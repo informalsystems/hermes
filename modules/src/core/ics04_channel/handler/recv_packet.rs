@@ -13,17 +13,25 @@ use crate::timestamp::Expiry;
 use crate::Height;
 
 #[derive(Clone, Debug)]
-pub struct RecvPacketSuccess {
+pub struct ResultUnordered {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub sequence: Sequence,
-    pub receipt: Option<Receipt>,
+    pub receipt: Receipt,
+}
+
+#[derive(Clone, Debug)]
+pub struct ResultOrdered {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub next_seq_recv: Sequence,
 }
 
 #[derive(Clone, Debug)]
 pub enum RecvPacketResult {
-    Success(RecvPacketSuccess),
     NoOp,
+    Unordered(ResultUnordered),
+    Ordered(ResultOrdered),
 }
 
 pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<PacketResult, Error> {
@@ -98,11 +106,10 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
             ));
         }
 
-        PacketResult::Recv(RecvPacketResult::Success(RecvPacketSuccess {
+        PacketResult::Recv(RecvPacketResult::Ordered(ResultOrdered {
             port_id: packet.destination_port.clone(),
             channel_id: packet.destination_channel,
-            sequence: next_seq_recv.increment(),
-            receipt: None,
+            next_seq_recv: next_seq_recv.increment(),
         }))
     } else {
         let packet_rec = ctx.get_packet_receipt(&(
@@ -121,11 +128,11 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
             }
             Err(e) if e.detail() == Error::packet_receipt_not_found(packet.sequence).detail() => {
                 // store a receipt that does not contain any data
-                PacketResult::Recv(RecvPacketResult::Success(RecvPacketSuccess {
+                PacketResult::Recv(RecvPacketResult::Unordered(ResultUnordered {
                     port_id: packet.destination_port.clone(),
                     channel_id: packet.destination_channel,
                     sequence: packet.sequence,
-                    receipt: Some(Receipt::Ok),
+                    receipt: Receipt::Ok,
                 }))
             }
             Err(_) => return Err(Error::implementation_specific()),
