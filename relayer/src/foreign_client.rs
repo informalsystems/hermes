@@ -179,6 +179,17 @@ define_error! {
                     e.client_id, e.chain_id, e.description, e.source)
             },
 
+        ClientUpgradeNoSource
+        {
+            client_id: ClientId,
+            chain_id: ChainId,
+            description: String,
+        }
+        |e| {
+            format_args!("failed while trying to upgrade client id {0} for chain {1}: {2}",
+                    e.client_id, e.chain_id, e.description)
+        },
+
         ClientEventQuery
             {
                 client_id: ClientId,
@@ -435,7 +446,19 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     pub fn upgrade(&self, src_upgrade_height: Height) -> Result<Vec<IbcEvent>, ForeignClientError> {
         info!("[{}] upgrade Height: {}", self, src_upgrade_height);
 
-        let mut msgs = self.build_update_client_with_trusted(src_upgrade_height, Height::zero())?;
+        let mut msgs = self
+            .build_update_client_with_trusted(src_upgrade_height, Height::zero())
+            .map_err(|_| {
+                ForeignClientError::client_upgrade_no_source(
+                    self.id.clone(),
+                    self.src_chain.id(),
+                    format!(
+                        "is chain {} halted at height {}?",
+                        self.src_chain().id(),
+                        src_upgrade_height
+                    ),
+                )
+            })?;
 
         // Query the host chain for the upgraded client state, consensus state & their proofs.
         let (client_state, proof_upgrade_client) = self
@@ -779,7 +802,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     }
 
     /// Wrapper for build_update_client_with_trusted.
-    pub fn build_update_client(
+    pub fn wait_and_build_update_client(
         &self,
         target_height: Height,
     ) -> Result<Vec<Any>, ForeignClientError> {
