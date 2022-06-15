@@ -8,7 +8,7 @@ use alloc::sync::Arc;
 use eyre::eyre;
 use tokio::runtime::Runtime;
 
-use ibc::applications::transfer::denom::Amount;
+use ibc::applications::transfer::amount::Amount;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 

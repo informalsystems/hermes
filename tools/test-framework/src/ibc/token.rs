@@ -1,5 +1,6 @@
 use core::ops::{Add, Sub};
-use ibc::applications::transfer::denom::{Amount, Coin, RawCoin};
+use ibc::applications::transfer::amount::Amount;
+use ibc::applications::transfer::coin::{Coin, RawCoin};
 
 use crate::error::Error;
 use crate::ibc::denom::{derive_ibc_denom, Denom, TaggedDenom, TaggedDenomRef};

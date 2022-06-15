@@ -5,7 +5,8 @@ use ibc_proto::ibc::applications::fee::v1::{
 };
 
 use super::error::Error;
-use crate::applications::transfer::denom::{Amount, RawCoin};
+use crate::applications::transfer::amount::Amount;
+use crate::applications::transfer::coin::RawCoin;
 use crate::core::ics04_channel::packet_id::PacketId;
 use crate::prelude::*;
 use crate::signer::Signer;

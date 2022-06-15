@@ -2,7 +2,7 @@ use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::applications::fee::v1::{Fee as ProtoFee, MsgPayPacketFee};
 
 use crate::applications::ics29_fee::error::Error;
-use crate::applications::transfer::denom::RawCoin;
+use crate::applications::transfer::coin::RawCoin;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
 use crate::signer::Signer;

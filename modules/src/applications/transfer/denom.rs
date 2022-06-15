@@ -1,24 +1,14 @@
 use core::fmt::{self, Display};
 use core::str::FromStr;
 
-use derive_more::{Display, From, Into};
-use ibc_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
+use derive_more::{Display, From};
 use ibc_proto::ibc::applications::transfer::v1::DenomTrace as RawDenomTrace;
 use serde::{Deserialize, Serialize};
 
 use super::error::Error;
-use crate::bigint::U256;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
 use crate::serializers::serde_string;
-
-/// A `Coin` type with fully qualified `PrefixedDenom`.
-pub type PrefixedCoin = Coin<PrefixedDenom>;
-
-/// A `Coin` type with an unprefixed denomination.
-pub type BaseCoin = Coin<BaseDenom>;
-
-pub type RawCoin = Coin<String>;
 
 /// Base denomination type
 #[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, Display)]
@@ -276,109 +266,6 @@ impl Display for PrefixedDenom {
         } else {
             write!(f, "{}/{}", self.trace_path, self.base_denom)
         }
-    }
-}
-
-/// A type for representing token transfer amounts.
-#[derive(
-    Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize, Display, From, Into,
-)]
-pub struct Amount(pub U256);
-
-impl Amount {
-    pub fn checked_add(self, rhs: impl Into<Amount>) -> Option<Self> {
-        self.0.checked_add(rhs.into().0).map(Self)
-    }
-
-    pub fn checked_sub(self, rhs: impl Into<Amount>) -> Option<Self> {
-        self.0.checked_sub(rhs.into().0).map(Self)
-    }
-}
-
-impl FromStr for Amount {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let amount = U256::from_str_radix(s, 10).map_err(Error::invalid_amount)?;
-        Ok(Self(amount))
-    }
-}
-
-impl From<u64> for Amount {
-    fn from(v: u64) -> Self {
-        Self(v.into())
-    }
-}
-
-impl From<u128> for Amount {
-    fn from(amount: u128) -> Self {
-        Self(amount.into())
-    }
-}
-
-/// Coin defines a token with a denomination and an amount.
-#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct Coin<D> {
-    /// Denomination
-    pub denom: D,
-    /// Amount
-    #[serde(with = "serde_string")]
-    pub amount: Amount,
-}
-
-impl<D> Coin<D> {
-    pub fn new(denom: D, amount: impl Into<Amount>) -> Self {
-        Self {
-            denom,
-            amount: amount.into(),
-        }
-    }
-
-    pub fn checked_add(self, rhs: impl Into<Amount>) -> Option<Self> {
-        let amount = self.amount.checked_add(rhs)?;
-        Some(Self::new(self.denom, amount))
-    }
-
-    pub fn checked_sub(self, rhs: impl Into<Amount>) -> Option<Self> {
-        let amount = self.amount.checked_sub(rhs)?;
-        Some(Self::new(self.denom, amount))
-    }
-}
-
-impl<D: FromStr> TryFrom<ProtoCoin> for Coin<D>
-where
-    D::Err: Into<Error>,
-{
-    type Error = Error;
-
-    fn try_from(proto: ProtoCoin) -> Result<Coin<D>, Self::Error> {
-        let denom = D::from_str(&proto.denom).map_err(Into::into)?;
-        let amount = Amount::from_str(&proto.amount)?;
-        Ok(Self { denom, amount })
-    }
-}
-
-impl<D: ToString> From<Coin<D>> for ProtoCoin {
-    fn from(coin: Coin<D>) -> ProtoCoin {
-        ProtoCoin {
-            denom: coin.denom.to_string(),
-            amount: coin.amount.to_string(),
-        }
-    }
-}
-
-impl From<BaseCoin> for PrefixedCoin {
-    fn from(coin: BaseCoin) -> PrefixedCoin {
-        PrefixedCoin {
-            denom: coin.denom.into(),
-            amount: coin.amount,
-        }
-    }
-}
-
-impl<D: Display> Display for Coin<D> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}{}", self.amount, self.denom)
     }
 }
 

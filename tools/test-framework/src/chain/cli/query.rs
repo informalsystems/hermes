@@ -1,6 +1,6 @@
 use core::str::FromStr;
 use eyre::eyre;
-use ibc::applications::transfer::denom::Amount;
+use ibc::applications::transfer::amount::Amount;
 use serde_json as json;
 use serde_yaml as yaml;
 
