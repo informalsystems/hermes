@@ -1,10 +1,12 @@
+use ibc_proto::google::protobuf::Any;
+use prost::{EncodeError, Message};
+
 use crate::core::ics24_host::error::ValidationError;
 use crate::prelude::*;
-use ibc_proto::google::protobuf::Any;
 
 pub trait Msg: Clone {
     type ValidationError;
-    type Raw: From<Self> + prost::Message;
+    type Raw: From<Self> + Message;
 
     // TODO: Clarify what is this function supposed to do & its connection to ICS26 routing mod.
     fn route(&self) -> String;
@@ -21,19 +23,23 @@ pub trait Msg: Clone {
     }
 
     fn get_sign_bytes(self) -> Vec<u8> {
-        let mut buf = Vec::new();
         let raw_msg: Self::Raw = self.into();
-        match prost::Message::encode(&raw_msg, &mut buf) {
-            Ok(()) => buf,
+        encode_message(&raw_msg).unwrap_or_else(|e| {
             // Severe error that cannot be recovered.
-            Err(e) => panic!(
+            panic!(
                 "Cannot encode the proto message {:?} into a buffer due to underlying error: {}",
                 raw_msg, e
-            ),
-        }
+            )
+        })
     }
 
     fn validate_basic(&self) -> Result<(), ValidationError> {
         Ok(())
     }
+}
+
+pub fn encode_message<M: Message>(message: &M) -> Result<Vec<u8>, EncodeError> {
+    let mut buf = Vec::new();
+    Message::encode(message, &mut buf)?;
+    Ok(buf)
 }

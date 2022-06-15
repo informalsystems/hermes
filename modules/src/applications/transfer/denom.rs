@@ -378,7 +378,7 @@ impl From<BaseCoin> for PrefixedCoin {
 
 impl<D: Display> Display for Coin<D> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}-{}", self.amount, self.denom)
+        write!(f, "{}{}", self.amount, self.denom)
     }
 }
 

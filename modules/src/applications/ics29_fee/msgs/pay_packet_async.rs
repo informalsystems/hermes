@@ -5,12 +5,12 @@ use ibc_proto::ibc::applications::fee::v1::{
 use ibc_proto::ibc::core::channel::v1::PacketId as ProtoPacketId;
 
 use crate::applications::ics29_fee::error::Error;
-use crate::applications::ics29_fee::utils::encode_message;
 use crate::applications::transfer::denom::RawCoin;
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
 use crate::signer::Signer;
+use crate::tx_msg::encode_message;
 
 const TYPE_URL: &str = "/ibc.applications.fee.v1.MsgPayPacketFeeAsync";
 
