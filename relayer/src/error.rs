@@ -535,27 +535,45 @@ impl GrpcStatusSubdetail {
         msg.contains("verification failed") && msg.contains("client state height < proof height")
     }
 
-    /// Check whether this gRPC error matches
-    /// - message: "account sequence mismatch, expected 166791, got 166793: incorrect account sequence: invalid request"
+    /// Check whether this gRPC error message starts with "account sequence mismatch".
     ///
     /// # Note:
     /// This predicate is tested and validated against errors
     /// that appear at the `estimate_gas` step. The error
     /// predicate to be used at the `broadcast_tx_sync` step
     /// is different & relies on parsing the Response error code.
-    pub fn is_account_sequence_mismatch(&self) -> bool {
-        // The code changed in SDK 0.44 from `InvalidArgument` to `Unknown`.
-        // Workaround: Ignore code. We'll match only on the status message.
-        // if self.status.code() != tonic::Code::InvalidArgument {
-        //     return false;
-        // }
-
+    ///
+    /// It is currently expected that, in the case of a match, the error message is of form:
+    /// "account sequence mismatch, expected E, got G: incorrect account sequence",
+    /// where E > G.
+    /// The case where E < G is considered recoverable and should have been previously handled
+    /// (see `is_account_sequence_mismatch_that_can_be_ignored` for which the error is ignored and
+    /// simulation uses default gas).
+    /// However, if in future cosmos-sdk releases the gRPC error message changes such that
+    /// it still starts with "account sequence mismatch" but the rest doesn't match the remainder of
+    /// the pattern (", expected E, got G: incorrect account sequence"), or
+    /// there are hermes code changes such that the E < G case is not previously caught anymore,
+    /// then this predicate will catch all "account sequence mismatch" errors
+    pub fn is_account_sequence_mismatch_that_requires_refresh(&self) -> bool {
         self.status
             .message()
             .trim_start()
             .starts_with("account sequence mismatch")
     }
 
+    /// Check whether this gRPC error matches:
+    /// "account sequence mismatch, expected E, got G",
+    /// where E < G.
+    /// It is currently expected that, in the case of a match, the error message is of form:
+    /// "account sequence mismatch, expected E, got G: incorrect account sequence"
+    ///
+    /// # Note:
+    /// This predicate is tested and validated against errors
+    /// that appear during the `estimate_gas` step.
+    /// If it evaluates to true then the error is ignored and the transaction that caused this
+    /// simulation error is still sent to mempool with `broadcast_tx_sync` allowing for potential
+    /// recovery after mempool's `recheckTxs` step.
+    /// More details in https://github.com/informalsystems/ibc-rs/issues/2249
     pub fn is_account_sequence_mismatch_that_can_be_ignored(&self) -> bool {
         match parse_sequences_in_mismatch_error_message(self.status.message()) {
             None => false,
@@ -564,11 +582,14 @@ impl GrpcStatusSubdetail {
     }
 }
 
+/// Assumes that the cosmos-sdk account sequence mismatch error message, that may be seen
+/// during simulating or broadcasting a transaction, includes the following pattern:
+/// "account sequence mismatch, expected E, got G".
+/// If a match is found it extracts and returns (E, G).
 fn parse_sequences_in_mismatch_error_message(message: &str) -> Option<(u64, u64)> {
-    let re = Regex::new(
-        r#"account sequence mismatch, expected (?P<expected>\d+), got (?P<got>\d+): incorrect account sequence"#
-    )
-        .unwrap();
+    let re =
+        Regex::new(r#"account sequence mismatch, expected (?P<expected>\d+), got (?P<got>\d+)"#)
+            .unwrap();
     match re.captures(message) {
         None => None,
         Some(captures) => match (captures["expected"].parse(), captures["got"].parse()) {
@@ -594,19 +615,36 @@ mod tests {
         }
         let tests: Vec<Test<'_>> = vec![
             Test {
-                name: "matches mismatch error, correct expected and got",
+                name: "good mismatch error, expected < got",
                 message:
-                    "account sequence mismatch, expected 25, got 29: incorrect account sequence",
-                result: Some((25, 29)),
+                    "account sequence mismatch, expected 100, got 200: incorrect account sequence",
+                result: Some((100, 200)),
             },
             Test {
-                name: "matches mismatch error, bad expected",
+                name: "good mismatch error, expected > got",
                 message:
-                    "account sequence mismatch, expected 2a5, got 29: incorrect account sequence",
+                    "account sequence mismatch, expected 200, got 100: incorrect account sequence",
+                result: Some((200, 100)),
+            },
+            Test {
+                name: "good changed mismatch error, expected < got",
+                message: "account sequence mismatch, expected 100, got 200: this part has changed",
+                result: Some((100, 200)),
+            },
+            Test {
+                name: "good changed mismatch error, expected > got",
+                message:
+                    "account sequence mismatch, expected 200, got 100 --> this part has changed",
+                result: Some((200, 100)),
+            },
+            Test {
+                name: "bad mismatch error, bad expected",
+                message:
+                    "account sequence mismatch, expected 2a5, got 100: incorrect account sequence",
                 result: None,
             },
             Test {
-                name: "matches mismatch error, bad got",
+                name: "bad mismatch error, bad got",
                 message:
                     "account sequence mismatch, expected 25, got -29: incorrect account sequence",
                 result: None,
