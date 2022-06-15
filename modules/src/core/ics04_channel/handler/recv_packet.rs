@@ -16,8 +16,7 @@ use crate::Height;
 pub struct RecvPacketSuccess {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    pub seq: Sequence,
-    pub seq_number: Sequence,
+    pub sequence: Sequence,
     pub receipt: Option<Receipt>,
 }
 
@@ -102,8 +101,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
         PacketResult::Recv(RecvPacketResult::Success(RecvPacketSuccess {
             port_id: packet.destination_port.clone(),
             channel_id: packet.destination_channel,
-            seq: packet.sequence,
-            seq_number: next_seq_recv.increment(),
+            sequence: next_seq_recv.increment(),
             receipt: None,
         }))
     } else {
@@ -126,8 +124,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
                 PacketResult::Recv(RecvPacketResult::Success(RecvPacketSuccess {
                     port_id: packet.destination_port.clone(),
                     channel_id: packet.destination_channel,
-                    seq: packet.sequence,
-                    seq_number: 1.into(),
+                    sequence: packet.sequence,
                     receipt: Some(Receipt::Ok),
                 }))
             }

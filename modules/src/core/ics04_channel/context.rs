@@ -181,13 +181,13 @@ pub trait ChannelKeeper {
                         // Ordered channel
                         self.store_next_sequence_recv(
                             (res.port_id.clone(), res.channel_id),
-                            res.seq_number,
+                            res.sequence,
                         )?
                     }
                     Some(r) => {
                         // Unordered channel
                         self.store_packet_receipt(
-                            (res.port_id.clone(), res.channel_id, res.seq),
+                            (res.port_id.clone(), res.channel_id, res.sequence),
                             r,
                         )?
                     }
