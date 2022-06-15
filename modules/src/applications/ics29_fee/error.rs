@@ -3,6 +3,8 @@ use prost::EncodeError;
 
 use crate::applications::transfer::error::Error as TransferError;
 use crate::core::ics04_channel::error::Error as ChannelError;
+use crate::core::ics24_host::error::ValidationError;
+use crate::prelude::*;
 use crate::signer::SignerError;
 
 define_error! {
@@ -20,6 +22,10 @@ define_error! {
             [ SignerError ]
             | _ | { "failed to parse signer" },
 
+        Ics24
+            [ ValidationError ]
+            | _ | { "ics24 error" },
+
         EmptyFee
             | _ | { "expect fee field to be non-empty" },
 
@@ -28,6 +34,10 @@ define_error! {
 
         Encode
             [ TraceError<EncodeError> ]
-            | _ | { "protobuf encode error" }
+            | _ | { "protobuf encode error" },
+
+        EventAttributeNotFound
+            { key: String }
+            | e | { format_args!("IBC event attribute not found for key: {}", e.key) },
     }
 }

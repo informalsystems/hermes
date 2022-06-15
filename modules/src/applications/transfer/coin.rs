@@ -1,6 +1,8 @@
 use core::fmt::{self, Display};
+use core::str::from_utf8;
 use core::str::FromStr;
 use ibc_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
+use safe_regex::regex;
 use serde::{Deserialize, Serialize};
 
 use super::amount::Amount;
@@ -43,6 +45,40 @@ impl<D> Coin<D> {
     pub fn checked_sub(self, rhs: impl Into<Amount>) -> Option<Self> {
         let amount = self.amount.checked_sub(rhs)?;
         Some(Self::new(self.denom, amount))
+    }
+}
+
+impl<D: FromStr> FromStr for Coin<D>
+where
+    D::Err: Into<Error>,
+{
+    type Err = Error;
+
+    #[allow(clippy::assign_op_pattern)]
+    fn from_str(coin_str: &str) -> Result<Self, Error> {
+        let matcher = regex!(br"(\\d+)([a-zA-Z].+)");
+
+        let (m1, m2) = matcher
+            .match_slices(coin_str.as_bytes())
+            .ok_or_else(|| Error::invalid_coin(coin_str.to_string()))?;
+
+        let amount = from_utf8(m1).map_err(Error::utf8_decode)?.parse()?;
+
+        let denom = from_utf8(m2)
+            .map_err(Error::utf8_decode)?
+            .parse()
+            .map_err(Into::into)?;
+
+        Ok(Coin { amount, denom })
+    }
+}
+
+impl<D: FromStr> Coin<D>
+where
+    D::Err: Into<Error>,
+{
+    pub fn from_string_list(coin_str: &str) -> Result<Vec<Self>, Error> {
+        coin_str.split(',').map(FromStr::from_str).collect()
     }
 }
 

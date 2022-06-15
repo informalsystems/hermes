@@ -16,7 +16,7 @@ define_error! {
 
         Encode
             [ TraceError<EncodeError> ]
-            | _ | { "protobuf encode error" }
+            | _ | { "protobuf encode error" },
     }
 }
 
