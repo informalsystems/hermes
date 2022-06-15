@@ -1,18 +1,12 @@
-use core::fmt::{self, Display};
 use core::ops::{Add, Sub};
-use eyre::eyre;
-use ibc::applications::transfer::denom::{Amount, RawCoin};
+use ibc::applications::transfer::denom::{Amount, Coin, RawCoin};
 
-use crate::error::{handle_generic_error, Error};
+use crate::error::Error;
 use crate::ibc::denom::{derive_ibc_denom, Denom, TaggedDenom, TaggedDenomRef};
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::MonoTagged;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Token {
-    pub denom: Denom,
-    pub amount: Amount,
-}
+pub type Token = Coin<Denom>;
 
 pub type TaggedToken<Chain> = MonoTagged<Chain, Token>;
 pub type TaggedTokenRef<'a, Chain> = MonoTagged<Chain, &'a Token>;
@@ -21,6 +15,8 @@ pub trait TaggedTokenExt<Chain> {
     fn denom(&self) -> TaggedDenomRef<Chain>;
 
     fn amount(&self) -> Amount;
+
+    fn as_coin(&self) -> RawCoin;
 
     fn transfer<Counterparty>(
         &self,
@@ -33,22 +29,6 @@ pub trait TaggedDenomExt<Chain> {
     fn with_amount(&self, amount: impl Into<Amount>) -> TaggedToken<Chain>;
 }
 
-impl Token {
-    pub fn new(denom: Denom, amount: impl Into<Amount>) -> Self {
-        Self {
-            denom,
-            amount: amount.into(),
-        }
-    }
-
-    pub fn as_coin(&self) -> RawCoin {
-        RawCoin {
-            denom: self.denom.to_string(),
-            amount: self.amount,
-        }
-    }
-}
-
 impl<Chain> TaggedTokenExt<Chain> for TaggedToken<Chain> {
     fn denom(&self) -> TaggedDenomRef<Chain> {
         self.map_ref(|t| &t.denom)
@@ -56,6 +36,10 @@ impl<Chain> TaggedTokenExt<Chain> for TaggedToken<Chain> {
 
     fn amount(&self) -> Amount {
         self.value().amount
+    }
+
+    fn as_coin(&self) -> RawCoin {
+        RawCoin::new(self.value().denom.to_string(), self.value().amount)
     }
 
     fn transfer<Counterparty>(
@@ -76,6 +60,10 @@ impl<'a, Chain> TaggedTokenExt<Chain> for TaggedTokenRef<'a, Chain> {
 
     fn amount(&self) -> Amount {
         self.value().amount
+    }
+
+    fn as_coin(&self) -> RawCoin {
+        RawCoin::new(self.value().denom.to_string(), self.value().amount)
     }
 
     fn transfer<Counterparty>(
@@ -107,33 +95,13 @@ impl<'a, Chain> TaggedDenomExt<Chain> for TaggedDenomRef<'a, Chain> {
     }
 }
 
-impl<I: Into<Amount>> Add<I> for Token {
-    type Output = Self;
-
-    fn add(self, amount: I) -> Self {
-        Self {
-            denom: self.denom,
-            amount: self.amount.checked_add(amount).unwrap(),
-        }
-    }
-}
-
-impl<I: Into<Amount>> Sub<I> for Token {
-    type Output = Self;
-
-    fn sub(self, amount: I) -> Self {
-        Self {
-            denom: self.denom,
-            amount: self.amount.checked_sub(amount).unwrap(),
-        }
-    }
-}
-
 impl<Chain, I: Into<Amount>> Add<I> for MonoTagged<Chain, Token> {
     type Output = Self;
 
     fn add(self, amount: I) -> Self {
-        self.map_into(|t| t + amount.into())
+        self.map_into(|t| t.checked_add(amount))
+            .transpose()
+            .unwrap()
     }
 }
 
@@ -141,24 +109,8 @@ impl<Chain, I: Into<Amount>> Sub<I> for MonoTagged<Chain, Token> {
     type Output = Self;
 
     fn sub(self, amount: I) -> Self {
-        self.map_into(|t| t - amount.into())
-    }
-}
-
-impl Display for Token {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}{}", self.amount, self.denom)
-    }
-}
-
-impl TryFrom<RawCoin> for Token {
-    type Error = Error;
-
-    fn try_from(fee: RawCoin) -> Result<Self, Error> {
-        let denom = Denom::base(&fee.denom);
-        let amount =
-            u128::try_from(fee.amount.0).map_err(|e| handle_generic_error(eyre!("{}", e)))?;
-
-        Ok(Token::new(denom, amount))
+        self.map_into(|t| t.checked_sub(amount))
+            .transpose()
+            .unwrap()
     }
 }

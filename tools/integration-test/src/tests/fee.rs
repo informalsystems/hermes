@@ -565,16 +565,16 @@ impl BinaryChannelTest for PayPacketFeeAsyncTest {
 
             assert_eq!(
                 &packet_fee.fee.recv_fee[0],
-                &denom_a.with_amount(receive_fee).value().as_coin(),
+                &denom_a.with_amount(receive_fee).as_coin(),
             );
             assert_eq!(
                 &packet_fee.fee.ack_fee[0],
-                &denom_a.with_amount(ack_fee).value().as_coin()
+                &denom_a.with_amount(ack_fee).as_coin()
             );
 
             assert_eq!(
                 &packet_fee.fee.timeout_fee[0],
-                &denom_a.with_amount(timeout_fee).value().as_coin(),
+                &denom_a.with_amount(timeout_fee).as_coin(),
             );
 
             assert_eq!(

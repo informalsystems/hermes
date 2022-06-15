@@ -13,7 +13,7 @@ use ibc_relayer::chain::cosmos::query::fee::{
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 
 use crate::error::{handle_generic_error, Error};
-use crate::ibc::token::TaggedTokenRef;
+use crate::ibc::token::{TaggedTokenExt, TaggedTokenRef};
 use crate::relayer::transfer::build_transfer_message;
 use crate::relayer::tx::simple_send_tx;
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
@@ -44,9 +44,9 @@ pub async fn ibc_token_transfer_with_fee<SrcChain, DstChain>(
             .0
             .parse()
             .map_err(handle_generic_error)?,
-        vec![receive_fee.value().as_coin()],
-        vec![ack_fee.value().as_coin()],
-        vec![timeout_fee.value().as_coin()],
+        vec![receive_fee.as_coin()],
+        vec![ack_fee.as_coin()],
+        vec![timeout_fee.as_coin()],
     )
     .map_err(handle_generic_error)?;
 
@@ -77,9 +77,9 @@ pub async fn pay_packet_fee<Chain, Counterparty>(
             .0
             .parse()
             .map_err(handle_generic_error)?,
-        vec![receive_fee.value().as_coin()],
-        vec![ack_fee.value().as_coin()],
-        vec![timeout_fee.value().as_coin()],
+        vec![receive_fee.as_coin()],
+        vec![ack_fee.as_coin()],
+        vec![timeout_fee.as_coin()],
     )
     .map_err(handle_generic_error)?;
 

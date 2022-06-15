@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{self, Display};
 use core::str::FromStr;
 
 use derive_more::{Display, From, Into};
@@ -52,7 +52,7 @@ impl TracePrefix {
     }
 }
 
-impl fmt::Display for TracePrefix {
+impl Display for TracePrefix {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}/{}", self.port_id, self.channel_id)
     }
@@ -130,7 +130,7 @@ impl FromStr for TracePath {
     }
 }
 
-impl fmt::Display for TracePath {
+impl Display for TracePath {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let path = self
             .0
@@ -269,7 +269,7 @@ impl From<BaseDenom> for PrefixedDenom {
     }
 }
 
-impl fmt::Display for PrefixedDenom {
+impl Display for PrefixedDenom {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.trace_path.0.is_empty() {
             write!(f, "{}", self.base_denom)
@@ -333,6 +333,16 @@ impl<D> Coin<D> {
             amount: amount.into(),
         }
     }
+
+    pub fn checked_add(self, rhs: impl Into<Amount>) -> Option<Self> {
+        let amount = self.amount.checked_add(rhs)?;
+        Some(Self::new(self.denom, amount))
+    }
+
+    pub fn checked_sub(self, rhs: impl Into<Amount>) -> Option<Self> {
+        let amount = self.amount.checked_sub(rhs)?;
+        Some(Self::new(self.denom, amount))
+    }
 }
 
 impl<D: FromStr> TryFrom<ProtoCoin> for Coin<D>
@@ -366,7 +376,7 @@ impl From<BaseCoin> for PrefixedCoin {
     }
 }
 
-impl fmt::Display for PrefixedCoin {
+impl<D: Display> Display for Coin<D> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}-{}", self.amount, self.denom)
     }
