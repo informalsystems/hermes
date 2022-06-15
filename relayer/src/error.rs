@@ -2,7 +2,7 @@
 
 use core::time::Duration;
 
-use flex_error::{define_error, DisplayOnly, TraceClone, TraceError};
+use flex_error::{define_error, DisplayOnly, TraceError};
 use http::uri::InvalidUri;
 use humantime::format_duration;
 use prost::{DecodeError, EncodeError};
@@ -46,7 +46,7 @@ define_error! {
 
         Rpc
             { url: tendermint_rpc::Url }
-            [ TraceClone<TendermintRpcError> ]
+            [ TendermintRpcError ]
             |e| { format!("RPC error to endpoint {}", e.url) },
 
         AbciQuery
@@ -91,7 +91,7 @@ define_error! {
             |e| { format!("missing parameter in GRPC response: {}", e.param) },
 
         Decode
-            [ TraceError<TendermintProtoError> ]
+            [ TendermintProtoError ]
             |_| { "error decoding protobuf" },
 
         LightClientVerification
@@ -122,7 +122,7 @@ define_error! {
             |_| { "bad notification" },
 
         ConversionFromAny
-            [ TraceError<TendermintProtoError> ]
+            [ TendermintProtoError ]
             |_| { "conversion from a protobuf `Any` into a domain type failed" },
 
         EmptyUpgradedClientState
@@ -140,6 +140,10 @@ define_error! {
 
         EmptyResponseProof
             |_| { "empty response proof" },
+
+        RpcResponse
+            { detail: String }
+            | e | { format!("RPC client returns error response: {}", e.detail) },
 
         MalformedProof
             [ ProofError ]

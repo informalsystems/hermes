@@ -3,7 +3,6 @@ use core::time::Duration;
 use eyre::eyre;
 use http::uri::Uri;
 use ibc::core::ics24_host::identifier::ChainId;
-use ibc::events::IbcEvent;
 use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::gas::calculate_fee;
@@ -11,8 +10,7 @@ use ibc_relayer::chain::cosmos::query::account::query_account;
 use ibc_relayer::chain::cosmos::tx::estimate_fee_and_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::cosmos::types::gas::GasConfig;
-use ibc_relayer::chain::cosmos::types::tx::TxSyncResult;
-use ibc_relayer::chain::cosmos::wait::wait_for_block_commits;
+use ibc_relayer::chain::cosmos::wait::wait_tx_succeed;
 use ibc_relayer::config::GasPrice;
 use ibc_relayer::keyring::KeyEntry;
 use tendermint_rpc::{HttpClient, Url};
@@ -93,37 +91,21 @@ pub async fn simple_send_tx(
         .await?
         .into();
 
-    let message_count = messages.len();
-
     let response =
         estimate_fee_and_send_tx(config, key_entry, &account, &Default::default(), messages)
             .await?;
 
-    let events_per_tx = vec![IbcEvent::default(); message_count];
+    if response.code.is_err() {
+        return Err(eyre!("send_tx returns error response: {:?}", response).into());
+    }
 
-    let tx_sync_result = TxSyncResult {
-        response,
-        events: events_per_tx,
-    };
-
-    let mut tx_sync_results = vec![tx_sync_result];
-
-    wait_for_block_commits(
-        &config.chain_id,
+    wait_tx_succeed(
         &config.rpc_client,
         &config.rpc_address,
         &config.rpc_timeout,
-        &mut tx_sync_results,
+        &response.hash,
     )
     .await?;
-
-    for result in tx_sync_results.iter() {
-        for event in result.events.iter() {
-            if let IbcEvent::ChainError(e) = event {
-                return Err(Error::generic(eyre!("send_tx result in error: {}", e)));
-            }
-        }
-    }
 
     Ok(())
 }
