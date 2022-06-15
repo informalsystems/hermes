@@ -13,25 +13,19 @@ use crate::timestamp::Expiry;
 use crate::Height;
 
 #[derive(Clone, Debug)]
-pub struct ResultUnordered {
-    pub port_id: PortId,
-    pub channel_id: ChannelId,
-    pub sequence: Sequence,
-    pub receipt: Receipt,
-}
-
-#[derive(Clone, Debug)]
-pub struct ResultOrdered {
-    pub port_id: PortId,
-    pub channel_id: ChannelId,
-    pub next_seq_recv: Sequence,
-}
-
-#[derive(Clone, Debug)]
 pub enum RecvPacketResult {
     NoOp,
-    Unordered(ResultUnordered),
-    Ordered(ResultOrdered),
+    Unordered {
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: Sequence,
+        receipt: Receipt,
+    },
+    Ordered {
+        port_id: PortId,
+        channel_id: ChannelId,
+        next_seq_recv: Sequence,
+    },
 }
 
 pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<PacketResult, Error> {
@@ -106,11 +100,11 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
             ));
         }
 
-        PacketResult::Recv(RecvPacketResult::Ordered(ResultOrdered {
+        PacketResult::Recv(RecvPacketResult::Ordered {
             port_id: packet.destination_port.clone(),
             channel_id: packet.destination_channel,
             next_seq_recv: next_seq_recv.increment(),
-        }))
+        })
     } else {
         let packet_rec = ctx.get_packet_receipt(&(
             packet.destination_port.clone(),
@@ -128,12 +122,12 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
             }
             Err(e) if e.detail() == Error::packet_receipt_not_found(packet.sequence).detail() => {
                 // store a receipt that does not contain any data
-                PacketResult::Recv(RecvPacketResult::Unordered(ResultUnordered {
+                PacketResult::Recv(RecvPacketResult::Unordered {
                     port_id: packet.destination_port.clone(),
                     channel_id: packet.destination_channel,
                     sequence: packet.sequence,
                     receipt: Receipt::Ok,
-                }))
+                })
             }
             Err(_) => return Err(Error::implementation_specific()),
         }
