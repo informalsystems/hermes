@@ -36,7 +36,7 @@ pub const MAX_PACKET_DELAY: Duration = Duration::from_secs(120);
 
 mod handshake_retry {
     //! Provides utility methods and constants to configure the retry behavior
-    //! for the channel handshake algorithm.
+    //! for the connection handshake algorithm.
 
     use crate::connection::ConnectionError;
     use crate::util::retry::{clamp_total, ConstantGrowth};
@@ -897,7 +897,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .map_err(|e| ConnectionError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection init
-        let event = events
+        let result = events
             .into_iter()
             .find(|event| {
                 matches!(event, IbcEvent::OpenInitConnection(_))
@@ -906,13 +906,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .ok_or_else(ConnectionError::missing_connection_init_event)?;
 
         // TODO - make chainError an actual error
-        match event {
+        match result {
             IbcEvent::OpenInitConnection(_) => {
-                info!("🥂 {} => {:#?}\n", self.dst_chain().id(), event);
-                Ok(event)
+                info!("🥂 {} => {:#?}\n", self.dst_chain().id(), result);
+                Ok(result)
             }
             IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
-            _ => panic!("internal error"),
+            _ => Err(ConnectionError::invalid_event(result)),
         }
     }
 
@@ -1038,7 +1038,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .map_err(|e| ConnectionError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection try transaction
-        let event = events
+        let result = events
             .into_iter()
             .find(|event| {
                 matches!(event, IbcEvent::OpenTryConnection(_))
@@ -1046,13 +1046,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             })
             .ok_or_else(ConnectionError::missing_connection_try_event)?;
 
-        match event {
+        match result {
             IbcEvent::OpenTryConnection(_) => {
-                info!("🥂 {} => {:#?}\n", self.dst_chain().id(), event);
-                Ok(event)
+                info!("🥂 {} => {:#?}\n", self.dst_chain().id(), result);
+                Ok(result)
             }
             IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
-            _ => panic!("internal error"),
+            _ => Err(ConnectionError::invalid_event(result)),
         }
     }
 
@@ -1144,7 +1144,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .map_err(|e| ConnectionError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection ack
-        let event = events
+        let result = events
             .into_iter()
             .find(|event| {
                 matches!(event, IbcEvent::OpenAckConnection(_))
@@ -1152,13 +1152,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             })
             .ok_or_else(ConnectionError::missing_connection_ack_event)?;
 
-        match event {
+        match result {
             IbcEvent::OpenAckConnection(_) => {
-                info!("🥂 {} => {:#?}\n", self.dst_chain().id(), event);
-                Ok(event)
+                info!("🥂 {} => {:#?}\n", self.dst_chain().id(), result);
+                Ok(result)
             }
             IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
-            _ => panic!("internal error"),
+            _ => Err(ConnectionError::invalid_event(result)),
         }
     }
 
@@ -1232,7 +1232,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .map_err(|e| ConnectionError::submit(self.dst_chain().id(), e))?;
 
         // Find the relevant event for connection confirm
-        let event = events
+        let result = events
             .into_iter()
             .find(|event| {
                 matches!(event, IbcEvent::OpenConfirmConnection(_))
@@ -1240,13 +1240,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             })
             .ok_or_else(ConnectionError::missing_connection_confirm_event)?;
 
-        match event {
+        match result {
             IbcEvent::OpenConfirmConnection(_) => {
-                info!("🥂 {} => {:#?}\n", self.dst_chain().id(), event);
-                Ok(event)
+                info!("🥂 {} => {:#?}\n", self.dst_chain().id(), result);
+                Ok(result)
             }
             IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
-            _ => panic!("internal error"),
+            _ => Err(ConnectionError::invalid_event(result)),
         }
     }
 
