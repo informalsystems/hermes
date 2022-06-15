@@ -435,7 +435,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     pub fn upgrade(&self, src_upgrade_height: Height) -> Result<Vec<IbcEvent>, ForeignClientError> {
         info!("[{}] upgrade Height: {}", self, src_upgrade_height);
 
-        let mut msgs = self.build_update_client(src_upgrade_height)?;
+        let src_application_height = src_upgrade_height
+            .decrement()
+            .map_err(ForeignClientError::client)?;
+
+        let mut msgs = self.build_update_client(src_application_height)?;
 
         // Query the host chain for the upgraded client state, consensus state & their proofs.
         let (client_state, proof_upgrade_client) = self
