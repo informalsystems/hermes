@@ -17,7 +17,7 @@ use ibc_relayer::chain::requests::{
 };
 use ibc_relayer::{
     config::Config,
-    transfer::{build_and_send_transfer_messages, Amount, TransferOptions},
+    transfer::{build_and_send_transfer_messages, TransferOptions},
 };
 
 use crate::cli_utils::ChainHandlePair;
