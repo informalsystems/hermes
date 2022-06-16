@@ -462,7 +462,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         let (client_state, proof_upgrade_client) = self
             .src_chain
             .query_upgraded_client_state(QueryUpgradedClientStateRequest {
-                height: src_upgrade_height,
+                upgrade_height: src_upgrade_height,
             })
             .map_err(|e| {
                 ForeignClientError::client_upgrade(
@@ -478,7 +478,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         let (consensus_state, proof_upgrade_consensus_state) = self
             .src_chain
             .query_upgraded_consensus_state(QueryUpgradedConsensusStateRequest {
-                height: src_upgrade_height,
+                upgrade_height: src_upgrade_height,
             })
             .map_err(|e| {
                 ForeignClientError::client_upgrade(

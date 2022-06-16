@@ -788,7 +788,7 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_upgraded_client_state");
 
         // Query for the value and the proof.
-        let upgrade_height = request.height;
+        let upgrade_height = request.upgrade_height;
         let query_height = upgrade_height
             .decrement()
             .map_err(|_| Error::invalid_height_no_source())?;
@@ -811,7 +811,7 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("query_upgraded_consensus_state");
         crate::telemetry!(query, self.id(), "query_upgraded_consensus_state");
 
-        let upgrade_height = request.height;
+        let upgrade_height = request.upgrade_height;
         let query_height = upgrade_height
             .decrement()
             .map_err(|_| Error::invalid_height_no_source())?;

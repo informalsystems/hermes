@@ -152,12 +152,14 @@ pub struct QueryConsensusStateRequest {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryUpgradedClientStateRequest {
-    pub height: Height,
+    /// Height at which the chain is scheduled to halt for upgrade
+    pub upgrade_height: Height,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryUpgradedConsensusStateRequest {
-    pub height: Height,
+    /// Height at which the chain is scheduled to halt for upgrade
+    pub upgrade_height: Height,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
