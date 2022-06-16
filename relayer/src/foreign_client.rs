@@ -441,7 +441,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         }
     }
 
-    /// Create and send a transaction to perform a chain upgrade.
+    /// Create and send a transaction to perform a client upgrade.
     /// src_upgrade_height: The height on the source chain at which the chain will halt for the upgrade.
     pub fn upgrade(&self, src_upgrade_height: Height) -> Result<Vec<IbcEvent>, ForeignClientError> {
         info!("[{}] upgrade Height: {}", self, src_upgrade_height);
