@@ -56,7 +56,11 @@ where
 
     #[allow(clippy::assign_op_pattern)]
     fn from_str(coin_str: &str) -> Result<Self, Error> {
-        let matcher = regex!(br"(\\d+)([a-zA-Z].+)");
+        // Denominations can be 3 ~ 128 characters long and support letters, followed by either
+        // a letter, a number or a separator ('/', ':', '.', '_' or '-').
+        // Loosely copy the regex from here:
+        // https://github.com/cosmos/cosmos-sdk/blob/v0.45.5/types/coin.go#L760-L762
+        let matcher = regex!(br"([0-9]+)([a-zA-Z0-9/:\\._\x2d]+)");
 
         let (m1, m2) = matcher
             .match_slices(coin_str.as_bytes())
@@ -116,5 +120,58 @@ impl From<BaseCoin> for PrefixedCoin {
 impl<D: Display> Display for Coin<D> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}{}", self.amount, self.denom)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_raw_coin() -> Result<(), Error> {
+        {
+            let coin = RawCoin::from_str("123stake")?;
+            assert_eq!(coin.denom, "stake");
+            assert_eq!(coin.amount, 123u64.into());
+        }
+
+        {
+            let coin = RawCoin::from_str("1a1")?;
+            assert_eq!(coin.denom, "a1");
+            assert_eq!(coin.amount, 1u64.into());
+        }
+
+        {
+            let coin = RawCoin::from_str("0x1/:.\\_-")?;
+            assert_eq!(coin.denom, "x1/:.\\_-");
+            assert_eq!(coin.amount, 0u64.into());
+        }
+
+        {
+            // `!` is not allowed
+            let res = RawCoin::from_str("0x!");
+            assert!(res.is_err());
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_parse_raw_coin_list() -> Result<(), Error> {
+        {
+            let coins = RawCoin::from_string_list("123stake,1a1,999den0m")?;
+            assert_eq!(coins.len(), 3);
+
+            assert_eq!(coins[0].denom, "stake");
+            assert_eq!(coins[0].amount, 123u64.into());
+
+            assert_eq!(coins[1].denom, "a1");
+            assert_eq!(coins[1].amount, 1u64.into());
+
+            assert_eq!(coins[2].denom, "den0m");
+            assert_eq!(coins[2].amount, 999u64.into());
+        }
+
+        Ok(())
     }
 }

@@ -9,7 +9,7 @@ use serde_derive::{Deserialize, Serialize};
 use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
-use crate::applications::ics29_fee::events::IncentivizedPacket;
+use crate::applications::ics29_fee::events::{self as FeeEvents, IncentivizedPacket};
 use crate::core::ics02_client::error as client_error;
 use crate::core::ics02_client::events as ClientEvents;
 use crate::core::ics02_client::events::NewBlock;
@@ -360,6 +360,8 @@ pub fn from_tx_response_event(height: Height, event: &tendermint::abci::Event) -
     } else if let Some(mut chan_res) = ChannelEvents::try_from_tx(event) {
         chan_res.set_height(height);
         Some(chan_res)
+    } else if let Some(event) = FeeEvents::try_from_tx(event) {
+        Some(event)
     } else {
         None
     }
@@ -422,6 +424,7 @@ impl IbcEvent {
             IbcEvent::WriteAcknowledgement(ev) => ev.set_height(height),
             IbcEvent::AcknowledgePacket(ev) => ev.set_height(height),
             IbcEvent::TimeoutPacket(ev) => ev.set_height(height),
+            IbcEvent::IncentivizedPacket(_) => {}
             _ => unimplemented!(),
         }
     }

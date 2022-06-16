@@ -532,24 +532,58 @@ impl BinaryChannelTest for PayPacketFeeAsyncTest {
 
         let total_sent = send_amount + receive_fee + ack_fee + timeout_fee;
         let balance_a2 = balance_a1 - total_sent;
-        info!("Expect user A's balance after transfer: {}", balance_a2);
 
         chain_driver_a.assert_eventual_wallet_amount(&user_a.address(), &balance_a2.as_ref())?;
 
-        let send_packet_event = events
-            .into_iter()
-            .find_map(|event| match event {
-                IbcEvent::SendPacket(e) => Some(e),
-                _ => None,
-            })
-            .ok_or_else(|| eyre!("expect send packet event"))?;
+        let sequence = {
+            let send_packet_event = events
+                .iter()
+                .find_map(|event| match event {
+                    IbcEvent::SendPacket(e) => Some(e),
+                    _ => None,
+                })
+                .ok_or_else(|| eyre!("expect send packet event"))?;
 
-        let sequence = send_packet_event.packet.sequence;
+            send_packet_event.packet.sequence
+        };
+
+        {
+            let event = events
+                .iter()
+                .find_map(|ev| {
+                    if let IbcEvent::IncentivizedPacket(ev) = ev {
+                        Some(ev)
+                    } else {
+                        None
+                    }
+                })
+                .unwrap();
+
+            info!("incentivized packet event: {:?}", event);
+
+            assert_eq!(event.sequence, sequence);
+
+            assert_eq!(event.total_recv_fee.len(), 1);
+            assert_eq!(event.total_ack_fee.len(), 1);
+            assert_eq!(event.total_timeout_fee.len(), 1);
+
+            assert_eq!(
+                &event.total_recv_fee[0],
+                &denom_a.with_amount(receive_fee).as_coin(),
+            );
+            assert_eq!(
+                &event.total_ack_fee[0],
+                &denom_a.with_amount(ack_fee).as_coin()
+            );
+
+            assert_eq!(
+                &event.total_timeout_fee[0],
+                &denom_a.with_amount(timeout_fee).as_coin(),
+            );
+        }
 
         {
             let packets = chain_driver_a.query_incentivized_packets(&channel_id_a, &port_a)?;
-
-            info!("incenvitized packets: {:?}", packets);
 
             assert_eq!(packets.len(), 1);
 
