@@ -99,14 +99,18 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     })
 }
 
-/// Receives worker commands, which may be:
-///     - IbcEvent => then it updates schedule
-///     - NewBlock => schedules packet clearing
-///     - Shutdown => exits
+/// Receives worker commands and handles them accordingly.
 ///
-/// Regardless of the incoming command, this method
-/// also refreshes and executes any scheduled operational
-/// data that is ready.
+/// Given an `IbcEvent` command, updates the schedule and initiates
+/// packet clearing if the `should_clear_on_start` flag has been toggled.
+///
+/// Given a `NewBlock` command, checks if packet clearing should occur
+/// and performs it if so.
+///
+/// Given a `ClearPendingPackets` command, clears pending packets.
+///
+/// Regardless of the incoming command, this method also refreshes and
+/// and executes any scheduled operational data that is ready.
 fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     link: &mut Link<ChainA, ChainB>,
     should_clear_on_start: &mut bool,
