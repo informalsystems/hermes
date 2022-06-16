@@ -114,30 +114,45 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     path: &Packet,
     cmd: WorkerCmd,
 ) -> Result<(), TaskError<RunError>> {
-    match cmd {
+    // Handle packet clearing which is triggered from a command
+    let (do_clear, maybe_height) = match &cmd {
         WorkerCmd::IbcEvents { batch } => {
             if *should_clear_on_start {
-                handle_clear_packet(link, clear_interval, path, Some(batch.height))?;
-                *should_clear_on_start = false;
+                (true, Some(batch.height.clone()))
+            } else {
+                (false, None)
             }
-            handle_update_schedule(link, clear_interval, path, batch)
         }
 
         // Handle the arrival of an event signaling that the
-        // source chain has advanced to a new block.
+        // source chain has advanced to a new block
         WorkerCmd::NewBlock { height, .. } => {
             if *should_clear_on_start {
-                handle_clear_packet(link, clear_interval, path, Some(height))?;
-                *should_clear_on_start = false;
-                Ok(())
-            } else if should_clear_packets(clear_interval, height) {
-                handle_clear_packet(link, clear_interval, path, Some(height))
+                (true, Some(height.clone()))
+            } else if should_clear_packets(clear_interval, *height) {
+                (true, Some(height.clone()))
             } else {
-                Ok(())
+                (false, None)
             }
         }
 
-        WorkerCmd::ClearPendingPackets => handle_clear_packet(link, clear_interval, path, None),
+        WorkerCmd::ClearPendingPackets => (true, None),
+    };
+
+    if do_clear {
+        handle_clear_packet(link, clear_interval, path, maybe_height)?;
+
+        // Reset the `clear_on_start` flag
+        if *should_clear_on_start {
+            *should_clear_on_start = false;
+        }
+    }
+
+    // Handle command-specific task
+    if let WorkerCmd::IbcEvents { batch } = cmd {
+        handle_update_schedule(link, clear_interval, path, batch)
+    } else {
+        Ok(())
     }
 }
 
