@@ -63,8 +63,8 @@ pub struct MsgRegisterPayee {
     pub channel_id: ::prost::alloc::string::String,
     /// the relayer address
     #[prost(string, tag="3")]
-    pub relayer_address: ::prost::alloc::string::String,
-    /// the fee payee address
+    pub relayer: ::prost::alloc::string::String,
+    /// the payee address
     #[prost(string, tag="4")]
     pub payee: ::prost::alloc::string::String,
 }
@@ -72,25 +72,25 @@ pub struct MsgRegisterPayee {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgRegisterPayeeResponse {
 }
-/// MsgRegisterCounterpartyAddress defines the request type for the RegisterCounterpartyAddress rpc
+/// MsgRegisterCounterpartyPayee defines the request type for the RegisterCounterpartyPayee rpc
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgRegisterCounterpartyAddress {
-    /// the relayer address
-    #[prost(string, tag="1")]
-    pub address: ::prost::alloc::string::String,
-    /// the counterparty relayer address
-    #[prost(string, tag="2")]
-    pub counterparty_address: ::prost::alloc::string::String,
+pub struct MsgRegisterCounterpartyPayee {
     /// unique port identifier
-    #[prost(string, tag="3")]
+    #[prost(string, tag="1")]
     pub port_id: ::prost::alloc::string::String,
     /// unique channel identifier
-    #[prost(string, tag="4")]
+    #[prost(string, tag="2")]
     pub channel_id: ::prost::alloc::string::String,
+    /// the relayer address
+    #[prost(string, tag="3")]
+    pub relayer: ::prost::alloc::string::String,
+    /// the counterparty payee address
+    #[prost(string, tag="4")]
+    pub counterparty_payee: ::prost::alloc::string::String,
 }
-/// MsgRegisterCounterpartyAddressResponse defines the response type for the RegisterCounterpartyAddress rpc
+/// MsgRegisterCounterpartyPayeeResponse defines the response type for the RegisterCounterpartyPayee rpc
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgRegisterCounterpartyAddressResponse {
+pub struct MsgRegisterCounterpartyPayeeResponse {
 }
 /// MsgPayPacketFee defines the request type for the PayPacketFee rpc
 /// This Msg can be used to pay for a packet at the next sequence send & should be combined with the Msg that will be
@@ -200,9 +200,9 @@ pub mod msg_client {
         }
         /// RegisterPayee defines a rpc handler method for MsgRegisterPayee
         /// RegisterPayee is called by the relayer on each channelEnd and allows them to set an optional
-        /// payee to which escrowed packet fees will be paid out. The payee should be registered on the source chain from which
-        /// packets originate as this is where fee distribution takes place. This function may be called more than once by a
-        /// relayer, in which case, the latest payee is always used.
+        /// payee to which reverse and timeout relayer packet fees will be paid out. The payee should be registered on
+        /// the source chain from which packets originate as this is where fee distribution takes place. This function may be
+        /// called more than once by a relayer, in which case, the latest payee is always used.
         pub async fn register_payee(
             &mut self,
             request: impl tonic::IntoRequest<super::MsgRegisterPayee>,
@@ -222,16 +222,16 @@ pub mod msg_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
-        /// RegisterCounterpartyAddress defines a rpc handler method for MsgRegisterCounterpartyAddress
-        /// RegisterCounterpartyAddress is called by the relayer on each channelEnd and allows them to specify their
-        /// counterparty address before relaying. This ensures they will be properly compensated for forward relaying since
-        /// destination chain must send back relayer's source address (counterparty address) in acknowledgement. This function
-        /// may be called more than once by a relayer, in which case, the latest counterparty address is always used.
-        pub async fn register_counterparty_address(
+        /// RegisterCounterpartyPayee defines a rpc handler method for MsgRegisterCounterpartyPayee
+        /// RegisterCounterpartyPayee is called by the relayer on each channelEnd and allows them to specify the counterparty
+        /// payee address before relaying. This ensures they will be properly compensated for forward relaying since
+        /// the destination chain must include the registered counterparty payee address in the acknowledgement. This function
+        /// may be called more than once by a relayer, in which case, the latest counterparty payee address is always used.
+        pub async fn register_counterparty_payee(
             &mut self,
-            request: impl tonic::IntoRequest<super::MsgRegisterCounterpartyAddress>,
+            request: impl tonic::IntoRequest<super::MsgRegisterCounterpartyPayee>,
         ) -> Result<
-            tonic::Response<super::MsgRegisterCounterpartyAddressResponse>,
+            tonic::Response<super::MsgRegisterCounterpartyPayeeResponse>,
             tonic::Status,
         > {
             self.inner
@@ -245,7 +245,7 @@ pub mod msg_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/ibc.applications.fee.v1.Msg/RegisterCounterpartyAddress",
+                "/ibc.applications.fee.v1.Msg/RegisterCounterpartyPayee",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -310,23 +310,23 @@ pub mod msg_server {
     pub trait Msg: Send + Sync + 'static {
         /// RegisterPayee defines a rpc handler method for MsgRegisterPayee
         /// RegisterPayee is called by the relayer on each channelEnd and allows them to set an optional
-        /// payee to which escrowed packet fees will be paid out. The payee should be registered on the source chain from which
-        /// packets originate as this is where fee distribution takes place. This function may be called more than once by a
-        /// relayer, in which case, the latest payee is always used.
+        /// payee to which reverse and timeout relayer packet fees will be paid out. The payee should be registered on
+        /// the source chain from which packets originate as this is where fee distribution takes place. This function may be
+        /// called more than once by a relayer, in which case, the latest payee is always used.
         async fn register_payee(
             &self,
             request: tonic::Request<super::MsgRegisterPayee>,
         ) -> Result<tonic::Response<super::MsgRegisterPayeeResponse>, tonic::Status>;
-        /// RegisterCounterpartyAddress defines a rpc handler method for MsgRegisterCounterpartyAddress
-        /// RegisterCounterpartyAddress is called by the relayer on each channelEnd and allows them to specify their
-        /// counterparty address before relaying. This ensures they will be properly compensated for forward relaying since
-        /// destination chain must send back relayer's source address (counterparty address) in acknowledgement. This function
-        /// may be called more than once by a relayer, in which case, the latest counterparty address is always used.
-        async fn register_counterparty_address(
+        /// RegisterCounterpartyPayee defines a rpc handler method for MsgRegisterCounterpartyPayee
+        /// RegisterCounterpartyPayee is called by the relayer on each channelEnd and allows them to specify the counterparty
+        /// payee address before relaying. This ensures they will be properly compensated for forward relaying since
+        /// the destination chain must include the registered counterparty payee address in the acknowledgement. This function
+        /// may be called more than once by a relayer, in which case, the latest counterparty payee address is always used.
+        async fn register_counterparty_payee(
             &self,
-            request: tonic::Request<super::MsgRegisterCounterpartyAddress>,
+            request: tonic::Request<super::MsgRegisterCounterpartyPayee>,
         ) -> Result<
-            tonic::Response<super::MsgRegisterCounterpartyAddressResponse>,
+            tonic::Response<super::MsgRegisterCounterpartyPayeeResponse>,
             tonic::Status,
         >;
         /// PayPacketFee defines a rpc handler method for MsgPayPacketFee
@@ -432,27 +432,25 @@ pub mod msg_server {
                     };
                     Box::pin(fut)
                 }
-                "/ibc.applications.fee.v1.Msg/RegisterCounterpartyAddress" => {
+                "/ibc.applications.fee.v1.Msg/RegisterCounterpartyPayee" => {
                     #[allow(non_camel_case_types)]
-                    struct RegisterCounterpartyAddressSvc<T: Msg>(pub Arc<T>);
+                    struct RegisterCounterpartyPayeeSvc<T: Msg>(pub Arc<T>);
                     impl<
                         T: Msg,
-                    > tonic::server::UnaryService<super::MsgRegisterCounterpartyAddress>
-                    for RegisterCounterpartyAddressSvc<T> {
-                        type Response = super::MsgRegisterCounterpartyAddressResponse;
+                    > tonic::server::UnaryService<super::MsgRegisterCounterpartyPayee>
+                    for RegisterCounterpartyPayeeSvc<T> {
+                        type Response = super::MsgRegisterCounterpartyPayeeResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<
-                                super::MsgRegisterCounterpartyAddress,
-                            >,
+                            request: tonic::Request<super::MsgRegisterCounterpartyPayee>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
-                                (*inner).register_counterparty_address(request).await
+                                (*inner).register_counterparty_payee(request).await
                             };
                             Box::pin(fut)
                         }
@@ -462,7 +460,7 @@ pub mod msg_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = RegisterCounterpartyAddressSvc(inner);
+                        let method = RegisterCounterpartyPayeeSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -601,9 +599,9 @@ pub struct GenesisState {
     /// list of registered payees
     #[prost(message, repeated, tag="3")]
     pub registered_payees: ::prost::alloc::vec::Vec<RegisteredPayee>,
-    /// list of registered relayer addresses
+    /// list of registered counterparty payees
     #[prost(message, repeated, tag="4")]
-    pub registered_relayers: ::prost::alloc::vec::Vec<RegisteredRelayerAddress>,
+    pub registered_counterparty_payees: ::prost::alloc::vec::Vec<RegisteredCounterpartyPayee>,
     /// list of forward relayer addresses
     #[prost(message, repeated, tag="5")]
     pub forward_relayers: ::prost::alloc::vec::Vec<ForwardRelayerAddress>,
@@ -621,28 +619,29 @@ pub struct FeeEnabledChannel {
 /// RegisteredPayee contains the relayer address and payee address for a specific channel
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RegisteredPayee {
-    /// the relayer address
+    /// unique channel identifier
     #[prost(string, tag="1")]
-    pub relayer_address: ::prost::alloc::string::String,
+    pub channel_id: ::prost::alloc::string::String,
+    /// the relayer address
+    #[prost(string, tag="2")]
+    pub relayer: ::prost::alloc::string::String,
     /// the payee address
-    #[prost(string, tag="2")]
+    #[prost(string, tag="3")]
     pub payee: ::prost::alloc::string::String,
-    /// unique channel identifier
-    #[prost(string, tag="3")]
-    pub channel_id: ::prost::alloc::string::String,
 }
-/// RegisteredRelayerAddress contains the address and counterparty address for a specific relayer (for distributing fees)
+/// RegisteredCounterpartyPayee contains the relayer address and counterparty payee address for a specific channel (used
+/// for recv fee distribution)
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct RegisteredRelayerAddress {
-    /// the relayer address
-    #[prost(string, tag="1")]
-    pub address: ::prost::alloc::string::String,
-    /// the counterparty relayer address
-    #[prost(string, tag="2")]
-    pub counterparty_address: ::prost::alloc::string::String,
+pub struct RegisteredCounterpartyPayee {
     /// unique channel identifier
-    #[prost(string, tag="3")]
+    #[prost(string, tag="1")]
     pub channel_id: ::prost::alloc::string::String,
+    /// the relayer address
+    #[prost(string, tag="2")]
+    pub relayer: ::prost::alloc::string::String,
+    /// the counterparty payee address
+    #[prost(string, tag="3")]
+    pub counterparty_payee: ::prost::alloc::string::String,
 }
 /// ForwardRelayerAddress contains the forward relayer address and PacketId used for async acknowledgements
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -760,7 +759,7 @@ pub struct QueryPayeeRequest {
     pub channel_id: ::prost::alloc::string::String,
     /// the relayer address to which the distribution address is registered
     #[prost(string, tag="2")]
-    pub relayer_address: ::prost::alloc::string::String,
+    pub relayer: ::prost::alloc::string::String,
 }
 /// QueryPayeeResponse defines the response type for the Payee rpc
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -769,22 +768,22 @@ pub struct QueryPayeeResponse {
     #[prost(string, tag="1")]
     pub payee_address: ::prost::alloc::string::String,
 }
-/// QueryCounterpartyAddressRequest defines the request type for the CounterpartyAddress rpc
+/// QueryCounterpartyPayeeRequest defines the request type for the CounterpartyPayee rpc
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryCounterpartyAddressRequest {
+pub struct QueryCounterpartyPayeeRequest {
     /// unique channel identifier
     #[prost(string, tag="1")]
     pub channel_id: ::prost::alloc::string::String,
     /// the relayer address to which the counterparty is registered
     #[prost(string, tag="2")]
-    pub relayer_address: ::prost::alloc::string::String,
+    pub relayer: ::prost::alloc::string::String,
 }
-/// QueryCounterpartyAddressResponse defines the response type for the CounterpartyAddress rpc
+/// QueryCounterpartyPayeeResponse defines the response type for the CounterpartyPayee rpc
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryCounterpartyAddressResponse {
-    /// the counterparty address used to compensate forward relaying
+pub struct QueryCounterpartyPayeeResponse {
+    /// the counterparty payee address used to compensate forward relaying
     #[prost(string, tag="1")]
-    pub counterparty_address: ::prost::alloc::string::String,
+    pub counterparty_payee: ::prost::alloc::string::String,
 }
 /// QueryFeeEnabledChannelsRequest defines the request type for the FeeEnabledChannels rpc
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -1040,12 +1039,12 @@ pub mod query_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
-        /// CounterpartyAddress returns the registered counterparty address for forward relaying
-        pub async fn counterparty_address(
+        /// CounterpartyPayee returns the registered counterparty payee for forward relaying
+        pub async fn counterparty_payee(
             &mut self,
-            request: impl tonic::IntoRequest<super::QueryCounterpartyAddressRequest>,
+            request: impl tonic::IntoRequest<super::QueryCounterpartyPayeeRequest>,
         ) -> Result<
-            tonic::Response<super::QueryCounterpartyAddressResponse>,
+            tonic::Response<super::QueryCounterpartyPayeeResponse>,
             tonic::Status,
         > {
             self.inner
@@ -1059,7 +1058,7 @@ pub mod query_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/ibc.applications.fee.v1.Query/CounterpartyAddress",
+                "/ibc.applications.fee.v1.Query/CounterpartyPayee",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -1166,12 +1165,12 @@ pub mod query_server {
             &self,
             request: tonic::Request<super::QueryPayeeRequest>,
         ) -> Result<tonic::Response<super::QueryPayeeResponse>, tonic::Status>;
-        /// CounterpartyAddress returns the registered counterparty address for forward relaying
-        async fn counterparty_address(
+        /// CounterpartyPayee returns the registered counterparty payee for forward relaying
+        async fn counterparty_payee(
             &self,
-            request: tonic::Request<super::QueryCounterpartyAddressRequest>,
+            request: tonic::Request<super::QueryCounterpartyPayeeRequest>,
         ) -> Result<
-            tonic::Response<super::QueryCounterpartyAddressResponse>,
+            tonic::Response<super::QueryCounterpartyPayeeResponse>,
             tonic::Status,
         >;
         /// FeeEnabledChannels returns a list of all fee enabled channels
@@ -1522,27 +1521,25 @@ pub mod query_server {
                     };
                     Box::pin(fut)
                 }
-                "/ibc.applications.fee.v1.Query/CounterpartyAddress" => {
+                "/ibc.applications.fee.v1.Query/CounterpartyPayee" => {
                     #[allow(non_camel_case_types)]
-                    struct CounterpartyAddressSvc<T: Query>(pub Arc<T>);
+                    struct CounterpartyPayeeSvc<T: Query>(pub Arc<T>);
                     impl<
                         T: Query,
-                    > tonic::server::UnaryService<super::QueryCounterpartyAddressRequest>
-                    for CounterpartyAddressSvc<T> {
-                        type Response = super::QueryCounterpartyAddressResponse;
+                    > tonic::server::UnaryService<super::QueryCounterpartyPayeeRequest>
+                    for CounterpartyPayeeSvc<T> {
+                        type Response = super::QueryCounterpartyPayeeResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<
-                                super::QueryCounterpartyAddressRequest,
-                            >,
+                            request: tonic::Request<super::QueryCounterpartyPayeeRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
-                                (*inner).counterparty_address(request).await
+                                (*inner).counterparty_payee(request).await
                             };
                             Box::pin(fut)
                         }
@@ -1552,7 +1549,7 @@ pub mod query_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = CounterpartyAddressSvc(inner);
+                        let method = CounterpartyPayeeSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
