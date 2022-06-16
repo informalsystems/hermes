@@ -318,14 +318,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, LinkError> {
         let client = self.restore_dst_client();
         client
-            .build_update_client(height)
+            .wait_and_build_update_client(height)
             .map_err(LinkError::client)
     }
 
     pub fn build_update_client_on_src(&self, height: Height) -> Result<Vec<Any>, LinkError> {
         let client = self.restore_src_client();
         client
-            .build_update_client(height)
+            .wait_and_build_update_client(height)
             .map_err(LinkError::client)
     }
 
