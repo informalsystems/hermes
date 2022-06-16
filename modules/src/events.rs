@@ -9,6 +9,7 @@ use serde_derive::{Deserialize, Serialize};
 use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
+use crate::applications::ics29_fee::events::IncentivizedPacket;
 use crate::core::ics02_client::error as client_error;
 use crate::core::ics02_client::events as ClientEvents;
 use crate::core::ics02_client::events::NewBlock;
@@ -248,6 +249,8 @@ pub enum IbcEvent {
     TimeoutPacket(ChannelEvents::TimeoutPacket),
     TimeoutOnClosePacket(ChannelEvents::TimeoutOnClosePacket),
 
+    IncentivizedPacket(IncentivizedPacket),
+
     AppModule(ModuleEvent),
 
     Empty(String),      // Special event, signifying empty response
@@ -301,6 +304,8 @@ impl fmt::Display for IbcEvent {
             IbcEvent::TimeoutPacket(ev) => write!(f, "TimeoutPacketEv({})", ev),
             IbcEvent::TimeoutOnClosePacket(ev) => write!(f, "TimeoutOnClosePacketEv({})", ev),
 
+            IbcEvent::IncentivizedPacket(ev) => write!(f, "IncenvitizedPacket({:?}", ev),
+
             IbcEvent::AppModule(ev) => write!(f, "AppModuleEv({:?})", ev),
 
             IbcEvent::Empty(ev) => write!(f, "EmptyEv({})", ev),
@@ -334,6 +339,7 @@ impl TryFrom<IbcEvent> for AbciEvent {
             IbcEvent::AcknowledgePacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::TimeoutPacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::TimeoutOnClosePacket(event) => event.try_into().map_err(Error::channel)?,
+            IbcEvent::IncentivizedPacket(event) => event.into(),
             IbcEvent::AppModule(event) => event.try_into()?,
             IbcEvent::NewBlock(_) | IbcEvent::Empty(_) | IbcEvent::ChainError(_) => {
                 return Err(Error::incorrect_event_type(event.to_string()))
@@ -443,6 +449,7 @@ impl IbcEvent {
             IbcEvent::AcknowledgePacket(_) => IbcEventType::AckPacket,
             IbcEvent::TimeoutPacket(_) => IbcEventType::Timeout,
             IbcEvent::TimeoutOnClosePacket(_) => IbcEventType::TimeoutOnClose,
+            IbcEvent::IncentivizedPacket(_) => IbcEventType::IncentivizedPacket,
             IbcEvent::AppModule(_) => IbcEventType::AppModule,
             IbcEvent::Empty(_) => IbcEventType::Empty,
             IbcEvent::ChainError(_) => IbcEventType::ChainError,
