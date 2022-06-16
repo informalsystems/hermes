@@ -75,13 +75,13 @@ impl TryFrom<VersionInfo> for Specs {
         let tendermint_version = parse_tendermint_version(&raw_version)?;
 
         trace!(
-            "parsed version specification for {} {}@{} -> SDK={}; Ibc-Go status={:?}; Tendermint={:?}",
-            raw_version.app_name,
-            raw_version.version,
-            raw_version.git_commit,
-            sdk_version,
-            ibc_go_version,
-            tendermint_version
+            application = %raw_version.app_name,
+            version = %raw_version.version,
+            git_commit = %raw_version.git_commit,
+            sdk_version = %sdk_version,
+            ibc_go_status = ?ibc_go_version,
+            tendermint_version = %tendermint_version,
+            "parsed version specification"
         );
 
         Ok(Self {
