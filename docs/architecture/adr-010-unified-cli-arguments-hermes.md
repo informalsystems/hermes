@@ -21,25 +21,25 @@ To avoid confusion, all the parameters should take long flags. The following gen
 
 The following commands are implemented, with the binary name `hermes` omitted:
 
-__Hermes global flags__
+### Hermes global flags
 
 * `hermes --config <CONFIG> <COMMAND>`
 
 * `hermes --json <COMMAND>`
 
-__Commands for clients__
+### Commands for clients
 
 * `create client --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID>`
     * Optional: `[--clock-drift <CLOCK_DRIFT>] [--trust-threshold <TRUST_THRESHOLD>] [--trusting-period <TRUSTING_PERDIOD>]`
 
-* `update client --chain <DST_CHAIN_ID> --client <DST_CLIENT_ID>`
+* `update client --chain <CHAIN_ID> --client <CLIENT_ID>`
     * Optional: `[--target-height <TARGET_HEIGHT>] [--trusted-height <TRUSTED_HEIGHT>]`
 
 * `upgrade client --chain <DST_CHAIN_ID> --client <DST_CLIENT_ID>`
 
-* `upgrade clients --chain <SRC_CHAIN_ID>`
+* `upgrade clients --chain <CHAIN_ID>`
 
-__Create a connection__
+### Create a connection
 
 * `create connection --chain-a <CHAIN_A_ID> --chain-b <CHAIN_B_ID>`
     * Optional: `[--delay <DELAY>]`
@@ -47,15 +47,15 @@ __Create a connection__
 * `create connection --chain-a <CHAIN_A_ID> --client-a <CLIENT_A_ID> --client-b <CLIENT_B_ID>`
     * Optional: `[--delay <DELAY>]`
 
-__Create a channel__
+### Create a channel
 
-* `create channel --chain-a <CHAIN_A> --chain-b <CHAIN_B> --port-a <PORT_A> --port-b <PORT_B>`
+* `create channel --chain-a <CHAIN_A_ID> --chain-b <CHAIN_B_ID> --port-a <PORT_A_ID> --port-b <PORT_B_ID>`
     * Optional: `[--chan-version <VERSION>] [--new-client-conn] [--order <ORDER>]`
 
-* `create channel --chain-a <CHAIN_A> --conn-a <CONNECTION_A> --port-a <PORT_A> --port-b <PORT_B>`
+* `create channel --chain-a <CHAIN_A_ID> --conn-a <CONNECTION_A_ID> --port-a <PORT_A_ID> --port-b <PORT_B_ID>`
     * Optional: `[--chan-version <VERSION>] [--new-client-conn] [--order <ORDER>]`
 
-__Commands for keys__
+### Commands for keys
 
 * `keys add --chain <CHAIN_ID> --key-file <KEY_FILE> --mnemonic-file <MNEMONIC_FILE>`
     * Optional: `[--hd-path <HD_PATH>] [--key-name <KEY_NAME>]`
@@ -69,25 +69,27 @@ __Commands for keys__
 
 * `keys list --chain <CHAIN_ID>`
 
-__Listen__
+### Listen
 
 * `listen --chain <CHAIN_ID>`
     * Optional: `[--event <EVENT>]`
 
-__Misbehaviour__
+### Misbehaviour
 
 * `misbehaviour --chain <CHAIN_ID> --client <CLIENT_ID>`
 
-__Start the relayer in multi-chain mode__
+### Start the relayer in multi-chain mode
 
 * `start`
     * Optional: `[--full-scan]`
 
-__Clear objects__
+### Clear objects
 
 * `clear packets --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
 
-__Queries__
+### Queries
+
+__Channel__
 
 * `query channel client --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
 
@@ -99,6 +101,8 @@ __Queries__
 
 * `query channels --chain <CHAIN_ID>`
     * Optional: `[--dst-chain <DST_CHAIN_ID>] [--verbose]`
+
+__Client__
 
 * `query client connections --chain <CHAIN_ID> --client <CLIENT_ID>`
     * Optional: `[--height <HEIGHT>]`
@@ -115,12 +119,16 @@ __Queries__
 * `query clients --chain <CHAIN_ID>`
     * Optional: `[--omit-chain-ids] [--src-chain <ID>]`
 
+__Connection__
+
 * `query connection channels --chain <CHAIN_ID> --conn <CONNECTION_ID>`
 
 * `query connection end --chain <CHAIN_ID> --conn <CONNECTION_ID>`
     * Optional: `[--height <HEIGHT>]`
 
 * `query connections --chain <CHAIN_ID>`
+
+__Packet__
 
 * `query packet ack --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID> --seq <SEQUENCE>`
     * Optional: `[--height <HEIGHT>]`
@@ -138,17 +146,19 @@ __Queries__
 
 * `query packet unreceived-packets --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
 
+__Tx__
+
 * `query tx events --chain <CHAIN_ID> --hash <HASH>`
 
-__Shell completion__
+### Shell completion
 
 * `completions --shell <SHELL>`
 
-__Validate configuration file__
+### Validate configuration file
 
 * `config validate`
 
-__Health check__
+### Health check
 
 * `health-check`
 
