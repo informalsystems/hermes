@@ -13,7 +13,7 @@ pub async fn query_denom_trace(grpc_address: &Uri, hash: &str) -> Result<DenomTr
         .map_err(Error::grpc_transport)?;
 
     let request = tonic::Request::new(QueryDenomTraceRequest {
-        hash: hash.to_string(),
+        hash: hash.to_owned(),
     });
 
     let response = client
@@ -24,7 +24,7 @@ pub async fn query_denom_trace(grpc_address: &Uri, hash: &str) -> Result<DenomTr
 
     let denom_trace = response
         .denom_trace
-        .ok_or_else(|| Error::empty_denom_trace(hash.to_string()))?;
+        .ok_or_else(|| Error::empty_denom_trace(hash.to_owned()))?;
 
     Ok(DenomTrace {
         path: denom_trace.path,
