@@ -16,7 +16,8 @@ To avoid confusion, all the parameters should take long flags. The following gen
 * Only long flags are used in order to avoid having nonintuitive flags or conflicting flags.
 * Any parameter ending with `_id` should have the `_id` removed from the flag to shorten it. For example the flag for `chain_id` should only be `chain`.
 * Flags which can be shorten and still be meaningful should be shorten. This is done for `connection`, `channel` and `sequence`, which become respectively `conn`, `chan` and `seq`.
-* In cases where there are undirectional parameters for a same object, the flags end with the suffix `-a` and `-b`.
+* For the channel and connection creation CLIs, the objects at the two ends are prefixed by `--a-` and `--b-`.
+* All the specifiers for `chain`, `connection`, `channel` and `port` flags are prefixed. These specifiers are `host`, `reference`, `a`, `b` and `counterparty`.
 
 The following commands are implemented, with the binary name `hermes` omitted:
 
@@ -31,28 +32,29 @@ The following commands are implemented, with the binary name `hermes` omitted:
 * `create client --host-chain <HOST_CHAIN_ID> --reference-chain <REFERENCE_CHAIN_ID>`
     * Optional: `[--clock-drift <CLOCK_DRIFT>] [--trust-threshold <TRUST_THRESHOLD>] [--trusting-period <TRUSTING_PERDIOD>]`
 
-* `update client --chain <CHAIN_ID> --client <CLIENT_ID>`
-    * Optional: `[--target-height <TARGET_HEIGHT>] [--trusted-height <TRUSTED_HEIGHT>]`
+* `update client --host-chain <HOST_CHAIN_ID> --host-client <HOST_CLIENT_ID>`
+    * Optional: `[--height <REFERENCE_HEIGHT>] [--trusted-height <REFERENCE_TRUSTED_HEIGHT>]`
 
-* `upgrade client --chain <CHAIN_ID> --client <CLIENT_ID>`
+* `upgrade client --host-chain <HOST_CHAIN_ID> --host-client <HOST_CLIENT_ID>`
 
-* `upgrade clients --chain <CHAIN_ID>`
+* `upgrade clients --reference-chain <REFERENCE_CHAIN_ID>`
+    * Optional: `[--host-chain <HOST_CHAIN_ID>]`
 
 ### Create a connection
 
-* `create connection --chain-a <CHAIN_A_ID> --chain-b <CHAIN_B_ID>`
+* `create connection --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID>`
     * Optional: `[--delay <DELAY>]`
 
-* `create connection --chain-a <CHAIN_A_ID> --client-a <CLIENT_A_ID> --client-b <CLIENT_B_ID>`
+* `create connection --a-chain <A_CHAIN_ID> --a-client <A_CLIENT_ID> --b-client <B_CLIENT_ID>`
     * Optional: `[--delay <DELAY>]`
 
 ### Create a channel
 
-* `create channel --chain-a <CHAIN_A_ID> --chain-b <CHAIN_B_ID> --port-a <PORT_A_ID> --port-b <PORT_B_ID>`
+* `create channel --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>`
     * Optional: `[--chan-version <VERSION>] [--new-client-conn] [--order <ORDER>]`
 
-* `create channel --chain-a <CHAIN_A_ID> --conn-a <CONNECTION_A_ID> --port-a <PORT_A_ID> --port-b <PORT_B_ID>`
-    * Optional: `[--chan-version <VERSION>] [--new-client-conn] [--order <ORDER>]`
+* `create channel --a-chain <A_CHAIN_ID> --a-conn <A_CONNECTION_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>`
+    * Optional: `[--chan-version <VERSION>] [--order <ORDER>]`
 
 ### Commands for keys
 
@@ -98,8 +100,8 @@ __Channel__
 * `query channel ends --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
     * Optional: `[--height <HEIGHT>] [--verbose]`
 
-* `query channels --host-chain <HOST_CHAIN_ID>`
-    * Optional: `[--reference-chain <REFERENCE_CHAIN_ID>] [--verbose]`
+* `query channels --chain <CHAIN_ID>`
+    * Optional: `[--counterparty-chain <COUNTERPARTY_CHAIN_ID>] [--verbose]`
 
 __Client__
 
