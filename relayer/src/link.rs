@@ -56,7 +56,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         b_chain: ChainB,
         opts: LinkParameters,
         with_tx_confirmation: bool,
-        auto_register_counterparty_address: bool,
+        auto_register_counterparty_payee: bool,
     ) -> Result<Link<ChainA, ChainB>, LinkError> {
         // Check that the packet's channel on source chain is Open
         let a_channel_id = &opts.src_channel_id;
@@ -145,11 +145,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             connection_delay: a_connection.delay_period(),
         };
 
-        if auto_register_counterparty_address && a_channel.version.supports_fee() {
+        if auto_register_counterparty_payee && a_channel.version.supports_fee() {
             let address_a = a_chain.get_signer().map_err(LinkError::relayer)?;
 
             b_chain
-                .maybe_register_counterparty_address(b_channel_id, b_port_id, address_a)
+                .maybe_register_counterparty_payee(b_channel_id, b_port_id, address_a)
                 .map_err(LinkError::relayer)?;
         }
 
@@ -161,7 +161,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
     pub fn reverse(
         &self,
         with_tx_confirmation: bool,
-        auto_register_counterparty_address: bool,
+        auto_register_counterparty_payee: bool,
     ) -> Result<Link<ChainB, ChainA>, LinkError> {
         let opts = LinkParameters {
             src_port_id: self.a_to_b.dst_port_id().clone(),
@@ -177,7 +177,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             chain_a,
             opts,
             with_tx_confirmation,
-            auto_register_counterparty_address,
+            auto_register_counterparty_payee,
         )
     }
 }

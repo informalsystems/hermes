@@ -402,13 +402,13 @@ where
         self.value().query_balance(key_name)
     }
 
-    fn maybe_register_counterparty_address(
+    fn maybe_register_counterparty_payee(
         &self,
         channel_id: ChannelId,
         port_id: PortId,
-        counterparty_address: Signer,
+        counterparty_payee: Signer,
     ) -> Result<(), Error> {
         self.value()
-            .maybe_register_counterparty_address(channel_id, port_id, counterparty_address)
+            .maybe_register_counterparty_payee(channel_id, port_id, counterparty_payee)
     }
 }

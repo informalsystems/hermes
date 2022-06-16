@@ -60,7 +60,7 @@ use crate::chain::cosmos::batch::{
     send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
 };
 use crate::chain::cosmos::encode::encode_to_bech32;
-use crate::chain::cosmos::fee::maybe_register_counterparty_address;
+use crate::chain::cosmos::fee::maybe_register_counterparty_payee;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
 use crate::chain::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::query::balance::query_balance;
@@ -1570,16 +1570,16 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok((target, supporting))
     }
 
-    fn maybe_register_counterparty_address(
+    fn maybe_register_counterparty_payee(
         &mut self,
         channel_id: &ChannelId,
         port_id: &PortId,
-        counterparty_address: &Signer,
+        counterparty_payee: &Signer,
     ) -> Result<(), Error> {
         let address = self.get_signer()?;
         let key_entry = self.key()?;
 
-        self.rt.block_on(maybe_register_counterparty_address(
+        self.rt.block_on(maybe_register_counterparty_payee(
             &self.tx_config,
             &key_entry,
             &mut self.account,
@@ -1587,7 +1587,7 @@ impl ChainEndpoint for CosmosSdkChain {
             channel_id,
             port_id,
             &address,
-            counterparty_address,
+            counterparty_payee,
         ))
     }
 }

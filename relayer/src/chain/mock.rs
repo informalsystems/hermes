@@ -437,11 +437,11 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn maybe_register_counterparty_address(
+    fn maybe_register_counterparty_payee(
         &mut self,
         _channel_id: &ChannelId,
         _port_id: &PortId,
-        _counterparty_address: &Signer,
+        _counterparty_payee: &Signer,
     ) -> Result<(), Error> {
         unimplemented!()
     }

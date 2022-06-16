@@ -8,8 +8,8 @@ use crate::chain::tagged::TaggedChainDriverExt;
 use crate::error::Error;
 use crate::ibc::token::TaggedTokenRef;
 use crate::relayer::fee::{
-    ibc_token_transfer_with_fee, pay_packet_fee, query_counterparty_address,
-    query_incentivized_packets, register_counterparty_address,
+    ibc_token_transfer_with_fee, pay_packet_fee, query_counterparty_payee,
+    query_incentivized_packets, register_counterparty_payee,
 };
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
@@ -40,15 +40,15 @@ pub trait ChainFeeMethodsExt<Chain> {
         timeout_fee: &TaggedTokenRef<'_, Chain>,
     ) -> Result<(), Error>;
 
-    fn register_counterparty_address<Counterparty>(
+    fn register_counterparty_payee<Counterparty>(
         &self,
         wallet: &MonoTagged<Chain, &Wallet>,
-        counterparty_address: &MonoTagged<Counterparty, &WalletAddress>,
+        counterparty_payee: &MonoTagged<Counterparty, &WalletAddress>,
         channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
         port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,
     ) -> Result<(), Error>;
 
-    fn query_counterparty_address<Counterparty>(
+    fn query_counterparty_payee<Counterparty>(
         &self,
         channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
         address: &MonoTagged<Chain, &WalletAddress>,
@@ -110,28 +110,28 @@ impl<'a, Chain: Send> ChainFeeMethodsExt<Chain> for MonoTagged<Chain, &'a ChainD
         ))
     }
 
-    fn register_counterparty_address<Counterparty>(
+    fn register_counterparty_payee<Counterparty>(
         &self,
         wallet: &MonoTagged<Chain, &Wallet>,
-        counterparty_address: &MonoTagged<Counterparty, &WalletAddress>,
+        counterparty_payee: &MonoTagged<Counterparty, &WalletAddress>,
         channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
         port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,
     ) -> Result<(), Error> {
-        self.value().runtime.block_on(register_counterparty_address(
+        self.value().runtime.block_on(register_counterparty_payee(
             &self.tx_config(),
             wallet,
-            counterparty_address,
+            counterparty_payee,
             channel_id,
             port_id,
         ))
     }
 
-    fn query_counterparty_address<Counterparty>(
+    fn query_counterparty_payee<Counterparty>(
         &self,
         channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
         address: &MonoTagged<Chain, &WalletAddress>,
     ) -> Result<Option<MonoTagged<Counterparty, WalletAddress>>, Error> {
-        self.value().runtime.block_on(query_counterparty_address(
+        self.value().runtime.block_on(query_counterparty_payee(
             &self.tx_config().value().grpc_address,
             channel_id,
             address,

@@ -473,16 +473,16 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryHostConsensusState { request, reply_to })
     }
 
-    fn maybe_register_counterparty_address(
+    fn maybe_register_counterparty_payee(
         &self,
         channel_id: ChannelId,
         port_id: PortId,
-        counterparty_address: Signer,
+        counterparty_payee: Signer,
     ) -> Result<(), Error> {
-        self.send(|reply_to| ChainRequest::MaybeRegisterCounterpartyAddress {
+        self.send(|reply_to| ChainRequest::MaybeRegisterCounterpartyPayee {
             channel_id,
             port_id,
-            counterparty_address,
+            counterparty_payee,
             reply_to,
         })
     }

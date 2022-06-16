@@ -49,7 +49,7 @@ impl TestOverrides for ForwardRelayerTest {
 
 impl TestOverrides for AutoForwardRelayerTest {
     fn modify_relayer_config(&self, config: &mut Config) {
-        config.mode.packets.auto_register_counterparty_address = true;
+        config.mode.packets.auto_register_counterparty_payee = true;
     }
 
     fn channel_version(&self) -> Version {
@@ -59,7 +59,7 @@ impl TestOverrides for AutoForwardRelayerTest {
 
 impl TestOverrides for NoForwardRelayerTest {
     fn modify_relayer_config(&self, config: &mut Config) {
-        config.mode.packets.auto_register_counterparty_address = false;
+        config.mode.packets.auto_register_counterparty_payee = false;
     }
 
     fn channel_version(&self) -> Version {
@@ -89,7 +89,7 @@ impl TestOverrides for PayPacketFeeAsyncTest {
 
 impl TestOverrides for NonFeeChannelTest {
     fn modify_relayer_config(&self, config: &mut Config) {
-        config.mode.packets.auto_register_counterparty_address = true;
+        config.mode.packets.auto_register_counterparty_payee = true;
     }
 }
 
@@ -228,17 +228,17 @@ impl BinaryChannelTest for ForwardRelayerTest {
         );
 
         {
-            let counterparty_address =
-                chain_driver_b.query_counterparty_address(&channel_id_b, &relayer_b.address())?;
+            let counterparty_payee =
+                chain_driver_b.query_counterparty_payee(&channel_id_b, &relayer_b.address())?;
 
             assert_eq(
                 "counterparty address should be None before registering",
-                &counterparty_address,
+                &counterparty_payee,
                 &None,
             )?;
         }
 
-        chain_driver_b.register_counterparty_address(
+        chain_driver_b.register_counterparty_payee(
             &relayer_b,
             &relayer_a.address(),
             &channel_id_b,
@@ -246,12 +246,12 @@ impl BinaryChannelTest for ForwardRelayerTest {
         )?;
 
         {
-            let counterparty_address =
-                chain_driver_b.query_counterparty_address(&channel_id_b, &relayer_b.address())?;
+            let counterparty_payee =
+                chain_driver_b.query_counterparty_payee(&channel_id_b, &relayer_b.address())?;
 
             assert_eq(
                 "counterparty address should match registered address",
-                &counterparty_address,
+                &counterparty_payee,
                 &Some(relayer_a.address().cloned()),
             )?;
         }
@@ -498,7 +498,7 @@ impl BinaryChannelTest for PayPacketFeeAsyncTest {
             chain_id_a
         );
 
-        chain_driver_b.register_counterparty_address(
+        chain_driver_b.register_counterparty_payee(
             &relayer_b,
             &relayer_a.address(),
             &channel_id_b,
@@ -661,7 +661,7 @@ impl BinaryChannelTest for NonFeeChannelTest {
         let send_amount = random_u128_range(1000, 2000);
 
         {
-            let res = chain_driver_b.register_counterparty_address(
+            let res = chain_driver_b.register_counterparty_payee(
                 &relayer_b,
                 &relayer_a.address(),
                 &channel_id_b,

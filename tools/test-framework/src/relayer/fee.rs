@@ -2,12 +2,12 @@ use core::time::Duration;
 use http::uri::Uri;
 use ibc::applications::ics29_fee::msgs::pay_packet::build_pay_packet_message;
 use ibc::applications::ics29_fee::msgs::pay_packet_async::build_pay_packet_fee_async_message;
-use ibc::applications::ics29_fee::msgs::register_counterparty::build_register_counterparty_address_message;
+use ibc::applications::ics29_fee::msgs::register_counterparty::build_register_counterparty_payee_message;
 use ibc::applications::ics29_fee::packet_fee::IdentifiedPacketFees;
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::events::IbcEvent;
 use ibc_relayer::chain::cosmos::query::fee::{
-    query_counterparty_address as raw_query_counterparty_address,
+    query_counterparty_payee as raw_query_counterparty_payee,
     query_incentivized_packets as raw_query_incentivized_packets,
 };
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
@@ -88,21 +88,21 @@ pub async fn pay_packet_fee<Chain, Counterparty>(
     Ok(())
 }
 
-pub async fn register_counterparty_address<Chain, Counterparty>(
+pub async fn register_counterparty_payee<Chain, Counterparty>(
     tx_config: &MonoTagged<Chain, &TxConfig>,
     wallet: &MonoTagged<Chain, &Wallet>,
-    counterparty_address: &MonoTagged<Counterparty, &WalletAddress>,
+    counterparty_payee: &MonoTagged<Counterparty, &WalletAddress>,
     channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
     port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,
 ) -> Result<(), Error> {
-    let message = build_register_counterparty_address_message(
+    let message = build_register_counterparty_payee_message(
         &wallet
             .value()
             .address
             .0
             .parse()
             .map_err(handle_generic_error)?,
-        &counterparty_address
+        &counterparty_payee
             .value()
             .0
             .parse()
@@ -119,12 +119,12 @@ pub async fn register_counterparty_address<Chain, Counterparty>(
     Ok(())
 }
 
-pub async fn query_counterparty_address<Chain, Counterparty>(
+pub async fn query_counterparty_payee<Chain, Counterparty>(
     grpc_address: &Uri,
     channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
     address: &MonoTagged<Chain, &WalletAddress>,
 ) -> Result<Option<MonoTagged<Counterparty, WalletAddress>>, Error> {
-    let counterparty_address = raw_query_counterparty_address(
+    let counterparty_payee = raw_query_counterparty_payee(
         grpc_address,
         channel_id.value(),
         &address.value().0.parse().map_err(handle_generic_error)?,
@@ -132,7 +132,7 @@ pub async fn query_counterparty_address<Chain, Counterparty>(
     .await
     .map_err(handle_generic_error)?;
 
-    Ok(counterparty_address.map(|address| MonoTagged::new(WalletAddress(address))))
+    Ok(counterparty_payee.map(|address| MonoTagged::new(WalletAddress(address))))
 }
 
 pub async fn query_incentivized_packets<Chain, Counterparty>(

@@ -74,7 +74,7 @@ pub mod default {
         ZERO_DURATION
     }
 
-    pub fn auto_register_counterparty_address() -> bool {
+    pub fn auto_register_counterparty_payee() -> bool {
         false
     }
 }
@@ -160,7 +160,7 @@ impl Default for ModeConfig {
                 clear_interval: default::clear_packets_interval(),
                 clear_on_start: true,
                 tx_confirmation: true,
-                auto_register_counterparty_address: default::auto_register_counterparty_address(),
+                auto_register_counterparty_payee: default::auto_register_counterparty_payee(),
             },
         }
     }
@@ -198,8 +198,8 @@ pub struct Packets {
     pub clear_on_start: bool,
     #[serde(default = "default::tx_confirmation")]
     pub tx_confirmation: bool,
-    #[serde(default = "default::auto_register_counterparty_address")]
-    pub auto_register_counterparty_address: bool,
+    #[serde(default = "default::auto_register_counterparty_payee")]
+    pub auto_register_counterparty_payee: bool,
 }
 
 impl Default for Packets {
@@ -209,7 +209,7 @@ impl Default for Packets {
             clear_interval: default::clear_packets_interval(),
             clear_on_start: false,
             tx_confirmation: default::tx_confirmation(),
-            auto_register_counterparty_address: default::auto_register_counterparty_address(),
+            auto_register_counterparty_payee: default::auto_register_counterparty_payee(),
         }
     }
 }

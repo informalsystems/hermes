@@ -576,10 +576,10 @@ pub trait ChainEndpoint: Sized {
         Ok(proofs)
     }
 
-    fn maybe_register_counterparty_address(
+    fn maybe_register_counterparty_payee(
         &mut self,
         channel_id: &ChannelId,
         port_id: &PortId,
-        counterparty_address: &Signer,
+        counterparty_payee: &Signer,
     ) -> Result<(), Error>;
 }

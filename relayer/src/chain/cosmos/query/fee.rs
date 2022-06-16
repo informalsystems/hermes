@@ -4,13 +4,13 @@ use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc::signer::Signer;
 use ibc_proto::ibc::applications::fee::v1::query_client::QueryClient;
 use ibc_proto::ibc::applications::fee::v1::{
-    QueryCounterpartyAddressRequest, QueryIncentivizedPacketsForChannelRequest,
+    QueryCounterpartyPayeeRequest, QueryIncentivizedPacketsForChannelRequest,
 };
 use tonic::Code;
 
 use crate::error::Error;
 
-pub async fn query_counterparty_address(
+pub async fn query_counterparty_payee(
     grpc_address: &Uri,
     channel_id: &ChannelId,
     address: &Signer,
@@ -19,18 +19,18 @@ pub async fn query_counterparty_address(
         .await
         .map_err(Error::grpc_transport)?;
 
-    let request = QueryCounterpartyAddressRequest {
+    let request = QueryCounterpartyPayeeRequest {
         channel_id: channel_id.to_string(),
-        relayer_address: address.to_string(),
+        relayer: address.to_string(),
     };
 
-    let result = client.counterparty_address(request).await;
+    let result = client.counterparty_payee(request).await;
 
     match result {
         Ok(response) => {
-            let counterparty_address = response.into_inner().counterparty_address;
+            let counterparty_payee = response.into_inner().counterparty_payee;
 
-            Ok(Some(counterparty_address))
+            Ok(Some(counterparty_payee))
         }
         Err(e) => {
             if e.code() == Code::NotFound {

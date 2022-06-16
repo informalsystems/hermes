@@ -1,9 +1,9 @@
-use ibc::applications::ics29_fee::msgs::register_counterparty::build_register_counterparty_address_message;
+use ibc::applications::ics29_fee::msgs::register_counterparty::build_register_counterparty_payee_message;
 use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc::signer::Signer;
 
 use crate::chain::cosmos::query::account::get_or_fetch_account;
-use crate::chain::cosmos::query::fee::query_counterparty_address;
+use crate::chain::cosmos::query::fee::query_counterparty_payee;
 use crate::chain::cosmos::retry::send_tx_with_account_sequence_retry;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
@@ -12,7 +12,7 @@ use crate::config::types::Memo;
 use crate::error::Error;
 use crate::keyring::KeyEntry;
 
-pub async fn maybe_register_counterparty_address(
+pub async fn maybe_register_counterparty_payee(
     tx_config: &TxConfig,
     key_entry: &KeyEntry,
     m_account: &mut Option<Account>,
@@ -20,24 +20,24 @@ pub async fn maybe_register_counterparty_address(
     channel_id: &ChannelId,
     port_id: &PortId,
     address: &Signer,
-    counterparty_address: &Signer,
+    counterparty_payee: &Signer,
 ) -> Result<(), Error> {
     let account =
         get_or_fetch_account(&tx_config.grpc_address, &key_entry.account, m_account).await?;
 
-    let current_counterparty_address =
-        query_counterparty_address(&tx_config.grpc_address, channel_id, address).await?;
+    let current_counterparty_payee =
+        query_counterparty_payee(&tx_config.grpc_address, channel_id, address).await?;
 
-    match &current_counterparty_address {
-        Some(current_counterparty_address)
-            if current_counterparty_address == counterparty_address.as_ref() =>
+    match &current_counterparty_payee {
+        Some(current_counterparty_payee)
+            if current_counterparty_payee == counterparty_payee.as_ref() =>
         {
             Ok(())
         }
         _ => {
-            let message = build_register_counterparty_address_message(
+            let message = build_register_counterparty_payee_message(
                 address,
-                counterparty_address,
+                counterparty_payee,
                 channel_id,
                 port_id,
             )

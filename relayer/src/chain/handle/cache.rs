@@ -482,13 +482,13 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner.query_host_consensus_state(request)
     }
 
-    fn maybe_register_counterparty_address(
+    fn maybe_register_counterparty_payee(
         &self,
         channel_id: ChannelId,
         port_id: PortId,
-        counterparty_address: Signer,
+        counterparty_payee: Signer,
     ) -> Result<(), Error> {
         self.inner
-            .maybe_register_counterparty_address(channel_id, port_id, counterparty_address)
+            .maybe_register_counterparty_payee(channel_id, port_id, counterparty_payee)
     }
 }
