@@ -888,7 +888,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         height: Height,
     ) -> Result<Instant, LinkError> {
         let chain_time = chain
-            .query_host_consensus_state(QueryHostConsensusStateRequest { height })
+            .query_host_consensus_state(QueryHostConsensusStateRequest {
+                height: HeightQuery::Specific(height),
+            })
             .map_err(LinkError::relayer)?
             .timestamp();
         let duration = Timestamp::now()

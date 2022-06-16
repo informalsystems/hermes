@@ -1513,8 +1513,12 @@ impl ChainEndpoint for CosmosSdkChain {
         &self,
         request: QueryHostConsensusStateRequest,
     ) -> Result<Self::ConsensusState, Error> {
-        let height =
-            Height::try_from(request.height.revision_height).map_err(Error::invalid_height)?;
+        let height = match request.height {
+            HeightQuery::Latest => Height::from(0u32),
+            HeightQuery::Specific(ibc_height) => {
+                Height::try_from(ibc_height.revision_height).map_err(Error::invalid_height)?
+            }
+        };
 
         // TODO(hu55a1n1): use the `/header` RPC endpoint instead when we move to tendermint v0.35.x
         let rpc_call = match height.value() {

@@ -383,5 +383,5 @@ impl From<QueryNextSequenceReceiveRequest> for RawQueryNextSequenceReceiveReques
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryHostConsensusStateRequest {
-    pub height: Height,
+    pub height: HeightQuery,
 }
