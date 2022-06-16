@@ -16,7 +16,6 @@ To avoid confusion, all the parameters should take long flags. The following gen
 * Only long flags are used in order to avoid having nonintuitive flags or conflicting flags.
 * Any parameter ending with `_id` should have the `_id` removed from the flag to shorten it. For example the flag for `chain_id` should only be `chain`.
 * Flags which can be shorten and still be meaningful should be shorten. This is done for `connection`, `channel` and `sequence`, which become respectively `conn`, `chan` and `seq`.
-* In cases where there are source and destination parameters for a same object, the flags start with the prefix `--src-` and `--dst-`.
 * In cases where there are undirectional parameters for a same object, the flags end with the suffix `-a` and `-b`.
 
 The following commands are implemented, with the binary name `hermes` omitted:
@@ -29,13 +28,13 @@ The following commands are implemented, with the binary name `hermes` omitted:
 
 ### Commands for clients
 
-* `create client --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID>`
+* `create client --host-chain <HOST_CHAIN_ID> --reference-chain <REFERENCE_CHAIN_ID>`
     * Optional: `[--clock-drift <CLOCK_DRIFT>] [--trust-threshold <TRUST_THRESHOLD>] [--trusting-period <TRUSTING_PERDIOD>]`
 
 * `update client --chain <CHAIN_ID> --client <CLIENT_ID>`
     * Optional: `[--target-height <TARGET_HEIGHT>] [--trusted-height <TRUSTED_HEIGHT>]`
 
-* `upgrade client --chain <DST_CHAIN_ID> --client <DST_CLIENT_ID>`
+* `upgrade client --chain <CHAIN_ID> --client <CLIENT_ID>`
 
 * `upgrade clients --chain <CHAIN_ID>`
 
@@ -99,8 +98,8 @@ __Channel__
 * `query channel ends --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
     * Optional: `[--height <HEIGHT>] [--verbose]`
 
-* `query channels --chain <CHAIN_ID>`
-    * Optional: `[--dst-chain <DST_CHAIN_ID>] [--verbose]`
+* `query channels --host-chain <HOST_CHAIN_ID>`
+    * Optional: `[--reference-chain <REFERENCE_CHAIN_ID>] [--verbose]`
 
 __Client__
 
@@ -116,8 +115,8 @@ __Client__
 * `query client state --chain <CHAIN_ID> --client <CLIENT_ID>`
     * Optional: `[--height <HEIGHT>]`
 
-* `query clients --dst-chain <DST_CHAIN_ID>`
-    * Optional: `[--omit-chain-ids] [--src-chain <SRC_CHAIN_ID>]`
+* `query clients --host-chain <HOST_CHAIN_ID>`
+    * Optional: `[--omit-chain-ids] [--reference-chain <REFERENCE_CHAIN_ID>]`
 
 __Connection__
 
