@@ -13,6 +13,7 @@ use ibc_relayer::chain::requests::{
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::{CreateOptions, ForeignClient};
 use tendermint_light_client_verifier::types::TrustThreshold;
+use tracing::warn;
 
 use crate::application::app_config;
 use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic, ChainHandlePair};
@@ -219,6 +220,12 @@ impl Runnable for TxUpgradeClientCmd {
             // 1 less than the halted height
             src_application_height.increment()
         };
+
+        warn!(
+            "Assuming that chain '{}' is currently halted for upgrade at height {}",
+            client.src_chain().id(),
+            src_upgrade_height
+        );
         let outcome = client.upgrade(src_upgrade_height);
 
         match outcome {
