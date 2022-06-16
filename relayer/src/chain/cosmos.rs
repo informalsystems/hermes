@@ -338,7 +338,7 @@ impl CosmosSdkChain {
     fn query_client_upgrade_state(
         &self,
         query_data: ClientUpgradePath,
-        query_height: Height,
+        query_height: ibc::Height,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
         // SAFETY: Creating a Path from a constant; this should never fail
         let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH)
@@ -348,7 +348,7 @@ impl CosmosSdkChain {
             &self.config.rpc_addr,
             path,
             Path::Upgrade(query_data).to_string(),
-            query_height,
+            Height::try_from(query_height.revision_height).map_err(Error::invalid_height)?,
             true,
         ))?;
 
@@ -788,18 +788,13 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_upgraded_client_state");
 
         // Query for the value and the proof.
-        let upgrade_height =
-            Height::try_from(request.height.revision_height).map_err(Error::invalid_height)?;
-        let query_height = Height::try_from(
-            upgrade_height
-                .value()
-                .checked_sub(1)
-                .expect("height overflow"),
-        )
-        .map_err(Error::invalid_height)?;
+        let upgrade_height = request.height;
+        let query_height = upgrade_height
+            .decrement()
+            .map_err(|_| Error::invalid_height_no_source())?;
 
         let (upgraded_client_state_raw, proof) = self.query_client_upgrade_state(
-            ClientUpgradePath::UpgradedClientState(upgrade_height.value()),
+            ClientUpgradePath::UpgradedClientState(upgrade_height.revision_height),
             query_height,
         )?;
 
@@ -816,19 +811,14 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("query_upgraded_consensus_state");
         crate::telemetry!(query, self.id(), "query_upgraded_consensus_state");
 
-        let upgrade_height =
-            Height::try_from(request.height.revision_height).map_err(Error::invalid_height)?;
-        let query_height = Height::try_from(
-            upgrade_height
-                .value()
-                .checked_sub(1)
-                .expect("height overflow"),
-        )
-        .map_err(Error::invalid_height)?;
+        let upgrade_height = request.height;
+        let query_height = upgrade_height
+            .decrement()
+            .map_err(|_| Error::invalid_height_no_source())?;
 
         // Fetch the consensus state and its proof.
         let (upgraded_consensus_state_raw, proof) = self.query_client_upgrade_state(
-            ClientUpgradePath::UpgradedClientConsensusState(upgrade_height.value()),
+            ClientUpgradePath::UpgradedClientConsensusState(upgrade_height.revision_height),
             query_height,
         )?;
 
