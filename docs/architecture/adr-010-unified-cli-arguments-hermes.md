@@ -16,8 +16,8 @@ To avoid confusion, all the parameters should take long flags. The following gen
 * Only long flags are used in order to avoid having nonintuitive flags or conflicting flags.
 * Any parameter ending with `_id` should have the `_id` removed from the flag to shorten it. For example the flag for `chain_id` should only be `chain`.
 * Flags which can be shorten and still be meaningful should be shorten. This is done for `connection`, `channel` and `sequence`, which become respectively `conn`, `chan` and `seq`.
-* For the channel and connection creation CLIs, the objects at the two ends are prefixed by `--a-` and `--b-`.
-* All the specifiers for `chain`, `connection`, `channel` and `port` flags are prefixed. These specifiers are `host`, `reference`, `a`, `b` and `counterparty`.
+* For the channel and connection creation CLIs, the objects at the two ends are suffixed by `-a` and `-b`.
+* All the specifiers for `chain`, `connection`, `channel` and `port` flags are suffixed. These specifiers are `host`, `reference`, `a`, `b` and `counterparty`.
 
 The following commands are implemented, with the binary name `hermes` omitted:
 
@@ -29,31 +29,31 @@ The following commands are implemented, with the binary name `hermes` omitted:
 
 ### Commands for clients
 
-* `create client --host-chain <HOST_CHAIN_ID> --reference-chain <REFERENCE_CHAIN_ID>`
+* `create client --chain-host <CHAIN_HOST_ID> --chain-reference <CHAIN_REFERENCE_ID>`
     * Optional: `[--clock-drift <CLOCK_DRIFT>] [--trust-threshold <TRUST_THRESHOLD>] [--trusting-period <TRUSTING_PERDIOD>]`
 
-* `update client --host-chain <HOST_CHAIN_ID> --host-client <HOST_CLIENT_ID>`
+* `update client --chain-host <CHAIN_HOST_ID> --client-host <CLIENT_HOST_ID>`
     * Optional: `[--height <REFERENCE_HEIGHT>] [--trusted-height <REFERENCE_TRUSTED_HEIGHT>]`
 
-* `upgrade client --host-chain <HOST_CHAIN_ID> --host-client <HOST_CLIENT_ID>`
+* `upgrade client --chain-host <CHAIN_HOST_ID> --client-host <CLIENT_HOST_ID>`
 
-* `upgrade clients --reference-chain <REFERENCE_CHAIN_ID>`
-    * Optional: `[--host-chain <HOST_CHAIN_ID>]` (**Not implemented**)
+* `upgrade clients --chain-reference <CHAIN_REFERENCE_ID>`
+    * Optional: `[--chain-host <CHAIN_HOST_ID>]` (**Not implemented**)
 
 ### Create a connection
 
-* `create connection --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID>`
+* `create connection --chain-a <CHAIN_A_ID> --chain-b <CHAIN_B_ID>`
     * Optional: `[--delay <DELAY>]`
 
-* `create connection --a-chain <A_CHAIN_ID> --a-client <A_CLIENT_ID> --b-client <B_CLIENT_ID>`
+* `create connection --chain-a <CHAIN_A_ID> --client-a <CLIENT_A_ID> --client-b <CLIENT_B_ID>`
     * Optional: `[--delay <DELAY>]`
 
 ### Create a channel
 
-* `create channel --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>`
+* `create channel --chain-a <CHAIN_A_ID> --chain-b <CHAIN_B_ID> --port-a <PORT_A_ID> --port-b <PORT_B_ID>`
     * Optional: `[--chan-version <VERSION>] [--new-client-conn] [--order <ORDER>]`
 
-* `create channel --a-chain <A_CHAIN_ID> --a-conn <A_CONNECTION_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>`
+* `create channel --chain-a <CHAIN_A_ID> --conn-a <CONNECTION_A_ID> --port-a <PORT_A_ID> --port-b <PORT_B_ID>`
     * Optional: `[--chan-version <VERSION>] [--order <ORDER>]`
 
 ### Commands for keys
@@ -104,8 +104,8 @@ __Client__
 * `query client state --chain <CHAIN_ID> --client <CLIENT_ID>`
     * Optional: `[--height <HEIGHT>]`
 
-* `query clients --host-chain <HOST_CHAIN_ID>`
-    * Optional: `[--omit-chain-ids] [--reference-chain <REFERENCE_CHAIN_ID>]`
+* `query clients --chain-host <CHAIN_HOST_ID>`
+    * Optional: `[--omit-chain-ids] [--chain-reference <CHAIN_REFERENCE_ID>]`
 
 __Connection__
 
@@ -115,7 +115,7 @@ __Connection__
     * Optional: `[--height <HEIGHT>]`
 
 * `query connections --chain <CHAIN_ID>`
-    * Optional: `[--counterparty-chain <COUNTERPARTY_CHAIN_ID>] [--verbose]` (**Not implemented**)
+    * Optional: `[--chain-counterparty <CHAIN_COUNTERPARTY_ID>] [--verbose]` (**Not implemented**)
 
 __Channel__
 
@@ -128,7 +128,7 @@ __Channel__
     * Optional: `[--height <HEIGHT>] [--verbose]`
 
 * `query channels --chain <CHAIN_ID>`
-    * Optional: `[--counterparty-chain <COUNTERPARTY_CHAIN_ID>] [--verbose]`
+    * Optional: `[--chain-counterparty <CHAIN_COUNTERPARTY_ID>] [--verbose]`
 
 __Packet__
 
