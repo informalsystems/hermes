@@ -159,27 +159,12 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
 }
 
 /// Whether or not to clear pending packets at this `step` for some height.
-/// If the relayer has been configured to clear packets on startup and that has not
+/// If the relayer has been configured to clear packets on start and that has not
 /// occurred yet, then packets are cleared.
-/// If a height is received, then packets are cleared if `clear_interval` is not
-/// `0` and if we have reached the interval.
-fn should_clear_packets(
-    clear_interval: u64,
-    // should_clear_on_start: &mut bool,
-    // height: Option<Height>,
-    height: Height,
-) -> bool {
-    // if height.is_none() {
-    //     return false;
-    // }
-
-    // if *should_clear_on_start {
-    //     *should_clear_on_start = false;
-    //     return true;
-    // }
-
-    // let height = height.unwrap();
-
+///
+/// If the specified height is reached, then packets are cleared if `clear_interval`
+/// is not `0` and if we have reached the interval.
+fn should_clear_packets(clear_interval: u64, height: Height) -> bool {
     clear_interval != 0 && height.revision_height % clear_interval == 0
 }
 
@@ -200,13 +185,8 @@ fn handle_clear_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
     link: &mut Link<ChainA, ChainB>,
     clear_interval: u64,
     path: &Packet,
-    // should_clear_on_start: &mut bool,
     height: Option<Height>,
 ) -> Result<(), TaskError<RunError>> {
-    // if !should_clear_packets(clear_interval, should_clear_on_start, height) {
-    //     return Ok(());
-    // }
-
     link.a_to_b
         .schedule_packet_clearing(height)
         .map_err(handle_link_error_in_task)?;
