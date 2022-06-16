@@ -1,9 +1,10 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
+use ibc_relayer::chain::requests::{IncludeProof, QueryPacketCommitmentRequest};
 use serde::Serialize;
 use subtle_encoding::{Encoding, Hex};
 
-use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
@@ -45,15 +46,16 @@ impl QueryPacketCommitmentCmd {
 
         let chain = spawn_chain_runtime(&config, &self.chain_id)?;
 
-        let bytes = chain
-            .build_packet_proofs(
-                PacketMsgType::Recv,
-                &self.port_id,
-                &self.channel_id,
-                self.sequence,
-                Height::new(chain.id().version(), self.height.unwrap_or(0_u64)),
+        let (bytes, _) = chain
+            .query_packet_commitment(
+                QueryPacketCommitmentRequest {
+                    port_id: self.port_id.clone(),
+                    channel_id: self.channel_id,
+                    sequence: self.sequence,
+                    height: Height::new(chain.id().version(), self.height.unwrap_or(0_u64)),
+                },
+                IncludeProof::No,
             )
-            .map(|(bytes, _)| bytes)
             .map_err(Error::relayer)?;
 
         if bytes.is_empty() {

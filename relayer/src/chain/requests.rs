@@ -23,6 +23,14 @@ use ibc_proto::ibc::core::connection::v1::{
 
 use serde::{Deserialize, Serialize};
 
+/// Defines a type to be used in select requests to specify whether or not a proof should be
+/// returned along with the response.
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub enum IncludeProof {
+    Yes,
+    No,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PageRequest {
     /// key is a value returned in PageResponse.next_key to begin
@@ -200,6 +208,14 @@ impl From<QueryChannelClientStateRequest> for RawQueryChannelClientStateRequest 
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryPacketCommitmentRequest {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub sequence: Sequence,
+    pub height: Height,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct QueryPacketCommitmentsRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -214,6 +230,14 @@ impl From<QueryPacketCommitmentsRequest> for RawQueryPacketCommitmentsRequest {
             pagination: request.pagination.map(|pagination| pagination.into()),
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryPacketReceiptRequest {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub sequence: Sequence,
+    pub height: Height,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -235,6 +259,14 @@ impl From<QueryUnreceivedPacketsRequest> for RawQueryUnreceivedPacketsRequest {
                 .collect(),
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct QueryPacketAcknowledgementRequest {
+    pub port_id: PortId,
+    pub channel_id: ChannelId,
+    pub sequence: Sequence,
+    pub height: Height,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -285,6 +317,7 @@ impl From<QueryUnreceivedAcksRequest> for RawQueryUnreceivedAcksRequest {
 pub struct QueryNextSequenceReceiveRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
+    pub height: Height,
 }
 
 impl From<QueryNextSequenceReceiveRequest> for RawQueryNextSequenceReceiveRequest {

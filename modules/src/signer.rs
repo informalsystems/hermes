@@ -1,36 +1,36 @@
+use core::str::FromStr;
+
 use crate::prelude::*;
-use core::{convert::Infallible, fmt::Display, str::FromStr};
+
+use derive_more::Display;
+use flex_error::define_error;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+define_error! {
+    #[derive(Debug, PartialEq, Eq)]
+    SignerError {
+        EmptySigner
+            | _ | { "signer cannot be empty" },
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Display)]
 pub struct Signer(String);
 
-impl Signer {
-    pub fn new(s: impl ToString) -> Self {
-        Self(s.to_string())
-    }
-
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
-
-impl Display for Signer {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl From<String> for Signer {
-    fn from(s: String) -> Self {
-        Self(s)
-    }
-}
-
 impl FromStr for Signer {
-    type Err = Infallible;
+    type Err = SignerError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(s.to_string()))
+        let s = s.to_string();
+        if s.trim().is_empty() {
+            return Err(SignerError::empty_signer());
+        }
+        Ok(Self(s))
+    }
+}
+
+impl AsRef<str> for Signer {
+    fn as_ref(&self) -> &str {
+        self.0.as_str()
     }
 }

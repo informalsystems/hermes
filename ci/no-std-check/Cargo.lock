@@ -698,7 +698,7 @@ dependencies = [
 
 [[package]]
 name = "ibc"
-version = "0.14.1"
+version = "0.15.0"
 dependencies = [
  "bytes",
  "derive_more",
@@ -719,6 +719,7 @@ dependencies = [
  "tendermint-proto",
  "time",
  "tracing",
+ "uint",
 ]
 
 [[package]]
@@ -735,8 +736,9 @@ dependencies = [
 
 [[package]]
 name = "ics23"
-version = "0.7.0"
-source = "git+https://github.com/mzabaluev/ics23.git?branch=prost-0.10#ea7ef846bdd5325584d8fd2c8935ac674d056ae9"
+version = "0.8.0-alpha"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "18a435f2471c1b2ce14771da465d47321c5905fac866d0effa9e0a3eb5d94fcf"
 dependencies = [
  "anyhow",
  "bytes",
@@ -1024,9 +1026,9 @@ dependencies = [
 
 [[package]]
 name = "num-traits"
-version = "0.2.14"
+version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a64b1ec5cda2586e284722486d802acf1f7dbdc623e2bfc57e65ca1cd099290"
+checksum = "578ede34cf02f8924ab9447f50c28075b4d3e5b269972345e7e0372b38c6cdcd"
 dependencies = [
  "autocfg",
 ]
@@ -1404,9 +1406,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.5.4"
+version = "1.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d07a8629359eb56f1e2fb1652bb04212c072a87ba68546a04065d525673ac461"
+checksum = "d83f127d94bdbcda4c8cc2e50f6f84f4b611f69c902699ca385a39c3a75f9ff1"
 dependencies = [
  "aho-corasick",
  "memchr",
@@ -1424,9 +1426,9 @@ dependencies = [
 
 [[package]]
 name = "regex-syntax"
-version = "0.6.25"
+version = "0.6.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f497285884f3fcff424ffc933e56d7cbca511def0c9831a7f9b5f6153e3cc89b"
+checksum = "49b3de9ec5dc0a3417da371aab17d729997c15010e7fd24ff707773a33bddb64"
 
 [[package]]
 name = "ripemd160"

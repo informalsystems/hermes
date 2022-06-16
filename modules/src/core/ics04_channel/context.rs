@@ -171,28 +171,20 @@ pub trait ChannelKeeper {
                     res.commitment,
                 )?;
             }
-            PacketResult::Recv(res) => {
-                let res = match res {
-                    RecvPacketResult::Success(res) => res,
-                    RecvPacketResult::NoOp => unreachable!(),
-                };
-                match res.receipt {
-                    None => {
-                        // Ordered channel
-                        self.store_next_sequence_recv(
-                            (res.port_id.clone(), res.channel_id),
-                            res.seq_number,
-                        )?
-                    }
-                    Some(r) => {
-                        // Unordered channel
-                        self.store_packet_receipt(
-                            (res.port_id.clone(), res.channel_id, res.seq),
-                            r,
-                        )?
-                    }
-                }
-            }
+            PacketResult::Recv(res) => match res {
+                RecvPacketResult::Ordered {
+                    port_id,
+                    channel_id,
+                    next_seq_recv,
+                } => self.store_next_sequence_recv((port_id, channel_id), next_seq_recv)?,
+                RecvPacketResult::Unordered {
+                    port_id,
+                    channel_id,
+                    sequence,
+                    receipt,
+                } => self.store_packet_receipt((port_id, channel_id, sequence), receipt)?,
+                RecvPacketResult::NoOp => unreachable!(),
+            },
             PacketResult::WriteAck(res) => {
                 self.store_packet_acknowledgement(
                     (res.port_id.clone(), res.channel_id, res.seq),

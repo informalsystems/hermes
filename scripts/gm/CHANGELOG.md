@@ -1,5 +1,26 @@
 # Gaiad Manager Change Log
 
+## v0.1.3
+
+### BUGFIXES
+
+- Fixed variable TM to reference the GAIAD_BINARY ([#2210]).
+
+[#2210]: https://github.com/informalsystems/ibc-rs/issues/2210
+
+## v0.1.2
+
+### BUGFIXES
+
+- Fixed `gm hermes keys` which was broken following a breaking change in Hermes CLI ([#2262]).
+
+### IMPROVEMENTS
+
+- Adjusted the `max_gas` and `gas_price.price` parameters used for `gm hermes config`.
+
+[#2262]: https://github.com/informalsystems/ibc-rs/issues/2262
+
+
 ## v0.1.1
 
 ### BUGFIXES
