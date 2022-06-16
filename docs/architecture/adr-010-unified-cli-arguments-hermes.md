@@ -117,7 +117,7 @@ __Client__
     * Optional: `[--height <HEIGHT>]`
 
 * `query clients --dst-chain <DST_CHAIN_ID>`
-    * Optional: `[--omit-chain-ids] [--src-chain <ID>]`
+    * Optional: `[--omit-chain-ids] [--src-chain <SRC_CHAIN_ID>]`
 
 __Connection__
 
