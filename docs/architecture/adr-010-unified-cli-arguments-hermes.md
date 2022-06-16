@@ -15,7 +15,7 @@ To avoid confusion, all the parameters should take long flags. The following gen
 
 * Only long flags are used in order to avoid having nonintuitive flags or conflicting flags.
 * Any parameter ending with `_id` should have the `_id` removed from the flag to shorten it. For example the flag for `chain_id` should only be `chain`.
-* Flags which can be shorten and still be meaninful should be shorten. This is done for `connection`, `channel` and `sequence`, which become respectively `conn`, `chan` and `seq`.
+* Flags which can be shorten and still be meaningful should be shorten. This is done for `connection`, `channel` and `sequence`, which become respectively `conn`, `chan` and `seq`.
 * In cases where there are source and destination parameters for a same object, the flags start with the prefix `--src-` and `--dst-`.
 * In cases where there are undirectional parameters for a same object, the flags end with the suffix `-a` and `-b`.
 
