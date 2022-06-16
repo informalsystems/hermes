@@ -38,7 +38,7 @@ The following commands are implemented, with the binary name `hermes` omitted:
 * `upgrade client --host-chain <HOST_CHAIN_ID> --host-client <HOST_CLIENT_ID>`
 
 * `upgrade clients --reference-chain <REFERENCE_CHAIN_ID>`
-    * Optional: `[--host-chain <HOST_CHAIN_ID>]`
+    * Optional: `[--host-chain <HOST_CHAIN_ID>]` (**Not implemented**)
 
 ### Create a connection
 
@@ -90,19 +90,6 @@ The following commands are implemented, with the binary name `hermes` omitted:
 
 ### Queries
 
-__Channel__
-
-* `query channel client --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
-
-* `query channel end --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
-    * Optional: `[--height <HEIGHT>]`
-
-* `query channel ends --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
-    * Optional: `[--height <HEIGHT>] [--verbose]`
-
-* `query channels --chain <CHAIN_ID>`
-    * Optional: `[--counterparty-chain <COUNTERPARTY_CHAIN_ID>] [--verbose]`
-
 __Client__
 
 * `query client connections --chain <CHAIN_ID> --client <CLIENT_ID>`
@@ -128,6 +115,20 @@ __Connection__
     * Optional: `[--height <HEIGHT>]`
 
 * `query connections --chain <CHAIN_ID>`
+    * Optional: `[--counterparty-chain <COUNTERPARTY_CHAIN_ID>] [--verbose]` (**Not implemented**)
+
+__Channel__
+
+* `query channel client --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
+
+* `query channel end --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
+    * Optional: `[--height <HEIGHT>]`
+
+* `query channel ends --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
+    * Optional: `[--height <HEIGHT>] [--verbose]`
+
+* `query channels --chain <CHAIN_ID>`
+    * Optional: `[--counterparty-chain <COUNTERPARTY_CHAIN_ID>] [--verbose]`
 
 __Packet__
 
