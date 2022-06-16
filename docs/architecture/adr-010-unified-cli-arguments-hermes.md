@@ -35,7 +35,7 @@ __Commands for clients__
 * `update client --chain <DST_CHAIN_ID> --client <DST_CLIENT_ID>`
     * Optional: `[--target-height <TARGET_HEIGHT>] [--trusted-height <TRUSTED_HEIGHT>]`
 
-* `upgrade client --chain <CHAIN_ID> --client <CLIENT_ID>`
+* `upgrade client --chain <DST_CHAIN_ID> --client <DST_CLIENT_ID>`
 
 * `upgrade clients --chain <SRC_CHAIN_ID>`
 
