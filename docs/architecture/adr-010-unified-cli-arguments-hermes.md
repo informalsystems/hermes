@@ -44,7 +44,7 @@ __Create a connection__
 * `create connection --chain-a <CHAIN_A_ID> --chain-b <CHAIN_B_ID>`
     * Optional: `[--delay <DELAY>]`
 
-* `create connection --chain-a <CHAIN_A_ID> --client-a <CLIENT_A> --client-b <CLIENT_B>`
+* `create connection --chain-a <CHAIN_A_ID> --client-a <CLIENT_A_ID> --client-b <CLIENT_B_ID>`
     * Optional: `[--delay <DELAY>]`
 
 __Create a channel__
