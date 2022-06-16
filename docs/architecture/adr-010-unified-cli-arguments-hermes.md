@@ -116,7 +116,7 @@ __Client__
 * `query client state --chain <CHAIN_ID> --client <CLIENT_ID>`
     * Optional: `[--height <HEIGHT>]`
 
-* `query clients --chain <CHAIN_ID>`
+* `query clients --dst-chain <DST_CHAIN_ID>`
     * Optional: `[--omit-chain-ids] [--src-chain <ID>]`
 
 __Connection__
