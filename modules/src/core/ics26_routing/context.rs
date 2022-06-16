@@ -95,7 +95,7 @@ impl OnRecvPacketAck {
 
 pub type ModuleOutputBuilder = HandlerOutputBuilder<(), ModuleEvent>;
 
-pub trait Module: Debug + Send + Sync + AsAnyMut + 'static {
+pub trait Module: Send + Sync + AsAnyMut {
     #[allow(clippy::too_many_arguments)]
     fn on_chan_open_init(
         &mut self,

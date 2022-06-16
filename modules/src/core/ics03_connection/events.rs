@@ -131,8 +131,8 @@ impl OpenInit {
     pub fn attributes(&self) -> &Attributes {
         &self.0
     }
-    pub fn connection_id(&self) -> &Option<ConnectionId> {
-        &self.0.connection_id
+    pub fn connection_id(&self) -> Option<&ConnectionId> {
+        self.0.connection_id.as_ref()
     }
     pub fn height(&self) -> Height {
         self.0.height
@@ -171,8 +171,8 @@ impl OpenTry {
     pub fn attributes(&self) -> &Attributes {
         &self.0
     }
-    pub fn connection_id(&self) -> &Option<ConnectionId> {
-        &self.0.connection_id
+    pub fn connection_id(&self) -> Option<&ConnectionId> {
+        self.0.connection_id.as_ref()
     }
     pub fn height(&self) -> Height {
         self.0.height
@@ -211,8 +211,8 @@ impl OpenAck {
     pub fn attributes(&self) -> &Attributes {
         &self.0
     }
-    pub fn connection_id(&self) -> &Option<ConnectionId> {
-        &self.0.connection_id
+    pub fn connection_id(&self) -> Option<&ConnectionId> {
+        self.0.connection_id.as_ref()
     }
     pub fn height(&self) -> Height {
         self.0.height
@@ -251,8 +251,8 @@ impl OpenConfirm {
     pub fn attributes(&self) -> &Attributes {
         &self.0
     }
-    pub fn connection_id(&self) -> &Option<ConnectionId> {
-        &self.0.connection_id
+    pub fn connection_id(&self) -> Option<&ConnectionId> {
+        self.0.connection_id.as_ref()
     }
     pub fn height(&self) -> Height {
         self.0.height

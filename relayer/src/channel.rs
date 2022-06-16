@@ -487,7 +487,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
             let dst_channel_id = channel
                 .dst_channel_id()
-                .ok_or_else(ChannelError::missing_counterparty_connection)?;
+                .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
 
             debug!(
                 "do_chan_open_finalize for src_channel_id: {}, dst_channel_id: {}",
@@ -906,7 +906,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 self.dst_chain().id(),
                 self.dst_port_id().clone(),
                 self.src_chain().id(),
-                src_channel.counterparty().port_id.clone(),
+                src_channel.counterparty().port_id().clone(),
                 *src_channel_id,
             ));
         }
