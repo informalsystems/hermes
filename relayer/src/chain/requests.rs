@@ -81,7 +81,7 @@ pub enum IncludeProof {
     No,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct PageRequest {
     /// key is a value returned in PageResponse.next_key to begin
     /// querying the next page most efficiently. Only one of offset or key
@@ -130,7 +130,7 @@ pub struct QueryClientStateRequest {
     pub height: HeightQuery,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryClientStatesRequest {
     pub pagination: Option<PageRequest>,
 }
@@ -150,17 +150,17 @@ pub struct QueryConsensusStateRequest {
     pub query_height: HeightQuery,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryUpgradedClientStateRequest {
     pub height: Height,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryUpgradedConsensusStateRequest {
     pub height: Height,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryConsensusStatesRequest {
     pub client_id: ClientId,
     pub pagination: Option<PageRequest>,
@@ -175,7 +175,7 @@ impl From<QueryConsensusStatesRequest> for RawQueryConsensusStatesRequest {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryConnectionsRequest {
     pub pagination: Option<PageRequest>,
 }
@@ -188,7 +188,7 @@ impl From<QueryConnectionsRequest> for RawQueryConnectionsRequest {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryClientConnectionsRequest {
     pub client_id: ClientId,
 }
@@ -207,7 +207,7 @@ pub struct QueryConnectionRequest {
     pub height: HeightQuery,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryConnectionChannelsRequest {
     pub connection_id: ConnectionId,
     pub pagination: Option<PageRequest>,
@@ -222,7 +222,7 @@ impl From<QueryConnectionChannelsRequest> for RawQueryConnectionChannelsRequest 
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryChannelsRequest {
     pub pagination: Option<PageRequest>,
 }
@@ -242,7 +242,7 @@ pub struct QueryChannelRequest {
     pub height: HeightQuery,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryChannelClientStateRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -265,7 +265,7 @@ pub struct QueryPacketCommitmentRequest {
     pub height: HeightQuery,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryPacketCommitmentsRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -290,7 +290,7 @@ pub struct QueryPacketReceiptRequest {
     pub height: HeightQuery,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryUnreceivedPacketsRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -319,7 +319,7 @@ pub struct QueryPacketAcknowledgementRequest {
     pub height: HeightQuery,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryPacketAcknowledgementsRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -342,7 +342,7 @@ impl From<QueryPacketAcknowledgementsRequest> for RawQueryPacketAcknowledgements
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryUnreceivedAcksRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -379,7 +379,7 @@ impl From<QueryNextSequenceReceiveRequest> for RawQueryNextSequenceReceiveReques
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryHostConsensusStateRequest {
     pub height: Height,
 }
