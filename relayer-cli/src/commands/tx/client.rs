@@ -6,6 +6,7 @@ use abscissa_core::{Command, Runnable};
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::events::IbcEvent;
+use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     IncludeProof, PageRequest, QueryClientStateRequest, QueryClientStatesRequest,
@@ -252,12 +253,29 @@ impl Runnable for TxUpgradeClientsCmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
+        let src_upgrade_height = {
+            let src_application_height = match src_chain.query_latest_height() {
+                Ok(height) => height,
+                Err(e) => Output::error(format!("{}", e)).exit(),
+            };
+
+            // When the chain is halted, the application height reports a height
+            // 1 less than the halted height
+            src_application_height.increment()
+        };
+
         let results = config
             .chains
             .iter()
             .filter_map(|chain| {
-                (self.src_chain_id != chain.id)
-                    .then(|| self.upgrade_clients_for_chain(&config, src_chain.clone(), &chain.id))
+                (self.src_chain_id != chain.id).then(|| {
+                    self.upgrade_clients_for_chain(
+                        &config,
+                        src_chain.clone(),
+                        &chain.id,
+                        &src_upgrade_height,
+                    )
+                })
             })
             .collect();
 
@@ -275,6 +293,7 @@ impl TxUpgradeClientsCmd {
         config: &Config,
         src_chain: Chain,
         dst_chain_id: &ChainId,
+        src_upgrade_height: &Height,
     ) -> UpgradeClientsForChainResult {
         let dst_chain = spawn_chain_runtime_generic::<Chain>(config, dst_chain_id)?;
 
@@ -286,7 +305,14 @@ impl TxUpgradeClientsCmd {
             .map_err(Error::relayer)?
             .into_iter()
             .filter_map(|c| (self.src_chain_id == c.client_state.chain_id()).then(|| c.client_id))
-            .map(|id| TxUpgradeClientsCmd::upgrade_client(id, dst_chain.clone(), src_chain.clone()))
+            .map(|id| {
+                TxUpgradeClientsCmd::upgrade_client(
+                    id,
+                    dst_chain.clone(),
+                    src_chain.clone(),
+                    src_upgrade_height,
+                )
+            })
             .collect();
 
         Ok(outputs)
@@ -296,21 +322,12 @@ impl TxUpgradeClientsCmd {
         client_id: ClientId,
         dst_chain: Chain,
         src_chain: Chain,
+        src_upgrade_height: &Height,
     ) -> Result<Vec<IbcEvent>, Error> {
         let client = ForeignClient::restore(client_id, dst_chain, src_chain);
 
-        let src_upgrade_height = {
-            let src_application_height = match client.src_chain().query_latest_height() {
-                Ok(height) => height,
-                Err(e) => Output::error(format!("{}", e)).exit(),
-            };
-
-            // When the chain is halted, the application height reports a height
-            // 1 less than the halted height
-            src_application_height.increment()
-        };
         client
-            .upgrade(src_upgrade_height)
+            .upgrade(*src_upgrade_height)
             .map_err(Error::foreign_client)
     }
 }
