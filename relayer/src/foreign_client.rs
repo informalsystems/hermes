@@ -957,14 +957,18 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         }
     }
 
-    /// Returns a vector with a message for updating the client to height `target_height`.
-    /// If the client already stores a consensus state for this height, returns an empty vector.
+    /// Wait for the source chain application to reach height `target_height`
+    /// before building the update client messages.
+    ///
+    /// Returns a vector with a message for updating the client to height
+    /// `target_height`. If the client already stores a consensus state for this
+    /// height, returns an empty vector.
     pub fn wait_and_build_update_client_with_trusted(
         &self,
         target_height: Height,
         trusted_height: Height,
     ) -> Result<Vec<Any>, ForeignClientError> {
-        let src_network_latest_height = || {
+        let src_application_latest_height = || {
             self.src_chain().query_latest_height().map_err(|e| {
                 ForeignClientError::client_create(
                     self.src_chain.id(),
@@ -975,7 +979,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         };
 
         // Wait for the source network to produce block(s) & reach `target_height`.
-        while src_network_latest_height()? < target_height {
+        while src_application_latest_height()? < target_height {
             thread::sleep(Duration::from_millis(100))
         }
 
