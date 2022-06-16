@@ -118,7 +118,7 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     let (do_clear, maybe_height) = match &cmd {
         WorkerCmd::IbcEvents { batch } => {
             if *should_clear_on_start {
-                (true, Some(batch.height.clone()))
+                (true, Some(batch.height))
             } else {
                 (false, None)
             }
@@ -127,10 +127,8 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
         // Handle the arrival of an event signaling that the
         // source chain has advanced to a new block
         WorkerCmd::NewBlock { height, .. } => {
-            if *should_clear_on_start {
-                (true, Some(height.clone()))
-            } else if should_clear_packets(clear_interval, *height) {
-                (true, Some(height.clone()))
+            if *should_clear_on_start || should_clear_packets(clear_interval, *height) {
+                (true, Some(*height))
             } else {
                 (false, None)
             }
