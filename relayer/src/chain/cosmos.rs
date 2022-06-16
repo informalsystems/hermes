@@ -10,7 +10,7 @@ use num_bigint::BigInt;
 use std::thread;
 
 use bitcoin::hashes::hex::ToHex;
-use tendermint::block::Height;
+use tendermint::block::Height as TmHeight;
 use tendermint::{
     abci::{Event, Path as TendermintABCIPath},
     node::info::TxIndexStatus,
@@ -174,7 +174,7 @@ impl CosmosSdkChain {
         }
 
         // Get the latest height and convert to tendermint Height
-        let latest_height = Height::try_from(self.query_chain_latest_height()?.revision_height)
+        let latest_height = TmHeight::try_from(self.query_chain_latest_height()?.revision_height)
             .map_err(Error::invalid_height)?;
 
         // Check on the configured max_tx_size against the consensus parameters at latest height
@@ -296,7 +296,7 @@ impl CosmosSdkChain {
         let path = TendermintABCIPath::from_str(IBC_QUERY_PATH)
             .expect("Turning IBC query path constant into a Tendermint ABCI path");
 
-        let height = Height::try_from(height_query)?;
+        let height = TmHeight::try_from(height_query)?;
 
         let data = data.into();
         if !data.is_provable() & prove {
@@ -348,7 +348,7 @@ impl CosmosSdkChain {
             &self.config.rpc_addr,
             path,
             Path::Upgrade(query_data).to_string(),
-            Height::try_from(query_height.revision_height).map_err(Error::invalid_height)?,
+            TmHeight::try_from(query_height.revision_height).map_err(Error::invalid_height)?,
             true,
         ))?;
 
@@ -1514,9 +1514,9 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryHostConsensusStateRequest,
     ) -> Result<Self::ConsensusState, Error> {
         let height = match request.height {
-            HeightQuery::Latest => Height::from(0u32),
+            HeightQuery::Latest => TmHeight::from(0u32),
             HeightQuery::Specific(ibc_height) => {
-                Height::try_from(ibc_height.revision_height).map_err(Error::invalid_height)?
+                TmHeight::try_from(ibc_height.revision_height).map_err(Error::invalid_height)?
             }
         };
 
