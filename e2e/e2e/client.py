@@ -19,7 +19,7 @@ class TxCreateClient(Cmd[ClientCreated]):
     src_chain_id: ChainId
 
     def args(self) -> List[str]:
-        return ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id]
+        return ["--host-chain", self.dst_chain_id, "--reference-chain", self.src_chain_id]
 
     def process(self, result: Any) -> ClientCreated:
         return from_dict(ClientCreated, result['CreateClient'])
@@ -43,7 +43,7 @@ class TxUpdateClient(Cmd[ClientUpdated]):
     dst_client_id: ClientId
 
     def args(self) -> List[str]:
-        return ["--dst-chain", self.dst_chain_id, "--dst-client", self.dst_client_id]
+        return ["--host-chain", self.dst_chain_id, "--client", self.dst_client_id]
 
     def process(self, result: Any) -> ClientUpdated:
         return from_dict(ClientUpdated, result[-1]['UpdateClient']['common'])
