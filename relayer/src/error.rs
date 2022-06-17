@@ -501,6 +501,13 @@ define_error! {
                     e.chain_id
                 )
             },
+
+        EmptyDenomTrace
+        { hash: String }
+        |e| {
+            format_args!(
+                "Query/DenomTrace RPC returned an empty denom trace for trace hash: {}", e.hash)
+        },
     }
 }
 
