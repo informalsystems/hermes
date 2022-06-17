@@ -32,10 +32,10 @@ The following commands are implemented, with the binary name `hermes` omitted:
 * `create client --chain-host <CHAIN_HOST_ID> --chain-reference <CHAIN_REFERENCE_ID>`
     * Optional: `[--clock-drift <CLOCK_DRIFT>] [--trust-threshold <TRUST_THRESHOLD>] [--trusting-period <TRUSTING_PERDIOD>]`
 
-* `update client --chain-host <CHAIN_HOST_ID> --client-host <CLIENT_HOST_ID>`
+* `update client --chain-host <CHAIN_HOST_ID> --client <CLIENT_ID>`
     * Optional: `[--height <REFERENCE_HEIGHT>] [--trusted-height <REFERENCE_TRUSTED_HEIGHT>]`
 
-* `upgrade client --chain-host <CHAIN_HOST_ID> --client-host <CLIENT_HOST_ID>`
+* `upgrade client --chain-host <CHAIN_HOST_ID> --client <CLIENT_ID>`
 
 * `upgrade clients --chain-reference <CHAIN_REFERENCE_ID>`
     * Optional: `[--chain-host <CHAIN_HOST_ID>]` (**Not implemented**)
