@@ -6,6 +6,7 @@ use ibc::{
     },
     Height,
 };
+use tracing::info;
 
 use crate::chain::requests::QueryChannelRequest;
 use crate::chain::{counterparty::check_channel_counterparty, requests::QueryConnectionRequest};
@@ -147,6 +148,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
 
         if auto_register_counterparty_payee && a_channel.version.supports_fee() {
             let address_a = a_chain.get_signer().map_err(LinkError::relayer)?;
+
+            info!(
+                "auto registering counterparty payee on chain {} as {} on chain {}",
+                b_chain.id(),
+                address_a,
+                a_chain.id()
+            );
 
             b_chain
                 .maybe_register_counterparty_payee(b_channel_id, b_port_id, address_a)

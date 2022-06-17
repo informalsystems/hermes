@@ -195,7 +195,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p ibc-integration-test --no-fail-fast --no-run
+          args: -p ibc-integration-test --features ics29-fee --no-fail-fast --no-run
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
@@ -204,7 +204,7 @@ jobs:
         run: |
           nix shell .#ibc-go-main-simapp -c cargo \
             test -p ibc-integration-test --features ics29-fee --no-fail-fast -- \
-            --nocapture --test-threads=1 test_channel_with_fee
+            --nocapture --test-threads=1 fee::
 
   model-based-test:
     runs-on: ubuntu-latest

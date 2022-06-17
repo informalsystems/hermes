@@ -17,7 +17,7 @@ use crate::prelude::*;
 /// No explicit validation is necessary, and the
 /// spec (v1) currently allows empty strings.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
-pub struct Version(String);
+pub struct Version(pub String);
 
 impl Version {
     pub fn new(v: String) -> Self {
@@ -30,8 +30,8 @@ impl Version {
 
     pub fn ics20_with_fee() -> Self {
         let val = json::json!({
-            "feeVersion": "ics29-1",
-            "appVersion": transfer::VERSION,
+            "fee_version": "ics29-1",
+            "app_version": transfer::VERSION,
         });
 
         Self::new(val.to_string())
@@ -45,9 +45,9 @@ impl Version {
         json::from_str::<json::Value>(&self.0)
             .ok()
             .and_then(|val| {
-                let _app_version = val.get("appVersion")?.as_str()?;
+                let _app_version = val.get("app_version")?.as_str()?;
 
-                let fee_version = val.get("feeVersion")?.as_str()?;
+                let fee_version = val.get("fee_version")?.as_str()?;
 
                 Some(fee_version == "ics29-1")
             })
@@ -79,5 +79,23 @@ impl Default for Version {
 impl fmt::Display for Version {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::Version;
+
+    #[test]
+    fn test_ics29_version() {
+        {
+            let version = Version::ics20();
+            assert!(!version.supports_fee());
+        }
+
+        {
+            let version = Version::ics20_with_fee();
+            assert!(version.supports_fee());
+        }
     }
 }

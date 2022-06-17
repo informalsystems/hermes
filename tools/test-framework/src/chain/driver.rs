@@ -32,7 +32,7 @@ use crate::util::retry::assert_eventually_succeed;
    test is taking much longer to reach eventual consistency, it might
    be indication of some underlying performance issues.
 */
-const WAIT_WALLET_AMOUNT_ATTEMPTS: u16 = 180;
+const WAIT_WALLET_AMOUNT_ATTEMPTS: u16 = 90;
 
 /**
     A driver for interacting with a chain full nodes through command line.
