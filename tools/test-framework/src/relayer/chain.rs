@@ -63,6 +63,7 @@ use ibc_relayer::chain::requests::{
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::config::ChainConfig;
 use ibc_relayer::connection::ConnectionMsgType;
+use ibc_relayer::denom::DenomTrace;
 use ibc_relayer::error::Error;
 use ibc_relayer::keyring::KeyEntry;
 
@@ -410,5 +411,9 @@ where
     ) -> Result<(), Error> {
         self.value()
             .maybe_register_counterparty_payee(channel_id, port_id, counterparty_payee)
+    }
+
+    fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
+        self.value().query_denom_trace(hash)
     }
 }

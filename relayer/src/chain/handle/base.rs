@@ -46,6 +46,7 @@ use crate::{
     },
     config::ChainConfig,
     connection::ConnectionMsgType,
+    denom::DenomTrace,
     error::Error,
     keyring::KeyEntry,
 };
@@ -152,6 +153,10 @@ impl ChainHandle for BaseChainHandle {
 
     fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
         self.send(|reply_to| ChainRequest::QueryBalance { key_name, reply_to })
+    }
+
+    fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
+        self.send(|reply_to| ChainRequest::QueryDenomTrace { hash, reply_to })
     }
 
     fn query_application_status(&self) -> Result<ChainStatus, Error> {

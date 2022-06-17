@@ -360,10 +360,8 @@ pub fn from_tx_response_event(height: Height, event: &tendermint::abci::Event) -
     } else if let Some(mut chan_res) = ChannelEvents::try_from_tx(event) {
         chan_res.set_height(height);
         Some(chan_res)
-    } else if let Some(event) = FeeEvents::try_from_tx(event) {
-        Some(event)
     } else {
-        None
+        FeeEvents::try_from_tx(event)
     }
 }
 

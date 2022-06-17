@@ -36,6 +36,7 @@ use crate::chain::requests::{
     QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStatesRequest,
 };
 use crate::config::ChainConfig;
+use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
@@ -167,6 +168,10 @@ impl ChainEndpoint for MockChain {
     }
 
     fn query_balance(&self, _key_name: Option<String>) -> Result<Balance, Error> {
+        unimplemented!()
+    }
+
+    fn query_denom_trace(&self, _hash: String) -> Result<DenomTrace, Error> {
         unimplemented!()
     }
 

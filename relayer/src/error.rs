@@ -16,7 +16,6 @@ use tendermint_proto::Error as TendermintProtoError;
 use tendermint_rpc::endpoint::abci_query::AbciQuery;
 use tendermint_rpc::endpoint::broadcast::tx_commit::TxResult;
 use tendermint_rpc::Error as TendermintRpcError;
-use tokio::task::JoinError;
 use tonic::{
     metadata::errors::InvalidMetadataValue, transport::Error as TransportError,
     Status as GrpcStatus,
@@ -512,9 +511,12 @@ define_error! {
                 )
             },
 
-        Join
-            [ TraceError<JoinError> ]
-            | _ | { "error joining tokio tasks" },
+        EmptyDenomTrace
+            { hash: String }
+            | e | {
+                format_args!(
+                    "Query/DenomTrace RPC returned an empty denom trace for trace hash: {}", e.hash)
+            },
     }
 }
 
