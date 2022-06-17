@@ -37,8 +37,7 @@ impl BinaryChannelTest for IbcDenomTraceTest {
             &channel.channel_id_a.as_ref(),
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a,
-            a_to_b_amount,
+            &denom_a.with_amount(a_to_b_amount).as_ref(),
         )?;
 
         let denom_b = derive_ibc_denom(
@@ -54,14 +53,12 @@ impl BinaryChannelTest for IbcDenomTraceTest {
 
         chains.node_a.chain_driver().assert_eventual_wallet_amount(
             &wallet_a.address(),
-            balance_a - a_to_b_amount,
-            &denom_a,
+            &(balance_a - a_to_b_amount).as_ref(),
         )?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
             &wallet_b.address(),
-            a_to_b_amount,
-            &denom_b.as_ref(),
+            &denom_b.with_amount(a_to_b_amount).as_ref(),
         )?;
 
         info!(
