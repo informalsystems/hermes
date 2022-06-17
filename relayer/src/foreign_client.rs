@@ -179,6 +179,17 @@ define_error! {
                     e.client_id, e.chain_id, e.description, e.source)
             },
 
+        ClientUpgradeNoSource
+        {
+            client_id: ClientId,
+            chain_id: ChainId,
+            description: String,
+        }
+        |e| {
+            format_args!("failed while trying to upgrade client id {0} for chain {1}: {2}",
+                    e.client_id, e.chain_id, e.description)
+        },
+
         ClientEventQuery
             {
                 client_id: ClientId,
@@ -430,25 +441,31 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         }
     }
 
-    pub fn upgrade(&self) -> Result<Vec<IbcEvent>, ForeignClientError> {
-        // Fetch the latest height of the source chain.
-        let src_height = self.src_chain.query_latest_height().map_err(|e| {
-            ForeignClientError::client_upgrade(
-                self.id.clone(),
-                self.src_chain.id(),
-                "failed while querying src chain for latest height".to_string(),
-                e,
-            )
-        })?;
+    /// Create and send a transaction to perform a client upgrade.
+    /// src_upgrade_height: The height on the source chain at which the chain will halt for the upgrade.
+    pub fn upgrade(&self, src_upgrade_height: Height) -> Result<Vec<IbcEvent>, ForeignClientError> {
+        info!("[{}] upgrade Height: {}", self, src_upgrade_height);
 
-        info!("[{}] upgrade Height: {}", self, src_height);
-
-        let mut msgs = self.build_update_client(src_height)?;
+        let mut msgs = self
+            .build_update_client_with_trusted(src_upgrade_height, Height::zero())
+            .map_err(|_| {
+                ForeignClientError::client_upgrade_no_source(
+                    self.id.clone(),
+                    self.src_chain.id(),
+                    format!(
+                        "is chain {} halted at height {}?",
+                        self.src_chain().id(),
+                        src_upgrade_height
+                    ),
+                )
+            })?;
 
         // Query the host chain for the upgraded client state, consensus state & their proofs.
         let (client_state, proof_upgrade_client) = self
             .src_chain
-            .query_upgraded_client_state(QueryUpgradedClientStateRequest { height: src_height })
+            .query_upgraded_client_state(QueryUpgradedClientStateRequest {
+                height: src_upgrade_height,
+            })
             .map_err(|e| {
                 ForeignClientError::client_upgrade(
                     self.id.clone(),
@@ -463,7 +480,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         let (consensus_state, proof_upgrade_consensus_state) = self
             .src_chain
             .query_upgraded_consensus_state(QueryUpgradedConsensusStateRequest {
-                height: src_height,
+                height: src_upgrade_height,
             })
             .map_err(|e| {
                 ForeignClientError::client_upgrade(
@@ -785,11 +802,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     }
 
     /// Wrapper for build_update_client_with_trusted.
-    pub fn build_update_client(
+    pub fn wait_and_build_update_client(
         &self,
         target_height: Height,
     ) -> Result<Vec<Any>, ForeignClientError> {
-        self.build_update_client_with_trusted(target_height, Height::zero())
+        self.wait_and_build_update_client_with_trusted(target_height, Height::zero())
     }
 
     /// Returns a trusted height that is lower than the target height, so
@@ -940,14 +957,18 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         }
     }
 
-    /// Returns a vector with a message for updating the client to height `target_height`.
-    /// If the client already stores a consensus state for this height, returns an empty vector.
-    pub fn build_update_client_with_trusted(
+    /// Wait for the source chain application to reach height `target_height`
+    /// before building the update client messages.
+    ///
+    /// Returns a vector with a message for updating the client to height
+    /// `target_height`. If the client already stores a consensus state for this
+    /// height, returns an empty vector.
+    pub fn wait_and_build_update_client_with_trusted(
         &self,
         target_height: Height,
         trusted_height: Height,
     ) -> Result<Vec<Any>, ForeignClientError> {
-        let src_network_latest_height = || {
+        let src_application_latest_height = || {
             self.src_chain().query_latest_height().map_err(|e| {
                 ForeignClientError::client_create(
                     self.src_chain.id(),
@@ -958,10 +979,18 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         };
 
         // Wait for the source network to produce block(s) & reach `target_height`.
-        while src_network_latest_height()? < target_height {
+        while src_application_latest_height()? < target_height {
             thread::sleep(Duration::from_millis(100))
         }
 
+        self.build_update_client_with_trusted(target_height, trusted_height)
+    }
+
+    pub fn build_update_client_with_trusted(
+        &self,
+        target_height: Height,
+        trusted_height: Height,
+    ) -> Result<Vec<Any>, ForeignClientError> {
         // Get the latest client state on destination.
         let (client_state, _) = self.validated_client_state()?;
 
@@ -1084,7 +1113,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             height
         };
 
-        let new_msgs = self.build_update_client_with_trusted(h, trusted_height)?;
+        let new_msgs = self.wait_and_build_update_client_with_trusted(h, trusted_height)?;
         if new_msgs.is_empty() {
             return Err(ForeignClientError::client_already_up_to_date(
                 self.id.clone(),

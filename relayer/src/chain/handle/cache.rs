@@ -44,6 +44,7 @@ use crate::chain::requests::{
 use crate::chain::tracking::TrackedMsgs;
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
+use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::keyring::KeyEntry;
 use crate::telemetry;
@@ -135,6 +136,10 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
 
     fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
         self.inner().query_balance(key_name)
+    }
+
+    fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
+        self.inner().query_denom_trace(hash)
     }
 
     fn query_application_status(&self) -> Result<ChainStatus, Error> {

@@ -43,6 +43,7 @@ use crate::chain::requests::{
 };
 use crate::chain::tracking::TrackedMsgs;
 use crate::config::ChainConfig;
+use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::util::lock::LockExt;
 use crate::{connection::ConnectionMsgType, keyring::KeyEntry};
@@ -161,6 +162,11 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
         self.inc_metric("query_balance");
         self.inner().query_balance(key_name)
+    }
+
+    fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
+        self.inc_metric("query_denom_trace");
+        self.inner().query_denom_trace(hash)
     }
 
     fn query_application_status(&self) -> Result<ChainStatus, Error> {
