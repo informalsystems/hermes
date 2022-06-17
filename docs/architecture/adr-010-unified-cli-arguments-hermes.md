@@ -16,8 +16,8 @@ To avoid confusion, all the parameters should take long flags. The following gen
 * Only long flags are used in order to avoid having nonintuitive flags or conflicting flags.
 * Any parameter ending with `_id` should have the `_id` removed from the flag to shorten it. For example the flag for `chain_id` should only be `chain`.
 * Flags which can be shorten and still be meaningful should be shorten. This is done for `connection`, `channel` and `sequence`, which become respectively `conn`, `chan` and `seq`.
-* For the channel and connection creation CLIs, the objects at the two ends are suffixed by `-a` and `-b`.
-* All the specifiers for `chain`, `connection`, `channel` and `port` flags are suffixed. These specifiers are `host`, `reference`, `a`, `b` and `counterparty`.
+* For the channel and connection creation CLIs, the objects at the two ends are prefixed by `--a-` and `--b-`.
+* All the specifiers for `chain`, `connection`, `channel` and `port` flags are prefixed. These specifiers are `host`, `reference`, `a`, `b` and `counterparty`.
 
 The following commands are implemented, with the binary name `hermes` omitted:
 
@@ -29,31 +29,31 @@ The following commands are implemented, with the binary name `hermes` omitted:
 
 ### Commands for clients
 
-* `create client --chain-host <CHAIN_HOST_ID> --chain-reference <CHAIN_REFERENCE_ID>`
+* `create client --host-chain <HOST_CHAIN_ID> --reference-chain <REFERENCE_CHAIN_ID>`
     * Optional: `[--clock-drift <CLOCK_DRIFT>] [--trust-threshold <TRUST_THRESHOLD>] [--trusting-period <TRUSTING_PERDIOD>]`
 
-* `update client --chain-host <CHAIN_HOST_ID> --client <CLIENT_ID>`
+* `update client --host-chain <HOST_CHAIN_ID> --client <CLIENT_ID>`
     * Optional: `[--height <REFERENCE_HEIGHT>] [--trusted-height <REFERENCE_TRUSTED_HEIGHT>]`
 
-* `upgrade client --chain-host <CHAIN_HOST_ID> --client <CLIENT_ID>`
+* `upgrade client --host-chain <HOST_CHAIN_ID> --client <CLIENT_ID>`
 
-* `upgrade clients --chain-reference <CHAIN_REFERENCE_ID>`
-    * Optional: `[--chain-host <CHAIN_HOST_ID>]` (**Not implemented**)
+* `upgrade clients --reference-chain <REFERENCE_CHAIN_ID>`
+    * Optional: `[--host-chain <HOST_CHAIN_ID>]` (**Not implemented**)
 
 ### Create a connection
 
-* `create connection --chain-a <CHAIN_A_ID> --chain-b <CHAIN_B_ID>`
+* `create connection --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID>`
     * Optional: `[--delay <DELAY>]`
 
-* `create connection --chain-a <CHAIN_A_ID> --client-a <CLIENT_A_ID> --client-b <CLIENT_B_ID>`
+* `create connection --a-chain <A_CHAIN_ID> --a-client <A_CLIENT_ID> --b-client <B_CLIENT_ID>`
     * Optional: `[--delay <DELAY>]`
 
 ### Create a channel
 
-* `create channel --chain-a <CHAIN_A_ID> --chain-b <CHAIN_B_ID> --port-a <PORT_A_ID> --port-b <PORT_B_ID>`
+* `create channel --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>`
     * Optional: `[--chan-version <VERSION>] [--new-client-conn] [--order <ORDER>]`
 
-* `create channel --chain-a <CHAIN_A_ID> --conn-a <CONNECTION_A_ID> --port-a <PORT_A_ID> --port-b <PORT_B_ID>`
+* `create channel --a-chain <A_CHAIN_ID> --a-conn <A_CONNECTION_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>`
     * Optional: `[--chan-version <VERSION>] [--order <ORDER>]`
 
 ### Commands for keys
@@ -104,8 +104,8 @@ __Client__
 * `query client state --chain <CHAIN_ID> --client <CLIENT_ID>`
     * Optional: `[--height <HEIGHT>]`
 
-* `query clients --chain-host <CHAIN_HOST_ID>`
-    * Optional: `[--omit-chain-ids] [--chain-reference <CHAIN_REFERENCE_ID>]`
+* `query clients --host-chain <HOST_CHAIN_ID>`
+    * Optional: `[--omit-chain-ids] [--reference-chain <REFERENCE_CHAIN_ID>]`
 
 __Connection__
 
@@ -124,11 +124,11 @@ __Channel__
 * `query channel end --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
     * Optional: `[--height <HEIGHT>]`
 
-* `query channel ends --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
+* `query channel full --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>` (**Not implemented**)
     * Optional: `[--height <HEIGHT>] [--verbose]`
 
 * `query channels --chain <CHAIN_ID>`
-    * Optional: `[--chain-counterparty <CHAIN_COUNTERPARTY_ID>] [--verbose]`
+    * Optional: `[--counterparty-chain <COUNTERPARTY_CHAIN_ID>] [--verbose]`
 
 __Packet__
 
@@ -166,7 +166,16 @@ __Tx__
 
 ## Status
 
-Proposed
+Proposed.
+
+__17.06.22__
+
+The following are not yet implemented:
+* Optional flags for `upgrade clients`, issue [#2311](https://github.com/informalsystems/ibc-rs/issues/2311)
+* Optional flags for `query connections`, issue [#2310](https://github.com/informalsystems/ibc-rs/issues/2310)
+* Updating `query channel ends` to `query channel full`
+
+The PR which updates the flags for all the commands as described in this ADR: [#2275](https://github.com/informalsystems/ibc-rs/pull/2275)
 
 ## Consequences
 
