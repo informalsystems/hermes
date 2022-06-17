@@ -12,10 +12,15 @@ use crate::conclude::Output;
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct KeysDeleteCmd {
-    #[clap(long = "chain", required = true, help = "identifier of the chain")]
+    #[clap(
+        long = "chain",
+        required = true,
+        value_name = "CHAIN_ID",
+        help = "identifier of the chain"
+    )]
     chain_id: ChainId,
 
-    #[clap(long = "key-name", help = "name of the key")]
+    #[clap(long = "key-name", value_name = "KEY_NAME", help = "name of the key")]
     key_name: Option<String>,
 
     #[clap(long = "all", help = "delete all keys")]

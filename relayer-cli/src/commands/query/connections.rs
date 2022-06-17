@@ -16,6 +16,7 @@ pub struct QueryConnectionsCmd {
     #[clap(
         long = "chain",
         required = true,
+        value_name = "CHAIN_ID",
         help = "identifier of the chain to query"
     )]
     chain_id: ChainId,

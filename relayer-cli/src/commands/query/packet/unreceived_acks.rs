@@ -20,14 +20,25 @@ pub struct QueryUnreceivedAcknowledgementCmd {
     #[clap(
         long = "chain",
         required = true,
+        value_name = "CHAIN_ID",
         help = "identifier of the chain to query the unreceived acknowledgments"
     )]
     chain_id: ChainId,
 
-    #[clap(long = "port", required = true, help = "port identifier")]
+    #[clap(
+        long = "port",
+        required = true,
+        value_name = "PORT_ID",
+        help = "port identifier"
+    )]
     port_id: PortId,
 
-    #[clap(long = "chan", required = true, help = "channel identifier")]
+    #[clap(
+        long = "chan",
+        required = true,
+        value_name = "CHANNEL_ID",
+        help = "channel identifier"
+    )]
     channel_id: ChannelId,
 }
 

@@ -18,34 +18,37 @@ use crate::prelude::*;
 #[derive(Clone, Command, Debug, Parser)]
 pub struct CreateConnectionCommand {
     #[clap(
-        long = "chain-a",
+        long = "a-chain",
         required = true,
+        value_name = "A_CHAIN_ID",
         help = "identifier of the side `a` chain for the new connection"
     )]
     chain_a_id: ChainId,
 
     #[clap(
-        long = "chain-b",
+        long = "b-chain",
+        value_name = "B_CHAIN_ID",
         help = "identifier of the side `b` chain for the new connection"
     )]
     chain_b_id: Option<ChainId>,
 
     #[clap(
-        long = "client-a",
-        value_name = "CLIENT_A_ID",
+        long = "a-client",
+        value_name = "A_CLIENT_ID",
         help = "identifier of client hosted on chain `a`; default: None (creates a new client)"
     )]
     client_a: Option<ClientId>,
 
     #[clap(
-        long = "client-b",
-        value_name = "CLIENT_B_ID",
+        long = "b-client",
+        value_name = "B_CLIENT_ID",
         help = "identifier of client hosted on chain `b`; default: None (creates a new client)"
     )]
     client_b: Option<ClientId>,
 
     #[clap(
         long = "delay",
+        value_name = "DELAY",
         help = "delay period parameter for the new connection (seconds)",
         default_value = "0"
     )]

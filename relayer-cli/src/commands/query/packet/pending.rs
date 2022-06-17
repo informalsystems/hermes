@@ -34,6 +34,7 @@ pub struct QueryPendingPacketsCmd {
     #[clap(
         long = "chain",
         required = true,
+        value_name = "CHAIN_ID",
         help = "identifier of the chain at one end of the channel"
     )]
     chain_id: ChainId,
@@ -41,6 +42,7 @@ pub struct QueryPendingPacketsCmd {
     #[clap(
         long = "port",
         required = true,
+        value_name = "PORT_ID",
         help = "port identifier on the chain given by <CHAIN_ID>"
     )]
     port_id: PortId,
@@ -48,6 +50,7 @@ pub struct QueryPendingPacketsCmd {
     #[clap(
         long = "chan",
         required = true,
+        value_name = "CHANNEL_ID",
         help = "channel identifier on the chain given by <CHAIN_ID>"
     )]
     channel_id: ChannelId,

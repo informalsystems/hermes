@@ -24,13 +24,14 @@ pub struct QueryChannelsCmd {
     #[clap(
         long = "chain",
         required = true,
+        value_name = "CHAIN_ID",
         help = "identifier of the chain to query"
     )]
     chain_id: ChainId,
 
     #[clap(
-        long = "chain-counterparty",
-        value_name = "CHAIN_COUNTERPARTY_ID",
+        long = "counterparty-chain",
+        value_name = "COUNTERPARTY_CHAIN_ID",
         help = "identifier of the channel's destination chain"
     )]
     dst_chain_id: Option<ChainId>,

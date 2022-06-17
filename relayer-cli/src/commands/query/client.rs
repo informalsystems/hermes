@@ -28,6 +28,7 @@ pub struct QueryClientStateCmd {
     #[clap(
         long = "chain",
         required = true,
+        value_name = "CHAIN_ID",
         help = "identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -35,11 +36,16 @@ pub struct QueryClientStateCmd {
     #[clap(
         long = "client",
         required = true,
+        value_name = "CLIENT_ID",
         help = "identifier of the client to query"
     )]
     client_id: ClientId,
 
-    #[clap(long = "height", help = "the chain height context for the query")]
+    #[clap(
+        long = "height",
+        value_name = "HEIGHT",
+        help = "the chain height context for the query"
+    )]
     height: Option<u64>,
 }
 
@@ -79,6 +85,7 @@ pub struct QueryClientConsensusCmd {
     #[clap(
         long = "chain",
         required = true,
+        value_name = "CHAIN_ID",
         help = "identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -86,12 +93,14 @@ pub struct QueryClientConsensusCmd {
     #[clap(
         long = "client",
         required = true,
+        value_name = "CLIENT_ID",
         help = "identifier of the client to query"
     )]
     client_id: ClientId,
 
     #[clap(
         long = "consensus-height",
+        value_name = "CONSENSUS_HEIGHT",
         help = "height of the client's consensus state to query"
     )]
     consensus_height: Option<u64>,
@@ -101,6 +110,7 @@ pub struct QueryClientConsensusCmd {
 
     #[clap(
         long = "height",
+        value_name = "HEIGHT",
         help = "the chain height context to be used, applicable only to a specific height"
     )]
     height: Option<u64>,
@@ -182,6 +192,7 @@ pub struct QueryClientHeaderCmd {
     #[clap(
         long = "chain",
         required = true,
+        value_name = "CHAIN_ID",
         help = "identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -189,6 +200,7 @@ pub struct QueryClientHeaderCmd {
     #[clap(
         long = "client",
         required = true,
+        value_name = "CLIENT_ID",
         help = "identifier of the client to query"
     )]
     client_id: ClientId,
@@ -196,11 +208,16 @@ pub struct QueryClientHeaderCmd {
     #[clap(
         long = "consensus-height",
         required = true,
+        value_name = "CONSENSUS_HEIGHT",
         help = "height of header to query"
     )]
     consensus_height: u64,
 
-    #[clap(long = "height", help = "the chain height context for the query")]
+    #[clap(
+        long = "height",
+        value_name = "HEIGHT",
+        help = "the chain height context for the query"
+    )]
     height: Option<u64>,
 }
 
@@ -261,6 +278,7 @@ pub struct QueryClientConnectionsCmd {
     #[clap(
         long = "chain",
         required = true,
+        value_name = "CHAIN_ID",
         help = "identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -268,12 +286,14 @@ pub struct QueryClientConnectionsCmd {
     #[clap(
         long = "client",
         required = true,
+        value_name = "CLIENT_ID",
         help = "identifier of the client to query"
     )]
     client_id: ClientId,
 
     #[clap(
         long = "height",
+        value_name = "HEIGHT",
         help = "the chain height which this query should reflect"
     )]
     height: Option<u64>,

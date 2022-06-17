@@ -23,6 +23,7 @@ pub struct QueryConnectionEndCmd {
     #[clap(
         long = "chain",
         required = true,
+        value_name = "CHAIN_ID",
         help = "identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -30,11 +31,16 @@ pub struct QueryConnectionEndCmd {
     #[clap(
         long = "conn",
         required = true,
+        value_name = "CONNECTION_ID",
         help = "identifier of the connection to query"
     )]
     connection_id: ConnectionId,
 
-    #[clap(long = "height", help = "height of the state to query")]
+    #[clap(
+        long = "height",
+        value_name = "HEIGHT",
+        help = "height of the state to query"
+    )]
     height: Option<u64>,
 }
 
@@ -88,6 +94,7 @@ pub struct QueryConnectionChannelsCmd {
     #[clap(
         long = "chain",
         required = true,
+        value_name = "CHAIN_ID",
         help = "identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -95,6 +102,7 @@ pub struct QueryConnectionChannelsCmd {
     #[clap(
         long = "conn",
         required = true,
+        value_name = "CONNECTION_ID",
         help = "identifier of the connection to query"
     )]
     connection_id: ConnectionId,

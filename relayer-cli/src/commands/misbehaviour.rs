@@ -20,6 +20,7 @@ pub struct MisbehaviourCmd {
     #[clap(
         long = "chain",
         required = true,
+        value_name = "CHAIN_ID",
         help = "identifier of the chain where client updates are monitored for misbehaviour"
     )]
     chain_id: ChainId,
@@ -27,6 +28,7 @@ pub struct MisbehaviourCmd {
     #[clap(
         long = "client",
         required = true,
+        value_name = "CLIENT_ID",
         help = "identifier of the client to be monitored for misbehaviour"
     )]
     client_id: ClientId,

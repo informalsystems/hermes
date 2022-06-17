@@ -22,17 +22,17 @@ use crate::error::Error;
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxCreateClientCmd {
     #[clap(
-        long = "chain-host",
+        long = "host-chain",
         required = true,
-        value_name = "CHAIN_HOST_ID",
+        value_name = "HOST_CHAIN_ID",
         help = "identifier of the chain that hosts the client"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "chain-reference",
+        long = "reference-chain",
         required = true,
-        value_name = "CHAIN_REFERENCE_ID",
+        value_name = "REFERENCE_CHAIN_ID",
         help = "identifier of the chain targeted by the client"
     )]
     src_chain_id: ChainId,
@@ -46,21 +46,21 @@ pub struct TxCreateClientCmd {
     /// to accept or reject a new header (originating from the source chain) for this client.
     /// If this option is not specified, a suitable clock drift value is derived from the chain
     /// configurations.
-    #[clap(long = "clock-drift")]
+    #[clap(long = "clock-drift", value_name = "CLOCK_DRIFT")]
     clock_drift: Option<humantime::Duration>,
 
     /// Override the trusting period specified in the config.
     ///
     /// The trusting period specifies how long a validator set is trusted for
     /// (must be shorter than the chain's unbonding period).
-    #[clap(long = "trusting-period")]
+    #[clap(long = "trusting-period", value_name = "TRUSTING_PERIOD")]
     trusting_period: Option<humantime::Duration>,
 
     /// Override the trust threshold specified in the configuration.
     ///
     /// The trust threshold defines what fraction of the total voting power of a known
     /// and trusted validator set is sufficient for a commit to be accepted going forward.
-    #[clap(long = "trust-threshold", parse(try_from_str = parse_trust_threshold))]
+    #[clap(long = "trust-threshold", value_name = "TRUST_THRESHOLD", parse(try_from_str = parse_trust_threshold))]
     trust_threshold: Option<TrustThreshold>,
 }
 
@@ -102,17 +102,17 @@ impl Runnable for TxCreateClientCmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxUpdateClientCmd {
     #[clap(
-        long = "chain-host",
+        long = "host-chain",
         required = true,
-        value_name = "CHAIN_HOST_ID",
+        value_name = "HOST_CHAIN_ID",
         help = "identifier of the chain that hosts the client"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "client-reference",
+        long = "client",
         required = true,
-        value_name = "CHAIN_REFERENCE_ID",
+        value_name = "CLIENT_ID",
         help = "identifier of the chain targeted by the client"
     )]
     dst_client_id: ClientId,
@@ -187,8 +187,9 @@ impl Runnable for TxUpdateClientCmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxUpgradeClientCmd {
     #[clap(
-        long = "chain-host",
+        long = "host-chain",
         required = true,
+        value_name = "HOST_CHAIN_ID",
         help = "identifier of the chain that hosts the client"
     )]
     chain_id: ChainId,
@@ -196,6 +197,7 @@ pub struct TxUpgradeClientCmd {
     #[clap(
         long = "client",
         required = true,
+        value_name = "CLIENT_ID",
         help = "identifier of the client to be upgraded"
     )]
     client_id: ClientId,
@@ -244,9 +246,9 @@ impl Runnable for TxUpgradeClientCmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxUpgradeClientsCmd {
     #[clap(
-        long = "chain-reference",
+        long = "reference-chain",
         required = true,
-        value_name = "CHAIN_REFERENCE_ID",
+        value_name = "REFERENCE_CHAIN_ID",
         help = "identifier of the chain that underwent an upgrade; all clients targeting this chain will be upgraded"
     )]
     src_chain_id: ChainId,
