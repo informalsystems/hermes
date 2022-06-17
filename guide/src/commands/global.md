@@ -34,7 +34,7 @@ To process all the output using `jq`, one can redirect `stderr` to `stdout` with
 __Example__
 
 ```shell
-hermes --config /home/my_chain.toml --json create client --dst-chain ibc-0 --src-chain ibc-1
+hermes --config /home/my_chain.toml --json create client --host-chain ibc-0 --reference-chain ibc-1
 ```
 
 ```json
@@ -51,7 +51,7 @@ __Example__
 To improve the readability, pipe all of the output to `jq`:
 
 ```
-hermes --config /home/my_chain.toml --json create client --dst-chain ibc-0 --src-chain ibc-1 2>&1 | jq
+hermes --config /home/my_chain.toml --json create client --host-chain ibc-0 --reference-chain ibc-1 2>&1 | jq
 ```
 
 ```json
@@ -105,7 +105,7 @@ __Example__
 To extract the identifer of the newly created client above:
 
 ```
-hermes --config /home/my_chain.toml --json create client --dst-chain ibc-0 --src-chain ibc-1 | jq '.result.CreateClient.client_id'
+hermes --config /home/my_chain.toml --json create client --host-chain ibc-0 --reference-chain ibc-1 | jq '.result.CreateClient.client_id'
 ```
 
 ```

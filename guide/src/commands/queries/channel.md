@@ -14,12 +14,14 @@ DESCRIPTION:
     Query the identifiers of all channels on a given chain
 
 FLAGS:
-        --chain <CHAIN_ID>            identifier of the chain to query
+        --chain <CHAIN_ID>
+            identifier of the chain to query
 
 OPTIONS:
-        --dst-chain <DST_CHAIN_ID>    identifier of the channel's destination chain
-        --verbose                     enable verbose output, displaying all client and connection
-                                      ids
+        --counterparty-chain <COUNTERPARTY_CHAIN_ID>
+            identifier of the channel's destination chain
+        --verbose
+            enable verbose output, displaying all client and connection ids
 ```
 
 __Example__

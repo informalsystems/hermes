@@ -11,14 +11,14 @@ tracking the state of the source chain.
 
 ```shell
 USAGE:
-    hermes create client [OPTIONS] --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID>
+    hermes create client [OPTIONS] --host-chain <HOST_CHAIN_ID> --reference-chain <REFERENCE_CHAIN_ID>
 
 FLAGS:
-        --dst-chain <DST_CHAIN_ID>
-            identifier of the destination chain
+        --host-chain <HOST_CHAIN_ID>
+            identifier of the chain that hosts the client
 
-        --src-chain <SRC_CHAIN_ID>
-            identifier of the source chain
+        --reference-chain <REFERENCE_CHAIN_ID>
+            identifier of the chain targeted by the client
 
 OPTIONS:
         --clock-drift <CLOCK_DRIFT>
@@ -49,7 +49,7 @@ __Example__
 Create a new client on `ibc-0` which tracks `ibc-1`:
 
 ```shell
-hermes create client --dst-chain ibc-0 --src-chain ibc-1
+hermes create client --host-chain ibc-0 --reference-chain ibc-1
 ```
 
 ```json
@@ -81,19 +81,21 @@ Specific update and trusted heights can be specified.
 
 ```shell
 USAGE:
-    hermes update client [OPTIONS] --dst-chain <DST_CHAIN_ID> --dst-client <DST_CLIENT_ID>
+    hermes update client [OPTIONS] --host-chain <HOST_CHAIN_ID> --client <CLIENT_ID>
 
 FLAGS:
-        --dst-chain <DST_CHAIN_ID>
-            identifier of the destination chain
+        --host-chain <HOST_CHAIN_ID>
+            identifier of the chain that hosts the client
 
-        --dst-client <DST_CLIENT_ID>
-            identifier of the client to be updated on destination chain
+        --client <CLIENT_ID>
+            identifier of the chain targeted by the client
 
 OPTIONS:
-    -h, --help                               Print help information
-        --target-height <TARGET_HEIGHT>      the target height of the client update
-        --trusted-height <TRUSTED_HEIGHT>    the trusted height of the client update
+        --height <REFERENCE_HEIGHT>
+            the target height of the client update
+
+        --trusted-height <REFERENCE_TRUSTED_HEIGHT>
+            the trusted height of the client update
 ```
 
 __Update client with latest header__
@@ -101,7 +103,7 @@ __Update client with latest header__
 the client on `ibc-0` with latest header of `ibc-1`:
 
 ```shell
-hermes update client --dst-chain ibc-0 --dst-client 07-tendermint-9
+hermes update client --host-chain ibc-0 --client 07-tendermint-9
 ```
 
 ```json
@@ -129,7 +131,7 @@ The client with identifier `07-tendermint-1` has been updated with the consensus
 __Update a client to a specific target height__
 
 ```shell
-hermes update client --dst-chain ibc-0 --dst-client 07-tendermint-1 --target-height 320 --trusted-height 293
+hermes update client --host-chain ibc-0 --client 07-tendermint-1 --height 320 --trusted-height 293
 ```
 
 ```json

@@ -37,7 +37,7 @@ __With gm__
 1. Create one client on `ibc-1` for `ibc-0`:
 
     ```shell
-    hermes create client --dst-chain ibc-1 --src-chain ibc-0
+    hermes create client --host-chain ibc-1 --reference-chain ibc-0
     ```
 
     ```json
@@ -229,7 +229,7 @@ __With gm__
     and another for the upgraded state.
 
     ```shell
-    hermes upgrade client --chain ibc-1 --client 07-tendermint-0
+    hermes upgrade client --host-chain ibc-1 --client 07-tendermint-0
     ```
     ```json
     Success: [

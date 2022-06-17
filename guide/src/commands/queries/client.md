@@ -9,17 +9,21 @@ Use the `query clients` command to query the identifiers of all clients on a giv
 
 ```shell
 USAGE:
-    hermes query clients [OPTIONS] --chain <CHAIN_ID>
+    hermes query clients [OPTIONS] --host-chain <HOST_CHAIN_ID>
 
 DESCRIPTION:
     Query the identifiers of all clients on a chain
 
 FLAGS:
-        --chain <CHAIN_ID>    identifier of the chain to query
+        --host-chain <HOST_CHAIN_ID>
+            identifier of the chain to query
 
 OPTIONS:
-        --src-chain <ID>      filter for clients which target a specific chain id (implies '--omit-chain-ids')
-        --omit-chain-ids      omit printing the source chain for each client (default: false)
+        --omit-chain-ids
+            omit printing the source chain for each client
+
+        --reference-chain <REFERENCE_CHAIN_ID>
+            filter for clients which target a specific chain id (implies '--omit-chain-ids')
 ```
 
 __Example__
@@ -27,7 +31,7 @@ __Example__
 Query all clients on `ibc-1`:
 
 ```shell
-hermes query clients --chain ibc-1
+hermes query clients --host-chain ibc-1
 ```
 
 ```json
@@ -56,7 +60,7 @@ Success: [
 Query all clients on `ibc-1` having `ibc-2` as their source chain:
 
 ```shell
-hermes query clients --chain ibc-1 --src-chain ibc-2
+hermes query clients --host-chain ibc-1 --reference-chain ibc-2
 ```
 
 ```json

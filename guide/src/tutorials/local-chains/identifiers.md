@@ -14,7 +14,7 @@ __`07-tendermint-<n>`__ for tendermint clients
 For example `07-tendermint-0` is assigned to the first client created on `ibc-1`:
 
  ```shell
-hermes tx raw create-client --dst-chain ibc-1 --src-chain ibc-0
+hermes tx raw create-client --host-chain ibc-1 --reference-chain ibc-0
  ```
 
  ```json

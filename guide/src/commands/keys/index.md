@@ -218,8 +218,8 @@ FLAGS:
         --chain <CHAIN_ID>    identifier of the chain
 
 OPTIONS:
-        --key-name NAME       name of the key
-        --all                 delete all keys
+        --key-name <KEY_NAME>    name of the key
+        --all                    delete all keys
 ```
 
 #### Delete private keys that was previously added to a chain

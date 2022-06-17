@@ -21,9 +21,6 @@ FLAGS:
         --chain <CHAIN_ID>     identifier of the chain
         --chan <CHANNEL_ID>    identifier of the channel
         --port <PORT_ID>       identifier of the port
-
-OPTIONS:
-    -h, --help    Print help information
 ```
 
 ### Example

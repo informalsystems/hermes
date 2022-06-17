@@ -10,14 +10,14 @@ Use this to perform the upgrade for the given client.
 
 ```shell
 USAGE:
-    hermes tx raw upgrade-client --chain <CHAIN_ID> --client <CLIENT_ID>
+    hermes tx raw upgrade-client --host-chain <HOST_CHAIN_ID> --client <CLIENT_ID>
 
 DESCRIPTION:
     Upgrade the specified client on destination chain
     
 FLAGS:
-        --chain <CHAIN_ID>      identifier of the chain that hosts the client
-        --client <CLIENT_ID>    identifier of the client to be upgraded
+        --client <CLIENT_ID>            identifier of the client to be upgraded
+        --host-chain <HOST_CHAIN_ID>    identifier of the chain that hosts the client
 ```
 
 __Example__
@@ -25,7 +25,7 @@ __Example__
 A given client is upgraded:
 
 ```shell
-hermes tx raw upgrade-client --chain ibc-1 --client 07-tendermint-0
+hermes tx raw upgrade-client --host-chain ibc-1 --client 07-tendermint-0
 ````
 
 ```
@@ -60,14 +60,15 @@ Use this to perform the upgrade on all the clients.
 
 ```shell
 USAGE:
-    hermes tx raw upgrade-clients --src-chain <SRC_CHAIN_ID>
+    hermes tx raw upgrade-clients --reference-chain <REFERENCE_CHAIN_ID>
 
 DESCRIPTION:
     Upgrade all IBC clients that target a specific chain
  
 FLAGS:
-        --src-chain <SRC_CHAIN_ID>    identifier of the chain that underwent an upgrade; all clients
-                                      targeting this chain will be upgraded
+        --reference-chain <REFERENCE_CHAIN_ID>
+            identifier of the chain that underwent an upgrade; all clients targeting this chain will
+            be upgraded
 ```
 
 __Example__
@@ -75,7 +76,7 @@ __Example__
 All the clients are upgraded:
 
 ```shell
-hermes tx raw upgrade-clients --chain ibc-1
+hermes tx raw upgrade-clients --reference-chain ibc-1
 ````
 
 ```

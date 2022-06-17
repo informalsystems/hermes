@@ -6,7 +6,7 @@ your configuration file.
 
 ```shell
 USAGE:
-    hermes config validate <OPTIONS>
+    hermes config validate
 
 DESCRIPTION:
     validate the relayer configuration

@@ -9,17 +9,17 @@ Use the `create-client` command to create a new client.
 
 ```shell
 USAGE:
-    hermes tx raw create-client [OPTIONS] --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID>
+    hermes tx raw create-client [OPTIONS] --host-chain <HOST_CHAIN_ID> --reference-chain <REFERENCE_CHAIN_ID>
 
 DESCRIPTION:
     Create a client for source chain on destination chain
 
 FLAGS:
-        --dst-chain <DST_CHAIN_ID>
-            identifier of the destination chain
+        --host-chain <HOST_CHAIN_ID>
+            identifier of the chain that hosts the client
 
-        --src-chain <SRC_CHAIN_ID>
-            identifier of the source chain
+        --reference-chain <REFERENCE_CHAIN_ID>
+            identifier of the chain targeted by the client
 
 OPTIONS:
         --clock-drift <CLOCK_DRIFT>
@@ -38,7 +38,7 @@ __Example__
 Create a new client of `ibc-1` on `ibc-0`:
 
 ```shell
-hermes tx raw create-client --dst-chain ibc-0 --src-chain ibc-1
+hermes tx raw create-client --host-chain ibc-0 --reference-chain ibc-1
 ```
 
 ```json
@@ -66,24 +66,24 @@ Specific update and trusted heights can be specified.
 
 ```shell
 USAGE:
-    hermes tx raw update-client [OPTIONS] --dst-chain <DST_CHAIN_ID> --dst-client <DST_CLIENT_ID>
+    hermes tx raw update-client [OPTIONS] --host-chain <HOST_CHAIN_ID> --client <CLIENT_ID>
 
 DESCRIPTION:
     Update the specified client on destination chain
 
 FLAGS:
-        --dst-chain <DST_CHAIN_ID>
-            identifier of the destination chain
+        --host-chain <HOST_CHAIN_ID>
+            identifier of the chain that hosts the client
 
-        --dst-client <DST_CLIENT_ID>
-            identifier of the client to be updated on destination chain
+        --client <CLIENT_ID>
+            identifier of the chain targeted by the client
 
 OPTIONS:
 
-        --target-height <TARGET_HEIGHT>
+        --height <REFERENCE_HEIGHT>
             the target height of the client update
 
-        --trusted-height <TRUSTED_HEIGHT>
+        --trusted-height <REFERENCE_TRUSTED_HEIGHT>
             the trusted height of the client update
 ```
 
@@ -92,7 +92,7 @@ __Example__
 Update the client on `ibc-0` with latest header of `ibc-1`
 
 ```shell
-hermes tx raw update-client --dst-chain ibc-0 --dst-client 07-tendermint-0
+hermes tx raw update-client --host-chain ibc-0 --client 07-tendermint-0
 ```
 
 ```json
