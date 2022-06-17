@@ -150,6 +150,9 @@ define_error! {
             [ TendermintError ]
             |_| { "invalid height" },
 
+        InvalidHeightNoSource
+            |_| { "invalid height" },
+
         InvalidMetadata
             [ TraceError<InvalidMetadataValue> ]
             |_| { "invalid metadata" },
