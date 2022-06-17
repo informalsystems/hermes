@@ -11,15 +11,15 @@ The problem we are trying to solve is a unified approach to CLI arguments for He
 
 ## Decision
 
-To avoid confusion, all the parameters should take long flags. The following general scenarios should be applied:
+To avoid confusion, all the parameters should take long flags. The following approach should be applied:
 
 * Only long flags are used in order to avoid having nonintuitive flags or conflicting flags.
 * Any parameter ending with `_id` should have the `_id` removed from the flag to shorten it. For example the flag for `chain_id` should only be `chain`.
-* Flags which can be shorten and still be meaningful should be shorten. This is done for `connection`, `channel` and `sequence`, which become respectively `conn`, `chan` and `seq`.
-* For the channel and connection creation CLIs, the objects at the two ends are prefixed by `--a-` and `--b-`.
-* All the specifiers for `chain`, `connection`, `channel` and `port` flags are prefixed. These specifiers are `host`, `reference`, `a`, `b` and `counterparty`.
+* Flags which can be shortened and still be meaningful should be shortened. This is done for `connection`, `channel` and `sequence`, which become respectively `conn`, `chan` and `seq`.
+* For the channel and connection creation CLIs, the objects at the two ends are prefixed by `--a-` and `--b-`. Example `--a-chain` and `--b-chain`.
+* Whenever `chain`, `conn`, `chan` and `port` flags have to be disambiguated with a specifier, the specifier will be a prefix. Example of specifiers we currently use are `host`, `reference`, `a`, `b` and `counterparty`.
 
-The following commands are implemented, with the binary name `hermes` omitted:
+The following commands are implemented, with the binary name `hermes` often omitted:
 
 ### Hermes global flags
 
@@ -30,7 +30,7 @@ The following commands are implemented, with the binary name `hermes` omitted:
 ### Commands for clients
 
 * `create client --host-chain <HOST_CHAIN_ID> --reference-chain <REFERENCE_CHAIN_ID>`
-    * Optional: `[--clock-drift <CLOCK_DRIFT>] [--trust-threshold <TRUST_THRESHOLD>] [--trusting-period <TRUSTING_PERDIOD>]`
+    * Optional: `[--clock-drift <CLOCK_DRIFT>] [--trust-threshold <TRUST_THRESHOLD>] [--trusting-period <TRUSTING_PERIOD>]`
 
 * `update client --host-chain <HOST_CHAIN_ID> --client <CLIENT_ID>`
     * Optional: `[--height <REFERENCE_HEIGHT>] [--trusted-height <REFERENCE_TRUSTED_HEIGHT>]`
@@ -38,7 +38,7 @@ The following commands are implemented, with the binary name `hermes` omitted:
 * `upgrade client --host-chain <HOST_CHAIN_ID> --client <CLIENT_ID>`
 
 * `upgrade clients --reference-chain <REFERENCE_CHAIN_ID>`
-    * Optional: `[--host-chain <HOST_CHAIN_ID>]` (**Not implemented**)
+    * Optional: `[--host-chain <HOST_CHAIN_ID>]`
 
 ### Create a connection
 
@@ -50,10 +50,10 @@ The following commands are implemented, with the binary name `hermes` omitted:
 
 ### Create a channel
 
-* `create channel --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>`
-    * Optional: `[--chan-version <VERSION>] [--new-client-conn] [--order <ORDER>]`
-
 * `create channel --a-chain <A_CHAIN_ID> --a-conn <A_CONNECTION_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>`
+    * Optional: `[--chan-version <VERSION>] [--order <ORDER>]`
+
+* `create channel --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID> --new-client-conn`
     * Optional: `[--chan-version <VERSION>] [--order <ORDER>]`
 
 ### Commands for keys
@@ -84,7 +84,7 @@ The following commands are implemented, with the binary name `hermes` omitted:
 * `start`
     * Optional: `[--full-scan]`
 
-### Clear objects
+### Clear packets
 
 * `clear packets --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
 
@@ -115,7 +115,7 @@ __Connection__
     * Optional: `[--height <HEIGHT>]`
 
 * `query connections --chain <CHAIN_ID>`
-    * Optional: `[--chain-counterparty <CHAIN_COUNTERPARTY_ID>] [--verbose]` (**Not implemented**)
+    * Optional: `[--chain-counterparty <CHAIN_COUNTERPARTY_ID>] [--verbose]`
 
 __Channel__
 
@@ -124,7 +124,7 @@ __Channel__
 * `query channel end --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
     * Optional: `[--height <HEIGHT>]`
 
-* `query channel full --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>` (**Not implemented**)
+* `query channel full --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
     * Optional: `[--height <HEIGHT>] [--verbose]`
 
 * `query channels --chain <CHAIN_ID>`
