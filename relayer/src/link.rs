@@ -1,13 +1,10 @@
-use ibc::{
-    core::{
-        ics03_connection::connection::State as ConnectionState,
-        ics04_channel::channel::State as ChannelState,
-        ics24_host::identifier::{ChannelId, PortChannelId, PortId},
-    },
-    Height,
+use ibc::core::{
+    ics03_connection::connection::State as ConnectionState,
+    ics04_channel::channel::State as ChannelState,
+    ics24_host::identifier::{ChannelId, PortChannelId, PortId},
 };
 
-use crate::chain::requests::QueryChannelRequest;
+use crate::chain::requests::{HeightQuery, QueryChannelRequest};
 use crate::chain::{counterparty::check_channel_counterparty, requests::QueryConnectionRequest};
 use crate::chain::{handle::ChainHandle, requests::IncludeProof};
 use crate::channel::{Channel, ChannelSide};
@@ -65,7 +62,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 QueryChannelRequest {
                     port_id: opts.src_port_id.clone(),
                     channel_id: opts.src_channel_id,
-                    height: Height::default(),
+                    height: HeightQuery::Latest,
                 },
                 IncludeProof::No,
             )
@@ -111,7 +108,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: a_connection_id.clone(),
-                    height: Height::zero(),
+                    height: HeightQuery::Latest,
                 },
                 IncludeProof::No,
             )
