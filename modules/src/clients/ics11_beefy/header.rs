@@ -405,7 +405,7 @@ pub fn decode_timestamp_extrinsic<HostFunctions: HostFunctionsProvider>(
     // Timestamp extrinsic should be the first inherent and hence the first extrinsic
     // https://github.com/paritytech/substrate/blob/d602397a0bbb24b5d627795b797259a44a5e29e9/primitives/trie/src/lib.rs#L99-L101
     let key = codec::Encode::encode(&Compact(0u32));
-    HostFunctions::verify_membership_trie_proof(&extrinsic_root, proof, &*key, ext)
+    HostFunctions::verify_membership_trie_proof(extrinsic_root.as_fixed_bytes(), proof, &*key, ext)
         .map_err(|e| Error::timestamp_extrinsic(format!("Proof Verification failed {:?}", e)))?;
     // Decoding from the [2..] because the timestamp inmherent has two extra bytes before the call that represents the
     // call length and the extrinsic version.

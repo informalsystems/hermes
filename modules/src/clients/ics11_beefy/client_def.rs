@@ -411,7 +411,7 @@ fn verify_membership<HostFunctions: HostFunctionsProvider, P: Into<Path>>(
     let trie_proof: Vec<Vec<u8>> = codec::Decode::decode(&mut &*trie_proof)
         .map_err(|e| Error::beefy(BeefyError::scale_decode(e)))?;
     let root = H256::from_slice(root.as_bytes());
-    HostFunctions::verify_membership_trie_proof(&root, &trie_proof, &key, &value)
+    HostFunctions::verify_membership_trie_proof(root.as_fixed_bytes(), &trie_proof, &key, &value)
 }
 
 fn verify_non_membership<HostFunctions: HostFunctionsProvider, P: Into<Path>>(
@@ -431,7 +431,7 @@ fn verify_non_membership<HostFunctions: HostFunctionsProvider, P: Into<Path>>(
     let trie_proof: Vec<Vec<u8>> = codec::Decode::decode(&mut &*trie_proof)
         .map_err(|e| Error::beefy(BeefyError::scale_decode(e)))?;
     let root = H256::from_slice(root.as_bytes());
-    HostFunctions::verify_non_membership_trie_proof(&root, &trie_proof, &key)
+    HostFunctions::verify_non_membership_trie_proof(root.as_fixed_bytes(), &trie_proof, &key)
 }
 
 fn verify_delay_passed(

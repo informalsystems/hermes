@@ -6,6 +6,7 @@ use subtle_encoding::hex;
 use tendermint_proto::Protobuf;
 
 use crate::clients::ics07_tendermint::header::{decode_header, Header as TendermintHeader};
+#[cfg(any(test, feature = "ics11_beefy"))]
 use crate::clients::ics11_beefy::header::{decode_header as decode_beefy_header, BeefyHeader};
 // use crate::clients::ics13_near::header::NearHeader;
 use crate::core::ics02_client::client_type::ClientType;
@@ -35,6 +36,7 @@ pub trait Header: Clone + core::fmt::Debug + Send + Sync {
 pub enum AnyHeader {
     Tendermint(TendermintHeader),
     #[serde(skip)]
+    #[cfg(any(test, feature = "ics11_beefy"))]
     Beefy(BeefyHeader),
     // #[serde(skip)]
     // Near(NearHeader),
@@ -46,6 +48,7 @@ impl AnyHeader {
     pub fn height(&self) -> Height {
         match self {
             Self::Tendermint(header) => header.height(),
+            #[cfg(any(test, feature = "ics11_beefy"))]
             Self::Beefy(_header) => Default::default(),
             // Self::Near(_header) => Default::default(),
             #[cfg(any(test, feature = "mocks"))]
@@ -56,6 +59,7 @@ impl AnyHeader {
     pub fn timestamp(&self) -> Timestamp {
         match self {
             Self::Tendermint(header) => header.timestamp(),
+            #[cfg(any(test, feature = "ics11_beefy"))]
             Self::Beefy(_header) => Default::default(),
             // Self::Near(_header) => Default::default(),
             #[cfg(any(test, feature = "mocks"))]
@@ -68,6 +72,7 @@ impl Header for AnyHeader {
     fn client_type(&self) -> ClientType {
         match self {
             Self::Tendermint(header) => header.client_type(),
+            #[cfg(any(test, feature = "ics11_beefy"))]
             Self::Beefy(header) => header.client_type(),
             // Self::Near(header) => header.client_type(),
             #[cfg(any(test, feature = "mocks"))]
@@ -106,6 +111,7 @@ impl TryFrom<Any> for AnyHeader {
                 Ok(AnyHeader::Tendermint(val))
             }
 
+            #[cfg(any(test, feature = "ics11_beefy"))]
             BEEFY_HEADER_TYPE_URL => {
                 let val = decode_beefy_header(&*raw.value).map_err(Error::beefy)?;
                 Ok(AnyHeader::Beefy(val))
@@ -131,6 +137,7 @@ impl From<AnyHeader> for Any {
                     .expect("encoding to `Any` from `AnyHeader::Tendermint`"),
             },
 
+            #[cfg(any(test, feature = "ics11_beefy"))]
             AnyHeader::Beefy(header) => Any {
                 type_url: BEEFY_HEADER_TYPE_URL.to_string(),
                 value: header

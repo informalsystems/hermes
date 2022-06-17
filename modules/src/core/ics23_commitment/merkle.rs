@@ -1,5 +1,8 @@
 use crate::prelude::*;
+#[cfg(any(test, feature = "ics11_beefy"))]
 use sp_std::marker::PhantomData;
+#[cfg(not(any(test, feature = "ics11_beefy")))]
+use std::marker::PhantomData;
 use tendermint::merkle::proof::Proof as TendermintProof;
 
 use crate::clients::host_functions::{HostFunctionsManager, HostFunctionsProvider};
