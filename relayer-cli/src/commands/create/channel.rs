@@ -9,9 +9,10 @@ use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::Order;
 use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::{ChainId, ConnectionId, PortId};
-use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::{IncludeProof, QueryClientStateRequest, QueryConnectionRequest};
+use ibc_relayer::chain::requests::{
+    HeightQuery, IncludeProof, QueryClientStateRequest, QueryConnectionRequest,
+};
 use ibc_relayer::channel::Channel;
 use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
@@ -186,12 +187,11 @@ impl CreateChannelCommand {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Query the connection end.
-        let height = Height::new(chain_a.id().version(), 0);
         let (conn_end, _) = chain_a
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: connection_a.clone(),
-                    height,
+                    height: HeightQuery::Latest,
                 },
                 IncludeProof::No,
             )
@@ -202,7 +202,7 @@ impl CreateChannelCommand {
             .query_client_state(
                 QueryClientStateRequest {
                     client_id: conn_end.client_id().clone(),
-                    height,
+                    height: HeightQuery::Latest,
                 },
                 IncludeProof::No,
             )

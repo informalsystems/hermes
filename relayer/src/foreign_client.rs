@@ -38,7 +38,7 @@ use ibc::Height;
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::{
-    IncludeProof, PageRequest, QueryClientStateRequest, QueryConsensusStateRequest,
+    HeightQuery, IncludeProof, PageRequest, QueryClientStateRequest, QueryConsensusStateRequest,
     QueryConsensusStatesRequest, QueryUpgradedClientStateRequest,
     QueryUpgradedConsensusStateRequest,
 };
@@ -408,12 +408,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         host_chain: DstChain,
         client_id: &ClientId,
     ) -> Result<ForeignClient<DstChain, SrcChain>, ForeignClientError> {
-        let height = Height::new(expected_target_chain.id().version(), 0);
-
         match host_chain.query_client_state(
             QueryClientStateRequest {
                 client_id: client_id.clone(),
-                height,
+                height: HeightQuery::Latest,
             },
             IncludeProof::No,
         ) {
@@ -464,7 +462,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         let (client_state, proof_upgrade_client) = self
             .src_chain
             .query_upgraded_client_state(QueryUpgradedClientStateRequest {
-                height: src_upgrade_height,
+                upgrade_height: src_upgrade_height,
             })
             .map_err(|e| {
                 ForeignClientError::client_upgrade(
@@ -480,7 +478,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         let (consensus_state, proof_upgrade_consensus_state) = self
             .src_chain
             .query_upgraded_consensus_state(QueryUpgradedConsensusStateRequest {
-                height: src_upgrade_height,
+                upgrade_height: src_upgrade_height,
             })
             .map_err(|e| {
                 ForeignClientError::client_upgrade(
@@ -677,7 +675,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 .query_client_state(
                     QueryClientStateRequest {
                         client_id: self.id().clone(),
-                        height: Height::zero(),
+                        height: HeightQuery::Latest,
                     },
                     IncludeProof::No,
                 )
@@ -1237,7 +1235,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 QueryConsensusStateRequest {
                     client_id: self.id.clone(),
                     consensus_height: height,
-                    query_height: Height::zero(),
+                    query_height: HeightQuery::Latest,
                 },
                 IncludeProof::No,
             )
@@ -1320,7 +1318,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 .query_client_state(
                     QueryClientStateRequest {
                         client_id: self.id().clone(),
-                        height: Height::zero(),
+                        height: HeightQuery::Latest,
                     },
                     IncludeProof::No,
                 )
@@ -1618,12 +1616,11 @@ mod test {
 
     use ibc::core::ics24_host::identifier::ClientId;
     use ibc::events::IbcEvent;
-    use ibc::Height;
 
     use crate::chain::handle::{BaseChainHandle, ChainHandle};
     use crate::chain::mock::test_utils::get_basic_chain_config;
     use crate::chain::mock::MockChain;
-    use crate::chain::requests::{IncludeProof, QueryClientStateRequest};
+    use crate::chain::requests::{HeightQuery, IncludeProof, QueryClientStateRequest};
     use crate::chain::runtime::ChainRuntime;
     use crate::foreign_client::ForeignClient;
 
@@ -1807,7 +1804,7 @@ mod test {
         let b_client_state_res = b_chain.query_client_state(
             QueryClientStateRequest {
                 client_id: b_client,
-                height: Height::default(),
+                height: HeightQuery::Latest,
             },
             IncludeProof::No,
         );
@@ -1820,7 +1817,7 @@ mod test {
         let a_client_state_res = a_chain.query_client_state(
             QueryClientStateRequest {
                 client_id: a_client,
-                height: Height::default(),
+                height: HeightQuery::Latest,
             },
             IncludeProof::No,
         );

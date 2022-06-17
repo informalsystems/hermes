@@ -7,11 +7,10 @@ use serde::Serialize;
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics04_channel::channel::{ChannelEnd, State};
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId};
-use ibc::Height;
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{
-    IncludeProof, PageRequest, QueryChannelRequest, QueryChannelsRequest, QueryClientStateRequest,
-    QueryConnectionRequest,
+    HeightQuery, IncludeProof, PageRequest, QueryChannelRequest, QueryChannelsRequest,
+    QueryClientStateRequest, QueryConnectionRequest,
 };
 use ibc_relayer::registry::Registry;
 
@@ -96,7 +95,7 @@ fn run_query_channels<Chain: ChainHandle>(
                 chain_id,
                 port_id,
                 channel_id,
-                chain_height,
+                HeightQuery::Specific(chain_height),
             );
 
             match channel_ends {
@@ -124,12 +123,12 @@ fn query_channel_ends<Chain: ChainHandle>(
     chain_id: ChainId,
     port_id: PortId,
     channel_id: ChannelId,
-    chain_height: Height,
+    chain_height_query: HeightQuery,
 ) -> Result<ChannelEnds, Box<dyn std::error::Error>> {
     let (connection_end, _) = chain.query_connection(
         QueryConnectionRequest {
             connection_id: connection_id.clone(),
-            height: chain_height,
+            height: chain_height_query,
         },
         IncludeProof::No,
     )?;
@@ -137,7 +136,7 @@ fn query_channel_ends<Chain: ChainHandle>(
     let (client_state, _) = chain.query_client_state(
         QueryClientStateRequest {
             client_id,
-            height: chain_height,
+            height: chain_height_query,
         },
         IncludeProof::No,
     )?;
@@ -162,7 +161,7 @@ fn query_channel_ends<Chain: ChainHandle>(
             "connection end for {} on chain {} @ {:?} does not have counterparty connection id: {:?}",
             connection_id,
             chain_id,
-            chain_height,
+            chain_height_query,
             connection_end
         )
     })?;
@@ -172,17 +171,18 @@ fn query_channel_ends<Chain: ChainHandle>(
     let counterparty_channel_id = channel_counterparty.channel_id.ok_or_else(|| {
         format!(
             "channel end for {}/{} on chain {} @ {:?} does not have counterparty channel id: {:?}",
-            port_id, channel_id, chain_id, chain_height, channel_end
+            port_id, channel_id, chain_id, chain_height_query, channel_end
         )
     })?;
 
     let counterparty_chain = registry.get_or_spawn(&counterparty_chain_id)?;
-    let counterparty_chain_height = counterparty_chain.query_latest_height()?;
+    let counterparty_chain_height_query =
+        HeightQuery::Specific(counterparty_chain.query_latest_height()?);
 
     let (counterparty_connection_end, _) = counterparty_chain.query_connection(
         QueryConnectionRequest {
             connection_id: counterparty_connection_id,
-            height: counterparty_chain_height,
+            height: counterparty_chain_height_query,
         },
         IncludeProof::No,
     )?;
@@ -190,7 +190,7 @@ fn query_channel_ends<Chain: ChainHandle>(
     let (counterparty_client_state, _) = counterparty_chain.query_client_state(
         QueryClientStateRequest {
             client_id: counterparty_client_id,
-            height: counterparty_chain_height,
+            height: counterparty_chain_height_query,
         },
         IncludeProof::No,
     )?;
@@ -199,7 +199,7 @@ fn query_channel_ends<Chain: ChainHandle>(
         QueryChannelRequest {
             port_id: counterparty_port_id,
             channel_id: counterparty_channel_id,
-            height: counterparty_chain_height,
+            height: counterparty_chain_height_query,
         },
         IncludeProof::No,
     )?;
