@@ -39,6 +39,7 @@ use crate::chain::requests::{
 use crate::chain::tracking::TrackedMsgs;
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
+use crate::denom::DenomTrace;
 use crate::error::{Error, QUERY_PROOF_EXPECT_MSG};
 use crate::event::monitor::{EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
@@ -137,6 +138,9 @@ pub trait ChainEndpoint: Sized {
     /// Query the balance of the given account for the denom used to pay tx fees.
     /// If no account is given, behavior must be specified, e.g. retrieve it from configuration file.
     fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error>;
+
+    /// Query the denomination trace given a trace hash.
+    fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error>;
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error>;
 
