@@ -34,11 +34,7 @@ pub struct ClearPacketsCmd {
     #[clap(required = true, help = "identifier of the channel")]
     channel_id: ChannelId,
 
-    #[clap(
-        short = 'k',
-        long,
-        help = "use the given signing key (default: `key_name` config)"
-    )]
+    #[clap(long, help = "use the given signing key (default: `key_name` config)")]
     key: Option<String>,
 }
 
