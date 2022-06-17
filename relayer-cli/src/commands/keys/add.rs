@@ -175,39 +175,3 @@ pub fn restore_key(
     keyring.add_key(key_name, key_entry.clone())?;
     Ok(key_entry)
 }
-
-#[cfg(test)]
-mod tests {
-
-    use super::KeysAddCmd;
-    use std::path::PathBuf;
-
-    use abscissa_core::clap::Parser;
-    use ibc::core::ics24_host::identifier::ChainId;
-
-    #[test]
-    fn test_keys_add_key_file() {
-        assert_eq!(
-            KeysAddCmd{ chain_id: ChainId::from_string("chain_id"), key_file: Some(PathBuf::from("key_file")), mnemonic_file: None, key_name: None, hd_path: "m/44'/118'/0'/0/0".to_string() },
-            KeysAddCmd::try_parse_from(&["test", "--chain", "chain_id", "--key-file", "key_file"]).unwrap()
-        )
-    }
-
-    #[test]
-    fn test_keys_add_mnemonic_file() {
-        assert_eq!(
-            KeysAddCmd{ chain_id: ChainId::from_string("chain_id"), key_file: None, mnemonic_file: Some(PathBuf::from("mnemonic_file")), key_name: None, hd_path: "m/44'/118'/0'/0/0".to_string() },
-            KeysAddCmd::try_parse_from(&["test", "--chain", "chain_id", "--mnemonic-file", "mnemonic_file"]).unwrap()
-        )
-    }
-
-    #[test]
-    fn test_keys_add_no_file() {
-        assert!(KeysAddCmd::try_parse_from(&["test", "--chain", "chain_id"]).is_err());
-    }
-
-    #[test]
-    fn test_keys_add_key_and_mnemonic() {
-        assert!(KeysAddCmd::try_parse_from(&["test", "--chain", "chain_id", "--key-file", "key_file", "--mnemonic-file", "mnemonic_file"]).is_err());
-    }
-}

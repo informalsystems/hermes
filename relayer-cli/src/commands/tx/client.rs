@@ -22,16 +22,18 @@ use crate::error::Error;
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxCreateClientCmd {
     #[clap(
-        long = "dst-chain",
+        long = "chain-host",
         required = true,
-        help = "identifier of the destination chain"
+        value_name = "CHAIN_HOST_ID",
+        help = "identifier of the chain that hosts the client"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "src-chain",
+        long = "chain-reference",
         required = true,
-        help = "identifier of the source chain"
+        value_name = "CHAIN_REFERENCE_ID",
+        help = "identifier of the chain targeted by the client"
     )]
     src_chain_id: ChainId,
 
@@ -100,27 +102,31 @@ impl Runnable for TxCreateClientCmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxUpdateClientCmd {
     #[clap(
-        long = "dst-chain",
+        long = "chain-host",
         required = true,
-        help = "identifier of the destination chain"
+        value_name = "CHAIN_HOST_ID",
+        help = "identifier of the chain that hosts the client"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "dst-client",
+        long = "client-reference",
         required = true,
-        help = "identifier of the client to be updated on destination chain"
+        value_name = "CHAIN_REFERENCE_ID",
+        help = "identifier of the chain targeted by the client"
     )]
     dst_client_id: ClientId,
 
     #[clap(
-        long = "target-height",
+        long = "height",
+        value_name = "REFERENCE_HEIGHT",
         help = "the target height of the client update"
     )]
     target_height: Option<u64>,
 
     #[clap(
         long = "trusted-height",
+        value_name = "REFERENCE_TRUSTED_HEIGHT",
         help = "the trusted height of the client update"
     )]
     trusted_height: Option<u64>,
@@ -181,7 +187,7 @@ impl Runnable for TxUpdateClientCmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxUpgradeClientCmd {
     #[clap(
-        long = "chain",
+        long = "chain-host",
         required = true,
         help = "identifier of the chain that hosts the client"
     )]
@@ -238,8 +244,9 @@ impl Runnable for TxUpgradeClientCmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxUpgradeClientsCmd {
     #[clap(
-        long = "src-chain",
+        long = "chain-reference",
         required = true,
+        value_name = "CHAIN_REFERENCE_ID",
         help = "identifier of the chain that underwent an upgrade; all clients targeting this chain will be upgraded"
     )]
     src_chain_id: ChainId,

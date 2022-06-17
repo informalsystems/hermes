@@ -18,16 +18,17 @@ use crate::prelude::*;
 #[derive(Clone, Command, Debug, Parser)]
 pub struct QueryAllClientsCmd {
     #[clap(
-        long = "chain",
+        long = "chain-host",
         required = true,
+        value_name = "CHAIN_HOST_ID",
         help = "identifier of the chain to query"
     )]
     chain_id: ChainId,
 
     #[clap(
-        long = "src-chain",
+        long = "chain-reference",
         help = "filter for clients which target a specific chain id (implies '--omit-chain-ids')",
-        value_name = "ID"
+        value_name = "CHAIN_REFERENCE_ID"
     )]
     src_chain_id: Option<ChainId>,
 

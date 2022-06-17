@@ -32,12 +32,14 @@ pub struct CreateConnectionCommand {
 
     #[clap(
         long = "client-a",
+        value_name = "CLIENT_A_ID",
         help = "identifier of client hosted on chain `a`; default: None (creates a new client)"
     )]
     client_a: Option<ClientId>,
 
     #[clap(
         long = "client-b",
+        value_name = "CLIENT_B_ID",
         help = "identifier of client hosted on chain `b`; default: None (creates a new client)"
     )]
     client_b: Option<ClientId>,

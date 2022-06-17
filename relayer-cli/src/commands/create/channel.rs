@@ -47,18 +47,21 @@ pub struct CreateChannelCommand {
     #[clap(
         long = "chain-a",
         required = true,
+        value_name = "CHAIN_A_ID",
         help = "Identifier of the side `a` chain for the new channel"
     )]
     chain_a: ChainId,
 
     #[clap(
         long = "chain-b",
+        value_name = "CHAIN_B_ID",
         help = "Identifier of the side `b` chain for the new channel"
     )]
     chain_b: Option<ChainId>,
 
     #[clap(
         long = "conn-a",
+        value_name = "CONNECTION_A_ID",
         help = "Identifier of the connection on chain `a` to use in creating the new channel."
     )]
     connection_a: Option<ConnectionId>,
@@ -66,6 +69,7 @@ pub struct CreateChannelCommand {
     #[clap(
         long = "port-a",
         required = true,
+        value_name = "PORT_A_ID",
         help = "Identifier of the side `a` port for the new channel"
     )]
     port_a: PortId,
@@ -73,6 +77,7 @@ pub struct CreateChannelCommand {
     #[clap(
         long = "port-b",
         required = true,
+        value_name = "PORT_B_ID",
         help = "Identifier of the side `b` port for the new channel"
     )]
     port_b: PortId,

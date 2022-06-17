@@ -7,7 +7,7 @@ use std::io;
 
 #[derive(Debug, Parser)]
 pub struct CompletionsCmd {
-    #[clap(arg_enum)]
+    #[clap(long = "shell", arg_enum)]
     shell: Shell,
 }
 
