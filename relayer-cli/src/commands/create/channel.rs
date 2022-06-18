@@ -96,6 +96,12 @@ pub struct CreateChannelCommand {
         help = "Indicates that a new client and connection will be created underlying the new channel"
     )]
     new_client_connection: bool,
+
+    #[clap(
+        long,
+        help = "Skip new_client_connection confirmation"
+    )]
+    yes: bool,
 }
 
 impl Runnable for CreateChannelCommand {
@@ -105,28 +111,33 @@ impl Runnable for CreateChannelCommand {
             None => match &self.chain_b {
                 Some(chain_b) => {
                     if self.new_client_connection {
-                        match Confirm::new()
-                            .with_prompt(format!(
-                                "{}: {}\n{}: {}",
-                                style("WARN").yellow(),
-                                PROMPT,
-                                style("Hint").cyan(),
-                                HINT
-                            ))
-                            .interact()
-                        {
-                            Ok(confirm) => {
-                                if confirm {
-                                    self.run_using_new_connection(chain_b);
-                                } else {
-                                    Output::error("You elected not to create new clients and connections. Please re-invoke `create channel` with a pre-existing connection ID".to_string()).exit();
+                        if self.yes {
+                            self.run_using_new_connection(chain_b);
+                        }
+                        else {
+                            match Confirm::new()
+                                .with_prompt(format!(
+                                    "{}: {}\n{}: {}",
+                                    style("WARN").yellow(),
+                                    PROMPT,
+                                    style("Hint").cyan(),
+                                    HINT
+                                ))
+                                .interact()
+                            {
+                                Ok(confirm) => {
+                                    if confirm {
+                                        self.run_using_new_connection(chain_b);
+                                    } else {
+                                        Output::error("You elected not to create new clients and connections. Please re-invoke `create channel` with a pre-existing connection ID".to_string()).exit();
+                                    }
                                 }
-                            }
-                            Err(e) => {
-                                Output::error(format!(
-                                    "An error occurred while waiting for user input: {}",
-                                    e
-                                ));
+                                Err(e) => {
+                                    Output::error(format!(
+                                        "An error occurred while waiting for user input: {}",
+                                        e
+                                    ));
+                                }
                             }
                         }
                     } else {
