@@ -46,7 +46,7 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 
 use super::requests::{
-    IncludeProof, QueryPacketAcknowledgementRequest, QueryPacketCommitmentRequest,
+    HeightQuery, IncludeProof, QueryPacketAcknowledgementRequest, QueryPacketCommitmentRequest,
     QueryPacketReceiptRequest,
 };
 
@@ -362,7 +362,7 @@ pub trait ChainEndpoint: Sized {
         let (connection_end, maybe_connection_proof) = self.query_connection(
             QueryConnectionRequest {
                 connection_id: connection_id.clone(),
-                height,
+                height: HeightQuery::Specific(height),
             },
             IncludeProof::Yes,
         )?;
@@ -400,7 +400,7 @@ pub trait ChainEndpoint: Sized {
                 let (client_state_value, maybe_client_state_proof) = self.query_client_state(
                     QueryClientStateRequest {
                         client_id: client_id.clone(),
-                        height,
+                        height: HeightQuery::Specific(height),
                     },
                     IncludeProof::Yes,
                 )?;
@@ -416,7 +416,7 @@ pub trait ChainEndpoint: Sized {
                         QueryConsensusStateRequest {
                             client_id: client_id.clone(),
                             consensus_height: client_state_value.latest_height(),
-                            query_height: height,
+                            query_height: HeightQuery::Specific(height),
                         },
                         IncludeProof::Yes,
                     )?;
@@ -463,7 +463,7 @@ pub trait ChainEndpoint: Sized {
             QueryChannelRequest {
                 port_id: port_id.clone(),
                 channel_id: *channel_id,
-                height,
+                height: HeightQuery::Specific(height),
             },
             IncludeProof::Yes,
         )?;
@@ -491,7 +491,7 @@ pub trait ChainEndpoint: Sized {
                         port_id,
                         channel_id,
                         sequence,
-                        height,
+                        height: HeightQuery::Specific(height),
                     },
                     IncludeProof::Yes,
                 )?;
@@ -504,7 +504,7 @@ pub trait ChainEndpoint: Sized {
                         port_id,
                         channel_id,
                         sequence,
-                        height,
+                        height: HeightQuery::Specific(height),
                     },
                     IncludeProof::Yes,
                 )?;
@@ -517,7 +517,7 @@ pub trait ChainEndpoint: Sized {
                         port_id,
                         channel_id,
                         sequence,
-                        height,
+                        height: HeightQuery::Specific(height),
                     },
                     IncludeProof::Yes,
                 )?;
@@ -529,7 +529,7 @@ pub trait ChainEndpoint: Sized {
                     QueryNextSequenceReceiveRequest {
                         port_id,
                         channel_id,
-                        height,
+                        height: HeightQuery::Specific(height),
                     },
                     IncludeProof::Yes,
                 )?;
@@ -542,7 +542,7 @@ pub trait ChainEndpoint: Sized {
                         QueryChannelRequest {
                             port_id: port_id.clone(),
                             channel_id,
-                            height,
+                            height: HeightQuery::Specific(height),
                         },
                         IncludeProof::Yes,
                     )?;
@@ -557,7 +557,7 @@ pub trait ChainEndpoint: Sized {
                         port_id,
                         channel_id,
                         sequence,
-                        height,
+                        height: HeightQuery::Specific(height),
                     },
                     IncludeProof::Yes,
                 )?;

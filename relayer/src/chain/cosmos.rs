@@ -10,7 +10,7 @@ use num_bigint::BigInt;
 use std::thread;
 
 use bitcoin::hashes::hex::ToHex;
-use tendermint::block::Height;
+use tendermint::block::Height as TmHeight;
 use tendermint::{
     abci::{Event, Path as TendermintABCIPath},
     node::info::TxIndexStatus,
@@ -21,7 +21,7 @@ use tendermint_rpc::{
     endpoint::broadcast::tx_sync::Response, endpoint::status, Client, HttpClient, Order,
 };
 use tokio::runtime::Runtime as TokioRuntime;
-use tonic::codegen::http::Uri;
+use tonic::{codegen::http::Uri, metadata::AsciiMetadataValue};
 use tracing::{error, span, warn, Level};
 
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
@@ -82,14 +82,14 @@ use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 
 use super::requests::{
-    IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
-    QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
-    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
-    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
-    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest,
-    QueryPacketCommitmentsRequest, QueryPacketReceiptRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
+    HeightQuery, IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest,
+    QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
+    QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
+    QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
+    QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
+    QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
     QueryUpgradedConsensusStateRequest,
 };
 
@@ -178,7 +178,7 @@ impl CosmosSdkChain {
         }
 
         // Get the latest height and convert to tendermint Height
-        let latest_height = Height::try_from(self.query_chain_latest_height()?.revision_height)
+        let latest_height = TmHeight::try_from(self.query_chain_latest_height()?.revision_height)
             .map_err(Error::invalid_height)?;
 
         // Check on the configured max_tx_size against the consensus parameters at latest height
@@ -291,7 +291,7 @@ impl CosmosSdkChain {
     fn query(
         &self,
         data: impl Into<Path>,
-        height: ICSHeight,
+        height_query: HeightQuery,
         prove: bool,
     ) -> Result<QueryResponse, Error> {
         crate::time!("query");
@@ -300,7 +300,7 @@ impl CosmosSdkChain {
         let path = TendermintABCIPath::from_str(IBC_QUERY_PATH)
             .expect("Turning IBC query path constant into a Tendermint ABCI path");
 
-        let height = Height::try_from(height.revision_height).map_err(Error::invalid_height)?;
+        let height = TmHeight::try_from(height_query)?;
 
         let data = data.into();
         if !data.is_provable() & prove {
@@ -323,18 +323,27 @@ impl CosmosSdkChain {
     }
 
     /// Perform an ABCI query against the client upgrade sub-store.
-    /// Fetches both the target data, as well as the proof.
     ///
-    /// The data is returned in its raw format `Vec<u8>`, and is either
-    /// the client state (if the target path is [`UpgradedClientState`]),
-    /// or the client consensus state ([`UpgradedClientConsensusState`]).
+    /// The data is returned in its raw format `Vec<u8>`, and is either the
+    /// client state (if the target path is [`UpgradedClientState`]), or the
+    /// client consensus state ([`UpgradedClientConsensusState`]).
+    ///
+    /// Note: This is a special query in that it will only succeed if the chain
+    /// is halted after reaching the height proposed in a successful governance
+    /// proposal to upgrade the chain. In this scenario, let P be the height at
+    /// which the chain is planned to upgrade. We assume that the chain is
+    /// halted at height P. Tendermint will be at height P (as reported by the
+    /// /status RPC query), but the application will be at height P-1 (as
+    /// reported by the /abci_info RPC query).
+    ///
+    /// Therefore, `query_height` needs to be P-1. However, the path specified
+    /// in `query_data` needs to be constructed with height `P`, as this is how
+    /// the chain will have stored it in its upgrade sub-store.
     fn query_client_upgrade_state(
         &self,
-        data: ClientUpgradePath,
-        height: Height,
+        query_data: ClientUpgradePath,
+        query_height: ibc::Height,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
-        let prev_height = Height::try_from(height.value() - 1).map_err(Error::invalid_height)?;
-
         // SAFETY: Creating a Path from a constant; this should never fail
         let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH)
             .expect("Turning SDK upgrade query path constant into a Tendermint ABCI path");
@@ -342,8 +351,8 @@ impl CosmosSdkChain {
             &self.rpc_client,
             &self.config.rpc_addr,
             path,
-            Path::Upgrade(data).to_string(),
-            prev_height,
+            Path::Upgrade(query_data).to_string(),
+            TmHeight::try_from(query_height.revision_height).map_err(Error::invalid_height)?,
             true,
         ))?;
 
@@ -789,11 +798,14 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_upgraded_client_state");
 
         // Query for the value and the proof.
-        let tm_height =
-            Height::try_from(request.height.revision_height).map_err(Error::invalid_height)?;
+        let upgrade_height = request.upgrade_height;
+        let query_height = upgrade_height
+            .decrement()
+            .map_err(|_| Error::invalid_height_no_source())?;
+
         let (upgraded_client_state_raw, proof) = self.query_client_upgrade_state(
-            ClientUpgradePath::UpgradedClientState(request.height.revision_height),
-            tm_height,
+            ClientUpgradePath::UpgradedClientState(upgrade_height.revision_height),
+            query_height,
         )?;
 
         let client_state = AnyClientState::decode_vec(&upgraded_client_state_raw)
@@ -809,13 +821,15 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("query_upgraded_consensus_state");
         crate::telemetry!(query, self.id(), "query_upgraded_consensus_state");
 
-        let tm_height =
-            Height::try_from(request.height.revision_height).map_err(Error::invalid_height)?;
+        let upgrade_height = request.upgrade_height;
+        let query_height = upgrade_height
+            .decrement()
+            .map_err(|_| Error::invalid_height_no_source())?;
 
         // Fetch the consensus state and its proof.
         let (upgraded_consensus_state_raw, proof) = self.query_client_upgrade_state(
-            ClientUpgradePath::UpgradedClientConsensusState(request.height.revision_height),
-            tm_height,
+            ClientUpgradePath::UpgradedClientConsensusState(upgrade_height.revision_height),
+            query_height,
         )?;
 
         let consensus_state = AnyConsensusState::decode_vec(&upgraded_consensus_state_raw)
@@ -972,7 +986,7 @@ impl ChainEndpoint for CosmosSdkChain {
         async fn do_query_connection(
             chain: &CosmosSdkChain,
             connection_id: &ConnectionId,
-            height: ICSHeight,
+            height_query: HeightQuery,
         ) -> Result<ConnectionEnd, Error> {
             use ibc_proto::ibc::core::connection::v1 as connection;
             use tonic::IntoRequest;
@@ -987,8 +1001,7 @@ impl ChainEndpoint for CosmosSdkChain {
             }
             .into_request();
 
-            let height_param =
-                str::parse(&height.revision_height.to_string()).map_err(Error::invalid_metadata)?;
+            let height_param = AsciiMetadataValue::try_from(height_query)?;
 
             request
                 .metadata_mut()
@@ -1510,8 +1523,12 @@ impl ChainEndpoint for CosmosSdkChain {
         &self,
         request: QueryHostConsensusStateRequest,
     ) -> Result<Self::ConsensusState, Error> {
-        let height =
-            Height::try_from(request.height.revision_height).map_err(Error::invalid_height)?;
+        let height = match request.height {
+            HeightQuery::Latest => TmHeight::from(0u32),
+            HeightQuery::Specific(ibc_height) => {
+                TmHeight::try_from(ibc_height.revision_height).map_err(Error::invalid_height)?
+            }
+        };
 
         // TODO(hu55a1n1): use the `/header` RPC endpoint instead when we move to tendermint v0.35.x
         let rpc_call = match height.value() {
