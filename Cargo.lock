@@ -620,9 +620,9 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-channel"
-version = "0.5.4"
+version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5aaa7bd5fb665c6864b5f963dd9097905c54125909c7aa94c9e18507cdbe6c53"
+checksum = "4c02a4d71819009c192cf4872265391563fd6a84c81ff2c0f2a7026ca4c1d85c"
 dependencies = [
  "cfg-if 1.0.0",
  "crossbeam-utils 0.8.8",
@@ -1542,7 +1542,7 @@ dependencies = [
  "bech32 0.9.0",
  "bitcoin",
  "bytes",
- "crossbeam-channel 0.5.4",
+ "crossbeam-channel 0.5.5",
  "dirs-next",
  "env_logger",
  "flex-error",
@@ -1602,7 +1602,7 @@ dependencies = [
  "clap_complete",
  "color-eyre",
  "console",
- "crossbeam-channel 0.5.4",
+ "crossbeam-channel 0.5.5",
  "dialoguer",
  "dirs-next",
  "eyre",
@@ -1639,7 +1639,7 @@ dependencies = [
 name = "ibc-relayer-rest"
 version = "0.15.0"
 dependencies = [
- "crossbeam-channel 0.5.4",
+ "crossbeam-channel 0.5.5",
  "ibc",
  "ibc-relayer",
  "rouille",
@@ -1654,7 +1654,7 @@ dependencies = [
 name = "ibc-telemetry"
 version = "0.15.0"
 dependencies = [
- "crossbeam-channel 0.5.4",
+ "crossbeam-channel 0.5.5",
  "ibc",
  "moka",
  "once_cell",
@@ -1671,7 +1671,7 @@ version = "0.15.0"
 dependencies = [
  "async-trait",
  "color-eyre",
- "crossbeam-channel 0.5.4",
+ "crossbeam-channel 0.5.5",
  "env_logger",
  "eyre",
  "flex-error",
@@ -2012,7 +2012,7 @@ version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df72b50274c0988d9f4a6e808e06d9d926f265db6f8bbda1576bcaa658e72763"
 dependencies = [
- "crossbeam-channel 0.5.4",
+ "crossbeam-channel 0.5.5",
  "crossbeam-epoch 0.8.2",
  "crossbeam-utils 0.8.8",
  "num_cpus",
@@ -2182,7 +2182,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6105e89802af13fdf48c49d7646d3b533a70e536d818aae7e78ba0433d01acb8"
 dependencies = [
  "async-trait",
- "crossbeam-channel 0.5.4",
+ "crossbeam-channel 0.5.5",
  "dashmap",
  "fnv",
  "futures-channel",
@@ -2608,7 +2608,7 @@ version = "1.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "258bcdb5ac6dad48491bb2992db6b7cf74878b0384908af124823d118c99683f"
 dependencies = [
- "crossbeam-channel 0.5.4",
+ "crossbeam-channel 0.5.5",
  "crossbeam-deque",
  "crossbeam-utils 0.8.8",
  "num_cpus",
