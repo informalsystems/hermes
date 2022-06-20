@@ -115,7 +115,7 @@ __Connection__
     * Optional: `[--height <HEIGHT>]`
 
 * `query connections --chain <CHAIN_ID>`
-    * Optional: `[--chain-counterparty <CHAIN_COUNTERPARTY_ID>] [--verbose]`
+    * Optional: `[--counterparty-chain <COUNTERPARTY_CHAIN_ID>] [--verbose]`
 
 __Channel__
 
