@@ -3,7 +3,7 @@
 ## TL;DR
 * Tool to manage local gaiad instances - no Docker needed.
 * `scripts/gm/bin/gm install` to install it. Follow the instructions there for dependencies.
-* `gm start` to start the example configuration of one validator and one full node on your local machine.
+* `gm start` to start the nodes specified in the configuration.
 * Config file is in `$HOME/.gm/gm.toml` play around and add more nodes.
 * Tab completion is pretty good, use it! Or run `gm` by itself for help.
 * Pre-1.0 warning: Got a shell error? [Raise an issue!](https://github.com/informalsystems/ibc-rs/issues/)
@@ -26,7 +26,7 @@ configuration updates.
 * [`sconfig`](https://github.com/freshautomations/sconfig/releases) and
   [`stoml`](https://github.com/freshautomations/stoml/releases) installed in your PATH (put them in `/usr/local/bin`)
 * `sed`, `tr` (trying to remove these in the future)
-* For shell-completion Bourne Again Shell (`bash`) for the local user (`zsh` shell-completion is coming)
+* For shell-completion Bourne Again Shell (`bash`) for the local user
 
 ## How to run
 1. Install the dependencies.
@@ -60,6 +60,7 @@ The rest is just fluff.
 * (Optional) Enable auto-completion
 On MacOS:
 ```bash
+# Note: zsh is the default shell on MacOS, so no need to run this unless you explicitly use bash
 brew install bash-completion
 ```
 On Linux:
@@ -71,6 +72,7 @@ apt install bash-completion || yum install bash-completion
 Note: The `shell-support` script allows bash-completion as well as creating a `gm` alias, so you don't need to add more
 entries to your PATH environment variable. If you don't want to use this, you can always just add `$HOME/.gm/bin` to
 your path.
+
 ## Folders and files
 ### The HOME folder
 **Where**: `$HOME/.gm`
@@ -82,7 +84,7 @@ the `gm.toml` file for node configuration. By default, newly created node config
 ### The configuration: `gm.toml`
 **Where**: `$HOME/.gm/gm.toml`.
 
-**Description**: This file contains all the high-level node configuration that `gm` is aware of.
+**Description**: This file contains all the high-level node configuration that `gm` is aware of. Note that all entries under `[global]` are also valid entries under any `[node]` header, and can be used to override the global entries for specific nodes/validators.
 
 **Entries**: All entries are defined and documented in the [gm.toml](gm.toml) example configuration file.
 
@@ -131,6 +133,37 @@ node4 GRPCW: http://localhost:27055
 ```
 
 Note: The GRPC-Web port was recently introduced (after gaiad v4.2.1). It will be ignored in earlier versions.
+
+## Minimal configuration example
+The following configuration is all you need to specify 2 `gaiad` chains. `hermes` will know about these chains.
+```toml
+[global]
+gaiad_binary="path/to/your/gaiad"
+add_to_hermes=true
+
+[global.hermes]
+binary="path/to/your/hermes"
+
+[ibc-0]
+[ibc-1]
+```
+
+This configuration specifies 2 networks (chains), `ibc-0` and `ibc-1`. A typical workflow might look like:
+
+```bash
+# Generate the config for `hermes`. 
+# Notably, this will create the appropriate `[[chains]]` entries for `ibc-0` and `ibc-1`.
+$ gm hermes config
+
+# Generate the keys so that `hermes` can sign transactions on both chains
+$ gm hermes keys
+
+# Start the two chains
+$ gm start
+
+# Create a connection 
+$ hermes create connection ibc-0 ibc-1
+```
 
 ## Tribal knowledge (things they don't tell you)
 * the user is welcome to create additional nodes outside the scope of `gm` on the local machine but `gm` will only

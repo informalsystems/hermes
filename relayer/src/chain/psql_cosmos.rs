@@ -47,6 +47,7 @@ use crate::{
     keyring::{KeyEntry, KeyRing},
     light_client::{tendermint::LightClient as TmLightClient, LightClient, Verified},
 };
+use crate::denom::DenomTrace;
 
 pub mod batch;
 pub mod query;
@@ -424,6 +425,10 @@ impl ChainEndpoint for PsqlChain {
         include_proof: IncludeProof,
     ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
         self.chain.query_packet_acknowledgement(request, include_proof)
+    }
+
+    fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
+        self.chain.query_denom_trace(hash)
     }
 }
 

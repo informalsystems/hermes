@@ -1,11 +1,10 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use ibc_relayer::chain::requests::{IncludeProof, QueryPacketAcknowledgementRequest};
+use ibc_relayer::chain::requests::{HeightQuery, IncludeProof, QueryPacketAcknowledgementRequest};
 use subtle_encoding::{Encoding, Hex};
 
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 
 use crate::cli_utils::spawn_chain_runtime;
@@ -45,7 +44,12 @@ impl QueryPacketAcknowledgmentCmd {
                     port_id: self.port_id.clone(),
                     channel_id: self.channel_id,
                     sequence: self.sequence,
-                    height: Height::new(chain.id().version(), self.height.unwrap_or(0_u64)),
+                    height: self.height.map_or(HeightQuery::Latest, |revision_height| {
+                        HeightQuery::Specific(ibc::Height::new(
+                            chain.id().version(),
+                            revision_height,
+                        ))
+                    }),
                 },
                 IncludeProof::No,
             )
