@@ -9,7 +9,7 @@ services:
     tty: true
     entrypoint: "/usr/bin/run-gaiad.sh"
     volumes:
-      - type: volume
+      - type: bind
         source: ./chains/gaia/v6.0.0/ibc-0
         target: /chain/gaia
     networks:
@@ -25,7 +25,7 @@ services:
     tty: true
     entrypoint: "/usr/bin/run-gaiad.sh"
     volumes:
-      - type: volume
+      - type: bind
         source: ./chains/gaia/v6.0.0/ibc-1
         target: /chain/gaia
     networks:
