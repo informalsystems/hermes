@@ -32,7 +32,7 @@ base64      = { version = "0.13", default-features = false, features = ["alloc"]
 
 [dependencies.tendermint-proto]
 git = "https://github.com/composableFi/tendermint-rs"
-branch = "seun-0.23.7"
+rev = "5a74e0f8da4d3dab83cc04b5f1363b018cf3d9e8"
 default-features = false
 
 [features]

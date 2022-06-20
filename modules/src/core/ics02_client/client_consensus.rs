@@ -111,23 +111,17 @@ impl From<AnyConsensusState> for Any {
         match value {
             AnyConsensusState::Tendermint(value) => Any {
                 type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: value
-                    .encode_vec()
-                    .expect("encoding to `Any` from `AnyConsensusState::Tendermint`"),
+                value: value.encode_vec(),
             },
             #[cfg(any(test, feature = "ics11_beefy"))]
             AnyConsensusState::Beefy(value) => Any {
                 type_url: BEEFY_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: value
-                    .encode_vec()
-                    .expect("encoding to `Any` from `AnyConsensusState::Beefy`"),
+                value: value.encode_vec(),
             },
             #[cfg(any(test, feature = "mocks"))]
             AnyConsensusState::Mock(value) => Any {
                 type_url: MOCK_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: value
-                    .encode_vec()
-                    .expect("encoding to `Any` from `AnyConsensusState::Mock`"),
+                value: value.encode_vec(),
             },
         }
     }

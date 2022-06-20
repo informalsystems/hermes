@@ -60,6 +60,7 @@ pub mod handler;
 pub mod keys;
 pub mod macros;
 pub mod proofs;
+#[cfg(feature = "std")]
 pub mod query;
 pub mod relayer;
 pub mod signer;

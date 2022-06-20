@@ -1,5 +1,5 @@
+use alloc::vec::Vec;
 use borsh::maybestd::{io::Write, string::String};
-use sp_std::vec::Vec;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use sp_core::ed25519::{Public as Ed25519Public, Signature as Ed25519Signature};

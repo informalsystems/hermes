@@ -16,18 +16,19 @@ use crate::Height;
 use core::fmt::Debug;
 
 #[derive(Clone, Debug)]
-pub struct RecvPacketSuccess {
-    pub port_id: PortId,
-    pub channel_id: ChannelId,
-    pub seq: Sequence,
-    pub seq_number: Sequence,
-    pub receipt: Option<Receipt>,
-}
-
-#[derive(Clone, Debug)]
 pub enum RecvPacketResult {
-    Success(RecvPacketSuccess),
     NoOp,
+    Unordered {
+        port_id: PortId,
+        channel_id: ChannelId,
+        sequence: Sequence,
+        receipt: Receipt,
+    },
+    Ordered {
+        port_id: PortId,
+        channel_id: ChannelId,
+        next_seq_recv: Sequence,
+    },
 }
 
 pub fn process<HostFunctions: HostFunctionsProvider>(
@@ -89,8 +90,10 @@ pub fn process<HostFunctions: HostFunctionsProvider>(
     )?;
 
     let result = if dest_channel_end.order_matches(&Order::Ordered) {
-        let next_seq_recv =
-            ctx.get_next_sequence_recv(&(packet.source_port.clone(), packet.source_channel))?;
+        let next_seq_recv = ctx.get_next_sequence_recv(&(
+            packet.destination_port.clone(),
+            packet.destination_channel,
+        ))?;
 
         if packet.sequence < next_seq_recv {
             output.emit(IbcEvent::ReceivePacket(ReceivePacket {
@@ -105,17 +108,15 @@ pub fn process<HostFunctions: HostFunctionsProvider>(
             ));
         }
 
-        PacketResult::Recv(RecvPacketResult::Success(RecvPacketSuccess {
-            port_id: packet.source_port.clone(),
-            channel_id: packet.source_channel,
-            seq: packet.sequence,
-            seq_number: next_seq_recv.increment(),
-            receipt: None,
-        }))
+        PacketResult::Recv(RecvPacketResult::Ordered {
+            port_id: packet.destination_port.clone(),
+            channel_id: packet.destination_channel,
+            next_seq_recv: next_seq_recv.increment(),
+        })
     } else {
         let packet_rec = ctx.get_packet_receipt(&(
-            packet.source_port.clone(),
-            packet.source_channel,
+            packet.destination_port.clone(),
+            packet.destination_channel,
             packet.sequence,
         ));
 
@@ -129,13 +130,12 @@ pub fn process<HostFunctions: HostFunctionsProvider>(
             }
             Err(e) if e.detail() == Error::packet_receipt_not_found(packet.sequence).detail() => {
                 // store a receipt that does not contain any data
-                PacketResult::Recv(RecvPacketResult::Success(RecvPacketSuccess {
-                    port_id: packet.source_port.clone(),
-                    channel_id: packet.source_channel,
-                    seq: packet.sequence,
-                    seq_number: 1.into(),
-                    receipt: Some(Receipt::Ok),
-                }))
+                PacketResult::Recv(RecvPacketResult::Unordered {
+                    port_id: packet.destination_port.clone(),
+                    channel_id: packet.destination_channel,
+                    sequence: packet.sequence,
+                    receipt: Receipt::Ok,
+                })
             }
             Err(e) => return Err(Error::implementation_specific(e.to_string())),
         }

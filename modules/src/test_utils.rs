@@ -116,26 +116,30 @@ impl HostFunctionsProvider for Crypto {
     }
 
     fn verify_membership_trie_proof(
-        root: &sp_core::H256,
+        root: &[u8; 32],
         proof: &[Vec<u8>],
         key: &[u8],
         value: &[u8],
     ) -> Result<(), Ics02Error> {
         let item = vec![(key, Some(value))];
         sp_trie::verify_trie_proof::<LayoutV0<sp_runtime::traits::BlakeTwo256>, _, _, _>(
-            root, proof, &item,
+            &sp_core::H256::from_slice(root),
+            proof,
+            &item,
         )
         .map_err(|_| Ics02Error::beefy(BeefyError::invalid_trie_proof()))
     }
 
     fn verify_non_membership_trie_proof(
-        root: &sp_core::H256,
+        root: &[u8; 32],
         proof: &[Vec<u8>],
         key: &[u8],
     ) -> Result<(), Ics02Error> {
         let item: Vec<(&[u8], Option<&[u8]>)> = vec![(key, None)];
         sp_trie::verify_trie_proof::<LayoutV0<sp_runtime::traits::BlakeTwo256>, _, _, _>(
-            root, proof, &item,
+            &sp_core::H256::from_slice(root),
+            proof,
+            &item,
         )
         .map_err(|_| Ics02Error::beefy(BeefyError::invalid_trie_proof()))
     }

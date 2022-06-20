@@ -149,7 +149,10 @@ fn can_recover_from_simulation_failure(e: &Error) -> bool {
     use crate::error::ErrorDetail::*;
 
     match e.detail() {
-        GrpcStatus(detail) => detail.is_client_state_height_too_low(),
+        GrpcStatus(detail) => {
+            detail.is_client_state_height_too_low()
+                || detail.is_account_sequence_mismatch_that_can_be_ignored()
+        }
         _ => false,
     }
 }

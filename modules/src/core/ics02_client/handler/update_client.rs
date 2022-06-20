@@ -62,7 +62,7 @@ pub fn process<HostFunctions: HostFunctionsProvider>(
                 Error::consensus_state_not_found(client_id.clone(), client_state.latest_height())
             })?;
 
-        debug!("latest consensus state: {:?}", latest_consensus_state);
+        tracing::debug!("latest consensus state: {:?}", latest_consensus_state);
 
         let now = ctx.host_timestamp();
         let duration = now

@@ -220,7 +220,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
             epoch: consensus_height.revision_number,
             height: consensus_height.revision_height,
         };
-        let value = expected_consensus_state.encode_vec().unwrap();
+        let value = expected_consensus_state.encode_vec();
         verify_membership::<HostFunctions, _>(prefix, proof, root, path, value)
     }
 
@@ -238,7 +238,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Error> {
         let path = ConnectionsPath(connection_id.clone());
-        let value = expected_connection_end.encode_vec().unwrap();
+        let value = expected_connection_end.encode_vec();
         verify_membership::<HostFunctions, _>(prefix, proof, root, path, value)
     }
 
@@ -256,7 +256,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         expected_channel_end: &ChannelEnd,
     ) -> Result<(), Error> {
         let path = ChannelEndsPath(port_id.clone(), *channel_id);
-        let value = expected_channel_end.encode_vec().unwrap();
+        let value = expected_channel_end.encode_vec();
         verify_membership::<HostFunctions, _>(prefix, proof, root, path, value)
     }
 
@@ -272,7 +272,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         expected_client_state: &AnyClientState,
     ) -> Result<(), Error> {
         let path = ClientStatePath(client_id.clone());
-        let value = expected_client_state.encode_vec().unwrap();
+        let value = expected_client_state.encode_vec();
         verify_membership::<HostFunctions, _>(prefix, proof, root, path, value)
     }
 

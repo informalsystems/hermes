@@ -1,8 +1,8 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the connection module.
 
 use serde_derive::{Deserialize, Serialize};
-use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
+use tendermint::abci::EventAttribute;
 
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics02_client::height::Height;
@@ -19,7 +19,7 @@ const COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY: &str = "counterparty_connection_id";
 const COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY: &str = "counterparty_client_id";
 
 pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
-    match event.type_str.parse() {
+    match event.kind.parse() {
         Ok(IbcEventType::OpenInitConnection) => extract_attributes_from_tx(event)
             .map(OpenInit::from)
             .map(IbcEvent::OpenInitConnection)
@@ -44,8 +44,8 @@ fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Result<Attribu
     let mut attr = Attributes::default();
 
     for tag in &event.attributes {
-        let key = tag.key.as_ref();
-        let value = tag.value.as_ref();
+        let key = tag.key.as_str();
+        let value = tag.value.as_str();
         match key {
             HEIGHT_ATTRIBUTE_KEY => {
                 attr.height = value.parse().map_err(|e| {
@@ -88,36 +88,41 @@ pub struct Attributes {
 /// is infallible, even if it is not represented in the error type.
 /// Once tendermint-rs improves the API of the `Key` and `Value` types,
 /// we will be able to remove the `.parse().unwrap()` calls.
-impl From<Attributes> for Vec<Tag> {
+impl From<Attributes> for Vec<EventAttribute> {
     fn from(a: Attributes) -> Self {
         let mut attributes = vec![];
-        let height = Tag {
+        let height = EventAttribute {
             key: HEIGHT_ATTRIBUTE_KEY.parse().unwrap(),
             value: a.height.to_string().parse().unwrap(),
+            index: false,
         };
         attributes.push(height);
         if let Some(conn_id) = a.connection_id {
-            let conn_id = Tag {
+            let conn_id = EventAttribute {
                 key: CONN_ID_ATTRIBUTE_KEY.parse().unwrap(),
                 value: conn_id.to_string().parse().unwrap(),
+                index: false,
             };
             attributes.push(conn_id);
         }
-        let client_id = Tag {
+        let client_id = EventAttribute {
             key: CLIENT_ID_ATTRIBUTE_KEY.parse().unwrap(),
             value: a.client_id.to_string().parse().unwrap(),
+            index: false,
         };
         attributes.push(client_id);
         if let Some(conn_id) = a.counterparty_connection_id {
-            let conn_id = Tag {
+            let conn_id = EventAttribute {
                 key: COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY.parse().unwrap(),
                 value: conn_id.to_string().parse().unwrap(),
+                index: false,
             };
             attributes.push(conn_id);
         }
-        let counterparty_client_id = Tag {
+        let counterparty_client_id = EventAttribute {
             key: COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY.parse().unwrap(),
             value: a.counterparty_client_id.to_string().parse().unwrap(),
+            index: false,
         };
         attributes.push(counterparty_client_id);
         attributes
@@ -156,9 +161,9 @@ impl From<OpenInit> for IbcEvent {
 
 impl From<OpenInit> for AbciEvent {
     fn from(v: OpenInit) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
+        let attributes = Vec::<EventAttribute>::from(v.0);
         AbciEvent {
-            type_str: IbcEventType::OpenInitConnection.as_str().to_string(),
+            kind: IbcEventType::OpenInitConnection.as_str().to_string(),
             attributes,
         }
     }
@@ -196,9 +201,9 @@ impl From<OpenTry> for IbcEvent {
 
 impl From<OpenTry> for AbciEvent {
     fn from(v: OpenTry) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
+        let attributes = Vec::<EventAttribute>::from(v.0);
         AbciEvent {
-            type_str: IbcEventType::OpenTryConnection.as_str().to_string(),
+            kind: IbcEventType::OpenTryConnection.as_str().to_string(),
             attributes,
         }
     }
@@ -236,9 +241,9 @@ impl From<OpenAck> for IbcEvent {
 
 impl From<OpenAck> for AbciEvent {
     fn from(v: OpenAck) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
+        let attributes = Vec::<EventAttribute>::from(v.0);
         AbciEvent {
-            type_str: IbcEventType::OpenAckConnection.as_str().to_string(),
+            kind: IbcEventType::OpenAckConnection.as_str().to_string(),
             attributes,
         }
     }
@@ -276,9 +281,9 @@ impl From<OpenConfirm> for IbcEvent {
 
 impl From<OpenConfirm> for AbciEvent {
     fn from(v: OpenConfirm) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
+        let attributes = Vec::<EventAttribute>::from(v.0);
         AbciEvent {
-            type_str: IbcEventType::OpenConfirmConnection.as_str().to_string(),
+            kind: IbcEventType::OpenConfirmConnection.as_str().to_string(),
             attributes,
         }
     }

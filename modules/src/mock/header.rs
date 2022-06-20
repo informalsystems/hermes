@@ -92,7 +92,7 @@ mod tests {
     #[test]
     fn encode_any() {
         let header = MockHeader::new(Height::new(1, 10)).with_timestamp(Timestamp::none());
-        let bytes = header.wrap_any().encode_vec().unwrap();
+        let bytes = header.wrap_any().encode_vec();
 
         assert_eq!(
             &bytes,

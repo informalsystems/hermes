@@ -13,7 +13,6 @@ use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
 use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement as GenericAcknowledgement;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::Version;
-use crate::core::ics05_port::context::PortReader;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::core::ics26_routing::context::{ModuleOutputBuilder, OnRecvPacketAck, ReaderContext};
 use crate::prelude::*;
@@ -25,7 +24,7 @@ pub trait Ics20Keeper:
     type AccountId;
 }
 
-pub trait Ics20Reader: ChannelReader + PortReader
+pub trait Ics20Reader: ChannelReader
 where
     Self: Sized,
 {
