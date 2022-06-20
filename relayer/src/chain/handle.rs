@@ -35,6 +35,7 @@ use crate::{
     account::Balance,
     config::ChainConfig,
     connection::ConnectionMsgType,
+    denom::DenomTrace,
     error::Error,
     event::monitor::{EventBatch, Result as MonitorResult},
     keyring::KeyEntry,
@@ -154,6 +155,11 @@ pub enum ChainRequest {
     QueryBalance {
         key_name: Option<String>,
         reply_to: ReplyTo<Balance>,
+    },
+
+    QueryDenomTrace {
+        hash: String,
+        reply_to: ReplyTo<DenomTrace>,
     },
 
     QueryApplicationStatus {
@@ -392,6 +398,9 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
     /// Query the balance of the given account for the denom used to pay tx fees.
     /// If no account is given, behavior must be specified, e.g. retrieve it from configuration file.
     fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error>;
+
+    /// Query the denomination trace given a trace hash.
+    fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error>;
 
     /// Query the latest height and timestamp the application is at
     fn query_application_status(&self) -> Result<ChainStatus, Error>;
