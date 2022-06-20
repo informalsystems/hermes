@@ -576,6 +576,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "ics11_beefy")]
     #[tokio::test]
     async fn test_continuous_update_of_beefy_client() {
         let client_id = ClientId::new(ClientType::Beefy, 0).unwrap();

@@ -30,14 +30,16 @@ std = [
     "pallet-mmr-primitives/std",
     "beefy-primitives/std",
     "sp-trie/std",
+    "sp-io/std",
+    "sp-std/std",
     "tendermint-rpc"
 ]
 clock = ["tendermint/clock", "time/std"]
 
 # This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
 # Depends on the `testgen` suite for generating Tendermint light blocks.
-mocks = ["tendermint-testgen", "clock", "std", "sp-io/std", "sha3", "ripemd", "ics11_beefy"]
-ics11_beefy = ["sp-io", "sp-core", "sp-std"]
+mocks = ["tendermint-testgen", "clock", "std", "sha3", "ripemd", "ics11_beefy"]
+ics11_beefy = ["sp-io", "sp-core", "sp-std", "beefy-primitives", "sp-runtime", "sp-trie", "pallet-mmr-primitives", "beefy-client"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
@@ -59,9 +61,10 @@ flex-error = { version = "0.4.4", default-features = false }
 num-traits = { version = "0.2.15", default-features = false }
 derive_more = { version = "0.99.17", default-features = false, features = ["from", "into", "display"] }
 uint = { version = "0.9", default-features = false }
-beefy-client = { package = "beefy-generic-client",  git = "https://github.com/ComposableFi/beefy-client", branch = "master", default-features = false }
-pallet-mmr-primitives = { package = "sp-mmr-primitives", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
-beefy-primitives = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false }
+
+beefy-client = { package = "beefy-generic-client",  git = "https://github.com/ComposableFi/beefy-client", branch = "master", default-features = false, optional = true }
+pallet-mmr-primitives = { package = "sp-mmr-primitives", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false, optional = true }
+beefy-primitives = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false, optional = true }
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false }
 sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false, optional = true }
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false, optional = true}
@@ -70,6 +73,7 @@ sp-trie = { git = "https://github.com/paritytech/substrate", branch = "polkadot-
 sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.22", default-features = false, optional = true }
 sha3 = { version = "0.10.1", optional = true }
 ripemd = { version = "0.1.1", optional = true }
+
 primitive-types = { version = "0.11.1", default-features = false, features = ["serde_no_std"] }
 
 
