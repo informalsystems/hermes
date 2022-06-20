@@ -32,7 +32,7 @@ FROM alpine:edge
 LABEL maintainer="hello@informal.systems"
 
 # Add jq for debugging
-RUN apk add --no-cache jq curl tree
+RUN apk add --no-cache jq curl
 
 # Copy over binaries from the build-env
 COPY --from=build-env /go/bin/gaiad /usr/bin/gaiad
@@ -40,7 +40,5 @@ COPY --from=build-env /go/bin/gaiad /usr/bin/gaiad
 # Copy entrypoint script
 COPY ./run-gaiad.sh /usr/bin
 RUN chmod 755 /usr/bin/run-gaiad.sh
-
-RUN tree -pug /chain
 
 ENTRYPOINT "/bin/sh"
