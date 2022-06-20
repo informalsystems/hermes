@@ -4,7 +4,7 @@ services:
 
   ibc-0:
     container_name: ibc-0
-    image: "informaldev/gaiad:v6.0.0"
+    image: "ghcr.io/mzabaluev/gaiad:v6.0.0"
     stdin_open: true
     tty: true
     entrypoint: "/usr/bin/run-gaiad.sh"
@@ -20,7 +20,7 @@ services:
 
   ibc-1:
     container_name: ibc-1
-    image: "informaldev/gaiad:v6.0.0"
+    image: "ghcr.io/mzabaluev/gaiad:v6.0.0"
     stdin_open: true
     tty: true
     entrypoint: "/usr/bin/run-gaiad.sh"
