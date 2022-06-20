@@ -72,9 +72,7 @@ echo "*** Requirements"
 which docker
 
 echo "*** Create Docker image and upload to Docker Hub"
-docker build --build-arg CHAIN=gaia --build-arg RELEASE=$GAIA_BRANCH --build-arg NAME=ibc-0 --no-cache -t informaldev/ibc-0:$GAIA_BRANCH -f "$BASE_DIR/gaia.Dockerfile" .
-docker build --build-arg CHAIN=gaia --build-arg RELEASE=$GAIA_BRANCH --build-arg NAME=ibc-1 --no-cache -t informaldev/ibc-1:$GAIA_BRANCH -f "$BASE_DIR/gaia.Dockerfile" .
+docker build --build-arg RELEASE=$GAIA_BRANCH --no-cache -t informaldev/gaiad:$GAIA_BRANCH -f "$BASE_DIR/gaia.Dockerfile" .
 
 read -p "Press ANY KEY to push image to Docker Hub, or CTRL-C to cancel. " dontcare
-docker push informaldev/ibc-0:$GAIA_BRANCH
-docker push informaldev/ibc-1:$GAIA_BRANCH
+docker push informaldev/gaiad:$GAIA_BRANCH

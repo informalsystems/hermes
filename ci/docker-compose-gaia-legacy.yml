@@ -4,10 +4,14 @@ services:
 
   ibc-0:
     container_name: ibc-0
-    image: "informaldev/ibc-0:v6.0.0"
+    image: "informaldev/gaiad:v6.0.0"
     stdin_open: true
     tty: true
-    entrypoint: "/chain/gaia/run-gaiad.sh"
+    entrypoint: "/usr/bin/run-gaiad.sh"
+    volumes:
+      - type: volume
+        source: ./chains/gaia/v6.0.0/ibc-0
+        target: /chain/gaia
     networks:
       relaynet:
         ipv4_address: 172.25.0.10
@@ -16,10 +20,14 @@ services:
 
   ibc-1:
     container_name: ibc-1
-    image: "informaldev/ibc-1:v6.0.0"
+    image: "informaldev/gaiad:v6.0.0"
     stdin_open: true
     tty: true
-    entrypoint: "/chain/gaia/run-gaiad.sh"
+    entrypoint: "/usr/bin/run-gaiad.sh"
+    volumes:
+      - type: volume
+        source: ./chains/gaia/v6.0.0/ibc-1
+        target: /chain/gaia
     networks:
       relaynet:
         ipv4_address: 172.25.0.11

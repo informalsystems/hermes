@@ -31,23 +31,15 @@ RUN gaiad version --long
 FROM alpine:edge
 LABEL maintainer="hello@informal.systems"
 
-ARG RELEASE
-ARG CHAIN
-ARG NAME
-
 # Add jq for debugging
 RUN apk add --no-cache jq curl tree
-
-WORKDIR /$NAME
 
 # Copy over binaries from the build-env
 COPY --from=build-env /go/bin/gaiad /usr/bin/gaiad
 
-COPY --chown=root:root ./chains/$CHAIN/$RELEASE/$NAME /chain/$CHAIN
-
 # Copy entrypoint script
-COPY ./run-gaiad.sh /chain/$CHAIN
-RUN chmod 755 /chain/$CHAIN/run-gaiad.sh
+COPY ./run-gaiad.sh /usr/bin
+RUN chmod 755 /usr/bin/run-gaiad.sh
 
 RUN tree -pug /chain
 
