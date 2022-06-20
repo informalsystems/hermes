@@ -20,7 +20,7 @@ use ibc::tx_msg::Msg;
 use crate::chain::counterparty::connection_state_on_destination;
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::{
-    IncludeProof, PageRequest, QueryConnectionRequest, QueryConnectionsRequest,
+    HeightQuery, IncludeProof, PageRequest, QueryConnectionRequest, QueryConnectionsRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
@@ -220,7 +220,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: connection.src_connection_id.clone(),
-                    height,
+                    height: HeightQuery::Specific(height),
                 },
                 IncludeProof::No,
             )
@@ -398,7 +398,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 .query_connection(
                     QueryConnectionRequest {
                         connection_id: id.clone(),
-                        height: Height::zero(),
+                        height: HeightQuery::Latest,
                     },
                     IncludeProof::No,
                 )
@@ -418,7 +418,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 .query_connection(
                     QueryConnectionRequest {
                         connection_id: id.clone(),
-                        height: Height::zero(),
+                        height: HeightQuery::Latest,
                     },
                     IncludeProof::No,
                 )
@@ -686,7 +686,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: connection_id.clone(),
-                    height: Height::zero(),
+                    height: HeightQuery::Latest,
                 },
                 IncludeProof::No,
             )
@@ -809,7 +809,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: dst_connection_id.clone(),
-                    height: Height::zero(),
+                    height: HeightQuery::Latest,
                 },
                 IncludeProof::No,
             )
@@ -834,7 +834,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
     pub fn build_update_client_on_src(&self, height: Height) -> Result<Vec<Any>, ConnectionError> {
         let client = self.restore_src_client();
-        client.build_update_client(height).map_err(|e| {
+        client.wait_and_build_update_client(height).map_err(|e| {
             ConnectionError::client_operation(
                 self.src_client_id().clone(),
                 self.src_chain().id(),
@@ -845,7 +845,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
     pub fn build_update_client_on_dst(&self, height: Height) -> Result<Vec<Any>, ConnectionError> {
         let client = self.restore_dst_client();
-        client.build_update_client(height).map_err(|e| {
+        client.wait_and_build_update_client(height).map_err(|e| {
             ConnectionError::client_operation(
                 self.dst_client_id().clone(),
                 self.dst_chain().id(),
@@ -927,7 +927,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: src_connection_id.clone(),
-                    height: Height::zero(),
+                    height: HeightQuery::Latest,
                 },
                 IncludeProof::No,
             )
@@ -1073,7 +1073,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: src_connection_id.clone(),
-                    height: Height::zero(),
+                    height: HeightQuery::Latest,
                 },
                 IncludeProof::No,
             )
@@ -1184,7 +1184,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: src_connection_id.clone(),
-                    height: query_height,
+                    height: HeightQuery::Specific(query_height),
                 },
                 IncludeProof::No,
             )

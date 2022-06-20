@@ -1,16 +1,13 @@
 use flex_error::define_error;
 use serde::{Deserialize, Serialize};
 
-use ibc::{
-    core::{
-        ics02_client::{client_state::ClientState, events::UpdateClient},
-        ics03_connection::events::Attributes as ConnectionAttributes,
-        ics04_channel::events::{
-            Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement,
-        },
-        ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+use ibc::core::{
+    ics02_client::{client_state::ClientState, events::UpdateClient},
+    ics03_connection::events::Attributes as ConnectionAttributes,
+    ics04_channel::events::{
+        Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement,
     },
-    Height,
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
 };
 
 use crate::chain::{
@@ -19,7 +16,7 @@ use crate::chain::{
         counterparty_chain_from_connection,
     },
     handle::ChainHandle,
-    requests::{IncludeProof, QueryClientStateRequest},
+    requests::{HeightQuery, IncludeProof, QueryClientStateRequest},
 };
 use crate::error::Error as RelayerError;
 use crate::supervisor::Error as SupervisorError;
@@ -307,7 +304,7 @@ impl Object {
             .query_client_state(
                 QueryClientStateRequest {
                     client_id: e.client_id().clone(),
-                    height: Height::zero(),
+                    height: HeightQuery::Latest,
                 },
                 IncludeProof::No,
             )
