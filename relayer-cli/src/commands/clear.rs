@@ -34,8 +34,17 @@ pub struct ClearPacketsCmd {
     #[clap(required = true, help = "identifier of the channel")]
     channel_id: ChannelId,
 
-    #[clap(long, help = "use the given signing key (default: `key_name` config)")]
-    key: Option<String>,
+    #[clap(
+        long,
+        help = "use the given signing key for the specified chain (default: `key_name` config)"
+    )]
+    key_name: Option<String>,
+
+    #[clap(
+        long,
+        help = "use the given signing key for the counterparty chain (default: `counterparty_key_name` config)"
+    )]
+    counterparty_key_name: Option<String>,
 }
 
 impl Override<Config> for ClearPacketsCmd {
@@ -47,8 +56,12 @@ impl Override<Config> for ClearPacketsCmd {
             ))
         })?;
 
-        if let Some(ref key_name) = self.key {
+        if let Some(ref key_name) = self.key_name {
             chain_config.key_name = key_name.to_string();
+        }
+
+        if let Some(ref counterparty_key_name) = self.counterparty_key_name {
+            chain_config.counterparty_key_name = counterparty_key_name.to_string();
         }
 
         Ok(config)
