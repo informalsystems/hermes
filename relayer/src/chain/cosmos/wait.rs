@@ -70,20 +70,22 @@ async fn update_tx_sync_result(
     tx_sync_result: &mut TxSyncResult,
 ) -> Result<(), Error> {
     let TxSyncResult { response, events } = tx_sync_result;
+    let num_events = events.len();
 
-    // If this transaction was not committed, determine whether it was because it failed
-    // or because it hasn't been committed yet.
+    // Check if broadcasting the transaction failed
+    if response.code.value() != 0 {
+        // Replace the events with errors so we don't attempt to resolve the transaction later on.
+        *events = vec![IbcEvent::ChainError(format!(
+            "check_tx (broadcast_tx_sync) on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
+            chain_id, response.hash, response.code, response.log
+        )); num_events];
+        return Ok(());
+    }
+
+    // Check if we previously found events for the transaction.
+    // If a transaction query results in at least one event then it has been included in a block.
     if empty_event_present(events) {
-        // If the transaction failed, replace the events with an error,
-        // so that we don't attempt to resolve the transaction later on.
-        if response.code.value() != 0 {
-            *events = vec![IbcEvent::ChainError(format!(
-                "deliver_tx on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
-                chain_id, response.hash, response.code, response.log
-            ))];
-        }
-
-        // Otherwise, try to resolve transaction hash to the corresponding events.
+        // No events for this transaction, query again the transaction by hash.
         let events_per_tx = query_txs(
             chain_id,
             rpc_client,
@@ -92,11 +94,39 @@ async fn update_tx_sync_result(
         )
         .await?;
 
-        // If we get events back, progress was made, so we replace the events
-        // with the new ones. in both cases we will check in the next iteration
-        // whether or not the transaction was fully committed.
+        // Check if the query found the transaction and its events.
         if !events_per_tx.is_empty() {
-            *events = events_per_tx;
+            // Transaction was included in a block. Check the events.
+            let result = events_per_tx
+                .iter()
+                .find(|event| matches!(event, IbcEvent::ChainError(_)));
+            match result {
+                // The transaction was successful, copy the events
+                None => *events = events_per_tx,
+
+                // The transaction failed deliver_tx. In this case all messages that
+                // were included in the transactions are marked as failed.
+                // Note: It is possible to extract the `index` from the response.
+                // This identifies the message in the transaction that caused the failure.
+                // This gives more information on the (first) message that caused the error.
+                // There is no evaluation of messages after the first failed message.
+                // If n messages are sent in a Tx, and the error index is i then:
+                //  - messages 1..i-1 passed deliverTx,
+                //  - message i failed deliverTx,
+                //  - deliverTx has not run for i+1..n
+                // Same is true for checkTx (above)
+                // TODO - maybe add at some point more error details to the `IbcEvent::ChainError()`
+                // below.
+                Some(err) => {
+                    *events = vec![
+                        IbcEvent::ChainError(format!(
+                            "deliver_tx on chain {} for Tx hash {} reports {:?}",
+                            chain_id, response.hash, err
+                        ));
+                        num_events
+                    ];
+                }
+            }
         }
     }
 
