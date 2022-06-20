@@ -38,7 +38,7 @@ pub trait ChainFeeMethodsExt<Chain> {
         receive_fee: &TaggedTokenRef<'_, Chain>,
         ack_fee: &TaggedTokenRef<'_, Chain>,
         timeout_fee: &TaggedTokenRef<'_, Chain>,
-    ) -> Result<(), Error>;
+    ) -> Result<Vec<IbcEvent>, Error>;
 
     fn register_counterparty_payee<Counterparty>(
         &self,
@@ -97,7 +97,7 @@ impl<'a, Chain: Send> ChainFeeMethodsExt<Chain> for MonoTagged<Chain, &'a ChainD
         receive_fee: &TaggedTokenRef<'_, Chain>,
         ack_fee: &TaggedTokenRef<'_, Chain>,
         timeout_fee: &TaggedTokenRef<'_, Chain>,
-    ) -> Result<(), Error> {
+    ) -> Result<Vec<IbcEvent>, Error> {
         self.value().runtime.block_on(pay_packet_fee(
             &self.tx_config(),
             port_id,

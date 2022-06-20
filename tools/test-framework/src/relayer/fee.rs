@@ -66,7 +66,7 @@ pub async fn pay_packet_fee<Chain, Counterparty>(
     receive_fee: &TaggedTokenRef<'_, Chain>,
     ack_fee: &TaggedTokenRef<'_, Chain>,
     timeout_fee: &TaggedTokenRef<'_, Chain>,
-) -> Result<(), Error> {
+) -> Result<Vec<IbcEvent>, Error> {
     let message = build_pay_packet_fee_async_message(
         port_id.value(),
         channel_id.value(),
@@ -83,9 +83,7 @@ pub async fn pay_packet_fee<Chain, Counterparty>(
     )
     .map_err(handle_generic_error)?;
 
-    simple_send_tx(tx_config.value(), &payer.value().key, vec![message]).await?;
-
-    Ok(())
+    simple_send_tx(tx_config.value(), &payer.value().key, vec![message]).await
 }
 
 pub async fn register_counterparty_payee<Chain, Counterparty>(

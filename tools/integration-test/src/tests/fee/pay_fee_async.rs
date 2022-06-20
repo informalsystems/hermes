@@ -115,9 +115,7 @@ impl BinaryChannelTest for PayPacketFeeAsyncTest {
                         None
                     }
                 })
-                .unwrap();
-
-            info!("incentivized packet event: {:?}", event);
+                .ok_or_else(|| eyre!("expect incentivized packet event"))?;
 
             assert_eq!(event.sequence, sequence);
 
@@ -179,7 +177,7 @@ impl BinaryChannelTest for PayPacketFeeAsyncTest {
         let ack_fee_2 = random_u128_range(200, 300);
         let timeout_fee_2 = random_u128_range(100, 200);
 
-        chain_driver_a.pay_packet_fee(
+        let events2 = chain_driver_a.pay_packet_fee(
             &port_a,
             &channel_id_a,
             &DualTagged::new(sequence),
@@ -193,6 +191,39 @@ impl BinaryChannelTest for PayPacketFeeAsyncTest {
         let balance_a3 = balance_a2 - total_sent_2;
 
         chain_driver_a.assert_eventual_wallet_amount(&user_a.address(), &balance_a3.as_ref())?;
+
+        {
+            let event = events2
+                .iter()
+                .find_map(|ev| {
+                    if let IbcEvent::IncentivizedPacket(ev) = ev {
+                        Some(ev)
+                    } else {
+                        None
+                    }
+                })
+                .ok_or_else(|| eyre!("expect incentivized packet event"))?;
+
+            assert_eq!(event.sequence, sequence);
+
+            assert_eq!(event.total_recv_fee.len(), 1);
+            assert_eq!(event.total_ack_fee.len(), 1);
+            assert_eq!(event.total_timeout_fee.len(), 1);
+
+            assert_eq!(
+                &event.total_recv_fee[0],
+                &denom_a.with_amount(receive_fee + receive_fee_2).as_coin(),
+            );
+            assert_eq!(
+                &event.total_ack_fee[0],
+                &denom_a.with_amount(ack_fee + ack_fee_2).as_coin()
+            );
+
+            assert_eq!(
+                &event.total_timeout_fee[0],
+                &denom_a.with_amount(timeout_fee + timeout_fee_2).as_coin(),
+            );
+        }
 
         let denom_b = derive_ibc_denom(
             &channel.port_b.as_ref(),
