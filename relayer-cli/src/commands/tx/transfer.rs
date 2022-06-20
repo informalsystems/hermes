@@ -6,14 +6,13 @@ use ibc::{
     applications::transfer::Amount,
     core::{
         ics02_client::client_state::ClientState,
-        ics02_client::height::Height,
         ics24_host::identifier::{ChainId, ChannelId, PortId},
     },
     events::IbcEvent,
 };
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest,
+    HeightQuery, IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest,
 };
 use ibc_relayer::{
     config::Config,
@@ -183,13 +182,16 @@ impl Runnable for TxIcs20MsgTransferCmd {
         // To do this, fetch from the source chain the channel end, then the associated connection
         // end, and then the underlying client state; finally, check that this client is verifying
         // headers for the destination chain.
-        let channel_end_src = chains
+        let (channel_end_src, _) = chains
             .src
-            .query_channel(QueryChannelRequest {
-                port_id: opts.packet_src_port_id.clone(),
-                channel_id: opts.packet_src_channel_id,
-                height: Height::zero(),
-            })
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: opts.packet_src_port_id.clone(),
+                    channel_id: opts.packet_src_channel_id,
+                    height: HeightQuery::Latest,
+                },
+                IncludeProof::No,
+            )
             .unwrap_or_else(exit_with_unrecoverable_error);
         if !channel_end_src.is_open() {
             Output::error(format!(
@@ -213,22 +215,28 @@ impl Runnable for TxIcs20MsgTransferCmd {
             Some(cid) => cid,
         };
 
-        let conn_end = chains
+        let (conn_end, _) = chains
             .src
-            .query_connection(QueryConnectionRequest {
-                connection_id: conn_id.clone(),
-                height: Height::zero(),
-            })
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: conn_id.clone(),
+                    height: HeightQuery::Latest,
+                },
+                IncludeProof::No,
+            )
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         debug!("connection hop underlying the channel: {:?}", conn_end);
 
-        let src_chain_client_state = chains
+        let (src_chain_client_state, _) = chains
             .src
-            .query_client_state(QueryClientStateRequest {
-                client_id: conn_end.client_id().clone(),
-                height: Height::zero(),
-            })
+            .query_client_state(
+                QueryClientStateRequest {
+                    client_id: conn_end.client_id().clone(),
+                    height: HeightQuery::Latest,
+                },
+                IncludeProof::No,
+            )
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         debug!(

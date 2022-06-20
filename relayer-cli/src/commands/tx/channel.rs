@@ -5,9 +5,8 @@ use ibc::core::ics03_connection::connection::ConnectionEnd;
 use ibc::core::ics04_channel::channel::Order;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::events::IbcEvent;
-use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::QueryConnectionRequest;
+use ibc_relayer::chain::requests::{HeightQuery, IncludeProof, QueryConnectionRequest};
 use ibc_relayer::channel::{Channel, ChannelSide};
 
 use crate::cli_utils::ChainHandlePair;
@@ -26,11 +25,14 @@ macro_rules! tx_chan_cmd {
         };
 
         // Retrieve the connection
-        let dst_connection = match chains.dst.query_connection(QueryConnectionRequest {
-            connection_id: $self.dst_conn_id.clone(),
-            height: Height::default(),
-        }) {
-            Ok(connection) => connection,
+        let dst_connection = match chains.dst.query_connection(
+            QueryConnectionRequest {
+                connection_id: $self.dst_conn_id.clone(),
+                height: HeightQuery::Latest,
+            },
+            IncludeProof::No,
+        ) {
+            Ok((connection, _)) => connection,
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
@@ -102,11 +104,14 @@ impl Runnable for TxRawChanOpenInitCmd {
         };
 
         // Retrieve the connection
-        let dst_connection = match chains.dst.query_connection(QueryConnectionRequest {
-            connection_id: self.dst_conn_id.clone(),
-            height: Height::default(),
-        }) {
-            Ok(connection) => connection,
+        let dst_connection = match chains.dst.query_connection(
+            QueryConnectionRequest {
+                connection_id: self.dst_conn_id.clone(),
+                height: HeightQuery::Latest,
+            },
+            IncludeProof::No,
+        ) {
+            Ok((connection, _)) => connection,
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 

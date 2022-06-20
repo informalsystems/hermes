@@ -2,7 +2,7 @@ use ibc::core::ics24_host::identifier::ChainId;
 use ibc::Height;
 use tendermint_rpc::{Client, HttpClient, Url};
 
-use crate::chain::ChainStatus;
+use crate::chain::endpoint::ChainStatus;
 use crate::error::Error;
 
 /// Query the chain status via an RPC query.

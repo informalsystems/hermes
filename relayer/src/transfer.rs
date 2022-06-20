@@ -13,9 +13,9 @@ use ibc::Height;
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::google::protobuf::Any;
 
+use crate::chain::endpoint::ChainStatus;
 use crate::chain::handle::ChainHandle;
 use crate::chain::tracking::TrackedMsgs;
-use crate::chain::ChainStatus;
 use crate::error::Error;
 
 define_error! {

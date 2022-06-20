@@ -19,6 +19,7 @@
     unused_lifetimes,
     unused_qualifications
 )]
+#![allow(deprecated)]
 
 extern crate alloc;
 
