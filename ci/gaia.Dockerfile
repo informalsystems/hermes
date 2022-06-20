@@ -18,9 +18,8 @@ WORKDIR /go/src/github.com/cosmos/gaia
 # Checkout branch
 RUN git checkout $RELEASE
 
-# Install minimum necessary dependencies, build Cosmos SDK, remove packages
-RUN apk add --no-cache $PACKAGES && \
-    make install
+# Build and install Gaia
+RUN make install
 
 # Show version
 RUN gaiad version --long
