@@ -30,11 +30,11 @@ static HINT: &str = "Consider using the default invocation\n\nhermes create chan
 ///
 /// There are two possible ways to invoke this command:
 ///
-/// `create channel --chain-a <Chain-A-ID> --conn-a <Connection-ID> --port-a <Port-ID> --port-b <Port-ID>` is the default
+/// `create channel --a-chain <A_CHAIN_ID> --a-conn <A_CONNECTION_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>` is the default
 /// way in which this command should be used, specifying a `Connection-ID` for this new channel
 /// to re-use. The command expects that `Connection-ID` is associated with chain A.
 ///
-/// `create channel --chain-a <Chain-A-ID> --chain-b <Chain-B-ID> --port-a <Port-ID> --port-b <Port-ID> --new-client-conn`
+/// `create channel --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID> --new-client-conn`
 /// to indicate that a new connection/client pair is being created as part of this new channel.
 /// This brings up an interactive yes/no prompt to ensure that the operator at least
 /// considers the fact that they're initializing a new connection with the channel.

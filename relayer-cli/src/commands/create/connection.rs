@@ -54,9 +54,9 @@ pub struct CreateConnectionCommand {
     delay: u64,
 }
 
-// cargo run --bin hermes -- create connection --chain-a ibc-0 --chain-b ibc-1
-// cargo run --bin hermes -- create connection --chain-a ibc-0 --chain-b ibc-1 --delay 100
-// cargo run --bin hermes -- create connection --chain-a ibc-0 --client-a 07-tendermint-0 --client-b 07-tendermint-0
+// cargo run --bin hermes -- create connection --a-chain ibc-0 --b-chain ibc-1
+// cargo run --bin hermes -- create connection --a-chain ibc-0 --b-chain ibc-1 --delay 100
+// cargo run --bin hermes -- create connection --a-chain ibc-0 --a-client 07-tendermint-0 --b-client 07-tendermint-0
 impl Runnable for CreateConnectionCommand {
     fn run(&self) {
         match &self.chain_b_id {
@@ -76,11 +76,11 @@ impl CreateConnectionCommand {
 
         // Validate the other options. Bail if the CLI was invoked with incompatible options.
         if self.client_a.is_some() {
-            Output::error("Option `<chain-b-id>` is incompatible with `--client-a`".to_string())
+            Output::error("Option `<B_CHAIN_ID>` is incompatible with `--a-client`".to_string())
                 .exit();
         }
         if self.client_b.is_some() {
-            Output::error("Option `<chain-b-id>` is incompatible with `--client-b`".to_string())
+            Output::error("Option `<B_CHAIN_ID>` is incompatible with `--b-client`".to_string())
                 .exit();
         }
 
@@ -116,7 +116,7 @@ impl CreateConnectionCommand {
         let client_a_id = match &self.client_a {
             Some(c) => c,
             None => Output::error(
-                "Option `--client-a` is necessary when <chain-b-id> is missing".to_string(),
+                "Option `--a-client` is necessary when <B_CHAIN_ID> is missing".to_string(),
             )
             .exit(),
         };
@@ -147,7 +147,7 @@ impl CreateConnectionCommand {
         let client_b_id = match &self.client_b {
             Some(c) => c,
             None => Output::error(
-                "Option `--client-b` is necessary when <chain-b-id> is missing".to_string(),
+                "Option `--b-client` is necessary when <B_CHAIN_ID> is missing".to_string(),
             )
             .exit(),
         };
