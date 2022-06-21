@@ -203,10 +203,15 @@ impl Runnable for QueryClientHeaderCmd {
         let consensus_height =
             ibc::Height::new(counterparty_chain.version(), self.consensus_height);
 
-        let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
+        let query_height = match self.height {
+            Some(revision_height) => {
+                QueryHeight::Specific(Height::new(chain.id().version(), revision_height))
+            }
+            None => QueryHeight::Latest,
+        };
 
         let res = chain.query_txs(QueryTxRequest::Client(QueryClientEventRequest {
-            height,
+            query_height,
             event_id: WithBlockDataType::UpdateClient,
             client_id: self.client_id.clone(),
             consensus_height,

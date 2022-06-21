@@ -1158,7 +1158,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             let result = self
                 .dst_chain
                 .query_txs(QueryTxRequest::Client(QueryClientEventRequest {
-                    height: Height::zero(),
+                    query_height: QueryHeight::Latest,
                     event_id: WithBlockDataType::UpdateClient,
                     client_id: self.id.clone(),
                     consensus_height,

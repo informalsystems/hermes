@@ -10,7 +10,7 @@ use tendermint_rpc::{Client, HttpClient, Order, Url};
 
 use crate::chain::cosmos::query::{header_query, packet_query, tx_hash_query};
 use crate::chain::requests::{
-    QueryClientEventRequest, QueryPacketEventDataRequest, QueryTxRequest,
+    QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest, QueryTxRequest,
 };
 use crate::error::Error;
 
@@ -146,9 +146,12 @@ fn update_client_from_tx_search_response(
     response: ResultTx,
 ) -> Option<IbcEvent> {
     let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
-    if request.height != ICSHeight::zero() && height > request.height {
-        return None;
-    }
+
+    if let QueryHeight::Specific(specific_query_height) = request.query_height {
+        if height > specific_query_height {
+            return None;
+        }
+    };
 
     response
         .tx_result

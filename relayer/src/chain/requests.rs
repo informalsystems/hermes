@@ -415,7 +415,7 @@ pub struct QueryPacketEventDataRequest {
 /// Query request for a single client event, identified by `event_id`, for `client_id`.
 #[derive(Clone, Debug)]
 pub struct QueryClientEventRequest {
-    pub height: Height,
+    pub query_height: QueryHeight,
     pub event_id: WithBlockDataType,
     pub client_id: ClientId,
     pub consensus_height: Height,
