@@ -38,12 +38,12 @@ impl KeysDeleteCmd {
 
         let id = match (self.all, &self.key_name) {
             (true, Some(_)) => {
-                return Err("cannot set both -k/--key-name and -a/--all"
+                return Err("cannot set both --key-name and --all"
                     .to_owned()
                     .into());
             }
             (false, None) => {
-                return Err("must provide either -k/--key-name or -a/--all"
+                return Err("must provide either --key-name or --all"
                     .to_owned()
                     .into());
             }
