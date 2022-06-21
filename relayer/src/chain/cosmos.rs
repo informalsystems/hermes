@@ -1482,8 +1482,10 @@ impl ChainEndpoint for CosmosSdkChain {
                         let response_height =
                             ICSHeight::new(self.id().version(), u64::from(block.header.height));
 
-                        if request.height != ICSHeight::zero() && response_height > request.height {
-                            continue;
+                        if let QueryHeight::Specific(query_height) = request.height {
+                            if response_height > query_height {
+                                continue;
+                            }
                         }
 
                         let response = self

@@ -409,7 +409,7 @@ pub struct QueryPacketEventDataRequest {
     pub destination_channel_id: ChannelId,
     pub destination_port_id: PortId,
     pub sequences: Vec<Sequence>,
-    pub height: Height,
+    pub height: QueryHeight,
 }
 
 /// Query request for a single client event, identified by `event_id`, for `client_id`.

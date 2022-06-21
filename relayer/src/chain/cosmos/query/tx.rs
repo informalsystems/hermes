@@ -187,8 +187,10 @@ fn packet_from_tx_search_response(
     response: ResultTx,
 ) -> Option<IbcEvent> {
     let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
-    if request.height != ICSHeight::zero() && height > request.height {
-        return None;
+    if let QueryHeight::Specific(query_height) = request.height {
+        if height > query_height {
+            return None;
+        }
     }
 
     response
