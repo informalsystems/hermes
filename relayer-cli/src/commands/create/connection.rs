@@ -14,7 +14,7 @@ use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct CreateConnectionCommand {
     #[clap(
         long = "a-chain",
@@ -26,6 +26,8 @@ pub struct CreateConnectionCommand {
 
     #[clap(
         long = "b-chain",
+        required = true,
+        groups = &["client_a", "client_b"],
         value_name = "B_CHAIN_ID",
         help = "identifier of the side `b` chain for the new connection"
     )]
@@ -33,6 +35,8 @@ pub struct CreateConnectionCommand {
 
     #[clap(
         long = "a-client",
+        required = true,
+        group = "client_a",
         value_name = "A_CLIENT_ID",
         help = "identifier of client hosted on chain `a`; default: None (creates a new client)"
     )]
@@ -40,6 +44,8 @@ pub struct CreateConnectionCommand {
 
     #[clap(
         long = "b-client",
+        required = true,
+        group = "client_b",
         value_name = "B_CLIENT_ID",
         help = "identifier of client hosted on chain `b`; default: None (creates a new client)"
     )]
@@ -54,9 +60,9 @@ pub struct CreateConnectionCommand {
     delay: u64,
 }
 
-// cargo run --bin hermes -- create connection --chain-a ibc-0 --chain-b ibc-1
-// cargo run --bin hermes -- create connection --chain-a ibc-0 --chain-b ibc-1 --delay 100
-// cargo run --bin hermes -- create connection --chain-a ibc-0 --client-a 07-tendermint-0 --client-b 07-tendermint-0
+// cargo run --bin hermes -- create connection --a-chain ibc-0 --b-chain ibc-1
+// cargo run --bin hermes -- create connection --a-chain ibc-0 --b-chain ibc-1 --delay 100
+// cargo run --bin hermes -- create connection --a-chain ibc-0 --a-client 07-tendermint-0 --b-client 07-tendermint-0
 impl Runnable for CreateConnectionCommand {
     fn run(&self) {
         match &self.chain_b_id {
@@ -73,16 +79,6 @@ impl CreateConnectionCommand {
 
         let chains = ChainHandlePair::spawn(&config, &self.chain_a_id, chain_b_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
-
-        // Validate the other options. Bail if the CLI was invoked with incompatible options.
-        if self.client_a.is_some() {
-            Output::error("Option `<chain-b-id>` is incompatible with `--client-a`".to_string())
-                .exit();
-        }
-        if self.client_b.is_some() {
-            Output::error("Option `<chain-b-id>` is incompatible with `--client-b`".to_string())
-                .exit();
-        }
 
         info!(
             "Creating new clients hosted on chains {} and {}",
@@ -116,7 +112,7 @@ impl CreateConnectionCommand {
         let client_a_id = match &self.client_a {
             Some(c) => c,
             None => Output::error(
-                "Option `--client-a` is necessary when <chain-b-id> is missing".to_string(),
+                "Option `--a-client` is necessary when <chain-b-id> is missing".to_string(),
             )
             .exit(),
         };
@@ -147,7 +143,7 @@ impl CreateConnectionCommand {
         let client_b_id = match &self.client_b {
             Some(c) => c,
             None => Output::error(
-                "Option `--client-b` is necessary when <chain-b-id> is missing".to_string(),
+                "Option `--b-client` is necessary when <chain-b-id> is missing".to_string(),
             )
             .exit(),
         };
@@ -169,5 +165,72 @@ impl CreateConnectionCommand {
             Ok(conn) => Output::success(conn).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::CreateConnectionCommand;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::{ChainId, ClientId};
+
+    use std::str::FromStr;
+
+    #[test]
+    fn test_create_connection_chain_a_and_chain_b() {
+        assert_eq!(
+            CreateConnectionCommand{ chain_a_id: ChainId::from_string("chain_a"), chain_b_id: Some(ChainId::from_string("chain_b")), client_a: None, client_b: None, delay: 0 },
+            CreateConnectionCommand::parse_from(&["test", "--a-chain", "chain_a", "--b-chain", "chain_b"])
+        )
+    }
+
+    #[test]
+    fn test_create_connection_chain_a_and_chain_b_with_delay() {
+        assert_eq!(
+            CreateConnectionCommand{ chain_a_id: ChainId::from_string("chain_a"), chain_b_id: Some(ChainId::from_string("chain_b")), client_a: None, client_b: None, delay: 42 },
+            CreateConnectionCommand::parse_from(&["test", "--a-chain", "chain_a", "--b-chain", "chain_b", "--delay", "42"])
+        )
+    }
+
+    #[test]
+    fn create_connection_chain_a_and_clients() {
+        assert_eq!(
+            CreateConnectionCommand{ chain_a_id: ChainId::from_string("chain_a"), chain_b_id: None, client_a: Some(ClientId::from_str("07-client_a").unwrap()), client_b: Some(ClientId::from_str("07-client_b").unwrap()), delay: 0 },
+            CreateConnectionCommand::parse_from(&["test", "--a-chain", "chain_a", "--a-client", "07-client_a", "--b-client", "07-client_b"])
+        )
+    }
+
+    #[test]
+    fn create_connection_chain_a_and_clients_with_delay() {
+        assert_eq!(
+            CreateConnectionCommand{ chain_a_id: ChainId::from_string("chain_a"), chain_b_id: None, client_a: Some(ClientId::from_str("07-client_a").unwrap()), client_b: Some(ClientId::from_str("07-client_b").unwrap()), delay: 42 },
+            CreateConnectionCommand::parse_from(&["test", "--a-chain", "chain_a", "--a-client", "07-client_a", "--b-client", "07-client_b", "--delay", "42"])
+        )
+    }
+
+    #[test]
+    fn test_create_connection_chain_a_only() {
+        assert!(CreateConnectionCommand::try_parse_from(&["test", "--a-chain", "chain_a"]).is_err())
+    }
+
+    #[test]
+    fn test_create_connection_client_a_required_without_chain_b() {
+        assert!(CreateConnectionCommand::try_parse_from(&["test", "--a-chain", "chain_a", "--b-client", "client_b"]).is_err())
+    }
+
+    #[test]
+    fn test_create_connection_client_b_required_without_chain_b() {
+        assert!(CreateConnectionCommand::try_parse_from(&["test", "--a-chain", "chain_a", "--a-client", "client_a"]).is_err())
+    }
+
+    #[test]
+    fn test_create_connection_only_chain_b_or_client_a() {
+        assert!(CreateConnectionCommand::try_parse_from(&["test", "--a-chain", "chain_a", "--b-chain", "chain_b", "--a-client", "07-client_a"]).is_err())
+    }
+
+    #[test]
+    fn test_create_connection_only_chain_b_or_client_b() {
+        assert!(CreateConnectionCommand::try_parse_from(&["test", "--a-chain", "chain_a", "--b-chain", "chain_b", "--b-client", "07-client_b"]).is_err())
     }
 }

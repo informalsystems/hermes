@@ -21,7 +21,7 @@ pub enum ClearCmds {
     Packets(ClearPacketsCmd),
 }
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, PartialEq)]
 pub struct ClearPacketsCmd {
     #[clap(
         long = "chain",
@@ -103,4 +103,37 @@ where
         Ok(mut ev) => ev_list.append(&mut ev),
         Err(e) => Output::error(Error::link(e)).exit(),
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ClearPacketsCmd;
+
+    use std::str::FromStr;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::{ChainId, PortId, ChannelId};
+
+    #[test]
+    fn test_clear_packets() {
+        assert_eq!(
+            ClearPacketsCmd{ chain_id: ChainId::from_string("chain_id"), port_id: PortId::from_str("port_id").unwrap(), channel_id: ChannelId::from_str("channel-07").unwrap() },
+            ClearPacketsCmd::parse_from(&["test", "--chain", "chain_id", "--port", "port_id", "--chan", "channel-07"])
+        )
+    }
+
+    #[test]
+    fn test_clear_packets_no_chan() {
+        assert!(ClearPacketsCmd::try_parse_from(&["test", "--chain", "chain_id", "--port", "port_id"]).is_err())
+    }
+
+    #[test]
+    fn test_clear_packets_no_port() {
+        assert!(ClearPacketsCmd::try_parse_from(&["test", "--chain", "chain_id", "--chan", "channel-07"]).is_err())
+    }
+
+    #[test]
+    fn test_clear_packets_no_chain() {
+        assert!(ClearPacketsCmd::try_parse_from(&["test", "--port", "port_id", "--chan", "channel-07"]).is_err())
+    }
 }

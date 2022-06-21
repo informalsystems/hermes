@@ -10,7 +10,7 @@ use ibc_relayer::{
 use crate::application::app_config;
 use crate::conclude::Output;
 
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct KeysDeleteCmd {
     #[clap(
         long = "chain",
@@ -20,10 +20,10 @@ pub struct KeysDeleteCmd {
     )]
     chain_id: ChainId,
 
-    #[clap(long = "key-name", value_name = "KEY_NAME", help = "name of the key")]
+    #[clap(long = "key-name", required = true, value_name = "KEY_NAME", group = "delete_key", help = "name of the key")]
     key_name: Option<String>,
 
-    #[clap(long = "all", help = "delete all keys")]
+    #[clap(long = "all", required = true, group = "delete_key", help = "delete all keys")]
     all: bool,
 }
 
@@ -37,18 +37,12 @@ impl KeysDeleteCmd {
             .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
 
         let id = match (self.all, &self.key_name) {
-            (true, Some(_)) => {
-                return Err("cannot set both -k/--key-name and -a/--all"
-                    .to_owned()
-                    .into());
-            }
-            (false, None) => {
-                return Err("must provide either -k/--key-name or -a/--all"
-                    .to_owned()
-                    .into());
-            }
             (true, None) => KeysDeleteId::All,
             (false, Some(ref key_name)) => KeysDeleteId::Named(key_name),
+            // This case should never be attained as --all and --key-name have the same group and are required.
+            _ => {
+                return Err("Error with clap parser. A parsing error should have been triggered.".to_owned().into());
+            }
         };
 
         Ok(KeysDeleteOptions {
@@ -112,4 +106,43 @@ pub fn delete_all_keys(config: &ChainConfig) -> Result<(), Box<dyn std::error::E
         keyring.remove_key(&key.0)?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::KeysDeleteCmd;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::ChainId;
+
+    #[test]
+    fn test_keys_delete_key_name() {
+        assert_eq!(
+            KeysDeleteCmd{ chain_id: ChainId::from_string("chain_id"), key_name: Some("to_delete".to_owned()), all: false },
+            KeysDeleteCmd::parse_from(&["test", "--chain", "chain_id", "--key-name", "to_delete"])
+        )
+    }
+
+    #[test]
+    fn test_keys_delete_all() {
+        assert_eq!(
+            KeysDeleteCmd{ chain_id: ChainId::from_string("chain_id"), key_name: None, all: true },
+            KeysDeleteCmd::parse_from(&["test", "--chain", "chain_id", "--all"])
+        )
+    }
+
+    #[test]
+    fn test_keys_delete_only_chain() {
+        assert!(KeysDeleteCmd::try_parse_from(&["test", "--chain", "chain_id"]).is_err())
+    }
+
+    #[test]
+    fn test_keys_delete_key_name_or_all() {
+        assert!(KeysDeleteCmd::try_parse_from(&["test", "--chain", "chain_id", "--key-name", "to_delete", "--all"]).is_err())
+    }
+
+    #[test]
+    fn test_keys_delete_no_chain() {
+        assert!(KeysDeleteCmd::try_parse_from(&["test", "--all"]).is_err())
+    }
 }

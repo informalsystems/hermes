@@ -15,7 +15,7 @@ use crate::conclude::{exit_with_unrecoverable_error, json, Output};
 /// `query transfer denom-trace --chain <CHAIN_ID> --hash <HASH>`
 ///
 /// If successful the the base denomination and the path will be displayed.
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct DenomTraceCmd {
     #[clap(long = "chain", required = true, help = "identifier of the chain")]
     chain_id: ChainId,
@@ -44,5 +44,31 @@ impl Runnable for DenomTraceCmd {
             ))
             .exit(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::DenomTraceCmd;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::ChainId;
+
+    #[test]
+    fn test_transfer_denom_trace() {
+        assert_eq!(
+            DenomTraceCmd{ chain_id: ChainId::from_string("chain_id"), hash: "abcdefg".to_owned() },
+            DenomTraceCmd::parse_from(&["test", "--chain", "chain_id", "--hash", "abcdefg"])
+        )
+    }
+
+    #[test]
+    fn test_transfer_denom_trace_no_hash() {
+        assert!(DenomTraceCmd::try_parse_from(&["test", "--chain", "chain_id"]).is_err())
+    }
+
+    #[test]
+    fn test_transfer_denom_trace_no_chain() {
+        assert!(DenomTraceCmd::try_parse_from(&["test", "--hash", "abcdefg"]).is_err())
     }
 }

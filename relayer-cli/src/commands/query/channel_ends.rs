@@ -17,7 +17,7 @@ use ibc_relayer::registry::Registry;
 use crate::conclude::Output;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct QueryChannelEndsCmd {
     #[clap(
         long = "chain",
@@ -235,5 +235,54 @@ impl Runnable for QueryChannelEndsCmd {
             Ok(()) => {}
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::QueryChannelEndsCmd;
+
+    use std::str::FromStr;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::{ChainId, PortId, ChannelId};
+
+    #[test]
+    fn test_query_channel_ends_required_only() {
+        assert_eq!(
+            QueryChannelEndsCmd{ chain_id: ChainId::from_string("chain_id"), port_id: PortId::from_str("port_id").unwrap(), channel_id: ChannelId::from_str("channel-07").unwrap(), height: None, verbose: false },
+            QueryChannelEndsCmd::parse_from(&["test", "--chain", "chain_id", "--port", "port_id", "--chan", "channel-07"])
+        )
+    }
+
+    #[test]
+    fn test_query_channel_ends_height() {
+        assert_eq!(
+            QueryChannelEndsCmd{ chain_id: ChainId::from_string("chain_id"), port_id: PortId::from_str("port_id").unwrap(), channel_id: ChannelId::from_str("channel-07").unwrap(), height: Some(42), verbose: false },
+            QueryChannelEndsCmd::parse_from(&["test", "--chain", "chain_id", "--port", "port_id", "--chan", "channel-07", "--height", "42"])
+        )
+    }
+
+    #[test]
+    fn test_query_channel_ends_verbose() {
+        assert_eq!(
+            QueryChannelEndsCmd{ chain_id: ChainId::from_string("chain_id"), port_id: PortId::from_str("port_id").unwrap(), channel_id: ChannelId::from_str("channel-07").unwrap(), height: None, verbose: true },
+            QueryChannelEndsCmd::parse_from(&["test", "--chain", "chain_id", "--port", "port_id", "--chan", "channel-07", "--verbose"])
+        )
+    }
+
+    #[test]
+    fn test_query_channel_client_no_chan() {
+        assert!(QueryChannelEndsCmd::try_parse_from(&["test", "--chain", "chain_id", "--port", "port_id"]).is_err())
+    }
+
+    #[test]
+    fn test_query_channel_client_no_port() {
+        assert!(QueryChannelEndsCmd::try_parse_from(&["test", "--chain", "chain_id", "--chan", "channel-07"]).is_err())
+    }
+
+    #[test]
+    fn test_query_channel_client_no_chain() {
+        assert!(QueryChannelEndsCmd::try_parse_from(&["test", "--port", "port_id", "--chan", "channel-07"]).is_err())
     }
 }

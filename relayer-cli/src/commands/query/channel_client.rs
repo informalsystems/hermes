@@ -14,7 +14,7 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 /// `query channel client --chain <chain_id> --port <port_id> --chan <channel_id>`
 ///
 /// If successful the channel's client state is displayed.
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct QueryChannelClientCmd {
     #[clap(
         long = "chain",
@@ -55,5 +55,38 @@ impl Runnable for QueryChannelClientCmd {
             Ok(cs) => Output::success(cs).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::QueryChannelClientCmd;
+
+    use std::str::FromStr;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::{ChainId, PortId, ChannelId};
+
+    #[test]
+    fn test_query_channel_client() {
+        assert_eq!(
+            QueryChannelClientCmd{ chain_id: ChainId::from_string("chain_id"), port_id: PortId::from_str("port_id").unwrap(), channel_id: ChannelId::from_str("channel-07").unwrap() },
+            QueryChannelClientCmd::parse_from(&["test", "--chain", "chain_id", "--port", "port_id", "--chan", "channel-07"])
+        )
+    }
+
+    #[test]
+    fn test_query_channel_client_no_chan() {
+        assert!(QueryChannelClientCmd::try_parse_from(&["test", "--chain", "chain_id", "--port", "port_id"]).is_err())
+    }
+
+    #[test]
+    fn test_query_channel_client_no_port() {
+        assert!(QueryChannelClientCmd::try_parse_from(&["test", "--chain", "chain_id", "--chan", "channel-07"]).is_err())
+    }
+
+    #[test]
+    fn test_query_channel_client_no_chain() {
+        assert!(QueryChannelClientCmd::try_parse_from(&["test", "--port", "port_id", "--chan", "channel-07"]).is_err())
     }
 }

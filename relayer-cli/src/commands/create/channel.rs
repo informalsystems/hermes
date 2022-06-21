@@ -42,7 +42,7 @@ static HINT: &str = "Consider using the default invocation\n\nhermes create chan
 /// Note that `Connection-ID`s have to be considered based off of the chain's perspective. Although
 /// chain A and chain B might refer to the connection with different names, they are actually referring
 /// to the same connection.
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 #[clap(disable_version_flag = true)]
 pub struct CreateChannelCommand {
     #[clap(
@@ -55,6 +55,8 @@ pub struct CreateChannelCommand {
 
     #[clap(
         long = "b-chain",
+        group = "chain_b",
+        requires = "new_client",
         value_name = "B_CHAIN_ID",
         help = "Identifier of the side `b` chain for the new channel"
     )]
@@ -62,6 +64,8 @@ pub struct CreateChannelCommand {
 
     #[clap(
         long = "a-conn",
+        required = true,
+        groups = &["chain_b", "new_client"],
         value_name = "A_CONNECTION_ID",
         help = "Identifier of the connection on chain `a` to use in creating the new channel."
     )]
@@ -101,6 +105,7 @@ pub struct CreateChannelCommand {
 
     #[clap(
         long = "new-client-conn",
+        group = "new_client",
         help = "Indicates that a new client and connection will be created underlying the new channel"
     )]
     new_client_connection: bool,
@@ -112,36 +117,29 @@ impl Runnable for CreateChannelCommand {
             Some(conn) => self.run_reusing_connection(conn),
             None => match &self.chain_b {
                 Some(chain_b) => {
-                    if self.new_client_connection {
-                        match Confirm::new()
-                            .with_prompt(format!(
-                                "{}: {}\n{}: {}",
-                                style("WARN").yellow(),
-                                PROMPT,
-                                style("Hint").cyan(),
-                                HINT
-                            ))
-                            .interact()
-                        {
-                            Ok(confirm) => {
-                                if confirm {
-                                    self.run_using_new_connection(chain_b);
-                                } else {
-                                    Output::error("You elected not to create new clients and connections. Please re-invoke `create channel` with a pre-existing connection ID".to_string()).exit();
-                                }
-                            }
-                            Err(e) => {
-                                Output::error(format!(
-                                    "An error occurred while waiting for user input: {}",
-                                    e
-                                ));
+                    match Confirm::new()
+                        .with_prompt(format!(
+                            "{}: {}\n{}: {}",
+                            style("WARN").yellow(),
+                            PROMPT,
+                            style("Hint").cyan(),
+                            HINT
+                        ))
+                        .interact()
+                    {
+                        Ok(confirm) => {
+                            if confirm {
+                                self.run_using_new_connection(chain_b);
+                            } else {
+                                Output::error("You elected not to create new clients and connections. Please re-invoke `create channel` with a pre-existing connection ID".to_string()).exit();
                             }
                         }
-                    } else {
-                        Output::error(
-                                "The `--new-client-connection` flag is required if invoking with `--chain-b`".to_string()
-                            )
-                            .exit();
+                        Err(e) => {
+                            Output::error(format!(
+                                "An error occurred while waiting for user input: {}",
+                                e
+                            ));
+                        }
                     }
                 }
                 None => Output::error("Missing one of `<chain-b>` or `<connection-a>`".to_string())
@@ -242,5 +240,73 @@ impl CreateChannelCommand {
         .unwrap_or_else(exit_with_unrecoverable_error);
 
         Output::success(channel).exit();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use super::CreateChannelCommand;
+    use abscissa_core::clap::Parser;
+
+    use ibc::core::ics04_channel::Version;
+    use ibc::core::ics04_channel::channel::Order;
+    use ibc::core::ics24_host::identifier::{ChainId, ConnectionId, PortId};
+
+    #[test]
+    fn test_create_channel_reuse_client() {
+        assert_eq!(
+            CreateChannelCommand{ chain_a: ChainId::from_string("chain_a"), chain_b: None, connection_a: Some(ConnectionId::from_str("connection_a").unwrap()), port_a: PortId::from_str("port_id_a").unwrap(), port_b: PortId::from_str("port_id_b").unwrap(), order: Order::Unordered, version: None, new_client_connection: false },
+            CreateChannelCommand::parse_from(&["test", "--a-chain", "chain_a", "--a-conn", "connection_a", "--a-port", "port_id_a", "--b-port", "port_id_b"])
+        )
+    }
+
+    #[test]
+    fn test_create_channel_version() {
+        assert_eq!(
+            CreateChannelCommand{ chain_a: ChainId::from_string("chain_a"), chain_b: None, connection_a: Some(ConnectionId::from_str("connection_a").unwrap()), port_a: PortId::from_str("port_id_a").unwrap(), port_b: PortId::from_str("port_id_b").unwrap(), order: Order::Unordered, version: Some(Version::new("v1".to_owned())), new_client_connection: false },
+            CreateChannelCommand::parse_from(&["test", "--a-chain", "chain_a", "--a-conn", "connection_a", "--a-port", "port_id_a", "--b-port", "port_id_b", "--chan-version", "v1"])
+        )
+    }
+
+    #[test]
+    fn test_create_channel_order() {
+        assert_eq!(
+            CreateChannelCommand{ chain_a: ChainId::from_string("chain_a"), chain_b: None, connection_a: Some(ConnectionId::from_str("connection_a").unwrap()), port_a: PortId::from_str("port_id_a").unwrap(), port_b: PortId::from_str("port_id_b").unwrap(), order: Order::Ordered, version: None, new_client_connection: false },
+            CreateChannelCommand::parse_from(&["test", "--a-chain", "chain_a", "--a-conn", "connection_a", "--a-port", "port_id_a", "--b-port", "port_id_b", "--order", "ordered"])
+        )
+    }
+
+    #[test]
+    fn test_create_channel_reuse_client_with_new_client() {
+        assert!(
+            CreateChannelCommand::try_parse_from(&["test", "--a-chain", "chain_a", "--a-conn", "connection_a", "--a-port", "port_id_a", "--b-port", "port_id_b", "--new-client-conn"]).is_err()
+        )
+    }
+
+    #[test]
+    fn test_create_channel_new_client() {
+        assert_eq!(
+            CreateChannelCommand{ chain_a: ChainId::from_string("chain_a"), chain_b: Some(ChainId::from_string("chain_b")), connection_a: None, port_a: PortId::from_str("port_id_a").unwrap(), port_b: PortId::from_str("port_id_b").unwrap(), order: Order::Unordered, version: None, new_client_connection: true },
+            CreateChannelCommand::parse_from(&["test", "--a-chain", "chain_a", "--b-chain", "chain_b", "--a-port", "port_id_a", "--b-port", "port_id_b", "--new-client-conn"])
+        )
+    }
+
+    #[test]
+    fn test_create_channel_reuse_client_with_b_chain() {
+        assert!(
+            CreateChannelCommand::try_parse_from(&["test", "--a-chain", "chain_a", "--b-chain", "chain_b", "--a-conn", "connection_a", "--a-port", "port_id_a", "--b-port", "port_id_b", "--order", "ordered"]).is_err()
+        )
+    }
+
+    #[test]
+    fn test_create_channel_b_chain_without_new_client() {
+        assert!(CreateChannelCommand::try_parse_from(&["test", "--a-chain", "chain_a", "--b-chain", "chain_b", "--a-port", "port_id_a", "--b-port", "port_id_b"]).is_err())
+    }
+
+    #[test]
+    fn test_create_channel_no_b_chain_nor_a_conn() {
+        assert!(CreateChannelCommand::try_parse_from(&["test", "--a-chain", "chain_a", "--a-port", "port_id_a", "--b-port", "port_id_b"]).is_err())
     }
 }

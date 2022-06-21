@@ -18,7 +18,7 @@ use crate::commands::query::channel_ends::ChannelEnds;
 use crate::conclude::Output;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct QueryChannelsCmd {
     #[clap(
         long = "chain",
@@ -270,5 +270,42 @@ impl Debug for QueryChannelsOutput {
             QueryChannelsOutput::Verbose(output) => write!(f, "{:#?}", output),
             QueryChannelsOutput::Summary(output) => write!(f, "{:#?}", output),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::QueryChannelsCmd;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::ChainId;
+
+    #[test]
+    fn test_query_channels_required_only() {
+        assert_eq!(
+            QueryChannelsCmd{ chain_id: ChainId::from_string("chain_id"), dst_chain_id: None, verbose: false },
+            QueryChannelsCmd::parse_from(&["test", "--chain", "chain_id"])
+        )
+    }
+
+    #[test]
+    fn test_query_channels_counterparty_chain() {
+        assert_eq!(
+            QueryChannelsCmd{ chain_id: ChainId::from_string("chain_id"), dst_chain_id: Some(ChainId::from_string("counterparty_chain_id")), verbose: false },
+            QueryChannelsCmd::parse_from(&["test", "--chain", "chain_id", "--counterparty-chain", "counterparty_chain_id"])
+        )
+    }
+
+    #[test]
+    fn test_query_channels_verbose() {
+        assert_eq!(
+            QueryChannelsCmd{ chain_id: ChainId::from_string("chain_id"), dst_chain_id: None, verbose: true },
+            QueryChannelsCmd::parse_from(&["test", "--chain", "chain_id", "--verbose"])
+        )
+    }
+
+    #[test]
+    fn test_query_channels_no_chain() {
+        assert!(QueryChannelsCmd::try_parse_from(&["test"]).is_err())
     }
 }
