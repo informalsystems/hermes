@@ -88,6 +88,7 @@ pub struct TelemetryState {
 
     ws_send_packet_count: Counter<u64>,
     ws_acknowledgement_count: Counter<u64>,
+    ws_cleared_count: Counter<u64>,
 }
 
 impl TelemetryState {
@@ -318,6 +319,25 @@ impl TelemetryState {
 
         self.ws_acknowledgement_count.add(1, labels);
     }
+
+    pub fn record_cleared_packet(
+        &self,
+        _seq_nr: u64,
+        _height: u64,
+        chain_id: &ChainId,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_chain_id: &ChainId,
+    ) {
+        let labels: &[KeyValue; 4] = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("counterparty", counterparty_chain_id.to_string()),
+            KeyValue::new("channel", channel_id.to_string()),
+            KeyValue::new("port", port_id.to_string()),
+        ];
+
+        self.ws_cleared_count.add(1, labels);
+    }
 }
 
 use std::sync::Arc;
@@ -328,6 +348,7 @@ use opentelemetry::sdk::metrics::aggregators::{histogram, last_value, sum};
 
 #[derive(Debug)]
 struct CustomAggregatorSelector;
+
 impl AggregatorSelector for CustomAggregatorSelector {
     fn aggregator_for(&self, descriptor: &Descriptor) -> Option<Arc<dyn Aggregator + Send + Sync>> {
         match descriptor.name() {
@@ -424,6 +445,11 @@ impl Default for TelemetryState {
             ws_acknowledgement_count: meter
                 .u64_counter("ws_acknowledgement_count")
                 .with_description("BLA ws_acknowledgement")
+                .init(),
+
+            ws_cleared_count: meter
+                .u64_counter("ws_cleared_count")
+                .with_description("Number of packets sent through ClearPendingPackets")
                 .init(),
 
             tx_latency_submitted: meter

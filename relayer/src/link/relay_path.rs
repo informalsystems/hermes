@@ -436,35 +436,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // Collect relevant events from the incoming batch & adjust their height.
         let events = self.filter_relaying_events(batch.events, batch.tracking_id);
 
-        // Update telemetry info
-        telemetry!({
-            for e in events.events() {
-                match e {
-                    IbcEvent::SendPacket(send_packet_ev) => {
-                        ibc_telemetry::global().record_send_packet(
-                            send_packet_ev.packet.sequence.into(),
-                            send_packet_ev.height().revision_height,
-                            &self.src_chain().id(),
-                            self.src_channel_id(),
-                            self.src_port_id(),
-                            &self.dst_chain().id(),
-                        );
-                    }
-                    IbcEvent::WriteAcknowledgement(write_ack_ev) => {
-                        ibc_telemetry::global().record_write_ack(
-                            write_ack_ev.packet.sequence.into(),
-                            write_ack_ev.height().revision_height,
-                            &self.dst_chain().id(),
-                            self.src_channel_id(),
-                            self.src_port_id(),
-                            &self.src_chain().id(),
-                        );
-                    }
-                    _ => {}
-                }
-            }
-        });
-
         // Transform the events into operational data items
         self.events_to_operational_data(events)
     }
@@ -1103,6 +1074,42 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             &self.path_id,
             query_send_packet_events,
         ) {
+            // Update telemetry info
+            telemetry!({
+                for e in events_chunk.clone() {
+                    match e {
+                        IbcEvent::SendPacket(send_packet_ev) => {
+                            ibc_telemetry::global().record_send_packet(
+                                send_packet_ev.packet.sequence.into(),
+                                send_packet_ev.height().revision_height,
+                                &self.src_chain().id(),
+                                self.src_channel_id(),
+                                self.src_port_id(),
+                                &self.dst_chain().id(),
+                            );
+                            ibc_telemetry::global().record_cleared_packet(
+                                send_packet_ev.packet.sequence.into(),
+                                send_packet_ev.height().revision_height,
+                                &self.src_chain().id(),
+                                self.src_channel_id(),
+                                self.src_port_id(),
+                                &self.dst_chain().id(),
+                            );
+                        }
+                        IbcEvent::WriteAcknowledgement(write_ack_ev) => {
+                            ibc_telemetry::global().record_write_ack(
+                                write_ack_ev.packet.sequence.into(),
+                                write_ack_ev.height().revision_height,
+                                &self.dst_chain().id(),
+                                self.dst_channel_id(),
+                                self.src_port_id(),
+                                &self.src_chain().id(),
+                            );
+                        }
+                        _ => {}
+                    }
+                }
+            });
             self.events_to_operational_data(TrackedEvents::new(events_chunk, tracking_id))?;
         }
 
