@@ -53,11 +53,12 @@ impl ClientDef for TendermintClient {
         header: Self::Header,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Ics02Error> {
         if header.height().revision_number() != client_state.chain_id.version() {
-            return Err(Ics02Error::tendermint_handler_error(
+            return Err(Ics02Error::client_specific(
                 Error::mismatched_revisions(
                     client_state.chain_id.version(),
                     header.height().revision_number(),
-                ),
+                )
+                .to_string(),
             ));
         }
 
@@ -92,9 +93,10 @@ impl ClientDef for TendermintClient {
                 .revision_height()
                 .try_into()
                 .map_err(|_| {
-                    Ics02Error::tendermint_handler_error(Error::invalid_header_height(
-                        header.trusted_height.revision_height(),
-                    ))
+                    Ics02Error::client_specific(
+                        Error::invalid_header_height(header.trusted_height.revision_height())
+                            .to_string(),
+                    )
                 })?,
             next_validators: &header.trusted_validator_set,
             next_validators_hash: trusted_consensus_state.next_validators_hash,
@@ -127,11 +129,7 @@ impl ClientDef for TendermintClient {
                 ))
                 .into())
             }
-            Verdict::Invalid(detail) => {
-                return Err(Ics02Error::tendermint_handler_error(
-                    Error::verification_error(detail),
-                ))
-            }
+            Verdict::Invalid(detail) => return Err(Error::verification_error(detail).into()),
         }
 
         // If the header has verified, but its corresponding consensus state
@@ -156,15 +154,17 @@ impl ClientDef for TendermintClient {
                 // New (untrusted) header timestamp cannot occur after next
                 // consensus state's height
                 if header.signed_header.header().time > next_cs.timestamp {
-                    return Err(Ics02Error::tendermint_handler_error(
+                    return Err(Ics02Error::client_specific(
                         Error::header_timestamp_too_high(
                             header.signed_header.header().time.to_string(),
                             next_cs.timestamp.to_string(),
-                        ),
+                        )
+                        .to_string(),
                     ));
                 }
             }
         }
+
         // (cs-trusted, cs-prev, cs-new)
         if header.trusted_height < header.height() {
             let maybe_prev_cs = ctx
@@ -177,11 +177,12 @@ impl ClientDef for TendermintClient {
                 // New (untrusted) header timestamp cannot occur before the
                 // previous consensus state's height
                 if header.signed_header.header().time < prev_cs.timestamp {
-                    return Err(Ics02Error::tendermint_handler_error(
+                    return Err(Ics02Error::client_specific(
                         Error::header_timestamp_too_low(
                             header.signed_header.header().time.to_string(),
                             prev_cs.timestamp.to_string(),
-                        ),
+                        )
+                        .to_string(),
                     ));
                 }
             }
@@ -426,7 +427,7 @@ fn verify_membership(
             value,
             0,
         )
-        .map_err(|e| Ics02Error::tendermint(Error::ics23_error(e)))
+        .map_err(|e| Ics02Error::ics23_verification(e))
 }
 
 fn verify_non_membership(
@@ -443,7 +444,7 @@ fn verify_non_membership(
 
     merkle_proof
         .verify_non_membership(&client_state.proof_specs, root.clone().into(), merkle_path)
-        .map_err(|e| Ics02Error::tendermint(Error::ics23_error(e)))
+        .map_err(|e| Ics02Error::ics23_verification(e))
 }
 
 fn verify_delay_passed(
