@@ -23,7 +23,7 @@ use crate::prelude::*;
 use ibc_relayer::config::default::connection_delay;
 
 static PROMPT: &str = "Are you sure you want a new connection & clients to be created? Hermes will use default security parameters.";
-static HINT: &str = "Consider using the default invocation\n\nhermes create channel --port-a <PORT-ID> --port-b <PORT-ID> <CHAIN-A-ID> <CONNECTION-A-ID>\n\nto re-use a pre-existing connection.";
+static HINT: &str = "Consider using the default invocation\n\nhermes create channel --a-port <PORT-ID> --b-port <PORT-ID> --a-chain <CHAIN-A-ID> --a-conn <CONNECTION-A-ID>\n\nto re-use a pre-existing connection.";
 
 /// The data structure that represents all the possible options when invoking
 /// the `create channel` CLI command.
@@ -139,7 +139,7 @@ impl Runnable for CreateChannelCommand {
                         }
                     } else {
                         Output::error(
-                                "The `--new-client-connection` flag is required if invoking with `--chain-b`".to_string()
+                                "The `--new-client-conn` flag is required if invoking with `--chain-b`".to_string()
                             )
                             .exit();
                     }
