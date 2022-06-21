@@ -138,6 +138,46 @@ pub trait ChannelReader {
     }
 }
 
+pub trait ChannelMetaReader {
+    /// Returns the current height of the local chain.
+    fn host_height(&self) -> Height;
+
+    /// Returns the current timestamp of the local chain.
+    fn host_timestamp(&self) -> Timestamp;
+
+    /// Returns the time when the client state for the given [`ClientId`] was updated with a header for the given [`Height`]
+    fn client_update_time(&self, client_id: &ClientId, height: Height) -> Result<Timestamp, Error>;
+
+    /// Returns the height when the client state for the given [`ClientId`] was updated with a header for the given [`Height`]
+    fn client_update_height(&self, client_id: &ClientId, height: Height) -> Result<Height, Error>;
+
+    /// Calculates the block delay period using the connection's delay period and the maximum
+    /// expected time per block.
+    fn block_delay(&self, delay_period_time: Duration) -> u64;
+}
+
+impl<T: ChannelReader> ChannelMetaReader for T {
+    fn host_height(&self) -> Height {
+        ChannelReader::host_height(self)
+    }
+
+    fn host_timestamp(&self) -> Timestamp {
+        ChannelReader::host_timestamp(self)
+    }
+
+    fn client_update_time(&self, client_id: &ClientId, height: Height) -> Result<Timestamp, Error> {
+        ChannelReader::client_update_time(self, client_id, height)
+    }
+
+    fn client_update_height(&self, client_id: &ClientId, height: Height) -> Result<Height, Error> {
+        ChannelReader::client_update_height(self, client_id, height)
+    }
+
+    fn block_delay(&self, delay_period_time: Duration) -> u64 {
+        ChannelReader::block_delay(self, delay_period_time)
+    }
+}
+
 /// A context supplying all the necessary write-only dependencies (i.e., storage writing facility)
 /// for processing any `ChannelMsg`.
 pub trait ChannelKeeper {

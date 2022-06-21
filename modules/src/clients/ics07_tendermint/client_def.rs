@@ -19,7 +19,7 @@ use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
-use crate::core::ics04_channel::context::ChannelReader;
+use crate::core::ics04_channel::context::ChannelMetaReader;
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
@@ -274,7 +274,7 @@ impl ClientDef for TendermintClient {
 
     fn verify_packet_data(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn ChannelMetaReader,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -306,7 +306,7 @@ impl ClientDef for TendermintClient {
 
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn ChannelMetaReader,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -337,7 +337,7 @@ impl ClientDef for TendermintClient {
 
     fn verify_next_sequence_recv(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn ChannelMetaReader,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -368,7 +368,7 @@ impl ClientDef for TendermintClient {
 
     fn verify_packet_receipt_absence(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn ChannelMetaReader,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -427,7 +427,7 @@ fn verify_membership(
             value,
             0,
         )
-        .map_err(|e| Ics02Error::ics23_verification(e))
+        .map_err(Ics02Error::ics23_verification)
 }
 
 fn verify_non_membership(
@@ -444,11 +444,11 @@ fn verify_non_membership(
 
     merkle_proof
         .verify_non_membership(&client_state.proof_specs, root.clone().into(), merkle_path)
-        .map_err(|e| Ics02Error::ics23_verification(e))
+        .map_err(Ics02Error::ics23_verification)
 }
 
 fn verify_delay_passed(
-    ctx: &dyn ChannelReader,
+    ctx: &dyn ChannelMetaReader,
     height: Height,
     connection_end: &ConnectionEnd,
 ) -> Result<(), Ics02Error> {
