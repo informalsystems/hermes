@@ -2,7 +2,7 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_def::ClientDef;
-use crate::core::ics02_client::client_state::AnyClientState;
+use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
@@ -99,7 +99,7 @@ impl ClientDef for MockClient {
         Ok(())
     }
 
-    fn verify_client_full_state(
+    fn verify_client_full_state<U>(
         &self,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -107,7 +107,7 @@ impl ClientDef for MockClient {
         _proof: &CommitmentProofBytes,
         _root: &CommitmentRoot,
         _client_id: &ClientId,
-        _expected_client_state: &AnyClientState,
+        _expected_client_state: &dyn ClientState<UpgradeOptions = U>,
     ) -> Result<(), Error> {
         Ok(())
     }

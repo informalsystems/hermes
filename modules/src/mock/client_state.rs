@@ -109,12 +109,16 @@ impl ClientState for MockClientState {
         self.frozen_height
     }
 
-    fn upgrade(self, _upgrade_height: Height, _upgrade_options: (), _chain_id: ChainId) -> Self {
+    fn upgrade(&mut self, _upgrade_height: Height, _upgrade_options: (), _chain_id: ChainId) {
         todo!()
     }
 
     fn wrap_any(self) -> AnyClientState {
         AnyClientState::Mock(self)
+    }
+
+    fn encode_vec(&self) -> Result<Vec<u8>, Error> {
+        Protobuf::encode_vec(self).map_err(Error::invalid_any_client_state)
     }
 }
 
