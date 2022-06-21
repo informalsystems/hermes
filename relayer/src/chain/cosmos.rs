@@ -81,10 +81,10 @@ use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 
 use super::requests::{
-    HeightQuery, IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest,
-    QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
-    QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
-    QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
+    IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+    QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
+    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
+    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHeight,
     QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
     QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
@@ -289,7 +289,7 @@ impl CosmosSdkChain {
     fn query(
         &self,
         data: impl Into<Path>,
-        height_query: HeightQuery,
+        height_query: QueryHeight,
         prove: bool,
     ) -> Result<QueryResponse, Error> {
         crate::time!("query");
@@ -984,7 +984,7 @@ impl ChainEndpoint for CosmosSdkChain {
         async fn do_query_connection(
             chain: &CosmosSdkChain,
             connection_id: &ConnectionId,
-            height_query: HeightQuery,
+            height_query: QueryHeight,
         ) -> Result<ConnectionEnd, Error> {
             use ibc_proto::ibc::core::connection::v1 as connection;
             use tonic::IntoRequest;
@@ -1522,8 +1522,8 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryHostConsensusStateRequest,
     ) -> Result<Self::ConsensusState, Error> {
         let height = match request.height {
-            HeightQuery::Latest => TmHeight::from(0u32),
-            HeightQuery::Specific(ibc_height) => {
+            QueryHeight::Latest => TmHeight::from(0u32),
+            QueryHeight::Specific(ibc_height) => {
                 TmHeight::try_from(ibc_height.revision_height).map_err(Error::invalid_height)?
             }
         };

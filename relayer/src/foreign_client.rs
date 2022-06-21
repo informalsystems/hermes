@@ -38,8 +38,8 @@ use ibc::Height;
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::{
-    HeightQuery, IncludeProof, PageRequest, QueryClientStateRequest, QueryConsensusStateRequest,
-    QueryConsensusStatesRequest, QueryUpgradedClientStateRequest,
+    IncludeProof, PageRequest, QueryClientStateRequest, QueryConsensusStateRequest,
+    QueryConsensusStatesRequest, QueryHeight, QueryUpgradedClientStateRequest,
     QueryUpgradedConsensusStateRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
@@ -411,7 +411,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         match host_chain.query_client_state(
             QueryClientStateRequest {
                 client_id: client_id.clone(),
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         ) {
@@ -675,7 +675,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 .query_client_state(
                     QueryClientStateRequest {
                         client_id: self.id().clone(),
-                        height: HeightQuery::Latest,
+                        height: QueryHeight::Latest,
                     },
                     IncludeProof::No,
                 )
@@ -1235,7 +1235,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 QueryConsensusStateRequest {
                     client_id: self.id.clone(),
                     consensus_height: height,
-                    query_height: HeightQuery::Latest,
+                    query_height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -1318,7 +1318,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 .query_client_state(
                     QueryClientStateRequest {
                         client_id: self.id().clone(),
-                        height: HeightQuery::Latest,
+                        height: QueryHeight::Latest,
                     },
                     IncludeProof::No,
                 )
@@ -1620,7 +1620,7 @@ mod test {
     use crate::chain::handle::{BaseChainHandle, ChainHandle};
     use crate::chain::mock::test_utils::get_basic_chain_config;
     use crate::chain::mock::MockChain;
-    use crate::chain::requests::{HeightQuery, IncludeProof, QueryClientStateRequest};
+    use crate::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
     use crate::chain::runtime::ChainRuntime;
     use crate::foreign_client::ForeignClient;
 
@@ -1804,7 +1804,7 @@ mod test {
         let b_client_state_res = b_chain.query_client_state(
             QueryClientStateRequest {
                 client_id: b_client,
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         );
@@ -1817,7 +1817,7 @@ mod test {
         let a_client_state_res = a_chain.query_client_state(
             QueryClientStateRequest {
                 client_id: a_client,
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         );

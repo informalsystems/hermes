@@ -11,7 +11,7 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, Connection
 
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::{
-    HeightQuery, IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest,
+    IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
 use crate::error::Error as RelayerError;
 use crate::object;
@@ -115,7 +115,7 @@ impl FilterPolicy {
                 .query_client_state(
                     QueryClientStateRequest {
                         client_id: counterparty_client_id.clone(),
-                        height: HeightQuery::Latest,
+                        height: QueryHeight::Latest,
                     },
                     IncludeProof::No,
                 )
@@ -232,7 +232,7 @@ impl FilterPolicy {
             .query_client_state(
                 QueryClientStateRequest {
                     client_id: obj.dst_client_id.clone(),
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -274,7 +274,7 @@ impl FilterPolicy {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: obj.src_connection_id.clone(),
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -284,7 +284,7 @@ impl FilterPolicy {
             .query_client_state(
                 QueryClientStateRequest {
                     client_id: connection_end.client_id().clone(),
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -328,7 +328,7 @@ impl FilterPolicy {
                 QueryChannelRequest {
                     port_id: port_id.clone(),
                     channel_id: *channel_id,
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -345,7 +345,7 @@ impl FilterPolicy {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: conn_id.clone(),
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -355,7 +355,7 @@ impl FilterPolicy {
             .query_client_state(
                 QueryClientStateRequest {
                     client_id: connection_end.client_id().clone(),
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )

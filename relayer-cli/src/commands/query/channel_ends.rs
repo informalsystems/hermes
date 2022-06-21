@@ -10,7 +10,7 @@ use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortI
 use ibc::Height;
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{
-    HeightQuery, IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest,
+    IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
 use ibc_relayer::registry::Registry;
 
@@ -85,7 +85,7 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
         QueryChannelRequest {
             port_id: port_id.clone(),
             channel_id,
-            height: HeightQuery::Specific(chain_height),
+            height: QueryHeight::Specific(chain_height),
         },
         IncludeProof::No,
     )?;
@@ -111,7 +111,7 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
     let (connection_end, _) = chain.query_connection(
         QueryConnectionRequest {
             connection_id: connection_id.clone(),
-            height: HeightQuery::Specific(chain_height),
+            height: QueryHeight::Specific(chain_height),
         },
         IncludeProof::No,
     )?;
@@ -121,7 +121,7 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
     let (client_state, _) = chain.query_client_state(
         QueryClientStateRequest {
             client_id: client_id.clone(),
-            height: HeightQuery::Specific(chain_height),
+            height: QueryHeight::Specific(chain_height),
         },
         IncludeProof::No,
     )?;
@@ -153,7 +153,7 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
     let counterparty_chain_id = client_state.chain_id();
     let counterparty_chain = registry.get_or_spawn(&counterparty_chain_id)?;
     let counterparty_chain_height_query =
-        HeightQuery::Specific(counterparty_chain.query_latest_height()?);
+        QueryHeight::Specific(counterparty_chain.query_latest_height()?);
 
     let (counterparty_connection_end, _) = counterparty_chain.query_connection(
         QueryConnectionRequest {

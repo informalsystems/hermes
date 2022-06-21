@@ -11,9 +11,9 @@ use ibc::events::IbcEvent;
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::HeightQuery;
 use crate::chain::requests::IncludeProof;
 use crate::chain::requests::QueryClientStateRequest;
+use crate::chain::requests::QueryHeight;
 use crate::chain::tracking::TrackedMsgs;
 use crate::chain::tracking::TrackingId;
 use crate::link::error::LinkError;
@@ -182,7 +182,7 @@ impl OperationalData {
                     .query_client_state(
                         QueryClientStateRequest {
                             client_id: relay_path.src_client_id().clone(),
-                            height: HeightQuery::Latest,
+                            height: QueryHeight::Latest,
                         },
                         IncludeProof::No,
                     )
@@ -193,7 +193,7 @@ impl OperationalData {
                     .query_client_state(
                         QueryClientStateRequest {
                             client_id: relay_path.dst_client_id().clone(),
-                            height: HeightQuery::Latest,
+                            height: QueryHeight::Latest,
                         },
                         IncludeProof::No,
                     )

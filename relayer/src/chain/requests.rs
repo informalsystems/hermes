@@ -33,42 +33,42 @@ use tonic::metadata::AsciiMetadataValue;
 /// case where the user wants to query at whatever the latest height is, as
 /// opposed to specifying a specific height.
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-pub enum HeightQuery {
+pub enum QueryHeight {
     Latest,
     Specific(Height),
 }
 
-impl TryFrom<HeightQuery> for TMBlockHeight {
+impl TryFrom<QueryHeight> for TMBlockHeight {
     type Error = Error;
 
-    fn try_from(height_query: HeightQuery) -> Result<Self, Self::Error> {
+    fn try_from(height_query: QueryHeight) -> Result<Self, Self::Error> {
         let height = match height_query {
-            HeightQuery::Latest => 0u64,
-            HeightQuery::Specific(height) => height.revision_height,
+            QueryHeight::Latest => 0u64,
+            QueryHeight::Specific(height) => height.revision_height,
         };
 
         Self::try_from(height).map_err(Error::invalid_height)
     }
 }
 
-impl TryFrom<HeightQuery> for AsciiMetadataValue {
+impl TryFrom<QueryHeight> for AsciiMetadataValue {
     type Error = Error;
 
-    fn try_from(height_query: HeightQuery) -> Result<Self, Self::Error> {
+    fn try_from(height_query: QueryHeight) -> Result<Self, Self::Error> {
         let height = match height_query {
-            HeightQuery::Latest => 0u64,
-            HeightQuery::Specific(height) => height.revision_height,
+            QueryHeight::Latest => 0u64,
+            QueryHeight::Specific(height) => height.revision_height,
         };
 
         str::parse(&height.to_string()).map_err(Error::invalid_metadata)
     }
 }
 
-impl Display for HeightQuery {
+impl Display for QueryHeight {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            HeightQuery::Latest => write!(f, "latest height"),
-            HeightQuery::Specific(height) => write!(f, "{}", height),
+            QueryHeight::Latest => write!(f, "latest height"),
+            QueryHeight::Specific(height) => write!(f, "{}", height),
         }
     }
 }
@@ -127,7 +127,7 @@ impl From<PageRequest> for RawPageRequest {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryClientStateRequest {
     pub client_id: ClientId,
-    pub height: HeightQuery,
+    pub height: QueryHeight,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -147,7 +147,7 @@ impl From<QueryClientStatesRequest> for RawQueryClientStatesRequest {
 pub struct QueryConsensusStateRequest {
     pub client_id: ClientId,
     pub consensus_height: Height,
-    pub query_height: HeightQuery,
+    pub query_height: QueryHeight,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -206,7 +206,7 @@ impl From<QueryClientConnectionsRequest> for RawQueryClientConnectionsRequest {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryConnectionRequest {
     pub connection_id: ConnectionId,
-    pub height: HeightQuery,
+    pub height: QueryHeight,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -241,7 +241,7 @@ impl From<QueryChannelsRequest> for RawQueryChannelsRequest {
 pub struct QueryChannelRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    pub height: HeightQuery,
+    pub height: QueryHeight,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -264,7 +264,7 @@ pub struct QueryPacketCommitmentRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub sequence: Sequence,
-    pub height: HeightQuery,
+    pub height: QueryHeight,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -289,7 +289,7 @@ pub struct QueryPacketReceiptRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub sequence: Sequence,
-    pub height: HeightQuery,
+    pub height: QueryHeight,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -318,7 +318,7 @@ pub struct QueryPacketAcknowledgementRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub sequence: Sequence,
-    pub height: HeightQuery,
+    pub height: QueryHeight,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -369,7 +369,7 @@ impl From<QueryUnreceivedAcksRequest> for RawQueryUnreceivedAcksRequest {
 pub struct QueryNextSequenceReceiveRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    pub height: HeightQuery,
+    pub height: QueryHeight,
 }
 
 impl From<QueryNextSequenceReceiveRequest> for RawQueryNextSequenceReceiveRequest {
@@ -383,5 +383,5 @@ impl From<QueryNextSequenceReceiveRequest> for RawQueryNextSequenceReceiveReques
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryHostConsensusStateRequest {
-    pub height: HeightQuery,
+    pub height: QueryHeight,
 }
