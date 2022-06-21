@@ -6,7 +6,6 @@ use ibc_proto::ibc::lightclients::tendermint::v1::Misbehaviour as RawMisbehaviou
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
-use crate::core::ics02_client::misbehaviour::AnyMisbehaviour;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::Height;
 
@@ -24,10 +23,6 @@ impl crate::core::ics02_client::misbehaviour::Misbehaviour for Misbehaviour {
 
     fn height(&self) -> Height {
         self.header1.height()
-    }
-
-    fn wrap_any(self) -> AnyMisbehaviour {
-        AnyMisbehaviour::Tendermint(self)
     }
 }
 

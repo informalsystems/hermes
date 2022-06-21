@@ -8,6 +8,7 @@ use tendermint_proto::Protobuf;
 use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
 
 use crate::clients::ics07_tendermint::client_state;
+use crate::clients::ics07_tendermint::client_state::ClientState as TmClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
@@ -52,9 +53,6 @@ pub trait ClientState: core::fmt::Debug + Send + Sync {
         upgrade_options: Self::UpgradeOptions,
         chain_id: ChainId,
     );
-
-    /// Wrap into an `AnyClientState`
-    fn wrap_any(self) -> AnyClientState;
 
     fn encode_vec(&self) -> Result<Vec<u8>, Error>;
 }
@@ -237,12 +235,21 @@ impl ClientState for AnyClientState {
         }
     }
 
-    fn wrap_any(self) -> AnyClientState {
-        self
-    }
-
     fn encode_vec(&self) -> Result<Vec<u8>, Error> {
         Protobuf::encode_vec(self).map_err(Error::invalid_any_client_state)
+    }
+}
+
+impl From<TmClientState> for AnyClientState {
+    fn from(cs: TmClientState) -> Self {
+        Self::Tendermint(cs)
+    }
+}
+
+#[cfg(any(test, feature = "mocks"))]
+impl From<MockClientState> for AnyClientState {
+    fn from(cs: MockClientState) -> Self {
+        Self::Mock(cs)
     }
 }
 
@@ -301,7 +308,8 @@ mod tests {
 
     #[test]
     fn any_client_state_serialization() {
-        let tm_client_state = get_dummy_tendermint_client_state(get_dummy_tendermint_header());
+        let tm_client_state: AnyClientState =
+            get_dummy_tendermint_client_state(get_dummy_tendermint_header()).into();
 
         let raw: Any = tm_client_state.clone().into();
         let tm_client_state_back = AnyClientState::try_from(raw).unwrap();

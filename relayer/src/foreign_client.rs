@@ -14,7 +14,7 @@ use tracing::{debug, error, info, span, trace, warn, Level};
 
 use flex_error::define_error;
 use ibc::core::ics02_client::client_consensus::{
-    AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState, QueryClientEventRequest,
+    AnyConsensusState, AnyConsensusStateWithHeight, QueryClientEventRequest,
 };
 use ibc::core::ics02_client::client_state::AnyClientState;
 use ibc::core::ics02_client::client_state::ClientState;
@@ -592,7 +592,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         })?;
         let settings = ClientSettings::for_create_command(options, &src_config, &dst_config);
 
-        let client_state = self
+        let client_state: AnyClientState = self
             .src_chain
             .build_client_state(latest_height, settings)
             .map_err(|e| {
@@ -601,8 +601,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                     "failed when building client state".to_string(),
                     e,
                 )
-            })?
-            .wrap_any();
+            })?;
 
         let consensus_state = self
             .src_chain
@@ -617,8 +616,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                     "failed while building client consensus state from src chain".to_string(),
                     e,
                 )
-            })?
-            .wrap_any();
+            })?;
 
         //TODO Get acct_prefix
         let msg = MsgCreateAnyClient::new(client_state, consensus_state, signer)

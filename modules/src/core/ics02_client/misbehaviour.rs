@@ -25,8 +25,6 @@ pub trait Misbehaviour: Clone + core::fmt::Debug + Send + Sync {
 
     /// The height of the consensus state
     fn height(&self) -> Height;
-
-    fn wrap_any(self) -> AnyMisbehaviour;
 }
 
 #[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound once possible
@@ -55,10 +53,6 @@ impl Misbehaviour for AnyMisbehaviour {
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(misbehaviour) => misbehaviour.height(),
         }
-    }
-
-    fn wrap_any(self) -> AnyMisbehaviour {
-        self
     }
 }
 
@@ -111,6 +105,19 @@ impl core::fmt::Display for AnyMisbehaviour {
             #[cfg(any(test, feature = "mocks"))]
             AnyMisbehaviour::Mock(mock) => write!(f, "{:?}", mock),
         }
+    }
+}
+
+#[cfg(any(test, feature = "mocks"))]
+impl From<MockMisbehaviour> for AnyMisbehaviour {
+    fn from(misbehaviour: MockMisbehaviour) -> Self {
+        Self::Mock(misbehaviour)
+    }
+}
+
+impl From<TmMisbehaviour> for AnyMisbehaviour {
+    fn from(misbehaviour: TmMisbehaviour) -> Self {
+        Self::Tendermint(misbehaviour)
     }
 }
 
