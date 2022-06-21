@@ -67,7 +67,7 @@ impl ClientDef for TendermintClient {
         let existing_consensus_state =
             match ctx.maybe_consensus_state(&client_id, header.height())? {
                 Some(cs) => {
-                    let cs = downcast_consensus_state(cs.as_ref())?.clone();
+                    let cs = downcast_consensus_state(cs.as_ref())?;
                     // If this consensus state matches, skip verification
                     // (optimization)
                     if cs == header_consensus_state {
