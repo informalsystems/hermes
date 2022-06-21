@@ -444,7 +444,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         info!("[{}] upgrade Height: {}", self, src_upgrade_height);
 
         let mut msgs = self
-            .build_update_client_with_trusted(src_upgrade_height, Height::zero())
+            .build_update_client_with_trusted(src_upgrade_height, None)
             .map_err(|_| {
                 ForeignClientError::client_upgrade_no_source(
                     self.id.clone(),
@@ -803,7 +803,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         &self,
         target_height: Height,
     ) -> Result<Vec<Any>, ForeignClientError> {
-        self.wait_and_build_update_client_with_trusted(target_height, Height::zero())
+        self.wait_and_build_update_client_with_trusted(target_height, None)
     }
 
     /// Returns a trusted height that is lower than the target height, so
@@ -963,7 +963,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     pub fn wait_and_build_update_client_with_trusted(
         &self,
         target_height: Height,
-        trusted_height: Height,
+        trusted_height: Option<Height>,
     ) -> Result<Vec<Any>, ForeignClientError> {
         let src_application_latest_height = || {
             self.src_chain().query_latest_height().map_err(|e| {
@@ -986,16 +986,17 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     pub fn build_update_client_with_trusted(
         &self,
         target_height: Height,
-        trusted_height: Height,
+        maybe_trusted_height: Option<Height>,
     ) -> Result<Vec<Any>, ForeignClientError> {
         // Get the latest client state on destination.
         let (client_state, _) = self.validated_client_state()?;
 
-        let trusted_height = if trusted_height == Height::zero() {
-            self.solve_trusted_height(target_height, &client_state)?
-        } else {
-            self.validate_trusted_height(trusted_height, &client_state)?;
-            trusted_height
+        let trusted_height = match maybe_trusted_height {
+            Some(trusted_height) => {
+                self.validate_trusted_height(trusted_height, &client_state)?;
+                trusted_height
+            }
+            None => self.solve_trusted_height(target_height, &client_state)?,
         };
 
         if trusted_height != client_state.latest_height() {
@@ -1090,13 +1091,13 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     }
 
     pub fn build_latest_update_client_and_send(&self) -> Result<Vec<IbcEvent>, ForeignClientError> {
-        self.build_update_client_and_send(Height::zero(), Height::zero())
+        self.build_update_client_and_send(Height::zero(), None)
     }
 
     pub fn build_update_client_and_send(
         &self,
         height: Height,
-        trusted_height: Height,
+        trusted_height: Option<Height>,
     ) -> Result<Vec<IbcEvent>, ForeignClientError> {
         let h = if height == Height::zero() {
             self.src_chain.query_latest_height().map_err(|e| {
