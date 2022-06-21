@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::core::ics02_client::context::{ClientKeeper, ClientReader, ConsensusReader};
 use crate::core::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::core::ics04_channel::channel::{Counterparty, Order};
-use crate::core::ics04_channel::context::{ChannelKeeper, ChannelReader};
+use crate::core::ics04_channel::context::{ChannelKeeper, ChannelMetaReader, ChannelReader};
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement as GenericAcknowledgement;
 use crate::core::ics04_channel::packet::Packet;
@@ -32,6 +32,7 @@ pub trait Ics26Context:
     + ConnectionKeeper
     + ChannelKeeper
     + ChannelReader
+    + ChannelMetaReader
     + PortReader
 {
     type Router: Router;

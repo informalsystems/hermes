@@ -10,7 +10,7 @@ use crate::core::ics02_client::header::{AnyHeader, Header};
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
-use crate::core::ics04_channel::context::ChannelReader;
+use crate::core::ics04_channel::context::ChannelMetaReader;
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
@@ -36,7 +36,6 @@ pub trait ClientDef: Clone {
         header: Self::Header,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Error>;
 
-    /// TODO
     fn verify_upgrade_and_update_state(
         &self,
         client_state: &Self::ClientState,
@@ -109,7 +108,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_data(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn ChannelMetaReader,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -125,7 +124,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn ChannelMetaReader,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -141,7 +140,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_next_sequence_recv(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn ChannelMetaReader,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -156,7 +155,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_receipt_absence(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn ChannelMetaReader,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -428,7 +427,7 @@ impl ClientDef for AnyClient {
     }
     fn verify_packet_data(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn ChannelMetaReader,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -485,7 +484,7 @@ impl ClientDef for AnyClient {
 
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn ChannelMetaReader,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -542,7 +541,7 @@ impl ClientDef for AnyClient {
 
     fn verify_next_sequence_recv(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn ChannelMetaReader,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -595,7 +594,7 @@ impl ClientDef for AnyClient {
     }
     fn verify_packet_receipt_absence(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn ChannelMetaReader,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
