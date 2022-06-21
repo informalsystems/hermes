@@ -6,13 +6,13 @@ use tendermint_light_client_verifier::types::{TrustedBlockState, UntrustedBlockS
 use tendermint_light_client_verifier::{ProdVerifier, Verdict, Verifier};
 use tendermint_proto::Protobuf;
 
-use crate::clients::ics07_tendermint::client_state::ClientState;
+use crate::clients::ics07_tendermint::client_state::ClientState as TmClientState;
 use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
 use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::core::ics02_client::client_def::ClientDef;
-use crate::core::ics02_client::client_state::AnyClientState;
+use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error as Ics02Error;
@@ -43,7 +43,7 @@ pub struct TendermintClient {
 
 impl ClientDef for TendermintClient {
     type Header = Header;
-    type ClientState = ClientState;
+    type ClientState = TmClientState;
     type ConsensusState = TmConsensusState;
 
     fn check_header_and_update_state(
@@ -251,7 +251,7 @@ impl ClientDef for TendermintClient {
         verify_membership(client_state, prefix, proof, root, path, value)
     }
 
-    fn verify_client_full_state(
+    fn verify_client_full_state<U>(
         &self,
         client_state: &Self::ClientState,
         height: Height,
@@ -259,14 +259,12 @@ impl ClientDef for TendermintClient {
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         client_id: &ClientId,
-        expected_client_state: &AnyClientState,
+        expected_client_state: &dyn ClientState<UpgradeOptions = U>,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
 
         let path = ClientStatePath(client_id.clone());
-        let value = expected_client_state
-            .encode_vec()
-            .map_err(Ics02Error::invalid_any_client_state)?;
+        let value = expected_client_state.encode_vec()?;
         verify_membership(client_state, prefix, proof, root, path, value)
     }
 
@@ -405,7 +403,7 @@ impl ClientDef for TendermintClient {
 }
 
 fn verify_membership(
-    client_state: &ClientState,
+    client_state: &TmClientState,
     prefix: &CommitmentPrefix,
     proof: &CommitmentProofBytes,
     root: &CommitmentRoot,
@@ -429,7 +427,7 @@ fn verify_membership(
 }
 
 fn verify_non_membership(
-    client_state: &ClientState,
+    client_state: &TmClientState,
     prefix: &CommitmentPrefix,
     proof: &CommitmentProofBytes,
     root: &CommitmentRoot,
@@ -464,7 +462,7 @@ fn verify_delay_passed(
     let delay_period_time = connection_end.delay_period();
     let delay_period_height = ctx.block_delay(delay_period_time);
 
-    ClientState::verify_delay_passed(
+    TmClientState::verify_delay_passed(
         current_timestamp,
         current_height,
         processed_time,

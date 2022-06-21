@@ -219,11 +219,11 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
     }
 
     fn upgrade(
-        mut self,
+        &mut self,
         upgrade_height: Height,
         upgrade_options: UpgradeOptions,
         chain_id: ChainId,
-    ) -> Self {
+    ) {
         // Reset custom fields to zero values
         self.trusting_period = ZERO_DURATION;
         self.trust_level = TrustThreshold::ZERO;
@@ -236,12 +236,14 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
         self.latest_height = upgrade_height;
         self.unbonding_period = upgrade_options.unbonding_period;
         self.chain_id = chain_id;
-
-        self
     }
 
     fn wrap_any(self) -> AnyClientState {
         AnyClientState::Tendermint(self)
+    }
+
+    fn encode_vec(&self) -> Result<Vec<u8>, Ics02Error> {
+        Protobuf::encode_vec(self).map_err(Ics02Error::invalid_any_client_state)
     }
 }
 

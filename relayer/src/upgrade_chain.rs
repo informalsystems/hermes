@@ -84,7 +84,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
         )
         .map_err(UpgradeChainError::query)?;
 
-    let client_state = downcast!(client_state => AnyClientState::Tendermint)
+    let mut client_state = downcast!(client_state => AnyClientState::Tendermint)
         .ok_or_else(UpgradeChainError::tendermint_only)?;
 
     // Retain the old unbonding period in case the user did not specify a new one
@@ -94,7 +94,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
             .unwrap_or(client_state.unbonding_period),
     };
 
-    let upgraded_client_state = client_state.upgrade(
+    client_state.upgrade(
         upgrade_height.increment(),
         upgrade_options,
         opts.upgraded_chain_id.clone(),
@@ -103,7 +103,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
     let proposal = UpgradeProposal {
         title: "proposal 0".to_string(),
         description: "upgrade the chain software and unbonding period".to_string(),
-        upgraded_client_state: Some(Any::from(upgraded_client_state.wrap_any())),
+        upgraded_client_state: Some(Any::from(client_state.wrap_any())),
         plan: Some(Plan {
             name: opts.upgrade_plan_name.clone(),
             height: upgrade_height.revision_height() as i64,
