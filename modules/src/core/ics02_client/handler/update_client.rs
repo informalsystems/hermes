@@ -5,7 +5,7 @@ use tracing::debug;
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_def::{AnyClient, ClientDef};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
-use crate::core::ics02_client::context::ClientReader;
+use crate::core::ics02_client::context::{ClientReader, ConsensusReader};
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
 use crate::core::ics02_client::handler::ClientResult;
@@ -29,8 +29,8 @@ pub struct Result {
     pub processed_height: Height,
 }
 
-pub fn process(
-    ctx: &dyn ClientReader,
+pub fn process<Ctx: ClientReader + ConsensusReader>(
+    ctx: &Ctx,
     msg: MsgUpdateAnyClient,
 ) -> HandlerResult<ClientResult, Error> {
     let mut output = HandlerOutput::builder();
@@ -54,15 +54,14 @@ pub fn process(
     }
 
     // Read consensus state from the host chain store.
-    let latest_consensus_state = ctx
-        .consensus_state(&client_id, client_state.latest_height())
-        .map_err(|_| {
-            Error::consensus_state_not_found(client_id.clone(), client_state.latest_height())
-        })?;
+    let latest_consensus_state =
+        ClientReader::consensus_state(ctx, &client_id, client_state.latest_height()).map_err(
+            |_| Error::consensus_state_not_found(client_id.clone(), client_state.latest_height()),
+        )?;
 
     debug!("latest consensus state: {:?}", latest_consensus_state);
 
-    let now = ctx.host_timestamp();
+    let now = ClientReader::host_timestamp(ctx);
     let duration = now
         .duration_since(&latest_consensus_state.timestamp())
         .ok_or_else(|| {
@@ -87,7 +86,7 @@ pub fn process(
         client_id: client_id.clone(),
         client_state: new_client_state,
         consensus_state: new_consensus_state,
-        processed_time: ctx.host_timestamp(),
+        processed_time: ClientReader::host_timestamp(ctx),
         processed_height: ctx.host_height(),
     });
 
