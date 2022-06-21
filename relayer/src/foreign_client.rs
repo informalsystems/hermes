@@ -1091,32 +1091,32 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     }
 
     pub fn build_latest_update_client_and_send(&self) -> Result<Vec<IbcEvent>, ForeignClientError> {
-        self.build_update_client_and_send(Height::zero(), None)
+        self.build_update_client_and_send(QueryHeight::Latest, None)
     }
 
     pub fn build_update_client_and_send(
         &self,
-        height: Height,
+        target_query_height: QueryHeight,
         trusted_height: Option<Height>,
     ) -> Result<Vec<IbcEvent>, ForeignClientError> {
-        let h = if height == Height::zero() {
-            self.src_chain.query_latest_height().map_err(|e| {
+        let target_height = match target_query_height {
+            QueryHeight::Latest => self.src_chain.query_latest_height().map_err(|e| {
                 ForeignClientError::client_update(
                     self.src_chain.id(),
                     "failed while querying src chain ({}) for latest height".to_string(),
                     e,
                 )
-            })?
-        } else {
-            height
+            })?,
+            QueryHeight::Specific(height) => height,
         };
 
-        let new_msgs = self.wait_and_build_update_client_with_trusted(h, trusted_height)?;
+        let new_msgs =
+            self.wait_and_build_update_client_with_trusted(target_height, trusted_height)?;
         if new_msgs.is_empty() {
             return Err(ForeignClientError::client_already_up_to_date(
                 self.id.clone(),
                 self.src_chain.id(),
-                h,
+                target_height,
             ));
         }
 
