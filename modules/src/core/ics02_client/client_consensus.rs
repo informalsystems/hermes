@@ -1,6 +1,5 @@
 use crate::prelude::*;
 
-use core::convert::Infallible;
 use core::marker::{Send, Sync};
 
 use ibc_proto::google::protobuf::Any;
@@ -23,9 +22,7 @@ pub const TENDERMINT_CONSENSUS_STATE_TYPE_URL: &str =
 
 pub const MOCK_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.mock.ConsensusState";
 
-pub trait ConsensusState: Clone + core::fmt::Debug + Send + Sync {
-    type Error;
-
+pub trait ConsensusState: core::fmt::Debug + Send + Sync {
     /// Type of client associated with this consensus state (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 
@@ -34,6 +31,8 @@ pub trait ConsensusState: Clone + core::fmt::Debug + Send + Sync {
 
     /// Wrap into an `AnyConsensusState`
     fn wrap_any(self) -> AnyConsensusState;
+
+    fn encode_vec(&self) -> Result<Vec<u8>, Error>;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -95,15 +94,13 @@ impl From<AnyConsensusState> for Any {
         match value {
             AnyConsensusState::Tendermint(value) => Any {
                 type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: value
-                    .encode_vec()
+                value: ConsensusState::encode_vec(&value)
                     .expect("encoding to `Any` from `AnyConsensusState::Tendermint`"),
             },
             #[cfg(any(test, feature = "mocks"))]
             AnyConsensusState::Mock(value) => Any {
                 type_url: MOCK_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: value
-                    .encode_vec()
+                value: ConsensusState::encode_vec(&value)
                     .expect("encoding to `Any` from `AnyConsensusState::Mock`"),
             },
         }
@@ -148,8 +145,6 @@ impl From<AnyConsensusStateWithHeight> for ConsensusStateWithHeight {
 }
 
 impl ConsensusState for AnyConsensusState {
-    type Error = Infallible;
-
     fn client_type(&self) -> ClientType {
         self.client_type()
     }
@@ -165,5 +160,9 @@ impl ConsensusState for AnyConsensusState {
 
     fn wrap_any(self) -> AnyConsensusState {
         self
+    }
+
+    fn encode_vec(&self) -> Result<Vec<u8>, Error> {
+        Protobuf::encode_vec(self).map_err(Error::invalid_any_consensus_state)
     }
 }

@@ -1,6 +1,6 @@
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
-use crate::core::ics02_client::client_consensus::AnyConsensusState;
+use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_def::ClientDef;
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::context::ClientReader;
@@ -58,7 +58,7 @@ impl ClientDef for MockClient {
         _root: &CommitmentRoot,
         client_id: &ClientId,
         consensus_height: Height,
-        _expected_consensus_state: &AnyConsensusState,
+        _expected_consensus_state: &dyn ConsensusState,
     ) -> Result<(), Error> {
         let client_prefixed_path = Path::ClientConsensusState(ClientConsensusStatePath {
             client_id: client_id.clone(),

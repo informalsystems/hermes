@@ -7,10 +7,10 @@ use tendermint_light_client_verifier::{ProdVerifier, Verdict, Verifier};
 use tendermint_proto::Protobuf;
 
 use crate::clients::ics07_tendermint::client_state::ClientState;
-use crate::clients::ics07_tendermint::consensus_state::ConsensusState;
+use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
-use crate::core::ics02_client::client_consensus::AnyConsensusState;
+use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::core::ics02_client::client_def::ClientDef;
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
@@ -44,7 +44,7 @@ pub struct TendermintClient {
 impl ClientDef for TendermintClient {
     type Header = Header;
     type ClientState = ClientState;
-    type ConsensusState = ConsensusState;
+    type ConsensusState = TmConsensusState;
 
     fn check_header_and_update_state(
         &self,
@@ -64,7 +64,7 @@ impl ClientDef for TendermintClient {
 
         // Check if a consensus state is already installed; if so it should
         // match the untrusted header.
-        let header_consensus_state = ConsensusState::from(header.clone());
+        let header_consensus_state = TmConsensusState::from(header.clone());
         let existing_consensus_state =
             match ctx.maybe_consensus_state(&client_id, header.height())? {
                 Some(cs) => {
@@ -186,7 +186,7 @@ impl ClientDef for TendermintClient {
 
         Ok((
             client_state.with_header(header.clone())?,
-            ConsensusState::from(header),
+            TmConsensusState::from(header),
         ))
     }
 
@@ -199,7 +199,7 @@ impl ClientDef for TendermintClient {
         root: &CommitmentRoot,
         client_id: &ClientId,
         consensus_height: Height,
-        expected_consensus_state: &AnyConsensusState,
+        expected_consensus_state: &dyn ConsensusState,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
 
@@ -208,9 +208,7 @@ impl ClientDef for TendermintClient {
             epoch: consensus_height.revision_number(),
             height: consensus_height.revision_height(),
         };
-        let value = expected_consensus_state
-            .encode_vec()
-            .map_err(Ics02Error::invalid_any_consensus_state)?;
+        let value = expected_consensus_state.encode_vec()?;
         verify_membership(client_state, prefix, proof, root, path, value)
     }
 
@@ -477,7 +475,7 @@ fn verify_delay_passed(
     .map_err(|e| e.into())
 }
 
-fn downcast_consensus_state(cs: AnyConsensusState) -> Result<ConsensusState, Ics02Error> {
+fn downcast_consensus_state(cs: AnyConsensusState) -> Result<TmConsensusState, Ics02Error> {
     downcast!(
         cs => AnyConsensusState::Tendermint
     )
