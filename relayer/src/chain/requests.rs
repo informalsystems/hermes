@@ -4,6 +4,7 @@ use crate::error::Error;
 
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use ibc::events::WithBlockDataType;
 use ibc::Height;
 use ibc_proto::cosmos::base::query::v1beta1::PageRequest as RawPageRequest;
 use ibc_proto::ibc::core::channel::v1::{
@@ -26,6 +27,7 @@ use ibc_proto::ibc::core::connection::v1::{
 };
 
 use serde::{Deserialize, Serialize};
+use tendermint::abci::transaction::Hash as TxHash;
 use tendermint::block::Height as TMBlockHeight;
 use tonic::metadata::AsciiMetadataValue;
 
@@ -384,4 +386,42 @@ impl From<QueryNextSequenceReceiveRequest> for RawQueryNextSequenceReceiveReques
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryHostConsensusStateRequest {
     pub height: QueryHeight,
+}
+
+/// Used for queries and not yet standardized in channel's query.proto
+#[derive(Clone, Debug)]
+pub enum QueryTxRequest {
+    Packet(QueryPacketEventDataRequest),
+    Client(QueryClientEventRequest),
+    Transaction(QueryTxHash),
+}
+
+#[derive(Clone, Debug)]
+pub struct QueryTxHash(pub TxHash);
+
+/// Used to query a packet event, identified by `event_id`, for specific channel and sequences.
+/// The query is preformed for the chain context at `height`.
+#[derive(Clone, Debug)]
+pub struct QueryPacketEventDataRequest {
+    pub event_id: WithBlockDataType,
+    pub source_channel_id: ChannelId,
+    pub source_port_id: PortId,
+    pub destination_channel_id: ChannelId,
+    pub destination_port_id: PortId,
+    pub sequences: Vec<Sequence>,
+    pub height: Height,
+}
+
+/// Query request for a single client event, identified by `event_id`, for `client_id`.
+#[derive(Clone, Debug)]
+pub struct QueryClientEventRequest {
+    pub height: Height,
+    pub event_id: WithBlockDataType,
+    pub client_id: ClientId,
+    pub consensus_height: Height,
+}
+
+#[derive(Clone, Debug)]
+pub enum QueryBlockRequest {
+    Packet(QueryPacketEventDataRequest),
 }

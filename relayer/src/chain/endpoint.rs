@@ -19,7 +19,6 @@ use ibc::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofB
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::events::IbcEvent;
 use ibc::proofs::{ConsensusProof, Proofs};
-use ibc::query::{QueryBlockRequest, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::timestamp::Timestamp;
 use ibc::Height as ICSHeight;
@@ -46,8 +45,8 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 
 use super::requests::{
-    IncludeProof, QueryHeight, QueryPacketAcknowledgementRequest, QueryPacketCommitmentRequest,
-    QueryPacketReceiptRequest,
+    IncludeProof, QueryBlockRequest, QueryHeight, QueryPacketAcknowledgementRequest,
+    QueryPacketCommitmentRequest, QueryPacketReceiptRequest, QueryTxRequest,
 };
 
 /// The result of a health check.

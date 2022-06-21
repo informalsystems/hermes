@@ -13,10 +13,12 @@ use crate::chain::endpoint::ChainStatus;
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::IncludeProof;
 use crate::chain::requests::QueryChannelRequest;
+use crate::chain::requests::QueryClientEventRequest;
 use crate::chain::requests::QueryHeight;
 use crate::chain::requests::QueryHostConsensusStateRequest;
 use crate::chain::requests::QueryNextSequenceReceiveRequest;
 use crate::chain::requests::QueryPacketCommitmentRequest;
+use crate::chain::requests::QueryTxRequest;
 use crate::chain::requests::QueryUnreceivedAcksRequest;
 use crate::chain::requests::QueryUnreceivedPacketsRequest;
 use crate::chain::tracking::TrackedMsgs;
@@ -42,7 +44,6 @@ use crate::util::queue::Queue;
 use ibc::{
     core::{
         ics02_client::{
-            client_consensus::QueryClientEventRequest,
             events::ClientMisbehaviour as ClientMisbehaviourEvent,
             events::UpdateClient as UpdateClientEvent,
         },
@@ -59,7 +60,6 @@ use ibc::{
         ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     },
     events::{IbcEvent, PrettyEvents, WithBlockDataType},
-    query::QueryTxRequest,
     signer::Signer,
     timestamp::Timestamp,
     tx_msg::Msg,

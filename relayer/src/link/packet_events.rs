@@ -2,13 +2,12 @@
 
 use tracing::{info, span, trace, warn, Level};
 
-use ibc::core::ics04_channel::channel::QueryPacketEventDataRequest;
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::events::{IbcEvent, WithBlockDataType};
-use ibc::query::{QueryBlockRequest, QueryTxRequest};
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
+use crate::chain::requests::{QueryBlockRequest, QueryPacketEventDataRequest, QueryTxRequest};
 use crate::link::error::LinkError;
 use crate::path::PathIdentifiers;
 

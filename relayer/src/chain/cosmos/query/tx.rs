@@ -1,17 +1,17 @@
-use ibc::core::ics02_client::client_consensus::QueryClientEventRequest;
 use ibc::core::ics02_client::events as ClientEvents;
-use ibc::core::ics04_channel::channel::QueryPacketEventDataRequest;
 use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics04_channel::packet::{Packet, Sequence};
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::{from_tx_response_event, IbcEvent};
-use ibc::query::QueryTxRequest;
 use ibc::Height as ICSHeight;
 use tendermint::abci::Event;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::{Client, HttpClient, Order, Url};
 
 use crate::chain::cosmos::query::{header_query, packet_query, tx_hash_query};
+use crate::chain::requests::{
+    QueryClientEventRequest, QueryPacketEventDataRequest, QueryTxRequest,
+};
 use crate::error::Error;
 
 /// This function queries transactions for events matching certain criteria.

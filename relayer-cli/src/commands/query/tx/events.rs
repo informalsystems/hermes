@@ -2,12 +2,12 @@ use core::str::FromStr;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
+use ibc_relayer::chain::requests::{QueryTxHash, QueryTxRequest};
 use tracing::debug;
 
 use tendermint::abci::transaction::Hash;
 
 use ibc::core::ics24_host::identifier::ChainId;
-use ibc::query::{QueryTxHash, QueryTxRequest};
 
 use ibc_relayer::chain::handle::ChainHandle;
 
