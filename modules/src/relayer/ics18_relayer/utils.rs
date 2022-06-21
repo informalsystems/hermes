@@ -152,14 +152,14 @@ mod tests {
             // Update client on chain B to latest height of B.
             // - create the client update message with the latest header from B
             // The test uses LightClientBlock that does not store the trusted height
-            let b_latest_header = match ctx_b.query_latest_header().unwrap() {
+            let b_latest_header: AnyHeader = match ctx_b.query_latest_header().unwrap() {
                 AnyHeader::Tendermint(header) => {
                     let th = header.height();
                     let mut hheader = header.clone();
                     hheader.trusted_height = th.decrement().unwrap();
-                    hheader.wrap_any()
+                    hheader.into()
                 }
-                AnyHeader::Mock(header) => header.wrap_any(),
+                AnyHeader::Mock(header) => header.into(),
             };
 
             assert_eq!(

@@ -27,9 +27,6 @@ pub trait Header: Clone + core::fmt::Debug + Send + Sync {
 
     /// The timestamp of the consensus state
     fn timestamp(&self) -> Timestamp;
-
-    /// Wrap into an `AnyHeader`
-    fn wrap_any(self) -> AnyHeader;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
@@ -66,10 +63,6 @@ impl Header for AnyHeader {
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(header) => header.timestamp(),
         }
-    }
-
-    fn wrap_any(self) -> AnyHeader {
-        self
     }
 }
 
@@ -126,5 +119,18 @@ impl From<AnyHeader> for Any {
                     .expect("encoding to `Any` from `AnyHeader::Mock`"),
             },
         }
+    }
+}
+
+#[cfg(any(test, feature = "mocks"))]
+impl From<MockHeader> for AnyHeader {
+    fn from(header: MockHeader) -> Self {
+        Self::Mock(header)
+    }
+}
+
+impl From<TendermintHeader> for AnyHeader {
+    fn from(header: TendermintHeader) -> Self {
+        Self::Tendermint(header)
     }
 }

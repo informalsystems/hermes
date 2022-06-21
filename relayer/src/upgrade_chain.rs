@@ -103,7 +103,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
     let proposal = UpgradeProposal {
         title: "proposal 0".to_string(),
         description: "upgrade the chain software and unbonding period".to_string(),
-        upgraded_client_state: Some(Any::from(client_state.wrap_any())),
+        upgraded_client_state: Some(Any::from(AnyClientState::from(client_state))),
         plan: Some(Plan {
             name: opts.upgrade_plan_name.clone(),
             height: upgrade_height.revision_height() as i64,

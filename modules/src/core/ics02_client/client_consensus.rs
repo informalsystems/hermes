@@ -8,7 +8,7 @@ use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
 use serde::Serialize;
 use tendermint_proto::Protobuf;
 
-use crate::clients::ics07_tendermint::consensus_state;
+use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::height::Height;
@@ -30,9 +30,6 @@ pub trait ConsensusState: core::fmt::Debug + Send + Sync + AsAny {
     /// Commitment root of the consensus state, which is used for key-value pair verification.
     fn root(&self) -> &CommitmentRoot;
 
-    /// Wrap into an `AnyConsensusState`
-    fn wrap_any(self) -> AnyConsensusState;
-
     fn encode_vec(&self) -> Result<Vec<u8>, Error>;
 }
 
@@ -49,7 +46,7 @@ impl<M: AnyTrait + ConsensusState> AsAny for M {
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(tag = "type")]
 pub enum AnyConsensusState {
-    Tendermint(consensus_state::ConsensusState),
+    Tendermint(TmConsensusState),
 
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockConsensusState),
@@ -94,7 +91,7 @@ impl TryFrom<ProtoAny> for AnyConsensusState {
             "" => Err(Error::empty_consensus_state_response()),
 
             TENDERMINT_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Tendermint(
-                consensus_state::ConsensusState::decode_vec(&value.value)
+                TmConsensusState::decode_vec(&value.value)
                     .map_err(Error::decode_raw_client_state)?,
             )),
 
@@ -124,6 +121,19 @@ impl From<AnyConsensusState> for ProtoAny {
                     .expect("encoding to `Any` from `AnyConsensusState::Mock`"),
             },
         }
+    }
+}
+
+#[cfg(any(test, feature = "mocks"))]
+impl From<MockConsensusState> for AnyConsensusState {
+    fn from(cs: MockConsensusState) -> Self {
+        Self::Mock(cs)
+    }
+}
+
+impl From<TmConsensusState> for AnyConsensusState {
+    fn from(cs: TmConsensusState) -> Self {
+        Self::Tendermint(cs)
     }
 }
 
@@ -176,10 +186,6 @@ impl ConsensusState for AnyConsensusState {
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(mock_state) => mock_state.root(),
         }
-    }
-
-    fn wrap_any(self) -> AnyConsensusState {
-        self
     }
 
     fn encode_vec(&self) -> Result<Vec<u8>, Error> {

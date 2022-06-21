@@ -65,12 +65,6 @@ impl MockClientState {
     }
 }
 
-impl From<MockClientState> for AnyClientState {
-    fn from(mcs: MockClientState) -> Self {
-        Self::Mock(mcs)
-    }
-}
-
 impl TryFrom<RawMockClientState> for MockClientState {
     type Error = Error;
 
@@ -111,10 +105,6 @@ impl ClientState for MockClientState {
 
     fn upgrade(&mut self, _upgrade_height: Height, _upgrade_options: (), _chain_id: ChainId) {
         todo!()
-    }
-
-    fn wrap_any(self) -> AnyClientState {
-        AnyClientState::Mock(self)
     }
 
     fn encode_vec(&self) -> Result<Vec<u8>, Error> {
@@ -173,12 +163,6 @@ impl From<MockConsensusState> for RawMockConsensusState {
     }
 }
 
-impl From<MockConsensusState> for AnyConsensusState {
-    fn from(mcs: MockConsensusState) -> Self {
-        Self::Mock(mcs)
-    }
-}
-
 impl ConsensusState for MockConsensusState {
     fn client_type(&self) -> ClientType {
         ClientType::Mock
@@ -186,10 +170,6 @@ impl ConsensusState for MockConsensusState {
 
     fn root(&self) -> &CommitmentRoot {
         &self.root
-    }
-
-    fn wrap_any(self) -> AnyConsensusState {
-        AnyConsensusState::Mock(self)
     }
 
     fn encode_vec(&self) -> Result<Vec<u8>, Error> {

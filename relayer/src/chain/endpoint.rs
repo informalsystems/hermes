@@ -10,7 +10,7 @@ use ibc::core::ics02_client::client_consensus::{
 use ibc::core::ics02_client::client_state::{
     AnyClientState, ClientState, IdentifiedAnyClientState,
 };
-use ibc::core::ics02_client::header::Header;
+use ibc::core::ics02_client::header::{AnyHeader, Header};
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd, State};
 use ibc::core::ics03_connection::version::{get_compatible_versions, Version};
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
@@ -69,13 +69,13 @@ pub trait ChainEndpoint: Sized {
     type LightBlock: Send + Sync;
 
     /// Type of headers for this chain
-    type Header: Header;
+    type Header: Header + Into<AnyHeader>;
 
     /// Type of consensus state for this chain
-    type ConsensusState: ConsensusState;
+    type ConsensusState: ConsensusState + Into<AnyConsensusState>;
 
     /// Type of the client state for this chain
-    type ClientState: ClientState;
+    type ClientState: ClientState + Into<AnyClientState>;
 
     type LightClient: LightClient<Self>;
 
