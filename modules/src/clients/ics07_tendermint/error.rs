@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 use flex_error::{define_error, TraceError};
 
-use crate::core::ics23_commitment::error::Error as Ics23Error;
+use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::timestamp::{Timestamp, TimestampOverflowError};
@@ -249,10 +249,6 @@ define_error! {
                     e.client_id, e.height)
             },
 
-        Ics23Error
-            [ Ics23Error ]
-            | _ | { "ics23 commitment error" },
-
         InsufficientHeight
             {
                 latest_height: Height,
@@ -290,5 +286,11 @@ define_error! {
             | e | {
                 format_args!("insufficient signers overlap between {0} and {1}", e.q1, e.q2)
             },
+    }
+}
+
+impl From<Error> for Ics02Error {
+    fn from(e: Error) -> Self {
+        Self::client_specific(e.to_string())
     }
 }

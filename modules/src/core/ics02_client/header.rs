@@ -87,7 +87,7 @@ impl TryFrom<Any> for AnyHeader {
     fn try_from(raw: Any) -> Result<Self, Error> {
         match raw.type_url.as_str() {
             TENDERMINT_HEADER_TYPE_URL => {
-                let val = decode_header(raw.value.deref()).map_err(Error::tendermint)?;
+                let val = decode_header(raw.value.deref())?;
 
                 Ok(AnyHeader::Tendermint(val))
             }
