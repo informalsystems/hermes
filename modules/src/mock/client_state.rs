@@ -2,7 +2,6 @@ use crate::prelude::*;
 
 use alloc::collections::btree_map::BTreeMap as HashMap;
 
-use core::convert::Infallible;
 use core::time::Duration;
 
 use serde::{Deserialize, Serialize};
@@ -177,8 +176,6 @@ impl From<MockConsensusState> for AnyConsensusState {
 }
 
 impl ConsensusState for MockConsensusState {
-    type Error = Infallible;
-
     fn client_type(&self) -> ClientType {
         ClientType::Mock
     }
@@ -189,5 +186,9 @@ impl ConsensusState for MockConsensusState {
 
     fn wrap_any(self) -> AnyConsensusState {
         AnyConsensusState::Mock(self)
+    }
+
+    fn encode_vec(&self) -> Result<Vec<u8>, Error> {
+        Protobuf::encode_vec(self).map_err(Error::invalid_any_consensus_state)
     }
 }

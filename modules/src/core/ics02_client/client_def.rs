@@ -62,7 +62,7 @@ pub trait ClientDef: Clone {
         root: &CommitmentRoot,
         client_id: &ClientId,
         consensus_height: Height,
-        expected_consensus_state: &AnyConsensusState,
+        expected_consensus_state: &dyn ConsensusState,
     ) -> Result<(), Error>;
 
     /// Verify a `proof` that a connection state matches that of the input `connection_end`.
@@ -246,7 +246,7 @@ impl ClientDef for AnyClient {
         root: &CommitmentRoot,
         client_id: &ClientId,
         consensus_height: Height,
-        expected_consensus_state: &AnyConsensusState,
+        expected_consensus_state: &dyn ConsensusState,
     ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {

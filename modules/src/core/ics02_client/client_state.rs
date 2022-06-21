@@ -21,7 +21,7 @@ use crate::Height;
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
 
-pub trait ClientState: Clone + core::fmt::Debug + Send + Sync {
+pub trait ClientState: core::fmt::Debug + Send + Sync {
     /// Client-specific options for upgrading the client
     type UpgradeOptions;
 
