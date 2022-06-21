@@ -1,8 +1,9 @@
 use crate::prelude::*;
 
+use core::any::Any as AnyTrait;
 use core::marker::{Send, Sync};
 
-use ibc_proto::google::protobuf::Any;
+use ibc_proto::google::protobuf::Any as ProtoAny;
 use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
 use serde::Serialize;
 use tendermint_proto::Protobuf;
@@ -22,7 +23,7 @@ pub const TENDERMINT_CONSENSUS_STATE_TYPE_URL: &str =
 
 pub const MOCK_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.mock.ConsensusState";
 
-pub trait ConsensusState: core::fmt::Debug + Send + Sync {
+pub trait ConsensusState: core::fmt::Debug + Send + Sync + AsAny {
     /// Type of client associated with this consensus state (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 
@@ -33,6 +34,16 @@ pub trait ConsensusState: core::fmt::Debug + Send + Sync {
     fn wrap_any(self) -> AnyConsensusState;
 
     fn encode_vec(&self) -> Result<Vec<u8>, Error>;
+}
+
+pub trait AsAny: AnyTrait {
+    fn as_any(&self) -> &dyn AnyTrait;
+}
+
+impl<M: AnyTrait + ConsensusState> AsAny for M {
+    fn as_any(&self) -> &dyn AnyTrait {
+        self
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -62,14 +73,23 @@ impl AnyConsensusState {
             AnyConsensusState::Mock(_cs) => ClientType::Mock,
         }
     }
+
+    pub fn boxed_dyn(self) -> Box<dyn ConsensusState> {
+        match self {
+            AnyConsensusState::Tendermint(cs) => Box::new(cs),
+
+            #[cfg(any(test, feature = "mocks"))]
+            AnyConsensusState::Mock(cs) => Box::new(cs),
+        }
+    }
 }
 
-impl Protobuf<Any> for AnyConsensusState {}
+impl Protobuf<ProtoAny> for AnyConsensusState {}
 
-impl TryFrom<Any> for AnyConsensusState {
+impl TryFrom<ProtoAny> for AnyConsensusState {
     type Error = Error;
 
-    fn try_from(value: Any) -> Result<Self, Self::Error> {
+    fn try_from(value: ProtoAny) -> Result<Self, Self::Error> {
         match value.type_url.as_str() {
             "" => Err(Error::empty_consensus_state_response()),
 
@@ -89,16 +109,16 @@ impl TryFrom<Any> for AnyConsensusState {
     }
 }
 
-impl From<AnyConsensusState> for Any {
+impl From<AnyConsensusState> for ProtoAny {
     fn from(value: AnyConsensusState) -> Self {
         match value {
-            AnyConsensusState::Tendermint(value) => Any {
+            AnyConsensusState::Tendermint(value) => ProtoAny {
                 type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
                 value: ConsensusState::encode_vec(&value)
                     .expect("encoding to `Any` from `AnyConsensusState::Tendermint`"),
             },
             #[cfg(any(test, feature = "mocks"))]
-            AnyConsensusState::Mock(value) => Any {
+            AnyConsensusState::Mock(value) => ProtoAny {
                 type_url: MOCK_CONSENSUS_STATE_TYPE_URL.to_string(),
                 value: ConsensusState::encode_vec(&value)
                     .expect("encoding to `Any` from `AnyConsensusState::Mock`"),
