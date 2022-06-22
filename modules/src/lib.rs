@@ -78,3 +78,9 @@ pub use ibc_base::proofs;
 pub use ibc_base::serializers;
 pub use ibc_base::signer;
 pub use ibc_base::timestamp;
+
+pub mod clients {
+    pub mod ics07_tendermint {
+        pub use ibc_client_tendermint::*;
+    }
+}

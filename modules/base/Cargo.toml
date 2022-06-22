@@ -17,7 +17,8 @@ all-features = true
 
 [features]
 default = ["std"]
-std = ["flex-error/std", "flex-error/eyre_tracer", "ibc-proto/std"]
+std = ["flex-error/std", "flex-error/eyre_tracer", "ibc-proto/std", "clock"]
+clock = ["tendermint/clock", "time/std"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
