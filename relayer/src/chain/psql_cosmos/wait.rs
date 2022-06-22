@@ -14,7 +14,7 @@ use crate::chain::cosmos::types::tx::TxSyncResult;
 use crate::chain::psql_cosmos::query::query_txs;
 use crate::error::Error;
 
-const WAIT_BACKOFF: Duration = Duration::from_millis(300);
+const WAIT_BACKOFF: Duration = Duration::from_millis(100);
 
 /// Given a vector of `TxSyncResult` elements,
 /// each including a transaction response hash for one or more messages, periodically queries the chain

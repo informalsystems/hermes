@@ -247,8 +247,8 @@ fn update_client_from_tx_search_response(
 async fn tx_result_by_packet_fields(
     pool: &PgPool,
     search: &QueryPacketEventDataRequest,
+    sequence: Sequence,
 ) -> Result<(TxResult, String), Error> {
-    let sequence = search.sequences.first().unwrap();
     let result = sqlx::query_as::<_, SqlTxResult>(
         "SELECT tx_hash, tx_result FROM ibc_tx_packet_events WHERE \
         packet_sequence = $1 and \
@@ -276,10 +276,11 @@ async fn tx_result_by_packet_fields(
 pub async fn packet_search(
     pool: &PgPool,
     search: &QueryPacketEventDataRequest,
+    seq: Sequence,
 ) -> Result<TxSearchResponse, Error> {
     info!(seq = ?search.sequences, "got sequence");
 
-    let (raw_tx_result, hash) = tx_result_by_packet_fields(pool, search).await?;
+    let (raw_tx_result, hash) = tx_result_by_packet_fields(pool, search, seq).await?;
     let deliver_tx = raw_tx_result.result.unwrap();
     let tx_result = proto_to_deliver_tx(deliver_tx)?;
 
@@ -338,7 +339,7 @@ pub async fn query_txs(
 
             // TODO - make a single psql query
             for seq in &request.sequences {
-                let response = packet_search(pool, request).await?;
+                let response = packet_search(pool, request, *seq).await?;
                 // query first (and only) Tx that includes the event specified in the query request
 
                 assert!(

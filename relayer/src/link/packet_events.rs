@@ -5,7 +5,7 @@ use tracing::{info, span, trace, warn, Level};
 use ibc::core::ics04_channel::channel::QueryPacketEventDataRequest;
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::events::{IbcEvent, WithBlockDataType};
-use ibc::query::{QueryBlockRequest, QueryTxRequest};
+use ibc::query::QueryTxRequest;
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
@@ -89,13 +89,14 @@ pub fn query_send_packet_events<ChainA: ChainHandle>(
 
     query.sequences.retain(|seq| !recvd_sequences.contains(seq));
 
-    let (start_block_events, end_block_events) = if !query.sequences.is_empty() {
-        src_chain
-            .query_blocks(QueryBlockRequest::Packet(query))
-            .map_err(LinkError::relayer)?
-    } else {
-        Default::default()
-    };
+    // let (start_block_events, end_block_events) = if !query.sequences.is_empty() {
+    //     src_chain
+    //         .query_blocks(QueryBlockRequest::Packet(query))
+    //         .map_err(LinkError::relayer)?
+    // } else {
+    //     Default::default()
+    // };
+    let (start_block_events, end_block_events) = (vec![], vec![]);
 
     trace!("start_block_events {:?}", start_block_events);
     trace!("tx_events {:?}", tx_events);

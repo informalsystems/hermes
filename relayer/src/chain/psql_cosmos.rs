@@ -33,6 +33,7 @@ use crate::chain::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::CosmosSdkChain;
 use crate::chain::psql_cosmos::batch::send_batched_messages_and_wait_commit;
 use crate::chain::psql_cosmos::query::query_txs;
+use crate::denom::DenomTrace;
 use crate::{
     account::Balance,
     chain::{
@@ -47,7 +48,6 @@ use crate::{
     keyring::{KeyEntry, KeyRing},
     light_client::{tendermint::LightClient as TmLightClient, LightClient, Verified},
 };
-use crate::denom::DenomTrace;
 
 pub mod batch;
 pub mod query;
@@ -424,7 +424,8 @@ impl ChainEndpoint for PsqlChain {
         request: QueryPacketAcknowledgementRequest,
         include_proof: IncludeProof,
     ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
-        self.chain.query_packet_acknowledgement(request, include_proof)
+        self.chain
+            .query_packet_acknowledgement(request, include_proof)
     }
 
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
