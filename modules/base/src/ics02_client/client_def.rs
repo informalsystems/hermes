@@ -15,9 +15,6 @@ use crate::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::prelude::*;
 use crate::Height;
 
-#[cfg(any(test, feature = "mocks"))]
-use crate::mock::client_def::MockClient;
-
 pub trait ClientDef: Clone {
     type Header: Header;
     type ClientState: ClientState;

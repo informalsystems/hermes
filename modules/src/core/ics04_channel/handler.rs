@@ -10,6 +10,7 @@ use crate::core::ics26_routing::context::{
     Ics26Context, ModuleId, ModuleOutputBuilder, OnRecvPacketAck, Router,
 };
 use crate::handler::{HandlerOutput, HandlerOutputBuilder};
+use ibc_base::ics04_channel::context::ChannelMetaReader;
 
 pub mod acknowledgement;
 pub mod chan_close_confirm;
@@ -63,7 +64,7 @@ pub fn channel_dispatch<Ctx>(
     msg: &ChannelMsg,
 ) -> Result<(HandlerOutputBuilder<()>, ChannelResult), Error>
 where
-    Ctx: ChannelReader,
+    Ctx: ChannelReader + ChannelMetaReader,
 {
     let output = match msg {
         ChannelMsg::ChannelOpenInit(msg) => chan_open_init::process(ctx, msg),
@@ -171,7 +172,7 @@ pub fn packet_dispatch<Ctx>(
     msg: &PacketMsg,
 ) -> Result<(HandlerOutputBuilder<()>, PacketResult), Error>
 where
-    Ctx: ChannelReader,
+    Ctx: ChannelReader + ChannelMetaReader,
 {
     let output = match msg {
         PacketMsg::RecvPacket(msg) => recv_packet::process(ctx, msg),

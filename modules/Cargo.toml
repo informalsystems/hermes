@@ -26,6 +26,7 @@ clock = ["tendermint/clock", "time/std"]
 mocks = ["tendermint-testgen", "clock", "std"]
 
 [dependencies]
+ibc-base = { version = "0.15.0", path = "base", default-features = false }
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
 ibc-proto = { version = "0.18.0", path = "../proto", default-features = false }
 ibc-client-tendermint = { version = "0.15.0", path = "clients/ics07_tendermint", default-features = false }

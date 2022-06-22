@@ -1,8 +1,5 @@
 use crate::prelude::*;
 
-use core::any::Any as AnyTrait;
-use core::marker::{Send, Sync};
-
 use ibc_proto::google::protobuf::Any as ProtoAny;
 use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
 use serde::Serialize;
@@ -17,6 +14,8 @@ use crate::events::WithBlockDataType;
 use crate::timestamp::Timestamp;
 use ibc_client_tendermint::consensus_state::ConsensusState as TmConsensusState;
 
+pub use ibc_base::ics02_client::client_consensus::*;
+
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockConsensusState;
 
@@ -24,26 +23,6 @@ pub const TENDERMINT_CONSENSUS_STATE_TYPE_URL: &str =
     "/ibc.lightclients.tendermint.v1.ConsensusState";
 
 pub const MOCK_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.mock.ConsensusState";
-
-pub trait ConsensusState: core::fmt::Debug + Send + Sync + AsAny {
-    /// Type of client associated with this consensus state (eg. Tendermint)
-    fn client_type(&self) -> ClientType;
-
-    /// Commitment root of the consensus state, which is used for key-value pair verification.
-    fn root(&self) -> &CommitmentRoot;
-
-    fn encode_vec(&self) -> Result<Vec<u8>, Error>;
-}
-
-pub trait AsAny: AnyTrait {
-    fn as_any(&self) -> &dyn AnyTrait;
-}
-
-impl<M: AnyTrait + ConsensusState> AsAny for M {
-    fn as_any(&self) -> &dyn AnyTrait {
-        self
-    }
-}
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(tag = "type")]

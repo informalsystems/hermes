@@ -1432,6 +1432,7 @@ dependencies = [
  "derive_more",
  "env_logger",
  "flex-error",
+ "ibc-base",
  "ibc-client-tendermint",
  "ibc-proto",
  "ics23",

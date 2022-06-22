@@ -1,7 +1,5 @@
 use crate::prelude::*;
 
-use core::str::FromStr;
-
 use serde_derive::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
@@ -16,6 +14,8 @@ use super::handler::{
     acknowledgement::AckPacketResult, recv_packet::RecvPacketResult, send_packet::SendPacketResult,
     timeout::TimeoutPacketResult, write_acknowledgement::WriteAckPacketResult,
 };
+
+pub use ibc_base::ics04_channel::packet::*;
 
 /// Enumeration of proof carrying ICS4 message, helper for relayer.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -50,50 +50,6 @@ impl core::fmt::Display for PacketMsgType {
             PacketMsgType::TimeoutOrdered => write!(f, "(PacketMsgType::TimeoutOrdered)"),
             PacketMsgType::TimeoutOnClose => write!(f, "(PacketMsgType::TimeoutOnClose)"),
         }
-    }
-}
-
-/// The sequence number of a packet enforces ordering among packets from the same source.
-#[derive(
-    Copy, Clone, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord, Deserialize, Serialize,
-)]
-pub struct Sequence(u64);
-
-impl FromStr for Sequence {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self::from(s.parse::<u64>().map_err(|e| {
-            Error::invalid_string_as_sequence(s.to_string(), e)
-        })?))
-    }
-}
-
-impl Sequence {
-    pub fn is_zero(&self) -> bool {
-        self.0 == 0
-    }
-
-    pub fn increment(&self) -> Sequence {
-        Sequence(self.0 + 1)
-    }
-}
-
-impl From<u64> for Sequence {
-    fn from(seq: u64) -> Self {
-        Sequence(seq)
-    }
-}
-
-impl From<Sequence> for u64 {
-    fn from(s: Sequence) -> u64 {
-        s.0
-    }
-}
-
-impl core::fmt::Display for Sequence {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "{}", self.0)
     }
 }
 
@@ -271,7 +227,7 @@ impl TryFrom<RawObject<'_>> for Packet {
 impl From<Packet> for RawPacket {
     fn from(packet: Packet) -> Self {
         RawPacket {
-            sequence: packet.sequence.0,
+            sequence: packet.sequence.into(),
             source_port: packet.source_port.to_string(),
             source_channel: packet.source_channel.to_string(),
             destination_port: packet.destination_port.to_string(),

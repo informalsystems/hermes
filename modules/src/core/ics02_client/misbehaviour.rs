@@ -9,23 +9,16 @@ use ibc_client_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::misbehaviour::Misbehaviour as MockMisbehaviour;
 
+use super::header::AnyHeader;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::Height;
 
-use super::header::AnyHeader;
+pub use ibc_base::ics02_client::misbehaviour::*;
 
 pub const TENDERMINT_MISBEHAVIOR_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Misbehaviour";
 
 #[cfg(any(test, feature = "mocks"))]
 pub const MOCK_MISBEHAVIOUR_TYPE_URL: &str = "/ibc.mock.Misbehavior";
-
-pub trait Misbehaviour: Clone + core::fmt::Debug + Send + Sync {
-    /// The type of client (eg. Tendermint)
-    fn client_id(&self) -> &ClientId;
-
-    /// The height of the consensus state
-    fn height(&self) -> Height;
-}
 
 #[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound once possible
 #[allow(clippy::large_enum_variant)]

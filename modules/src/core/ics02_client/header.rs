@@ -14,20 +14,10 @@ use crate::timestamp::Timestamp;
 use crate::Height;
 use ibc_client_tendermint::header::{decode_header, Header as TendermintHeader};
 
+pub use ibc_base::ics02_client::header::*;
+
 pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
 pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
-
-/// Abstract of consensus state update information
-pub trait Header: Clone + core::fmt::Debug + Send + Sync {
-    /// The type of client (eg. Tendermint)
-    fn client_type(&self) -> ClientType;
-
-    /// The height of the consensus state
-    fn height(&self) -> Height;
-
-    /// The timestamp of the consensus state
-    fn timestamp(&self) -> Timestamp;
-}
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 #[allow(clippy::large_enum_variant)]

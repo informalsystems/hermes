@@ -3,13 +3,11 @@
 
 pub mod channel;
 pub mod context;
-pub mod error;
 pub mod events;
-
 pub mod handler;
 pub mod msgs;
 pub mod packet;
 
-pub mod commitment;
-mod version;
-pub use version::Version;
+pub use ibc_base::ics04_channel::commitment;
+pub use ibc_base::ics04_channel::error;
+pub use ibc_base::ics04_channel::Version;

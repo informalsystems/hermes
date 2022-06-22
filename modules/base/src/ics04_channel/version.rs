@@ -9,6 +9,8 @@ use serde_derive::{Deserialize, Serialize};
 
 use crate::prelude::*;
 
+const ICS20_VERSION: &'static str = "ics20-1";
+
 /// The version field for a `ChannelEnd`.
 ///
 /// This field is opaque to the core IBC protocol.
@@ -24,6 +26,10 @@ impl Version {
 
     pub fn empty() -> Self {
         Self::new("".to_string())
+    }
+
+    pub fn ics20() -> Self {
+        Self::new(ICS20_VERSION.to_string())
     }
 }
 

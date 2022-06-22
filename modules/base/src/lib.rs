@@ -49,7 +49,7 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
-mod prelude;
+pub mod prelude;
 
 pub mod bigint;
 pub mod ics02_client;
@@ -58,18 +58,11 @@ pub mod ics04_channel;
 pub mod ics05_port;
 pub mod ics23_commitment;
 pub mod ics24_host;
-pub mod macros;
 pub mod proofs;
 pub mod signer;
 pub mod timestamp;
 
-mod serializers;
+pub mod serializers;
 
 /// Re-export of ICS 002 Height domain type
 pub type Height = ics02_client::height::Height;
-
-#[cfg(test)]
-mod test;
-
-#[cfg(any(test, feature = "mocks"))]
-pub mod test_utils;

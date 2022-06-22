@@ -2,4 +2,5 @@
 //! bind to uniquely named ports.
 
 pub mod context;
-pub mod error;
+
+pub use ibc_base::ics05_port::error;
