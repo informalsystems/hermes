@@ -269,7 +269,7 @@ If the command fails with the error:
 Error: failed while trying to upgrade client id 07-tendermint-0 for chain ibc-0: failed while fetching from chain the upgraded client state: conversion from a protobuf `Any` into a domain type failed: conversion from a protobuf `Any` into a domain type failed: error converting message type into domain type: the client state was not found
 ```
 
-It might be due to the chain not being at the height defined for the upgrade. This can be check with the INFO output of the command:
+It might be due to the chain not being at the height defined for the upgrade. This can be checked with the INFO output of the command:
 
 ```shell
 INFO ThreadId(01) [ibc-0 -> ibc-1:07-tendermint-0] upgrade Height: 0-82

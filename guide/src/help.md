@@ -91,7 +91,7 @@ all commands.
 
 The relayer configuration file permits parametrization of output verbosity via the knob called `log_level`.
 This file is loaded by default from `$HOME/.hermes/config.toml`, but can be overridden in all commands
-with the `-c` flag, eg. `hermes -c ./path/to/my/config.toml some command`.
+with the `--config` flag, eg. `hermes --config ./path/to/my/config.toml some command`.
 
 Relevant snippet:
 
@@ -419,26 +419,26 @@ In order to test the correct operation during the channel close, perform the ste
 to close-open:
 
     ```shell
-    hermes -c config.toml tx raw chan-close-init --dst-chain ibc-0 --src-chain ibc-1 --dst-conn connection-0 --dst-port transfer --src-port transfer --dst-chan channel-0 --src-chan channel-1
+    hermes --config config.toml tx raw chan-close-init --dst-chain ibc-0 --src-chain ibc-1 --dst-conn connection-0 --dst-port transfer --src-port transfer --dst-chan channel-0 --src-chan channel-1
     ```
 
 - trigger timeout on close to ibc-1
 
     ```shell
-    hermes -c config.toml tx raw packet-recv --dst-chain ibc-0 --src-chain ibc-1 --src-port transfer --src-chan channel-1
+    hermes --config config.toml tx raw packet-recv --dst-chain ibc-0 --src-chain ibc-1 --src-port transfer --src-chan channel-1
     ```
 
 - close-close
 
     ```shell
-    hermes -c config.toml tx raw chan-close-confirm --dst-chain ibc-1 --src-chain ibc-0 --dst-conn connection-1 --dst-port transfer --src-port transfer --dst-chan channel-1 --src-chan channel-0
+    hermes --config config.toml tx raw chan-close-confirm --dst-chain ibc-1 --src-chain ibc-0 --dst-conn connection-1 --dst-port transfer --src-port transfer --dst-chan channel-1 --src-chan channel-0
     ```
 
 - verify that the two ends are in Close state:
 
   ```shell
-  hermes -c config.toml query channel end --chain ibc-0 --port transfer --chan channel-0
-  hermes -c config.toml query channel end --chain ibc-1 --port transfer --chan channel-1
+  hermes --config config.toml query channel end --chain ibc-0 --port transfer --chan channel-0
+  hermes --config config.toml query channel end --chain ibc-1 --port transfer --chan channel-1
   ```
 
 
