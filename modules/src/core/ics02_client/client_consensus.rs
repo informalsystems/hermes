@@ -8,7 +8,6 @@ use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
 use serde::Serialize;
 use tendermint_proto::Protobuf;
 
-use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::height::Height;
@@ -16,6 +15,7 @@ use crate::core::ics23_commitment::commitment::CommitmentRoot;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::events::WithBlockDataType;
 use crate::timestamp::Timestamp;
+use ibc_client_tendermint::consensus_state::ConsensusState as TmConsensusState;
 
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockConsensusState;

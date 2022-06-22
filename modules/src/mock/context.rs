@@ -15,7 +15,6 @@ use ibc_proto::google::protobuf::Any;
 use sha2::Digest;
 use tracing::debug;
 
-use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
 use crate::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
@@ -47,6 +46,7 @@ use crate::relayer::ics18_relayer::error::Error as Ics18Error;
 use crate::signer::Signer;
 use crate::timestamp::Timestamp;
 use crate::Height;
+use ibc_client_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
 
 pub const DEFAULT_BLOCK_TIME_SECS: u64 = 3;
 

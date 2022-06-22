@@ -1,3 +1,4 @@
+use alloc::string::ToString;
 use core::cmp::Ordering;
 
 use bytes::Buf;
@@ -7,15 +8,13 @@ use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
 use tendermint_proto::Protobuf;
 
-use crate::alloc::string::ToString;
-
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 
-use crate::clients::ics07_tendermint::error::Error;
-use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics24_host::identifier::ChainId;
-use crate::timestamp::Timestamp;
-use crate::Height;
+use super::error::Error;
+use ibc_base::ics02_client::client_type::ClientType;
+use ibc_base::ics24_host::identifier::ChainId;
+use ibc_base::timestamp::Timestamp;
+use ibc_base::Height;
 
 /// Tendermint consensus header
 #[derive(Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -66,7 +65,7 @@ pub fn headers_compatible(header: &SignedHeader, other: &SignedHeader) -> bool {
     }
 }
 
-impl crate::core::ics02_client::header::Header for Header {
+impl ibc_base::ics02_client::header::Header for Header {
     fn client_type(&self) -> ClientType {
         ClientType::Tendermint
     }
@@ -144,7 +143,7 @@ pub mod test_util {
     use tendermint::validator::Set as ValidatorSet;
     use tendermint::PublicKey;
 
-    use crate::clients::ics07_tendermint::header::Header;
+    use super::header::Header;
     use crate::Height;
 
     pub fn get_dummy_tendermint_header() -> tendermint::block::Header {

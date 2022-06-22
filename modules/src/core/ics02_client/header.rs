@@ -5,7 +5,6 @@ use serde_derive::{Deserialize, Serialize};
 use subtle_encoding::hex;
 use tendermint_proto::Protobuf;
 
-use crate::clients::ics07_tendermint::header::{decode_header, Header as TendermintHeader};
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 #[cfg(any(test, feature = "mocks"))]
@@ -13,6 +12,7 @@ use crate::mock::header::MockHeader;
 use crate::prelude::*;
 use crate::timestamp::Timestamp;
 use crate::Height;
+use ibc_client_tendermint::header::{decode_header, Header as TendermintHeader};
 
 pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
 pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";

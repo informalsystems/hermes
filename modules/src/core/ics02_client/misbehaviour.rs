@@ -3,8 +3,8 @@ use crate::prelude::*;
 use ibc_proto::google::protobuf::Any;
 use tendermint_proto::Protobuf;
 
-use crate::clients::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
 use crate::core::ics02_client::error::Error;
+use ibc_client_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
 
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::misbehaviour::Misbehaviour as MockMisbehaviour;

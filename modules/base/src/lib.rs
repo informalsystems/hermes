@@ -51,30 +51,25 @@ extern crate std;
 
 mod prelude;
 
-pub mod applications;
 pub mod bigint;
-pub mod core;
-pub mod events;
-pub mod handler;
-pub mod keys;
+pub mod ics02_client;
+pub mod ics03_connection;
+pub mod ics04_channel;
+pub mod ics05_port;
+pub mod ics23_commitment;
+pub mod ics24_host;
 pub mod macros;
 pub mod proofs;
-pub mod query;
-pub mod relayer;
 pub mod signer;
 pub mod timestamp;
-pub mod tx_msg;
 
 mod serializers;
 
 /// Re-export of ICS 002 Height domain type
-pub type Height = core::ics02_client::height::Height;
+pub type Height = ics02_client::height::Height;
 
 #[cfg(test)]
 mod test;
 
 #[cfg(any(test, feature = "mocks"))]
 pub mod test_utils;
-
-#[cfg(any(test, feature = "mocks"))]
-pub mod mock; // Context mock, the underlying host chain, and client types: for testing all handlers.

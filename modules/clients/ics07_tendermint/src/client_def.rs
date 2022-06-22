@@ -6,34 +6,33 @@ use tendermint_light_client_verifier::types::{TrustedBlockState, UntrustedBlockS
 use tendermint_light_client_verifier::{ProdVerifier, Verdict, Verifier};
 use tendermint_proto::Protobuf;
 
-use crate::clients::ics07_tendermint::client_state::ClientState as TmClientState;
-use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
-use crate::clients::ics07_tendermint::error::Error;
-use crate::clients::ics07_tendermint::header::Header;
-use crate::core::ics02_client::client_consensus::ConsensusState;
-use crate::core::ics02_client::client_def::ClientDef;
-use crate::core::ics02_client::client_state::ClientState;
-use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::context::ConsensusReader;
-use crate::core::ics02_client::error::Error as Ics02Error;
-use crate::core::ics03_connection::connection::ConnectionEnd;
-use crate::core::ics04_channel::channel::ChannelEnd;
-use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
-use crate::core::ics04_channel::context::ChannelMetaReader;
-use crate::core::ics04_channel::packet::Sequence;
-use crate::core::ics23_commitment::commitment::{
+use super::client_state::ClientState as TmClientState;
+use super::consensus_state::ConsensusState as TmConsensusState;
+use super::error::Error;
+use super::header::Header;
+use ibc_base::ics02_client::client_consensus::ConsensusState;
+use ibc_base::ics02_client::client_def::ClientDef;
+use ibc_base::ics02_client::client_state::ClientState;
+use ibc_base::ics02_client::client_type::ClientType;
+use ibc_base::ics02_client::context::ConsensusReader;
+use ibc_base::ics02_client::error::Error as Ics02Error;
+use ibc_base::ics02_client::height::Height;
+use ibc_base::ics03_connection::connection::ConnectionEnd;
+use ibc_base::ics04_channel::channel::ChannelEnd;
+use ibc_base::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
+use ibc_base::ics04_channel::context::ChannelMetaReader;
+use ibc_base::ics04_channel::packet::Sequence;
+use ibc_base::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
 };
-use crate::core::ics23_commitment::merkle::{apply_prefix, MerkleProof};
-use crate::core::ics24_host::identifier::ConnectionId;
-use crate::core::ics24_host::identifier::{ChannelId, ClientId, PortId};
-use crate::core::ics24_host::path::{
+use ibc_base::ics23_commitment::merkle::{apply_prefix, MerkleProof};
+use ibc_base::ics24_host::identifier::ConnectionId;
+use ibc_base::ics24_host::identifier::{ChannelId, ClientId, PortId};
+use ibc_base::ics24_host::path::{
     AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
     ConnectionsPath, ReceiptsPath, SeqRecvsPath,
 };
-use crate::core::ics24_host::Path;
-use crate::prelude::*;
-use crate::Height;
+use ibc_base::ics24_host::Path;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct TendermintClient {

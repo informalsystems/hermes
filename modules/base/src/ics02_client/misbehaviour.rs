@@ -1,0 +1,12 @@
+use crate::prelude::*;
+
+use crate::ics24_host::identifier::ClientId;
+use crate::Height;
+
+pub trait Misbehaviour: Clone + core::fmt::Debug + Send + Sync {
+    /// The type of client (eg. Tendermint)
+    fn client_id(&self) -> &ClientId;
+
+    /// The height of the consensus state
+    fn height(&self) -> Height;
+}

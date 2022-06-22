@@ -1,6 +1,5 @@
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
-use crate::clients::ics07_tendermint::client_def::TendermintClient;
 use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::client_type::ClientType;
@@ -19,6 +18,7 @@ use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, Por
 use crate::downcast;
 use crate::prelude::*;
 use crate::Height;
+use ibc_client_tendermint::client_def::TendermintClient;
 
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_def::MockClient;

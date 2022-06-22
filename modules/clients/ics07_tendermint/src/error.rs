@@ -1,13 +1,10 @@
-use crate::prelude::*;
-
 use flex_error::{define_error, TraceError};
 
-use crate::core::ics02_client::error::Error as Ics02Error;
-use crate::core::ics24_host::error::ValidationError;
-use crate::core::ics24_host::identifier::ClientId;
-use crate::timestamp::{Timestamp, TimestampOverflowError};
-
-use crate::Height;
+use ibc_base::ics02_client::error::Error as Ics02Error;
+use ibc_base::ics24_host::error::ValidationError;
+use ibc_base::ics24_host::identifier::ClientId;
+use ibc_base::timestamp::{Timestamp, TimestampOverflowError};
+use ibc_base::Height;
 use tendermint::account::Id;
 use tendermint::hash::Hash;
 use tendermint::Error as TendermintError;

@@ -1432,6 +1432,67 @@ dependencies = [
  "derive_more",
  "env_logger",
  "flex-error",
+ "ibc-client-tendermint",
+ "ibc-proto",
+ "ics23",
+ "modelator",
+ "num-traits",
+ "primitive-types",
+ "prost",
+ "prost-types",
+ "safe-regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "sha2 0.10.2",
+ "subtle-encoding",
+ "tendermint",
+ "tendermint-light-client-verifier",
+ "tendermint-proto",
+ "tendermint-rpc",
+ "tendermint-testgen",
+ "test-log",
+ "time",
+ "tracing",
+ "tracing-subscriber",
+ "uint",
+]
+
+[[package]]
+name = "ibc-base"
+version = "0.15.0"
+dependencies = [
+ "bytes",
+ "derive_more",
+ "flex-error",
+ "ibc-proto",
+ "ics23",
+ "num-traits",
+ "primitive-types",
+ "prost",
+ "prost-types",
+ "safe-regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "sha2 0.10.2",
+ "subtle-encoding",
+ "tendermint",
+ "tendermint-proto",
+ "time",
+ "tracing",
+ "uint",
+]
+
+[[package]]
+name = "ibc-client-tendermint"
+version = "0.15.0"
+dependencies = [
+ "bytes",
+ "derive_more",
+ "env_logger",
+ "flex-error",
+ "ibc-base",
  "ibc-proto",
  "ics23",
  "modelator",

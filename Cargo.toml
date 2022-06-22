@@ -4,6 +4,8 @@ resolver = "2"
 
 members = [
     "modules",
+    "modules/clients/ics07_tendermint",
+    "modules/base",
     "relayer",
     "relayer-cli",
     "relayer-rest",

@@ -1,5 +1,3 @@
-use crate::prelude::*;
-
 use serde::Serialize;
 use tendermint::{hash::Algorithm, time::Time, Hash};
 use tendermint_proto::google::protobuf as tpb;
@@ -7,11 +5,11 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
 
-use crate::clients::ics07_tendermint::error::Error;
-use crate::clients::ics07_tendermint::header::Header;
-use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::error::Error as Ics02Error;
-use crate::core::ics23_commitment::commitment::CommitmentRoot;
+use super::error::Error;
+use super::header::Header;
+use ibc_base::ics02_client::client_type::ClientType;
+use ibc_base::ics02_client::error::Error as Ics02Error;
+use ibc_base::ics23_commitment::commitment::CommitmentRoot;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ConsensusState {
@@ -30,7 +28,7 @@ impl ConsensusState {
     }
 }
 
-impl crate::core::ics02_client::client_consensus::ConsensusState for ConsensusState {
+impl ibc_base::ics02_client::client_consensus::ConsensusState for ConsensusState {
     fn client_type(&self) -> ClientType {
         ClientType::Tendermint
     }

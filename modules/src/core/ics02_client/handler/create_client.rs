@@ -71,10 +71,6 @@ mod tests {
     use core::time::Duration;
     use test_log::test;
 
-    use crate::clients::ics07_tendermint::client_state::{
-        AllowUpdate, ClientState as TendermintClientState,
-    };
-    use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_type::ClientType;
     use crate::core::ics02_client::context::ClientReader;
@@ -91,6 +87,8 @@ mod tests {
     use crate::mock::header::MockHeader;
     use crate::test_utils::get_dummy_account_id;
     use crate::Height;
+    use ibc_client_tendermint::client_state::{AllowUpdate, ClientState as TendermintClientState};
+    use ibc_client_tendermint::header::test_util::get_dummy_tendermint_header;
 
     #[test]
     fn test_create_client_ok() {

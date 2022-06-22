@@ -94,11 +94,11 @@ mod tests {
 
     use ibc_proto::ibc::core::client::v1::MsgCreateClient;
 
-    use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
-    use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::msgs::MsgCreateAnyClient;
     use crate::test_utils::get_dummy_account_id;
+    use ibc_client_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
+    use ibc_client_tendermint::header::test_util::get_dummy_tendermint_header;
 
     #[test]
     fn msg_create_client_serialization() {

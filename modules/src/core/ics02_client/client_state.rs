@@ -5,10 +5,10 @@ use ibc_proto::google::protobuf::Any;
 use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
+use ibc_client_tendermint::client_state;
+use ibc_client_tendermint::client_state::ClientState as TmClientState;
 use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
 
-use crate::clients::ics07_tendermint::client_state;
-use crate::clients::ics07_tendermint::client_state::ClientState as TmClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
@@ -302,9 +302,9 @@ mod tests {
     use ibc_proto::google::protobuf::Any;
     use test_log::test;
 
-    use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
-    use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
     use crate::core::ics02_client::client_state::AnyClientState;
+    use ibc_client_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
+    use ibc_client_tendermint::header::test_util::get_dummy_tendermint_header;
 
     #[test]
     fn any_client_state_serialization() {
