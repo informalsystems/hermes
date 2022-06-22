@@ -278,7 +278,7 @@ pub async fn packet_search(
     search: &QueryPacketEventDataRequest,
     seq: Sequence,
 ) -> Result<TxSearchResponse, Error> {
-    info!(seq = ?search.sequences, "got sequence");
+    info!(seq = ?seq, "got sequence");
 
     let (raw_tx_result, hash) = tx_result_by_packet_fields(pool, search, seq).await?;
     let deliver_tx = raw_tx_result.result.unwrap();

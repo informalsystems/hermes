@@ -33,7 +33,7 @@ pub async fn wait_for_block_commits(
 
     info!(
         id = %config.chain_id,
-        "XXX wait_for_block_commits: waiting for commit of tx hashes(s) {}",
+        "wait_for_block_commits: waiting for commit of tx hashes(s) {}",
         hashes
     );
 

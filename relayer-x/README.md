@@ -52,16 +52,16 @@ Other tendermint RPCs stay the same (e.g. query status, abci_status, etc)
 ### Application queries
 Not implemented, gRPC is still used
 
-### Run hermes and the IBC node
-In this mode hermes is configured to send all the RPC requests to the IBC node.
-See here how to [start the IBC node](https://github.com/informalsystems/ibc-rs/blob/anca/ibcnode/relayer-x/ibc-proxy/README.md)
-The IBC node performs psql queries for Tx-es
+### Run hermes and the IBC proxy node
+In this mode hermes is configured to send all the RPC requests to the IBC proxy node who performs psql queries for all Tx RPC queries and relays all others RPCs to `<ibc_proxy_rpc_port>`.
+
+See here how to [start the IBC proxy node](https://github.com/informalsystems/ibc-rs/blob/anca/ibcnode/relayer-x/ibc-proxy/README.md)
 Hermes chain configuration should look like this (type shown for clarification, `CosmosSdk` is the default and can be omitted):
   ```
   [[chains]]
   id = 'ibc-0'
   type = 'CosmosSdk'
-  rpc_addr = 'http://127.0.0.1:<ibc_node_rpc_port>'
+  rpc_addr = 'http://127.0.0.1:<ibc_proxy_rpc_port>'
   grpc_addr = 'http://127.0.0.1:9090'
   websocket_addr = 'ws://127.0.0.1:26657/websocket'
   ```

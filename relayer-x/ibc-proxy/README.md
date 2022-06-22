@@ -8,7 +8,6 @@ to set up two chains with the PostgreSQL indexer.
 ### 1.Spawn node for `ibc-0`
 
 ```shell
-$ RUST_LOG=debug cargo run -- --port 8220 --proxy http://localhost:26657 --db postgres://tendermint:tendermint@localhost/ibc0
 $ RUST_LOG=debug cargo run -- --port 8220 --rpc http://localhost:26657 --db postgres://tendermint:tendermint@localhost/ibc0 --ws http://localhost:26657
 ```
 
