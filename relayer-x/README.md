@@ -5,8 +5,6 @@ WIP
 See Thane's notes [here](https://hedgedoc.informal.systems/G3PkdLXKT86oOTGWrGQe5g#).
 
 ### PSQL
-No need to setup the tendermint stuff.
-
 Tested with following changes:
 - edit `~/.pgpass` to read something like:
     ```
@@ -24,29 +22,60 @@ Tested with following changes:
     sudo -u postgres pg_ctl reload -D /Library/PostgreSQL/14/data/
     ```
 ## Start the chains (gaia v7.0.0)
-- start the `dev-env` script (doesn't work with three chains):
+- start the `dev-env` script (doesn't work yet with three chains):
   ```
   ./scripts/dev-env ~/.hermes/config.toml ibc-0 ibc-1
   ```
   Tested with gaia v7.0.0
 
-## Run hermes CLIs
-- create IBC client
-  ```
-  $ hermes create client ibc-0 ibc-1
-  2022-05-04T19:58:37.942880Z  INFO ThreadId(01) using default configuration from '/Users/ancaz/.hermes/config.toml'
-  2022-05-04T19:58:37.973893Z  INFO ThreadId(35) send_tx_commit{id=create client}: wait_for_block_commits: waiting for commit of tx hashes(s) AD23A756AA297E18CBED3AF24270CCD933F04C2A17DE7410D5C38AE1572F3E7B id=ibc-0
-  Error: foreign client error: error raised while creating client for chain ibc-0: failed sending message to dst chain : failed tx: no confirmation
-  ```
-  All CLIs will fail to retrieve the Tx hash as the queries are not yet changed to do psql queries. 
+The script does the following:
+- sets up psql
+  - removes the old database and role
+  - creates the tendermint DB
+  - loads the [schema](https://github.com/informalsystems/ibc-rs/blob/anca/ibcnode/relayer-x/schema.sql)
+- configures psql indexer in tendermint config files
+- starts two gaia chains
 
-## Check psql
-- check that the transaction appears in the `tx_results` table (there should be b:
+## Run hermes
+### Tendermint queries
+Most of the tendermint RPCs that use the indexer have been implemented:
+- All Tx tendermint psql queries:
+  - Tx by hash - required for all hermes CLIs and packet relaying
+  - client header by id and height - required to retrieve headers used in previous client updates (misbehavior)
+  - packet data by packet fields
+
+- Not implemented:
+  - block query - required to extract events from begin/end block
+
+Other tendermint RPCs stay the same (e.g. query status, abci_status, etc)
+
+### Application queries
+Not implemented, gRPC is still used
+
+### Run hermes and the IBC node
+In this mode hermes is configured to send all the RPC requests to the IBC node.
+See here how to [start the IBC node](https://github.com/informalsystems/ibc-rs/blob/anca/ibcnode/relayer-x/ibc-proxy/README.md)
+The IBC node performs psql queries for Tx-es
+Hermes chain configuration should look like this (type shown for clarification, `CosmosSdk` is the default and can be omitted):
   ```
-  $ psql -U tendermint -c "select tx_hash from tx_results  where tx_hash = 'AD23A756AA297E18CBED3AF24270CCD933F04C2A17DE7410D5C38AE1572F3E7B'" ibc0
-  tx_hash
-  ------------------------------------------------------------------
-  AD23A756AA297E18CBED3AF24270CCD933F04C2A17DE7410D5C38AE1572F3E7B
-  (1 row)
+  [[chains]]
+  id = 'ibc-0'
+  type = 'CosmosSdk'
+  rpc_addr = 'http://127.0.0.1:<ibc_node_rpc_port>'
+  grpc_addr = 'http://127.0.0.1:9090'
+  websocket_addr = 'ws://127.0.0.1:26657/websocket'
+  ```
+
+### Run hermes with `CosmosPsql` configured chains
+In this mode hermes performs psql queries (currently limited to tendermint Tx queries).
+Hermes chain configuration should look like this:
+  ```
+  [[chains]]
+  id = 'ibc-0'
+  type = 'CosmosPsql'
+  psql_conn = 'postgres://tendermint:tendermint@localhost/ibc0'
+  rpc_addr = 'http://127.0.0.1:26657'
+  grpc_addr = 'http://127.0.0.1:9090'
+  websocket_addr = 'ws://127.0.0.1:26657/websocket'
   ```
 
