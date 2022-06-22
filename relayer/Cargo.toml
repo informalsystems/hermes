@@ -63,6 +63,7 @@ nanoid = "0.4.0"
 regex = "1.5.5"
 moka = "0.8.5"
 uuid = { version = "1.1.2", features = ["v4"] }
+async-trait = "0.1.56"
 
 [dependencies.num-bigint]
 version = "0.4"

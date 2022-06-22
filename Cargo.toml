@@ -5,6 +5,7 @@ resolver = "2"
 members = [
     "modules",
     "relayer",
+    "relayer-next",
     "relayer-cli",
     "relayer-rest",
     "telemetry",
