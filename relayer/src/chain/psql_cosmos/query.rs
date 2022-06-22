@@ -1,7 +1,5 @@
 use eyre::WrapErr;
 use prost::Message;
-//use std::thread;
-//use std::time::Duration;
 use sqlx::PgPool;
 use tendermint::abci::{self, responses::Codespace, tag::Tag, Event, Gas, Info, Log};
 use tendermint_proto::abci::TxResult;
@@ -13,7 +11,7 @@ use ibc::core::ics02_client::client_consensus::QueryClientEventRequest;
 use ibc::core::ics02_client::events as ClientEvents;
 use ibc::core::ics04_channel::channel::QueryPacketEventDataRequest;
 use ibc::core::ics04_channel::events as ChannelEvents;
-use ibc::core::ics04_channel::packet::{Packet, Sequence};
+use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::query::QueryTxRequest;
@@ -25,29 +23,13 @@ use crate::error::Error;
 /// 1. Client Update request - returns a vector with at most one update client event
 /// 2. Packet event request - returns at most one packet event for each sequence specified
 ///    in the request.
-///    Note - there is no way to format the packet query such that it asks for Tx-es with either
-///    sequence (the query conditions can only be AND-ed).
-///    There is a possibility to include "<=" and ">=" conditions but it doesn't work with
-///    string attributes (sequence is emmitted as a string).
-///    Therefore, for packets we perform one tx_search for each sequence.
-///    Alternatively, a single query for all packets could be performed but it would return all
-///    packets ever sent.
-
-fn filter_matching_event(
-    event: Event,
-    request: &QueryPacketEventDataRequest,
-    seq: Sequence,
-) -> Option<IbcEvent> {
-    fn matches_packet(
-        request: &QueryPacketEventDataRequest,
-        seq: Sequence,
-        packet: &Packet,
-    ) -> bool {
+fn filter_matching_event(event: Event, request: &QueryPacketEventDataRequest) -> Option<IbcEvent> {
+    fn matches_packet(request: &QueryPacketEventDataRequest, packet: &Packet) -> bool {
         packet.source_port == request.source_port_id
             && packet.source_channel == request.source_channel_id
             && packet.destination_port == request.destination_port_id
             && packet.destination_channel == request.destination_channel_id
-            && packet.sequence == seq
+            && request.sequences.contains(&packet.sequence)
     }
 
     if event.type_str != request.event_id.as_str() {
@@ -56,12 +38,10 @@ fn filter_matching_event(
 
     let ibc_event = ChannelEvents::try_from_tx(&event)?;
     match ibc_event {
-        IbcEvent::SendPacket(ref send_ev) if matches_packet(request, seq, &send_ev.packet) => {
+        IbcEvent::SendPacket(ref send_ev) if matches_packet(request, &send_ev.packet) => {
             Some(ibc_event)
         }
-        IbcEvent::WriteAcknowledgement(ref ack_ev)
-            if matches_packet(request, seq, &ack_ev.packet) =>
-        {
+        IbcEvent::WriteAcknowledgement(ref ack_ev) if matches_packet(request, &ack_ev.packet) => {
             Some(ibc_event)
         }
         _ => None,
@@ -244,56 +224,78 @@ fn update_client_from_tx_search_response(
         .map(IbcEvent::UpdateClient)
 }
 
-async fn tx_result_by_packet_fields(
+async fn tx_results_by_packet_fields(
     pool: &PgPool,
     search: &QueryPacketEventDataRequest,
-    sequence: Sequence,
-) -> Result<(TxResult, String), Error> {
-    let result = sqlx::query_as::<_, SqlTxResult>(
-        "SELECT tx_hash, tx_result FROM ibc_tx_packet_events WHERE \
-        packet_sequence = $1 and \
-        type = $2 and \
-        packet_src_channel = $3 and \
-        packet_src_port = $4 \
-        LIMIT 1",
-    )
-    .bind(format!("{}", sequence))
-    .bind(search.event_id.as_str())
-    .bind(search.source_channel_id.to_string())
-    .bind(search.source_port_id.to_string())
-    .fetch_one(pool)
-    .await
-    .map_err(Error::sqlx)?;
+) -> Result<Vec<(i64, TxResult, String)>, Error> {
+    // Convert from `[Sequence(1), Sequence(2)]` to String `"('1', '2')"`
+    let seqs = search
+        .clone()
+        .sequences
+        .into_iter()
+        .map(|i| format!("'{}'", i))
+        .collect::<Vec<String>>();
+    let seqs_string = format!("({})", seqs.join(", "));
 
-    let tx_result = tendermint_proto::abci::TxResult::decode(result.tx_result.as_slice())
-        .wrap_err("failed to decode tx result")
-        .unwrap();
+    let sql_select_string = format!(
+        "SELECT DISTINCT tx_hash, tx_result FROM ibc_tx_packet_events WHERE \
+        packet_sequence IN {} and \
+        type = $1 and \
+        packet_src_channel = $2 and \
+        packet_src_port = $3",
+        seqs_string
+    );
 
-    Ok((tx_result, result.tx_hash))
+    let results = sqlx::query_as::<_, SqlTxResult>(sql_select_string.as_str())
+        //.bind(seqs_string.as_str())
+        .bind(search.event_id.as_str())
+        .bind(search.source_channel_id.to_string())
+        .bind(search.source_port_id.to_string())
+        .fetch_all(pool)
+        .await
+        .map_err(Error::sqlx)?;
+
+    let tx_result = results
+        .into_iter()
+        .map(|result| {
+            let tx_res = tendermint_proto::abci::TxResult::decode(result.tx_result.as_slice())
+                .wrap_err("failed to decode tx result")
+                .unwrap();
+            (tx_res.height, tx_res, result.tx_hash)
+        })
+        .collect();
+
+    Ok(tx_result)
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn packet_search(
+pub async fn tx_search_response_from_packet_query(
     pool: &PgPool,
     search: &QueryPacketEventDataRequest,
-    seq: Sequence,
 ) -> Result<TxSearchResponse, Error> {
-    info!(seq = ?seq, "got sequence");
+    info!("packet_search_multi");
 
-    let (raw_tx_result, hash) = tx_result_by_packet_fields(pool, search, seq).await?;
-    let deliver_tx = raw_tx_result.result.unwrap();
-    let tx_result = proto_to_deliver_tx(deliver_tx)?;
+    let results = tx_results_by_packet_fields(pool, search).await?;
 
-    trace!(tx_result.events = ? &tx_result.events, "got events");
+    let txs = results
+        .into_iter()
+        .map(|result| {
+            let (height, raw_tx_result, hash) = result;
+            let deliver_tx = raw_tx_result.result.unwrap();
+            trace!(tx_result.events = ? &deliver_tx.events, "got events");
 
-    let txs = vec![ResultTx {
-        hash: hash.parse().unwrap(), // TODO: validate hash earlier
-        height: raw_tx_result.height.try_into().unwrap(),
-        index: raw_tx_result.index,
-        tx_result,
-        tx: raw_tx_result.tx.into(),
-        proof: None,
-    }];
+            let tx_result = proto_to_deliver_tx(deliver_tx).unwrap();
+
+            ResultTx {
+                hash: hash.parse().unwrap(),
+                height: height.try_into().unwrap(),
+                index: raw_tx_result.index,
+                tx_result,
+                tx: raw_tx_result.tx.into(),
+                proof: None,
+            }
+        })
+        .collect();
 
     Ok(TxSearchResponse {
         txs,
@@ -301,29 +303,29 @@ pub async fn packet_search(
     })
 }
 
-// Extract the packet events from the query_txs RPC response. For any given
-// packet query, there is at most one Tx matching such query. Moreover, a Tx may
-// contain several events, but a single one must match the packet query.
-// For example, if we're querying for the packet with sequence 3 and this packet
-// was committed in some Tx along with the packet with sequence 4, the response
-// will include both packets. For this reason, we iterate all packets in the Tx,
-// searching for those that match (which must be a single one).
-fn packet_from_tx_search_response(
+// Extract the packet events from the query_txs RPC responses.
+fn packet_events_from_tx_search_response(
     chain_id: &ChainId,
     request: &QueryPacketEventDataRequest,
-    seq: Sequence,
-    response: ResultTx,
-) -> Option<IbcEvent> {
-    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
-    if request.height != ICSHeight::zero() && height > request.height {
-        return None;
-    }
+    responses: Vec<ResultTx>,
+) -> Vec<IbcEvent> {
+    let mut events = vec![];
+    for response in responses {
+        let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
+        if request.height != ICSHeight::zero() && height > request.height {
+            continue;
+        }
 
-    response
-        .tx_result
-        .events
-        .into_iter()
-        .find_map(|ev| filter_matching_event(ev, request, seq))
+        let mut new_events = response
+            .tx_result
+            .events
+            .into_iter()
+            .filter_map(|ev| filter_matching_event(ev, request))
+            .collect::<Vec<_>>();
+
+        events.append(&mut new_events)
+    }
+    events
 }
 
 pub async fn query_txs(
@@ -335,29 +337,9 @@ pub async fn query_txs(
         QueryTxRequest::Packet(request) => {
             crate::time!("query_txs: query packet events");
 
-            let mut result: Vec<IbcEvent> = vec![];
-
-            // TODO - make a single psql query
-            for seq in &request.sequences {
-                let response = packet_search(pool, request, *seq).await?;
-                // query first (and only) Tx that includes the event specified in the query request
-
-                assert!(
-                    response.txs.len() <= 1,
-                    "packet_from_tx_search_response: unexpected number of txs"
-                );
-
-                if response.txs.is_empty() {
-                    continue;
-                }
-
-                if let Some(event) =
-                    packet_from_tx_search_response(chain_id, request, *seq, response.txs[0].clone())
-                {
-                    result.push(event);
-                }
-            }
-            Ok(result)
+            let responses = tx_search_response_from_packet_query(pool, request).await?;
+            let events = packet_events_from_tx_search_response(chain_id, request, responses.txs);
+            Ok(events)
         }
 
         QueryTxRequest::Client(request) => {
