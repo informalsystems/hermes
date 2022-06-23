@@ -78,10 +78,10 @@ impl PsqlChain {
         &mut self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEvent>, Error> {
-        crate::time!("send_messages_and_wait_commit");
+        crate::time!("do_send_messages_and_wait_commit");
 
         let _span =
-            span!(Level::DEBUG, "send_tx_commit", id = %tracked_msgs.tracking_id()).entered();
+            span!(Level::DEBUG, "do_send_messages_and_wait_commit", id = %tracked_msgs.tracking_id()).entered();
 
         let proto_msgs = tracked_msgs.msgs;
 

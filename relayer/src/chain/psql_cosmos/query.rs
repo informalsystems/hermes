@@ -1,6 +1,7 @@
 use eyre::WrapErr;
 use prost::Message;
 use sqlx::PgPool;
+use tendermint::abci::transaction::Hash;
 use tendermint::abci::{self, responses::Codespace, tag::Tag, Event, Gas, Info, Log};
 use tendermint_proto::abci::TxResult;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
@@ -17,6 +18,8 @@ use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::query::QueryTxRequest;
 use ibc::Height as ICSHeight;
 
+use crate::chain::cosmos::types::tx::TxSyncResult;
+use crate::chain::psql_cosmos::wait::empty_event_present;
 use crate::error::Error;
 
 /// This function queries transactions for events matching certain criteria.
@@ -49,7 +52,6 @@ fn filter_matching_event(event: Event, request: &QueryPacketEventDataRequest) ->
 }
 
 pub fn all_ibc_events_from_tx_search_response(
-    chain_id: &ChainId,
     height: ICSHeight,
     result: abci::DeliverTx,
 ) -> Vec<IbcEvent> {
@@ -194,7 +196,7 @@ pub async fn header_search(
 // for client Y at consensus height H'. This is the reason the code iterates all event fields in the
 // returned Tx to retrieve the relevant ones.
 // Returns `None` if no matching event was found.
-fn update_client_from_tx_search_response(
+fn update_client_events_from_tx_search_response(
     chain_id: &ChainId,
     request: &QueryClientEventRequest,
     response: ResultTx,
@@ -247,7 +249,6 @@ async fn tx_results_by_packet_fields(
     );
 
     let results = sqlx::query_as::<_, SqlTxResult>(sql_select_string.as_str())
-        //.bind(seqs_string.as_str())
         .bind(search.event_id.as_str())
         .bind(search.source_channel_id.to_string())
         .bind(search.source_port_id.to_string())
@@ -273,9 +274,10 @@ pub async fn tx_search_response_from_packet_query(
     pool: &PgPool,
     search: &QueryPacketEventDataRequest,
 ) -> Result<TxSearchResponse, Error> {
-    info!("packet_search_multi");
+    trace!("tx_search_response_from_packet_query");
 
     let results = tx_results_by_packet_fields(pool, search).await?;
+    let total_count = results.len() as u32;
 
     let txs = results
         .into_iter()
@@ -297,10 +299,7 @@ pub async fn tx_search_response_from_packet_query(
         })
         .collect();
 
-    Ok(TxSearchResponse {
-        txs,
-        total_count: 1,
-    })
+    Ok(TxSearchResponse { txs, total_count })
 }
 
 // Extract the packet events from the query_txs RPC responses.
@@ -356,7 +355,7 @@ pub async fn query_txs(
 
             let tx = response.txs.remove(0);
 
-            let event = update_client_from_tx_search_response(chain_id, request, tx);
+            let event = update_client_events_from_tx_search_response(chain_id, request, tx);
 
             Ok(event.into_iter().collect())
         }
@@ -375,9 +374,171 @@ pub async fn query_txs(
                     hash, tx_result.code, tx_result.log
                 ))]);
             }
-            Ok(all_ibc_events_from_tx_search_response(
-                chain_id, height, tx_result,
-            ))
+            Ok(all_ibc_events_from_tx_search_response(height, tx_result))
         }
     }
+}
+
+async fn abci_tx_results_by_hashes(
+    pool: &PgPool,
+    hashes: Vec<Hash>,
+) -> Result<Vec<(i64, TxResult, String)>, Error> {
+    // Convert from `[Sequence(1), Sequence(2)]` to String `"('1', '2')"`
+    let hash_string = hashes
+        .into_iter()
+        .map(|i| format!("'{}'", i))
+        .collect::<Vec<String>>();
+    let hashes_psql = format!("({})", hash_string.join(", "));
+    let sql_select_string = format!(
+        "SELECT DISTINCT tx_hash, tx_result FROM tx_results WHERE \
+        tx_hash IN {}",
+        hashes_psql
+    );
+
+    let results = sqlx::query_as::<_, SqlTxResult>(sql_select_string.as_str())
+        .fetch_all(pool)
+        .await
+        .map_err(Error::sqlx)?;
+
+    let tx_result = results
+        .into_iter()
+        .map(|result| {
+            let tx_res = tendermint_proto::abci::TxResult::decode(result.tx_result.as_slice())
+                .wrap_err("failed to decode tx result")
+                .unwrap();
+            (tx_res.height, tx_res, result.tx_hash)
+        })
+        .collect();
+
+    Ok(tx_result)
+}
+
+async fn rpc_tx_results_by_hashes(
+    pool: &PgPool,
+    hashes: Vec<Hash>,
+) -> Result<TxSearchResponse, Error> {
+    trace!("search_pending_txs_by_hashes {:?}", hashes);
+
+    let results = abci_tx_results_by_hashes(pool, hashes).await?;
+    let total_count = results.len() as u32;
+
+    let txs = results
+        .into_iter()
+        .map(|result| {
+            let (height, raw_tx_result, hash) = result;
+            let deliver_tx = raw_tx_result.result.unwrap();
+            trace!(tx_result.events = ? &deliver_tx.events, "got events");
+
+            let tx_result = proto_to_deliver_tx(deliver_tx).unwrap();
+
+            ResultTx {
+                hash: hash.parse().unwrap(),
+                height: height.try_into().unwrap(),
+                index: raw_tx_result.index,
+                tx_result,
+                tx: raw_tx_result.tx.into(),
+                proof: None,
+            }
+        })
+        .collect();
+
+    Ok(TxSearchResponse { txs, total_count })
+}
+
+fn all_ibc_events_from_tx_result_batch(
+    chain_id: &ChainId,
+    responses: Vec<ResultTx>,
+) -> Vec<Vec<IbcEvent>> {
+    let mut events: Vec<Vec<IbcEvent>> = vec![];
+    for response in responses {
+        let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
+
+        let new_events = if response.tx_result.code.is_err() {
+            vec![IbcEvent::ChainError(format!(
+                "deliver_tx on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
+                chain_id, response.hash, response.tx_result.code, response.tx_result.log
+            ))]
+        } else {
+            response
+                .tx_result
+                .events
+                .into_iter()
+                .filter_map(|ev| from_tx_response_event(height, &ev))
+                .collect::<Vec<_>>()
+        };
+        events.push(new_events)
+    }
+    events
+}
+
+pub async fn query_hashes_and_update_tx_sync_events(
+    pool: &PgPool,
+    chain_id: &ChainId,
+    tx_sync_results: &mut [TxSyncResult],
+) -> Result<(), Error> {
+    // get the hashes of the transactions for which events have not been retrieved yet
+    let unsolved_hashes = tx_sync_results
+        .iter_mut()
+        .filter(|result| empty_event_present(&result.events))
+        .map(|res| res.response.hash)
+        .collect();
+
+    // query the chain with all unsolved hashes
+    let responses = rpc_tx_results_by_hashes(pool, unsolved_hashes).await?;
+
+    // get the hashes for found transactions
+    let solved_hashes = responses
+        .txs
+        .iter()
+        .map(|res| res.hash)
+        .collect::<Vec<Hash>>();
+
+    if solved_hashes.is_empty() {
+        return Ok(());
+    }
+
+    // extract the IBC events from all transactions that were solved
+    let solved_txs_events = all_ibc_events_from_tx_result_batch(chain_id, responses.txs);
+
+    // get the pending results for the solved transactions where the results should be stored
+    let mut solved_results = tx_sync_results
+        .iter_mut()
+        .filter(|result| solved_hashes.contains(&result.response.hash))
+        .collect::<Vec<&mut TxSyncResult>>();
+
+    for (tx_sync_result, events) in solved_results.iter_mut().zip(solved_txs_events.iter()) {
+        // Transaction was included in a block. Check if it was an error.
+        let tx_chain_error = events
+            .iter()
+            .find(|event| matches!(event, IbcEvent::ChainError(_)));
+
+        if let Some(err) = tx_chain_error {
+            // Save the error for all messages in the transaction
+            let err_events = tx_sync_result
+                .events
+                .iter()
+                .map(|_| err.clone())
+                .collect::<Vec<IbcEvent>>();
+            tx_sync_result.events = err_events.clone();
+        } else {
+            tx_sync_result.events = events.clone();
+        }
+    }
+    Ok(())
+}
+
+pub async fn query_hashes_and_update_tx_sync_results(
+    pool: &PgPool,
+    chain_id: &ChainId,
+    tx_sync_results: &mut [TxSyncResult],
+) -> Result<(), Error> {
+    for result in tx_sync_results.iter_mut() {
+        if result.response.code.is_err() {
+            result.events = vec![IbcEvent::ChainError(format!(
+                "check_tx (broadcast_tx_sync) on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
+                chain_id, result.response.hash, result.response.code, result.response.log)); result.events.len()]
+        }
+    }
+
+    query_hashes_and_update_tx_sync_events(pool, chain_id, tx_sync_results).await
 }

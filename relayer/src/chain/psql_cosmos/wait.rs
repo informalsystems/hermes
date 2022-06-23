@@ -7,14 +7,13 @@ use sqlx::PgPool;
 use tracing::{info, trace};
 
 use ibc::events::IbcEvent;
-use ibc::query::{QueryTxHash, QueryTxRequest};
 
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::tx::TxSyncResult;
-use crate::chain::psql_cosmos::query::query_txs;
+use crate::chain::psql_cosmos::query::query_hashes_and_update_tx_sync_results;
 use crate::error::Error;
 
-const WAIT_BACKOFF: Duration = Duration::from_millis(100);
+const WAIT_BACKOFF: Duration = Duration::from_millis(300);
 
 /// Given a vector of `TxSyncResult` elements,
 /// each including a transaction response hash for one or more messages, periodically queries the chain
@@ -43,7 +42,7 @@ pub async fn wait_for_block_commits(
         if all_tx_results_found(tx_sync_results) {
             trace!(
                 id = %config.chain_id,
-                "XXX wait_for_block_commits: retrieved {} tx results after {}ms",
+                "wait_for_block_commits: retrieved {} tx results after {}ms",
                 tx_sync_results.len(),
                 elapsed.as_millis(),
             );
@@ -55,52 +54,11 @@ pub async fn wait_for_block_commits(
         }
         thread::sleep(WAIT_BACKOFF);
 
-        for tx_sync_result in tx_sync_results.iter_mut() {
-            // ignore error
-            let _ = update_tx_sync_result(pool, config, tx_sync_result).await;
-        }
+        query_hashes_and_update_tx_sync_results(pool, &config.chain_id, tx_sync_results).await?;
     }
 }
 
-async fn update_tx_sync_result(
-    pool: &PgPool,
-    config: &TxConfig,
-    tx_sync_result: &mut TxSyncResult,
-) -> Result<(), Error> {
-    let TxSyncResult { response, events } = tx_sync_result;
-
-    // If this transaction was not committed, determine whether it was because it failed
-    // or because it hasn't been committed yet.
-    if empty_event_present(events) {
-        // If the transaction failed, replace the events with an error,
-        // so that we don't attempt to resolve the transaction later on.
-        if response.code.value() != 0 {
-            *events = vec![IbcEvent::ChainError(format!(
-                "deliver_tx on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
-                config.chain_id, response.hash, response.code, response.log
-            ))];
-        }
-
-        // Otherwise, try to resolve transaction hash to the corresponding events.
-        let events_per_tx = query_txs(
-            pool,
-            &config.chain_id,
-            &QueryTxRequest::Transaction(QueryTxHash(response.hash)),
-        )
-        .await?;
-
-        // If we get events back, progress was made, so we replace the events
-        // with the new ones. in both cases we will check in the next iteration
-        // whether or not the transaction was fully committed.
-        if !events_per_tx.is_empty() {
-            *events = events_per_tx;
-        }
-    }
-
-    Ok(())
-}
-
-fn empty_event_present(events: &[IbcEvent]) -> bool {
+pub fn empty_event_present(events: &[IbcEvent]) -> bool {
     events.iter().any(|ev| matches!(ev, IbcEvent::Empty(_)))
 }
 
