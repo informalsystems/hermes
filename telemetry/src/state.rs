@@ -100,7 +100,7 @@ pub struct TelemetryState {
     /// Counts the number of WriteAcknowledgement Hermes transfers.
     ws_acknowledgement_count: Counter<u64>,
 
-    /// Counts the number of SendPacket Hermes transfers from ClearPacket. 
+    /// Counts the number of SendPacket Hermes transfers from ClearPacket.
     ws_cleared_count: Counter<u64>,
 
     /// Records the sequence number of the oldest SendPacket for which no
@@ -370,7 +370,11 @@ impl TelemetryState {
         counterparty_chain_id: &ChainId,
     ) {
         // Unique Identifier for a chain/channel/port.
-        let uid: PathIdentifier = PathIdentifier::new(chain_id.to_string(), channel_id.to_string(), port_id.to_string());
+        let uid: PathIdentifier = PathIdentifier::new(
+            chain_id.to_string(),
+            channel_id.to_string(),
+            port_id.to_string(),
+        );
 
         let labels = &[
             KeyValue::new("chain", chain_id.to_string()),
@@ -398,7 +402,6 @@ impl TelemetryState {
         }
     }
 
-
     pub fn record_ack_history(
         &self,
         seq_nr: u64,
@@ -409,7 +412,11 @@ impl TelemetryState {
         counterparty_chain_id: &ChainId,
     ) {
         // Unique Identifier for a chain/channel/port.
-        let uid: PathIdentifier = PathIdentifier::new(chain_id.to_string(), channel_id.to_string(), port_id.to_string());
+        let uid: PathIdentifier = PathIdentifier::new(
+            chain_id.to_string(),
+            channel_id.to_string(),
+            port_id.to_string(),
+        );
 
         let labels = &[
             KeyValue::new("chain", chain_id.to_string()),
@@ -420,7 +427,6 @@ impl TelemetryState {
 
         // If there are no HashSet for this uid, create a new one.
         if let Some(set) = self.sequence_history.get(&uid) {
-
             // Temporary solution in case the DashSet has "stuck" values.
             if set.len() > HISTORY_RESET_THRESHOLD {
                 set.clear();
@@ -433,8 +439,8 @@ impl TelemetryState {
                     } else {
                         self.ws_oldest_sequence.record(NO_PENDING_PACKETS, labels);
                     }
-                },
-                None => {},
+                }
+                None => {}
             }
         }
     }

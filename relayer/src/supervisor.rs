@@ -677,7 +677,6 @@ fn process_batch<Chain: ChainHandle>(
                     }
                 }
             });
-
         }
 
         let worker = workers.get_or_spawn(object, src, dst, config);
