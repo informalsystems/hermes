@@ -2,6 +2,8 @@
 //! that any host chain must implement to be able to process any `ClientMsg`. See
 //! "ADR 003: IBC protocol implementation" for more details.
 
+use alloc::boxed::Box;
+
 use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
@@ -10,7 +12,6 @@ use crate::core::ics02_client::handler::ClientResult::{self, Create, Update, Upg
 use crate::core::ics24_host::identifier::ClientId;
 use crate::timestamp::Timestamp;
 use crate::Height;
-use std::prelude::v1::Box;
 
 /// Defines the read-only part of ICS2 (client functions) context.
 pub trait ClientReader {
