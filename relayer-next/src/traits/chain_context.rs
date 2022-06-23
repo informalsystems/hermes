@@ -1,15 +1,6 @@
-use core::fmt::{Debug, Display};
+use core::fmt::Debug;
 
-use super::message::IbcMessage as SomeIbcMessage;
-
-pub type ChannelId<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::ChannelId;
-pub type PortId<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::PortId;
-pub type Sequence<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::Sequence;
-pub type IbcMessage<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::IbcMessage;
-pub type IbcEvent<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::IbcEvent;
-
-pub type Height<Chain> = <Chain as ChainContext>::Height;
-pub type Timestamp<Chain> = <Chain as ChainContext>::Timestamp;
+use super::message::{IbcMessage as SomeIbcMessage, Message as SomeMessage};
 
 pub trait ChainContext: Sized + Send + Sync + 'static {
     type Error;
@@ -17,7 +8,7 @@ pub trait ChainContext: Sized + Send + Sync + 'static {
     type Height: Clone + Debug;
     type Timestamp: Clone + Debug;
 
-    type Address: Clone + Display;
+    type Message: SomeMessage;
 }
 
 pub trait IbcChainContext<Counterparty: ChainContext>: ChainContext {

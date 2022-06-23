@@ -1596,6 +1596,7 @@ name = "ibc-relayer-next"
 version = "0.15.0"
 dependencies = [
  "async-trait",
+ "eyre",
  "flex-error",
  "ibc",
  "ibc-proto",

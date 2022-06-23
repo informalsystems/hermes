@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
-use super::chain_context::{ChannelId, Height, IbcMessage, PortId, Sequence};
 use super::relay_context::RelayContext;
+use crate::types::aliases::{ChannelId, Height, IbcMessage, PortId, Sequence};
 
 #[async_trait]
 pub trait TimeoutUnorderedPacketMessageBuilder: RelayContext {

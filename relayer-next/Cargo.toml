@@ -28,6 +28,7 @@ serde_derive = "1.0"
 async-trait = "0.1.56"
 flex-error = { version = "0.4.4", default-features = false }
 prost = { version = "0.10" }
+eyre = "0.6.8"
 
 [dependencies.tendermint]
 version = "=0.23.7"

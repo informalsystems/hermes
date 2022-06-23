@@ -1,6 +1,5 @@
-use crate::traits::chain_context::{
-    ChannelId, Height, IbcChainContext, PortId, Sequence, Timestamp,
-};
+use crate::traits::chain_context::IbcChainContext;
+use crate::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
 
 #[derive(Clone, Debug)]
 pub struct Packet<SrcChain: IbcChainContext<DstChain>, DstChain: IbcChainContext<SrcChain>> {

@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use super::relay_context::RelayContext;
-use crate::traits::chain_context::{ChannelId, Height, IbcMessage, PortId, Sequence};
+use crate::types::aliases::{ChannelId, Height, IbcMessage, PortId, Sequence};
 
 #[async_trait]
 pub trait AckPacketMessageBuilder: RelayContext {

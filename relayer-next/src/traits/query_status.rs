@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 
-use super::chain_context::{ChainContext, Height, Timestamp};
+use super::chain_context::ChainContext;
+use crate::types::aliases::{Height, Timestamp};
 
 pub struct ChainStatus<Chain: ChainContext> {
     pub height: Height<Chain>,
