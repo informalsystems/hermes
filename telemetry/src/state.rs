@@ -11,6 +11,14 @@ use prometheus::proto::MetricFamily;
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
 
+use dashmap::{DashMap, DashSet};
+
+use crate::path_identifier::PathIdentifier;
+
+const NO_PENDING_PACKETS: u64 = 0;
+const HISTORY_SET_CAPACITY: usize = 1000;
+const HISTORY_RESET_THRESHOLD: usize = 900;
+
 #[derive(Copy, Clone, Debug)]
 pub enum WorkerType {
     Client,
@@ -86,9 +94,22 @@ pub struct TelemetryState {
     /// Used for computing the `tx_latency` metric.
     in_flight_events: moka::sync::Cache<String, Instant>,
 
+    /// Counts the number of SendPacket Hermes transfers.
     ws_send_packet_count: Counter<u64>,
+
+    /// Counts the number of WriteAcknowledgement Hermes transfers.
     ws_acknowledgement_count: Counter<u64>,
+
+    /// Counts the number of SendPacket Hermes transfers from ClearPacket. 
     ws_cleared_count: Counter<u64>,
+
+    /// Records the sequence number of the oldest SendPacket for which no
+    /// WriteAcknowledgement has been received. The value is 0 if all the
+    /// WriteAcknowledgement were received.
+    ws_oldest_sequence: ValueRecorder<u64>,
+
+    /// History of SendPacket sequence numbers received and not yet Acknowledged.
+    sequence_history: DashMap<PathIdentifier, DashSet<u64>>,
 }
 
 impl TelemetryState {
@@ -338,6 +359,85 @@ impl TelemetryState {
 
         self.ws_cleared_count.add(1, labels);
     }
+
+    pub fn record_send_history(
+        &self,
+        seq_nr: u64,
+        _height: u64,
+        chain_id: &ChainId,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_chain_id: &ChainId,
+    ) {
+        // Unique Identifier for a chain/channel/port.
+        let uid: PathIdentifier = PathIdentifier::new(chain_id.to_string(), channel_id.to_string(), port_id.to_string());
+
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("counterparty", counterparty_chain_id.to_string()),
+            KeyValue::new("channel", channel_id.to_string()),
+            KeyValue::new("port", port_id.to_string()),
+        ];
+
+        // If there are no HashSet for this uid, create a new one.
+        // Else update the min value.
+        if let Some(set) = self.sequence_history.get(&uid) {
+            set.insert(seq_nr);
+            // Record the min of the HashSet as the oldest sequence.
+            if let Some(min) = set.clone().into_iter().min() {
+                self.ws_oldest_sequence.record(min, labels);
+            }
+        } else {
+            let new_dashset = DashSet::with_capacity(HISTORY_SET_CAPACITY);
+            new_dashset.insert(seq_nr);
+            // Record the min of the HashSet as the oldest sequence.
+            if let Some(min) = new_dashset.clone().into_iter().min() {
+                self.ws_oldest_sequence.record(min, labels);
+            }
+            self.sequence_history.insert(uid, new_dashset);
+        }
+    }
+
+
+    pub fn record_ack_history(
+        &self,
+        seq_nr: u64,
+        _height: u64,
+        chain_id: &ChainId,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_chain_id: &ChainId,
+    ) {
+        // Unique Identifier for a chain/channel/port.
+        let uid: PathIdentifier = PathIdentifier::new(chain_id.to_string(), channel_id.to_string(), port_id.to_string());
+
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("counterparty", counterparty_chain_id.to_string()),
+            KeyValue::new("channel", channel_id.to_string()),
+            KeyValue::new("port", port_id.to_string()),
+        ];
+
+        // If there are no HashSet for this uid, create a new one.
+        if let Some(set) = self.sequence_history.get(&uid) {
+
+            // Temporary solution in case the DashSet has "stuck" values.
+            if set.len() > HISTORY_RESET_THRESHOLD {
+                set.clear();
+            }
+            match set.remove(&seq_nr) {
+                Some(_) => {
+                    // Record the min of the HashSet as the oldest sequence.
+                    if let Some(min) = set.clone().into_iter().min() {
+                        self.ws_oldest_sequence.record(min, labels);
+                    } else {
+                        self.ws_oldest_sequence.record(NO_PENDING_PACKETS, labels);
+                    }
+                },
+                None => {},
+            }
+        }
+    }
 }
 
 use std::sync::Arc;
@@ -353,6 +453,7 @@ impl AggregatorSelector for CustomAggregatorSelector {
     fn aggregator_for(&self, descriptor: &Descriptor) -> Option<Arc<dyn Aggregator + Send + Sync>> {
         match descriptor.name() {
             "wallet_balance" => Some(Arc::new(last_value())),
+            "ws_oldest_sequence" => Some(Arc::new(last_value())),
             // Prometheus' supports only collector for histogram, sum, and last value aggregators.
             // https://docs.rs/opentelemetry-prometheus/0.10.0/src/opentelemetry_prometheus/lib.rs.html#411-418
             // TODO: Once quantile sketches are supported, replace histograms with that.
@@ -472,6 +573,13 @@ impl Default for TelemetryState {
                 .time_to_live(Duration::from_secs(60 * 60)) // Remove entries after 1 hour
                 .time_to_idle(Duration::from_secs(30 * 60)) // Remove entries if they have been idle for 30 minutes
                 .build(),
+
+            sequence_history: DashMap::new(),
+
+            ws_oldest_sequence: meter
+                .u64_value_recorder("ws_oldest_sequence")
+                .with_description("The sequence number of the oldest pending SendPacket. If this value is 0, it means there are no pending SendPacket.")
+                .init(),
         }
     }
 }
