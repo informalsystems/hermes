@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use super::context::RelayContext;
+use super::relay_context::RelayContext;
 use crate::types::packet::Packet;
 
 #[async_trait]
