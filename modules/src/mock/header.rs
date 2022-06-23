@@ -93,11 +93,12 @@ impl From<MockHeader> for AnyConsensusState {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::ics02_client::header::AnyHeader;
 
     #[test]
     fn encode_any() {
         let header = MockHeader::new(Height::new(1, 10).unwrap()).with_timestamp(Timestamp::none());
-        let bytes = header.encode_vec().unwrap();
+        let bytes = AnyHeader::from(header).encode_vec().unwrap();
 
         assert_eq!(
             &bytes,
