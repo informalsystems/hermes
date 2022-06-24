@@ -80,6 +80,11 @@ pub trait ClientReader {
     fn client_counter(&self) -> Result<u64, Error>;
 }
 
+/// Defines a subset of the `ClientReader`'s methods that a light-client implementation can access.
+/// A blanket implementation of this trait is provided for all types that implement `ClientReader`.
+///
+/// Note: This trait is not a supertrait of `ClientReader` because it uses trait objects and cannot
+/// depend on `AnyClientState` and `AnyConsensusState` due to a circular dependency problem.
 pub trait LightClientReader {
     fn consensus_state(
         &self,
