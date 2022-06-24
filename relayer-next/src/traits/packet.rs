@@ -1,4 +1,4 @@
-use super::chain_context::IbcChainContext;
+use crate::traits::chain_context::IbcChainContext;
 use crate::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
 
 pub trait IbcPacket<SrcChain, DstChain>

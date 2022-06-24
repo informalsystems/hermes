@@ -1,20 +1,10 @@
-use ibc::core::ics04_channel::packet::Sequence;
-use ibc::core::ics24_host::identifier::{ChannelId, PortId};
-use ibc::events::IbcEvent;
 use ibc::signer::Signer;
-use ibc::timestamp::Timestamp;
 use ibc::Height;
 use ibc_proto::google::protobuf::Any;
-use ibc_relayer::chain::handle::ChainHandle;
 use prost::EncodeError;
 
-use crate::traits::chain_context::{ChainContext, IbcChainContext};
+use crate::traits::chain_context::ChainContext;
 use crate::traits::message::{IbcMessage, Message};
-use crate::types::error::Error;
-
-pub struct CosmosChainContext<Handle: ChainHandle> {
-    pub handle: Handle,
-}
 
 pub struct CosmosIbcMessage {
     pub source_height: Option<Height>,
@@ -51,24 +41,4 @@ where
     fn source_height(&self) -> Option<Height> {
         self.source_height
     }
-}
-
-impl<Handle: ChainHandle> ChainContext for CosmosChainContext<Handle> {
-    type Error = Error;
-
-    type Height = Height;
-    type Timestamp = Timestamp;
-    type Message = CosmosIbcMessage;
-}
-
-impl<Handle: ChainHandle, Counterparty> IbcChainContext<Counterparty> for CosmosChainContext<Handle>
-where
-    Counterparty: ChainContext<Height = Height>,
-{
-    type ChannelId = ChannelId;
-    type PortId = PortId;
-    type Sequence = Sequence;
-
-    type IbcMessage = CosmosIbcMessage;
-    type IbcEvent = IbcEvent;
 }
