@@ -530,7 +530,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         if b_counterparty_id.is_some() && b_counterparty_id != relayer_a_id {
             if updated_relayer_b_id == relayer_b_id.as_ref() {
                 warn!(
-                    "updating the expected {:?} of side_b({}) since it is different than the \
+                    "updating the expected {:?} of side_a({}) since it is different than the \
                 counterparty of {:?}: {:?}, on {}. This is typically caused by crossing handshake \
                 messages in the presence of multiple relayers.",
                     relayer_a_id,
