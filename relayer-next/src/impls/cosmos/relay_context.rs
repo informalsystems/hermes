@@ -6,6 +6,7 @@ use crate::impls::cosmos::chain_context::CosmosChainContext;
 use crate::impls::cosmos::error::Error;
 use crate::traits::relay_context::RelayContext;
 
+#[derive(Debug, Clone)]
 pub struct CosmosRelayContext<SrcChain, DstChain>
 where
     SrcChain: ChainHandle,

@@ -1,3 +1,4 @@
+use core::fmt::Debug;
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc::events::IbcEvent;
@@ -9,6 +10,7 @@ use crate::impls::cosmos::error::Error;
 use crate::impls::cosmos::message::CosmosIbcMessage;
 use crate::traits::chain_context::{ChainContext, IbcChainContext};
 
+#[derive(Debug, Clone)]
 pub struct CosmosChainContext<Handle: ChainHandle> {
     pub handle: Handle,
 }

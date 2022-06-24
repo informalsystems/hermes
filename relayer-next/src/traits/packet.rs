@@ -1,7 +1,7 @@
 use crate::traits::chain_context::IbcChainContext;
 use crate::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
 
-pub trait IbcPacket<SrcChain, DstChain>
+pub trait IbcPacket<SrcChain, DstChain>: Send
 where
     SrcChain: IbcChainContext<DstChain>,
     DstChain: IbcChainContext<SrcChain>,

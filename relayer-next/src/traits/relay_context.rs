@@ -1,21 +1,22 @@
 use crate::traits::chain_context::IbcChainContext;
+use crate::traits::core::CoreTraits;
 use crate::traits::packet::IbcPacket;
 
-pub trait RelayContext: Sized + Send + Sync + 'static {
-    type Error;
+pub trait RelayContext: CoreTraits {
+    type Error: CoreTraits;
 
     type SrcChain: IbcChainContext<Self::DstChain, Error = Self::Error>;
 
     type DstChain: IbcChainContext<Self::SrcChain, Error = Self::Error>;
 
-    type Packet: IbcPacket<Self::SrcChain, Self::DstChain>;
+    type Packet: IbcPacket<Self::SrcChain, Self::DstChain> + CoreTraits;
 
     fn source_chain(&self) -> &Self::SrcChain;
 
     fn destination_chain(&self) -> &Self::DstChain;
 }
 
-pub trait RelayContextPair {
+pub trait RelayContextPair: CoreTraits {
     type SrcContext: RelayContext;
 
     type DstContext: RelayContext<
