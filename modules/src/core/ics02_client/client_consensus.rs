@@ -13,8 +13,6 @@ use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics23_commitment::commitment::CommitmentRoot;
-use crate::core::ics24_host::identifier::ClientId;
-use crate::events::WithBlockDataType;
 use crate::timestamp::Timestamp;
 
 #[cfg(any(test, feature = "mocks"))]
@@ -190,13 +188,4 @@ impl ConsensusState for AnyConsensusState {
     fn encode_vec(&self) -> Result<Vec<u8>, Error> {
         Protobuf::encode_vec(self).map_err(Error::invalid_any_consensus_state)
     }
-}
-
-/// Query request for a single client event, identified by `event_id`, for `client_id`.
-#[derive(Clone, Debug)]
-pub struct QueryClientEventRequest {
-    pub height: crate::Height,
-    pub event_id: WithBlockDataType,
-    pub client_id: ClientId,
-    pub consensus_height: crate::Height,
 }

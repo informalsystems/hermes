@@ -2,7 +2,7 @@ use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    HeightQuery, IncludeProof, PageRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
+    IncludeProof, PageRequest, QueryConnectionChannelsRequest, QueryConnectionRequest, QueryHeight,
 };
 
 use ibc::core::{
@@ -41,8 +41,8 @@ impl Runnable for QueryConnectionEndCmd {
         let res = chain.query_connection(
             QueryConnectionRequest {
                 connection_id: self.connection_id.clone(),
-                height: self.height.map_or(HeightQuery::Latest, |revision_height| {
-                    HeightQuery::Specific(ibc::Height::new(chain.id().version(), revision_height))
+                height: self.height.map_or(QueryHeight::Latest, |revision_height| {
+                    QueryHeight::Specific(ibc::Height::new(chain.id().version(), revision_height))
                 }),
             },
             IncludeProof::No,
