@@ -4,9 +4,13 @@ use crate::traits::relay_context::RelayContext;
 use crate::types::aliases::Packet;
 
 #[async_trait]
-pub trait PacketRelayer: RelayContext {
-    type Context: RelayContext;
+pub trait PacketRelayer<Context: RelayContext> {
     type Return;
+    type Error;
 
-    async fn relay(&self, packet: Packet<Self::Context>) -> Result<Self::Return, Self::Error>;
+    async fn relay_packet(
+        &self,
+        context: &Context,
+        packet: Packet<Context>,
+    ) -> Result<Self::Return, Self::Error>;
 }
