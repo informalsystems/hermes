@@ -50,7 +50,7 @@ macro_rules! tx_chan_cmd {
 }
 
 #[derive(Clone, Command, Debug, Parser)]
-pub struct TxRawChanOpenInitCmd {
+pub struct TxChanOpenInitCmd {
     #[clap(required = true, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
@@ -75,7 +75,7 @@ pub struct TxRawChanOpenInitCmd {
     order: Order,
 }
 
-impl Runnable for TxRawChanOpenInitCmd {
+impl Runnable for TxChanOpenInitCmd {
     fn run(&self) {
         let config = app_config();
 
@@ -131,7 +131,7 @@ impl Runnable for TxRawChanOpenInitCmd {
 }
 
 #[derive(Clone, Command, Debug, Parser)]
-pub struct TxRawChanOpenTryCmd {
+pub struct TxChanOpenTryCmd {
     #[clap(required = true, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
@@ -165,7 +165,7 @@ pub struct TxRawChanOpenTryCmd {
     dst_chan_id: Option<ChannelId>,
 }
 
-impl Runnable for TxRawChanOpenTryCmd {
+impl Runnable for TxChanOpenTryCmd {
     fn run(&self) {
         tx_chan_cmd!(
             "ChanOpenTry",
@@ -198,7 +198,7 @@ impl Runnable for TxRawChanOpenTryCmd {
 }
 
 #[derive(Clone, Command, Debug, Parser)]
-pub struct TxRawChanOpenAckCmd {
+pub struct TxChanOpenAckCmd {
     #[clap(required = true, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
@@ -233,7 +233,7 @@ pub struct TxRawChanOpenAckCmd {
     src_chan_id: ChannelId,
 }
 
-impl Runnable for TxRawChanOpenAckCmd {
+impl Runnable for TxChanOpenAckCmd {
     fn run(&self) {
         tx_chan_cmd!(
             "ChanOpenAck",
@@ -266,7 +266,7 @@ impl Runnable for TxRawChanOpenAckCmd {
 }
 
 #[derive(Clone, Command, Debug, Parser)]
-pub struct TxRawChanOpenConfirmCmd {
+pub struct TxChanOpenConfirmCmd {
     #[clap(required = true, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
@@ -301,7 +301,7 @@ pub struct TxRawChanOpenConfirmCmd {
     src_chan_id: ChannelId,
 }
 
-impl Runnable for TxRawChanOpenConfirmCmd {
+impl Runnable for TxChanOpenConfirmCmd {
     fn run(&self) {
         tx_chan_cmd!(
             "ChanOpenConfirm",
@@ -334,7 +334,7 @@ impl Runnable for TxRawChanOpenConfirmCmd {
 }
 
 #[derive(Clone, Command, Debug, Parser)]
-pub struct TxRawChanCloseInitCmd {
+pub struct TxChanCloseInitCmd {
     #[clap(required = true, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
@@ -369,7 +369,7 @@ pub struct TxRawChanCloseInitCmd {
     src_chan_id: ChannelId,
 }
 
-impl Runnable for TxRawChanCloseInitCmd {
+impl Runnable for TxChanCloseInitCmd {
     fn run(&self) {
         tx_chan_cmd!(
             "ChanCloseInit",
@@ -402,7 +402,7 @@ impl Runnable for TxRawChanCloseInitCmd {
 }
 
 #[derive(Clone, Command, Debug, Parser)]
-pub struct TxRawChanCloseConfirmCmd {
+pub struct TxChanCloseConfirmCmd {
     #[clap(required = true, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
@@ -437,7 +437,7 @@ pub struct TxRawChanCloseConfirmCmd {
     src_chan_id: ChannelId,
 }
 
-impl Runnable for TxRawChanCloseConfirmCmd {
+impl Runnable for TxChanCloseConfirmCmd {
     fn run(&self) {
         tx_chan_cmd!(
             "ChanCloseConfirm",

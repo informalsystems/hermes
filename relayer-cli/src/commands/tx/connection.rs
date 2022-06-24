@@ -35,7 +35,7 @@ macro_rules! conn_open_cmd {
 }
 
 #[derive(Clone, Command, Debug, Parser)]
-pub struct TxRawConnInitCmd {
+pub struct TxConnInitCmd {
     #[clap(required = true, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
@@ -49,7 +49,7 @@ pub struct TxRawConnInitCmd {
     src_client_id: ClientId,
 }
 
-impl Runnable for TxRawConnInitCmd {
+impl Runnable for TxConnInitCmd {
     fn run(&self) {
         conn_open_cmd!(
             "ConnOpenInit",
@@ -67,7 +67,7 @@ impl Runnable for TxRawConnInitCmd {
 }
 
 #[derive(Clone, Command, Debug, Parser)]
-pub struct TxRawConnTryCmd {
+pub struct TxConnTryCmd {
     #[clap(required = true, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
@@ -98,7 +98,7 @@ pub struct TxRawConnTryCmd {
     dst_conn_id: Option<ConnectionId>,
 }
 
-impl Runnable for TxRawConnTryCmd {
+impl Runnable for TxConnTryCmd {
     fn run(&self) {
         conn_open_cmd!(
             "ConnOpenTry",
@@ -124,7 +124,7 @@ impl Runnable for TxRawConnTryCmd {
 }
 
 #[derive(Clone, Command, Debug, Parser)]
-pub struct TxRawConnAckCmd {
+pub struct TxConnAckCmd {
     #[clap(required = true, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
@@ -156,7 +156,7 @@ pub struct TxRawConnAckCmd {
     src_conn_id: ConnectionId,
 }
 
-impl Runnable for TxRawConnAckCmd {
+impl Runnable for TxConnAckCmd {
     fn run(&self) {
         conn_open_cmd!(
             "ConnOpenAck",
@@ -182,7 +182,7 @@ impl Runnable for TxRawConnAckCmd {
 }
 
 #[derive(Clone, Command, Debug, Parser)]
-pub struct TxRawConnConfirmCmd {
+pub struct TxConnConfirmCmd {
     #[clap(required = true, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
@@ -214,7 +214,7 @@ pub struct TxRawConnConfirmCmd {
     src_conn_id: ConnectionId,
 }
 
-impl Runnable for TxRawConnConfirmCmd {
+impl Runnable for TxConnConfirmCmd {
     fn run(&self) {
         conn_open_cmd!(
             "ConnOpenConfirm",

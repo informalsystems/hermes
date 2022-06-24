@@ -11,7 +11,7 @@ use crate::error::Error;
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Parser)]
-pub struct TxRawPacketRecvCmd {
+pub struct TxPacketRecvCmd {
     #[clap(required = true, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
@@ -25,7 +25,7 @@ pub struct TxRawPacketRecvCmd {
     src_channel_id: ChannelId,
 }
 
-impl Runnable for TxRawPacketRecvCmd {
+impl Runnable for TxPacketRecvCmd {
     fn run(&self) {
         let config = app_config();
 
@@ -55,7 +55,7 @@ impl Runnable for TxRawPacketRecvCmd {
 }
 
 #[derive(Clone, Command, Debug, Parser)]
-pub struct TxRawPacketAckCmd {
+pub struct TxPacketAckCmd {
     #[clap(required = true, help = "identifier of the destination chain")]
     dst_chain_id: ChainId,
 
@@ -69,7 +69,7 @@ pub struct TxRawPacketAckCmd {
     src_channel_id: ChannelId,
 }
 
-impl Runnable for TxRawPacketAckCmd {
+impl Runnable for TxPacketAckCmd {
     fn run(&self) {
         let config = app_config();
 
