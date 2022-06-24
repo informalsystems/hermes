@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use core::any::Any as AnyTrait;
+use core::any::Any;
 use core::marker::{Send, Sync};
 
 use ibc_proto::google::protobuf::Any as ProtoAny;
@@ -23,7 +23,7 @@ pub const TENDERMINT_CONSENSUS_STATE_TYPE_URL: &str =
 
 pub const MOCK_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.mock.ConsensusState";
 
-pub trait ConsensusState: core::fmt::Debug + Send + Sync + AsAny {
+pub trait ConsensusState: core::fmt::Debug + Send + Sync + AsAnyConsensusState {
     /// Type of client associated with this consensus state (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 
@@ -33,12 +33,12 @@ pub trait ConsensusState: core::fmt::Debug + Send + Sync + AsAny {
     fn encode_vec(&self) -> Result<Vec<u8>, Error>;
 }
 
-pub trait AsAny: AnyTrait {
-    fn as_any(&self) -> &dyn AnyTrait;
+pub trait AsAnyConsensusState: Any {
+    fn as_any(&self) -> &dyn Any;
 }
 
-impl<M: AnyTrait + ConsensusState> AsAny for M {
-    fn as_any(&self) -> &dyn AnyTrait {
+impl<T: ConsensusState> AsAnyConsensusState for T {
+    fn as_any(&self) -> &dyn Any {
         self
     }
 }
