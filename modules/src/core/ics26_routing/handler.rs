@@ -297,7 +297,8 @@ mod tests {
         let mut msg_to_on_close =
             MsgTimeoutOnClose::try_from(get_dummy_raw_msg_timeout_on_close(36, 5)).unwrap();
         msg_to_on_close.packet.sequence = 2.into();
-        msg_to_on_close.packet.timeout_height = msg_transfer_two.timeout_height;
+        msg_to_on_close.packet.timeout_height =
+            msg_transfer_two.timeout_height.unwrap_or_else(Height::zero);
         msg_to_on_close.packet.timeout_timestamp = msg_transfer_two.timeout_timestamp;
 
         let denom = msg_transfer_two.token.denom.clone();

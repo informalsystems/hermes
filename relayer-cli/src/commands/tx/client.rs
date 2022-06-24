@@ -9,7 +9,7 @@ use ibc::events::IbcEvent;
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    HeightQuery, IncludeProof, PageRequest, QueryClientStateRequest, QueryClientStatesRequest,
+    IncludeProof, PageRequest, QueryClientStateRequest, QueryClientStatesRequest, QueryHeight,
 };
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::{CreateOptions, ForeignClient};
@@ -121,7 +121,7 @@ impl Runnable for TxUpdateClientCmd {
         let src_chain_id = match dst_chain.query_client_state(
             QueryClientStateRequest {
                 client_id: self.dst_client_id.clone(),
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         ) {
@@ -140,21 +140,19 @@ impl Runnable for TxUpdateClientCmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
-        let height = match self.target_height {
-            Some(height) => ibc::Height::new(src_chain.id().version(), height),
-            None => ibc::Height::zero(),
-        };
+        let target_height = self.target_height.map_or(QueryHeight::Latest, |height| {
+            QueryHeight::Specific(Height::new(src_chain.id().version(), height))
+        });
 
-        let trusted_height = match self.trusted_height {
-            Some(height) => ibc::Height::new(src_chain.id().version(), height),
-            None => ibc::Height::zero(),
-        };
+        let trusted_height = self
+            .trusted_height
+            .map(|height| Height::new(src_chain.id().version(), height));
 
         let client = ForeignClient::find(src_chain, dst_chain, &self.dst_client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         let res = client
-            .build_update_client_and_send(height, trusted_height)
+            .build_update_client_and_send(target_height, trusted_height)
             .map_err(Error::foreign_client);
 
         match res {
@@ -188,7 +186,7 @@ impl Runnable for TxUpgradeClientCmd {
         let src_chain_id = match dst_chain.query_client_state(
             QueryClientStateRequest {
                 client_id: self.client_id.clone(),
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         ) {

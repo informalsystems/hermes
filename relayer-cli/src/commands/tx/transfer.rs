@@ -12,7 +12,7 @@ use ibc::{
 };
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    HeightQuery, IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest,
+    IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
 use ibc_relayer::{
     config::Config,
@@ -176,7 +176,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
                 QueryChannelRequest {
                     port_id: opts.packet_src_port_id.clone(),
                     channel_id: opts.packet_src_channel_id,
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -208,7 +208,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: conn_id.clone(),
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -221,7 +221,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
             .query_client_state(
                 QueryClientStateRequest {
                     client_id: conn_end.client_id().clone(),
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )

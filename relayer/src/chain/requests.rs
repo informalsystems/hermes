@@ -4,6 +4,7 @@ use crate::error::Error;
 
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use ibc::events::WithBlockDataType;
 use ibc::Height;
 use ibc_proto::cosmos::base::query::v1beta1::PageRequest as RawPageRequest;
 use ibc_proto::ibc::core::channel::v1::{
@@ -26,6 +27,7 @@ use ibc_proto::ibc::core::connection::v1::{
 };
 
 use serde::{Deserialize, Serialize};
+use tendermint::abci::transaction::Hash as TxHash;
 use tendermint::block::Height as TMBlockHeight;
 use tonic::metadata::AsciiMetadataValue;
 
@@ -33,42 +35,42 @@ use tonic::metadata::AsciiMetadataValue;
 /// case where the user wants to query at whatever the latest height is, as
 /// opposed to specifying a specific height.
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-pub enum HeightQuery {
+pub enum QueryHeight {
     Latest,
     Specific(Height),
 }
 
-impl TryFrom<HeightQuery> for TMBlockHeight {
+impl TryFrom<QueryHeight> for TMBlockHeight {
     type Error = Error;
 
-    fn try_from(height_query: HeightQuery) -> Result<Self, Self::Error> {
+    fn try_from(height_query: QueryHeight) -> Result<Self, Self::Error> {
         let height = match height_query {
-            HeightQuery::Latest => 0u64,
-            HeightQuery::Specific(height) => height.revision_height,
+            QueryHeight::Latest => 0u64,
+            QueryHeight::Specific(height) => height.revision_height,
         };
 
         Self::try_from(height).map_err(Error::invalid_height)
     }
 }
 
-impl TryFrom<HeightQuery> for AsciiMetadataValue {
+impl TryFrom<QueryHeight> for AsciiMetadataValue {
     type Error = Error;
 
-    fn try_from(height_query: HeightQuery) -> Result<Self, Self::Error> {
+    fn try_from(height_query: QueryHeight) -> Result<Self, Self::Error> {
         let height = match height_query {
-            HeightQuery::Latest => 0u64,
-            HeightQuery::Specific(height) => height.revision_height,
+            QueryHeight::Latest => 0u64,
+            QueryHeight::Specific(height) => height.revision_height,
         };
 
         str::parse(&height.to_string()).map_err(Error::invalid_metadata)
     }
 }
 
-impl Display for HeightQuery {
+impl Display for QueryHeight {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            HeightQuery::Latest => write!(f, "latest height"),
-            HeightQuery::Specific(height) => write!(f, "{}", height),
+            QueryHeight::Latest => write!(f, "latest height"),
+            QueryHeight::Specific(height) => write!(f, "{}", height),
         }
     }
 }
@@ -127,7 +129,7 @@ impl From<PageRequest> for RawPageRequest {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryClientStateRequest {
     pub client_id: ClientId,
-    pub height: HeightQuery,
+    pub height: QueryHeight,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -147,7 +149,7 @@ impl From<QueryClientStatesRequest> for RawQueryClientStatesRequest {
 pub struct QueryConsensusStateRequest {
     pub client_id: ClientId,
     pub consensus_height: Height,
-    pub query_height: HeightQuery,
+    pub query_height: QueryHeight,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -206,7 +208,7 @@ impl From<QueryClientConnectionsRequest> for RawQueryClientConnectionsRequest {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryConnectionRequest {
     pub connection_id: ConnectionId,
-    pub height: HeightQuery,
+    pub height: QueryHeight,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -241,7 +243,7 @@ impl From<QueryChannelsRequest> for RawQueryChannelsRequest {
 pub struct QueryChannelRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    pub height: HeightQuery,
+    pub height: QueryHeight,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -264,7 +266,7 @@ pub struct QueryPacketCommitmentRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub sequence: Sequence,
-    pub height: HeightQuery,
+    pub height: QueryHeight,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -289,7 +291,7 @@ pub struct QueryPacketReceiptRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub sequence: Sequence,
-    pub height: HeightQuery,
+    pub height: QueryHeight,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -318,7 +320,7 @@ pub struct QueryPacketAcknowledgementRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub sequence: Sequence,
-    pub height: HeightQuery,
+    pub height: QueryHeight,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -369,7 +371,7 @@ impl From<QueryUnreceivedAcksRequest> for RawQueryUnreceivedAcksRequest {
 pub struct QueryNextSequenceReceiveRequest {
     pub port_id: PortId,
     pub channel_id: ChannelId,
-    pub height: HeightQuery,
+    pub height: QueryHeight,
 }
 
 impl From<QueryNextSequenceReceiveRequest> for RawQueryNextSequenceReceiveRequest {
@@ -383,5 +385,43 @@ impl From<QueryNextSequenceReceiveRequest> for RawQueryNextSequenceReceiveReques
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryHostConsensusStateRequest {
-    pub height: HeightQuery,
+    pub height: QueryHeight,
+}
+
+/// Used for queries and not yet standardized in channel's query.proto
+#[derive(Clone, Debug)]
+pub enum QueryTxRequest {
+    Packet(QueryPacketEventDataRequest),
+    Client(QueryClientEventRequest),
+    Transaction(QueryTxHash),
+}
+
+#[derive(Clone, Debug)]
+pub struct QueryTxHash(pub TxHash);
+
+/// Used to query a packet event, identified by `event_id`, for specific channel and sequences.
+/// The query is preformed for the chain context at `height`.
+#[derive(Clone, Debug)]
+pub struct QueryPacketEventDataRequest {
+    pub event_id: WithBlockDataType,
+    pub source_channel_id: ChannelId,
+    pub source_port_id: PortId,
+    pub destination_channel_id: ChannelId,
+    pub destination_port_id: PortId,
+    pub sequences: Vec<Sequence>,
+    pub height: QueryHeight,
+}
+
+/// Query request for a single client event, identified by `event_id`, for `client_id`.
+#[derive(Clone, Debug)]
+pub struct QueryClientEventRequest {
+    pub query_height: QueryHeight,
+    pub event_id: WithBlockDataType,
+    pub client_id: ClientId,
+    pub consensus_height: Height,
+}
+
+#[derive(Clone, Debug)]
+pub enum QueryBlockRequest {
+    Packet(QueryPacketEventDataRequest),
 }

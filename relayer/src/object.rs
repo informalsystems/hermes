@@ -16,7 +16,7 @@ use crate::chain::{
         counterparty_chain_from_connection,
     },
     handle::ChainHandle,
-    requests::{HeightQuery, IncludeProof, QueryClientStateRequest},
+    requests::{IncludeProof, QueryClientStateRequest, QueryHeight},
 };
 use crate::error::Error as RelayerError;
 use crate::supervisor::Error as SupervisorError;
@@ -304,7 +304,7 @@ impl Object {
             .query_client_state(
                 QueryClientStateRequest {
                     client_id: e.client_id().clone(),
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )

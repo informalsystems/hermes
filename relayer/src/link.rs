@@ -4,7 +4,7 @@ use ibc::core::{
     ics24_host::identifier::{ChannelId, PortChannelId, PortId},
 };
 
-use crate::chain::requests::{HeightQuery, QueryChannelRequest};
+use crate::chain::requests::{QueryChannelRequest, QueryHeight};
 use crate::chain::{counterparty::check_channel_counterparty, requests::QueryConnectionRequest};
 use crate::chain::{handle::ChainHandle, requests::IncludeProof};
 use crate::channel::{Channel, ChannelSide};
@@ -62,7 +62,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 QueryChannelRequest {
                     port_id: opts.src_port_id.clone(),
                     channel_id: opts.src_channel_id,
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -108,7 +108,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: a_connection_id.clone(),
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )

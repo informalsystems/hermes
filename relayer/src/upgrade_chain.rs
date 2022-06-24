@@ -18,7 +18,7 @@ use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::UpgradeProposal;
 
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::{HeightQuery, IncludeProof, QueryClientStateRequest};
+use crate::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use crate::chain::tracking::TrackedMsgs;
 use crate::config::ChainConfig;
 use crate::error::Error;
@@ -78,7 +78,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
         .query_client_state(
             QueryClientStateRequest {
                 client_id: opts.src_client_id.clone(),
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         )
