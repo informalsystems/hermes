@@ -1,4 +1,5 @@
 use crate::traits::chain_context::{ChainContext, IbcChainContext};
+use crate::traits::relay_context::RelayContext;
 
 pub type ChannelId<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::ChannelId;
 
@@ -13,3 +14,9 @@ pub type IbcEvent<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>
 pub type Height<Chain> = <Chain as ChainContext>::Height;
 
 pub type Timestamp<Chain> = <Chain as ChainContext>::Timestamp;
+
+pub type SrcChain<Context> = <Context as RelayContext>::SrcChain;
+
+pub type DstChain<Context> = <Context as RelayContext>::DstChain;
+
+pub type Packet<Context> = <Context as RelayContext>::Packet;
