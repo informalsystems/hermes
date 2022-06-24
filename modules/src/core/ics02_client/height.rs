@@ -169,7 +169,7 @@ impl TryFrom<&str> for Height {
 
 impl From<Height> for String {
     fn from(height: Height) -> Self {
-        format!("{}-{}", height.revision_number, height.revision_number)
+        format!("{}-{}", height.revision_number, height.revision_height)
     }
 }
 
