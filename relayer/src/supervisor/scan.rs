@@ -19,9 +19,9 @@ use crate::{
         counterparty::{channel_on_destination, connection_state_on_destination},
         handle::ChainHandle,
         requests::{
-            HeightQuery, IncludeProof, PageRequest, QueryChannelRequest,
-            QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
-            QueryConnectionChannelsRequest, QueryConnectionRequest,
+            IncludeProof, PageRequest, QueryChannelRequest, QueryClientConnectionsRequest,
+            QueryClientStateRequest, QueryClientStatesRequest, QueryConnectionChannelsRequest,
+            QueryConnectionRequest, QueryHeight,
         },
     },
     config::{filter::ChannelFilters, ChainConfig, Config, PacketFilter},
@@ -698,7 +698,7 @@ fn query_client<Chain: ChainHandle>(
         .query_client_state(
             QueryClientStateRequest {
                 client_id: client_id.clone(),
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         )
@@ -717,7 +717,7 @@ fn query_channel<Chain: ChainHandle>(
             QueryChannelRequest {
                 port_id: port_id.clone(),
                 channel_id: *channel_id,
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         )
@@ -788,7 +788,7 @@ fn query_connection<Chain: ChainHandle>(
         .query_connection(
             QueryConnectionRequest {
                 connection_id: connection_id.clone(),
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         )

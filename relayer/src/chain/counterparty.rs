@@ -13,7 +13,7 @@ use super::{
     handle::ChainHandle,
     requests::{QueryConnectionChannelsRequest, QueryPacketCommitmentsRequest},
 };
-use crate::chain::requests::HeightQuery;
+use crate::chain::requests::QueryHeight;
 use crate::channel::ChannelError;
 use crate::path::PathIdentifiers;
 use crate::supervisor::Error;
@@ -39,7 +39,7 @@ pub fn counterparty_chain_from_connection(
         .query_connection(
             QueryConnectionRequest {
                 connection_id: src_connection_id.clone(),
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         )
@@ -50,7 +50,7 @@ pub fn counterparty_chain_from_connection(
         .query_client_state(
             QueryClientStateRequest {
                 client_id: client_id.clone(),
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         )
@@ -79,7 +79,7 @@ fn connection_on_destination(
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: counterparty_connection.clone(),
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -104,7 +104,7 @@ pub fn connection_state_on_destination(
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: remote_connection_id.clone(),
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -162,7 +162,7 @@ pub fn channel_connection_client(
             QueryChannelRequest {
                 port_id: port_id.clone(),
                 channel_id: *channel_id,
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         )
@@ -185,7 +185,7 @@ pub fn channel_connection_client(
         .query_connection(
             QueryConnectionRequest {
                 connection_id: connection_id.clone(),
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         )
@@ -204,7 +204,7 @@ pub fn channel_connection_client(
         .query_client_state(
             QueryClientStateRequest {
                 client_id: client_id.clone(),
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         )
@@ -273,7 +273,7 @@ pub fn channel_on_destination(
                 QueryChannelRequest {
                     port_id: channel.channel_end.counterparty().port_id().clone(),
                     channel_id: *remote_channel_id,
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -311,7 +311,7 @@ pub fn check_channel_counterparty(
             QueryChannelRequest {
                 port_id: target_pchan.port_id.clone(),
                 channel_id: target_pchan.channel_id,
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         )

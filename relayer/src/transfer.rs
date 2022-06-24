@@ -65,7 +65,7 @@ define_error! {
 
 #[derive(Copy, Clone)]
 pub struct TransferTimeout {
-    pub timeout_height: Height,
+    pub timeout_height: Option<Height>,
     pub timeout_timestamp: Timestamp,
 }
 
@@ -86,9 +86,9 @@ impl TransferTimeout {
         destination_chain_status: &ChainStatus,
     ) -> Result<Self, TransferError> {
         let timeout_height = if timeout_height_offset == 0 {
-            Height::zero()
+            None
         } else {
-            destination_chain_status.height.add(timeout_height_offset)
+            Some(destination_chain_status.height.add(timeout_height_offset))
         };
 
         let timeout_timestamp = if timeout_duration == Duration::ZERO {
@@ -124,7 +124,7 @@ pub fn build_transfer_message(
     denom: String,
     sender: Signer,
     receiver: Signer,
-    timeout_height: Height,
+    timeout_height: Option<Height>,
     timeout_timestamp: Timestamp,
 ) -> Any {
     let msg = MsgTransfer {

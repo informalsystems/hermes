@@ -6,8 +6,8 @@ use tracing::{debug, error, trace, trace_span};
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
-use ibc::query::{QueryTxHash, QueryTxRequest};
 
+use crate::chain::requests::{QueryTxHash, QueryTxRequest};
 use crate::chain::tracking::TrackingId;
 use crate::error::Error as RelayerError;
 use crate::link::{error::LinkError, RelayPath};

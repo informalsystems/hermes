@@ -2,6 +2,8 @@ use core::time::Duration;
 use futures::stream::{FuturesOrdered, StreamExt};
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::IbcEvent;
+use itertools::Itertools;
+use std::thread;
 use std::time::Instant;
 use tendermint::abci::transaction::Hash as TxHash;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
@@ -11,6 +13,8 @@ use tokio::time::sleep;
 use tracing::info;
 
 use crate::chain::cosmos::query::tx::{all_ibc_events_from_tx_search_response, query_tx_response};
+use crate::chain::cosmos::types::tx::TxSyncResult;
+use crate::chain::requests::{QueryTxHash, QueryTxRequest};
 use crate::error::Error;
 
 const WAIT_BACKOFF: Duration = Duration::from_millis(300);

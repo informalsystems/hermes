@@ -7,7 +7,6 @@ use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::merkle::MerkleProof;
-use ibc::query::QueryTxRequest;
 use ibc::{
     core::ics02_client::header::AnyHeader,
     core::ics03_connection::connection::ConnectionEnd,
@@ -19,7 +18,6 @@ use ibc::{
     },
     events::IbcEvent,
     proofs::Proofs,
-    query::QueryBlockRequest,
     signer::Signer,
     Height,
 };
@@ -31,15 +29,15 @@ use crate::chain::client::ClientSettings;
 use crate::chain::endpoint::{ChainStatus, HealthCheck};
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::requests::{
-    HeightQuery, IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest,
+    IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
     QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
     QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
-    QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
+    QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHeight,
     QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
     QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
-    QueryUpgradedConsensusStateRequest,
+    QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
 use crate::config::ChainConfig;
@@ -176,7 +174,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         match include_proof {
             IncludeProof::Yes => handle.query_client_state(request, IncludeProof::Yes),
             IncludeProof::No => {
-                if matches!(request.height, HeightQuery::Latest) {
+                if matches!(request.height, QueryHeight::Latest) {
                     let (result, in_cache) = self.cache.get_or_try_insert_client_state_with(
                         &request.client_id,
                         || {
@@ -251,7 +249,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         match include_proof {
             IncludeProof::Yes => handle.query_connection(request, IncludeProof::Yes),
             IncludeProof::No => {
-                if matches!(request.height, HeightQuery::Latest) {
+                if matches!(request.height, QueryHeight::Latest) {
                     let (result, in_cache) = self.cache.get_or_try_insert_connection_with(
                         &request.connection_id,
                         || {
@@ -312,7 +310,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         match include_proof {
             IncludeProof::Yes => handle.query_channel(request, IncludeProof::Yes),
             IncludeProof::No => {
-                if matches!(request.height, HeightQuery::Latest) {
+                if matches!(request.height, QueryHeight::Latest) {
                     let (result, in_cache) = self.cache.get_or_try_insert_channel_with(
                         &PortChannelId::new(request.channel_id, request.port_id.clone()),
                         || {
