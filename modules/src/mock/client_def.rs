@@ -3,8 +3,10 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_def::ClientDef;
 use crate::core::ics02_client::client_state::ClientState;
+use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::context::LightClientReader;
 use crate::core::ics02_client::error::Error;
+use crate::core::ics02_client::header::Header;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
@@ -26,7 +28,6 @@ use crate::Height;
 pub struct MockClient;
 
 impl ClientDef for MockClient {
-    type Header = MockHeader;
     type ClientState = MockClientState;
     type ConsensusState = MockConsensusState;
 
@@ -35,7 +36,7 @@ impl ClientDef for MockClient {
         _ctx: &dyn LightClientReader,
         _client_id: ClientId,
         client_state: Self::ClientState,
-        header: Self::Header,
+        header: &dyn Header,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
         if client_state.latest_height() >= header.height() {
             return Err(Error::low_header_height(
@@ -43,6 +44,12 @@ impl ClientDef for MockClient {
                 client_state.latest_height(),
             ));
         }
+
+        let header = header
+            .as_any()
+            .downcast_ref::<MockHeader>()
+            .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?
+            .clone();
         Ok((
             MockClientState::new(header),
             MockConsensusState::new(header),

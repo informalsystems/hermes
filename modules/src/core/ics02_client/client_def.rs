@@ -6,7 +6,7 @@ use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::context::LightClientReader;
 use crate::core::ics02_client::error::Error;
-use crate::core::ics02_client::header::{AnyHeader, Header};
+use crate::core::ics02_client::header::Header;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
@@ -24,7 +24,6 @@ use crate::Height;
 use crate::mock::client_def::MockClient;
 
 pub trait ClientDef {
-    type Header: Header;
     type ClientState: ClientState;
     type ConsensusState: ConsensusState;
 
@@ -33,7 +32,7 @@ pub trait ClientDef {
         ctx: &dyn LightClientReader,
         client_id: ClientId,
         client_state: Self::ClientState,
-        header: Self::Header,
+        header: &dyn Header,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Error>;
 
     fn verify_upgrade_and_update_state(
@@ -188,7 +187,6 @@ impl AnyClient {
 
 // ⚠️  Beware of the awful boilerplate below ⚠️
 impl ClientDef for AnyClient {
-    type Header = AnyHeader;
     type ClientState = AnyClientState;
     type ConsensusState = AnyConsensusState;
 
@@ -198,13 +196,12 @@ impl ClientDef for AnyClient {
         ctx: &dyn LightClientReader,
         client_id: ClientId,
         client_state: AnyClientState,
-        header: AnyHeader,
+        header: &dyn Header,
     ) -> Result<(AnyClientState, AnyConsensusState), Error> {
         match self {
             Self::Tendermint(client) => {
-                let (client_state, header) = downcast!(
-                    client_state => AnyClientState::Tendermint,
-                    header => AnyHeader::Tendermint,
+                let client_state = downcast!(
+                    client_state => AnyClientState::Tendermint
                 )
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
@@ -219,9 +216,8 @@ impl ClientDef for AnyClient {
 
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(client) => {
-                let (client_state, header) = downcast!(
-                    client_state => AnyClientState::Mock,
-                    header => AnyHeader::Mock,
+                let client_state = downcast!(
+                    client_state => AnyClientState::Mock
                 )
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 

@@ -9,13 +9,14 @@ use tendermint_proto::Protobuf;
 use crate::clients::ics07_tendermint::client_state::ClientState as TmClientState;
 use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
 use crate::clients::ics07_tendermint::error::Error;
-use crate::clients::ics07_tendermint::header::Header;
+use crate::clients::ics07_tendermint::header::Header as TmHeader;
 use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_def::ClientDef;
 use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::context::LightClientReader;
 use crate::core::ics02_client::error::Error as Ics02Error;
+use crate::core::ics02_client::header::Header;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
@@ -41,7 +42,6 @@ pub struct TendermintClient {
 }
 
 impl ClientDef for TendermintClient {
-    type Header = Header;
     type ClientState = TmClientState;
     type ConsensusState = TmConsensusState;
 
@@ -50,7 +50,7 @@ impl ClientDef for TendermintClient {
         ctx: &dyn LightClientReader,
         client_id: ClientId,
         client_state: Self::ClientState,
-        header: Self::Header,
+        header: &dyn Header,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Ics02Error> {
         if header.height().revision_number != client_state.chain_id.version() {
             return Err(Ics02Error::client_specific(
@@ -61,6 +61,12 @@ impl ClientDef for TendermintClient {
                 .to_string(),
             ));
         }
+
+        let header = header
+            .as_any()
+            .downcast_ref::<TmHeader>()
+            .ok_or_else(|| Ics02Error::client_args_type_mismatch(ClientType::Tendermint))?
+            .clone();
 
         // Check if a consensus state is already installed; if so it should
         // match the untrusted header.
