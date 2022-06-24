@@ -99,7 +99,7 @@ USAGE:
     hermes query client state [OPTIONS] --chain <CHAIN_ID> --client <CLIENT_ID>
 
 DESCRIPTION:
-    Query client full state
+    Query the client state
 
 FLAGS:
         --chain <CHAIN_ID>      identifier of the chain to query
