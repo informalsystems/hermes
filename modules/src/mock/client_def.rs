@@ -45,11 +45,10 @@ impl ClientDef for MockClient {
             ));
         }
 
-        let header = header
+        let header = *header
             .as_any()
             .downcast_ref::<MockHeader>()
-            .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?
-            .clone();
+            .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
         Ok((
             MockClientState::new(header),
             MockConsensusState::new(header),
