@@ -20,8 +20,11 @@ pub(crate) fn process(
 ) -> HandlerResult<ConnectionResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    // Check that consensus height (for client proof) in message is not too advanced nor too old.
-    check_client_consensus_height(ctx, msg.consensus_height())?;
+    // If a consensus proof is present, check that the consensus height (for
+    // client proof) in the message is not too advanced nor too old.
+    if let Some(consensus_height) = msg.consensus_height() {
+        check_client_consensus_height(ctx, consensus_height)?;
+    }
 
     // Unwrap the old connection end (if any) and its identifier.
     let (mut new_connection_end, conn_id) = match &msg.previous_connection_id {

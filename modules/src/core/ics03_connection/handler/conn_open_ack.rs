@@ -19,8 +19,11 @@ pub(crate) fn process(
 ) -> HandlerResult<ConnectionResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    // Check the client's (consensus state) proof height.
-    check_client_consensus_height(ctx, msg.consensus_height())?;
+    // If a consensus proof is present, check that the consensus height (for
+    // client proof) in the message is not too advanced nor too old.
+    if let Some(consensus_height) = msg.consensus_height() {
+        check_client_consensus_height(ctx, consensus_height)?;
+    }
 
     // Validate the connection end.
     let mut conn_end = ctx.connection_end(&msg.connection_id)?;

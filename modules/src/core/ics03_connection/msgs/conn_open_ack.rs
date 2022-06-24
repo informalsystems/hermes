@@ -29,11 +29,8 @@ pub struct MsgConnectionOpenAck {
 impl MsgConnectionOpenAck {
     /// Getter for accessing the `consensus_height` field from this message. Returns the special
     /// value `Height(0)` if this field is not set.
-    pub fn consensus_height(&self) -> Height {
-        match self.proofs.consensus_proof() {
-            None => Height::zero(),
-            Some(p) => p.height(),
-        }
+    pub fn consensus_height(&self) -> Option<Height> {
+        self.proofs.consensus_proof().map(|proof| proof.height())
     }
 }
 
