@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::traits::message_sender::IbcMessageSender;
 use crate::traits::messages::receive_packet::ReceivePacketMessageBuilder;
 use crate::traits::packet_relayer::PacketRelayer;
-use crate::traits::queries::status::ChainStatusQuerier;
+use crate::traits::queries::status::{ChainStatus, ChainStatusQuerier};
 use crate::types::aliases::Packet;
 
 pub struct ReceivePacketRelayer;
@@ -23,7 +23,7 @@ where
         context: &Context,
         packet: Packet<Context>,
     ) -> Result<Self::Return, Self::Error> {
-        let source_height = context.source_chain().query_chain_status().await?.height;
+        let source_height = context.source_chain().query_chain_status().await?.height();
 
         let message = context
             .build_receive_packet_message(&source_height, &packet)
