@@ -10,7 +10,6 @@ use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::timestamp::Expiry;
-use crate::Height;
 
 #[derive(Clone, Debug)]
 pub enum RecvPacketResult {
@@ -89,7 +88,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
 
         if packet.sequence < next_seq_recv {
             output.emit(IbcEvent::ReceivePacket(ReceivePacket {
-                height: Height::zero(),
+                height: ctx.host_height(),
                 packet: msg.packet.clone(),
             }));
             return Ok(output.with_result(PacketResult::Recv(RecvPacketResult::NoOp)));
@@ -115,7 +114,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
         match packet_rec {
             Ok(_receipt) => {
                 output.emit(IbcEvent::ReceivePacket(ReceivePacket {
-                    height: Height::zero(),
+                    height: ctx.host_height(),
                     packet: msg.packet.clone(),
                 }));
                 return Ok(output.with_result(PacketResult::Recv(RecvPacketResult::NoOp)));
