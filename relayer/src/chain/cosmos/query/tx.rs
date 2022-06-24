@@ -1,13 +1,13 @@
-use ibc::core::ics02_client::events as ClientEvents;
-use ibc::core::ics04_channel::events as ChannelEvents;
+use ibc::core::ics04_channel::events as channel_events;
 use ibc::core::ics04_channel::packet::{Packet, Sequence};
 use ibc::core::ics24_host::identifier::ChainId;
-use ibc::events::{from_tx_response_event, IbcEvent};
+use ibc::events::IbcEvent;
 use ibc::Height as ICSHeight;
 use tendermint::abci::Event;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::{Client, HttpClient, Order, Url};
 
+use crate::chain::cosmos::query::events::{client_events, from_tx_response_event};
 use crate::chain::cosmos::query::{header_query, packet_query, tx_hash_query};
 use crate::chain::requests::{
     QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest, QueryTxRequest,
@@ -158,7 +158,7 @@ fn update_client_from_tx_search_response(
         .events
         .into_iter()
         .filter(|event| event.type_str == request.event_id.as_str())
-        .flat_map(|event| ClientEvents::try_from_tx(&event))
+        .flat_map(|event| client_events::try_from_tx(&event))
         .flat_map(|event| match event {
             IbcEvent::UpdateClient(mut update) => {
                 update.common.height = height;
@@ -221,7 +221,7 @@ fn filter_matching_event(
         return None;
     }
 
-    let ibc_event = ChannelEvents::try_from_tx(&event)?;
+    let ibc_event = channel_events::try_from_tx(&event)?;
     match ibc_event {
         IbcEvent::SendPacket(ref send_ev) if matches_packet(request, seq, &send_ev.packet) => {
             Some(ibc_event)

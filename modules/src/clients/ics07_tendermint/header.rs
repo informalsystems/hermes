@@ -3,6 +3,7 @@ use core::cmp::Ordering;
 use bytes::Buf;
 use prost::Message;
 use serde_derive::{Deserialize, Serialize};
+use subtle_encoding::hex;
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
 use tendermint_proto::Protobuf;
@@ -13,6 +14,7 @@ use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::core::ics02_client::client_type::ClientType;
+use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics24_host::identifier::ChainId;
 use crate::timestamp::Timestamp;
 use crate::Height;
@@ -43,6 +45,11 @@ impl Header {
 
     pub fn compatible_with(&self, other_header: &Header) -> bool {
         headers_compatible(&self.signed_header, &other_header.signed_header)
+    }
+
+    pub fn decode_from_string(s: &str) -> Result<Self, Ics02Error> {
+        let header_bytes = hex::decode(s).unwrap();
+        Protobuf::decode(header_bytes.as_ref()).map_err(Ics02Error::invalid_raw_header)
     }
 }
 

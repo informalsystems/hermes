@@ -338,23 +338,6 @@ impl TryFrom<IbcEvent> for AbciEvent {
     }
 }
 
-// This is tendermint specific
-pub fn from_tx_response_event(height: Height, event: &tendermint::abci::Event) -> Option<IbcEvent> {
-    // Return the first hit we find
-    if let Some(mut client_res) = ClientEvents::try_from_tx(event) {
-        client_res.set_height(height);
-        Some(client_res)
-    } else if let Some(mut conn_res) = ConnectionEvents::try_from_tx(event) {
-        conn_res.set_height(height);
-        Some(conn_res)
-    } else if let Some(mut chan_res) = ChannelEvents::try_from_tx(event) {
-        chan_res.set_height(height);
-        Some(chan_res)
-    } else {
-        None
-    }
-}
-
 impl IbcEvent {
     pub fn to_json(&self) -> String {
         match serde_json::to_string(self) {

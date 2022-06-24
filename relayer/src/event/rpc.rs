@@ -3,12 +3,14 @@ use core::convert::TryFrom;
 
 use tendermint_rpc::{event::Event as RpcEvent, event::EventData as RpcEventData};
 
-use ibc::core::ics02_client::{events as ClientEvents, height::Height};
-use ibc::core::ics03_connection::events as ConnectionEvents;
-use ibc::core::ics04_channel::events as ChannelEvents;
+use ibc::core::ics02_client::events::NewBlock as NewBlockEvent;
+use ibc::core::ics03_connection::events as connection_events;
+use ibc::core::ics04_channel::events as channel_events;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::{IbcEvent, RawObject};
+use ibc::Height;
 
+use crate::chain::cosmos::query::events::client_events;
 use crate::event::monitor::queries;
 
 /// Extract IBC events from Tendermint RPC events
@@ -130,7 +132,7 @@ pub fn get_all_events(
                 u64::from(block.as_ref().ok_or("tx.height")?.header.height),
             );
 
-            vals.push((height, ClientEvents::NewBlock::new(height).into()));
+            vals.push((height, NewBlockEvent::new(height).into()));
             vals.append(&mut extract_block_events(height, &events));
         }
         RpcEventData::Tx { tx_result } => {
@@ -141,21 +143,21 @@ pub fn get_all_events(
 
             for abci_event in &tx_result.result.events {
                 if query == queries::ibc_client().to_string() {
-                    if let Some(mut client_event) = ClientEvents::try_from_tx(abci_event) {
+                    if let Some(mut client_event) = client_events::try_from_tx(abci_event) {
                         client_event.set_height(height);
                         tracing::trace!("extracted ibc_client event {}", client_event);
                         vals.push((height, client_event));
                     }
                 }
                 if query == queries::ibc_connection().to_string() {
-                    if let Some(mut conn_event) = ConnectionEvents::try_from_tx(abci_event) {
+                    if let Some(mut conn_event) = connection_events::try_from_tx(abci_event) {
                         conn_event.set_height(height);
                         tracing::trace!("extracted ibc_connection event {}", conn_event);
                         vals.push((height, conn_event));
                     }
                 }
                 if query == queries::ibc_channel().to_string() {
-                    if let Some(mut chan_event) = ChannelEvents::try_from_tx(abci_event) {
+                    if let Some(mut chan_event) = channel_events::try_from_tx(abci_event) {
                         chan_event.set_height(height);
                         let _span = tracing::trace_span!("ibc_channel event").entered();
                         tracing::trace!("extracted {}", chan_event);
@@ -216,37 +218,37 @@ fn extract_block_events(
     }
 
     let mut events: Vec<(Height, IbcEvent)> = vec![];
-    append_events::<ChannelEvents::OpenInit>(
+    append_events::<channel_events::OpenInit>(
         &mut events,
         extract_events(height, block_events, "channel_open_init", "channel_id"),
         height,
     );
-    append_events::<ChannelEvents::OpenTry>(
+    append_events::<channel_events::OpenTry>(
         &mut events,
         extract_events(height, block_events, "channel_open_try", "channel_id"),
         height,
     );
-    append_events::<ChannelEvents::OpenAck>(
+    append_events::<channel_events::OpenAck>(
         &mut events,
         extract_events(height, block_events, "channel_open_ack", "channel_id"),
         height,
     );
-    append_events::<ChannelEvents::OpenConfirm>(
+    append_events::<channel_events::OpenConfirm>(
         &mut events,
         extract_events(height, block_events, "channel_open_confirm", "channel_id"),
         height,
     );
-    append_events::<ChannelEvents::SendPacket>(
+    append_events::<channel_events::SendPacket>(
         &mut events,
         extract_events(height, block_events, "send_packet", "packet_data"),
         height,
     );
-    append_events::<ChannelEvents::CloseInit>(
+    append_events::<channel_events::CloseInit>(
         &mut events,
         extract_events(height, block_events, "channel_close_init", "channel_id"),
         height,
     );
-    append_events::<ChannelEvents::CloseConfirm>(
+    append_events::<channel_events::CloseConfirm>(
         &mut events,
         extract_events(height, block_events, "channel_close_confirm", "channel_id"),
         height,

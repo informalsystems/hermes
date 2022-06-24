@@ -83,11 +83,6 @@ impl AnyHeader {
         let encoded = hex::encode(buf);
         String::from_utf8(encoded).expect("hex-encoded string should always be valid UTF-8")
     }
-
-    pub fn decode_from_string(s: &str) -> Result<Self, Error> {
-        let header_bytes = hex::decode(s).unwrap();
-        Protobuf::decode(header_bytes.as_ref()).map_err(Error::invalid_raw_header)
-    }
 }
 
 impl Protobuf<ProtoAny> for AnyHeader {}
