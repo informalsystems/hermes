@@ -5,14 +5,14 @@ use ibc::core::ics04_channel::channel::State;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortChannelId, PortId};
 use ibc::events::IbcEvent;
 
-use crate::error::Error;
+use crate::error::Error as RelayerError;
 use crate::foreign_client::{ForeignClientError, HasExpiredOrFrozenError};
 use crate::supervisor::Error as SupervisorError;
 
 define_error! {
     ChannelError {
         Relayer
-            [ Error ]
+            [ RelayerError ]
             |_| { "relayer error" },
 
         Supervisor
@@ -50,7 +50,7 @@ define_error! {
             |_| { "missing channel on destination chain" },
 
         ChannelProof
-            [ Error ]
+            [ RelayerError ]
             |_| { "failed to build channel proofs" },
 
         ClientOperation
@@ -66,13 +66,20 @@ define_error! {
 
         FetchSigner
             { chain_id: ChainId }
-            [ Error ]
+            [ RelayerError ]
             |e| { format_args!("failed while fetching the signer for destination chain '{}'", e.chain_id) },
 
         Query
             { chain_id: ChainId }
-            [ Error ]
+            [ RelayerError ]
             |e| { format_args!("failed during a query to chain '{0}'", e.chain_id) },
+
+        ChainQuery
+            { chain_id: ChainId }
+            [ RelayerError ]
+            |e| {
+                format!("failed during a query to chain id {0}", e.chain_id)
+            },
 
         QueryChannel
             { channel_id: ChannelId }
@@ -81,20 +88,11 @@ define_error! {
 
         Submit
             { chain_id: ChainId }
-            [ Error ]
+            [ RelayerError ]
             |e| { format_args!("failed during a transaction submission step to chain '{0}'", e.chain_id) },
 
         HandshakeFinalize
-            {
-                port_id: PortId,
-                channel_id: ChannelId,
-                chain_id: ChainId,
-            }
-            [ Error ]
-            |e| {
-                format_args!("failed to finalize a channel open handshake while querying for channel end '{0}/{1}' on chain '{2}'",
-                    e.port_id, e.channel_id, e.chain_id)
-            },
+            |_| { "continue handshake" },
 
         PartialOpenHandshake
             {
@@ -158,18 +156,6 @@ define_error! {
                 format_args!("missing event: {}", e.description)
             },
 
-        MaxRetry
-            {
-                description: String,
-                tries: u64,
-                total_delay: Duration,
-                source: Box<ChannelErrorDetail>,
-            }
-            | e | {
-                format_args!("Error after maximum retry of {} and total delay of {}s: {}",
-                    e.tries, e.total_delay.as_secs(), e.description)
-            },
-
         RetryInternal
             { reason: String }
             | e | {
@@ -189,6 +175,17 @@ define_error! {
             | e | {
                 format_args!("channel object cannot be built from event: {}",
                     e.event)
+            },
+
+        MaxRetry
+            {
+                description: String,
+                tries: u64,
+                total_delay: Duration,
+            }
+            | e | {
+                format_args!("Error after maximum retry of {} and total delay of {}s: {}",
+                    e.tries, e.total_delay.as_secs(), e.description)
             },
     }
 }
