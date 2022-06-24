@@ -7,9 +7,8 @@ use eyre::eyre;
 use ibc::core::ics03_connection::connection::State as ConnectionState;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::timestamp::ZERO_DURATION;
-use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::{IncludeProof, QueryConnectionRequest};
+use ibc_relayer::chain::requests::{IncludeProof, QueryConnectionRequest, QueryHeight};
 use ibc_relayer::connection::{extract_connection_id, Connection, ConnectionSide};
 
 use crate::error::Error;
@@ -92,7 +91,7 @@ pub fn query_connection_end<ChainA: ChainHandle, ChainB>(
     let (connection_end, _) = handle.query_connection(
         QueryConnectionRequest {
             connection_id: connection_id.into_value().clone(),
-            height: Height::zero(),
+            height: QueryHeight::Latest,
         },
         IncludeProof::No,
     )?;
@@ -107,7 +106,7 @@ pub fn query_identified_connection_end<ChainA: ChainHandle, ChainB>(
     let (connection_end, _) = handle.query_connection(
         QueryConnectionRequest {
             connection_id: connection_id.into_value().clone(),
-            height: Height::zero(),
+            height: QueryHeight::Latest,
         },
         IncludeProof::No,
     )?;

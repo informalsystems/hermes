@@ -4,16 +4,15 @@ use tracing::debug;
 
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    IncludeProof, PageRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
-    QueryConsensusStateRequest, QueryConsensusStatesRequest,
+    IncludeProof, PageRequest, QueryClientConnectionsRequest, QueryClientEventRequest,
+    QueryClientStateRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHeight,
+    QueryTxRequest,
 };
 
-use ibc::core::ics02_client::client_consensus::QueryClientEventRequest;
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::core::ics24_host::identifier::ClientId;
 use ibc::events::WithBlockDataType;
-use ibc::query::QueryTxRequest;
 use ibc::Height;
 
 use crate::application::app_config;
@@ -42,12 +41,12 @@ impl Runnable for QueryClientStateCmd {
         let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
-
         match chain.query_client_state(
             QueryClientStateRequest {
                 client_id: self.client_id.clone(),
-                height,
+                height: self.height.map_or(QueryHeight::Latest, |revision_height| {
+                    QueryHeight::Specific(ibc::Height::new(chain.id().version(), revision_height))
+                }),
             },
             IncludeProof::No,
         ) {
@@ -98,7 +97,7 @@ impl Runnable for QueryClientConsensusCmd {
         let counterparty_chain = match chain.query_client_state(
             QueryClientStateRequest {
                 client_id: self.client_id.clone(),
-                height: Height::zero(),
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         ) {
@@ -112,7 +111,6 @@ impl Runnable for QueryClientConsensusCmd {
 
         match self.consensus_height {
             Some(cs_height) => {
-                let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
                 let consensus_height = ibc::Height::new(counterparty_chain.version(), cs_height);
 
                 let res = chain
@@ -120,7 +118,15 @@ impl Runnable for QueryClientConsensusCmd {
                         QueryConsensusStateRequest {
                             client_id: self.client_id.clone(),
                             consensus_height,
-                            query_height: height,
+                            query_height: self.height.map_or(
+                                QueryHeight::Latest,
+                                |revision_height| {
+                                    QueryHeight::Specific(ibc::Height::new(
+                                        chain.id().version(),
+                                        revision_height,
+                                    ))
+                                },
+                            ),
                         },
                         IncludeProof::No,
                     )
@@ -182,7 +188,7 @@ impl Runnable for QueryClientHeaderCmd {
         let counterparty_chain = match chain.query_client_state(
             QueryClientStateRequest {
                 client_id: self.client_id.clone(),
-                height: Height::zero(),
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         ) {
@@ -197,10 +203,15 @@ impl Runnable for QueryClientHeaderCmd {
         let consensus_height =
             ibc::Height::new(counterparty_chain.version(), self.consensus_height);
 
-        let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
+        let query_height = match self.height {
+            Some(revision_height) => {
+                QueryHeight::Specific(Height::new(chain.id().version(), revision_height))
+            }
+            None => QueryHeight::Latest,
+        };
 
         let res = chain.query_txs(QueryTxRequest::Client(QueryClientEventRequest {
-            height,
+            query_height,
             event_id: WithBlockDataType::UpdateClient,
             client_id: self.client_id.clone(),
             consensus_height,

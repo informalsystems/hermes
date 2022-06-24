@@ -4,7 +4,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::core::ics24_host::identifier::{ChannelId, PortId};
-use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest};
+use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
 
 use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
@@ -39,7 +39,9 @@ impl Runnable for QueryChannelEndCmd {
             QueryChannelRequest {
                 port_id: self.port_id.clone(),
                 channel_id: self.channel_id,
-                height: ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64)),
+                height: self.height.map_or(QueryHeight::Latest, |revision_height| {
+                    QueryHeight::Specific(ibc::Height::new(chain.id().version(), revision_height))
+                }),
             },
             IncludeProof::No,
         );

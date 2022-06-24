@@ -60,7 +60,6 @@ pub mod handler;
 pub mod keys;
 pub mod macros;
 pub mod proofs;
-pub mod query;
 pub mod relayer;
 pub mod signer;
 pub mod timestamp;

@@ -36,8 +36,8 @@ pub struct MsgTransfer<C = Coin> {
     /// the recipient address on the destination chain
     pub receiver: Signer,
     /// Timeout height relative to the current block height.
-    /// The timeout is disabled when set to 0.
-    pub timeout_height: Height,
+    /// The timeout is disabled when set to None.
+    pub timeout_height: Option<Height>,
     /// Timeout timestamp relative to the current block timestamp.
     /// The timeout is disabled when set to 0.
     pub timeout_timestamp: Timestamp,
@@ -63,12 +63,13 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
         let timeout_timestamp = Timestamp::from_nanoseconds(raw_msg.timeout_timestamp)
             .map_err(|_| Error::invalid_packet_timeout_timestamp(raw_msg.timeout_timestamp))?;
 
-        let timeout_height = match raw_msg.timeout_height.clone() {
-            None => Height::zero(),
-            Some(raw_height) => raw_height.try_into().map_err(|e| {
+        let timeout_height: Option<Height> = raw_msg
+            .timeout_height
+            .map(|raw_height| raw_height.try_into())
+            .transpose()
+            .map_err(|e| {
                 Error::invalid_packet_timeout_height(format!("invalid timeout height {}", e))
-            })?,
-        };
+            })?;
 
         Ok(MsgTransfer {
             source_port: raw_msg
@@ -96,7 +97,7 @@ impl From<MsgTransfer> for RawMsgTransfer {
             token: Some(domain_msg.token),
             sender: domain_msg.sender.to_string(),
             receiver: domain_msg.receiver.to_string(),
-            timeout_height: Some(domain_msg.timeout_height.into()),
+            timeout_height: domain_msg.timeout_height.map(|height| height.into()),
             timeout_timestamp: domain_msg.timeout_timestamp.nanoseconds(),
         }
     }
@@ -156,10 +157,10 @@ pub mod test_util {
             sender: address.clone(),
             receiver: address,
             timeout_timestamp: Timestamp::now().add(Duration::from_secs(10)).unwrap(),
-            timeout_height: Height {
+            timeout_height: Some(Height {
                 revision_number: 0,
                 revision_height: height,
-            },
+            }),
         }
     }
 }
