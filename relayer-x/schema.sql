@@ -106,18 +106,37 @@ CREATE VIEW tx_events AS
 
 -- A joined view of all IBC packet transaction events.
 CREATE VIEW ibc_packet_src_events AS SELECT * FROM (
- SELECT tx_id, type, value AS packet_src_port FROM event_attributes WHERE key = 'packet_src_port'
-) src_port
-NATURAL JOIN (
- SELECT tx_id, value AS packet_src_channel FROM event_attributes WHERE key = 'packet_src_channel'
-) src_channel
-NATURAL JOIN (
- SELECT tx_id, value AS packet_sequence FROM event_attributes WHERE key = 'packet_sequence'
-) seq
+    SELECT tx_id, type, value AS packet_src_port FROM event_attributes WHERE key = 'packet_src_port'
+    ) src_port
+    NATURAL JOIN (
+        SELECT tx_id, value AS packet_src_channel FROM event_attributes WHERE key = 'packet_src_channel'
+        ) src_channel
+    NATURAL JOIN (
+        SELECT tx_id, value AS packet_sequence FROM event_attributes WHERE key = 'packet_sequence'
+        ) seq
 ORDER BY seq.packet_sequence, src_port.tx_id, src_port.type, src_port.packet_src_port, src_channel.packet_src_channel;
 
 CREATE VIEW ibc_tx_packet_events AS SELECT * FROM ibc_packet_src_events JOIN (
     SELECT rowid, tx_hash, tx_result FROM tx_results) tx_result ON (ibc_packet_src_events.tx_id = tx_result.rowid);
+
+-- A joined view of all IBC packet block events. These are the events included in Begin/End Block.
+-- `ibc_block_events` does NOT include the Tx events and `ibc_tx_packet_events` does NOT include block events.
+CREATE VIEW ibc_block_events AS SELECT * FROM (
+    SELECT block_id, type, value AS packet_src_port FROM block_events WHERE key = 'packet_src_port'
+    ) src_port
+    NATURAL JOIN (
+        SELECT block_id, value AS packet_src_channel FROM block_events WHERE key = 'packet_src_channel'
+        ) src_channel
+    NATURAL JOIN (
+        SELECT block_id, value AS packet_sequence FROM event_attributes WHERE key = 'packet_sequence'
+        ) seq
+    NATURAL JOIN (
+        SELECT block_id, value AS packet_dst_port FROM block_events WHERE key = 'packet_dst_port'
+        ) dst_port
+    NATURAL JOIN (
+        SELECT block_id, value AS packet_dst_channel FROM block_events WHERE key = 'packet_dst_channel'
+        ) dst_channel
+ORDER BY seq.packet_sequence, src_port.block_id;
 
 -- A joined view of all IBC client transaction events.
 CREATE VIEW ibc_client_events AS SELECT * FROM (

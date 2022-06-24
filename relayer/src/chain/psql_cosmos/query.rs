@@ -542,3 +542,47 @@ pub async fn query_hashes_and_update_tx_sync_results(
 
     query_hashes_and_update_tx_sync_events(pool, chain_id, tx_sync_results).await
 }
+
+#[derive(Debug, sqlx::FromRow)]
+struct SqlBlockEvents {
+    block_id: i64,
+    r#type: String,
+    packet_src_port: String,
+    packet_sequence: String,
+    packet_dst_port: String,
+    packet_dst_channel: String,
+    packet_src_channel: String,
+}
+
+async fn block_results_by_packet_fields(
+    pool: &PgPool,
+    search: &QueryPacketEventDataRequest,
+) -> Result<Vec<SqlBlockEvents>, Error> {
+    // Convert from `[Sequence(1), Sequence(2)]` to String `"('1', '2')"`
+    let seqs = search
+        .clone()
+        .sequences
+        .into_iter()
+        .map(|i| format!("'{}'", i))
+        .collect::<Vec<String>>();
+    let seqs_string = format!("({})", seqs.join(", "));
+
+    let sql_select_string = format!(
+        "SELECT * FROM ibc_block_events WHERE \
+        packet_sequence IN {} and \
+        type = $1 and \
+        packet_src_channel = $2 and \
+        packet_src_port = $3",
+        seqs_string
+    );
+
+    let results = sqlx::query_as::<_, SqlBlockEvents>(sql_select_string.as_str())
+        .bind(search.event_id.as_str())
+        .bind(search.source_channel_id.to_string())
+        .bind(search.source_port_id.to_string())
+        .fetch_all(pool)
+        .await
+        .map_err(Error::sqlx)?;
+
+    Ok(results)
+}
