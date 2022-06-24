@@ -11,7 +11,7 @@ use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::{ChainId, ConnectionId, PortId};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    HeightQuery, IncludeProof, QueryClientStateRequest, QueryConnectionRequest,
+    IncludeProof, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
 use ibc_relayer::channel::Channel;
 use ibc_relayer::connection::Connection;
@@ -191,7 +191,7 @@ impl CreateChannelCommand {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: connection_a.clone(),
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -202,7 +202,7 @@ impl CreateChannelCommand {
             .query_client_state(
                 QueryClientStateRequest {
                     client_id: conn_end.client_id().clone(),
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )

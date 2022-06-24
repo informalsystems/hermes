@@ -31,9 +31,7 @@ use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientS
 use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::error::Error as ClientError;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
-use ibc::core::ics04_channel::channel::{
-    ChannelEnd, IdentifiedChannelEnd, QueryPacketEventDataRequest,
-};
+use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics04_channel::packet::{Packet, Sequence};
 use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
@@ -44,8 +42,6 @@ use ibc::core::ics24_host::path::{
 };
 use ibc::core::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
 use ibc::events::IbcEvent;
-use ibc::query::QueryBlockRequest;
-use ibc::query::QueryTxRequest;
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 use ibc::{
@@ -83,14 +79,15 @@ use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 
 use super::requests::{
-    HeightQuery, IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest,
+    IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
     QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
     QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
-    QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
+    QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHeight,
     QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
     QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
-    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
+    QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketEventDataRequest,
+    QueryPacketReceiptRequest, QueryTxRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
     QueryUpgradedConsensusStateRequest,
 };
 
@@ -291,7 +288,7 @@ impl CosmosSdkChain {
     fn query(
         &self,
         data: impl Into<Path>,
-        height_query: HeightQuery,
+        height_query: QueryHeight,
         prove: bool,
     ) -> Result<QueryResponse, Error> {
         crate::time!("query");
@@ -986,7 +983,7 @@ impl ChainEndpoint for CosmosSdkChain {
         async fn do_query_connection(
             chain: &CosmosSdkChain,
             connection_id: &ConnectionId,
-            height_query: HeightQuery,
+            height_query: QueryHeight,
         ) -> Result<ConnectionEnd, Error> {
             use ibc_proto::ibc::core::connection::v1 as connection;
             use tonic::IntoRequest;
@@ -1487,8 +1484,10 @@ impl ChainEndpoint for CosmosSdkChain {
                         let response_height =
                             ICSHeight::new(self.id().version(), u64::from(block.header.height));
 
-                        if request.height != ICSHeight::zero() && response_height > request.height {
-                            continue;
+                        if let QueryHeight::Specific(query_height) = request.height {
+                            if response_height > query_height {
+                                continue;
+                            }
                         }
 
                         let response = self
@@ -1524,8 +1523,8 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryHostConsensusStateRequest,
     ) -> Result<Self::ConsensusState, Error> {
         let height = match request.height {
-            HeightQuery::Latest => TmHeight::from(0u32),
-            HeightQuery::Specific(ibc_height) => {
+            QueryHeight::Latest => TmHeight::from(0u32),
+            QueryHeight::Specific(ibc_height) => {
                 TmHeight::try_from(ibc_height.revision_height).map_err(Error::invalid_height)?
             }
         };

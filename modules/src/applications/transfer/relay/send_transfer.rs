@@ -4,6 +4,7 @@ use crate::applications::transfer::events::TransferEvent;
 use crate::applications::transfer::msgs::transfer::MsgTransfer;
 use crate::applications::transfer::packet::PacketData;
 use crate::applications::transfer::{is_sender_chain_source, Coin, PrefixedCoin};
+use crate::core::ics02_client::height::Height;
 use crate::core::ics04_channel::handler::send_packet::send_packet;
 use crate::core::ics04_channel::packet::Packet;
 use crate::events::ModuleEvent;
@@ -80,7 +81,7 @@ where
         destination_port,
         destination_channel,
         data,
-        timeout_height: msg.timeout_height,
+        timeout_height: msg.timeout_height.unwrap_or_else(Height::zero),
         timeout_timestamp: msg.timeout_timestamp,
     };
 

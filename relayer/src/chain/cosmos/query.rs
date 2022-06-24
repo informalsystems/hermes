@@ -1,7 +1,6 @@
-use ibc::core::ics02_client::client_consensus::QueryClientEventRequest;
-use ibc::core::ics04_channel::channel::QueryPacketEventDataRequest;
 use ibc::core::ics04_channel::packet::Sequence;
-use ibc::query::QueryTxHash;
+
+use crate::chain::requests::{QueryClientEventRequest, QueryPacketEventDataRequest, QueryTxHash};
 use tendermint_rpc::query::Query;
 
 pub mod abci;
