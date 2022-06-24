@@ -1,6 +1,6 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use ibc_relayer::chain::requests::{HeightQuery, IncludeProof, QueryPacketCommitmentRequest};
+use ibc_relayer::chain::requests::{IncludeProof, QueryHeight, QueryPacketCommitmentRequest};
 use serde::Serialize;
 use subtle_encoding::{Encoding, Hex};
 
@@ -52,8 +52,8 @@ impl QueryPacketCommitmentCmd {
                     port_id: self.port_id.clone(),
                     channel_id: self.channel_id,
                     sequence: self.sequence,
-                    height: self.height.map_or(HeightQuery::Latest, |revision_height| {
-                        HeightQuery::Specific(ibc::Height::new(
+                    height: self.height.map_or(QueryHeight::Latest, |revision_height| {
+                        QueryHeight::Specific(ibc::Height::new(
                             chain.id().version(),
                             revision_height,
                         ))

@@ -11,12 +11,14 @@ use crate::chain::counterparty::unreceived_acknowledgements;
 use crate::chain::counterparty::unreceived_packets;
 use crate::chain::endpoint::ChainStatus;
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::HeightQuery;
 use crate::chain::requests::IncludeProof;
 use crate::chain::requests::QueryChannelRequest;
+use crate::chain::requests::QueryClientEventRequest;
+use crate::chain::requests::QueryHeight;
 use crate::chain::requests::QueryHostConsensusStateRequest;
 use crate::chain::requests::QueryNextSequenceReceiveRequest;
 use crate::chain::requests::QueryPacketCommitmentRequest;
+use crate::chain::requests::QueryTxRequest;
 use crate::chain::requests::QueryUnreceivedAcksRequest;
 use crate::chain::requests::QueryUnreceivedPacketsRequest;
 use crate::chain::tracking::TrackedMsgs;
@@ -42,7 +44,6 @@ use crate::util::queue::Queue;
 use ibc::{
     core::{
         ics02_client::{
-            client_consensus::QueryClientEventRequest,
             events::ClientMisbehaviour as ClientMisbehaviourEvent,
             events::UpdateClient as UpdateClientEvent,
         },
@@ -59,7 +60,6 @@ use ibc::{
         ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     },
     events::{IbcEvent, PrettyEvents, WithBlockDataType},
-    query::QueryTxRequest,
     signer::Signer,
     timestamp::Timestamp,
     tx_msg::Msg,
@@ -201,7 +201,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         &self.channel
     }
 
-    fn src_channel(&self, height_query: HeightQuery) -> Result<ChannelEnd, LinkError> {
+    fn src_channel(&self, height_query: QueryHeight) -> Result<ChannelEnd, LinkError> {
         self.src_chain()
             .query_channel(
                 QueryChannelRequest {
@@ -215,7 +215,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .map_err(|e| LinkError::channel(ChannelError::query(self.src_chain().id(), e)))
     }
 
-    fn dst_channel(&self, height_query: HeightQuery) -> Result<ChannelEnd, LinkError> {
+    fn dst_channel(&self, height_query: QueryHeight) -> Result<ChannelEnd, LinkError> {
         self.dst_chain()
             .query_channel(
                 QueryChannelRequest {
@@ -518,7 +518,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     // to the counterparty.
                     if self.ordered_channel()
                         && self
-                            .src_channel(HeightQuery::Specific(timeout_ev.height))?
+                            .src_channel(QueryHeight::Specific(timeout_ev.height))?
                             .state_matches(&ChannelState::Closed)
                     {
                         (Some(self.build_chan_close_confirm_from_event(event)?), None)
@@ -539,7 +539,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 }
                 IbcEvent::WriteAcknowledgement(ref write_ack_ev) => {
                     if self
-                        .dst_channel(HeightQuery::Latest)?
+                        .dst_channel(QueryHeight::Latest)?
                         .state_matches(&ChannelState::Closed)
                     {
                         (None, None)
@@ -790,7 +790,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     port_id: self.src_port_id().clone(),
                     channel_id: *self.src_channel_id(),
                     sequence: packet.sequence,
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -834,7 +834,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     ) -> Result<Height, LinkError> {
         let events = chain
             .query_txs(QueryTxRequest::Client(QueryClientEventRequest {
-                height: Height::zero(),
+                query_height: QueryHeight::Latest,
                 event_id: WithBlockDataType::UpdateClient,
                 client_id,
                 consensus_height,
@@ -889,7 +889,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     ) -> Result<Instant, LinkError> {
         let chain_time = chain
             .query_host_consensus_state(QueryHostConsensusStateRequest {
-                height: HeightQuery::Specific(height),
+                height: QueryHeight::Specific(height),
             })
             .map_err(LinkError::relayer)?
             .timestamp();
@@ -1198,7 +1198,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     QueryNextSequenceReceiveRequest {
                         port_id: self.dst_port_id().clone(),
                         channel_id: *dst_channel_id,
-                        height: HeightQuery::Specific(height),
+                        height: QueryHeight::Specific(height),
                     },
                     IncludeProof::No,
                 )
@@ -1275,7 +1275,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     ) -> Result<Option<Any>, LinkError> {
         let packet = event.packet.clone();
         if self
-            .dst_channel(HeightQuery::Specific(dst_info.height))?
+            .dst_channel(QueryHeight::Specific(dst_info.height))?
             .state_matches(&ChannelState::Closed)
         {
             Ok(self.build_timeout_on_close_packet(&event.packet, dst_info.height)?)

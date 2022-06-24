@@ -9,8 +9,8 @@ use ibc::core::ics04_channel::channel::{ChannelEnd, State};
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId};
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{
-    HeightQuery, IncludeProof, PageRequest, QueryChannelRequest, QueryChannelsRequest,
-    QueryClientStateRequest, QueryConnectionRequest,
+    IncludeProof, PageRequest, QueryChannelRequest, QueryChannelsRequest, QueryClientStateRequest,
+    QueryConnectionRequest, QueryHeight,
 };
 use ibc_relayer::registry::Registry;
 
@@ -95,7 +95,7 @@ fn run_query_channels<Chain: ChainHandle>(
                 chain_id,
                 port_id,
                 channel_id,
-                HeightQuery::Specific(chain_height),
+                QueryHeight::Specific(chain_height),
             );
 
             match channel_ends {
@@ -123,7 +123,7 @@ fn query_channel_ends<Chain: ChainHandle>(
     chain_id: ChainId,
     port_id: PortId,
     channel_id: ChannelId,
-    chain_height_query: HeightQuery,
+    chain_height_query: QueryHeight,
 ) -> Result<ChannelEnds, Box<dyn std::error::Error>> {
     let (connection_end, _) = chain.query_connection(
         QueryConnectionRequest {
@@ -177,7 +177,7 @@ fn query_channel_ends<Chain: ChainHandle>(
 
     let counterparty_chain = registry.get_or_spawn(&counterparty_chain_id)?;
     let counterparty_chain_height_query =
-        HeightQuery::Specific(counterparty_chain.query_latest_height()?);
+        QueryHeight::Specific(counterparty_chain.query_latest_height()?);
 
     let (counterparty_connection_end, _) = counterparty_chain.query_connection(
         QueryConnectionRequest {
