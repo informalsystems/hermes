@@ -546,17 +546,17 @@ impl Default for TelemetryState {
 
             ws_send_packet_count: meter
                 .u64_counter("ws_send_packet_count")
-                .with_description("BLA send_packet")
+                .with_description("Number of SendPacket relayed.")
                 .init(),
 
             ws_acknowledgement_count: meter
                 .u64_counter("ws_acknowledgement_count")
-                .with_description("BLA ws_acknowledgement")
+                .with_description("Number of WriteAcknowledgement relayed.")
                 .init(),
 
             ws_cleared_count: meter
                 .u64_counter("ws_cleared_count")
-                .with_description("Number of packets sent through ClearPendingPackets")
+                .with_description("Number of packets relayed through ClearPendingPackets")
                 .init(),
 
             tx_latency_submitted: meter
