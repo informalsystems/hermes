@@ -5,7 +5,8 @@
 
 # Query Clients
 
-Use the `query clients` command to query the identifiers of all clients on a given chain.
+Use the `query clients` command to query the identifiers of all clients on a given chain, called
+the _host_ chain.
 
 ```shell
 USAGE:
@@ -20,7 +21,7 @@ FLAGS:
 
 OPTIONS:
         --omit-chain-ids
-            omit printing the source chain for each client
+            omit printing the reference (or target) chain for each client
 
         --reference-chain <REFERENCE_CHAIN_ID>
             filter for clients which target a specific chain id (implies '--omit-chain-ids')
@@ -57,7 +58,7 @@ Success: [
 ]
 ```
 
-Query all clients on `ibc-1` having `ibc-2` as their source chain:
+Query all clients on `ibc-1` having `ibc-2` as their reference chain:
 
 ```shell
 hermes query clients --host-chain ibc-1 --reference-chain ibc-2

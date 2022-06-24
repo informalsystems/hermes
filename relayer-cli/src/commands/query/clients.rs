@@ -32,7 +32,7 @@ pub struct QueryAllClientsCmd {
 
     #[clap(
         long = "omit-chain-ids",
-        help = "omit printing the source chain for each client"
+        help = "omit printing the reference (or target) chain for each client"
     )]
     omit_chain_ids: bool,
 }
