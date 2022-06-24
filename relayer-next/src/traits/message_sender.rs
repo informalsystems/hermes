@@ -12,4 +12,9 @@ where
         &self,
         message: IbcMessage<Self, Counterparty>,
     ) -> Result<Vec<IbcEvent<Self, Counterparty>>, Self::Error>;
+
+    async fn send_messages(
+        &self,
+        messages: Vec<IbcMessage<Self, Counterparty>>,
+    ) -> Result<Vec<Vec<IbcEvent<Self, Counterparty>>>, Self::Error>;
 }

@@ -9,13 +9,14 @@ use crate::traits::message::{IbcMessage, Message};
 pub struct CosmosIbcMessage {
     pub source_height: Option<Height>,
 
-    pub to_protobuf_fn: Box<dyn FnOnce(Signer) -> Result<Any, EncodeError> + 'static + Send + Sync>,
+    pub to_protobuf_fn:
+        Box<dyn FnOnce(&Signer) -> Result<Any, EncodeError> + 'static + Send + Sync>,
 }
 
 impl CosmosIbcMessage {
     pub fn new(
         source_height: Option<Height>,
-        to_protobuf_fn: impl FnOnce(Signer) -> Result<Any, EncodeError> + 'static + Send + Sync,
+        to_protobuf_fn: impl FnOnce(&Signer) -> Result<Any, EncodeError> + 'static + Send + Sync,
     ) -> Self {
         Self {
             source_height,
@@ -29,7 +30,7 @@ impl Message for CosmosIbcMessage {
     type RawMessage = Any;
     type EncodeError = EncodeError;
 
-    fn encode_raw(self, signer: Signer) -> Result<Any, EncodeError> {
+    fn encode_raw(self, signer: &Signer) -> Result<Any, EncodeError> {
         (self.to_protobuf_fn)(signer)
     }
 }

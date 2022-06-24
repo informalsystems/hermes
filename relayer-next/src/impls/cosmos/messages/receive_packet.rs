@@ -36,7 +36,7 @@ where
         let packet = packet.clone();
 
         let message = CosmosIbcMessage::new(Some(*height), move |signer| {
-            Ok(MsgRecvPacket::new(packet, proofs.clone(), signer).to_any())
+            Ok(MsgRecvPacket::new(packet, proofs.clone(), signer.clone()).to_any())
         });
 
         Ok(message)

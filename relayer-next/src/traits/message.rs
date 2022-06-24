@@ -6,7 +6,7 @@ pub trait Message {
     type RawMessage;
     type EncodeError;
 
-    fn encode_raw(self, signer: Self::Signer) -> Result<Self::RawMessage, Self::EncodeError>;
+    fn encode_raw(self, signer: &Self::Signer) -> Result<Self::RawMessage, Self::EncodeError>;
 }
 
 pub trait IbcMessage<Counterparty: ChainContext>: Message {
