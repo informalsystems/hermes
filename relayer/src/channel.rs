@@ -496,6 +496,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     /// a_counterparty_id <_____________________________________/                     |
     ///                           \____________________________________>   b_counterparty_id
     ///
+    /// There are two cases to consider.
+    ///
     /// Case 1 (fix channel ID):
     ///  a                                                      b
     ///  | <-- Init (r1)                                        |
@@ -672,7 +674,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         Err(ChannelError::handshake_finalize())
     }
 
-    /// Executes the channel handshake protocol (ICS003)
+    /// Executes the channel handshake protocol (ICS004)
     fn handshake(&mut self) -> Result<(), ChannelError> {
         let max_block_times = self.max_block_times()?;
 
