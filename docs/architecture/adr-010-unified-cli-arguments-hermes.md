@@ -148,6 +148,10 @@ __Packet__
 
 * `query packet unreceived-packets --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
 
+__Transfer__
+
+* `query transfer denom-trace --chain <CHAIN_ID> --hash <HASH>`
+
 __Tx__
 
 * `query tx events --chain <CHAIN_ID> --hash <HASH>`
