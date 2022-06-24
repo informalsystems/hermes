@@ -1,5 +1,4 @@
-use super::chain_context::IbcChainContext;
-
+use crate::traits::chain_context::IbcChainContext;
 use crate::traits::packet::IbcPacket;
 
 pub trait RelayContext: Sized + Send + Sync + 'static {

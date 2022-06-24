@@ -1,9 +1,10 @@
 use ibc::core::ics04_channel::packet::Packet;
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::impls::cosmos::chain_context::CosmosChainContext;
+use crate::impls::cosmos::error::Error;
 use crate::traits::relay_context::RelayContext;
-use crate::types::error::Error;
 
 pub struct CosmosRelayContext<SrcChain, DstChain>
 where
@@ -12,6 +13,9 @@ where
 {
     pub source_chain: CosmosChainContext<SrcChain>,
     pub destination_chain: CosmosChainContext<DstChain>,
+
+    pub foreign_client_src_to_dst: ForeignClient<DstChain, SrcChain>,
+    pub foreign_client_dst_to_src: ForeignClient<SrcChain, DstChain>,
 }
 
 impl<SrcChain, DstChain> RelayContext for CosmosRelayContext<SrcChain, DstChain>

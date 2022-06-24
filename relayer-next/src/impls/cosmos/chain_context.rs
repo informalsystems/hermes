@@ -5,9 +5,9 @@ use ibc::timestamp::Timestamp;
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 
+use crate::impls::cosmos::error::Error;
 use crate::impls::cosmos::message::CosmosIbcMessage;
 use crate::traits::chain_context::{ChainContext, IbcChainContext};
-use crate::types::error::Error;
 
 pub struct CosmosChainContext<Handle: ChainHandle> {
     pub handle: Handle,

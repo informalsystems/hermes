@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use super::chain_context::{ChainContext, IbcChainContext};
+use crate::traits::chain_context::{ChainContext, IbcChainContext};
 use crate::types::aliases::{IbcEvent, IbcMessage};
 
 #[async_trait]
