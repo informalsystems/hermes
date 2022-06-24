@@ -60,10 +60,6 @@ impl Override<Config> for ClearPacketsCmd {
             chain_config.key_name = key_name.to_string();
         }
 
-        if let Some(ref counterparty_key_name) = self.counterparty_key_name {
-            chain_config.counterparty_key_name = counterparty_key_name.to_string();
-        }
-
         Ok(config)
     }
 }
@@ -81,6 +77,14 @@ impl Runnable for ClearPacketsCmd {
             Ok((chains, _)) => chains,
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
+
+        // Now that we have access to the counterparty chain at this point, we can
+        // match on `counterparty_key_name` and if a String exists, then override
+        // the counterparty chain's `key_name` in its own Config
+        if let Some(ref counterparty_key_name) = self.counterparty_key_name {
+            // Is the counterparty chain the source chain or the destination chain?
+            let dst_chain_config = ChainHandle::<BaseChainHandle>::config(&chains.dst)?;
+        }
 
         let mut ev_list = vec![];
 
