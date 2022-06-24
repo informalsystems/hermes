@@ -14,7 +14,7 @@ use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_def::ClientDef;
 use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::context::ConsensusReader;
+use crate::core::ics02_client::context::LightClientReader;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
@@ -47,7 +47,7 @@ impl ClientDef for TendermintClient {
 
     fn check_header_and_update_state(
         &self,
-        ctx: &dyn ConsensusReader,
+        ctx: &dyn LightClientReader,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,

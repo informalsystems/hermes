@@ -1,6 +1,6 @@
 //! This module implements the processing logic for ICS2 (client abstractions and functions) msgs.
 
-use crate::core::ics02_client::context::{ClientReader, ConsensusReader};
+use crate::core::ics02_client::context::{ClientReader, LightClientReader};
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::msgs::ClientMsg;
 use crate::handler::HandlerOutput;
@@ -19,7 +19,7 @@ pub enum ClientResult {
 /// General entry point for processing any message related to ICS2 (client functions) protocols.
 pub fn dispatch<Ctx>(ctx: &Ctx, msg: ClientMsg) -> Result<HandlerOutput<ClientResult>, Error>
 where
-    Ctx: ClientReader + ConsensusReader,
+    Ctx: ClientReader + LightClientReader,
 {
     match msg {
         ClientMsg::CreateClient(msg) => create_client::process(ctx, msg),

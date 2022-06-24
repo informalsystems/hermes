@@ -3,7 +3,7 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_def::ClientDef;
 use crate::core::ics02_client::client_state::ClientState;
-use crate::core::ics02_client::context::ConsensusReader;
+use crate::core::ics02_client::context::LightClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
@@ -32,7 +32,7 @@ impl ClientDef for MockClient {
 
     fn check_header_and_update_state(
         &self,
-        _ctx: &dyn ConsensusReader,
+        _ctx: &dyn LightClientReader,
         _client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,

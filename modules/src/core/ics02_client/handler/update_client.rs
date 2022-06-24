@@ -5,7 +5,7 @@ use tracing::debug;
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_def::{AnyClient, ClientDef};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
-use crate::core::ics02_client::context::{ClientReader, ConsensusReader};
+use crate::core::ics02_client::context::{ClientReader, LightClientReader};
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
 use crate::core::ics02_client::handler::ClientResult;
@@ -29,7 +29,7 @@ pub struct Result {
     pub processed_height: Height,
 }
 
-pub fn process<Ctx: ClientReader + ConsensusReader>(
+pub fn process<Ctx: ClientReader + LightClientReader>(
     ctx: &Ctx,
     msg: MsgUpdateAnyClient,
 ) -> HandlerResult<ClientResult, Error> {

@@ -80,7 +80,7 @@ pub trait ClientReader {
     fn client_counter(&self) -> Result<u64, Error>;
 }
 
-pub trait ConsensusReader {
+pub trait LightClientReader {
     fn consensus_state(
         &self,
         client_id: &ClientId,
@@ -121,7 +121,7 @@ pub trait ConsensusReader {
     fn host_timestamp(&self) -> Timestamp;
 }
 
-impl<T: ClientReader> ConsensusReader for T {
+impl<T: ClientReader> LightClientReader for T {
     fn consensus_state(
         &self,
         client_id: &ClientId,
