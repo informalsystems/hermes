@@ -23,7 +23,7 @@ use crate::Height;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_def::MockClient;
 
-pub trait ClientDef: Clone {
+pub trait ClientDef {
     type Header: Header;
     type ClientState: ClientState;
     type ConsensusState: ConsensusState;
