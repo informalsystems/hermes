@@ -18,10 +18,9 @@ FLAGS:
             identifier of the chain to query
 
 OPTIONS:
-        --counterparty-chain <COUNTERPARTY_CHAIN_ID>
-            identifier of the channel's destination chain
         --verbose
-            enable verbose output, displaying all client and connection ids
+            enable verbose output, displaying the client and connection ids for each channel in the
+            response
 ```
 
 __Example__

@@ -28,16 +28,17 @@ pub struct QueryChannelsCmd {
     )]
     chain_id: ChainId,
 
-    #[clap(
-        long = "counterparty-chain",
-        value_name = "COUNTERPARTY_CHAIN_ID",
-        help = "identifier of the channel's destination chain"
-    )]
-    dst_chain_id: Option<ChainId>,
-
+    // TODO: Filtering by counterparty chain does not work currently.
+    //  https://github.com/informalsystems/ibc-rs/issues/1132#issuecomment-1165324496
+    // #[clap(
+    //     long = "counterparty-chain",
+    //     value_name = "COUNTERPARTY_CHAIN_ID",
+    //     help = "filter the query response by the this counterparty chain"
+    // )]
+    // dst_chain_id: Option<ChainId>,
     #[clap(
         long = "verbose",
-        help = "enable verbose output, displaying all client and connection ids"
+        help = "enable verbose output, displaying the client and connection ids for each channel in the response"
     )]
     verbose: bool,
 }
@@ -93,7 +94,7 @@ fn run_query_channels<Chain: ChainHandle>(
             let channel_ends = query_channel_ends(
                 &mut registry,
                 &chain,
-                cmd.dst_chain_id.as_ref(),
+                None,
                 channel_end,
                 connection_id,
                 chain_id,
