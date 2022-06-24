@@ -3,7 +3,6 @@ use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics04_channel::packet::{Packet, Sequence};
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::{from_tx_response_event, IbcEvent};
-use ibc::query::{QueryTxHash, QueryTxRequest};
 use ibc::Height as ICSHeight;
 use tendermint::abci::transaction::Hash as TxHash;
 use tendermint::abci::Event;
@@ -14,7 +13,7 @@ use tracing::trace;
 
 use crate::chain::cosmos::query::{header_query, packet_query, tx_hash_query};
 use crate::chain::requests::{
-    QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest, QueryTxRequest,
+    QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest, QueryTxHash, QueryTxRequest,
 };
 use crate::error::Error;
 
