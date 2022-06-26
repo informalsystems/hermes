@@ -3,7 +3,7 @@ use ibc::Height;
 use ibc_proto::google::protobuf::Any;
 use prost::EncodeError;
 
-use crate::traits::chain_context::ChainContext;
+use crate::traits::chain_types::ChainTypes;
 use crate::traits::message::{IbcMessage, Message};
 
 pub struct CosmosIbcMessage {
@@ -37,7 +37,7 @@ impl Message for CosmosIbcMessage {
 
 impl<Counterparty> IbcMessage<Counterparty> for CosmosIbcMessage
 where
-    Counterparty: ChainContext<Height = Height>,
+    Counterparty: ChainTypes<Height = Height>,
 {
     fn source_height(&self) -> Option<Height> {
         self.source_height

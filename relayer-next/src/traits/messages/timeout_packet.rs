@@ -1,35 +1,35 @@
 use async_trait::async_trait;
 
-use crate::traits::relay_context::RelayContext;
+use crate::traits::relay_types::RelayTypes;
 use crate::types::aliases::{ChannelId, Height, IbcMessage, PortId, Sequence};
 
 #[async_trait]
-pub trait TimeoutUnorderedPacketMessageBuilder: RelayContext {
+pub trait TimeoutUnorderedPacketMessageBuilder<Relay: RelayTypes> {
     async fn build_timeout_unordered_packet_message(
         &self,
-        height: Height<Self::DstChain>,
-        port_id: PortId<Self::DstChain, Self::SrcChain>,
-        channel_id: ChannelId<Self::DstChain, Self::SrcChain>,
-        sequence: Sequence<Self::SrcChain, Self::DstChain>,
-    ) -> Result<IbcMessage<Self::SrcChain, Self::DstChain>, Self::Error>;
+        height: Height<Relay::DstChain>,
+        port_id: PortId<Relay::DstChain, Relay::SrcChain>,
+        channel_id: ChannelId<Relay::DstChain, Relay::SrcChain>,
+        sequence: Sequence<Relay::SrcChain, Relay::DstChain>,
+    ) -> Result<IbcMessage<Relay::SrcChain, Relay::DstChain>, Relay::Error>;
 }
 
 #[async_trait]
-pub trait TimeoutOrderedPacketMessageBuilder: RelayContext {
+pub trait TimeoutOrderedPacketMessageBuilder<Relay: RelayTypes> {
     async fn build_timeout_ordered_packet_message(
         &self,
-        height: Height<Self::DstChain>,
-        port_id: PortId<Self::DstChain, Self::SrcChain>,
-        channel_id: ChannelId<Self::DstChain, Self::SrcChain>,
-    ) -> Result<IbcMessage<Self::SrcChain, Self::DstChain>, Self::Error>;
+        height: Height<Relay::DstChain>,
+        port_id: PortId<Relay::DstChain, Relay::SrcChain>,
+        channel_id: ChannelId<Relay::DstChain, Relay::SrcChain>,
+    ) -> Result<IbcMessage<Relay::SrcChain, Relay::DstChain>, Relay::Error>;
 }
 
 #[async_trait]
-pub trait TimeoutChannelClosedMessageBuilder: RelayContext {
+pub trait TimeoutChannelClosedMessageBuilder<Relay: RelayTypes> {
     async fn build_timeout_channel_closed_message(
         &self,
-        height: Height<Self::DstChain>,
-        port_id: PortId<Self::DstChain, Self::SrcChain>,
-        channel_id: ChannelId<Self::DstChain, Self::SrcChain>,
-    ) -> Result<IbcMessage<Self::SrcChain, Self::DstChain>, Self::Error>;
+        height: Height<Relay::DstChain>,
+        port_id: PortId<Relay::DstChain, Relay::SrcChain>,
+        channel_id: ChannelId<Relay::DstChain, Relay::SrcChain>,
+    ) -> Result<IbcMessage<Relay::SrcChain, Relay::DstChain>, Relay::Error>;
 }

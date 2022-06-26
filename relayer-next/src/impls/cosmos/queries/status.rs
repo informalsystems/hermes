@@ -4,14 +4,12 @@ use ibc::Height;
 use ibc_relayer::chain::endpoint::ChainStatus as CosmosChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
 
-use crate::impls::cosmos::chain_context::CosmosChainContext;
+use crate::impls::cosmos::chain_types::CosmosChainTypes;
 use crate::impls::cosmos::error::Error;
+use crate::impls::cosmos::handler::CosmosChainHandler;
 use crate::traits::queries::status::{ChainStatus, ChainStatusQuerier};
 
-impl<Chain> ChainStatus<CosmosChainContext<Chain>> for CosmosChainStatus
-where
-    Chain: ChainHandle,
-{
+impl ChainStatus<CosmosChainTypes> for CosmosChainStatus {
     fn height(&self) -> Height {
         self.height
     }
@@ -22,9 +20,9 @@ where
 }
 
 #[async_trait]
-impl<Chain> ChainStatusQuerier for CosmosChainContext<Chain>
+impl<Handle> ChainStatusQuerier<CosmosChainTypes> for CosmosChainHandler<Handle>
 where
-    Chain: ChainHandle,
+    Handle: ChainHandle,
 {
     type ChainStatus = CosmosChainStatus;
 

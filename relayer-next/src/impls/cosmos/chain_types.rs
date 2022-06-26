@@ -4,18 +4,15 @@ use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc::events::IbcEvent;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
-use ibc_relayer::chain::handle::ChainHandle;
 
 use crate::impls::cosmos::error::Error;
 use crate::impls::cosmos::message::CosmosIbcMessage;
-use crate::traits::chain_context::{ChainContext, IbcChainContext};
+use crate::traits::chain_types::{ChainTypes, IbcChainTypes};
 
 #[derive(Debug, Clone)]
-pub struct CosmosChainContext<Handle: ChainHandle> {
-    pub handle: Handle,
-}
+pub struct CosmosChainTypes;
 
-impl<Handle: ChainHandle> ChainContext for CosmosChainContext<Handle> {
+impl ChainTypes for CosmosChainTypes {
     type Error = Error;
 
     type Height = Height;
@@ -23,12 +20,7 @@ impl<Handle: ChainHandle> ChainContext for CosmosChainContext<Handle> {
     type Message = CosmosIbcMessage;
 }
 
-impl<Chain, Counterparty> IbcChainContext<CosmosChainContext<Counterparty>>
-    for CosmosChainContext<Chain>
-where
-    Chain: ChainHandle,
-    Counterparty: ChainHandle,
-{
+impl IbcChainTypes<CosmosChainTypes> for CosmosChainTypes {
     type ChannelId = ChannelId;
     type PortId = PortId;
     type Sequence = Sequence;

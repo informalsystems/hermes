@@ -1,7 +1,7 @@
 use crate::traits::core::CoreTraits;
 use crate::traits::message::{IbcMessage as SomeIbcMessage, Message as SomeMessage};
 
-pub trait ChainContext: CoreTraits {
+pub trait ChainTypes: CoreTraits {
     type Error: CoreTraits;
 
     type Height: CoreTraits;
@@ -10,14 +10,15 @@ pub trait ChainContext: CoreTraits {
     type Message: CoreTraits + SomeMessage;
 }
 
-pub trait IbcChainContext<Counterparty>: ChainContext
-where
-    Counterparty: ChainContext,
-{
+pub trait IbcChainTypes<Counterparty: ChainTypes>: ChainTypes {
     type ChannelId: CoreTraits;
     type PortId: CoreTraits;
     type Sequence: CoreTraits;
 
     type IbcMessage: CoreTraits + SomeIbcMessage<Counterparty>;
     type IbcEvent: CoreTraits;
+}
+
+pub trait IbcChainContext<Counterparty: ChainTypes>: CoreTraits {
+    type IbcChainTypes: IbcChainTypes<Counterparty>;
 }

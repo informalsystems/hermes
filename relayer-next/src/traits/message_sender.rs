@@ -1,20 +1,21 @@
 use async_trait::async_trait;
 
-use crate::traits::chain_context::{ChainContext, IbcChainContext};
+use crate::traits::chain_types::{ChainTypes, IbcChainTypes};
 use crate::types::aliases::{IbcEvent, IbcMessage};
 
 #[async_trait]
-pub trait IbcMessageSender<Counterparty>: IbcChainContext<Counterparty>
+pub trait IbcMessageSender<Chain, Counterparty>
 where
-    Counterparty: ChainContext,
+    Chain: IbcChainTypes<Counterparty>,
+    Counterparty: ChainTypes,
 {
     async fn send_message(
         &self,
-        message: IbcMessage<Self, Counterparty>,
-    ) -> Result<Vec<IbcEvent<Self, Counterparty>>, Self::Error>;
+        message: IbcMessage<Chain, Counterparty>,
+    ) -> Result<Vec<IbcEvent<Chain, Counterparty>>, Chain::Error>;
 
     async fn send_messages(
         &self,
-        messages: Vec<IbcMessage<Self, Counterparty>>,
-    ) -> Result<Vec<Vec<IbcEvent<Self, Counterparty>>>, Self::Error>;
+        messages: Vec<IbcMessage<Chain, Counterparty>>,
+    ) -> Result<Vec<Vec<IbcEvent<Chain, Counterparty>>>, Chain::Error>;
 }

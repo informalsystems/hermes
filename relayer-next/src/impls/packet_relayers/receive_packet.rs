@@ -4,6 +4,7 @@ use crate::traits::message_sender::IbcMessageSender;
 use crate::traits::messages::receive_packet::ReceivePacketMessageBuilder;
 use crate::traits::packet_relayer::PacketRelayer;
 use crate::traits::queries::status::{ChainStatus, ChainStatusQuerier};
+use crate::traits::relay_types::{RelayContext, RelayTypes};
 use crate::types::aliases::Packet;
 
 pub struct ReceivePacketRelayer;
@@ -11,25 +12,32 @@ pub struct ReceivePacketRelayer;
 #[async_trait]
 impl<Context> PacketRelayer<Context> for ReceivePacketRelayer
 where
-    Context: ReceivePacketMessageBuilder,
-    Context::SrcChain: ChainStatusQuerier,
-    Context::DstChain: IbcMessageSender<Context::SrcChain>,
+    Context: RelayContext,
+    Context: ReceivePacketMessageBuilder<Context::RelayTypes>,
+    Context::SrcChain: ChainStatusQuerier<<Context::RelayTypes as RelayTypes>::SrcChain>,
+    Context::DstChain: IbcMessageSender<
+        <Context::RelayTypes as RelayTypes>::DstChain,
+        <Context::RelayTypes as RelayTypes>::SrcChain,
+    >,
 {
     type Return = ();
-    type Error = Context::Error;
 
     async fn relay_packet(
         &self,
         context: &Context,
-        packet: Packet<Context>,
-    ) -> Result<Self::Return, Self::Error> {
-        let source_height = context.source_chain().query_chain_status().await?.height();
+        packet: Packet<Context::RelayTypes>,
+    ) -> Result<(), <Context::RelayTypes as RelayTypes>::Error> {
+        let source_height = context
+            .source_context()
+            .query_chain_status()
+            .await?
+            .height();
 
         let message = context
             .build_receive_packet_message(&source_height, &packet)
             .await?;
 
-        context.destination_chain().send_message(message).await?;
+        context.destination_context().send_message(message).await?;
 
         Ok(())
     }

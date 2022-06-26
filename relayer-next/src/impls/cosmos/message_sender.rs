@@ -3,25 +3,24 @@ use ibc::events::IbcEvent;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::tracking::TrackedMsgs;
 
-use crate::impls::cosmos::chain_context::CosmosChainContext;
+use crate::impls::cosmos::chain_types::CosmosChainTypes;
 use crate::impls::cosmos::error::Error;
+use crate::impls::cosmos::handler::CosmosChainHandler;
 use crate::impls::cosmos::message::CosmosIbcMessage;
 use crate::traits::message::Message;
 use crate::traits::message_sender::IbcMessageSender;
 
 #[async_trait]
-impl<Chain, Counterparty> IbcMessageSender<CosmosChainContext<Counterparty>>
-    for CosmosChainContext<Chain>
+impl<Handle> IbcMessageSender<CosmosChainTypes, CosmosChainTypes> for CosmosChainHandler<Handle>
 where
-    Chain: ChainHandle,
-    Counterparty: ChainHandle,
+    Handle: ChainHandle,
 {
-    async fn send_message(&self, message: CosmosIbcMessage) -> Result<Vec<IbcEvent>, Self::Error> {
+    async fn send_message(&self, message: CosmosIbcMessage) -> Result<Vec<IbcEvent>, Error> {
         let signer = self.handle.get_signer().map_err(Error::relayer)?;
 
         let raw_message = message.encode_raw(&signer).map_err(Error::encode)?;
 
-        let tracked_messages = TrackedMsgs::new_static(vec![raw_message], "CosmosChainContext");
+        let tracked_messages = TrackedMsgs::new_static(vec![raw_message], "CosmosChainTypes");
 
         let events = self
             .handle
@@ -34,7 +33,7 @@ where
     async fn send_messages(
         &self,
         messages: Vec<CosmosIbcMessage>,
-    ) -> Result<Vec<Vec<IbcEvent>>, Self::Error> {
+    ) -> Result<Vec<Vec<IbcEvent>>, Error> {
         let signer = self.handle.get_signer().map_err(Error::relayer)?;
 
         let raw_messages = messages
@@ -43,7 +42,7 @@ where
             .collect::<Result<Vec<_>, _>>()
             .map_err(Error::encode)?;
 
-        let tracked_messages = TrackedMsgs::new_static(raw_messages, "CosmosChainContext");
+        let tracked_messages = TrackedMsgs::new_static(raw_messages, "CosmosChainTypes");
 
         let events = self
             .handle

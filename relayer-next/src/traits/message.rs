@@ -1,4 +1,4 @@
-use crate::traits::chain_context::ChainContext;
+use crate::traits::chain_types::ChainTypes;
 use crate::types::aliases::Height;
 
 pub trait Message {
@@ -9,6 +9,6 @@ pub trait Message {
     fn encode_raw(self, signer: &Self::Signer) -> Result<Self::RawMessage, Self::EncodeError>;
 }
 
-pub trait IbcMessage<Counterparty: ChainContext>: Message {
+pub trait IbcMessage<Counterparty: ChainTypes>: Message {
     fn source_height(&self) -> Option<Height<Counterparty>>;
 }

@@ -1,47 +1,35 @@
 use ibc::core::ics04_channel::packet::Packet;
-use ibc_relayer::chain::handle::ChainHandle;
 
-use crate::impls::cosmos::chain_context::CosmosChainContext;
+use crate::impls::cosmos::chain_types::CosmosChainTypes;
 use crate::traits::packet::IbcPacket;
 use crate::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
 
-impl<SrcChain, DstChain> IbcPacket<CosmosChainContext<SrcChain>, CosmosChainContext<DstChain>>
-    for Packet
-where
-    SrcChain: ChainHandle,
-    DstChain: ChainHandle,
-{
-    fn source_port(&self) -> &PortId<CosmosChainContext<SrcChain>, CosmosChainContext<DstChain>> {
+impl IbcPacket<CosmosChainTypes, CosmosChainTypes> for Packet {
+    fn source_port(&self) -> &PortId<CosmosChainTypes, CosmosChainTypes> {
         &self.source_port
     }
 
-    fn source_channel_id(
-        &self,
-    ) -> &ChannelId<CosmosChainContext<SrcChain>, CosmosChainContext<DstChain>> {
+    fn source_channel_id(&self) -> &ChannelId<CosmosChainTypes, CosmosChainTypes> {
         &self.source_channel
     }
 
-    fn destination_port(
-        &self,
-    ) -> &PortId<CosmosChainContext<DstChain>, CosmosChainContext<SrcChain>> {
+    fn destination_port(&self) -> &PortId<CosmosChainTypes, CosmosChainTypes> {
         &self.destination_port
     }
 
-    fn destination_channel_id(
-        &self,
-    ) -> &ChannelId<CosmosChainContext<DstChain>, CosmosChainContext<SrcChain>> {
+    fn destination_channel_id(&self) -> &ChannelId<CosmosChainTypes, CosmosChainTypes> {
         &self.destination_channel
     }
 
-    fn sequence(&self) -> &Sequence<CosmosChainContext<SrcChain>, CosmosChainContext<DstChain>> {
+    fn sequence(&self) -> &Sequence<CosmosChainTypes, CosmosChainTypes> {
         &self.sequence
     }
 
-    fn timeout_height(&self) -> &Height<CosmosChainContext<DstChain>> {
+    fn timeout_height(&self) -> &Height<CosmosChainTypes> {
         &self.timeout_height
     }
 
-    fn timeout_timestamp(&self) -> &Timestamp<CosmosChainContext<DstChain>> {
+    fn timeout_timestamp(&self) -> &Timestamp<CosmosChainTypes> {
         &self.timeout_timestamp
     }
 }

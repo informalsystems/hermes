@@ -1,4 +1,4 @@
-pub mod chain_context;
+pub mod chain_types;
 pub mod core;
 pub mod message;
 pub mod message_sender;
@@ -6,4 +6,4 @@ pub mod messages;
 pub mod packet;
 pub mod packet_relayer;
 pub mod queries;
-pub mod relay_context;
+pub mod relay_types;
