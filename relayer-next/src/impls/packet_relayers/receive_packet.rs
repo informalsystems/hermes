@@ -14,11 +14,8 @@ impl<Context> PacketRelayer<Context> for ReceivePacketRelayer
 where
     Context: RelayContext,
     Context: ReceivePacketMessageBuilder<Context::RelayTypes>,
-    Context::SrcChain: ChainStatusQuerier<<Context::RelayTypes as RelayTypes>::SrcChain>,
-    Context::DstChain: IbcMessageSender<
-        <Context::RelayTypes as RelayTypes>::DstChain,
-        <Context::RelayTypes as RelayTypes>::SrcChain,
-    >,
+    Context::SrcChainContext: ChainStatusQuerier<Context::SrcChainTypes>,
+    Context::DstChainContext: IbcMessageSender<Context::DstChainTypes, Context::SrcChainTypes>,
 {
     type Return = ();
 

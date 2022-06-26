@@ -20,5 +20,7 @@ pub trait IbcChainTypes<Counterparty: ChainTypes>: ChainTypes {
 }
 
 pub trait IbcChainContext<Counterparty: ChainTypes>: CoreTraits {
+    type Error: CoreTraits;
+
     type IbcChainTypes: IbcChainTypes<Counterparty>;
 }

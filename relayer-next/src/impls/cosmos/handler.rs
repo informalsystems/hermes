@@ -1,4 +1,5 @@
 use crate::impls::cosmos::chain_types::CosmosChainTypes;
+use crate::impls::cosmos::error::Error;
 use crate::impls::cosmos::relay_types::CosmosRelayTypes;
 use crate::traits::chain_types::IbcChainContext;
 use crate::traits::relay_types::RelayContext;
@@ -21,6 +22,8 @@ where
 }
 
 impl<Chain: ChainHandle> IbcChainContext<CosmosChainTypes> for CosmosChainHandler<Chain> {
+    type Error = Error;
+
     type IbcChainTypes = CosmosChainTypes;
 }
 
@@ -29,17 +32,23 @@ where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
 {
+    type Error = Error;
+
     type RelayTypes = CosmosRelayTypes;
 
-    type SrcChain = CosmosChainHandler<SrcChain>;
+    type SrcChainTypes = CosmosChainTypes;
 
-    type DstChain = CosmosChainHandler<DstChain>;
+    type DstChainTypes = CosmosChainTypes;
 
-    fn source_context(&self) -> &Self::SrcChain {
+    type SrcChainContext = CosmosChainHandler<SrcChain>;
+
+    type DstChainContext = CosmosChainHandler<DstChain>;
+
+    fn source_context(&self) -> &Self::SrcChainContext {
         &self.src_handle
     }
 
-    fn destination_context(&self) -> &Self::DstChain {
+    fn destination_context(&self) -> &Self::DstChainContext {
         &self.dst_handle
     }
 }
