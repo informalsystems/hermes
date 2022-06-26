@@ -15,25 +15,17 @@ pub trait RelayTypes: CoreTraits {
 pub trait RelayContext: CoreTraits {
     type Error: CoreTraits;
 
-    type SrcChainTypes: IbcChainTypes<Self::DstChainTypes, Error = Self::Error>;
-
-    type DstChainTypes: IbcChainTypes<Self::SrcChainTypes, Error = Self::Error>;
-
-    type RelayTypes: RelayTypes<
-        Error = Self::Error,
-        SrcChain = Self::SrcChainTypes,
-        DstChain = Self::DstChainTypes,
-    >;
+    type RelayTypes: RelayTypes<Error = Self::Error>;
 
     type SrcChainContext: IbcChainContext<
-        Self::DstChainTypes,
-        IbcChainTypes = Self::SrcChainTypes,
+        <Self::RelayTypes as RelayTypes>::DstChain,
+        IbcChainTypes = <Self::RelayTypes as RelayTypes>::SrcChain,
         Error = Self::Error,
     >;
 
     type DstChainContext: IbcChainContext<
-        Self::SrcChainTypes,
-        IbcChainTypes = Self::DstChainTypes,
+        <Self::RelayTypes as RelayTypes>::SrcChain,
+        IbcChainTypes = <Self::RelayTypes as RelayTypes>::DstChain,
         Error = Self::Error,
     >;
 

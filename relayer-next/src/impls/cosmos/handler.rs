@@ -36,10 +36,6 @@ where
 
     type RelayTypes = CosmosRelayTypes;
 
-    type SrcChainTypes = CosmosChainTypes;
-
-    type DstChainTypes = CosmosChainTypes;
-
     type SrcChainContext = CosmosChainHandler<SrcChain>;
 
     type DstChainContext = CosmosChainHandler<DstChain>;

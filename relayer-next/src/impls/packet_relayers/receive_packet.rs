@@ -10,20 +10,21 @@ use crate::types::aliases::Packet;
 pub struct ReceivePacketRelayer;
 
 #[async_trait]
-impl<Context> PacketRelayer<Context> for ReceivePacketRelayer
+impl<Context, Relay> PacketRelayer<Context> for ReceivePacketRelayer
 where
-    Context: RelayContext,
-    Context: ReceivePacketMessageBuilder<Context::RelayTypes>,
-    Context::SrcChainContext: ChainStatusQuerier<Context::SrcChainTypes>,
-    Context::DstChainContext: IbcMessageSender<Context::DstChainTypes, Context::SrcChainTypes>,
+    Relay: RelayTypes,
+    Context: RelayContext<RelayTypes = Relay>,
+    Context: ReceivePacketMessageBuilder<Relay>,
+    Context::SrcChainContext: ChainStatusQuerier<Relay::SrcChain>,
+    Context::DstChainContext: IbcMessageSender<Relay::DstChain, Relay::SrcChain>,
 {
     type Return = ();
 
     async fn relay_packet(
         &self,
         context: &Context,
-        packet: Packet<Context::RelayTypes>,
-    ) -> Result<(), <Context::RelayTypes as RelayTypes>::Error> {
+        packet: Packet<Relay>,
+    ) -> Result<(), Relay::Error> {
         let source_height = context
             .source_context()
             .query_chain_status()
