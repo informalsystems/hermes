@@ -18,4 +18,9 @@ where
         &self,
         messages: Vec<IbcMessage<Chain, Counterparty>>,
     ) -> Result<Vec<Vec<IbcEvent<Chain, Counterparty>>>, Chain::Error>;
+
+    async fn send_messages_fixed<const COUNT: usize>(
+        &self,
+        messages: [IbcMessage<Chain, Counterparty>; COUNT],
+    ) -> Result<[Vec<IbcEvent<Chain, Counterparty>>; COUNT], Chain::Error>;
 }

@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use eyre::eyre;
 use ibc::events::IbcEvent;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::tracking::TrackedMsgs;
@@ -54,5 +55,24 @@ where
         let nested_events = events.into_iter().map(|event| vec![event]).collect();
 
         Ok(nested_events)
+    }
+
+    async fn send_messages_fixed<const COUNT: usize>(
+        &self,
+        messages: [CosmosIbcMessage; COUNT],
+    ) -> Result<[Vec<IbcEvent>; COUNT], Error> {
+        let events = self
+            .send_messages(messages.into())
+            .await?
+            .try_into()
+            .map_err(|e: Vec<_>| {
+                Error::generic(eyre!(
+                    "mismatch size for events returned. expected: {}, got: {}",
+                    COUNT,
+                    e.len()
+                ))
+            })?;
+
+        Ok(events)
     }
 }
