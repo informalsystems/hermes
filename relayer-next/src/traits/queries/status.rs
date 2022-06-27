@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
-use crate::traits::chain_types::ChainTypes;
+use crate::traits::chain_types::ChainContext;
 use crate::types::aliases::{Height, Timestamp};
 
-pub trait ChainStatus<Chain: ChainTypes> {
+pub trait ChainStatus<Chain: ChainContext> {
     fn height(&self) -> Height<Chain>;
 
     fn timestamp(&self) -> Timestamp<Chain>;
@@ -12,7 +12,7 @@ pub trait ChainStatus<Chain: ChainTypes> {
 #[async_trait]
 pub trait ChainStatusQuerier<Chain>
 where
-    Chain: ChainTypes,
+    Chain: ChainContext,
 {
     type ChainStatus: ChainStatus<Chain>;
 

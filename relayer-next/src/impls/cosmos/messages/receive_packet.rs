@@ -9,11 +9,10 @@ use ibc_relayer::chain::handle::ChainHandle;
 use crate::impls::cosmos::error::Error;
 use crate::impls::cosmos::handler::CosmosRelayHandler;
 use crate::impls::cosmos::message::CosmosIbcMessage;
-use crate::impls::cosmos::relay_types::CosmosRelayTypes;
 use crate::traits::messages::receive_packet::ReceivePacketMessageBuilder;
 
 #[async_trait]
-impl<SrcChain, DstChain> ReceivePacketMessageBuilder<CosmosRelayTypes>
+impl<SrcChain, DstChain> ReceivePacketMessageBuilder<CosmosRelayHandler<SrcChain, DstChain>>
     for CosmosRelayHandler<SrcChain, DstChain>
 where
     SrcChain: ChainHandle,

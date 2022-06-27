@@ -2,12 +2,13 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::impls::cosmos::handler::CosmosRelayHandler;
-use crate::impls::cosmos::relay_types::CosmosRelayTypes;
 use crate::traits::target::{ChainTarget, DestinationTarget, SourceTarget};
 
-pub trait CosmosChainTarget<Target>
+pub trait CosmosChainTarget<SrcChain, DstChain, Target>
 where
-    Target: ChainTarget<CosmosRelayTypes>,
+    SrcChain: ChainHandle,
+    DstChain: ChainHandle,
+    Target: ChainTarget<CosmosRelayHandler<SrcChain, DstChain>>,
 {
     type TargetHandle: ChainHandle;
 
@@ -21,15 +22,15 @@ where
         -> &ForeignClient<Self::TargetHandle, Self::CounterpartyHandle>;
 }
 
-impl<SrcHandle, DstHandle> CosmosChainTarget<DestinationTarget>
-    for CosmosRelayHandler<SrcHandle, DstHandle>
+impl<SrcChain, DstChain> CosmosChainTarget<SrcChain, DstChain, DestinationTarget>
+    for CosmosRelayHandler<SrcChain, DstChain>
 where
-    SrcHandle: ChainHandle,
-    DstHandle: ChainHandle,
+    SrcChain: ChainHandle,
+    DstChain: ChainHandle,
 {
-    type TargetHandle = DstHandle;
+    type TargetHandle = DstChain;
 
-    type CounterpartyHandle = SrcHandle;
+    type CounterpartyHandle = SrcChain;
 
     fn target_handle(&self) -> &Self::TargetHandle {
         &self.dst_handle.handle
@@ -46,15 +47,15 @@ where
     }
 }
 
-impl<SrcHandle, DstHandle> CosmosChainTarget<SourceTarget>
-    for CosmosRelayHandler<SrcHandle, DstHandle>
+impl<SrcChain, DstChain> CosmosChainTarget<SrcChain, DstChain, SourceTarget>
+    for CosmosRelayHandler<SrcChain, DstChain>
 where
-    SrcHandle: ChainHandle,
-    DstHandle: ChainHandle,
+    SrcChain: ChainHandle,
+    DstChain: ChainHandle,
 {
-    type TargetHandle = SrcHandle;
+    type TargetHandle = SrcChain;
 
-    type CounterpartyHandle = DstHandle;
+    type CounterpartyHandle = DstChain;
 
     fn target_handle(&self) -> &Self::TargetHandle {
         &self.src_handle.handle

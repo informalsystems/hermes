@@ -1,10 +1,10 @@
-use crate::traits::chain_types::IbcChainTypes;
+use crate::traits::chain_types::IbcChainContext;
 use crate::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
 
 pub trait IbcPacket<SrcChain, DstChain>: Send
 where
-    SrcChain: IbcChainTypes<DstChain>,
-    DstChain: IbcChainTypes<SrcChain>,
+    SrcChain: IbcChainContext<DstChain>,
+    DstChain: IbcChainContext<SrcChain>,
 {
     fn source_port(&self) -> &PortId<SrcChain, DstChain>;
 

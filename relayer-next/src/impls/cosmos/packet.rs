@@ -1,35 +1,44 @@
 use ibc::core::ics04_channel::packet::Packet;
+use ibc::core::ics04_channel::packet::Sequence;
+use ibc::core::ics24_host::identifier::{ChannelId, PortId};
+use ibc::timestamp::Timestamp;
+use ibc::Height;
+use ibc_relayer::chain::handle::ChainHandle;
 
-use crate::impls::cosmos::chain_types::CosmosChainTypes;
+use crate::impls::cosmos::handler::CosmosChainHandler;
 use crate::traits::packet::IbcPacket;
-use crate::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
 
-impl IbcPacket<CosmosChainTypes, CosmosChainTypes> for Packet {
-    fn source_port(&self) -> &PortId<CosmosChainTypes, CosmosChainTypes> {
+impl<SrcChain, DstChain> IbcPacket<CosmosChainHandler<SrcChain>, CosmosChainHandler<DstChain>>
+    for Packet
+where
+    SrcChain: ChainHandle,
+    DstChain: ChainHandle,
+{
+    fn source_port(&self) -> &PortId {
         &self.source_port
     }
 
-    fn source_channel_id(&self) -> &ChannelId<CosmosChainTypes, CosmosChainTypes> {
+    fn source_channel_id(&self) -> &ChannelId {
         &self.source_channel
     }
 
-    fn destination_port(&self) -> &PortId<CosmosChainTypes, CosmosChainTypes> {
+    fn destination_port(&self) -> &PortId {
         &self.destination_port
     }
 
-    fn destination_channel_id(&self) -> &ChannelId<CosmosChainTypes, CosmosChainTypes> {
+    fn destination_channel_id(&self) -> &ChannelId {
         &self.destination_channel
     }
 
-    fn sequence(&self) -> &Sequence<CosmosChainTypes, CosmosChainTypes> {
+    fn sequence(&self) -> &Sequence {
         &self.sequence
     }
 
-    fn timeout_height(&self) -> &Height<CosmosChainTypes> {
+    fn timeout_height(&self) -> &Height {
         &self.timeout_height
     }
 
-    fn timeout_timestamp(&self) -> &Timestamp<CosmosChainTypes> {
+    fn timeout_timestamp(&self) -> &Timestamp {
         &self.timeout_timestamp
     }
 }

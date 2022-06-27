@@ -1,15 +1,16 @@
 use async_trait::async_trait;
 use ibc::events::IbcEvent;
+use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::tracking::TrackedMsgs;
 
-use crate::impls::cosmos::chain_types::CosmosChainTypes;
 use crate::impls::cosmos::error::Error;
-use crate::impls::cosmos::handler::{CosmosChainHandler, CosmosRelayHandler};
+use crate::impls::cosmos::handler::CosmosChainHandler;
+use crate::impls::cosmos::handler::CosmosRelayHandler;
 use crate::impls::cosmos::message::CosmosIbcMessage;
-use crate::impls::cosmos::relay_types::CosmosRelayTypes;
 use crate::impls::cosmos::target::CosmosChainTarget;
 use crate::impls::message_senders::update_client::MessageSenderWithUpdateClient;
+use crate::traits::chain_types::{ChainContext, IbcChainContext};
 use crate::traits::ibc_message_sender::{IbcMessageSender, IbcMessageSenderContext};
 use crate::traits::message::Message;
 use crate::traits::message_sender::{MessageSender, MessageSenderContext};
@@ -22,12 +23,14 @@ impl<SrcChain, DstChain, Target> IbcMessageSenderContext<Target>
 where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
-    Target: ChainTarget<
-        CosmosRelayTypes,
-        TargetChain = CosmosChainTypes,
-        CounterpartyChain = CosmosChainTypes,
+    Target: ChainTarget<CosmosRelayHandler<SrcChain, DstChain>>,
+    Self: CosmosChainTarget<SrcChain, DstChain, Target>,
+    Target::CounterpartyChain: ChainContext<Height = Height>,
+    Target::TargetChain: IbcChainContext<
+        Target::CounterpartyChain,
+        IbcMessage = CosmosIbcMessage,
+        IbcEvent = IbcEvent,
     >,
-    Self: CosmosChainTarget<Target>,
 {
     type IbcMessageSender = MessageSenderWithUpdateClient<CosmosBaseMessageSender>;
 
@@ -55,12 +58,13 @@ impl<SrcChain, DstChain, Target> IbcMessageSender<CosmosRelayHandler<SrcChain, D
 where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
-    Target: ChainTarget<
-        CosmosRelayTypes,
-        TargetChain = CosmosChainTypes,
-        CounterpartyChain = CosmosChainTypes,
+    Target: ChainTarget<CosmosRelayHandler<SrcChain, DstChain>>,
+    CosmosRelayHandler<SrcChain, DstChain>: CosmosChainTarget<SrcChain, DstChain, Target>,
+    Target::TargetChain: IbcChainContext<
+        Target::CounterpartyChain,
+        IbcMessage = CosmosIbcMessage,
+        IbcEvent = IbcEvent,
     >,
-    CosmosRelayHandler<SrcChain, DstChain>: CosmosChainTarget<Target>,
 {
     async fn send_messages(
         &self,
@@ -78,7 +82,7 @@ where
             .collect::<Result<Vec<_>, _>>()
             .map_err(Error::encode)?;
 
-        let tracked_messages = TrackedMsgs::new_static(raw_messages, "CosmosChainTypes");
+        let tracked_messages = TrackedMsgs::new_static(raw_messages, "CosmosChainHandler");
 
         let events = context
             .target_handle()
@@ -111,7 +115,7 @@ where
             .collect::<Result<Vec<_>, _>>()
             .map_err(Error::encode)?;
 
-        let tracked_messages = TrackedMsgs::new_static(raw_messages, "CosmosChainTypes");
+        let tracked_messages = TrackedMsgs::new_static(raw_messages, "CosmosChainHandler");
 
         let events = context
             .handle

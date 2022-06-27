@@ -16,9 +16,9 @@ impl<Sender, Context, Target> IbcMessageSender<Context, Target>
     for MessageSenderWithUpdateClient<Sender>
 where
     Context: RelayContext,
-    Target: ChainTarget<Context::RelayTypes>,
+    Target: ChainTarget<Context>,
     Sender: IbcMessageSender<Context, Target>,
-    Context: UpdateClientMessageBuilder<Context::RelayTypes, Target>,
+    Context: UpdateClientMessageBuilder<Context, Target>,
     Height<Target::CounterpartyChain>: Ord,
 {
     async fn send_messages(

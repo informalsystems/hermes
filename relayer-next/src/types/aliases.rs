@@ -1,26 +1,26 @@
-use crate::traits::chain_types::{ChainTypes, IbcChainTypes};
-use crate::traits::relay_types::RelayTypes;
+use crate::traits::chain_types::{ChainContext, IbcChainContext};
+use crate::traits::relay_types::RelayContext;
 
-pub type ChannelId<Chain, Counterparty> = <Chain as IbcChainTypes<Counterparty>>::ChannelId;
+pub type ChannelId<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::ChannelId;
 
-pub type PortId<Chain, Counterparty> = <Chain as IbcChainTypes<Counterparty>>::PortId;
+pub type PortId<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::PortId;
 
-pub type Sequence<Chain, Counterparty> = <Chain as IbcChainTypes<Counterparty>>::Sequence;
+pub type Sequence<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::Sequence;
 
-pub type IbcMessage<Chain, Counterparty> = <Chain as IbcChainTypes<Counterparty>>::IbcMessage;
+pub type IbcMessage<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::IbcMessage;
 
-pub type Message<Chain> = <Chain as ChainTypes>::Message;
+pub type Message<Chain> = <Chain as ChainContext>::Message;
 
-pub type IbcEvent<Chain, Counterparty> = <Chain as IbcChainTypes<Counterparty>>::IbcEvent;
+pub type IbcEvent<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::IbcEvent;
 
-pub type Event<Chain> = <Chain as ChainTypes>::Event;
+pub type Event<Chain> = <Chain as ChainContext>::Event;
 
-pub type Height<Chain> = <Chain as ChainTypes>::Height;
+pub type Height<Chain> = <Chain as ChainContext>::Height;
 
-pub type Timestamp<Chain> = <Chain as ChainTypes>::Timestamp;
+pub type Timestamp<Chain> = <Chain as ChainContext>::Timestamp;
 
-pub type SrcChain<Context> = <Context as RelayTypes>::SrcChain;
+pub type SrcChain<Context> = <Context as RelayContext>::SrcChain;
 
-pub type DstChain<Context> = <Context as RelayTypes>::DstChain;
+pub type DstChain<Context> = <Context as RelayContext>::DstChain;
 
-pub type Packet<Context> = <Context as RelayTypes>::Packet;
+pub type Packet<Context> = <Context as RelayContext>::Packet;

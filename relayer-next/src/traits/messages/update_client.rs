@@ -1,13 +1,13 @@
 use async_trait::async_trait;
 
-use crate::traits::relay_types::RelayTypes;
+use crate::traits::relay_types::RelayContext;
 use crate::traits::target::ChainTarget;
 use crate::types::aliases::{Height, IbcMessage};
 
 #[async_trait]
 pub trait UpdateClientMessageBuilder<Relay, Target>
 where
-    Relay: RelayTypes,
+    Relay: RelayContext,
     Target: ChainTarget<Relay>,
 {
     async fn build_update_client_messages(

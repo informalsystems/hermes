@@ -7,7 +7,7 @@ use crate::types::aliases::{IbcEvent, IbcMessage};
 
 pub trait IbcMessageSenderContext<Target>: RelayContext
 where
-    Target: ChainTarget<Self::RelayTypes>,
+    Target: ChainTarget<Self>,
 {
     type IbcMessageSender: IbcMessageSender<Self, Target>;
 
@@ -18,7 +18,7 @@ where
 pub trait IbcMessageSender<Context, Target>: Async
 where
     Context: RelayContext,
-    Target: ChainTarget<Context::RelayTypes>,
+    Target: ChainTarget<Context>,
 {
     async fn send_messages(
         &self,
@@ -36,7 +36,7 @@ pub struct MismatchIbcEventsCountError {
 pub trait IbcMessageSenderExt<Context, Target>: IbcMessageSender<Context, Target>
 where
     Context: RelayContext,
-    Target: ChainTarget<Context::RelayTypes>,
+    Target: ChainTarget<Context>,
 {
     async fn send_messages_fixed<const COUNT: usize>(
         &self,
@@ -61,7 +61,7 @@ impl<Context, Target, Sender> IbcMessageSenderExt<Context, Target> for Sender
 where
     Context: RelayContext,
     Sender: IbcMessageSender<Context, Target>,
-    Target: ChainTarget<Context::RelayTypes>,
+    Target: ChainTarget<Context>,
 {
     async fn send_messages_fixed<const COUNT: usize>(
         &self,

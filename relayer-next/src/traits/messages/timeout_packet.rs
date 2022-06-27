@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 
-use crate::traits::relay_types::RelayTypes;
+use crate::traits::relay_types::RelayContext;
 use crate::types::aliases::{ChannelId, Height, IbcMessage, PortId, Sequence};
 
 #[async_trait]
-pub trait TimeoutUnorderedPacketMessageBuilder<Relay: RelayTypes> {
+pub trait TimeoutUnorderedPacketMessageBuilder<Relay: RelayContext> {
     async fn build_timeout_unordered_packet_message(
         &self,
         height: Height<Relay::DstChain>,
@@ -15,7 +15,7 @@ pub trait TimeoutUnorderedPacketMessageBuilder<Relay: RelayTypes> {
 }
 
 #[async_trait]
-pub trait TimeoutOrderedPacketMessageBuilder<Relay: RelayTypes> {
+pub trait TimeoutOrderedPacketMessageBuilder<Relay: RelayContext> {
     async fn build_timeout_ordered_packet_message(
         &self,
         height: Height<Relay::DstChain>,
@@ -25,7 +25,7 @@ pub trait TimeoutOrderedPacketMessageBuilder<Relay: RelayTypes> {
 }
 
 #[async_trait]
-pub trait TimeoutChannelClosedMessageBuilder<Relay: RelayTypes> {
+pub trait TimeoutChannelClosedMessageBuilder<Relay: RelayContext> {
     async fn build_timeout_channel_closed_message(
         &self,
         height: Height<Relay::DstChain>,

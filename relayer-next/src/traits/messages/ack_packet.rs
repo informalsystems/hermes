@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 
-use crate::traits::relay_types::RelayTypes;
+use crate::traits::relay_types::RelayContext;
 use crate::types::aliases::{ChannelId, Height, IbcMessage, PortId, Sequence};
 
 #[async_trait]
-pub trait AckPacketMessageBuilder<Relay: RelayTypes> {
+pub trait AckPacketMessageBuilder<Relay: RelayContext> {
     async fn build_ack_packet_message(
         &self,
         height: Height<Relay::DstChain>,

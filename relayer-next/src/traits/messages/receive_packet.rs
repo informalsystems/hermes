@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 
-use crate::traits::relay_types::RelayTypes;
+use crate::traits::relay_types::RelayContext;
 use crate::types::aliases::{Height, IbcMessage, Packet};
 
 #[async_trait]
-pub trait ReceivePacketMessageBuilder<Relay: RelayTypes> {
+pub trait ReceivePacketMessageBuilder<Relay: RelayContext> {
     async fn build_receive_packet_message(
         &self,
         height: &Height<Relay::SrcChain>,

@@ -10,6 +10,6 @@ pub trait PacketRelayer<Context: RelayContext> {
     async fn relay_packet(
         &self,
         context: &Context,
-        packet: Packet<Context::RelayTypes>,
+        packet: Packet<Context>,
     ) -> Result<Self::Return, Context::Error>;
 }

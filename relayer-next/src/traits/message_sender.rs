@@ -18,6 +18,6 @@ where
     async fn send_messages(
         &self,
         context: &Context,
-        messages: Vec<Message<Context::ChainTypes>>,
-    ) -> Result<Vec<Vec<Event<Context::ChainTypes>>>, Context::Error>;
+        messages: Vec<Message<Context>>,
+    ) -> Result<Vec<Vec<Event<Context>>>, Context::Error>;
 }
