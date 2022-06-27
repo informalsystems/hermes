@@ -5,6 +5,7 @@ use crate::traits::messages::receive_packet::ReceivePacketMessageBuilder;
 use crate::traits::packet_relayer::PacketRelayer;
 use crate::traits::queries::status::{ChainStatus, ChainStatusQuerier};
 use crate::traits::relay_types::{RelayContext, RelayTypes};
+use crate::traits::target::DestinationTarget;
 use crate::types::aliases::Packet;
 
 pub struct ReceivePacketRelayer;
@@ -16,7 +17,7 @@ where
     Context: RelayContext<RelayTypes = Relay>,
     Context: ReceivePacketMessageBuilder<Relay>,
     Context::SrcChainContext: ChainStatusQuerier<Relay::SrcChain>,
-    Context::DstChainContext: IbcMessageSender<Relay::DstChain, Relay::SrcChain>,
+    Context: IbcMessageSender<Relay, DestinationTarget>,
 {
     type Return = ();
 
@@ -35,7 +36,7 @@ where
             .build_receive_packet_message(&source_height, &packet)
             .await?;
 
-        context.destination_context().send_message(message).await?;
+        context.send_message(message).await?;
 
         Ok(())
     }

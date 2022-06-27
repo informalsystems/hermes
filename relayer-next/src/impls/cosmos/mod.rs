@@ -7,3 +7,4 @@ pub mod messages;
 pub mod packet;
 pub mod queries;
 pub mod relay_types;
+pub mod target;
