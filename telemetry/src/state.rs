@@ -95,21 +95,21 @@ pub struct TelemetryState {
     in_flight_events: moka::sync::Cache<String, Instant>,
 
     /// Counts the number of SendPacket Hermes transfers.
-    ws_send_packet_count: Counter<u64>,
+    send_packet_count: Counter<u64>,
 
     /// Counts the number of WriteAcknowledgement Hermes transfers.
-    ws_acknowledgement_count: Counter<u64>,
+    acknowledgement_count: Counter<u64>,
 
     /// Counts the number of SendPacket Hermes transfers from ClearPacket.
-    ws_cleared_count: Counter<u64>,
+    cleared_count: Counter<u64>,
 
     /// Records the sequence number of the oldest SendPacket for which no
     /// WriteAcknowledgement has been received. The value is 0 if all the
     /// WriteAcknowledgement were received.
-    ws_oldest_sequence: ValueRecorder<u64>,
+    oldest_sequence: ValueRecorder<u64>,
 
     /// History of SendPacket sequence numbers received and not yet Acknowledged.
-    sequence_history: DashMap<PathIdentifier, DashSet<u64>>,
+    sequences_histories: DashMap<PathIdentifier, DashSet<u64>>,
 }
 
 impl TelemetryState {
@@ -319,7 +319,7 @@ impl TelemetryState {
             KeyValue::new("port", port_id.to_string()),
         ];
 
-        self.ws_send_packet_count.add(1, labels);
+        self.send_packet_count.add(1, labels);
     }
 
     pub fn record_write_ack(
@@ -338,7 +338,7 @@ impl TelemetryState {
             KeyValue::new("port", port_id.to_string()),
         ];
 
-        self.ws_acknowledgement_count.add(1, labels);
+        self.acknowledgement_count.add(1, labels);
     }
 
     pub fn record_cleared_packet(
@@ -357,7 +357,7 @@ impl TelemetryState {
             KeyValue::new("port", port_id.to_string()),
         ];
 
-        self.ws_cleared_count.add(1, labels);
+        self.cleared_count.add(1, labels);
     }
 
     pub fn record_send_history(
@@ -385,20 +385,27 @@ impl TelemetryState {
 
         // If there are no HashSet for this uid, create a new one.
         // Else update the min value.
-        if let Some(set) = self.sequence_history.get(&uid) {
+        if let Some(set) = self.sequences_histories.get(&uid) {
+            // Avoid having the DashSet growing more than a given threshold, by removing
+            // the oldest sequence number entry.
+            if set.len() > HISTORY_RESET_THRESHOLD {
+                if let Some(min) = set.iter().map(|v| *v).min() {
+                    set.remove(&min);
+                }
+            }
             set.insert(seq_nr);
             // Record the min of the HashSet as the oldest sequence.
             if let Some(min) = set.clone().into_iter().min() {
-                self.ws_oldest_sequence.record(min, labels);
+                self.oldest_sequence.record(min, labels);
             }
         } else {
             let new_dashset = DashSet::with_capacity(HISTORY_SET_CAPACITY);
             new_dashset.insert(seq_nr);
             // Record the min of the HashSet as the oldest sequence.
-            if let Some(min) = new_dashset.clone().into_iter().min() {
-                self.ws_oldest_sequence.record(min, labels);
+            if let Some(min) = new_dashset.iter().map(|v| *v).min() {
+                self.oldest_sequence.record(min, labels);
             }
-            self.sequence_history.insert(uid, new_dashset);
+            self.sequences_histories.insert(uid, new_dashset);
         }
     }
 
@@ -426,18 +433,14 @@ impl TelemetryState {
         ];
 
         // If there are no HashSet for this uid, create a new one.
-        if let Some(set) = self.sequence_history.get(&uid) {
-            // Temporary solution in case the DashSet has "stuck" values.
-            if set.len() > HISTORY_RESET_THRESHOLD {
-                set.clear();
-            }
+        if let Some(set) = self.sequences_histories.get(&uid) {
             match set.remove(&seq_nr) {
                 Some(_) => {
                     // Record the min of the HashSet as the oldest sequence.
-                    if let Some(min) = set.clone().into_iter().min() {
-                        self.ws_oldest_sequence.record(min, labels);
+                    if let Some(min) = set.iter().map(|v| *v).min() {
+                        self.oldest_sequence.record(min, labels);
                     } else {
-                        self.ws_oldest_sequence.record(NO_PENDING_PACKETS, labels);
+                        self.oldest_sequence.record(NO_PENDING_PACKETS, labels);
                     }
                 }
                 None => {}
@@ -459,7 +462,7 @@ impl AggregatorSelector for CustomAggregatorSelector {
     fn aggregator_for(&self, descriptor: &Descriptor) -> Option<Arc<dyn Aggregator + Send + Sync>> {
         match descriptor.name() {
             "wallet_balance" => Some(Arc::new(last_value())),
-            "ws_oldest_sequence" => Some(Arc::new(last_value())),
+            "oldest_sequence" => Some(Arc::new(last_value())),
             // Prometheus' supports only collector for histogram, sum, and last value aggregators.
             // https://docs.rs/opentelemetry-prometheus/0.10.0/src/opentelemetry_prometheus/lib.rs.html#411-418
             // TODO: Once quantile sketches are supported, replace histograms with that.
@@ -544,18 +547,18 @@ impl Default for TelemetryState {
                 .with_description("The balance in each wallet that Hermes is using, per wallet, denom and chain. The amount is of unit: 10^6 * `denom`")
                 .init(),
 
-            ws_send_packet_count: meter
-                .u64_counter("ws_send_packet_count")
+            send_packet_count: meter
+                .u64_counter("send_packet_count")
                 .with_description("Number of SendPacket relayed.")
                 .init(),
 
-            ws_acknowledgement_count: meter
-                .u64_counter("ws_acknowledgement_count")
+            acknowledgement_count: meter
+                .u64_counter("acknowledgement_count")
                 .with_description("Number of WriteAcknowledgement relayed.")
                 .init(),
 
-            ws_cleared_count: meter
-                .u64_counter("ws_cleared_count")
+            cleared_count: meter
+                .u64_counter("cleared_count")
                 .with_description("Number of packets relayed through ClearPendingPackets")
                 .init(),
 
@@ -580,10 +583,10 @@ impl Default for TelemetryState {
                 .time_to_idle(Duration::from_secs(30 * 60)) // Remove entries if they have been idle for 30 minutes
                 .build(),
 
-            sequence_history: DashMap::new(),
+            sequences_histories: DashMap::new(),
 
-            ws_oldest_sequence: meter
-                .u64_value_recorder("ws_oldest_sequence")
+            oldest_sequence: meter
+                .u64_value_recorder("oldest_sequence")
                 .with_description("The sequence number of the oldest pending SendPacket. If this value is 0, it means there are no pending SendPacket.")
                 .init(),
         }
