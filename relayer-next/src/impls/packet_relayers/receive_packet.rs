@@ -4,7 +4,7 @@ use crate::traits::ibc_message_sender::{IbcMessageSenderContext, IbcMessageSende
 use crate::traits::messages::receive_packet::ReceivePacketMessageBuilder;
 use crate::traits::packet_relayer::PacketRelayer;
 use crate::traits::queries::status::{ChainStatus, ChainStatusQuerier};
-use crate::traits::relay_types::RelayContext;
+use crate::traits::relay_context::RelayContext;
 use crate::traits::target::DestinationTarget;
 use crate::types::aliases::Packet;
 

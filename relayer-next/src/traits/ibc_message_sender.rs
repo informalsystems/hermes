@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::traits::core::Async;
-use crate::traits::relay_types::RelayContext;
+use crate::traits::relay_context::RelayContext;
 use crate::traits::target::ChainTarget;
 use crate::types::aliases::{IbcEvent, IbcMessage};
 

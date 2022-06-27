@@ -1,4 +1,4 @@
-use crate::traits::chain_types::ChainContext;
+use crate::traits::chain_context::ChainContext;
 use crate::types::aliases::Height;
 
 pub trait Message {

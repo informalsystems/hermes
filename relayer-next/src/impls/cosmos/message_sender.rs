@@ -10,7 +10,7 @@ use crate::impls::cosmos::handler::CosmosRelayHandler;
 use crate::impls::cosmos::message::CosmosIbcMessage;
 use crate::impls::cosmos::target::CosmosChainTarget;
 use crate::impls::message_senders::update_client::MessageSenderWithUpdateClient;
-use crate::traits::chain_types::{ChainContext, IbcChainContext};
+use crate::traits::chain_context::{ChainContext, IbcChainContext};
 use crate::traits::ibc_message_sender::{IbcMessageSender, IbcMessageSenderContext};
 use crate::traits::message::Message;
 use crate::traits::message_sender::{MessageSender, MessageSenderContext};

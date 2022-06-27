@@ -4,7 +4,7 @@ use crate::traits::ibc_message_sender::IbcMessageSender;
 use crate::traits::message::IbcMessage as _;
 use crate::traits::message_sender::MessageSenderContext;
 use crate::traits::messages::update_client::UpdateClientMessageBuilder;
-use crate::traits::relay_types::RelayContext;
+use crate::traits::relay_context::RelayContext;
 use crate::traits::target::ChainTarget;
 use crate::types::aliases::{Height, IbcEvent, IbcMessage};
 

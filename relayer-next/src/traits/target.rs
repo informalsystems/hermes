@@ -1,6 +1,6 @@
-use crate::traits::chain_types::IbcChainContext;
+use crate::traits::chain_context::IbcChainContext;
 use crate::traits::core::Async;
-use crate::traits::relay_types::RelayContext;
+use crate::traits::relay_context::RelayContext;
 
 pub struct SourceTarget;
 

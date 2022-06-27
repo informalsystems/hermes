@@ -3,7 +3,7 @@ use ibc::Height;
 use ibc_proto::google::protobuf::Any;
 use prost::EncodeError;
 
-use crate::traits::chain_types::ChainContext;
+use crate::traits::chain_context::ChainContext;
 use crate::traits::message::{IbcMessage, Message};
 
 pub struct CosmosIbcMessage {

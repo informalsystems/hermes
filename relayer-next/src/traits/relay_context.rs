@@ -1,4 +1,4 @@
-use crate::traits::chain_types::IbcChainContext;
+use crate::traits::chain_context::IbcChainContext;
 use crate::traits::core::{Async, ErrorContext};
 use crate::traits::packet::IbcPacket;
 

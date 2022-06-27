@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::traits::relay_types::RelayContext;
+use crate::traits::relay_context::RelayContext;
 use crate::types::aliases::{ChannelId, Height, IbcMessage, PortId, Sequence};
 
 #[async_trait]

@@ -9,9 +9,9 @@ use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::impls::cosmos::error::Error;
 use crate::impls::cosmos::message::CosmosIbcMessage;
-use crate::traits::chain_types::{ChainContext, IbcChainContext};
+use crate::traits::chain_context::{ChainContext, IbcChainContext};
 use crate::traits::core::ErrorContext;
-use crate::traits::relay_types::RelayContext;
+use crate::traits::relay_context::RelayContext;
 
 pub struct CosmosChainHandler<Handle> {
     pub handle: Handle,

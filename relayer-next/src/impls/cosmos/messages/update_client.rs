@@ -6,7 +6,7 @@ use crate::impls::cosmos::error::Error;
 use crate::impls::cosmos::handler::CosmosRelayHandler;
 use crate::impls::cosmos::message::CosmosIbcMessage;
 use crate::impls::cosmos::target::CosmosChainTarget;
-use crate::traits::chain_types::{ChainContext, IbcChainContext};
+use crate::traits::chain_context::{ChainContext, IbcChainContext};
 use crate::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::traits::target::ChainTarget;
 
