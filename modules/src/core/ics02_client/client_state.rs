@@ -44,6 +44,14 @@ pub trait ClientState: Send + Sync + AsAnyClientState {
 
     /// Encode to canonical binary representation
     fn encode_vec(&self) -> Result<Vec<u8>, Error>;
+
+    /// Consumes the given instance and returns a heap allocated instance
+    fn boxed(self) -> Box<dyn ClientState>
+    where
+        Self: Sized,
+    {
+        Box::new(self)
+    }
 }
 
 pub trait AsAnyClientState: Any {

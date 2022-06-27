@@ -132,7 +132,7 @@ impl<T: ClientReader> LightClientReader for T {
         client_id: &ClientId,
         height: Height,
     ) -> Result<Box<dyn ConsensusState>, Error> {
-        ClientReader::consensus_state(self, client_id, height).map(|cs| cs.boxed_dyn())
+        ClientReader::consensus_state(self, client_id, height).map(|cs| cs.boxed())
     }
 
     fn next_consensus_state(
@@ -141,7 +141,7 @@ impl<T: ClientReader> LightClientReader for T {
         height: Height,
     ) -> Result<Option<Box<dyn ConsensusState>>, Error> {
         ClientReader::next_consensus_state(self, client_id, height)
-            .map(|cs| cs.map(AnyConsensusState::boxed_dyn))
+            .map(|cs| cs.map(AnyConsensusState::boxed))
     }
 
     fn prev_consensus_state(
@@ -150,7 +150,7 @@ impl<T: ClientReader> LightClientReader for T {
         height: Height,
     ) -> Result<Option<Box<dyn ConsensusState>>, Error> {
         ClientReader::prev_consensus_state(self, client_id, height)
-            .map(|cs| cs.map(AnyConsensusState::boxed_dyn))
+            .map(|cs| cs.map(AnyConsensusState::boxed))
     }
 
     fn host_timestamp(&self) -> Timestamp {

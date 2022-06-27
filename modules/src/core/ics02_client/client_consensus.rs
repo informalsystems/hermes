@@ -30,7 +30,16 @@ pub trait ConsensusState: Send + Sync + AsAnyConsensusState {
     /// Commitment root of the consensus state, which is used for key-value pair verification.
     fn root(&self) -> &CommitmentRoot;
 
+    /// Encode to canonical binary representation
     fn encode_vec(&self) -> Result<Vec<u8>, Error>;
+
+    /// Consumes the given instance and returns a heap allocated instance
+    fn boxed(self) -> Box<dyn ConsensusState>
+    where
+        Self: Sized,
+    {
+        Box::new(self)
+    }
 }
 
 pub trait AsAnyConsensusState: Any {
@@ -68,15 +77,6 @@ impl AnyConsensusState {
 
             #[cfg(any(test, feature = "mocks"))]
             AnyConsensusState::Mock(_cs) => ClientType::Mock,
-        }
-    }
-
-    pub fn boxed_dyn(self) -> Box<dyn ConsensusState> {
-        match self {
-            AnyConsensusState::Tendermint(cs) => Box::new(cs),
-
-            #[cfg(any(test, feature = "mocks"))]
-            AnyConsensusState::Mock(cs) => Box::new(cs),
         }
     }
 }

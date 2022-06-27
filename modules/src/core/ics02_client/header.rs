@@ -28,6 +28,14 @@ pub trait Header: core::fmt::Debug + Send + Sync + AsAnyHeader {
 
     /// The timestamp of the consensus state
     fn timestamp(&self) -> Timestamp;
+
+    /// Consumes the given instance and returns a heap allocated instance
+    fn boxed(self) -> Box<dyn Header>
+    where
+        Self: Sized,
+    {
+        Box::new(self)
+    }
 }
 
 pub trait AsAnyHeader: Any {
