@@ -30,14 +30,16 @@ static HINT: &str = "Consider using the default invocation\n\nhermes create chan
 ///
 /// There are two possible ways to invoke this command:
 ///
-/// `create channel --port-a <Port-ID> --port-b <Port-ID> <Chain-A-ID> <Connection-ID>` is the default
-/// way in which this command should be used, specifying a `Connection-ID` for this new channel
-/// to re-use. The command expects that `Connection-ID` is associated with chain A.
+/// `create channel --a-port <A_PORT_ID> --b-port <B_PORT_ID> --a-chain <A_CHAIN_ID> --a-conn <A_CONNECTION_ID>` 
+/// is the default way in which this command should be used, specifying a `Connection-ID` 
+/// associated with chain A for this new channel to re-use.
 ///
-/// `create channel --port-a <Port-ID> --port-b <Port-ID> <Chain-A-ID> <Chain-B-ID> --new-client-connection`
-/// to indicate that a new connection/client pair is being created as part of this new channel.
-/// This brings up an interactive yes/no prompt to ensure that the operator at least
-/// considers the fact that they're initializing a new connection with the channel.
+/// `create channel --a-port <A_PORT_ID> --b-port <B_PORT_ID> --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --new-client-conn`
+/// can alternatively be used to indicate that a new connection/client pair is being 
+/// created as part of this new channel. This brings up an interactive yes/no prompt 
+/// to ensure that the operator at least considers the fact that they're initializing a 
+/// new connection with the channel. This prompt can be skipped by appending the `--yes`
+/// flag to the command.
 ///
 /// Note that `Connection-ID`s have to be considered based off of the chain's perspective. Although
 /// chain A and chain B might refer to the connection with different names, they are actually referring
@@ -97,10 +99,7 @@ pub struct CreateChannelCommand {
     )]
     new_client_connection: bool,
 
-    #[clap(
-        long,
-        help = "Skip new_client_connection confirmation"
-    )]
+    #[clap(long, help = "Skip new_client_conn confirmation")]
     yes: bool,
 }
 
@@ -113,8 +112,7 @@ impl Runnable for CreateChannelCommand {
                     if self.new_client_connection {
                         if self.yes {
                             self.run_using_new_connection(chain_b);
-                        }
-                        else {
+                        } else {
                             match Confirm::new()
                                 .with_prompt(format!(
                                     "{}: {}\n{}: {}",
@@ -142,13 +140,15 @@ impl Runnable for CreateChannelCommand {
                         }
                     } else {
                         Output::error(
-                                "The `--new-client-connection` flag is required if invoking with `--chain-b`".to_string()
-                            )
-                            .exit();
+                            "The `--new-client-conn` flag is required if invoking with `--b-chain`"
+                                .to_string(),
+                        )
+                        .exit();
                     }
                 }
-                None => Output::error("Missing one of `<chain-b>` or `<connection-a>`".to_string())
-                    .exit(),
+                None => {
+                    Output::error("Missing one of `<b-chain>` or `<a-conn>`".to_string()).exit()
+                }
             },
         }
     }
