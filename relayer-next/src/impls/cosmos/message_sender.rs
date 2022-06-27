@@ -9,6 +9,7 @@ use crate::impls::cosmos::handler::CosmosRelayHandler;
 use crate::impls::cosmos::message::CosmosIbcMessage;
 use crate::impls::cosmos::relay_types::CosmosRelayTypes;
 use crate::impls::cosmos::target::CosmosChainTarget;
+use crate::impls::message_senders::update_client::MessageSenderWithUpdateClient;
 use crate::traits::message::Message;
 use crate::traits::message_sender::{IbcMessageSender, MessageSenderContext};
 use crate::traits::target::ChainTarget;
@@ -27,10 +28,12 @@ where
     >,
     Self: CosmosChainTarget<Target>,
 {
-    type Sender = CosmosBaseMessageSender;
+    type Sender = MessageSenderWithUpdateClient<CosmosBaseMessageSender>;
 
     fn message_sender(&self) -> &Self::Sender {
-        &CosmosBaseMessageSender
+        &MessageSenderWithUpdateClient {
+            sender: CosmosBaseMessageSender,
+        }
     }
 }
 
