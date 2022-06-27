@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::traits::message_sender::IbcMessageSender;
+use crate::traits::message_sender::{IbcMessageSender, IbcMessageSenderExt};
 use crate::traits::messages::receive_packet::ReceivePacketMessageBuilder;
 use crate::traits::packet_relayer::PacketRelayer;
 use crate::traits::queries::status::{ChainStatus, ChainStatusQuerier};
