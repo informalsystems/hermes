@@ -1,12 +1,17 @@
 use async_trait::async_trait;
 
 use crate::traits::relay_types::RelayTypes;
+use crate::traits::target::ChainTarget;
 use crate::types::aliases::{Height, IbcMessage};
 
 #[async_trait]
-pub trait UpdateClientMessageBuilder<Relay: RelayTypes> {
+pub trait UpdateClientMessageBuilder<Relay, Target>
+where
+    Relay: RelayTypes,
+    Target: ChainTarget<Relay>,
+{
     async fn build_update_client_messages(
         &self,
-        height: Height<Relay::SrcChain>,
-    ) -> Result<Vec<IbcMessage<Relay::DstChain, Relay::SrcChain>>, Relay::Error>;
+        height: Height<Target::CounterpartyChain>,
+    ) -> Result<Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>, Relay::Error>;
 }
