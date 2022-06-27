@@ -92,7 +92,7 @@ pub trait ClientDef {
 
     /// Verify the client state for this chain that it is stored on the counterparty chain.
     #[allow(clippy::too_many_arguments)]
-    fn verify_client_full_state<U>(
+    fn verify_client_full_state(
         &self,
         client_state: &Self::ClientState,
         height: Height,
@@ -100,7 +100,7 @@ pub trait ClientDef {
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         client_id: &ClientId,
-        expected_client_state: &dyn ClientState<UpgradeOptions = U>,
+        expected_client_state: &dyn ClientState,
     ) -> Result<(), Error>;
 
     /// Verify a `proof` that a packet has been commited.
@@ -374,7 +374,7 @@ impl ClientDef for AnyClient {
         }
     }
 
-    fn verify_client_full_state<U>(
+    fn verify_client_full_state(
         &self,
         client_state: &Self::ClientState,
         height: Height,
@@ -382,7 +382,7 @@ impl ClientDef for AnyClient {
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         client_id: &ClientId,
-        client_state_on_counterparty: &dyn ClientState<UpgradeOptions = U>,
+        client_state_on_counterparty: &dyn ClientState,
     ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {

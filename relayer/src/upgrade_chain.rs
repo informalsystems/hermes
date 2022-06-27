@@ -9,7 +9,7 @@ use flex_error::define_error;
 use tendermint::abci::transaction::Hash as TxHash;
 
 use ibc::clients::ics07_tendermint::client_state::UpgradeOptions;
-use ibc::core::ics02_client::client_state::{AnyClientState, ClientState};
+use ibc::core::ics02_client::client_state::AnyClientState;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::downcast;
 use ibc_proto::cosmos::gov::v1beta1::MsgSubmitProposal;

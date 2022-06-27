@@ -22,10 +22,7 @@ use crate::Height;
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
 
-pub trait ClientState: core::fmt::Debug + Send + Sync {
-    /// Client-specific options for upgrading the client
-    type UpgradeOptions;
-
+pub trait ClientState: Send + Sync {
     /// Return the chain identifier which this client is serving (i.e., the client is verifying
     /// consensus states from this chain).
     fn chain_id(&self) -> ChainId;
@@ -43,16 +40,6 @@ pub trait ClientState: core::fmt::Debug + Send + Sync {
 
     /// Frozen height of the client
     fn frozen_height(&self) -> Option<Height>;
-
-    /// Helper function to verify the upgrade client procedure.
-    /// Resets all fields except the blockchain-specific ones,
-    /// and updates the given fields.
-    fn upgrade(
-        &mut self,
-        upgrade_height: Height,
-        upgrade_options: Self::UpgradeOptions,
-        chain_id: ChainId,
-    );
 
     fn encode_vec(&self) -> Result<Vec<u8>, Error>;
 }
@@ -151,6 +138,22 @@ impl AnyClientState {
             AnyClientState::Mock(mock_state) => mock_state.expired(elapsed_since_latest),
         }
     }
+
+    pub fn upgrade(
+        &mut self,
+        upgrade_height: Height,
+        upgrade_options: AnyUpgradeOptions,
+        chain_id: ChainId,
+    ) {
+        match self {
+            AnyClientState::Tendermint(tm_state) => {
+                tm_state.upgrade(upgrade_height, upgrade_options.into_tendermint(), chain_id)
+            }
+
+            #[cfg(any(test, feature = "mocks"))]
+            AnyClientState::Mock(_mock_state) => unimplemented!(),
+        }
+    }
 }
 
 impl Protobuf<Any> for AnyClientState {}
@@ -196,8 +199,6 @@ impl From<AnyClientState> for Any {
 }
 
 impl ClientState for AnyClientState {
-    type UpgradeOptions = AnyUpgradeOptions;
-
     fn chain_id(&self) -> ChainId {
         match self {
             AnyClientState::Tendermint(tm_state) => tm_state.chain_id(),
@@ -217,22 +218,6 @@ impl ClientState for AnyClientState {
 
     fn frozen_height(&self) -> Option<Height> {
         self.frozen_height()
-    }
-
-    fn upgrade(
-        &mut self,
-        upgrade_height: Height,
-        upgrade_options: Self::UpgradeOptions,
-        chain_id: ChainId,
-    ) {
-        match self {
-            AnyClientState::Tendermint(tm_state) => {
-                tm_state.upgrade(upgrade_height, upgrade_options.into_tendermint(), chain_id)
-            }
-
-            #[cfg(any(test, feature = "mocks"))]
-            AnyClientState::Mock(mock_state) => mock_state.upgrade(upgrade_height, (), chain_id),
-        }
     }
 
     fn encode_vec(&self) -> Result<Vec<u8>, Error> {

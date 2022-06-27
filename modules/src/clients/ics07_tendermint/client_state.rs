@@ -201,33 +201,8 @@ impl ClientState {
             _ => Ok(()),
         }
     }
-}
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct UpgradeOptions {
-    pub unbonding_period: Duration,
-}
-
-impl crate::core::ics02_client::client_state::ClientState for ClientState {
-    type UpgradeOptions = UpgradeOptions;
-
-    fn chain_id(&self) -> ChainId {
-        self.chain_id.clone()
-    }
-
-    fn client_type(&self) -> ClientType {
-        ClientType::Tendermint
-    }
-
-    fn latest_height(&self) -> Height {
-        self.latest_height
-    }
-
-    fn frozen_height(&self) -> Option<Height> {
-        self.frozen_height
-    }
-
-    fn upgrade(
+    pub fn upgrade(
         &mut self,
         upgrade_height: Height,
         upgrade_options: UpgradeOptions,
@@ -245,6 +220,29 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
         self.latest_height = upgrade_height;
         self.unbonding_period = upgrade_options.unbonding_period;
         self.chain_id = chain_id;
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct UpgradeOptions {
+    pub unbonding_period: Duration,
+}
+
+impl crate::core::ics02_client::client_state::ClientState for ClientState {
+    fn chain_id(&self) -> ChainId {
+        self.chain_id.clone()
+    }
+
+    fn client_type(&self) -> ClientType {
+        ClientType::Tendermint
+    }
+
+    fn latest_height(&self) -> Height {
+        self.latest_height
+    }
+
+    fn frozen_height(&self) -> Option<Height> {
+        self.frozen_height
     }
 
     fn encode_vec(&self) -> Result<Vec<u8>, Ics02Error> {

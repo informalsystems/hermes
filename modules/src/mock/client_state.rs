@@ -85,8 +85,6 @@ impl From<MockClientState> for RawMockClientState {
 }
 
 impl ClientState for MockClientState {
-    type UpgradeOptions = ();
-
     fn chain_id(&self) -> ChainId {
         todo!()
     }
@@ -101,10 +99,6 @@ impl ClientState for MockClientState {
 
     fn frozen_height(&self) -> Option<Height> {
         self.frozen_height
-    }
-
-    fn upgrade(&mut self, _upgrade_height: Height, _upgrade_options: (), _chain_id: ChainId) {
-        todo!()
     }
 
     fn encode_vec(&self) -> Result<Vec<u8>, Error> {
