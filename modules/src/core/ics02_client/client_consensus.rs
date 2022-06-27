@@ -1,6 +1,5 @@
 use crate::prelude::*;
 
-use core::any::Any;
 use core::marker::{Send, Sync};
 
 use ibc_proto::google::protobuf::Any as ProtoAny;
@@ -13,6 +12,7 @@ use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics23_commitment::commitment::CommitmentRoot;
+use crate::dynamic_typing::AsAny;
 use crate::timestamp::Timestamp;
 
 #[cfg(any(test, feature = "mocks"))]
@@ -23,7 +23,7 @@ pub const TENDERMINT_CONSENSUS_STATE_TYPE_URL: &str =
 
 pub const MOCK_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.mock.ConsensusState";
 
-pub trait ConsensusState: Send + Sync + AsAnyConsensusState {
+pub trait ConsensusState: Send + Sync + AsAny {
     /// Type of client associated with this consensus state (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 
@@ -42,16 +42,6 @@ pub trait ConsensusState: Send + Sync + AsAnyConsensusState {
         Self: Sized,
     {
         Box::new(self)
-    }
-}
-
-pub trait AsAnyConsensusState: Any {
-    fn as_any(&self) -> &dyn Any;
-}
-
-impl<T: ConsensusState> AsAnyConsensusState for T {
-    fn as_any(&self) -> &dyn Any {
-        self
     }
 }
 

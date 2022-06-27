@@ -1,4 +1,3 @@
-use core::any::Any;
 use core::ops::Deref;
 
 use ibc_proto::google::protobuf::Any as ProtoAny;
@@ -9,6 +8,7 @@ use tendermint_proto::Protobuf;
 use crate::clients::ics07_tendermint::header::{decode_header, Header as TendermintHeader};
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
+use crate::dynamic_typing::AsAny;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::header::MockHeader;
 use crate::prelude::*;
@@ -19,7 +19,7 @@ pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.He
 pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
 
 /// Abstract of consensus state update information
-pub trait Header: core::fmt::Debug + Send + Sync + AsAnyHeader {
+pub trait Header: core::fmt::Debug + Send + Sync + AsAny {
     /// The type of client (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 
@@ -35,16 +35,6 @@ pub trait Header: core::fmt::Debug + Send + Sync + AsAnyHeader {
         Self: Sized,
     {
         Box::new(self)
-    }
-}
-
-pub trait AsAnyHeader: Any {
-    fn as_any(&self) -> &dyn Any;
-}
-
-impl<T: Header> AsAnyHeader for T {
-    fn as_any(&self) -> &dyn Any {
-        self
     }
 }
 

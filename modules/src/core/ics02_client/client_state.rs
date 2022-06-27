@@ -1,4 +1,3 @@
-use core::any::Any;
 use core::marker::{Send, Sync};
 use core::time::Duration;
 
@@ -15,6 +14,7 @@ use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ChainId, ClientId};
+use crate::dynamic_typing::AsAny;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockClientState;
 use crate::prelude::*;
@@ -23,7 +23,7 @@ use crate::Height;
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
 
-pub trait ClientState: Send + Sync + AsAnyClientState {
+pub trait ClientState: Send + Sync + AsAny {
     /// Return the chain identifier which this client is serving (i.e., the client is verifying
     /// consensus states from this chain).
     fn chain_id(&self) -> ChainId;
@@ -55,16 +55,6 @@ pub trait ClientState: Send + Sync + AsAnyClientState {
         Self: Sized,
     {
         Box::new(self)
-    }
-}
-
-pub trait AsAnyClientState: Any {
-    fn as_any(&self) -> &dyn Any;
-}
-
-impl<T: ClientState> AsAnyClientState for T {
-    fn as_any(&self) -> &dyn Any {
-        self
     }
 }
 

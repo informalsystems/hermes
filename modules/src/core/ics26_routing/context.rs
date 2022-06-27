@@ -17,6 +17,7 @@ use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::Version;
 use crate::core::ics05_port::context::PortReader;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use crate::dynamic_typing::AsAnyMut;
 use crate::events::ModuleEvent;
 use crate::handler::HandlerOutputBuilder;
 use crate::signer::Signer;
@@ -202,16 +203,6 @@ pub trait RouterBuilder: Sized {
 
     /// Consumes the `RouterBuilder` and returns a `Router` as configured
     fn build(self) -> Self::Router;
-}
-
-pub trait AsAnyMut: Any {
-    fn as_any_mut(&mut self) -> &mut dyn Any;
-}
-
-impl<M: Any + Module> AsAnyMut for M {
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
-    }
 }
 
 /// A router maintains a mapping of `ModuleId`s against `Modules`. Implementations must not publicly
