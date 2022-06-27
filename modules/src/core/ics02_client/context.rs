@@ -15,7 +15,12 @@ use crate::Height;
 
 /// Defines the read-only part of ICS2 (client functions) context.
 pub trait ClientReader {
+    /// Retrieve the client type for the client with specified client ID.
     fn client_type(&self, client_id: &ClientId) -> Result<ClientType, Error>;
+
+    /// Retrieve the client state for the given client ID.
+    ///
+    /// Returns an error if no such client exists.
     fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Error>;
 
     /// Retrieve the consensus state for the given client ID at the specified
