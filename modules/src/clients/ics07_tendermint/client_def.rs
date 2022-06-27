@@ -11,7 +11,7 @@ use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConse
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header as TmHeader;
 use crate::core::ics02_client::client_consensus::ConsensusState;
-use crate::core::ics02_client::client_def::ClientDef;
+use crate::core::ics02_client::client_def::{ClientDef, UpdatedState};
 use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::context::LightClientReader;
@@ -48,7 +48,7 @@ impl ClientDef for TendermintClient {
         client_id: ClientId,
         client_state: Box<dyn ClientState>,
         header: &dyn Header,
-    ) -> Result<(Box<dyn ClientState>, Box<dyn ConsensusState>), Ics02Error> {
+    ) -> Result<UpdatedState, Ics02Error> {
         if header.height().revision_number != client_state.chain_id().version() {
             return Err(Ics02Error::client_specific(
                 Error::mismatched_revisions(
@@ -67,37 +67,37 @@ impl ClientDef for TendermintClient {
         let existing_consensus_state =
             match ctx.maybe_consensus_state(&client_id, header.height())? {
                 Some(cs) => {
-                    let tm_cs = downcast_consensus_state(cs.as_ref())?;
+                    let tm_cs = downcast_consensus_state(cs.as_ref()).map(Clone::clone)?;
                     // If this consensus state matches, skip verification
                     // (optimization)
-                    if tm_cs == &header_consensus_state {
+                    if tm_cs == header_consensus_state {
                         // Header is already installed and matches the incoming
                         // header (already verified)
-                        return Ok((client_state, cs));
+                        return Ok((client_state, cs).into());
                     }
                     Some(tm_cs)
                 }
                 None => None,
             };
 
-        let trusted_consensus_state = {
+        let trusted_state = {
             let trusted_cs = ctx.consensus_state(&client_id, header.trusted_height)?;
-            downcast_consensus_state(trusted_cs.as_ref())?
-        };
+            let trusted_tm_cs = downcast_consensus_state(trusted_cs.as_ref())?;
 
-        let trusted_state = TrustedBlockState {
-            header_time: trusted_consensus_state.timestamp,
-            height: header
-                .trusted_height
-                .revision_height
-                .try_into()
-                .map_err(|_| {
-                    Ics02Error::client_specific(
-                        Error::invalid_header_height(header.trusted_height).to_string(),
-                    )
-                })?,
-            next_validators: &header.trusted_validator_set,
-            next_validators_hash: trusted_consensus_state.next_validators_hash,
+            TrustedBlockState {
+                header_time: trusted_tm_cs.timestamp,
+                height: header
+                    .trusted_height
+                    .revision_height
+                    .try_into()
+                    .map_err(|_| {
+                        Ics02Error::client_specific(
+                            Error::invalid_header_height(header.trusted_height).to_string(),
+                        )
+                    })?,
+                next_validators: &header.trusted_validator_set,
+                next_validators_hash: trusted_tm_cs.next_validators_hash,
+            }
         };
 
         let untrusted_state = UntrustedBlockState {
@@ -135,30 +135,32 @@ impl ClientDef for TendermintClient {
         // differs from the existing consensus state for that height, freeze the
         // client and return the installed consensus state.
         if let Some(cs) = existing_consensus_state {
-            if cs != &header_consensus_state {
+            if cs != header_consensus_state {
                 return Ok((
-                    client_state.with_frozen_height(header.height())?.boxed(),
+                    client_state
+                        .clone()
+                        .with_frozen_height(header.height())?
+                        .boxed(),
                     cs.boxed(),
-                ));
+                )
+                    .into());
             }
         }
 
         // Monotonicity checks for timestamps for in-the-middle updates
         // (cs-new, cs-next, cs-latest)
         if header.height() < client_state.latest_height() {
-            let maybe_next_cs = ctx
-                .next_consensus_state(&client_id, header.height())?
-                .map(|cs| downcast_consensus_state(cs.as_ref()))
-                .transpose()?;
+            let maybe_next_cs = ctx.next_consensus_state(&client_id, header.height())?;
 
             if let Some(next_cs) = maybe_next_cs {
                 // New (untrusted) header timestamp cannot occur after next
                 // consensus state's height
-                if header.signed_header.header().time > next_cs.timestamp {
+                if header.signed_header.header().time > next_cs.timestamp().into_tm_time().unwrap()
+                {
                     return Err(Ics02Error::client_specific(
                         Error::header_timestamp_too_high(
                             header.signed_header.header().time.to_string(),
-                            next_cs.timestamp.to_string(),
+                            next_cs.timestamp().to_string(),
                         )
                         .to_string(),
                     ));
@@ -168,19 +170,17 @@ impl ClientDef for TendermintClient {
 
         // (cs-trusted, cs-prev, cs-new)
         if header.trusted_height < header.height() {
-            let maybe_prev_cs = ctx
-                .prev_consensus_state(&client_id, header.height())?
-                .map(|cs| downcast_consensus_state(cs.as_ref()))
-                .transpose()?;
+            let maybe_prev_cs = ctx.prev_consensus_state(&client_id, header.height())?;
 
             if let Some(prev_cs) = maybe_prev_cs {
                 // New (untrusted) header timestamp cannot occur before the
                 // previous consensus state's height
-                if header.signed_header.header().time < prev_cs.timestamp {
+                if header.signed_header.header().time < prev_cs.timestamp().into_tm_time().unwrap()
+                {
                     return Err(Ics02Error::client_specific(
                         Error::header_timestamp_too_low(
                             header.signed_header.header().time.to_string(),
-                            prev_cs.timestamp.to_string(),
+                            prev_cs.timestamp().to_string(),
                         )
                         .to_string(),
                     ));
@@ -189,9 +189,10 @@ impl ClientDef for TendermintClient {
         }
 
         Ok((
-            client_state.with_header(header.clone()).boxed(),
+            client_state.clone().with_header(header.clone()).boxed(),
             TmConsensusState::from(header.clone()).boxed(),
-        ))
+        )
+            .into())
     }
 
     fn verify_client_consensus_state(
@@ -409,7 +410,7 @@ impl ClientDef for TendermintClient {
         _consensus_state: &dyn ConsensusState,
         _proof_upgrade_client: RawMerkleProof,
         _proof_upgrade_consensus_state: RawMerkleProof,
-    ) -> Result<(Box<dyn ClientState>, Box<dyn ConsensusState>), Ics02Error> {
+    ) -> Result<UpdatedState, Ics02Error> {
         todo!()
     }
 }

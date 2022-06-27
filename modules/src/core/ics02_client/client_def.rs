@@ -22,6 +22,22 @@ use crate::Height;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_def::MockClient;
 
+pub struct UpdatedState {
+    pub client_state: Box<dyn ClientState>,
+    pub consensus_state: Box<dyn ConsensusState>,
+}
+
+impl From<(Box<dyn ClientState>, Box<dyn ConsensusState>)> for UpdatedState {
+    fn from(
+        (client_state, consensus_state): (Box<dyn ClientState>, Box<dyn ConsensusState>),
+    ) -> Self {
+        Self {
+            client_state,
+            consensus_state,
+        }
+    }
+}
+
 pub trait ClientDef {
     fn check_header_and_update_state(
         &self,
@@ -29,7 +45,7 @@ pub trait ClientDef {
         client_id: ClientId,
         client_state: Box<dyn ClientState>,
         header: &dyn Header,
-    ) -> Result<(Box<dyn ClientState>, Box<dyn ConsensusState>), Error>;
+    ) -> Result<UpdatedState, Error>;
 
     fn verify_upgrade_and_update_state(
         &self,
@@ -37,7 +53,7 @@ pub trait ClientDef {
         consensus_state: &dyn ConsensusState,
         proof_upgrade_client: MerkleProof,
         proof_upgrade_consensus_state: MerkleProof,
-    ) -> Result<(Box<dyn ClientState>, Box<dyn ConsensusState>), Error>;
+    ) -> Result<UpdatedState, Error>;
 
     /// Verification functions as specified in:
     /// <https://github.com/cosmos/ibc/tree/master/spec/core/ics-002-client-semantics>
@@ -190,7 +206,7 @@ impl ClientDef for AnyClient {
         client_id: ClientId,
         client_state: Box<dyn ClientState>,
         header: &dyn Header,
-    ) -> Result<(Box<dyn ClientState>, Box<dyn ConsensusState>), Error> {
+    ) -> Result<UpdatedState, Error> {
         match self {
             Self::Tendermint(client) => {
                 client.check_header_and_update_state(ctx, client_id, client_state, header)
@@ -514,7 +530,7 @@ impl ClientDef for AnyClient {
         consensus_state: &dyn ConsensusState,
         proof_upgrade_client: MerkleProof,
         proof_upgrade_consensus_state: MerkleProof,
-    ) -> Result<(Box<dyn ClientState>, Box<dyn ConsensusState>), Error> {
+    ) -> Result<UpdatedState, Error> {
         match self {
             Self::Tendermint(client) => client.verify_upgrade_and_update_state(
                 client_state,

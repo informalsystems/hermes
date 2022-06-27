@@ -1,7 +1,7 @@
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use crate::core::ics02_client::client_consensus::ConsensusState;
-use crate::core::ics02_client::client_def::ClientDef;
+use crate::core::ics02_client::client_def::{ClientDef, UpdatedState};
 use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::context::LightClientReader;
@@ -34,7 +34,7 @@ impl ClientDef for MockClient {
         _client_id: ClientId,
         client_state: Box<dyn ClientState>,
         header: &dyn Header,
-    ) -> Result<(Box<dyn ClientState>, Box<dyn ConsensusState>), Error> {
+    ) -> Result<UpdatedState, Error> {
         if client_state.latest_height() >= header.height() {
             return Err(Error::low_header_height(
                 header.height(),
@@ -49,7 +49,8 @@ impl ClientDef for MockClient {
         Ok((
             MockClientState::new(header).boxed(),
             MockConsensusState::new(header).boxed(),
-        ))
+        )
+            .into())
     }
 
     fn verify_client_consensus_state(
@@ -183,10 +184,11 @@ impl ClientDef for MockClient {
         consensus_state: &dyn ConsensusState,
         _proof_upgrade_client: MerkleProof,
         _proof_upgrade_consensus_state: MerkleProof,
-    ) -> Result<(Box<dyn ClientState>, Box<dyn ConsensusState>), Error> {
+    ) -> Result<UpdatedState, Error> {
         Ok((
             client_state.clone().boxed(),
             consensus_state.clone().boxed(),
-        ))
+        )
+            .into())
     }
 }
