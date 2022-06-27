@@ -104,11 +104,17 @@ impl Ord for Height {
 
 impl Protobuf<RawHeight> for Height {}
 
-impl From<RawHeight> for Height {
-    fn from(raw: RawHeight) -> Self {
-        Height {
-            revision_number: raw.revision_number,
-            revision_height: raw.revision_height,
+impl TryFrom<RawHeight> for Height {
+    type Error = Error;
+
+    fn try_from(raw_height: RawHeight) -> Result<Self, Self::Error> {
+        if raw_height.revision_height == 0 {
+            Err(Error::invalid_height())
+        } else {
+            Ok(Height::new(
+                raw_height.revision_number,
+                raw_height.revision_height,
+            ))
         }
     }
 }
@@ -155,6 +161,9 @@ impl TryFrom<&str> for Height {
     type Error = HeightError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
+        // FIXME: REJECT `revision_height == 0`
+        // Note: we might have stored a height with `revision_height == 0`
+        // in the case of `Packet.timeout_height` (it's a valid height).
         let split: Vec<&str> = value.split('-').collect();
         Ok(Height {
             revision_number: split[0]

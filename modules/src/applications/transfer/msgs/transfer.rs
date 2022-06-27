@@ -63,6 +63,9 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
         let timeout_timestamp = Timestamp::from_nanoseconds(raw_msg.timeout_timestamp)
             .map_err(|_| Error::invalid_packet_timeout_timestamp(raw_msg.timeout_timestamp))?;
 
+        // FIXME: With "Height zero" representation gone, this conversion will fail (return Error) with
+        // `timeout_height == 0`
+        // Do not merge without this comment addressed.
         let timeout_height: Option<Height> = raw_msg
             .timeout_height
             .map(|raw_height| raw_height.try_into())
@@ -143,6 +146,7 @@ pub mod test_util {
         Height,
     };
 
+    // FIXME (BEFORE MERGE): Add at least 1 test that uses `timeout_height: None`
     // Returns a dummy ICS20 `MsgTransfer`, for testing only!
     pub fn get_dummy_msg_transfer(height: u64) -> MsgTransfer<PrefixedCoin> {
         let address: Signer = get_dummy_bech32_account().as_str().parse().unwrap();

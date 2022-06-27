@@ -25,7 +25,10 @@ impl TryFrom<RawMockHeader> for MockHeader {
 
     fn try_from(raw: RawMockHeader) -> Result<Self, Self::Error> {
         Ok(MockHeader {
-            height: raw.height.ok_or_else(Error::missing_raw_header)?.into(),
+            height: raw
+                .height
+                .and_then(|raw_height| raw_height.try_into().ok())
+                .ok_or_else(Error::missing_raw_header)?,
 
             timestamp: Timestamp::from_nanoseconds(raw.timestamp)
                 .map_err(Error::invalid_packet_timestamp)?,

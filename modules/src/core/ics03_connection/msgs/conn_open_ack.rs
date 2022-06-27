@@ -55,8 +55,8 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
     fn try_from(msg: RawMsgConnectionOpenAck) -> Result<Self, Self::Error> {
         let consensus_height = msg
             .consensus_height
-            .ok_or_else(Error::missing_consensus_height)?
-            .into();
+            .and_then(|raw_height| raw_height.try_into().ok())
+            .ok_or_else(Error::missing_consensus_height)?;
         let consensus_proof_obj = ConsensusProof::new(
             msg.proof_consensus
                 .try_into()
@@ -67,8 +67,8 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
 
         let proof_height = msg
             .proof_height
-            .ok_or_else(Error::missing_proof_height)?
-            .into();
+            .and_then(|raw_height| raw_height.try_into().ok())
+            .ok_or_else(Error::missing_proof_height)?;
 
         let client_proof =
             CommitmentProofBytes::try_from(msg.proof_client).map_err(Error::invalid_proof)?;

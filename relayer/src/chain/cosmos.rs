@@ -1223,8 +1223,8 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let height = response
             .height
-            .ok_or_else(|| Error::grpc_response_param("height".to_string()))?
-            .into();
+            .and_then(|raw_height| raw_height.try_into().ok())
+            .ok_or_else(|| Error::grpc_response_param("height".to_string()))?;
 
         Ok((commitment_sequences, height))
     }
@@ -1341,8 +1341,8 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let height = response
             .height
-            .ok_or_else(|| Error::grpc_response_param("height".to_string()))?
-            .into();
+            .and_then(|raw_height| raw_height.try_into().ok())
+            .ok_or_else(|| Error::grpc_response_param("height".to_string()))?;
 
         Ok((acks_sequences, height))
     }

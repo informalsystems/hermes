@@ -81,8 +81,8 @@ define_error! {
         MissingLatestHeight
             |_| { "missing latest height" },
 
-        MissingFrozenHeight
-            |_| { "missing frozen height" },
+        InvalidFrozenHeight
+            |_| { "invalid frozen height" },
 
         InvalidChainId
             { raw_value: String }

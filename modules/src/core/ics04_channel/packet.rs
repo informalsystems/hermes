@@ -195,10 +195,14 @@ impl TryFrom<RawPacket> for Packet {
         if Sequence::from(raw_pkt.sequence).is_zero() {
             return Err(Error::zero_packet_sequence());
         }
+
+        // FIXME: Currently buggy, because `timeout_height.revision_height == 0`
+        // is the only place where it's a valid value.
+        // Introduce a new type `TimeoutHeight` to properly model this.
         let packet_timeout_height: Height = raw_pkt
             .timeout_height
-            .ok_or_else(Error::missing_height)?
-            .into();
+            .and_then(|raw_height| raw_height.try_into().ok())
+            .ok_or_else(Error::missing_height)?;
 
         if packet_timeout_height.is_zero() && raw_pkt.timeout_timestamp == 0 {
             return Err(Error::zero_packet_timeout());

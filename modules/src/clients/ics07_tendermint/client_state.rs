@@ -264,14 +264,12 @@ impl TryFrom<RawClientState> for ClientState {
             .clone()
             .ok_or_else(Error::missing_trusting_period)?;
 
-        let frozen_height = raw.frozen_height.and_then(|raw_height| {
-            let height = raw_height.into();
-            if height == Height::zero() {
-                None
-            } else {
-                Some(height)
-            }
-        });
+        // In `RawClientState`, a `frozen_height` of `0` means "not frozen".
+        // See:
+        // https://github.com/cosmos/ibc-go/blob/8422d0c4c35ef970539466c5bdec1cd27369bab3/modules/light-clients/07-tendermint/types/client_state.go#L74
+        let frozen_height = raw
+            .frozen_height
+            .and_then(|raw_height| raw_height.try_into().ok());
 
         Ok(Self {
             chain_id: ChainId::from_string(raw.chain_id.as_str()),
@@ -296,7 +294,8 @@ impl TryFrom<RawClientState> for ClientState {
             latest_height: raw
                 .latest_height
                 .ok_or_else(Error::missing_latest_height)?
-                .into(),
+                .try_into()
+                .map_err(|_| Error::missing_latest_height())?,
             frozen_height,
             upgrade_path: raw.upgrade_path,
             allow_update: AllowUpdate {
