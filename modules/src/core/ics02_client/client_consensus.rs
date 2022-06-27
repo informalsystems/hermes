@@ -23,7 +23,7 @@ pub const TENDERMINT_CONSENSUS_STATE_TYPE_URL: &str =
 
 pub const MOCK_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.mock.ConsensusState";
 
-pub trait ConsensusState: core::fmt::Debug + Send + Sync + AsAnyConsensusState {
+pub trait ConsensusState: Send + Sync + AsAnyConsensusState {
     /// Type of client associated with this consensus state (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 

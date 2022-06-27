@@ -1,7 +1,8 @@
+use core::any::Any;
 use core::marker::{Send, Sync};
 use core::time::Duration;
 
-use ibc_proto::google::protobuf::Any;
+use ibc_proto::google::protobuf::Any as ProtoAny;
 use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
@@ -22,7 +23,7 @@ use crate::Height;
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
 
-pub trait ClientState: Send + Sync {
+pub trait ClientState: Send + Sync + AsAnyClientState {
     /// Return the chain identifier which this client is serving (i.e., the client is verifying
     /// consensus states from this chain).
     fn chain_id(&self) -> ChainId;
@@ -41,7 +42,18 @@ pub trait ClientState: Send + Sync {
     /// Frozen height of the client
     fn frozen_height(&self) -> Option<Height>;
 
+    /// Encode to canonical binary representation
     fn encode_vec(&self) -> Result<Vec<u8>, Error>;
+}
+
+pub trait AsAnyClientState: Any {
+    fn as_any(&self) -> &dyn Any;
+}
+
+impl<T: ClientState> AsAnyClientState for T {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -156,12 +168,12 @@ impl AnyClientState {
     }
 }
 
-impl Protobuf<Any> for AnyClientState {}
+impl Protobuf<ProtoAny> for AnyClientState {}
 
-impl TryFrom<Any> for AnyClientState {
+impl TryFrom<ProtoAny> for AnyClientState {
     type Error = Error;
 
-    fn try_from(raw: Any) -> Result<Self, Self::Error> {
+    fn try_from(raw: ProtoAny) -> Result<Self, Self::Error> {
         match raw.type_url.as_str() {
             "" => Err(Error::empty_client_state_response()),
 
@@ -180,16 +192,16 @@ impl TryFrom<Any> for AnyClientState {
     }
 }
 
-impl From<AnyClientState> for Any {
+impl From<AnyClientState> for ProtoAny {
     fn from(value: AnyClientState) -> Self {
         match value {
-            AnyClientState::Tendermint(value) => Any {
+            AnyClientState::Tendermint(value) => ProtoAny {
                 type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
                 value: ClientState::encode_vec(&value)
                     .expect("encoding to `Any` from `AnyClientState::Tendermint`"),
             },
             #[cfg(any(test, feature = "mocks"))]
-            AnyClientState::Mock(value) => Any {
+            AnyClientState::Mock(value) => ProtoAny {
                 type_url: MOCK_CLIENT_STATE_TYPE_URL.to_string(),
                 value: ClientState::encode_vec(&value)
                     .expect("encoding to `Any` from `AnyClientState::Mock`"),
@@ -284,7 +296,7 @@ impl From<IdentifiedAnyClientState> for IdentifiedClientState {
 #[cfg(test)]
 mod tests {
 
-    use ibc_proto::google::protobuf::Any;
+    use ibc_proto::google::protobuf::Any as ProtoAny;
     use test_log::test;
 
     use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
@@ -296,7 +308,7 @@ mod tests {
         let tm_client_state: AnyClientState =
             get_dummy_tendermint_client_state(get_dummy_tendermint_header()).into();
 
-        let raw: Any = tm_client_state.clone().into();
+        let raw: ProtoAny = tm_client_state.clone().into();
         let tm_client_state_back = AnyClientState::try_from(raw).unwrap();
         assert_eq!(tm_client_state, tm_client_state_back);
     }
