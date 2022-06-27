@@ -395,7 +395,7 @@ impl TelemetryState {
             }
             set.insert(seq_nr);
             // Record the min of the HashSet as the oldest sequence.
-            if let Some(min) = set.clone().into_iter().min() {
+            if let Some(min) = set.iter().map(|v| *v).min() {
                 self.oldest_sequence.record(min, labels);
             }
         } else {
