@@ -30,14 +30,14 @@ static HINT: &str = "Consider using the default invocation\n\nhermes create chan
 ///
 /// There are two possible ways to invoke this command:
 ///
-/// `create channel --a-port <A_PORT_ID> --b-port <B_PORT_ID> --a-chain <A_CHAIN_ID> --a-conn <A_CONNECTION_ID>` 
-/// is the default way in which this command should be used, specifying a `Connection-ID` 
+/// `create channel --a-port <A_PORT_ID> --b-port <B_PORT_ID> --a-chain <A_CHAIN_ID> --a-conn <A_CONNECTION_ID>`
+/// is the default way in which this command should be used, specifying a `Connection-ID`
 /// associated with chain A for this new channel to re-use.
 ///
 /// `create channel --a-port <A_PORT_ID> --b-port <B_PORT_ID> --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --new-client-conn`
-/// can alternatively be used to indicate that a new connection/client pair is being 
-/// created as part of this new channel. This brings up an interactive yes/no prompt 
-/// to ensure that the operator at least considers the fact that they're initializing a 
+/// can alternatively be used to indicate that a new connection/client pair is being
+/// created as part of this new channel. This brings up an interactive yes/no prompt
+/// to ensure that the operator at least considers the fact that they're initializing a
 /// new connection with the channel. This prompt can be skipped by appending the `--yes`
 /// flag to the command.
 ///
@@ -97,7 +97,7 @@ pub struct CreateChannelCommand {
         long,
         help = "Indicates that a new client and connection will be created underlying the new channel"
     )]
-    new_client_connection: bool,
+    new_client_conn: bool,
 
     #[clap(long, help = "Skip new_client_conn confirmation")]
     yes: bool,
@@ -109,7 +109,7 @@ impl Runnable for CreateChannelCommand {
             Some(conn) => self.run_reusing_connection(conn),
             None => match &self.chain_b {
                 Some(chain_b) => {
-                    if self.new_client_connection {
+                    if self.new_client_conn {
                         if self.yes {
                             self.run_using_new_connection(chain_b);
                         } else {
@@ -147,7 +147,7 @@ impl Runnable for CreateChannelCommand {
                     }
                 }
                 None => {
-                    Output::error("Missing one of `<b-chain>` or `<a-conn>`".to_string()).exit()
+                    Output::error("Missing one of `--b-chain` or `--a-conn`".to_string()).exit()
                 }
             },
         }
