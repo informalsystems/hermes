@@ -1,20 +1,16 @@
 use crate::traits::chain_types::{IbcChainContext, IbcChainTypes};
-use crate::traits::core::CoreTraits;
+use crate::traits::core::{Async, ErrorContext};
 use crate::traits::packet::IbcPacket;
 
-pub trait RelayTypes: CoreTraits {
-    type Error: CoreTraits;
-
+pub trait RelayTypes: ErrorContext {
     type SrcChain: IbcChainTypes<Self::DstChain, Error = Self::Error>;
 
     type DstChain: IbcChainTypes<Self::SrcChain, Error = Self::Error>;
 
-    type Packet: IbcPacket<Self::SrcChain, Self::DstChain> + CoreTraits;
+    type Packet: IbcPacket<Self::SrcChain, Self::DstChain> + Async;
 }
 
-pub trait RelayContext: CoreTraits {
-    type Error: CoreTraits;
-
+pub trait RelayContext: ErrorContext {
     type RelayTypes: RelayTypes<Error = Self::Error>;
 
     type SrcChainContext: IbcChainContext<
@@ -34,12 +30,12 @@ pub trait RelayContext: CoreTraits {
     fn destination_context(&self) -> &Self::DstChainContext;
 }
 
-pub trait RelayTypesPair: CoreTraits {
+pub trait RelayTypesPair: Async {
     type SrcToDestContext: RelayTypes;
 
     type DstToSrcContext: RelayTypes<
         SrcChain = <Self::SrcToDestContext as RelayTypes>::DstChain,
         DstChain = <Self::SrcToDestContext as RelayTypes>::SrcChain,
-        Error = <Self::SrcToDestContext as RelayTypes>::Error,
+        Error = <Self::SrcToDestContext as ErrorContext>::Error,
     >;
 }

@@ -1,26 +1,22 @@
-use crate::traits::core::CoreTraits;
+use crate::traits::core::{Async, ErrorContext};
 use crate::traits::message::{IbcMessage as SomeIbcMessage, Message as SomeMessage};
 
-pub trait ChainTypes: CoreTraits {
-    type Error: CoreTraits;
+pub trait ChainTypes: ErrorContext {
+    type Height: Async;
+    type Timestamp: Async;
 
-    type Height: CoreTraits;
-    type Timestamp: CoreTraits;
-
-    type Message: CoreTraits + SomeMessage;
+    type Message: Async + SomeMessage;
 }
 
 pub trait IbcChainTypes<Counterparty: ChainTypes>: ChainTypes {
-    type ChannelId: CoreTraits;
-    type PortId: CoreTraits;
-    type Sequence: CoreTraits;
+    type ChannelId: Async;
+    type PortId: Async;
+    type Sequence: Async;
 
-    type IbcMessage: CoreTraits + SomeIbcMessage<Counterparty>;
-    type IbcEvent: CoreTraits;
+    type IbcMessage: Async + SomeIbcMessage<Counterparty>;
+    type IbcEvent: Async;
 }
 
-pub trait IbcChainContext<Counterparty: ChainTypes>: CoreTraits {
-    type Error: CoreTraits;
-
+pub trait IbcChainContext<Counterparty: ChainTypes>: ErrorContext {
     type IbcChainTypes: IbcChainTypes<Counterparty>;
 }

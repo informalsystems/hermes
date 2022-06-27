@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::traits::core::CoreTraits;
+use crate::traits::core::Async;
 use crate::traits::relay_types::RelayContext;
 use crate::traits::target::ChainTarget;
 use crate::types::aliases::{IbcEvent, IbcMessage};
@@ -15,7 +15,7 @@ where
 }
 
 #[async_trait]
-pub trait IbcMessageSender<Context, Target>: CoreTraits
+pub trait IbcMessageSender<Context, Target>: Async
 where
     Context: RelayContext,
     Target: ChainTarget<Context::RelayTypes>,

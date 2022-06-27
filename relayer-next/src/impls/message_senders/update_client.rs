@@ -11,12 +11,6 @@ pub struct MessageSenderWithUpdateClient<Sender> {
     pub sender: Sender,
 }
 
-impl<Sender> MessageSenderWithUpdateClient<Sender> {
-    pub fn new(sender: Sender) -> Self {
-        Self { sender }
-    }
-}
-
 #[async_trait]
 impl<Sender, Context, Target> IbcMessageSender<Context, Target>
     for MessageSenderWithUpdateClient<Sender>

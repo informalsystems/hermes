@@ -8,13 +8,16 @@ use ibc::Height;
 use crate::impls::cosmos::error::Error;
 use crate::impls::cosmos::message::CosmosIbcMessage;
 use crate::traits::chain_types::{ChainTypes, IbcChainTypes};
+use crate::traits::core::ErrorContext;
 
 #[derive(Debug, Clone)]
 pub struct CosmosChainTypes;
 
-impl ChainTypes for CosmosChainTypes {
+impl ErrorContext for CosmosChainTypes {
     type Error = Error;
+}
 
+impl ChainTypes for CosmosChainTypes {
     type Height = Height;
     type Timestamp = Timestamp;
     type Message = CosmosIbcMessage;

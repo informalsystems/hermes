@@ -1,3 +1,7 @@
-pub trait CoreTraits: Sized + Send + Sync + 'static {}
+pub trait ErrorContext: Async {
+    type Error: Async;
+}
 
-impl<A> CoreTraits for A where A: Sized + Send + Sync + 'static {}
+pub trait Async: Sized + Send + Sync + 'static {}
+
+impl<A> Async for A where A: Sized + Send + Sync + 'static {}

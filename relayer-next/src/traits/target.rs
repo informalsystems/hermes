@@ -1,12 +1,12 @@
 use crate::traits::chain_types::IbcChainTypes;
-use crate::traits::core::CoreTraits;
+use crate::traits::core::Async;
 use crate::traits::relay_types::RelayTypes;
 
 pub struct SourceTarget;
 
 pub struct DestinationTarget;
 
-pub trait ChainTarget<Relay: RelayTypes>: CoreTraits + private::Sealed {
+pub trait ChainTarget<Relay: RelayTypes>: Async + private::Sealed {
     type TargetChain: IbcChainTypes<Self::CounterpartyChain, Error = Relay::Error>;
 
     type CounterpartyChain: IbcChainTypes<Self::TargetChain, Error = Relay::Error>;
