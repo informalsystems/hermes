@@ -42,6 +42,10 @@ pub trait ClientState: Send + Sync + AsAnyClientState {
     /// Frozen height of the client
     fn frozen_height(&self) -> Option<Height>;
 
+    /// Check if the state is expired when `elapsed` time has passed since the latest consensus
+    /// state timestamp
+    fn expired(&self, elapsed: Duration) -> bool;
+
     /// Encode to canonical binary representation
     fn encode_vec(&self) -> Result<Vec<u8>, Error>;
 
@@ -238,6 +242,10 @@ impl ClientState for AnyClientState {
 
     fn frozen_height(&self) -> Option<Height> {
         self.frozen_height()
+    }
+
+    fn expired(&self, _elapsed: Duration) -> bool {
+        unimplemented!()
     }
 
     fn encode_vec(&self) -> Result<Vec<u8>, Error> {

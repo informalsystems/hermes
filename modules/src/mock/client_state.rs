@@ -59,10 +59,6 @@ impl MockClientState {
     pub fn refresh_time(&self) -> Option<Duration> {
         None
     }
-
-    pub fn expired(&self, _elapsed: Duration) -> bool {
-        false
-    }
 }
 
 impl TryFrom<RawMockClientState> for MockClientState {
@@ -101,6 +97,10 @@ impl ClientState for MockClientState {
         self.frozen_height
     }
 
+    fn expired(&self, _elapsed: Duration) -> bool {
+        false
+    }
+
     fn encode_vec(&self) -> Result<Vec<u8>, Error> {
         Protobuf::encode_vec(self).map_err(Error::invalid_any_client_state)
     }
@@ -124,10 +124,6 @@ impl MockConsensusState {
             header,
             root: CommitmentRoot::from(vec![0]),
         }
-    }
-
-    pub fn timestamp(&self) -> Timestamp {
-        self.header.timestamp
     }
 }
 
@@ -164,6 +160,10 @@ impl ConsensusState for MockConsensusState {
 
     fn root(&self) -> &CommitmentRoot {
         &self.root
+    }
+
+    fn timestamp(&self) -> Timestamp {
+        self.header.timestamp
     }
 
     fn encode_vec(&self) -> Result<Vec<u8>, Error> {

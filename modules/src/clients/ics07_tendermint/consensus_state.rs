@@ -12,6 +12,7 @@ use crate::clients::ics07_tendermint::header::Header;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics23_commitment::commitment::CommitmentRoot;
+use crate::timestamp::Timestamp;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ConsensusState {
@@ -37,6 +38,10 @@ impl crate::core::ics02_client::client_consensus::ConsensusState for ConsensusSt
 
     fn root(&self) -> &CommitmentRoot {
         &self.root
+    }
+
+    fn timestamp(&self) -> Timestamp {
+        self.timestamp.into()
     }
 
     fn encode_vec(&self) -> Result<Vec<u8>, Ics02Error> {

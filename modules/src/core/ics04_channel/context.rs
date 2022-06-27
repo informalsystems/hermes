@@ -5,6 +5,7 @@ use core::time::Duration;
 use num_traits::float::FloatCore;
 
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
+use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;

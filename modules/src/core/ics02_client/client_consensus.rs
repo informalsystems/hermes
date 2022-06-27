@@ -30,6 +30,9 @@ pub trait ConsensusState: Send + Sync + AsAnyConsensusState {
     /// Commitment root of the consensus state, which is used for key-value pair verification.
     fn root(&self) -> &CommitmentRoot;
 
+    /// Timestamp corresponding to the block in which this ConsensusState was stored
+    fn timestamp(&self) -> Timestamp;
+
     /// Encode to canonical binary representation
     fn encode_vec(&self) -> Result<Vec<u8>, Error>;
 
@@ -62,15 +65,6 @@ pub enum AnyConsensusState {
 }
 
 impl AnyConsensusState {
-    pub fn timestamp(&self) -> Timestamp {
-        match self {
-            Self::Tendermint(cs_state) => cs_state.timestamp.into(),
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(mock_state) => mock_state.timestamp(),
-        }
-    }
-
     pub fn client_type(&self) -> ClientType {
         match self {
             AnyConsensusState::Tendermint(_cs) => ClientType::Tendermint,
@@ -182,6 +176,15 @@ impl ConsensusState for AnyConsensusState {
 
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(mock_state) => mock_state.root(),
+        }
+    }
+
+    fn timestamp(&self) -> Timestamp {
+        match self {
+            Self::Tendermint(cs_state) => cs_state.timestamp(),
+
+            #[cfg(any(test, feature = "mocks"))]
+            Self::Mock(mock_state) => mock_state.timestamp(),
         }
     }
 
