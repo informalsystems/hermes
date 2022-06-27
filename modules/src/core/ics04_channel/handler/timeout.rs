@@ -53,11 +53,13 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgTimeout) -> HandlerResult<Packe
     let proof_height = msg.proofs.height();
     let packet_height = packet.timeout_height;
 
-    if (!packet.timeout_height.is_zero()) && packet_height > proof_height {
-        return Err(Error::packet_timeout_height_not_reached(
-            packet.timeout_height,
-            proof_height,
-        ));
+    if let Some(timeout_height) = packet.timeout_height {
+        if timeout_height > proof_height {
+            return Err(Error::packet_timeout_height_not_reached(
+                timeout_height,
+                proof_height,
+            ));
+        }
     }
 
     let consensus_state = ctx.client_consensus_state(&client_id, proof_height)?;

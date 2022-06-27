@@ -5,6 +5,7 @@ use core::str::FromStr;
 use serde_derive::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
+use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
@@ -106,7 +107,7 @@ pub struct Packet {
     pub destination_channel: ChannelId,
     #[serde(serialize_with = "crate::serializers::ser_hex_upper")]
     pub data: Vec<u8>,
-    pub timeout_height: Height,
+    pub timeout_height: Option<Height>,
     pub timeout_timestamp: Timestamp,
 }
 
@@ -165,15 +166,25 @@ impl Packet {
     /// instead of the common-case where it results in
     /// [`MsgRecvPacket`](crate::core::ics04_channel::msgs::recv_packet::MsgRecvPacket).
     pub fn timed_out(&self, dst_chain_ts: &Timestamp, dst_chain_height: Height) -> bool {
-        (self.timeout_height != Height::zero() && self.timeout_height < dst_chain_height)
-            || (self.timeout_timestamp != Timestamp::none()
-                && dst_chain_ts.check_expiry(&self.timeout_timestamp) == Expired)
+        let height_timed_out = self
+            .timeout_height
+            .map_or(false, |timeout_height| timeout_height < dst_chain_height);
+
+        let timestamp_timed_out = self.timeout_timestamp != Timestamp::none()
+            && dst_chain_ts.check_expiry(&self.timeout_timestamp) == Expired;
+
+        height_timed_out || timestamp_timed_out
     }
 }
 
 /// Custom debug output to omit the packet data
 impl core::fmt::Display for Packet {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+        let timeout_height_display: String = match self.timeout_height {
+            Some(timeout_height) => format!("{}", timeout_height),
+            None => "None".into(),
+        };
+
         write!(
             f,
             "seq:{}, path:{}/{}->{}/{}, toh:{}, tos:{})",
@@ -182,7 +193,7 @@ impl core::fmt::Display for Packet {
             self.source_port,
             self.destination_channel,
             self.destination_port,
-            self.timeout_height,
+            timeout_height_display,
             self.timeout_timestamp
         )
     }
@@ -196,15 +207,32 @@ impl TryFrom<RawPacket> for Packet {
             return Err(Error::zero_packet_sequence());
         }
 
-        // FIXME: Currently buggy, because `timeout_height.revision_height == 0`
-        // is the only place where it's a valid value.
-        // Introduce a new type `TimeoutHeight` to properly model this.
-        let packet_timeout_height: Height = raw_pkt
+        // `RawPacket.timeout_height` is treated differently because
+        //
+        // `RawHeight.timeout_height == {revision_number: 0, revision_height = 0}`
+        //
+        // is legal and meaningful, even though the Tendermint spec rejects this
+        // height as invalid. Thus, it must be parsed specially, where this
+        // special case means "no timeout".
+        //
+        // Note: it is important for `revision_number` to also be `0`, otherwise
+        // packet commitment proofs will be incorrect (see proof construction in
+        // `ChannelReader::packet_commitment()`). Note also that ibc-go conforms
+        // to this.
+        let packet_timeout_height: Option<Height> = raw_pkt
             .timeout_height
-            .and_then(|raw_height| raw_height.try_into().ok())
-            .ok_or_else(Error::missing_height)?;
+            .and_then(|raw_height| {
+                if raw_height.revision_number == 0 && raw_height.revision_height == 0 {
+                    None
+                } else {
+                    Some(raw_height)
+                }
+            })
+            .map(|raw_height| raw_height.try_into())
+            .transpose()
+            .map_err(|_| Error::invalid_timeout_height())?;
 
-        if packet_timeout_height.is_zero() && raw_pkt.timeout_timestamp == 0 {
+        if packet_timeout_height.is_none() && raw_pkt.timeout_timestamp == 0 {
             return Err(Error::zero_packet_timeout());
         }
         if raw_pkt.data.is_empty() {
@@ -281,7 +309,15 @@ impl From<Packet> for RawPacket {
             destination_port: packet.destination_port.to_string(),
             destination_channel: packet.destination_channel.to_string(),
             data: packet.data,
-            timeout_height: Some(packet.timeout_height.into()),
+            // We map "no timeout height" to `Some(RawHeight::zero)` due to a quirk
+            // in ICS-4. See https://github.com/cosmos/ibc/issues/776.
+            timeout_height: match packet.timeout_height {
+                Some(height) => Some(height.into()),
+                None => Some(RawHeight {
+                    revision_number: 0,
+                    revision_height: 0,
+                }),
+            },
             timeout_timestamp: packet.timeout_timestamp.nanoseconds(),
         }
     }
