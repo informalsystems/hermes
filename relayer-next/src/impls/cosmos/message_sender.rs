@@ -5,8 +5,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::tracking::TrackedMsgs;
 
 use crate::impls::cosmos::error::Error;
-use crate::impls::cosmos::handler::CosmosChainHandler;
-use crate::impls::cosmos::handler::CosmosRelayHandler;
+use crate::impls::cosmos::handler::{CosmosChainHandler, CosmosRelayHandler};
 use crate::impls::cosmos::message::CosmosIbcMessage;
 use crate::impls::cosmos::target::CosmosChainTarget;
 use crate::impls::message_senders::chain_sender::SendIbcMessageToChain;

@@ -4,12 +4,12 @@ use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc::events::IbcEvent;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
-use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::impls::cosmos::error::Error;
 use crate::impls::cosmos::message::CosmosIbcMessage;
 use crate::traits::chain_context::{ChainContext, IbcChainContext};
+use crate::traits::core::Async;
 use crate::traits::core::ErrorContext;
 use crate::traits::relay_context::RelayContext;
 
@@ -24,11 +24,11 @@ pub struct CosmosRelayHandler<SrcChain, DstChain> {
     pub dst_to_src_client: ForeignClient<SrcChain, DstChain>,
 }
 
-impl<Handle: ChainHandle> ErrorContext for CosmosChainHandler<Handle> {
+impl<Handle: Async> ErrorContext for CosmosChainHandler<Handle> {
     type Error = Error;
 }
 
-impl<Handle: ChainHandle> ChainContext for CosmosChainHandler<Handle> {
+impl<Handle: Async> ChainContext for CosmosChainHandler<Handle> {
     type Height = Height;
 
     type Timestamp = Timestamp;
@@ -41,8 +41,8 @@ impl<Handle: ChainHandle> ChainContext for CosmosChainHandler<Handle> {
 impl<Chain, Counterparty> IbcChainContext<CosmosChainHandler<Counterparty>>
     for CosmosChainHandler<Chain>
 where
-    Chain: ChainHandle,
-    Counterparty: ChainHandle,
+    Chain: Async,
+    Counterparty: Async,
 {
     type ChannelId = ChannelId;
 
@@ -57,16 +57,16 @@ where
 
 impl<SrcChain, DstChain> ErrorContext for CosmosRelayHandler<SrcChain, DstChain>
 where
-    SrcChain: ChainHandle,
-    DstChain: ChainHandle,
+    SrcChain: Async,
+    DstChain: Async,
 {
     type Error = Error;
 }
 
 impl<SrcChain, DstChain> RelayContext for CosmosRelayHandler<SrcChain, DstChain>
 where
-    SrcChain: ChainHandle,
-    DstChain: ChainHandle,
+    SrcChain: Async,
+    DstChain: Async,
 {
     type SrcChain = CosmosChainHandler<SrcChain>;
 

@@ -6,11 +6,12 @@ use ibc_relayer::chain::handle::ChainHandle;
 
 use crate::impls::cosmos::error::Error;
 use crate::impls::cosmos::handler::CosmosChainHandler;
+use crate::traits::core::Async;
 use crate::traits::queries::status::{ChainStatus, ChainStatusQuerier};
 
 impl<Chain> ChainStatus<CosmosChainHandler<Chain>> for CosmosChainStatus
 where
-    Chain: ChainHandle,
+    Chain: Async,
 {
     fn height(&self) -> Height {
         self.height

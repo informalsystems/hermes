@@ -3,16 +3,16 @@ use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc::timestamp::Timestamp;
 use ibc::Height;
-use ibc_relayer::chain::handle::ChainHandle;
 
 use crate::impls::cosmos::handler::CosmosChainHandler;
+use crate::traits::core::Async;
 use crate::traits::packet::IbcPacket;
 
 impl<SrcChain, DstChain> IbcPacket<CosmosChainHandler<SrcChain>, CosmosChainHandler<DstChain>>
     for Packet
 where
-    SrcChain: ChainHandle,
-    DstChain: ChainHandle,
+    SrcChain: Async,
+    DstChain: Async,
 {
     fn source_port(&self) -> &PortId {
         &self.source_port
