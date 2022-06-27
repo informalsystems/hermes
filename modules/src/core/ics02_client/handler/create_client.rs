@@ -2,8 +2,8 @@
 
 use crate::prelude::*;
 
-use crate::core::ics02_client::client_consensus::AnyConsensusState;
-use crate::core::ics02_client::client_state::AnyClientState;
+use crate::core::ics02_client::client_consensus::ConsensusState;
+use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
@@ -18,12 +18,11 @@ use crate::timestamp::Timestamp;
 
 /// The result following the successful processing of a `MsgCreateAnyClient` message. Preferably
 /// this data type should be used with a qualified name `create_client::Result` to avoid ambiguity.
-#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Result {
     pub client_id: ClientId,
     pub client_type: ClientType,
-    pub client_state: AnyClientState,
-    pub consensus_state: AnyConsensusState,
+    pub client_state: Box<dyn ClientState>,
+    pub consensus_state: Box<dyn ConsensusState>,
     pub processed_time: Timestamp,
     pub processed_height: Height,
 }
@@ -48,8 +47,8 @@ pub fn process(
     let result = ClientResult::Create(Result {
         client_id: client_id.clone(),
         client_type: msg.client_state.client_type(),
-        client_state: msg.client_state.clone(),
-        consensus_state: msg.consensus_state,
+        client_state: msg.client_state.clone().boxed(),
+        consensus_state: msg.consensus_state.boxed(),
         processed_time: ctx.host_timestamp(),
         processed_height: ctx.host_height(),
     });

@@ -1,8 +1,8 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpgradeAnyClient`.
 //!
-use crate::core::ics02_client::client_consensus::AnyConsensusState;
-use crate::core::ics02_client::client_def::{AnyClient, ClientDef};
-use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
+use crate::core::ics02_client::client_consensus::ConsensusState;
+use crate::core::ics02_client::client_def::{AnyClient, ClientDef, UpdatedState};
+use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
@@ -15,11 +15,10 @@ use crate::prelude::*;
 
 /// The result following the successful processing of a `MsgUpgradeAnyClient` message.
 /// This data type should be used with a qualified name `upgrade_client::Result` to avoid ambiguity.
-#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Result {
     pub client_id: ClientId,
-    pub client_state: AnyClientState,
-    pub consensus_state: AnyConsensusState,
+    pub client_state: Box<dyn ClientState>,
+    pub consensus_state: Box<dyn ConsensusState>,
 }
 
 pub fn process(
@@ -49,7 +48,10 @@ pub fn process(
 
     let client_def = AnyClient::from_client_type(client_type);
 
-    let (new_client_state, new_consensus_state) = client_def.verify_upgrade_and_update_state(
+    let UpdatedState {
+        client_state,
+        consensus_state,
+    } = client_def.verify_upgrade_and_update_state(
         &upgrade_client_state,
         &msg.consensus_state,
         msg.proof_upgrade_client.clone(),
@@ -61,8 +63,8 @@ pub fn process(
 
     let result = ClientResult::Upgrade(Result {
         client_id: client_id.clone(),
-        client_state: new_client_state,
-        consensus_state: new_consensus_state,
+        client_state,
+        consensus_state,
     });
     let event_attributes = Attributes {
         client_id,

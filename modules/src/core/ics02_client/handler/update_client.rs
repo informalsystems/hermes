@@ -2,9 +2,9 @@
 
 use tracing::debug;
 
-use crate::core::ics02_client::client_consensus::AnyConsensusState;
-use crate::core::ics02_client::client_def::{AnyClient, ClientDef};
-use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
+use crate::core::ics02_client::client_consensus::ConsensusState;
+use crate::core::ics02_client::client_def::{AnyClient, ClientDef, UpdatedState};
+use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::context::{ClientReader, LightClientReader};
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
@@ -20,11 +20,10 @@ use crate::timestamp::Timestamp;
 
 /// The result following the successful processing of a `MsgUpdateAnyClient` message. Preferably
 /// this data type should be used with a qualified name `update_client::Result` to avoid ambiguity.
-#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Result {
     pub client_id: ClientId,
-    pub client_state: AnyClientState,
-    pub consensus_state: AnyConsensusState,
+    pub client_state: Box<dyn ClientState>,
+    pub consensus_state: Box<dyn ConsensusState>,
     pub processed_time: Timestamp,
     pub processed_height: Height,
 }
@@ -78,14 +77,17 @@ pub fn process<Ctx: ClientReader + LightClientReader>(
     // Use client_state to validate the new header against the latest consensus_state.
     // This function will return the new client_state (its latest_height changed) and a
     // consensus_state obtained from header. These will be later persisted by the keeper.
-    let (new_client_state, new_consensus_state) = client_def
+    let UpdatedState {
+        client_state,
+        consensus_state,
+    } = client_def
         .check_header_and_update_state(ctx, client_id.clone(), client_state, &header)
         .map_err(|e| Error::header_verification_failure(e.to_string()))?;
 
     let result = ClientResult::Update(Result {
         client_id: client_id.clone(),
-        client_state: new_client_state,
-        consensus_state: new_consensus_state,
+        client_state,
+        consensus_state,
         processed_time: ClientReader::host_timestamp(ctx),
         processed_height: ctx.host_height(),
     });

@@ -5,7 +5,7 @@
 use alloc::boxed::Box;
 
 use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
-use crate::core::ics02_client::client_state::AnyClientState;
+use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::{Error, ErrorDetail};
 use crate::core::ics02_client::handler::ClientResult::{self, Create, Update, Upgrade};
@@ -21,7 +21,7 @@ pub trait ClientReader {
     /// Retrieve the client state for the given client ID.
     ///
     /// Returns an error if no such client exists.
-    fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Error>;
+    fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Error>;
 
     /// Retrieve the consensus state for the given client ID at the specified
     /// height.
@@ -168,52 +168,37 @@ pub trait ClientKeeper {
     fn store_client_result(&mut self, handler_res: ClientResult) -> Result<(), Error> {
         match handler_res {
             Create(res) => {
+                let latest_height = res.client_state.latest_height();
                 let client_id = res.client_id.clone();
 
                 self.store_client_type(client_id.clone(), res.client_type)?;
-                self.store_client_state(client_id.clone(), res.client_state.clone())?;
-                self.store_consensus_state(
-                    client_id,
-                    res.client_state.latest_height(),
-                    res.consensus_state,
-                )?;
+                self.store_client_state(client_id.clone(), res.client_state)?;
+                self.store_consensus_state(client_id.clone(), latest_height, res.consensus_state)?;
                 self.increase_client_counter();
-                self.store_update_time(
-                    res.client_id.clone(),
-                    res.client_state.latest_height(),
-                    res.processed_time,
-                )?;
-                self.store_update_height(
-                    res.client_id,
-                    res.client_state.latest_height(),
-                    res.processed_height,
-                )?;
+                self.store_update_time(client_id.clone(), latest_height, res.processed_time)?;
+                self.store_update_height(client_id, latest_height, res.processed_height)?;
                 Ok(())
             }
             Update(res) => {
-                self.store_client_state(res.client_id.clone(), res.client_state.clone())?;
+                let latest_height = res.client_state.latest_height();
+
+                self.store_client_state(res.client_id.clone(), res.client_state)?;
                 self.store_consensus_state(
                     res.client_id.clone(),
-                    res.client_state.latest_height(),
+                    latest_height,
                     res.consensus_state,
                 )?;
-                self.store_update_time(
-                    res.client_id.clone(),
-                    res.client_state.latest_height(),
-                    res.processed_time,
-                )?;
-                self.store_update_height(
-                    res.client_id,
-                    res.client_state.latest_height(),
-                    res.processed_height,
-                )?;
+                self.store_update_time(res.client_id.clone(), latest_height, res.processed_time)?;
+                self.store_update_height(res.client_id, latest_height, res.processed_height)?;
                 Ok(())
             }
             Upgrade(res) => {
-                self.store_client_state(res.client_id.clone(), res.client_state.clone())?;
+                let latest_height = res.client_state.latest_height();
+
+                self.store_client_state(res.client_id.clone(), res.client_state)?;
                 self.store_consensus_state(
                     res.client_id.clone(),
-                    res.client_state.latest_height(),
+                    latest_height,
                     res.consensus_state,
                 )?;
                 Ok(())
@@ -232,7 +217,7 @@ pub trait ClientKeeper {
     fn store_client_state(
         &mut self,
         client_id: ClientId,
-        client_state: AnyClientState,
+        client_state: Box<dyn ClientState>,
     ) -> Result<(), Error>;
 
     /// Called upon successful client creation and update
@@ -240,7 +225,7 @@ pub trait ClientKeeper {
         &mut self,
         client_id: ClientId,
         height: Height,
-        consensus_state: AnyConsensusState,
+        consensus_state: Box<dyn ConsensusState>,
     ) -> Result<(), Error>;
 
     /// Called upon client creation.
