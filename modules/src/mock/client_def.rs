@@ -28,16 +28,13 @@ use crate::Height;
 pub struct MockClient;
 
 impl ClientDef for MockClient {
-    type ClientState = MockClientState;
-    type ConsensusState = MockConsensusState;
-
     fn check_header_and_update_state(
         &self,
         _ctx: &dyn LightClientReader,
         _client_id: ClientId,
-        client_state: Self::ClientState,
+        client_state: Box<dyn ClientState>,
         header: &dyn Header,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
+    ) -> Result<(Box<dyn ClientState>, Box<dyn ConsensusState>), Error> {
         if client_state.latest_height() >= header.height() {
             return Err(Error::low_header_height(
                 header.height(),
@@ -50,14 +47,14 @@ impl ClientDef for MockClient {
             .downcast_ref::<MockHeader>()
             .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
         Ok((
-            MockClientState::new(header),
-            MockConsensusState::new(header),
+            MockClientState::new(header).boxed(),
+            MockConsensusState::new(header).boxed(),
         ))
     }
 
     fn verify_client_consensus_state(
         &self,
-        _client_state: &Self::ClientState,
+        _client_state: &dyn ClientState,
         _height: Height,
         prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
@@ -80,7 +77,7 @@ impl ClientDef for MockClient {
 
     fn verify_connection_state(
         &self,
-        _client_state: &Self::ClientState,
+        _client_state: &dyn ClientState,
         _height: Height,
         _prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
@@ -93,7 +90,7 @@ impl ClientDef for MockClient {
 
     fn verify_channel_state(
         &self,
-        _client_state: &Self::ClientState,
+        _client_state: &dyn ClientState,
         _height: Height,
         _prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
@@ -107,7 +104,7 @@ impl ClientDef for MockClient {
 
     fn verify_client_full_state(
         &self,
-        _client_state: &Self::ClientState,
+        _client_state: &dyn ClientState,
         _height: Height,
         _prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
@@ -121,7 +118,7 @@ impl ClientDef for MockClient {
     fn verify_packet_data(
         &self,
         _ctx: &dyn ChannelMetaReader,
-        _client_state: &Self::ClientState,
+        _client_state: &dyn ClientState,
         _height: Height,
         _connection_end: &ConnectionEnd,
         _proof: &CommitmentProofBytes,
@@ -137,7 +134,7 @@ impl ClientDef for MockClient {
     fn verify_packet_acknowledgement(
         &self,
         _ctx: &dyn ChannelMetaReader,
-        _client_state: &Self::ClientState,
+        _client_state: &dyn ClientState,
         _height: Height,
         _connection_end: &ConnectionEnd,
         _proof: &CommitmentProofBytes,
@@ -153,7 +150,7 @@ impl ClientDef for MockClient {
     fn verify_next_sequence_recv(
         &self,
         _ctx: &dyn ChannelMetaReader,
-        _client_state: &Self::ClientState,
+        _client_state: &dyn ClientState,
         _height: Height,
         _connection_end: &ConnectionEnd,
         _proof: &CommitmentProofBytes,
@@ -168,7 +165,7 @@ impl ClientDef for MockClient {
     fn verify_packet_receipt_absence(
         &self,
         _ctx: &dyn ChannelMetaReader,
-        _client_state: &Self::ClientState,
+        _client_state: &dyn ClientState,
         _height: Height,
         _connection_end: &ConnectionEnd,
         _proof: &CommitmentProofBytes,
@@ -182,11 +179,14 @@ impl ClientDef for MockClient {
 
     fn verify_upgrade_and_update_state(
         &self,
-        client_state: &Self::ClientState,
-        consensus_state: &Self::ConsensusState,
+        client_state: &dyn ClientState,
+        consensus_state: &dyn ConsensusState,
         _proof_upgrade_client: MerkleProof,
         _proof_upgrade_consensus_state: MerkleProof,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
-        Ok((*client_state, consensus_state.clone()))
+    ) -> Result<(Box<dyn ClientState>, Box<dyn ConsensusState>), Error> {
+        Ok((
+            client_state.clone().boxed(),
+            consensus_state.clone().boxed(),
+        ))
     }
 }
