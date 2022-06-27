@@ -14,6 +14,8 @@ use crate::events::{
 };
 use crate::prelude::*;
 
+use super::packet::parse_timeout_height;
+
 /// Channel event attribute keys
 const HEIGHT_ATTRIBUTE_KEY: &str = "height";
 const CONNECTION_ID_ATTRIBUTE_KEY: &str = "connection_id";
@@ -169,8 +171,7 @@ fn extract_packet_and_write_ack_from_tx(
                     .into()
             }
             PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY => {
-                packet.timeout_height =
-                    value.parse().map_err(|_| Error::invalid_timeout_height())?;
+                packet.timeout_height = parse_timeout_height(value)?;
             }
             PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY => {
                 packet.timeout_timestamp = value.parse().unwrap();
@@ -320,7 +321,10 @@ impl TryFrom<Packet> for Vec<Tag> {
         attributes.push(sequence);
         let timeout_height = Tag {
             key: PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY.parse().unwrap(),
-            value: p.timeout_height.to_string().parse().unwrap(),
+            value: match p.timeout_height {
+                Some(timeout_height) => timeout_height.to_string().parse().unwrap(),
+                None => "0-0".parse().unwrap(),
+            },
         };
         attributes.push(timeout_height);
         let timeout_timestamp = Tag {

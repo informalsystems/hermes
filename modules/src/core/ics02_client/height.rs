@@ -154,6 +154,8 @@ define_error! {
                 format_args!("cannot convert into a `Height` type from string {0}",
                     e.height)
             },
+        ZeroHeight
+            |_| { "attempted to parse an invalid zero height" }
     }
 }
 
@@ -161,18 +163,20 @@ impl TryFrom<&str> for Height {
     type Error = HeightError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        // FIXME: REJECT `revision_height == 0`
-        // Note: we might have stored a height with `revision_height == 0`
-        // in the case of `Packet.timeout_height` (it's a valid height).
         let split: Vec<&str> = value.split('-').collect();
-        Ok(Height {
-            revision_number: split[0]
-                .parse::<u64>()
-                .map_err(|e| HeightError::height_conversion(value.to_owned(), e))?,
-            revision_height: split[1]
-                .parse::<u64>()
-                .map_err(|e| HeightError::height_conversion(value.to_owned(), e))?,
-        })
+
+        let revision_number = split[0]
+            .parse::<u64>()
+            .map_err(|e| HeightError::height_conversion(value.to_owned(), e))?;
+        let revision_height = split[1]
+            .parse::<u64>()
+            .map_err(|e| HeightError::height_conversion(value.to_owned(), e))?;
+
+        if revision_height == 0 {
+            return Err(HeightError::zero_height());
+        }
+
+        Ok(Height::new(revision_number, revision_height))
     }
 }
 

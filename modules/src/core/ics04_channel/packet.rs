@@ -1,3 +1,4 @@
+use crate::core::ics02_client::height::HeightErrorDetail;
 use crate::prelude::*;
 
 use core::str::FromStr;
@@ -199,6 +200,20 @@ impl core::fmt::Display for Packet {
     }
 }
 
+/// Parse a string into a timeout height expected to be stored in
+/// `Packet.timeout_height`. We need to parse the timeout height differently
+/// because of a quirk introduced in ibc-go. See comment in
+/// `TryFrom<RawPacket> for Packet`.
+pub fn parse_timeout_height(s: &str) -> Result<Option<Height>, Error> {
+    match s.parse::<Height>() {
+        Ok(height) => Ok(Some(height)),
+        Err(e) => match e.into_detail() {
+            HeightErrorDetail::ZeroHeight(_) => Ok(None),
+            _ => Err(Error::invalid_timeout_height()),
+        },
+    }
+}
+
 impl TryFrom<RawPacket> for Packet {
     type Error = Error;
 
@@ -264,6 +279,7 @@ impl TryFrom<RawPacket> for Packet {
 impl TryFrom<RawObject<'_>> for Packet {
     type Error = EventError;
     fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
+        // FIXME: Use ABCI constants instead of these hardcoded strings
         Ok(Packet {
             sequence: extract_attribute(&obj, &format!("{}.packet_sequence", obj.action))?
                 .parse()
@@ -284,12 +300,11 @@ impl TryFrom<RawObject<'_>> for Packet {
             .parse()
             .map_err(EventError::parse)?,
             data: vec![],
-            timeout_height: extract_attribute(
-                &obj,
-                &format!("{}.packet_timeout_height", obj.action),
-            )?
-            .parse()
-            .map_err(EventError::height)?,
+            timeout_height: {
+                let timeout_height_str =
+                    extract_attribute(&obj, &format!("{}.packet_timeout_height", obj.action))?;
+                parse_timeout_height(&timeout_height_str).map_err(|_| EventError::height())?
+            },
             timeout_timestamp: extract_attribute(
                 &obj,
                 &format!("{}.packet_timeout_timestamp", obj.action),

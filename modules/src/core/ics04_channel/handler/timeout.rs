@@ -51,7 +51,6 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgTimeout) -> HandlerResult<Packe
 
     // check that timeout height or timeout timestamp has passed on the other end
     let proof_height = msg.proofs.height();
-    let packet_height = packet.timeout_height;
 
     if let Some(timeout_height) = packet.timeout_height {
         if timeout_height > proof_height {
