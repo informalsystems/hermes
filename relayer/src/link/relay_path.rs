@@ -41,6 +41,8 @@ use crate::link::{pending, relay_sender};
 use crate::path::PathIdentifiers;
 use crate::telemetry;
 use crate::util::queue::Queue;
+
+use ibc::core::ics02_client::client_consensus::ConsensusState;
 use ibc::{
     core::{
         ics02_client::{
