@@ -9,9 +9,10 @@ use crate::impls::cosmos::handler::CosmosChainHandler;
 use crate::impls::cosmos::handler::CosmosRelayHandler;
 use crate::impls::cosmos::message::CosmosIbcMessage;
 use crate::impls::cosmos::target::CosmosChainTarget;
+use crate::impls::message_senders::chain_sender::SendIbcMessageToChain;
 use crate::impls::message_senders::update_client::MessageSenderWithUpdateClient;
 use crate::traits::chain_context::{ChainContext, IbcChainContext};
-use crate::traits::ibc_message_sender::{IbcMessageSender, IbcMessageSenderContext};
+use crate::traits::ibc_message_sender::IbcMessageSenderContext;
 use crate::traits::message::Message;
 use crate::traits::message_sender::{MessageSender, MessageSenderContext};
 use crate::traits::target::ChainTarget;
@@ -28,15 +29,18 @@ where
     Target::CounterpartyChain: ChainContext<Height = Height>,
     Target::TargetChain: IbcChainContext<
         Target::CounterpartyChain,
+        Message = CosmosIbcMessage,
         IbcMessage = CosmosIbcMessage,
+        Event = IbcEvent,
         IbcEvent = IbcEvent,
     >,
+    Target::TargetChain: MessageSenderContext,
 {
-    type IbcMessageSender = MessageSenderWithUpdateClient<CosmosBaseMessageSender>;
+    type IbcMessageSender = MessageSenderWithUpdateClient<SendIbcMessageToChain>;
 
     fn ibc_message_sender(&self) -> &Self::IbcMessageSender {
         &MessageSenderWithUpdateClient {
-            sender: CosmosBaseMessageSender,
+            sender: SendIbcMessageToChain,
         }
     }
 }
@@ -49,51 +53,6 @@ where
 
     fn message_sender(&self) -> &Self::MessageSender {
         &CosmosBaseMessageSender
-    }
-}
-
-#[async_trait]
-impl<SrcChain, DstChain, Target> IbcMessageSender<CosmosRelayHandler<SrcChain, DstChain>, Target>
-    for CosmosBaseMessageSender
-where
-    SrcChain: ChainHandle,
-    DstChain: ChainHandle,
-    Target: ChainTarget<CosmosRelayHandler<SrcChain, DstChain>>,
-    CosmosRelayHandler<SrcChain, DstChain>: CosmosChainTarget<SrcChain, DstChain, Target>,
-    Target::TargetChain: IbcChainContext<
-        Target::CounterpartyChain,
-        IbcMessage = CosmosIbcMessage,
-        IbcEvent = IbcEvent,
-    >,
-{
-    async fn send_messages(
-        &self,
-        context: &CosmosRelayHandler<SrcChain, DstChain>,
-        messages: Vec<CosmosIbcMessage>,
-    ) -> Result<Vec<Vec<IbcEvent>>, Error> {
-        let signer = context
-            .target_handle()
-            .get_signer()
-            .map_err(Error::relayer)?;
-
-        let raw_messages = messages
-            .into_iter()
-            .map(|message| message.encode_raw(&signer))
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(Error::encode)?;
-
-        let tracked_messages = TrackedMsgs::new_static(raw_messages, "CosmosChainHandler");
-
-        let events = context
-            .target_handle()
-            .send_messages_and_wait_commit(tracked_messages)
-            .map_err(Error::relayer)?;
-
-        // TODO: properly group IBC events by orginal order by
-        // calling send_tx functions without going through ChainHandle
-        let nested_events = events.into_iter().map(|event| vec![event]).collect();
-
-        Ok(nested_events)
     }
 }
 
