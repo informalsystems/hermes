@@ -1,6 +1,6 @@
 # Install Gaia
 
-The script to start the chains requires gaia to be installed.
+For `gm` to start the chains, it requires gaia to be installed.
 
 > __NOTE__: This assumes you have `Golang` programming language installed on 
 > your machine. If not, please ensure you install before proceeding. See 
@@ -20,7 +20,7 @@ Run the `make` command to build and install `gaiad`
 
 ```shell
 cd ~/go/src/github.com/cosmos/gaia
-git checkout v4.2.1
+git checkout <latest-release-tag> (https://github.com/cosmos/gaia/releases)
 make install
 ```
 
