@@ -1,6 +1,8 @@
 use async_trait::async_trait;
 
-use crate::traits::message_sender::{IbcMessageSender, IbcMessageSenderExt, MessageSenderContext};
+use crate::traits::ibc_message_sender::{
+    IbcMessageSender, IbcMessageSenderContext, IbcMessageSenderExt,
+};
 use crate::traits::messages::receive_packet::ReceivePacketMessageBuilder;
 use crate::traits::packet_relayer::PacketRelayer;
 use crate::traits::queries::status::{ChainStatus, ChainStatusQuerier};
@@ -17,7 +19,7 @@ where
     Context: RelayContext<RelayTypes = Relay, Error = Error>,
     Context: ReceivePacketMessageBuilder<Relay>,
     Context::SrcChainContext: ChainStatusQuerier<Relay::SrcChain>,
-    Context: MessageSenderContext<DestinationTarget, Sender = Sender>,
+    Context: IbcMessageSenderContext<DestinationTarget, Sender = Sender>,
     Sender: IbcMessageSender<Context, DestinationTarget>,
 {
     type Return = ();

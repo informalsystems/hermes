@@ -10,13 +10,13 @@ use crate::impls::cosmos::message::CosmosIbcMessage;
 use crate::impls::cosmos::relay_types::CosmosRelayTypes;
 use crate::impls::cosmos::target::CosmosChainTarget;
 use crate::impls::message_senders::update_client::MessageSenderWithUpdateClient;
+use crate::traits::ibc_message_sender::{IbcMessageSender, IbcMessageSenderContext};
 use crate::traits::message::Message;
-use crate::traits::message_sender::{IbcMessageSender, MessageSenderContext};
 use crate::traits::target::ChainTarget;
 
 pub struct CosmosBaseMessageSender;
 
-impl<SrcChain, DstChain, Target> MessageSenderContext<Target>
+impl<SrcChain, DstChain, Target> IbcMessageSenderContext<Target>
     for CosmosRelayHandler<SrcChain, DstChain>
 where
     SrcChain: ChainHandle,

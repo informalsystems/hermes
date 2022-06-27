@@ -1,7 +1,7 @@
 pub mod chain_types;
 pub mod core;
+pub mod ibc_message_sender;
 pub mod message;
-pub mod message_sender;
 pub mod messages;
 pub mod packet;
 pub mod packet_relayer;

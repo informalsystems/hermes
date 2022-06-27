@@ -4,7 +4,7 @@ use ibc_relayer::error::Error as RelayerError;
 use ibc_relayer::foreign_client::ForeignClientError;
 use prost::EncodeError;
 
-use crate::traits::message_sender::MismatchIbcEventsCountError;
+use crate::traits::ibc_message_sender::MismatchIbcEventsCountError;
 
 define_error! {
     Error {

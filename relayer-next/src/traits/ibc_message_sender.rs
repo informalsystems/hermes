@@ -5,7 +5,7 @@ use crate::traits::relay_types::RelayContext;
 use crate::traits::target::ChainTarget;
 use crate::types::aliases::{IbcEvent, IbcMessage};
 
-pub trait MessageSenderContext<Target>: RelayContext
+pub trait IbcMessageSenderContext<Target>: RelayContext
 where
     Target: ChainTarget<Self::RelayTypes>,
 {
