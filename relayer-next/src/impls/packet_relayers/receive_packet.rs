@@ -1,8 +1,6 @@
 use async_trait::async_trait;
 
-use crate::traits::ibc_message_sender::{
-    IbcMessageSender, IbcMessageSenderContext, IbcMessageSenderExt,
-};
+use crate::traits::ibc_message_sender::{IbcMessageSenderContext, IbcMessageSenderExt};
 use crate::traits::messages::receive_packet::ReceivePacketMessageBuilder;
 use crate::traits::packet_relayer::PacketRelayer;
 use crate::traits::queries::status::{ChainStatus, ChainStatusQuerier};
@@ -13,14 +11,13 @@ use crate::types::aliases::Packet;
 pub struct ReceivePacketRelayer;
 
 #[async_trait]
-impl<Context, Relay, Error, Sender> PacketRelayer<Context> for ReceivePacketRelayer
+impl<Context, Relay, Error> PacketRelayer<Context> for ReceivePacketRelayer
 where
     Relay: RelayTypes<Error = Error>,
     Context: RelayContext<RelayTypes = Relay, Error = Error>,
     Context: ReceivePacketMessageBuilder<Relay>,
     Context::SrcChainContext: ChainStatusQuerier<Relay::SrcChain>,
-    Context: IbcMessageSenderContext<DestinationTarget, Sender = Sender>,
-    Sender: IbcMessageSender<Context, DestinationTarget>,
+    Context: IbcMessageSenderContext<DestinationTarget>,
 {
     type Return = ();
 
@@ -36,7 +33,7 @@ where
             .await?;
 
         context
-            .message_sender()
+            .ibc_message_sender()
             .send_message(context, message)
             .await?;
 

@@ -4,7 +4,7 @@ use ibc_relayer::foreign_client::ForeignClient;
 use crate::impls::cosmos::chain_types::CosmosChainTypes;
 use crate::impls::cosmos::error::Error;
 use crate::impls::cosmos::relay_types::CosmosRelayTypes;
-use crate::traits::chain_types::IbcChainContext;
+use crate::traits::chain_types::{ChainContext, IbcChainContext};
 use crate::traits::core::ErrorContext;
 use crate::traits::relay_types::RelayContext;
 
@@ -25,6 +25,10 @@ where
 
 impl<Chain: ChainHandle> ErrorContext for CosmosChainHandler<Chain> {
     type Error = Error;
+}
+
+impl<Chain: ChainHandle> ChainContext for CosmosChainHandler<Chain> {
+    type ChainTypes = CosmosChainTypes;
 }
 
 impl<Chain: ChainHandle> IbcChainContext<CosmosChainTypes> for CosmosChainHandler<Chain> {

@@ -19,15 +19,22 @@ impl ErrorContext for CosmosChainTypes {
 
 impl ChainTypes for CosmosChainTypes {
     type Height = Height;
+
     type Timestamp = Timestamp;
+
     type Message = CosmosIbcMessage;
+
+    type Event = IbcEvent;
 }
 
 impl IbcChainTypes<CosmosChainTypes> for CosmosChainTypes {
     type ChannelId = ChannelId;
+
     type PortId = PortId;
+
     type Sequence = Sequence;
 
     type IbcMessage = CosmosIbcMessage;
+
     type IbcEvent = IbcEvent;
 }

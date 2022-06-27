@@ -9,9 +9,9 @@ pub trait IbcMessageSenderContext<Target>: RelayContext
 where
     Target: ChainTarget<Self::RelayTypes>,
 {
-    type Sender: IbcMessageSender<Self, Target>;
+    type IbcMessageSender: IbcMessageSender<Self, Target>;
 
-    fn message_sender(&self) -> &Self::Sender;
+    fn ibc_message_sender(&self) -> &Self::IbcMessageSender;
 }
 
 #[async_trait]

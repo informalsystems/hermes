@@ -9,7 +9,11 @@ pub type Sequence<Chain, Counterparty> = <Chain as IbcChainTypes<Counterparty>>:
 
 pub type IbcMessage<Chain, Counterparty> = <Chain as IbcChainTypes<Counterparty>>::IbcMessage;
 
+pub type Message<Chain> = <Chain as ChainTypes>::Message;
+
 pub type IbcEvent<Chain, Counterparty> = <Chain as IbcChainTypes<Counterparty>>::IbcEvent;
+
+pub type Event<Chain> = <Chain as ChainTypes>::Event;
 
 pub type Height<Chain> = <Chain as ChainTypes>::Height;
 

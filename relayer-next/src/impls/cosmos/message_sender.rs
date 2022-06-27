@@ -5,13 +5,14 @@ use ibc_relayer::chain::tracking::TrackedMsgs;
 
 use crate::impls::cosmos::chain_types::CosmosChainTypes;
 use crate::impls::cosmos::error::Error;
-use crate::impls::cosmos::handler::CosmosRelayHandler;
+use crate::impls::cosmos::handler::{CosmosChainHandler, CosmosRelayHandler};
 use crate::impls::cosmos::message::CosmosIbcMessage;
 use crate::impls::cosmos::relay_types::CosmosRelayTypes;
 use crate::impls::cosmos::target::CosmosChainTarget;
 use crate::impls::message_senders::update_client::MessageSenderWithUpdateClient;
 use crate::traits::ibc_message_sender::{IbcMessageSender, IbcMessageSenderContext};
 use crate::traits::message::Message;
+use crate::traits::message_sender::{MessageSender, MessageSenderContext};
 use crate::traits::target::ChainTarget;
 
 pub struct CosmosBaseMessageSender;
@@ -28,12 +29,23 @@ where
     >,
     Self: CosmosChainTarget<Target>,
 {
-    type Sender = MessageSenderWithUpdateClient<CosmosBaseMessageSender>;
+    type IbcMessageSender = MessageSenderWithUpdateClient<CosmosBaseMessageSender>;
 
-    fn message_sender(&self) -> &Self::Sender {
+    fn ibc_message_sender(&self) -> &Self::IbcMessageSender {
         &MessageSenderWithUpdateClient {
             sender: CosmosBaseMessageSender,
         }
+    }
+}
+
+impl<Chain> MessageSenderContext for CosmosChainHandler<Chain>
+where
+    Chain: ChainHandle,
+{
+    type MessageSender = CosmosBaseMessageSender;
+
+    fn message_sender(&self) -> &Self::MessageSender {
+        &CosmosBaseMessageSender
     }
 }
 
@@ -70,6 +82,39 @@ where
 
         let events = context
             .target_handle()
+            .send_messages_and_wait_commit(tracked_messages)
+            .map_err(Error::relayer)?;
+
+        // TODO: properly group IBC events by orginal order by
+        // calling send_tx functions without going through ChainHandle
+        let nested_events = events.into_iter().map(|event| vec![event]).collect();
+
+        Ok(nested_events)
+    }
+}
+
+#[async_trait]
+impl<Chain> MessageSender<CosmosChainHandler<Chain>> for CosmosBaseMessageSender
+where
+    Chain: ChainHandle,
+{
+    async fn send_messages(
+        &self,
+        context: &CosmosChainHandler<Chain>,
+        messages: Vec<CosmosIbcMessage>,
+    ) -> Result<Vec<Vec<IbcEvent>>, Error> {
+        let signer = context.handle.get_signer().map_err(Error::relayer)?;
+
+        let raw_messages = messages
+            .into_iter()
+            .map(|message| message.encode_raw(&signer))
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(Error::encode)?;
+
+        let tracked_messages = TrackedMsgs::new_static(raw_messages, "CosmosChainTypes");
+
+        let events = context
+            .handle
             .send_messages_and_wait_commit(tracked_messages)
             .map_err(Error::relayer)?;
 
