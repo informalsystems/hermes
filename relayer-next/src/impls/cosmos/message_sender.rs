@@ -10,11 +10,12 @@ use crate::impls::cosmos::message::CosmosIbcMessage;
 use crate::impls::cosmos::relay_types::CosmosRelayTypes;
 use crate::impls::cosmos::target::CosmosChainTarget;
 use crate::traits::message::Message;
-use crate::traits::message_sender::IbcMessageSender;
+use crate::traits::message_sender::{IbcMessageSender, MessageSenderContext};
 use crate::traits::target::ChainTarget;
 
-#[async_trait]
-impl<SrcChain, DstChain, Target> IbcMessageSender<CosmosRelayTypes, Target>
+pub struct CosmosBaseMessageSender;
+
+impl<SrcChain, DstChain, Target> MessageSenderContext<Target>
     for CosmosRelayHandler<SrcChain, DstChain>
 where
     SrcChain: ChainHandle,
@@ -26,11 +27,35 @@ where
     >,
     Self: CosmosChainTarget<Target>,
 {
+    type Sender = CosmosBaseMessageSender;
+
+    fn message_sender(&self) -> &Self::Sender {
+        &CosmosBaseMessageSender
+    }
+}
+
+#[async_trait]
+impl<SrcChain, DstChain, Target> IbcMessageSender<CosmosRelayHandler<SrcChain, DstChain>, Target>
+    for CosmosBaseMessageSender
+where
+    SrcChain: ChainHandle,
+    DstChain: ChainHandle,
+    Target: ChainTarget<
+        CosmosRelayTypes,
+        TargetChain = CosmosChainTypes,
+        CounterpartyChain = CosmosChainTypes,
+    >,
+    CosmosRelayHandler<SrcChain, DstChain>: CosmosChainTarget<Target>,
+{
     async fn send_messages(
         &self,
+        context: &CosmosRelayHandler<SrcChain, DstChain>,
         messages: Vec<CosmosIbcMessage>,
     ) -> Result<Vec<Vec<IbcEvent>>, Error> {
-        let signer = self.target_handle().get_signer().map_err(Error::relayer)?;
+        let signer = context
+            .target_handle()
+            .get_signer()
+            .map_err(Error::relayer)?;
 
         let raw_messages = messages
             .into_iter()
@@ -40,7 +65,7 @@ where
 
         let tracked_messages = TrackedMsgs::new_static(raw_messages, "CosmosChainTypes");
 
-        let events = self
+        let events = context
             .target_handle()
             .send_messages_and_wait_commit(tracked_messages)
             .map_err(Error::relayer)?;

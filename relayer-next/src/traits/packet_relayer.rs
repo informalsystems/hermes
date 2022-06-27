@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::traits::relay_types::{RelayContext, RelayTypes};
+use crate::traits::relay_types::RelayContext;
 use crate::types::aliases::Packet;
 
 #[async_trait]
@@ -11,5 +11,5 @@ pub trait PacketRelayer<Context: RelayContext> {
         &self,
         context: &Context,
         packet: Packet<Context::RelayTypes>,
-    ) -> Result<Self::Return, <Context::RelayTypes as RelayTypes>::Error>;
+    ) -> Result<Self::Return, Context::Error>;
 }

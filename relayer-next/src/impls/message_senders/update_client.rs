@@ -1,9 +1,9 @@
-pub struct MessageSenderWithUpdateClient<'a, Sender> {
-    pub sender: &'a Sender,
+pub struct MessageSenderWithUpdateClient<Sender> {
+    pub sender: Sender,
 }
 
-impl<'a, Sender> MessageSenderWithUpdateClient<'a, Sender> {
-    pub fn new(sender: &'a Sender) -> Self {
+impl<'a, Sender> MessageSenderWithUpdateClient<Sender> {
+    pub fn new(sender: Sender) -> Self {
         Self { sender }
     }
 }

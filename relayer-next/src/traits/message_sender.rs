@@ -1,20 +1,30 @@
 use async_trait::async_trait;
 
 use crate::traits::core::CoreTraits;
-use crate::traits::relay_types::RelayTypes;
+use crate::traits::relay_types::RelayContext;
 use crate::traits::target::ChainTarget;
 use crate::types::aliases::{IbcEvent, IbcMessage};
 
-#[async_trait]
-pub trait IbcMessageSender<Relay, Target>: CoreTraits
+pub trait MessageSenderContext<Target>: RelayContext
 where
-    Relay: RelayTypes,
-    Target: ChainTarget<Relay>,
+    Target: ChainTarget<Self::RelayTypes>,
+{
+    type Sender: IbcMessageSender<Self, Target>;
+
+    fn message_sender(&self) -> &Self::Sender;
+}
+
+#[async_trait]
+pub trait IbcMessageSender<Context, Target>: CoreTraits
+where
+    Context: RelayContext,
+    Target: ChainTarget<Context::RelayTypes>,
 {
     async fn send_messages(
         &self,
+        context: &Context,
         messages: Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
-    ) -> Result<Vec<Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>>, Relay::Error>;
+    ) -> Result<Vec<Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>>, Context::Error>;
 }
 
 pub struct MismatchIbcEventsCountError {
@@ -23,40 +33,49 @@ pub struct MismatchIbcEventsCountError {
 }
 
 #[async_trait]
-pub trait IbcMessageSenderExt<Relay, Target>: IbcMessageSender<Relay, Target>
+pub trait IbcMessageSenderExt<Context, Target>: IbcMessageSender<Context, Target>
 where
-    Relay: RelayTypes,
-    Target: ChainTarget<Relay>,
+    Context: RelayContext,
+    Target: ChainTarget<Context::RelayTypes>,
 {
     async fn send_messages_fixed<const COUNT: usize>(
         &self,
+        context: &Context,
         messages: [IbcMessage<Target::TargetChain, Target::CounterpartyChain>; COUNT],
-    ) -> Result<[Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>; COUNT], Relay::Error>
+    ) -> Result<
+        [Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>; COUNT],
+        Context::Error,
+    >
     where
-        Relay::Error: From<MismatchIbcEventsCountError>;
+        Context::Error: From<MismatchIbcEventsCountError>;
 
     async fn send_message(
         &self,
+        context: &Context,
         message: IbcMessage<Target::TargetChain, Target::CounterpartyChain>,
-    ) -> Result<(), Relay::Error>;
+    ) -> Result<(), Context::Error>;
 }
 
 #[async_trait]
-impl<Context, Relay, Target> IbcMessageSenderExt<Relay, Target> for Context
+impl<Context, Target, Sender> IbcMessageSenderExt<Context, Target> for Sender
 where
-    Context: IbcMessageSender<Relay, Target>,
-    Relay: RelayTypes,
-    Target: ChainTarget<Relay>,
+    Context: RelayContext,
+    Sender: IbcMessageSender<Context, Target>,
+    Target: ChainTarget<Context::RelayTypes>,
 {
     async fn send_messages_fixed<const COUNT: usize>(
         &self,
+        context: &Context,
         messages: [IbcMessage<Target::TargetChain, Target::CounterpartyChain>; COUNT],
-    ) -> Result<[Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>; COUNT], Relay::Error>
+    ) -> Result<
+        [Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>; COUNT],
+        Context::Error,
+    >
     where
-        Relay::Error: From<MismatchIbcEventsCountError>,
+        Context::Error: From<MismatchIbcEventsCountError>,
     {
         let events = self
-            .send_messages(messages.into())
+            .send_messages(context, messages.into())
             .await?
             .try_into()
             .map_err(|e: Vec<_>| MismatchIbcEventsCountError {
@@ -69,9 +88,10 @@ where
 
     async fn send_message(
         &self,
+        context: &Context,
         message: IbcMessage<Target::TargetChain, Target::CounterpartyChain>,
-    ) -> Result<(), Relay::Error> {
-        self.send_messages(vec![message]).await?;
+    ) -> Result<(), Context::Error> {
+        self.send_messages(context, vec![message]).await?;
 
         Ok(())
     }
