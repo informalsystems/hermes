@@ -220,7 +220,8 @@ memo_prefix = ''
 # [chains.packet_filter]
 # policy = 'allow'
 # list = [
-#   ['transfer', 'channel-1'],
+#   ['ica*', '*'],
+#   ['transfer', 'channel-0'],
 # ]
 
 # Specify that the transaction fees should be payed from this fee granter's account.
