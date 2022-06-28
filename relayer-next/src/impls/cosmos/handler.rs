@@ -1,9 +1,10 @@
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics04_channel::packet::Sequence;
-use ibc::core::ics24_host::identifier::{ChannelId, PortId};
+use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use ibc::events::IbcEvent;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
+use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::impls::cosmos::error::Error;
@@ -44,6 +45,10 @@ where
     Chain: Async,
     Counterparty: Async,
 {
+    type ClientId = ClientId;
+
+    type ConnectionId = ConnectionId;
+
     type ChannelId = ChannelId;
 
     type PortId = PortId;
@@ -65,8 +70,8 @@ where
 
 impl<SrcChain, DstChain> RelayContext for CosmosRelayHandler<SrcChain, DstChain>
 where
-    SrcChain: Async,
-    DstChain: Async,
+    SrcChain: ChainHandle,
+    DstChain: ChainHandle,
 {
     type SrcChain = CosmosChainHandler<SrcChain>;
 
@@ -80,5 +85,13 @@ where
 
     fn destination_context(&self) -> &Self::DstChain {
         &self.dst_handle
+    }
+
+    fn source_client_id(&self) -> &ClientId {
+        self.dst_to_src_client.id()
+    }
+
+    fn destination_client_id(&self) -> &ClientId {
+        self.src_to_dst_client.id()
     }
 }

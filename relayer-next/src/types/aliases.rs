@@ -1,6 +1,10 @@
 use crate::traits::chain_context::{ChainContext, IbcChainContext};
 use crate::traits::relay_context::RelayContext;
 
+pub type ClientId<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::ClientId;
+
+pub type ConnectionId<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::ConnectionId;
+
 pub type ChannelId<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::ChannelId;
 
 pub type PortId<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::PortId;

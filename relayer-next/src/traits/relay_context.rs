@@ -1,6 +1,7 @@
 use crate::traits::chain_context::IbcChainContext;
 use crate::traits::core::{Async, ErrorContext};
 use crate::traits::packet::IbcPacket;
+use crate::types::aliases::ClientId;
 
 pub trait RelayContext: ErrorContext {
     type SrcChain: IbcChainContext<Self::DstChain, Error = Self::Error>;
@@ -12,14 +13,8 @@ pub trait RelayContext: ErrorContext {
     fn source_context(&self) -> &Self::SrcChain;
 
     fn destination_context(&self) -> &Self::DstChain;
-}
 
-pub trait RelayContextPair: Async {
-    type SrcToDestContext: RelayContext;
+    fn source_client_id(&self) -> &ClientId<Self::SrcChain, Self::DstChain>;
 
-    type DstToSrcContext: RelayContext<
-        SrcChain = <Self::SrcToDestContext as RelayContext>::DstChain,
-        DstChain = <Self::SrcToDestContext as RelayContext>::SrcChain,
-        Error = <Self::SrcToDestContext as ErrorContext>::Error,
-    >;
+    fn destination_client_id(&self) -> &ClientId<Self::DstChain, Self::SrcChain>;
 }
