@@ -274,6 +274,7 @@ impl Runnable for TxUpgradeClientCmd {
 
         while src_application_latest_height < target_application_upgrade_height {
             thread::sleep(Duration::from_millis(200));
+
             src_application_latest_height = match client.src_chain().query_latest_height() {
                 Ok(height) => height,
                 Err(e) => Output::error(format!("{}", e)).exit(),
