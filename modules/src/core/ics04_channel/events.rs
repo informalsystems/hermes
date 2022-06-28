@@ -25,15 +25,15 @@ const COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY: &str = "counterparty_channel_id";
 const COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY: &str = "counterparty_port_id";
 
 /// Packet event attribute keys
-const PKT_SEQ_ATTRIBUTE_KEY: &str = "packet_sequence";
-const PKT_DATA_ATTRIBUTE_KEY: &str = "packet_data";
-const PKT_SRC_PORT_ATTRIBUTE_KEY: &str = "packet_src_port";
-const PKT_SRC_CHANNEL_ATTRIBUTE_KEY: &str = "packet_src_channel";
-const PKT_DST_PORT_ATTRIBUTE_KEY: &str = "packet_dst_port";
-const PKT_DST_CHANNEL_ATTRIBUTE_KEY: &str = "packet_dst_channel";
-const PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY: &str = "packet_timeout_height";
-const PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY: &str = "packet_timeout_timestamp";
-const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
+pub const PKT_SEQ_ATTRIBUTE_KEY: &str = "packet_sequence";
+pub const PKT_DATA_ATTRIBUTE_KEY: &str = "packet_data";
+pub const PKT_SRC_PORT_ATTRIBUTE_KEY: &str = "packet_src_port";
+pub const PKT_SRC_CHANNEL_ATTRIBUTE_KEY: &str = "packet_src_channel";
+pub const PKT_DST_PORT_ATTRIBUTE_KEY: &str = "packet_dst_port";
+pub const PKT_DST_CHANNEL_ATTRIBUTE_KEY: &str = "packet_dst_channel";
+pub const PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY: &str = "packet_timeout_height";
+pub const PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY: &str = "packet_timeout_timestamp";
+pub const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
 
 pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
     match event.type_str.parse() {

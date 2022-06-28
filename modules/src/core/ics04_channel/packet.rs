@@ -14,6 +14,11 @@ use crate::events::{extract_attribute, Error as EventError, RawObject};
 use crate::timestamp::{Expiry::Expired, Timestamp};
 use crate::Height;
 
+use super::events::{
+    PKT_DST_CHANNEL_ATTRIBUTE_KEY, PKT_DST_PORT_ATTRIBUTE_KEY, PKT_SEQ_ATTRIBUTE_KEY,
+    PKT_SRC_CHANNEL_ATTRIBUTE_KEY, PKT_SRC_PORT_ATTRIBUTE_KEY, PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY,
+    PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY,
+};
 use super::handler::{
     acknowledgement::AckPacketResult, recv_packet::RecvPacketResult, send_packet::SendPacketResult,
     timeout::TimeoutPacketResult, write_acknowledgement::WriteAckPacketResult,
@@ -279,35 +284,48 @@ impl TryFrom<RawPacket> for Packet {
 impl TryFrom<RawObject<'_>> for Packet {
     type Error = EventError;
     fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
-        // FIXME: Use ABCI constants instead of these hardcoded strings
         Ok(Packet {
-            sequence: extract_attribute(&obj, &format!("{}.packet_sequence", obj.action))?
-                .parse()
-                .map_err(EventError::channel)?,
-            source_port: extract_attribute(&obj, &format!("{}.packet_src_port", obj.action))?
-                .parse()
-                .map_err(EventError::parse)?,
-            source_channel: extract_attribute(&obj, &format!("{}.packet_src_channel", obj.action))?
-                .parse()
-                .map_err(EventError::parse)?,
-            destination_port: extract_attribute(&obj, &format!("{}.packet_dst_port", obj.action))?
-                .parse()
-                .map_err(EventError::parse)?,
+            sequence: extract_attribute(
+                &obj,
+                &format!("{}.{}", obj.action, PKT_SEQ_ATTRIBUTE_KEY),
+            )?
+            .parse()
+            .map_err(EventError::channel)?,
+            source_port: extract_attribute(
+                &obj,
+                &format!("{}.{}", obj.action, PKT_SRC_PORT_ATTRIBUTE_KEY),
+            )?
+            .parse()
+            .map_err(EventError::parse)?,
+            source_channel: extract_attribute(
+                &obj,
+                &format!("{}.{}", obj.action, PKT_SRC_CHANNEL_ATTRIBUTE_KEY),
+            )?
+            .parse()
+            .map_err(EventError::parse)?,
+            destination_port: extract_attribute(
+                &obj,
+                &format!("{}.{}", obj.action, PKT_DST_PORT_ATTRIBUTE_KEY),
+            )?
+            .parse()
+            .map_err(EventError::parse)?,
             destination_channel: extract_attribute(
                 &obj,
-                &format!("{}.packet_dst_channel", obj.action),
+                &format!("{}.{}", obj.action, PKT_DST_CHANNEL_ATTRIBUTE_KEY),
             )?
             .parse()
             .map_err(EventError::parse)?,
             data: vec![],
             timeout_height: {
-                let timeout_height_str =
-                    extract_attribute(&obj, &format!("{}.packet_timeout_height", obj.action))?;
+                let timeout_height_str = extract_attribute(
+                    &obj,
+                    &format!("{}.{}", obj.action, PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY),
+                )?;
                 parse_timeout_height(&timeout_height_str).map_err(|_| EventError::height())?
             },
             timeout_timestamp: extract_attribute(
                 &obj,
-                &format!("{}.packet_timeout_timestamp", obj.action),
+                &format!("{}.{}", obj.action, PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY),
             )?
             .parse()
             .map_err(EventError::timestamp)?,
