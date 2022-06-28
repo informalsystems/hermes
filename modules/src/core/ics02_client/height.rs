@@ -40,10 +40,6 @@ impl Height {
         }
     }
 
-    pub fn is_zero(&self) -> bool {
-        self.revision_height == 0
-    }
-
     pub fn add(&self, delta: u64) -> Height {
         Height {
             revision_number: self.revision_number,
