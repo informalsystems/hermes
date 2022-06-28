@@ -168,7 +168,10 @@ mod tests {
         let tests: Vec<Test> = vec![Test {
             name: "Good parameters".to_string(),
             ctx: context
-                .with_client(&client_id, Height::new(0, client_consensus_state_height))
+                .with_client(
+                    &client_id,
+                    Height::new(0, client_consensus_state_height).unwrap(),
+                )
                 .with_connection(conn_id, conn_end)
                 .with_channel(
                     msg_chan_confirm.port_id.clone(),

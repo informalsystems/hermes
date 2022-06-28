@@ -168,7 +168,7 @@ mod tests {
         packet_old.sequence = 1.into();
         packet_old.data = vec![0];
 
-        let client_height = Height::new(0, Height::default().revision_height + 1);
+        let client_height = Height::new(0, 1).unwrap();
 
         let tests: Vec<Test> = vec![
             Test {

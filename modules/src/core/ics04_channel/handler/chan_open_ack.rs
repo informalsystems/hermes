@@ -145,7 +145,7 @@ mod tests {
         }
         let proof_height = 10;
         let client_consensus_state_height = 10;
-        let host_chain_height = Height::new(0, 35);
+        let host_chain_height = Height::new(0, 35).unwrap();
 
         let context = MockContext::default();
 
@@ -220,7 +220,7 @@ mod tests {
                     .clone()
                     .with_client(
                         &msg_conn_try.client_id,
-                        Height::new(0, client_consensus_state_height),
+                        Height::new(0, client_consensus_state_height).unwrap(),
                     )
                     .with_channel(
                         msg_chan_ack.port_id.clone(),
@@ -236,7 +236,7 @@ mod tests {
                     .clone()
                     .with_client(
                         &msg_conn_try.client_id,
-                        Height::new(0, client_consensus_state_height),
+                        Height::new(0, client_consensus_state_height).unwrap(),
                     )
                     .with_channel(
                         msg_chan_ack.port_id.clone(),
@@ -264,7 +264,7 @@ mod tests {
                 ctx: context //  .clone()
                     .with_client(
                         &msg_conn_try.client_id,
-                        Height::new(0, client_consensus_state_height),
+                        Height::new(0, client_consensus_state_height).unwrap(),
                     )
                     .with_connection(cid, conn_end)
                     .with_channel(

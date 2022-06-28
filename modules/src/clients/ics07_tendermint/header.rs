@@ -40,6 +40,7 @@ impl Header {
             ChainId::chain_version(self.signed_header.header.chain_id.as_str()),
             u64::from(self.signed_header.header.height),
         )
+        .expect("malformed tendermint header domain type has an illegal height of 0")
     }
 
     pub fn compatible_with(&self, other_header: &Header) -> bool {
@@ -199,7 +200,7 @@ pub mod test_util {
         Header {
             signed_header: shdr,
             validator_set: vs.clone(),
-            trusted_height: Height::new(0, 1),
+            trusted_height: Height::new(0, 1).unwrap(),
             trusted_validator_set: vs,
         }
     }

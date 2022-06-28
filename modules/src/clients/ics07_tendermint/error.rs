@@ -174,9 +174,9 @@ define_error! {
             },
 
         InvalidHeaderHeight
-            { height: Height }
+            { height: u64 }
             | e | {
-                format_args!("header height = {0} is invalid", e.height)
+                format_args!("header revision height = {0} is invalid", e.height)
             },
 
         InvalidTrustedHeaderHeight

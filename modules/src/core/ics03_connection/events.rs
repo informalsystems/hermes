@@ -290,7 +290,7 @@ mod test {
 
     #[test]
     fn connection_event_to_abci_event() {
-        let height = Height::new(1, 1);
+        let height = Height::new(1, 1).unwrap();
         let attributes = Attributes {
             height,
             connection_id: Some("test_connection".parse().unwrap()),

@@ -150,7 +150,7 @@ mod tests {
             want_pass: bool,
         }
 
-        let host_chain_height = Height::new(0, 35);
+        let host_chain_height = Height::new(0, 35).unwrap();
         let max_history_size = 5;
         let context = MockContext::new(
             ChainId::new("mockgaia".to_string(), 0),
@@ -212,19 +212,19 @@ mod tests {
             },
             Test {
                 name: "Processing fails because the client misses the consensus state targeted by the proof".to_string(),
-                ctx: context.clone().with_client(&msg_proof_height_missing.client_id, Height::new(0, client_consensus_state_height)),
+                ctx: context.clone().with_client(&msg_proof_height_missing.client_id, Height::new(0, client_consensus_state_height).unwrap()),
                 msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_proof_height_missing)),
                 want_pass: false,
             },
             Test {
                 name: "Good parameters but has previous_connection_id".to_string(),
-                ctx: context.clone().with_client(&msg_conn_try.client_id, Height::new(0, client_consensus_state_height)),
+                ctx: context.clone().with_client(&msg_conn_try.client_id, Height::new(0, client_consensus_state_height).unwrap()),
                 msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.clone())),
                 want_pass: false,
             },
             Test {
                 name: "Good parameters".to_string(),
-                ctx: context.with_client(&msg_conn_try.client_id, Height::new(0, client_consensus_state_height)),
+                ctx: context.with_client(&msg_conn_try.client_id, Height::new(0, client_consensus_state_height).unwrap()),
                 msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.with_previous_connection_id(None))),
                 want_pass: true,
             },

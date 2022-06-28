@@ -92,7 +92,7 @@ impl ClientDef for TendermintClient {
                 .try_into()
                 .map_err(|_| {
                     Ics02Error::tendermint_handler_error(Error::invalid_header_height(
-                        header.trusted_height,
+                        header.trusted_height.revision_height,
                     ))
                 })?,
             next_validators: &header.trusted_validator_set,
@@ -185,7 +185,7 @@ impl ClientDef for TendermintClient {
         }
 
         Ok((
-            client_state.with_header(header.clone()),
+            client_state.with_header(header.clone())?,
             ConsensusState::from(header),
         ))
     }

@@ -85,7 +85,7 @@ impl Default for MockContext {
             ChainId::new("mockgaia".to_string(), 0),
             HostType::Mock,
             5,
-            Height::new(0, 5),
+            Height::new(0, 5).unwrap(),
         )
     }
 }
@@ -1345,7 +1345,7 @@ mod tests {
                     ChainId::new("mockgaia".to_string(), cv),
                     HostType::Mock,
                     2,
-                    Height::new(cv, 1),
+                    Height::new(cv, 1).unwrap(),
                 ),
             },
             Test {
@@ -1354,7 +1354,7 @@ mod tests {
                     ChainId::new("mocksgaia".to_string(), cv),
                     HostType::SyntheticTendermint,
                     2,
-                    Height::new(cv, 1),
+                    Height::new(cv, 1).unwrap(),
                 ),
             },
             Test {
@@ -1363,7 +1363,7 @@ mod tests {
                     ChainId::new("mockgaia".to_string(), cv),
                     HostType::Mock,
                     30,
-                    Height::new(cv, 2),
+                    Height::new(cv, 2).unwrap(),
                 ),
             },
             Test {
@@ -1372,7 +1372,7 @@ mod tests {
                     ChainId::new("mocksgaia".to_string(), cv),
                     HostType::SyntheticTendermint,
                     30,
-                    Height::new(cv, 2),
+                    Height::new(cv, 2).unwrap(),
                 ),
             },
             Test {
@@ -1381,7 +1381,7 @@ mod tests {
                     ChainId::new("mockgaia".to_string(), cv),
                     HostType::Mock,
                     3,
-                    Height::new(cv, 30),
+                    Height::new(cv, 30).unwrap(),
                 ),
             },
             Test {
@@ -1390,7 +1390,7 @@ mod tests {
                     ChainId::new("mockgaia".to_string(), cv),
                     HostType::SyntheticTendermint,
                     3,
-                    Height::new(cv, 30),
+                    Height::new(cv, 30).unwrap(),
                 ),
             },
             Test {
@@ -1399,7 +1399,7 @@ mod tests {
                     ChainId::new("mockgaia".to_string(), cv),
                     HostType::Mock,
                     3,
-                    Height::new(cv, 2),
+                    Height::new(cv, 2).unwrap(),
                 ),
             },
             Test {
@@ -1408,7 +1408,7 @@ mod tests {
                     ChainId::new("mockgaia".to_string(), cv),
                     HostType::SyntheticTendermint,
                     3,
-                    Height::new(cv, 2),
+                    Height::new(cv, 2).unwrap(),
                 ),
             },
             Test {
@@ -1417,7 +1417,7 @@ mod tests {
                     ChainId::new("mockgaia".to_string(), cv),
                     HostType::Mock,
                     50,
-                    Height::new(cv, 2000),
+                    Height::new(cv, 2000).unwrap(),
                 ),
             },
             Test {
@@ -1426,7 +1426,7 @@ mod tests {
                     ChainId::new("mockgaia".to_string(), cv),
                     HostType::SyntheticTendermint,
                     50,
-                    Height::new(cv, 2000),
+                    Height::new(cv, 2000).unwrap(),
                 ),
             },
         ];
@@ -1458,7 +1458,7 @@ mod tests {
                 "failed while increasing height for context {:?}",
                 test.ctx
             );
-            if current_height > Height::new(cv, 0) {
+            if current_height > Height::new(cv, 0).unwrap() {
                 assert_eq!(
                     test.ctx.host_block(current_height).unwrap().height(),
                     current_height,
@@ -1550,7 +1550,7 @@ mod tests {
             ChainId::new("mockgaia".to_string(), 1),
             HostType::Mock,
             1,
-            Height::new(1, 1),
+            Height::new(1, 1).unwrap(),
         )
         .with_router(r);
 

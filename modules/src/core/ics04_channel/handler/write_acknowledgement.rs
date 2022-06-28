@@ -104,7 +104,7 @@ mod tests {
 
         let context = MockContext::default();
 
-        let client_height = Height::new(0, 1);
+        let client_height = Height::new(0, 1).unwrap();
 
         let mut packet: Packet = get_dummy_raw_packet(1, 6).try_into().unwrap();
         packet.sequence = 1.into();

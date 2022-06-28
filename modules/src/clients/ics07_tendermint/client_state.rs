@@ -117,14 +117,15 @@ impl ClientState {
         self.latest_height
     }
 
-    pub fn with_header(self, h: Header) -> Self {
-        ClientState {
+    pub fn with_header(self, h: Header) -> Result<Self, Error> {
+        Ok(ClientState {
             latest_height: Height::new(
                 self.latest_height.revision_number,
                 h.signed_header.header.height.into(),
-            ),
+            )
+            .map_err(|_| Error::invalid_header_height(h.signed_header.header.height.value()))?,
             ..self
-        }
+        })
     }
 
     pub fn with_frozen_height(self, h: Height) -> Result<Self, Error> {
@@ -378,7 +379,7 @@ mod tests {
             trusting_period: Duration::new(64000, 0),
             unbonding_period: Duration::new(128000, 0),
             max_clock_drift: Duration::new(3, 0),
-            latest_height: Height::new(0, 10),
+            latest_height: Height::new(0, 10).unwrap(),
             proof_specs: ProofSpecs::default(),
             upgrade_path: vec!["".to_string()],
             allow_update: AllowUpdate {
@@ -501,9 +502,9 @@ mod tests {
                 name: "Successful delay verification".to_string(),
                 params: Params {
                     current_time: (now + Duration::from_nanos(2000)).unwrap(),
-                    current_height: Height::new(0, 5),
+                    current_height: Height::new(0, 5).unwrap(),
                     processed_time: (now + Duration::from_nanos(1000)).unwrap(),
-                    processed_height: Height::new(0, 3),
+                    processed_height: Height::new(0, 3).unwrap(),
                     delay_period_time: Duration::from_nanos(500),
                     delay_period_blocks: 2,
                 },
@@ -513,9 +514,9 @@ mod tests {
                 name: "Delay period(time) has not elapsed".to_string(),
                 params: Params {
                     current_time: (now + Duration::from_nanos(1200)).unwrap(),
-                    current_height: Height::new(0, 5),
+                    current_height: Height::new(0, 5).unwrap(),
                     processed_time: (now + Duration::from_nanos(1000)).unwrap(),
-                    processed_height: Height::new(0, 3),
+                    processed_height: Height::new(0, 3).unwrap(),
                     delay_period_time: Duration::from_nanos(500),
                     delay_period_blocks: 2,
                 },
@@ -525,9 +526,9 @@ mod tests {
                 name: "Delay period(blocks) has not elapsed".to_string(),
                 params: Params {
                     current_time: (now + Duration::from_nanos(2000)).unwrap(),
-                    current_height: Height::new(0, 5),
+                    current_height: Height::new(0, 5).unwrap(),
                     processed_time: (now + Duration::from_nanos(1000)).unwrap(),
-                    processed_height: Height::new(0, 4),
+                    processed_height: Height::new(0, 4).unwrap(),
                     delay_period_time: Duration::from_nanos(500),
                     delay_period_blocks: 2,
                 },
@@ -565,7 +566,7 @@ mod tests {
             trusting_period: Duration::new(64000, 0),
             unbonding_period: Duration::new(128000, 0),
             max_clock_drift: Duration::new(3, 0),
-            latest_height: Height::new(1, 10),
+            latest_height: Height::new(1, 10).unwrap(),
             proof_specs: ProofSpecs::default(),
             upgrade_path: vec!["".to_string()],
             allow_update: AllowUpdate {
@@ -584,21 +585,23 @@ mod tests {
         let tests = vec![
             Test {
                 name: "Successful height verification".to_string(),
-                height: Height::new(1, 8),
+                height: Height::new(1, 8).unwrap(),
                 setup: None,
                 want_pass: true,
             },
             Test {
                 name: "Invalid (too large)  client height".to_string(),
-                height: Height::new(1, 12),
+                height: Height::new(1, 12).unwrap(),
                 setup: None,
                 want_pass: false,
             },
             Test {
                 name: "Invalid, client is frozen below current height".to_string(),
-                height: Height::new(1, 6),
+                height: Height::new(1, 6).unwrap(),
                 setup: Some(Box::new(|client_state| {
-                    client_state.with_frozen_height(Height::new(1, 5)).unwrap()
+                    client_state
+                        .with_frozen_height(Height::new(1, 5).unwrap())
+                        .unwrap()
                 })),
                 want_pass: false,
             },
@@ -659,7 +662,8 @@ pub mod test_util {
                 Height::new(
                     ChainId::chain_version(tm_header.chain_id.as_str()),
                     u64::from(tm_header.height),
-                ),
+                )
+                .unwrap(),
                 Default::default(),
                 vec!["".to_string()],
                 AllowUpdate {

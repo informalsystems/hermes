@@ -22,11 +22,15 @@ pub struct Height {
 }
 
 impl Height {
-    pub fn new(revision_number: u64, revision_height: u64) -> Self {
-        Self {
+    pub fn new(revision_number: u64, revision_height: u64) -> Result<Self, Error> {
+        if revision_height == 0 {
+            return Err(Error::invalid_height());
+        }
+
+        Ok(Self {
             revision_number,
             revision_height,
-        }
+        })
     }
 
     pub fn zero() -> Height {
@@ -101,14 +105,7 @@ impl TryFrom<RawHeight> for Height {
     type Error = Error;
 
     fn try_from(raw_height: RawHeight) -> Result<Self, Self::Error> {
-        if raw_height.revision_height == 0 {
-            Err(Error::invalid_height())
-        } else {
-            Ok(Height::new(
-                raw_height.revision_number,
-                raw_height.revision_height,
-            ))
-        }
+        Height::new(raw_height.revision_number, raw_height.revision_height)
     }
 }
 
@@ -165,11 +162,7 @@ impl TryFrom<&str> for Height {
             .parse::<u64>()
             .map_err(|e| HeightError::height_conversion(value.to_owned(), e))?;
 
-        if revision_height == 0 {
-            return Err(HeightError::zero_height());
-        }
-
-        Ok(Height::new(revision_number, revision_height))
+        Height::new(revision_number, revision_height).map_err(|_| HeightError::zero_height())
     }
 }
 

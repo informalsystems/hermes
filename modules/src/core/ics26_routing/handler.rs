@@ -212,15 +212,15 @@ mod tests {
         }
         let default_signer = get_dummy_account_id();
         let client_height = 5;
-        let start_client_height = Height::new(0, client_height);
-        let update_client_height = Height::new(0, 34);
-        let update_client_height_after_send = Height::new(0, 35);
+        let start_client_height = Height::new(0, client_height).unwrap();
+        let update_client_height = Height::new(0, 34).unwrap();
+        let update_client_height_after_send = Height::new(0, 35).unwrap();
 
-        let update_client_height_after_second_send = Height::new(0, 36);
+        let update_client_height_after_second_send = Height::new(0, 36).unwrap();
 
-        let upgrade_client_height = Height::new(1, 2);
+        let upgrade_client_height = Height::new(1, 2).unwrap();
 
-        let upgrade_client_height_second = Height::new(1, 1);
+        let upgrade_client_height_second = Height::new(1, 1).unwrap();
 
         let transfer_module_id: ModuleId = MODULE_ID_STR.parse().unwrap();
 

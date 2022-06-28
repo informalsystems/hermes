@@ -374,7 +374,7 @@ mod tests {
 
     #[test]
     fn client_event_to_abci_event() {
-        let height = Height::new(1, 1);
+        let height = Height::new(1, 1).unwrap();
         let attributes = Attributes {
             height,
             client_id: "test_client".parse().unwrap(),

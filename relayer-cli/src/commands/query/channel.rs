@@ -40,7 +40,10 @@ impl Runnable for QueryChannelEndCmd {
                 port_id: self.port_id.clone(),
                 channel_id: self.channel_id,
                 height: self.height.map_or(QueryHeight::Latest, |revision_height| {
-                    QueryHeight::Specific(ibc::Height::new(chain.id().version(), revision_height))
+                    QueryHeight::Specific(
+                        ibc::Height::new(chain.id().version(), revision_height)
+                            .unwrap_or_else(exit_with_unrecoverable_error),
+                    )
                 }),
             },
             IncludeProof::No,

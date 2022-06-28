@@ -1218,7 +1218,7 @@ mod tests {
             destination_port: "b_test_port".parse().unwrap(),
             destination_channel: "channel-1".parse().unwrap(),
             data: "test_data".as_bytes().to_vec(),
-            timeout_height: Some(Height::new(1, 10)),
+            timeout_height: Some(Height::new(1, 10).unwrap()),
             timeout_timestamp: Timestamp::now(),
         };
         let mut abci_events = vec![];

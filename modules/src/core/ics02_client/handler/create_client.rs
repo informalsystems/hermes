@@ -97,7 +97,7 @@ mod tests {
     fn test_create_client_ok() {
         let ctx = MockContext::default();
         let signer = get_dummy_account_id();
-        let height = Height::new(0, 42);
+        let height = Height::new(0, 42).unwrap();
 
         let msg = MsgCreateAnyClient::new(
             MockClientState::new(MockHeader::new(height)).into(),
@@ -141,7 +141,7 @@ mod tests {
     fn test_create_client_ok_multiple() {
         let existing_client_id = ClientId::default();
         let signer = get_dummy_account_id();
-        let height = Height::new(0, 80);
+        let height = Height::new(0, 80).unwrap();
 
         let ctx = MockContext::default().with_client(&existing_client_id, height);
 
@@ -243,7 +243,7 @@ mod tests {
             Duration::from_secs(64000),
             Duration::from_secs(128000),
             Duration::from_millis(3000),
-            Height::new(0, u64::from(tm_header.height)),
+            Height::new(0, u64::from(tm_header.height)).unwrap(),
             ProofSpecs::default(),
             vec!["".to_string()],
             AllowUpdate {

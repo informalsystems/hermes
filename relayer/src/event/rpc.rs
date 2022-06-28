@@ -128,7 +128,8 @@ pub fn get_all_events(
             let height = Height::new(
                 ChainId::chain_version(chain_id.to_string().as_str()),
                 u64::from(block.as_ref().ok_or("tx.height")?.header.height),
-            );
+            )
+            .map_err(|_| String::from("tx.height: invalid header height of 0"))?;
 
             vals.push((height, ClientEvents::NewBlock::new(height).into()));
             vals.append(&mut extract_block_events(height, &events));
@@ -137,7 +138,8 @@ pub fn get_all_events(
             let height = Height::new(
                 ChainId::chain_version(chain_id.to_string().as_str()),
                 tx_result.height as u64,
-            );
+            )
+            .map_err(|_| String::from("tx_result.height: invalid header height of 0"))?;
 
             for abci_event in &tx_result.result.events {
                 if query == queries::ibc_client().to_string() {

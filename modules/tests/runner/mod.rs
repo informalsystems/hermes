@@ -143,7 +143,7 @@ impl IbcTestRunner {
     }
 
     pub fn height(height: Height) -> Height {
-        Height::new(height.revision_number, height.revision_height)
+        Height::new(height.revision_number, height.revision_height).unwrap()
     }
 
     fn mock_header(height: Height) -> MockHeader {
