@@ -2,6 +2,7 @@ use crate::prelude::*;
 
 use core::marker::{Send, Sync};
 
+use dyn_clone::DynClone;
 use ibc_proto::google::protobuf::Any as ProtoAny;
 use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
 use serde::Serialize;
@@ -23,7 +24,7 @@ pub const TENDERMINT_CONSENSUS_STATE_TYPE_URL: &str =
 
 pub const MOCK_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.mock.ConsensusState";
 
-pub trait ConsensusState: Send + Sync + AsAny {
+pub trait ConsensusState: Send + Sync + AsAny + DynClone {
     /// Type of client associated with this consensus state (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 

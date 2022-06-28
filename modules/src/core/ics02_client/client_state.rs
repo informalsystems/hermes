@@ -1,11 +1,11 @@
 use core::marker::{Send, Sync};
 use core::time::Duration;
 
+use dyn_clone::DynClone;
 use ibc_proto::google::protobuf::Any as ProtoAny;
+use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
 use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
-
-use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
 
 use crate::clients::ics07_tendermint::client_state;
 use crate::clients::ics07_tendermint::client_state::ClientState as TmClientState;
@@ -23,7 +23,7 @@ use crate::Height;
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
 
-pub trait ClientState: Send + Sync + AsAny {
+pub trait ClientState: Send + Sync + AsAny + DynClone {
     /// Return the chain identifier which this client is serving (i.e., the client is verifying
     /// consensus states from this chain).
     fn chain_id(&self) -> ChainId;
