@@ -19,13 +19,13 @@ DESCRIPTION:
 
 OPTIONS:
     -h, --help           Print help information
-    
+
 FLAGS:
         --chain <CHAIN_ID>               Identifier of the chain
         --channel <CHANNEL_ID>           Identifier of the channel
         --port <PORT_ID>                 Identifier of the port
-        --key-name <KEY>                 Use the given signing key for the source chain (default: `key_name` config)
-        --counterparty-key-name <KEY>    Use the given signing key for the destination chain (default: `key_name` config)
+        --key-name <KEY>                 Use the given signing key for the specified chain (default: `key_name` config)
+        --counterparty-key-name <KEY>    Use the given signing key for the counterparty chain (default: `key_name` config)
 ```
 
 ### Example
