@@ -3,7 +3,7 @@ use eyre::eyre;
 use ibc::core::ics04_channel::channel::State as ChannelState;
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, Order};
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::{HeightQuery, IncludeProof, QueryChannelRequest};
+use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
 use ibc_relayer::channel::{extract_channel_id, Channel, ChannelSide};
 
 use crate::error::Error;
@@ -80,7 +80,7 @@ pub fn query_channel_end<ChainA: ChainHandle, ChainB>(
         QueryChannelRequest {
             port_id: port_id.into_value().clone(),
             channel_id: *channel_id.into_value(),
-            height: HeightQuery::Latest,
+            height: QueryHeight::Latest,
         },
         IncludeProof::No,
     )?;
@@ -97,7 +97,7 @@ pub fn query_identified_channel_end<ChainA: ChainHandle, ChainB>(
         QueryChannelRequest {
             port_id: port_id.into_value().clone(),
             channel_id: *channel_id.into_value(),
-            height: HeightQuery::Latest,
+            height: QueryHeight::Latest,
         },
         IncludeProof::No,
     )?;
