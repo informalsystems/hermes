@@ -45,7 +45,6 @@ static HINT: &str = "Consider using the default invocation\n\nhermes create chan
 /// chain A and chain B might refer to the connection with different names, they are actually referring
 /// to the same connection.
 #[derive(Clone, Command, Debug, Parser)]
-#[clap(disable_version_flag = true)]
 pub struct CreateChannelCommand {
     #[clap(
         long = "a-chain",
@@ -95,8 +94,8 @@ pub struct CreateChannelCommand {
     order: Order,
 
     #[clap(
-        long = "chan-version",
-        alias = "version",
+        long = "channel-version",
+        alias = "chan-version",
         value_name = "VERSION",
         help = "The version for the new channel"
     )]
