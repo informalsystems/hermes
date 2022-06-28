@@ -82,6 +82,10 @@ impl crate::core::ics02_client::header::Header for Header {
         self.height()
     }
 
+    fn encode_vec(&self) -> Vec<u8> {
+        Protobuf::<RawHeader>::encode_vec(self).expect("encoding to vec cannot fail")
+    }
+
     fn timestamp(&self) -> Timestamp {
         self.signed_header.header.time.into()
     }

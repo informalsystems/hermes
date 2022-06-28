@@ -29,6 +29,9 @@ pub trait Header: core::fmt::Debug + Send + Sync + AsAny {
     /// The timestamp of the consensus state
     fn timestamp(&self) -> Timestamp;
 
+    /// Encode to canonical binary representation
+    fn encode_vec(&self) -> Vec<u8>;
+
     /// Consumes the given instance and returns a heap allocated instance
     fn boxed(self) -> Box<dyn Header>
     where
