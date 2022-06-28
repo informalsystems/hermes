@@ -1,5 +1,6 @@
 use crate::prelude::*;
 
+use core::fmt::Debug;
 use core::marker::{Send, Sync};
 
 use dyn_clone::DynClone;
@@ -24,7 +25,7 @@ pub const TENDERMINT_CONSENSUS_STATE_TYPE_URL: &str =
 
 pub const MOCK_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.mock.ConsensusState";
 
-pub trait ConsensusState: Send + Sync + AsAny + DynClone {
+pub trait ConsensusState: Debug + Send + Sync + AsAny + DynClone {
     /// Type of client associated with this consensus state (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 
