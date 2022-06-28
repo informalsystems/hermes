@@ -79,7 +79,7 @@ impl Runnable for ClearPacketsCmd {
         };
 
         // If `counterparty_key_name` is provided, fetch the counterparty chain's
-        // config and override its `key_name` parameter
+        // config and overwrite its `key_name` parameter
         if let Some(ref counterparty_key_name) = self.counterparty_key_name {
             match chains.dst.config() {
                 Ok(mut dst_chain_cfg) => {
