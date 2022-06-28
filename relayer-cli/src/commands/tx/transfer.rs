@@ -48,7 +48,8 @@ pub struct TxIcs20MsgTransferCmd {
     src_port_id: PortId,
 
     #[clap(
-        long = "src-chan",
+        long = "src-channel",
+        alias = "src-chan",
         required = true,
         help = "Identifier of the source channel"
     )]

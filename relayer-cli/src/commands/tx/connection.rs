@@ -113,7 +113,8 @@ pub struct TxRawConnTryCmd {
     src_client_id: ClientId,
 
     #[clap(
-        long = "src-conn",
+        long = "src-connection",
+        alias = "src-conn",
         required = true,
         help = "Identifier of the source connection (required)",
         value_name = "ID"
@@ -121,7 +122,8 @@ pub struct TxRawConnTryCmd {
     src_conn_id: ConnectionId,
 
     #[clap(
-        long = "dst-conn",
+        long = "dst-connection",
+        alias = "dst-conn",
         help = "Identifier of the destination connection (optional)",
         value_name = "ID"
     )]
@@ -184,7 +186,8 @@ pub struct TxRawConnAckCmd {
     src_client_id: ClientId,
 
     #[clap(
-        long = "dst-conn",
+        long = "dst-connection",
+        alias = "dst-conn",
         required = true,
         help = "Identifier of the destination connection (required)",
         value_name = "ID"
@@ -192,7 +195,8 @@ pub struct TxRawConnAckCmd {
     dst_conn_id: ConnectionId,
 
     #[clap(
-        long = "src-conn",
+        long = "src-connection",
+        alias = "src-conn",
         required = true,
         help = "Identifier of the source connection (required)",
         value_name = "ID"
@@ -256,7 +260,8 @@ pub struct TxRawConnConfirmCmd {
     src_client_id: ClientId,
 
     #[clap(
-        long = "dst-conn",
+        long = "dst-connection",
+        alias = "dst-conn",
         required = true,
         help = "Identifier of the destination connection (required)",
         value_name = "ID"
@@ -264,7 +269,8 @@ pub struct TxRawConnConfirmCmd {
     dst_conn_id: ConnectionId,
 
     #[clap(
-        long = "src-conn",
+        long = "src-connection",
+        alias = "src-conn",
         required = true,
         help = "Identifier of the source connection (required)",
         value_name = "ID"

@@ -34,7 +34,8 @@ pub struct TxRawPacketRecvCmd {
     src_port_id: PortId,
 
     #[clap(
-        long = "src-chan",
+        long = "src-channel",
+        alias = "src-chan",
         required = true,
         help = "Identifier of the source channel"
     )]
@@ -94,7 +95,8 @@ pub struct TxRawPacketAckCmd {
     src_port_id: PortId,
 
     #[clap(
-        long = "src-chan",
+        long = "src-channel",
+        alias = "src-chan",
         required = true,
         help = "Identifier of the source channel"
     )]
