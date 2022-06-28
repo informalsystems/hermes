@@ -12,27 +12,25 @@ Use the `chan-close-init` command to initialize the closure of a channel.
 
 ```shell
 USAGE:
-    hermes tx raw chan-close-init <OPTIONS>
+    hermes tx raw chan-close-init --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-conn <DST_CONN_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID> --dst-chan <ID> --src-chan <ID>
 
 DESCRIPTION:
     Initiate the closing of a channel (ChannelCloseInit)
 
-POSITIONAL ARGUMENTS:
-    dst_chain_id              identifier of the destination chain
-    src_chain_id              identifier of the source chain
-    dst_conn_id               identifier of the destination connection
-    dst_port_id               identifier of the destination port
-    src_port_id               identifier of the source port
-
 FLAGS:
-    -d, --dst-chan-id ID      identifier of the destination channel (required)
-    -s, --src-chan-id ID      identifier of the source channel (required)
+        --dst-chain <DST_CHAIN_ID>    Identifier of the destination chain
+        --dst-chan <ID>               Identifier of the destination channel (required)
+        --dst-conn <DST_CONN_ID>      Identifier of the destination connection
+        --dst-port <DST_PORT_ID>      Identifier of the destination port
+        --src-chain <SRC_CHAIN_ID>    Identifier of the source chain
+        --src-chan <ID>               Identifier of the source channel (required)
+        --src-port <SRC_PORT_ID>      Identifier of the source port
 ```
 
 __Example__
 
 ```shell
-hermes tx raw chan-close-init ibc-0 ibc-1 connection-0 transfer transfer -d channel-0 -s channel-1
+hermes tx raw chan-close-init --dst-chain ibc-0 --src-chain ibc-1 --dst-conn connection-0 --dst-port transfer --src-port transfer --dst-chan channel-0 --src-chan channel-1
 ```
 
 ```json
@@ -73,27 +71,26 @@ Use the `chan-close-confirm` command to confirm the closure of a channel.
 
 ```shell
 USAGE:
-    hermes tx raw chan-close-confirm <OPTIONS>
+    hermes tx raw chan-close-confirm --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-conn <DST_CONN_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID> --dst-chan <ID> --src-chan <ID>
 
 DESCRIPTION:
     Confirm the closing of a channel (ChannelCloseConfirm)
 
-POSITIONAL ARGUMENTS:
-    dst_chain_id              identifier of the destination chain
-    src_chain_id              identifier of the source chain
-    dst_conn_id               identifier of the destination connection
-    dst_port_id               identifier of the destination port
-    src_port_id               identifier of the source port
-
 FLAGS:
-    -d, --dst-chan-id ID      identifier of the destination channel (required)
-    -s, --src-chan-id ID      identifier of the source channel (required)
+        --dst-chain <DST_CHAIN_ID>    Identifier of the destination chain
+        --dst-chan <ID>               Identifier of the destination channel (required)
+        --dst-conn <DST_CONN_ID>      Identifier of the destination connection
+        --dst-port <DST_PORT_ID>      Identifier of the destination port
+        --src-chain <SRC_CHAIN_ID>    Identifier of the source chain
+        --src-chan <ID>               Identifier of the source channel (required)
+        --src-port <SRC_PORT_ID>      Identifier of the source port
+
 ```
 
 __Example__
 
 ```shell
-hermes tx raw chan-close-confirm ibc-1 ibc-0 connection-1 transfer transfer -d channel-1 -s channel-0
+hermes tx raw chan-close-confirm --dst-chain ibc-1 --src-chain ibc-0 --dst-conn connection-1 --src-port transfer --dst-port transfer --dst-chan channel-1 --src-chan channel-0
 ```
 
 ```json

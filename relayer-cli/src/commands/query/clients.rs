@@ -15,18 +15,25 @@ use crate::prelude::*;
 /// Query clients command
 #[derive(Clone, Command, Debug, Parser)]
 pub struct QueryAllClientsCmd {
-    #[clap(required = true, help = "identifier of the chain to query")]
+    #[clap(
+        long = "host-chain",
+        required = true,
+        value_name = "HOST_CHAIN_ID",
+        help = "Identifier of the chain to query"
+    )]
     chain_id: ChainId,
 
     #[clap(
-        short,
-        long,
-        help = "filter for clients which target a specific chain id (implies '-o')",
-        value_name = "ID"
+        long = "reference-chain",
+        help = "Filter for clients which target a specific chain id (implies '--omit-chain-ids')",
+        value_name = "REFERENCE_CHAIN_ID"
     )]
     src_chain_id: Option<ChainId>,
 
-    #[clap(short, long, help = "omit printing the source chain for each client")]
+    #[clap(
+        long = "omit-chain-ids",
+        help = "Omit printing the reference (or target) chain for each client"
+    )]
     omit_chain_ids: bool,
 }
 
@@ -37,7 +44,7 @@ struct ClientChain {
 }
 
 /// Command for querying all clients.
-/// hermes -c cfg.toml query clients ibc-1
+/// hermes --config cfg.toml query clients --chain ibc-1
 impl Runnable for QueryAllClientsCmd {
     fn run(&self) {
         let config = app_config();

@@ -19,14 +19,24 @@ use crate::prelude::app_config;
 /// Query the events emitted by transaction
 #[derive(Clone, Command, Debug, Parser)]
 pub struct QueryTxEventsCmd {
-    #[clap(required = true, help = "identifier of the chain to query")]
+    #[clap(
+        long = "chain",
+        required = true,
+        value_name = "CHAIN_ID",
+        help = "Identifier of the chain to query"
+    )]
     chain_id: ChainId,
 
-    #[clap(required = true, help = "transaction hash to query")]
+    #[clap(
+        long = "hash",
+        required = true,
+        value_name = "HASH",
+        help = "Transaction hash to query"
+    )]
     hash: String,
 }
 
-// cargo run --bin hermes -- query tx events ibc-0 B8E78AD83810239E21863AC7B5FC4F99396ABB39EB534F721EEF43A4979C2821
+// cargo run --bin hermes -- query tx events --chain ibc-0 --hash B8E78AD83810239E21863AC7B5FC4F99396ABB39EB534F721EEF43A4979C2821
 impl Runnable for QueryTxEventsCmd {
     fn run(&self) {
         let config = app_config();

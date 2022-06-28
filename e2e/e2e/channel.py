@@ -27,9 +27,9 @@ class TxChanOpenInit(Cmd[TxChanOpenInitRes]):
     ordering: Optional[Ordering] = None
 
     def args(self) -> List[str]:
-        args = [self.dst_chain_id, self.src_chain_id,
-                self.connection_id,
-                self.dst_port_id, self.src_port_id]
+        args = ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id,
+                "--dst-conn", self.connection_id,
+                "--dst-port", self.dst_port_id, "--src-port", self.src_port_id]
 
         if self.ordering is not None:
             args.extend(['--ordering', str(self.ordering)])
@@ -65,10 +65,10 @@ class TxChanOpenTry(Cmd[TxChanOpenTryRes]):
     ordering: Optional[Ordering] = None
 
     def args(self) -> List[str]:
-        args = [self.dst_chain_id, self.src_chain_id,
-                self.connection_id,
-                self.dst_port_id, self.src_port_id,
-                "-s", self.src_channel_id]
+        args = ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id,
+                "--dst-conn", self.connection_id,
+                "--dst-port", self.dst_port_id, "--src-port", self.src_port_id,
+                "--src-chan", self.src_channel_id]
 
         if self.ordering is not None:
             args.extend(['--ordering', str(self.ordering)])
@@ -104,11 +104,11 @@ class TxChanOpenAck(Cmd[TxChanOpenAckRes]):
     src_channel_id: ChannelId
 
     def args(self) -> List[str]:
-        args = [self.dst_chain_id, self.src_chain_id,
-                self.connection_id,
-                self.dst_port_id, self.src_port_id,
-                "-d", self.dst_channel_id,
-                "-s", self.src_channel_id]
+        args = ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id,
+                "--dst-conn", self.connection_id,
+                "--dst-port", self.dst_port_id, "--src-port", self.src_port_id,
+                "--dst-chan", self.dst_channel_id,
+                "--src-chan", self.src_channel_id]
 
         return args
 
@@ -141,11 +141,11 @@ class TxChanOpenConfirm(Cmd[TxChanOpenConfirmRes]):
     src_channel_id: ChannelId
 
     def args(self) -> List[str]:
-        args = [self.dst_chain_id, self.src_chain_id,
-                self.connection_id,
-                self.dst_port_id, self.src_port_id,
-                "-d", self.dst_channel_id,
-                "-s", self.src_channel_id]
+        args = ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id,
+                "--dst-conn", self.connection_id,
+                "--dst-port", self.dst_port_id, "--src-port", self.src_port_id,
+                "--dst-chan", self.dst_channel_id,
+                "--src-chan", self.src_channel_id]
 
         return args
 
@@ -177,11 +177,11 @@ class TxChanCloseInit(Cmd[TxChanCloseInitRes]):
     src_chan_id: ChannelId
 
     def args(self) -> List[str]:
-        args = [self.dst_chain_id, self.src_chain_id,
-                self.dst_conn_id,
-                self.dst_port_id, self.src_port_id,
-                "-d", self.dst_chan_id,
-                "-s", self.src_chan_id]
+        args = ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id,
+                "--dst-conn", self.dst_conn_id,
+                "--dst-port", self.dst_port_id, "--src-port", self.src_port_id,
+                "--dst-chan", self.dst_chan_id,
+                "--src-chan", self.src_chan_id]
 
         return args
 
@@ -214,11 +214,11 @@ class TxChanCloseConfirm(Cmd[TxChanCloseConfirmRes]):
     src_chan_id: ChannelId
 
     def args(self) -> List[str]:
-        args = [self.dst_chain_id, self.src_chain_id,
-                self.dst_conn_id,
-                self.dst_port_id, self.src_port_id,
-                "-d", self.dst_chan_id,
-                "-s", self.src_chan_id]
+        args = ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id,
+                "--dst-conn", self.dst_conn_id,
+                "--dst-port", self.dst_port_id, "--src-port", self.src_port_id,
+                "--dst-chan", self.dst_chan_id,
+                "--src-chan", self.src_chan_id]
 
         return args
 
@@ -267,7 +267,7 @@ class QueryChannelEnd(Cmd[ChannelEnd]):
     channel_id: ChannelId
 
     def args(self) -> List[str]:
-        return [self.chain_id, self.port_id, self.channel_id]
+        return ["--chain", self.chain_id, "--port", self.port_id, "--chan", self.channel_id]
 
     def process(self, result: Any) -> ChannelEnd:
         return from_dict(ChannelEnd, result)
@@ -280,7 +280,7 @@ class QueryChannelEnds(Cmd[ChannelEnds]):
     channel_id: ChannelId
 
     def args(self) -> List[str]:
-        return [self.chain_id, self.port_id, self.channel_id]
+        return ["--chain", self.chain_id, "--port", self.port_id, "--chan", self.channel_id]
 
     def process(self, result: Any) -> ChannelEnds:
         return from_dict(ChannelEnds, result)
