@@ -161,10 +161,7 @@ pub mod test_util {
             sender: address.clone(),
             receiver: address,
             timeout_timestamp: Timestamp::now().add(Duration::from_secs(10)).unwrap(),
-            timeout_height: Some(Height {
-                revision_number: 0,
-                revision_height: height,
-            }),
+            timeout_height: Some(Height::new(0, height).unwrap()),
         }
     }
 }

@@ -147,11 +147,7 @@ mod tests {
 
         let create_client_msgs: Vec<MsgCreateAnyClient> = vec![
             MsgCreateAnyClient::new(
-                MockClientState::new(MockHeader::new(Height {
-                    revision_height: 42,
-                    ..height
-                }))
-                .into(),
+                MockClientState::new(MockHeader::new(Height::new(0, 42).unwrap())).into(),
                 MockConsensusState::new(MockHeader::new(Height {
                     revision_height: 42,
                     ..height

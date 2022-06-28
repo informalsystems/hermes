@@ -15,10 +15,10 @@ use crate::core::ics02_client::error::Error;
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Height {
     /// Previously known as "epoch"
-    pub revision_number: u64,
+    revision_number: u64,
 
     /// The height of a block
-    pub revision_height: u64,
+    revision_height: u64,
 }
 
 impl Height {
