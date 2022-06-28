@@ -33,6 +33,14 @@ impl Height {
         })
     }
 
+    pub fn revision_number(&self) -> u64 {
+        self.revision_number
+    }
+
+    pub fn revision_height(&self) -> u64 {
+        self.revision_height
+    }
+
     pub fn add(&self, delta: u64) -> Height {
         Height {
             revision_number: self.revision_number,
