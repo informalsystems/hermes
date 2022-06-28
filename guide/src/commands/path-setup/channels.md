@@ -14,7 +14,9 @@ USAGE:
 
 DESCRIPTION:
     Create a new channel between two chains using a pre-existing connection.
-    Alternatively, create a new client and a new connection underlying the new channel if a pre-existing connection is not provided.
+
+    Alternatively, create a new client and a new connection underlying the new channel if a pre-existing
+    connection is not provided.
 
 FLAGS:
         --a-chain <A_CHAIN_ID>              Identifier of the side `a` chain for the new channel
