@@ -2,8 +2,8 @@
 //! the interface that any host chain must implement to be able to process any `ConnectionMsg`.
 //! See "ADR 003: IBC protocol implementation" for more details.
 
-use crate::core::ics02_client::client_consensus::AnyConsensusState;
-use crate::core::ics02_client::client_state::AnyClientState;
+use crate::core::ics02_client::client_consensus::ConsensusState;
+use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics03_connection::error::Error;
 use crate::core::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
@@ -19,7 +19,7 @@ pub trait ConnectionReader {
     fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, Error>;
 
     /// Returns the ClientState for the given identifier `client_id`.
-    fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Error>;
+    fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Error>;
 
     /// Returns the current height of the local chain.
     fn host_current_height(&self) -> Height;
@@ -35,10 +35,10 @@ pub trait ConnectionReader {
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<AnyConsensusState, Error>;
+    ) -> Result<Box<dyn ConsensusState>, Error>;
 
     /// Returns the ConsensusState of the host (local) chain at a specific height.
-    fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error>;
+    fn host_consensus_state(&self, height: Height) -> Result<Box<dyn ConsensusState>, Error>;
 
     /// Function required by ICS 03. Returns the list of all possible versions that the connection
     /// handshake protocol supports.

@@ -4,7 +4,7 @@
 
 use alloc::boxed::Box;
 
-use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
+use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::{Error, ErrorDetail};
@@ -31,7 +31,7 @@ pub trait ClientReader {
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<AnyConsensusState, Error>;
+    ) -> Result<Box<dyn ConsensusState>, Error>;
 
     /// Similar to `consensus_state`, attempt to retrieve the consensus state,
     /// but return `None` if no state exists at the given height.
@@ -39,7 +39,7 @@ pub trait ClientReader {
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<Option<AnyConsensusState>, Error> {
+    ) -> Result<Option<Box<dyn ConsensusState>>, Error> {
         match self.consensus_state(client_id, height) {
             Ok(cs) => Ok(Some(cs)),
             Err(e) => match e.detail() {
@@ -54,14 +54,14 @@ pub trait ClientReader {
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<Option<AnyConsensusState>, Error>;
+    ) -> Result<Option<Box<dyn ConsensusState>>, Error>;
 
     /// Search for the highest consensus state lower than `height`.
     fn prev_consensus_state(
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<Option<AnyConsensusState>, Error>;
+    ) -> Result<Option<Box<dyn ConsensusState>>, Error>;
 
     /// Returns the current height of the local chain.
     fn host_height(&self) -> Height;
@@ -75,10 +75,10 @@ pub trait ClientReader {
     }
 
     /// Returns the `ConsensusState` of the host (local) chain at a specific height.
-    fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error>;
+    fn host_consensus_state(&self, height: Height) -> Result<Box<dyn ConsensusState>, Error>;
 
     /// Returns the pending `ConsensusState` of the host (local) chain.
-    fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Error>;
+    fn pending_host_consensus_state(&self) -> Result<Box<dyn ConsensusState>, Error>;
 
     /// Returns a natural number, counting how many clients have been created thus far.
     /// The value of this counter should increase only via method `ClientKeeper::increase_client_counter`.
@@ -137,7 +137,7 @@ impl<T: ClientReader> LightClientReader for T {
         client_id: &ClientId,
         height: Height,
     ) -> Result<Box<dyn ConsensusState>, Error> {
-        ClientReader::consensus_state(self, client_id, height).map(|cs| cs.boxed())
+        ClientReader::consensus_state(self, client_id, height)
     }
 
     fn next_consensus_state(
@@ -146,7 +146,6 @@ impl<T: ClientReader> LightClientReader for T {
         height: Height,
     ) -> Result<Option<Box<dyn ConsensusState>>, Error> {
         ClientReader::next_consensus_state(self, client_id, height)
-            .map(|cs| cs.map(AnyConsensusState::boxed))
     }
 
     fn prev_consensus_state(
@@ -155,7 +154,6 @@ impl<T: ClientReader> LightClientReader for T {
         height: Height,
     ) -> Result<Option<Box<dyn ConsensusState>>, Error> {
         ClientReader::prev_consensus_state(self, client_id, height)
-            .map(|cs| cs.map(AnyConsensusState::boxed))
     }
 
     fn host_timestamp(&self) -> Timestamp {

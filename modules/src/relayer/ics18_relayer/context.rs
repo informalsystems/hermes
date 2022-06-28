@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use ibc_proto::google::protobuf::Any;
 
-use crate::core::ics02_client::client_state::AnyClientState;
+use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::header::AnyHeader;
 use crate::events::IbcEvent;
 
@@ -20,7 +20,7 @@ pub trait Ics18Context {
 
     /// Returns this client state for the given `client_id` on this chain.
     /// Wrapper over the `/abci_query?path=..` endpoint.
-    fn query_client_full_state(&self, client_id: &ClientId) -> Option<AnyClientState>;
+    fn query_client_full_state(&self, client_id: &ClientId) -> Option<Box<dyn ClientState>>;
 
     /// Returns the most advanced header of this chain.
     fn query_latest_header(&self) -> Option<AnyHeader>;
