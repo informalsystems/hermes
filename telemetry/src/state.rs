@@ -109,6 +109,8 @@ pub struct TelemetryState {
     /// WriteAcknowledgement were received.
     oldest_sequence: ValueRecorder<u64>,
 
+    /// Record the timestamp related to the oldest sequence number.
+    /// The timestamp is the time passed since since the unix epoch in seconds.
     oldest_timestamp: ValueRecorder<u64>,
 
     /// History of SendPacket sequence numbers received and not yet Acknowledged.
@@ -575,17 +577,17 @@ impl Default for TelemetryState {
 
             send_packet_count: meter
                 .u64_counter("send_packet_count")
-                .with_description("Number of SendPacket relayed.")
+                .with_description("Number of SendPacket relayed")
                 .init(),
 
             acknowledgement_count: meter
                 .u64_counter("acknowledgement_count")
-                .with_description("Number of WriteAcknowledgement relayed.")
+                .with_description("Number of WriteAcknowledgement relayed")
                 .init(),
 
             cleared_count: meter
                 .u64_counter("cleared_count")
-                .with_description("Number of packets relayed through ClearPendingPackets")
+                .with_description("Number of SendPacket relayed through ClearPendingPackets")
                 .init(),
 
             tx_latency_submitted: meter
@@ -613,12 +615,13 @@ impl Default for TelemetryState {
 
             oldest_sequence: meter
                 .u64_value_recorder("oldest_sequence")
-                .with_description("The sequence number of the oldest pending SendPacket. If this value is 0, it means there are no pending SendPacket.")
+                .with_description("The sequence number of the oldest pending SendPacket. If this value is 0, it means there are no pending SendPacket")
                 .init(),
 
             oldest_timestamp: meter
                 .u64_value_recorder("oldest_timestamp")
-                .with_description("The timestamp of the oldest sequence number.")
+                .with_unit(Unit::new("seconds"))
+                .with_description("The timestamp of the oldest sequence number in seconds")
                 .init(),
         }
     }
