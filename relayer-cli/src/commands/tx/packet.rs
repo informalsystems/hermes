@@ -15,28 +15,28 @@ pub struct TxRawPacketRecvCmd {
     #[clap(
         long = "dst-chain",
         required = true,
-        help = "identifier of the destination chain"
+        help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
         long = "src-chain",
         required = true,
-        help = "identifier of the source chain"
+        help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
         long = "src-port",
         required = true,
-        help = "identifier of the source port"
+        help = "Identifier of the source port"
     )]
     src_port_id: PortId,
 
     #[clap(
         long = "src-chan",
         required = true,
-        help = "identifier of the source channel"
+        help = "Identifier of the source channel"
     )]
     src_channel_id: ChannelId,
 }
@@ -75,28 +75,28 @@ pub struct TxRawPacketAckCmd {
     #[clap(
         long = "dst-chain",
         required = true,
-        help = "identifier of the destination chain"
+        help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
         long = "src-chain",
         required = true,
-        help = "identifier of the source chain"
+        help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
         long = "src-port",
         required = true,
-        help = "identifier of the source port"
+        help = "Identifier of the source port"
     )]
     src_port_id: PortId,
 
     #[clap(
         long = "src-chan",
         required = true,
-        help = "identifier of the source channel"
+        help = "Identifier of the source channel"
     )]
     src_channel_id: ChannelId,
 }

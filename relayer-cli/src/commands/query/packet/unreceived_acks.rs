@@ -21,7 +21,7 @@ pub struct QueryUnreceivedAcknowledgementCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
-        help = "identifier of the chain to query the unreceived acknowledgments"
+        help = "Identifier of the chain to query the unreceived acknowledgments"
     )]
     chain_id: ChainId,
 
@@ -29,7 +29,7 @@ pub struct QueryUnreceivedAcknowledgementCmd {
         long = "port",
         required = true,
         value_name = "PORT_ID",
-        help = "port identifier"
+        help = "Port identifier"
     )]
     port_id: PortId,
 
@@ -38,7 +38,7 @@ pub struct QueryUnreceivedAcknowledgementCmd {
         alias = "chan",
         required = true,
         value_name = "CHANNEL_ID",
-        help = "channel identifier"
+        help = "Channel identifier"
     )]
     channel_id: ChannelId,
 }

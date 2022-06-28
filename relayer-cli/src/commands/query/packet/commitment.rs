@@ -26,7 +26,7 @@ pub struct QueryPacketCommitmentCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
-        help = "identifier of the chain to query"
+        help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
 
@@ -34,7 +34,7 @@ pub struct QueryPacketCommitmentCmd {
         long = "port",
         required = true,
         value_name = "PORT_ID",
-        help = "identifier of the port to query"
+        help = "Identifier of the port to query"
     )]
     port_id: PortId,
 
@@ -43,7 +43,7 @@ pub struct QueryPacketCommitmentCmd {
         alias = "chan",
         required = true,
         value_name = "CHANNEL_ID",
-        help = "identifier of the channel to query"
+        help = "Identifier of the channel to query"
     )]
     channel_id: ChannelId,
 
@@ -52,14 +52,14 @@ pub struct QueryPacketCommitmentCmd {
         alias = "seq",
         required = true,
         value_name = "SEQUENCE",
-        help = "sequence of packet to query"
+        help = "Sequence of packet to query"
     )]
     sequence: Sequence,
 
     #[clap(
         long = "height",
         value_name = "HEIGHT",
-        help = "height of the state to query"
+        help = "Height of the state to query"
     )]
     height: Option<u64>,
 }

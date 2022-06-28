@@ -27,7 +27,7 @@ pub struct TxCreateClientCmd {
         long = "host-chain",
         required = true,
         value_name = "HOST_CHAIN_ID",
-        help = "identifier of the chain that hosts the client"
+        help = "Identifier of the chain that hosts the client"
     )]
     dst_chain_id: ChainId,
 
@@ -35,7 +35,7 @@ pub struct TxCreateClientCmd {
         long = "reference-chain",
         required = true,
         value_name = "REFERENCE_CHAIN_ID",
-        help = "identifier of the chain targeted by the client"
+        help = "Identifier of the chain targeted by the client"
     )]
     src_chain_id: ChainId,
 
@@ -107,7 +107,7 @@ pub struct TxUpdateClientCmd {
         long = "host-chain",
         required = true,
         value_name = "HOST_CHAIN_ID",
-        help = "identifier of the chain that hosts the client"
+        help = "Identifier of the chain that hosts the client"
     )]
     dst_chain_id: ChainId,
 
@@ -115,21 +115,21 @@ pub struct TxUpdateClientCmd {
         long = "client",
         required = true,
         value_name = "CLIENT_ID",
-        help = "identifier of the chain targeted by the client"
+        help = "Identifier of the chain targeted by the client"
     )]
     dst_client_id: ClientId,
 
     #[clap(
         long = "height",
         value_name = "REFERENCE_HEIGHT",
-        help = "the target height of the client update"
+        help = "The target height of the client update"
     )]
     target_height: Option<u64>,
 
     #[clap(
         long = "trusted-height",
         value_name = "REFERENCE_TRUSTED_HEIGHT",
-        help = "the trusted height of the client update"
+        help = "The trusted height of the client update"
     )]
     trusted_height: Option<u64>,
 }
@@ -193,7 +193,7 @@ pub struct TxUpgradeClientCmd {
         long = "host-chain",
         required = true,
         value_name = "HOST_CHAIN_ID",
-        help = "identifier of the chain that hosts the client"
+        help = "Identifier of the chain that hosts the client"
     )]
     chain_id: ChainId,
 
@@ -201,7 +201,7 @@ pub struct TxUpgradeClientCmd {
         long = "client",
         required = true,
         value_name = "CLIENT_ID",
-        help = "identifier of the client to be upgraded"
+        help = "Identifier of the client to be upgraded"
     )]
     client_id: ClientId,
 }
@@ -272,7 +272,7 @@ pub struct TxUpgradeClientsCmd {
         long = "reference-chain",
         required = true,
         value_name = "REFERENCE_CHAIN_ID",
-        help = "identifier of the chain that underwent an upgrade; all clients targeting this chain will be upgraded"
+        help = "Identifier of the chain that underwent an upgrade; all clients targeting this chain will be upgraded"
     )]
     src_chain_id: ChainId,
 }

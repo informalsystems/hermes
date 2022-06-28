@@ -23,7 +23,7 @@ pub struct QueryTxEventsCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
-        help = "identifier of the chain to query"
+        help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
 
@@ -31,7 +31,7 @@ pub struct QueryTxEventsCmd {
         long = "hash",
         required = true,
         value_name = "HASH",
-        help = "transaction hash to query"
+        help = "Transaction hash to query"
     )]
     hash: String,
 }

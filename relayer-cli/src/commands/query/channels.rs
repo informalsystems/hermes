@@ -24,7 +24,7 @@ pub struct QueryChannelsCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
-        help = "identifier of the chain to query"
+        help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
 
@@ -33,12 +33,12 @@ pub struct QueryChannelsCmd {
     // #[clap(
     //     long = "counterparty-chain",
     //     value_name = "COUNTERPARTY_CHAIN_ID",
-    //     help = "filter the query response by the this counterparty chain"
+    //     help = "Filter the query response by the this counterparty chain"
     // )]
     // dst_chain_id: Option<ChainId>,
     #[clap(
         long = "verbose",
-        help = "enable verbose output, displaying the client and connection ids for each channel in the response"
+        help = "Enable verbose output, displaying the client and connection ids for each channel in the response"
     )]
     verbose: bool,
 }

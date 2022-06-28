@@ -20,35 +20,35 @@ pub struct CreateConnectionCommand {
         long = "a-chain",
         required = true,
         value_name = "A_CHAIN_ID",
-        help = "identifier of the side `a` chain for the new connection"
+        help = "Identifier of the side `a` chain for the new connection"
     )]
     chain_a_id: ChainId,
 
     #[clap(
         long = "b-chain",
         value_name = "B_CHAIN_ID",
-        help = "identifier of the side `b` chain for the new connection"
+        help = "Identifier of the side `b` chain for the new connection"
     )]
     chain_b_id: Option<ChainId>,
 
     #[clap(
         long = "a-client",
         value_name = "A_CLIENT_ID",
-        help = "identifier of client hosted on chain `a`; default: None (creates a new client)"
+        help = "Identifier of client hosted on chain `a`; default: None (creates a new client)"
     )]
     client_a: Option<ClientId>,
 
     #[clap(
         long = "b-client",
         value_name = "B_CLIENT_ID",
-        help = "identifier of client hosted on chain `b`; default: None (creates a new client)"
+        help = "Identifier of client hosted on chain `b`; default: None (creates a new client)"
     )]
     client_b: Option<ClientId>,
 
     #[clap(
         long = "delay",
         value_name = "DELAY",
-        help = "delay period parameter for the new connection (seconds)",
+        help = "Delay period parameter for the new connection (seconds)",
         default_value = "0"
     )]
     delay: u64,

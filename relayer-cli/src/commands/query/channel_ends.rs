@@ -23,7 +23,7 @@ pub struct QueryChannelEndsCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
-        help = "identifier of the chain to query"
+        help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
 
@@ -31,7 +31,7 @@ pub struct QueryChannelEndsCmd {
         long = "port",
         required = true,
         value_name = "PORT_ID",
-        help = "identifier of the port to query"
+        help = "Identifier of the port to query"
     )]
     port_id: PortId,
 
@@ -40,20 +40,20 @@ pub struct QueryChannelEndsCmd {
         alias = "chan",
         required = true,
         value_name = "CHANNEL_ID",
-        help = "identifier of the channel to query"
+        help = "Identifier of the channel to query"
     )]
     channel_id: ChannelId,
 
     #[clap(
         long = "height",
         value_name = "HEIGHT",
-        help = "height of the state to query"
+        help = "Height of the state to query"
     )]
     height: Option<u64>,
 
     #[clap(
         long = "verbose",
-        help = "enable verbose output, displaying all details of channels, connections & clients"
+        help = "Enable verbose output, displaying all details of channels, connections & clients"
     )]
     verbose: bool,
 }
