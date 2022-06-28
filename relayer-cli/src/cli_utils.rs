@@ -1,3 +1,5 @@
+//! Various utilities for the Hermes CLI
+
 use alloc::sync::Arc;
 
 use tokio::runtime::Runtime as TokioRuntime;

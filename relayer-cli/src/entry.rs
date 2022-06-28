@@ -1,3 +1,5 @@
+//! Definition of the entrypoint for the Hermes CLI.
+
 use std::path::PathBuf;
 use std::process;
 

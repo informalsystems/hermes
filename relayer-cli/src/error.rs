@@ -1,3 +1,5 @@
+//! All errors which can be reaised from a command.
+
 use flex_error::define_error;
 
 use tendermint::Error as TendermintError;

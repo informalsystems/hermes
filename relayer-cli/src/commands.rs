@@ -1,9 +1,4 @@
-//! Cli Subcommands
-//!
-//! This is where you specify the subcommands of your application.
-//!
-//! See the `impl Configurable` below for how to specify the path to the
-//! application's configuration file.
+//! Definition of all the Hermes subcommands
 
 mod clear;
 mod completions;
