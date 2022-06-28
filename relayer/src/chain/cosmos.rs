@@ -712,10 +712,11 @@ impl ChainEndpoint for CosmosSdkChain {
             .block_metas;
 
         return if let Some(latest_app_block) = blocks.first() {
-            let height = ICSHeight {
-                revision_number: ChainId::chain_version(latest_app_block.header.chain_id.as_str()),
-                revision_height: u64::from(abci_info.last_block_height),
-            };
+            let height = ICSHeight::new(
+                ChainId::chain_version(latest_app_block.header.chain_id.as_str()),
+                u64::from(abci_info.last_block_height),
+            )
+            .map_err(|_| Error::invalid_height_no_source())?;
             let timestamp = latest_app_block.header.time.into();
 
             Ok(ChainStatus { height, timestamp })
