@@ -618,7 +618,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     // Done with this op. data
                     info!("success");
                     telemetry!({
-                        let (chain, counterparty, channel_id, port_id) = self.target_info(odata.target);
+                        let (chain, counterparty, channel_id, port_id) =
+                            self.target_info(odata.target);
 
                         ibc_telemetry::global().tx_submitted(
                             reply.len(),
