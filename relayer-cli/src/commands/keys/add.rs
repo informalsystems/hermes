@@ -22,48 +22,48 @@ use crate::conclude::Output;
 ///
 /// The command to add a key from a file:
 ///
-/// `keys add [OPTIONS] --key-file <KEY_FILE> <CHAIN_ID>`
+/// `keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>`
 ///
 /// The command to restore a key from a file containing mnemonic:
 ///
-/// `keys add [OPTIONS] --mnemonic-file <MNEMONIC_FILE> <CHAIN_ID>`
+/// `keys add [OPTIONS] --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>`
 ///
 /// The key-file and mnemonic-file flags can't be given at the same time, this will cause a terminating error.
 /// If successful the key will be created or restored, depending on which flag was given.
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct KeysAddCmd {
-    #[clap(required = true, help = "identifier of the chain")]
+    #[clap(long = "chain", required = true, help = "Identifier of the chain")]
     chain_id: ChainId,
 
     #[clap(
-        short = 'f',
-        long,
+        long = "key-file",
         required = true,
-        help = "path to the key file",
+        value_name = "KEY_FILE",
+        help = "Path to the key file",
         group = "add-restore"
     )]
     key_file: Option<PathBuf>,
 
     #[clap(
-        short,
-        long,
+        long = "mnemonic-file",
         required = true,
-        help = "path to file containing mnemonic to restore the key from",
+        value_name = "MNEMONIC_FILE",
+        help = "Path to file containing mnemonic to restore the key from",
         group = "add-restore"
     )]
     mnemonic_file: Option<PathBuf>,
 
     #[clap(
-        short,
-        long,
-        help = "name of the key (defaults to the `key_name` defined in the config)"
+        long = "key-name",
+        value_name = "KEY_NAME",
+        help = "Name of the key (defaults to the `key_name` defined in the config)"
     )]
     key_name: Option<String>,
 
     #[clap(
-        short = 'p',
-        long,
-        help = "derivation path for this key",
+        long = "hd-path",
+        value_name = "HD_PATH",
+        help = "Derivation path for this key",
         default_value = "m/44'/118'/0'/0/0"
     )]
     hd_path: String,
@@ -107,7 +107,7 @@ impl Runnable for KeysAddCmd {
             Ok(result) => result,
         };
 
-        // Check if --file or --mnemonic was given as input.
+        // Check if --key-file or --mnemonic-file was given as input.
         match (self.key_file.clone(), self.mnemonic_file.clone()) {
             (Some(key_file), _) => {
                 let key = add_key(&opts.config, &opts.name, &key_file, &opts.hd_path);

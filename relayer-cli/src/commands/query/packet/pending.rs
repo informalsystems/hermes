@@ -32,20 +32,27 @@ struct Summary {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct QueryPendingPacketsCmd {
     #[clap(
+        long = "chain",
         required = true,
-        help = "identifier of the chain at one end of the channel"
+        value_name = "CHAIN_ID",
+        help = "Identifier of the chain at one end of the channel"
     )]
     chain_id: ChainId,
 
     #[clap(
+        long = "port",
         required = true,
-        help = "port identifier on the chain given by <CHAIN_ID>"
+        value_name = "PORT_ID",
+        help = "Port identifier on the chain given by <CHAIN_ID>"
     )]
     port_id: PortId,
 
     #[clap(
+        long = "channel",
+        alias = "chan",
         required = true,
-        help = "channel identifier on the chain given by <CHAIN_ID>"
+        value_name = "CHANNEL_ID",
+        help = "Channel identifier on the chain given by <CHAIN_ID>"
     )]
     channel_id: ChannelId,
 }
