@@ -1,11 +1,12 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the client module.
 
+use ibc_proto::google::protobuf::Any;
 use serde_derive::{Deserialize, Serialize};
+use subtle_encoding::hex;
 use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
 use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::header::AnyHeader;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::events::{IbcEvent, IbcEventType};
@@ -155,16 +156,17 @@ impl core::fmt::Display for CreateClient {
 }
 
 /// UpdateClient event signals a recent update of an on-chain client (IBC Client).
-#[derive(Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Clone, PartialEq)]
 pub struct UpdateClient {
     pub common: Attributes,
-    pub header: Option<AnyHeader>,
+    pub header: Option<Any>,
 }
 
 impl UpdateClient {
     pub fn client_id(&self) -> &ClientId {
         &self.common.client_id
     }
+
     pub fn client_type(&self) -> ClientType {
         self.common.client_type
     }
@@ -199,11 +201,17 @@ impl From<UpdateClient> for IbcEvent {
 
 impl From<UpdateClient> for AbciEvent {
     fn from(v: UpdateClient) -> Self {
+        fn encode_to_string(header: Any) -> String {
+            let buf = prost::Message::encode_to_vec(&header);
+            let encoded = hex::encode(buf);
+            String::from_utf8(encoded).expect("hex-encoded string should always be valid UTF-8")
+        }
+
         let mut attributes = Vec::<Tag>::from(v.common);
         if let Some(h) = v.header {
             let header = Tag {
                 key: HEADER_ATTRIBUTE_KEY.parse().unwrap(),
-                value: h.encode_to_string().parse().unwrap(),
+                value: encode_to_string(h).parse().unwrap(),
             };
             attributes.push(header);
         }
