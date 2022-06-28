@@ -7,10 +7,12 @@ use serde::{Deserialize, Serialize};
 use tendermint_light_client_verifier::options::Options;
 use tendermint_proto::Protobuf;
 
+use crate::clients::ics07_tendermint::client_def::TendermintClient;
 use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
+use crate::core::ics02_client::client_def::ClientDef;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
@@ -229,6 +231,10 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
 
     fn client_type(&self) -> ClientType {
         ClientType::Tendermint
+    }
+
+    fn client_def(&self) -> Box<dyn ClientDef> {
+        Box::new(TendermintClient::default())
     }
 
     fn latest_height(&self) -> Height {

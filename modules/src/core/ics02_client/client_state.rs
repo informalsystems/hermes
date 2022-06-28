@@ -10,6 +10,7 @@ use tendermint_proto::Protobuf;
 
 use crate::clients::ics07_tendermint::client_state;
 use crate::clients::ics07_tendermint::client_state::ClientState as TmClientState;
+use crate::core::ics02_client::client_def::ClientDef;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
@@ -31,6 +32,9 @@ pub trait ClientState: Debug + Send + Sync + AsAny + DynClone {
 
     /// Type of client associated with this state (eg. Tendermint)
     fn client_type(&self) -> ClientType;
+
+    /// Return the associated `ClientDef` implementation
+    fn client_def(&self) -> Box<dyn ClientDef>;
 
     /// Latest height of consensus state
     fn latest_height(&self) -> Height;
@@ -224,6 +228,10 @@ impl ClientState for AnyClientState {
 
     fn client_type(&self) -> ClientType {
         self.client_type()
+    }
+
+    fn client_def(&self) -> Box<dyn ClientDef> {
+        todo!()
     }
 
     fn latest_height(&self) -> Height {
