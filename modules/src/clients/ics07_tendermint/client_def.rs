@@ -1,5 +1,6 @@
 use core::convert::TryInto;
 
+use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 use prost::Message;
 use tendermint_light_client_verifier::types::{TrustedBlockState, UntrustedBlockState};
@@ -412,6 +413,10 @@ impl ClientDef for TendermintClient {
         _proof_upgrade_consensus_state: RawMerkleProof,
     ) -> Result<UpdatedState, Ics02Error> {
         todo!()
+    }
+
+    fn decode_header(&self, header: Any) -> Result<Box<dyn Header>, Ics02Error> {
+        TmHeader::try_from(header).map(TmHeader::boxed)
     }
 }
 

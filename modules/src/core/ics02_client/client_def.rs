@@ -1,3 +1,4 @@
+use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use crate::clients::ics07_tendermint::client_def::TendermintClient;
@@ -176,6 +177,9 @@ pub trait ClientDef {
         channel_id: &ChannelId,
         sequence: Sequence,
     ) -> Result<(), Error>;
+
+    /// Decode the given protobuf encoded light-client header and return it.
+    fn decode_header(&self, header: Any) -> Result<Box<dyn Header>, Error>;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -547,5 +551,9 @@ impl ClientDef for AnyClient {
                 proof_upgrade_consensus_state,
             ),
         }
+    }
+
+    fn decode_header(&self, _header: Any) -> Result<Box<dyn Header>, Error> {
+        todo!()
     }
 }
