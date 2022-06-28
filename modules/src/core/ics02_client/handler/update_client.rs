@@ -358,7 +358,7 @@ mod tests {
         let block_ref = ctx_b.host_block(update_height);
         let mut latest_header: AnyHeader = block_ref.cloned().map(Into::into).unwrap();
 
-        let trusted_height = client_height.clone().sub(1).unwrap_or_default();
+        let trusted_height = client_height.clone().sub(1).unwrap();
 
         latest_header = match latest_header {
             AnyHeader::Tendermint(mut theader) => {

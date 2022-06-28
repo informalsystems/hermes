@@ -163,7 +163,7 @@ mod tests {
 
         let context = MockContext::default();
 
-        let height = Height::default().revision_height + 2;
+        let height = 2;
         let timeout_timestamp = 5;
 
         let client_height = Height::new(0, 2).unwrap();

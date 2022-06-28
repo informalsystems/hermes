@@ -131,10 +131,10 @@ pub struct Attributes {
 impl Default for Attributes {
     fn default() -> Self {
         Attributes {
-            height: Height::default(),
+            height: Height::new(0, 1).unwrap(),
             client_id: Default::default(),
             client_type: ClientType::Tendermint,
-            consensus_height: Height::default(),
+            consensus_height: Height::new(0, 1).unwrap(),
         }
     }
 }

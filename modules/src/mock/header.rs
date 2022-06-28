@@ -12,10 +12,19 @@ use crate::mock::client_state::MockConsensusState;
 use crate::timestamp::Timestamp;
 use crate::Height;
 
-#[derive(Copy, Clone, Default, Debug, Deserialize, PartialEq, Eq, Serialize)]
+#[derive(Copy, Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct MockHeader {
     pub height: Height,
     pub timestamp: Timestamp,
+}
+
+impl Default for MockHeader {
+    fn default() -> Self {
+        Self {
+            height: Height::new(0, 1).unwrap(),
+            timestamp: Default::default(),
+        }
+    }
 }
 
 impl Protobuf<RawMockHeader> for MockHeader {}

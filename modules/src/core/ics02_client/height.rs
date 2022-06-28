@@ -60,12 +60,6 @@ impl Height {
     }
 }
 
-impl Default for Height {
-    fn default() -> Self {
-        Height::new(0, 1).unwrap()
-    }
-}
-
 impl PartialOrd for Height {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))

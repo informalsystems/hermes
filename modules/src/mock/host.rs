@@ -118,7 +118,7 @@ impl From<TmLightBlock> for TMHeader {
         TMHeader {
             signed_header: light_block.signed_header,
             validator_set: light_block.validators,
-            trusted_height: Default::default(),
+            trusted_height: Height::new(0, 1).unwrap(),
             trusted_validator_set: light_block.next_validators,
         }
     }

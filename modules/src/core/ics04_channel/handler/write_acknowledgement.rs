@@ -159,7 +159,7 @@ mod tests {
             Test {
                 name: "Zero ack".to_string(),
                 ctx: context
-                    .with_client(&ClientId::default(), Height::default())
+                    .with_client(&ClientId::default(), Height::new(0, 1).unwrap())
                     .with_connection(ConnectionId::default(), connection_end)
                     .with_channel(PortId::default(), ChannelId::default(), dest_channel_end),
                 packet,

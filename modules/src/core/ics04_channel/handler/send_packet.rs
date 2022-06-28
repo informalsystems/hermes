@@ -181,7 +181,7 @@ mod tests {
                 name: "Good parameters".to_string(),
                 ctx: context
                     .clone()
-                    .with_client(&ClientId::default(), Height::default())
+                    .with_client(&ClientId::default(), Height::new(0, 1).unwrap())
                     .with_connection(ConnectionId::default(), connection_end.clone())
                     .with_channel(PortId::default(), ChannelId::default(), channel_end.clone())
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
