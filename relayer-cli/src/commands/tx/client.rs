@@ -1,4 +1,5 @@
-use core::fmt;
+use core::{fmt, time::Duration};
+use std::thread;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
@@ -14,7 +15,6 @@ use ibc_relayer::chain::requests::{
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::{CreateOptions, ForeignClient};
 use tendermint_light_client_verifier::types::TrustThreshold;
-use tracing::warn;
 
 use crate::application::app_config;
 use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic, ChainHandlePair};
@@ -209,9 +209,9 @@ pub struct TxUpgradeClientCmd {
         long = "upgrade-height",
         required = true,
         value_name = "SRC_UPGRADE_HEIGHT",
-        help = "The height at which the client upgrade should occur at"
+        help = "The height at which the source chain should halt in order to perform the client upgrade"
     )]
-    upgrade_height: Height,
+    target_upgrade_height: Height,
 }
 
 impl Runnable for TxUpgradeClientCmd {
@@ -249,23 +249,49 @@ impl Runnable for TxUpgradeClientCmd {
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Assumption: this query is run while the chain is halted as a result of an upgrade
-        let src_upgrade_height = {
-            let src_application_height = match client.src_chain().query_latest_height() {
+        // let src_upgrade_height = {
+        //     let src_application_height = match client.src_chain().query_latest_height() {
+        //         Ok(height) => height,
+        //         Err(e) => Output::error(format!("{}", e)).exit(),
+        //     };
+
+        //     // When the chain is halted, the application height reports a height
+        //     // 1 less than the halted height
+        //     src_application_height.increment()
+        // };
+
+        // Wait until the client's application height reaches the target upgrade height - 1
+        // since
+        let target_application_upgrade_height = match self.target_upgrade_height.decrement() {
+            Ok(height) => height,
+            Err(e) => Output::error(format!("{}", e)).exit(),
+        };
+
+        let mut src_application_latest_height = match client.src_chain().query_latest_height() {
+            Ok(height) => height,
+            Err(e) => Output::error(format!("{}", e)).exit(),
+        };
+
+        while src_application_latest_height < target_application_upgrade_height {
+            thread::sleep(Duration::from_millis(200));
+            src_application_latest_height = match client.src_chain().query_latest_height() {
                 Ok(height) => height,
                 Err(e) => Output::error(format!("{}", e)).exit(),
             };
+        }
 
-            // When the chain is halted, the application height reports a height
-            // 1 less than the halted height
-            src_application_height.increment()
-        };
+        // while let Ok(src_application_latest_height) = client.src_chain().query_latest_height() {
+        //     if src_application_latest_height < self.target_upgrade_height {
+        //         thread::sleep(Duration::from_millis(200));
+        //     }
+        // }
 
-        warn!(
-            "Assuming that chain '{}' is currently halted for upgrade at height {}",
-            client.src_chain().id(),
-            src_upgrade_height
-        );
-        let outcome = client.upgrade(src_upgrade_height);
+        // warn!(
+        //     "Assuming that chain '{}' is currently halted for upgrade at height {}",
+        //     client.src_chain().id(),
+        //     src_upgrade_height
+        // );
+        let outcome = client.upgrade(self.target_upgrade_height);
 
         match outcome {
             Ok(receipt) => Output::success(receipt).exit(),
