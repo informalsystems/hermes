@@ -1,6 +1,10 @@
+use crate::prelude::*;
+
 use core::cmp::Ordering;
 
 use bytes::Buf;
+use ibc_proto::google::protobuf::Any;
+use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 use prost::Message;
 use serde_derive::{Deserialize, Serialize};
 use subtle_encoding::hex;
@@ -8,16 +12,14 @@ use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
 use tendermint_proto::Protobuf;
 
-use crate::alloc::string::ToString;
-
-use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
-
 use crate::clients::ics07_tendermint::error::Error;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics24_host::identifier::ChainId;
 use crate::timestamp::Timestamp;
 use crate::Height;
+
+pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
 
 /// Tendermint consensus header
 #[derive(Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -49,7 +51,7 @@ impl Header {
 
     pub fn decode_from_string(s: &str) -> Result<Self, Ics02Error> {
         let header_bytes = hex::decode(s).unwrap();
-        Protobuf::decode(header_bytes.as_ref()).map_err(Ics02Error::invalid_raw_header)
+        Protobuf::<RawHeader>::decode(header_bytes.as_ref()).map_err(Ics02Error::invalid_raw_header)
     }
 }
 
@@ -82,12 +84,12 @@ impl crate::core::ics02_client::header::Header for Header {
         self.height()
     }
 
-    fn encode_vec(&self) -> Vec<u8> {
-        Protobuf::<RawHeader>::encode_vec(self).expect("encoding to vec cannot fail")
-    }
-
     fn timestamp(&self) -> Timestamp {
         self.signed_header.header.time.into()
+    }
+
+    fn encode_any(&self) -> Any {
+        self.clone().into()
     }
 }
 
@@ -130,8 +132,33 @@ impl TryFrom<RawHeader> for Header {
     }
 }
 
-pub fn decode_header<B: Buf>(buf: B) -> Result<Header, Error> {
-    RawHeader::decode(buf).map_err(Error::decode)?.try_into()
+impl Protobuf<Any> for Header {}
+
+impl TryFrom<Any> for Header {
+    type Error = Ics02Error;
+
+    fn try_from(raw: Any) -> Result<Self, Ics02Error> {
+        use core::ops::Deref;
+
+        fn decode_header<B: Buf>(buf: B) -> Result<Header, Error> {
+            RawHeader::decode(buf).map_err(Error::decode)?.try_into()
+        }
+
+        match raw.type_url.as_str() {
+            TENDERMINT_HEADER_TYPE_URL => decode_header(raw.value.deref()).map_err(Into::into),
+            _ => Err(Ics02Error::unknown_header_type(raw.type_url)),
+        }
+    }
+}
+
+impl From<Header> for Any {
+    fn from(header: Header) -> Self {
+        Any {
+            type_url: TENDERMINT_HEADER_TYPE_URL.to_string(),
+            value: Protobuf::<RawHeader>::encode_vec(&header)
+                .expect("encoding to `Any` from `TmHeader`"),
+        }
+    }
 }
 
 impl From<Header> for RawHeader {
