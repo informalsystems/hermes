@@ -173,7 +173,7 @@ impl CosmosSdkChain {
         }
 
         // Get the latest height and convert to tendermint Height
-        let latest_height = TmHeight::try_from(self.query_chain_latest_height()?.revision_height)
+        let latest_height = TmHeight::try_from(self.query_chain_latest_height()?.revision_height())
             .map_err(Error::invalid_height)?;
 
         // Check on the configured max_tx_size against the consensus parameters at latest height
@@ -347,7 +347,7 @@ impl CosmosSdkChain {
             &self.config.rpc_addr,
             path,
             Path::Upgrade(query_data).to_string(),
-            TmHeight::try_from(query_height.revision_height).map_err(Error::invalid_height)?,
+            TmHeight::try_from(query_height.revision_height()).map_err(Error::invalid_height)?,
             true,
         ))?;
 
@@ -799,7 +799,7 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(|_| Error::invalid_height_no_source())?;
 
         let (upgraded_client_state_raw, proof) = self.query_client_upgrade_state(
-            ClientUpgradePath::UpgradedClientState(upgrade_height.revision_height),
+            ClientUpgradePath::UpgradedClientState(upgrade_height.revision_height()),
             query_height,
         )?;
 
@@ -823,7 +823,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         // Fetch the consensus state and its proof.
         let (upgraded_consensus_state_raw, proof) = self.query_client_upgrade_state(
-            ClientUpgradePath::UpgradedClientConsensusState(upgrade_height.revision_height),
+            ClientUpgradePath::UpgradedClientConsensusState(upgrade_height.revision_height()),
             query_height,
         )?;
 
@@ -877,7 +877,7 @@ impl ChainEndpoint for CosmosSdkChain {
             ClientConsensusStatePath {
                 client_id: request.client_id.clone(),
                 epoch: request.consensus_height.revision_number,
-                height: request.consensus_height.revision_height,
+                height: request.consensus_height.revision_height(),
             },
             request.query_height,
             matches!(include_proof, IncludeProof::Yes),
@@ -1524,7 +1524,7 @@ impl ChainEndpoint for CosmosSdkChain {
         let height = match request.height {
             QueryHeight::Latest => TmHeight::from(0u32),
             QueryHeight::Specific(ibc_height) => {
-                TmHeight::try_from(ibc_height.revision_height).map_err(Error::invalid_height)?
+                TmHeight::try_from(ibc_height.revision_height()).map_err(Error::invalid_height)?
             }
         };
 

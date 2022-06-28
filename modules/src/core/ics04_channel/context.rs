@@ -83,7 +83,7 @@ pub trait ChannelReader {
         let (revision_number, revision_height) = match timeout_height {
             Some(height) => (
                 height.revision_number.to_be_bytes(),
-                height.revision_height.to_be_bytes(),
+                height.revision_height().to_be_bytes(),
             ),
             None => (0u64.to_be_bytes(), 0u64.to_be_bytes()),
         };

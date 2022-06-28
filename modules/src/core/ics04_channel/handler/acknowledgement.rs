@@ -152,7 +152,7 @@ mod tests {
         let client_height = Height::new(0, 2).unwrap();
 
         let msg = MsgAcknowledgement::try_from(get_dummy_raw_msg_acknowledgement(
-            client_height.revision_height,
+            client_height.revision_height(),
         ))
         .unwrap();
         let packet = msg.packet.clone();

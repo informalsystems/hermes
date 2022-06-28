@@ -180,9 +180,10 @@ mod tests {
 
         let client_height = host_height.increment();
 
-        let msg =
-            MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(client_height.revision_height))
-                .unwrap();
+        let msg = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(
+            client_height.revision_height(),
+        ))
+        .unwrap();
 
         let packet = msg.packet.clone();
 

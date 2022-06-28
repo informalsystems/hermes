@@ -62,7 +62,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         trace!(%trusted, %target, "light client verification");
 
         let target_height =
-            TMHeight::try_from(target.revision_height).map_err(Error::invalid_height)?;
+            TMHeight::try_from(target.revision_height()).map_err(Error::invalid_height)?;
 
         let client = self.prepare_client(client_state)?;
         let mut state = self.prepare_state(trusted)?;
@@ -89,7 +89,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
     fn fetch(&mut self, height: ibc::Height) -> Result<LightBlock, Error> {
         trace!(%height, "fetching header");
 
-        let height = TMHeight::try_from(height.revision_height).map_err(Error::invalid_height)?;
+        let height = TMHeight::try_from(height.revision_height()).map_err(Error::invalid_height)?;
 
         self.fetch_light_block(AtHeight::At(height))
     }
@@ -212,7 +212,7 @@ impl LightClient {
 
     fn prepare_state(&self, trusted: ibc::Height) -> Result<LightClientState, Error> {
         let trusted_height =
-            TMHeight::try_from(trusted.revision_height).map_err(Error::invalid_height)?;
+            TMHeight::try_from(trusted.revision_height()).map_err(Error::invalid_height)?;
 
         let trusted_block = self.fetch_light_block(AtHeight::At(trusted_height))?;
 

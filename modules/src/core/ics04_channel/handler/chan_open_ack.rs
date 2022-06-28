@@ -181,7 +181,7 @@ mod tests {
 
         let msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_raw_msg_conn_open_try(
             client_consensus_state_height,
-            host_chain_height.revision_height,
+            host_chain_height.revision_height(),
         ))
         .unwrap();
 

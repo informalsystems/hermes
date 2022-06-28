@@ -88,11 +88,11 @@ impl ClientDef for TendermintClient {
             header_time: trusted_consensus_state.timestamp,
             height: header
                 .trusted_height
-                .revision_height
+                .revision_height()
                 .try_into()
                 .map_err(|_| {
                     Ics02Error::tendermint_handler_error(Error::invalid_header_height(
-                        header.trusted_height.revision_height,
+                        header.trusted_height.revision_height(),
                     ))
                 })?,
             next_validators: &header.trusted_validator_set,
@@ -206,7 +206,7 @@ impl ClientDef for TendermintClient {
         let path = ClientConsensusStatePath {
             client_id: client_id.clone(),
             epoch: consensus_height.revision_number,
-            height: consensus_height.revision_height,
+            height: consensus_height.revision_height(),
         };
         let value = expected_consensus_state
             .encode_vec()
