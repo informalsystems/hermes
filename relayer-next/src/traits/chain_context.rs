@@ -11,7 +11,10 @@ pub trait ChainContext: ErrorContext {
     type Event: Async;
 }
 
-pub trait IbcChainContext<Counterparty: ChainContext>: ChainContext {
+pub trait IbcChainContext<Counterparty>: ChainContext
+where
+    Counterparty: ChainContext,
+{
     type ClientId: Async;
 
     type ConnectionId: Async;

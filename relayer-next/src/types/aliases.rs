@@ -1,4 +1,5 @@
 use crate::traits::chain_context::{ChainContext, IbcChainContext};
+use crate::traits::ibc_event_context::IbcEventContext;
 use crate::traits::relay_context::RelayContext;
 
 pub type ClientId<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::ClientId;
@@ -28,3 +29,6 @@ pub type SrcChain<Context> = <Context as RelayContext>::SrcChain;
 pub type DstChain<Context> = <Context as RelayContext>::DstChain;
 
 pub type Packet<Context> = <Context as RelayContext>::Packet;
+
+pub type WriteAcknowledgementEvent<Chain, Counterparty> =
+    <Chain as IbcEventContext<Counterparty>>::WriteAcknowledgementEvent;

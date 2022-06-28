@@ -1,3 +1,4 @@
+use ibc::core::ics04_channel::events::WriteAcknowledgement;
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
@@ -12,6 +13,7 @@ use crate::impls::cosmos::message::CosmosIbcMessage;
 use crate::traits::chain_context::{ChainContext, IbcChainContext};
 use crate::traits::core::Async;
 use crate::traits::core::ErrorContext;
+use crate::traits::ibc_event_context::IbcEventContext;
 use crate::traits::relay_context::RelayContext;
 
 pub struct CosmosChainHandler<Handle> {
@@ -58,6 +60,15 @@ where
     type IbcMessage = CosmosIbcMessage;
 
     type IbcEvent = IbcEvent;
+}
+
+impl<Chain, Counterparty> IbcEventContext<CosmosChainHandler<Counterparty>>
+    for CosmosChainHandler<Chain>
+where
+    Chain: Async,
+    Counterparty: Async,
+{
+    type WriteAcknowledgementEvent = WriteAcknowledgement;
 }
 
 impl<SrcChain, DstChain> ErrorContext for CosmosRelayHandler<SrcChain, DstChain>
