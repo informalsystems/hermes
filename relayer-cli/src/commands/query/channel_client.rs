@@ -11,7 +11,7 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 
 /// The data structure that represents the arguments when invoking the `query channel client` CLI command.
 ///
-/// `query channel client --chain <chain_id> --port <port_id> --chan <channel_id>`
+/// `query channel client --chain <chain_id> --port <port_id> --channel <channel_id>`
 ///
 /// If successful the channel's client state is displayed.
 #[derive(Clone, Command, Debug, Parser)]
@@ -33,7 +33,8 @@ pub struct QueryChannelClientCmd {
     port_id: PortId,
 
     #[clap(
-        long = "chan",
+        long = "channel",
+        alias = "chan",
         required = true,
         value_name = "CHANNEL_ID",
         help = "identifier of the channel to query"

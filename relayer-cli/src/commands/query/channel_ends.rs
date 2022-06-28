@@ -36,7 +36,8 @@ pub struct QueryChannelEndsCmd {
     port_id: PortId,
 
     #[clap(
-        long = "chan",
+        long = "channel",
+        alias = "chan",
         required = true,
         value_name = "CHANNEL_ID",
         help = "identifier of the channel to query"

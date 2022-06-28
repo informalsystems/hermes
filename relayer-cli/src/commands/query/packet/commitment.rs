@@ -39,7 +39,8 @@ pub struct QueryPacketCommitmentCmd {
     port_id: PortId,
 
     #[clap(
-        long = "chan",
+        long = "channel",
+        alias = "chan",
         required = true,
         value_name = "CHANNEL_ID",
         help = "identifier of the channel to query"
@@ -47,7 +48,8 @@ pub struct QueryPacketCommitmentCmd {
     channel_id: ChannelId,
 
     #[clap(
-        long = "seq",
+        long = "sequence",
+        alias = "seq",
         required = true,
         value_name = "SEQUENCE",
         help = "sequence of packet to query"

@@ -34,7 +34,8 @@ pub struct QueryUnreceivedPacketsCmd {
     port_id: PortId,
 
     #[clap(
-        long = "chan",
+        long = "channel",
+        alias = "chan",
         required = true,
         value_name = "CHANNEL_ID",
         help = "channel identifier"

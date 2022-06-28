@@ -48,7 +48,8 @@ pub struct QueryPendingPacketsCmd {
     port_id: PortId,
 
     #[clap(
-        long = "chan",
+        long = "channel",
+        alias = "chan",
         required = true,
         value_name = "CHANNEL_ID",
         help = "channel identifier on the chain given by <CHAIN_ID>"

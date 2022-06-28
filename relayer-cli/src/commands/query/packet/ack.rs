@@ -31,7 +31,8 @@ pub struct QueryPacketAcknowledgmentCmd {
     port_id: PortId,
 
     #[clap(
-        long = "chan",
+        long = "channel",
+        alias = "chan",
         required = true,
         value_name = "CHANNEL_ID",
         help = "identifier of the channel to query"
@@ -39,7 +40,8 @@ pub struct QueryPacketAcknowledgmentCmd {
     channel_id: ChannelId,
 
     #[clap(
-        long = "seq",
+        long = "sequence",
+        alias = "seq",
         required = true,
         value_name = "SEQUENCE",
         help = "sequence of packet to query"

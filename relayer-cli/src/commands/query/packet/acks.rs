@@ -38,7 +38,8 @@ pub struct QueryPacketAcknowledgementsCmd {
     port_id: PortId,
 
     #[clap(
-        long = "chan",
+        long = "channel",
+        alias = "chan",
         required = true,
         value_name = "CHANNEL_ID",
         help = "identifier of the channel to query"
@@ -67,7 +68,7 @@ impl QueryPacketAcknowledgementsCmd {
     }
 }
 
-// cargo run --bin hermes -- query packet acknowledgements --chain ibc-0 --port transfer --conn ibconexfer --height 3
+// cargo run --bin hermes -- query packet acknowledgements --chain ibc-0 --port transfer --connection ibconexfer --height 3
 impl Runnable for QueryPacketAcknowledgementsCmd {
     fn run(&self) {
         match self.execute() {

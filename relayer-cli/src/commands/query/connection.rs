@@ -27,7 +27,8 @@ pub struct QueryConnectionEndCmd {
     chain_id: ChainId,
 
     #[clap(
-        long = "conn",
+        long = "connection",
+        alias = "conn",
         required = true,
         value_name = "CONNECTION_ID",
         help = "identifier of the connection to query"
@@ -42,7 +43,7 @@ pub struct QueryConnectionEndCmd {
     height: Option<u64>,
 }
 
-// cargo run --bin hermes -- query connection end --chain ibc-test --conn connectionidone --height 3
+// cargo run --bin hermes -- query connection end --chain ibc-test --connection connectionidone --height 3
 impl Runnable for QueryConnectionEndCmd {
     fn run(&self) {
         let config = app_config();
@@ -92,7 +93,8 @@ pub struct QueryConnectionChannelsCmd {
     chain_id: ChainId,
 
     #[clap(
-        long = "conn",
+        long = "connection",
+        alias = "conn",
         required = true,
         value_name = "CONNECTION_ID",
         help = "identifier of the connection to query"

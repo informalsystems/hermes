@@ -69,19 +69,19 @@ DESCRIPTION:
     client and a new connection underlying the new channel if a pre-existing connection is not provided
 
 FLAGS:
-        --a-chain <A_CHAIN_ID>        Identifier of the side `a` chain for the new channel
-        --a-port <A_PORT_ID>          Identifier of the side `a` port for the new channel
-        --b-port <B_PORT_ID>          Identifier of the side `b` port for the new channel
+        --a-chain <A_CHAIN_ID>              Identifier of the side `a` chain for the new channel
+        --a-port <A_PORT_ID>                Identifier of the side `a` port for the new channel
+        --b-port <B_PORT_ID>                Identifier of the side `b` port for the new channel
 
 OPTIONS:
-        --a-conn <A_CONNECTION_ID>    Identifier of the connection on chain `a` to use in creating
-                                      the new channel.
-        --b-chain <B_CHAIN_ID>        Identifier of the side `b` chain for the new channel
-        --chan-version <VERSION>      The version for the new channel
-        --new-client-conn             Indicates that a new client and connection will be created
-                                      underlying the new channel
-        --order <ORDER>               The channel ordering, valid options 'unordered' (default) and
-                                      'ordered' [default: ORDER_UNORDERED]
+        --a-connection <A_CONNECTION_ID>    Identifier of the connection on chain `a` to use in creating
+                                            the new channel.
+        --b-chain <B_CHAIN_ID>              Identifier of the side `b` chain for the new channel
+        --chan-version <VERSION>            The version for the new channel
+        --new-client-connection             Indicates that a new client and connection will be created
+                                            underlying the new channel
+        --order <ORDER>                     The channel ordering, valid options 'unordered' (default) and
+                                            'ordered' [default: ORDER_UNORDERED]
 ```
 
 Additionally, the `-h`/`--help` flags typical for CLI applications work on
@@ -437,8 +437,8 @@ to close-open:
 - verify that the two ends are in Close state:
 
   ```shell
-  hermes --config config.toml query channel end --chain ibc-0 --port transfer --chan channel-0
-  hermes --config config.toml query channel end --chain ibc-1 --port transfer --chan channel-1
+  hermes --config config.toml query channel end --chain ibc-0 --port transfer --channel channel-0
+  hermes --config config.toml query channel end --chain ibc-1 --port transfer --channel channel-1
   ```
 
 
