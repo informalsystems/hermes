@@ -33,13 +33,6 @@ impl Height {
         })
     }
 
-    pub fn zero() -> Height {
-        Self {
-            revision_number: 0,
-            revision_height: 0,
-        }
-    }
-
     pub fn add(&self, delta: u64) -> Height {
         Height {
             revision_number: self.revision_number,
@@ -69,7 +62,7 @@ impl Height {
 
 impl Default for Height {
     fn default() -> Self {
-        Self::zero()
+        Height::new(0, 1).unwrap()
     }
 }
 

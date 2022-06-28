@@ -1170,7 +1170,7 @@ impl ClientReader for MockContext {
     }
 
     fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Ics02Error> {
-        Err(Ics02Error::missing_local_consensus_state(Height::zero()))
+        Err(Ics02Error::implementation_specific())
     }
 
     fn client_counter(&self) -> Result<u64, Ics02Error> {

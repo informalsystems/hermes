@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use tendermint_light_client_verifier::options::Options;
 use tendermint_proto::Protobuf;
 
+use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
 
 use crate::clients::ics07_tendermint::error::Error;
@@ -77,13 +78,6 @@ impl ClientState {
             )));
         }
 
-        // Basic validation for the latest_height parameter.
-        if latest_height <= Height::zero() {
-            return Err(Error::validation(
-                "ClientState latest height must be greater than zero".to_string(),
-            ));
-        }
-
         // `TrustThreshold` is guaranteed to be in the range `[0, 1)`, but a `TrustThreshold::ZERO`
         // value is invalid in this context
         if trust_level == TrustThreshold::ZERO {
@@ -129,11 +123,6 @@ impl ClientState {
     }
 
     pub fn with_frozen_height(self, h: Height) -> Result<Self, Error> {
-        if h == Height::zero() {
-            return Err(Error::validation(
-                "ClientState frozen height must be greater than zero".to_string(),
-            ));
-        }
         Ok(Self {
             frozen_height: Some(h),
             ..self
@@ -316,12 +305,17 @@ impl From<ClientState> for RawClientState {
             trusting_period: Some(value.trusting_period.into()),
             unbonding_period: Some(value.unbonding_period.into()),
             max_clock_drift: Some(value.max_clock_drift.into()),
-            frozen_height: Some(value.frozen_height.unwrap_or_else(Height::zero).into()),
+            frozen_height: Some(value.frozen_height.map(|height| height.into()).unwrap_or(
+                RawHeight {
+                    revision_number: 0,
+                    revision_height: 0,
+                },
+            )),
             latest_height: Some(value.latest_height.into()),
             proof_specs: value.proof_specs.into(),
+            upgrade_path: value.upgrade_path,
             allow_update_after_expiry: value.allow_update.after_expiry,
             allow_update_after_misbehaviour: value.allow_update.after_misbehaviour,
-            upgrade_path: value.upgrade_path,
         }
     }
 }
@@ -429,14 +423,6 @@ mod tests {
                 name: "Invalid (too small) trusting trust threshold".to_string(),
                 params: ClientStateParams {
                     trust_level: TrustThreshold::ZERO,
-                    ..default_params.clone()
-                },
-                want_pass: false,
-            },
-            Test {
-                name: "Invalid (too small) latest height".to_string(),
-                params: ClientStateParams {
-                    latest_height: Height::zero(),
                     ..default_params.clone()
                 },
                 want_pass: false,

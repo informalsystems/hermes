@@ -343,7 +343,7 @@ impl ChannelReader for DummyTransferModule {
     }
 
     fn host_height(&self) -> Height {
-        Height::zero()
+        Height::new(0, 1).unwrap()
     }
 
     fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, Error> {
