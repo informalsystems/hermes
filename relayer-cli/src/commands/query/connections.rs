@@ -11,7 +11,12 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct QueryConnectionsCmd {
-    #[clap(required = true, help = "identifier of the chain to query")]
+    #[clap(
+        long = "chain",
+        required = true,
+        value_name = "CHAIN_ID",
+        help = "Identifier of the chain to query"
+    )]
     chain_id: ChainId,
 }
 
