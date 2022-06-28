@@ -73,7 +73,7 @@ The following commands are implemented, with the binary name `hermes` often omit
 ### Listen
 
 * `listen --chain <CHAIN_ID>`
-    * Optional: `[--event <EVENT>]`
+    * Optional: `[--events <EVENT>...]`
 
 ### Misbehaviour
 
