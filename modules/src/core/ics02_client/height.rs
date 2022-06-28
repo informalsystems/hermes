@@ -65,13 +65,6 @@ impl Height {
     pub fn decrement(&self) -> Result<Height, Error> {
         self.sub(1)
     }
-
-    pub fn with_revision_height(self, revision_height: u64) -> Height {
-        Height {
-            revision_height,
-            ..self
-        }
-    }
 }
 
 impl Default for Height {
