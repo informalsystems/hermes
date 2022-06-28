@@ -10,8 +10,9 @@ use opentelemetry_prometheus::PrometheusExporter;
 use prometheus::proto::MetricFamily;
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
+use tendermint::Time;
 
-use dashmap::{DashMap, DashSet};
+use dashmap::DashMap;
 
 use crate::path_identifier::PathIdentifier;
 
@@ -108,8 +109,10 @@ pub struct TelemetryState {
     /// WriteAcknowledgement were received.
     oldest_sequence: ValueRecorder<u64>,
 
+    oldest_timestamp: ValueRecorder<u64>,
+
     /// History of SendPacket sequence numbers received and not yet Acknowledged.
-    sequences_histories: DashMap<PathIdentifier, DashSet<u64>>,
+    sequences_histories: DashMap<PathIdentifier, DashMap<u64, u64>>,
 }
 
 impl TelemetryState {
@@ -309,7 +312,7 @@ impl TelemetryState {
         }
     }
 
-    pub fn record_send_packet(
+    pub fn send_packet_count(
         &self,
         _seq_nr: u64,
         _height: u64,
@@ -328,7 +331,7 @@ impl TelemetryState {
         self.send_packet_count.add(1, labels);
     }
 
-    pub fn record_write_ack(
+    pub fn acknowledgement_count(
         &self,
         _seq_nr: u64,
         _height: u64,
@@ -347,7 +350,7 @@ impl TelemetryState {
         self.acknowledgement_count.add(1, labels);
     }
 
-    pub fn record_cleared_packet(
+    pub fn cleared_count(
         &self,
         _seq_nr: u64,
         _height: u64,
@@ -389,29 +392,39 @@ impl TelemetryState {
             KeyValue::new("port", port_id.to_string()),
         ];
 
+        // Retrieve timestamp for recieved SendPacket.
+        let now = Time::now();
+        let timestamp = match now.duration_since(Time::unix_epoch()) {
+            Ok(ts) => ts.as_secs(),
+            Err(_) => 0,
+        };
+
         // If there are no HashSet for this uid, create a new one.
         // Else update the min value.
         if let Some(set) = self.sequences_histories.get(&uid) {
             // Avoid having the DashSet growing more than a given threshold, by removing
             // the oldest sequence number entry.
             if set.len() > HISTORY_RESET_THRESHOLD {
-                if let Some(min) = set.iter().map(|v| *v).min() {
+                if let Some(min) = set.iter().map(|v| *v.key()).min() {
                     set.remove(&min);
                 }
             }
-            set.insert(seq_nr);
+            set.insert(seq_nr, timestamp);
             // Record the min of the HashSet as the oldest sequence.
-            if let Some(min) = set.iter().map(|v| *v).min() {
+            if let Some(min) = set.iter().map(|v| *v.key()).min() {
+                // Updated oldest sequence number and add associated timestamp to labels.
                 self.oldest_sequence.record(min, labels);
+                self.oldest_timestamp.record(timestamp, labels);
             }
         } else {
-            let new_dashset = DashSet::with_capacity(HISTORY_SET_CAPACITY);
-            new_dashset.insert(seq_nr);
-            // Record the min of the HashSet as the oldest sequence.
-            if let Some(min) = new_dashset.iter().map(|v| *v).min() {
-                self.oldest_sequence.record(min, labels);
-            }
-            self.sequences_histories.insert(uid, new_dashset);
+            let new_dashmap = DashMap::with_capacity(HISTORY_SET_CAPACITY);
+            new_dashmap.insert(seq_nr, timestamp);
+
+            // Updated oldest sequence number and add associated timestamp to labels.
+            self.oldest_sequence.record(seq_nr, labels);
+            self.oldest_timestamp.record(timestamp, labels);
+
+            self.sequences_histories.insert(uid, new_dashmap);
         }
     }
 
@@ -443,10 +456,16 @@ impl TelemetryState {
             match set.remove(&seq_nr) {
                 Some(_) => {
                     // Record the min of the HashSet as the oldest sequence.
-                    if let Some(min) = set.iter().map(|v| *v).min() {
+                    if let Some(min) = set.iter().map(|v| *v.key()).min() {
+                        if let Some(timestamp) = set.get(&min) {
+                            self.oldest_timestamp.record(*timestamp, labels);
+                        } else {
+                            self.oldest_timestamp.record(0, labels);
+                        }
                         self.oldest_sequence.record(min, labels);
                     } else {
                         self.oldest_sequence.record(NO_PENDING_PACKETS, labels);
+                        self.oldest_timestamp.record(0, labels);
                     }
                 }
                 None => {}
@@ -469,6 +488,7 @@ impl AggregatorSelector for CustomAggregatorSelector {
         match descriptor.name() {
             "wallet_balance" => Some(Arc::new(last_value())),
             "oldest_sequence" => Some(Arc::new(last_value())),
+            "oldest_timestamp" => Some(Arc::new(last_value())),
             // Prometheus' supports only collector for histogram, sum, and last value aggregators.
             // https://docs.rs/opentelemetry-prometheus/0.10.0/src/opentelemetry_prometheus/lib.rs.html#411-418
             // TODO: Once quantile sketches are supported, replace histograms with that.
@@ -594,6 +614,11 @@ impl Default for TelemetryState {
             oldest_sequence: meter
                 .u64_value_recorder("oldest_sequence")
                 .with_description("The sequence number of the oldest pending SendPacket. If this value is 0, it means there are no pending SendPacket.")
+                .init(),
+
+            oldest_timestamp: meter
+                .u64_value_recorder("oldest_timestamp")
+                .with_description("The timestamp of the oldest sequence number.")
                 .init(),
         }
     }
