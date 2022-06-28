@@ -243,8 +243,8 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
         elapsed > self.trusting_period
     }
 
-    fn encode_vec(&self) -> Result<Vec<u8>, Ics02Error> {
-        Protobuf::encode_vec(self).map_err(Ics02Error::invalid_any_client_state)
+    fn encode_vec(&self) -> Vec<u8> {
+        Protobuf::encode_vec(self).expect("encoding to vec cannot fail")
     }
 }
 

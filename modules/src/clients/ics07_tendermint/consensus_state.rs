@@ -10,7 +10,6 @@ use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensus
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
 use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics23_commitment::commitment::CommitmentRoot;
 use crate::timestamp::Timestamp;
 
@@ -44,8 +43,8 @@ impl crate::core::ics02_client::client_consensus::ConsensusState for ConsensusSt
         self.timestamp.into()
     }
 
-    fn encode_vec(&self) -> Result<Vec<u8>, Ics02Error> {
-        Protobuf::encode_vec(self).map_err(Ics02Error::invalid_any_consensus_state)
+    fn encode_vec(&self) -> Vec<u8> {
+        Protobuf::encode_vec(self).expect("encoding to vec cannot fail")
     }
 }
 

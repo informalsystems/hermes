@@ -97,8 +97,7 @@ impl From<AnyConsensusState> for ProtoAny {
         match value {
             AnyConsensusState::Tendermint(value) => ProtoAny {
                 type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: ConsensusState::encode_vec(&value)
-                    .expect("encoding to `Any` from `AnyConsensusState::Tendermint`"),
+                value: ConsensusState::encode_vec(&value),
             },
             #[cfg(any(test, feature = "mocks"))]
             AnyConsensusState::Mock(value) => ProtoAny {

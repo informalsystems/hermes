@@ -214,7 +214,7 @@ impl ClientDef for TendermintClient {
             epoch: consensus_height.revision_number,
             height: consensus_height.revision_height,
         };
-        let value = expected_consensus_state.encode_vec()?;
+        let value = expected_consensus_state.encode_vec();
         verify_membership(client_state, prefix, proof, root, path, value)
     }
 
@@ -273,7 +273,7 @@ impl ClientDef for TendermintClient {
         client_state.verify_height(height)?;
 
         let path = ClientStatePath(client_id.clone());
-        let value = expected_client_state.encode_vec()?;
+        let value = expected_client_state.encode_vec();
         verify_membership(client_state, prefix, proof, root, path, value)
     }
 

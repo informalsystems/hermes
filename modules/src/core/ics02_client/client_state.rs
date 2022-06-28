@@ -200,8 +200,7 @@ impl From<AnyClientState> for ProtoAny {
         match value {
             AnyClientState::Tendermint(value) => ProtoAny {
                 type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
-                value: ClientState::encode_vec(&value)
-                    .expect("encoding to `Any` from `AnyClientState::Tendermint`"),
+                value: ClientState::encode_vec(&value),
             },
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(value) => ProtoAny {
