@@ -11,7 +11,7 @@ use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::{ChainId, ConnectionId, PortId};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    IncludeProof, QueryClientStateRequest, QueryConnectionRequest, QueryHeight
+    IncludeProof, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
 use ibc_relayer::channel::Channel;
 use ibc_relayer::connection::Connection;
