@@ -186,8 +186,8 @@ impl ClientDef for MockClient {
         _proof_upgrade_consensus_state: MerkleProof,
     ) -> Result<UpdatedState, Error> {
         Ok((
-            client_state.clone().boxed(),
-            consensus_state.clone().boxed(),
+            dyn_clone::clone_box(client_state),
+            dyn_clone::clone_box(consensus_state),
         )
             .into())
     }
