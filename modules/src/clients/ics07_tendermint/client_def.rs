@@ -53,11 +53,11 @@ impl ClientDef for TendermintClient {
         client_state: Self::ClientState,
         header: Self::Header,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Ics02Error> {
-        if header.height().revision_number != client_state.chain_id.version() {
+        if header.height().revision_number() != client_state.chain_id.version() {
             return Err(Ics02Error::tendermint_handler_error(
                 Error::mismatched_revisions(
                     client_state.chain_id.version(),
-                    header.height().revision_number,
+                    header.height().revision_number(),
                 ),
             ));
         }
@@ -205,7 +205,7 @@ impl ClientDef for TendermintClient {
 
         let path = ClientConsensusStatePath {
             client_id: client_id.clone(),
-            epoch: consensus_height.revision_number,
+            epoch: consensus_height.revision_number(),
             height: consensus_height.revision_height(),
         };
         let value = expected_consensus_state

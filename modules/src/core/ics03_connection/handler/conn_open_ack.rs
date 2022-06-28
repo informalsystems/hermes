@@ -140,7 +140,7 @@ mod tests {
         let latest_height = proof_height.increment();
         let max_history_size = 5;
         let default_context = MockContext::new(
-            ChainId::new("mockgaia".to_string(), latest_height.revision_number),
+            ChainId::new("mockgaia".to_string(), latest_height.revision_number()),
             HostType::Mock,
             max_history_size,
             latest_height,

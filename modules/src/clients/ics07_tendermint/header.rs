@@ -114,10 +114,10 @@ impl TryFrom<RawHeader> for Header {
                 .map_err(Error::invalid_raw_header)?,
         };
 
-        if header.height().revision_number != header.trusted_height.revision_number {
+        if header.height().revision_number() != header.trusted_height.revision_number() {
             return Err(Error::mismatched_revisions(
-                header.trusted_height.revision_number,
-                header.height().revision_number,
+                header.trusted_height.revision_number(),
+                header.height().revision_number(),
             ));
         }
 

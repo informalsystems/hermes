@@ -139,7 +139,7 @@ impl MockContext {
 
         assert_eq!(
             host_id.version(),
-            latest_height.revision_number,
+            latest_height.revision_number(),
             "The version in the chain identifier must match the version in the latest height"
         );
 
@@ -370,9 +370,9 @@ impl MockContext {
 
     pub fn with_height(self, target_height: Height) -> Self {
         let latest_height = self.latest_height();
-        if target_height.revision_number > latest_height.revision_number {
+        if target_height.revision_number() > latest_height.revision_number() {
             unimplemented!()
-        } else if target_height.revision_number < latest_height.revision_number {
+        } else if target_height.revision_number() < latest_height.revision_number() {
             panic!("Cannot rewind history of the chain to a smaller revision number!")
         } else if target_height.revision_height() < latest_height.revision_height() {
             panic!("Cannot rewind history of the chain to a smaller revision height!")

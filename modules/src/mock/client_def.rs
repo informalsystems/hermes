@@ -62,7 +62,7 @@ impl ClientDef for MockClient {
     ) -> Result<(), Error> {
         let client_prefixed_path = Path::ClientConsensusState(ClientConsensusStatePath {
             client_id: client_id.clone(),
-            epoch: consensus_height.revision_number,
+            epoch: consensus_height.revision_number(),
             height: consensus_height.revision_height(),
         })
         .to_string();

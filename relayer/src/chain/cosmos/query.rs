@@ -59,7 +59,7 @@ pub fn header_query(request: &QueryClientEventRequest) -> Query {
         format!("{}.consensus_height", request.event_id.as_str()),
         format!(
             "{}-{}",
-            request.consensus_height.revision_number,
+            request.consensus_height.revision_number(),
             request.consensus_height.revision_height()
         ),
     )

@@ -876,7 +876,7 @@ impl ChainEndpoint for CosmosSdkChain {
         let res = self.query(
             ClientConsensusStatePath {
                 client_id: request.client_id.clone(),
-                epoch: request.consensus_height.revision_number,
+                epoch: request.consensus_height.revision_number(),
                 height: request.consensus_height.revision_height(),
             },
             request.query_height,

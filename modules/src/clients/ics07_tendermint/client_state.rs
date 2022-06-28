@@ -114,7 +114,7 @@ impl ClientState {
     pub fn with_header(self, h: Header) -> Result<Self, Error> {
         Ok(ClientState {
             latest_height: Height::new(
-                self.latest_height.revision_number,
+                self.latest_height.revision_number(),
                 h.signed_header.header.height.into(),
             )
             .map_err(|_| Error::invalid_header_height(h.signed_header.header.height.value()))?,
