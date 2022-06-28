@@ -7,7 +7,6 @@ use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::merkle::MerkleProof;
-use ibc::query::QueryTxRequest;
 use ibc::{
     core::ics02_client::header::AnyHeader,
     core::ics03_connection::connection::ConnectionEnd,
@@ -17,7 +16,6 @@ use ibc::{
     core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     events::IbcEvent,
     proofs::Proofs,
-    query::QueryBlockRequest,
     signer::Signer,
     Height,
 };
@@ -31,18 +29,19 @@ use crate::chain::client::ClientSettings;
 use crate::chain::endpoint::{ChainStatus, HealthCheck};
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::requests::{
-    IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
-    QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
-    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
-    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
-    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest,
-    QueryPacketCommitmentsRequest, QueryPacketReceiptRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
-    QueryUpgradedConsensusStateRequest,
+    IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
+    QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
+    QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
+    QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
+    QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
+    QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
+    QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
 use crate::config::ChainConfig;
+use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::util::lock::LockExt;
 use crate::{connection::ConnectionMsgType, keyring::KeyEntry};
@@ -161,6 +160,11 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
         self.inc_metric("query_balance");
         self.inner().query_balance(key_name)
+    }
+
+    fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
+        self.inc_metric("query_denom_trace");
+        self.inner().query_denom_trace(hash)
     }
 
     fn query_application_status(&self) -> Result<ChainStatus, Error> {

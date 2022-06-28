@@ -4,17 +4,14 @@ use std::collections::BTreeMap;
 use itertools::Itertools;
 use tracing::{debug, error, info, info_span, warn};
 
-use ibc::{
-    core::{
-        ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
-        ics03_connection::connection::{IdentifiedConnectionEnd, State as ConnectionState},
-        ics04_channel::{
-            channel::{IdentifiedChannelEnd, State as ChannelState},
-            packet::Sequence,
-        },
-        ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+use ibc::core::{
+    ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
+    ics03_connection::connection::{IdentifiedConnectionEnd, State as ConnectionState},
+    ics04_channel::{
+        channel::{IdentifiedChannelEnd, State as ChannelState},
+        packet::Sequence,
     },
-    Height,
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
 };
 
 use crate::{
@@ -24,7 +21,7 @@ use crate::{
         requests::{
             IncludeProof, PageRequest, QueryChannelRequest, QueryClientConnectionsRequest,
             QueryClientStateRequest, QueryClientStatesRequest, QueryConnectionChannelsRequest,
-            QueryConnectionRequest,
+            QueryConnectionRequest, QueryHeight,
         },
     },
     config::{filter::ChannelFilters, ChainConfig, Config, PacketFilter},
@@ -701,7 +698,7 @@ fn query_client<Chain: ChainHandle>(
         .query_client_state(
             QueryClientStateRequest {
                 client_id: client_id.clone(),
-                height: Height::zero(),
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         )
@@ -720,7 +717,7 @@ fn query_channel<Chain: ChainHandle>(
             QueryChannelRequest {
                 port_id: port_id.clone(),
                 channel_id: *channel_id,
-                height: Height::zero(),
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         )
@@ -791,7 +788,7 @@ fn query_connection<Chain: ChainHandle>(
         .query_connection(
             QueryConnectionRequest {
                 connection_id: connection_id.clone(),
-                height: Height::zero(),
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         )

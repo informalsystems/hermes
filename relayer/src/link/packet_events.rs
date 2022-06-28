@@ -2,13 +2,14 @@
 
 use tracing::{info, span, trace, warn, Level};
 
-use ibc::core::ics04_channel::channel::QueryPacketEventDataRequest;
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::events::{IbcEvent, WithBlockDataType};
-use ibc::query::{QueryBlockRequest, QueryTxRequest};
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
+use crate::chain::requests::{
+    QueryBlockRequest, QueryHeight, QueryPacketEventDataRequest, QueryTxRequest,
+};
 use crate::link::error::LinkError;
 use crate::path::PathIdentifiers;
 
@@ -71,7 +72,7 @@ pub fn query_send_packet_events<ChainA: ChainHandle>(
         destination_port_id: path.port_id.clone(),
         destination_channel_id: path.channel_id,
         sequences,
-        height: src_query_height,
+        height: QueryHeight::Specific(src_query_height),
     };
 
     let tx_events = src_chain
@@ -127,7 +128,7 @@ pub fn query_write_ack_events<ChainA: ChainHandle>(
             destination_port_id: path.counterparty_port_id.clone(),
             destination_channel_id: path.counterparty_channel_id,
             sequences,
-            height: src_query_height,
+            height: QueryHeight::Specific(src_query_height),
         }))
         .map_err(|e| LinkError::query(src_chain.id(), e))?;
 

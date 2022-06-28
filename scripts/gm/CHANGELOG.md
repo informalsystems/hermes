@@ -1,5 +1,13 @@
 # Gaiad Manager Change Log
 
+## v0.1.3
+
+### BUGFIXES
+
+- Fixed variable TM to reference the GAIAD_BINARY ([#2210]).
+
+[#2210]: https://github.com/informalsystems/ibc-rs/issues/2210
+
 ## v0.1.2
 
 ### BUGFIXES
