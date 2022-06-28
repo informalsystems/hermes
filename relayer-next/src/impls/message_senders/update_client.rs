@@ -1,32 +1,35 @@
 use async_trait::async_trait;
 
+use crate::traits::chain_context::IbcChainContext;
+use crate::traits::core::Async;
 use crate::traits::ibc_message_sender::IbcMessageSender;
-use crate::traits::message::IbcMessage as _;
+use crate::traits::message::IbcMessage;
 use crate::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::traits::relay_context::RelayContext;
 use crate::traits::target::ChainTarget;
-use crate::types::aliases::{Height, IbcEvent, IbcMessage};
 
-pub struct MessageSenderWithUpdateClient<Sender> {
+pub struct SendIbcMessagesWithUpdateClient<Sender> {
     pub sender: Sender,
 }
 
 #[async_trait]
-impl<Sender, Context, Target> IbcMessageSender<Context, Target>
-    for MessageSenderWithUpdateClient<Sender>
+impl<Sender, Context, Target, Height, TargetChain, CounterpartyChain, Message, Event>
+    IbcMessageSender<Context, Target> for SendIbcMessagesWithUpdateClient<Sender>
 where
     Context: RelayContext,
-    Target: ChainTarget<Context>,
+    Target: ChainTarget<Context, TargetChain = TargetChain, CounterpartyChain = CounterpartyChain>,
     Sender: IbcMessageSender<Context, Target>,
+    TargetChain: IbcChainContext<CounterpartyChain, IbcMessage = Message, IbcEvent = Event>,
+    CounterpartyChain: IbcChainContext<TargetChain, Height = Height>,
     Context: UpdateClientMessageBuilder<Context, Target>,
-    Height<Target::CounterpartyChain>: Ord,
+    Message: IbcMessage<CounterpartyChain> + Async,
+    Height: Ord + Async,
 {
     async fn send_messages(
         &self,
         context: &Context,
-        messages: Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
-    ) -> Result<Vec<Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>>, Context::Error>
-    {
+        messages: Vec<Message>,
+    ) -> Result<Vec<Vec<Event>>, Context::Error> {
         let min_source_height = messages
             .iter()
             .map(|message| message.source_height())

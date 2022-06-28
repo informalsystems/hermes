@@ -8,8 +8,8 @@ use crate::impls::cosmos::error::Error;
 use crate::impls::cosmos::handler::{CosmosChainHandler, CosmosRelayHandler};
 use crate::impls::cosmos::message::CosmosIbcMessage;
 use crate::impls::cosmos::target::CosmosChainTarget;
-use crate::impls::message_senders::chain_sender::SendIbcMessageToChain;
-use crate::impls::message_senders::update_client::MessageSenderWithUpdateClient;
+use crate::impls::message_senders::chain_sender::SendIbcMessagesToChain;
+use crate::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
 use crate::traits::chain_context::{ChainContext, IbcChainContext};
 use crate::traits::ibc_message_sender::IbcMessageSenderContext;
 use crate::traits::message::Message;
@@ -35,11 +35,11 @@ where
     >,
     Target::TargetChain: MessageSenderContext,
 {
-    type IbcMessageSender = MessageSenderWithUpdateClient<SendIbcMessageToChain>;
+    type IbcMessageSender = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
 
     fn ibc_message_sender(&self) -> &Self::IbcMessageSender {
-        &MessageSenderWithUpdateClient {
-            sender: SendIbcMessageToChain,
+        &SendIbcMessagesWithUpdateClient {
+            sender: SendIbcMessagesToChain,
         }
     }
 }

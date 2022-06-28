@@ -7,10 +7,10 @@ use crate::traits::message_sender::{MessageSender, MessageSenderContext};
 use crate::traits::relay_context::RelayContext;
 use crate::traits::target::ChainTarget;
 
-pub struct SendIbcMessageToChain;
+pub struct SendIbcMessagesToChain;
 
 #[async_trait]
-impl<Context, Target, Message, Event> IbcMessageSender<Context, Target> for SendIbcMessageToChain
+impl<Context, Target, Message, Event> IbcMessageSender<Context, Target> for SendIbcMessagesToChain
 where
     Message: Async,
     Event: Async,
