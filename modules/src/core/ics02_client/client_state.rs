@@ -48,7 +48,7 @@ pub trait ClientState: Debug + Send + Sync + AsAny + DynClone {
     fn expired(&self, elapsed: Duration) -> bool;
 
     /// Encode to canonical binary representation
-    fn encode_vec(&self) -> Result<Vec<u8>, Error>;
+    fn encode_vec(&self) -> Vec<u8>;
 
     /// Consumes the given instance and returns a heap allocated instance
     fn boxed(self) -> Box<dyn ClientState>
@@ -239,8 +239,8 @@ impl ClientState for AnyClientState {
         unimplemented!()
     }
 
-    fn encode_vec(&self) -> Result<Vec<u8>, Error> {
-        Protobuf::encode_vec(self).map_err(Error::invalid_any_client_state)
+    fn encode_vec(&self) -> Vec<u8> {
+        Protobuf::encode_vec(self).expect("encoding to vec cannot fail")
     }
 }
 

@@ -36,7 +36,7 @@ pub trait ConsensusState: Debug + Send + Sync + AsAny + DynClone {
     fn timestamp(&self) -> Timestamp;
 
     /// Encode to canonical binary representation
-    fn encode_vec(&self) -> Result<Vec<u8>, Error>;
+    fn encode_vec(&self) -> Vec<u8>;
 
     /// Consumes the given instance and returns a heap allocated instance
     fn boxed(self) -> Box<dyn ConsensusState>
@@ -180,7 +180,7 @@ impl ConsensusState for AnyConsensusState {
         }
     }
 
-    fn encode_vec(&self) -> Result<Vec<u8>, Error> {
-        Protobuf::encode_vec(self).map_err(Error::invalid_any_consensus_state)
+    fn encode_vec(&self) -> Vec<u8> {
+        Protobuf::encode_vec(self).expect("encoding to vec cannot fail")
     }
 }
