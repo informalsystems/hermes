@@ -2,12 +2,11 @@
 
 use crate::prelude::*;
 
+use ibc_proto::google::protobuf::Any;
+use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 use tendermint_proto::Protobuf;
 
-use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
-
 use crate::core::ics02_client::error::Error;
-use crate::core::ics02_client::header::AnyHeader;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::signer::Signer;
@@ -19,12 +18,12 @@ pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpdateClient";
 #[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound when possible
 pub struct MsgUpdateAnyClient {
     pub client_id: ClientId,
-    pub header: AnyHeader,
+    pub header: Any,
     pub signer: Signer,
 }
 
 impl MsgUpdateAnyClient {
-    pub fn new(client_id: ClientId, header: AnyHeader, signer: Signer) -> Self {
+    pub fn new(client_id: ClientId, header: Any, signer: Signer) -> Self {
         MsgUpdateAnyClient {
             client_id,
             header,
@@ -59,7 +58,7 @@ impl TryFrom<RawMsgUpdateClient> for MsgUpdateAnyClient {
                 .client_id
                 .parse()
                 .map_err(Error::invalid_msg_update_client_id)?,
-            header: AnyHeader::try_from(raw_header)?,
+            header: raw_header,
             signer: raw.signer.parse().map_err(Error::signer)?,
         })
     }
@@ -69,7 +68,7 @@ impl From<MsgUpdateAnyClient> for RawMsgUpdateClient {
     fn from(ics_msg: MsgUpdateAnyClient) -> Self {
         RawMsgUpdateClient {
             client_id: ics_msg.client_id.to_string(),
-            header: Some(ics_msg.header.into()),
+            header: Some(ics_msg.header),
             signer: ics_msg.signer.to_string(),
         }
     }

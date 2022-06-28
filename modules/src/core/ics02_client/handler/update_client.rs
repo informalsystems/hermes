@@ -3,13 +3,12 @@
 use tracing::debug;
 
 use crate::core::ics02_client::client_consensus::ConsensusState;
-use crate::core::ics02_client::client_def::{AnyClient, ClientDef, UpdatedState};
+use crate::core::ics02_client::client_def::UpdatedState;
 use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::context::{ClientReader, LightClientReader};
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
 use crate::core::ics02_client::handler::ClientResult;
-use crate::core::ics02_client::header::Header;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::core::ics24_host::identifier::ClientId;
@@ -40,13 +39,10 @@ pub fn process<Ctx: ClientReader + LightClientReader>(
         signer: _,
     } = msg;
 
-    // Read client type from the host chain store. The client should already exist.
-    let client_type = ctx.client_type(&client_id)?;
-
-    let client_def = AnyClient::from_client_type(client_type);
-
-    // Read client state from the host chain store.
+    // Read client state from the host chain store. The client should already exist.
     let client_state = ctx.client_state(&client_id)?;
+
+    let client_def = client_state.client_def();
 
     if client_state.is_frozen() {
         return Err(Error::client_frozen(client_id));
@@ -59,6 +55,8 @@ pub fn process<Ctx: ClientReader + LightClientReader>(
         )?;
 
     debug!("latest consensus state: {:?}", latest_consensus_state);
+
+    let header = client_def.decode_header(header)?;
 
     let now = ClientReader::host_timestamp(ctx);
     let duration = now
@@ -81,7 +79,7 @@ pub fn process<Ctx: ClientReader + LightClientReader>(
         client_state,
         consensus_state,
     } = client_def
-        .check_header_and_update_state(ctx, client_id.clone(), client_state, &header)
+        .check_header_and_update_state(ctx, client_id.clone(), client_state, header.as_ref())
         .map_err(|e| Error::header_verification_failure(e.to_string()))?;
 
     let result = ClientResult::Update(Result {
