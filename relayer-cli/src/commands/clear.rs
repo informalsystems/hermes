@@ -4,7 +4,7 @@ use abscissa_core::{Command, FrameworkErrorKind, Runnable};
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
-use ibc_relayer::chain::handle::BaseChainHandle;
+use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::config::Config;
 use ibc_relayer::link::error::LinkError;
 use ibc_relayer::link::{Link, LinkParameters};
@@ -78,12 +78,15 @@ impl Runnable for ClearPacketsCmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
-        // Now that we have access to the counterparty chain at this point, we can
-        // match on `counterparty_key_name` and if a String exists, then override
-        // the counterparty chain's `key_name` in its own Config
+        // If `counterparty_key_name` is provided, fetch the counterparty chain's
+        // config and override its `key_name` parameter
         if let Some(ref counterparty_key_name) = self.counterparty_key_name {
-            // Is the counterparty chain the source chain or the destination chain?
-            let dst_chain_config = ChainHandle::<BaseChainHandle>::config(&chains.dst)?;
+            match chains.dst.config() {
+                Ok(mut dst_chain_cfg) => {
+                    dst_chain_cfg.key_name = counterparty_key_name.to_string();
+                }
+                Err(e) => Output::error(format!("{}", e)).exit(),
+            }
         }
 
         let mut ev_list = vec![];
