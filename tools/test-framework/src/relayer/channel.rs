@@ -2,9 +2,8 @@ use core::time::Duration;
 use eyre::eyre;
 use ibc::core::ics04_channel::channel::State as ChannelState;
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, Order};
-use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::QueryChannelRequest;
+use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
 use ibc_relayer::channel::{extract_channel_id, Channel, ChannelSide};
 
 use crate::error::Error;
@@ -77,11 +76,14 @@ pub fn query_channel_end<ChainA: ChainHandle, ChainB>(
     channel_id: &TaggedChannelIdRef<ChainA, ChainB>,
     port_id: &TaggedPortIdRef<ChainA, ChainB>,
 ) -> Result<DualTagged<ChainA, ChainB, ChannelEnd>, Error> {
-    let channel_end = handle.query_channel(QueryChannelRequest {
-        port_id: port_id.into_value().clone(),
-        channel_id: *channel_id.into_value(),
-        height: Height::zero(),
-    })?;
+    let (channel_end, _) = handle.query_channel(
+        QueryChannelRequest {
+            port_id: port_id.into_value().clone(),
+            channel_id: *channel_id.into_value(),
+            height: QueryHeight::Latest,
+        },
+        IncludeProof::No,
+    )?;
 
     Ok(DualTagged::new(channel_end))
 }
@@ -91,11 +93,14 @@ pub fn query_identified_channel_end<ChainA: ChainHandle, ChainB>(
     channel_id: TaggedChannelIdRef<ChainA, ChainB>,
     port_id: TaggedPortIdRef<ChainA, ChainB>,
 ) -> Result<DualTagged<ChainA, ChainB, IdentifiedChannelEnd>, Error> {
-    let channel_end = handle.query_channel(QueryChannelRequest {
-        port_id: port_id.into_value().clone(),
-        channel_id: *channel_id.into_value(),
-        height: Height::zero(),
-    })?;
+    let (channel_end, _) = handle.query_channel(
+        QueryChannelRequest {
+            port_id: port_id.into_value().clone(),
+            channel_id: *channel_id.into_value(),
+            height: QueryHeight::Latest,
+        },
+        IncludeProof::No,
+    )?;
     Ok(DualTagged::new(IdentifiedChannelEnd::new(
         port_id.into_value().clone(),
         *channel_id.into_value(),

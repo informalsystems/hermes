@@ -5,7 +5,7 @@ if [ "${DEBUG:-}" = "2" ]; then
 fi
 
 version() {
-  VERSION="v0.1.2"
+  VERSION="v0.1.3"
   if is_json_output; then
     echo '{"status": "success", "message": "'"${VERSION}"'"}'
   else
@@ -1011,25 +1011,25 @@ hermes_keys() {
   HERMES_BINARY="$(get_hermes_binary)"
   HDPATH="$(get_hdpath "$1")"
   if [ -z "$GLOBAL_HERMES_CONFIG" ] && [ -z "$HDPATH" ]; then
-      "$HERMES_BINARY" keys add "$ID" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
+      "$HERMES_BINARY" keys add --chain "$ID" --key-file "${NETWORK_HOME_DIR}/wallet_seed.json"
   elif [ -n "$GLOBAL_HERMES_CONFIG" ] && [ -z "$HDPATH" ]; then
-      "$HERMES_BINARY" -c "$GLOBAL_HERMES_CONFIG" keys add "$ID" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
+      "$HERMES_BINARY" --config "$GLOBAL_HERMES_CONFIG" keys add --chain "$ID" --key-file "${NETWORK_HOME_DIR}/wallet_seed.json"
   elif [ -z "$GLOBAL_HERMES_CONFIG" ] && [ -n "$HDPATH" ]; then
-      "$HERMES_BINARY" keys add "$ID" --hd-path "$HDPATH" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
+      "$HERMES_BINARY" keys add --chain "$ID" --hd-path "$HDPATH" --key-file "${NETWORK_HOME_DIR}/wallet_seed.json"
   elif [ -n "$GLOBAL_HERMES_CONFIG" ] && [ -n "$HDPATH" ]; then
-      "$HERMES_BINARY" -c "$GLOBAL_HERMES_CONFIG" keys add "$ID" --hd-path "$HDPATH" -f "${NETWORK_HOME_DIR}/wallet_seed.json"
+      "$HERMES_BINARY" --config "$GLOBAL_HERMES_CONFIG" keys add --chain "$ID" --hd-path "$HDPATH" --key-file "${NETWORK_HOME_DIR}/wallet_seed.json"
   fi
   EXTRA_WALLETS_COUNTER="$(get_extra_wallets "$1")"
   while [ "$EXTRA_WALLETS_COUNTER" -gt 0 ];
   do
     if [ -z "$GLOBAL_HERMES_CONFIG" ] && [ -z "$HDPATH" ]; then
-        "$HERMES_BINARY" keys add "$ID" --key-name "wallet${EXTRA_WALLETS_COUNTER}" -f "${NETWORK_HOME_DIR}/wallet${EXTRA_WALLETS_COUNTER}_seed.json"
+        "$HERMES_BINARY" keys add --chain "$ID" --key-name "wallet${EXTRA_WALLETS_COUNTER}" --key-file "${NETWORK_HOME_DIR}/wallet${EXTRA_WALLETS_COUNTER}_seed.json"
     elif [ -n "$GLOBAL_HERMES_CONFIG" ] && [ -z "$HDPATH" ]; then
-        "$HERMES_BINARY" -c "$GLOBAL_HERMES_CONFIG" keys add "$ID" --key-name "wallet${EXTRA_WALLETS_COUNTER}" -f "${NETWORK_HOME_DIR}/wallet${EXTRA_WALLETS_COUNTER}_seed.json"
+        "$HERMES_BINARY" --config "$GLOBAL_HERMES_CONFIG" keys add --chain "$ID" --key-name "wallet${EXTRA_WALLETS_COUNTER}" --key-file "${NETWORK_HOME_DIR}/wallet${EXTRA_WALLETS_COUNTER}_seed.json"
     elif [ -z "$GLOBAL_HERMES_CONFIG" ] && [ -n "$HDPATH" ]; then
-        "$HERMES_BINARY" keys add "$ID" --hd-path "$HDPATH" --key-name "wallet${EXTRA_WALLETS_COUNTER}" -f "${NETWORK_HOME_DIR}/wallet${EXTRA_WALLETS_COUNTER}_seed.json"
+        "$HERMES_BINARY" keys add --chain "$ID" --hd-path "$HDPATH" --key-name "wallet${EXTRA_WALLETS_COUNTER}" --key-file "${NETWORK_HOME_DIR}/wallet${EXTRA_WALLETS_COUNTER}_seed.json"
     elif [ -n "$GLOBAL_HERMES_CONFIG" ] && [ -n "$HDPATH" ]; then
-        "$HERMES_BINARY" -c "$GLOBAL_HERMES_CONFIG" keys add "$ID" --hd-path "$HDPATH" --key-name "wallet${EXTRA_WALLETS_COUNTER}" -f "${NETWORK_HOME_DIR}/wallet${EXTRA_WALLETS_COUNTER}_seed.json"
+        "$HERMES_BINARY" --config "$GLOBAL_HERMES_CONFIG" keys add --chain "$ID" --hd-path "$HDPATH" --key-name "wallet${EXTRA_WALLETS_COUNTER}" --key-file "${NETWORK_HOME_DIR}/wallet${EXTRA_WALLETS_COUNTER}_seed.json"
     fi
     EXTRA_WALLETS_COUNTER="$((EXTRA_WALLETS_COUNTER - 1))"
   done
@@ -1051,7 +1051,7 @@ hermes_cc() {
   do
     for j in $(seq $((i+1)) $N)
     do
-      echo "\"${HERMES_BINARY}\" create channel $(n_from_a "$i" "$CHAINS") $(n_from_a "$j" "$CHAINS") --port-a transfer --port-b transfer"
+      echo "\"${HERMES_BINARY}\" create channel --a-chain $(n_from_a "$i" "$CHAINS") --b-chain $(n_from_a "$j" "$CHAINS") --a-port transfer --b-port transfer"
     done
   done
 }
@@ -1072,7 +1072,7 @@ reset() {
     return 0
   fi
   # `unsafe-reset-all` was moved to `gaiad tendermint` sub-command
-  TM="$(gaiad | grep -q 'unsafe' || echo "tendermint")"
+  TM="$($GAIAD_BINARY | grep -q 'unsafe' || echo "tendermint")"
   if is_json_output; then
     "$GAIAD_BINARY" "$TM" unsafe-reset-all --home "$HOME_DIR" 1> /dev/null 2> /dev/null
   else

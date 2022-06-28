@@ -6,13 +6,15 @@ use abscissa_core::{Command, Runnable};
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::events::IbcEvent;
+use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    PageRequest, QueryClientStateRequest, QueryClientStatesRequest,
+    IncludeProof, PageRequest, QueryClientStateRequest, QueryClientStatesRequest, QueryHeight,
 };
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::{CreateOptions, ForeignClient};
 use tendermint_light_client_verifier::types::TrustThreshold;
+use tracing::warn;
 
 use crate::application::app_config;
 use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic, ChainHandlePair};
@@ -21,10 +23,20 @@ use crate::error::Error;
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxCreateClientCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        long = "host-chain",
+        required = true,
+        value_name = "HOST_CHAIN_ID",
+        help = "Identifier of the chain that hosts the client"
+    )]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(
+        long = "reference-chain",
+        required = true,
+        value_name = "REFERENCE_CHAIN_ID",
+        help = "Identifier of the chain targeted by the client"
+    )]
     src_chain_id: ChainId,
 
     /// The maximum allowed clock drift for this client.
@@ -36,26 +48,26 @@ pub struct TxCreateClientCmd {
     /// to accept or reject a new header (originating from the source chain) for this client.
     /// If this option is not specified, a suitable clock drift value is derived from the chain
     /// configurations.
-    #[clap(short = 'd', long)]
+    #[clap(long = "clock-drift", value_name = "CLOCK_DRIFT")]
     clock_drift: Option<humantime::Duration>,
 
     /// Override the trusting period specified in the config.
     ///
     /// The trusting period specifies how long a validator set is trusted for
     /// (must be shorter than the chain's unbonding period).
-    #[clap(short = 'p', long)]
+    #[clap(long = "trusting-period", value_name = "TRUSTING_PERIOD")]
     trusting_period: Option<humantime::Duration>,
 
     /// Override the trust threshold specified in the configuration.
     ///
     /// The trust threshold defines what fraction of the total voting power of a known
     /// and trusted validator set is sufficient for a commit to be accepted going forward.
-    #[clap(short = 't', long, parse(try_from_str = parse_trust_threshold))]
+    #[clap(long = "trust-threshold", value_name = "TRUST_THRESHOLD", parse(try_from_str = parse_trust_threshold))]
     trust_threshold: Option<TrustThreshold>,
 }
 
 /// Sample to run this tx:
-///     `hermes tx raw create-client ibc-0 ibc-1`
+///     `hermes tx raw create-client --dst-chain ibc-0 --src-chain ibc-1`
 impl Runnable for TxCreateClientCmd {
     fn run(&self) {
         let config = app_config();
@@ -91,19 +103,34 @@ impl Runnable for TxCreateClientCmd {
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxUpdateClientCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        long = "host-chain",
+        required = true,
+        value_name = "HOST_CHAIN_ID",
+        help = "Identifier of the chain that hosts the client"
+    )]
     dst_chain_id: ChainId,
 
     #[clap(
+        long = "client",
         required = true,
-        help = "identifier of the client to be updated on destination chain"
+        value_name = "CLIENT_ID",
+        help = "Identifier of the chain targeted by the client"
     )]
     dst_client_id: ClientId,
 
-    #[clap(short = 'H', long, help = "the target height of the client update")]
+    #[clap(
+        long = "height",
+        value_name = "REFERENCE_HEIGHT",
+        help = "The target height of the client update"
+    )]
     target_height: Option<u64>,
 
-    #[clap(short = 't', long, help = "the trusted height of the client update")]
+    #[clap(
+        long = "trusted-height",
+        value_name = "REFERENCE_TRUSTED_HEIGHT",
+        help = "The trusted height of the client update"
+    )]
     trusted_height: Option<u64>,
 }
 
@@ -116,11 +143,14 @@ impl Runnable for TxUpdateClientCmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
-        let src_chain_id = match dst_chain.query_client_state(QueryClientStateRequest {
-            client_id: self.dst_client_id.clone(),
-            height: ibc::Height::zero(),
-        }) {
-            Ok(cs) => cs.chain_id(),
+        let src_chain_id = match dst_chain.query_client_state(
+            QueryClientStateRequest {
+                client_id: self.dst_client_id.clone(),
+                height: QueryHeight::Latest,
+            },
+            IncludeProof::No,
+        ) {
+            Ok((cs, _)) => cs.chain_id(),
             Err(e) => {
                 Output::error(format!(
                     "Query of client '{}' on chain '{}' failed with error: {}",
@@ -135,21 +165,19 @@ impl Runnable for TxUpdateClientCmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
-        let height = match self.target_height {
-            Some(height) => ibc::Height::new(src_chain.id().version(), height),
-            None => ibc::Height::zero(),
-        };
+        let target_height = self.target_height.map_or(QueryHeight::Latest, |height| {
+            QueryHeight::Specific(Height::new(src_chain.id().version(), height))
+        });
 
-        let trusted_height = match self.trusted_height {
-            Some(height) => ibc::Height::new(src_chain.id().version(), height),
-            None => ibc::Height::zero(),
-        };
+        let trusted_height = self
+            .trusted_height
+            .map(|height| Height::new(src_chain.id().version(), height));
 
         let client = ForeignClient::find(src_chain, dst_chain, &self.dst_client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         let res = client
-            .build_update_client_and_send(height, trusted_height)
+            .build_update_client_and_send(target_height, trusted_height)
             .map_err(Error::foreign_client);
 
         match res {
@@ -162,12 +190,19 @@ impl Runnable for TxUpdateClientCmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxUpgradeClientCmd {
     #[clap(
+        long = "host-chain",
         required = true,
-        help = "identifier of the chain that hosts the client"
+        value_name = "HOST_CHAIN_ID",
+        help = "Identifier of the chain that hosts the client"
     )]
     chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the client to be upgraded")]
+    #[clap(
+        long = "client",
+        required = true,
+        value_name = "CLIENT_ID",
+        help = "Identifier of the client to be upgraded"
+    )]
     client_id: ClientId,
 }
 
@@ -180,11 +215,14 @@ impl Runnable for TxUpgradeClientCmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
-        let src_chain_id = match dst_chain.query_client_state(QueryClientStateRequest {
-            client_id: self.client_id.clone(),
-            height: ibc::Height::zero(),
-        }) {
-            Ok(cs) => cs.chain_id(),
+        let src_chain_id = match dst_chain.query_client_state(
+            QueryClientStateRequest {
+                client_id: self.client_id.clone(),
+                height: QueryHeight::Latest,
+            },
+            IncludeProof::No,
+        ) {
+            Ok((cs, _)) => cs.chain_id(),
             Err(e) => {
                 Output::error(format!(
                     "Query of client '{}' on chain '{}' failed with error: {}",
@@ -202,7 +240,24 @@ impl Runnable for TxUpgradeClientCmd {
         let client = ForeignClient::find(src_chain, dst_chain, &self.client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let outcome = client.upgrade();
+        // Assumption: this query is run while the chain is halted as a result of an upgrade
+        let src_upgrade_height = {
+            let src_application_height = match client.src_chain().query_latest_height() {
+                Ok(height) => height,
+                Err(e) => Output::error(format!("{}", e)).exit(),
+            };
+
+            // When the chain is halted, the application height reports a height
+            // 1 less than the halted height
+            src_application_height.increment()
+        };
+
+        warn!(
+            "Assuming that chain '{}' is currently halted for upgrade at height {}",
+            client.src_chain().id(),
+            src_upgrade_height
+        );
+        let outcome = client.upgrade(src_upgrade_height);
 
         match outcome {
             Ok(receipt) => Output::success(receipt).exit(),
@@ -214,8 +269,10 @@ impl Runnable for TxUpgradeClientCmd {
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxUpgradeClientsCmd {
     #[clap(
+        long = "reference-chain",
         required = true,
-        help = "identifier of the chain that underwent an upgrade; all clients targeting this chain will be upgraded"
+        value_name = "REFERENCE_CHAIN_ID",
+        help = "Identifier of the chain that underwent an upgrade; all clients targeting this chain will be upgraded"
     )]
     src_chain_id: ChainId,
 }
@@ -228,12 +285,29 @@ impl Runnable for TxUpgradeClientsCmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
+        let src_upgrade_height = {
+            let src_application_height = match src_chain.query_latest_height() {
+                Ok(height) => height,
+                Err(e) => Output::error(format!("{}", e)).exit(),
+            };
+
+            // When the chain is halted, the application height reports a height
+            // 1 less than the halted height
+            src_application_height.increment()
+        };
+
         let results = config
             .chains
             .iter()
             .filter_map(|chain| {
-                (self.src_chain_id != chain.id)
-                    .then(|| self.upgrade_clients_for_chain(&config, src_chain.clone(), &chain.id))
+                (self.src_chain_id != chain.id).then(|| {
+                    self.upgrade_clients_for_chain(
+                        &config,
+                        src_chain.clone(),
+                        &chain.id,
+                        &src_upgrade_height,
+                    )
+                })
             })
             .collect();
 
@@ -251,6 +325,7 @@ impl TxUpgradeClientsCmd {
         config: &Config,
         src_chain: Chain,
         dst_chain_id: &ChainId,
+        src_upgrade_height: &Height,
     ) -> UpgradeClientsForChainResult {
         let dst_chain = spawn_chain_runtime_generic::<Chain>(config, dst_chain_id)?;
 
@@ -262,7 +337,14 @@ impl TxUpgradeClientsCmd {
             .map_err(Error::relayer)?
             .into_iter()
             .filter_map(|c| (self.src_chain_id == c.client_state.chain_id()).then(|| c.client_id))
-            .map(|id| TxUpgradeClientsCmd::upgrade_client(id, dst_chain.clone(), src_chain.clone()))
+            .map(|id| {
+                TxUpgradeClientsCmd::upgrade_client(
+                    id,
+                    dst_chain.clone(),
+                    src_chain.clone(),
+                    src_upgrade_height,
+                )
+            })
             .collect();
 
         Ok(outputs)
@@ -272,9 +354,13 @@ impl TxUpgradeClientsCmd {
         client_id: ClientId,
         dst_chain: Chain,
         src_chain: Chain,
+        src_upgrade_height: &Height,
     ) -> Result<Vec<IbcEvent>, Error> {
         let client = ForeignClient::restore(client_id, dst_chain, src_chain);
-        client.upgrade().map_err(Error::foreign_client)
+
+        client
+            .upgrade(*src_upgrade_height)
+            .map_err(Error::foreign_client)
     }
 }
 

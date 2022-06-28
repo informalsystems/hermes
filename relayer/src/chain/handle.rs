@@ -26,7 +26,6 @@ use ibc::{
     },
     events::IbcEvent,
     proofs::Proofs,
-    query::{QueryBlockRequest, QueryTxRequest},
     signer::Signer,
     Height,
 };
@@ -35,6 +34,7 @@ use crate::{
     account::Balance,
     config::ChainConfig,
     connection::ConnectionMsgType,
+    denom::DenomTrace,
     error::Error,
     event::monitor::{EventBatch, Result as MonitorResult},
     keyring::KeyEntry,
@@ -44,12 +44,14 @@ use super::{
     client::ClientSettings,
     endpoint::{ChainStatus, HealthCheck},
     requests::{
-        QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
-        QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
-        QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
-        QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
-        QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-        QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+        IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
+        QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
+        QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
+        QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
+        QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
+        QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
+        QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
+        QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
         QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
     },
     tracking::TrackedMsgs,
@@ -154,6 +156,11 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Balance>,
     },
 
+    QueryDenomTrace {
+        hash: String,
+        reply_to: ReplyTo<DenomTrace>,
+    },
+
     QueryApplicationStatus {
         reply_to: ReplyTo<ChainStatus>,
     },
@@ -199,7 +206,8 @@ pub enum ChainRequest {
 
     QueryClientState {
         request: QueryClientStateRequest,
-        reply_to: ReplyTo<AnyClientState>,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(AnyClientState, Option<MerkleProof>)>,
     },
 
     QueryClientConnections {
@@ -207,14 +215,15 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Vec<ConnectionId>>,
     },
 
+    QueryConsensusState {
+        request: QueryConsensusStateRequest,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(AnyConsensusState, Option<MerkleProof>)>,
+    },
+
     QueryConsensusStates {
         request: QueryConsensusStatesRequest,
         reply_to: ReplyTo<Vec<AnyConsensusStateWithHeight>>,
-    },
-
-    QueryConsensusState {
-        request: QueryConsensusStateRequest,
-        reply_to: ReplyTo<AnyConsensusState>,
     },
 
     QueryUpgradedClientState {
@@ -237,7 +246,8 @@ pub enum ChainRequest {
 
     QueryConnection {
         request: QueryConnectionRequest,
-        reply_to: ReplyTo<ConnectionEnd>,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(ConnectionEnd, Option<MerkleProof>)>,
     },
 
     QueryConnections {
@@ -257,7 +267,8 @@ pub enum ChainRequest {
 
     QueryChannel {
         request: QueryChannelRequest,
-        reply_to: ReplyTo<ChannelEnd>,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(ChannelEnd, Option<MerkleProof>)>,
     },
 
     QueryChannelClientState {
@@ -267,26 +278,8 @@ pub enum ChainRequest {
 
     QueryNextSequenceReceive {
         request: QueryNextSequenceReceiveRequest,
-        reply_to: ReplyTo<Sequence>,
-    },
-
-    ProvenClientState {
-        client_id: ClientId,
-        height: Height,
-        reply_to: ReplyTo<(AnyClientState, MerkleProof)>,
-    },
-
-    ProvenConnection {
-        connection_id: ConnectionId,
-        height: Height,
-        reply_to: ReplyTo<(ConnectionEnd, MerkleProof)>,
-    },
-
-    ProvenClientConsensus {
-        client_id: ClientId,
-        consensus_height: Height,
-        height: Height,
-        reply_to: ReplyTo<(AnyConsensusState, MerkleProof)>,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(Sequence, Option<MerkleProof>)>,
     },
 
     BuildChannelProofs {
@@ -302,12 +295,24 @@ pub enum ChainRequest {
         channel_id: ChannelId,
         sequence: Sequence,
         height: Height,
-        reply_to: ReplyTo<(Vec<u8>, Proofs)>,
+        reply_to: ReplyTo<Proofs>,
+    },
+
+    QueryPacketCommitment {
+        request: QueryPacketCommitmentRequest,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(Vec<u8>, Option<MerkleProof>)>,
     },
 
     QueryPacketCommitments {
         request: QueryPacketCommitmentsRequest,
         reply_to: ReplyTo<(Vec<Sequence>, Height)>,
+    },
+
+    QueryPacketReceipt {
+        request: QueryPacketReceiptRequest,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(Vec<u8>, Option<MerkleProof>)>,
     },
 
     QueryUnreceivedPackets {
@@ -316,6 +321,12 @@ pub enum ChainRequest {
     },
 
     QueryPacketAcknowledgement {
+        request: QueryPacketAcknowledgementRequest,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(Vec<u8>, Option<MerkleProof>)>,
+    },
+
+    QueryPacketAcknowledgements {
         request: QueryPacketAcknowledgementsRequest,
         reply_to: ReplyTo<(Vec<Sequence>, Height)>,
     },
@@ -387,34 +398,50 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
     /// If no account is given, behavior must be specified, e.g. retrieve it from configuration file.
     fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error>;
 
+    /// Query the denomination trace given a trace hash.
+    fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error>;
+
+    /// Query the latest height and timestamp the application is at
     fn query_application_status(&self) -> Result<ChainStatus, Error>;
 
     fn query_latest_height(&self) -> Result<Height, Error> {
         Ok(self.query_application_status()?.height)
     }
 
+    /// Performs a query to retrieve the state of all clients that a chain hosts.
     fn query_clients(
         &self,
         request: QueryClientStatesRequest,
     ) -> Result<Vec<IdentifiedAnyClientState>, Error>;
 
-    fn query_client_state(&self, request: QueryClientStateRequest)
-        -> Result<AnyClientState, Error>;
+    /// Performs a query to retrieve the state of the specified light client. A
+    /// proof can optionally be returned along with the result.
+    fn query_client_state(
+        &self,
+        request: QueryClientStateRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(AnyClientState, Option<MerkleProof>), Error>;
 
+    /// Performs a query to retrieve the identifiers of all connections.
     fn query_client_connections(
         &self,
         request: QueryClientConnectionsRequest,
     ) -> Result<Vec<ConnectionId>, Error>;
 
+    /// Performs a query to retrieve the consensus state for a specified height
+    /// `consensus_height` that the specified light client stores.
+    fn query_consensus_state(
+        &self,
+        request: QueryConsensusStateRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error>;
+
+    /// Performs a query to retrieve all the consensus states that the specified
+    /// light client stores.
     fn query_consensus_states(
         &self,
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error>;
-
-    fn query_consensus_state(
-        &self,
-        request: QueryConsensusStateRequest,
-    ) -> Result<AnyConsensusState, Error>;
 
     fn query_upgraded_client_state(
         &self,
@@ -430,53 +457,56 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
 
     fn query_compatible_versions(&self) -> Result<Vec<Version>, Error>;
 
-    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error>;
+    /// Performs a query to retrieve the connection associated with a given
+    /// connection identifier. A proof can optionally be returned along with the
+    /// result.
+    fn query_connection(
+        &self,
+        request: QueryConnectionRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ConnectionEnd, Option<MerkleProof>), Error>;
 
+    /// Performs a query to retrieve the identifiers of all connections.
     fn query_connections(
         &self,
         request: QueryConnectionsRequest,
     ) -> Result<Vec<IdentifiedConnectionEnd>, Error>;
 
+    /// Performs a query to retrieve all channels associated with a connection.
     fn query_connection_channels(
         &self,
         request: QueryConnectionChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
 
+    /// Performs a query to retrieve `nextSequenceRecv` stored at path
+    /// `path::SeqRecvsPath` as defined in ICS-4. A proof can optionally be
+    /// returned along with the result.
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,
-    ) -> Result<Sequence, Error>;
+        include_proof: IncludeProof,
+    ) -> Result<(Sequence, Option<MerkleProof>), Error>;
 
+    /// Performs a query to retrieve all the channels of a chain.
     fn query_channels(
         &self,
         request: QueryChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error>;
 
-    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error>;
+    /// Performs a query to retrieve the channel associated with a given channel
+    /// identifier. A proof can optionally be returned along with the result.
+    fn query_channel(
+        &self,
+        request: QueryChannelRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ChannelEnd, Option<MerkleProof>), Error>;
 
+    /// Performs a query to retrieve the client state for the channel associated
+    /// with a given channel identifier.
     fn query_channel_client_state(
         &self,
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error>;
-
-    fn proven_client_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<(AnyClientState, MerkleProof), Error>;
-
-    fn proven_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<(ConnectionEnd, MerkleProof), Error>;
-
-    fn proven_client_consensus(
-        &self,
-        client_id: &ClientId,
-        consensus_height: Height,
-        height: Height,
-    ) -> Result<(AnyConsensusState, MerkleProof), Error>;
 
     fn build_header(
         &self,
@@ -528,24 +558,70 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         channel_id: &ChannelId,
         sequence: Sequence,
         height: Height,
-    ) -> Result<(Vec<u8>, Proofs), Error>;
+    ) -> Result<Proofs, Error>;
 
+    /// Performs a query to retrieve a stored packet commitment hash, stored on
+    /// the chain at path `path::CommitmentsPath`. A proof can optionally be
+    /// returned along with the result.
+    fn query_packet_commitment(
+        &self,
+        request: QueryPacketCommitmentRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(Vec<u8>, Option<MerkleProof>), Error>;
+
+    /// Performs a query to retrieve all the packet commitments hashes
+    /// associated with a channel. Returns the corresponding packet sequence
+    /// numbers and the height at which they were retrieved.
     fn query_packet_commitments(
         &self,
         request: QueryPacketCommitmentsRequest,
     ) -> Result<(Vec<Sequence>, Height), Error>;
 
+    /// Performs a query to retrieve a given packet receipt, stored on the chain at path
+    /// `path::CommitmentsPath`. A proof can optionally be returned along with the result.
+    fn query_packet_receipt(
+        &self,
+        request: QueryPacketReceiptRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(Vec<u8>, Option<MerkleProof>), Error>;
+
+    /// Performs a query about which IBC packets in the specified list has not
+    /// been received. Returns the sequence numbers of the packets that were not
+    /// received.
+    ///
+    /// For example, given a request with the sequence numbers `[5,6,7,8]`, a
+    /// response of `[7,8]` would indicate that packets 5 & 6 were received,
+    /// while packets 7, 8 were not.
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<Sequence>, Error>;
 
+    /// Performs a query to retrieve a stored packet acknowledgement hash,
+    /// stored on the chain at path `path::AcksPath`. A proof can optionally be
+    /// returned along with the result.
+    fn query_packet_acknowledgement(
+        &self,
+        request: QueryPacketAcknowledgementRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(Vec<u8>, Option<MerkleProof>), Error>;
+
+    /// Performs a query to retrieve all the packet acknowledgements associated
+    /// with a channel. Returns the corresponding packet sequence numbers and
+    /// the height at which they were retrieved.
     fn query_packet_acknowledgements(
         &self,
         request: QueryPacketAcknowledgementsRequest,
     ) -> Result<(Vec<Sequence>, Height), Error>;
 
-    fn query_unreceived_acknowledgement(
+    /// Performs a query about which IBC packets in the specified list has not
+    /// been acknowledged. Returns the sequence numbers of the packets that were not
+    /// acknowledged.
+    ///
+    /// For example, given a request with the sequence numbers `[5,6,7,8]`, a
+    /// response of `[7,8]` would indicate that packets 5 & 6 were acknowledged,
+    /// while packets 7, 8 were not.
+    fn query_unreceived_acknowledgements(
         &self,
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<Sequence>, Error>;

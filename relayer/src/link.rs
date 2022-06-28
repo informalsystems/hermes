@@ -1,15 +1,12 @@
-use ibc::{
-    core::{
-        ics03_connection::connection::State as ConnectionState,
-        ics04_channel::channel::State as ChannelState,
-        ics24_host::identifier::{ChannelId, PortChannelId, PortId},
-    },
-    Height,
+use ibc::core::{
+    ics03_connection::connection::State as ConnectionState,
+    ics04_channel::channel::State as ChannelState,
+    ics24_host::identifier::{ChannelId, PortChannelId, PortId},
 };
 
-use crate::chain::handle::ChainHandle;
-use crate::chain::requests::QueryChannelRequest;
+use crate::chain::requests::{QueryChannelRequest, QueryHeight};
 use crate::chain::{counterparty::check_channel_counterparty, requests::QueryConnectionRequest};
+use crate::chain::{handle::ChainHandle, requests::IncludeProof};
 use crate::channel::{Channel, ChannelSide};
 use crate::link::error::LinkError;
 
@@ -60,12 +57,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         // Check that the packet's channel on source chain is Open
         let a_channel_id = &opts.src_channel_id;
         let a_port_id = &opts.src_port_id;
-        let a_channel = a_chain
-            .query_channel(QueryChannelRequest {
-                port_id: opts.src_port_id.clone(),
-                channel_id: opts.src_channel_id,
-                height: Height::default(),
-            })
+        let (a_channel, _) = a_chain
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: opts.src_port_id.clone(),
+                    channel_id: opts.src_channel_id,
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
             .map_err(|e| {
                 LinkError::channel_not_found(a_port_id.clone(), *a_channel_id, a_chain.id(), e)
             })?;
@@ -104,11 +104,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
 
         // Check the underlying connection
         let a_connection_id = a_channel.connection_hops()[0].clone();
-        let a_connection = a_chain
-            .query_connection(QueryConnectionRequest {
-                connection_id: a_connection_id.clone(),
-                height: Height::zero(),
-            })
+        let (a_connection, _) = a_chain
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: a_connection_id.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
             .map_err(LinkError::relayer)?;
 
         if !a_connection.state_matches(&ConnectionState::Open) {

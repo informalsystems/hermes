@@ -11,7 +11,9 @@ use ibc::events::IbcEvent;
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
+use crate::chain::requests::IncludeProof;
 use crate::chain::requests::QueryClientStateRequest;
+use crate::chain::requests::QueryHeight;
 use crate::chain::tracking::TrackedMsgs;
 use crate::chain::tracking::TrackingId;
 use crate::link::error::LinkError;
@@ -174,21 +176,27 @@ impl OperationalData {
 
             client_update_opt.pop()
         } else {
-            let client_state = match self.target {
+            let (client_state, _) = match self.target {
                 OperationalDataTarget::Source => relay_path
                     .src_chain()
-                    .query_client_state(QueryClientStateRequest {
-                        client_id: relay_path.src_client_id().clone(),
-                        height: Height::zero(),
-                    })
+                    .query_client_state(
+                        QueryClientStateRequest {
+                            client_id: relay_path.src_client_id().clone(),
+                            height: QueryHeight::Latest,
+                        },
+                        IncludeProof::No,
+                    )
                     .map_err(|e| LinkError::query(relay_path.src_chain().id(), e))?,
 
                 OperationalDataTarget::Destination => relay_path
                     .dst_chain()
-                    .query_client_state(QueryClientStateRequest {
-                        client_id: relay_path.dst_client_id().clone(),
-                        height: Height::zero(),
-                    })
+                    .query_client_state(
+                        QueryClientStateRequest {
+                            client_id: relay_path.dst_client_id().clone(),
+                            height: QueryHeight::Latest,
+                        },
+                        IncludeProof::No,
+                    )
                     .map_err(|e| LinkError::query(relay_path.dst_chain().id(), e))?,
             };
 

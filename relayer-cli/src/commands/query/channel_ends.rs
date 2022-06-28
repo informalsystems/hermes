@@ -10,7 +10,7 @@ use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortI
 use ibc::Height;
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{
-    QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest,
+    IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
 use ibc_relayer::registry::Registry;
 
@@ -19,22 +19,41 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct QueryChannelEndsCmd {
-    #[clap(required = true, help = "identifier of the chain to query")]
+    #[clap(
+        long = "chain",
+        required = true,
+        value_name = "CHAIN_ID",
+        help = "Identifier of the chain to query"
+    )]
     chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the port to query")]
+    #[clap(
+        long = "port",
+        required = true,
+        value_name = "PORT_ID",
+        help = "Identifier of the port to query"
+    )]
     port_id: PortId,
 
-    #[clap(required = true, help = "identifier of the channel to query")]
+    #[clap(
+        long = "channel",
+        alias = "chan",
+        required = true,
+        value_name = "CHANNEL_ID",
+        help = "Identifier of the channel to query"
+    )]
     channel_id: ChannelId,
 
-    #[clap(short = 'H', long, help = "height of the state to query")]
+    #[clap(
+        long = "height",
+        value_name = "HEIGHT",
+        help = "Height of the state to query"
+    )]
     height: Option<u64>,
 
     #[clap(
-        short = 'v',
-        long,
-        help = "enable verbose output, displaying all details of channels, connections & clients"
+        long = "verbose",
+        help = "Enable verbose output, displaying all details of channels, connections & clients"
     )]
     verbose: bool,
 }
@@ -81,11 +100,14 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
         None => chain.query_latest_height()?,
     };
 
-    let channel_end = chain.query_channel(QueryChannelRequest {
-        port_id: port_id.clone(),
-        channel_id,
-        height: chain_height,
-    })?;
+    let (channel_end, _) = chain.query_channel(
+        QueryChannelRequest {
+            port_id: port_id.clone(),
+            channel_id,
+            height: QueryHeight::Specific(chain_height),
+        },
+        IncludeProof::No,
+    )?;
     if channel_end.state_matches(&State::Uninitialized) {
         return Err(format!(
             "{}/{} on chain {} @ {:?} is uninitialized",
@@ -105,17 +127,23 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
         })?
         .clone();
 
-    let connection_end = chain.query_connection(QueryConnectionRequest {
-        connection_id: connection_id.clone(),
-        height: chain_height,
-    })?;
+    let (connection_end, _) = chain.query_connection(
+        QueryConnectionRequest {
+            connection_id: connection_id.clone(),
+            height: QueryHeight::Specific(chain_height),
+        },
+        IncludeProof::No,
+    )?;
 
     let client_id = connection_end.client_id().clone();
 
-    let client_state = chain.query_client_state(QueryClientStateRequest {
-        client_id: client_id.clone(),
-        height: chain_height,
-    })?;
+    let (client_state, _) = chain.query_client_state(
+        QueryClientStateRequest {
+            client_id: client_id.clone(),
+            height: QueryHeight::Specific(chain_height),
+        },
+        IncludeProof::No,
+    )?;
 
     let channel_counterparty = channel_end.counterparty().clone();
     let connection_counterparty = connection_end.counterparty().clone();
@@ -143,25 +171,33 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
 
     let counterparty_chain_id = client_state.chain_id();
     let counterparty_chain = registry.get_or_spawn(&counterparty_chain_id)?;
-    let counterparty_chain_height = counterparty_chain.query_latest_height()?;
+    let counterparty_chain_height_query =
+        QueryHeight::Specific(counterparty_chain.query_latest_height()?);
 
-    let counterparty_connection_end =
-        counterparty_chain.query_connection(QueryConnectionRequest {
+    let (counterparty_connection_end, _) = counterparty_chain.query_connection(
+        QueryConnectionRequest {
             connection_id: counterparty_connection_id.clone(),
-            height: counterparty_chain_height,
-        })?;
+            height: counterparty_chain_height_query,
+        },
+        IncludeProof::No,
+    )?;
 
-    let counterparty_client_state =
-        counterparty_chain.query_client_state(QueryClientStateRequest {
+    let (counterparty_client_state, _) = counterparty_chain.query_client_state(
+        QueryClientStateRequest {
             client_id: counterparty_client_id.clone(),
-            height: counterparty_chain_height,
-        })?;
+            height: counterparty_chain_height_query,
+        },
+        IncludeProof::No,
+    )?;
 
-    let counterparty_channel_end = counterparty_chain.query_channel(QueryChannelRequest {
-        port_id: counterparty_port_id.clone(),
-        channel_id: counterparty_channel_id,
-        height: counterparty_chain_height,
-    })?;
+    let (counterparty_channel_end, _) = counterparty_chain.query_channel(
+        QueryChannelRequest {
+            port_id: counterparty_port_id.clone(),
+            channel_id: counterparty_channel_id,
+            height: counterparty_chain_height_query,
+        },
+        IncludeProof::No,
+    )?;
 
     if cmd.verbose {
         let res = ChannelEnds {

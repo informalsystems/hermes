@@ -7,7 +7,6 @@ use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::merkle::MerkleProof;
-use ibc::query::QueryTxRequest;
 use ibc::{
     core::ics02_client::header::AnyHeader,
     core::ics03_connection::connection::ConnectionEnd,
@@ -19,7 +18,6 @@ use ibc::{
     },
     events::IbcEvent,
     proofs::Proofs,
-    query::QueryBlockRequest,
     signer::Signer,
     Height,
 };
@@ -31,17 +29,20 @@ use crate::chain::client::ClientSettings;
 use crate::chain::endpoint::{ChainStatus, HealthCheck};
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::requests::{
-    QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
-    QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
-    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
-    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
-    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
+    QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
+    QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
+    QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHeight,
+    QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
+    QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
+    QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
+use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::keyring::KeyEntry;
 use crate::telemetry;
@@ -135,6 +136,10 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().query_balance(key_name)
     }
 
+    fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
+        self.inner().query_denom_trace(hash)
+    }
+
     fn query_application_status(&self) -> Result<ChainStatus, Error> {
         self.inner().query_application_status()
     }
@@ -163,25 +168,31 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     fn query_client_state(
         &self,
         request: QueryClientStateRequest,
-    ) -> Result<AnyClientState, Error> {
+        include_proof: IncludeProof,
+    ) -> Result<(AnyClientState, Option<MerkleProof>), Error> {
         let handle = self.inner();
-        if request.height.is_zero() {
-            let (result, in_cache) =
-                self.cache
-                    .get_or_try_insert_client_state_with(&request.client_id, || {
-                        handle.query_client_state(QueryClientStateRequest {
-                            client_id: request.client_id.clone(),
-                            height: request.height,
-                        })
-                    })?;
+        match include_proof {
+            IncludeProof::Yes => handle.query_client_state(request, IncludeProof::Yes),
+            IncludeProof::No => {
+                if matches!(request.height, QueryHeight::Latest) {
+                    let (result, in_cache) = self.cache.get_or_try_insert_client_state_with(
+                        &request.client_id,
+                        || {
+                            handle
+                                .query_client_state(request.clone(), IncludeProof::No)
+                                .map(|(client_state, _)| client_state)
+                        },
+                    )?;
 
-            if in_cache == CacheStatus::Hit {
-                telemetry!(query_cache_hit, &self.id(), "query_client_state");
+                    if in_cache == CacheStatus::Hit {
+                        telemetry!(query_cache_hit, &self.id(), "query_client_state");
+                    }
+
+                    Ok((result, None))
+                } else {
+                    handle.query_client_state(request, IncludeProof::No)
+                }
             }
-
-            Ok(result)
-        } else {
-            handle.query_client_state(request)
         }
     }
 
@@ -202,8 +213,9 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     fn query_consensus_state(
         &self,
         request: QueryConsensusStateRequest,
-    ) -> Result<AnyConsensusState, Error> {
-        self.inner().query_consensus_state(request)
+        include_proof: IncludeProof,
+    ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error> {
+        self.inner().query_consensus_state(request, include_proof)
     }
 
     fn query_upgraded_client_state(
@@ -228,22 +240,34 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().query_compatible_versions()
     }
 
-    fn query_connection(&self, request: QueryConnectionRequest) -> Result<ConnectionEnd, Error> {
+    fn query_connection(
+        &self,
+        request: QueryConnectionRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ConnectionEnd, Option<MerkleProof>), Error> {
         let handle = self.inner();
-        if request.height.is_zero() {
-            let (result, in_cache) = self
-                .cache
-                .get_or_try_insert_connection_with(&request.connection_id, || {
-                    handle.query_connection(request.clone())
-                })?;
+        match include_proof {
+            IncludeProof::Yes => handle.query_connection(request, IncludeProof::Yes),
+            IncludeProof::No => {
+                if matches!(request.height, QueryHeight::Latest) {
+                    let (result, in_cache) = self.cache.get_or_try_insert_connection_with(
+                        &request.connection_id,
+                        || {
+                            handle
+                                .query_connection(request.clone(), IncludeProof::No)
+                                .map(|(conn_end, _)| conn_end)
+                        },
+                    )?;
 
-            if in_cache == CacheStatus::Hit {
-                telemetry!(query_cache_hit, &self.id(), "query_connection");
+                    if in_cache == CacheStatus::Hit {
+                        telemetry!(query_cache_hit, &self.id(), "query_connection");
+                    }
+
+                    Ok((result, None))
+                } else {
+                    handle.query_connection(request, IncludeProof::No)
+                }
             }
-
-            Ok(result)
-        } else {
-            handle.query_connection(request)
         }
     }
 
@@ -264,8 +288,10 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     fn query_next_sequence_receive(
         &self,
         request: QueryNextSequenceReceiveRequest,
-    ) -> Result<Sequence, Error> {
-        self.inner().query_next_sequence_receive(request)
+        include_proof: IncludeProof,
+    ) -> Result<(Sequence, Option<MerkleProof>), Error> {
+        self.inner()
+            .query_next_sequence_receive(request, include_proof)
     }
 
     fn query_channels(
@@ -275,21 +301,34 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().query_channels(request)
     }
 
-    fn query_channel(&self, request: QueryChannelRequest) -> Result<ChannelEnd, Error> {
+    fn query_channel(
+        &self,
+        request: QueryChannelRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(ChannelEnd, Option<MerkleProof>), Error> {
         let handle = self.inner();
-        if request.height.is_zero() {
-            let (result, in_cache) = self.cache.get_or_try_insert_channel_with(
-                &PortChannelId::new(request.channel_id, request.port_id.clone()),
-                || handle.query_channel(request),
-            )?;
+        match include_proof {
+            IncludeProof::Yes => handle.query_channel(request, IncludeProof::Yes),
+            IncludeProof::No => {
+                if matches!(request.height, QueryHeight::Latest) {
+                    let (result, in_cache) = self.cache.get_or_try_insert_channel_with(
+                        &PortChannelId::new(request.channel_id, request.port_id.clone()),
+                        || {
+                            handle
+                                .query_channel(request, IncludeProof::No)
+                                .map(|(channel_end, _)| channel_end)
+                        },
+                    )?;
 
-            if in_cache == CacheStatus::Hit {
-                telemetry!(query_cache_hit, &self.id(), "query_channel");
+                    if in_cache == CacheStatus::Hit {
+                        telemetry!(query_cache_hit, &self.id(), "query_channel");
+                    }
+
+                    Ok((result, None))
+                } else {
+                    handle.query_channel(request, IncludeProof::No)
+                }
             }
-
-            Ok(result)
-        } else {
-            handle.query_channel(request)
         }
     }
 
@@ -298,32 +337,6 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         request: QueryChannelClientStateRequest,
     ) -> Result<Option<IdentifiedAnyClientState>, Error> {
         self.inner().query_channel_client_state(request)
-    }
-
-    fn proven_client_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<(AnyClientState, MerkleProof), Error> {
-        self.inner().proven_client_state(client_id, height)
-    }
-
-    fn proven_connection(
-        &self,
-        connection_id: &ConnectionId,
-        height: Height,
-    ) -> Result<(ConnectionEnd, MerkleProof), Error> {
-        self.inner().proven_connection(connection_id, height)
-    }
-
-    fn proven_client_consensus(
-        &self,
-        client_id: &ClientId,
-        consensus_height: Height,
-        height: Height,
-    ) -> Result<(AnyConsensusState, MerkleProof), Error> {
-        self.inner()
-            .proven_client_consensus(client_id, consensus_height, height)
     }
 
     fn build_header(
@@ -396,9 +409,17 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         channel_id: &ChannelId,
         sequence: Sequence,
         height: Height,
-    ) -> Result<(Vec<u8>, Proofs), Error> {
+    ) -> Result<Proofs, Error> {
         self.inner()
             .build_packet_proofs(packet_type, port_id, channel_id, sequence, height)
+    }
+
+    fn query_packet_commitment(
+        &self,
+        request: QueryPacketCommitmentRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
+        self.inner().query_packet_commitment(request, include_proof)
     }
 
     fn query_packet_commitments(
@@ -408,11 +429,28 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().query_packet_commitments(request)
     }
 
+    fn query_packet_receipt(
+        &self,
+        request: QueryPacketReceiptRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
+        self.inner().query_packet_receipt(request, include_proof)
+    }
+
     fn query_unreceived_packets(
         &self,
         request: QueryUnreceivedPacketsRequest,
     ) -> Result<Vec<Sequence>, Error> {
         self.inner().query_unreceived_packets(request)
+    }
+
+    fn query_packet_acknowledgement(
+        &self,
+        request: QueryPacketAcknowledgementRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
+        self.inner()
+            .query_packet_acknowledgement(request, include_proof)
     }
 
     fn query_packet_acknowledgements(
@@ -422,11 +460,11 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().query_packet_acknowledgements(request)
     }
 
-    fn query_unreceived_acknowledgement(
+    fn query_unreceived_acknowledgements(
         &self,
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<Sequence>, Error> {
-        self.inner().query_unreceived_acknowledgement(request)
+        self.inner().query_unreceived_acknowledgements(request)
     }
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {

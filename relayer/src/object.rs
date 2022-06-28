@@ -1,16 +1,13 @@
 use flex_error::define_error;
 use serde::{Deserialize, Serialize};
 
-use ibc::{
-    core::{
-        ics02_client::{client_state::ClientState, events::UpdateClient},
-        ics03_connection::events::Attributes as ConnectionAttributes,
-        ics04_channel::events::{
-            Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement,
-        },
-        ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+use ibc::core::{
+    ics02_client::{client_state::ClientState, events::UpdateClient},
+    ics03_connection::events::Attributes as ConnectionAttributes,
+    ics04_channel::events::{
+        Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement,
     },
-    Height,
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
 };
 
 use crate::chain::{
@@ -19,7 +16,7 @@ use crate::chain::{
         counterparty_chain_from_connection,
     },
     handle::ChainHandle,
-    requests::QueryClientStateRequest,
+    requests::{IncludeProof, QueryClientStateRequest, QueryHeight},
 };
 use crate::error::Error as RelayerError;
 use crate::supervisor::Error as SupervisorError;
@@ -303,11 +300,14 @@ impl Object {
         e: &UpdateClient,
         dst_chain: &impl ChainHandle,
     ) -> Result<Self, ObjectError> {
-        let client_state = dst_chain
-            .query_client_state(QueryClientStateRequest {
-                client_id: e.client_id().clone(),
-                height: Height::zero(),
-            })
+        let (client_state, _) = dst_chain
+            .query_client_state(
+                QueryClientStateRequest {
+                    client_id: e.client_id().clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
             .map_err(ObjectError::relayer)?;
 
         if client_state.refresh_period().is_none() {

@@ -4,17 +4,14 @@ use std::collections::BTreeMap;
 use itertools::Itertools;
 use tracing::{debug, error, info, info_span, warn};
 
-use ibc::{
-    core::{
-        ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
-        ics03_connection::connection::{IdentifiedConnectionEnd, State as ConnectionState},
-        ics04_channel::{
-            channel::{IdentifiedChannelEnd, State as ChannelState},
-            packet::Sequence,
-        },
-        ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+use ibc::core::{
+    ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
+    ics03_connection::connection::{IdentifiedConnectionEnd, State as ConnectionState},
+    ics04_channel::{
+        channel::{IdentifiedChannelEnd, State as ChannelState},
+        packet::Sequence,
     },
-    Height,
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
 };
 
 use crate::{
@@ -22,9 +19,9 @@ use crate::{
         counterparty::{channel_on_destination, connection_state_on_destination},
         handle::ChainHandle,
         requests::{
-            PageRequest, QueryChannelRequest, QueryClientConnectionsRequest,
+            IncludeProof, PageRequest, QueryChannelRequest, QueryClientConnectionsRequest,
             QueryClientStateRequest, QueryClientStatesRequest, QueryConnectionChannelsRequest,
-            QueryConnectionRequest,
+            QueryConnectionRequest, QueryHeight,
         },
     },
     config::{filter::ChannelFilters, ChainConfig, Config, PacketFilter},
@@ -697,11 +694,14 @@ fn query_client<Chain: ChainHandle>(
     chain: &Chain,
     client_id: &ClientId,
 ) -> Result<IdentifiedAnyClientState, Error> {
-    let client = chain
-        .query_client_state(QueryClientStateRequest {
-            client_id: client_id.clone(),
-            height: Height::zero(),
-        })
+    let (client, _) = chain
+        .query_client_state(
+            QueryClientStateRequest {
+                client_id: client_id.clone(),
+                height: QueryHeight::Latest,
+            },
+            IncludeProof::No,
+        )
         .map_err(Error::query)?;
 
     Ok(IdentifiedAnyClientState::new(client_id.clone(), client))
@@ -712,12 +712,15 @@ fn query_channel<Chain: ChainHandle>(
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<IdentifiedChannelEnd, Error> {
-    let channel_end = chain
-        .query_channel(QueryChannelRequest {
-            port_id: port_id.clone(),
-            channel_id: *channel_id,
-            height: Height::zero(),
-        })
+    let (channel_end, _) = chain
+        .query_channel(
+            QueryChannelRequest {
+                port_id: port_id.clone(),
+                channel_id: *channel_id,
+                height: QueryHeight::Latest,
+            },
+            IncludeProof::No,
+        )
         .map_err(Error::query)?;
 
     Ok(IdentifiedChannelEnd::new(
@@ -781,11 +784,14 @@ fn query_connection<Chain: ChainHandle>(
     chain: &Chain,
     connection_id: &ConnectionId,
 ) -> Result<IdentifiedConnectionEnd, Error> {
-    let connection_end = chain
-        .query_connection(QueryConnectionRequest {
-            connection_id: connection_id.clone(),
-            height: Height::zero(),
-        })
+    let (connection_end, _) = chain
+        .query_connection(
+            QueryConnectionRequest {
+                connection_id: connection_id.clone(),
+                height: QueryHeight::Latest,
+            },
+            IncludeProof::No,
+        )
         .map_err(Error::query)?;
 
     Ok(IdentifiedConnectionEnd {

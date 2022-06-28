@@ -6,14 +6,13 @@ use ibc::{
     applications::transfer::Amount,
     core::{
         ics02_client::client_state::ClientState,
-        ics02_client::height::Height,
         ics24_host::identifier::{ChainId, ChannelId, PortId},
     },
     events::IbcEvent,
 };
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest,
+    IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
 use ibc_relayer::{
     config::Config,
@@ -27,64 +26,77 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxIcs20MsgTransferCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        long = "dst-chain",
+        required = true,
+        help = "Identifier of the destination chain"
+    )]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(
+        long = "src-chain",
+        required = true,
+        help = "Identifier of the source chain"
+    )]
     src_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source port")]
+    #[clap(
+        long = "src-port",
+        required = true,
+        help = "Identifier of the source port"
+    )]
     src_port_id: PortId,
 
-    #[clap(required = true, help = "identifier of the source channel")]
+    #[clap(
+        long = "src-channel",
+        alias = "src-chan",
+        required = true,
+        help = "Identifier of the source channel"
+    )]
     src_channel_id: ChannelId,
 
     #[clap(
+        long = "amount",
         required = true,
-        help = "amount of coins (samoleans, by default) to send (e.g. `100000`)"
+        help = "Amount of coins (samoleans, by default) to send (e.g. `100000`)"
     )]
     amount: Amount,
 
     #[clap(
-        short = 'o',
-        long,
+        long = "timeout-height-offset",
         default_value = "0",
-        help = "timeout in number of blocks since current"
+        help = "Timeout in number of blocks since current"
     )]
     timeout_height_offset: u64,
 
     #[clap(
-        short = 't',
-        long,
+        long = "timeout-seconds",
         default_value = "0",
-        help = "timeout in seconds since current"
+        help = "Timeout in seconds since current"
     )]
     timeout_seconds: u64,
 
     #[clap(
-        short = 'r',
-        long,
-        help = "receiving account address on the destination chain"
+        long = "receiver",
+        help = "Receiving account address on the destination chain"
     )]
     receiver: Option<String>,
 
     #[clap(
-        short = 'd',
-        long,
-        help = "denomination of the coins to send",
+        long = "denom",
+        help = "Denomination of the coins to send",
         default_value = "samoleans"
     )]
     denom: String,
 
-    #[clap(short = 'n', long, help = "number of messages to send")]
+    #[clap(long = "number-msgs", help = "Number of messages to send")]
     number_msgs: Option<usize>,
 
     #[clap(
-        short = 'k',
-        long,
-        help = "use the given signing key (default: `key_name` config)"
+        long = "key-name",
+        help = "Use the given signing key name (default: `key_name` config)"
     )]
-    key: Option<String>,
+    key_name: Option<String>,
 }
 
 impl Override<Config> for TxIcs20MsgTransferCmd {
@@ -96,7 +108,7 @@ impl Override<Config> for TxIcs20MsgTransferCmd {
             ))
         })?;
 
-        if let Some(ref key_name) = self.key {
+        if let Some(ref key_name) = self.key_name {
             src_chain_config.key_name = key_name.to_string();
         }
 
@@ -171,13 +183,16 @@ impl Runnable for TxIcs20MsgTransferCmd {
         // To do this, fetch from the source chain the channel end, then the associated connection
         // end, and then the underlying client state; finally, check that this client is verifying
         // headers for the destination chain.
-        let channel_end_src = chains
+        let (channel_end_src, _) = chains
             .src
-            .query_channel(QueryChannelRequest {
-                port_id: opts.packet_src_port_id.clone(),
-                channel_id: opts.packet_src_channel_id,
-                height: Height::zero(),
-            })
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: opts.packet_src_port_id.clone(),
+                    channel_id: opts.packet_src_channel_id,
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
             .unwrap_or_else(exit_with_unrecoverable_error);
         if !channel_end_src.is_open() {
             Output::error(format!(
@@ -201,22 +216,28 @@ impl Runnable for TxIcs20MsgTransferCmd {
             Some(cid) => cid,
         };
 
-        let conn_end = chains
+        let (conn_end, _) = chains
             .src
-            .query_connection(QueryConnectionRequest {
-                connection_id: conn_id.clone(),
-                height: Height::zero(),
-            })
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: conn_id.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         debug!("connection hop underlying the channel: {:?}", conn_end);
 
-        let src_chain_client_state = chains
+        let (src_chain_client_state, _) = chains
             .src
-            .query_client_state(QueryClientStateRequest {
-                client_id: conn_end.client_id().clone(),
-                height: Height::zero(),
-            })
+            .query_client_state(
+                QueryClientStateRequest {
+                    client_id: conn_end.client_id().clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         debug!(

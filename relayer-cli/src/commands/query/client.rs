@@ -4,16 +4,15 @@ use tracing::debug;
 
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    PageRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
-    QueryConsensusStateRequest, QueryConsensusStatesRequest,
+    IncludeProof, PageRequest, QueryClientConnectionsRequest, QueryClientEventRequest,
+    QueryClientStateRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHeight,
+    QueryTxRequest,
 };
 
-use ibc::core::ics02_client::client_consensus::QueryClientEventRequest;
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::core::ics24_host::identifier::ClientId;
 use ibc::events::WithBlockDataType;
-use ibc::query::QueryTxRequest;
 use ibc::Height;
 
 use crate::application::app_config;
@@ -23,18 +22,32 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 /// Query client state command
 #[derive(Clone, Command, Debug, Parser)]
 pub struct QueryClientStateCmd {
-    #[clap(required = true, help = "identifier of the chain to query")]
+    #[clap(
+        long = "chain",
+        required = true,
+        value_name = "CHAIN_ID",
+        help = "Identifier of the chain to query"
+    )]
     chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the client to query")]
+    #[clap(
+        long = "client",
+        required = true,
+        value_name = "CLIENT_ID",
+        help = "Identifier of the client to query"
+    )]
     client_id: ClientId,
 
-    #[clap(short = 'H', long, help = "the chain height context for the query")]
+    #[clap(
+        long = "height",
+        value_name = "HEIGHT",
+        help = "The chain height context for the query"
+    )]
     height: Option<u64>,
 }
 
 /// Command for querying a client's state.
-/// hermes query client state ibc-1 07-tendermint-0 --height 3
+/// hermes query client state --chain ibc-1 --client 07-tendermint-0 --height 3
 impl Runnable for QueryClientStateCmd {
     fn run(&self) {
         let config = app_config();
@@ -42,13 +55,16 @@ impl Runnable for QueryClientStateCmd {
         let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
-
-        match chain.query_client_state(QueryClientStateRequest {
-            client_id: self.client_id.clone(),
-            height,
-        }) {
-            Ok(cs) => Output::success(cs).exit(),
+        match chain.query_client_state(
+            QueryClientStateRequest {
+                client_id: self.client_id.clone(),
+                height: self.height.map_or(QueryHeight::Latest, |revision_height| {
+                    QueryHeight::Specific(ibc::Height::new(chain.id().version(), revision_height))
+                }),
+            },
+            IncludeProof::No,
+        ) {
+            Ok((cs, _)) => Output::success(cs).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
@@ -57,32 +73,42 @@ impl Runnable for QueryClientStateCmd {
 /// Query client consensus command
 #[derive(Clone, Command, Debug, Parser)]
 pub struct QueryClientConsensusCmd {
-    #[clap(required = true, help = "identifier of the chain to query")]
+    #[clap(
+        long = "chain",
+        required = true,
+        value_name = "CHAIN_ID",
+        help = "Identifier of the chain to query"
+    )]
     chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the client to query")]
+    #[clap(
+        long = "client",
+        required = true,
+        value_name = "CLIENT_ID",
+        help = "Identifier of the client to query"
+    )]
     client_id: ClientId,
 
     #[clap(
-        short = 'c',
-        long,
-        help = "height of the client's consensus state to query"
+        long = "consensus-height",
+        value_name = "CONSENSUS_HEIGHT",
+        help = "Height of the client's consensus state to query"
     )]
     consensus_height: Option<u64>,
 
-    #[clap(short = 's', long, help = "show only consensus heights")]
+    #[clap(long = "heights-only", help = "Show only consensus heights")]
     heights_only: bool,
 
     #[clap(
-        short = 'H',
-        long,
-        help = "the chain height context to be used, applicable only to a specific height"
+        long = "height",
+        value_name = "HEIGHT",
+        help = "The chain height context to be used, applicable only to a specific height"
     )]
     height: Option<u64>,
 }
 
 /// Implementation of the query for a client's consensus state at a certain height.
-/// hermes query client consensus ibc-0 07-tendermint-0 -c 22
+/// hermes query client consensus --chain ibc-0 --client 07-tendermint-0 --consensus-height 22
 impl Runnable for QueryClientConsensusCmd {
     fn run(&self) {
         let config = app_config();
@@ -92,11 +118,14 @@ impl Runnable for QueryClientConsensusCmd {
         let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let counterparty_chain = match chain.query_client_state(QueryClientStateRequest {
-            client_id: self.client_id.clone(),
-            height: Height::zero(),
-        }) {
-            Ok(cs) => cs.chain_id(),
+        let counterparty_chain = match chain.query_client_state(
+            QueryClientStateRequest {
+                client_id: self.client_id.clone(),
+                height: QueryHeight::Latest,
+            },
+            IncludeProof::No,
+        ) {
+            Ok((cs, _)) => cs.chain_id(),
             Err(e) => Output::error(format!(
                 "failed while querying client '{}' on chain '{}' with error: {}",
                 self.client_id, self.chain_id, e
@@ -106,14 +135,26 @@ impl Runnable for QueryClientConsensusCmd {
 
         match self.consensus_height {
             Some(cs_height) => {
-                let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
                 let consensus_height = ibc::Height::new(counterparty_chain.version(), cs_height);
 
-                let res = chain.query_consensus_state(QueryConsensusStateRequest {
-                    client_id: self.client_id.clone(),
-                    consensus_height,
-                    query_height: height,
-                });
+                let res = chain
+                    .query_consensus_state(
+                        QueryConsensusStateRequest {
+                            client_id: self.client_id.clone(),
+                            consensus_height,
+                            query_height: self.height.map_or(
+                                QueryHeight::Latest,
+                                |revision_height| {
+                                    QueryHeight::Specific(ibc::Height::new(
+                                        chain.id().version(),
+                                        revision_height,
+                                    ))
+                                },
+                            ),
+                        },
+                        IncludeProof::No,
+                    )
+                    .map(|(consensus_state, _)| consensus_state);
 
                 match res {
                     Ok(cs) => Output::success(cs).exit(),
@@ -144,21 +185,40 @@ impl Runnable for QueryClientConsensusCmd {
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct QueryClientHeaderCmd {
-    #[clap(required = true, help = "identifier of the chain to query")]
+    #[clap(
+        long = "chain",
+        required = true,
+        value_name = "CHAIN_ID",
+        help = "Identifier of the chain to query"
+    )]
     chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the client to query")]
+    #[clap(
+        long = "client",
+        required = true,
+        value_name = "CLIENT_ID",
+        help = "Identifier of the client to query"
+    )]
     client_id: ClientId,
 
-    #[clap(required = true, help = "height of header to query")]
+    #[clap(
+        long = "consensus-height",
+        required = true,
+        value_name = "CONSENSUS_HEIGHT",
+        help = "Height of header to query"
+    )]
     consensus_height: u64,
 
-    #[clap(short = 'H', long, help = "the chain height context for the query")]
+    #[clap(
+        long = "height",
+        value_name = "HEIGHT",
+        help = "The chain height context for the query"
+    )]
     height: Option<u64>,
 }
 
 /// Implementation of the query for the header used in a client update at a certain height.
-/// hermes query client header ibc-0 07-tendermint-0 22
+/// hermes query client header --chain ibc-0 --client 07-tendermint-0 --consensus-height 22
 impl Runnable for QueryClientHeaderCmd {
     fn run(&self) {
         let config = app_config();
@@ -168,11 +228,14 @@ impl Runnable for QueryClientHeaderCmd {
         let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let counterparty_chain = match chain.query_client_state(QueryClientStateRequest {
-            client_id: self.client_id.clone(),
-            height: Height::zero(),
-        }) {
-            Ok(cs) => cs.chain_id(),
+        let counterparty_chain = match chain.query_client_state(
+            QueryClientStateRequest {
+                client_id: self.client_id.clone(),
+                height: QueryHeight::Latest,
+            },
+            IncludeProof::No,
+        ) {
+            Ok((cs, _)) => cs.chain_id(),
             Err(e) => Output::error(format!(
                 "failed while querying client '{}' on chain '{}' with error: {}",
                 self.client_id, self.chain_id, e
@@ -183,10 +246,15 @@ impl Runnable for QueryClientHeaderCmd {
         let consensus_height =
             ibc::Height::new(counterparty_chain.version(), self.consensus_height);
 
-        let height = ibc::Height::new(chain.id().version(), self.height.unwrap_or(0_u64));
+        let query_height = match self.height {
+            Some(revision_height) => {
+                QueryHeight::Specific(Height::new(chain.id().version(), revision_height))
+            }
+            None => QueryHeight::Latest,
+        };
 
         let res = chain.query_txs(QueryTxRequest::Client(QueryClientEventRequest {
-            height,
+            query_height,
             event_id: WithBlockDataType::UpdateClient,
             client_id: self.client_id.clone(),
             consensus_height,
@@ -202,21 +270,31 @@ impl Runnable for QueryClientHeaderCmd {
 /// Query client connections command
 #[derive(Clone, Command, Debug, Parser)]
 pub struct QueryClientConnectionsCmd {
-    #[clap(required = true, help = "identifier of the chain to query")]
+    #[clap(
+        long = "chain",
+        required = true,
+        value_name = "CHAIN_ID",
+        help = "Identifier of the chain to query"
+    )]
     chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the client to query")]
+    #[clap(
+        long = "client",
+        required = true,
+        value_name = "CLIENT_ID",
+        help = "Identifier of the client to query"
+    )]
     client_id: ClientId,
 
     #[clap(
-        short = 'H',
-        long,
-        help = "the chain height which this query should reflect"
+        long = "height",
+        value_name = "HEIGHT",
+        help = "The chain height which this query should reflect"
     )]
     height: Option<u64>,
 }
 
-// hermes query connections ibc-0
+// hermes query connections --chain ibc-0
 impl Runnable for QueryClientConnectionsCmd {
     fn run(&self) {
         let config = app_config();

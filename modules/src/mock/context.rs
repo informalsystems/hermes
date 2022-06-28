@@ -6,7 +6,7 @@ use alloc::collections::btree_map::BTreeMap;
 use alloc::sync::Arc;
 use core::borrow::Borrow;
 use core::cmp::min;
-use core::fmt::Debug;
+use core::fmt::{Debug, Formatter};
 use core::ops::{Add, Sub};
 use core::time::Duration;
 use std::sync::Mutex;
@@ -612,8 +612,14 @@ impl RouterBuilder for MockRouterBuilder {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Default)]
 pub struct MockRouter(BTreeMap<ModuleId, Arc<dyn Module>>);
+
+impl Debug for MockRouter {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(f, "{:?}", self.0.keys().collect::<Vec<&ModuleId>>())
+    }
+}
 
 impl Router for MockRouter {
     fn get_route_mut(&mut self, module_id: &impl Borrow<ModuleId>) -> Option<&mut dyn Module> {
