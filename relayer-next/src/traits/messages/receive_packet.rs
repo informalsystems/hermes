@@ -1,7 +1,8 @@
 use async_trait::async_trait;
 
+use crate::traits::ibc_event_context::IbcEventContext;
 use crate::traits::relay_context::RelayContext;
-use crate::types::aliases::{Height, IbcMessage};
+use crate::types::aliases::{Height, IbcMessage, WriteAcknowledgementEvent};
 
 #[async_trait]
 pub trait ReceivePacketMessageBuilder<Relay: RelayContext> {
@@ -13,11 +14,17 @@ pub trait ReceivePacketMessageBuilder<Relay: RelayContext> {
 }
 
 #[async_trait]
-pub trait ReceivePacketRelayer<Context: RelayContext> {
-    async fn relay_recv_packet(
+pub trait ReceivePacketRelayer<Context: RelayContext>
+where
+    Context::DstChain: IbcEventContext<Context::SrcChain>,
+{
+    async fn relay_receive_packet(
         &self,
         context: &Context,
-        height: &Height<Context::DstChain>,
-        packet: Context::Packet,
-    ) -> Result<(), Context::Error>;
+        source_height: &Height<Context::SrcChain>,
+        packet: &Context::Packet,
+    ) -> Result<
+        Option<WriteAcknowledgementEvent<Context::DstChain, Context::SrcChain>>,
+        Context::Error,
+    >;
 }

@@ -49,6 +49,14 @@ where
     where
         Context::Error: From<MismatchIbcEventsCountError>;
 
+    async fn send_message_with_events(
+        &self,
+        context: &Context,
+        message: IbcMessage<Target::TargetChain, Target::CounterpartyChain>,
+    ) -> Result<Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>, Context::Error>
+    where
+        Context::Error: From<MismatchIbcEventsCountError>;
+
     async fn send_message(
         &self,
         context: &Context,
@@ -82,6 +90,19 @@ where
                 expected: COUNT,
                 actual: e.len(),
             })?;
+
+        Ok(events)
+    }
+
+    async fn send_message_with_events(
+        &self,
+        context: &Context,
+        message: IbcMessage<Target::TargetChain, Target::CounterpartyChain>,
+    ) -> Result<Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>, Context::Error>
+    where
+        Context::Error: From<MismatchIbcEventsCountError>,
+    {
+        let [events] = self.send_messages_fixed::<1>(context, [message]).await?;
 
         Ok(events)
     }
