@@ -5,14 +5,13 @@ use tendermint_proto::Protobuf;
 
 use crate::clients::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
 use crate::core::ics02_client::error::Error;
+use crate::core::ics02_client::header::Header;
 
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::misbehaviour::Misbehaviour as MockMisbehaviour;
 
 use crate::core::ics24_host::identifier::ClientId;
 use crate::Height;
-
-use super::header::AnyHeader;
 
 pub const TENDERMINT_MISBEHAVIOR_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Misbehaviour";
 
@@ -121,8 +120,8 @@ impl From<TmMisbehaviour> for AnyMisbehaviour {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct MisbehaviourEvidence {
     pub misbehaviour: AnyMisbehaviour,
-    pub supporting_headers: Vec<AnyHeader>,
+    pub supporting_headers: Vec<Box<dyn Header>>,
 }

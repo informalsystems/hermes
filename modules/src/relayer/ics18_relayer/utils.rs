@@ -1,4 +1,4 @@
-use crate::core::ics02_client::header::{AnyHeader, Header};
+use crate::core::ics02_client::header::Header;
 use crate::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::core::ics02_client::msgs::ClientMsg;
 use crate::core::ics24_host::identifier::ClientId;
@@ -10,7 +10,7 @@ use crate::relayer::ics18_relayer::error::Error;
 pub fn build_client_update_datagram<Ctx>(
     dest: &Ctx,
     client_id: &ClientId,
-    src_header: AnyHeader,
+    src_header: &dyn Header,
 ) -> Result<ClientMsg, Error>
 where
     Ctx: Ics18Context,
@@ -42,7 +42,7 @@ where
     // Client on destination chain can be updated.
     Ok(ClientMsg::UpdateClient(MsgUpdateAnyClient {
         client_id: client_id.clone(),
-        header: src_header,
+        header: src_header.encode_any(),
         signer: dest.signer(),
     }))
 }
