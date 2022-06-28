@@ -12,16 +12,33 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawPacketRecvCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        long = "dst-chain",
+        required = true,
+        help = "Identifier of the destination chain"
+    )]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(
+        long = "src-chain",
+        required = true,
+        help = "Identifier of the source chain"
+    )]
     src_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source port")]
+    #[clap(
+        long = "src-port",
+        required = true,
+        help = "Identifier of the source port"
+    )]
     src_port_id: PortId,
 
-    #[clap(required = true, help = "identifier of the source channel")]
+    #[clap(
+        long = "src-channel",
+        alias = "src-chan",
+        required = true,
+        help = "Identifier of the source channel"
+    )]
     src_channel_id: ChannelId,
 }
 
@@ -56,16 +73,33 @@ impl Runnable for TxRawPacketRecvCmd {
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawPacketAckCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        long = "dst-chain",
+        required = true,
+        help = "Identifier of the destination chain"
+    )]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(
+        long = "src-chain",
+        required = true,
+        help = "Identifier of the source chain"
+    )]
     src_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source port")]
+    #[clap(
+        long = "src-port",
+        required = true,
+        help = "Identifier of the source port"
+    )]
     src_port_id: PortId,
 
-    #[clap(required = true, help = "identifier of the source channel")]
+    #[clap(
+        long = "src-channel",
+        alias = "src-chan",
+        required = true,
+        help = "Identifier of the source channel"
+    )]
     src_channel_id: ChannelId,
 }
 
