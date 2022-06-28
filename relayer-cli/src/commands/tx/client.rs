@@ -204,6 +204,14 @@ pub struct TxUpgradeClientCmd {
         help = "Identifier of the client to be upgraded"
     )]
     client_id: ClientId,
+
+    #[clap(
+        long = "upgrade-height",
+        required = true,
+        value_name = "SRC_UPGRADE_HEIGHT",
+        help = "The height at which the client upgrade should occur at"
+    )]
+    upgrade_height: Height,
 }
 
 impl Runnable for TxUpgradeClientCmd {
