@@ -117,10 +117,10 @@ DESCRIPTION:
     Relay receive or timeout packets
 
 FLAGS:
-        --dst-chain <DST_CHAIN_ID>     identifier of the destination chain
-        --src-chain <SRC_CHAIN_ID>     identifier of the source chain
-        --src-chan <SRC_CHANNEL_ID>    identifier of the source channel
-        --src-port <SRC_PORT_ID>       identifier of the source port
+        --dst-chain <DST_CHAIN_ID>     Identifier of the destination chain
+        --src-chain <SRC_CHAIN_ID>     Identifier of the source chain
+        --src-chan <SRC_CHANNEL_ID>    Identifier of the source channel
+        --src-port <SRC_PORT_ID>       Identifier of the source port
 ```
 
 __Example__
@@ -229,10 +229,10 @@ DESCRIPTION:
     Relay acknowledgment packets
 
 FLAGS:
-        --dst-chain <DST_CHAIN_ID>     identifier of the destination chain
-        --src-chain <SRC_CHAIN_ID>     identifier of the source chain
-        --src-chan <SRC_CHANNEL_ID>    identifier of the source channel
-        --src-port <SRC_PORT_ID>       identifier of the source port
+        --dst-chain <DST_CHAIN_ID>     Identifier of the destination chain
+        --src-chain <SRC_CHAIN_ID>     Identifier of the source chain
+        --src-chan <SRC_CHANNEL_ID>    Identifier of the source channel
+        --src-port <SRC_PORT_ID>       Identifier of the source port
 ```
 
 __Example__

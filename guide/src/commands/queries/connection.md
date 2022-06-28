@@ -14,7 +14,7 @@ DESCRIPTION:
     Query the identifiers of all connections on a chain
 
 FLAGS:
-        --chain <CHAIN_ID>    identifier of the chain to query
+        --chain <CHAIN_ID>    Identifier of the chain to query
 ```
 
 __Example__
@@ -64,11 +64,11 @@ DESCRIPTION:
     Query connection end
 
 FLAGS:
-        --chain <CHAIN_ID>              identifier of the chain to query
-        --connection <CONNECTION_ID>    identifier of the connection to query
+        --chain <CHAIN_ID>              Identifier of the chain to query
+        --connection <CONNECTION_ID>    Identifier of the connection to query
 
 OPTIONS:
-        --height <HEIGHT>               height of the state to query
+        --height <HEIGHT>               Height of the state to query
 ```
 
 __Example__
@@ -121,8 +121,8 @@ DESCRIPTION:
     Query connection channels
 
 FLAGS:
-        --chain <CHAIN_ID>              identifier of the chain to query
-        --connection <CONNECTION_ID>    identifier of the connection to query
+        --chain <CHAIN_ID>              Identifier of the chain to query
+        --connection <CONNECTION_ID>    Identifier of the connection to query
 ```
 
 __Example__

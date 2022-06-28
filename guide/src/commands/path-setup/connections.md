@@ -15,15 +15,15 @@ DESCRIPTION:
     Create a new connection between two chains
 
 FLAGS:
-        --a-chain <A_CHAIN_ID>      identifier of the side `a` chain for the new connection
+        --a-chain <A_CHAIN_ID>      Identifier of the side `a` chain for the new connection
 
 OPTIONS:
-        --a-client <A_CLIENT_ID>    identifier of client hosted on chain `a`; default: None (creates
+        --a-client <A_CLIENT_ID>    Identifier of client hosted on chain `a`; default: None (creates
                                     a new client)
-        --b-chain <B_CHAIN_ID>      identifier of the side `b` chain for the new connection
-        --b-client <B_CLIENT_ID>    identifier of client hosted on chain `b`; default: None (creates
+        --b-chain <B_CHAIN_ID>      Identifier of the side `b` chain for the new connection
+        --b-client <B_CLIENT_ID>    Identifier of client hosted on chain `b`; default: None (creates
                                     a new client)
-        --delay <DELAY>             delay period parameter for the new connection (seconds)
+        --delay <DELAY>             Delay period parameter for the new connection (seconds)
                                     [default: 0]
 ```
 

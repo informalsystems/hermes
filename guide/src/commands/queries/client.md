@@ -102,11 +102,11 @@ DESCRIPTION:
     Query the client state
 
 FLAGS:
-        --chain <CHAIN_ID>      identifier of the chain to query
-        --client <CLIENT_ID>    identifier of the client to query
+        --chain <CHAIN_ID>      Identifier of the chain to query
+        --client <CLIENT_ID>    Identifier of the client to query
 
 OPTIONS:
-        --height HEIGHT         the chain height which this query should reflect
+        --height HEIGHT         The chain height which this query should reflect
 ```
 
 __Example__
@@ -245,11 +245,11 @@ DESCRIPTION:
     Query client connections
 
 FLAGS:
-        --chain <CHAIN_ID>      identifier of the chain to query
-        --client <CLIENT_ID>    identifier of the client to query
+        --chain <CHAIN_ID>      Identifier of the chain to query
+        --client <CLIENT_ID>    Identifier of the client to query
 
 OPTIONS:
-        --height <HEIGHT>       the chain height which this query should reflect
+        --height <HEIGHT>       The chain height which this query should reflect
 ```
 
 __Example__
@@ -277,12 +277,12 @@ DESCRIPTION:
     Query for the header used in a client update at a certain height
 
 FLAGS:
-        --chain <CHAIN_ID>                       identifier of the chain to query
-        --client <CLIENT_ID>                     identifier of the client to query
-        --consensus-height <CONSENSUS_HEIGHT>    height of header to query
+        --chain <CHAIN_ID>                       Identifier of the chain to query
+        --client <CLIENT_ID>                     Identifier of the client to query
+        --consensus-height <CONSENSUS_HEIGHT>    Height of header to query
 
 OPTIONS:
-        --height <HEIGHT>                        the chain height context for the query
+        --height <HEIGHT>                        The chain height context for the query
 ```
 
 __Example__

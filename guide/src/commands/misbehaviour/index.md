@@ -16,9 +16,9 @@ DESCRIPTION:
     Listen to client update IBC events and handles misbehaviour
 
 FLAGS:
-        --chain <CHAIN_ID>      identifier of the chain where client updates are monitored for
+        --chain <CHAIN_ID>      Identifier of the chain where client updates are monitored for
                                 misbehaviour
-        --client <CLIENT_ID>    identifier of the client to be monitored for misbehaviour
+        --client <CLIENT_ID>    Identifier of the client to be monitored for misbehaviour
 ```
 
 The misbehaviour monitor starts by analyzing all headers used in prior client updates.

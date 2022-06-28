@@ -35,9 +35,9 @@ USAGE:
     hermes query packet pending --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
 
 FLAGS:
-        --chain <CHAIN_ID>        identifier of the chain at one end of the channel
-        --channel <CHANNEL_ID>    channel identifier on the chain given by <CHAIN_ID>
-        --port <PORT_ID>          port identifier on the chain given by <CHAIN_ID>
+        --chain <CHAIN_ID>        Identifier of the chain at one end of the channel
+        --channel <CHANNEL_ID>    Channel identifier on the chain given by <CHAIN_ID>
+        --port <PORT_ID>          Port identifier on the chain given by <CHAIN_ID>
 ```
 
 __Example__
@@ -90,9 +90,9 @@ DESCRIPTION:
     Query packet commitments
 
 FLAGS:
-        --chain <CHAIN_ID>        identifier of the chain to query
-        --channel <CHANNEL_ID>    identifier of the channel to query
-        --port <PORT_ID>          identifier of the port to query
+        --chain <CHAIN_ID>        Identifier of the chain to query
+        --channel <CHANNEL_ID>    Identifier of the channel to query
+        --port <PORT_ID>          Identifier of the port to query
 ```
 
 __Example__
@@ -129,13 +129,13 @@ DESCRIPTION:
     Query packet commitment
 
 FLAGS:
-        --chain <CHAIN_ID>             identifier of the chain to query
-        --channel <CHANNEL_ID>         identifier of the channel to query
-        --port <PORT_ID>               identifier of the port to query
-        --sequence <SEQUENCE>          sequence of packet to query
+        --chain <CHAIN_ID>             Identifier of the chain to query
+        --channel <CHANNEL_ID>         Identifier of the channel to query
+        --port <PORT_ID>               Identifier of the port to query
+        --sequence <SEQUENCE>          Sequence of packet to query
 
 OPTIONS:
-        --height <HEIGHT>              height of the state to query
+        --height <HEIGHT>              Height of the state to query
 ```
 
 __Example__
@@ -162,9 +162,9 @@ DESCRIPTION:
     Query packet acknowledgments
 
 FLAGS:
-        --chain <CHAIN_ID>        identifier of the chain to query
-        --channel <CHANNEL_ID>    identifier of the channel to query
-        --port <PORT_ID>          identifier of the port to query
+        --chain <CHAIN_ID>        Identifier of the chain to query
+        --channel <CHANNEL_ID>    Identifier of the channel to query
+        --port <PORT_ID>          Identifier of the port to query
 ```
 
 __Example__
@@ -201,13 +201,13 @@ DESCRIPTION:
     Query packet acknowledgment
 
 FLAGS:
-        --chain <CHAIN_ID>             identifier of the chain to query
-        --channel <CHANNEL_ID>         identifier of the channel to query
-        --port <PORT_ID>               identifier of the port to query
-        --sequence <SEQUENCE>          sequence of packet to query
+        --chain <CHAIN_ID>             Identifier of the chain to query
+        --channel <CHANNEL_ID>         Identifier of the channel to query
+        --port <PORT_ID>               Identifier of the port to query
+        --sequence <SEQUENCE>          Sequence of packet to query
 
 OPTIONS:
-        --height <HEIGHT>              height of the state to query
+        --height <HEIGHT>              Height of the state to query
 ```
 
 __Example__
@@ -234,9 +234,9 @@ DESCRIPTION:
     Query unreceived packets
 
 FLAGS:
-        --chain <CHAIN_ID>        identifier of the chain for the unreceived sequences
-        --channel <CHANNEL_ID>    channel identifier
-        --port <PORT_ID>          port identifier
+        --chain <CHAIN_ID>        Identifier of the chain for the unreceived sequences
+        --channel <CHANNEL_ID>    Channel identifier
+        --port <PORT_ID>          Port identifier
 ```
 
 __Example__
@@ -267,9 +267,9 @@ DESCRIPTION:
     Query unreceived acknowledgments
 
 FLAGS:
-        --chain <CHAIN_ID>        identifier of the chain to query the unreceived acknowledgments
-        --channel <CHANNEL_ID>    channel identifier
-        --port <PORT_ID>          port identifier
+        --chain <CHAIN_ID>        Identifier of the chain to query the unreceived acknowledgments
+        --channel <CHANNEL_ID>    Channel identifier
+        --port <PORT_ID>          Port identifier
 ```
 
 __Example__

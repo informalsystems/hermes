@@ -32,8 +32,8 @@ DESCRIPTION:
     Query the events emitted by transaction
 
 FLAGS:
-        --chain <CHAIN_ID>    identifier of the chain to query
-        --hash <HASH>         transaction hash to query
+        --chain <CHAIN_ID>    Identifier of the chain to query
+        --hash <HASH>         Transaction hash to query
 ```
 
 __Example__

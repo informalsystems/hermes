@@ -158,9 +158,9 @@ USAGE:
     hermes [OPTIONS] <SUBCOMMAND>
 
 OPTIONS:
-        --config <CONFIG>    path to configuration file
+        --config <CONFIG>    Path to configuration file
     -h, --help               Print help information
-        --json               enable JSON output
+        --json               Enable JSON output
     -V, --version            Print version information
 
 SUBCOMMANDS:

@@ -18,9 +18,9 @@ DESCRIPTION:
     The channel is identified by the chain, port, and channel IDs at one of its ends
 
 FLAGS:
-        --chain <CHAIN_ID>        identifier of the chain
-        --channel <CHANNEL_ID>    identifier of the channel
-        --port <PORT_ID>          identifier of the port
+        --chain <CHAIN_ID>        Identifier of the chain
+        --channel <CHANNEL_ID>    Identifier of the channel
+        --port <PORT_ID>          Identifier of the port
 ```
 
 ### Example

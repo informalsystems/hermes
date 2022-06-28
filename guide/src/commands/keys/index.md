@@ -215,11 +215,11 @@ DESCRIPTION:
     Delete key(s) from a configured chain
 
 FLAGS:
-        --chain <CHAIN_ID>    identifier of the chain
+        --chain <CHAIN_ID>    Identifier of the chain
 
 OPTIONS:
-        --key-name <KEY_NAME>    name of the key
-        --all                    delete all keys
+        --key-name <KEY_NAME>    Name of the key
+        --all                    Delete all keys
 ```
 
 #### Delete private keys that was previously added to a chain
@@ -248,7 +248,7 @@ DESCRIPTION:
     List keys configured on a chain
 
 FLAGS:
-        --chain <CHAIN_ID>    identifier of the chain
+        --chain <CHAIN_ID>    Identifier of the chain
 ```
 
 #### Listing the private key that was added to a chain
@@ -308,7 +308,7 @@ DESCRIPTION:
     Query balance for a key from a configured chain. If no key is given, the key is retrieved from the configuration file
 
 FLAGS:
-        --chain <CHAIN_ID>        identifier of the chain
+        --chain <CHAIN_ID>        Identifier of the chain
 
 OPTIONS:
         --key-name <KEY_NAME>     (optional) name of the key (defaults to the `key_name` defined in the config)
