@@ -10,11 +10,8 @@ pub trait ChainStatus<Chain: ChainContext> {
 }
 
 #[async_trait]
-pub trait ChainStatusQuerier<Chain>
-where
-    Chain: ChainContext,
-{
-    type ChainStatus: ChainStatus<Chain>;
+pub trait ChainStatusQuerier: ChainContext {
+    type ChainStatus: ChainStatus<Self>;
 
-    async fn query_chain_status(&self) -> Result<Self::ChainStatus, Chain::Error>;
+    async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error>;
 }

@@ -23,7 +23,7 @@ where
 }
 
 #[async_trait]
-impl<Chain> ChainStatusQuerier<CosmosChainHandler<Chain>> for CosmosChainHandler<Chain>
+impl<Chain> ChainStatusQuerier for CosmosChainHandler<Chain>
 where
     Chain: ChainHandle,
 {
