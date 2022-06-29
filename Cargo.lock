@@ -1601,6 +1601,7 @@ dependencies = [
  "ibc",
  "ibc-proto",
  "ibc-relayer",
+ "itertools",
  "prost",
  "serde",
  "serde_derive",
