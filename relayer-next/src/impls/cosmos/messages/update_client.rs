@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 
@@ -33,7 +34,13 @@ where
 
         let ibc_messages = messages
             .into_iter()
-            .map(|any| CosmosIbcMessage::new(Some(height), |_| Ok(any)))
+            .map(|update_message| {
+                CosmosIbcMessage::new(Some(height), move |signer| {
+                    let mut update_message = update_message.clone();
+                    update_message.signer = signer.clone();
+                    Ok(update_message.to_any())
+                })
+            })
             .collect();
 
         Ok(ibc_messages)

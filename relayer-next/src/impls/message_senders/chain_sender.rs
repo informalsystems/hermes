@@ -17,19 +17,20 @@ where
     Event: Async,
     Context: RelayContext<Error = Error>,
     Target: ChainTarget<Context, TargetChain = TargetChain>,
-    TargetChain: MessageSenderContext<Error = Error>,
+    TargetChain: MessageSenderContext,
     TargetChain: IbcChainContext<
         Target::CounterpartyChain,
         Message = Message,
         IbcMessage = Message,
         Event = Event,
         IbcEvent = Event,
+        Error = Error,
     >,
 {
     async fn send_messages(
         context: &Context,
         messages: Vec<Message>,
-    ) -> Result<Vec<Vec<Event>>, Context::Error> {
+    ) -> Result<Vec<Vec<Event>>, Error> {
         let events =
             TargetChain::MessageSender::send_messages(Target::target_chain(context), messages)
                 .await?;

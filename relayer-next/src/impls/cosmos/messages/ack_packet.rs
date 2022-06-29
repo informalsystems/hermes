@@ -41,10 +41,13 @@ where
         let ack = event.ack.clone();
 
         let message = CosmosIbcMessage::new(Some(height), move |signer| {
-            Ok(
-                MsgAcknowledgement::new(packet, ack.into(), proofs.clone(), signer.clone())
-                    .to_any(),
+            Ok(MsgAcknowledgement::new(
+                packet.clone(),
+                ack.clone().into(),
+                proofs.clone(),
+                signer.clone(),
             )
+            .to_any())
         });
 
         Ok(message)

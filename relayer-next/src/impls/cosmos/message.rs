@@ -1,7 +1,7 @@
 use ibc::signer::Signer;
 use ibc::Height;
 use ibc_proto::google::protobuf::Any;
-use prost::EncodeError;
+use prost::{EncodeError, Message as ProtoMessage};
 
 use crate::traits::chain_context::ChainContext;
 use crate::traits::message::{IbcMessage, Message};
@@ -9,14 +9,13 @@ use crate::traits::message::{IbcMessage, Message};
 pub struct CosmosIbcMessage {
     pub source_height: Option<Height>,
 
-    pub to_protobuf_fn:
-        Box<dyn FnOnce(&Signer) -> Result<Any, EncodeError> + 'static + Send + Sync>,
+    pub to_protobuf_fn: Box<dyn Fn(&Signer) -> Result<Any, EncodeError> + 'static + Send + Sync>,
 }
 
 impl CosmosIbcMessage {
     pub fn new(
         source_height: Option<Height>,
-        to_protobuf_fn: impl FnOnce(&Signer) -> Result<Any, EncodeError> + 'static + Send + Sync,
+        to_protobuf_fn: impl Fn(&Signer) -> Result<Any, EncodeError> + 'static + Send + Sync,
     ) -> Self {
         Self {
             source_height,
@@ -30,8 +29,13 @@ impl Message for CosmosIbcMessage {
     type RawMessage = Any;
     type EncodeError = EncodeError;
 
-    fn encode_raw(self, signer: &Signer) -> Result<Any, EncodeError> {
+    fn encode_raw(&self, signer: &Signer) -> Result<Any, EncodeError> {
         (self.to_protobuf_fn)(signer)
+    }
+
+    fn estimate_len(&self) -> Result<usize, Self::EncodeError> {
+        let raw = (self.to_protobuf_fn)(&Signer::dummy())?;
+        Ok(raw.encoded_len())
     }
 }
 
