@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use core::marker::PhantomData;
 use core::time::Duration;
 use std::collections::VecDeque;
 use std::time::Instant;
@@ -16,7 +17,7 @@ pub struct SendError {
     pub message: String,
 }
 
-pub struct BatchedMessageSender;
+pub struct BatchedMessageSender<Sender>(PhantomData<Sender>);
 
 pub struct MessageBatch<Message, Event, Error> {
     messages: Vec<Message>,
@@ -36,12 +37,13 @@ pub trait BatchMessageContext<Message, Event, Error> {
 }
 
 #[async_trait]
-impl<Context, Target, TargetChain, Message, Event, Error> IbcMessageSender<Context, Target>
-    for BatchedMessageSender
+impl<Context, Target, TargetChain, Message, Event, Error, Sender> IbcMessageSender<Context, Target>
+    for BatchedMessageSender<Sender>
 where
     Message: Async,
     Event: Async,
     Error: Async,
+    Sender: Async,
     Error: From<SendError>,
     Error: From<RecvError>,
     Context: RelayContext<Error = Error>,
@@ -75,77 +77,83 @@ where
     }
 }
 
-pub async fn process_message_batches<Sender, Context, Target, Message, Event, Error, TargetChain>(
-    context: &Context,
-    max_message_count: usize,
-    max_tx_size: usize,
-    max_delay: Duration,
-    last_sent_time: &mut Instant,
-    pending_batches: VecDeque<MessageBatch<Message, Event, Error>>,
-) -> VecDeque<MessageBatch<Message, Event, Error>>
-where
-    Error: Clone,
-    Context: RelayContext<Error = Error>,
-    Message: ChainMessage,
-    Target: ChainTarget<Context, TargetChain = TargetChain>,
-    Sender: IbcMessageSender<Context, Target>,
-    TargetChain: IbcChainContext<Target::CounterpartyChain, IbcMessage = Message, IbcEvent = Event>,
-{
-    let batch_result = partition_message_batches(max_message_count, max_tx_size, pending_batches);
-
-    let now = Instant::now();
-
-    if batch_result.ready_batches.is_empty() {
-        // If there is nothing to send, return the remaining batches which should also be empty
-        batch_result.remaining_batches
-    } else if
-    // If the current batch is not full and there is still some time until max delay,
-    // return everything and wait until the next batch is full
-    batch_result.remaining_batches.is_empty()
-        && now.duration_since(*last_sent_time) < max_delay
+impl<Sender> BatchedMessageSender<Sender> {
+    pub async fn process_message_batches<Context, Target, Message, Event, Error, TargetChain>(
+        context: &Context,
+        max_message_count: usize,
+        max_tx_size: usize,
+        max_delay: Duration,
+        last_sent_time: &mut Instant,
+        pending_batches: VecDeque<MessageBatch<Message, Event, Error>>,
+    ) -> VecDeque<MessageBatch<Message, Event, Error>>
+    where
+        Error: Clone,
+        Context: RelayContext<Error = Error>,
+        Message: ChainMessage,
+        Target: ChainTarget<Context, TargetChain = TargetChain>,
+        Sender: IbcMessageSender<Context, Target>,
+        TargetChain:
+            IbcChainContext<Target::CounterpartyChain, IbcMessage = Message, IbcEvent = Event>,
     {
-        batch_result.ready_batches
-    } else {
-        send_ready_batches::<Sender, _, _, _, _, _, _>(context, batch_result.ready_batches).await;
+        let batch_result =
+            partition_message_batches(max_message_count, max_tx_size, pending_batches);
 
-        batch_result.remaining_batches
-    }
-}
+        let now = Instant::now();
 
-async fn send_ready_batches<Sender, Context, Target, Message, Event, Error, TargetChain>(
-    context: &Context,
-    ready_batches: VecDeque<MessageBatch<Message, Event, Error>>,
-) where
-    Error: Clone,
-    Context: RelayContext<Error = Error>,
-    Message: ChainMessage,
-    Target: ChainTarget<Context, TargetChain = TargetChain>,
-    Sender: IbcMessageSender<Context, Target>,
-    TargetChain: IbcChainContext<Target::CounterpartyChain, IbcMessage = Message, IbcEvent = Event>,
-{
-    let (messages, senders): (Vec<_>, Vec<_>) = ready_batches
-        .into_iter()
-        .map(|batch| {
-            let message_count = batch.messages.len();
-            (batch.messages, (message_count, batch.result_sender))
-        })
-        .unzip();
+        if batch_result.ready_batches.is_empty() {
+            // If there is nothing to send, return the remaining batches which should also be empty
+            batch_result.remaining_batches
+        } else if
+        // If the current batch is not full and there is still some time until max delay,
+        // return everything and wait until the next batch is full
+        batch_result.remaining_batches.is_empty()
+            && now.duration_since(*last_sent_time) < max_delay
+        {
+            batch_result.ready_batches
+        } else {
+            Self::send_ready_batches(context, batch_result.ready_batches).await;
+            *last_sent_time = now;
 
-    let in_messages = messages.into_iter().flatten().collect::<Vec<_>>();
-
-    let send_result = Sender::send_messages(context, in_messages).await;
-
-    match send_result {
-        Err(e) => {
-            for (_, sender) in senders.into_iter() {
-                let _ = sender.send(Err(e.clone()));
-            }
+            batch_result.remaining_batches
         }
-        Ok(all_events) => {
-            let mut all_events = all_events.into_iter();
-            for (message_count, sender) in senders.into_iter() {
-                let events = take(&mut all_events, message_count);
-                let _ = sender.send(Ok(events));
+    }
+
+    async fn send_ready_batches<Context, Target, TargetChain>(
+        context: &Context,
+        ready_batches: VecDeque<
+            MessageBatch<TargetChain::IbcMessage, TargetChain::IbcEvent, Context::Error>,
+        >,
+    ) where
+        Context: RelayContext,
+        Target: ChainTarget<Context, TargetChain = TargetChain>,
+        Sender: IbcMessageSender<Context, Target>,
+        TargetChain: IbcChainContext<Target::CounterpartyChain>,
+        Context::Error: Clone,
+    {
+        let (messages, senders): (Vec<_>, Vec<_>) = ready_batches
+            .into_iter()
+            .map(|batch| {
+                let message_count = batch.messages.len();
+                (batch.messages, (message_count, batch.result_sender))
+            })
+            .unzip();
+
+        let in_messages = messages.into_iter().flatten().collect::<Vec<_>>();
+
+        let send_result = Sender::send_messages(context, in_messages).await;
+
+        match send_result {
+            Err(e) => {
+                for (_, sender) in senders.into_iter() {
+                    let _ = sender.send(Err(e.clone()));
+                }
+            }
+            Ok(all_events) => {
+                let mut all_events = all_events.into_iter();
+                for (message_count, sender) in senders.into_iter() {
+                    let events = take(&mut all_events, message_count);
+                    let _ = sender.send(Ok(events));
+                }
             }
         }
     }
