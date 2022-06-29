@@ -35,20 +35,21 @@ Use the `chan-open-init` command to initialize a new channel.
 
 ```shell
 USAGE:
-    hermes tx raw chan-open-init <OPTIONS>
+    hermes tx raw chan-open-init [OPTIONS] --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-conn <DST_CONN_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID>
 
 DESCRIPTION:
     Initialize a channel (ChannelOpenInit)
 
-POSITIONAL ARGUMENTS:
-    dst_chain_id              identifier of the destination chain
-    src_chain_id              identifier of the source chain
-    dst_conn_id               identifier of the destination connection
-    dst_port_id               identifier of the destination port
-    src_port_id               identifier of the source port
-
 FLAGS:
-    -o, --order ORDER         the channel ordering, valid options 'unordered' (default) and 'ordered'
+        --dst-chain <DST_CHAIN_ID>    Identifier of the destination chain
+        --dst-conn <DST_CONN_ID>      Identifier of the destination connection
+        --dst-port <DST_PORT_ID>      Identifier of the destination port
+        --src-chain <SRC_CHAIN_ID>    Identifier of the source chain
+        --src-port <SRC_PORT_ID>      Identifier of the source port
+
+OPTIONS:
+        --order <ORDER>               The channel ordering, valid options 'unordered' (default) and
+                                      'ordered' [default: ORDER_UNORDERED]
 ```
 
 __Example__
@@ -56,7 +57,7 @@ __Example__
 First, let's initialize the channel on `ibc-0` using an existing connection identified by `connection-0`:
 
 ```shell
-hermes tx raw chan-open-init ibc-0 ibc-1 connection-0 transfer transfer
+hermes tx raw chan-open-init --dst-chain ibc-0 --src-chain ibc-1 --dst-conn connection-0 --dst-port transfer --src-port transfer
 ```
 
 ```json
@@ -98,20 +99,21 @@ Use the `chan-open-try` command to establish a counterparty to the channel on th
 
 ```shell
 USAGE:
-    hermes tx raw chan-open-try <OPTIONS>
+    hermes tx raw chan-open-try [OPTIONS] --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-conn <DST_CONN_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID> --src-chan <ID>
 
 DESCRIPTION:
     Relay the channel attempt (ChannelOpenTry)
 
-POSITIONAL ARGUMENTS:
-    dst_chain_id              identifier of the destination chain
-    src_chain_id              identifier of the source chain
-    dst_conn_id               identifier of the destination connection
-    dst_port_id               identifier of the destination port
-    src_port_id               identifier of the source port
-
 FLAGS:
-    -s, --src-chan-id ID      identifier of the source channel (required)
+        --dst-chain <DST_CHAIN_ID>    Identifier of the destination chain
+        --dst-conn <DST_CONN_ID>      Identifier of the destination connection
+        --dst-port <DST_PORT_ID>      Identifier of the destination port
+        --src-chain <SRC_CHAIN_ID>    Identifier of the source chain
+        --src-chan <ID>               Identifier of the source channel (required)
+        --src-port <SRC_PORT_ID>      Identifier of the source port
+
+OPTIONS:
+        --dst-chan <ID>               Identifier of the destination channel (optional)
 ```
 
 __Example__
@@ -119,7 +121,7 @@ __Example__
 Let's now create the counterparty to `channel-0` on chain `ibc-1`:
 
 ```shell
-hermes tx raw chan-open-try ibc-1 ibc-0 connection-1 transfer transfer -s channel-0
+hermes tx raw chan-open-try --dst-chain ibc-1 --src-chain ibc-0 --dst-conn connection-1 --dst-port transfer --src-port transfer --src-chan channel-0
 ```
 
 ```json
@@ -165,21 +167,19 @@ Use the `chan-open-ack` command to acknowledge the channel on the initial chain.
 
 ```shell
 USAGE:
-    hermes tx raw chan-open-ack <OPTIONS>
+    hermes tx raw chan-open-ack --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-conn <DST_CONN_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID> --dst-chan <ID> --src-chan <ID>
 
 DESCRIPTION:
     Relay acknowledgment of a channel attempt (ChannelOpenAck)
 
-POSITIONAL ARGUMENTS:
-    dst_chain_id              identifier of the destination chain
-    src_chain_id              identifier of the source chain
-    dst_conn_id               identifier of the destination connection
-    dst_port_id               identifier of the destination port
-    src_port_id               identifier of the source port
-
 FLAGS:
-    -d, --dst-chan-id ID      identifier of the destination channel (required)
-    -s, --src-chan-id ID      identifier of the source channel (required)
+        --dst-chain <DST_CHAIN_ID>    Identifier of the destination chain
+        --dst-chan <ID>               Identifier of the destination channel (required)
+        --dst-conn <DST_CONN_ID>      Identifier of the destination connection
+        --dst-port <DST_PORT_ID>      Identifier of the destination port
+        --src-chain <SRC_CHAIN_ID>    Identifier of the source chain
+        --src-chan <ID>               Identifier of the source channel (required)
+        --src-port <SRC_PORT_ID>      Identifier of the source port
 ```
 
 __Example__
@@ -187,7 +187,7 @@ __Example__
 We can now acknowledge on `ibc-0` that `ibc-1` has accepted the opening of the channel:
 
 ```shell
-hermes tx raw chan-open-ack ibc-0 ibc-1 connection-0 transfer transfer -d channel-0 -s channel-1
+hermes tx raw chan-open-ack --dst-chain ibc-0 --src-chain ibc-1 --dst-conn connection-0 --dst-port transfer --src-port transfer --dst-chan channel-0 --src-chan channel-1
 ```
 
 ```json
@@ -232,21 +232,19 @@ and finish the handshake, after which the channel is open on both chains.
 
 ```shell
 USAGE:
-    hermes tx raw chan-open-confirm <OPTIONS>
+    hermes tx raw chan-open-confirm --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-conn <DST_CONN_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID> --dst-chan <ID> --src-chan <ID>
 
 DESCRIPTION:
     Confirm opening of a channel (ChannelOpenConfirm)
 
-POSITIONAL ARGUMENTS:
-    dst_chain_id              identifier of the destination chain
-    src_chain_id              identifier of the source chain
-    dst_conn_id               identifier of the destination connection
-    dst_port_id               identifier of the destination port
-    src_port_id               identifier of the source port
-
 FLAGS:
-    -d, --dst-chan-id ID      identifier of the destination channel (required)
-    -s, --src-chan-id ID      identifier of the source channel (required)
+        --dst-chain <DST_CHAIN_ID>    Identifier of the destination chain
+        --dst-chan <ID>               Identifier of the destination channel (required)
+        --dst-conn <DST_CONN_ID>      Identifier of the destination connection
+        --dst-port <DST_PORT_ID>      Identifier of the destination port
+        --src-chain <SRC_CHAIN_ID>    Identifier of the source chain
+        --src-chan <ID>               Identifier of the source channel (required)
+        --src-port <SRC_PORT_ID>      Identifier of the source port
 ```
 
 __Example__
@@ -255,7 +253,7 @@ Confirm on `ibc-1` that `ibc-0` has accepted the opening of the channel,
 after which the channel is open on both chains.
 
 ```shell
-hermes tx raw chan-open-confirm ibc-1 ibc-0 connection-1 transfer transfer -d channel-1 -s channel-0
+hermes tx raw chan-open-confirm --dst-chain ibc-1 --src-chain ibc-0 --dst-conn connection-1 --dst-port transfer --src-port transfer --dst-chan channel-1 --src-chan channel-0
 ```
 
 ```json
