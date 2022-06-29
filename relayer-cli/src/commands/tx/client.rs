@@ -248,20 +248,11 @@ impl Runnable for TxUpgradeClientCmd {
         let client = ForeignClient::find(src_chain, dst_chain, &self.client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        // Assumption: this query is run while the chain is halted as a result of an upgrade
-        // let src_upgrade_height = {
-        //     let src_application_height = match client.src_chain().query_latest_height() {
-        //         Ok(height) => height,
-        //         Err(e) => Output::error(format!("{}", e)).exit(),
-        //     };
-
-        //     // When the chain is halted, the application height reports a height
-        //     // 1 less than the halted height
-        //     src_application_height.increment()
-        // };
-
-        // Wait until the client's application height reaches the target upgrade height - 1
-        // since
+        // In order to perform the client upgrade, the chain is paused at the height specified by
+        // the user. When the chain is paused, the application height reports a height of 1 less
+        // than the height according to Tendermint. As a result, the target height at which the
+        // upgrade occurs at (the application height) is 1 less than the height specified by
+        // the user.
         let target_application_upgrade_height = match self.target_upgrade_height.decrement() {
             Ok(height) => height,
             Err(e) => Output::error(format!("{}", e)).exit(),
@@ -272,6 +263,7 @@ impl Runnable for TxUpgradeClientCmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
+        // Wait until the client's application height reaches the target application upgrade height
         while src_application_latest_height < target_application_upgrade_height {
             thread::sleep(Duration::from_millis(200));
 
@@ -281,17 +273,6 @@ impl Runnable for TxUpgradeClientCmd {
             };
         }
 
-        // while let Ok(src_application_latest_height) = client.src_chain().query_latest_height() {
-        //     if src_application_latest_height < self.target_upgrade_height {
-        //         thread::sleep(Duration::from_millis(200));
-        //     }
-        // }
-
-        // warn!(
-        //     "Assuming that chain '{}' is currently halted for upgrade at height {}",
-        //     client.src_chain().id(),
-        //     src_upgrade_height
-        // );
         let outcome = client.upgrade(self.target_upgrade_height);
 
         match outcome {
