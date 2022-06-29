@@ -84,7 +84,7 @@ impl TryFrom<Option<RawHeight>> for TimeoutHeight {
     }
 }
 /// We map "no timeout height" to `Some(RawHeight::zero)` due to a quirk
-/// in ICS-4. See https://github.com/cosmos/ibc/issues/776.
+/// in ICS-4. See <https://github.com/cosmos/ibc/issues/776>.
 impl From<TimeoutHeight> for Option<RawHeight> {
     fn from(timeout_height: TimeoutHeight) -> Self {
         let raw_height = match timeout_height.0 {
