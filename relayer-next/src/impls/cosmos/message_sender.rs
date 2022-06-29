@@ -36,12 +36,6 @@ where
     Target::TargetChain: MessageSenderContext,
 {
     type IbcMessageSender = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
-
-    fn ibc_message_sender(&self) -> &Self::IbcMessageSender {
-        &SendIbcMessagesWithUpdateClient {
-            sender: SendIbcMessagesToChain,
-        }
-    }
 }
 
 impl<Chain> MessageSenderContext for CosmosChainHandler<Chain>
@@ -49,10 +43,6 @@ where
     Chain: ChainHandle,
 {
     type MessageSender = CosmosBaseMessageSender;
-
-    fn message_sender(&self) -> &Self::MessageSender {
-        &CosmosBaseMessageSender
-    }
 }
 
 #[async_trait]
@@ -61,7 +51,6 @@ where
     Chain: ChainHandle,
 {
     async fn send_messages(
-        &self,
         context: &CosmosChainHandler<Chain>,
         messages: Vec<CosmosIbcMessage>,
     ) -> Result<Vec<Vec<IbcEvent>>, Error> {

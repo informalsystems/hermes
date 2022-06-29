@@ -26,7 +26,6 @@ where
     Height: Ord + Async,
 {
     async fn send_messages(
-        &self,
         context: &Context,
         messages: Vec<Message>,
     ) -> Result<Vec<Vec<Event>>, Context::Error> {
@@ -54,13 +53,13 @@ where
 
                 in_messages.extend(messages);
 
-                let in_events = self.sender.send_messages(context, in_messages).await?;
+                let in_events = Sender::send_messages(context, in_messages).await?;
 
                 let events = in_events.into_iter().take(update_messages_count).collect();
 
                 Ok(events)
             }
-            None => self.sender.send_messages(context, messages).await,
+            None => Sender::send_messages(context, messages).await,
         }
     }
 }

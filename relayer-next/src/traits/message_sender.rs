@@ -6,8 +6,6 @@ use crate::types::aliases::{Event, Message};
 
 pub trait MessageSenderContext: ChainContext {
     type MessageSender: MessageSender<Self>;
-
-    fn message_sender(&self) -> &Self::MessageSender;
 }
 
 #[async_trait]
@@ -16,7 +14,6 @@ where
     Context: ChainContext,
 {
     async fn send_messages(
-        &self,
         context: &Context,
         messages: Vec<Message<Context>>,
     ) -> Result<Vec<Vec<Event<Context>>>, Context::Error>;

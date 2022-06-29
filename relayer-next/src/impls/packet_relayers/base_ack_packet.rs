@@ -25,10 +25,7 @@ where
     ) -> Result<(), Error> {
         let message = context.build_ack_packet_message(&packet, ack).await?;
 
-        context
-            .ibc_message_sender()
-            .send_message(context, message)
-            .await?;
+        context.send_message(message).await?;
 
         Ok(())
     }

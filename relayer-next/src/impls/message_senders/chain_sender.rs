@@ -10,14 +10,15 @@ use crate::traits::target::ChainTarget;
 pub struct SendIbcMessagesToChain;
 
 #[async_trait]
-impl<Context, Target, Message, Event> IbcMessageSender<Context, Target> for SendIbcMessagesToChain
+impl<Context, Target, TargetChain, Message, Event, Error> IbcMessageSender<Context, Target>
+    for SendIbcMessagesToChain
 where
     Message: Async,
     Event: Async,
-    Context: RelayContext,
-    Target: ChainTarget<Context>,
-    Target::TargetChain: MessageSenderContext,
-    Target::TargetChain: IbcChainContext<
+    Context: RelayContext<Error = Error>,
+    Target: ChainTarget<Context, TargetChain = TargetChain>,
+    TargetChain: MessageSenderContext<Error = Error>,
+    TargetChain: IbcChainContext<
         Target::CounterpartyChain,
         Message = Message,
         IbcMessage = Message,
@@ -26,16 +27,12 @@ where
     >,
 {
     async fn send_messages(
-        &self,
         context: &Context,
         messages: Vec<Message>,
     ) -> Result<Vec<Vec<Event>>, Context::Error> {
-        let target_chain = Target::target_chain(context);
-
-        let events = target_chain
-            .message_sender()
-            .send_messages(target_chain, messages)
-            .await?;
+        let events =
+            TargetChain::MessageSender::send_messages(Target::target_chain(context), messages)
+                .await?;
 
         Ok(events)
     }
