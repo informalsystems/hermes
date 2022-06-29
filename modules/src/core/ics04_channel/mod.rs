@@ -9,6 +9,7 @@ pub mod events;
 pub mod handler;
 pub mod msgs;
 pub mod packet;
+pub mod timeout;
 
 pub mod commitment;
 mod version;

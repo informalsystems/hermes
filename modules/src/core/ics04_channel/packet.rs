@@ -23,6 +23,7 @@ use super::handler::{
     acknowledgement::AckPacketResult, recv_packet::RecvPacketResult, send_packet::SendPacketResult,
     timeout::TimeoutPacketResult, write_acknowledgement::WriteAckPacketResult,
 };
+use super::timeout::TimeoutHeight;
 
 /// Enumeration of proof carrying ICS4 message, helper for relayer.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -113,7 +114,7 @@ pub struct Packet {
     pub destination_channel: ChannelId,
     #[serde(serialize_with = "crate::serializers::ser_hex_upper")]
     pub data: Vec<u8>,
-    pub timeout_height: Option<Height>,
+    pub timeout_height: TimeoutHeight,
     pub timeout_timestamp: Timestamp,
 }
 
@@ -172,9 +173,7 @@ impl Packet {
     /// instead of the common-case where it results in
     /// [`MsgRecvPacket`](crate::core::ics04_channel::msgs::recv_packet::MsgRecvPacket).
     pub fn timed_out(&self, dst_chain_ts: &Timestamp, dst_chain_height: Height) -> bool {
-        let height_timed_out = self
-            .timeout_height
-            .map_or(false, |timeout_height| timeout_height < dst_chain_height);
+        let height_timed_out = self.timeout_height.has_expired(&dst_chain_height);
 
         let timestamp_timed_out = self.timeout_timestamp != Timestamp::none()
             && dst_chain_ts.check_expiry(&self.timeout_timestamp) == Expired;
@@ -186,11 +185,6 @@ impl Packet {
 /// Custom debug output to omit the packet data
 impl core::fmt::Display for Packet {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        let timeout_height_display: String = match self.timeout_height {
-            Some(timeout_height) => format!("{}", timeout_height),
-            None => "None".into(),
-        };
-
         write!(
             f,
             "seq:{}, path:{}/{}->{}/{}, toh:{}, tos:{})",
@@ -199,7 +193,7 @@ impl core::fmt::Display for Packet {
             self.source_port,
             self.destination_channel,
             self.destination_port,
-            timeout_height_display,
+            self.timeout_height,
             self.timeout_timestamp
         )
     }
@@ -209,11 +203,11 @@ impl core::fmt::Display for Packet {
 /// `Packet.timeout_height`. We need to parse the timeout height differently
 /// because of a quirk introduced in ibc-go. See comment in
 /// `TryFrom<RawPacket> for Packet`.
-pub fn parse_timeout_height(s: &str) -> Result<Option<Height>, Error> {
+pub fn parse_timeout_height(s: &str) -> Result<TimeoutHeight, Error> {
     match s.parse::<Height>() {
-        Ok(height) => Ok(Some(height)),
+        Ok(height) => Ok(TimeoutHeight::from(height)),
         Err(e) => match e.into_detail() {
-            HeightErrorDetail::ZeroHeight(_) => Ok(None),
+            HeightErrorDetail::ZeroHeight(_) => Ok(TimeoutHeight::no_timeout()),
             _ => Err(Error::invalid_timeout_height()),
         },
     }
@@ -239,20 +233,12 @@ impl TryFrom<RawPacket> for Packet {
         // packet commitment proofs will be incorrect (see proof construction in
         // `ChannelReader::packet_commitment()`). Note also that ibc-go conforms
         // to this.
-        let packet_timeout_height: Option<Height> = raw_pkt
+        let packet_timeout_height: TimeoutHeight = raw_pkt
             .timeout_height
-            .and_then(|raw_height| {
-                if raw_height.revision_number == 0 && raw_height.revision_height == 0 {
-                    None
-                } else {
-                    Some(raw_height)
-                }
-            })
-            .map(|raw_height| raw_height.try_into())
-            .transpose()
+            .try_into()
             .map_err(|_| Error::invalid_timeout_height())?;
 
-        if packet_timeout_height.is_none() && raw_pkt.timeout_timestamp == 0 {
+        if packet_timeout_height.has_timeout() == false && raw_pkt.timeout_timestamp == 0 {
             return Err(Error::zero_packet_timeout());
         }
         if raw_pkt.data.is_empty() {
