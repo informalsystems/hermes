@@ -153,6 +153,45 @@ pub trait ClientState {
 }
 ```
 
+### Downcasting support
+
+We need the ability to upcast `&dyn T` to `&dyn core::any::Any` to be able to downcast to a concrete type. This can be
+done using a trait with a blanket implementation ->
+
+```rust
+pub mod dynamic_typing {
+    use core::any::Any;
+
+    pub trait AsAny: Any {
+        fn as_any(&self) -> &dyn Any;
+    }
+
+    impl<T: Any> AsAny for T {
+        fn as_any(&self) -> &dyn Any {
+            self
+        }
+    }
+}
+```
+
+All light client traits could then add `AsAny` as a supertrait.
+
+```rust
+use crate::dynamic_typing::AsAny;
+
+pub trait Header: AsAny { /* ... */ }
+```
+
+And usage would look like ->
+
+```rust
+fn downcast_header(h: &dyn Header) -> Result<&TmHeader, Ics02Error> {
+    h.as_any()
+        .downcast_ref::<TmHeader>()
+        .ok_or_else(|| Ics02Error::client_args_type_mismatch(ClientType::Tendermint))
+}
+```
+
 ## Status
 
 Proposed
