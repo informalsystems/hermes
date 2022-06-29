@@ -42,20 +42,26 @@ pub fn mul_ceil(a: u64, f: f64) -> BigInt {
     (f * a).ceil().to_integer()
 }
 
-/// Adjusts the fee based on the configured `gas_adjustment` to prevent out of gas errors.
+/// Adjusts the fee based on the configured `gas_multiplier` to prevent out of gas errors.
 /// The actual gas cost, when a transaction is executed, may be slightly higher than the
 /// one returned by the simulation.
 fn adjust_gas_with_simulated_fees(config: &GasConfig, gas_amount: u64) -> u64 {
-    let gas_adjustment = config.gas_adjustment;
+    let gas_multiplier = config.gas_multiplier;
 
-    assert!(gas_adjustment <= 1.0);
+    assert!(gas_multiplier >= 1.0);
 
-    let (_, digits) = mul_ceil(gas_amount, gas_adjustment).to_u64_digits();
-    assert!(digits.len() == 1);
+    // Multiply the gas estimate by the gas_multiplier option
+    let (_, digits) = mul_ceil(gas_amount, gas_multiplier).to_u64_digits();
 
-    let adjustment = digits[0];
-    let gas = gas_amount.checked_add(adjustment).unwrap_or(u64::MAX);
+    let gas = if digits.len() == 1 {
+        // If the result fits in a u64, use that
+        digits[0]
+    } else {
+        // Otherwise, use u64::MAX
+        u64::MAX
+    };
 
+    // Bound the gas estimate by the max_gas option
     min(gas, config.max_gas)
 }
 
