@@ -17,12 +17,23 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
 
 ## Testing procedure
 
-1. Start two gaia instances and initialize hermes:
+1. Start two gaia instances using `gm` and initialize hermes:
 
-    ```shell
-    ./scripts/dev-env ~/.hermes/config.toml ibc-0 ibc-1
+    Refer to the section [Install Gaiad Manager](../../tutorials/local-chains/gaiad-manager.md) and make sure you have same configuration for `$HOME/.gm/gm.toml`
+
+    Start two instances.
+
+    ```bash
+    gm start
     ```
-    The `one-chain` script is invoked for each chain and modifies the `genesis.json` file to use a short window for governance proposals (`200s` for `max_deposit_period` and `voting_period`). Therefore, an upgrade proposal can be submitted, voted on and accepted within a short time.
+    Create/update the `$HOME/.hermes/config.toml` file.
+    ```bash
+    gm hermes config
+    ```
+    Associate keys.
+    ```bash
+    gm hermes keys
+    ```
 
 2. Create one client on `ibc-1` for `ibc-0`:
 

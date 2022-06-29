@@ -69,7 +69,7 @@ your path.
 
 Copy and paste below to $HOME/.gm/gm.toml
 
-The following configuration you need to specify 3 `gaiad` chains. `hermes` will know about these chains.
+The following configuration you need to specify 2 `gaiad` chains. `hermes` will know about these chains.
 
 ```toml
 [global]
@@ -79,39 +79,35 @@ The following configuration you need to specify 3 `gaiad` chains. `hermes` will 
   gaiad_binary = "~/go/bin/gaiad"
   hdpath = ""
   home_dir = "$HOME/.gm"
-  ports_start_at = 27040
+  ports_start_at = 27000
   validator_mnemonic = ""
   wallet_mnemonic = ""
 
   [global.hermes]
-    binary = "$HOME/Informal/ibc-rs/target/debug/hermes"
+    binary = "$HOME/ibc-rs/target/debug/hermes" #change this path according to your setup
     config = "$HOME/.hermes/config.toml"
     log_level = "info"
     telemetry_enabled = true
     telemetry_host = "127.0.0.1"
     telemetry_port = 3001
 
-[network1]
-  ports_start_at = 27000
-
-[network2]
-  ports_start_at = 27010
-
-[network3]
-  ports_start_at = 27010
-
 [ibc-0]
-  add_to_hermes = true
-  network = "network1"
-  ports_start_at = 27020
+  ports_start_at = 27010
 
 [ibc-1]
+  ports_start_at = 27020
+
+[node-0]
   add_to_hermes = true
-  network = "network2"
+  network = "ibc-0"
   ports_start_at = 27030
 
-[ibc-2]
+[node-1]
   add_to_hermes = true
-  network = "network3"
-  ports_start_at = 27030
+  network = "ibc-1"
+  ports_start_at = 27040
+
 ```
+In the [next section](start.md) we will configure hermes and start local chains using `gm`
+
+> __NOTE:__ Go to this page for more detils about [Gaiad Manager](https://github.com/informalsystems/ibc-rs/tree/master/scripts/gm)
