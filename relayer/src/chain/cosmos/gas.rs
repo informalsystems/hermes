@@ -10,8 +10,12 @@ use crate::config::GasPrice;
 
 pub struct PrettyFee<'a>(pub &'a Fee);
 
-pub fn gas_amount_to_fees(config: &GasConfig, gas_amount: u64) -> Fee {
-    let adjusted_gas_limit = adjust_gas_with_simulated_fees(config, gas_amount);
+pub fn gas_amount_to_fee(config: &GasConfig, gas_amount: u64) -> Fee {
+    let adjusted_gas_limit = adjust_estimated_gas(AdjustGas {
+        gas_multiplier: config.gas_multiplier,
+        max_gas: config.max_gas,
+        gas_amount,
+    });
 
     // The fee in coins based on gas amount
     let amount = calculate_fee(adjusted_gas_limit, &config.gas_price);
@@ -42,16 +46,35 @@ pub fn mul_ceil(a: u64, f: f64) -> BigInt {
     (f * a).ceil().to_integer()
 }
 
+/// Multiply `a` with `f` and round the result down to the nearest integer.
+pub fn mul_floor(a: u64, f: f64) -> BigInt {
+    assert!(f.is_finite());
+
+    let a = BigInt::from(a);
+    let f = BigRational::from_float(f).expect("f is finite");
+    (f * a).floor().to_integer()
+}
+
+struct AdjustGas {
+    gas_multiplier: f64,
+    max_gas: u64,
+    gas_amount: u64,
+}
+
 /// Adjusts the fee based on the configured `gas_multiplier` to prevent out of gas errors.
 /// The actual gas cost, when a transaction is executed, may be slightly higher than the
 /// one returned by the simulation.
-fn adjust_gas_with_simulated_fees(config: &GasConfig, gas_amount: u64) -> u64 {
-    let gas_multiplier = config.gas_multiplier;
-
+fn adjust_estimated_gas(
+    AdjustGas {
+        gas_multiplier,
+        max_gas,
+        gas_amount,
+    }: AdjustGas,
+) -> u64 {
     assert!(gas_multiplier >= 1.0);
 
     // Multiply the gas estimate by the gas_multiplier option
-    let (_, digits) = mul_ceil(gas_amount, gas_multiplier).to_u64_digits();
+    let (_, digits) = mul_floor(gas_amount, gas_multiplier).to_u64_digits();
 
     let gas = if digits.len() == 1 {
         // If the result fits in a u64, use that
@@ -62,7 +85,7 @@ fn adjust_gas_with_simulated_fees(config: &GasConfig, gas_amount: u64) -> u64 {
     };
 
     // Bound the gas estimate by the max_gas option
-    min(gas, config.max_gas)
+    min(gas, max_gas)
 }
 
 impl fmt::Display for PrettyFee<'_> {
@@ -76,5 +99,43 @@ impl fmt::Display for PrettyFee<'_> {
             .field("amount", &amount)
             .field("gas_limit", &self.0.gas_limit)
             .finish()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{adjust_estimated_gas, AdjustGas};
+
+    #[test]
+    fn adjust_gas_small() {
+        let adjusted_gas = adjust_estimated_gas(AdjustGas {
+            gas_multiplier: 1.1,
+            max_gas: 100_000,
+            gas_amount: 80_000,
+        });
+
+        assert_eq!(adjusted_gas, 88_000);
+    }
+
+    #[test]
+    fn adjust_gas_over_max() {
+        let adjusted_gas = adjust_estimated_gas(AdjustGas {
+            gas_multiplier: 2.0,
+            max_gas: 100_000,
+            gas_amount: 80_000,
+        });
+
+        assert_eq!(adjusted_gas, 100_000);
+    }
+
+    #[test]
+    fn adjust_gas_overflow() {
+        let adjusted_gas = adjust_estimated_gas(AdjustGas {
+            gas_multiplier: 3.0,
+            max_gas: u64::MAX,
+            gas_amount: u64::MAX / 2,
+        });
+
+        assert_eq!(adjusted_gas, u64::MAX);
     }
 }
