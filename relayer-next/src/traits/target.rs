@@ -24,11 +24,11 @@ impl<Relay: RelayContext> ChainTarget<Relay> for SourceTarget {
     type CounterpartyChain = Relay::DstChain;
 
     fn target_chain(context: &Relay) -> &Self::TargetChain {
-        context.source_context()
+        context.source_chain()
     }
 
     fn counterparty_chain(context: &Relay) -> &Self::CounterpartyChain {
-        context.destination_context()
+        context.destination_chain()
     }
 }
 
@@ -37,11 +37,11 @@ impl<Relay: RelayContext> ChainTarget<Relay> for DestinationTarget {
     type CounterpartyChain = Relay::SrcChain;
 
     fn target_chain(context: &Relay) -> &Self::TargetChain {
-        context.destination_context()
+        context.destination_chain()
     }
 
     fn counterparty_chain(context: &Relay) -> &Self::CounterpartyChain {
-        context.source_context()
+        context.source_chain()
     }
 }
 

@@ -10,9 +10,9 @@ pub trait RelayContext: ErrorContext {
 
     type Packet: IbcPacket<Self::SrcChain, Self::DstChain> + Async;
 
-    fn source_context(&self) -> &Self::SrcChain;
+    fn source_chain(&self) -> &Self::SrcChain;
 
-    fn destination_context(&self) -> &Self::DstChain;
+    fn destination_chain(&self) -> &Self::DstChain;
 
     fn source_client_id(&self) -> &ClientId<Self::SrcChain, Self::DstChain>;
 

@@ -90,11 +90,11 @@ where
 
     type Packet = Packet;
 
-    fn source_context(&self) -> &Self::SrcChain {
+    fn source_chain(&self) -> &Self::SrcChain {
         &self.src_handle
     }
 
-    fn destination_context(&self) -> &Self::DstChain {
+    fn destination_chain(&self) -> &Self::DstChain {
         &self.dst_handle
     }
 
