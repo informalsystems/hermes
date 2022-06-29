@@ -8,7 +8,6 @@ use ibc::{
         ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
         ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState},
         ics02_client::events::UpdateClient,
-        ics02_client::header::AnyHeader,
         ics02_client::misbehaviour::MisbehaviourEvidence,
         ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
         ics03_connection::version::Version,
@@ -42,6 +41,7 @@ use crate::{
             QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
         },
         tracking::TrackedMsgs,
+        BuiltHeader,
     },
     config::ChainConfig,
     connection::ConnectionMsgType,
@@ -298,7 +298,7 @@ impl ChainHandle for BaseChainHandle {
         trusted_height: Height,
         target_height: Height,
         client_state: AnyClientState,
-    ) -> Result<(AnyHeader, Vec<AnyHeader>), Error> {
+    ) -> Result<BuiltHeader, Error> {
         self.send(|reply_to| ChainRequest::BuildHeader {
             trusted_height,
             target_height,

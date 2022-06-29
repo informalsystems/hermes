@@ -11,7 +11,7 @@ use ibc::{
             client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
             client_state::{AnyClientState, IdentifiedAnyClientState},
             events::UpdateClient,
-            header::AnyHeader,
+            header::Header,
             misbehaviour::MisbehaviourEvidence,
         },
         ics03_connection::{
@@ -31,6 +31,7 @@ use ibc::{
     Height,
 };
 
+use crate::chain::BuiltHeader;
 use crate::{
     account::Balance,
     config::ChainConfig,
@@ -527,7 +528,7 @@ where
         trusted_height: Height,
         target_height: Height,
         client_state: AnyClientState,
-        reply_to: ReplyTo<(AnyHeader, Vec<AnyHeader>)>,
+        reply_to: ReplyTo<BuiltHeader>,
     ) -> Result<(), Error> {
         let result = self
             .chain
@@ -538,9 +539,11 @@ where
                 &mut self.light_client,
             )
             .map(|(header, support)| {
-                let header = header.into();
-                let support = support.into_iter().map(|h| h.into()).collect();
-                (header, support)
+                let support = support.into_iter().map(|h| h.boxed()).collect();
+                BuiltHeader {
+                    target: header.boxed(),
+                    supporting: support,
+                }
             });
 
         reply_to.send(result).map_err(Error::send)

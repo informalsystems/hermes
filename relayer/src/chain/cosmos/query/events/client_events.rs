@@ -1,11 +1,11 @@
-use ibc::clients::ics07_tendermint::header::Header;
+use ibc::clients::ics07_tendermint::header::Header as TmHeader;
 use ibc::core::ics02_client::error::Error;
 use ibc::core::ics02_client::events::{
     Attributes, ClientMisbehaviour, CreateClient, UpdateClient, UpgradeClient,
     CLIENT_ID_ATTRIBUTE_KEY, CLIENT_TYPE_ATTRIBUTE_KEY, CONSENSUS_HEIGHT_ATTRIBUTE_KEY,
     HEADER_ATTRIBUTE_KEY, HEIGHT_ATTRIBUTE_KEY,
 };
-use ibc::core::ics02_client::header::AnyHeader;
+use ibc::core::ics02_client::header::Header;
 use ibc::events::{IbcEvent, IbcEventType};
 use tendermint::abci::Event as AbciEvent;
 
@@ -20,7 +20,8 @@ pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEvent> {
                 common: attributes,
                 header: extract_header_from_tx(event)
                     .ok()
-                    .map(AnyHeader::Tendermint),
+                    .as_ref()
+                    .map(Header::encode_any),
             })),
             Err(_) => None,
         },
@@ -68,12 +69,12 @@ fn extract_attributes_from_tx(event: &AbciEvent) -> Result<Attributes, Error> {
     Ok(attr)
 }
 
-fn extract_header_from_tx(event: &AbciEvent) -> Result<Header, Error> {
+fn extract_header_from_tx(event: &AbciEvent) -> Result<TmHeader, Error> {
     for tag in &event.attributes {
         let key = tag.key.as_ref();
         let value = tag.value.as_ref();
         if key == HEADER_ATTRIBUTE_KEY {
-            return Header::decode_from_string(value);
+            return TmHeader::decode_from_string(value);
         }
     }
     Err(Error::missing_raw_header())

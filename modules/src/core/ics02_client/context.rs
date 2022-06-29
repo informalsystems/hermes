@@ -5,7 +5,6 @@
 use alloc::boxed::Box;
 
 use crate::core::ics02_client::client_consensus::ConsensusState;
-use crate::core::ics02_client::client_def::ClientDef;
 use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::{Error, ErrorDetail};
@@ -23,9 +22,6 @@ pub trait ClientReader {
     ///
     /// Returns an error if no such client exists.
     fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Error>;
-
-    /// Retrieve the light client for the given `client_id`
-    fn client(&self, client_id: &ClientId) -> Result<Box<dyn ClientDef>, Error>;
 
     /// Retrieve the consensus state for the given client ID at the specified
     /// height.

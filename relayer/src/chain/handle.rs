@@ -10,7 +10,6 @@ use ibc::{
             client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
             client_state::{AnyClientState, IdentifiedAnyClientState},
             events::UpdateClient,
-            header::AnyHeader,
             misbehaviour::MisbehaviourEvidence,
         },
         ics03_connection::{
@@ -55,6 +54,7 @@ use super::{
         QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
     },
     tracking::TrackedMsgs,
+    BuiltHeader,
 };
 
 mod base;
@@ -174,7 +174,7 @@ pub enum ChainRequest {
         trusted_height: Height,
         target_height: Height,
         client_state: AnyClientState,
-        reply_to: ReplyTo<(AnyHeader, Vec<AnyHeader>)>,
+        reply_to: ReplyTo<BuiltHeader>,
     },
 
     BuildClientState {
@@ -513,7 +513,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         trusted_height: Height,
         target_height: Height,
         client_state: AnyClientState,
-    ) -> Result<(AnyHeader, Vec<AnyHeader>), Error>;
+    ) -> Result<BuiltHeader, Error>;
 
     /// Constructs a client state at the given height
     fn build_client_state(

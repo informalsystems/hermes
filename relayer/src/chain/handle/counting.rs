@@ -8,7 +8,6 @@ use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::merkle::MerkleProof;
 use ibc::{
-    core::ics02_client::header::AnyHeader,
     core::ics03_connection::connection::ConnectionEnd,
     core::ics03_connection::version::Version,
     core::ics04_channel::channel::ChannelEnd,
@@ -40,6 +39,7 @@ use crate::chain::requests::{
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
+use crate::chain::BuiltHeader;
 use crate::config::ChainConfig;
 use crate::denom::DenomTrace;
 use crate::error::Error;
@@ -313,7 +313,7 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         trusted_height: Height,
         target_height: Height,
         client_state: AnyClientState,
-    ) -> Result<(AnyHeader, Vec<AnyHeader>), Error> {
+    ) -> Result<BuiltHeader, Error> {
         self.inc_metric("build_header");
         self.inner()
             .build_header(trusted_height, target_height, client_state)

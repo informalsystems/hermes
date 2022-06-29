@@ -10,6 +10,7 @@ pub mod tracking;
 #[cfg(test)]
 pub mod mock;
 
+use ibc::core::ics02_client::header::Header;
 use serde::{de::Error, Deserialize, Serialize};
 
 // NOTE(new): When adding a variant to `ChainType`, make sure to update
@@ -45,6 +46,12 @@ impl<'de> Deserialize<'de> for ChainType {
             _ => Err(D::Error::unknown_variant(&original, &["cosmos-sdk"])), // NOTE(new): mention the new variant here
         }
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct BuiltHeader {
+    pub target: Box<dyn Header>,
+    pub supporting: Vec<Box<dyn Header>>,
 }
 
 #[cfg(test)]

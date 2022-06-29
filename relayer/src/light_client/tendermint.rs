@@ -20,7 +20,7 @@ use ibc::{
     core::{
         ics02_client::{
             client_state::AnyClientState, client_type::ClientType, events::UpdateClient,
-            header::AnyHeader, misbehaviour::MisbehaviourEvidence,
+            header::Header, misbehaviour::MisbehaviourEvidence,
         },
         ics24_host::identifier::ChainId,
     },
@@ -110,7 +110,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             ))
         })?;
 
-        let update_header = downcast!(update_header => AnyHeader::Tendermint).ok_or_else(|| {
+        let update_header: TmHeader = update_header.try_into().map_err(|_| {
             Error::misbehaviour(format!(
                 "header type incompatible for chain {}",
                 self.chain_id
@@ -153,7 +153,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
             Ok(Some(MisbehaviourEvidence {
                 misbehaviour,
-                supporting_headers: supporting.into_iter().map(Into::into).collect(),
+                supporting_headers: supporting.into_iter().map(Header::boxed).collect(),
             }))
         } else {
             Ok(None)

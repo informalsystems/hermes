@@ -12,6 +12,7 @@ use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
 use tracing::{debug, error, info, span, trace, warn, Level};
 
+use crate::chain::BuiltHeader;
 use flex_error::define_error;
 use ibc::core::ics02_client::client_consensus::{
     AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState,
@@ -20,7 +21,7 @@ use ibc::core::ics02_client::client_state::AnyClientState;
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics02_client::error::Error as ClientError;
 use ibc::core::ics02_client::events::UpdateClient;
-use ibc::core::ics02_client::header::{AnyHeader, Header};
+use ibc::core::ics02_client::header::Header;
 use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::core::ics02_client::msgs::misbehavior::MsgSubmitAnyMisbehaviour;
@@ -883,7 +884,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     fn wait_for_header_validation_delay(
         &self,
         client_state: &AnyClientState,
-        header: &AnyHeader,
+        header: &dyn Header,
     ) -> Result<(), ForeignClientError> {
         // Get latest height and time on destination chain
         let mut status = self.dst_chain().query_application_status().map_err(|e| {
@@ -1029,7 +1030,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             return Ok(vec![]);
         }
 
-        let (header, support) = self
+        let BuiltHeader {
+            target: header,
+            supporting: support,
+        } = self
             .src_chain()
             .build_header(trusted_height, target_height, client_state.clone())
             .map_err(|e| {
@@ -1048,7 +1052,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             )
         })?;
 
-        self.wait_for_header_validation_delay(&client_state, &header)?;
+        self.wait_for_header_validation_delay(&client_state, header.as_ref())?;
 
         let mut msgs = vec![];
 
@@ -1061,7 +1065,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
             msgs.push(
                 MsgUpdateAnyClient {
-                    header,
+                    header: header.encode_any(),
                     client_id: self.id.clone(),
                     signer: signer.clone(),
                 }
@@ -1078,7 +1082,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         msgs.push(
             MsgUpdateAnyClient {
-                header,
+                header: header.encode_any(),
                 signer,
                 client_id: self.id.clone(),
             }
@@ -1468,7 +1472,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         for header in evidence.supporting_headers {
             msgs.push(
                 MsgUpdateAnyClient {
-                    header,
+                    header: header.encode_any(),
                     client_id: self.id.clone(),
                     signer: signer.clone(),
                 }
