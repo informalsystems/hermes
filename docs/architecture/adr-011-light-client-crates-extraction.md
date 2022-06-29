@@ -243,6 +243,17 @@ pub fn process(
 }
 ```
 
+### Splitting the work across multiple PRs
+
+It is suggested that the proposed changes be split across multiple PRs in the following way ->
+
+* Remove `Any*` enums usage from light client implementations and make the light client traits object safe.
+* Move tendermint specific code out of the `ibc` crate and into either the `ibc-relayer` crate or the light client
+  implementation.
+* Remove all `Any*` enums from the `ibc` crate. Pin other workspace crates to stable `ibc` version.
+* Extract the light client implementations into separate crates.
+* Update all workspace crates to use new API.
+
 ## Status
 
 Proposed
