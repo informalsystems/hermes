@@ -182,7 +182,6 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
         .send_messages_and_wait_commit(TrackedMsgs::new_static(msgs, "ft-transfer"))
         .map_err(|e| TransferError::submit(packet_src_chain.id(), e))?;
 
-    dbg!(&events);
     // Check if the chain rejected the transaction
     let result = events
         .iter()
