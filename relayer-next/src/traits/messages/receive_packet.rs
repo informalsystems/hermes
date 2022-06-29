@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 
+use crate::traits::core::Async;
 use crate::traits::ibc_event_context::IbcEventContext;
 use crate::traits::relay_context::RelayContext;
 use crate::types::aliases::{Height, IbcMessage, WriteAcknowledgementEvent};
@@ -14,7 +15,7 @@ pub trait ReceivePacketMessageBuilder<Relay: RelayContext> {
 }
 
 #[async_trait]
-pub trait ReceivePacketRelayer<Context: RelayContext>
+pub trait ReceivePacketRelayer<Context: RelayContext>: Async
 where
     Context::DstChain: IbcEventContext<Context::SrcChain>,
 {

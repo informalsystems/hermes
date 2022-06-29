@@ -5,6 +5,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use crate::impls::cosmos::error::Error;
 use crate::impls::cosmos::handler::CosmosRelayHandler;
 use crate::impls::packet_relayers::base_receive_packet::BaseReceivePacketRelayer;
+use crate::impls::packet_relayers::skip_received_packet::SkipReceivedPacketRelayer;
 use crate::traits::messages::receive_packet::ReceivePacketRelayer;
 
 pub async fn run_receive_packet_relayer<ChainA, ChainB>(
@@ -16,7 +17,7 @@ where
     ChainA: ChainHandle,
     ChainB: ChainHandle,
 {
-    BaseReceivePacketRelayer
+    SkipReceivedPacketRelayer::new(BaseReceivePacketRelayer)
         .relay_receive_packet(context, &height, &packet)
         .await?;
 

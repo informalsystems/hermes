@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use core::marker::PhantomData;
 
 use crate::traits::chain_context::IbcChainContext;
 use crate::traits::core::Async;
@@ -8,9 +9,7 @@ use crate::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::traits::relay_context::RelayContext;
 use crate::traits::target::ChainTarget;
 
-pub struct SendIbcMessagesWithUpdateClient<Sender> {
-    pub sender: Sender,
-}
+pub struct SendIbcMessagesWithUpdateClient<Sender>(PhantomData<Sender>);
 
 #[async_trait]
 impl<Sender, Context, Target, Height, TargetChain, CounterpartyChain, Message, Event>
