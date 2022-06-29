@@ -39,28 +39,28 @@ pub struct TxRawConnInitCmd {
     #[clap(
         long = "dst-chain",
         required = true,
-        help = "identifier of the destination chain"
+        help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
         long = "src-chain",
         required = true,
-        help = "identifier of the source chain"
+        help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
         long = "dst-client",
         required = true,
-        help = "identifier of the destination client"
+        help = "Identifier of the destination client"
     )]
     dst_client_id: ClientId,
 
     #[clap(
         long = "src-client",
         required = true,
-        help = "identifier of the source client"
+        help = "Identifier of the source client"
     )]
     src_client_id: ClientId,
 }
@@ -87,42 +87,44 @@ pub struct TxRawConnTryCmd {
     #[clap(
         long = "dst-chain",
         required = true,
-        help = "identifier of the destination chain"
+        help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
         long = "src-chain",
         required = true,
-        help = "identifier of the source chain"
+        help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
         long = "dst-client",
         required = true,
-        help = "identifier of the destination client"
+        help = "Identifier of the destination client"
     )]
     dst_client_id: ClientId,
 
     #[clap(
         long = "src-client",
         required = true,
-        help = "identifier of the source client"
+        help = "Identifier of the source client"
     )]
     src_client_id: ClientId,
 
     #[clap(
-        long = "src-conn",
+        long = "src-connection",
+        alias = "src-conn",
         required = true,
-        help = "identifier of the source connection (required)",
+        help = "Identifier of the source connection (required)",
         value_name = "ID"
     )]
     src_conn_id: ConnectionId,
 
     #[clap(
-        long = "dst-conn",
-        help = "identifier of the destination connection (optional)",
+        long = "dst-connection",
+        alias = "dst-conn",
+        help = "Identifier of the destination connection (optional)",
         value_name = "ID"
     )]
     dst_conn_id: Option<ConnectionId>,
@@ -158,43 +160,45 @@ pub struct TxRawConnAckCmd {
     #[clap(
         long = "dst-chain",
         required = true,
-        help = "identifier of the destination chain"
+        help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
         long = "src-chain",
         required = true,
-        help = "identifier of the source chain"
+        help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
         long = "dst-client",
         required = true,
-        help = "identifier of the destination client"
+        help = "Identifier of the destination client"
     )]
     dst_client_id: ClientId,
 
     #[clap(
         long = "src-client",
         required = true,
-        help = "identifier of the source client"
+        help = "Identifier of the source client"
     )]
     src_client_id: ClientId,
 
     #[clap(
-        long = "dst-conn",
+        long = "dst-connection",
+        alias = "dst-conn",
         required = true,
-        help = "identifier of the destination connection (required)",
+        help = "Identifier of the destination connection (required)",
         value_name = "ID"
     )]
     dst_conn_id: ConnectionId,
 
     #[clap(
-        long = "src-conn",
+        long = "src-connection",
+        alias = "src-conn",
         required = true,
-        help = "identifier of the source connection (required)",
+        help = "Identifier of the source connection (required)",
         value_name = "ID"
     )]
     src_conn_id: ConnectionId,
@@ -230,43 +234,45 @@ pub struct TxRawConnConfirmCmd {
     #[clap(
         long = "dst-chain",
         required = true,
-        help = "identifier of the destination chain"
+        help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
         long = "src-chain",
         required = true,
-        help = "identifier of the source chain"
+        help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
         long = "dst-client",
         required = true,
-        help = "identifier of the destination client"
+        help = "Identifier of the destination client"
     )]
     dst_client_id: ClientId,
 
     #[clap(
         long = "src-client",
         required = true,
-        help = "identifier of the source client"
+        help = "Identifier of the source client"
     )]
     src_client_id: ClientId,
 
     #[clap(
-        long = "dst-conn",
+        long = "dst-connection",
+        alias = "dst-conn",
         required = true,
-        help = "identifier of the destination connection (required)",
+        help = "Identifier of the destination connection (required)",
         value_name = "ID"
     )]
     dst_conn_id: ConnectionId,
 
     #[clap(
-        long = "src-conn",
+        long = "src-connection",
+        alias = "src-conn",
         required = true,
-        help = "identifier of the source connection (required)",
+        help = "Identifier of the source connection (required)",
         value_name = "ID"
     )]
     src_conn_id: ConnectionId,

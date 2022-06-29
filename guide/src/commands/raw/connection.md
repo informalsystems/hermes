@@ -41,10 +41,10 @@ DESCRIPTION:
     Initialize a connection (ConnectionOpenInit)
 
 FLAGS:
-        --dst-chain <DST_CHAIN_ID>      identifier of the destination chain
-        --dst-client <DST_CLIENT_ID>    identifier of the destination client
-        --src-chain <SRC_CHAIN_ID>      identifier of the source chain
-        --src-client <SRC_CLIENT_ID>    identifier of the source client
+        --dst-chain <DST_CHAIN_ID>      Identifier of the destination chain
+        --dst-client <DST_CLIENT_ID>    Identifier of the destination client
+        --src-chain <SRC_CHAIN_ID>      Identifier of the source chain
+        --src-client <SRC_CLIENT_ID>    Identifier of the source client
 ```
 
 __Example__
@@ -100,14 +100,14 @@ DESCRIPTION:
     Relay the connection attempt (ConnectionOpenTry)
 
 FLAGS:
-        --dst-chain <DST_CHAIN_ID>      identifier of the destination chain
-        --dst-client <DST_CLIENT_ID>    identifier of the destination client
-        --src-chain <SRC_CHAIN_ID>      identifier of the source chain
-        --src-client <SRC_CLIENT_ID>    identifier of the source client
-        --src-conn <ID>                 identifier of the source connection (required)
+        --dst-chain <DST_CHAIN_ID>      Identifier of the destination chain
+        --dst-client <DST_CLIENT_ID>    Identifier of the destination client
+        --src-chain <SRC_CHAIN_ID>      Identifier of the source chain
+        --src-client <SRC_CLIENT_ID>    Identifier of the source client
+        --src-conn <ID>                 Identifier of the source connection (required)
 
 OPTIONS:
-        --dst-conn <ID>                 identifier of the destination connection (optional)
+        --dst-conn <ID>                 Identifier of the destination connection (optional)
 ```
 
 __Example__
@@ -164,12 +164,12 @@ DESCRIPTION:
     Relay acknowledgment of a connection attempt (ConnectionOpenAck)
 
 FLAGS:
-        --dst-chain <DST_CHAIN_ID>      identifier of the destination chain
-        --dst-client <DST_CLIENT_ID>    identifier of the destination client
-        --dst-conn <ID>                 identifier of the destination connection (required)
-        --src-chain <SRC_CHAIN_ID>      identifier of the source chain
-        --src-client <SRC_CLIENT_ID>    identifier of the source client
-        --src-conn <ID>                 identifier of the source connection (required)
+        --dst-chain <DST_CHAIN_ID>      Identifier of the destination chain
+        --dst-client <DST_CLIENT_ID>    Identifier of the destination client
+        --dst-conn <ID>                 Identifier of the destination connection (required)
+        --src-chain <SRC_CHAIN_ID>      Identifier of the source chain
+        --src-client <SRC_CLIENT_ID>    Identifier of the source client
+        --src-conn <ID>                 Identifier of the source connection (required)
 ```
 
 __Example__
@@ -225,12 +225,12 @@ DESCRIPTION:
     Confirm opening of a connection (ConnectionOpenConfirm)
 
 FLAGS:
-        --dst-chain <DST_CHAIN_ID>      identifier of the destination chain
-        --dst-client <DST_CLIENT_ID>    identifier of the destination client
-        --dst-conn <ID>                 identifier of the destination connection (required)
-        --src-chain <SRC_CHAIN_ID>      identifier of the source chain
-        --src-client <SRC_CLIENT_ID>    identifier of the source client
-        --src-conn <ID>                 identifier of the source connection (required)
+        --dst-chain <DST_CHAIN_ID>      Identifier of the destination chain
+        --dst-client <DST_CLIENT_ID>    Identifier of the destination client
+        --dst-conn <ID>                 Identifier of the destination connection (required)
+        --src-chain <SRC_CHAIN_ID>      Identifier of the source chain
+        --src-client <SRC_CLIENT_ID>    Identifier of the source client
+        --src-conn <ID>                 Identifier of the source connection (required)
 ```
 
 __Example__

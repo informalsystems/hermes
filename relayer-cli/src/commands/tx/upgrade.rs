@@ -17,58 +17,58 @@ pub struct TxIbcUpgradeChainCmd {
     #[clap(
         long = "dst-chain",
         required = true,
-        help = "identifier of the chain to upgrade"
+        help = "Identifier of the chain to upgrade"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
         long = "src-chain",
         required = true,
-        help = "identifier of the source chain"
+        help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
         long = "src-client",
         required = true,
-        help = "identifier of the client on source chain from which the plan is created"
+        help = "Identifier of the client on source chain from which the plan is created"
     )]
     src_client_id: ClientId,
 
-    #[clap(long = "amount", required = true, help = "amount of stake")]
+    #[clap(long = "amount", required = true, help = "Amount of stake")]
     amount: u64,
 
     #[clap(
         long = "height-offset",
         required = true,
-        help = "upgrade height offset in number of blocks since current"
+        help = "Upgrade height offset in number of blocks since current"
     )]
     height_offset: u64,
 
     #[clap(
         long = "new-chain",
         value_name = "CHAIN-ID",
-        help = "new chain identifier to assign to the upgrading chain (optional)"
+        help = "New chain identifier to assign to the upgrading chain (optional)"
     )]
     new_chain_id: Option<ChainId>,
 
     #[clap(
         long = "new-unbonding",
         value_name = "PERIOD",
-        help = "new unbonding period to assign to the upgrading chain, in seconds (optional)"
+        help = "New unbonding period to assign to the upgrading chain, in seconds (optional)"
     )]
     new_unbonding: Option<u64>,
 
     #[clap(
         long = "upgrade-name",
         value_name = "NAME",
-        help = "a string to name the upgrade proposal plan (default: 'plan')"
+        help = "A string to name the upgrade proposal plan (default: 'plan')"
     )]
     upgrade_name: Option<String>,
 
     #[clap(
         long = "denom",
-        help = "denomination for the deposit (default: 'stake')"
+        help = "Denomination for the deposit (default: 'stake')"
     )]
     denom: Option<String>,
 }

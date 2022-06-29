@@ -9,7 +9,7 @@ use ibc::events::IbcEvent;
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    HeightQuery, IncludeProof, PageRequest, QueryClientStateRequest, QueryClientStatesRequest,
+    IncludeProof, PageRequest, QueryClientStateRequest, QueryClientStatesRequest, QueryHeight,
 };
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::{CreateOptions, ForeignClient};
@@ -21,13 +21,13 @@ use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic, ChainHa
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct TxCreateClientCmd {
     #[clap(
         long = "host-chain",
         required = true,
         value_name = "HOST_CHAIN_ID",
-        help = "identifier of the chain that hosts the client"
+        help = "Identifier of the chain that hosts the client"
     )]
     dst_chain_id: ChainId,
 
@@ -35,7 +35,7 @@ pub struct TxCreateClientCmd {
         long = "reference-chain",
         required = true,
         value_name = "REFERENCE_CHAIN_ID",
-        help = "identifier of the chain targeted by the client"
+        help = "Identifier of the chain targeted by the client"
     )]
     src_chain_id: ChainId,
 
@@ -107,7 +107,7 @@ pub struct TxUpdateClientCmd {
         long = "host-chain",
         required = true,
         value_name = "HOST_CHAIN_ID",
-        help = "identifier of the chain that hosts the client"
+        help = "Identifier of the chain that hosts the client"
     )]
     dst_chain_id: ChainId,
 
@@ -115,21 +115,21 @@ pub struct TxUpdateClientCmd {
         long = "client",
         required = true,
         value_name = "CLIENT_ID",
-        help = "identifier of the chain targeted by the client"
+        help = "Identifier of the chain targeted by the client"
     )]
     dst_client_id: ClientId,
 
     #[clap(
         long = "height",
         value_name = "REFERENCE_HEIGHT",
-        help = "the target height of the client update"
+        help = "The target height of the client update"
     )]
     target_height: Option<u64>,
 
     #[clap(
         long = "trusted-height",
         value_name = "REFERENCE_TRUSTED_HEIGHT",
-        help = "the trusted height of the client update"
+        help = "The trusted height of the client update"
     )]
     trusted_height: Option<u64>,
 }
@@ -146,7 +146,7 @@ impl Runnable for TxUpdateClientCmd {
         let src_chain_id = match dst_chain.query_client_state(
             QueryClientStateRequest {
                 client_id: self.dst_client_id.clone(),
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         ) {
@@ -165,21 +165,19 @@ impl Runnable for TxUpdateClientCmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
-        let height = match self.target_height {
-            Some(height) => ibc::Height::new(src_chain.id().version(), height),
-            None => ibc::Height::zero(),
-        };
+        let target_height = self.target_height.map_or(QueryHeight::Latest, |height| {
+            QueryHeight::Specific(Height::new(src_chain.id().version(), height))
+        });
 
-        let trusted_height = match self.trusted_height {
-            Some(height) => ibc::Height::new(src_chain.id().version(), height),
-            None => ibc::Height::zero(),
-        };
+        let trusted_height = self
+            .trusted_height
+            .map(|height| Height::new(src_chain.id().version(), height));
 
         let client = ForeignClient::find(src_chain, dst_chain, &self.dst_client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
         let res = client
-            .build_update_client_and_send(height, trusted_height)
+            .build_update_client_and_send(target_height, trusted_height)
             .map_err(Error::foreign_client);
 
         match res {
@@ -189,13 +187,13 @@ impl Runnable for TxUpdateClientCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct TxUpgradeClientCmd {
     #[clap(
         long = "host-chain",
         required = true,
         value_name = "HOST_CHAIN_ID",
-        help = "identifier of the chain that hosts the client"
+        help = "Identifier of the chain that hosts the client"
     )]
     chain_id: ChainId,
 
@@ -203,7 +201,7 @@ pub struct TxUpgradeClientCmd {
         long = "client",
         required = true,
         value_name = "CLIENT_ID",
-        help = "identifier of the client to be upgraded"
+        help = "Identifier of the client to be upgraded"
     )]
     client_id: ClientId,
 }
@@ -220,7 +218,7 @@ impl Runnable for TxUpgradeClientCmd {
         let src_chain_id = match dst_chain.query_client_state(
             QueryClientStateRequest {
                 client_id: self.client_id.clone(),
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         ) {
@@ -268,13 +266,13 @@ impl Runnable for TxUpgradeClientCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser)]
 pub struct TxUpgradeClientsCmd {
     #[clap(
         long = "reference-chain",
         required = true,
         value_name = "REFERENCE_CHAIN_ID",
-        help = "identifier of the chain that underwent an upgrade; all clients targeting this chain will be upgraded"
+        help = "Identifier of the chain that underwent an upgrade; all clients targeting this chain will be upgraded"
     )]
     src_chain_id: ChainId,
 }

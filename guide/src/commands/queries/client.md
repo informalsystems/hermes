@@ -5,7 +5,8 @@
 
 # Query Clients
 
-Use the `query clients` command to query the identifiers of all clients on a given chain.
+Use the `query clients` command to query the identifiers of all clients on a given chain, called
+the _host_ chain.
 
 ```shell
 USAGE:
@@ -20,7 +21,7 @@ FLAGS:
 
 OPTIONS:
         --omit-chain-ids
-            omit printing the source chain for each client
+            omit printing the reference (or target) chain for each client
 
         --reference-chain <REFERENCE_CHAIN_ID>
             filter for clients which target a specific chain id (implies '--omit-chain-ids')
@@ -57,7 +58,7 @@ Success: [
 ]
 ```
 
-Query all clients on `ibc-1` having `ibc-2` as their source chain:
+Query all clients on `ibc-1` having `ibc-2` as their reference chain:
 
 ```shell
 hermes query clients --host-chain ibc-1 --reference-chain ibc-2
@@ -98,14 +99,14 @@ USAGE:
     hermes query client state [OPTIONS] --chain <CHAIN_ID> --client <CLIENT_ID>
 
 DESCRIPTION:
-    Query client full state
+    Query the client state
 
 FLAGS:
-        --chain <CHAIN_ID>      identifier of the chain to query
-        --client <CLIENT_ID>    identifier of the client to query
+        --chain <CHAIN_ID>      Identifier of the chain to query
+        --client <CLIENT_ID>    Identifier of the client to query
 
 OPTIONS:
-        --height HEIGHT         the chain height which this query should reflect
+        --height HEIGHT         The chain height which this query should reflect
 ```
 
 __Example__
@@ -159,20 +160,20 @@ DESCRIPTION:
 
 FLAGS:
         --chain <CHAIN_ID>
-            identifier of the chain to query
+            Identifier of the chain to query
 
         --client <CLIENT_ID>
-            identifier of the client to query
+            Identifier of the client to query
 
 OPTIONS:
         --consensus-height <CONSENSUS_HEIGHT>
-            height of the client's consensus state to query
+            Height of the client's consensus state to query
 
         --height <HEIGHT>
-            the chain height context to be used, applicable only to a specific height
+            The chain height context to be used, applicable only to a specific height
 
         --heights-only
-            show only consensus heights
+            Show only consensus heights
 ```
 
 __Example__
@@ -244,11 +245,11 @@ DESCRIPTION:
     Query client connections
 
 FLAGS:
-        --chain <CHAIN_ID>      identifier of the chain to query
-        --client <CLIENT_ID>    identifier of the client to query
+        --chain <CHAIN_ID>      Identifier of the chain to query
+        --client <CLIENT_ID>    Identifier of the client to query
 
 OPTIONS:
-        --height <HEIGHT>       the chain height which this query should reflect
+        --height <HEIGHT>       The chain height which this query should reflect
 ```
 
 __Example__
@@ -276,12 +277,12 @@ DESCRIPTION:
     Query for the header used in a client update at a certain height
 
 FLAGS:
-        --chain <CHAIN_ID>                       identifier of the chain to query
-        --client <CLIENT_ID>                     identifier of the client to query
-        --consensus-height <CONSENSUS_HEIGHT>    height of header to query
+        --chain <CHAIN_ID>                       Identifier of the chain to query
+        --client <CLIENT_ID>                     Identifier of the client to query
+        --consensus-height <CONSENSUS_HEIGHT>    Height of header to query
 
 OPTIONS:
-        --height <HEIGHT>                        the chain height context for the query
+        --height <HEIGHT>                        The chain height context for the query
 ```
 
 __Example__

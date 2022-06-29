@@ -8,8 +8,8 @@ Informal Systems <hello@informal.systems>
 Implementation of `hermes`, an IBC Relayer developed in Rust.
 
 FLAGS:
-        --config <CONFIG>    path to configuration file
-        --json                enable JSON output
+        --config <CONFIG>    Path to configuration file
+        --json               Enable JSON output
 ```
 
 The flags must be specified right after the `hermes` command and before any subcommand.

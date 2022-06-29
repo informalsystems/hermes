@@ -1,6 +1,6 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use ibc_relayer::chain::requests::{HeightQuery, IncludeProof, QueryPacketCommitmentRequest};
+use ibc_relayer::chain::requests::{IncludeProof, QueryHeight, QueryPacketCommitmentRequest};
 use serde::Serialize;
 use subtle_encoding::{Encoding, Hex};
 
@@ -26,7 +26,7 @@ pub struct QueryPacketCommitmentCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
-        help = "identifier of the chain to query"
+        help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
 
@@ -34,30 +34,32 @@ pub struct QueryPacketCommitmentCmd {
         long = "port",
         required = true,
         value_name = "PORT_ID",
-        help = "identifier of the port to query"
+        help = "Identifier of the port to query"
     )]
     port_id: PortId,
 
     #[clap(
-        long = "chan",
+        long = "channel",
+        alias = "chan",
         required = true,
         value_name = "CHANNEL_ID",
-        help = "identifier of the channel to query"
+        help = "Identifier of the channel to query"
     )]
     channel_id: ChannelId,
 
     #[clap(
-        long = "seq",
+        long = "sequence",
+        alias = "seq",
         required = true,
         value_name = "SEQUENCE",
-        help = "sequence of packet to query"
+        help = "Sequence of packet to query"
     )]
     sequence: Sequence,
 
     #[clap(
         long = "height",
         value_name = "HEIGHT",
-        help = "height of the state to query"
+        help = "Height of the state to query"
     )]
     height: Option<u64>,
 }
@@ -76,8 +78,8 @@ impl QueryPacketCommitmentCmd {
                     port_id: self.port_id.clone(),
                     channel_id: self.channel_id,
                     sequence: self.sequence,
-                    height: self.height.map_or(HeightQuery::Latest, |revision_height| {
-                        HeightQuery::Specific(ibc::Height::new(
+                    height: self.height.map_or(QueryHeight::Latest, |revision_height| {
+                        QueryHeight::Specific(ibc::Height::new(
                             chain.id().version(),
                             revision_height,
                         ))

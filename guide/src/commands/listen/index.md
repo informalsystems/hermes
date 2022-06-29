@@ -13,7 +13,7 @@ FLAGS:
         --chain <CHAIN_ID>    Identifier of the chain to listen for events from
 
 OPTIONS:
-        --event <EVENT>       Add an event type to listen for, can be repeated. Listen for all events by default (available: Tx, NewBlock)
+        --events <EVENT>...   Add an event type to listen for, can be repeated. Listen for all events by default (available: Tx, NewBlock)
 ```
 
 __Example__
@@ -155,8 +155,8 @@ At the moment, two event types are available:
 
 The `--event` flag can be repeated to specify more than one event type.
 
-- To listen for only `NewBlock` events on `ibc-0`, invoke `hermes listen --chain ibc-0 --event NewBlock`
-- To listen for only `Tx` events on `ibc-0`, invoke `hermes listen --chain ibc-0 --event Tx`
-- To listen for both `NewBlock` and `Tx` events on `ibc-0`, invoke `hermes listen --chain ibc-0 --event NewBlock --event Tx`
+- To listen for only `NewBlock` events on `ibc-0`, invoke `hermes listen --chain ibc-0 --events NewBlock`
+- To listen for only `Tx` events on `ibc-0`, invoke `hermes listen --chain ibc-0 --events Tx`
+- To listen for both `NewBlock` and `Tx` events on `ibc-0`, invoke `hermes listen --chain ibc-0 --events NewBlock Tx`
 
 If the `--event` flag is omitted, the relayer will subscribe to all event types.

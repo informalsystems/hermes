@@ -16,8 +16,8 @@ DESCRIPTION:
     Upgrade the specified client on destination chain
     
 FLAGS:
-        --client <CLIENT_ID>            identifier of the client to be upgraded
-        --host-chain <HOST_CHAIN_ID>    identifier of the chain that hosts the client
+        --client <CLIENT_ID>            Identifier of the client to be upgraded
+        --host-chain <HOST_CHAIN_ID>    Identifier of the chain that hosts the client
 ```
 
 __Example__

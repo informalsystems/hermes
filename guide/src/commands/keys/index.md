@@ -76,20 +76,20 @@ DESCRIPTION:
 
 FLAGS:
         --chain <CHAIN_ID>
-            identifier of the chain
+            Identifier of the chain
 
         --key-file <KEY_FILE>
-            path to the key file
+            Path to the key file
 
         --mnemonic-file <MNEMONIC_FILE>
-            path to file containing mnemonic to restore the key from
+            Path to file containing mnemonic to restore the key from
 
 OPTIONS:
         --key-name <KEY_NAME>
-            name of the key (defaults to the `key_name` defined in the config)
+            Name of the key (defaults to the `key_name` defined in the config)
 
         --hd-path <HD_PATH>
-            derivation path for this key [default: m/44'/118'/0'/0/0]
+            Derivation path for this key [default: m/44'/118'/0'/0/0]
 ```
 
 #### Add a private key to a chain from a key file
@@ -102,17 +102,17 @@ DESCRIPTION:
 
 FLAGS:
         --chain <CHAIN_ID>
-            identifier of the chain
+            Identifier of the chain
 
         --key-file <KEY_FILE>
-            path to the key file
+            Path to the key file
 
 OPTIONS:
         --key-name <KEY_NAME>
-            name of the key (defaults to the `key_name` defined in the config)
+            Name of the key (defaults to the `key_name` defined in the config)
 
         --hd-path <HD_PATH>
-            derivation path for this key [default: m/44'/118'/0'/0/0]
+            Derivation path for this key [default: m/44'/118'/0'/0/0]
 ```
 
 To add a private key file to a chain:
@@ -157,17 +157,17 @@ DESCRIPTION:
 
 FLAGS:
         --chain <CHAIN_ID>
-            identifier of the chain
+            Identifier of the chain
 
         --mnemonic-file <MNEMONIC_FILE>
-            path to file containing mnemonic to restore the key from
+            Path to file containing mnemonic to restore the key from
 
 OPTIONS:
         --key-name <KEY_NAME>
-            name of the key (defaults to the `key_name` defined in the config)
+            Name of the key (defaults to the `key_name` defined in the config)
 
         --hd-path <HD_PATH>
-            derivation path for this key [default: m/44'/118'/0'/0/0]
+            Derivation path for this key [default: m/44'/118'/0'/0/0]
 ```
 
 To restore a key from its mnemonic:
@@ -215,11 +215,11 @@ DESCRIPTION:
     Delete key(s) from a configured chain
 
 FLAGS:
-        --chain <CHAIN_ID>    identifier of the chain
+        --chain <CHAIN_ID>    Identifier of the chain
 
 OPTIONS:
-        --key-name <KEY_NAME>    name of the key
-        --all                    delete all keys
+        --key-name <KEY_NAME>    Name of the key
+        --all                    Delete all keys
 ```
 
 #### Delete private keys that was previously added to a chain
@@ -248,7 +248,7 @@ DESCRIPTION:
     List keys configured on a chain
 
 FLAGS:
-        --chain <CHAIN_ID>    identifier of the chain
+        --chain <CHAIN_ID>    Identifier of the chain
 ```
 
 #### Listing the private key that was added to a chain
@@ -308,7 +308,7 @@ DESCRIPTION:
     Query balance for a key from a configured chain. If no key is given, the key is retrieved from the configuration file
 
 FLAGS:
-        --chain <CHAIN_ID>        identifier of the chain
+        --chain <CHAIN_ID>        Identifier of the chain
 
 OPTIONS:
         --key-name <KEY_NAME>     (optional) name of the key (defaults to the `key_name` defined in the config)

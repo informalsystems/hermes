@@ -24,7 +24,7 @@ pub struct QueryPacketCommitmentsCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
-        help = "identifier of the chain to query"
+        help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
 
@@ -32,15 +32,16 @@ pub struct QueryPacketCommitmentsCmd {
         long = "port",
         required = true,
         value_name = "PORT_ID",
-        help = "identifier of the port to query"
+        help = "Identifier of the port to query"
     )]
     port_id: PortId,
 
     #[clap(
-        long = "chan",
+        long = "channel",
+        alias = "chan",
         required = true,
         value_name = "CHANNEL_ID",
-        help = "identifier of the channel to query"
+        help = "Identifier of the channel to query"
     )]
     channel_id: ChannelId,
 }
@@ -62,7 +63,7 @@ impl QueryPacketCommitmentsCmd {
     }
 }
 
-// cargo run --bin hermes -- query packet commitments --chain ibc-0 --port transfer --chan ibconexfer --height 3
+// cargo run --bin hermes -- query packet commitments --chain ibc-0 --port transfer --channel ibconexfer --height 3
 impl Runnable for QueryPacketCommitmentsCmd {
     fn run(&self) {
         match self.execute() {

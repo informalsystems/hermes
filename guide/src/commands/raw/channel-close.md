@@ -18,13 +18,13 @@ DESCRIPTION:
     Initiate the closing of a channel (ChannelCloseInit)
 
 FLAGS:
-        --dst-chain <DST_CHAIN_ID>    identifier of the destination chain
-        --dst-chan <ID>               identifier of the destination channel (required)
-        --dst-conn <DST_CONN_ID>      identifier of the destination connection
-        --dst-port <DST_PORT_ID>      identifier of the destination port
-        --src-chain <SRC_CHAIN_ID>    identifier of the source chain
-        --src-chan <ID>               identifier of the source channel (required)
-        --src-port <SRC_PORT_ID>      identifier of the source port
+        --dst-chain <DST_CHAIN_ID>    Identifier of the destination chain
+        --dst-chan <ID>               Identifier of the destination channel (required)
+        --dst-conn <DST_CONN_ID>      Identifier of the destination connection
+        --dst-port <DST_PORT_ID>      Identifier of the destination port
+        --src-chain <SRC_CHAIN_ID>    Identifier of the source chain
+        --src-chan <ID>               Identifier of the source channel (required)
+        --src-port <SRC_PORT_ID>      Identifier of the source port
 ```
 
 __Example__
@@ -77,13 +77,13 @@ DESCRIPTION:
     Confirm the closing of a channel (ChannelCloseConfirm)
 
 FLAGS:
-        --dst-chain <DST_CHAIN_ID>    identifier of the destination chain
-        --dst-chan <ID>               identifier of the destination channel (required)
-        --dst-conn <DST_CONN_ID>      identifier of the destination connection
-        --dst-port <DST_PORT_ID>      identifier of the destination port
-        --src-chain <SRC_CHAIN_ID>    identifier of the source chain
-        --src-chan <ID>               identifier of the source channel (required)
-        --src-port <SRC_PORT_ID>      identifier of the source port
+        --dst-chain <DST_CHAIN_ID>    Identifier of the destination chain
+        --dst-chan <ID>               Identifier of the destination channel (required)
+        --dst-conn <DST_CONN_ID>      Identifier of the destination connection
+        --dst-port <DST_PORT_ID>      Identifier of the destination port
+        --src-chain <SRC_CHAIN_ID>    Identifier of the source chain
+        --src-chan <ID>               Identifier of the source channel (required)
+        --src-port <SRC_PORT_ID>      Identifier of the source port
 
 ```
 

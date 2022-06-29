@@ -23,7 +23,7 @@ pub struct KeyBalanceCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
-        help = "identifier of the chain"
+        help = "Identifier of the chain"
     )]
     chain_id: ChainId,
 

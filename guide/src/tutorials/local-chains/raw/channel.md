@@ -34,11 +34,11 @@ hermes tx raw chan-open-confirm --dst-chain ibc-1 --src-chain ibc-0 --dst-conn c
 To verify that the two ends are in `Open` state:
 
 ```shell
-hermes query channel end --chain ibc-0 --port transfer --chan channel-0
+hermes query channel end --chain ibc-0 --port transfer --channel channel-0
 ```
 
 ```shell
-hermes query channel end --chain ibc-1 --port transfer --chan channel-1
+hermes query channel end --chain ibc-1 --port transfer --channel channel-1
 ```
 
 ## Next Steps

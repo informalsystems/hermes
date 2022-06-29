@@ -7,9 +7,9 @@ use tracing::debug;
 use tendermint::abci::transaction::Hash;
 
 use ibc::core::ics24_host::identifier::ChainId;
-use ibc::query::{QueryTxHash, QueryTxRequest};
 
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::chain::requests::{QueryTxHash, QueryTxRequest};
 
 use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
@@ -23,7 +23,7 @@ pub struct QueryTxEventsCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
-        help = "identifier of the chain to query"
+        help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
 
@@ -31,7 +31,7 @@ pub struct QueryTxEventsCmd {
         long = "hash",
         required = true,
         value_name = "HASH",
-        help = "transaction hash to query"
+        help = "Transaction hash to query"
     )]
     hash: String,
 }

@@ -12,7 +12,7 @@ use ibc::{
 };
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    HeightQuery, IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest,
+    IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
 use ibc_relayer::{
     config::Config,
@@ -29,71 +29,72 @@ pub struct TxIcs20MsgTransferCmd {
     #[clap(
         long = "dst-chain",
         required = true,
-        help = "identifier of the destination chain"
+        help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
         long = "src-chain",
         required = true,
-        help = "identifier of the source chain"
+        help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
         long = "src-port",
         required = true,
-        help = "identifier of the source port"
+        help = "Identifier of the source port"
     )]
     src_port_id: PortId,
 
     #[clap(
-        long = "src-chan",
+        long = "src-channel",
+        alias = "src-chan",
         required = true,
-        help = "identifier of the source channel"
+        help = "Identifier of the source channel"
     )]
     src_channel_id: ChannelId,
 
     #[clap(
         long = "amount",
         required = true,
-        help = "amount of coins (samoleans, by default) to send (e.g. `100000`)"
+        help = "Amount of coins (samoleans, by default) to send (e.g. `100000`)"
     )]
     amount: Amount,
 
     #[clap(
         long = "timeout-height-offset",
         default_value = "0",
-        help = "timeout in number of blocks since current"
+        help = "Timeout in number of blocks since current"
     )]
     timeout_height_offset: u64,
 
     #[clap(
         long = "timeout-seconds",
         default_value = "0",
-        help = "timeout in seconds since current"
+        help = "Timeout in seconds since current"
     )]
     timeout_seconds: u64,
 
     #[clap(
         long = "receiver",
-        help = "receiving account address on the destination chain"
+        help = "Receiving account address on the destination chain"
     )]
     receiver: Option<String>,
 
     #[clap(
         long = "denom",
-        help = "denomination of the coins to send",
+        help = "Denomination of the coins to send",
         default_value = "samoleans"
     )]
     denom: String,
 
-    #[clap(long = "number-msgs", help = "number of messages to send")]
+    #[clap(long = "number-msgs", help = "Number of messages to send")]
     number_msgs: Option<usize>,
 
     #[clap(
         long = "key-name",
-        help = "use the given signing key name (default: `key_name` config)"
+        help = "Use the given signing key name (default: `key_name` config)"
     )]
     key_name: Option<String>,
 }
@@ -188,7 +189,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
                 QueryChannelRequest {
                     port_id: opts.packet_src_port_id.clone(),
                     channel_id: opts.packet_src_channel_id,
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -220,7 +221,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: conn_id.clone(),
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -233,7 +234,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
             .query_client_state(
                 QueryClientStateRequest {
                     client_id: conn_end.client_id().clone(),
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )

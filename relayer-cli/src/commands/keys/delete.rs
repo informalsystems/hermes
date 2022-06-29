@@ -16,14 +16,14 @@ pub struct KeysDeleteCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
-        help = "identifier of the chain"
+        help = "Identifier of the chain"
     )]
     chain_id: ChainId,
 
-    #[clap(long = "key-name", required = true, value_name = "KEY_NAME", group = "delete_key", help = "name of the key")]
+    #[clap(long = "key-name", value_name = "KEY_NAME", help = "Name of the key")]
     key_name: Option<String>,
 
-    #[clap(long = "all", required = true, group = "delete_key", help = "delete all keys")]
+    #[clap(long = "all", help = "Delete all keys")]
     all: bool,
 }
 
@@ -37,12 +37,14 @@ impl KeysDeleteCmd {
             .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
 
         let id = match (self.all, &self.key_name) {
+            (true, Some(_)) => {
+                return Err("cannot set both --key-name and --all".to_owned().into());
+            }
+            (false, None) => {
+                return Err("must provide either --key-name or --all".to_owned().into());
+            }
             (true, None) => KeysDeleteId::All,
             (false, Some(ref key_name)) => KeysDeleteId::Named(key_name),
-            // This case should never be attained as --all and --key-name have the same group and are required.
-            _ => {
-                return Err("Error with clap parser. A parsing error should have been triggered.".to_owned().into());
-            }
         };
 
         Ok(KeysDeleteOptions {

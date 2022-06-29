@@ -6,7 +6,7 @@ use abscissa_core::{Command, Runnable};
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::{HeightQuery, IncludeProof, QueryClientStateRequest};
+use ibc_relayer::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
 
@@ -20,41 +20,35 @@ pub struct CreateConnectionCommand {
         long = "a-chain",
         required = true,
         value_name = "A_CHAIN_ID",
-        help = "identifier of the side `a` chain for the new connection"
+        help = "Identifier of the side `a` chain for the new connection"
     )]
     chain_a_id: ChainId,
 
     #[clap(
         long = "b-chain",
-        required = true,
-        groups = &["client_a", "client_b"],
         value_name = "B_CHAIN_ID",
-        help = "identifier of the side `b` chain for the new connection"
+        help = "Identifier of the side `b` chain for the new connection"
     )]
     chain_b_id: Option<ChainId>,
 
     #[clap(
         long = "a-client",
-        required = true,
-        group = "client_a",
         value_name = "A_CLIENT_ID",
-        help = "identifier of client hosted on chain `a`; default: None (creates a new client)"
+        help = "Identifier of client hosted on chain `a`; default: None (creates a new client)"
     )]
     client_a: Option<ClientId>,
 
     #[clap(
         long = "b-client",
-        required = true,
-        group = "client_b",
         value_name = "B_CLIENT_ID",
-        help = "identifier of client hosted on chain `b`; default: None (creates a new client)"
+        help = "Identifier of client hosted on chain `b`; default: None (creates a new client)"
     )]
     client_b: Option<ClientId>,
 
     #[clap(
         long = "delay",
         value_name = "DELAY",
-        help = "delay period parameter for the new connection (seconds)",
+        help = "Delay period parameter for the new connection (seconds)",
         default_value = "0"
     )]
     delay: u64,
@@ -79,6 +73,16 @@ impl CreateConnectionCommand {
 
         let chains = ChainHandlePair::spawn(&config, &self.chain_a_id, chain_b_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
+
+        // Validate the other options. Bail if the CLI was invoked with incompatible options.
+        if self.client_a.is_some() {
+            Output::error("Option `<B_CHAIN_ID>` is incompatible with `--a-client`".to_string())
+                .exit();
+        }
+        if self.client_b.is_some() {
+            Output::error("Option `<B_CHAIN_ID>` is incompatible with `--b-client`".to_string())
+                .exit();
+        }
 
         info!(
             "Creating new clients hosted on chains {} and {}",
@@ -112,7 +116,7 @@ impl CreateConnectionCommand {
         let client_a_id = match &self.client_a {
             Some(c) => c,
             None => Output::error(
-                "Option `--a-client` is necessary when <chain-b-id> is missing".to_string(),
+                "Option `--a-client` is necessary when <B_CHAIN_ID> is missing".to_string(),
             )
             .exit(),
         };
@@ -121,7 +125,7 @@ impl CreateConnectionCommand {
         let chain_b_id = match chain_a.query_client_state(
             QueryClientStateRequest {
                 client_id: client_a_id.clone(),
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         ) {
@@ -143,7 +147,7 @@ impl CreateConnectionCommand {
         let client_b_id = match &self.client_b {
             Some(c) => c,
             None => Output::error(
-                "Option `--b-client` is necessary when <chain-b-id> is missing".to_string(),
+                "Option `--b-client` is necessary when <B_CHAIN_ID> is missing".to_string(),
             )
             .exit(),
         };

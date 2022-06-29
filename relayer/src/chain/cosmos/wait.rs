@@ -1,7 +1,6 @@
 use core::time::Duration;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::IbcEvent;
-use ibc::query::{QueryTxHash, QueryTxRequest};
 use itertools::Itertools;
 use std::thread;
 use std::time::Instant;
@@ -10,6 +9,7 @@ use tracing::{info, trace};
 
 use crate::chain::cosmos::query::tx::query_txs;
 use crate::chain::cosmos::types::tx::TxSyncResult;
+use crate::chain::requests::{QueryTxHash, QueryTxRequest};
 use crate::error::Error;
 
 const WAIT_BACKOFF: Duration = Duration::from_millis(300);

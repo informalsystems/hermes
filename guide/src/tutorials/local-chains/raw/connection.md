@@ -37,11 +37,11 @@ hermes tx raw conn-confirm --dst-chain ibc-1 --src-chain ibc-0 --dst-client 07-t
 To verify that the two ends are in `Open` state:
 
 ```shell
-hermes query connection end --chain ibc-0 --conn connection-0
+hermes query connection end --chain ibc-0 --connection connection-0
 ```
 
 ```shell
-hermes query connection end --chain ibc-1 --conn connection-1
+hermes query connection end --chain ibc-1 --connection connection-1
 ```
 
 

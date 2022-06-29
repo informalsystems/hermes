@@ -10,7 +10,7 @@ and [packet-acks](../raw/packet.md#relay-acknowledgment-packets).
 
 ```
 USAGE:
-    hermes clear packets --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>
+    hermes clear packets --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
 
 DESCRIPTION:
     Clear outstanding packets (i.e. packet-recv and packet-ack) on a given channel in both directions.
@@ -18,9 +18,9 @@ DESCRIPTION:
     The channel is identified by the chain, port, and channel IDs at one of its ends
 
 FLAGS:
-        --chain <CHAIN_ID>     identifier of the chain
-        --chan <CHANNEL_ID>    identifier of the channel
-        --port <PORT_ID>       identifier of the port
+        --chain <CHAIN_ID>        Identifier of the chain
+        --channel <CHANNEL_ID>    Identifier of the channel
+        --port <PORT_ID>          Identifier of the port
 ```
 
 ### Example
@@ -139,7 +139,7 @@ Success: [
 as can be seen with the `query packet unreceived-packets` command:
 
 ```
-❯ hermes query packet unreceived-packets --chain ibc1 --port transfer --chan channel-13
+❯ hermes query packet unreceived-packets --chain ibc1 --port transfer --channel channel-13
 2022-02-24T14:21:28.874190Z  INFO ThreadId(01) using default configuration from '/Users/coromac/.hermes/config.toml'
 Success: [
     14,
@@ -151,7 +151,7 @@ Success: [
 3. We can clear them manually using the `clear packets` command:
 
 ```
-❯ hermes clear packets --chain ibc0 --port transfer --chan channel-13
+❯ hermes clear packets --chain ibc0 --port transfer --channel channel-13
 2022-02-24T14:17:25.748422Z  INFO ThreadId(01) using default configuration from '/Users/coromac/.hermes/config.toml'
 2022-02-24T14:17:25.799704Z  INFO ThreadId(01) PacketRecvCmd{src_chain=ibc0 src_port=transfer src_channel=channel-13 dst_chain=ibc1}: found unprocessed SendPacket events for [Sequence(14), Sequence(15), Sequence(16)] (first 10 shown here; total=3)
 2022-02-24T14:17:25.827177Z  INFO ThreadId(01) PacketRecvCmd{src_chain=ibc0 src_port=transfer src_channel=channel-13 dst_chain=ibc1}: ready to fetch a scheduled op. data with batch of size 3 targeting Destination
@@ -433,7 +433,7 @@ Success: [
 4. The packets have now been successfully relayed:
 
 ```
-❯ hermes query packet unreceived-packets --chain ibc1 --port transfer --chan channel-13
+❯ hermes query packet unreceived-packets --chain ibc1 --port transfer --channel channel-13
 2022-02-24T14:21:28.874190Z  INFO ThreadId(01) using default configuration from '/Users/coromac/.hermes/config.toml'
 Success: []
 ```

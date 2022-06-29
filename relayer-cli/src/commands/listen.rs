@@ -66,7 +66,7 @@ pub struct ListenCmd {
 
     /// Add an event type to listen for, can be repeated.
     /// Listen for all events by default (available: Tx, NewBlock).
-    #[clap(long = "event", value_name = "EVENT")]
+    #[clap(long = "events", value_name = "EVENT", multiple_values = true)]
     events: Vec<EventFilter>,
 }
 

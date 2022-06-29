@@ -32,14 +32,14 @@ use crate::conclude::Output;
 /// If successful the key will be created or restored, depending on which flag was given.
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct KeysAddCmd {
-    #[clap(long = "chain", required = true, help = "identifier of the chain")]
+    #[clap(long = "chain", required = true, help = "Identifier of the chain")]
     chain_id: ChainId,
 
     #[clap(
         long = "key-file",
         required = true,
         value_name = "KEY_FILE",
-        help = "path to the key file",
+        help = "Path to the key file",
         group = "add-restore"
     )]
     key_file: Option<PathBuf>,
@@ -48,7 +48,7 @@ pub struct KeysAddCmd {
         long = "mnemonic-file",
         required = true,
         value_name = "MNEMONIC_FILE",
-        help = "path to file containing mnemonic to restore the key from",
+        help = "Path to file containing mnemonic to restore the key from",
         group = "add-restore"
     )]
     mnemonic_file: Option<PathBuf>,
@@ -56,14 +56,14 @@ pub struct KeysAddCmd {
     #[clap(
         long = "key-name",
         value_name = "KEY_NAME",
-        help = "name of the key (defaults to the `key_name` defined in the config)"
+        help = "Name of the key (defaults to the `key_name` defined in the config)"
     )]
     key_name: Option<String>,
 
     #[clap(
         long = "hd-path",
         value_name = "HD_PATH",
-        help = "derivation path for this key",
+        help = "Derivation path for this key",
         default_value = "m/44'/118'/0'/0/0"
     )]
     hd_path: String,

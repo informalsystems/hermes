@@ -21,9 +21,7 @@ DESCRIPTION:
     Create objects (client, connection, or channel) on chains
 
 SUBCOMMANDS:
-    channel       Create a new channel between two chains using a pre-existing connection.
-                      Alternatively, create a new client and a new connection underlying the new
-                      channel if a pre-existing connection is not provided
+    channel       Create a new channel between two chains using a pre-existing connection
     client        Create a new IBC client
     connection    Create a new connection between two chains
     help          Print this message or the help of the given subcommand(s)

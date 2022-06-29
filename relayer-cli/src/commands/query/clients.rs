@@ -19,20 +19,20 @@ pub struct QueryAllClientsCmd {
         long = "host-chain",
         required = true,
         value_name = "HOST_CHAIN_ID",
-        help = "identifier of the chain to query"
+        help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
 
     #[clap(
         long = "reference-chain",
-        help = "filter for clients which target a specific chain id (implies '--omit-chain-ids')",
+        help = "Filter for clients which target a specific chain id (implies '--omit-chain-ids')",
         value_name = "REFERENCE_CHAIN_ID"
     )]
     src_chain_id: Option<ChainId>,
 
     #[clap(
         long = "omit-chain-ids",
-        help = "omit printing the source chain for each client"
+        help = "Omit printing the reference (or target) chain for each client"
     )]
     omit_chain_ids: bool,
 }

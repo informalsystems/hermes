@@ -14,23 +14,25 @@ USAGE:
 
 DESCRIPTION:
     Create a new channel between two chains using a pre-existing connection.
-    Alternatively, create a new client and a new connection underlying the new channel if a pre-existing connection is not provided.
+
+    Alternatively, create a new client and a new connection underlying the new channel if a pre-existing
+    connection is not provided.
 
 FLAGS:
-        --a-chain <A_CHAIN_ID>        Identifier of the side `a` chain for the new channel
-        --a-port <A_PORT_ID>          Identifier of the side `a` port for the new channel
-        --b-port <B_PORT_ID>          Identifier of the side `b` port for the new channel
+        --a-chain <A_CHAIN_ID>              Identifier of the side `a` chain for the new channel
+        --a-port <A_PORT_ID>                Identifier of the side `a` port for the new channel
+        --b-port <B_PORT_ID>                Identifier of the side `b` port for the new channel
 
 OPTIONS:
 
-        --a-conn <A_CONNECTION_ID>    Identifier of the connection on chain `a` to use in creating
-                                      the new channel.
-        --b-chain <B_CHAIN_ID>        Identifier of the side `b` chain for the new channel
-        --chan-version <VERSION>      The version for the new channel
-        --new-client-conn             Indicates that a new client and connection will be created
-                                      underlying the new channel
-        --order <ORDER>               The channel ordering, valid options 'unordered' (default) and
-                                      'ordered' [default: ORDER_UNORDERED]
+        --a-connection <A_CONNECTION_ID>    Identifier of the connection on chain `a` to use in creating
+                                            the new channel.
+        --b-chain <B_CHAIN_ID>              Identifier of the side `b` chain for the new channel
+        --chan-version <VERSION>            The version for the new channel
+        --new-client-connection             Indicates that a new client and connection will be created
+                                            underlying the new channel
+        --order <ORDER>                     The channel ordering, valid options 'unordered' (default) and
+                                            'ordered' [default: ORDER_UNORDERED]
 ```
 
 ## Examples
@@ -45,7 +47,7 @@ specifically the one we just created in the example above, with port name
 `transfer` on both sides:
 
 ```shell
-hermes create channel --a-chain ibc-0 --a-conn connection-0 --a-port transfer --b-port transfer --order unordered
+hermes create channel --a-chain ibc-0 --a-connection connection-0 --a-port transfer --b-port transfer --order unordered
 ```
 
 Notice that one can omit the destination chain parameter, as Hermes will automatically
