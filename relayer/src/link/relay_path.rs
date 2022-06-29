@@ -437,6 +437,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // Collect relevant events from the incoming batch & adjust their height.
         let events = self.filter_relaying_events(batch.events, batch.tracking_id);
 
+        // Update telemetry info
+        telemetry!({
+            for e in events.events() {
+                self.record_send_packet_and_acknowledgment_history(e);
+            }
+        });
+
         // Transform the events into operational data items
         self.events_to_operational_data(events)
     }
@@ -610,6 +617,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 Ok(reply) => {
                     // Done with this op. data
                     info!("success");
+                    telemetry!({
+                        let (chain, counterparty, channel_id, port_id) =
+                            self.target_info(odata.target);
+
+                        ibc_telemetry::global().tx_submitted(
+                            reply.len(),
+                            odata.tracking_id,
+                            &chain,
+                            channel_id,
+                            port_id,
+                            &counterparty,
+                        );
+                    });
 
                     return Ok(reply);
                 }
@@ -732,18 +752,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         let msgs = odata.assemble_msgs(self)?;
-
-        telemetry!({
-            let (chain, counterparty, channel_id, port_id) = self.target_info(odata.target);
-
-            ibc_telemetry::global().tx_submitted(
-                msgs.tracking_id,
-                &chain,
-                channel_id,
-                port_id,
-                &counterparty,
-            );
-        });
 
         match odata.target {
             OperationalDataTarget::Source => S::submit(self.src_chain(), msgs),
@@ -1077,6 +1085,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             &self.path_id,
             query_send_packet_events,
         ) {
+            // Update telemetry info
+            telemetry!({
+                for e in events_chunk.clone() {
+                    self.record_cleared_send_packet_and_acknowledgment(e);
+                }
+            });
             self.events_to_operational_data(TrackedEvents::new(events_chunk, tracking_id))?;
         }
 
@@ -1715,6 +1729,68 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 self.dst_channel_id(),
                 self.dst_port_id(),
             ),
+        }
+    }
+
+    #[cfg(feature = "telemetry")]
+    fn record_send_packet_and_acknowledgment_history(&self, event: &IbcEvent) {
+        match event {
+            IbcEvent::SendPacket(send_packet_ev) => {
+                ibc_telemetry::global().record_send_history(
+                    send_packet_ev.packet.sequence.into(),
+                    send_packet_ev.height().revision_height,
+                    &self.src_chain().id(),
+                    self.src_channel_id(),
+                    self.src_port_id(),
+                    &self.dst_chain().id(),
+                );
+            }
+            IbcEvent::WriteAcknowledgement(write_ack_ev) => {
+                ibc_telemetry::global().record_ack_history(
+                    write_ack_ev.packet.sequence.into(),
+                    write_ack_ev.height().revision_height,
+                    &self.dst_chain().id(),
+                    self.dst_channel_id(),
+                    self.dst_port_id(),
+                    &self.src_chain().id(),
+                );
+            }
+            _ => {}
+        }
+    }
+
+    #[cfg(feature = "telemetry")]
+    fn record_cleared_send_packet_and_acknowledgment(&self, event: IbcEvent) {
+        match event {
+            IbcEvent::SendPacket(send_packet_ev) => {
+                ibc_telemetry::global().send_packet_count(
+                    send_packet_ev.packet.sequence.into(),
+                    send_packet_ev.height().revision_height,
+                    &self.src_chain().id(),
+                    self.src_channel_id(),
+                    self.src_port_id(),
+                    &self.dst_chain().id(),
+                );
+                ibc_telemetry::global().cleared_count(
+                    send_packet_ev.packet.sequence.into(),
+                    send_packet_ev.height().revision_height,
+                    &self.src_chain().id(),
+                    self.src_channel_id(),
+                    self.src_port_id(),
+                    &self.dst_chain().id(),
+                );
+            }
+            IbcEvent::WriteAcknowledgement(write_ack_ev) => {
+                ibc_telemetry::global().acknowledgement_count(
+                    write_ack_ev.packet.sequence.into(),
+                    write_ack_ev.height().revision_height,
+                    &self.dst_chain().id(),
+                    self.src_channel_id(),
+                    self.src_port_id(),
+                    &self.src_chain().id(),
+                );
+            }
+            _ => {}
         }
     }
 }
