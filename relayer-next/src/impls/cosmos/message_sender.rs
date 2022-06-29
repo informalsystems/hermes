@@ -1,16 +1,14 @@
 use async_trait::async_trait;
 use ibc::events::IbcEvent;
-use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::tracking::TrackedMsgs;
 
 use crate::impls::cosmos::error::Error;
 use crate::impls::cosmos::handler::{CosmosChainHandler, CosmosRelayHandler};
 use crate::impls::cosmos::message::CosmosIbcMessage;
-use crate::impls::cosmos::target::CosmosChainTarget;
 use crate::impls::message_senders::chain_sender::SendIbcMessagesToChain;
 use crate::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
-use crate::traits::chain_context::{ChainContext, IbcChainContext};
+use crate::traits::ibc_message_sender::IbcMessageSender;
 use crate::traits::ibc_message_sender::IbcMessageSenderContext;
 use crate::traits::message::Message;
 use crate::traits::message_sender::{MessageSender, MessageSenderContext};
@@ -24,16 +22,7 @@ where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
     Target: ChainTarget<CosmosRelayHandler<SrcChain, DstChain>>,
-    Self: CosmosChainTarget<SrcChain, DstChain, Target>,
-    Target::CounterpartyChain: ChainContext<Height = Height>,
-    Target::TargetChain: IbcChainContext<
-        Target::CounterpartyChain,
-        Message = CosmosIbcMessage,
-        IbcMessage = CosmosIbcMessage,
-        Event = IbcEvent,
-        IbcEvent = IbcEvent,
-    >,
-    Target::TargetChain: MessageSenderContext,
+    SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>: IbcMessageSender<Self, Target>,
 {
     type IbcMessageSender = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
 }
