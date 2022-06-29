@@ -11,12 +11,20 @@ use crate::link::error::LinkError;
 use crate::link::RelaySummary;
 
 pub trait SubmitReply {
+    /// Creates a new, empty instance, i.e., comprising zero replies.
     fn empty() -> Self;
+
+    /// Counts the number of replies that this instance contains.
+    fn len(&self) -> usize;
 }
 
 impl SubmitReply for RelaySummary {
     fn empty() -> Self {
         RelaySummary::empty()
+    }
+
+    fn len(&self) -> usize {
+        self.events.len()
     }
 }
 
@@ -66,6 +74,10 @@ pub struct AsyncReply {
 impl SubmitReply for AsyncReply {
     fn empty() -> Self {
         Self { responses: vec![] }
+    }
+
+    fn len(&self) -> usize {
+        self.responses.len()
     }
 }
 
