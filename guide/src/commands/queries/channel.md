@@ -15,11 +15,11 @@ DESCRIPTION:
 
 FLAGS:
         --chain <CHAIN_ID>
-            identifier of the chain to query
+            Identifier of the chain to query
 
 OPTIONS:
         --verbose
-            enable verbose output, displaying the client and connection ids for each channel in the
+            Enable verbose output, displaying the client and connection ids for each channel in the
             response
 ```
 

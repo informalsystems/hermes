@@ -11,19 +11,36 @@ use crate::application::app_config;
 use crate::conclude::Output;
 
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[clap(
+    override_usage = "hermes keys delete --chain <CHAIN_ID> --key-name <KEY_NAME>\n\n    hermes keys delete --chain <CHAIN_ID> --all"
+)]
 pub struct KeysDeleteCmd {
     #[clap(
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "FLAGS",
         help = "Identifier of the chain"
     )]
     chain_id: ChainId,
 
-    #[clap(long = "key-name", value_name = "KEY_NAME", help = "Name of the key")]
+    #[clap(
+        long = "key-name",
+        required = true,
+        value_name = "KEY_NAME",
+        group = "delete_mode",
+        help_heading = "FLAGS",
+        help = "Name of the key"
+    )]
     key_name: Option<String>,
 
-    #[clap(long = "all", help = "Delete all keys")]
+    #[clap(
+        long = "all",
+        required = true,
+        group = "delete_mode",
+        help_heading = "FLAGS",
+        help = "Delete all keys"
+    )]
     all: bool,
 }
 
@@ -120,7 +137,11 @@ mod tests {
     #[test]
     fn test_keys_delete_key_name() {
         assert_eq!(
-            KeysDeleteCmd{ chain_id: ChainId::from_string("chain_id"), key_name: Some("to_delete".to_owned()), all: false },
+            KeysDeleteCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                key_name: Some("to_delete".to_owned()),
+                all: false
+            },
             KeysDeleteCmd::parse_from(&["test", "--chain", "chain_id", "--key-name", "to_delete"])
         )
     }
@@ -128,7 +149,11 @@ mod tests {
     #[test]
     fn test_keys_delete_all() {
         assert_eq!(
-            KeysDeleteCmd{ chain_id: ChainId::from_string("chain_id"), key_name: None, all: true },
+            KeysDeleteCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                key_name: None,
+                all: true
+            },
             KeysDeleteCmd::parse_from(&["test", "--chain", "chain_id", "--all"])
         )
     }
@@ -140,7 +165,15 @@ mod tests {
 
     #[test]
     fn test_keys_delete_key_name_or_all() {
-        assert!(KeysDeleteCmd::try_parse_from(&["test", "--chain", "chain_id", "--key-name", "to_delete", "--all"]).is_err())
+        assert!(KeysDeleteCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_id",
+            "--key-name",
+            "to_delete",
+            "--all"
+        ])
+        .is_err())
     }
 
     #[test]

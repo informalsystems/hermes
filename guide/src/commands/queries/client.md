@@ -17,14 +17,14 @@ DESCRIPTION:
 
 FLAGS:
         --host-chain <HOST_CHAIN_ID>
-            identifier of the chain to query
+            Identifier of the chain to query
 
 OPTIONS:
         --omit-chain-ids
-            omit printing the reference (or target) chain for each client
+            Omit printing the reference (or target) chain for each client
 
         --reference-chain <REFERENCE_CHAIN_ID>
-            filter for clients which target a specific chain id (implies '--omit-chain-ids')
+            Filter for clients which target a specific chain id (implies '--omit-chain-ids')
 ```
 
 __Example__

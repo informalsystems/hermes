@@ -20,13 +20,11 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct QueryChannelsCmd {
-    #[clap(required = true, help = "identifier of the chain to query")]
-    chain_id: ChainId,
-
     #[clap(
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "FLAGS",
         help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -287,23 +285,21 @@ mod tests {
     #[test]
     fn test_query_channels_required_only() {
         assert_eq!(
-            QueryChannelsCmd{ chain_id: ChainId::from_string("chain_id"), dst_chain_id: None, verbose: false },
+            QueryChannelsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                verbose: false
+            },
             QueryChannelsCmd::parse_from(&["test", "--chain", "chain_id"])
-        )
-    }
-
-    #[test]
-    fn test_query_channels_counterparty_chain() {
-        assert_eq!(
-            QueryChannelsCmd{ chain_id: ChainId::from_string("chain_id"), dst_chain_id: Some(ChainId::from_string("counterparty_chain_id")), verbose: false },
-            QueryChannelsCmd::parse_from(&["test", "--chain", "chain_id", "--counterparty-chain", "counterparty_chain_id"])
         )
     }
 
     #[test]
     fn test_query_channels_verbose() {
         assert_eq!(
-            QueryChannelsCmd{ chain_id: ChainId::from_string("chain_id"), dst_chain_id: None, verbose: true },
+            QueryChannelsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                verbose: true
+            },
             QueryChannelsCmd::parse_from(&["test", "--chain", "chain_id", "--verbose"])
         )
     }

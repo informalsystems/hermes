@@ -61,7 +61,12 @@ impl FromStr for EventFilter {
 #[derive(Debug, Parser, PartialEq)]
 pub struct ListenCmd {
     /// Identifier of the chain to listen for events from
-    #[clap(long = "chain", required = true, value_name = "CHAIN_ID")]
+    #[clap(
+        long = "chain",
+        required = true,
+        value_name = "CHAIN_ID",
+        help_heading = "FLAGS"
+    )]
     chain_id: ChainId,
 
     /// Add an event type to listen for, can be repeated.
@@ -163,7 +168,7 @@ fn subscribe(
 
 #[cfg(test)]
 mod tests {
-    use super::{ListenCmd, EventFilter};
+    use super::{EventFilter, ListenCmd};
 
     use std::str::FromStr;
 
@@ -173,7 +178,10 @@ mod tests {
     #[test]
     fn test_listen_required_only() {
         assert_eq!(
-            ListenCmd{ chain_id: ChainId::from_string("chain_id"), events: vec!() },
+            ListenCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                events: vec!()
+            },
             ListenCmd::parse_from(&["test", "--chain", "chain_id"])
         )
     }
@@ -181,22 +189,54 @@ mod tests {
     #[test]
     fn test_listen_single_event() {
         assert_eq!(
-            ListenCmd{ chain_id: ChainId::from_string("chain_id"), events: vec!(EventFilter::from_str("Tx").unwrap()) },
-            ListenCmd::parse_from(&["test", "--chain", "chain_id", "--event", "Tx"])
+            ListenCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                events: vec!(EventFilter::from_str("Tx").unwrap())
+            },
+            ListenCmd::parse_from(&["test", "--chain", "chain_id", "--events", "Tx"])
         )
     }
 
     #[test]
     fn test_listen_multiple_events() {
         assert_eq!(
-            ListenCmd{ chain_id: ChainId::from_string("chain_id"), events: vec!(EventFilter::from_str("Tx").unwrap(), EventFilter::from_str("NewBlock").unwrap()) },
-            ListenCmd::parse_from(&["test", "--chain", "chain_id", "--event", "Tx", "--event", "NewBlock"])
+            ListenCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                events: vec!(
+                    EventFilter::from_str("Tx").unwrap(),
+                    EventFilter::from_str("NewBlock").unwrap()
+                )
+            },
+            ListenCmd::parse_from(&[
+                "test", "--chain", "chain_id", "--events", "Tx", "--events", "NewBlock"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_listen_multiple_events_single_flag() {
+        assert_eq!(
+            ListenCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                events: vec!(
+                    EventFilter::from_str("Tx").unwrap(),
+                    EventFilter::from_str("NewBlock").unwrap()
+                )
+            },
+            ListenCmd::parse_from(&["test", "--chain", "chain_id", "--events", "Tx", "NewBlock"])
         )
     }
 
     #[test]
     fn test_listen_unknown_event_filter() {
-        assert!(ListenCmd::try_parse_from(&["test", "--chain", "chain_id", "--event", "TestFilter"]).is_err())
+        assert!(ListenCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_id",
+            "--events",
+            "TestFilter"
+        ])
+        .is_err())
     }
 
     #[test]

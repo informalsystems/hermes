@@ -23,6 +23,7 @@ pub struct KeyBalanceCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "FLAGS",
         help = "Identifier of the chain"
     )]
     chain_id: ChainId,
@@ -81,7 +82,10 @@ mod tests {
     #[test]
     fn test_keys_balance_required_only() {
         assert_eq!(
-            KeyBalanceCmd{ chain_id: ChainId::from_string("chain_id"), key_name: None },
+            KeyBalanceCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                key_name: None
+            },
             KeyBalanceCmd::parse_from(&["test", "--chain", "chain_id"])
         )
     }
@@ -89,7 +93,10 @@ mod tests {
     #[test]
     fn test_keys_balance_name() {
         assert_eq!(
-            KeyBalanceCmd{ chain_id: ChainId::from_string("chain_id"), key_name: Some("kname".to_owned()) },
+            KeyBalanceCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                key_name: Some("kname".to_owned())
+            },
             KeyBalanceCmd::parse_from(&["test", "--chain", "chain_id", "--key-name", "kname"])
         )
     }

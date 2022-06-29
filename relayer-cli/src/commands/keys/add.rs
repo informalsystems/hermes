@@ -31,14 +31,23 @@ use crate::conclude::Output;
 /// The key-file and mnemonic-file flags can't be given at the same time, this will cause a terminating error.
 /// If successful the key will be created or restored, depending on which flag was given.
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[clap(
+    override_usage = "hermes keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>\n\n    hermes keys add [OPTIONS] --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>"
+)]
 pub struct KeysAddCmd {
-    #[clap(long = "chain", required = true, help = "Identifier of the chain")]
+    #[clap(
+        long = "chain",
+        required = true,
+        help_heading = "FLAGS",
+        help = "Identifier of the chain"
+    )]
     chain_id: ChainId,
 
     #[clap(
         long = "key-file",
         required = true,
         value_name = "KEY_FILE",
+        help_heading = "FLAGS",
         help = "Path to the key file",
         group = "add-restore"
     )]
@@ -48,6 +57,7 @@ pub struct KeysAddCmd {
         long = "mnemonic-file",
         required = true,
         value_name = "MNEMONIC_FILE",
+        help_heading = "FLAGS",
         help = "Path to file containing mnemonic to restore the key from",
         group = "add-restore"
     )]
@@ -192,7 +202,13 @@ mod tests {
     #[test]
     fn test_keys_add_key_file() {
         assert_eq!(
-            KeysAddCmd{ chain_id: ChainId::from_string("chain_id"), key_file: Some(PathBuf::from("key_file")), mnemonic_file: None, key_name: None, hd_path: "m/44'/118'/0'/0/0".to_string() },
+            KeysAddCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                key_file: Some(PathBuf::from("key_file")),
+                mnemonic_file: None,
+                key_name: None,
+                hd_path: "m/44'/118'/0'/0/0".to_string()
+            },
             KeysAddCmd::parse_from(&["test", "--chain", "chain_id", "--key-file", "key_file"])
         )
     }
@@ -200,8 +216,20 @@ mod tests {
     #[test]
     fn test_keys_add_mnemonic_file() {
         assert_eq!(
-            KeysAddCmd{ chain_id: ChainId::from_string("chain_id"), key_file: None, mnemonic_file: Some(PathBuf::from("mnemonic_file")), key_name: None, hd_path: "m/44'/118'/0'/0/0".to_string() },
-            KeysAddCmd::parse_from(&["test", "--chain", "chain_id", "--mnemonic-file", "mnemonic_file"])
+            KeysAddCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                key_file: None,
+                mnemonic_file: Some(PathBuf::from("mnemonic_file")),
+                key_name: None,
+                hd_path: "m/44'/118'/0'/0/0".to_string()
+            },
+            KeysAddCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--mnemonic-file",
+                "mnemonic_file"
+            ])
         )
     }
 
@@ -212,9 +240,17 @@ mod tests {
 
     #[test]
     fn test_keys_add_key_and_mnemonic() {
-        assert!(KeysAddCmd::try_parse_from(&["test", "--chain", "chain_id", "--key-file", "key_file", "--mnemonic-file", "mnemonic_file"]).is_err());
+        assert!(KeysAddCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_id",
+            "--key-file",
+            "key_file",
+            "--mnemonic-file",
+            "mnemonic_file"
+        ])
+        .is_err());
     }
-
 
     #[test]
     fn test_keys_add_no_chain() {

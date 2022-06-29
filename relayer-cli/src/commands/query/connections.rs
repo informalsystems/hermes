@@ -15,6 +15,7 @@ pub struct QueryConnectionsCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "FLAGS",
         help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -58,7 +59,9 @@ mod tests {
     #[test]
     fn test_query_connections() {
         assert_eq!(
-            QueryConnectionsCmd{ chain_id: ChainId::from_string("chain_id") },
+            QueryConnectionsCmd {
+                chain_id: ChainId::from_string("chain_id")
+            },
             QueryConnectionsCmd::parse_from(&["test", "--chain", "chain_id"])
         )
     }

@@ -18,6 +18,7 @@ pub struct KeysListCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "FLAGS",
         help = "Identifier of the chain"
     )]
     chain_id: ChainId,
@@ -84,7 +85,9 @@ mod tests {
     #[test]
     fn test_keys_list() {
         assert_eq!(
-            KeysListCmd{ chain_id: ChainId::from_string("chain_id") },
+            KeysListCmd {
+                chain_id: ChainId::from_string("chain_id")
+            },
             KeysListCmd::parse_from(&["test", "--chain", "chain_id"])
         )
     }

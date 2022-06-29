@@ -17,10 +17,20 @@ use crate::conclude::{exit_with_unrecoverable_error, json, Output};
 /// If successful the the base denomination and the path will be displayed.
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct DenomTraceCmd {
-    #[clap(long = "chain", required = true, help = "Identifier of the chain")]
+    #[clap(
+        long = "chain",
+        required = true,
+        help_heading = "FLAGS",
+        help = "Identifier of the chain"
+    )]
     chain_id: ChainId,
 
-    #[clap(long = "hash", required = true, help = "Trace hash to query")]
+    #[clap(
+        long = "hash",
+        required = true,
+        help_heading = "FLAGS",
+        help = "Trace hash to query"
+    )]
     hash: String,
 }
 
@@ -57,7 +67,10 @@ mod tests {
     #[test]
     fn test_transfer_denom_trace() {
         assert_eq!(
-            DenomTraceCmd{ chain_id: ChainId::from_string("chain_id"), hash: "abcdefg".to_owned() },
+            DenomTraceCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                hash: "abcdefg".to_owned()
+            },
             DenomTraceCmd::parse_from(&["test", "--chain", "chain_id", "--hash", "abcdefg"])
         )
     }

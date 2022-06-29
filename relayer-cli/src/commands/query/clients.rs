@@ -19,6 +19,7 @@ pub struct QueryAllClientsCmd {
         long = "host-chain",
         required = true,
         value_name = "HOST_CHAIN_ID",
+        help_heading = "FLAGS",
         help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -119,7 +120,11 @@ mod tests {
     #[test]
     fn test_query_clients_required_only() {
         assert_eq!(
-            QueryAllClientsCmd{ chain_id: ChainId::from_string("chain_host_id"), src_chain_id: None, omit_chain_ids: false },
+            QueryAllClientsCmd {
+                chain_id: ChainId::from_string("chain_host_id"),
+                src_chain_id: None,
+                omit_chain_ids: false
+            },
             QueryAllClientsCmd::parse_from(&["test", "--host-chain", "chain_host_id"])
         )
     }
@@ -127,16 +132,35 @@ mod tests {
     #[test]
     fn test_query_clients_omit_chain_ids() {
         assert_eq!(
-            QueryAllClientsCmd{ chain_id: ChainId::from_string("chain_host_id"), src_chain_id: None, omit_chain_ids: true },
-            QueryAllClientsCmd::parse_from(&["test", "--host-chain", "chain_host_id", "--omit-chain-ids"])
+            QueryAllClientsCmd {
+                chain_id: ChainId::from_string("chain_host_id"),
+                src_chain_id: None,
+                omit_chain_ids: true
+            },
+            QueryAllClientsCmd::parse_from(&[
+                "test",
+                "--host-chain",
+                "chain_host_id",
+                "--omit-chain-ids"
+            ])
         )
     }
 
     #[test]
     fn test_query_clients_reference_chain() {
         assert_eq!(
-            QueryAllClientsCmd{ chain_id: ChainId::from_string("chain_host_id"), src_chain_id: Some(ChainId::from_string("reference_chain_id")), omit_chain_ids: false },
-            QueryAllClientsCmd::parse_from(&["test", "--host-chain", "chain_host_id", "--reference-chain", "reference_chain_id"])
+            QueryAllClientsCmd {
+                chain_id: ChainId::from_string("chain_host_id"),
+                src_chain_id: Some(ChainId::from_string("reference_chain_id")),
+                omit_chain_ids: false
+            },
+            QueryAllClientsCmd::parse_from(&[
+                "test",
+                "--host-chain",
+                "chain_host_id",
+                "--reference-chain",
+                "reference_chain_id"
+            ])
         )
     }
 

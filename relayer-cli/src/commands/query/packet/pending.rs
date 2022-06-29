@@ -35,6 +35,7 @@ pub struct QueryPendingPacketsCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "FLAGS",
         help = "Identifier of the chain at one end of the channel"
     )]
     chain_id: ChainId,
@@ -43,15 +44,17 @@ pub struct QueryPendingPacketsCmd {
         long = "port",
         required = true,
         value_name = "PORT_ID",
+        help_heading = "FLAGS",
         help = "Port identifier on the chain given by <CHAIN_ID>"
     )]
     port_id: PortId,
 
     #[clap(
         long = "channel",
-        alias = "chan",
+        visible_alias = "chan",
         required = true,
         value_name = "CHANNEL_ID",
+        help_heading = "FLAGS",
         help = "Channel identifier on the chain given by <CHAIN_ID>"
     )]
     channel_id: ChannelId,
@@ -108,28 +111,77 @@ mod tests {
     use std::str::FromStr;
 
     use abscissa_core::clap::Parser;
-    use ibc::core::ics24_host::identifier::{ChainId, PortId, ChannelId};
+    use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
     #[test]
     fn test_query_packet_pending() {
         assert_eq!(
-            QueryPendingPacketsCmd{ chain_id: ChainId::from_string("chain_id"), port_id: PortId::from_str("port_id").unwrap(), channel_id: ChannelId::from_str("channel-07").unwrap() },
-            QueryPendingPacketsCmd::parse_from(&["test", "--chain", "chain_id", "--port", "port_id", "--chan", "channel-07"])
+            QueryPendingPacketsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                port_id: PortId::from_str("port_id").unwrap(),
+                channel_id: ChannelId::from_str("channel-07").unwrap()
+            },
+            QueryPendingPacketsCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--port",
+                "port_id",
+                "--channel",
+                "channel-07"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_packet_pending_chan_alias() {
+        assert_eq!(
+            QueryPendingPacketsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                port_id: PortId::from_str("port_id").unwrap(),
+                channel_id: ChannelId::from_str("channel-07").unwrap()
+            },
+            QueryPendingPacketsCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--port",
+                "port_id",
+                "--chan",
+                "channel-07"
+            ])
         )
     }
 
     #[test]
     fn test_query_packet_pending_no_chan() {
-        assert!(QueryPendingPacketsCmd::try_parse_from(&["test", "--chain", "chain_id", "--port", "port_id"]).is_err())
+        assert!(QueryPendingPacketsCmd::try_parse_from(&[
+            "test", "--chain", "chain_id", "--port", "port_id"
+        ])
+        .is_err())
     }
 
     #[test]
     fn test_query_packet_pending_no_port() {
-        assert!(QueryPendingPacketsCmd::try_parse_from(&["test", "--chain", "chain_id", "--chan", "channel-07"]).is_err())
+        assert!(QueryPendingPacketsCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_id",
+            "--channel",
+            "channel-07"
+        ])
+        .is_err())
     }
 
     #[test]
     fn test_query_packet_pending_no_chain() {
-        assert!(QueryPendingPacketsCmd::try_parse_from(&["test", "--port", "port_id", "--chan", "channel-07"]).is_err())
+        assert!(QueryPendingPacketsCmd::try_parse_from(&[
+            "test",
+            "--port",
+            "port_id",
+            "--channel",
+            "channel-07"
+        ])
+        .is_err())
     }
 }

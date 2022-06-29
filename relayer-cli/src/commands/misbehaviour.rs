@@ -20,6 +20,7 @@ pub struct MisbehaviourCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "FLAGS",
         help = "Identifier of the chain where client updates are monitored for misbehaviour"
     )]
     chain_id: ChainId,
@@ -28,6 +29,7 @@ pub struct MisbehaviourCmd {
         long = "client",
         required = true,
         value_name = "CLIENT_ID",
+        help_heading = "FLAGS",
         help = "Identifier of the client to be monitored for misbehaviour"
     )]
     client_id: ClientId,
@@ -146,7 +148,10 @@ mod tests {
     #[test]
     fn test_misbehaviour() {
         assert_eq!(
-            MisbehaviourCmd{ chain_id: ChainId::from_string("chain_id"), client_id: ClientId::from_str("client_id").unwrap() },
+            MisbehaviourCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                client_id: ClientId::from_str("client_id").unwrap()
+            },
             MisbehaviourCmd::parse_from(&["test", "--chain", "chain_id", "--client", "client_id"])
         )
     }

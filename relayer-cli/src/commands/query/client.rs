@@ -26,6 +26,7 @@ pub struct QueryClientStateCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "FLAGS",
         help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -34,6 +35,7 @@ pub struct QueryClientStateCmd {
         long = "client",
         required = true,
         value_name = "CLIENT_ID",
+        help_heading = "FLAGS",
         help = "Identifier of the client to query"
     )]
     client_id: ClientId,
@@ -77,6 +79,7 @@ pub struct QueryClientConsensusCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "FLAGS",
         help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -85,6 +88,7 @@ pub struct QueryClientConsensusCmd {
         long = "client",
         required = true,
         value_name = "CLIENT_ID",
+        help_heading = "FLAGS",
         help = "Identifier of the client to query"
     )]
     client_id: ClientId,
@@ -189,6 +193,7 @@ pub struct QueryClientHeaderCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "FLAGS",
         help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -197,6 +202,7 @@ pub struct QueryClientHeaderCmd {
         long = "client",
         required = true,
         value_name = "CLIENT_ID",
+        help_heading = "FLAGS",
         help = "Identifier of the client to query"
     )]
     client_id: ClientId,
@@ -205,6 +211,7 @@ pub struct QueryClientHeaderCmd {
         long = "consensus-height",
         required = true,
         value_name = "CONSENSUS_HEIGHT",
+        help_heading = "FLAGS",
         help = "Height of header to query"
     )]
     consensus_height: u64,
@@ -274,6 +281,7 @@ pub struct QueryClientConnectionsCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "FLAGS",
         help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -282,6 +290,7 @@ pub struct QueryClientConnectionsCmd {
         long = "client",
         required = true,
         value_name = "CLIENT_ID",
+        help_heading = "FLAGS",
         help = "Identifier of the client to query"
     )]
     client_id: ClientId,
@@ -317,7 +326,10 @@ impl Runnable for QueryClientConnectionsCmd {
 
 #[cfg(test)]
 mod tests {
-    use super::{QueryClientStateCmd, QueryClientConnectionsCmd, QueryClientConsensusCmd, QueryClientHeaderCmd};
+    use super::{
+        QueryClientConnectionsCmd, QueryClientConsensusCmd, QueryClientHeaderCmd,
+        QueryClientStateCmd,
+    };
 
     use std::str::FromStr;
 
@@ -327,58 +339,137 @@ mod tests {
     #[test]
     fn test_query_client_connections_required_only() {
         assert_eq!(
-            QueryClientConnectionsCmd{ chain_id: ChainId::from_string("chain_id"), client_id: ClientId::from_str("client_id").unwrap(), height: None },
-            QueryClientConnectionsCmd::parse_from(&["test", "--chain", "chain_id", "--client", "client_id"])
+            QueryClientConnectionsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                client_id: ClientId::from_str("client_id").unwrap(),
+                height: None
+            },
+            QueryClientConnectionsCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--client",
+                "client_id"
+            ])
         )
     }
 
     #[test]
     fn test_query_client_connections_height() {
         assert_eq!(
-            QueryClientConnectionsCmd{ chain_id: ChainId::from_string("chain_id"), client_id: ClientId::from_str("client_id").unwrap(), height: Some(42) },
-            QueryClientConnectionsCmd::parse_from(&["test", "--chain", "chain_id", "--client", "client_id", "--height", "42"])
+            QueryClientConnectionsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                client_id: ClientId::from_str("client_id").unwrap(),
+                height: Some(42)
+            },
+            QueryClientConnectionsCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--client",
+                "client_id",
+                "--height",
+                "42"
+            ])
         )
     }
 
     #[test]
     fn test_query_client_connections_no_client() {
-        assert!(QueryClientConnectionsCmd::try_parse_from(&["test", "--chain", "chain_id"]).is_err())
+        assert!(
+            QueryClientConnectionsCmd::try_parse_from(&["test", "--chain", "chain_id"]).is_err()
+        )
     }
 
     #[test]
     fn test_query_client_connections_no_chain() {
-        assert!(QueryClientConnectionsCmd::try_parse_from(&["test", "--client", "client_id"]).is_err())
+        assert!(
+            QueryClientConnectionsCmd::try_parse_from(&["test", "--client", "client_id"]).is_err()
+        )
     }
 
     #[test]
     fn test_query_client_consensus_required_only() {
         assert_eq!(
-            QueryClientConsensusCmd{ chain_id: ChainId::from_string("chain_id"), client_id: ClientId::from_str("client_id").unwrap(), consensus_height: None, heights_only: false, height: None },
-            QueryClientConsensusCmd::parse_from(&["test", "--chain", "chain_id", "--client", "client_id"])
+            QueryClientConsensusCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                client_id: ClientId::from_str("client_id").unwrap(),
+                consensus_height: None,
+                heights_only: false,
+                height: None
+            },
+            QueryClientConsensusCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--client",
+                "client_id"
+            ])
         )
     }
 
     #[test]
     fn test_query_client_consensus_consensus_height() {
         assert_eq!(
-            QueryClientConsensusCmd{ chain_id: ChainId::from_string("chain_id"), client_id: ClientId::from_str("client_id").unwrap(), consensus_height: Some(42), heights_only: false, height: None },
-            QueryClientConsensusCmd::parse_from(&["test", "--chain", "chain_id", "--client", "client_id", "--consensus-height", "42"])
+            QueryClientConsensusCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                client_id: ClientId::from_str("client_id").unwrap(),
+                consensus_height: Some(42),
+                heights_only: false,
+                height: None
+            },
+            QueryClientConsensusCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--client",
+                "client_id",
+                "--consensus-height",
+                "42"
+            ])
         )
     }
 
     #[test]
     fn test_query_client_consensus_height() {
         assert_eq!(
-            QueryClientConsensusCmd{ chain_id: ChainId::from_string("chain_id"), client_id: ClientId::from_str("client_id").unwrap(), consensus_height: None, heights_only: false, height: Some(42) },
-            QueryClientConsensusCmd::parse_from(&["test", "--chain", "chain_id", "--client", "client_id", "--height", "42"])
+            QueryClientConsensusCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                client_id: ClientId::from_str("client_id").unwrap(),
+                consensus_height: None,
+                heights_only: false,
+                height: Some(42)
+            },
+            QueryClientConsensusCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--client",
+                "client_id",
+                "--height",
+                "42"
+            ])
         )
     }
 
     #[test]
     fn test_query_client_consensus_heights_only() {
         assert_eq!(
-            QueryClientConsensusCmd{ chain_id: ChainId::from_string("chain_id"), client_id: ClientId::from_str("client_id").unwrap(), consensus_height: None, heights_only: true, height: None },
-            QueryClientConsensusCmd::parse_from(&["test", "--chain", "chain_id", "--client", "client_id", "--heights-only"])
+            QueryClientConsensusCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                client_id: ClientId::from_str("client_id").unwrap(),
+                consensus_height: None,
+                heights_only: true,
+                height: None
+            },
+            QueryClientConsensusCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--client",
+                "client_id",
+                "--heights-only"
+            ])
         )
     }
 
@@ -389,53 +480,126 @@ mod tests {
 
     #[test]
     fn test_query_client_consensus_no_chain() {
-        assert!(QueryClientConsensusCmd::try_parse_from(&["test", "--client", "client_id"]).is_err())
+        assert!(
+            QueryClientConsensusCmd::try_parse_from(&["test", "--client", "client_id"]).is_err()
+        )
     }
-    
+
     #[test]
     fn test_query_client_header_required_only() {
         assert_eq!(
-            QueryClientHeaderCmd{ chain_id: ChainId::from_string("chain_id"), client_id: ClientId::from_str("client_id").unwrap(), consensus_height: 42, height: None },
-            QueryClientHeaderCmd::parse_from(&["test", "--chain", "chain_id", "--client", "client_id", "--consensus-height", "42"])
+            QueryClientHeaderCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                client_id: ClientId::from_str("client_id").unwrap(),
+                consensus_height: 42,
+                height: None
+            },
+            QueryClientHeaderCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--client",
+                "client_id",
+                "--consensus-height",
+                "42"
+            ])
         )
     }
-    
+
     #[test]
     fn test_query_client_header_height() {
         assert_eq!(
-            QueryClientHeaderCmd{ chain_id: ChainId::from_string("chain_id"), client_id: ClientId::from_str("client_id").unwrap(), consensus_height: 42, height: Some(21) },
-            QueryClientHeaderCmd::parse_from(&["test", "--chain", "chain_id", "--client", "client_id", "--consensus-height", "42", "--height", "21"])
+            QueryClientHeaderCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                client_id: ClientId::from_str("client_id").unwrap(),
+                consensus_height: 42,
+                height: Some(21)
+            },
+            QueryClientHeaderCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--client",
+                "client_id",
+                "--consensus-height",
+                "42",
+                "--height",
+                "21"
+            ])
         )
     }
 
     #[test]
     fn test_query_client_header_no_consensus_height() {
-        assert!(QueryClientHeaderCmd::try_parse_from(&["test", "--chain", "chain_id", "--client", "client_id"]).is_err())
+        assert!(QueryClientHeaderCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_id",
+            "--client",
+            "client_id"
+        ])
+        .is_err())
     }
 
     #[test]
     fn test_query_client_header_no_client() {
-        assert!(QueryClientHeaderCmd::try_parse_from(&["test", "--chain", "chain_id", "--consensus-height", "42"]).is_err())
+        assert!(QueryClientHeaderCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_id",
+            "--consensus-height",
+            "42"
+        ])
+        .is_err())
     }
 
     #[test]
     fn test_query_client_header_no_chain() {
-        assert!(QueryClientHeaderCmd::try_parse_from(&["test", "--client", "client_id", "--consensus-height", "42"]).is_err())
+        assert!(QueryClientHeaderCmd::try_parse_from(&[
+            "test",
+            "--client",
+            "client_id",
+            "--consensus-height",
+            "42"
+        ])
+        .is_err())
     }
 
     #[test]
     fn test_query_client_state_required_only() {
         assert_eq!(
-            QueryClientStateCmd{ chain_id: ChainId::from_string("chain_id"), client_id: ClientId::from_str("client_id").unwrap(), height: None },
-            QueryClientStateCmd::parse_from(&["test", "--chain", "chain_id", "--client", "client_id"])
+            QueryClientStateCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                client_id: ClientId::from_str("client_id").unwrap(),
+                height: None
+            },
+            QueryClientStateCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--client",
+                "client_id"
+            ])
         )
     }
 
     #[test]
     fn test_query_client_state_height() {
         assert_eq!(
-            QueryClientStateCmd{ chain_id: ChainId::from_string("chain_id"), client_id: ClientId::from_str("client_id").unwrap(), height: Some(42) },
-            QueryClientStateCmd::parse_from(&["test", "--chain", "chain_id", "--client", "client_id", "--height", "42"])
+            QueryClientStateCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                client_id: ClientId::from_str("client_id").unwrap(),
+                height: Some(42)
+            },
+            QueryClientStateCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--client",
+                "client_id",
+                "--height",
+                "42"
+            ])
         )
     }
 

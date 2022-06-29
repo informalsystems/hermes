@@ -7,7 +7,7 @@ use std::io;
 
 #[derive(Debug, Parser, PartialEq)]
 pub struct CompletionsCmd {
-    #[clap(long = "shell", value_name = "SHELL", arg_enum)]
+    #[clap(long = "shell", value_name = "SHELL", arg_enum, help_heading = "FLAGS")]
     shell: Shell,
 }
 
@@ -29,7 +29,7 @@ mod tests {
     #[test]
     fn test_completions() {
         assert_eq!(
-            CompletionsCmd{ shell: Shell::Zsh},
+            CompletionsCmd { shell: Shell::Zsh },
             CompletionsCmd::parse_from(&["test", "--shell", "zsh"])
         )
     }
