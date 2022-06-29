@@ -106,6 +106,53 @@ dyn_clone::clone_trait_object!(ClientState);
 
 `dyn-clone` also provides a `clone_box()` function that can be used to get a `Box<T>` from a `&T`.
 
+#### Deriving `serde::{Serialize, Deserialize}` for trait objects
+
+Replacing the `AnyHeader` with a `Box<dyn Header>` wouldn't work in the code below because `Deserialize`
+requires `Self: Sized` and `Serialize` uses generic types.
+
+```rust
+#[derive(Deserialize, Serialize)]
+pub struct UpdateClient {
+    pub common: Attributes,
+    pub header: Option<AnyHeader>,
+}
+```
+
+This can be solved using the `ibc_proto::google::protobuf::Any` type instead and having the light client traits provide
+an encoding to `Any` ->
+
+```rust
+use ibc_proto::google::protobuf::Any;
+
+pub trait Header {
+    /// Encode to canonical protobuf representation
+    fn encode_any(&self) -> Any;
+
+    /* ... */
+}
+```
+
+Thankfully, the core modules code doesn't use the `serde` derivations except in logs and errors. Host and light-client
+implementations can optionally choose to downcast to the concrete type and use it's `serde` derivations directly (if
+available).
+
+#### Light client traits cannot have constructors
+
+This restriction comes from the fact that trait methods of object safe traits cannot return `Self`.  
+However, we would need a ctor to be able to create a `ClientState` and `ConsensusState` in the `create_client` handler.
+This can be done using a `where Self: Sized` clause on the trait method.
+
+```rust
+use ibc_proto::google::protobuf::Any;
+
+pub trait ClientState {
+    fn decode(any: Any) -> Box<dyn ClientState> where Self: Sized;
+
+    /* ... */
+}
+```
+
 ## Status
 
 Proposed
