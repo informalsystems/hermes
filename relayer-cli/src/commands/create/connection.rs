@@ -15,7 +15,9 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
-#[clap(override_usage("hermes create connection [OPTIONS] --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID>\n\n    hermes create connection [OPTIONS] --a-chain <A_CHAIN_ID> --a-client <A_CLIENT_ID> --b-client <B_CLIENT_ID>"))]
+#[clap(override_usage("hermes create connection [OPTIONS] --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID>
+
+    hermes create connection [OPTIONS] --a-chain <A_CHAIN_ID> --a-client <A_CLIENT_ID> --b-client <B_CLIENT_ID>"))]
 pub struct CreateConnectionCommand {
     #[clap(
         long = "a-chain",

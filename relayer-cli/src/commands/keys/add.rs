@@ -32,7 +32,9 @@ use crate::conclude::Output;
 /// If successful the key will be created or restored, depending on which flag was given.
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 #[clap(
-    override_usage = "hermes keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>\n\n    hermes keys add [OPTIONS] --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>"
+    override_usage = "hermes keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>
+
+    hermes keys add [OPTIONS] --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>"
 )]
 pub struct KeysAddCmd {
     #[clap(
