@@ -334,10 +334,7 @@ impl TryFrom<Packet> for Vec<Tag> {
         attributes.push(sequence);
         let timeout_height = Tag {
             key: PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY.parse().unwrap(),
-            value: match p.timeout_height {
-                Some(timeout_height) => timeout_height.to_string().parse().unwrap(),
-                None => "0-0".parse().unwrap(),
-            },
+            value: p.timeout_height.into(),
         };
         attributes.push(timeout_height);
         let timeout_timestamp = Tag {
@@ -1231,7 +1228,7 @@ mod tests {
             destination_port: "b_test_port".parse().unwrap(),
             destination_channel: "channel-1".parse().unwrap(),
             data: "test_data".as_bytes().to_vec(),
-            timeout_height: Some(Height::new(1, 10).unwrap()),
+            timeout_height: Height::new(1, 10).unwrap().into(),
             timeout_timestamp: Timestamp::now(),
         };
         let mut abci_events = vec![];

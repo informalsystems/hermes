@@ -60,10 +60,11 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
     }
 
     let latest_height = ctx.host_height();
-    if let Some(timeout_height) = packet.timeout_height {
-        if timeout_height <= latest_height {
-            return Err(Error::low_packet_height(latest_height, timeout_height));
-        }
+    if packet.timeout_height.has_expired(&latest_height) {
+        return Err(Error::low_packet_height(
+            latest_height,
+            packet.timeout_height,
+        ));
     }
 
     let latest_timestamp = ctx.host_timestamp();
@@ -194,7 +195,7 @@ mod tests {
             destination_port: PortId::default(),
             destination_channel: ChannelId::default(),
             data: Vec::new(),
-            timeout_height: Some(client_height),
+            timeout_height: client_height.into(),
             timeout_timestamp: Timestamp::from_nanoseconds(1).unwrap(),
         };
 

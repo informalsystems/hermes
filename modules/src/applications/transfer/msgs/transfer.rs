@@ -8,7 +8,7 @@ use ibc_proto::ibc::applications::transfer::v1::MsgTransfer as RawMsgTransfer;
 use tendermint_proto::Protobuf;
 
 use crate::applications::transfer::error::Error;
-use crate::core::ics02_client::height::Height;
+use crate::core::ics04_channel::timeout::TimeoutHeight;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::signer::Signer;
 use crate::timestamp::Timestamp;
@@ -37,7 +37,7 @@ pub struct MsgTransfer<C = Coin> {
     pub receiver: Signer,
     /// Timeout height relative to the current block height.
     /// The timeout is disabled when set to None.
-    pub timeout_height: Option<Height>,
+    pub timeout_height: TimeoutHeight,
     /// Timeout timestamp relative to the current block timestamp.
     /// The timeout is disabled when set to 0.
     pub timeout_timestamp: Timestamp,
@@ -63,32 +63,9 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
         let timeout_timestamp = Timestamp::from_nanoseconds(raw_msg.timeout_timestamp)
             .map_err(|_| Error::invalid_packet_timeout_timestamp(raw_msg.timeout_timestamp))?;
 
-        // `RawPacket.timeout_height` is treated differently because
-        //
-        // `RawHeight.timeout_height == {revision_number: 0, revision_height = 0}`
-        //
-        // is legal and meaningful, even though the Tendermint spec rejects this
-        // height as invalid. Thus, it must be parsed specially, where this
-        // special case means "no timeout".
-        //
-        // Note: it is important for `revision_number` to also be `0`, otherwise
-        // packet commitment proofs will be incorrect (see proof construction in
-        // `ChannelReader::packet_commitment()`). Note also that ibc-go conforms
-        // to this.
-        let timeout_height: Option<Height> = raw_msg
-            .timeout_height
-            .and_then(|raw_height| {
-                if raw_height.revision_number == 0 && raw_height.revision_height == 0 {
-                    None
-                } else {
-                    Some(raw_height)
-                }
-            })
-            .map(|raw_height| raw_height.try_into())
-            .transpose()
-            .map_err(|e| {
-                Error::invalid_packet_timeout_height(format!("invalid timeout height {}", e))
-            })?;
+        let timeout_height: TimeoutHeight = raw_msg.timeout_height.try_into().map_err(|e| {
+            Error::invalid_packet_timeout_height(format!("invalid timeout height {}", e))
+        })?;
 
         Ok(MsgTransfer {
             source_port: raw_msg
@@ -116,7 +93,7 @@ impl From<MsgTransfer> for RawMsgTransfer {
             token: Some(domain_msg.token),
             sender: domain_msg.sender.to_string(),
             receiver: domain_msg.receiver.to_string(),
-            timeout_height: domain_msg.timeout_height.map(|height| height.into()),
+            timeout_height: domain_msg.timeout_height.into(),
             timeout_timestamp: domain_msg.timeout_timestamp.nanoseconds(),
         }
     }
@@ -177,7 +154,7 @@ pub mod test_util {
             sender: address.clone(),
             receiver: address,
             timeout_timestamp: Timestamp::now().add(Duration::from_secs(10)).unwrap(),
-            timeout_height: Some(Height::new(0, height).unwrap()),
+            timeout_height: Height::new(0, height).unwrap().into(),
         }
     }
 }

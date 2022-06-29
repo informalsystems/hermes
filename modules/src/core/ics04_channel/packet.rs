@@ -6,7 +6,6 @@ use core::str::FromStr;
 use serde_derive::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
-use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
@@ -238,7 +237,7 @@ impl TryFrom<RawPacket> for Packet {
             .try_into()
             .map_err(|_| Error::invalid_timeout_height())?;
 
-        if packet_timeout_height.has_timeout() == false && raw_pkt.timeout_timestamp == 0 {
+        if !packet_timeout_height.has_timeout() && raw_pkt.timeout_timestamp == 0 {
             return Err(Error::zero_packet_timeout());
         }
         if raw_pkt.data.is_empty() {
@@ -328,15 +327,7 @@ impl From<Packet> for RawPacket {
             destination_port: packet.destination_port.to_string(),
             destination_channel: packet.destination_channel.to_string(),
             data: packet.data,
-            // We map "no timeout height" to `Some(RawHeight::zero)` due to a quirk
-            // in ICS-4. See https://github.com/cosmos/ibc/issues/776.
-            timeout_height: match packet.timeout_height {
-                Some(height) => Some(height.into()),
-                None => Some(RawHeight {
-                    revision_number: 0,
-                    revision_height: 0,
-                }),
-            },
+            timeout_height: packet.timeout_height.into(),
             timeout_timestamp: packet.timeout_timestamp.nanoseconds(),
         }
     }
