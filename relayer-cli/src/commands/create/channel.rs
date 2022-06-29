@@ -11,7 +11,7 @@ use ibc::core::ics04_channel::Version;
 use ibc::core::ics24_host::identifier::{ChainId, ConnectionId, PortId};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
-    HeightQuery, IncludeProof, QueryClientStateRequest, QueryConnectionRequest,
+    IncludeProof, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
 use ibc_relayer::channel::Channel;
 use ibc_relayer::connection::Connection;
@@ -23,79 +23,93 @@ use crate::prelude::*;
 use ibc_relayer::config::default::connection_delay;
 
 static PROMPT: &str = "Are you sure you want a new connection & clients to be created? Hermes will use default security parameters.";
-static HINT: &str = "Consider using the default invocation\n\nhermes create channel --port-a <PORT-ID> --port-b <PORT-ID> <CHAIN-A-ID> <CONNECTION-A-ID>\n\nto re-use a pre-existing connection.";
+static HINT: &str = "Consider using the default invocation\n\nhermes create channel --a-port <PORT-ID> --b-port <PORT-ID> --a-chain <CHAIN-A-ID> --a-connection <CONNECTION-A-ID>\n\nto re-use a pre-existing connection.";
 
 /// The data structure that represents all the possible options when invoking
 /// the `create channel` CLI command.
 ///
 /// There are two possible ways to invoke this command:
 ///
-/// `create channel --port-a <Port-ID> --port-b <Port-ID> <Chain-A-ID> <Connection-ID>` is the default
-/// way in which this command should be used, specifying a `Connection-ID` for this new channel
-/// to re-use. The command expects that `Connection-ID` is associated with chain A.
+/// `create channel --a-port <A_PORT_ID> --b-port <B_PORT_ID> --a-chain <A_CHAIN_ID> --a-conn <A_CONNECTION_ID>`
+/// is the default way in which this command should be used, specifying a `Connection-ID`
+/// associated with chain A for this new channel to re-use.
 ///
-/// `create channel --port-a <Port-ID> --port-b <Port-ID> <Chain-A-ID> <Chain-B-ID> --new-client-connection`
-/// to indicate that a new connection/client pair is being created as part of this new channel.
-/// This brings up an interactive yes/no prompt to ensure that the operator at least
-/// considers the fact that they're initializing a new connection with the channel.
+/// `create channel --a-port <A_PORT_ID> --b-port <B_PORT_ID> --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --new-client-conn`
+/// can alternatively be used to indicate that a new connection/client pair is being
+/// created as part of this new channel. This brings up an interactive yes/no prompt
+/// to ensure that the operator at least considers the fact that they're initializing a
+/// new connection with the channel. This prompt can be skipped by appending the `--yes`
+/// flag to the command.
 ///
 /// Note that `Connection-ID`s have to be considered based off of the chain's perspective. Although
 /// chain A and chain B might refer to the connection with different names, they are actually referring
 /// to the same connection.
 #[derive(Clone, Command, Debug, Parser)]
-#[clap(disable_version_flag = true)]
 pub struct CreateChannelCommand {
     #[clap(
+        long = "a-chain",
         required = true,
+        value_name = "A_CHAIN_ID",
         help = "Identifier of the side `a` chain for the new channel"
     )]
     chain_a: ChainId,
 
     #[clap(
-        short,
-        long,
+        long = "b-chain",
+        value_name = "B_CHAIN_ID",
         help = "Identifier of the side `b` chain for the new channel"
     )]
     chain_b: Option<ChainId>,
 
-    /// Identifier of the connection on chain `a` to use in creating the new channel.
+    #[clap(
+        long = "a-connection",
+        alias = "a-conn",
+        value_name = "A_CONNECTION_ID",
+        help = "Identifier of the connection on chain `a` to use in creating the new channel."
+    )]
     connection_a: Option<ConnectionId>,
 
     #[clap(
-        long,
+        long = "a-port",
         required = true,
+        value_name = "A_PORT_ID",
         help = "Identifier of the side `a` port for the new channel"
     )]
     port_a: PortId,
 
     #[clap(
-        long,
+        long = "b-port",
         required = true,
+        value_name = "B_PORT_ID",
         help = "Identifier of the side `b` port for the new channel"
     )]
     port_b: PortId,
 
     #[clap(
-        short,
-        long,
+        long = "order",
+        value_name = "ORDER",
         help = "The channel ordering, valid options 'unordered' (default) and 'ordered'",
         default_value_t
     )]
     order: Order,
 
     #[clap(
-        short,
         long = "channel-version",
-        alias = "version",
+        alias = "chan-version",
+        value_name = "VERSION",
         help = "The version for the new channel"
     )]
     version: Option<Version>,
 
     #[clap(
-        long,
+        long = "new-client-connection",
+        alias = "new-client-conn",
         help = "Indicates that a new client and connection will be created underlying the new channel"
     )]
-    new_client_connection: bool,
+    new_client_conn: bool,
+
+    #[clap(long, help = "Skip new_client_conn confirmation")]
+    yes: bool,
 }
 
 impl Runnable for CreateChannelCommand {
@@ -104,40 +118,46 @@ impl Runnable for CreateChannelCommand {
             Some(conn) => self.run_reusing_connection(conn),
             None => match &self.chain_b {
                 Some(chain_b) => {
-                    if self.new_client_connection {
-                        match Confirm::new()
-                            .with_prompt(format!(
-                                "{}: {}\n{}: {}",
-                                style("WARN").yellow(),
-                                PROMPT,
-                                style("Hint").cyan(),
-                                HINT
-                            ))
-                            .interact()
-                        {
-                            Ok(confirm) => {
-                                if confirm {
-                                    self.run_using_new_connection(chain_b);
-                                } else {
-                                    Output::error("You elected not to create new clients and connections. Please re-invoke `create channel` with a pre-existing connection ID".to_string()).exit();
+                    if self.new_client_conn {
+                        if self.yes {
+                            self.run_using_new_connection(chain_b);
+                        } else {
+                            match Confirm::new()
+                                .with_prompt(format!(
+                                    "{}: {}\n{}: {}",
+                                    style("WARN").yellow(),
+                                    PROMPT,
+                                    style("Hint").cyan(),
+                                    HINT
+                                ))
+                                .interact()
+                            {
+                                Ok(confirm) => {
+                                    if confirm {
+                                        self.run_using_new_connection(chain_b);
+                                    } else {
+                                        Output::error("You elected not to create new clients and connections. Please re-invoke `create channel` with a pre-existing connection ID".to_string()).exit();
+                                    }
                                 }
-                            }
-                            Err(e) => {
-                                Output::error(format!(
-                                    "An error occurred while waiting for user input: {}",
-                                    e
-                                ));
+                                Err(e) => {
+                                    Output::error(format!(
+                                        "An error occurred while waiting for user input: {}",
+                                        e
+                                    ));
+                                }
                             }
                         }
                     } else {
                         Output::error(
-                                "The `--new-client-connection` flag is required if invoking with `--chain-b`".to_string()
-                            )
-                            .exit();
+                            "The `--new-client-conn` flag is required if invoking with `--b-chain`"
+                                .to_string(),
+                        )
+                        .exit();
                     }
                 }
-                None => Output::error("Missing one of `<chain-b>` or `<connection-a>`".to_string())
-                    .exit(),
+                None => {
+                    Output::error("Missing one of `--b-chain` or `--a-conn`".to_string()).exit()
+                }
             },
         }
     }
@@ -191,7 +211,7 @@ impl CreateChannelCommand {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: connection_a.clone(),
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -202,7 +222,7 @@ impl CreateChannelCommand {
             .query_client_state(
                 QueryClientStateRequest {
                     client_id: conn_end.client_id().clone(),
-                    height: HeightQuery::Latest,
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )

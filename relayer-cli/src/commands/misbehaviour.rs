@@ -4,7 +4,7 @@ use ibc::core::ics02_client::events::UpdateClient;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::events::IbcEvent;
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::{HeightQuery, IncludeProof, QueryClientStateRequest};
+use ibc_relayer::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::{ForeignClient, MisbehaviourResults};
 use std::ops::Deref;
@@ -17,14 +17,18 @@ use ibc::core::ics02_client::client_state::ClientState;
 #[derive(Clone, Command, Debug, Parser)]
 pub struct MisbehaviourCmd {
     #[clap(
+        long = "chain",
         required = true,
-        help = "identifier of the chain where client updates are monitored for misbehaviour"
+        value_name = "CHAIN_ID",
+        help = "Identifier of the chain where client updates are monitored for misbehaviour"
     )]
     chain_id: ChainId,
 
     #[clap(
+        long = "client",
         required = true,
-        help = "identifier of the client to be monitored for misbehaviour"
+        value_name = "CLIENT_ID",
+        help = "Identifier of the client to be monitored for misbehaviour"
     )]
     client_id: ClientId,
 }
@@ -102,7 +106,7 @@ fn misbehaviour_handling<Chain: ChainHandle>(
         .query_client_state(
             QueryClientStateRequest {
                 client_id: client_id.clone(),
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         )

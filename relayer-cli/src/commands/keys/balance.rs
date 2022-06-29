@@ -12,19 +12,24 @@ use crate::conclude::{exit_with_unrecoverable_error, json, Output};
 ///
 /// The command has one argument and one optional flag:
 ///
-/// `keys balance <chain_id> --key-name <KEY_NAME>`
+/// `keys balance --chain <chain_id> --key-name <KEY_NAME>`
 ///
 /// If no key name is given, it will be taken from the configuration file.
 /// If successful the balance and denominator of the account, associated with the key name
 /// on the given chain, will be displayed.
 #[derive(Clone, Command, Debug, Parser)]
 pub struct KeyBalanceCmd {
-    #[clap(required = true, help = "identifier of the chain")]
+    #[clap(
+        long = "chain",
+        required = true,
+        value_name = "CHAIN_ID",
+        help = "Identifier of the chain"
+    )]
     chain_id: ChainId,
 
     #[clap(
-        long,
-        short,
+        long = "key-name",
+        value_name = "KEY_NAME",
         help = "(optional) name of the key (defaults to the `key_name` defined in the config)"
     )]
     key_name: Option<String>,

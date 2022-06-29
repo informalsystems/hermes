@@ -6,7 +6,7 @@ use ibc::core::ics04_channel::channel::Order;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::events::IbcEvent;
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::{HeightQuery, IncludeProof, QueryConnectionRequest};
+use ibc_relayer::chain::requests::{IncludeProof, QueryConnectionRequest, QueryHeight};
 use ibc_relayer::channel::{Channel, ChannelSide};
 
 use crate::cli_utils::ChainHandlePair;
@@ -28,7 +28,7 @@ macro_rules! tx_chan_cmd {
         let dst_connection = match chains.dst.query_connection(
             QueryConnectionRequest {
                 connection_id: $self.dst_conn_id.clone(),
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         ) {
@@ -51,26 +51,46 @@ macro_rules! tx_chan_cmd {
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawChanOpenInitCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        long = "dst-chain",
+        required = true,
+        help = "Identifier of the destination chain"
+    )]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(
+        long = "src-chain",
+        required = true,
+        help = "Identifier of the source chain"
+    )]
     src_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the destination connection")]
+    #[clap(
+        long = "dst-connection",
+        alias = "dst-conn",
+        required = true,
+        help = "Identifier of the destination connection"
+    )]
     dst_conn_id: ConnectionId,
 
-    #[clap(required = true, help = "identifier of the destination port")]
+    #[clap(
+        long = "dst-port",
+        required = true,
+        help = "Identifier of the destination port"
+    )]
     dst_port_id: PortId,
 
-    #[clap(required = true, help = "identifier of the source port")]
+    #[clap(
+        long = "src-port",
+        required = true,
+        help = "Identifier of the source port"
+    )]
     src_port_id: PortId,
 
     #[clap(
-        short,
-        long,
+        long = "order",
         default_value_t,
-        help = "the channel ordering, valid options 'unordered' (default) and 'ordered'"
+        help = "The channel ordering, valid options 'unordered' (default) and 'ordered'"
     )]
     order: Order,
 }
@@ -88,7 +108,7 @@ impl Runnable for TxRawChanOpenInitCmd {
         let dst_connection = match chains.dst.query_connection(
             QueryConnectionRequest {
                 connection_id: self.dst_conn_id.clone(),
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         ) {
@@ -132,34 +152,55 @@ impl Runnable for TxRawChanOpenInitCmd {
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawChanOpenTryCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        long = "dst-chain",
+        required = true,
+        help = "Identifier of the destination chain"
+    )]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(
+        long = "src-chain",
+        required = true,
+        help = "Identifier of the source chain"
+    )]
     src_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the destination connection")]
+    #[clap(
+        long = "dst-connection",
+        alias = "dst-conn",
+        required = true,
+        help = "Identifier of the destination connection"
+    )]
     dst_conn_id: ConnectionId,
 
-    #[clap(required = true, help = "identifier of the destination port")]
+    #[clap(
+        long = "dst-port",
+        required = true,
+        help = "Identifier of the destination port"
+    )]
     dst_port_id: PortId,
 
-    #[clap(required = true, help = "identifier of the source port")]
+    #[clap(
+        long = "src-port",
+        required = true,
+        help = "Identifier of the source port"
+    )]
     src_port_id: PortId,
 
     #[clap(
-        short = 's',
-        long,
+        long = "src-channel",
+        alias = "src-chan",
         required = true,
-        help = "identifier of the source channel (required)",
+        help = "Identifier of the source channel (required)",
         value_name = "ID"
     )]
     src_chan_id: ChannelId,
 
     #[clap(
-        short = 'd',
-        long,
-        help = "identifier of the destination channel (optional)",
+        long = "dst-channel",
+        alias = "dst-chan",
+        help = "Identifier of the destination channel (optional)",
         value_name = "ID"
     )]
     dst_chan_id: Option<ChannelId>,
@@ -199,35 +240,56 @@ impl Runnable for TxRawChanOpenTryCmd {
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawChanOpenAckCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        long = "dst-chain",
+        required = true,
+        help = "Identifier of the destination chain"
+    )]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(
+        long = "src-chain",
+        required = true,
+        help = "Identifier of the source chain"
+    )]
     src_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the destination connection")]
+    #[clap(
+        long = "dst-connection",
+        alias = "dst-conn",
+        required = true,
+        help = "Identifier of the destination connection"
+    )]
     dst_conn_id: ConnectionId,
 
-    #[clap(required = true, help = "identifier of the destination port")]
+    #[clap(
+        long = "dst-port",
+        required = true,
+        help = "Identifier of the destination port"
+    )]
     dst_port_id: PortId,
 
-    #[clap(required = true, help = "identifier of the source port")]
+    #[clap(
+        long = "src-port",
+        required = true,
+        help = "Identifier of the source port"
+    )]
     src_port_id: PortId,
 
     #[clap(
-        short = 'd',
-        long,
+        long = "dst-channel",
+        alias = "dst-chan",
         required = true,
-        help = "identifier of the destination channel (required)",
+        help = "Identifier of the destination channel (required)",
         value_name = "ID"
     )]
     dst_chan_id: ChannelId,
 
     #[clap(
-        short = 's',
-        long,
+        long = "src-channel",
+        alias = "src-chan",
         required = true,
-        help = "identifier of the source channel (required)",
+        help = "Identifier of the source channel (required)",
         value_name = "ID"
     )]
     src_chan_id: ChannelId,
@@ -267,35 +329,56 @@ impl Runnable for TxRawChanOpenAckCmd {
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawChanOpenConfirmCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        long = "dst-chain",
+        required = true,
+        help = "Identifier of the destination chain"
+    )]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(
+        long = "src-chain",
+        required = true,
+        help = "Identifier of the source chain"
+    )]
     src_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the destination connection")]
+    #[clap(
+        long = "dst-connection",
+        alias = "dst-conn",
+        required = true,
+        help = "Identifier of the destination connection"
+    )]
     dst_conn_id: ConnectionId,
 
-    #[clap(required = true, help = "identifier of the destination port")]
+    #[clap(
+        long = "dst-port",
+        required = true,
+        help = "Identifier of the destination port"
+    )]
     dst_port_id: PortId,
 
-    #[clap(required = true, help = "identifier of the source port")]
+    #[clap(
+        long = "src-port",
+        required = true,
+        help = "Identifier of the source port"
+    )]
     src_port_id: PortId,
 
     #[clap(
-        short = 'd',
-        long,
+        long = "dst-channel",
+        alias = "dst-chan",
         required = true,
-        help = "identifier of the destination channel (required)",
+        help = "Identifier of the destination channel (required)",
         value_name = "ID"
     )]
     dst_chan_id: ChannelId,
 
     #[clap(
-        short = 's',
-        long,
+        long = "src-channel",
+        alias = "src-chan",
         required = true,
-        help = "identifier of the source channel (required)",
+        help = "Identifier of the source channel (required)",
         value_name = "ID"
     )]
     src_chan_id: ChannelId,
@@ -335,35 +418,56 @@ impl Runnable for TxRawChanOpenConfirmCmd {
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawChanCloseInitCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        long = "dst-chain",
+        required = true,
+        help = "Identifier of the destination chain"
+    )]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(
+        long = "src-chain",
+        required = true,
+        help = "Identifier of the source chain"
+    )]
     src_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the destination connection")]
+    #[clap(
+        long = "dst-connection",
+        alias = "dst-conn",
+        required = true,
+        help = "Identifier of the destination connection"
+    )]
     dst_conn_id: ConnectionId,
 
-    #[clap(required = true, help = "identifier of the destination port")]
+    #[clap(
+        long = "dst-port",
+        required = true,
+        help = "Identifier of the destination port"
+    )]
     dst_port_id: PortId,
 
-    #[clap(required = true, help = "identifier of the source port")]
+    #[clap(
+        long = "src-port",
+        required = true,
+        help = "Identifier of the source port"
+    )]
     src_port_id: PortId,
 
     #[clap(
-        short = 'd',
-        long,
+        long = "dst-channel",
+        alias = "dst-chan",
         required = true,
-        help = "identifier of the destination channel (required)",
+        help = "Identifier of the destination channel (required)",
         value_name = "ID"
     )]
     dst_chan_id: ChannelId,
 
     #[clap(
-        short = 's',
-        long,
+        long = "src-channel",
+        alias = "src-chan",
         required = true,
-        help = "identifier of the source channel (required)",
+        help = "Identifier of the source channel (required)",
         value_name = "ID"
     )]
     src_chan_id: ChannelId,
@@ -403,35 +507,56 @@ impl Runnable for TxRawChanCloseInitCmd {
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawChanCloseConfirmCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        long = "dst-chain",
+        required = true,
+        help = "Identifier of the destination chain"
+    )]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(
+        long = "src-chain",
+        required = true,
+        help = "Identifier of the source chain"
+    )]
     src_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the destination connection")]
+    #[clap(
+        long = "dst-connection",
+        alias = "dst-conn",
+        required = true,
+        help = "Identifier of the destination connection"
+    )]
     dst_conn_id: ConnectionId,
 
-    #[clap(required = true, help = "identifier of the destination port")]
+    #[clap(
+        long = "dst-port",
+        required = true,
+        help = "Identifier of the destination port"
+    )]
     dst_port_id: PortId,
 
-    #[clap(required = true, help = "identifier of the source port")]
+    #[clap(
+        long = "src-port",
+        required = true,
+        help = "Identifier of the source port"
+    )]
     src_port_id: PortId,
 
     #[clap(
-        short = 'd',
-        long,
+        long = "dst-channel",
+        alias = "dst-chan",
         required = true,
-        help = "identifier of the destination channel (required)",
+        help = "Identifier of the destination channel (required)",
         value_name = "ID"
     )]
     dst_chan_id: ChannelId,
 
     #[clap(
-        short = 's',
-        long,
+        long = "src-channel",
+        alias = "src-chan",
         required = true,
-        help = "identifier of the source channel (required)",
+        help = "Identifier of the source channel (required)",
         value_name = "ID"
     )]
     src_chan_id: ChannelId,

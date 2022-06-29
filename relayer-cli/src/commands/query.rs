@@ -59,7 +59,7 @@ pub enum QueryCmd {
 
 #[derive(Command, Debug, Parser, Runnable)]
 pub enum QueryClientCmds {
-    /// Query the client full state
+    /// Query the client state
     State(client::QueryClientStateCmd),
 
     /// Query the client consensus state

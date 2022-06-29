@@ -8,6 +8,7 @@ use sqlx::postgres::{PgPool, PgPoolOptions};
 use tendermint_rpc::endpoint::broadcast::tx_sync;
 use tracing::{info, span, Level};
 
+use super::requests::{QueryBlockRequest, QueryTxRequest};
 use ibc::{
     core::{
         ics02_client::{
@@ -25,11 +26,10 @@ use ibc::{
         ics24_host::identifier::{ChainId, ConnectionId},
     },
     events::IbcEvent,
-    query::{QueryBlockRequest, QueryTxRequest},
     Height,
 };
 
-use crate::chain::cosmos::query::account::get_or_fetch_account;
+use super::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::CosmosSdkChain;
 use crate::chain::psql_cosmos::batch::send_batched_messages_and_wait_commit;
 use crate::chain::psql_cosmos::query::query_txs;

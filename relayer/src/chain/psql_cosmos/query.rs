@@ -8,18 +8,18 @@ use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::endpoint::tx_search::Response as TxSearchResponse;
 use tracing::{info, trace};
 
-use ibc::core::ics02_client::client_consensus::QueryClientEventRequest;
 use ibc::core::ics02_client::events as ClientEvents;
-use ibc::core::ics04_channel::channel::QueryPacketEventDataRequest;
 use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::{from_tx_response_event, IbcEvent};
-use ibc::query::QueryTxRequest;
 use ibc::Height as ICSHeight;
 
 use crate::chain::cosmos::types::tx::TxSyncResult;
 use crate::chain::psql_cosmos::wait::empty_event_present;
+use crate::chain::requests::{
+    QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest, QueryTxRequest,
+};
 use crate::error::Error;
 
 /// This function queries transactions for events matching certain criteria.
@@ -202,8 +202,10 @@ fn update_client_events_from_tx_search_response(
     response: ResultTx,
 ) -> Option<IbcEvent> {
     let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
-    if request.height != ICSHeight::zero() && height > request.height {
-        return None;
+    if let QueryHeight::Specific(query_height) = request.query_height {
+        if height > query_height {
+            return None;
+        }
     }
 
     response
@@ -311,9 +313,11 @@ fn packet_events_from_tx_search_response(
     let mut events = vec![];
     for response in responses {
         let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
-        if request.height != ICSHeight::zero() && height > request.height {
-            continue;
-        }
+        if let QueryHeight::Specific(specific_query_height) = request.height {
+            if height > specific_query_height {
+                continue;
+            }
+        };
 
         let mut new_events = response
             .tx_result

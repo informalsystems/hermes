@@ -6,7 +6,7 @@ use abscissa_core::{Command, Runnable};
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::{HeightQuery, IncludeProof, QueryClientStateRequest};
+use ibc_relayer::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
 
@@ -17,37 +17,46 @@ use crate::prelude::*;
 #[derive(Clone, Command, Debug, Parser)]
 pub struct CreateConnectionCommand {
     #[clap(
+        long = "a-chain",
         required = true,
-        help = "identifier of the side `a` chain for the new connection"
+        value_name = "A_CHAIN_ID",
+        help = "Identifier of the side `a` chain for the new connection"
     )]
     chain_a_id: ChainId,
 
-    #[clap(help = "identifier of the side `b` chain for the new connection")]
+    #[clap(
+        long = "b-chain",
+        value_name = "B_CHAIN_ID",
+        help = "Identifier of the side `b` chain for the new connection"
+    )]
     chain_b_id: Option<ChainId>,
 
     #[clap(
-        long,
-        help = "identifier of client hosted on chain `a`; default: None (creates a new client)"
+        long = "a-client",
+        value_name = "A_CLIENT_ID",
+        help = "Identifier of client hosted on chain `a`; default: None (creates a new client)"
     )]
     client_a: Option<ClientId>,
 
     #[clap(
-        long,
-        help = "identifier of client hosted on chain `b`; default: None (creates a new client)"
+        long = "b-client",
+        value_name = "B_CLIENT_ID",
+        help = "Identifier of client hosted on chain `b`; default: None (creates a new client)"
     )]
     client_b: Option<ClientId>,
 
     #[clap(
-        long,
-        help = "delay period parameter for the new connection (seconds)",
+        long = "delay",
+        value_name = "DELAY",
+        help = "Delay period parameter for the new connection (seconds)",
         default_value = "0"
     )]
     delay: u64,
 }
 
-// cargo run --bin hermes -- create connection ibc-0 ibc-1
-// cargo run --bin hermes -- create connection ibc-0 ibc-1 --delay 100
-// cargo run --bin hermes -- create connection ibc-0 --client-a-id 07-tendermint-0 --client-b-id 07-tendermint-0
+// cargo run --bin hermes -- create connection --a-chain ibc-0 --b-chain ibc-1
+// cargo run --bin hermes -- create connection --a-chain ibc-0 --b-chain ibc-1 --delay 100
+// cargo run --bin hermes -- create connection --a-chain ibc-0 --a-client 07-tendermint-0 --b-client 07-tendermint-0
 impl Runnable for CreateConnectionCommand {
     fn run(&self) {
         match &self.chain_b_id {
@@ -67,11 +76,11 @@ impl CreateConnectionCommand {
 
         // Validate the other options. Bail if the CLI was invoked with incompatible options.
         if self.client_a.is_some() {
-            Output::error("Option `<chain-b-id>` is incompatible with `--client-a`".to_string())
+            Output::error("Option `<B_CHAIN_ID>` is incompatible with `--a-client`".to_string())
                 .exit();
         }
         if self.client_b.is_some() {
-            Output::error("Option `<chain-b-id>` is incompatible with `--client-b`".to_string())
+            Output::error("Option `<B_CHAIN_ID>` is incompatible with `--b-client`".to_string())
                 .exit();
         }
 
@@ -107,7 +116,7 @@ impl CreateConnectionCommand {
         let client_a_id = match &self.client_a {
             Some(c) => c,
             None => Output::error(
-                "Option `--client-a` is necessary when <chain-b-id> is missing".to_string(),
+                "Option `--a-client` is necessary when <B_CHAIN_ID> is missing".to_string(),
             )
             .exit(),
         };
@@ -116,7 +125,7 @@ impl CreateConnectionCommand {
         let chain_b_id = match chain_a.query_client_state(
             QueryClientStateRequest {
                 client_id: client_a_id.clone(),
-                height: HeightQuery::Latest,
+                height: QueryHeight::Latest,
             },
             IncludeProof::No,
         ) {
@@ -138,7 +147,7 @@ impl CreateConnectionCommand {
         let client_b_id = match &self.client_b {
             Some(c) => c,
             None => Output::error(
-                "Option `--client-b` is necessary when <chain-b-id> is missing".to_string(),
+                "Option `--b-client` is necessary when <B_CHAIN_ID> is missing".to_string(),
             )
             .exit(),
         };

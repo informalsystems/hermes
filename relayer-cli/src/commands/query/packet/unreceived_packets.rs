@@ -18,15 +18,28 @@ use crate::prelude::*;
 #[derive(Clone, Command, Debug, Parser)]
 pub struct QueryUnreceivedPacketsCmd {
     #[clap(
+        long = "chain",
         required = true,
-        help = "identifier of the chain for the unreceived sequences"
+        value_name = "CHAIN_ID",
+        help = "Identifier of the chain for the unreceived sequences"
     )]
     chain_id: ChainId,
 
-    #[clap(required = true, help = "port identifier")]
+    #[clap(
+        long = "port",
+        required = true,
+        value_name = "PORT_ID",
+        help = "Port identifier"
+    )]
     port_id: PortId,
 
-    #[clap(required = true, help = "channel identifier")]
+    #[clap(
+        long = "channel",
+        alias = "chan",
+        required = true,
+        value_name = "CHANNEL_ID",
+        help = "Channel identifier"
+    )]
     channel_id: ChannelId,
 }
 
