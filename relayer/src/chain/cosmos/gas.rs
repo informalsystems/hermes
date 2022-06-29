@@ -107,25 +107,36 @@ mod tests {
     use super::{adjust_estimated_gas, AdjustGas};
 
     #[test]
+    fn adjust_gas_one() {
+        let adjusted_gas = adjust_estimated_gas(AdjustGas {
+            gas_multiplier: 1.0,
+            max_gas: 1_000_000,
+            gas_amount: 400_000,
+        });
+
+        assert_eq!(adjusted_gas, 400_000);
+    }
+
+    #[test]
     fn adjust_gas_small() {
         let adjusted_gas = adjust_estimated_gas(AdjustGas {
             gas_multiplier: 1.1,
-            max_gas: 100_000,
-            gas_amount: 80_000,
+            max_gas: 1_000_000,
+            gas_amount: 400_000,
         });
 
-        assert_eq!(adjusted_gas, 88_000);
+        assert_eq!(adjusted_gas, 440_000);
     }
 
     #[test]
     fn adjust_gas_over_max() {
         let adjusted_gas = adjust_estimated_gas(AdjustGas {
-            gas_multiplier: 2.0,
-            max_gas: 100_000,
-            gas_amount: 80_000,
+            gas_multiplier: 3.0,
+            max_gas: 1_000_000,
+            gas_amount: 400_000,
         });
 
-        assert_eq!(adjusted_gas, 100_000);
+        assert_eq!(adjusted_gas, 1_000_000);
     }
 
     #[test]
