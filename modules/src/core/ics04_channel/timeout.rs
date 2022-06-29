@@ -44,7 +44,7 @@ impl TimeoutHeight {
     /// Check if a height is past the timeout height, and thus is expired.
     pub fn has_expired(&self, height: &Height) -> bool {
         match self.0 {
-            Some(timeout_height) => timeout_height >= *height,
+            Some(timeout_height) => *height >= timeout_height,
             // When there's no timeout, heights are never expired
             None => false,
         }
