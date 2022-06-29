@@ -39,7 +39,7 @@ pub fn from_tx_response_event(height: Height, event: &tendermint::abci::Event) -
 ```
 
 As we look to add support for more light-clients, it would be much desirable for the core modules code to be
-light client agnostic allowing light client implementations to be hosted externally, and, maintained and audited
+light client agnostic allowing light client implementations to be hosted externally, and, maintained & audited
 independently.
 
 It would be possible to break the circular dependencies by extracting all core code (types, traits, etc.) that a
@@ -47,16 +47,64 @@ light client implementation would possibly need into a separate crate, say `ibc-
 modules crate and light client implementation crates depend on that `ibc-base` crate. This was implemented in PR
 [#2327](https://github.com/informalsystems/ibc-rs/pull/2327), but the solution seems to be fragile and unmaintainable.
 
-This ADR proposes to remove the `Any*` enums completely and use trait-objects in their place.
+This ADR proposes to break the circular dependency problem by removing the `Any*` enums completely and using
+trait-objects in their place.
 
 ## Decision
 
-
-
 ### Object safety
 
+There are a total of 5 light client traits, each associated with an `Any*` enum that implements it ->
 
+* `AnyClient` implements `ClientDef`.
+* `AnyClientState` implements `ClientState`.
+* `AnyConsensusState` implements `ConsensusState`.
+* `AnyHeader` implements `Header`.
+* `AnyMisbehaviour` implements `Misbehaviour`.
 
+In order to replace the `Any*` enums with trait objects, these light client traits must be object safe. This
+essentially means that these traits cannot have a `Self: Sized` requirement and their methods cannot have type
+parameters & cannot use `Self`. These restrictions, their implications and possible workarounds are documented below.
+
+#### Traits that require `Self: Sized` cannot be used as supertraits
+
+Common traits that the light client traits depend on that have the `Self: Sized` requirement
+are `core::convert::{Into<T>, From<T>, ...}`, `tendermint_proto::Protobuf`, `Clone`, etc.
+
+An easy workaround is to add these methods directly to the trait, for e.g. we add an `encode_vec()` method to
+the `Header` trait directly.
+
+```rust
+pub trait ClientState {
+    /// Encode to canonical binary representation
+    fn encode_vec(&self) -> Vec<u8>;
+
+    /* ... */
+}
+/// instead of ->
+/// pub trait ClientState: Protobuf<Any> { /* ... */}
+```
+
+#### `Clone` cannot be a supertrait and cannot be derived for types containing boxed trait objects
+
+The following can be made to work using the `dyn-clone` crate ->
+
+```rust
+#[derive(Clone)]
+pub struct Result {
+    pub client_id: ClientId,
+    pub client_state: Box<dyn ClientState>,
+    pub consensus_state: Box<dyn ConsensusState>,
+}
+```
+
+```rust
+pub trait ClientState: dyn_clone::DynClone { /* ... */ }
+
+dyn_clone::clone_trait_object!(ClientState);
+```
+
+`dyn-clone` also provides a `clone_box()` function that can be used to get a `Box<T>` from a `&T`.
 
 ## Status
 
@@ -75,7 +123,8 @@ Proposed
 ### Negative
 
 * Restrictions due to object safety - associated types cannot be used, supertraits cannot have `Sized` as supertrait,
-  cannot derive common traits on types with trait objects, etc.
+  cannot derive common traits (such as `Copy`, `serde::{Serialize, Deserialize}`, etc.) on types containing trait
+  objects, etc.
 * Possible performance hit due to heap allocations and dynamic dispatch.
 
 ### Neutral
