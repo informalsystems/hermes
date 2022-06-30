@@ -73,6 +73,16 @@ fn adjust_estimated_gas(
 ) -> u64 {
     assert!(gas_multiplier >= 1.0);
 
+    // No need to compute anything if the gas amount is zero
+    if gas_amount == 0 {
+        return 0;
+    };
+
+    // If the multiplier is 1, no need to perform the multiplication
+    if gas_multiplier == 1.0 {
+        return min(gas_amount, max_gas);
+    }
+
     // Multiply the gas estimate by the gas_multiplier option
     let (_sign, digits) = mul_floor(gas_amount, gas_multiplier).to_u64_digits();
 
