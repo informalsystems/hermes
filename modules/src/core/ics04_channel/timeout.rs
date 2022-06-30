@@ -8,15 +8,16 @@ use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 use serde::{Deserialize, Serialize};
 use tendermint::abci::tag::Value as TagValue;
 
-/// Represents a height to be used to timeout packets.
+/// Indicates a consensus height on the destination chain after which the packet
+/// will no longer be processed, and will instead count as having timed-out.
 ///
 /// `TimeoutHeight` is treated differently from other heights because
 ///
 /// `RawHeight.timeout_height == {revision_number: 0, revision_height = 0}`
 ///
-/// is legal and meaningful, even though the Tendermint spec rejects this
-/// height as invalid. Thus, it must be parsed specially, where this
-/// special case means "no timeout".
+/// is legal and meaningful, even though the Tendermint spec rejects this height
+/// as invalid. Thus, it must be parsed specially, where this special case means
+/// "no timeout".
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub enum TimeoutHeight {
     Never,
@@ -44,10 +45,11 @@ impl TimeoutHeight {
         }
     }
 
-    /// Check if a height is past the timeout height, and thus is expired.
+    /// Check if a height is *stricly past* the timeout height, and thus is
+    /// deemed expired.
     pub fn has_expired(&self, height: Height) -> bool {
         match self {
-            Self::At(timeout_height) => height >= *timeout_height,
+            Self::At(timeout_height) => height > *timeout_height,
             // When there's no timeout, heights are never expired
             Self::Never => false,
         }
