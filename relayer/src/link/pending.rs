@@ -244,6 +244,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
 
                     telemetry!(
                         tx_confirmed,
+                        tx_hashes.0.len(),
                         pending.tracking_id(),
                         &self.chain.id(),
                         &self.channel_id,

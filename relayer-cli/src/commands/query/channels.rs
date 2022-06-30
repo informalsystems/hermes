@@ -20,20 +20,25 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct QueryChannelsCmd {
-    #[clap(required = true, help = "identifier of the chain to query")]
+    #[clap(
+        long = "chain",
+        required = true,
+        value_name = "CHAIN_ID",
+        help = "Identifier of the chain to query"
+    )]
     chain_id: ChainId,
 
+    // TODO: Filtering by counterparty chain does not work currently.
+    //  https://github.com/informalsystems/ibc-rs/issues/1132#issuecomment-1165324496
+    // #[clap(
+    //     long = "counterparty-chain",
+    //     value_name = "COUNTERPARTY_CHAIN_ID",
+    //     help = "Filter the query response by the this counterparty chain"
+    // )]
+    // dst_chain_id: Option<ChainId>,
     #[clap(
-        short = 'd',
-        long,
-        help = "identifier of the channel's destination chain"
-    )]
-    destination_chain: Option<ChainId>,
-
-    #[clap(
-        short = 'v',
-        long,
-        help = "enable verbose output, displaying all client and connection ids"
+        long = "verbose",
+        help = "Enable verbose output, displaying the client and connection ids for each channel in the response"
     )]
     verbose: bool,
 }
@@ -89,7 +94,7 @@ fn run_query_channels<Chain: ChainHandle>(
             let channel_ends = query_channel_ends(
                 &mut registry,
                 &chain,
-                cmd.destination_chain.as_ref(),
+                None,
                 channel_end,
                 connection_id,
                 chain_id,
@@ -117,7 +122,7 @@ fn run_query_channels<Chain: ChainHandle>(
 fn query_channel_ends<Chain: ChainHandle>(
     registry: &mut Registry<Chain>,
     chain: &Chain,
-    destination_chain: Option<&ChainId>,
+    dst_chain_id: Option<&ChainId>,
     channel_end: ChannelEnd,
     connection_id: ConnectionId,
     chain_id: ChainId,
@@ -142,7 +147,7 @@ fn query_channel_ends<Chain: ChainHandle>(
     )?;
     let counterparty_chain_id = client_state.chain_id();
 
-    if let Some(dst_chain_id) = destination_chain {
+    if let Some(dst_chain_id) = dst_chain_id {
         if dst_chain_id != &counterparty_chain_id {
             return Err(format!(
                 "mismatch between supplied destination chain ({}) and counterparty chain ({})",

@@ -83,7 +83,7 @@ pub fn exit_with(out: Output) -> ! {
     }
 }
 
-/// Returns true if the application global json flag `-j` or `--json` is enabled.
+/// Returns true if the application global json flag `--json` is enabled.
 /// Returns false otherwise.
 pub fn json() -> bool {
     let a = app_reader();

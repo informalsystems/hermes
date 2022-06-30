@@ -1,9 +1,11 @@
 use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
+use abscissa_core::config::Override;
+use abscissa_core::{Command, FrameworkErrorKind, Runnable};
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
-use ibc_relayer::chain::handle::BaseChainHandle;
+use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
+use ibc_relayer::config::Config;
 use ibc_relayer::link::error::LinkError;
 use ibc_relayer::link::{Link, LinkParameters};
 
@@ -21,16 +23,61 @@ pub enum ClearCmds {
     Packets(ClearPacketsCmd),
 }
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Command)]
 pub struct ClearPacketsCmd {
-    #[clap(required = true, help = "identifier of the chain")]
+    #[clap(
+        long = "chain",
+        required = true,
+        value_name = "CHAIN_ID",
+        help = "Identifier of the chain"
+    )]
     chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the port")]
+    #[clap(
+        long = "port",
+        required = true,
+        value_name = "PORT_ID",
+        help = "Identifier of the port"
+    )]
     port_id: PortId,
 
-    #[clap(required = true, help = "identifier of the channel")]
+    #[clap(
+        long = "channel",
+        alias = "chan",
+        required = true,
+        value_name = "CHANNEL_ID",
+        help = "Identifier of the channel"
+    )]
     channel_id: ChannelId,
+
+    #[clap(
+        long,
+        help = "use the given signing key for the specified chain (default: `key_name` config)"
+    )]
+    key_name: Option<String>,
+
+    #[clap(
+        long,
+        help = "use the given signing key for the counterparty chain (default: `counterparty_key_name` config)"
+    )]
+    counterparty_key_name: Option<String>,
+}
+
+impl Override<Config> for ClearPacketsCmd {
+    fn override_config(&self, mut config: Config) -> Result<Config, abscissa_core::FrameworkError> {
+        let chain_config = config.find_chain_mut(&self.chain_id).ok_or_else(|| {
+            FrameworkErrorKind::ComponentError.context(format!(
+                "missing configuration for chain '{}'",
+                self.chain_id
+            ))
+        })?;
+
+        if let Some(ref key_name) = self.key_name {
+            chain_config.key_name = key_name.to_string();
+        }
+
+        Ok(config)
+    }
 }
 
 impl Runnable for ClearPacketsCmd {
@@ -46,6 +93,17 @@ impl Runnable for ClearPacketsCmd {
             Ok((chains, _)) => chains,
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
+
+        // If `counterparty_key_name` is provided, fetch the counterparty chain's
+        // config and overwrite its `key_name` parameter
+        if let Some(ref counterparty_key_name) = self.counterparty_key_name {
+            match chains.dst.config() {
+                Ok(mut dst_chain_cfg) => {
+                    dst_chain_cfg.key_name = counterparty_key_name.to_string();
+                }
+                Err(e) => Output::error(format!("{}", e)).exit(),
+            }
+        }
 
         let mut ev_list = vec![];
 

@@ -23,7 +23,7 @@ use crate::prelude::*;
 use ibc_relayer::config::default::connection_delay;
 
 static PROMPT: &str = "Are you sure you want a new connection & clients to be created? Hermes will use default security parameters.";
-static HINT: &str = "Consider using the default invocation\n\nhermes create channel --port-a <PORT-ID> --port-b <PORT-ID> <CHAIN-A-ID> <CONNECTION-A-ID>\n\nto re-use a pre-existing connection.";
+static HINT: &str = "Consider using the default invocation\n\nhermes create channel --a-port <PORT-ID> --b-port <PORT-ID> --a-chain <CHAIN-A-ID> --a-connection <CONNECTION-A-ID>\n\nto re-use a pre-existing connection.";
 
 /// The data structure that represents all the possible options when invoking
 /// the `create channel` CLI command.
@@ -45,56 +45,65 @@ static HINT: &str = "Consider using the default invocation\n\nhermes create chan
 /// chain A and chain B might refer to the connection with different names, they are actually referring
 /// to the same connection.
 #[derive(Clone, Command, Debug, Parser)]
-#[clap(disable_version_flag = true)]
 pub struct CreateChannelCommand {
     #[clap(
+        long = "a-chain",
         required = true,
+        value_name = "A_CHAIN_ID",
         help = "Identifier of the side `a` chain for the new channel"
     )]
     chain_a: ChainId,
 
     #[clap(
-        short,
-        long,
+        long = "b-chain",
+        value_name = "B_CHAIN_ID",
         help = "Identifier of the side `b` chain for the new channel"
     )]
     chain_b: Option<ChainId>,
 
-    /// Identifier of the connection on chain `a` to use in creating the new channel.
+    #[clap(
+        long = "a-connection",
+        alias = "a-conn",
+        value_name = "A_CONNECTION_ID",
+        help = "Identifier of the connection on chain `a` to use in creating the new channel."
+    )]
     connection_a: Option<ConnectionId>,
 
     #[clap(
-        long,
+        long = "a-port",
         required = true,
+        value_name = "A_PORT_ID",
         help = "Identifier of the side `a` port for the new channel"
     )]
     port_a: PortId,
 
     #[clap(
-        long,
+        long = "b-port",
         required = true,
+        value_name = "B_PORT_ID",
         help = "Identifier of the side `b` port for the new channel"
     )]
     port_b: PortId,
 
     #[clap(
-        short,
-        long,
+        long = "order",
+        value_name = "ORDER",
         help = "The channel ordering, valid options 'unordered' (default) and 'ordered'",
         default_value_t
     )]
     order: Order,
 
     #[clap(
-        short,
         long = "channel-version",
-        alias = "version",
+        alias = "chan-version",
+        value_name = "VERSION",
         help = "The version for the new channel"
     )]
     version: Option<Version>,
 
     #[clap(
-        long,
+        long = "new-client-connection",
+        alias = "new-client-conn",
         help = "Indicates that a new client and connection will be created underlying the new channel"
     )]
     new_client_conn: bool,
