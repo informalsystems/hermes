@@ -5,16 +5,16 @@
 - balance at ibc-0
 
     ```shell
-    gaiad --node tcp://localhost:26657 query bank balances $(gaiad --home data/ibc-0 keys --keyring-backend="test" show user -a)
+    gaiad --node tcp://localhost:27010 query bank balances $(gaiad --home ~/.gm/ibc-0 keys --keyring-backend="test" show wallet -a)
     ```
 
 - balance at ibc-1
 
     ```shell
-    gaiad --node tcp://localhost:26557 query bank balances $(gaiad --home data/ibc-1 keys --keyring-backend="test" show user -a)
+    gaiad --node tcp://localhost:27020 query bank balances $(gaiad --home ~/.gm/ibc-1 keys --keyring-backend="test" show wallet -a)
     ```
 
-> Note that the addresses used in the two commands above are configured in `dev-env`.
+> Note that the RPC addresses used in the two commands above are configured in `~/.hermes/config.toml` file. It can also be found with `gm status`
 
 ### 4.2 Packet relaying
 
