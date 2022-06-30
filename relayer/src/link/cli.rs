@@ -144,7 +144,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         tracking_id: TrackingId,
     ) -> Result<Vec<IbcEvent>, LinkError> {
         let mut results = vec![];
-        
+
         for events_chunk in query_packet_events_with(
             &sequences,
             src_response_height,
