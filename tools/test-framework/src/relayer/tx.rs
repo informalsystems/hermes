@@ -21,7 +21,7 @@ use crate::error::{handle_generic_error, Error};
 
 pub fn gas_config_for_test() -> GasConfig {
     let max_gas = 3000000;
-    let gas_multiplier = 0.1;
+    let gas_multiplier = 1.1;
     let gas_price = GasPrice::new(0.001, "stake".to_string());
 
     let default_gas = max_gas;
