@@ -64,8 +64,7 @@ pub struct ListenCmd {
     #[clap(
         long = "chain",
         required = true,
-        value_name = "CHAIN_ID",
-        help_heading = "FLAGS"
+        value_name = "CHAIN_ID"
     )]
     chain_id: ChainId,
 

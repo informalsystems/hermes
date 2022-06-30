@@ -26,7 +26,6 @@ pub struct QueryPacketCommitmentCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
-        help_heading = "FLAGS",
         help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -35,7 +34,6 @@ pub struct QueryPacketCommitmentCmd {
         long = "port",
         required = true,
         value_name = "PORT_ID",
-        help_heading = "FLAGS",
         help = "Identifier of the port to query"
     )]
     port_id: PortId,
@@ -45,7 +43,6 @@ pub struct QueryPacketCommitmentCmd {
         visible_alias = "chan",
         required = true,
         value_name = "CHANNEL_ID",
-        help_heading = "FLAGS",
         help = "Identifier of the channel to query"
     )]
     channel_id: ChannelId,
@@ -55,7 +52,6 @@ pub struct QueryPacketCommitmentCmd {
         visible_alias = "seq",
         required = true,
         value_name = "SEQUENCE",
-        help_heading = "FLAGS",
         help = "Sequence of packet to query"
     )]
     sequence: Sequence,

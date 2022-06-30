@@ -31,16 +31,10 @@ use crate::conclude::Output;
 /// The key-file and mnemonic-file flags can't be given at the same time, this will cause a terminating error.
 /// If successful the key will be created or restored, depending on which flag was given.
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
-#[clap(
-    override_usage = "hermes keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>
-
-    hermes keys add [OPTIONS] --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>"
-)]
 pub struct KeysAddCmd {
     #[clap(
         long = "chain",
         required = true,
-        help_heading = "FLAGS",
         help = "Identifier of the chain"
     )]
     chain_id: ChainId,
@@ -49,7 +43,6 @@ pub struct KeysAddCmd {
         long = "key-file",
         required = true,
         value_name = "KEY_FILE",
-        help_heading = "FLAGS",
         help = "Path to the key file",
         group = "add-restore"
     )]
@@ -59,7 +52,6 @@ pub struct KeysAddCmd {
         long = "mnemonic-file",
         required = true,
         value_name = "MNEMONIC_FILE",
-        help_heading = "FLAGS",
         help = "Path to file containing mnemonic to restore the key from",
         group = "add-restore"
     )]

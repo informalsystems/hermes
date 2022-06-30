@@ -11,17 +11,11 @@ use crate::application::app_config;
 use crate::conclude::Output;
 
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
-#[clap(
-    override_usage = "hermes keys delete --chain <CHAIN_ID> --key-name <KEY_NAME>
-
-    hermes keys delete --chain <CHAIN_ID> --all"
-)]
 pub struct KeysDeleteCmd {
     #[clap(
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
-        help_heading = "FLAGS",
         help = "Identifier of the chain"
     )]
     chain_id: ChainId,
@@ -31,7 +25,6 @@ pub struct KeysDeleteCmd {
         required = true,
         value_name = "KEY_NAME",
         group = "delete_mode",
-        help_heading = "FLAGS",
         help = "Name of the key"
     )]
     key_name: Option<String>,
@@ -40,7 +33,6 @@ pub struct KeysDeleteCmd {
         long = "all",
         required = true,
         group = "delete_mode",
-        help_heading = "FLAGS",
         help = "Delete all keys"
     )]
     all: bool,

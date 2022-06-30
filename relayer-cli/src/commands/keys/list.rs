@@ -18,7 +18,6 @@ pub struct KeysListCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
-        help_heading = "FLAGS",
         help = "Identifier of the chain"
     )]
     chain_id: ChainId,

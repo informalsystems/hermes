@@ -45,17 +45,11 @@ static HINT: &str = "Consider using the default invocation\n\nhermes create chan
 /// chain A and chain B might refer to the connection with different names, they are actually referring
 /// to the same connection.
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
-#[clap(
-    override_usage = "hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --a-connection <A_CONNECTION_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>
-
-    hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID> --new-client-connection"
-)]
 pub struct CreateChannelCommand {
     #[clap(
         long = "a-chain",
         required = true,
         value_name = "A_CHAIN_ID",
-        help_heading = "FLAGS",
         help = "Identifier of the side `a` chain for the new channel"
     )]
     chain_a: ChainId,
@@ -66,7 +60,6 @@ pub struct CreateChannelCommand {
         required = true,
         requires = "new-client-connection",
         group = "b_chain_group",
-        help_heading = "FLAGS",
         help = "Identifier of the side `b` chain for the new channel"
     )]
     chain_b: Option<ChainId>,
@@ -77,8 +70,7 @@ pub struct CreateChannelCommand {
         value_name = "A_CONNECTION_ID",
         required = true,
         groups = &["b_chain_group", "new_client_group"],
-        help_heading = "FLAGS",
-        help = "Identifier of the connection on chain `a` to use in creating the new channel."
+        help = "Identifier of the connection on chain `a` to use in creating the new channel"
     )]
     connection_a: Option<ConnectionId>,
 
@@ -86,7 +78,6 @@ pub struct CreateChannelCommand {
         long = "a-port",
         required = true,
         value_name = "A_PORT_ID",
-        help_heading = "FLAGS",
         help = "Identifier of the side `a` port for the new channel"
     )]
     port_a: PortId,
@@ -95,7 +86,6 @@ pub struct CreateChannelCommand {
         long = "b-port",
         required = true,
         value_name = "B_PORT_ID",
-        help_heading = "FLAGS",
         help = "Identifier of the side `b` port for the new channel"
     )]
     port_b: PortId,
@@ -120,13 +110,12 @@ pub struct CreateChannelCommand {
         long = "new-client-connection",
         visible_alias = "new-client-conn",
         group = "new_client_group",
-        help_heading = "FLAGS",
         help = "Indicates that a new client and connection will be created underlying the new channel"
     )]
     new_client_connection: bool,
 
     #[clap(
-        long,
+        long = "yes",
         requires = "new-client-connection",
         help = "Skip new_client_connection confirmation"
     )]

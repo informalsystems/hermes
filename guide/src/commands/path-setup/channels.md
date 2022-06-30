@@ -13,10 +13,10 @@ USAGE:
     hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>
 
 DESCRIPTION:
-    Create a new channel between two chains using a pre-existing connection.
+    Create a new channel between two chains.
 
-    Alternatively, create a new client and a new connection underlying the new channel if a pre-existing
-    connection is not provided.
+    Can create a new channel using a pre-existing connection or alternatively, create a new client and a
+    new connection underlying the new channel if a pre-existing connection is not provided.
 
 FLAGS:
         --a-chain <A_CHAIN_ID>              Identifier of the side `a` chain for the new channel
@@ -26,13 +26,14 @@ FLAGS:
 OPTIONS:
 
         --a-connection <A_CONNECTION_ID>    Identifier of the connection on chain `a` to use in creating
-                                            the new channel.
+                                            the new channel
         --b-chain <B_CHAIN_ID>              Identifier of the side `b` chain for the new channel
         --chan-version <VERSION>            The version for the new channel
         --new-client-connection             Indicates that a new client and connection will be created
                                             underlying the new channel
         --order <ORDER>                     The channel ordering, valid options 'unordered' (default) and
                                             'ordered' [default: ORDER_UNORDERED]
+        --yes                               Skip new_client_connection confirmation
 ```
 
 ## Examples
@@ -210,7 +211,7 @@ interactive prompt that pops up notifying you that a new client and a new
 connection will be initialized as part of the process:
 
 ```shell
-hermes create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --order unordered --new-client-conn
+hermes create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --order unordered --new-client-connection
 ```
 
 ```json

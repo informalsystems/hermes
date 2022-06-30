@@ -20,7 +20,6 @@ pub struct DenomTraceCmd {
     #[clap(
         long = "chain",
         required = true,
-        help_heading = "FLAGS",
         help = "Identifier of the chain"
     )]
     chain_id: ChainId,
@@ -28,7 +27,6 @@ pub struct DenomTraceCmd {
     #[clap(
         long = "hash",
         required = true,
-        help_heading = "FLAGS",
         help = "Trace hash to query"
     )]
     hash: String,

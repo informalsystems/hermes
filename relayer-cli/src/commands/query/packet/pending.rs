@@ -35,7 +35,6 @@ pub struct QueryPendingPacketsCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
-        help_heading = "FLAGS",
         help = "Identifier of the chain at one end of the channel"
     )]
     chain_id: ChainId,
@@ -44,7 +43,6 @@ pub struct QueryPendingPacketsCmd {
         long = "port",
         required = true,
         value_name = "PORT_ID",
-        help_heading = "FLAGS",
         help = "Port identifier on the chain given by <CHAIN_ID>"
     )]
     port_id: PortId,
@@ -54,7 +52,6 @@ pub struct QueryPendingPacketsCmd {
         visible_alias = "chan",
         required = true,
         value_name = "CHANNEL_ID",
-        help_heading = "FLAGS",
         help = "Channel identifier on the chain given by <CHAIN_ID>"
     )]
     channel_id: ChannelId,

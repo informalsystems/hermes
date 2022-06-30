@@ -15,15 +15,11 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
-#[clap(override_usage("hermes create connection [OPTIONS] --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID>
-
-    hermes create connection [OPTIONS] --a-chain <A_CHAIN_ID> --a-client <A_CLIENT_ID> --b-client <B_CLIENT_ID>"))]
 pub struct CreateConnectionCommand {
     #[clap(
         long = "a-chain",
         required = true,
         value_name = "A_CHAIN_ID",
-        help_heading = "FLAGS",
         help = "Identifier of the side `a` chain for the new connection"
     )]
     chain_a_id: ChainId,
@@ -33,7 +29,6 @@ pub struct CreateConnectionCommand {
         required = true,
         value_name = "B_CHAIN_ID",
         groups = &["a_client", "b_client"],
-        help_heading = "FLAGS",
         help = "Identifier of the side `b` chain for the new connection"
     )]
     chain_b_id: Option<ChainId>,
@@ -43,7 +38,6 @@ pub struct CreateConnectionCommand {
         required = true,
         value_name = "A_CLIENT_ID",
         group = "a_client",
-        help_heading = "FLAGS",
         help = "Identifier of client hosted on chain `a`; default: None (creates a new client)"
     )]
     client_a: Option<ClientId>,
@@ -53,7 +47,6 @@ pub struct CreateConnectionCommand {
         required = true,
         value_name = "B_CLIENT_ID",
         group = "b_client",
-        help_heading = "FLAGS",
         help = "Identifier of client hosted on chain `b`; default: None (creates a new client)"
     )]
     client_b: Option<ClientId>,
