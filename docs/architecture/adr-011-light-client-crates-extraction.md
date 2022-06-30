@@ -23,8 +23,15 @@ pub enum AnyClientState {
 }
 ```
 
-See [ADR003 - Dealing with chain-specific datatypes](https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/adr-003-handler-implementation.md#dealing-with-chain-specific-datatypes)
-for the rationale behind the `Any*` enum design choice.
+The rationale behind the `Any*` enum design choice is described
+in [ADR003 - Dealing with chain-specific datatypes](https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/adr-003-handler-implementation.md#dealing-with-chain-specific-datatypes)
+->
+> We could alternatively model all chain-specific datatypes as boxed trait objects (`Box<dyn Trait>`), but this approach
+> runs into a lot of limitations of trait objects, such as the inability to easily require such trait objects to be
+> Clonable, or Serializable, or to define an equality relation on them. Some support for such functionality can be found
+> in third-party libraries, but the overall experience for the developer is too subpar.
+>
+> We thus settle on a different strategy: lifting chain-specific data into an enum over all possible chain types.
 
 Additionally, there are places where the core modules code (indirectly) depends on light client specific types. e.g.:
 
