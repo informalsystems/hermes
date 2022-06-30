@@ -364,19 +364,27 @@ mod tests {
         }
 
         let proof_height = 10;
-        let default_raw_msg = get_dummy_raw_packet(proof_height, 0);
+        let default_raw_packet = get_dummy_raw_packet(proof_height, 0);
+        let raw_packet_no_timeout_or_timestamp = get_dummy_raw_packet(0, 0);
 
         let tests: Vec<Test> = vec![
             Test {
                 name: "Good parameters".to_string(),
-                raw: default_raw_msg.clone(),
+                raw: default_raw_packet.clone(),
+                want_pass: true,
+            },
+            Test {
+                // Note: ibc-go currently (06/30/2022) incorrectly rejects this
+                // case, even though it is allowed in ICS-4.
+                name: "Packet with no timeout of timestamp".to_string(),
+                raw: raw_packet_no_timeout_or_timestamp,
                 want_pass: true,
             },
             Test {
                 name: "Src port validation: correct".to_string(),
                 raw: RawPacket {
                     source_port: "srcportp34".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: true,
             },
@@ -384,7 +392,7 @@ mod tests {
                 name: "Bad src port, name too short".to_string(),
                 raw: RawPacket {
                     source_port: "p".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: false,
             },
@@ -392,7 +400,7 @@ mod tests {
                 name: "Bad src port, name too long".to_string(),
                 raw: RawPacket {
                     source_port: "abcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfasdfasdfasdfaklmnopqrstuabcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfasdfasdfasdfaklmnopqrstu".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: false,
             },
@@ -400,7 +408,7 @@ mod tests {
                 name: "Dst port validation: correct".to_string(),
                 raw: RawPacket {
                     destination_port: "destportsrcp34".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: true,
             },
@@ -408,7 +416,7 @@ mod tests {
                 name: "Bad dst port, name too short".to_string(),
                 raw: RawPacket {
                     destination_port: "p".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: false,
             },
@@ -416,7 +424,7 @@ mod tests {
                 name: "Bad dst port, name too long".to_string(),
                 raw: RawPacket {
                     destination_port: "abcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfasdfasdfasdfaklmnopqrstuabcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfas".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: false,
             },
@@ -424,7 +432,7 @@ mod tests {
                 name: "Src channel validation: correct".to_string(),
                 raw: RawPacket {
                     source_channel: "channel-1".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: true,
             },
@@ -432,7 +440,7 @@ mod tests {
                 name: "Bad src channel, name too short".to_string(),
                 raw: RawPacket {
                     source_channel: "p".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: false,
             },
@@ -440,7 +448,7 @@ mod tests {
                 name: "Bad src channel, name too long".to_string(),
                 raw: RawPacket {
                     source_channel: "channel-12839128379182739812739879".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: false,
             },
@@ -448,7 +456,7 @@ mod tests {
                 name: "Dst channel validation: correct".to_string(),
                 raw: RawPacket {
                     destination_channel: "channel-34".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: true,
             },
@@ -456,7 +464,7 @@ mod tests {
                 name: "Bad dst channel, name too short".to_string(),
                 raw: RawPacket {
                     destination_channel: "p".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: false,
             },
@@ -464,7 +472,7 @@ mod tests {
                 name: "Bad dst channel, name too long".to_string(),
                 raw: RawPacket {
                     destination_channel: "channel-12839128379182739812739879".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: false,
             },
@@ -479,7 +487,7 @@ mod tests {
                 name: "Missing timeout height".to_string(),
                 raw: RawPacket {
                     timeout_height: None,
-                    ..default_raw_msg
+                    ..default_raw_packet
                 },
                 want_pass: true,
             },
