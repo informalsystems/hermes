@@ -160,7 +160,6 @@ mod tests {
         let timestamp_future = Timestamp::now().add(Duration::from_secs(10)).unwrap();
         let timestamp_ns_past = 1;
 
-        // FIXME: Test with old timeout too
         let timeout_height_future = 10;
 
         let mut packet: Packet = get_dummy_raw_packet(
@@ -180,8 +179,12 @@ mod tests {
         packet_with_timestamp_old.data = vec![0];
 
         let client_raw_height = 5;
-        let packet_timeout_equal_client_height =
+        let packet_timeout_equal_client_height: Packet =
             get_dummy_raw_packet(client_raw_height, timestamp_future.nanoseconds())
+                .try_into()
+                .unwrap();
+        let packet_timeout_one_before_client_height: Packet =
+            get_dummy_raw_packet(client_raw_height - 1, timestamp_future.nanoseconds())
                 .try_into()
                 .unwrap();
 
@@ -215,6 +218,17 @@ mod tests {
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
                 packet: packet_timeout_equal_client_height,
                 want_pass: true,
+            },
+            Test {
+                name: "Packet timeout height one more than destination chain height".to_string(),
+                ctx: context
+                    .clone()
+                    .with_client(&ClientId::default(), client_height)
+                    .with_connection(ConnectionId::default(), connection_end.clone())
+                    .with_channel(PortId::default(), ChannelId::default(), channel_end.clone())
+                    .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
+                packet: packet_timeout_one_before_client_height,
+                want_pass: false,
             },
             Test {
                 name: "Packet timeout due to timestamp".to_string(),
