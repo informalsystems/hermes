@@ -86,8 +86,8 @@ The following commands are implemented, with the binary name `hermes` often omit
 
 ### Clear packets
 
-* `clear packets --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
-  --key-name <KEY> --counterparty-key-name <KEY>`
+* `clear packets [OPTIONS] --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
+    * Optional: `[--key-name <KEY>] [--counterparty-key-name <KEY>]`
 
 ### Queries
 
