@@ -468,13 +468,20 @@ mod tests {
                 },
                 want_pass: false,
             },
+            // Note: `timeout_height == None` is a quirk of protobuf. In
+            // `proto3` syntax, all structs are "nullable" by default and are
+            // represented as `Option<T>`. `ibc-go` defines the protobuf file
+            // with the extension option `gogoproto.nullable = false`, which
+            // means that they will always generate a field. It is left
+            // unspecified what a `None` value means. In this case, I believe it
+            // is best to assume the obvious semantic of "no timeout".
             Test {
                 name: "Missing timeout height".to_string(),
                 raw: RawPacket {
                     timeout_height: None,
                     ..default_raw_msg
                 },
-                want_pass: false,
+                want_pass: true,
             },
         ];
 

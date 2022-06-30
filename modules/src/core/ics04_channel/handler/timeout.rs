@@ -180,8 +180,12 @@ mod tests {
 
         let client_height = Height::new(0, 2).unwrap();
 
-        let msg =
-            MsgTimeout::try_from(get_dummy_raw_msg_timeout(msg_proof_height, msg_timeout_height, timeout_timestamp)).unwrap();
+        let msg = MsgTimeout::try_from(get_dummy_raw_msg_timeout(
+            msg_proof_height,
+            msg_timeout_height,
+            timeout_timestamp,
+        ))
+        .unwrap();
         let packet = msg.packet.clone();
 
         let mut msg_ok = msg.clone();
