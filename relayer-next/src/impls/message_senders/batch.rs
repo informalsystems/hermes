@@ -200,17 +200,18 @@ impl<Sender> BatchedMessageSender<Sender> {
         }
     }
 
-    async fn send_ready_batches<Context, Target, TargetChain>(
+    async fn send_ready_batches<Context, Target, TargetChain, Message, Event, Error>(
         context: &Context,
         ready_batches: VecDeque<
-            MessageBatch<TargetChain::IbcMessage, TargetChain::IbcEvent, Context::Error>,
+            MessageBatch<TargetChain::IbcMessage, TargetChain::IbcEvent, Error>,
         >,
     ) where
-        Context: RelayContext,
+        Context: RelayContext<Error = Error>,
         Target: ChainTarget<Context, TargetChain = TargetChain>,
         Sender: IbcMessageSender<Context, Target>,
-        TargetChain: IbcChainContext<Target::CounterpartyChain>,
-        Context::Error: Clone,
+        TargetChain:
+            IbcChainContext<Target::CounterpartyChain, IbcMessage = Message, IbcEvent = Event>,
+        Error: Clone,
     {
         let (messages, senders): (Vec<_>, Vec<_>) = ready_batches
             .into_iter()
