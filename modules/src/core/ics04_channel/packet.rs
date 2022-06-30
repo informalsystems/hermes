@@ -220,6 +220,14 @@ impl TryFrom<RawPacket> for Packet {
             return Err(Error::zero_packet_sequence());
         }
 
+        // Note: ibc-go currently (July 2022) incorrectly treats the timeout
+        // heights `{revision_number : >0, revision_height: 0}` as valid
+        // timeouts. However, heights with `revision_height == 0` are invalid in
+        // Tendermint. We explicitly reject these values because they go against
+        // the Tendermint spec, and shouldn't be used. To timeout on the next
+        // revision_number as soon as the chain starts,
+        // `{revision_number: old_rev + 1, revision_height: 1}`
+        // should be used.
         let packet_timeout_height: TimeoutHeight = raw_pkt
             .timeout_height
             .try_into()
@@ -351,6 +359,7 @@ mod tests {
     use test_log::test;
 
     use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
+    use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
     use crate::core::ics04_channel::packet::test_utils::get_dummy_raw_packet;
     use crate::core::ics04_channel::packet::Packet;
@@ -367,6 +376,12 @@ mod tests {
         let default_raw_packet = get_dummy_raw_packet(proof_height, 0);
         let raw_packet_no_timeout_or_timestamp = get_dummy_raw_packet(0, 0);
 
+        let mut raw_packet_invalid_timeout_height = get_dummy_raw_packet(0, 0);
+        raw_packet_invalid_timeout_height.timeout_height = Some(RawHeight {
+            revision_number: 1,
+            revision_height: 0,
+        });
+
         let tests: Vec<Test> = vec![
             Test {
                 name: "Good parameters".to_string(),
@@ -374,11 +389,16 @@ mod tests {
                 want_pass: true,
             },
             Test {
-                // Note: ibc-go currently (06/30/2022) incorrectly rejects this
+                // Note: ibc-go currently (July 2022) incorrectly rejects this
                 // case, even though it is allowed in ICS-4.
                 name: "Packet with no timeout of timestamp".to_string(),
                 raw: raw_packet_no_timeout_or_timestamp,
                 want_pass: true,
+            },
+            Test {
+                name: "Packet with invalid timeout height".to_string(),
+                raw: raw_packet_invalid_timeout_height,
+                want_pass: false,
             },
             Test {
                 name: "Src port validation: correct".to_string(),
