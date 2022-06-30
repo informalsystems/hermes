@@ -61,11 +61,7 @@ impl FromStr for EventFilter {
 #[derive(Debug, Parser, PartialEq)]
 pub struct ListenCmd {
     /// Identifier of the chain to listen for events from
-    #[clap(
-        long = "chain",
-        required = true,
-        value_name = "CHAIN_ID"
-    )]
+    #[clap(long = "chain", required = true, value_name = "CHAIN_ID")]
     chain_id: ChainId,
 
     /// Add an event type to listen for, can be repeated.

@@ -32,11 +32,7 @@ use crate::conclude::Output;
 /// If successful the key will be created or restored, depending on which flag was given.
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct KeysAddCmd {
-    #[clap(
-        long = "chain",
-        required = true,
-        help = "Identifier of the chain"
-    )]
+    #[clap(long = "chain", required = true, help = "Identifier of the chain")]
     chain_id: ChainId,
 
     #[clap(
@@ -147,8 +143,10 @@ impl Runnable for KeysAddCmd {
             // This case should never trigger.
             // The 'required' parameter for the flags will trigger an error if both flags have not been given.
             // And the 'group' parameter for the flags will trigger an error if both flags are given.
-            _ => Output::error("--mnemonic-file and --key-file can't both be set or both None".to_string())
-                .exit(),
+            _ => Output::error(
+                "--mnemonic-file and --key-file can't both be set or both None".to_string(),
+            )
+            .exit(),
         }
     }
 }
