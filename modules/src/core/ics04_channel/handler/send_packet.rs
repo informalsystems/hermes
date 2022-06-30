@@ -157,26 +157,35 @@ mod tests {
             ZERO_DURATION,
         );
 
-        let timestamp_future = Timestamp::now().add(Duration::from_secs(10));
+        let timestamp_future = Timestamp::now().add(Duration::from_secs(10)).unwrap();
         let timestamp_ns_past = 1;
 
         // FIXME: Test with old timeout too
-        let timeout_height = 10;
-        //CD:TODO remove unwrap
-        let mut packet: Packet =
-            get_dummy_raw_packet(timeout_height, timestamp_future.unwrap().nanoseconds())
-                .try_into()
-                .unwrap();
+        let timeout_height_future = 10;
+
+        let mut packet: Packet = get_dummy_raw_packet(
+            timeout_height_future,
+            timestamp_future.clone().nanoseconds(),
+        )
+        .try_into()
+        .unwrap();
         packet.sequence = 1.into();
         packet.data = vec![0];
 
-        let mut packet_old: Packet = get_dummy_raw_packet(timeout_height, timestamp_ns_past)
-            .try_into()
-            .unwrap();
-        packet_old.sequence = 1.into();
-        packet_old.data = vec![0];
+        let mut packet_with_timestamp_old: Packet =
+            get_dummy_raw_packet(timeout_height_future, timestamp_ns_past)
+                .try_into()
+                .unwrap();
+        packet_with_timestamp_old.sequence = 1.into();
+        packet_with_timestamp_old.data = vec![0];
 
-        let client_height_no_packet_timeout = Height::new(0, 5).unwrap();
+        let client_raw_height = 5;
+        let packet_timeout_equal_client_height =
+            get_dummy_raw_packet(client_raw_height, timestamp_future.nanoseconds())
+                .try_into()
+                .unwrap();
+
+        let client_height = Height::new(0, client_raw_height).unwrap();
 
         let tests: Vec<Test> = vec![
             Test {
@@ -189,7 +198,7 @@ mod tests {
                 name: "Good parameters".to_string(),
                 ctx: context
                     .clone()
-                    .with_client(&ClientId::default(), client_height_no_packet_timeout)
+                    .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end.clone())
                     .with_channel(PortId::default(), ChannelId::default(), channel_end.clone())
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
@@ -197,13 +206,24 @@ mod tests {
                 want_pass: true,
             },
             Test {
-                name: "Packet timeout".to_string(),
+                name: "Packet timeout height same as destination chain height".to_string(),
                 ctx: context
-                    .with_client(&ClientId::default(), client_height_no_packet_timeout)
+                    .clone()
+                    .with_client(&ClientId::default(), client_height)
+                    .with_connection(ConnectionId::default(), connection_end.clone())
+                    .with_channel(PortId::default(), ChannelId::default(), channel_end.clone())
+                    .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
+                packet: packet_timeout_equal_client_height,
+                want_pass: true,
+            },
+            Test {
+                name: "Packet timeout due to timestamp".to_string(),
+                ctx: context
+                    .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end)
                     .with_channel(PortId::default(), ChannelId::default(), channel_end)
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
-                packet: packet_old,
+                packet: packet_with_timestamp_old,
                 want_pass: false,
             },
         ]
