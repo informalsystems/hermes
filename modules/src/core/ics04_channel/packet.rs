@@ -220,18 +220,6 @@ impl TryFrom<RawPacket> for Packet {
             return Err(Error::zero_packet_sequence());
         }
 
-        // `RawPacket.timeout_height` is treated differently because
-        //
-        // `RawHeight.timeout_height == {revision_number: 0, revision_height = 0}`
-        //
-        // is legal and meaningful, even though the Tendermint spec rejects this
-        // height as invalid. Thus, it must be parsed specially, where this
-        // special case means "no timeout".
-        //
-        // Note: it is important for `revision_number` to also be `0`, otherwise
-        // packet commitment proofs will be incorrect (see proof construction in
-        // `ChannelReader::packet_commitment()`). Note also that ibc-go conforms
-        // to this.
         let packet_timeout_height: TimeoutHeight = raw_pkt
             .timeout_height
             .try_into()

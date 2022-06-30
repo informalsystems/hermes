@@ -137,14 +137,6 @@ mod tests {
 
         let context = MockContext::default();
 
-        let timestamp = Timestamp::now().add(Duration::from_secs(10));
-        //CD:TODO remove unwrap
-        let mut packet: Packet = get_dummy_raw_packet(1, timestamp.unwrap().nanoseconds())
-            .try_into()
-            .unwrap();
-        packet.sequence = 1.into();
-        packet.data = vec![0];
-
         let channel_end = ChannelEnd::new(
             State::TryOpen,
             Order::default(),
@@ -165,11 +157,26 @@ mod tests {
             ZERO_DURATION,
         );
 
-        let mut packet_old: Packet = get_dummy_raw_packet(1, 1).try_into().unwrap();
+        let timestamp_future = Timestamp::now().add(Duration::from_secs(10));
+        let timestamp_ns_past = 1;
+
+        // FIXME: Test with old timeout too
+        let timeout_height = 10;
+        //CD:TODO remove unwrap
+        let mut packet: Packet =
+            get_dummy_raw_packet(timeout_height, timestamp_future.unwrap().nanoseconds())
+                .try_into()
+                .unwrap();
+        packet.sequence = 1.into();
+        packet.data = vec![0];
+
+        let mut packet_old: Packet = get_dummy_raw_packet(timeout_height, timestamp_ns_past)
+            .try_into()
+            .unwrap();
         packet_old.sequence = 1.into();
         packet_old.data = vec![0];
 
-        let client_height = Height::new(0, 1).unwrap();
+        let client_height_no_packet_timeout = Height::new(0, 5).unwrap();
 
         let tests: Vec<Test> = vec![
             Test {
@@ -182,7 +189,7 @@ mod tests {
                 name: "Good parameters".to_string(),
                 ctx: context
                     .clone()
-                    .with_client(&ClientId::default(), Height::new(0, 1).unwrap())
+                    .with_client(&ClientId::default(), client_height_no_packet_timeout)
                     .with_connection(ConnectionId::default(), connection_end.clone())
                     .with_channel(PortId::default(), ChannelId::default(), channel_end.clone())
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
@@ -192,7 +199,7 @@ mod tests {
             Test {
                 name: "Packet timeout".to_string(),
                 ctx: context
-                    .with_client(&ClientId::default(), client_height)
+                    .with_client(&ClientId::default(), client_height_no_packet_timeout)
                     .with_connection(ConnectionId::default(), connection_end)
                     .with_channel(PortId::default(), ChannelId::default(), channel_end)
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
