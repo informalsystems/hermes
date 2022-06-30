@@ -225,9 +225,6 @@ impl TryFrom<RawPacket> for Packet {
             .try_into()
             .map_err(|_| Error::invalid_timeout_height())?;
 
-        if !packet_timeout_height.has_timeout() && raw_pkt.timeout_timestamp == 0 {
-            return Err(Error::zero_packet_timeout());
-        }
         if raw_pkt.data.is_empty() {
             return Err(Error::zero_packet_data());
         }

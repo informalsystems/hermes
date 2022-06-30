@@ -83,9 +83,6 @@ define_error! {
         ZeroPacketData
             | _ | { "packet data bytes cannot be empty" },
 
-        ZeroPacketTimeout
-            | _ | { "packet timeout height and packet timeout timestamp cannot both be 0" },
-
         InvalidTimeoutHeight
             | _ | { "invalid timeout height for the packet" },
 
