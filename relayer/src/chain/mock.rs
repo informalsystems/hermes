@@ -472,6 +472,7 @@ pub mod test_utils {
             max_gas: None,
             gas_price: GasPrice::new(0.001, "uatom".to_string()),
             gas_adjustment: None,
+            gas_multiplier: None,
             fee_granter: None,
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),
