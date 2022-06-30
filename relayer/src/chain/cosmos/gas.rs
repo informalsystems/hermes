@@ -74,14 +74,17 @@ fn adjust_estimated_gas(
     assert!(gas_multiplier >= 1.0);
 
     // Multiply the gas estimate by the gas_multiplier option
-    let (_, digits) = mul_floor(gas_amount, gas_multiplier).to_u64_digits();
+    let (_sign, digits) = mul_floor(gas_amount, gas_multiplier).to_u64_digits();
 
-    let gas = if digits.len() == 1 {
-        // If the result fits in a u64, use that
-        digits[0]
-    } else {
-        // Otherwise, use u64::MAX
-        u64::MAX
+    let gas = match digits.as_slice() {
+        // If there are no digits it means that the resulting amount is zero.
+        [] => 0,
+
+        // If there is a single "digit", it means that the result fits in a u64, so we can use that.
+        [gas] => *gas,
+
+        // Otherwise, the multiplication overflow and we use u64::MAX instead.
+        _ => u64::MAX,
     };
 
     // Bound the gas estimate by the max_gas option
@@ -105,6 +108,17 @@ impl fmt::Display for PrettyFee<'_> {
 #[cfg(test)]
 mod tests {
     use super::{adjust_estimated_gas, AdjustGas};
+
+    #[test]
+    fn adjust_zero_gas() {
+        let adjusted_gas = adjust_estimated_gas(AdjustGas {
+            gas_multiplier: 1.1,
+            max_gas: 1_000_000,
+            gas_amount: 0,
+        });
+
+        assert_eq!(adjusted_gas, 0);
+    }
 
     #[test]
     fn adjust_gas_one() {
