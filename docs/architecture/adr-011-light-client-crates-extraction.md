@@ -33,7 +33,9 @@ in [ADR003 - Dealing with chain-specific datatypes](https://github.com/informals
 >
 > We thus settle on a different strategy: lifting chain-specific data into an enum over all possible chain types.
 
-Additionally, there are places where the core modules code (indirectly) depends on light client specific types. e.g.:
+Additionally, there are places where the core modules code (indirectly) depends on light client specific types. For
+e.g., in the code below, the `ClientEvents::try_from_tx()` function must be able to deserialize a light client specific
+header from the `UpdateClient` event.
 
 ```rust
 pub fn from_tx_response_event(height: Height, event: &tendermint::abci::Event) -> Option<IbcEvent> {
@@ -147,8 +149,8 @@ available).
 #### Light client traits cannot have constructors
 
 This restriction comes from the fact that trait methods of object safe traits cannot return `Self`.  
-However, we would need a ctor to be able to create a `ClientState` and `ConsensusState` in the `create_client` handler.
-This can be done using a `where Self: Sized` clause on the trait method.
+However, we would need a constructor to be able to create a `ClientState` and `ConsensusState` in the `create_client`
+handler. This can be done using a `where Self: Sized` clause on the trait method.
 
 ```rust
 use ibc_proto::google::protobuf::Any;
