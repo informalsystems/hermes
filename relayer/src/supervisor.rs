@@ -648,7 +648,7 @@ fn process_batch<Chain: ChainHandle>(
             .get_or_spawn(object.dst_chain_id())
             .map_err(Error::spawn)?;
 
-        if let Object::Packet(path) = object.clone() {
+        if let Object::Packet(_path) = object.clone() {
             // Update telemetry info
             telemetry!({
                 for e in events.clone() {
@@ -658,8 +658,8 @@ fn process_batch<Chain: ChainHandle>(
                                 send_packet_ev.packet.sequence.into(),
                                 send_packet_ev.height().revision_height(),
                                 &src.id(),
-                                &path.src_channel_id,
-                                &path.src_port_id,
+                                &_path.src_channel_id,
+                                &_path.src_port_id,
                                 &dst.id(),
                             );
                         }
@@ -668,8 +668,8 @@ fn process_batch<Chain: ChainHandle>(
                                 write_ack_ev.packet.sequence.into(),
                                 write_ack_ev.height().revision_height(),
                                 &dst.id(),
-                                &path.src_channel_id,
-                                &path.src_port_id,
+                                &_path.src_channel_id,
+                                &_path.src_port_id,
                                 &src.id(),
                             );
                         }
