@@ -130,18 +130,18 @@ pub mod test_util {
 
     use super::MsgTransfer;
     use crate::bigint::U256;
+    use crate::core::ics04_channel::timeout::TimeoutHeight;
     use crate::signer::Signer;
     use crate::{
         applications::transfer::{BaseCoin, PrefixedCoin},
         core::ics24_host::identifier::{ChannelId, PortId},
         test_utils::get_dummy_bech32_account,
         timestamp::Timestamp,
-        Height,
     };
 
     // FIXME (BEFORE MERGE): Add at least 1 test that uses `timeout_height: None`
     // Returns a dummy ICS20 `MsgTransfer`, for testing only!
-    pub fn get_dummy_msg_transfer(height: u64) -> MsgTransfer<PrefixedCoin> {
+    pub fn get_dummy_msg_transfer(timeout_height: TimeoutHeight) -> MsgTransfer<PrefixedCoin> {
         let address: Signer = get_dummy_bech32_account().as_str().parse().unwrap();
         MsgTransfer {
             source_port: PortId::default(),
@@ -154,7 +154,7 @@ pub mod test_util {
             sender: address.clone(),
             receiver: address,
             timeout_timestamp: Timestamp::now().add(Duration::from_secs(10)).unwrap(),
-            timeout_height: Height::new(0, height).unwrap().into(),
+            timeout_height,
         }
     }
 }

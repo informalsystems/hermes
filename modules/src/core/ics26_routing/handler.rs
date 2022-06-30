@@ -129,6 +129,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::core::ics04_channel::timeout::TimeoutHeight;
     use crate::prelude::*;
 
     use test_log::test;
@@ -291,8 +292,9 @@ mod tests {
             MsgChannelCloseConfirm::try_from(get_dummy_raw_msg_chan_close_confirm(client_height))
                 .unwrap();
 
-        let msg_transfer = get_dummy_msg_transfer(35);
-        let msg_transfer_two = get_dummy_msg_transfer(36);
+        let msg_transfer = get_dummy_msg_transfer(Height::new(0, 35).unwrap().into());
+        let msg_transfer_two = get_dummy_msg_transfer(Height::new(0, 36).unwrap().into());
+        let msg_transfer_no_timeout = get_dummy_msg_transfer(TimeoutHeight::no_timeout());
 
         let mut msg_to_on_close =
             MsgTimeoutOnClose::try_from(get_dummy_raw_msg_timeout_on_close(36, 5)).unwrap();
@@ -468,6 +470,11 @@ mod tests {
                     signer: default_signer.clone(),
                 }))
                 .into(),
+                want_pass: true,
+            },
+            Test {
+                name: "Transfer message no timeout".to_string(),
+                msg: msg_transfer_no_timeout.into(),
                 want_pass: true,
             },
             //ICS04-close channel
