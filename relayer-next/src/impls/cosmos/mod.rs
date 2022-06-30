@@ -6,3 +6,4 @@ pub mod messages;
 pub mod packet;
 pub mod queries;
 pub mod target;
+pub mod traits;
