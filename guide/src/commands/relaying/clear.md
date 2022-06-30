@@ -17,10 +17,15 @@ DESCRIPTION:
 
     The channel is identified by the chain, port, and channel IDs at one of its ends
 
+OPTIONS:
+    -h, --help           Print help information
+
 FLAGS:
-        --chain <CHAIN_ID>        Identifier of the chain
-        --channel <CHANNEL_ID>    Identifier of the channel
-        --port <PORT_ID>          Identifier of the port
+        --chain <CHAIN_ID>               Identifier of the chain
+        --channel <CHANNEL_ID>           Identifier of the channel
+        --port <PORT_ID>                 Identifier of the port
+        --key-name <KEY>                 Use the given signing key for the specified chain (default: `key_name` config)
+        --counterparty-key-name <KEY>    Use the given signing key for the counterparty chain (default: `key_name` config)
 ```
 
 ### Example
@@ -437,4 +442,3 @@ Success: [
 2022-02-24T14:21:28.874190Z  INFO ThreadId(01) using default configuration from '/Users/coromac/.hermes/config.toml'
 Success: []
 ```
-
