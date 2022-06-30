@@ -48,14 +48,13 @@ impl KeysDeleteCmd {
             .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
 
         let id = match (self.all, &self.key_name) {
-            (true, Some(_)) => {
-                return Err("cannot set both --key-name and --all".to_owned().into());
-            }
-            (false, None) => {
-                return Err("must provide either --key-name or --all".to_owned().into());
-            }
             (true, None) => KeysDeleteId::All,
             (false, Some(ref key_name)) => KeysDeleteId::Named(key_name),
+            // This case should never trigger.
+            // The 'required' parameter for the flags will trigger an error if both flags have not been given.
+            // And the 'group' parameter for the flags will trigger an error if both flags are given.
+            _ => Output::error("--key-name and --all can't both be set or both None".to_string())
+                .exit(),
         };
 
         Ok(KeysDeleteOptions {
