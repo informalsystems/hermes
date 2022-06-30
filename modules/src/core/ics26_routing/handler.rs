@@ -292,9 +292,13 @@ mod tests {
             MsgChannelCloseConfirm::try_from(get_dummy_raw_msg_chan_close_confirm(client_height))
                 .unwrap();
 
-        let msg_transfer = get_dummy_msg_transfer(Height::new(0, 35).unwrap().into());
-        let msg_transfer_two = get_dummy_msg_transfer(Height::new(0, 36).unwrap().into());
-        let msg_transfer_no_timeout = get_dummy_msg_transfer(TimeoutHeight::no_timeout());
+        let msg_transfer = get_dummy_msg_transfer(Height::new(0, 35).unwrap().into(), None);
+        let msg_transfer_two = get_dummy_msg_transfer(Height::new(0, 36).unwrap().into(), None);
+        let msg_transfer_no_timeout = get_dummy_msg_transfer(TimeoutHeight::no_timeout(), None);
+        let msg_transfer_no_timeout_or_timestamp = get_dummy_msg_transfer(
+            TimeoutHeight::no_timeout(),
+            Some(Timestamp::from_nanoseconds(0).unwrap()),
+        );
 
         let mut msg_to_on_close =
             MsgTimeoutOnClose::try_from(get_dummy_raw_msg_timeout_on_close(36, 5)).unwrap();
@@ -472,9 +476,15 @@ mod tests {
                 .into(),
                 want_pass: true,
             },
+            // Timeout packets
             Test {
                 name: "Transfer message no timeout".to_string(),
                 msg: msg_transfer_no_timeout.into(),
+                want_pass: true,
+            },
+            Test {
+                name: "Transfer message no timeout nor timestamp".to_string(),
+                msg: msg_transfer_no_timeout_or_timestamp.into(),
                 want_pass: true,
             },
             //ICS04-close channel

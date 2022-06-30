@@ -139,9 +139,12 @@ pub mod test_util {
         timestamp::Timestamp,
     };
 
-    // FIXME (BEFORE MERGE): Add at least 1 test that uses `timeout_height: None`
-    // Returns a dummy ICS20 `MsgTransfer`, for testing only!
-    pub fn get_dummy_msg_transfer(timeout_height: TimeoutHeight) -> MsgTransfer<PrefixedCoin> {
+    // Returns a dummy ICS20 `MsgTransfer`. If no `timeout_timestamp` is
+    // specified, a timestamp of 10 seconds in the future is used.
+    pub fn get_dummy_msg_transfer(
+        timeout_height: TimeoutHeight,
+        timeout_timestamp: Option<Timestamp>,
+    ) -> MsgTransfer<PrefixedCoin> {
         let address: Signer = get_dummy_bech32_account().as_str().parse().unwrap();
         MsgTransfer {
             source_port: PortId::default(),
@@ -153,7 +156,8 @@ pub mod test_util {
             .into(),
             sender: address.clone(),
             receiver: address,
-            timeout_timestamp: Timestamp::now().add(Duration::from_secs(10)).unwrap(),
+            timeout_timestamp: timeout_timestamp
+                .unwrap_or_else(|| Timestamp::now().add(Duration::from_secs(10)).unwrap()),
             timeout_height,
         }
     }
