@@ -172,7 +172,7 @@ impl Packet {
     /// instead of the common-case where it results in
     /// [`MsgRecvPacket`](crate::core::ics04_channel::msgs::recv_packet::MsgRecvPacket).
     pub fn timed_out(&self, dst_chain_ts: &Timestamp, dst_chain_height: Height) -> bool {
-        let height_timed_out = self.timeout_height.has_expired(&dst_chain_height);
+        let height_timed_out = self.timeout_height.has_expired(dst_chain_height);
 
         let timestamp_timed_out = self.timeout_timestamp != Timestamp::none()
             && dst_chain_ts.check_expiry(&self.timeout_timestamp) == Expired;

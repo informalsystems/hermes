@@ -60,7 +60,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
     }
 
     let latest_height = ctx.host_height();
-    if packet.timeout_height.has_expired(&latest_height) {
+    if packet.timeout_height.has_expired(latest_height) {
         return Err(Error::low_packet_height(
             latest_height,
             packet.timeout_height,

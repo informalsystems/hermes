@@ -17,37 +17,46 @@ use tendermint::abci::tag::Value as TagValue;
 /// is legal and meaningful, even though the Tendermint spec rejects this
 /// height as invalid. Thus, it must be parsed specially, where this
 /// special case means "no timeout".
-#[derive(Clone, Copy, Debug, Default, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub struct TimeoutHeight(Option<Height>);
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+pub enum TimeoutHeight {
+    Never,
+    At(Height),
+}
 
 impl TimeoutHeight {
     pub fn no_timeout() -> Self {
-        Self(None)
+        Self::Never
     }
 
     /// Revision number to be used in packet commitment computation
     pub fn commitment_revision_number(&self) -> u64 {
-        match self.0 {
-            Some(height) => height.revision_number(),
-            None => 0,
+        match self {
+            Self::At(height) => height.revision_number(),
+            Self::Never => 0,
         }
     }
 
     /// Revision height to be used in packet commitment computation
     pub fn commitment_revision_height(&self) -> u64 {
-        match self.0 {
-            Some(height) => height.revision_height(),
-            None => 0,
+        match self {
+            Self::At(height) => height.revision_height(),
+            Self::Never => 0,
         }
     }
 
     /// Check if a height is past the timeout height, and thus is expired.
-    pub fn has_expired(&self, height: &Height) -> bool {
-        match self.0 {
-            Some(timeout_height) => *height >= timeout_height,
+    pub fn has_expired(&self, height: Height) -> bool {
+        match self {
+            Self::At(timeout_height) => height >= *timeout_height,
             // When there's no timeout, heights are never expired
-            None => false,
+            Self::Never => false,
         }
+    }
+}
+
+impl Default for TimeoutHeight {
+    fn default() -> Self {
+        Self::Never
     }
 }
 
@@ -60,10 +69,10 @@ impl TryFrom<RawHeight> for TimeoutHeight {
     // `revision_height`). Note also that ibc-go conforms to this convention.
     fn try_from(raw_height: RawHeight) -> Result<Self, Self::Error> {
         if raw_height.revision_number == 0 && raw_height.revision_height == 0 {
-            Ok(TimeoutHeight(None))
+            Ok(TimeoutHeight::Never)
         } else {
             let height: Height = raw_height.try_into()?;
-            Ok(TimeoutHeight(Some(height)))
+            Ok(TimeoutHeight::At(height))
         }
     }
 }
@@ -74,7 +83,7 @@ impl TryFrom<Option<RawHeight>> for TimeoutHeight {
     fn try_from(maybe_raw_height: Option<RawHeight>) -> Result<Self, Self::Error> {
         match maybe_raw_height {
             Some(raw_height) => Self::try_from(raw_height),
-            None => Ok(TimeoutHeight(None)),
+            None => Ok(TimeoutHeight::Never),
         }
     }
 }
@@ -82,9 +91,9 @@ impl TryFrom<Option<RawHeight>> for TimeoutHeight {
 /// in ICS-4. See <https://github.com/cosmos/ibc/issues/776>.
 impl From<TimeoutHeight> for Option<RawHeight> {
     fn from(timeout_height: TimeoutHeight) -> Self {
-        let raw_height = match timeout_height.0 {
-            Some(height) => height.into(),
-            None => RawHeight {
+        let raw_height = match timeout_height {
+            TimeoutHeight::At(height) => height.into(),
+            TimeoutHeight::Never => RawHeight {
                 revision_number: 0,
                 revision_height: 0,
             },
@@ -96,24 +105,24 @@ impl From<TimeoutHeight> for Option<RawHeight> {
 
 impl From<Height> for TimeoutHeight {
     fn from(height: Height) -> Self {
-        Self(Some(height))
+        Self::At(height)
     }
 }
 
 impl From<TimeoutHeight> for TagValue {
     fn from(timeout_height: TimeoutHeight) -> Self {
-        match timeout_height.0 {
-            Some(height) => height.to_string().parse().unwrap(),
-            None => "0-0".parse().unwrap(),
+        match timeout_height {
+            TimeoutHeight::At(height) => height.to_string().parse().unwrap(),
+            TimeoutHeight::Never => "0-0".parse().unwrap(),
         }
     }
 }
 
 impl Display for TimeoutHeight {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self.0 {
-            Some(timeout_height) => write!(f, "{}", timeout_height),
-            None => write!(f, "no timeout"),
+        match self {
+            TimeoutHeight::At(timeout_height) => write!(f, "{}", timeout_height),
+            TimeoutHeight::Never => write!(f, "no timeout"),
         }
     }
 }

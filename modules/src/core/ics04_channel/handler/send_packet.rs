@@ -55,7 +55,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
 
     let latest_height = client_state.latest_height();
 
-    if packet.timeout_height.has_expired(&latest_height) {
+    if packet.timeout_height.has_expired(latest_height) {
         return Err(Error::low_packet_height(
             latest_height,
             packet.timeout_height,
