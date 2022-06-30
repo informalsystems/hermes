@@ -162,12 +162,10 @@ mod tests {
 
         let timeout_height_future = 10;
 
-        let mut packet: Packet = get_dummy_raw_packet(
-            timeout_height_future,
-            timestamp_future.clone().nanoseconds(),
-        )
-        .try_into()
-        .unwrap();
+        let mut packet: Packet =
+            get_dummy_raw_packet(timeout_height_future, timestamp_future.nanoseconds())
+                .try_into()
+                .unwrap();
         packet.sequence = 1.into();
         packet.data = vec![0];
 
