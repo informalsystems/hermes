@@ -1459,15 +1459,14 @@ mod tests {
                 "failed while increasing height for context {:?}",
                 test.ctx
             );
-            if current_height > Height::new(cv, 0).unwrap() {
-                assert_eq!(
-                    test.ctx.host_block(current_height).unwrap().height(),
-                    current_height,
-                    "failed while fetching height {:?} of context {:?}",
-                    current_height,
-                    test.ctx
-                );
-            }
+
+            assert_eq!(
+                test.ctx.host_block(current_height).unwrap().height(),
+                current_height,
+                "failed while fetching height {:?} of context {:?}",
+                current_height,
+                test.ctx
+            );
         }
     }
 
