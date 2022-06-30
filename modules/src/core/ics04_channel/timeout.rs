@@ -49,11 +49,6 @@ impl TimeoutHeight {
             None => false,
         }
     }
-
-    // FIXME: Find better name
-    pub fn has_timeout(&self) -> bool {
-        self.0.is_some()
-    }
 }
 
 impl TryFrom<RawHeight> for TimeoutHeight {
