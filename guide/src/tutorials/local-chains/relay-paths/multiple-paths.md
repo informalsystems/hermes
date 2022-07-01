@@ -40,7 +40,7 @@ Follow the steps below to connect three chains together and relay packets betwee
     store_prefix = 'ibc'
     max_gas = 2000000
     gas_price = { price = 0.001, denom = 'stake' }
-    gas_adjustment = 0.1
+    gas_multiplier = 1.0
     clock_drift = '5s'
     trusting_period = '14days'
     trust_threshold = { numerator = '1', denominator = '3' }
@@ -56,7 +56,7 @@ Follow the steps below to connect three chains together and relay packets betwee
     store_prefix = 'ibc'
     max_gas = 2000000
     gas_price = { price = 0.001, denom = 'stake' }
-    gas_adjustment = 0.1
+    gas_multiplier = 1.0
     clock_drift = '5s'
     trusting_period = '14days'
     trust_threshold = { numerator = '1', denominator = '3' }
@@ -72,7 +72,7 @@ Follow the steps below to connect three chains together and relay packets betwee
     store_prefix = 'ibc'
     max_gas = 2000000
     gas_price = { price = 0.001, denom = 'stake' }
-    gas_adjustment = 0.1
+    gas_multiplier = 1.0
     clock_drift = '5s'
     trusting_period = '14days'
     trust_threshold = { numerator = '1', denominator = '3' }
