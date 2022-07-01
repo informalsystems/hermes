@@ -17,17 +17,7 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
 
 ## Testing procedure
 
-### Setup
-
-__With dev-env__
-
-```shell
-./scripts/dev-env ~/.hermes/config.toml ibc-0 ibc-1
-```
-The `one-chain` script is invoked for each chain and modifies the `genesis.json` file to use a short window for governance proposals (`200s` for `max_deposit_period` and `voting_period`). Therefore, an upgrade proposal can be submitted, voted on and accepted within a short time.
-
-
-__With gm__
+### Setup using Gaia manager
 > Note: The `gm.toml` file that we're using here looks like this:
 ```
 [global]
