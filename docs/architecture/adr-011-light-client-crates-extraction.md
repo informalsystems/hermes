@@ -274,6 +274,20 @@ Ideally, the domain type would contain validated `ClientState` and `ConsensusSta
 anymore because the `ibc` crate cannot depend on the light client crates. It is therefore proposed that domain types
 continue to use the `Any` type for such fields and defer the validation to the handlers.
 
+### Light client specific code
+
+A sizeable amount of light client specific code exists in the `ibc` crate exists today that is only used by `hermes`.
+For e.g. helper functions that extract `IbcEvent`s from `tendermint::abci::Event`s (i.e. `from_tx_response_event()`).
+
+There are cases where core types depend on light client types, for e.g. `ics02_client::Error`
+uses `ics07_tendermint::Error`s in some of its variants.
+
+Additionally, some of that code might be helpful for host implementations, for e.g. event conversions
+to/from `tendermint::abci::Event` are required for `deliverTx` implementation.
+
+It is recommended that most client specific code is moved either to the `ibc-relayer` crate or the light client crates
+and issues of this kind be dealt with on a case-by-case basis.
+
 ### Light client registry
 
 With the proposals in this ADR, the `ibc` crate would be light client agnostic, however, the host implementation must
