@@ -88,9 +88,12 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
 
     let config = app_config();
 
-    let chain_id = cmd.chain_id.clone();
-    let port_id = cmd.port_id.clone();
-    let channel_id = cmd.channel_id;
+    let QueryChannelEndsCmd {
+        chain_id,
+        port_id,
+        channel_id,
+        ..
+    } = cmd;
 
     let mut registry = <Registry<Chain>>::new((*config).clone());
     let chain = registry.get_or_spawn(&chain_id)?;
@@ -103,7 +106,7 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
     let (channel_end, _) = chain.query_channel(
         QueryChannelRequest {
             port_id: port_id.clone(),
-            channel_id,
+            channel_id: channel_id.clone(),
             height: QueryHeight::Specific(chain_height),
         },
         IncludeProof::No,
@@ -193,7 +196,7 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
     let (counterparty_channel_end, _) = counterparty_chain.query_channel(
         QueryChannelRequest {
             port_id: counterparty_port_id.clone(),
-            channel_id: counterparty_channel_id,
+            channel_id: counterparty_channel_id.clone(),
             height: counterparty_chain_height_query,
         },
         IncludeProof::No,
@@ -213,11 +216,11 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
         Output::success(res).exit();
     } else {
         let res = ChannelEndsSummary {
-            chain_id,
+            chain_id: chain_id.clone(),
             client_id,
             connection_id,
-            channel_id,
-            port_id,
+            channel_id: channel_id.clone(),
+            port_id: port_id.clone(),
 
             counterparty_chain_id,
             counterparty_client_id,

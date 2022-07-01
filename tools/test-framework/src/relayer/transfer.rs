@@ -47,7 +47,7 @@ pub fn build_transfer_message<SrcChain, DstChain>(
 
     Ok(raw_build_transfer_message(
         (*port_id.value()).clone(),
-        **channel_id.value(),
+        (*channel_id.value()).clone(),
         amount.into(),
         denom.to_string(),
         sender,

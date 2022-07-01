@@ -312,7 +312,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
             IncludeProof::No => {
                 if matches!(request.height, QueryHeight::Latest) {
                     let (result, in_cache) = self.cache.get_or_try_insert_channel_with(
-                        &PortChannelId::new(request.channel_id, request.port_id.clone()),
+                        &PortChannelId::new(request.channel_id.clone(), request.port_id.clone()),
                         || {
                             handle
                                 .query_channel(request, IncludeProof::No)

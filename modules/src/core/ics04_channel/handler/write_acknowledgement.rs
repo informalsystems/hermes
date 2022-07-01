@@ -25,8 +25,10 @@ pub fn process(
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    let dest_channel_end =
-        ctx.channel_end(&(packet.destination_port.clone(), packet.destination_channel))?;
+    let dest_channel_end = ctx.channel_end(&(
+        packet.destination_port.clone(),
+        packet.destination_channel.clone(),
+    ))?;
 
     if !dest_channel_end.state_matches(&State::Open) {
         return Err(Error::invalid_channel_state(
@@ -40,7 +42,7 @@ pub fn process(
     // set on the store and return an error if so.
     match ctx.get_packet_acknowledgement(&(
         packet.destination_port.clone(),
-        packet.destination_channel,
+        packet.destination_channel.clone(),
         packet.sequence,
     )) {
         Ok(_) => return Err(Error::acknowledgement_exists(packet.sequence)),
@@ -55,7 +57,7 @@ pub fn process(
 
     let result = PacketResult::WriteAck(WriteAckPacketResult {
         port_id: packet.source_port.clone(),
-        channel_id: packet.source_channel,
+        channel_id: packet.source_channel.clone(),
         seq: packet.sequence,
         ack_commitment: ctx.ack_commitment(ack.clone().into()),
     });
@@ -116,7 +118,10 @@ mod tests {
         let dest_channel_end = ChannelEnd::new(
             State::Open,
             Order::default(),
-            Counterparty::new(packet.source_port.clone(), Some(packet.source_channel)),
+            Counterparty::new(
+                packet.source_port.clone(),
+                Some(packet.source_channel.clone()),
+            ),
             vec![ConnectionId::default()],
             Version::ics20(),
         );
@@ -149,7 +154,7 @@ mod tests {
                     .with_connection(ConnectionId::default(), connection_end.clone())
                     .with_channel(
                         packet.destination_port.clone(),
-                        packet.destination_channel,
+                        packet.destination_channel.clone(),
                         dest_channel_end.clone(),
                     ),
                 packet: packet.clone(),

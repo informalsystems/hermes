@@ -125,22 +125,24 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let src_chain_id = src_chain.id();
         let dst_chain_id = dst_chain.id();
 
-        let src_channel_id = *channel
+        let src_channel_id = channel
             .src_channel_id()
-            .ok_or_else(|| LinkError::missing_channel_id(src_chain.id()))?;
+            .ok_or_else(|| LinkError::missing_channel_id(src_chain.id()))?
+            .clone();
 
-        let dst_channel_id = *channel
+        let dst_channel_id = channel
             .dst_channel_id()
-            .ok_or_else(|| LinkError::missing_channel_id(dst_chain.id()))?;
+            .ok_or_else(|| LinkError::missing_channel_id(dst_chain.id()))?
+            .clone();
 
         let src_port_id = channel.src_port_id().clone();
         let dst_port_id = channel.dst_port_id().clone();
 
         let path = PathIdentifiers {
             port_id: dst_port_id.clone(),
-            channel_id: dst_channel_id,
+            channel_id: dst_channel_id.clone(),
             counterparty_port_id: src_port_id.clone(),
-            counterparty_channel_id: src_channel_id,
+            counterparty_channel_id: src_channel_id.clone(),
         };
 
         Ok(Self {
@@ -206,7 +208,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .query_channel(
                 QueryChannelRequest {
                     port_id: self.src_port_id().clone(),
-                    channel_id: *self.src_channel_id(),
+                    channel_id: self.src_channel_id().clone(),
                     height: height_query,
                 },
                 IncludeProof::No,
@@ -220,7 +222,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .query_channel(
                 QueryChannelRequest {
                     port_id: self.dst_port_id().clone(),
-                    channel_id: *self.dst_channel_id(),
+                    channel_id: self.dst_channel_id().clone(),
                     height: height_query,
                 },
                 IncludeProof::No,
@@ -339,7 +341,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // Build the domain type message
         let new_msg = MsgChannelCloseConfirm {
             port_id: self.dst_port_id().clone(),
-            channel_id: *self.dst_channel_id(),
+            channel_id: self.dst_channel_id().clone(),
             proofs,
             signer: self.dst_signer()?,
         };
@@ -780,7 +782,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .dst_chain()
             .query_unreceived_packets(QueryUnreceivedPacketsRequest {
                 port_id: self.dst_port_id().clone(),
-                channel_id: *self.dst_channel_id(),
+                channel_id: self.dst_channel_id().clone(),
                 packet_commitment_sequences: vec![packet.sequence],
             })
             .map_err(LinkError::relayer)?;
@@ -796,7 +798,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .query_packet_commitment(
                 QueryPacketCommitmentRequest {
                     port_id: self.src_port_id().clone(),
-                    channel_id: *self.src_channel_id(),
+                    channel_id: self.src_channel_id().clone(),
                     sequence: packet.sequence,
                     height: QueryHeight::Latest,
                 },
@@ -821,7 +823,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .dst_chain()
             .query_unreceived_acknowledgements(QueryUnreceivedAcksRequest {
                 port_id: self.dst_port_id().clone(),
-                channel_id: *self.dst_channel_id(),
+                channel_id: self.dst_channel_id().clone(),
                 packet_ack_sequences: vec![packet.sequence],
             })
             .map_err(LinkError::relayer)?;
@@ -1211,7 +1213,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 .query_next_sequence_receive(
                     QueryNextSequenceReceiveRequest {
                         port_id: self.dst_port_id().clone(),
-                        channel_id: *dst_channel_id,
+                        channel_id: dst_channel_id.clone(),
                         height: QueryHeight::Specific(height),
                     },
                     IncludeProof::No,

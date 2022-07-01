@@ -67,6 +67,14 @@ pub fn validate_port_identifier(id: &str) -> Result<(), Error> {
     validate_identifier(id, 2, 128)
 }
 
+/// Default validator function for Channel identifiers.
+///
+/// A valid Identifier must be between 10-64 characters and only contain lowercase
+/// alphabetic characters,
+pub fn validate_channel_identifier(id: &str) -> Result<(), Error> {
+    validate_identifier(id, 10, 64)
+}
+
 #[cfg(test)]
 mod tests {
     use crate::core::ics24_host::validate::{
