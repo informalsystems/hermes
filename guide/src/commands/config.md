@@ -38,5 +38,5 @@ the same chain `ibc-1`:
 
 ```text
 hermes --config ./config.toml config validate
-error: hermes fatal error: config error: config file has duplicate entry for the chain with id ibc-1
+error: hermes fatal error: config error: config file has duplicate entry for the chain 'ibc-1'
 ```

@@ -54,7 +54,7 @@ define_error! {
         MissingChainConfig
             { chain_id: ChainId }
             | e | {
-                format_args!("missing chain with id '{}' in configuration file",
+                format_args!("missing chain '{}' in configuration file",
                     e.chain_id)
             },
 

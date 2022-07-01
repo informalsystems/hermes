@@ -45,6 +45,11 @@ mod tests {
     }
 
     #[test]
+    fn test_completions_no_shell_flag() {
+        assert!(CompletionsCmd::try_parse_from(&["test"]).is_err())
+    }
+
+    #[test]
     fn test_completions_unknown_shell() {
         assert!(CompletionsCmd::try_parse_from(&["test", "--shell", "my_shell"]).is_err())
     }
