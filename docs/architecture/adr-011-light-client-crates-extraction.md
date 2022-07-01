@@ -252,6 +252,28 @@ pub fn process(
 }
 ```
 
+### Domain types containing light client specific types
+
+Raw types such as `MessageCreateClient` contain light client `ClientState` and `ConsensusState` serialized
+as `google::protobuf::Any`.
+
+```rust
+pub struct MsgCreateClient {
+    /// light client state
+    #[prost(message, optional, tag = "1")]
+    pub client_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
+    /// consensus state associated with the client that corresponds to a given
+    /// height.
+    #[prost(message, optional, tag = "2")]
+    pub consensus_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
+    /* ... */
+}
+```
+
+Ideally, the domain type would contain validated `ClientState` and `ConsensusState` types but this is not possible
+anymore because the `ibc` crate cannot depend on the light client crates. It is therefore proposed that domain types
+continue to use the `Any` type for such fields and defer the validation to the handlers.
+
 ### Light client registry
 
 With the proposals in this ADR, the `ibc` crate would be light client agnostic, however, the host implementation must
@@ -278,8 +300,8 @@ fn decode_header(any_header: Any) -> Result<Box<dyn Header>, Error> {
 }
 ```
 
-This way we have a standardized list of supported light clients so that host implementations would not have to directly 
-import every single light client crate that they wish to support. The crate could feature gate light client support to 
+This way we have a standardized list of supported light clients so that host implementations would not have to directly
+import every single light client crate that they wish to support. The crate could feature gate light client support to
 provide hosts with a more granular control of which light clients they wish to support.
 
 The crate must come with a disclaimer that inclusion in the registry does not imply any guarantees on the correctness of
@@ -299,7 +321,7 @@ It is suggested that the proposed changes be split across multiple PRs in the fo
 * Extract the light client implementations into separate crates.
 * Update all workspace crates to use new API.
 
-A long-lived branch may be used to not block development on the modules code in the meantime. 
+A long-lived branch may be used to not block development on the modules code in the meantime.
 
 ## Status
 
