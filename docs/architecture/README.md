@@ -25,15 +25,16 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 
 ## Table of Contents
 
-| ADR \# | Description | Status |
-| ------ | ----------- | ------ |
-| [001](./adr-001-repo.md) | Repository structure for `ibc-rs` | Accepted    |
-| [002](./adr-002-ibc-relayer.md) | IBC Relayer in Rust | Accepted |
-| [003](./adr-003-handler-implementation.md) | IBC handlers implementation | Accepted |
-| [004](./adr-004-relayer-domain-decomposition.md) | Relayer domain decomposition | Accepted |
-| [005](./adr-005-relayer-v0-implementation.md) | Relayer v0 implementation | Accepted |
-| [006](./adr-006-hermes-v0.2-usecases.md) | Hermes v0.2.0 Use-Cases | Proposed |
-| [007](./adr-007-error.md) | Error Management | Accepted |
-| [008](./adr-008-ics20-implementation.md)         | ICS20 implementation              | Accepted |
+| ADR \#                                                    | Description                                           | Status   |
+|-----------------------------------------------------------|-------------------------------------------------------|----------|
+| [001](./adr-001-repo.md)                                  | Repository structure for `ibc-rs`                     | Accepted |
+| [002](./adr-002-ibc-relayer.md)                           | IBC Relayer in Rust                                   | Accepted |
+| [003](./adr-003-handler-implementation.md)                | IBC handlers implementation                           | Accepted |
+| [004](./adr-004-relayer-domain-decomposition.md)          | Relayer domain decomposition                          | Accepted |
+| [005](./adr-005-relayer-v0-implementation.md)             | Relayer v0 implementation                             | Accepted |
+| [006](./adr-006-hermes-v0.2-usecases.md)                  | Hermes v0.2.0 Use-Cases                               | Proposed |
+| [007](./adr-007-error.md)                                 | Error Management                                      | Accepted |
+| [008](./adr-008-ics20-implementation.md)                  | ICS20 implementation                                  | Accepted |
 | [009](./adr-009-chain-endpoint-handle-standardization.md) | ChainEndpoint and ChainHandle methods standardization | Accepted |
-| [010](./adr-010-unified-cli-arguments-hermes.md) | Unified approach for CLI arguments for Hermes v1.0.0 | Proposed |
+| [010](./adr-010-unified-cli-arguments-hermes.md)          | Unified approach for CLI arguments for Hermes v1.0.0  | Proposed |
+| [011](./adr-011-light-client-crates-extraction.md)        | Light client crates extraction                        | Proposed |
