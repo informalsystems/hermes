@@ -335,10 +335,12 @@ impl Default for PortId {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct ChannelId(String);
 
 impl ChannelId {
+    const PREFIX: &'static str = "channel-";
+
     /// Builds a new channel identifier. Like client and connection identifiers, channel ids are
     /// deterministically formed from two elements: a prefix `prefix`, and a monotonically
     /// increasing `counter`, separated by a dash "-".
@@ -351,12 +353,13 @@ impl ChannelId {
     /// assert_eq!(chan_id.to_string(), "channel-27");
     /// ```
     pub fn new(counter: u64) -> Self {
-        let id = format!("{}{}", Self::prefix(), counter);
+        let id = format!(
+            "{}{:0w$}",
+            Self::PREFIX,
+            counter,
+            w = 10 - Self::PREFIX.len()
+        );
         Self(id)
-    }
-
-    const fn prefix() -> &'static str {
-        "channel-"
     }
 
     /// Get this identifier as a borrowed `&str`
@@ -373,13 +376,7 @@ impl ChannelId {
 /// This implementation provides a `to_string` method.
 impl Display for ChannelId {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
-        write!(f, "{}{}", Self::prefix(), self.0)
-    }
-}
-
-impl Debug for ChannelId {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
-        f.debug_tuple("ChannelId").field(&self.to_string()).finish()
+        write!(f, "{}", self.0)
     }
 }
 
