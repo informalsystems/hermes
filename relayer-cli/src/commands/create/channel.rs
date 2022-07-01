@@ -109,6 +109,7 @@ pub struct CreateChannelCommand {
     #[clap(
         long = "new-client-connection",
         visible_alias = "new-client-conn",
+        required = true,
         group = "new_client_group",
         help = "Indicates that a new client and connection will be created underlying the new channel"
     )]
