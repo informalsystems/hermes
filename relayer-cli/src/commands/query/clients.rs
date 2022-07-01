@@ -19,6 +19,7 @@ pub struct QueryAllClientsCmd {
         long = "host-chain",
         required = true,
         value_name = "HOST_CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,

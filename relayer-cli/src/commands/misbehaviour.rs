@@ -20,6 +20,7 @@ pub struct MisbehaviourCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the chain where client updates are monitored for misbehaviour"
     )]
     chain_id: ChainId,
@@ -28,6 +29,7 @@ pub struct MisbehaviourCmd {
         long = "client",
         required = true,
         value_name = "CLIENT_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the client to be monitored for misbehaviour"
     )]
     client_id: ClientId,

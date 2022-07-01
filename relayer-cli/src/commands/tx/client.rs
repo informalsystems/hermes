@@ -27,6 +27,7 @@ pub struct TxCreateClientCmd {
         long = "host-chain",
         required = true,
         value_name = "HOST_CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the chain that hosts the client"
     )]
     dst_chain_id: ChainId,
@@ -35,6 +36,7 @@ pub struct TxCreateClientCmd {
         long = "reference-chain",
         required = true,
         value_name = "REFERENCE_CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the chain targeted by the client"
     )]
     src_chain_id: ChainId,
@@ -107,6 +109,7 @@ pub struct TxUpdateClientCmd {
         long = "host-chain",
         required = true,
         value_name = "HOST_CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the chain that hosts the client"
     )]
     dst_chain_id: ChainId,
@@ -115,6 +118,7 @@ pub struct TxUpdateClientCmd {
         long = "client",
         required = true,
         value_name = "CLIENT_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the chain targeted by the client"
     )]
     dst_client_id: ClientId,
@@ -193,6 +197,7 @@ pub struct TxUpgradeClientCmd {
         long = "host-chain",
         required = true,
         value_name = "HOST_CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the chain that hosts the client"
     )]
     chain_id: ChainId,
@@ -201,6 +206,7 @@ pub struct TxUpgradeClientCmd {
         long = "client",
         required = true,
         value_name = "CLIENT_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the client to be upgraded"
     )]
     client_id: ClientId,
@@ -272,6 +278,7 @@ pub struct TxUpgradeClientsCmd {
         long = "reference-chain",
         required = true,
         value_name = "REFERENCE_CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the chain that underwent an upgrade; all clients targeting this chain will be upgraded"
     )]
     src_chain_id: ChainId,

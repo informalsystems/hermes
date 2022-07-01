@@ -15,6 +15,7 @@ pub struct QueryConnectionsCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
