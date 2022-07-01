@@ -252,6 +252,42 @@ pub fn process(
 }
 ```
 
+### Light client registry
+
+With the proposals in this ADR, the `ibc` crate would be light client agnostic, however, the host implementation must
+still be aware of all light clients that it wishes to support. For e.g., after an upgrade a blockchain must be able to
+deserialize types from the persistent store.
+Furthermore, protobuf has emerged as the canonical serialization scheme for IBC, and IBC's message definitions usually
+serialize light client types using the `google::protobuf::Any` type where the `type_url` is accepted to uniquely
+represent specific light client types, although this has not been standardized yet.
+It is proposed to standardize this and provide a `ibc-client-registry` crate which standardizes this and collects all
+known light client implementations. This crate must provide one deserialization entry-point function per light client
+type ->
+
+```rust
+use ibc_proto::google::protobuf::Any;
+
+pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
+
+fn decode_header(any_header: Any) -> Result<Box<dyn Header>, Error> {
+    match any_header.type_url {
+        TENDERMINT_HEADER_TYPE_URL => TendermintHeader::try_from(any_header).map_err(|e| Error::decode_header(e)),
+        /* ... */
+        _ => Err(Error::unsupported_client())
+    }
+}
+```
+
+This way we have a standardized list of supported light clients so that host implementations would not have to directly 
+import every single light client crate that they wish to support. The crate could feature gate light client support to 
+provide hosts with a more granular control of which light clients they wish to support.
+
+The crate must come with a disclaimer that inclusion in the registry does not imply any guarantees on the correctness of
+the light client implementations themselves.
+
+Note that host implementations will be able to add support for light clients regardless of whether they are included in
+the registry.
+
 ### Splitting the work across multiple PRs
 
 It is suggested that the proposed changes be split across multiple PRs in the following way ->
