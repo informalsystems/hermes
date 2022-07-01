@@ -73,7 +73,7 @@ There are a total of 5 light client traits, each associated with an `Any*` enum 
 
 In order to replace the `Any*` enums with trait objects, these light client traits must be object safe. This
 essentially means that these traits cannot have a `Self: Sized` requirement and their methods cannot have type
-parameters & cannot use `Self`. These restrictions, their implications and possible workarounds are documented below.
+parameters & cannot use `Self`. These restrictions, their implications, and possible workarounds are documented below.
 
 #### Traits that require `Self: Sized` cannot be used as supertraits
 
@@ -346,7 +346,7 @@ Proposed
 ### Positive
 
 * Light client implementations can be hosted in separate crates outside the ibc-rs repo.
-* Light client implementations can be maintained & audited independently. clearer ownership
+* Light client implementations can be maintained & audited independently, resulting in clearer ownership.
 * The `ibc` crate would be light client agnostic and wouldn't need to be updated to add support for newer light clients.
 * Host chain implementations will be able to choose the light clients they wish to support.
 * Facilitates separation of client-specific code.
