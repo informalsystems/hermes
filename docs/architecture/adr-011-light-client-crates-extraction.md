@@ -299,6 +299,8 @@ It is suggested that the proposed changes be split across multiple PRs in the fo
 * Extract the light client implementations into separate crates.
 * Update all workspace crates to use new API.
 
+A long-lived branch may be used to not block development on the modules code in the meantime. 
+
 ## Status
 
 Proposed
