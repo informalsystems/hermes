@@ -143,8 +143,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         ) -> Result<Vec<IbcEvent>, LinkError>,
         tracking_id: TrackingId,
     ) -> Result<Vec<IbcEvent>, LinkError> {
-        dbg!(src_response_height);
         let mut results = vec![];
+
         for events_chunk in query_packet_events_with(
             &sequences,
             src_response_height,
