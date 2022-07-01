@@ -1,12 +1,12 @@
-use crate::prelude::*;
-
 use core::fmt::Display;
 
-use crate::{core::ics02_client::error::Error as ICS2Error, Height};
+use serde::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
-use serde::{Deserialize, Serialize};
 use tendermint::abci::tag::Value as TagValue;
+
+use crate::core::ics02_client::{error::Error as ICS2Error, height::Height};
+use crate::prelude::*;
 
 /// Indicates a consensus height on the destination chain after which the packet
 /// will no longer be processed, and will instead count as having timed-out.
@@ -18,7 +18,7 @@ use tendermint::abci::tag::Value as TagValue;
 /// is legal and meaningful, even though the Tendermint spec rejects this height
 /// as invalid. Thus, it must be parsed specially, where this special case means
 /// "no timeout".
-#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub enum TimeoutHeight {
     Never,
     At(Height),
@@ -126,5 +126,60 @@ impl Display for TimeoutHeight {
             TimeoutHeight::At(timeout_height) => write!(f, "{}", timeout_height),
             TimeoutHeight::Never => write!(f, "no timeout"),
         }
+    }
+}
+
+impl Serialize for TimeoutHeight {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        // When there is no timeout, we cannot construct an ICS02 Height with
+        // revision number and height at zero, so we have to define an
+        // isomorphic struct to serialize it as if it were an ICS02 height.
+        #[derive(Serialize)]
+        struct Height {
+            revision_number: u64,
+            revision_height: u64,
+        }
+
+        match self {
+            // If there is no timeout, we use our ad-hoc struct above
+            TimeoutHeight::Never => {
+                let zero = Height {
+                    revision_number: 0,
+                    revision_height: 0,
+                };
+
+                zero.serialize(serializer)
+            }
+            // Otherwise we can directly serialize the underlying height
+            TimeoutHeight::At(height) => height.serialize(serializer),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for TimeoutHeight {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        use crate::core::ics02_client::height::Height as Ics02Height;
+
+        // Here we have to use a bespoke struct as well in order to deserialize
+        // a height which may have a revision height equal to zero.
+        #[derive(Deserialize)]
+        struct Height {
+            revision_number: u64,
+            revision_height: u64,
+        }
+
+        Height::deserialize(deserializer).map(|height| {
+            Ics02Height::new(height.revision_number, height.revision_height)
+                // If it's a valid height with a non-zero revision height, then we have a timeout
+                .map(TimeoutHeight::At)
+                // Otherwise, no timeout
+                .unwrap_or(TimeoutHeight::Never)
+        })
     }
 }
