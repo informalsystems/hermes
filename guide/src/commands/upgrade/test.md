@@ -28,9 +28,46 @@ The `one-chain` script is invoked for each chain and modifies the `genesis.json`
 
 
 __With gm__
+> Note: The `gm.toml` file that we're using here looks like this:
+```
+[global]
+  add_to_hermes = false
+  auto_maintain_config = true
+  extra_wallets = 2
+  gaiad_binary = "$HOME/.go/bin/gaiad"
+  hdpath = ""
+  home_dir = "$HOME/.gm"
+  ports_start_at = 27040
+  validator_mnemonic = ""
+  wallet_mnemonic = ""
+
+  [global.hermes]
+    binary = "$HOME/.hermes/bin/hermes"
+    config = "$HOME/.hermes/config.toml"
+    log_level = "info"
+    telemetry_enabled = true
+    telemetry_host = "127.0.0.1"
+    telemetry_port = 3001
+
+[ibc-0]
+  ports_start_at = 27000
+
+[ibc-1]
+  ports_start_at = 27010
+
+[node1]
+  add_to_hermes = true
+  network = "ibc-0"
+  ports_start_at = 27020
+
+[node2]
+  add_to_hermes = true
+  network = "ibc-1"
+  ports_start_at = 27030
+```
 * Run the command `gm start`
 * Go to the file `$HOME/.gm/ibc-0/config/genesis.json` and change `max_deposit_period` and `voting_period` to a lower value, such as 200s
-* Run the commands: `gm reset`, `gm hermes config` and `gm keys`
+* Run the commands: `gm reset`, `gm hermes config` and `gm hermes keys`
 
 ### Test upgrading chain and client
 
@@ -230,6 +267,7 @@ __With gm__
 
     ```shell
     hermes upgrade client --host-chain ibc-1 --client 07-tendermint-0
+    --upgrade-height 0-440
     ```
     ```json
     Success: [
