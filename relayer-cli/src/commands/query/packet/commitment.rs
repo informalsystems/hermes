@@ -20,7 +20,7 @@ struct PacketSeqs {
     seqs: Vec<u64>,
 }
 
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct QueryPacketCommitmentCmd {
     #[clap(
         long = "chain",
@@ -40,7 +40,7 @@ pub struct QueryPacketCommitmentCmd {
 
     #[clap(
         long = "channel",
-        alias = "chan",
+        visible_alias = "chan",
         required = true,
         value_name = "CHANNEL_ID",
         help = "Identifier of the channel to query"
@@ -49,7 +49,7 @@ pub struct QueryPacketCommitmentCmd {
 
     #[clap(
         long = "sequence",
-        alias = "seq",
+        visible_alias = "seq",
         required = true,
         value_name = "SEQUENCE",
         help = "Sequence of packet to query"
@@ -105,5 +105,148 @@ impl Runnable for QueryPacketCommitmentCmd {
             Ok(hex) => Output::success(hex).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::QueryPacketCommitmentCmd;
+
+    use std::str::FromStr;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::{
+        ics04_channel::packet::Sequence,
+        ics24_host::identifier::{ChainId, ChannelId, PortId},
+    };
+
+    #[test]
+    fn test_query_packet_commitment_required_only() {
+        assert_eq!(
+            QueryPacketCommitmentCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                port_id: PortId::from_str("port_id").unwrap(),
+                channel_id: ChannelId::from_str("channel-07").unwrap(),
+                sequence: Sequence::from(42),
+                height: None
+            },
+            QueryPacketCommitmentCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--port",
+                "port_id",
+                "--channel",
+                "channel-07",
+                "--sequence",
+                "42"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_packet_commitment_aliases() {
+        assert_eq!(
+            QueryPacketCommitmentCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                port_id: PortId::from_str("port_id").unwrap(),
+                channel_id: ChannelId::from_str("channel-07").unwrap(),
+                sequence: Sequence::from(42),
+                height: None
+            },
+            QueryPacketCommitmentCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--port",
+                "port_id",
+                "--chan",
+                "channel-07",
+                "--seq",
+                "42"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_packet_commitment_height() {
+        assert_eq!(
+            QueryPacketCommitmentCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                port_id: PortId::from_str("port_id").unwrap(),
+                channel_id: ChannelId::from_str("channel-07").unwrap(),
+                sequence: Sequence::from(42),
+                height: Some(21)
+            },
+            QueryPacketCommitmentCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--port",
+                "port_id",
+                "--channel",
+                "channel-07",
+                "--sequence",
+                "42",
+                "--height",
+                "21"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_packet_commitment_no_seq() {
+        assert!(QueryPacketCommitmentCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_id",
+            "--port",
+            "port_id",
+            "--channel",
+            "channel-07"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_query_packet_commitment_no_chan() {
+        assert!(QueryPacketCommitmentCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_id",
+            "--port",
+            "port_id",
+            "--sequence",
+            "42"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_query_packet_commitment_no_port() {
+        assert!(QueryPacketCommitmentCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_id",
+            "--channel",
+            "channel-07",
+            "--sequence",
+            "42"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_query_packet_commitment_no_chain() {
+        assert!(QueryPacketCommitmentCmd::try_parse_from(&[
+            "test",
+            "--port",
+            "port_id",
+            "--channel",
+            "channel-07",
+            "--sequence",
+            "42"
+        ])
+        .is_err())
     }
 }

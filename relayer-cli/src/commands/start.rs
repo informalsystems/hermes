@@ -16,7 +16,7 @@ use crate::conclude::json;
 use crate::conclude::Output;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct StartCmd {
     #[clap(
         long = "full-scan",
@@ -186,4 +186,27 @@ fn make_supervisor<Chain: ChainHandle>(
             force_full_scan,
         },
     )?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::StartCmd;
+
+    use abscissa_core::clap::Parser;
+
+    #[test]
+    fn test_start_required_only() {
+        assert_eq!(
+            StartCmd { full_scan: false },
+            StartCmd::parse_from(&["test"])
+        )
+    }
+
+    #[test]
+    fn test_start_full_scan() {
+        assert_eq!(
+            StartCmd { full_scan: true },
+            StartCmd::parse_from(&["test", "--full-scan"])
+        )
+    }
 }

@@ -60,13 +60,15 @@ This can provide further specific guidance if we add additional parameters, e.g.
 hermes help create channel
 ```
 
-```
+```shell
 USAGE:
     hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>
 
 DESCRIPTION:
-    Create a new channel between two chains using a pre-existing connection. Alternatively, create a new
-    client and a new connection underlying the new channel if a pre-existing connection is not provided
+    Create a new channel between two chains.
+
+    Can create a new channel using a pre-existing connection or alternatively, create a new client and a
+    new connection underlying the new channel if a pre-existing connection is not provided.
 
 FLAGS:
         --a-chain <A_CHAIN_ID>              Identifier of the side `a` chain for the new channel
@@ -74,14 +76,16 @@ FLAGS:
         --b-port <B_PORT_ID>                Identifier of the side `b` port for the new channel
 
 OPTIONS:
+
         --a-connection <A_CONNECTION_ID>    Identifier of the connection on chain `a` to use in creating
-                                            the new channel.
+                                            the new channel
         --b-chain <B_CHAIN_ID>              Identifier of the side `b` chain for the new channel
         --chan-version <VERSION>            The version for the new channel
         --new-client-connection             Indicates that a new client and connection will be created
                                             underlying the new channel
         --order <ORDER>                     The channel ordering, valid options 'unordered' (default) and
                                             'ordered' [default: ORDER_UNORDERED]
+        --yes                               Skip new_client_connection confirmation
 ```
 
 Additionally, the `-h`/`--help` flags typical for CLI applications work on

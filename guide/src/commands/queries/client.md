@@ -17,14 +17,14 @@ DESCRIPTION:
 
 FLAGS:
         --host-chain <HOST_CHAIN_ID>
-            identifier of the chain to query
+            Identifier of the chain to query
 
 OPTIONS:
         --omit-chain-ids
-            omit printing the reference (or target) chain for each client
+            Omit printing the reference (or target) chain for each client
 
         --reference-chain <REFERENCE_CHAIN_ID>
-            filter for clients which target a specific chain id (implies '--omit-chain-ids')
+            Filter for clients which target a specific chain id (implies '--omit-chain-ids')
 ```
 
 __Example__
@@ -160,20 +160,20 @@ DESCRIPTION:
 
 FLAGS:
         --chain <CHAIN_ID>
-            identifier of the chain to query
+            Identifier of the chain to query
 
         --client <CLIENT_ID>
-            identifier of the client to query
+            Identifier of the client to query
 
 OPTIONS:
         --consensus-height <CONSENSUS_HEIGHT>
-            height of the client's consensus state to query
+            Height of the client's consensus state to query
 
         --height <HEIGHT>
-            the chain height context to be used, applicable only to a specific height
+            The chain height context to be used, applicable only to a specific height
 
         --heights-only
-            show only consensus heights
+            Show only consensus heights
 ```
 
 __Example__

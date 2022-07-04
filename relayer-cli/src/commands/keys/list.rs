@@ -13,7 +13,7 @@ use ibc_relayer::{
 use crate::conclude::Output;
 use crate::{application::app_config, conclude::json};
 
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct KeysListCmd {
     #[clap(
         long = "chain",
@@ -73,4 +73,27 @@ pub fn list_keys(
     let keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
     let keys = keyring.keys()?;
     Ok(keys)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::KeysListCmd;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::ChainId;
+
+    #[test]
+    fn test_keys_list() {
+        assert_eq!(
+            KeysListCmd {
+                chain_id: ChainId::from_string("chain_id")
+            },
+            KeysListCmd::parse_from(&["test", "--chain", "chain_id"])
+        )
+    }
+
+    #[test]
+    fn test_keys_list_no_chain() {
+        assert!(KeysListCmd::try_parse_from(&["test"]).is_err())
+    }
 }

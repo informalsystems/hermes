@@ -14,7 +14,7 @@ use crate::conclude::Output;
 use crate::prelude::*;
 use ibc::core::ics02_client::client_state::ClientState;
 
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct MisbehaviourCmd {
     #[clap(
         long = "chain",
@@ -132,4 +132,35 @@ fn misbehaviour_handling<Chain: ChainHandle>(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::MisbehaviourCmd;
+
+    use std::str::FromStr;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::{ChainId, ClientId};
+
+    #[test]
+    fn test_misbehaviour() {
+        assert_eq!(
+            MisbehaviourCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                client_id: ClientId::from_str("client_id").unwrap()
+            },
+            MisbehaviourCmd::parse_from(&["test", "--chain", "chain_id", "--client", "client_id"])
+        )
+    }
+
+    #[test]
+    fn test_misbehaviour_no_client() {
+        assert!(MisbehaviourCmd::try_parse_from(&["test", "--chain", "chain_id"]).is_err())
+    }
+
+    #[test]
+    fn test_misbehaviour_no_chain() {
+        assert!(MisbehaviourCmd::try_parse_from(&["test", "--client", "client_id"]).is_err())
+    }
 }

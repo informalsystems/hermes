@@ -19,6 +19,7 @@ SUBCOMMANDS:
     pending               Output a summary of pending packets in both directions
     unreceived-acks       Query unreceived acknowledgments
     unreceived-packets    Query unreceived packets
+    help                  Print this message or the help of the given subcommand(s)
 ```
 
 ## Table of Contents

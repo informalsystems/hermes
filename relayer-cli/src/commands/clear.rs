@@ -23,7 +23,7 @@ pub enum ClearCmds {
     Packets(ClearPacketsCmd),
 }
 
-#[derive(Debug, Parser, Command)]
+#[derive(Debug, Parser, Command, PartialEq)]
 pub struct ClearPacketsCmd {
     #[clap(
         long = "chain",
@@ -51,13 +51,13 @@ pub struct ClearPacketsCmd {
     channel_id: ChannelId,
 
     #[clap(
-        long,
+        long = "key-name",
         help = "use the given signing key for the specified chain (default: `key_name` config)"
     )]
     key_name: Option<String>,
 
     #[clap(
-        long,
+        long = "counterparty-key-name",
         help = "use the given signing key for the counterparty chain (default: `counterparty_key_name` config)"
     )]
     counterparty_key_name: Option<String>,
@@ -146,4 +146,138 @@ where
         Ok(mut ev) => ev_list.append(&mut ev),
         Err(e) => Output::error(Error::link(e)).exit(),
     };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::ClearPacketsCmd;
+
+    use std::str::FromStr;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+
+    #[test]
+    fn test_clear_packets_required_only() {
+        assert_eq!(
+            ClearPacketsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                port_id: PortId::from_str("port_id").unwrap(),
+                channel_id: ChannelId::from_str("channel-07").unwrap(),
+                key_name: None,
+                counterparty_key_name: None,
+            },
+            ClearPacketsCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--port",
+                "port_id",
+                "--channel",
+                "channel-07"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_clear_packets_chan_alias() {
+        assert_eq!(
+            ClearPacketsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                port_id: PortId::from_str("port_id").unwrap(),
+                channel_id: ChannelId::from_str("channel-07").unwrap(),
+                key_name: None,
+                counterparty_key_name: None
+            },
+            ClearPacketsCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--port",
+                "port_id",
+                "--chan",
+                "channel-07"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_clear_packets_key_name() {
+        assert_eq!(
+            ClearPacketsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                port_id: PortId::from_str("port_id").unwrap(),
+                channel_id: ChannelId::from_str("channel-07").unwrap(),
+                key_name: Some("key_name".to_owned()),
+                counterparty_key_name: None,
+            },
+            ClearPacketsCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--port",
+                "port_id",
+                "--channel",
+                "channel-07",
+                "--key-name",
+                "key_name"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_clear_packets_counterparty_key_name() {
+        assert_eq!(
+            ClearPacketsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                port_id: PortId::from_str("port_id").unwrap(),
+                channel_id: ChannelId::from_str("channel-07").unwrap(),
+                key_name: None,
+                counterparty_key_name: Some("counterparty_key_name".to_owned()),
+            },
+            ClearPacketsCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--port",
+                "port_id",
+                "--channel",
+                "channel-07",
+                "--counterparty-key-name",
+                "counterparty_key_name"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_clear_packets_no_chan() {
+        assert!(ClearPacketsCmd::try_parse_from(&[
+            "test", "--chain", "chain_id", "--port", "port_id"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_clear_packets_no_port() {
+        assert!(ClearPacketsCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_id",
+            "--channel",
+            "channel-07"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_clear_packets_no_chain() {
+        assert!(ClearPacketsCmd::try_parse_from(&[
+            "test",
+            "--port",
+            "port_id",
+            "--channel",
+            "channel-07"
+        ])
+        .is_err())
+    }
 }
