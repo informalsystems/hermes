@@ -12,7 +12,6 @@ use tendermint::abci::Event as AbciEvent;
 use crate::core::ics02_client::error as client_error;
 use crate::core::ics02_client::events as ClientEvents;
 use crate::core::ics02_client::events::NewBlock;
-use crate::core::ics02_client::height::HeightError;
 use crate::core::ics03_connection::events as ConnectionEvents;
 use crate::core::ics03_connection::events::Attributes as ConnectionAttributes;
 use crate::core::ics04_channel::error as channel_error;
@@ -27,7 +26,6 @@ use crate::Height;
 define_error! {
     Error {
         Height
-            [ HeightError ]
             | _ | { "error parsing height" },
 
         Parse

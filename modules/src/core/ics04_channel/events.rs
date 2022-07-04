@@ -14,6 +14,8 @@ use crate::events::{
 };
 use crate::prelude::*;
 
+use super::packet::parse_timeout_height;
+
 /// Channel event attribute keys
 const HEIGHT_ATTRIBUTE_KEY: &str = "height";
 const CONNECTION_ID_ATTRIBUTE_KEY: &str = "connection_id";
@@ -23,15 +25,15 @@ const COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY: &str = "counterparty_channel_id";
 const COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY: &str = "counterparty_port_id";
 
 /// Packet event attribute keys
-const PKT_SEQ_ATTRIBUTE_KEY: &str = "packet_sequence";
-const PKT_DATA_ATTRIBUTE_KEY: &str = "packet_data";
-const PKT_SRC_PORT_ATTRIBUTE_KEY: &str = "packet_src_port";
-const PKT_SRC_CHANNEL_ATTRIBUTE_KEY: &str = "packet_src_channel";
-const PKT_DST_PORT_ATTRIBUTE_KEY: &str = "packet_dst_port";
-const PKT_DST_CHANNEL_ATTRIBUTE_KEY: &str = "packet_dst_channel";
-const PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY: &str = "packet_timeout_height";
-const PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY: &str = "packet_timeout_timestamp";
-const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
+pub const PKT_SEQ_ATTRIBUTE_KEY: &str = "packet_sequence";
+pub const PKT_DATA_ATTRIBUTE_KEY: &str = "packet_data";
+pub const PKT_SRC_PORT_ATTRIBUTE_KEY: &str = "packet_src_port";
+pub const PKT_SRC_CHANNEL_ATTRIBUTE_KEY: &str = "packet_src_channel";
+pub const PKT_DST_PORT_ATTRIBUTE_KEY: &str = "packet_dst_port";
+pub const PKT_DST_CHANNEL_ATTRIBUTE_KEY: &str = "packet_dst_channel";
+pub const PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY: &str = "packet_timeout_height";
+pub const PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY: &str = "packet_timeout_timestamp";
+pub const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
 
 pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
     match event.type_str.parse() {
@@ -71,7 +73,7 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
                     // This event should not have a write ack.
                     debug_assert_eq!(write_ack.len(), 0);
                     IbcEvent::SendPacket(SendPacket {
-                        height: Default::default(),
+                        height: Height::new(0, 1).unwrap(),
                         packet,
                     })
                 })
@@ -80,7 +82,7 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
         Ok(IbcEventType::WriteAck) => extract_packet_and_write_ack_from_tx(event)
             .map(|(packet, write_ack)| {
                 IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
-                    height: Default::default(),
+                    height: Height::new(0, 1).unwrap(),
                     packet,
                     ack: write_ack,
                 })
@@ -92,7 +94,7 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
                     // This event should not have a write ack.
                     debug_assert_eq!(write_ack.len(), 0);
                     IbcEvent::AcknowledgePacket(AcknowledgePacket {
-                        height: Default::default(),
+                        height: Height::new(0, 1).unwrap(),
                         packet,
                     })
                 })
@@ -104,7 +106,7 @@ pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
                     // This event should not have a write ack.
                     debug_assert_eq!(write_ack.len(), 0);
                     IbcEvent::TimeoutPacket(TimeoutPacket {
-                        height: Default::default(),
+                        height: Height::new(0, 1).unwrap(),
                         packet,
                     })
                 })
@@ -169,8 +171,7 @@ fn extract_packet_and_write_ack_from_tx(
                     .into()
             }
             PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY => {
-                packet.timeout_height =
-                    value.parse().map_err(|_| Error::invalid_timeout_height())?;
+                packet.timeout_height = parse_timeout_height(value)?;
             }
             PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY => {
                 packet.timeout_timestamp = value.parse().unwrap();
@@ -213,7 +214,7 @@ fn extract_attributes(object: &RawObject<'_>, namespace: &str) -> Result<Attribu
     })
 }
 
-#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Attributes {
     pub height: Height,
     pub port_id: PortId,
@@ -229,6 +230,19 @@ impl Attributes {
     }
     pub fn channel_id(&self) -> Option<&ChannelId> {
         self.channel_id.as_ref()
+    }
+}
+
+impl Default for Attributes {
+    fn default() -> Self {
+        Self {
+            height: Height::new(0, 1).unwrap(),
+            port_id: Default::default(),
+            channel_id: Default::default(),
+            connection_id: Default::default(),
+            counterparty_port_id: Default::default(),
+            counterparty_channel_id: Default::default(),
+        }
     }
 }
 
@@ -320,7 +334,7 @@ impl TryFrom<Packet> for Vec<Tag> {
         attributes.push(sequence);
         let timeout_height = Tag {
             key: PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY.parse().unwrap(),
-            value: p.timeout_height.to_string().parse().unwrap(),
+            value: p.timeout_height.into(),
         };
         attributes.push(timeout_height);
         let timeout_timestamp = Tag {
@@ -1156,7 +1170,7 @@ mod tests {
     #[test]
     fn channel_event_to_abci_event() {
         let attributes = Attributes {
-            height: Height::default(),
+            height: Height::new(0, 1).unwrap(),
             port_id: "test_port".parse().unwrap(),
             channel_id: Some("channel-0".parse().unwrap()),
             connection_id: "test_connection".parse().unwrap(),
@@ -1214,28 +1228,28 @@ mod tests {
             destination_port: "b_test_port".parse().unwrap(),
             destination_channel: "channel-1".parse().unwrap(),
             data: "test_data".as_bytes().to_vec(),
-            timeout_height: Height::new(1, 10),
+            timeout_height: Height::new(1, 10).unwrap().into(),
             timeout_timestamp: Timestamp::now(),
         };
         let mut abci_events = vec![];
         let send_packet = SendPacket {
-            height: Height::default(),
+            height: Height::new(0, 1).unwrap(),
             packet: packet.clone(),
         };
         abci_events.push(AbciEvent::try_from(send_packet.clone()).unwrap());
         let write_ack = WriteAcknowledgement {
-            height: Height::default(),
+            height: Height::new(0, 1).unwrap(),
             packet: packet.clone(),
             ack: "test_ack".as_bytes().to_vec(),
         };
         abci_events.push(AbciEvent::try_from(write_ack.clone()).unwrap());
         let ack_packet = AcknowledgePacket {
-            height: Height::default(),
+            height: Height::new(0, 1).unwrap(),
             packet: packet.clone(),
         };
         abci_events.push(AbciEvent::try_from(ack_packet.clone()).unwrap());
         let timeout_packet = TimeoutPacket {
-            height: Height::default(),
+            height: Height::new(0, 1).unwrap(),
             packet,
         };
         abci_events.push(AbciEvent::try_from(timeout_packet.clone()).unwrap());

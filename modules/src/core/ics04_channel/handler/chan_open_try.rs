@@ -363,7 +363,7 @@ mod tests {
                 name: "Processing is successful".to_string(),
                 ctx: context
                     .clone()
-                    .with_client(&client_id, Height::new(0, proof_height))
+                    .with_client(&client_id, Height::new(0, proof_height).unwrap())
                     .with_connection(conn_id.clone(), conn_end.clone())
                     .with_channel(msg.port_id.clone(), chan_id, correct_chan_end),
                 msg: ChannelMsg::ChannelOpenTry(msg),
@@ -374,7 +374,7 @@ mod tests {
                 name: "Processing is successful against an empty context (no preexisting channel)"
                     .to_string(),
                 ctx: context
-                    .with_client(&client_id, Height::new(0, proof_height))
+                    .with_client(&client_id, Height::new(0, proof_height).unwrap())
                     .with_connection(conn_id, conn_end),
                 msg: ChannelMsg::ChannelOpenTry(msg_vanilla),
                 want_pass: true,

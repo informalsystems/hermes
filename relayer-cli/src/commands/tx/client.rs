@@ -122,14 +122,14 @@ pub struct TxUpdateClientCmd {
     #[clap(
         long = "height",
         value_name = "REFERENCE_HEIGHT",
-        help = "The target height of the client update"
+        help = "The target height of the client update. Leave unspecified for latest height."
     )]
     target_height: Option<u64>,
 
     #[clap(
         long = "trusted-height",
         value_name = "REFERENCE_TRUSTED_HEIGHT",
-        help = "The trusted height of the client update"
+        help = "The trusted height of the client update. Leave unspecified for latest height."
     )]
     trusted_height: Option<u64>,
 }
@@ -166,12 +166,16 @@ impl Runnable for TxUpdateClientCmd {
         };
 
         let target_height = self.target_height.map_or(QueryHeight::Latest, |height| {
-            QueryHeight::Specific(Height::new(src_chain.id().version(), height))
+            QueryHeight::Specific(
+                Height::new(src_chain.id().version(), height)
+                    .unwrap_or_else(exit_with_unrecoverable_error),
+            )
         });
 
-        let trusted_height = self
-            .trusted_height
-            .map(|height| Height::new(src_chain.id().version(), height));
+        let trusted_height = self.trusted_height.map(|height| {
+            Height::new(src_chain.id().version(), height)
+                .unwrap_or_else(exit_with_unrecoverable_error)
+        });
 
         let client = ForeignClient::find(src_chain, dst_chain, &self.dst_client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);

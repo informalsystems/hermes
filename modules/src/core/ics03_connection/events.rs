@@ -71,13 +71,25 @@ fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Result<Attribu
     Ok(attr)
 }
 
-#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Attributes {
     pub height: Height,
     pub connection_id: Option<ConnectionId>,
     pub client_id: ClientId,
     pub counterparty_connection_id: Option<ConnectionId>,
     pub counterparty_client_id: ClientId,
+}
+
+impl Default for Attributes {
+    fn default() -> Self {
+        Self {
+            height: Height::new(0, 1).unwrap(),
+            connection_id: Default::default(),
+            client_id: Default::default(),
+            counterparty_connection_id: Default::default(),
+            counterparty_client_id: Default::default(),
+        }
+    }
 }
 
 /// Convert attributes to Tendermint ABCI tags
@@ -290,7 +302,7 @@ mod test {
 
     #[test]
     fn connection_event_to_abci_event() {
-        let height = Height::new(1, 1);
+        let height = Height::new(1, 1).unwrap();
         let attributes = Attributes {
             height,
             connection_id: Some("test_connection".parse().unwrap()),
