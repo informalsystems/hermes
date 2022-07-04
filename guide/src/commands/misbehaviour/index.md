@@ -10,14 +10,15 @@ cannot be relayed using the frozen client.
 
 ```shell
 USAGE:
-    hermes misbehaviour <OPTIONS>
+    hermes misbehaviour --chain <CHAIN_ID> --client <CLIENT_ID>
 
 DESCRIPTION:
     Listen to client update IBC events and handles misbehaviour
 
-POSITIONAL ARGUMENTS:
-    chain_id                  identifier of the chain where client updates are monitored for misbehaviour
-    client_id                 identifier of the client to be monitored for misbehaviour
+REQUIRED:
+        --chain <CHAIN_ID>      Identifier of the chain where client updates are monitored for
+                                misbehaviour
+        --client <CLIENT_ID>    Identifier of the client to be monitored for misbehaviour
 ```
 
 The misbehaviour monitor starts by analyzing all headers used in prior client updates.
@@ -53,7 +54,7 @@ __Example__
 The `hermes misbehaviour` outputs an error message displaying `MISBEHAVIOUR DETECTED`:
 
 ```shell
-hermes misbehaviour ibc-0 07-tendermint-0
+hermes misbehaviour --chain ibc-0 --client 07-tendermint-0
 ```
 
 ```json
@@ -85,7 +86,7 @@ Success: Some(
 
 Querying client state from this point will show the client is in frozen state, with `frozen_height` indicating the height at which the client was frozen:
 ```shell
-hermes query client state ibc-0 07-tendermint-0 | jq
+hermes query client state --chain ibc-0 --client 07-tendermint-0 | jq
 ```
 ```json
 {

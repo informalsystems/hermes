@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use tendermint_light_client_verifier::options::Options;
 use tendermint_proto::Protobuf;
 
+use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
 
 use crate::clients::ics07_tendermint::error::Error;
@@ -77,13 +78,6 @@ impl ClientState {
             )));
         }
 
-        // Basic validation for the latest_height parameter.
-        if latest_height <= Height::zero() {
-            return Err(Error::validation(
-                "ClientState latest height must be greater than zero".to_string(),
-            ));
-        }
-
         // `TrustThreshold` is guaranteed to be in the range `[0, 1)`, but a `TrustThreshold::ZERO`
         // value is invalid in this context
         if trust_level == TrustThreshold::ZERO {
@@ -117,22 +111,18 @@ impl ClientState {
         self.latest_height
     }
 
-    pub fn with_header(self, h: Header) -> Self {
-        // TODO: Clarify which fields should update.
-        ClientState {
-            latest_height: self
-                .latest_height
-                .with_revision_height(u64::from(h.signed_header.header.height)),
+    pub fn with_header(self, h: Header) -> Result<Self, Error> {
+        Ok(ClientState {
+            latest_height: Height::new(
+                self.latest_height.revision_number(),
+                h.signed_header.header.height.into(),
+            )
+            .map_err(|_| Error::invalid_header_height(h.signed_header.header.height.value()))?,
             ..self
-        }
+        })
     }
 
     pub fn with_frozen_height(self, h: Height) -> Result<Self, Error> {
-        if h == Height::zero() {
-            return Err(Error::validation(
-                "ClientState frozen height must be greater than zero".to_string(),
-            ));
-        }
         Ok(Self {
             frozen_height: Some(h),
             ..self
@@ -264,14 +254,12 @@ impl TryFrom<RawClientState> for ClientState {
             .clone()
             .ok_or_else(Error::missing_trusting_period)?;
 
-        let frozen_height = raw.frozen_height.and_then(|raw_height| {
-            let height = raw_height.into();
-            if height == Height::zero() {
-                None
-            } else {
-                Some(height)
-            }
-        });
+        // In `RawClientState`, a `frozen_height` of `0` means "not frozen".
+        // See:
+        // https://github.com/cosmos/ibc-go/blob/8422d0c4c35ef970539466c5bdec1cd27369bab3/modules/light-clients/07-tendermint/types/client_state.go#L74
+        let frozen_height = raw
+            .frozen_height
+            .and_then(|raw_height| raw_height.try_into().ok());
 
         Ok(Self {
             chain_id: ChainId::from_string(raw.chain_id.as_str()),
@@ -296,7 +284,8 @@ impl TryFrom<RawClientState> for ClientState {
             latest_height: raw
                 .latest_height
                 .ok_or_else(Error::missing_latest_height)?
-                .into(),
+                .try_into()
+                .map_err(|_| Error::missing_latest_height())?,
             frozen_height,
             upgrade_path: raw.upgrade_path,
             allow_update: AllowUpdate {
@@ -316,12 +305,17 @@ impl From<ClientState> for RawClientState {
             trusting_period: Some(value.trusting_period.into()),
             unbonding_period: Some(value.unbonding_period.into()),
             max_clock_drift: Some(value.max_clock_drift.into()),
-            frozen_height: Some(value.frozen_height.unwrap_or_else(Height::zero).into()),
+            frozen_height: Some(value.frozen_height.map(|height| height.into()).unwrap_or(
+                RawHeight {
+                    revision_number: 0,
+                    revision_height: 0,
+                },
+            )),
             latest_height: Some(value.latest_height.into()),
             proof_specs: value.proof_specs.into(),
+            upgrade_path: value.upgrade_path,
             allow_update_after_expiry: value.allow_update.after_expiry,
             allow_update_after_misbehaviour: value.allow_update.after_misbehaviour,
-            upgrade_path: value.upgrade_path,
         }
     }
 }
@@ -379,7 +373,7 @@ mod tests {
             trusting_period: Duration::new(64000, 0),
             unbonding_period: Duration::new(128000, 0),
             max_clock_drift: Duration::new(3, 0),
-            latest_height: Height::new(0, 10),
+            latest_height: Height::new(0, 10).unwrap(),
             proof_specs: ProofSpecs::default(),
             upgrade_path: vec!["".to_string()],
             allow_update: AllowUpdate {
@@ -429,14 +423,6 @@ mod tests {
                 name: "Invalid (too small) trusting trust threshold".to_string(),
                 params: ClientStateParams {
                     trust_level: TrustThreshold::ZERO,
-                    ..default_params.clone()
-                },
-                want_pass: false,
-            },
-            Test {
-                name: "Invalid (too small) latest height".to_string(),
-                params: ClientStateParams {
-                    latest_height: Height::zero(),
                     ..default_params.clone()
                 },
                 want_pass: false,
@@ -502,9 +488,9 @@ mod tests {
                 name: "Successful delay verification".to_string(),
                 params: Params {
                     current_time: (now + Duration::from_nanos(2000)).unwrap(),
-                    current_height: Height::new(0, 5),
+                    current_height: Height::new(0, 5).unwrap(),
                     processed_time: (now + Duration::from_nanos(1000)).unwrap(),
-                    processed_height: Height::new(0, 3),
+                    processed_height: Height::new(0, 3).unwrap(),
                     delay_period_time: Duration::from_nanos(500),
                     delay_period_blocks: 2,
                 },
@@ -514,9 +500,9 @@ mod tests {
                 name: "Delay period(time) has not elapsed".to_string(),
                 params: Params {
                     current_time: (now + Duration::from_nanos(1200)).unwrap(),
-                    current_height: Height::new(0, 5),
+                    current_height: Height::new(0, 5).unwrap(),
                     processed_time: (now + Duration::from_nanos(1000)).unwrap(),
-                    processed_height: Height::new(0, 3),
+                    processed_height: Height::new(0, 3).unwrap(),
                     delay_period_time: Duration::from_nanos(500),
                     delay_period_blocks: 2,
                 },
@@ -526,9 +512,9 @@ mod tests {
                 name: "Delay period(blocks) has not elapsed".to_string(),
                 params: Params {
                     current_time: (now + Duration::from_nanos(2000)).unwrap(),
-                    current_height: Height::new(0, 5),
+                    current_height: Height::new(0, 5).unwrap(),
                     processed_time: (now + Duration::from_nanos(1000)).unwrap(),
-                    processed_height: Height::new(0, 4),
+                    processed_height: Height::new(0, 4).unwrap(),
                     delay_period_time: Duration::from_nanos(500),
                     delay_period_blocks: 2,
                 },
@@ -566,7 +552,7 @@ mod tests {
             trusting_period: Duration::new(64000, 0),
             unbonding_period: Duration::new(128000, 0),
             max_clock_drift: Duration::new(3, 0),
-            latest_height: Height::new(1, 10),
+            latest_height: Height::new(1, 10).unwrap(),
             proof_specs: ProofSpecs::default(),
             upgrade_path: vec!["".to_string()],
             allow_update: AllowUpdate {
@@ -585,21 +571,23 @@ mod tests {
         let tests = vec![
             Test {
                 name: "Successful height verification".to_string(),
-                height: Height::new(1, 8),
+                height: Height::new(1, 8).unwrap(),
                 setup: None,
                 want_pass: true,
             },
             Test {
                 name: "Invalid (too large)  client height".to_string(),
-                height: Height::new(1, 12),
+                height: Height::new(1, 12).unwrap(),
                 setup: None,
                 want_pass: false,
             },
             Test {
                 name: "Invalid, client is frozen below current height".to_string(),
-                height: Height::new(1, 6),
+                height: Height::new(1, 6).unwrap(),
                 setup: Some(Box::new(|client_state| {
-                    client_state.with_frozen_height(Height::new(1, 5)).unwrap()
+                    client_state
+                        .with_frozen_height(Height::new(1, 5).unwrap())
+                        .unwrap()
                 })),
                 want_pass: false,
             },
@@ -660,7 +648,8 @@ pub mod test_util {
                 Height::new(
                     ChainId::chain_version(tm_header.chain_id.as_str()),
                     u64::from(tm_header.height),
-                ),
+                )
+                .unwrap(),
                 Default::default(),
                 vec!["".to_string()],
                 AllowUpdate {

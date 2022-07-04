@@ -13,8 +13,6 @@ use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics23_commitment::commitment::CommitmentRoot;
-use crate::core::ics24_host::identifier::ClientId;
-use crate::events::WithBlockDataType;
 use crate::timestamp::Timestamp;
 
 #[cfg(any(test, feature = "mocks"))]
@@ -131,7 +129,10 @@ impl TryFrom<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {
             .ok_or_else(Error::empty_consensus_state_response)?;
 
         Ok(AnyConsensusStateWithHeight {
-            height: value.height.ok_or_else(Error::missing_height)?.into(),
+            height: value
+                .height
+                .and_then(|raw_height| raw_height.try_into().ok())
+                .ok_or_else(Error::missing_height)?,
             consensus_state: state,
         })
     }
@@ -165,13 +166,4 @@ impl ConsensusState for AnyConsensusState {
     fn wrap_any(self) -> AnyConsensusState {
         self
     }
-}
-
-/// Query request for a single client event, identified by `event_id`, for `client_id`.
-#[derive(Clone, Debug)]
-pub struct QueryClientEventRequest {
-    pub height: crate::Height,
-    pub event_id: WithBlockDataType,
-    pub client_id: ClientId,
-    pub consensus_height: crate::Height,
 }

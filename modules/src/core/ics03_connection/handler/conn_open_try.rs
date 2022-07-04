@@ -20,8 +20,11 @@ pub(crate) fn process(
 ) -> HandlerResult<ConnectionResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    // Check that consensus height (for client proof) in message is not too advanced nor too old.
-    check_client_consensus_height(ctx, msg.consensus_height())?;
+    // If a consensus proof is present, check that the consensus height (for
+    // client proof) in the message is not too advanced nor too old.
+    if let Some(consensus_height) = msg.consensus_height() {
+        check_client_consensus_height(ctx, consensus_height)?;
+    }
 
     // Unwrap the old connection end (if any) and its identifier.
     let (mut new_connection_end, conn_id) = match &msg.previous_connection_id {
@@ -147,7 +150,7 @@ mod tests {
             want_pass: bool,
         }
 
-        let host_chain_height = Height::new(0, 35);
+        let host_chain_height = Height::new(0, 35).unwrap();
         let max_history_size = 5;
         let context = MockContext::new(
             ChainId::new("mockgaia".to_string(), 0),
@@ -159,20 +162,20 @@ mod tests {
 
         let msg_conn_try = MsgConnectionOpenTry::try_from(get_dummy_raw_msg_conn_open_try(
             client_consensus_state_height,
-            host_chain_height.revision_height,
+            host_chain_height.revision_height(),
         ))
         .unwrap();
 
         // The proof targets a height that does not exist (i.e., too advanced) on destination chain.
         let msg_height_advanced = MsgConnectionOpenTry::try_from(get_dummy_raw_msg_conn_open_try(
             client_consensus_state_height,
-            host_chain_height.increment().revision_height,
+            host_chain_height.increment().revision_height(),
         ))
         .unwrap();
         let pruned_height = host_chain_height
             .sub(max_history_size as u64 + 1)
             .unwrap()
-            .revision_height;
+            .revision_height();
         // The consensus proof targets a missing height (pruned) on destination chain.
         let msg_height_old = MsgConnectionOpenTry::try_from(get_dummy_raw_msg_conn_open_try(
             client_consensus_state_height,
@@ -184,7 +187,7 @@ mod tests {
         let msg_proof_height_missing =
             MsgConnectionOpenTry::try_from(get_dummy_raw_msg_conn_open_try(
                 client_consensus_state_height - 1,
-                host_chain_height.revision_height,
+                host_chain_height.revision_height(),
             ))
             .unwrap();
 
@@ -209,19 +212,19 @@ mod tests {
             },
             Test {
                 name: "Processing fails because the client misses the consensus state targeted by the proof".to_string(),
-                ctx: context.clone().with_client(&msg_proof_height_missing.client_id, Height::new(0, client_consensus_state_height)),
+                ctx: context.clone().with_client(&msg_proof_height_missing.client_id, Height::new(0, client_consensus_state_height).unwrap()),
                 msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_proof_height_missing)),
                 want_pass: false,
             },
             Test {
                 name: "Good parameters but has previous_connection_id".to_string(),
-                ctx: context.clone().with_client(&msg_conn_try.client_id, Height::new(0, client_consensus_state_height)),
+                ctx: context.clone().with_client(&msg_conn_try.client_id, Height::new(0, client_consensus_state_height).unwrap()),
                 msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.clone())),
                 want_pass: false,
             },
             Test {
                 name: "Good parameters".to_string(),
-                ctx: context.with_client(&msg_conn_try.client_id, Height::new(0, client_consensus_state_height)),
+                ctx: context.with_client(&msg_conn_try.client_id, Height::new(0, client_consensus_state_height).unwrap()),
                 msg: ConnectionMsg::ConnectionOpenTry(Box::new(msg_conn_try.with_previous_connection_id(None))),
                 want_pass: true,
             },

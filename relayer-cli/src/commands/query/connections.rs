@@ -9,9 +9,15 @@ use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct QueryConnectionsCmd {
-    #[clap(required = true, help = "identifier of the chain to query")]
+    #[clap(
+        long = "chain",
+        required = true,
+        value_name = "CHAIN_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the chain to query"
+    )]
     chain_id: ChainId,
 }
 
@@ -40,5 +46,28 @@ impl Runnable for QueryConnectionsCmd {
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::QueryConnectionsCmd;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::ChainId;
+
+    #[test]
+    fn test_query_connections() {
+        assert_eq!(
+            QueryConnectionsCmd {
+                chain_id: ChainId::from_string("chain_id")
+            },
+            QueryConnectionsCmd::parse_from(&["test", "--chain", "chain_id"])
+        )
+    }
+
+    #[test]
+    fn test_query_connections_no_chain() {
+        assert!(QueryConnectionsCmd::try_parse_from(&["test"]).is_err())
     }
 }

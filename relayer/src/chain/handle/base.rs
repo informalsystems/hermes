@@ -21,7 +21,6 @@ use ibc::{
     },
     events::IbcEvent,
     proofs::Proofs,
-    query::{QueryBlockRequest, QueryTxRequest},
     signer::Signer,
     Height,
 };
@@ -32,14 +31,14 @@ use crate::{
         client::ClientSettings,
         endpoint::ChainStatus,
         requests::{
-            IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest,
+            IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
             QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
             QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
             QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
             QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
             QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
             QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
-            QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+            QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
             QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
         },
         tracking::TrackedMsgs,
@@ -372,7 +371,7 @@ impl ChainHandle for BaseChainHandle {
     ) -> Result<Proofs, Error> {
         self.send(|reply_to| ChainRequest::BuildChannelProofs {
             port_id: port_id.clone(),
-            channel_id: *channel_id,
+            channel_id: channel_id.clone(),
             height,
             reply_to,
         })
@@ -389,7 +388,7 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::BuildPacketProofs {
             packet_type,
             port_id: port_id.clone(),
-            channel_id: *channel_id,
+            channel_id: channel_id.clone(),
             sequence,
             height,
             reply_to,

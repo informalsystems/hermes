@@ -155,21 +155,29 @@ hermes 0.15.0
 Informal Systems <hello@informal.systems>
 
 USAGE:
-    hermes <SUBCOMMAND>
+    hermes [OPTIONS] <SUBCOMMAND>
+
+OPTIONS:
+        --config <CONFIG>    Path to configuration file
+    -h, --help               Print help information
+        --json               Enable JSON output
+    -V, --version            Print version information
 
 SUBCOMMANDS:
-    help       Get usage information
-    config     Validate Hermes configuration file
-    keys       Manage keys in the relayer for each chain
-    create     Create objects (client, connection, or channel) on chains
-    update     Update objects (clients) on chains
-    upgrade    Upgrade objects (clients) after chain upgrade
-    start      Start the relayer
-    query      Query objects from the chain
-    tx         Create and send IBC transactions
-    listen     Listen to and display IBC events emitted by a chain
-    misbehaviour Listen to client update IBC events and handles misbehaviour
-    version    Display version information
+    clear           Clear objects, such as outstanding packets on a channel
+    config          Validate Hermes configuration file
+    create          Create objects (client, connection, or channel) on chains
+    health-check    Performs a health check of all chains in the the config
+    help            Print this message or the help of the given subcommand(s)
+    keys            Manage keys in the relayer for each chain
+    listen          Listen to and display IBC events emitted by a chain
+    misbehaviour    Listen to client update IBC events and handles misbehaviour
+    query           Query objects from the chain
+    start           Start the relayer in multi-chain mode
+    tx              Create and send IBC transactions
+    update          Update objects (clients) on chains
+    upgrade         Upgrade objects (clients) after chain upgrade
+    completions     Generate auto-complete scripts for different shells
 ```
 
 ### Creating an alias for the executable
@@ -192,19 +200,19 @@ and any further necessary modifications to the shell's startup files.
 ### Bash
 
 ```sh
-hermes completions bash > ~/.local/share/bash-completion/completions/hermes
+hermes completions --shell bash > ~/.local/share/bash-completion/completions/hermes
 ```
 
 On a MacOS installation with Homebrew `bash-completion` formula installed, use 
 
 ```sh
-hermes completions bash > $(brew --prefix)/etc/bash_completion.d/hermes.bash-completion
+hermes completions --shell bash > $(brew --prefix)/etc/bash_completion.d/hermes.bash-completion
 ```
 
 ### Zsh
 
 ```sh
-hermes completions zsh > ~/.zfunc/_hermes
+hermes completions --shell zsh > ~/.zfunc/_hermes
 ```
 
 To make the shell load the script on initialization, add the directory to `fpath`

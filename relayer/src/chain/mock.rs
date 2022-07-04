@@ -23,7 +23,6 @@ use ibc::core::ics24_host::identifier::{ChainId, ConnectionId};
 use ibc::events::IbcEvent;
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
-use ibc::query::{QueryBlockRequest, QueryTxRequest};
 use ibc::relayer::ics18_relayer::context::Ics18Context;
 use ibc::signer::Signer;
 use ibc::test_utils::get_dummy_account_id;
@@ -44,14 +43,14 @@ use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 
 use super::requests::{
-    IncludeProof, QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
-    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
-    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
-    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest,
-    QueryPacketCommitmentsRequest, QueryPacketReceiptRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
-    QueryUpgradedConsensusStateRequest,
+    IncludeProof, QueryBlockRequest, QueryChannelsRequest, QueryClientConnectionsRequest,
+    QueryClientStateRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
+    QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
+    QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
+    QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
+    QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use super::tracking::TrackedMsgs;
 
@@ -91,7 +90,7 @@ impl ChainEndpoint for MockChain {
                 config.id.clone(),
                 HostType::SyntheticTendermint,
                 50,
-                Height::new(config.id.version(), 20),
+                Height::new(config.id.version(), 20).unwrap(),
             ),
             _event_sender: sender,
             event_receiver: receiver,
@@ -473,6 +472,7 @@ pub mod test_utils {
             max_gas: None,
             gas_price: GasPrice::new(0.001, "uatom".to_string()),
             gas_adjustment: None,
+            gas_multiplier: None,
             fee_granter: None,
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),

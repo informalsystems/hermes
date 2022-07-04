@@ -3,7 +3,7 @@
 Perform client creation, connection and channel handshake to establish a new path between the `transfer` ports on `ibc-0` and `ibc-1` chains.
 
 ```shell
-hermes create channel ibc-0 -c ibc-1 --port-a transfer --port-b transfer --new-client-connection
+hermes create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --new-client-connection
 ```
 
 If all the handshakes are performed successfully you should see a message similar to the one below:

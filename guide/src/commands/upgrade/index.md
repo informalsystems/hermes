@@ -6,14 +6,14 @@ Use the `upgrade client` command to upgrade a client after a chain upgrade.
 
 ```shell
 USAGE:
-    hermes upgrade client <OPTIONS>
+    hermes upgrade client --host-chain <HOST_CHAIN_ID> --client <CLIENT_ID>
 
 DESCRIPTION:
     Upgrade an IBC client
 
-POSITIONAL ARGUMENTS:
-    dst_chain_id              identifier of the destination chain
-    dst_client_id             identifier of the client to be upgraded on destination chain
+REQUIRED:
+        --client <CLIENT_ID>            Identifier of the client to be upgraded
+        --host-chain <HOST_CHAIN_ID>    Identifier of the chain that hosts the client
 ```
 
 __Example__

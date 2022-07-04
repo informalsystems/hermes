@@ -6,8 +6,8 @@ use tracing::{debug, error, trace, trace_span};
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
-use ibc::query::{QueryTxHash, QueryTxRequest};
 
+use crate::chain::requests::{QueryTxHash, QueryTxRequest};
 use crate::chain::tracking::TrackingId;
 use crate::error::Error as RelayerError;
 use crate::link::{error::LinkError, RelayPath};
@@ -244,6 +244,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
 
                     telemetry!(
                         tx_confirmed,
+                        tx_hashes.0.len(),
                         pending.tracking_id(),
                         &self.chain.id(),
                         &self.channel_id,

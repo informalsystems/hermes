@@ -132,7 +132,7 @@ mod tests {
                 name: "Processing fails due to connections mismatch (incorrect state)".to_string(),
                 ctx: context
                     .clone()
-                    .with_client(&client_id, Height::new(0, 10))
+                    .with_client(&client_id, Height::new(0, 10).unwrap())
                     .with_connection(msg_confirm.connection_id.clone(), incorrect_conn_end_state),
                 msg: ConnectionMsg::ConnectionOpenConfirm(msg_confirm.clone()),
                 want_pass: false,
@@ -140,7 +140,7 @@ mod tests {
             Test {
                 name: "Processing successful".to_string(),
                 ctx: context
-                    .with_client(&client_id, Height::new(0, 10))
+                    .with_client(&client_id, Height::new(0, 10).unwrap())
                     .with_connection(msg_confirm.connection_id.clone(), correct_conn_end),
                 msg: ConnectionMsg::ConnectionOpenConfirm(msg_confirm),
                 want_pass: true,

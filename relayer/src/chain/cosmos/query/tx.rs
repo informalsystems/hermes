@@ -1,17 +1,17 @@
-use ibc::core::ics02_client::client_consensus::QueryClientEventRequest;
 use ibc::core::ics02_client::events as ClientEvents;
-use ibc::core::ics04_channel::channel::QueryPacketEventDataRequest;
 use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics04_channel::packet::{Packet, Sequence};
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::{from_tx_response_event, IbcEvent};
-use ibc::query::QueryTxRequest;
 use ibc::Height as ICSHeight;
 use tendermint::abci::Event;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::{Client, HttpClient, Order, Url};
 
 use crate::chain::cosmos::query::{header_query, packet_query, tx_hash_query};
+use crate::chain::requests::{
+    QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest, QueryTxRequest,
+};
 use crate::error::Error;
 
 /// This function queries transactions for events matching certain criteria.
@@ -67,7 +67,7 @@ pub async fn query_txs(
                     &request,
                     *seq,
                     response.txs[0].clone(),
-                ) {
+                )? {
                     result.push(event);
                 }
             }
@@ -105,7 +105,7 @@ pub async fn query_txs(
             );
 
             let tx = response.txs.remove(0);
-            let event = update_client_from_tx_search_response(chain_id, &request, tx);
+            let event = update_client_from_tx_search_response(chain_id, &request, tx)?;
 
             Ok(event.into_iter().collect())
         }
@@ -144,13 +144,17 @@ fn update_client_from_tx_search_response(
     chain_id: &ChainId,
     request: &QueryClientEventRequest,
     response: ResultTx,
-) -> Option<IbcEvent> {
-    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
-    if request.height != ICSHeight::zero() && height > request.height {
-        return None;
-    }
+) -> Result<Option<IbcEvent>, Error> {
+    let height = ICSHeight::new(chain_id.version(), u64::from(response.height))
+        .map_err(|_| Error::invalid_height_no_source())?;
 
-    response
+    if let QueryHeight::Specific(specific_query_height) = request.query_height {
+        if height > specific_query_height {
+            return Ok(None);
+        }
+    };
+
+    Ok(response
         .tx_result
         .events
         .into_iter()
@@ -167,7 +171,7 @@ fn update_client_from_tx_search_response(
             update.common.client_id == request.client_id
                 && update.common.consensus_height == request.consensus_height
         })
-        .map(IbcEvent::UpdateClient)
+        .map(IbcEvent::UpdateClient))
 }
 
 // Extract the packet events from the query_txs RPC response. For any given
@@ -182,17 +186,21 @@ fn packet_from_tx_search_response(
     request: &QueryPacketEventDataRequest,
     seq: Sequence,
     response: ResultTx,
-) -> Option<IbcEvent> {
-    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
-    if request.height != ICSHeight::zero() && height > request.height {
-        return None;
+) -> Result<Option<IbcEvent>, Error> {
+    let height = ICSHeight::new(chain_id.version(), u64::from(response.height))
+        .map_err(|_| Error::invalid_height_no_source())?;
+
+    if let QueryHeight::Specific(query_height) = request.height {
+        if height > query_height {
+            return Ok(None);
+        }
     }
 
-    response
+    Ok(response
         .tx_result
         .events
         .into_iter()
-        .find_map(|ev| filter_matching_event(ev, request, seq))
+        .find_map(|ev| filter_matching_event(ev, request, seq)))
 }
 
 fn filter_matching_event(
@@ -231,7 +239,7 @@ fn filter_matching_event(
 }
 
 fn all_ibc_events_from_tx_search_response(chain_id: &ChainId, response: ResultTx) -> Vec<IbcEvent> {
-    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
+    let height = ICSHeight::new(chain_id.version(), u64::from(response.height)).unwrap();
     let deliver_tx_result = response.tx_result;
     if deliver_tx_result.code.is_err() {
         return vec![IbcEvent::ChainError(format!(

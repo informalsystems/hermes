@@ -14,7 +14,7 @@ __`07-tendermint-<n>`__ for tendermint clients
 For example `07-tendermint-0` is assigned to the first client created on `ibc-1`:
 
  ```shell
-hermes tx raw create-client ibc-1 ibc-0
+hermes tx raw create-client --host-chain ibc-1 --reference-chain ibc-0
  ```
 
  ```json
@@ -47,7 +47,7 @@ __`connection-<n>`__ for connections
 For example `connection-0` is assigned to the first connection created on `ibc-1`:
 
 ```shell
-hermes tx raw conn-init ibc-1 ibc-0 07-tendermint-0 07-tendermint-0
+hermes tx raw conn-init --dst-chain ibc-1 --src-chain ibc-0 --dst-client 07-tendermint-0 --src-client 07-tendermint-0
 ```
 
 ```json
@@ -83,7 +83,7 @@ We will create a second connection on `ibc-1` with identifier `connection-1` in 
 For example `channel-0` is assigned to the first channel created on `ibc-1`:
 
 ```shell
-hermes tx raw chan-open-init ibc-1 ibc-0 connection-0 transfer transfer
+hermes tx raw chan-open-init --dst-chain ibc-1 --src-chain ibc-0 --dst-conn connection-0 --dst-port transfer --src-port transfer
 ```
 
 ```json

@@ -115,7 +115,7 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                 chains.b,
                 LinkParameters {
                     src_port_id: path.src_port_id.clone(),
-                    src_channel_id: path.src_channel_id,
+                    src_channel_id: path.src_channel_id.clone(),
                 },
                 packets_config.tx_confirmation,
             );
