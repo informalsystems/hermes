@@ -13,12 +13,8 @@ tracking the state of the source chain.
 USAGE:
     hermes create client [OPTIONS] --host-chain <HOST_CHAIN_ID> --reference-chain <REFERENCE_CHAIN_ID>
 
-FLAGS:
-        --host-chain <HOST_CHAIN_ID>
-            identifier of the chain that hosts the client
-
-        --reference-chain <REFERENCE_CHAIN_ID>
-            identifier of the chain targeted by the client
+DESCRIPTION:
+    Create a new IBC client
 
 OPTIONS:
         --clock-drift <CLOCK_DRIFT>
@@ -31,17 +27,24 @@ OPTIONS:
             option is not specified, a suitable clock drift value is derived from the chain
             configurations.
 
+        --trust-threshold <TRUST_THRESHOLD>
+            Override the trust threshold specified in the configuration.
+
+            The trust threshold defines what fraction of the total voting power of a known and
+            trusted validator set is sufficient for a commit to be accepted going forward.
+
         --trusting-period <TRUSTING_PERIOD>
             Override the trusting period specified in the config.
 
             The trusting period specifies how long a validator set is trusted for (must be shorter
             than the chain's unbonding period).
 
-        --trust-threshold <TRUST_THRESHOLD>
-            Override the trust threshold specified in the configuration.
+REQUIRED:
+        --host-chain <HOST_CHAIN_ID>
+            Identifier of the chain that hosts the client
 
-            The trust threshold defines what fraction of the total voting power of a known and
-            trusted validator set is sufficient for a commit to be accepted going forward.
+        --reference-chain <REFERENCE_CHAIN_ID>
+            Identifier of the chain targeted by the client
 ```
 
 __Example__
@@ -83,19 +86,19 @@ Specific update and trusted heights can be specified.
 USAGE:
     hermes update client [OPTIONS] --host-chain <HOST_CHAIN_ID> --client <CLIENT_ID>
 
-FLAGS:
-        --host-chain <HOST_CHAIN_ID>
-            identifier of the chain that hosts the client
-
-        --client <CLIENT_ID>
-            identifier of the chain targeted by the client
+DESCRIPTION:
+    Update an IBC client
 
 OPTIONS:
         --height <REFERENCE_HEIGHT>
-            the target height of the client update
+            The target height of the client update. Leave unspecified for latest height.
 
         --trusted-height <REFERENCE_TRUSTED_HEIGHT>
-            the trusted height of the client update
+            The trusted height of the client update. Leave unspecified for latest height.
+
+REQUIRED:
+        --client <CLIENT_ID>            Identifier of the chain targeted by the client
+        --host-chain <HOST_CHAIN_ID>    Identifier of the chain that hosts the client
 ```
 
 __Update client with latest header__

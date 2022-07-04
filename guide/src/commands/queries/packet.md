@@ -35,9 +35,13 @@ Use the `query packet pending` command to query the sequence numbers of all pack
 USAGE:
     hermes query packet pending --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
 
-FLAGS:
+DESCRIPTION:
+    Output a summary of pending packets in both directions
+
+REQUIRED:
         --chain <CHAIN_ID>        Identifier of the chain at one end of the channel
-        --channel <CHANNEL_ID>    Channel identifier on the chain given by <CHAIN_ID>
+        --channel <CHANNEL_ID>    Channel identifier on the chain given by <CHAIN_ID> [aliases:
+                                  chan]
         --port <PORT_ID>          Port identifier on the chain given by <CHAIN_ID>
 ```
 
@@ -90,9 +94,9 @@ USAGE:
 DESCRIPTION:
     Query packet commitments
 
-FLAGS:
+REQUIRED:
         --chain <CHAIN_ID>        Identifier of the chain to query
-        --channel <CHANNEL_ID>    Identifier of the channel to query
+        --channel <CHANNEL_ID>    Identifier of the channel to query [aliases: chan]
         --port <PORT_ID>          Identifier of the port to query
 ```
 
@@ -129,14 +133,14 @@ USAGE:
 DESCRIPTION:
     Query packet commitment
 
-FLAGS:
-        --chain <CHAIN_ID>             Identifier of the chain to query
-        --channel <CHANNEL_ID>         Identifier of the channel to query
-        --port <PORT_ID>               Identifier of the port to query
-        --sequence <SEQUENCE>          Sequence of packet to query
-
 OPTIONS:
-        --height <HEIGHT>              Height of the state to query
+        --height <HEIGHT>    Height of the state to query. Leave unspecified for latest height.
+
+REQUIRED:
+        --chain <CHAIN_ID>        Identifier of the chain to query
+        --channel <CHANNEL_ID>    Identifier of the channel to query [aliases: chan]
+        --port <PORT_ID>          Identifier of the port to query
+        --sequence <SEQUENCE>     Sequence of packet to query [aliases: seq]
 ```
 
 __Example__
@@ -162,9 +166,9 @@ USAGE:
 DESCRIPTION:
     Query packet acknowledgments
 
-FLAGS:
+REQUIRED:
         --chain <CHAIN_ID>        Identifier of the chain to query
-        --channel <CHANNEL_ID>    Identifier of the channel to query
+        --channel <CHANNEL_ID>    Identifier of the channel to query [aliases: chan]
         --port <PORT_ID>          Identifier of the port to query
 ```
 
@@ -201,14 +205,14 @@ USAGE:
 DESCRIPTION:
     Query packet acknowledgment
 
-FLAGS:
-        --chain <CHAIN_ID>             Identifier of the chain to query
-        --channel <CHANNEL_ID>         Identifier of the channel to query
-        --port <PORT_ID>               Identifier of the port to query
-        --sequence <SEQUENCE>          Sequence of packet to query
-
 OPTIONS:
-        --height <HEIGHT>              Height of the state to query
+        --height <HEIGHT>    Height of the state to query. Leave unspecified for latest height.
+
+REQUIRED:
+        --chain <CHAIN_ID>        Identifier of the chain to query
+        --channel <CHANNEL_ID>    Identifier of the channel to query [aliases: chan]
+        --port <PORT_ID>          Identifier of the port to query
+        --sequence <SEQUENCE>     Sequence of packet to query [aliases: seq]
 ```
 
 __Example__
@@ -234,9 +238,9 @@ USAGE:
 DESCRIPTION:
     Query unreceived packets
 
-FLAGS:
+REQUIRED:
         --chain <CHAIN_ID>        Identifier of the chain for the unreceived sequences
-        --channel <CHANNEL_ID>    Channel identifier
+        --channel <CHANNEL_ID>    Channel identifier [aliases: chan]
         --port <PORT_ID>          Port identifier
 ```
 
@@ -267,9 +271,9 @@ USAGE:
 DESCRIPTION:
     Query unreceived acknowledgments
 
-FLAGS:
+REQUIRED:
         --chain <CHAIN_ID>        Identifier of the chain to query the unreceived acknowledgments
-        --channel <CHANNEL_ID>    Channel identifier
+        --channel <CHANNEL_ID>    Channel identifier [aliases: chan]
         --port <PORT_ID>          Port identifier
 ```
 
