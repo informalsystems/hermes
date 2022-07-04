@@ -69,7 +69,7 @@ pub fn validate_port_identifier(id: &str) -> Result<(), Error> {
 
 /// Default validator function for Channel identifiers.
 ///
-/// A valid Identifier must be between 10-64 characters and only contain lowercase
+/// A valid Identifier must be between 8-64 characters and only contain lowercase
 /// alphabetic characters,
 pub fn validate_channel_identifier(id: &str) -> Result<(), Error> {
     validate_identifier(id, 8, 64)
