@@ -353,12 +353,7 @@ impl ChannelId {
     /// assert_eq!(chan_id.to_string(), "channel-27");
     /// ```
     pub fn new(counter: u64) -> Self {
-        let id = format!(
-            "{}{:0w$}",
-            Self::PREFIX,
-            counter,
-            w = 10 - Self::PREFIX.len()
-        );
+        let id = format!("{}{}", Self::PREFIX, counter);
         Self(id)
     }
 
