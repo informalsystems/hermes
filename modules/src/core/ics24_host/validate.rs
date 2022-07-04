@@ -78,8 +78,8 @@ pub fn validate_channel_identifier(id: &str) -> Result<(), Error> {
 #[cfg(test)]
 mod tests {
     use crate::core::ics24_host::validate::{
-        validate_client_identifier, validate_connection_identifier, validate_identifier,
-        validate_port_identifier,
+        validate_channel_identifier, validate_client_identifier, validate_connection_identifier,
+        validate_identifier, validate_port_identifier,
     };
     use test_log::test;
 
@@ -110,6 +110,22 @@ mod tests {
     fn parse_connection_id_max() {
         // invalid max connection id (test string length is 65)
         let id = validate_connection_identifier(
+            "ihhankr30iy4nna65hjl2wjod7182io1t2s7u3ip3wqtbbn1sl0rgcntqc540r36r",
+        );
+        assert!(id.is_err())
+    }
+
+    #[test]
+    fn parse_invalid_channel_id_min() {
+        // invalid channel id, must be at least 8 characters
+        let id = validate_channel_identifier("channel");
+        assert!(id.is_err())
+    }
+
+    #[test]
+    fn parse_channel_id_max() {
+        // invalid channel id (test string length is 65)
+        let id = validate_channel_identifier(
             "ihhankr30iy4nna65hjl2wjod7182io1t2s7u3ip3wqtbbn1sl0rgcntqc540r36r",
         );
         assert!(id.is_err())
