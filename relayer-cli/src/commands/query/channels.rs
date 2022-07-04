@@ -28,14 +28,13 @@ pub struct QueryChannelsCmd {
     )]
     chain_id: ChainId,
 
-    // TODO: Filtering by counterparty chain does not work currently.
-    //  https://github.com/informalsystems/ibc-rs/issues/1132#issuecomment-1165324496
-    // #[clap(
-    //     long = "counterparty-chain",
-    //     value_name = "COUNTERPARTY_CHAIN_ID",
-    //     help = "Filter the query response by the this counterparty chain"
-    // )]
-    // dst_chain_id: Option<ChainId>,
+    #[clap(
+        long = "counterparty-chain",
+        value_name = "COUNTERPARTY_CHAIN_ID",
+        help = "Filter the query response by the this counterparty chain"
+    )]
+    dst_chain_id: Option<ChainId>,
+
     #[clap(
         long = "verbose",
         help = "Enable verbose output, displaying the client and connection ids for each channel in the response"
@@ -90,11 +89,35 @@ fn run_query_channels<Chain: ChainHandle>(
             })?
             .clone();
 
+        // If a counterparty chain is specified as a filter, check and skip the
+        // channel if required.
+        if let Some(dst_chain_id) = &cmd.dst_chain_id {
+            let (connection_end, _) = chain.query_connection(
+                QueryConnectionRequest {
+                    connection_id: connection_id.clone(),
+                    height: QueryHeight::Specific(chain_height),
+                },
+                IncludeProof::No,
+            )?;
+            let client_id = connection_end.client_id().clone();
+            let (client_state, _) = chain.query_client_state(
+                QueryClientStateRequest {
+                    client_id,
+                    height: QueryHeight::Specific(chain_height),
+                },
+                IncludeProof::No,
+            )?;
+
+            let counterparty_chain_id = client_state.chain_id();
+            if counterparty_chain_id != *dst_chain_id {
+                continue;
+            }
+        }
+
         if cmd.verbose {
             let channel_ends = query_channel_ends(
                 &mut registry,
                 &chain,
-                None,
                 channel_end,
                 connection_id,
                 chain_id,
@@ -122,7 +145,6 @@ fn run_query_channels<Chain: ChainHandle>(
 fn query_channel_ends<Chain: ChainHandle>(
     registry: &mut Registry<Chain>,
     chain: &Chain,
-    dst_chain_id: Option<&ChainId>,
     channel_end: ChannelEnd,
     connection_id: ConnectionId,
     chain_id: ChainId,
@@ -146,16 +168,6 @@ fn query_channel_ends<Chain: ChainHandle>(
         IncludeProof::No,
     )?;
     let counterparty_chain_id = client_state.chain_id();
-
-    if let Some(dst_chain_id) = dst_chain_id {
-        if dst_chain_id != &counterparty_chain_id {
-            return Err(format!(
-                "mismatch between supplied destination chain ({}) and counterparty chain ({})",
-                dst_chain_id, counterparty_chain_id
-            )
-            .into());
-        }
-    }
 
     let channel_counterparty = channel_end.counterparty().clone();
     let connection_counterparty = connection_end.counterparty().clone();
