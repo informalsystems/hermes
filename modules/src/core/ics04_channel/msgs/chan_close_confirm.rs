@@ -187,7 +187,7 @@ mod tests {
                 name: "Bad channel, name too long".to_string(),
                 raw: RawMsgChannelCloseConfirm {
                     channel_id:
-                        "channel-12839128379182739812739879"
+                        "channel-128391283791827398127398791283912837918273981273987912839"
                             .to_string(),
                     ..default_raw_msg.clone()
                 },
