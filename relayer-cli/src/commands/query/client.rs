@@ -26,6 +26,7 @@ pub struct QueryClientStateCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -34,6 +35,7 @@ pub struct QueryClientStateCmd {
         long = "client",
         required = true,
         value_name = "CLIENT_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the client to query"
     )]
     client_id: ClientId,
@@ -80,6 +82,7 @@ pub struct QueryClientConsensusCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -88,6 +91,7 @@ pub struct QueryClientConsensusCmd {
         long = "client",
         required = true,
         value_name = "CLIENT_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the client to query"
     )]
     client_id: ClientId,
@@ -193,6 +197,7 @@ pub struct QueryClientHeaderCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -201,6 +206,7 @@ pub struct QueryClientHeaderCmd {
         long = "client",
         required = true,
         value_name = "CLIENT_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the client to query"
     )]
     client_id: ClientId,
@@ -209,6 +215,7 @@ pub struct QueryClientHeaderCmd {
         long = "consensus-height",
         required = true,
         value_name = "CONSENSUS_HEIGHT",
+        help_heading = "REQUIRED",
         help = "Height of header to query"
     )]
     consensus_height: u64,
@@ -280,6 +287,7 @@ pub struct QueryClientConnectionsCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -288,6 +296,7 @@ pub struct QueryClientConnectionsCmd {
         long = "client",
         required = true,
         value_name = "CLIENT_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the client to query"
     )]
     client_id: ClientId,

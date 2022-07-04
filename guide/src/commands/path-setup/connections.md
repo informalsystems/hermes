@@ -9,22 +9,23 @@ Use the `create connection` command to create a new connection.
 
 ```shell
 USAGE:
-    hermes create connection [OPTIONS] --a-chain <A_CHAIN_ID>
+    hermes create connection [OPTIONS] --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID>
+
+    hermes create connection [OPTIONS] --a-chain <A_CHAIN_ID> --a-client <A_CLIENT_ID> --b-client <B_CLIENT_ID>
 
 DESCRIPTION:
     Create a new connection between two chains
 
+OPTIONS:
+        --delay <DELAY>    Delay period parameter for the new connection (seconds) [default: 0]
+
 FLAGS:
         --a-chain <A_CHAIN_ID>      Identifier of the side `a` chain for the new connection
-
-OPTIONS:
         --a-client <A_CLIENT_ID>    Identifier of client hosted on chain `a`; default: None (creates
                                     a new client)
         --b-chain <B_CHAIN_ID>      Identifier of the side `b` chain for the new connection
         --b-client <B_CLIENT_ID>    Identifier of client hosted on chain `b`; default: None (creates
                                     a new client)
-        --delay <DELAY>             Delay period parameter for the new connection (seconds)
-                                    [default: 0]
 ```
 
 ## Examples

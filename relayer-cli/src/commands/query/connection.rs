@@ -22,6 +22,7 @@ pub struct QueryConnectionEndCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -31,6 +32,7 @@ pub struct QueryConnectionEndCmd {
         visible_alias = "conn",
         required = true,
         value_name = "CONNECTION_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the connection to query"
     )]
     connection_id: ConnectionId,
@@ -91,6 +93,7 @@ pub struct QueryConnectionChannelsCmd {
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -100,6 +103,7 @@ pub struct QueryConnectionChannelsCmd {
         visible_alias = "conn",
         required = true,
         value_name = "CONNECTION_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the connection to query"
     )]
     connection_id: ConnectionId,

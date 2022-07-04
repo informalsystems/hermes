@@ -15,7 +15,7 @@ USAGE:
 DESCRIPTION:
     Listen to client update IBC events and handles misbehaviour
 
-FLAGS:
+REQUIRED:
         --chain <CHAIN_ID>      Identifier of the chain where client updates are monitored for
                                 misbehaviour
         --client <CLIENT_ID>    Identifier of the client to be monitored for misbehaviour

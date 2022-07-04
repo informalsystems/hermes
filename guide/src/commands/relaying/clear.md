@@ -10,22 +10,24 @@ and [packet-acks](../raw/packet.md#relay-acknowledgment-packets).
 
 ```
 USAGE:
-    hermes clear packets --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
+    hermes clear packets [OPTIONS] --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
 
 DESCRIPTION:
-    Clear outstanding packets (i.e. packet-recv and packet-ack) on a given channel in both directions.
-
+    Clear outstanding packets (i.e., packet-recv and packet-ack) on a given channel in both directions.
     The channel is identified by the chain, port, and channel IDs at one of its ends
 
 OPTIONS:
-    -h, --help           Print help information
+        --counterparty-key-name <COUNTERPARTY_KEY_NAME>
+            use the given signing key for the counterparty chain (default: `counterparty_key_name`
+            config)
 
-FLAGS:
-        --chain <CHAIN_ID>               Identifier of the chain
-        --channel <CHANNEL_ID>           Identifier of the channel
-        --port <PORT_ID>                 Identifier of the port
-        --key-name <KEY>                 Use the given signing key for the specified chain (default: `key_name` config)
-        --counterparty-key-name <KEY>    Use the given signing key for the counterparty chain (default: `key_name` config)
+        --key-name <KEY_NAME>
+            use the given signing key for the specified chain (default: `key_name` config)
+
+REQUIRED:
+        --chain <CHAIN_ID>        Identifier of the chain
+        --channel <CHANNEL_ID>    Identifier of the channel
+        --port <PORT_ID>          Identifier of the port
 ```
 
 ### Example
