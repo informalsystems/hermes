@@ -30,6 +30,9 @@ or on Twitter [@informalinc][twitter].
 
 The CLI comprises a special `help` command, which accepts as parameter other commands, and provides guidance on what is the correct way to invoke those commands.
 
+> __NOTE__: This special `help` command is preferred as it will display the full help
+> message.
+
 For instance,
 
 ```shell
