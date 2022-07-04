@@ -1,5 +1,5 @@
 use alloc::collections::btree_map::BTreeMap as HashMap;
-use alloc::fmt::Write;
+use core::fmt::Write;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
@@ -53,7 +53,7 @@ impl Runnable for KeysListCmd {
             Ok(keys) => {
                 let mut msg = String::new();
                 for (name, key) in keys {
-                    write!(&mut msg, "\n- {} ({})", name, key.account).unwrap();
+                    let _ = write!(msg, "\n- {} ({})", name, key.account);
                 }
                 Output::success_msg(msg).exit()
             }
