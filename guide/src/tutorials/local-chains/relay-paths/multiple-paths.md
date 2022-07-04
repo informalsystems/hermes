@@ -4,12 +4,6 @@ Hermes can relay packets over all current or future paths between the configured
 
 Follow the steps below to connect three chains together and relay packets between them:
 
-add to gm.toml
-gm start
-gm hermes config
-gm hermes keys
-gm status
-
 1. Add the config for the third chain to the existing `$HOME/.gm/gm.toml` file
 
     ```toml

@@ -84,7 +84,7 @@ The following configuration you need to specify 2 `gaiad` chains. `hermes` will 
   wallet_mnemonic = ""
 
   [global.hermes]
-    binary = "$HOME/ibc-rs/target/debug/hermes" #change this path according to your setup
+    binary = "$HOME/.hermes" #change this path according to your setup
     config = "$HOME/.hermes/config.toml"
     log_level = "info"
     telemetry_enabled = true

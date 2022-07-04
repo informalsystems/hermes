@@ -20,10 +20,12 @@ Run the `make` command to build and install `gaiad`
 
 ```shell
 cd ~/go/src/github.com/cosmos/gaia
-git checkout <latest-release-tag> (https://github.com/cosmos/gaia/releases)
+git checkout <latest-release-tag> 
 make install
 ```
-> __NOTE__: Specific to M1 MacOS, there could be some warnings after running `make install` which can be safely ignored as long as `gaiad` binaries are built in `$HOME/go/bin` directory.
+> Find the [latest-release-tag](https://github.com/cosmos/gaia/releases) here.
+
+>__NOTE__: Specific to M1 MacOS, there could be some warnings after running `make install` which can be safely ignored as long as `gaiad` binaries are built in `$HOME/go/bin` directory.
 ><br /><br />Add the path `export PATH=$HOME/go/bin:$PATH`
 
 If the command above is successful you can run the following command to ensure it was properly installed:
