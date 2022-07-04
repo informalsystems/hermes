@@ -144,7 +144,7 @@ pub trait ChannelKeeper {
     fn store_channel_result(&mut self, result: ChannelResult) -> Result<(), Error> {
         // The handler processed this channel & some modifications occurred, store the new end.
         self.store_channel(
-            (result.port_id.clone(), result.channel_id),
+            (result.port_id.clone(), result.channel_id.clone()),
             &result.channel_end,
         )?;
 
@@ -156,12 +156,18 @@ pub trait ChannelKeeper {
             // Associate also the channel end to its connection.
             self.store_connection_channels(
                 result.channel_end.connection_hops()[0].clone(),
-                &(result.port_id.clone(), result.channel_id),
+                &(result.port_id.clone(), result.channel_id.clone()),
             )?;
 
             // Initialize send, recv, and ack sequence numbers.
-            self.store_next_sequence_send((result.port_id.clone(), result.channel_id), 1.into())?;
-            self.store_next_sequence_recv((result.port_id.clone(), result.channel_id), 1.into())?;
+            self.store_next_sequence_send(
+                (result.port_id.clone(), result.channel_id.clone()),
+                1.into(),
+            )?;
+            self.store_next_sequence_recv(
+                (result.port_id.clone(), result.channel_id.clone()),
+                1.into(),
+            )?;
             self.store_next_sequence_ack((result.port_id, result.channel_id), 1.into())?;
         }
 
@@ -172,12 +178,12 @@ pub trait ChannelKeeper {
         match general_result {
             PacketResult::Send(res) => {
                 self.store_next_sequence_send(
-                    (res.port_id.clone(), res.channel_id),
+                    (res.port_id.clone(), res.channel_id.clone()),
                     res.seq_number,
                 )?;
 
                 self.store_packet_commitment(
-                    (res.port_id.clone(), res.channel_id, res.seq),
+                    (res.port_id.clone(), res.channel_id.clone(), res.seq),
                     res.commitment,
                 )?;
             }
@@ -220,9 +226,9 @@ pub trait ChannelKeeper {
             PacketResult::Timeout(res) => {
                 if let Some(c) = res.channel {
                     //Ordered Channel
-                    self.store_channel((res.port_id.clone(), res.channel_id), &c)?;
+                    self.store_channel((res.port_id.clone(), res.channel_id.clone()), &c)?;
                 }
-                self.delete_packet_commitment((res.port_id.clone(), res.channel_id, res.seq))?;
+                self.delete_packet_commitment((res.port_id, res.channel_id, res.seq))?;
             }
         }
         Ok(())

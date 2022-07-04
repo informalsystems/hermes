@@ -68,9 +68,9 @@ pub fn query_send_packet_events<ChainA: ChainHandle>(
     let mut query = QueryPacketEventDataRequest {
         event_id: WithBlockDataType::SendPacket,
         source_port_id: path.counterparty_port_id.clone(),
-        source_channel_id: path.counterparty_channel_id,
+        source_channel_id: path.counterparty_channel_id.clone(),
         destination_port_id: path.port_id.clone(),
-        destination_channel_id: path.channel_id,
+        destination_channel_id: path.channel_id.clone(),
         sequences,
         height: QueryHeight::Specific(src_query_height),
     };
@@ -124,9 +124,9 @@ pub fn query_write_ack_events<ChainA: ChainHandle>(
         .query_txs(QueryTxRequest::Packet(QueryPacketEventDataRequest {
             event_id: WithBlockDataType::WriteAck,
             source_port_id: path.port_id.clone(),
-            source_channel_id: path.channel_id,
+            source_channel_id: path.channel_id.clone(),
             destination_port_id: path.counterparty_port_id.clone(),
-            destination_channel_id: path.counterparty_channel_id,
+            destination_channel_id: path.counterparty_channel_id.clone(),
             sequences,
             height: QueryHeight::Specific(src_query_height),
         }))

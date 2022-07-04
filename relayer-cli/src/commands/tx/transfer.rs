@@ -144,7 +144,7 @@ impl TxIcs20MsgTransferCmd {
 
         let opts = TransferOptions {
             packet_src_port_id: self.src_port_id.clone(),
-            packet_src_channel_id: self.src_channel_id,
+            packet_src_channel_id: self.src_channel_id.clone(),
             amount: self.amount,
             denom,
             receiver: self.receiver.clone(),
@@ -180,7 +180,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
             .query_channel(
                 QueryChannelRequest {
                     port_id: opts.packet_src_port_id.clone(),
-                    channel_id: opts.packet_src_channel_id,
+                    channel_id: opts.packet_src_channel_id.clone(),
                     height: QueryHeight::Latest,
                 },
                 IncludeProof::No,

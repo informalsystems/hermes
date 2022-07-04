@@ -467,7 +467,7 @@ mod tests {
             Test {
                 name: "Bad src channel, name too long".to_string(),
                 raw: RawPacket {
-                    source_channel: "channel-12839128379182739812739879".to_string(),
+                    source_channel: "channel-128391283791827398127398791283912837918273981273987912839".to_string(),
                     ..default_raw_packet.clone()
                 },
                 want_pass: false,
@@ -491,7 +491,7 @@ mod tests {
             Test {
                 name: "Bad dst channel, name too long".to_string(),
                 raw: RawPacket {
-                    destination_channel: "channel-12839128379182739812739879".to_string(),
+                    destination_channel: "channel-128391283791827398127398791283912837918273981273987912839".to_string(),
                     ..default_raw_packet.clone()
                 },
                 want_pass: false,

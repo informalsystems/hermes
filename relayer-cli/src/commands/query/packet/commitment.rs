@@ -76,7 +76,7 @@ impl QueryPacketCommitmentCmd {
             .query_packet_commitment(
                 QueryPacketCommitmentRequest {
                     port_id: self.port_id.clone(),
-                    channel_id: self.channel_id,
+                    channel_id: self.channel_id.clone(),
                     sequence: self.sequence,
                     height: self.height.map_or(QueryHeight::Latest, |revision_height| {
                         QueryHeight::Specific(

@@ -83,7 +83,7 @@ pub fn get_unreceived_packets_at_dst<ChainA: ChainHandle, ChainB: ChainHandle>(
     let channel_id_a = channel.channel_id_a.value();
     let request = QueryUnreceivedPacketsRequest {
         port_id: port_id_a.clone(),
-        channel_id: *channel_id_a,
+        channel_id: channel_id_a.clone(),
         packet_commitment_sequences: Vec::new(),
     };
     Ok(chain.query_unreceived_packets(request)?)
@@ -97,7 +97,7 @@ pub fn get_committed_packets_at_src<ChainA: ChainHandle, ChainB: ChainHandle>(
     let channel_id_a = channel.channel_id_a.value();
     let request = QueryPacketCommitmentsRequest {
         port_id: port_id_a.clone(),
-        channel_id: *channel_id_a,
+        channel_id: channel_id_a.clone(),
         pagination: None,
     };
     let (sequences, _) = chain.query_packet_commitments(request)?;
@@ -112,7 +112,7 @@ pub fn get_unacknowledged_packets_at_src<ChainA: ChainHandle, ChainB: ChainHandl
     let channel_id_a = channel.channel_id_a.value();
     let request = QueryUnreceivedAcksRequest {
         port_id: port_id_a.clone(),
-        channel_id: *channel_id_a,
+        channel_id: channel_id_a.clone(),
         packet_ack_sequences: Vec::new(),
     };
     Ok(chain.query_unreceived_acknowledgements(request)?)
@@ -126,7 +126,7 @@ pub fn get_acknowledged_packets_at_dst<ChainA: ChainHandle, ChainB: ChainHandle>
     let channel_id_a = channel.channel_id_a.value();
     let request = QueryPacketAcknowledgementsRequest {
         port_id: port_id_a.clone(),
-        channel_id: *channel_id_a,
+        channel_id: channel_id_a.clone(),
         pagination: None,
         packet_commitment_sequences: Vec::new(),
     };

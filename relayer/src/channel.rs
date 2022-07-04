@@ -271,7 +271,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_channel(
                 QueryChannelRequest {
                     port_id: channel.src_port_id.clone(),
-                    channel_id: channel.src_channel_id,
+                    channel_id: channel.src_channel_id.clone(),
                     height: QueryHeight::Specific(height),
                 },
                 IncludeProof::No,
@@ -280,7 +280,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let a_connection_id = a_channel.connection_hops().first().ok_or_else(|| {
             ChannelError::supervisor(SupervisorError::missing_connection_hops(
-                channel.src_channel_id,
+                channel.src_channel_id.clone(),
                 chain.id(),
             ))
         })?;
@@ -301,7 +301,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .cloned()
             .ok_or_else(|| {
                 ChannelError::supervisor(SupervisorError::channel_connection_uninitialized(
-                    channel.src_channel_id,
+                    channel.src_channel_id.clone(),
                     chain.id(),
                     a_connection.counterparty().clone(),
                 ))
@@ -314,7 +314,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 a_connection.client_id().clone(),
                 a_connection_id.clone(),
                 channel.src_port_id.clone(),
-                Some(channel.src_channel_id),
+                Some(channel.src_channel_id.clone()),
                 None,
             ),
             b_side: ChannelSide::new(
@@ -322,7 +322,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 a_connection.counterparty().client_id().clone(),
                 b_connection_id.clone(),
                 a_channel.remote.port_id.clone(),
-                a_channel.remote.channel_id,
+                a_channel.remote.channel_id.clone(),
                 None,
             ),
             connection_delay: a_connection.delay_period(),
@@ -419,7 +419,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 .query_channel(
                     QueryChannelRequest {
                         port_id: self.a_side.port_id.clone(),
-                        channel_id: *id,
+                        channel_id: id.clone(),
                         height: QueryHeight::Latest,
                     },
                     IncludeProof::No,
@@ -437,7 +437,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 .query_channel(
                     QueryChannelRequest {
                         port_id: self.b_side.port_id.clone(),
-                        channel_id: *id,
+                        channel_id: id.clone(),
                         height: QueryHeight::Latest,
                     },
                     IncludeProof::No,
@@ -596,7 +596,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                         e
                     })?;
                 let channel_id = extract_channel_id(&event)?;
-                self.a_side.channel_id = Some(*channel_id);
+                self.a_side.channel_id = Some(channel_id.clone());
             }
 
             // send the Try message to chain a (source)
@@ -607,7 +607,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 })?;
 
                 let channel_id = extract_channel_id(&event)?;
-                self.a_side.channel_id = Some(*channel_id);
+                self.a_side.channel_id = Some(channel_id.clone());
             }
 
             // send the Try message to chain b (destination)
@@ -618,7 +618,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 })?;
 
                 let channel_id = extract_channel_id(&event)?;
-                self.b_side.channel_id = Some(*channel_id);
+                self.b_side.channel_id = Some(channel_id.clone());
             }
 
             // send the Ack message to chain a (source)
@@ -708,14 +708,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let channel_deps =
             channel_connection_client(self.src_chain(), self.src_port_id(), channel_id)
-                .map_err(|e| ChannelError::query_channel(*channel_id, e))?;
+                .map_err(|e| ChannelError::query_channel(channel_id.clone(), e))?;
 
         channel_state_on_destination(
             &channel_deps.channel,
             &channel_deps.connection,
             self.dst_chain(),
         )
-        .map_err(|e| ChannelError::query_channel(*channel_id, e))
+        .map_err(|e| ChannelError::query_channel(channel_id.clone(), e))
     }
 
     pub fn handshake_step(
@@ -905,7 +905,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_channel(
                 QueryChannelRequest {
                     port_id: self.dst_port_id().clone(),
-                    channel_id: *dst_channel_id,
+                    channel_id: dst_channel_id.clone(),
                     height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
@@ -918,11 +918,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             return Err(ChannelError::missing_channel_on_destination());
         }
 
-        check_destination_channel_state(
-            *dst_channel_id,
-            dst_channel,
-            dst_expected_channel.clone(),
-        )?;
+        check_destination_channel_state(dst_channel_id, &dst_channel, &dst_expected_channel)?;
 
         Ok(dst_expected_channel)
     }
@@ -939,7 +935,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_channel(
                 QueryChannelRequest {
                     port_id: self.src_port_id().clone(),
-                    channel_id: *src_channel_id,
+                    channel_id: src_channel_id.clone(),
                     height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
@@ -952,7 +948,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 self.dst_port_id().clone(),
                 self.src_chain().id(),
                 src_channel.counterparty().port_id().clone(),
-                *src_channel_id,
+                src_channel_id.clone(),
             ));
         }
 
@@ -1001,9 +997,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
 
         let previous_channel_id = if src_channel.counterparty().channel_id.is_none() {
-            self.b_side.channel_id
+            self.b_side.channel_id.clone()
         } else {
-            src_channel.counterparty().channel_id
+            src_channel.counterparty().channel_id.clone()
         };
 
         // Build the domain type message
@@ -1069,7 +1065,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_channel(
                 QueryChannelRequest {
                     port_id: self.src_port_id().clone(),
-                    channel_id: *src_channel_id,
+                    channel_id: src_channel_id.clone(),
                     height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
@@ -1109,8 +1105,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         // Build the domain type message
         let new_msg = MsgChannelOpenAck {
             port_id: self.dst_port_id().clone(),
-            channel_id: *dst_channel_id,
-            counterparty_channel_id: *src_channel_id,
+            channel_id: dst_channel_id.clone(),
+            counterparty_channel_id: src_channel_id.clone(),
             counterparty_version: src_channel.version().clone(),
             proofs,
             signer,
@@ -1177,7 +1173,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_channel(
                 QueryChannelRequest {
                     port_id: self.src_port_id().clone(),
-                    channel_id: *src_channel_id,
+                    channel_id: src_channel_id.clone(),
                     height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
@@ -1217,7 +1213,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         // Build the domain type message
         let new_msg = MsgChannelOpenConfirm {
             port_id: self.dst_port_id().clone(),
-            channel_id: *dst_channel_id,
+            channel_id: dst_channel_id.clone(),
             proofs,
             signer,
         };
@@ -1278,7 +1274,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_channel(
                 QueryChannelRequest {
                     port_id: self.dst_port_id().clone(),
-                    channel_id: *dst_channel_id,
+                    channel_id: dst_channel_id.clone(),
                     height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
@@ -1293,7 +1289,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         // Build the domain type message
         let new_msg = MsgChannelCloseInit {
             port_id: self.dst_port_id().clone(),
-            channel_id: *dst_channel_id,
+            channel_id: dst_channel_id.clone(),
             signer,
         };
 
@@ -1348,7 +1344,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_channel(
                 QueryChannelRequest {
                     port_id: self.src_port_id().clone(),
-                    channel_id: *src_channel_id,
+                    channel_id: src_channel_id.clone(),
                     height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
@@ -1388,7 +1384,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         // Build the domain type message
         let new_msg = MsgChannelCloseConfirm {
             port_id: self.dst_port_id().clone(),
-            channel_id: *dst_channel_id,
+            channel_id: dst_channel_id.clone(),
             proofs,
             signer,
         };
@@ -1463,9 +1459,9 @@ pub enum ChannelMsgType {
 }
 
 fn check_destination_channel_state(
-    channel_id: ChannelId,
-    existing_channel: ChannelEnd,
-    expected_channel: ChannelEnd,
+    channel_id: &ChannelId,
+    existing_channel: &ChannelEnd,
+    expected_channel: &ChannelEnd,
 ) -> Result<(), ChannelError> {
     let good_connection_hops =
         existing_channel.connection_hops() == expected_channel.connection_hops();
@@ -1483,6 +1479,6 @@ fn check_destination_channel_state(
     if good_state && good_connection_hops && good_channel_port_ids {
         Ok(())
     } else {
-        Err(ChannelError::channel_already_exist(channel_id))
+        Err(ChannelError::channel_already_exist(channel_id.clone()))
     }
 }

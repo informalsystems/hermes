@@ -107,15 +107,17 @@ pub fn bootstrap_channel_with_connection<ChainA: ChainHandle, ChainB: ChainHandl
         Some(options.version),
     )?;
 
-    let channel_id_a = *channel
+    let channel_id_a = channel
         .a_side
         .channel_id()
-        .ok_or_else(|| eyre!("expect channel id"))?;
+        .ok_or_else(|| eyre!("expect channel id"))?
+        .clone();
 
-    let channel_id_b = *channel
+    let channel_id_b = channel
         .b_side
         .channel_id()
-        .ok_or_else(|| eyre!("expect channel id"))?;
+        .ok_or_else(|| eyre!("expect channel id"))?
+        .clone();
 
     info!(
         "created new chain/client/connection/channel from {}/{}/{}/{} to {}/{}/{}/{}",
