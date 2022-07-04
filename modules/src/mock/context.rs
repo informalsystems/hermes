@@ -85,7 +85,7 @@ impl Default for MockContext {
             ChainId::new("mockgaia".to_string(), 0),
             HostType::Mock,
             5,
-            Height::new(0, 5),
+            Height::new(0, 5).unwrap(),
         )
     }
 }
@@ -129,16 +129,17 @@ impl MockContext {
         );
 
         assert_ne!(
-            latest_height.revision_height, 0,
+            latest_height.revision_height(),
+            0,
             "The chain must have a non-zero revision_height"
         );
 
         // Compute the number of blocks to store.
-        let n = min(max_history_size as u64, latest_height.revision_height);
+        let n = min(max_history_size as u64, latest_height.revision_height());
 
         assert_eq!(
             host_id.version(),
-            latest_height.revision_number,
+            latest_height.revision_number(),
             "The version in the chain identifier must match the version in the latest height"
         );
 
@@ -156,7 +157,7 @@ impl MockContext {
                     HostBlock::generate_block(
                         host_id.clone(),
                         host_type,
-                        latest_height.sub(i).unwrap().revision_height,
+                        latest_height.sub(i).unwrap().revision_height(),
                         next_block_timestamp
                             .sub(Duration::from_secs(DEFAULT_BLOCK_TIME_SECS * (i + 1)))
                             .unwrap(),
@@ -202,7 +203,7 @@ impl MockContext {
             ClientType::Tendermint => {
                 let light_block = HostBlock::generate_tm_block(
                     self.host_chain_id.clone(),
-                    cs_height.revision_height,
+                    cs_height.revision_height(),
                     Timestamp::now(),
                 );
 
@@ -254,7 +255,7 @@ impl MockContext {
             ClientType::Tendermint => {
                 let light_block = HostBlock::generate_tm_block(
                     self.host_chain_id.clone(),
-                    cs_height.revision_height,
+                    cs_height.revision_height(),
                     now,
                 );
 
@@ -274,7 +275,7 @@ impl MockContext {
             ClientType::Tendermint => {
                 let light_block = HostBlock::generate_tm_block(
                     self.host_chain_id.clone(),
-                    prev_cs_height.revision_height,
+                    prev_cs_height.revision_height(),
                     now.sub(self.block_time).unwrap(),
                 );
                 AnyConsensusState::from(light_block)
@@ -369,16 +370,16 @@ impl MockContext {
 
     pub fn with_height(self, target_height: Height) -> Self {
         let latest_height = self.latest_height();
-        if target_height.revision_number > latest_height.revision_number {
+        if target_height.revision_number() > latest_height.revision_number() {
             unimplemented!()
-        } else if target_height.revision_number < latest_height.revision_number {
+        } else if target_height.revision_number() < latest_height.revision_number() {
             panic!("Cannot rewind history of the chain to a smaller revision number!")
-        } else if target_height.revision_height < latest_height.revision_height {
+        } else if target_height.revision_height() < latest_height.revision_height() {
             panic!("Cannot rewind history of the chain to a smaller revision height!")
-        } else if target_height.revision_height > latest_height.revision_height {
+        } else if target_height.revision_height() > latest_height.revision_height() {
             // Repeatedly advance the host chain height till we hit the desired height
             let mut ctx = MockContext { ..self };
-            while ctx.latest_height().revision_height < target_height.revision_height {
+            while ctx.latest_height().revision_height() < target_height.revision_height() {
                 ctx.advance_host_chain_height()
             }
             ctx
@@ -408,8 +409,8 @@ impl MockContext {
     /// Accessor for a block of the local (host) chain from this context.
     /// Returns `None` if the block at the requested height does not exist.
     pub fn host_block(&self, target_height: Height) -> Option<&HostBlock> {
-        let target = target_height.revision_height as usize;
-        let latest = self.latest_height().revision_height as usize;
+        let target = target_height.revision_height() as usize;
+        let latest = self.latest_height().revision_height() as usize;
 
         // Check that the block is not too advanced, nor has it been pruned.
         if (target > latest) || (target <= latest - self.history.len()) {
@@ -425,7 +426,7 @@ impl MockContext {
         let new_block = HostBlock::generate_block(
             self.host_chain_id.clone(),
             self.host_chain_type,
-            latest_block.height().increment().revision_height,
+            latest_block.height().increment().revision_height(),
             latest_block.timestamp().add(self.block_time).unwrap(),
         );
 
@@ -1170,7 +1171,7 @@ impl ClientReader for MockContext {
     }
 
     fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Ics02Error> {
-        Err(Ics02Error::missing_local_consensus_state(Height::zero()))
+        Err(Ics02Error::implementation_specific())
     }
 
     fn client_counter(&self) -> Result<u64, Ics02Error> {
@@ -1345,7 +1346,7 @@ mod tests {
                     ChainId::new("mockgaia".to_string(), cv),
                     HostType::Mock,
                     2,
-                    Height::new(cv, 1),
+                    Height::new(cv, 1).unwrap(),
                 ),
             },
             Test {
@@ -1354,7 +1355,7 @@ mod tests {
                     ChainId::new("mocksgaia".to_string(), cv),
                     HostType::SyntheticTendermint,
                     2,
-                    Height::new(cv, 1),
+                    Height::new(cv, 1).unwrap(),
                 ),
             },
             Test {
@@ -1363,7 +1364,7 @@ mod tests {
                     ChainId::new("mockgaia".to_string(), cv),
                     HostType::Mock,
                     30,
-                    Height::new(cv, 2),
+                    Height::new(cv, 2).unwrap(),
                 ),
             },
             Test {
@@ -1372,7 +1373,7 @@ mod tests {
                     ChainId::new("mocksgaia".to_string(), cv),
                     HostType::SyntheticTendermint,
                     30,
-                    Height::new(cv, 2),
+                    Height::new(cv, 2).unwrap(),
                 ),
             },
             Test {
@@ -1381,7 +1382,7 @@ mod tests {
                     ChainId::new("mockgaia".to_string(), cv),
                     HostType::Mock,
                     3,
-                    Height::new(cv, 30),
+                    Height::new(cv, 30).unwrap(),
                 ),
             },
             Test {
@@ -1390,7 +1391,7 @@ mod tests {
                     ChainId::new("mockgaia".to_string(), cv),
                     HostType::SyntheticTendermint,
                     3,
-                    Height::new(cv, 30),
+                    Height::new(cv, 30).unwrap(),
                 ),
             },
             Test {
@@ -1399,7 +1400,7 @@ mod tests {
                     ChainId::new("mockgaia".to_string(), cv),
                     HostType::Mock,
                     3,
-                    Height::new(cv, 2),
+                    Height::new(cv, 2).unwrap(),
                 ),
             },
             Test {
@@ -1408,7 +1409,7 @@ mod tests {
                     ChainId::new("mockgaia".to_string(), cv),
                     HostType::SyntheticTendermint,
                     3,
-                    Height::new(cv, 2),
+                    Height::new(cv, 2).unwrap(),
                 ),
             },
             Test {
@@ -1417,7 +1418,7 @@ mod tests {
                     ChainId::new("mockgaia".to_string(), cv),
                     HostType::Mock,
                     50,
-                    Height::new(cv, 2000),
+                    Height::new(cv, 2000).unwrap(),
                 ),
             },
             Test {
@@ -1426,7 +1427,7 @@ mod tests {
                     ChainId::new("mockgaia".to_string(), cv),
                     HostType::SyntheticTendermint,
                     50,
-                    Height::new(cv, 2000),
+                    Height::new(cv, 2000).unwrap(),
                 ),
             },
         ];
@@ -1458,15 +1459,14 @@ mod tests {
                 "failed while increasing height for context {:?}",
                 test.ctx
             );
-            if current_height > Height::new(cv, 0) {
-                assert_eq!(
-                    test.ctx.host_block(current_height).unwrap().height(),
-                    current_height,
-                    "failed while fetching height {:?} of context {:?}",
-                    current_height,
-                    test.ctx
-                );
-            }
+
+            assert_eq!(
+                test.ctx.host_block(current_height).unwrap().height(),
+                current_height,
+                "failed while fetching height {:?} of context {:?}",
+                current_height,
+                test.ctx
+            );
         }
     }
 
@@ -1550,7 +1550,7 @@ mod tests {
             ChainId::new("mockgaia".to_string(), 1),
             HostType::Mock,
             1,
-            Height::new(1, 1),
+            Height::new(1, 1).unwrap(),
         )
         .with_router(r);
 

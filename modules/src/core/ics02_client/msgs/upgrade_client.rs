@@ -186,7 +186,7 @@ mod tests {
         let client_id: ClientId = "tendermint".parse().unwrap();
         let signer = get_dummy_account_id();
 
-        let height = Height::new(1, 1);
+        let height = Height::new(1, 1).unwrap();
 
         let client_state = AnyClientState::Mock(MockClientState::new(MockHeader::new(height)));
         let consensus_state =

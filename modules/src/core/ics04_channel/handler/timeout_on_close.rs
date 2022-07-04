@@ -163,10 +163,10 @@ mod tests {
 
         let context = MockContext::default();
 
-        let height = Height::default().revision_height + 2;
+        let height = 2;
         let timeout_timestamp = 5;
 
-        let client_height = Height::new(0, Height::default().revision_height + 2);
+        let client_height = Height::new(0, 2).unwrap();
 
         let msg = MsgTimeoutOnClose::try_from(get_dummy_raw_msg_timeout_on_close(
             height,

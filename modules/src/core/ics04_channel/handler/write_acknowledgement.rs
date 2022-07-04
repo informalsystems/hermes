@@ -104,7 +104,7 @@ mod tests {
 
         let context = MockContext::default();
 
-        let client_height = Height::new(0, 1);
+        let client_height = Height::new(0, 1).unwrap();
 
         let mut packet: Packet = get_dummy_raw_packet(1, 6).try_into().unwrap();
         packet.sequence = 1.into();
@@ -159,7 +159,7 @@ mod tests {
             Test {
                 name: "Zero ack".to_string(),
                 ctx: context
-                    .with_client(&ClientId::default(), Height::default())
+                    .with_client(&ClientId::default(), Height::new(0, 1).unwrap())
                     .with_connection(ConnectionId::default(), connection_end)
                     .with_channel(PortId::default(), ChannelId::default(), dest_channel_end),
                 packet,

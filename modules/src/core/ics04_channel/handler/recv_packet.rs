@@ -10,7 +10,6 @@ use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::timestamp::Expiry;
-use crate::Height;
 
 #[derive(Clone, Debug)]
 pub enum RecvPacketResult {
@@ -61,7 +60,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
     }
 
     let latest_height = ctx.host_height();
-    if (!packet.timeout_height.is_zero()) && (packet.timeout_height <= latest_height) {
+    if packet.timeout_height.has_expired(latest_height) {
         return Err(Error::low_packet_height(
             latest_height,
             packet.timeout_height,
@@ -89,7 +88,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
 
         if packet.sequence < next_seq_recv {
             output.emit(IbcEvent::ReceivePacket(ReceivePacket {
-                height: Height::zero(),
+                height: ctx.host_height(),
                 packet: msg.packet.clone(),
             }));
             return Ok(output.with_result(PacketResult::Recv(RecvPacketResult::NoOp)));
@@ -115,7 +114,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
         match packet_rec {
             Ok(_receipt) => {
                 output.emit(IbcEvent::ReceivePacket(ReceivePacket {
-                    height: Height::zero(),
+                    height: ctx.host_height(),
                     packet: msg.packet.clone(),
                 }));
                 return Ok(output.with_result(PacketResult::Recv(RecvPacketResult::NoOp)));
@@ -182,9 +181,10 @@ mod tests {
 
         let client_height = host_height.increment();
 
-        let msg =
-            MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(client_height.revision_height))
-                .unwrap();
+        let msg = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(
+            client_height.revision_height(),
+        ))
+        .unwrap();
 
         let packet = msg.packet.clone();
 
@@ -195,7 +195,7 @@ mod tests {
             destination_port: PortId::default(),
             destination_channel: ChannelId::default(),
             data: Vec::new(),
-            timeout_height: client_height,
+            timeout_height: client_height.into(),
             timeout_timestamp: Timestamp::from_nanoseconds(1).unwrap(),
         };
 

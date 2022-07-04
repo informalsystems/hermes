@@ -12,10 +12,19 @@ use crate::mock::client_state::MockConsensusState;
 use crate::timestamp::Timestamp;
 use crate::Height;
 
-#[derive(Copy, Clone, Default, Debug, Deserialize, PartialEq, Eq, Serialize)]
+#[derive(Copy, Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct MockHeader {
     pub height: Height,
     pub timestamp: Timestamp,
+}
+
+impl Default for MockHeader {
+    fn default() -> Self {
+        Self {
+            height: Height::new(0, 1).unwrap(),
+            timestamp: Default::default(),
+        }
+    }
 }
 
 impl Protobuf<RawMockHeader> for MockHeader {}
@@ -25,7 +34,10 @@ impl TryFrom<RawMockHeader> for MockHeader {
 
     fn try_from(raw: RawMockHeader) -> Result<Self, Self::Error> {
         Ok(MockHeader {
-            height: raw.height.ok_or_else(Error::missing_raw_header)?.into(),
+            height: raw
+                .height
+                .and_then(|raw_height| raw_height.try_into().ok())
+                .ok_or_else(Error::missing_raw_header)?,
 
             timestamp: Timestamp::from_nanoseconds(raw.timestamp)
                 .map_err(Error::invalid_packet_timestamp)?,
@@ -95,7 +107,7 @@ mod tests {
 
     #[test]
     fn encode_any() {
-        let header = MockHeader::new(Height::new(1, 10)).with_timestamp(Timestamp::none());
+        let header = MockHeader::new(Height::new(1, 10).unwrap()).with_timestamp(Timestamp::none());
         let bytes = header.wrap_any().encode_vec().unwrap();
 
         assert_eq!(

@@ -1,3 +1,4 @@
+use crate::core::ics02_client::height::HeightErrorDetail;
 use crate::prelude::*;
 
 use core::str::FromStr;
@@ -12,10 +13,16 @@ use crate::events::{extract_attribute, Error as EventError, RawObject};
 use crate::timestamp::{Expiry::Expired, Timestamp};
 use crate::Height;
 
+use super::events::{
+    PKT_DST_CHANNEL_ATTRIBUTE_KEY, PKT_DST_PORT_ATTRIBUTE_KEY, PKT_SEQ_ATTRIBUTE_KEY,
+    PKT_SRC_CHANNEL_ATTRIBUTE_KEY, PKT_SRC_PORT_ATTRIBUTE_KEY, PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY,
+    PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY,
+};
 use super::handler::{
     acknowledgement::AckPacketResult, recv_packet::RecvPacketResult, send_packet::SendPacketResult,
     timeout::TimeoutPacketResult, write_acknowledgement::WriteAckPacketResult,
 };
+use super::timeout::TimeoutHeight;
 
 /// Enumeration of proof carrying ICS4 message, helper for relayer.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -106,7 +113,7 @@ pub struct Packet {
     pub destination_channel: ChannelId,
     #[serde(serialize_with = "crate::serializers::ser_hex_upper")]
     pub data: Vec<u8>,
-    pub timeout_height: Height,
+    pub timeout_height: TimeoutHeight,
     pub timeout_timestamp: Timestamp,
 }
 
@@ -165,9 +172,12 @@ impl Packet {
     /// instead of the common-case where it results in
     /// [`MsgRecvPacket`](crate::core::ics04_channel::msgs::recv_packet::MsgRecvPacket).
     pub fn timed_out(&self, dst_chain_ts: &Timestamp, dst_chain_height: Height) -> bool {
-        (self.timeout_height != Height::zero() && self.timeout_height < dst_chain_height)
-            || (self.timeout_timestamp != Timestamp::none()
-                && dst_chain_ts.check_expiry(&self.timeout_timestamp) == Expired)
+        let height_timed_out = self.timeout_height.has_expired(dst_chain_height);
+
+        let timestamp_timed_out = self.timeout_timestamp != Timestamp::none()
+            && dst_chain_ts.check_expiry(&self.timeout_timestamp) == Expired;
+
+        height_timed_out || timestamp_timed_out
     }
 }
 
@@ -188,6 +198,20 @@ impl core::fmt::Display for Packet {
     }
 }
 
+/// Parse a string into a timeout height expected to be stored in
+/// `Packet.timeout_height`. We need to parse the timeout height differently
+/// because of a quirk introduced in ibc-go. See comment in
+/// `TryFrom<RawPacket> for Packet`.
+pub fn parse_timeout_height(s: &str) -> Result<TimeoutHeight, Error> {
+    match s.parse::<Height>() {
+        Ok(height) => Ok(TimeoutHeight::from(height)),
+        Err(e) => match e.into_detail() {
+            HeightErrorDetail::ZeroHeight(_) => Ok(TimeoutHeight::no_timeout()),
+            _ => Err(Error::invalid_timeout_height()),
+        },
+    }
+}
+
 impl TryFrom<RawPacket> for Packet {
     type Error = Error;
 
@@ -195,14 +219,20 @@ impl TryFrom<RawPacket> for Packet {
         if Sequence::from(raw_pkt.sequence).is_zero() {
             return Err(Error::zero_packet_sequence());
         }
-        let packet_timeout_height: Height = raw_pkt
-            .timeout_height
-            .ok_or_else(Error::missing_height)?
-            .into();
 
-        if packet_timeout_height.is_zero() && raw_pkt.timeout_timestamp == 0 {
-            return Err(Error::zero_packet_timeout());
-        }
+        // Note: ibc-go currently (July 2022) incorrectly treats the timeout
+        // heights `{revision_number : >0, revision_height: 0}` as valid
+        // timeouts. However, heights with `revision_height == 0` are invalid in
+        // Tendermint. We explicitly reject these values because they go against
+        // the Tendermint spec, and shouldn't be used. To timeout on the next
+        // revision_number as soon as the chain starts,
+        // `{revision_number: old_rev + 1, revision_height: 1}`
+        // should be used.
+        let packet_timeout_height: TimeoutHeight = raw_pkt
+            .timeout_height
+            .try_into()
+            .map_err(|_| Error::invalid_timeout_height())?;
+
         if raw_pkt.data.is_empty() {
             return Err(Error::zero_packet_data());
         }
@@ -233,34 +263,47 @@ impl TryFrom<RawObject<'_>> for Packet {
     type Error = EventError;
     fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
         Ok(Packet {
-            sequence: extract_attribute(&obj, &format!("{}.packet_sequence", obj.action))?
-                .parse()
-                .map_err(EventError::channel)?,
-            source_port: extract_attribute(&obj, &format!("{}.packet_src_port", obj.action))?
-                .parse()
-                .map_err(EventError::parse)?,
-            source_channel: extract_attribute(&obj, &format!("{}.packet_src_channel", obj.action))?
-                .parse()
-                .map_err(EventError::parse)?,
-            destination_port: extract_attribute(&obj, &format!("{}.packet_dst_port", obj.action))?
-                .parse()
-                .map_err(EventError::parse)?,
+            sequence: extract_attribute(
+                &obj,
+                &format!("{}.{}", obj.action, PKT_SEQ_ATTRIBUTE_KEY),
+            )?
+            .parse()
+            .map_err(EventError::channel)?,
+            source_port: extract_attribute(
+                &obj,
+                &format!("{}.{}", obj.action, PKT_SRC_PORT_ATTRIBUTE_KEY),
+            )?
+            .parse()
+            .map_err(EventError::parse)?,
+            source_channel: extract_attribute(
+                &obj,
+                &format!("{}.{}", obj.action, PKT_SRC_CHANNEL_ATTRIBUTE_KEY),
+            )?
+            .parse()
+            .map_err(EventError::parse)?,
+            destination_port: extract_attribute(
+                &obj,
+                &format!("{}.{}", obj.action, PKT_DST_PORT_ATTRIBUTE_KEY),
+            )?
+            .parse()
+            .map_err(EventError::parse)?,
             destination_channel: extract_attribute(
                 &obj,
-                &format!("{}.packet_dst_channel", obj.action),
+                &format!("{}.{}", obj.action, PKT_DST_CHANNEL_ATTRIBUTE_KEY),
             )?
             .parse()
             .map_err(EventError::parse)?,
             data: vec![],
-            timeout_height: extract_attribute(
-                &obj,
-                &format!("{}.packet_timeout_height", obj.action),
-            )?
-            .parse()
-            .map_err(EventError::height)?,
+            timeout_height: {
+                let timeout_height_str = extract_attribute(
+                    &obj,
+                    &format!("{}.{}", obj.action, PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY),
+                )?;
+                parse_timeout_height(&timeout_height_str).map_err(|_| EventError::height())?
+            },
             timeout_timestamp: extract_attribute(
                 &obj,
-                &format!("{}.packet_timeout_timestamp", obj.action),
+                &format!("{}.{}", obj.action, PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY),
             )?
             .parse()
             .map_err(EventError::timestamp)?,
@@ -277,7 +320,7 @@ impl From<Packet> for RawPacket {
             destination_port: packet.destination_port.to_string(),
             destination_channel: packet.destination_channel.to_string(),
             data: packet.data,
-            timeout_height: Some(packet.timeout_height.into()),
+            timeout_height: packet.timeout_height.into(),
             timeout_timestamp: packet.timeout_timestamp.nanoseconds(),
         }
     }
@@ -316,6 +359,7 @@ mod tests {
     use test_log::test;
 
     use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
+    use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
     use crate::core::ics04_channel::packet::test_utils::get_dummy_raw_packet;
     use crate::core::ics04_channel::packet::Packet;
@@ -329,19 +373,38 @@ mod tests {
         }
 
         let proof_height = 10;
-        let default_raw_msg = get_dummy_raw_packet(proof_height, 0);
+        let default_raw_packet = get_dummy_raw_packet(proof_height, 0);
+        let raw_packet_no_timeout_or_timestamp = get_dummy_raw_packet(0, 0);
+
+        let mut raw_packet_invalid_timeout_height = get_dummy_raw_packet(0, 0);
+        raw_packet_invalid_timeout_height.timeout_height = Some(RawHeight {
+            revision_number: 1,
+            revision_height: 0,
+        });
 
         let tests: Vec<Test> = vec![
             Test {
                 name: "Good parameters".to_string(),
-                raw: default_raw_msg.clone(),
+                raw: default_raw_packet.clone(),
                 want_pass: true,
+            },
+            Test {
+                // Note: ibc-go currently (July 2022) incorrectly rejects this
+                // case, even though it is allowed in ICS-4.
+                name: "Packet with no timeout of timestamp".to_string(),
+                raw: raw_packet_no_timeout_or_timestamp,
+                want_pass: true,
+            },
+            Test {
+                name: "Packet with invalid timeout height".to_string(),
+                raw: raw_packet_invalid_timeout_height,
+                want_pass: false,
             },
             Test {
                 name: "Src port validation: correct".to_string(),
                 raw: RawPacket {
                     source_port: "srcportp34".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: true,
             },
@@ -349,7 +412,7 @@ mod tests {
                 name: "Bad src port, name too short".to_string(),
                 raw: RawPacket {
                     source_port: "p".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: false,
             },
@@ -357,7 +420,7 @@ mod tests {
                 name: "Bad src port, name too long".to_string(),
                 raw: RawPacket {
                     source_port: "abcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfasdfasdfasdfaklmnopqrstuabcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfasdfasdfasdfaklmnopqrstu".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: false,
             },
@@ -365,7 +428,7 @@ mod tests {
                 name: "Dst port validation: correct".to_string(),
                 raw: RawPacket {
                     destination_port: "destportsrcp34".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: true,
             },
@@ -373,7 +436,7 @@ mod tests {
                 name: "Bad dst port, name too short".to_string(),
                 raw: RawPacket {
                     destination_port: "p".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: false,
             },
@@ -381,7 +444,7 @@ mod tests {
                 name: "Bad dst port, name too long".to_string(),
                 raw: RawPacket {
                     destination_port: "abcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfasdfasdfasdfaklmnopqrstuabcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfas".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: false,
             },
@@ -389,7 +452,7 @@ mod tests {
                 name: "Src channel validation: correct".to_string(),
                 raw: RawPacket {
                     source_channel: "channel-1".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: true,
             },
@@ -397,7 +460,7 @@ mod tests {
                 name: "Bad src channel, name too short".to_string(),
                 raw: RawPacket {
                     source_channel: "p".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: false,
             },
@@ -405,7 +468,7 @@ mod tests {
                 name: "Bad src channel, name too long".to_string(),
                 raw: RawPacket {
                     source_channel: "channel-12839128379182739812739879".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: false,
             },
@@ -413,7 +476,7 @@ mod tests {
                 name: "Dst channel validation: correct".to_string(),
                 raw: RawPacket {
                     destination_channel: "channel-34".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: true,
             },
@@ -421,7 +484,7 @@ mod tests {
                 name: "Bad dst channel, name too short".to_string(),
                 raw: RawPacket {
                     destination_channel: "p".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: false,
             },
@@ -429,17 +492,24 @@ mod tests {
                 name: "Bad dst channel, name too long".to_string(),
                 raw: RawPacket {
                     destination_channel: "channel-12839128379182739812739879".to_string(),
-                    ..default_raw_msg.clone()
+                    ..default_raw_packet.clone()
                 },
                 want_pass: false,
             },
+            // Note: `timeout_height == None` is a quirk of protobuf. In
+            // `proto3` syntax, all structs are "nullable" by default and are
+            // represented as `Option<T>`. `ibc-go` defines the protobuf file
+            // with the extension option `gogoproto.nullable = false`, which
+            // means that they will always generate a field. It is left
+            // unspecified what a `None` value means. In this case, I believe it
+            // is best to assume the obvious semantic of "no timeout".
             Test {
                 name: "Missing timeout height".to_string(),
                 raw: RawPacket {
                     timeout_height: None,
-                    ..default_raw_msg
+                    ..default_raw_packet
                 },
-                want_pass: false,
+                want_pass: true,
             },
         ];
 

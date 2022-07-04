@@ -142,14 +142,6 @@ impl TxIcs20MsgTransferCmd {
             return Err("number of messages should be greater than zero".into());
         }
 
-        if self.timeout_height_offset == 0 && self.timeout_seconds == 0 {
-            return Err(
-                "packet timeout height and packet timeout timestamp cannot both be 0, \
-                please specify either --timeout-height-offset or --timeout-seconds"
-                    .into(),
-            );
-        }
-
         let opts = TransferOptions {
             packet_src_port_id: self.src_port_id.clone(),
             packet_src_channel_id: self.src_channel_id,
