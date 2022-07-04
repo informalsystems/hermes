@@ -8,7 +8,7 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer::chain::handle::ChainHandle;
 
 use crate::cli_utils::spawn_chain_runtime;
-use crate::conclude::Output;
+use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::*;
 
@@ -55,7 +55,7 @@ pub struct QueryPacketAcknowledgmentCmd {
     #[clap(
         long = "height",
         value_name = "HEIGHT",
-        help = "Height of the state to query"
+        help = "Height of the state to query. Leave unspecified for latest height."
     )]
     height: Option<u64>,
 }
@@ -75,10 +75,10 @@ impl QueryPacketAcknowledgmentCmd {
                     channel_id: self.channel_id,
                     sequence: self.sequence,
                     height: self.height.map_or(QueryHeight::Latest, |revision_height| {
-                        QueryHeight::Specific(ibc::Height::new(
-                            chain.id().version(),
-                            revision_height,
-                        ))
+                        QueryHeight::Specific(
+                            ibc::Height::new(chain.id().version(), revision_height)
+                                .unwrap_or_else(exit_with_unrecoverable_error),
+                        )
                     }),
                 },
                 IncludeProof::No,

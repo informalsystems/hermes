@@ -137,7 +137,7 @@ mod tests {
         );
 
         let msg_chan_close_confirm = MsgChannelCloseConfirm::try_from(
-            get_dummy_raw_msg_chan_close_confirm(client_consensus_state_height.revision_height),
+            get_dummy_raw_msg_chan_close_confirm(client_consensus_state_height.revision_height()),
         )
         .unwrap();
 

@@ -21,6 +21,11 @@ pub struct TimeoutPacketResult {
     pub channel: Option<ChannelEnd>,
 }
 
+/// TimeoutPacket is called by a module which originally attempted to send a
+/// packet to a counterparty module, where the timeout height has passed on the
+/// counterparty chain without the packet being committed, to prove that the
+/// packet can no longer be executed and to allow the calling module to safely
+/// perform appropriate state transitions.
 pub fn process(ctx: &dyn ChannelReader, msg: &MsgTimeout) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
@@ -51,9 +56,8 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgTimeout) -> HandlerResult<Packe
 
     // check that timeout height or timeout timestamp has passed on the other end
     let proof_height = msg.proofs.height();
-    let packet_height = packet.timeout_height;
 
-    if (!packet.timeout_height.is_zero()) && packet_height > proof_height {
+    if packet.timeout_height.has_expired(proof_height) {
         return Err(Error::packet_timeout_height_not_reached(
             packet.timeout_height,
             proof_height,
@@ -170,13 +174,18 @@ mod tests {
 
         let context = MockContext::default();
 
-        let height = Height::default().revision_height + 2;
+        let msg_proof_height = 2;
+        let msg_timeout_height = 5;
         let timeout_timestamp = 5;
 
-        let client_height = Height::new(0, Height::default().revision_height + 2);
+        let client_height = Height::new(0, 2).unwrap();
 
-        let msg =
-            MsgTimeout::try_from(get_dummy_raw_msg_timeout(height, timeout_timestamp)).unwrap();
+        let msg = MsgTimeout::try_from(get_dummy_raw_msg_timeout(
+            msg_proof_height,
+            msg_timeout_height,
+            timeout_timestamp,
+        ))
+        .unwrap();
         let packet = msg.packet.clone();
 
         let mut msg_ok = msg.clone();

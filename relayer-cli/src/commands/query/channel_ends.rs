@@ -14,7 +14,7 @@ use ibc_relayer::chain::requests::{
 };
 use ibc_relayer::registry::Registry;
 
-use crate::conclude::Output;
+use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
@@ -99,7 +99,9 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
     let chain = registry.get_or_spawn(&chain_id)?;
 
     let chain_height = match cmd.height {
-        Some(height) => Height::new(chain.id().version(), height),
+        Some(height) => {
+            Height::new(chain.id().version(), height).unwrap_or_else(exit_with_unrecoverable_error)
+        }
         None => chain.query_latest_height()?,
     };
 

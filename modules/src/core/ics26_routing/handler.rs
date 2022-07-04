@@ -129,6 +129,7 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::core::ics04_channel::timeout::TimeoutHeight;
     use crate::prelude::*;
 
     use test_log::test;
@@ -212,15 +213,15 @@ mod tests {
         }
         let default_signer = get_dummy_account_id();
         let client_height = 5;
-        let start_client_height = Height::new(0, client_height);
-        let update_client_height = Height::new(0, 34);
-        let update_client_height_after_send = Height::new(0, 35);
+        let start_client_height = Height::new(0, client_height).unwrap();
+        let update_client_height = Height::new(0, 34).unwrap();
+        let update_client_height_after_send = Height::new(0, 35).unwrap();
 
-        let update_client_height_after_second_send = Height::new(0, 36);
+        let update_client_height_after_second_send = Height::new(0, 36).unwrap();
 
-        let upgrade_client_height = Height::new(1, 2);
+        let upgrade_client_height = Height::new(1, 2).unwrap();
 
-        let upgrade_client_height_second = Height::new(1, 1);
+        let upgrade_client_height_second = Height::new(1, 1).unwrap();
 
         let transfer_module_id: ModuleId = MODULE_ID_STR.parse().unwrap();
 
@@ -291,14 +292,18 @@ mod tests {
             MsgChannelCloseConfirm::try_from(get_dummy_raw_msg_chan_close_confirm(client_height))
                 .unwrap();
 
-        let msg_transfer = get_dummy_msg_transfer(35);
-        let msg_transfer_two = get_dummy_msg_transfer(36);
+        let msg_transfer = get_dummy_msg_transfer(Height::new(0, 35).unwrap().into(), None);
+        let msg_transfer_two = get_dummy_msg_transfer(Height::new(0, 36).unwrap().into(), None);
+        let msg_transfer_no_timeout = get_dummy_msg_transfer(TimeoutHeight::no_timeout(), None);
+        let msg_transfer_no_timeout_or_timestamp = get_dummy_msg_transfer(
+            TimeoutHeight::no_timeout(),
+            Some(Timestamp::from_nanoseconds(0).unwrap()),
+        );
 
         let mut msg_to_on_close =
             MsgTimeoutOnClose::try_from(get_dummy_raw_msg_timeout_on_close(36, 5)).unwrap();
         msg_to_on_close.packet.sequence = 2.into();
-        msg_to_on_close.packet.timeout_height =
-            msg_transfer_two.timeout_height.unwrap_or_else(Height::zero);
+        msg_to_on_close.packet.timeout_height = msg_transfer_two.timeout_height;
         msg_to_on_close.packet.timeout_timestamp = msg_transfer_two.timeout_timestamp;
 
         let denom = msg_transfer_two.token.denom.clone();
@@ -469,6 +474,17 @@ mod tests {
                     signer: default_signer.clone(),
                 }))
                 .into(),
+                want_pass: true,
+            },
+            // Timeout packets
+            Test {
+                name: "Transfer message no timeout".to_string(),
+                msg: msg_transfer_no_timeout.into(),
+                want_pass: true,
+            },
+            Test {
+                name: "Transfer message no timeout nor timestamp".to_string(),
+                msg: msg_transfer_no_timeout_or_timestamp.into(),
                 want_pass: true,
             },
             //ICS04-close channel

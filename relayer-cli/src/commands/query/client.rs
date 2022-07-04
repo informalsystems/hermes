@@ -61,7 +61,10 @@ impl Runnable for QueryClientStateCmd {
             QueryClientStateRequest {
                 client_id: self.client_id.clone(),
                 height: self.height.map_or(QueryHeight::Latest, |revision_height| {
-                    QueryHeight::Specific(ibc::Height::new(chain.id().version(), revision_height))
+                    QueryHeight::Specific(
+                        ibc::Height::new(chain.id().version(), revision_height)
+                            .unwrap_or_else(exit_with_unrecoverable_error),
+                    )
                 }),
             },
             IncludeProof::No,
@@ -139,7 +142,8 @@ impl Runnable for QueryClientConsensusCmd {
 
         match self.consensus_height {
             Some(cs_height) => {
-                let consensus_height = ibc::Height::new(counterparty_chain.version(), cs_height);
+                let consensus_height = ibc::Height::new(counterparty_chain.version(), cs_height)
+                    .unwrap_or_else(exit_with_unrecoverable_error);
 
                 let res = chain
                     .query_consensus_state(
@@ -149,10 +153,10 @@ impl Runnable for QueryClientConsensusCmd {
                             query_height: self.height.map_or(
                                 QueryHeight::Latest,
                                 |revision_height| {
-                                    QueryHeight::Specific(ibc::Height::new(
-                                        chain.id().version(),
-                                        revision_height,
-                                    ))
+                                    QueryHeight::Specific(
+                                        ibc::Height::new(chain.id().version(), revision_height)
+                                            .unwrap_or_else(exit_with_unrecoverable_error),
+                                    )
                                 },
                             ),
                         },
@@ -219,7 +223,7 @@ pub struct QueryClientHeaderCmd {
     #[clap(
         long = "height",
         value_name = "HEIGHT",
-        help = "The chain height context for the query"
+        help = "The chain height context for the query. Leave unspecified for latest height."
     )]
     height: Option<u64>,
 }
@@ -251,12 +255,14 @@ impl Runnable for QueryClientHeaderCmd {
         };
 
         let consensus_height =
-            ibc::Height::new(counterparty_chain.version(), self.consensus_height);
+            ibc::Height::new(counterparty_chain.version(), self.consensus_height)
+                .unwrap_or_else(exit_with_unrecoverable_error);
 
         let query_height = match self.height {
-            Some(revision_height) => {
-                QueryHeight::Specific(Height::new(chain.id().version(), revision_height))
-            }
+            Some(revision_height) => QueryHeight::Specific(
+                Height::new(chain.id().version(), revision_height)
+                    .unwrap_or_else(exit_with_unrecoverable_error),
+            ),
             None => QueryHeight::Latest,
         };
 

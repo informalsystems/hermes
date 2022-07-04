@@ -40,7 +40,7 @@ pub struct QueryConnectionEndCmd {
     #[clap(
         long = "height",
         value_name = "HEIGHT",
-        help = "Height of the state to query"
+        help = "Height of the state to query. Leave unspecified for latest height."
     )]
     height: Option<u64>,
 }
@@ -59,7 +59,10 @@ impl Runnable for QueryConnectionEndCmd {
             QueryConnectionRequest {
                 connection_id: self.connection_id.clone(),
                 height: self.height.map_or(QueryHeight::Latest, |revision_height| {
-                    QueryHeight::Specific(ibc::Height::new(chain.id().version(), revision_height))
+                    QueryHeight::Specific(
+                        ibc::Height::new(chain.id().version(), revision_height)
+                            .unwrap_or_else(exit_with_unrecoverable_error),
+                    )
                 }),
             },
             IncludeProof::No,

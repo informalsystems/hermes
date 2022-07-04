@@ -15,29 +15,30 @@ use crate::core::ics02_client::error::Error;
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Height {
     /// Previously known as "epoch"
-    pub revision_number: u64,
+    revision_number: u64,
 
     /// The height of a block
-    pub revision_height: u64,
+    revision_height: u64,
 }
 
 impl Height {
-    pub fn new(revision_number: u64, revision_height: u64) -> Self {
-        Self {
+    pub fn new(revision_number: u64, revision_height: u64) -> Result<Self, Error> {
+        if revision_height == 0 {
+            return Err(Error::invalid_height());
+        }
+
+        Ok(Self {
             revision_number,
             revision_height,
-        }
+        })
     }
 
-    pub fn zero() -> Height {
-        Self {
-            revision_number: 0,
-            revision_height: 0,
-        }
+    pub fn revision_number(&self) -> u64 {
+        self.revision_number
     }
 
-    pub fn is_zero(&self) -> bool {
-        self.revision_height == 0
+    pub fn revision_height(&self) -> u64 {
+        self.revision_height
     }
 
     pub fn add(&self, delta: u64) -> Height {
@@ -65,19 +66,6 @@ impl Height {
     pub fn decrement(&self) -> Result<Height, Error> {
         self.sub(1)
     }
-
-    pub fn with_revision_height(self, revision_height: u64) -> Height {
-        Height {
-            revision_height,
-            ..self
-        }
-    }
-}
-
-impl Default for Height {
-    fn default() -> Self {
-        Self::zero()
-    }
 }
 
 impl PartialOrd for Height {
@@ -104,12 +92,11 @@ impl Ord for Height {
 
 impl Protobuf<RawHeight> for Height {}
 
-impl From<RawHeight> for Height {
-    fn from(raw: RawHeight) -> Self {
-        Height {
-            revision_number: raw.revision_number,
-            revision_height: raw.revision_height,
-        }
+impl TryFrom<RawHeight> for Height {
+    type Error = Error;
+
+    fn try_from(raw_height: RawHeight) -> Result<Self, Self::Error> {
+        Height::new(raw_height.revision_number, raw_height.revision_height)
     }
 }
 
@@ -148,6 +135,8 @@ define_error! {
                 format_args!("cannot convert into a `Height` type from string {0}",
                     e.height)
             },
+        ZeroHeight
+            |_| { "attempted to parse an invalid zero height" }
     }
 }
 
@@ -156,20 +145,21 @@ impl TryFrom<&str> for Height {
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         let split: Vec<&str> = value.split('-').collect();
-        Ok(Height {
-            revision_number: split[0]
-                .parse::<u64>()
-                .map_err(|e| HeightError::height_conversion(value.to_owned(), e))?,
-            revision_height: split[1]
-                .parse::<u64>()
-                .map_err(|e| HeightError::height_conversion(value.to_owned(), e))?,
-        })
+
+        let revision_number = split[0]
+            .parse::<u64>()
+            .map_err(|e| HeightError::height_conversion(value.to_owned(), e))?;
+        let revision_height = split[1]
+            .parse::<u64>()
+            .map_err(|e| HeightError::height_conversion(value.to_owned(), e))?;
+
+        Height::new(revision_number, revision_height).map_err(|_| HeightError::zero_height())
     }
 }
 
 impl From<Height> for String {
     fn from(height: Height) -> Self {
-        format!("{}-{}", height.revision_number, height.revision_number)
+        format!("{}-{}", height.revision_number, height.revision_height)
     }
 }
 
