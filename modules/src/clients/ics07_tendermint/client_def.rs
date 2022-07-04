@@ -246,7 +246,7 @@ impl ClientDef for TendermintClient {
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
 
-        let path = ChannelEndsPath(port_id.clone(), *channel_id);
+        let path = ChannelEndsPath(port_id.clone(), channel_id.clone());
         let value = expected_channel_end
             .encode_vec()
             .map_err(Ics02Error::invalid_channel_end)?;
@@ -290,7 +290,7 @@ impl ClientDef for TendermintClient {
 
         let commitment_path = CommitmentsPath {
             port_id: port_id.clone(),
-            channel_id: *channel_id,
+            channel_id: channel_id.clone(),
             sequence,
         };
 
@@ -322,7 +322,7 @@ impl ClientDef for TendermintClient {
 
         let ack_path = AcksPath {
             port_id: port_id.clone(),
-            channel_id: *channel_id,
+            channel_id: channel_id.clone(),
             sequence,
         };
         verify_membership(
@@ -355,7 +355,7 @@ impl ClientDef for TendermintClient {
             .encode(&mut seq_bytes)
             .expect("buffer size too small");
 
-        let seq_path = SeqRecvsPath(port_id.clone(), *channel_id);
+        let seq_path = SeqRecvsPath(port_id.clone(), channel_id.clone());
         verify_membership(
             client_state,
             connection_end.counterparty().prefix(),
@@ -383,7 +383,7 @@ impl ClientDef for TendermintClient {
 
         let receipt_path = ReceiptsPath {
             port_id: port_id.clone(),
-            channel_id: *channel_id,
+            channel_id: channel_id.clone(),
             sequence,
         };
         verify_non_membership(

@@ -626,7 +626,7 @@ impl TryFrom<Attributes> for CloseInit {
             Ok(CloseInit {
                 height: attrs.height,
                 port_id: attrs.port_id.clone(),
-                channel_id: *channel_id,
+                channel_id: channel_id.clone(),
                 connection_id: attrs.connection_id.clone(),
                 counterparty_port_id: attrs.counterparty_port_id.clone(),
                 counterparty_channel_id: attrs.counterparty_channel_id,

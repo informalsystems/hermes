@@ -200,7 +200,7 @@ mod tests {
             Test {
                 name: "Bad channel, name too long".to_string(),
                 raw: RawMsgChannelOpenAck {
-                    channel_id: "channel-12839128379182739812739879".to_string(),
+                    channel_id: "channel-128391283791827398127398791283912837918273981273987912839".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,
@@ -224,7 +224,7 @@ mod tests {
             Test {
                 name: "[Counterparty] Bad channel, name too long".to_string(),
                 raw: RawMsgChannelOpenAck {
-                    counterparty_channel_id: "channel-12839128379182739812739879".to_string(),
+                    counterparty_channel_id: "channel-128391283791827398127398791283912837918273981273987912839".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,

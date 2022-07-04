@@ -24,7 +24,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
     let mut output = HandlerOutput::builder();
 
     let source_channel_end =
-        ctx.channel_end(&(packet.source_port.clone(), packet.source_channel))?;
+        ctx.channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))?;
 
     if source_channel_end.state_matches(&State::Closed) {
         return Err(Error::channel_closed(packet.source_channel));
@@ -32,7 +32,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
 
     let counterparty = Counterparty::new(
         packet.destination_port.clone(),
-        Some(packet.destination_channel),
+        Some(packet.destination_channel.clone()),
     );
 
     if !source_channel_end.counterparty_matches(&counterparty) {
@@ -70,7 +70,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
     }
 
     let next_seq_send =
-        ctx.get_next_sequence_send(&(packet.source_port.clone(), packet.source_channel))?;
+        ctx.get_next_sequence_send(&(packet.source_port.clone(), packet.source_channel.clone()))?;
 
     if packet.sequence != next_seq_send {
         return Err(Error::invalid_packet_sequence(
@@ -83,7 +83,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
 
     let result = PacketResult::Send(SendPacketResult {
         port_id: packet.source_port.clone(),
-        channel_id: packet.source_channel,
+        channel_id: packet.source_channel.clone(),
         seq: packet.sequence,
         seq_number: next_seq_send.increment(),
         commitment: ctx.packet_commitment(

@@ -306,7 +306,7 @@ impl FilterPolicy {
         port_id: &PortId,
         channel_id: &ChannelId,
     ) -> Result<Permission, FilterError> {
-        let identifier = CacheKey::Channel(chain_id.clone(), port_id.clone(), *channel_id);
+        let identifier = CacheKey::Channel(chain_id.clone(), port_id.clone(), channel_id.clone());
 
         trace!(
             "[client filter] controlling permissions for {:?}",
@@ -327,7 +327,7 @@ impl FilterPolicy {
             .query_channel(
                 QueryChannelRequest {
                     port_id: port_id.clone(),
-                    channel_id: *channel_id,
+                    channel_id: channel_id.clone(),
                     height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
@@ -369,7 +369,7 @@ impl FilterPolicy {
             conn_id,
         )?;
 
-        let key = CacheKey::Channel(chain_id.clone(), port_id.clone(), *channel_id);
+        let key = CacheKey::Channel(chain_id.clone(), port_id.clone(), channel_id.clone());
 
         debug!(
             "[client filter] {:?}: relay for channel {:?}: ",

@@ -32,21 +32,21 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgTimeout) -> HandlerResult<Packe
     let packet = &msg.packet;
 
     let mut source_channel_end =
-        ctx.channel_end(&(packet.source_port.clone(), packet.source_channel))?;
+        ctx.channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))?;
 
     if !source_channel_end.state_matches(&State::Open) {
-        return Err(Error::channel_closed(packet.source_channel));
+        return Err(Error::channel_closed(packet.source_channel.clone()));
     }
 
     let counterparty = Counterparty::new(
         packet.destination_port.clone(),
-        Some(packet.destination_channel),
+        Some(packet.destination_channel.clone()),
     );
 
     if !source_channel_end.counterparty_matches(&counterparty) {
         return Err(Error::invalid_packet_counterparty(
             packet.destination_port.clone(),
-            packet.destination_channel,
+            packet.destination_channel.clone(),
         ));
     }
 
@@ -79,7 +79,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgTimeout) -> HandlerResult<Packe
     //verify packet commitment
     let packet_commitment = ctx.get_packet_commitment(&(
         packet.source_port.clone(),
-        packet.source_channel,
+        packet.source_channel.clone(),
         packet.sequence,
     ))?;
 
@@ -111,7 +111,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgTimeout) -> HandlerResult<Packe
         source_channel_end.state = State::Closed;
         PacketResult::Timeout(TimeoutPacketResult {
             port_id: packet.source_port.clone(),
-            channel_id: packet.source_channel,
+            channel_id: packet.source_channel.clone(),
             seq: packet.sequence,
             channel: Some(source_channel_end),
         })
@@ -126,7 +126,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgTimeout) -> HandlerResult<Packe
 
         PacketResult::Timeout(TimeoutPacketResult {
             port_id: packet.source_port.clone(),
-            channel_id: packet.source_channel,
+            channel_id: packet.source_channel.clone(),
             seq: packet.sequence,
             channel: None,
         })
@@ -202,7 +202,7 @@ mod tests {
             Order::default(),
             Counterparty::new(
                 packet.destination_port.clone(),
-                Some(packet.destination_channel),
+                Some(packet.destination_channel.clone()),
             ),
             vec![ConnectionId::default()],
             Version::ics20(),
@@ -262,12 +262,12 @@ mod tests {
                     .with_connection(ConnectionId::default(), connection_end.clone())
                     .with_channel(
                         packet.source_port.clone(),
-                        packet.source_channel,
+                        packet.source_channel.clone(),
                         source_channel_end,
                     )
                     .with_packet_commitment(
                         msg_ok.packet.source_port.clone(),
-                        msg_ok.packet.source_channel,
+                        msg_ok.packet.source_channel.clone(),
                         msg_ok.packet.sequence,
                         data.clone(),
                     ),
@@ -286,7 +286,7 @@ mod tests {
                     )
                     .with_packet_commitment(
                         msg_ok.packet.source_port.clone(),
-                        msg_ok.packet.source_channel,
+                        msg_ok.packet.source_channel.clone(),
                         msg_ok.packet.sequence,
                         data,
                     )

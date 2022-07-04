@@ -161,7 +161,7 @@ pub fn channel_connection_client(
         .query_channel(
             QueryChannelRequest {
                 port_id: port_id.clone(),
-                channel_id: *channel_id,
+                channel_id: channel_id.clone(),
                 height: QueryHeight::Latest,
             },
             IncludeProof::No,
@@ -171,7 +171,7 @@ pub fn channel_connection_client(
     if channel_end.state_matches(&State::Uninitialized) {
         return Err(Error::channel_uninitialized(
             port_id.clone(),
-            *channel_id,
+            channel_id.clone(),
             chain.id(),
         ));
     }
@@ -179,7 +179,7 @@ pub fn channel_connection_client(
     let connection_id = channel_end
         .connection_hops()
         .first()
-        .ok_or_else(|| Error::missing_connection_hops(*channel_id, chain.id()))?;
+        .ok_or_else(|| Error::missing_connection_hops(channel_id.clone(), chain.id()))?;
 
     let (connection_end, _) = chain
         .query_connection(
@@ -194,7 +194,7 @@ pub fn channel_connection_client(
     if !connection_end.is_open() {
         return Err(Error::connection_not_open(
             connection_id.clone(),
-            *channel_id,
+            channel_id.clone(),
             chain.id(),
         ));
     }
@@ -212,7 +212,7 @@ pub fn channel_connection_client(
 
     let client = IdentifiedAnyClientState::new(client_id.clone(), client_state);
     let connection = IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
-    let channel = IdentifiedChannelEnd::new(port_id.clone(), *channel_id, channel_end);
+    let channel = IdentifiedChannelEnd::new(port_id.clone(), channel_id.clone(), channel_end);
 
     Ok(ChannelConnectionClient::new(channel, connection, client))
 }
@@ -272,14 +272,14 @@ pub fn channel_on_destination(
             .query_channel(
                 QueryChannelRequest {
                     port_id: channel.channel_end.counterparty().port_id().clone(),
-                    channel_id: *remote_channel_id,
+                    channel_id: remote_channel_id.clone(),
                     height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
             .map(|(c, _)| IdentifiedChannelEnd {
                 port_id: channel.channel_end.counterparty().port_id().clone(),
-                channel_id: *remote_channel_id,
+                channel_id: remote_channel_id.clone(),
                 channel_end: c,
             })
             .map_err(Error::relayer)?;
@@ -310,7 +310,7 @@ pub fn check_channel_counterparty(
         .query_channel(
             QueryChannelRequest {
                 port_id: target_pchan.port_id.clone(),
-                channel_id: target_pchan.channel_id,
+                channel_id: target_pchan.channel_id.clone(),
                 height: QueryHeight::Latest,
             },
             IncludeProof::No,
@@ -362,7 +362,7 @@ pub fn commitments_on_chain(
     let (mut commit_sequences, response_height) = chain
         .query_packet_commitments(QueryPacketCommitmentsRequest {
             port_id: port_id.clone(),
-            channel_id: *channel_id,
+            channel_id: channel_id.clone(),
             pagination: Some(PageRequest::all()),
         })
         .map_err(Error::relayer)?;
@@ -387,7 +387,7 @@ pub fn unreceived_packets_sequences(
     chain
         .query_unreceived_packets(QueryUnreceivedPacketsRequest {
             port_id: port_id.clone(),
-            channel_id: *channel_id,
+            channel_id: channel_id.clone(),
             packet_commitment_sequences: commitments_on_counterparty,
         })
         .map_err(Error::relayer)
@@ -407,7 +407,7 @@ pub fn packet_acknowledgements(
     let (mut acked_sequences, response_height) = chain
         .query_packet_acknowledgements(QueryPacketAcknowledgementsRequest {
             port_id: port_id.clone(),
-            channel_id: *channel_id,
+            channel_id: channel_id.clone(),
             pagination: Some(PageRequest::all()),
             packet_commitment_sequences: commit_sequences,
         })
@@ -435,7 +435,7 @@ pub fn unreceived_acknowledgements_sequences(
     chain
         .query_unreceived_acknowledgements(QueryUnreceivedAcksRequest {
             port_id: port_id.clone(),
-            channel_id: *channel_id,
+            channel_id: channel_id.clone(),
             packet_ack_sequences: acks_on_counterparty,
         })
         .map_err(Error::relayer)

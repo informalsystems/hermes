@@ -461,7 +461,7 @@ pub trait ChainEndpoint: Sized {
         let (_, maybe_channel_proof) = self.query_channel(
             QueryChannelRequest {
                 port_id: port_id.clone(),
-                channel_id: *channel_id,
+                channel_id: channel_id.clone(),
                 height: QueryHeight::Specific(height),
             },
             IncludeProof::Yes,
@@ -540,7 +540,7 @@ pub trait ChainEndpoint: Sized {
                     let (_, maybe_channel_proof) = self.query_channel(
                         QueryChannelRequest {
                             port_id: port_id.clone(),
-                            channel_id,
+                            channel_id: channel_id.clone(),
                             height: QueryHeight::Specific(height),
                         },
                         IncludeProof::Yes,
