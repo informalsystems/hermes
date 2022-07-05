@@ -30,6 +30,10 @@ impl BinaryChannelTest for ErrorEventsTest {
             .chain_driver()
             .query_balance(&wallet_a.address(), &denom_a)?;
 
+        // Create 4x transfer messages where each transfers
+        // (1/3 + 1) of the total balance the user has.
+        // So the third and fourth message should fail.
+
         let transfer_message = build_transfer_message(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
@@ -42,6 +46,9 @@ impl BinaryChannelTest for ErrorEventsTest {
         let messages = TrackedMsgs::new_static(vec![transfer_message; 4], "test_error_events");
 
         let events = chains.handle_a().send_messages_and_wait_commit(messages)?;
+
+        // We expect 4 error events to be returned, corresponding to the
+        // 4 messages sent.
 
         assert_eq!(events.len(), 4);
 

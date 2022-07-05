@@ -101,12 +101,8 @@ async fn update_tx_sync_result(
     Ok(())
 }
 
-fn empty_event_present(events: &[IbcEvent]) -> bool {
-    events.iter().any(|ev| matches!(ev, IbcEvent::Empty(_)))
-}
-
 fn all_tx_results_found(tx_sync_results: &[TxSyncResult]) -> bool {
     tx_sync_results
         .iter()
-        .all(|r| !empty_event_present(&r.events))
+        .all(|r| matches!(r.status, TxStatus::ReceivedResponse))
 }

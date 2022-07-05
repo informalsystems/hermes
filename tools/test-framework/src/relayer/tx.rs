@@ -99,11 +99,9 @@ pub async fn simple_send_tx(
         estimate_fee_and_send_tx(config, key_entry, &account, &Default::default(), messages)
             .await?;
 
-    let events_per_tx = vec![IbcEvent::default(); message_count];
-
     let tx_sync_result = TxSyncResult {
         response,
-        events: events_per_tx,
+        events: Vec::new(),
         status: TxStatus::Pending { message_count },
     };
 

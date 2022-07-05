@@ -858,7 +858,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         match events.first() {
             Some(IbcEvent::UpdateClient(event)) => Ok(event.height()),
             Some(event) => Err(LinkError::unexpected_event(event.clone())),
-            None => Err(LinkError::unexpected_event(IbcEvent::default())),
+            None => Err(LinkError::update_client_event_not_found()),
         }
     }
 

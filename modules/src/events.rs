@@ -244,14 +244,7 @@ pub enum IbcEvent {
 
     AppModule(ModuleEvent),
 
-    Empty(String),      // Special event, signifying empty response
     ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
-}
-
-impl Default for IbcEvent {
-    fn default() -> Self {
-        Self::Empty("".to_string())
-    }
 }
 
 /// For use in debug messages
@@ -297,7 +290,6 @@ impl fmt::Display for IbcEvent {
 
             IbcEvent::AppModule(ev) => write!(f, "AppModuleEv({:?})", ev),
 
-            IbcEvent::Empty(ev) => write!(f, "EmptyEv({})", ev),
             IbcEvent::ChainError(ev) => write!(f, "ChainErrorEv({})", ev),
         }
     }
@@ -329,7 +321,7 @@ impl TryFrom<IbcEvent> for AbciEvent {
             IbcEvent::TimeoutPacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::TimeoutOnClosePacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::AppModule(event) => event.try_into()?,
-            IbcEvent::NewBlock(_) | IbcEvent::Empty(_) | IbcEvent::ChainError(_) => {
+            IbcEvent::NewBlock(_) | IbcEvent::ChainError(_) => {
                 return Err(Error::incorrect_event_type(event.to_string()))
             }
         })
@@ -438,7 +430,6 @@ impl IbcEvent {
             IbcEvent::TimeoutPacket(_) => IbcEventType::Timeout,
             IbcEvent::TimeoutOnClosePacket(_) => IbcEventType::TimeoutOnClose,
             IbcEvent::AppModule(_) => IbcEventType::AppModule,
-            IbcEvent::Empty(_) => IbcEventType::Empty,
             IbcEvent::ChainError(_) => IbcEventType::ChainError,
         }
     }
