@@ -352,7 +352,7 @@ dependencies = [
 [[package]]
 name = "beefy-generic-client"
 version = "0.1.0"
-source = "git+https://github.com/ComposableFi/beefy-client?branch=master#156e6b68760464967cec0684ce689ad5244ea560"
+source = "git+https://github.com/ComposableFi/beefy-rs?branch=master#156e6b68760464967cec0684ce689ad5244ea560"
 dependencies = [
  "beefy-primitives",
  "ckb-merkle-mountain-range",
@@ -2284,7 +2284,7 @@ dependencies = [
 [[package]]
 name = "ics23"
 version = "0.8.0-alpha"
-source = "git+https://github.com/composablefi/ics23?rev=86e970a4f22973946a0faf472b56951691d40874#86e970a4f22973946a0faf472b56951691d40874"
+source = "git+https://github.com/composablefi/ics23?rev=b500a5c6068eb53c83c4c6c13bd9d8c25e0bf927#b500a5c6068eb53c83c4c6c13bd9d8c25e0bf927"
 dependencies = [
  "anyhow",
  "bytes",
@@ -2294,7 +2294,6 @@ dependencies = [
  "sha2 0.9.9",
  "sha3 0.9.1",
  "sp-core 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "sp-std 4.0.0 (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.22)",
 ]
 
 [[package]]
@@ -5241,11 +5240,6 @@ name = "sp-std"
 version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "14804d6069ee7a388240b665f17908d98386ffb0b5d39f89a4099fc7a2a4c03f"
-
-[[package]]
-name = "sp-std"
-version = "4.0.0"
-source = "git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.22#616d33ea23bab86cafffaf116fc607b6790fb4eb"
 
 [[package]]
 name = "sp-std"
