@@ -249,16 +249,6 @@ impl Runnable for TxUpgradeClientCmd {
         let client = ForeignClient::find(src_chain, dst_chain, &self.client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        // In order to perform the client upgrade, the chain is paused at the height specified by
-        // the user. When the chain is paused, the application height reports a height of 1 less
-        // than the height according to Tendermint. As a result, the target height at which the
-        // upgrade occurs at (the application height) is 1 less than the height specified by
-        // the user.
-        let target_application_upgrade_height = match self.target_upgrade_height.decrement() {
-            Ok(height) => height,
-            Err(e) => Output::error(format!("{}", e)).exit(),
-        };
-
         let mut src_application_latest_height = match client.src_chain().query_latest_height() {
             Ok(height) => height,
             Err(e) => Output::error(format!("{}", e)).exit(),
@@ -269,8 +259,12 @@ impl Runnable for TxUpgradeClientCmd {
             src_application_latest_height
         );
 
-        // Wait until the client's application height reaches the target application upgrade height
-        while src_application_latest_height <= target_application_upgrade_height {
+        // In order to perform the client upgrade, the chain is paused at the height specified by
+        // the user. When the chain is paused, the application height reports a height of 1 less
+        // than the height according to Tendermint. As a result, the target height at which the
+        // upgrade occurs at (the application height) is 1 less than the height specified by
+        // the user, hence the strictly less-than check in the while loop.
+        while src_application_latest_height < self.target_upgrade_height {
             thread::sleep(Duration::from_millis(500));
 
             src_application_latest_height = match client.src_chain().query_latest_height() {
@@ -284,7 +278,7 @@ impl Runnable for TxUpgradeClientCmd {
             );
         }
 
-        let outcome = client.upgrade(src_application_latest_height);
+        let outcome = client.upgrade(self.target_upgrade_height);
 
         match outcome {
             Ok(receipt) => Output::success(receipt).exit(),
