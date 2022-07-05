@@ -270,7 +270,7 @@ impl Runnable for TxUpgradeClientCmd {
         );
 
         // Wait until the client's application height reaches the target application upgrade height
-        while src_application_latest_height < target_application_upgrade_height {
+        while src_application_latest_height <= target_application_upgrade_height {
             thread::sleep(Duration::from_millis(500));
 
             src_application_latest_height = match client.src_chain().query_latest_height() {
@@ -284,7 +284,7 @@ impl Runnable for TxUpgradeClientCmd {
             );
         }
 
-        let outcome = client.upgrade(self.target_upgrade_height);
+        let outcome = client.upgrade(src_application_latest_height);
 
         match outcome {
             Ok(receipt) => Output::success(receipt).exit(),

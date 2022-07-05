@@ -231,7 +231,7 @@ gaiad version --log_level error --long | head -n4
     and another for the upgraded state.
 
     ```shell
-    hermes upgrade client --host-chain ibc-1 --client 07-tendermint-0 --upgrade-height 0-335
+    hermes upgrade client --host-chain ibc-1 --client 07-tendermint-0 --upgrade-height 0-332
     ```
     ```json
     Success: [
