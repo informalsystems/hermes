@@ -143,10 +143,10 @@ Success: [
 ```
 
 2. Because the relayer is not running these packets won't be relayed,
-as can be seen with the `query packet unreceived-packets` command:
+as can be seen with the `query packet pending-sends` command:
 
 ```
-❯ hermes query packet unreceived-packets --chain ibc1 --port transfer --channel channel-13
+❯ hermes query packet pending-sends --chain ibc1 --port transfer --channel channel-13
 2022-02-24T14:21:28.874190Z  INFO ThreadId(01) using default configuration from '/Users/coromac/.hermes/config.toml'
 Success: [
     14,
@@ -440,7 +440,7 @@ Success: [
 4. The packets have now been successfully relayed:
 
 ```
-❯ hermes query packet unreceived-packets --chain ibc1 --port transfer --channel channel-13
+❯ hermes query packet pending-sends --chain ibc1 --port transfer --channel channel-13
 2022-02-24T14:21:28.874190Z  INFO ThreadId(01) using default configuration from '/Users/coromac/.hermes/config.toml'
 Success: []
 ```

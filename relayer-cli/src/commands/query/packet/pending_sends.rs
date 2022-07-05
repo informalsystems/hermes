@@ -16,7 +16,7 @@ use crate::prelude::*;
 /// 2. queries the counterparty chain for all packet commitments/ sequences for a given port and channel
 /// 3. queries the chain for the unreceived sequences out of the list obtained in 2.
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
-pub struct QueryUnreceivedPacketsCmd {
+pub struct QueryPendingSendsCmd {
     #[clap(
         long = "chain",
         required = true,
@@ -46,7 +46,7 @@ pub struct QueryUnreceivedPacketsCmd {
     channel_id: ChannelId,
 }
 
-impl QueryUnreceivedPacketsCmd {
+impl QueryPendingSendsCmd {
     fn execute(&self) -> Result<Vec<Sequence>, Error> {
         let config = app_config();
         debug!("Options: {:?}", self);
@@ -69,7 +69,7 @@ impl QueryUnreceivedPacketsCmd {
     }
 }
 
-impl Runnable for QueryUnreceivedPacketsCmd {
+impl Runnable for QueryPendingSendsCmd {
     fn run(&self) {
         match self.execute() {
             Ok(seqs) => Output::success(seqs).exit(),
@@ -80,7 +80,7 @@ impl Runnable for QueryUnreceivedPacketsCmd {
 
 #[cfg(test)]
 mod tests {
-    use super::QueryUnreceivedPacketsCmd;
+    use super::QueryPendingSendsCmd;
 
     use std::str::FromStr;
 
@@ -90,12 +90,12 @@ mod tests {
     #[test]
     fn test_query_packet_unreceived_packets() {
         assert_eq!(
-            QueryUnreceivedPacketsCmd {
+            QueryPendingSendsCmd {
                 chain_id: ChainId::from_string("chain_id"),
                 port_id: PortId::from_str("port_id").unwrap(),
                 channel_id: ChannelId::from_str("channel-07").unwrap()
             },
-            QueryUnreceivedPacketsCmd::parse_from(&[
+            QueryPendingSendsCmd::parse_from(&[
                 "test",
                 "--chain",
                 "chain_id",
@@ -110,12 +110,12 @@ mod tests {
     #[test]
     fn test_query_packet_unreceived_packets_chan_alias() {
         assert_eq!(
-            QueryUnreceivedPacketsCmd {
+            QueryPendingSendsCmd {
                 chain_id: ChainId::from_string("chain_id"),
                 port_id: PortId::from_str("port_id").unwrap(),
                 channel_id: ChannelId::from_str("channel-07").unwrap()
             },
-            QueryUnreceivedPacketsCmd::parse_from(&[
+            QueryPendingSendsCmd::parse_from(&[
                 "test",
                 "--chain",
                 "chain_id",
@@ -129,7 +129,7 @@ mod tests {
 
     #[test]
     fn test_query_packet_unreceived_packets_no_chan() {
-        assert!(QueryUnreceivedPacketsCmd::try_parse_from(&[
+        assert!(QueryPendingSendsCmd::try_parse_from(&[
             "test", "--chain", "chain_id", "--port", "port_id"
         ])
         .is_err())
@@ -137,7 +137,7 @@ mod tests {
 
     #[test]
     fn test_query_packet_unreceived_packets_no_port() {
-        assert!(QueryUnreceivedPacketsCmd::try_parse_from(&[
+        assert!(QueryPendingSendsCmd::try_parse_from(&[
             "test",
             "--chain",
             "chain_id",
@@ -149,7 +149,7 @@ mod tests {
 
     #[test]
     fn test_query_packet_unreceived_packets_no_chain() {
-        assert!(QueryUnreceivedPacketsCmd::try_parse_from(&[
+        assert!(QueryPendingSendsCmd::try_parse_from(&[
             "test",
             "--port",
             "port_id",

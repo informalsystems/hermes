@@ -148,9 +148,9 @@ __Packet__
 
 * `query packet pending --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
 
-* `query packet unreceived-acks --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
+* `query packet pending-acks --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
 
-* `query packet unreceived-packets --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
+* `query packet pending-sends --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
 
 __Transfer__
 

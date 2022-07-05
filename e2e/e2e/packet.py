@@ -133,7 +133,7 @@ class TxPacketAck(Cmd[TxPacketAckRes]):
 
 # -----------------------------------------------------------------------------
 
-@cmd("query packet unreceived-packets")
+@cmd("query packet pending-sends")
 @dataclass
 class QueryUnreceivedPackets(Cmd[List[int]]):
     chain: ChainId
@@ -161,7 +161,7 @@ def query_unreceived_packets(
 # -----------------------------------------------------------------------------
 
 
-@cmd("query packet unreceived-acks")
+@cmd("query packet pending-acks")
 @dataclass
 class QueryUnreceivedAcks(Cmd[List[int]]):
     chain: ChainId

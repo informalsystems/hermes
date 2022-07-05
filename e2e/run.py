@@ -53,25 +53,25 @@ def passive_packets(
 
     # 3. verify the expected number of unreceived packets and acks on each channel end
 
-    # hermes query packet unreceived-packets ibc-0 transfer channel-0
+    # hermes query packet pending-sends ibc-0 transfer channel-0
     unreceived = packet.query_unreceived_packets(
         c, chain=ibc0, port=port_id, channel=ibc0_channel_id)
 
     assert (len(unreceived) == 3), (unreceived, "unreceived packet mismatch")
 
-    # hermes query packet unreceived-acks ibc-1 transfer channel-1
+    # hermes query packet pending-acks ibc-1 transfer channel-1
     unreceived = packet.query_unreceived_acks(
         c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
 
     assert (len(unreceived) == 2), (unreceived, "unreceived packet mismatch")
 
-    # hermes query packet unreceived-packets ibc-1 transfer channel-1
+    # hermes query packet pending-sends ibc-1 transfer channel-1
     unreceived = packet.query_unreceived_packets(
         c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
 
     assert (len(unreceived) == 4), (unreceived, "unreceived packet mismatch")
 
-    # hermes query packet unreceived-acks ibc-0 transfer channel-0
+    # hermes query packet pending-acks ibc-0 transfer channel-0
     unreceived = packet.query_unreceived_acks(
         c, chain=ibc0, port=port_id, channel=ibc0_channel_id)
 
@@ -84,28 +84,28 @@ def passive_packets(
     sleep(20.0)
 
     # 6. verify that there are no pending packets
-    # hermes query packet unreceived-packets ibc-1 transfer channel-1
+    # hermes query packet pending-sends ibc-1 transfer channel-1
     unreceived = packet.query_unreceived_packets(
         c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
 
     assert (len(unreceived) == 0), (unreceived,
                                     "unreceived packets mismatch (expected 0)")
 
-    # hermes query packet unreceived-acks ibc-1 transfer channel-1
+    # hermes query packet pending-acks ibc-1 transfer channel-1
     unreceived = packet.query_unreceived_acks(
         c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
 
     assert (len(unreceived) == 0), (unreceived,
                                     "unreceived acks mismatch (expected 0)")
 
-    # hermes query packet unreceived-packets ibc-0 transfer channel-0
+    # hermes query packet pending-sends ibc-0 transfer channel-0
     unreceived = packet.query_unreceived_packets(
         c, chain=ibc0, port=port_id, channel=ibc0_channel_id)
 
     assert (len(unreceived) == 0), (unreceived,
                                     "unreceived packets mismatch (expected 0)")
 
-    # hermes query packet unreceived-acks ibc-0 transfer channel-0
+    # hermes query packet pending-acks ibc-0 transfer channel-0
     unreceived = packet.query_unreceived_acks(
         c, chain=ibc0, port=port_id, channel=ibc0_channel_id)
 
@@ -124,28 +124,28 @@ def passive_packets(
     sleep(20.0)
 
     # 8. verify that there are no pending packets
-    # hermes query packet unreceived-packets ibc-1 transfer channel-1
+    # hermes query packet pending-sends ibc-1 transfer channel-1
     unreceived = packet.query_unreceived_packets(
         c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
 
     assert (len(unreceived) == 0), (unreceived,
                                     "unreceived packets mismatch (expected 0)")
 
-    # hermes query packet unreceived-acks ibc-1 transfer channel-1
+    # hermes query packet pending-acks ibc-1 transfer channel-1
     unreceived = packet.query_unreceived_acks(
         c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
 
     assert (len(unreceived) == 0), (unreceived,
                                     "unreceived acks mismatch (expected 0)")
 
-    # hermes query packet unreceived-packets ibc-0 transfer channel-0
+    # hermes query packet pending-sends ibc-0 transfer channel-0
     unreceived = packet.query_unreceived_packets(
         c, chain=ibc0, port=port_id, channel=ibc0_channel_id)
 
     assert (len(unreceived) == 0), (unreceived,
                                     "unreceived packets mismatch (expected 0)")
 
-    # hermes query packet unreceived-acks ibc-0 transfer channel-0
+    # hermes query packet pending-acks ibc-0 transfer channel-0
     unreceived = packet.query_unreceived_acks(
         c, chain=ibc0, port=port_id, channel=ibc0_channel_id)
 
