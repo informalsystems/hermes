@@ -11,7 +11,7 @@ use ibc_relayer::chain::cosmos::query::account::query_account;
 use ibc_relayer::chain::cosmos::tx::estimate_fee_and_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::cosmos::types::gas::GasConfig;
-use ibc_relayer::chain::cosmos::types::tx::TxSyncResult;
+use ibc_relayer::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use ibc_relayer::chain::cosmos::wait::wait_for_block_commits;
 use ibc_relayer::config::GasPrice;
 use ibc_relayer::keyring::KeyEntry;
@@ -104,6 +104,7 @@ pub async fn simple_send_tx(
     let tx_sync_result = TxSyncResult {
         response,
         events: events_per_tx,
+        status: TxStatus::Pending { message_count },
     };
 
     let mut tx_sync_results = vec![tx_sync_result];

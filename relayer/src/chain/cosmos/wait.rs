@@ -1,15 +1,16 @@
 use core::time::Duration;
 use ibc::core::ics24_host::identifier::ChainId;
+use ibc::events::from_tx_response_event;
 use ibc::events::IbcEvent;
+use ibc::Height;
 use itertools::Itertools;
 use std::thread;
 use std::time::Instant;
 use tendermint_rpc::{HttpClient, Url};
 use tracing::{info, trace};
 
-use crate::chain::cosmos::query::tx::query_txs;
-use crate::chain::cosmos::types::tx::TxSyncResult;
-use crate::chain::requests::{QueryTxHash, QueryTxRequest};
+use crate::chain::cosmos::query::tx::query_tx_response;
+use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use crate::error::Error;
 
 const WAIT_BACKOFF: Duration = Duration::from_millis(300);
@@ -69,63 +70,30 @@ async fn update_tx_sync_result(
     rpc_address: &Url,
     tx_sync_result: &mut TxSyncResult,
 ) -> Result<(), Error> {
-    let TxSyncResult { response, events } = tx_sync_result;
-    let num_events = events.len();
+    if let TxStatus::Pending { message_count } = tx_sync_result.status {
+        let response =
+            query_tx_response(rpc_client, rpc_address, &tx_sync_result.response.hash).await?;
 
-    // Check if broadcasting the transaction failed
-    if response.code.value() != 0 {
-        // Replace the events with errors so we don't attempt to resolve the transaction later on.
-        *events = vec![IbcEvent::ChainError(format!(
-            "check_tx (broadcast_tx_sync) on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
-            chain_id, response.hash, response.code, response.log
-        )); num_events];
-        return Ok(());
-    }
+        if let Some(response) = response {
+            tx_sync_result.status = TxStatus::ReceivedResponse;
 
-    // Check if we previously found events for the transaction.
-    // If a transaction query results in at least one event then it has been included in a block.
-    if empty_event_present(events) {
-        // No events for this transaction, query again the transaction by hash.
-        let events_per_tx = query_txs(
-            chain_id,
-            rpc_client,
-            rpc_address,
-            QueryTxRequest::Transaction(QueryTxHash(response.hash)),
-        )
-        .await?;
+            if response.tx_result.code.is_err() {
+                tx_sync_result.events = vec![
+                    IbcEvent::ChainError(format!(
+                        "deliver_tx for {} reports error: code={:?}, log={:?}",
+                        response.hash, response.tx_result.code, response.tx_result.log
+                    ));
+                    message_count
+                ];
+            } else {
+                let height = Height::new(chain_id.version(), u64::from(response.height)).unwrap();
 
-        // Check if the query found the transaction and its events.
-        if !events_per_tx.is_empty() {
-            // Transaction was included in a block. Check the events.
-            let result = events_per_tx
-                .iter()
-                .find(|event| matches!(event, IbcEvent::ChainError(_)));
-            match result {
-                // The transaction was successful, copy the events
-                None => *events = events_per_tx,
-
-                // The transaction failed deliver_tx. In this case all messages that
-                // were included in the transactions are marked as failed.
-                // Note: It is possible to extract the `index` from the response.
-                // This identifies the message in the transaction that caused the failure.
-                // This gives more information on the (first) message that caused the error.
-                // There is no evaluation of messages after the first failed message.
-                // If n messages are sent in a Tx, and the error index is i then:
-                //  - messages 1..i-1 passed deliverTx,
-                //  - message i failed deliverTx,
-                //  - deliverTx has not run for i+1..n
-                // Same is true for checkTx (above)
-                // TODO - maybe add at some point more error details to the `IbcEvent::ChainError()`
-                // below.
-                Some(err) => {
-                    *events = vec![
-                        IbcEvent::ChainError(format!(
-                            "deliver_tx on chain {} for Tx hash {} reports {:?}",
-                            chain_id, response.hash, err
-                        ));
-                        num_events
-                    ];
-                }
+                tx_sync_result.events = response
+                    .tx_result
+                    .events
+                    .iter()
+                    .flat_map(|event| from_tx_response_event(height, event).into_iter())
+                    .collect::<Vec<_>>();
             }
         }
     }
