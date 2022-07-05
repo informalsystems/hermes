@@ -4,13 +4,14 @@ use ibc::core::ics04_channel::packet::{Packet, Sequence};
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::{from_tx_response_event, IbcEvent};
 use ibc::Height as ICSHeight;
+use tendermint::abci::transaction::Hash as TxHash;
 use tendermint::abci::Event;
-use tendermint_rpc::endpoint::tx::Response as ResultTx;
+use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tendermint_rpc::{Client, HttpClient, Order, Url};
 
 use crate::chain::cosmos::query::{header_query, packet_query, tx_hash_query};
 use crate::chain::requests::{
-    QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest, QueryTxRequest,
+    QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest, QueryTxHash, QueryTxRequest,
 };
 use crate::error::Error;
 
@@ -67,7 +68,7 @@ pub async fn query_txs(
                     &request,
                     *seq,
                     response.txs[0].clone(),
-                ) {
+                )? {
                     result.push(event);
                 }
             }
@@ -105,7 +106,7 @@ pub async fn query_txs(
             );
 
             let tx = response.txs.remove(0);
-            let event = update_client_from_tx_search_response(chain_id, &request, tx);
+            let event = update_client_from_tx_search_response(chain_id, &request, tx)?;
 
             Ok(event.into_iter().collect())
         }
@@ -143,17 +144,18 @@ pub async fn query_txs(
 fn update_client_from_tx_search_response(
     chain_id: &ChainId,
     request: &QueryClientEventRequest,
-    response: ResultTx,
-) -> Option<IbcEvent> {
-    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
+    response: TxResponse,
+) -> Result<Option<IbcEvent>, Error> {
+    let height = ICSHeight::new(chain_id.version(), u64::from(response.height))
+        .map_err(|_| Error::invalid_height_no_source())?;
 
     if let QueryHeight::Specific(specific_query_height) = request.query_height {
         if height > specific_query_height {
-            return None;
+            return Ok(None);
         }
     };
 
-    response
+    Ok(response
         .tx_result
         .events
         .into_iter()
@@ -170,7 +172,7 @@ fn update_client_from_tx_search_response(
             update.common.client_id == request.client_id
                 && update.common.consensus_height == request.consensus_height
         })
-        .map(IbcEvent::UpdateClient)
+        .map(IbcEvent::UpdateClient))
 }
 
 // Extract the packet events from the query_txs RPC response. For any given
@@ -184,20 +186,22 @@ fn packet_from_tx_search_response(
     chain_id: &ChainId,
     request: &QueryPacketEventDataRequest,
     seq: Sequence,
-    response: ResultTx,
-) -> Option<IbcEvent> {
-    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
+    response: TxResponse,
+) -> Result<Option<IbcEvent>, Error> {
+    let height = ICSHeight::new(chain_id.version(), u64::from(response.height))
+        .map_err(|_| Error::invalid_height_no_source())?;
+
     if let QueryHeight::Specific(query_height) = request.height {
         if height > query_height {
-            return None;
+            return Ok(None);
         }
     }
 
-    response
+    Ok(response
         .tx_result
         .events
         .into_iter()
-        .find_map(|ev| filter_matching_event(ev, request, seq))
+        .find_map(|ev| filter_matching_event(ev, request, seq)))
 }
 
 fn filter_matching_event(
@@ -235,21 +239,46 @@ fn filter_matching_event(
     }
 }
 
-fn all_ibc_events_from_tx_search_response(chain_id: &ChainId, response: ResultTx) -> Vec<IbcEvent> {
-    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
+pub async fn query_tx_response(
+    rpc_client: &HttpClient,
+    rpc_address: &Url,
+    tx_hash: &TxHash,
+) -> Result<Option<TxResponse>, Error> {
+    let response = rpc_client
+        .tx_search(
+            tx_hash_query(&QueryTxHash(*tx_hash)),
+            false,
+            1,
+            1, // get only the first Tx matching the query
+            Order::Ascending,
+        )
+        .await
+        .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
+
+    Ok(response.txs.into_iter().next())
+}
+
+fn all_ibc_events_from_tx_search_response(
+    chain_id: &ChainId,
+    response: TxResponse,
+) -> Vec<IbcEvent> {
+    let height = ICSHeight::new(chain_id.version(), u64::from(response.height)).unwrap();
     let deliver_tx_result = response.tx_result;
+
     if deliver_tx_result.code.is_err() {
-        return vec![IbcEvent::ChainError(format!(
+        // We can only return a single ChainError here because at this point
+        // we have lost information about how many messages were in the transaction
+        vec![IbcEvent::ChainError(format!(
             "deliver_tx for {} reports error: code={:?}, log={:?}",
             response.hash, deliver_tx_result.code, deliver_tx_result.log
-        ))];
-    }
+        ))]
+    } else {
+        let result = deliver_tx_result
+            .events
+            .iter()
+            .flat_map(|event| from_tx_response_event(height, event).into_iter())
+            .collect::<Vec<_>>();
 
-    let mut result = vec![];
-    for event in deliver_tx_result.events {
-        if let Some(ibc_ev) = from_tx_response_event(height, &event) {
-            result.push(ibc_ev);
-        }
+        result
     }
-    result
 }

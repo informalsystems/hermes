@@ -11,9 +11,9 @@ USAGE:
 DESCRIPTION:
     Upgrade an IBC client
 
-FLAGS:
-        --host-chain <HOST_CHAIN_ID>    Identifier of the chain that hosts the client
+REQUIRED:
         --client <CLIENT_ID>            Identifier of the client to be upgraded
+        --host-chain <HOST_CHAIN_ID>    Identifier of the chain that hosts the client
 ```
 
 __Example__

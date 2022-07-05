@@ -102,8 +102,8 @@ impl TryFrom<RawMsgAcknowledgement> for MsgAcknowledgement {
             None,
             raw_msg
                 .proof_height
-                .ok_or_else(Error::missing_height)?
-                .into(),
+                .and_then(|raw_height| raw_height.try_into().ok())
+                .ok_or_else(Error::missing_height)?,
         )
         .map_err(Error::invalid_proof)?;
 

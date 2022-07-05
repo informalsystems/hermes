@@ -104,6 +104,9 @@ define_error! {
                 format!("unexpected query tx response: {}", e.event)
             },
 
+        UpdateClientEventNotFound
+            | _ | { "update client event not found in tx response" },
+
         InvalidChannelState
             {
                 channel_id: ChannelId,

@@ -8,7 +8,7 @@ use ibc_proto::ibc::applications::transfer::v1::MsgTransfer as RawMsgTransfer;
 use tendermint_proto::Protobuf;
 
 use crate::applications::transfer::error::Error;
-use crate::core::ics02_client::height::Height;
+use crate::core::ics04_channel::timeout::TimeoutHeight;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::signer::Signer;
 use crate::timestamp::Timestamp;
@@ -37,7 +37,7 @@ pub struct MsgTransfer<C = Coin> {
     pub receiver: Signer,
     /// Timeout height relative to the current block height.
     /// The timeout is disabled when set to None.
-    pub timeout_height: Option<Height>,
+    pub timeout_height: TimeoutHeight,
     /// Timeout timestamp relative to the current block timestamp.
     /// The timeout is disabled when set to 0.
     pub timeout_timestamp: Timestamp,
@@ -63,13 +63,9 @@ impl TryFrom<RawMsgTransfer> for MsgTransfer {
         let timeout_timestamp = Timestamp::from_nanoseconds(raw_msg.timeout_timestamp)
             .map_err(|_| Error::invalid_packet_timeout_timestamp(raw_msg.timeout_timestamp))?;
 
-        let timeout_height: Option<Height> = raw_msg
-            .timeout_height
-            .map(|raw_height| raw_height.try_into())
-            .transpose()
-            .map_err(|e| {
-                Error::invalid_packet_timeout_height(format!("invalid timeout height {}", e))
-            })?;
+        let timeout_height: TimeoutHeight = raw_msg.timeout_height.try_into().map_err(|e| {
+            Error::invalid_packet_timeout_height(format!("invalid timeout height {}", e))
+        })?;
 
         Ok(MsgTransfer {
             source_port: raw_msg
@@ -97,7 +93,7 @@ impl From<MsgTransfer> for RawMsgTransfer {
             token: Some(domain_msg.token),
             sender: domain_msg.sender.to_string(),
             receiver: domain_msg.receiver.to_string(),
-            timeout_height: domain_msg.timeout_height.map(|height| height.into()),
+            timeout_height: domain_msg.timeout_height.into(),
             timeout_timestamp: domain_msg.timeout_timestamp.nanoseconds(),
         }
     }
@@ -134,17 +130,21 @@ pub mod test_util {
 
     use super::MsgTransfer;
     use crate::bigint::U256;
+    use crate::core::ics04_channel::timeout::TimeoutHeight;
     use crate::signer::Signer;
     use crate::{
         applications::transfer::{BaseCoin, PrefixedCoin},
         core::ics24_host::identifier::{ChannelId, PortId},
         test_utils::get_dummy_bech32_account,
         timestamp::Timestamp,
-        Height,
     };
 
-    // Returns a dummy ICS20 `MsgTransfer`, for testing only!
-    pub fn get_dummy_msg_transfer(height: u64) -> MsgTransfer<PrefixedCoin> {
+    // Returns a dummy ICS20 `MsgTransfer`. If no `timeout_timestamp` is
+    // specified, a timestamp of 10 seconds in the future is used.
+    pub fn get_dummy_msg_transfer(
+        timeout_height: TimeoutHeight,
+        timeout_timestamp: Option<Timestamp>,
+    ) -> MsgTransfer<PrefixedCoin> {
         let address: Signer = get_dummy_bech32_account().as_str().parse().unwrap();
         MsgTransfer {
             source_port: PortId::default(),
@@ -156,11 +156,9 @@ pub mod test_util {
             .into(),
             sender: address.clone(),
             receiver: address,
-            timeout_timestamp: Timestamp::now().add(Duration::from_secs(10)).unwrap(),
-            timeout_height: Some(Height {
-                revision_number: 0,
-                revision_height: height,
-            }),
+            timeout_timestamp: timeout_timestamp
+                .unwrap_or_else(|| Timestamp::now().add(Duration::from_secs(10)).unwrap()),
+            timeout_height,
         }
     }
 }

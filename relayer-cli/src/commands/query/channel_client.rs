@@ -14,12 +14,13 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 /// `query channel client --chain <chain_id> --port <port_id> --channel <channel_id>`
 ///
 /// If successful the channel's client state is displayed.
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct QueryChannelClientCmd {
     #[clap(
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -28,15 +29,17 @@ pub struct QueryChannelClientCmd {
         long = "port",
         required = true,
         value_name = "PORT_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the port to query"
     )]
     port_id: PortId,
 
     #[clap(
         long = "channel",
-        alias = "chan",
+        visible_alias = "chan",
         required = true,
         value_name = "CHANNEL_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the channel to query"
     )]
     channel_id: ChannelId,
@@ -51,10 +54,92 @@ impl Runnable for QueryChannelClientCmd {
 
         match chain.query_channel_client_state(QueryChannelClientStateRequest {
             port_id: self.port_id.clone(),
-            channel_id: self.channel_id,
+            channel_id: self.channel_id.clone(),
         }) {
             Ok(cs) => Output::success(cs).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::QueryChannelClientCmd;
+
+    use std::str::FromStr;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+
+    #[test]
+    fn test_query_channel_client() {
+        assert_eq!(
+            QueryChannelClientCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                port_id: PortId::from_str("port_id").unwrap(),
+                channel_id: ChannelId::from_str("channel-07").unwrap()
+            },
+            QueryChannelClientCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--port",
+                "port_id",
+                "--channel",
+                "channel-07"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_channel_client_chan_alias() {
+        assert_eq!(
+            QueryChannelClientCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                port_id: PortId::from_str("port_id").unwrap(),
+                channel_id: ChannelId::from_str("channel-07").unwrap()
+            },
+            QueryChannelClientCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--port",
+                "port_id",
+                "--chan",
+                "channel-07"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_channel_client_no_chan() {
+        assert!(QueryChannelClientCmd::try_parse_from(&[
+            "test", "--chain", "chain_id", "--port", "port_id"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_query_channel_client_no_port() {
+        assert!(QueryChannelClientCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_id",
+            "--channel",
+            "channel-07"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_query_channel_client_no_chain() {
+        assert!(QueryChannelClientCmd::try_parse_from(&[
+            "test",
+            "--port",
+            "port_id",
+            "--channel",
+            "channel-07"
+        ])
+        .is_err())
     }
 }

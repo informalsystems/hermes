@@ -100,7 +100,7 @@ Follow the steps below to connect three chains together and relay packets betwee
    making an exception. Execute the following command:
 
     ```shell
-    hermes create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --new-client-conn
+    hermes create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --new-client-connection
     ```
 
     Then respond 'yes' to the prompt that pops up. Once the command has run to
@@ -166,7 +166,7 @@ Follow the steps below to connect three chains together and relay packets betwee
    previous invocation we used to create a channel between `ibc-0` and `ibc-1`:
 
     ```shell
-    hermes create channel --a-chain ibc-1 --b-chain ibc-2 --a-port transfer --b-port transfer --new-client-conn
+    hermes create channel --a-chain ibc-1 --b-chain ibc-2 --a-port transfer --b-port transfer --new-client-connection
     ```
 
     ```json
