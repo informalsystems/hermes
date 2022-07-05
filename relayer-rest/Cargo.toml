@@ -23,6 +23,6 @@ serde             = "1.0"
 tracing           = "0.1"
 
 [dev-dependencies]
-serde_json = "1.0.81"
+serde_json = "1.0.82"
 toml       = "0.5.9"
 ureq       = "2.4.0"
