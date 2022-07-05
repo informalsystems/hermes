@@ -2,17 +2,10 @@
 
 ## Prerequisites
 
-- gaiad `(v4.2.*)`, for example:
+- gaiad `(v7.0.*)`, for example:
 
 ```shell
 gaiad version --log_level error --long | head -n4
-```
-
-```shell
-name: gaia
-server_name: gaiad
-version: v4.2.0
-commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
 ```
 
 ## Testing procedure
@@ -24,7 +17,7 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
   add_to_hermes = false
   auto_maintain_config = true
   extra_wallets = 2
-  gaiad_binary = "$HOME/.go/bin/gaiad"
+  gaiad_binary = "$GOPATH/bin/gaiad"
   hdpath = ""
   home_dir = "$HOME/.gm"
   ports_start_at = 27040
@@ -99,19 +92,15 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
 
  3. Verify that the proposal was accepted:
 
-    Query the upgrade plan to check that it was submitted correctly. Note the `height` at which the proposal will take effect (chain halts). Also `status: PROPOSAL_STATUS_VOTING_PERIOD`.
-
-    Setup done with dev-env:
-
-    ```shell
-    gaiad query gov proposal 1 --home data/ibc-0/
-    ```
-
-    Setup done with gm:
+    Query the upgrade plan to check that it was submitted correctly.
 
     ```shell
     gaiad --node tcp://localhost:<RPC PORT> query gov proposal 1 --home $HOME/.gm/ibc-0/
     ```
+
+    If successful, you should see output like this. Note that the status of the proposal near the bottom of the output should be
+    `PROPOSAL_STATUS_VOTING_PERIOD` indicating that the voting period is still ongoing. Because we changed the `voting_period`
+    parameter earlier to 200 seconds, we'll need to wait at least that long before we see the proposal take effect.
 
     ```text
     content:
@@ -199,13 +188,6 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
     The parameter `1` should match the `proposal_id:` from the upgrade proposal submitted at step 3.
     This command must be issued while the proposal status is `PROPOSAL_STATUS_VOTING_PERIOD`. Confirm transaction when prompted.
 
-    Setup done with dev-env:
-
-    ```shell
-    gaiad tx gov vote 1 yes --home data/ibc-0/data/ --keyring-backend test --keyring-dir data/ibc-0/ --chain-id ibc-0 --from validator
-    ```
-    Setup done with gm:
-
     ```shell
     gaiad --node tcp://localhost:<RPC PORT> tx gov vote 1 yes --home $HOME/.gm/ibc-0/data/ --keyring-backend test --keyring-dir $HOME/.gm/ibc-0/ --chain-id ibc-0 --from validator
     ```
@@ -218,13 +200,6 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
 
   5. Wait approximately 200 seconds until the proposal changes status to `PROPOSAL_STATUS_PASSED`.
      Note the `final tally_result` that includes the vote submitted in the previous step.
-
-     Setup done with dev-env
-
-     ```shell
-     gaiad query gov proposal 1 --home data/ibc-0/
-     ```
-     Setup done with gm:
 
       ```shell
       gaiad --node tcp://localhost:<RPC PORT> query gov proposal 1 --home $HOME/.gm/ibc-0/
@@ -256,8 +231,7 @@ commit: 535be14a8bdbfeb0d950914b5baa2dc72c6b081c
     and another for the upgraded state.
 
     ```shell
-    hermes upgrade client --host-chain ibc-1 --client 07-tendermint-0
-    --upgrade-height 0-440
+    hermes upgrade client --host-chain ibc-1 --client 07-tendermint-0 --upgrade-height 0-335
     ```
     ```json
     Success: [

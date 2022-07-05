@@ -15,6 +15,7 @@ use ibc_relayer::chain::requests::{
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::{CreateOptions, ForeignClient};
 use tendermint_light_client_verifier::types::TrustThreshold;
+use tracing::info;
 
 use crate::application::app_config;
 use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic, ChainHandlePair};
@@ -263,6 +264,11 @@ impl Runnable for TxUpgradeClientCmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
+        info!(
+            "Source application latest height: {}",
+            src_application_latest_height
+        );
+
         // Wait until the client's application height reaches the target application upgrade height
         while src_application_latest_height < target_application_upgrade_height {
             thread::sleep(Duration::from_millis(500));
@@ -271,6 +277,11 @@ impl Runnable for TxUpgradeClientCmd {
                 Ok(height) => height,
                 Err(e) => Output::error(format!("{}", e)).exit(),
             };
+
+            info!(
+                "Source application latest height: {}",
+                src_application_latest_height
+            );
         }
 
         let outcome = client.upgrade(self.target_upgrade_height);
