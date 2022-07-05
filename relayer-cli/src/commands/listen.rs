@@ -27,12 +27,7 @@ impl EventFilter {
     pub fn matches(&self, event: &IbcEvent) -> bool {
         match self {
             EventFilter::NewBlock => matches!(event, IbcEvent::NewBlock(_)),
-            EventFilter::Tx => {
-                !(matches!(
-                    event,
-                    IbcEvent::NewBlock(_) | IbcEvent::Empty(_) | IbcEvent::ChainError(_)
-                ))
-            }
+            EventFilter::Tx => !(matches!(event, IbcEvent::NewBlock(_) | IbcEvent::ChainError(_))),
         }
     }
 }
