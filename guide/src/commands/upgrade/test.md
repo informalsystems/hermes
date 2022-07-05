@@ -25,7 +25,7 @@ gaiad version --log_level error --long | head -n4
   wallet_mnemonic = ""
 
   [global.hermes]
-    binary = "$HOME/.hermes/bin/hermes"
+    binary = "<path/to/hermes>"
     config = "$HOME/.hermes/config.toml"
     log_level = "info"
     telemetry_enabled = true
@@ -37,16 +37,6 @@ gaiad version --log_level error --long | head -n4
 
 [ibc-1]
   ports_start_at = 27010
-
-[node1]
-  add_to_hermes = true
-  network = "ibc-0"
-  ports_start_at = 27020
-
-[node2]
-  add_to_hermes = true
-  network = "ibc-1"
-  ports_start_at = 27030
 ```
 * Run the command `gm start`
 * Go to the file `$HOME/.gm/ibc-0/config/genesis.json` and change `max_deposit_period` and `voting_period` to a lower value, such as 200s
