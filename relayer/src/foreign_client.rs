@@ -448,7 +448,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .map_err(|_| {
                 ForeignClientError::client_upgrade_no_source(
                     self.id.clone(),
-                    self.src_chain.id(),
+                    self.dst_chain.id(),
                     format!(
                         "is chain {} halted at height {}?",
                         self.src_chain().id(),

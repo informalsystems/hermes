@@ -300,6 +300,11 @@ impl Runnable for TxUpgradeClientCmd {
             );
         }
 
+        // sdk chains don't immediately update their stores after halting (at
+        // least, as seen by the query interface). Sleep to avoid a race
+        // condition with the chain 
+        thread::sleep(Duration::from_millis(6000));
+
         let outcome = client.upgrade(reference_upgrade_height);
 
         match outcome {
@@ -371,6 +376,11 @@ impl Runnable for TxUpgradeClientsCmd {
                 reference_application_latest_height
             );
         }
+        
+        // sdk chains don't immediately update their stores after halting (at
+        // least, as seen by the query interface). Sleep to avoid a race
+        // condition with the chain 
+        thread::sleep(Duration::from_millis(6000));
 
         let results = config
             .chains
@@ -381,7 +391,7 @@ impl Runnable for TxUpgradeClientsCmd {
                         &config,
                         reference_chain.clone(),
                         &chain.id,
-                        &reference_upgrade_height,
+                        reference_upgrade_height,
                     )
                 })
             })
@@ -401,7 +411,7 @@ impl TxUpgradeClientsCmd {
         config: &Config,
         reference_chain: Chain,
         host_chain_id: &ChainId,
-        reference_upgrade_height: &Height,
+        reference_upgrade_height: Height,
     ) -> UpgradeClientsForChainResult {
         let host_chain = spawn_chain_runtime_generic::<Chain>(config, host_chain_id)?;
 
@@ -432,12 +442,12 @@ impl TxUpgradeClientsCmd {
         client_id: ClientId,
         host_chain: Chain,
         reference_chain: Chain,
-        reference_upgrade_height: &Height,
+        reference_upgrade_height: Height,
     ) -> Result<Vec<IbcEvent>, Error> {
         let client = ForeignClient::restore(client_id, host_chain, reference_chain);
 
         client
-            .upgrade(*reference_upgrade_height)
+            .upgrade(reference_upgrade_height)
             .map_err(Error::foreign_client)
     }
 }
