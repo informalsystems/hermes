@@ -276,14 +276,66 @@ continue to use the `Any` type for such fields and defer the validation to the h
 
 ### Light client specific code
 
-A sizeable amount of light client specific code exists in the `ibc` crate exists today that is only used by `hermes`.
+A sizeable amount of light client specific code exists in the `ibc` crate today that is only used by `hermes`.
 For e.g. helper functions that extract `IbcEvent`s from `tendermint::abci::Event`s (i.e. `from_tx_response_event()`).
+It should be fairly straightforward to move such code into the `ibc-relayer` crate.
 
 There are cases where core types depend on light client types, for e.g. `ics02_client::Error`
-uses `ics07_tendermint::Error`s in some of its variants.
+uses `ics07_tendermint::Error`s in some of its variants ->
 
-Additionally, some of that code might be helpful for host implementations, for e.g. event conversions
-to/from `tendermint::abci::Event` are required for `deliverTx` implementation.
+```rust
+use crate::clients::ics07_tendermint::error::Error as Ics07Error;
+
+define_error! {
+    #[derive(Debug, PartialEq, Eq)]
+    Error {
+        /* ... */
+    
+        Tendermint
+            [ Ics07Error ]
+            | _ | { "tendermint error" },
+
+        TendermintHandlerError
+            [ Ics07Error ]
+            | _ | { format_args!("Tendermint-specific handler error") },
+
+        /* ... */
+    }
+}
+```
+
+A `ClientSpecific` variant can be provided as a workaround with an accompanying `From<Ics07Error>` impl (for ease of
+use) ->
+
+```rust
+// modules/src/core/ics02_client/error.rs
+define_error! {
+    #[derive(Debug, PartialEq, Eq)]
+    Error {
+        /* ... */
+    
+        ClientSpecific
+            { description: String }
+            | e | { format_args!("client specific error: {0}", e.description) },
+    
+        /* ... */
+    }
+}
+```
+
+```rust
+// modules/src/clients/ics07_tendermint/error.rs
+impl From<Ics07Error> for Ics02Error {
+    fn from(e: Ics07Error) -> Self {
+        Self::client_specific(e.to_string())
+    }
+}
+```
+
+Additionally, some of that code might be helpful for host implementations, for e.g. event conversions from `IbcEvent`
+to `tendermint::abci::Event` are required for `deliverTx` implementation. Note that code such as this does not lead to
+the circular dependency problem that this ADR attempts to address and therefore can continue to live in the `ibc` crate;
+although ideally it should not.
 
 It is recommended that most client specific code is moved either to the `ibc-relayer` crate or the light client crates
 and issues of this kind be dealt with on a case-by-case basis.
