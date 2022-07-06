@@ -264,7 +264,7 @@ impl Runnable for TxUpgradeClientCmd {
         // the user. When the chain is paused, the application height reports a height of 1 less
         // than the height according to Tendermint. As a result, the target height at which the
         // upgrade occurs at (the application height) is 1 less than the height specified by
-        // the user, hence the strictly less-than check in the while loop.
+        // the user, hence the decrement of the upgrade height.
         let reference_upgrade_height = Height::new(
             client.src_chain().id().version(),
             self.reference_upgrade_height,

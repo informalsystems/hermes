@@ -68,10 +68,10 @@ gaiad version --log_level error --long | head -n4
 2. Create and submit an upgrade plan for chain `ibc-0`:
 
     Use the hermes test command to make an upgrade proposal. In the example below a software upgrade proposal is made for `ibc-0`, for the height `300` blocks from latest height. `10000000stake` is deposited.
-    The proposal includes the upgraded client state constructed from the state of `07-tendermint-0` client on `ibc-1` that was created in the previous step. In addition, the `unbonding_period` of the client is set to some new value (`400h`)
+    The proposal includes the upgraded client state constructed from the state of `07-tendermint-0` client on `ibc-1` that was created in the previous step.
 
     ```shell
-    hermes tx raw upgrade-chain --dst-chain ibc-0 --src-chain ibc-1 --src-client 07-tendermint-0 --amount 10000000 --height-offset 300
+    hermes tx raw upgrade-chain --dst-chain ibc-0 --src-chain ibc-1 --src-client 07-tendermint-0 --amount 10000000 --height-offset 60
     ```
 
     ```text
@@ -86,7 +86,7 @@ gaiad version --log_level error --long | head -n4
      > `gm ports` in order to see a list of the ports being used.
 
     ```shell
-    gaiad --node tcp://localhost:<RPC PORT> query gov proposal 1 --home $HOME/.gm/ibc-0/
+    gaiad --node tcp://localhost:27000 query gov proposal 1 --home $HOME/.gm/ibc-0/
     ```
 
     If successful, you should see output like this. Note that the status of the proposal near the bottom of the output should be
@@ -95,70 +95,71 @@ gaiad version --log_level error --long | head -n4
 
     ```text
     content:
-      '@type': /cosmos.upgrade.v1beta1.SoftwareUpgradeProposal
+      '@type': /ibc.core.client.v1.UpgradeProposal
       description: upgrade the chain software and unbonding period
       plan:
-        height: "332"
-        info: upgrade the chain software and unbonding period
-        name: test
+        height: "65"
+        info: ""
+        name: plan
         time: "0001-01-01T00:00:00Z"
-        upgraded_client_state:
-          '@type': /ibc.lightclients.tendermint.v1.ClientState
-          allow_update_after_expiry: true
-          allow_update_after_misbehaviour: true
-          chain_id: ibc-0
-          frozen_height:
-            revision_height: "0"
-            revision_number: "0"
-          latest_height:
-            revision_height: "333"
-            revision_number: "0"
-          max_clock_drift: 0s
-          proof_specs:
-          - inner_spec:
-              child_order:
-              - 0
-              - 1
-              child_size: 33
-              empty_child: null
-              hash: SHA256
-              max_prefix_length: 12
-              min_prefix_length: 4
-            leaf_spec:
-              hash: SHA256
-              length: VAR_PROTO
-              prefix: AA==
-              prehash_key: NO_HASH
-              prehash_value: SHA256
-            max_depth: 0
-            min_depth: 0
-          - inner_spec:
-              child_order:
-              - 0
-              - 1
-              child_size: 32
-              empty_child: null
-              hash: SHA256
-              max_prefix_length: 1
-              min_prefix_length: 1
-            leaf_spec:
-              hash: SHA256
-              length: VAR_PROTO
-              prefix: AA==
-              prehash_key: NO_HASH
-              prehash_value: SHA256
-            max_depth: 0
-            min_depth: 0
-          trust_level:
-            denominator: "0"
-            numerator: "0"
-          trusting_period: 0s
-          unbonding_period: 1440000s
-          upgrade_path:
-          - upgrade
-          - upgradedIBCState
-      title: upgrade_ibc_clients
-    deposit_end_time: "2021-04-12T16:33:37.187389Z"
+        upgraded_client_state: null
+      title: proposal 0
+      upgraded_client_state:
+        '@type': /ibc.lightclients.tendermint.v1.ClientState
+        allow_update_after_expiry: false
+        allow_update_after_misbehaviour: false
+        chain_id: ibc-0
+        frozen_height:
+          revision_height: "0"
+          revision_number: "0"
+        latest_height:
+          revision_height: "66"
+          revision_number: "0"
+        max_clock_drift: 0s
+        proof_specs:
+        - inner_spec:
+            child_order:
+            - 0
+            - 1
+            child_size: 33
+            empty_child: null
+            hash: SHA256
+            max_prefix_length: 12
+            min_prefix_length: 4
+          leaf_spec:
+            hash: SHA256
+            length: VAR_PROTO
+            prefix: AA==
+            prehash_key: NO_HASH
+            prehash_value: SHA256
+          max_depth: 0
+          min_depth: 0
+        - inner_spec:
+            child_order:
+            - 0
+            - 1
+            child_size: 32
+            empty_child: null
+            hash: SHA256
+            max_prefix_length: 1
+            min_prefix_length: 1
+          leaf_spec:
+            hash: SHA256
+            length: VAR_PROTO
+            prefix: AA==
+            prehash_key: NO_HASH
+            prehash_value: SHA256
+          max_depth: 0
+          min_depth: 0
+        trust_level:
+          denominator: "0"
+          numerator: "0"
+        trusting_period: 0s
+        unbonding_period: 1814400s
+        upgrade_path:
+        - upgrade
+        - upgradedIBCState
+    deposit_end_time: "2022-07-06T15:14:38.993051Z"
     final_tally_result:
       abstain: "0"
       "no": "0"
@@ -166,12 +167,12 @@ gaiad version --log_level error --long | head -n4
       "yes": "0"
     proposal_id: "1"
     status: PROPOSAL_STATUS_VOTING_PERIOD
-    submit_time: "2021-04-12T16:30:17.187389Z"
+    submit_time: "2022-07-06T15:12:38.993051Z"
     total_deposit:
     - amount: "10000000"
       denom: stake
-    voting_end_time: "2021-04-12T16:33:37.187389Z"
-    voting_start_time: "2021-04-12T16:30:17.187389Z"
+    voting_end_time: "2022-07-06T15:14:38.993051Z"
+    voting_start_time: "2022-07-06T15:12:38.993051Z"
     ```
 
  4. Vote on the proposal
@@ -180,7 +181,7 @@ gaiad version --log_level error --long | head -n4
     This command must be issued while the proposal status is `PROPOSAL_STATUS_VOTING_PERIOD`. Confirm transaction when prompted.
 
     ```shell
-    gaiad --node tcp://localhost:<RPC PORT> tx gov vote 1 yes --home $HOME/.gm/ibc-0/data/ --keyring-backend test --keyring-dir $HOME/.gm/ibc-0/ --chain-id ibc-0 --from validator
+    gaiad --node tcp://localhost:27000 tx gov vote 1 yes --home $HOME/.gm/ibc-0/data/ --keyring-backend test --keyring-dir $HOME/.gm/ibc-0/ --chain-id ibc-0 --from validator
     ```
 
     ```text
@@ -193,7 +194,7 @@ gaiad version --log_level error --long | head -n4
      Note the `final tally_result` that includes the vote submitted in the previous step.
 
       ```shell
-      gaiad --node tcp://localhost:<RPC PORT> query gov proposal 1 --home $HOME/.gm/ibc-0/
+      gaiad --node tcp://localhost:27000 query gov proposal 1 --home $HOME/.gm/ibc-0/
       ```
 
      ```text
@@ -220,10 +221,10 @@ gaiad version --log_level error --long | head -n4
 
     The following command performs the upgrade for client `07-tendermint-0`. It outputs two events, one for the updated client state,
     and another for the upgraded state.  
-    The `--upgrade-height 332` value is taken from the `height` in the upgrade plan output.
+    The `--upgrade-height 65` value is taken from the `height` in the upgrade plan output.
 
     ```shell
-    hermes upgrade client --host-chain ibc-1 --client 07-tendermint-0 --upgrade-height 332
+    hermes upgrade client --host-chain ibc-1 --client 07-tendermint-0 --upgrade-height 65
     ```
     ```json
     Success: [
