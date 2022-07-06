@@ -300,6 +300,11 @@ impl Runnable for TxUpgradeClientCmd {
             );
         }
 
+        // sdk chains don't immediately update their stores after halting (at
+        // least, as seen by the query interface). Sleep to avoid a race
+        // condition with the chain 
+        thread::sleep(Duration::from_millis(6000));
+
         let outcome = client.upgrade(reference_upgrade_height);
 
         match outcome {
@@ -371,6 +376,11 @@ impl Runnable for TxUpgradeClientsCmd {
                 reference_application_latest_height
             );
         }
+        
+        // sdk chains don't immediately update their stores after halting (at
+        // least, as seen by the query interface). Sleep to avoid a race
+        // condition with the chain 
+        thread::sleep(Duration::from_millis(6000));
 
         let results = config
             .chains
