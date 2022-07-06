@@ -217,25 +217,23 @@ pub fn process(
 
     let client_def = AnyClient::from_client_type(client_type);
 
-    let client_state = ctx.client_state(&client_id)?;
-
     /* ... */
 }
 ```
 
 This is problematic because it means the module code must be aware of a `ClientType` -> `ClientDef` mapping. This can be
-solved by requiring the `ClientState` trait to provide us with its `ClientDef` implementation.
+solved by requiring the `ClientReader` trait to provide us with its `ClientDef` implementation.
 
 ```rust
-pub trait ClientState {
-    /// Return the associated `ClientDef` implementation
-    fn client_def(&self) -> Box<dyn ClientDef>;
+pub trait ClientReader {
+    /// Return the `ClientDef` implementation for the client with specified `ClientId`
+    fn client_def(&self, client_id: &ClientId) -> Box<dyn ClientDef>;
 
     /* ... */
 }
 ```
 
-Now, we can use the `ClientState` instance to get the `ClientDef` implementation ->
+Now, we can use the `ClientReader` to get the `ClientDef` implementation for a particular `ClientId` ->
 
 ```rust
 pub fn process(
@@ -244,9 +242,7 @@ pub fn process(
 ) -> HandlerResult<ClientResult, Error> {
     /* ... */
 
-    let client_state = ctx.client_state(&client_id)?;
-
-    let client_def = client_state.client_def();
+    let client_def = ctx.client_def(&client_id);
 
     /* ... */
 }
