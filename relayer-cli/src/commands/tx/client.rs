@@ -230,12 +230,12 @@ impl Runnable for TxUpgradeClientCmd {
     fn run(&self) {
         let config = app_config();
 
-        let reference_chain = match spawn_chain_runtime(&config, &self.chain_id) {
+        let host_chain = match spawn_chain_runtime(&config, &self.chain_id) {
             Ok(handle) => handle,
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
-        let host_chain_id = match reference_chain.query_client_state(
+        let reference_chain_id = match host_chain.query_client_state(
             QueryClientStateRequest {
                 client_id: self.client_id.clone(),
                 height: QueryHeight::Latest,
@@ -252,48 +252,54 @@ impl Runnable for TxUpgradeClientCmd {
             }
         };
 
-        let host_chain = match spawn_chain_runtime(&config, &host_chain_id) {
+        let reference_chain = match spawn_chain_runtime(&config, &reference_chain_id) {
             Ok(handle) => handle,
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
-        let reference_upgrade_height =
-            Height::new(host_chain.id().version(), self.reference_upgrade_height)
-                .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let client = ForeignClient::find(host_chain, reference_chain, &self.client_id)
+        let client = ForeignClient::find(reference_chain, host_chain, &self.client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
-
-        let mut host_application_latest_height = match client.src_chain().query_latest_height() {
-            Ok(height) => height,
-            Err(e) => Output::error(format!("{}", e)).exit(),
-        };
-
-        info!(
-            "Host application latest height: {}",
-            host_application_latest_height
-        );
 
         // In order to perform the client upgrade, the chain is paused at the height specified by
         // the user. When the chain is paused, the application height reports a height of 1 less
         // than the height according to Tendermint. As a result, the target height at which the
         // upgrade occurs at (the application height) is 1 less than the height specified by
         // the user, hence the strictly less-than check in the while loop.
-        while host_application_latest_height != reference_upgrade_height {
+        let reference_upgrade_height =
+            Height::new(client.src_chain().id().version(), self.reference_upgrade_height)
+                .unwrap_or_else(exit_with_unrecoverable_error);
+        let target_reference_application_latest_height = reference_upgrade_height.decrement()
+                .expect("Upgrade height cannot be 1");
+
+        let mut reference_application_latest_height = match client.src_chain().query_latest_height()
+        {
+            Ok(height) => height,
+            Err(e) => Output::error(format!("{}", e)).exit(),
+        };
+
+        info!(
+            "Reference application latest height: {}",
+            reference_application_latest_height
+        );
+
+        while reference_application_latest_height
+            != target_reference_application_latest_height
+        {
             thread::sleep(Duration::from_millis(500));
 
-            host_application_latest_height = match client.src_chain().query_latest_height() {
+            reference_application_latest_height = match client.src_chain().query_latest_height() {
                 Ok(height) => height,
                 Err(e) => Output::error(format!("{}", e)).exit(),
             };
 
             info!(
-                "Host application latest height: {}",
-                host_application_latest_height
+                "Reference application latest height: {}",
+                reference_application_latest_height
             );
         }
 
-        let outcome = client.upgrade(host_application_latest_height);
+        let outcome = client.upgrade(reference_upgrade_height);
 
         match outcome {
             Ok(receipt) => Output::success(receipt).exit(),
