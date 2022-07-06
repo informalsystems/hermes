@@ -40,7 +40,7 @@ Follow the steps below to connect three chains together and relay packets betwee
     store_prefix = 'ibc'
     max_gas = 2000000
     gas_price = { price = 0.001, denom = 'stake' }
-    gas_adjustment = 0.1
+    gas_multiplier = 1.0
     clock_drift = '5s'
     trusting_period = '14days'
     trust_threshold = { numerator = '1', denominator = '3' }
@@ -56,7 +56,7 @@ Follow the steps below to connect three chains together and relay packets betwee
     store_prefix = 'ibc'
     max_gas = 2000000
     gas_price = { price = 0.001, denom = 'stake' }
-    gas_adjustment = 0.1
+    gas_multiplier = 1.0
     clock_drift = '5s'
     trusting_period = '14days'
     trust_threshold = { numerator = '1', denominator = '3' }
@@ -72,7 +72,7 @@ Follow the steps below to connect three chains together and relay packets betwee
     store_prefix = 'ibc'
     max_gas = 2000000
     gas_price = { price = 0.001, denom = 'stake' }
-    gas_adjustment = 0.1
+    gas_multiplier = 1.0
     clock_drift = '5s'
     trusting_period = '14days'
     trust_threshold = { numerator = '1', denominator = '3' }
@@ -100,7 +100,7 @@ Follow the steps below to connect three chains together and relay packets betwee
    making an exception. Execute the following command:
 
     ```shell
-    hermes create channel ibc-0 --chain-b ibc-1 --port-a transfer --port-b transfer --new-client-connection
+    hermes create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --new-client-connection
     ```
 
     Then respond 'yes' to the prompt that pops up. Once the command has run to
@@ -166,7 +166,7 @@ Follow the steps below to connect three chains together and relay packets betwee
    previous invocation we used to create a channel between `ibc-0` and `ibc-1`:
 
     ```shell
-    hermes create channel ibc-1 --chain-b ibc-2 --port-a transfer --port-b transfer --new-client-connection
+    hermes create channel --a-chain ibc-1 --b-chain ibc-2 --a-port transfer --b-port transfer --new-client-connection
     ```
 
     ```json
@@ -239,7 +239,7 @@ Follow the steps below to connect three chains together and relay packets betwee
     - Two packets from `ibc-0` to `ibc-1` from source channel `channel-0`
 
       ```shell
-      hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 2
+      hermes tx raw ft-transfer --dst-chain ibc-1 --src-chain ibc-0 --src-port transfer --src-chan channel-0 --amount 9999 --timeout-height-offset 1000 --number-msgs 2
       ```
 
       ```json
@@ -262,7 +262,7 @@ Follow the steps below to connect three chains together and relay packets betwee
     - Two packets from `ibc-1` to `ibc-2` from source channel `channel-1`
 
       ```shell
-      hermes tx raw ft-transfer ibc-2 ibc-1 transfer channel-1 9999 -o 1000 -n 2
+      hermes tx raw ft-transfer --dst-chain ibc-2 --src-chain ibc-1 --src-port transfer --src-chan channel-1 --amount 9999 --timeout-height-offset 1000 --number-msgs 2
       ```
 
       ```json
@@ -315,10 +315,10 @@ Follow the steps below to connect three chains together and relay packets betwee
 8. Query the unreceived packets and acknowledgments on `ibc-1` and `ibc-2` from a different terminal:
 
     ```shell
-    hermes query packet unreceived-packets ibc-1 transfer channel-0
-    hermes query packet unreceived-acks ibc-0 transfer channel-0
-    hermes query packet unreceived-packets ibc-2 transfer channel-0
-    hermes query packet unreceived-acks ibc-1 transfer channel-1
+    hermes query packet unreceived-packets --chain ibc-1 --port transfer --channel channel-0
+    hermes query packet unreceived-acks --chain ibc-0 --port transfer --channel channel-0
+    hermes query packet unreceived-packets --chain ibc-2 --port transfer --channel channel-0
+    hermes query packet unreceived-acks --chain ibc-1 --port transfer --channel channel-1
     ```
 
     If everything went well, each of these commands should result in:

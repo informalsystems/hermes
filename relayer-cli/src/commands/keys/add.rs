@@ -22,48 +22,60 @@ use crate::conclude::Output;
 ///
 /// The command to add a key from a file:
 ///
-/// `keys add [OPTIONS] --key-file <KEY_FILE> <CHAIN_ID>`
+/// `keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>`
 ///
 /// The command to restore a key from a file containing mnemonic:
 ///
-/// `keys add [OPTIONS] --mnemonic-file <MNEMONIC_FILE> <CHAIN_ID>`
+/// `keys add [OPTIONS] --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>`
 ///
 /// The key-file and mnemonic-file flags can't be given at the same time, this will cause a terminating error.
 /// If successful the key will be created or restored, depending on which flag was given.
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[clap(
+    override_usage = "hermes keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>
+
+    hermes keys add [OPTIONS] --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>"
+)]
 pub struct KeysAddCmd {
-    #[clap(required = true, help = "identifier of the chain")]
+    #[clap(
+        long = "chain",
+        required = true,
+        help_heading = "FLAGS",
+        help = "Identifier of the chain"
+    )]
     chain_id: ChainId,
 
     #[clap(
-        short = 'f',
-        long,
+        long = "key-file",
         required = true,
-        help = "path to the key file",
+        value_name = "KEY_FILE",
+        help_heading = "FLAGS",
+        help = "Path to the key file",
         group = "add-restore"
     )]
     key_file: Option<PathBuf>,
 
     #[clap(
-        short,
-        long,
+        long = "mnemonic-file",
         required = true,
-        help = "path to file containing mnemonic to restore the key from",
+        value_name = "MNEMONIC_FILE",
+        help_heading = "FLAGS",
+        help = "Path to file containing mnemonic to restore the key from",
         group = "add-restore"
     )]
     mnemonic_file: Option<PathBuf>,
 
     #[clap(
-        short,
-        long,
-        help = "name of the key (defaults to the `key_name` defined in the config)"
+        long = "key-name",
+        value_name = "KEY_NAME",
+        help = "Name of the key (defaults to the `key_name` defined in the config)"
     )]
     key_name: Option<String>,
 
     #[clap(
-        short = 'p',
-        long,
-        help = "derivation path for this key",
+        long = "hd-path",
+        value_name = "HD_PATH",
+        help = "Derivation path for this key",
         default_value = "m/44'/118'/0'/0/0"
     )]
     hd_path: String,
@@ -107,7 +119,7 @@ impl Runnable for KeysAddCmd {
             Ok(result) => result,
         };
 
-        // Check if --file or --mnemonic was given as input.
+        // Check if --key-file or --mnemonic-file was given as input.
         match (self.key_file.clone(), self.mnemonic_file.clone()) {
             (Some(key_file), _) => {
                 let key = add_key(&opts.config, &opts.name, &key_file, &opts.hd_path);
@@ -143,7 +155,10 @@ impl Runnable for KeysAddCmd {
             // This case should never trigger.
             // The 'required' parameter for the flags will trigger an error if both flags have not been given.
             // And the 'group' parameter for the flags will trigger an error if both flags are given.
-            _ => Output::error("--mnemonic-file and --key-file can't both be None").exit(),
+            _ => Output::error(
+                "--mnemonic-file and --key-file can't both be set or both None".to_string(),
+            )
+            .exit(),
         }
     }
 }
@@ -177,4 +192,72 @@ pub fn restore_key(
 
     keyring.add_key(key_name, key_entry.clone())?;
     Ok(key_entry)
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::KeysAddCmd;
+    use std::path::PathBuf;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::ChainId;
+
+    #[test]
+    fn test_keys_add_key_file() {
+        assert_eq!(
+            KeysAddCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                key_file: Some(PathBuf::from("key_file")),
+                mnemonic_file: None,
+                key_name: None,
+                hd_path: "m/44'/118'/0'/0/0".to_string()
+            },
+            KeysAddCmd::parse_from(&["test", "--chain", "chain_id", "--key-file", "key_file"])
+        )
+    }
+
+    #[test]
+    fn test_keys_add_mnemonic_file() {
+        assert_eq!(
+            KeysAddCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                key_file: None,
+                mnemonic_file: Some(PathBuf::from("mnemonic_file")),
+                key_name: None,
+                hd_path: "m/44'/118'/0'/0/0".to_string()
+            },
+            KeysAddCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--mnemonic-file",
+                "mnemonic_file"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_keys_add_no_file_nor_mnemonic() {
+        assert!(KeysAddCmd::try_parse_from(&["test", "--chain", "chain_id"]).is_err());
+    }
+
+    #[test]
+    fn test_keys_add_key_and_mnemonic() {
+        assert!(KeysAddCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_id",
+            "--key-file",
+            "key_file",
+            "--mnemonic-file",
+            "mnemonic_file"
+        ])
+        .is_err());
+    }
+
+    #[test]
+    fn test_keys_add_no_chain() {
+        assert!(KeysAddCmd::try_parse_from(&["test", "--key-file", "key_file"]).is_err());
+    }
 }

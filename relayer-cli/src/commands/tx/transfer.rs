@@ -26,64 +26,77 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxIcs20MsgTransferCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        long = "dst-chain",
+        required = true,
+        help = "Identifier of the destination chain"
+    )]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(
+        long = "src-chain",
+        required = true,
+        help = "Identifier of the source chain"
+    )]
     src_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source port")]
+    #[clap(
+        long = "src-port",
+        required = true,
+        help = "Identifier of the source port"
+    )]
     src_port_id: PortId,
 
-    #[clap(required = true, help = "identifier of the source channel")]
+    #[clap(
+        long = "src-channel",
+        alias = "src-chan",
+        required = true,
+        help = "Identifier of the source channel"
+    )]
     src_channel_id: ChannelId,
 
     #[clap(
+        long = "amount",
         required = true,
-        help = "amount of coins (samoleans, by default) to send (e.g. `100000`)"
+        help = "Amount of coins (samoleans, by default) to send (e.g. `100000`)"
     )]
     amount: Amount,
 
     #[clap(
-        short = 'o',
-        long,
+        long = "timeout-height-offset",
         default_value = "0",
-        help = "timeout in number of blocks since current"
+        help = "Timeout in number of blocks since current"
     )]
     timeout_height_offset: u64,
 
     #[clap(
-        short = 't',
-        long,
+        long = "timeout-seconds",
         default_value = "0",
-        help = "timeout in seconds since current"
+        help = "Timeout in seconds since current"
     )]
     timeout_seconds: u64,
 
     #[clap(
-        short = 'r',
-        long,
-        help = "receiving account address on the destination chain"
+        long = "receiver",
+        help = "Receiving account address on the destination chain"
     )]
     receiver: Option<String>,
 
     #[clap(
-        short = 'd',
-        long,
-        help = "denomination of the coins to send",
+        long = "denom",
+        help = "Denomination of the coins to send",
         default_value = "samoleans"
     )]
     denom: String,
 
-    #[clap(short = 'n', long, help = "number of messages to send")]
+    #[clap(long = "number-msgs", help = "Number of messages to send")]
     number_msgs: Option<usize>,
 
     #[clap(
-        short = 'k',
-        long,
-        help = "use the given signing key (default: `key_name` config)"
+        long = "key-name",
+        help = "Use the given signing key name (default: `key_name` config)"
     )]
-    key: Option<String>,
+    key_name: Option<String>,
 }
 
 impl Override<Config> for TxIcs20MsgTransferCmd {
@@ -95,7 +108,7 @@ impl Override<Config> for TxIcs20MsgTransferCmd {
             ))
         })?;
 
-        if let Some(ref key_name) = self.key {
+        if let Some(ref key_name) = self.key_name {
             src_chain_config.key_name = key_name.to_string();
         }
 
@@ -129,17 +142,9 @@ impl TxIcs20MsgTransferCmd {
             return Err("number of messages should be greater than zero".into());
         }
 
-        if self.timeout_height_offset == 0 && self.timeout_seconds == 0 {
-            return Err(
-                "packet timeout height and packet timeout timestamp cannot both be 0, \
-                please specify either --timeout-height-offset or --timeout-seconds"
-                    .into(),
-            );
-        }
-
         let opts = TransferOptions {
             packet_src_port_id: self.src_port_id.clone(),
-            packet_src_channel_id: self.src_channel_id,
+            packet_src_channel_id: self.src_channel_id.clone(),
             amount: self.amount,
             denom,
             receiver: self.receiver.clone(),
@@ -175,7 +180,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
             .query_channel(
                 QueryChannelRequest {
                     port_id: opts.packet_src_port_id.clone(),
-                    channel_id: opts.packet_src_channel_id,
+                    channel_id: opts.packet_src_channel_id.clone(),
                     height: QueryHeight::Latest,
                 },
                 IncludeProof::No,

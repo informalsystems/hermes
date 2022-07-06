@@ -27,13 +27,10 @@ pub struct MsgConnectionOpenAck {
 }
 
 impl MsgConnectionOpenAck {
-    /// Getter for accessing the `consensus_height` field from this message. Returns the special
-    /// value `Height(0)` if this field is not set.
-    pub fn consensus_height(&self) -> Height {
-        match self.proofs.consensus_proof() {
-            None => Height::zero(),
-            Some(p) => p.height(),
-        }
+    /// Getter for accessing the `consensus_height` field from this message.
+    /// Returns `None` if this field is not set.
+    pub fn consensus_height(&self) -> Option<Height> {
+        self.proofs.consensus_proof().map(|proof| proof.height())
     }
 }
 
@@ -58,8 +55,8 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
     fn try_from(msg: RawMsgConnectionOpenAck) -> Result<Self, Self::Error> {
         let consensus_height = msg
             .consensus_height
-            .ok_or_else(Error::missing_consensus_height)?
-            .into();
+            .and_then(|raw_height| raw_height.try_into().ok())
+            .ok_or_else(Error::missing_consensus_height)?;
         let consensus_proof_obj = ConsensusProof::new(
             msg.proof_consensus
                 .try_into()
@@ -70,8 +67,8 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
 
         let proof_height = msg
             .proof_height
-            .ok_or_else(Error::missing_proof_height)?
-            .into();
+            .and_then(|raw_height| raw_height.try_into().ok())
+            .ok_or_else(Error::missing_proof_height)?;
 
         let client_proof =
             CommitmentProofBytes::try_from(msg.proof_client).map_err(Error::invalid_proof)?;

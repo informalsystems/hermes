@@ -21,7 +21,7 @@ use crate::error::{handle_generic_error, Error};
 
 pub fn gas_config_for_test() -> GasConfig {
     let max_gas = 3000000;
-    let gas_adjustment = 0.1;
+    let gas_multiplier = 1.1;
     let gas_price = GasPrice::new(0.001, "stake".to_string());
 
     let default_gas = max_gas;
@@ -37,7 +37,7 @@ pub fn gas_config_for_test() -> GasConfig {
     GasConfig {
         default_gas,
         max_gas,
-        gas_adjustment,
+        gas_multiplier,
         gas_price,
         max_fee,
         fee_granter,
@@ -101,7 +101,7 @@ pub async fn simple_send_tx(
         return Err(eyre!("send_tx returns error response: {:?}", response).into());
     }
 
-    let responses = wait_tx_succeed(
+    let response = wait_tx_succeed(
         &config.rpc_client,
         &config.rpc_address,
         &config.rpc_timeout,
@@ -109,10 +109,7 @@ pub async fn simple_send_tx(
     )
     .await?;
 
-    let events = responses
-        .into_iter()
-        .flat_map(|response| all_ibc_events_from_tx_search_response(&config.chain_id, response))
-        .collect();
+    let events = all_ibc_events_from_tx_search_response(&config.chain_id, response);
 
     Ok(events)
 }

@@ -28,9 +28,9 @@ USAGE:
 DESCRIPTION:
     Query the denomination trace info from a trace hash
 
-FLAGS:
-        --chain <CHAIN_ID>    identifier of the chain
-        --hash <HASH>         trace hash to query
+REQUIRED:
+        --chain <CHAIN_ID>    Identifier of the chain
+        --hash <HASH>         Trace hash to query
 ```
 
 __Example__

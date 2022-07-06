@@ -12,16 +12,33 @@ use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawPacketRecvCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        long = "dst-chain",
+        required = true,
+        help = "Identifier of the destination chain"
+    )]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(
+        long = "src-chain",
+        required = true,
+        help = "Identifier of the source chain"
+    )]
     src_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source port")]
+    #[clap(
+        long = "src-port",
+        required = true,
+        help = "Identifier of the source port"
+    )]
     src_port_id: PortId,
 
-    #[clap(required = true, help = "identifier of the source channel")]
+    #[clap(
+        long = "src-channel",
+        alias = "src-chan",
+        required = true,
+        help = "Identifier of the source channel"
+    )]
     src_channel_id: ChannelId,
 }
 
@@ -36,7 +53,7 @@ impl Runnable for TxRawPacketRecvCmd {
 
         let opts = LinkParameters {
             src_port_id: self.src_port_id.clone(),
-            src_channel_id: self.src_channel_id,
+            src_channel_id: self.src_channel_id.clone(),
         };
         let link = match Link::new_from_opts(chains.src, chains.dst, opts, false, false) {
             Ok(link) => link,
@@ -56,16 +73,33 @@ impl Runnable for TxRawPacketRecvCmd {
 
 #[derive(Clone, Command, Debug, Parser)]
 pub struct TxRawPacketAckCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        long = "dst-chain",
+        required = true,
+        help = "Identifier of the destination chain"
+    )]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(
+        long = "src-chain",
+        required = true,
+        help = "Identifier of the source chain"
+    )]
     src_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source port")]
+    #[clap(
+        long = "src-port",
+        required = true,
+        help = "Identifier of the source port"
+    )]
     src_port_id: PortId,
 
-    #[clap(required = true, help = "identifier of the source channel")]
+    #[clap(
+        long = "src-channel",
+        alias = "src-chan",
+        required = true,
+        help = "Identifier of the source channel"
+    )]
     src_channel_id: ChannelId,
 }
 
@@ -80,7 +114,7 @@ impl Runnable for TxRawPacketAckCmd {
 
         let opts = LinkParameters {
             src_port_id: self.src_port_id.clone(),
-            src_channel_id: self.src_channel_id,
+            src_channel_id: self.src_channel_id.clone(),
         };
         let link = match Link::new_from_opts(chains.src, chains.dst, opts, false, false) {
             Ok(link) => link,

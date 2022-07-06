@@ -15,7 +15,7 @@ To avoid confusion, all the parameters should take long flags. The following app
 
 * Only long flags are used in order to avoid having nonintuitive flags or conflicting flags.
 * Any parameter ending with `_id` should have the `_id` removed from the flag to shorten it. For example the flag for `chain_id` should only be `chain`.
-* Flags which can be shortened and still be meaningful should be shortened. This is done for `connection`, `channel` and `sequence`, which become respectively `conn`, `chan` and `seq`.
+* Flags which can be shortened and still be meaningful should have a shortened alias. This is done for `connection`, `channel` and `sequence`, which have respectively `conn`, `chan` and `seq` aliases.
 * For the channel and connection creation CLIs, the objects at the two ends are prefixed by `--a-` and `--b-`. Example `--a-chain` and `--b-chain`.
 * Whenever `chain`, `conn`, `chan` and `port` flags have to be disambiguated with a specifier, the specifier will be a prefix. Example of specifiers we currently use are `host`, `reference`, `a`, `b` and `counterparty`.
 
@@ -50,15 +50,18 @@ The following commands are implemented, with the binary name `hermes` often omit
 
 ### Create a channel
 
-* `create channel --a-chain <A_CHAIN_ID> --a-conn <A_CONNECTION_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>`
-    * Optional: `[--chan-version <VERSION>] [--order <ORDER>]`
+* `create channel --a-chain <A_CHAIN_ID> --a-connection <A_CONNECTION_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>`
+    * Optional: `[--channel-version <VERSION>] [--order <ORDER>]`
 
-* `create channel --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID> --new-client-conn`
-    * Optional: `[--chan-version <VERSION>] [--order <ORDER>]`
+* `create channel --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID> --new-client-connection`
+    * Optional: `[--channel-version <VERSION>] [--order <ORDER>] [--yes]`
 
 ### Commands for keys
 
-* `keys add --chain <CHAIN_ID> --key-file <KEY_FILE> --mnemonic-file <MNEMONIC_FILE>`
+* `keys add --chain <CHAIN_ID> --key-file <KEY_FILE>`
+    * Optional: `[--hd-path <HD_PATH>] [--key-name <KEY_NAME>]`
+
+* `keys add --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>`
     * Optional: `[--hd-path <HD_PATH>] [--key-name <KEY_NAME>]`
 
 * `keys balance --chain <CHAIN_ID>`
@@ -73,7 +76,7 @@ The following commands are implemented, with the binary name `hermes` often omit
 ### Listen
 
 * `listen --chain <CHAIN_ID>`
-    * Optional: `[--event <EVENT>]`
+    * Optional: `[--events <EVENT>...]`
 
 ### Misbehaviour
 
@@ -86,7 +89,8 @@ The following commands are implemented, with the binary name `hermes` often omit
 
 ### Clear packets
 
-* `clear packets --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
+* `clear packets [OPTIONS] --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
+    * Optional: `[--key-name <KEY>] [--counterparty-key-name <KEY>]`
 
 ### Queries
 
@@ -109,22 +113,22 @@ __Client__
 
 __Connection__
 
-* `query connection channels --chain <CHAIN_ID> --conn <CONNECTION_ID>`
+* `query connection channels --chain <CHAIN_ID> --connection <CONNECTION_ID>`
 
-* `query connection end --chain <CHAIN_ID> --conn <CONNECTION_ID>`
+* `query connection end --chain <CHAIN_ID> --connection <CONNECTION_ID>`
     * Optional: `[--height <HEIGHT>]`
 
 * `query connections --chain <CHAIN_ID>`
-    * Optional: `[--chain-counterparty <CHAIN_COUNTERPARTY_ID>] [--verbose]`
+    * Optional: `[--counterparty-chain <COUNTERPARTY_CHAIN_ID>] [--verbose]`
 
 __Channel__
 
-* `query channel client --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
+* `query channel client --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
 
-* `query channel end --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
+* `query channel end --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
     * Optional: `[--height <HEIGHT>]`
 
-* `query channel full --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
+* `query channel full --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
     * Optional: `[--height <HEIGHT>] [--verbose]`
 
 * `query channels --chain <CHAIN_ID>`
@@ -132,21 +136,25 @@ __Channel__
 
 __Packet__
 
-* `query packet ack --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID> --seq <SEQUENCE>`
+* `query packet ack --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID> --sequence <SEQUENCE>`
     * Optional: `[--height <HEIGHT>]`
 
-* `query packet acks --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
+* `query packet acks --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
 
-* `query packet commitment --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID> --seq <SEQUENCE>`
+* `query packet commitment --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID> --sequence <SEQUENCE>`
     * Optional: `[--height <HEIGHT>]`
 
-* `query packet commitments --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
+* `query packet commitments --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
 
-* `query packet pending --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
+* `query packet pending --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
 
-* `query packet unreceived-acks --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
+* `query packet unreceived-acks --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
 
-* `query packet unreceived-packets --chain <CHAIN_ID> --port <PORT_ID> --chan <CHANNEL_ID>`
+* `query packet unreceived-packets --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
+
+__Transfer__
+
+* `query transfer denom-trace --chain <CHAIN_ID> --hash <HASH>`
 
 __Tx__
 

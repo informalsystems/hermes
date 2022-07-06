@@ -16,19 +16,36 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct QueryConnectionEndCmd {
-    #[clap(required = true, help = "identifier of the chain to query")]
+    #[clap(
+        long = "chain",
+        required = true,
+        value_name = "CHAIN_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the chain to query"
+    )]
     chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the connection to query")]
+    #[clap(
+        long = "connection",
+        visible_alias = "conn",
+        required = true,
+        value_name = "CONNECTION_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the connection to query"
+    )]
     connection_id: ConnectionId,
 
-    #[clap(short = 'H', long, help = "height of the state to query")]
+    #[clap(
+        long = "height",
+        value_name = "HEIGHT",
+        help = "Height of the state to query. Leave unspecified for latest height."
+    )]
     height: Option<u64>,
 }
 
-// cargo run --bin hermes -- query connection end ibc-test connectionidone --height 3
+// cargo run --bin hermes -- query connection end --chain ibc-test --connection connectionidone --height 3
 impl Runnable for QueryConnectionEndCmd {
     fn run(&self) {
         let config = app_config();
@@ -42,7 +59,10 @@ impl Runnable for QueryConnectionEndCmd {
             QueryConnectionRequest {
                 connection_id: self.connection_id.clone(),
                 height: self.height.map_or(QueryHeight::Latest, |revision_height| {
-                    QueryHeight::Specific(ibc::Height::new(chain.id().version(), revision_height))
+                    QueryHeight::Specific(
+                        ibc::Height::new(chain.id().version(), revision_height)
+                            .unwrap_or_else(exit_with_unrecoverable_error),
+                    )
                 }),
             },
             IncludeProof::No,
@@ -67,12 +87,25 @@ impl Runnable for QueryConnectionEndCmd {
 /// Command for querying the channel identifiers associated with a connection.
 /// Sample invocation:
 /// `cargo run --bin hermes -- query connection channels ibc-0 connection-0`
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct QueryConnectionChannelsCmd {
-    #[clap(required = true, help = "identifier of the chain to query")]
+    #[clap(
+        long = "chain",
+        required = true,
+        value_name = "CHAIN_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the chain to query"
+    )]
     chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the connection to query")]
+    #[clap(
+        long = "connection",
+        visible_alias = "conn",
+        required = true,
+        value_name = "CONNECTION_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the connection to query"
+    )]
     connection_id: ConnectionId,
 }
 
@@ -105,5 +138,135 @@ impl Runnable for QueryConnectionChannelsCmd {
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{QueryConnectionChannelsCmd, QueryConnectionEndCmd};
+
+    use std::str::FromStr;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::{ChainId, ConnectionId};
+
+    #[test]
+    fn test_query_connection_channels() {
+        assert_eq!(
+            QueryConnectionChannelsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                connection_id: ConnectionId::from_str("connection_id").unwrap()
+            },
+            QueryConnectionChannelsCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--connection",
+                "connection_id"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_connection_channels_conn_alias() {
+        assert_eq!(
+            QueryConnectionChannelsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                connection_id: ConnectionId::from_str("connection_id").unwrap()
+            },
+            QueryConnectionChannelsCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--conn",
+                "connection_id"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_connection_channels_no_conn() {
+        assert!(
+            QueryConnectionChannelsCmd::try_parse_from(&["test", "--chain", "chain_id"]).is_err()
+        )
+    }
+
+    #[test]
+    fn test_query_connection_channels_no_chain() {
+        assert!(QueryConnectionChannelsCmd::try_parse_from(&[
+            "test",
+            "--connection",
+            "connection_id"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_query_connection_end_required_only() {
+        assert_eq!(
+            QueryConnectionEndCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                connection_id: ConnectionId::from_str("connection_id").unwrap(),
+                height: None
+            },
+            QueryConnectionEndCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--connection",
+                "connection_id"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_connection_end_conn_alias() {
+        assert_eq!(
+            QueryConnectionEndCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                connection_id: ConnectionId::from_str("connection_id").unwrap(),
+                height: None
+            },
+            QueryConnectionEndCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--conn",
+                "connection_id"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_connection_end_height() {
+        assert_eq!(
+            QueryConnectionEndCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                connection_id: ConnectionId::from_str("connection_id").unwrap(),
+                height: Some(42)
+            },
+            QueryConnectionEndCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--connection",
+                "connection_id",
+                "--height",
+                "42"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_connection_end_no_conn() {
+        assert!(QueryConnectionEndCmd::try_parse_from(&["test", "--chain", "chain_id"]).is_err())
+    }
+
+    #[test]
+    fn test_query_connection_end_no_chain() {
+        assert!(
+            QueryConnectionEndCmd::try_parse_from(&["test", "--connection", "connection_id"])
+                .is_err()
+        )
     }
 }

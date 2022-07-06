@@ -68,8 +68,8 @@ impl TryFrom<RawMsgTimeout> for MsgTimeout {
             None,
             raw_msg
                 .proof_height
-                .ok_or_else(Error::missing_height)?
-                .into(),
+                .and_then(|raw_height| raw_height.try_into().ok())
+                .ok_or_else(Error::missing_height)?,
         )
         .map_err(Error::invalid_proof)?;
 
@@ -109,13 +109,17 @@ pub mod test_util {
 
     /// Returns a dummy `RawMsgTimeout`, for testing only!
     /// The `height` parametrizes both the proof height as well as the timeout height.
-    pub fn get_dummy_raw_msg_timeout(height: u64, timeout_timestamp: u64) -> RawMsgTimeout {
+    pub fn get_dummy_raw_msg_timeout(
+        proof_height: u64,
+        timeout_height: u64,
+        timeout_timestamp: u64,
+    ) -> RawMsgTimeout {
         RawMsgTimeout {
-            packet: Some(get_dummy_raw_packet(height, timeout_timestamp)),
+            packet: Some(get_dummy_raw_packet(timeout_height, timeout_timestamp)),
             proof_unreceived: get_dummy_proof(),
             proof_height: Some(RawHeight {
                 revision_number: 0,
-                revision_height: height,
+                revision_height: proof_height,
             }),
             next_sequence_recv: 1,
             signer: get_dummy_bech32_account(),
@@ -144,9 +148,11 @@ mod test {
             want_pass: bool,
         }
 
-        let height = 50;
+        let proof_height = 50;
+        let timeout_height = proof_height;
         let timeout_timestamp = 0;
-        let default_raw_msg = get_dummy_raw_msg_timeout(height, timeout_timestamp);
+        let default_raw_msg =
+            get_dummy_raw_msg_timeout(proof_height, timeout_height, timeout_timestamp);
 
         let tests: Vec<Test> = vec![
             Test {
@@ -204,7 +210,7 @@ mod test {
 
     #[test]
     fn to_and_from() {
-        let raw = get_dummy_raw_msg_timeout(15, 0);
+        let raw = get_dummy_raw_msg_timeout(15, 20, 0);
         let msg = MsgTimeout::try_from(raw.clone()).unwrap();
         let raw_back = RawMsgTimeout::from(msg.clone());
         let msg_back = MsgTimeout::try_from(raw_back.clone()).unwrap();

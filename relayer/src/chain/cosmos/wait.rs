@@ -1,21 +1,24 @@
 use core::time::Duration;
-use futures::stream::{FuturesOrdered, StreamExt};
 use ibc::core::ics24_host::identifier::ChainId;
+use ibc::events::from_tx_response_event;
 use ibc::events::IbcEvent;
+use ibc::Height;
+use itertools::Itertools;
+use std::thread;
 use std::time::Instant;
 use tendermint::abci::transaction::Hash as TxHash;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
-use tendermint_rpc::endpoint::tx_search::Response as TxSearchResponse;
 use tendermint_rpc::{HttpClient, Url};
 use tokio::time::sleep;
-use tracing::info;
+use tracing::{info, trace};
 
-use crate::chain::cosmos::query::tx::{all_ibc_events_from_tx_search_response, query_tx_response};
+use crate::chain::cosmos::query::tx::query_tx_response;
+use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use crate::error::Error;
 
 const WAIT_BACKOFF: Duration = Duration::from_millis(300);
 
-/// Given a vector of `TxHash` elements,
+/// Given a vector of `TxSyncResult` elements,
 /// each including a transaction response hash for one or more messages, periodically queries the chain
 /// with the transaction hashes to get the list of IbcEvents included in those transactions.
 pub async fn wait_for_block_commits(
@@ -23,46 +26,88 @@ pub async fn wait_for_block_commits(
     rpc_client: &HttpClient,
     rpc_address: &Url,
     rpc_timeout: &Duration,
-    tx_hashes: &[TxHash],
-) -> Result<Vec<IbcEvent>, Error> {
+    tx_sync_results: &mut [TxSyncResult],
+) -> Result<(), Error> {
+    let start_time = Instant::now();
+
+    let hashes = tx_sync_results
+        .iter()
+        .map(|res| res.response.hash.to_string())
+        .join(", ");
+
     info!(
         id = %chain_id,
-        "wait_for_block_commits: waiting for commit of tx hashes(s) {:?}",
-        tx_hashes
+        "wait_for_block_commits: waiting for commit of tx hashes(s) {}",
+        hashes
     );
 
-    let responses = wait_tx_hashes(rpc_client, rpc_address, rpc_timeout, tx_hashes).await?;
+    loop {
+        let elapsed = start_time.elapsed();
 
-    let all_events = responses
-        .into_iter()
-        .flat_map(|response| {
-            response.txs.into_iter().flat_map(|tx_response| {
-                all_ibc_events_from_tx_search_response(chain_id, tx_response)
-            })
-        })
-        .collect();
+        if all_tx_results_found(tx_sync_results) {
+            trace!(
+                id = %chain_id,
+                "wait_for_block_commits: retrieved {} tx results after {}ms",
+                tx_sync_results.len(),
+                elapsed.as_millis(),
+            );
 
-    Ok(all_events)
+            return Ok(());
+        } else if &elapsed > rpc_timeout {
+            return Err(Error::tx_no_confirmation());
+        } else {
+            thread::sleep(WAIT_BACKOFF);
+
+            for tx_sync_result in tx_sync_results.iter_mut() {
+                // ignore error
+                let _ =
+                    update_tx_sync_result(chain_id, rpc_client, rpc_address, tx_sync_result).await;
+            }
+        }
+    }
 }
 
-pub async fn wait_tx_hashes(
+async fn update_tx_sync_result(
+    chain_id: &ChainId,
     rpc_client: &HttpClient,
     rpc_address: &Url,
-    timeout: &Duration,
-    tx_hashes: &[TxHash],
-) -> Result<Vec<TxSearchResponse>, Error> {
-    let tasks = tx_hashes
+    tx_sync_result: &mut TxSyncResult,
+) -> Result<(), Error> {
+    if let TxStatus::Pending { message_count } = tx_sync_result.status {
+        let response =
+            query_tx_response(rpc_client, rpc_address, &tx_sync_result.response.hash).await?;
+
+        if let Some(response) = response {
+            tx_sync_result.status = TxStatus::ReceivedResponse;
+
+            if response.tx_result.code.is_err() {
+                tx_sync_result.events = vec![
+                    IbcEvent::ChainError(format!(
+                        "deliver_tx for {} reports error: code={:?}, log={:?}",
+                        response.hash, response.tx_result.code, response.tx_result.log
+                    ));
+                    message_count
+                ];
+            } else {
+                let height = Height::new(chain_id.version(), u64::from(response.height)).unwrap();
+
+                tx_sync_result.events = response
+                    .tx_result
+                    .events
+                    .iter()
+                    .flat_map(|event| from_tx_response_event(height, event).into_iter())
+                    .collect::<Vec<_>>();
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn all_tx_results_found(tx_sync_results: &[TxSyncResult]) -> bool {
+    tx_sync_results
         .iter()
-        .map(|tx_hash| async { wait_tx_hash(rpc_client, rpc_address, timeout, tx_hash).await })
-        .collect::<FuturesOrdered<_>>();
-
-    let responses = tasks
-        .collect::<Vec<_>>()
-        .await
-        .into_iter()
-        .collect::<Result<Vec<_>, _>>()?;
-
-    Ok(responses)
+        .all(|r| matches!(r.status, TxStatus::ReceivedResponse))
 }
 
 pub async fn wait_tx_succeed(
@@ -70,17 +115,15 @@ pub async fn wait_tx_succeed(
     rpc_address: &Url,
     timeout: &Duration,
     tx_hash: &TxHash,
-) -> Result<Vec<TxResponse>, Error> {
+) -> Result<TxResponse, Error> {
     let response = wait_tx_hash(rpc_client, rpc_address, timeout, tx_hash).await?;
 
-    for response in response.txs.iter() {
-        let response_code = response.tx_result.code;
-        if response_code.is_err() {
-            return Err(Error::rpc_response(format!("{}", response_code.value())));
-        }
+    let response_code = response.tx_result.code;
+    if response_code.is_err() {
+        return Err(Error::rpc_response(format!("{}", response_code.value())));
     }
 
-    Ok(response.txs)
+    Ok(response)
 }
 
 pub async fn wait_tx_hash(
@@ -88,21 +131,24 @@ pub async fn wait_tx_hash(
     rpc_address: &Url,
     timeout: &Duration,
     tx_hash: &TxHash,
-) -> Result<TxSearchResponse, Error> {
+) -> Result<TxResponse, Error> {
     let start_time = Instant::now();
 
     loop {
-        let responses = query_tx_response(rpc_client, rpc_address, tx_hash).await?;
+        let response = query_tx_response(rpc_client, rpc_address, tx_hash).await?;
 
-        if responses.txs.is_empty() {
-            let elapsed = start_time.elapsed();
-            if &elapsed > timeout {
-                return Err(Error::tx_no_confirmation());
-            } else {
-                sleep(WAIT_BACKOFF).await;
+        match response {
+            None => {
+                let elapsed = start_time.elapsed();
+                if &elapsed > timeout {
+                    return Err(Error::tx_no_confirmation());
+                } else {
+                    sleep(WAIT_BACKOFF).await;
+                }
             }
-        } else {
-            return Ok(responses);
+            Some(response) => {
+                return Ok(response);
+            }
         }
     }
 }

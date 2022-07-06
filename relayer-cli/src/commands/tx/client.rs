@@ -21,12 +21,24 @@ use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic, ChainHa
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct TxCreateClientCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        long = "host-chain",
+        required = true,
+        value_name = "HOST_CHAIN_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the chain that hosts the client"
+    )]
     dst_chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the source chain")]
+    #[clap(
+        long = "reference-chain",
+        required = true,
+        value_name = "REFERENCE_CHAIN_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the chain targeted by the client"
+    )]
     src_chain_id: ChainId,
 
     /// The maximum allowed clock drift for this client.
@@ -38,26 +50,26 @@ pub struct TxCreateClientCmd {
     /// to accept or reject a new header (originating from the source chain) for this client.
     /// If this option is not specified, a suitable clock drift value is derived from the chain
     /// configurations.
-    #[clap(short = 'd', long)]
+    #[clap(long = "clock-drift", value_name = "CLOCK_DRIFT")]
     clock_drift: Option<humantime::Duration>,
 
     /// Override the trusting period specified in the config.
     ///
     /// The trusting period specifies how long a validator set is trusted for
     /// (must be shorter than the chain's unbonding period).
-    #[clap(short = 'p', long)]
+    #[clap(long = "trusting-period", value_name = "TRUSTING_PERIOD")]
     trusting_period: Option<humantime::Duration>,
 
     /// Override the trust threshold specified in the configuration.
     ///
     /// The trust threshold defines what fraction of the total voting power of a known
     /// and trusted validator set is sufficient for a commit to be accepted going forward.
-    #[clap(short = 't', long, parse(try_from_str = parse_trust_threshold))]
+    #[clap(long = "trust-threshold", value_name = "TRUST_THRESHOLD", parse(try_from_str = parse_trust_threshold))]
     trust_threshold: Option<TrustThreshold>,
 }
 
 /// Sample to run this tx:
-///     `hermes tx raw create-client ibc-0 ibc-1`
+///     `hermes tx raw create-client --dst-chain ibc-0 --src-chain ibc-1`
 impl Runnable for TxCreateClientCmd {
     fn run(&self) {
         let config = app_config();
@@ -91,21 +103,38 @@ impl Runnable for TxCreateClientCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct TxUpdateClientCmd {
-    #[clap(required = true, help = "identifier of the destination chain")]
+    #[clap(
+        long = "host-chain",
+        required = true,
+        value_name = "HOST_CHAIN_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the chain that hosts the client"
+    )]
     dst_chain_id: ChainId,
 
     #[clap(
+        long = "client",
         required = true,
-        help = "identifier of the client to be updated on destination chain"
+        value_name = "CLIENT_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the chain targeted by the client"
     )]
     dst_client_id: ClientId,
 
-    #[clap(short = 'H', long, help = "the target height of the client update")]
+    #[clap(
+        long = "height",
+        value_name = "REFERENCE_HEIGHT",
+        help = "The target height of the client update. Leave unspecified for latest height."
+    )]
     target_height: Option<u64>,
 
-    #[clap(short = 't', long, help = "the trusted height of the client update")]
+    #[clap(
+        long = "trusted-height",
+        value_name = "REFERENCE_TRUSTED_HEIGHT",
+        help = "The trusted height of the client update. Leave unspecified for latest height."
+    )]
     trusted_height: Option<u64>,
 }
 
@@ -141,12 +170,16 @@ impl Runnable for TxUpdateClientCmd {
         };
 
         let target_height = self.target_height.map_or(QueryHeight::Latest, |height| {
-            QueryHeight::Specific(Height::new(src_chain.id().version(), height))
+            QueryHeight::Specific(
+                Height::new(src_chain.id().version(), height)
+                    .unwrap_or_else(exit_with_unrecoverable_error),
+            )
         });
 
-        let trusted_height = self
-            .trusted_height
-            .map(|height| Height::new(src_chain.id().version(), height));
+        let trusted_height = self.trusted_height.map(|height| {
+            Height::new(src_chain.id().version(), height)
+                .unwrap_or_else(exit_with_unrecoverable_error)
+        });
 
         let client = ForeignClient::find(src_chain, dst_chain, &self.dst_client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
@@ -162,15 +195,24 @@ impl Runnable for TxUpdateClientCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct TxUpgradeClientCmd {
     #[clap(
+        long = "host-chain",
         required = true,
-        help = "identifier of the chain that hosts the client"
+        value_name = "HOST_CHAIN_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the chain that hosts the client"
     )]
     chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the client to be upgraded")]
+    #[clap(
+        long = "client",
+        required = true,
+        value_name = "CLIENT_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the client to be upgraded"
+    )]
     client_id: ClientId,
 }
 
@@ -234,11 +276,14 @@ impl Runnable for TxUpgradeClientCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct TxUpgradeClientsCmd {
     #[clap(
+        long = "reference-chain",
         required = true,
-        help = "identifier of the chain that underwent an upgrade; all clients targeting this chain will be upgraded"
+        value_name = "REFERENCE_CHAIN_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the chain that underwent an upgrade; all clients targeting this chain will be upgraded"
     )]
     src_chain_id: ChainId,
 }
@@ -421,7 +466,17 @@ impl OutputBuffer {
 
 #[cfg(test)]
 mod tests {
-    use super::parse_trust_threshold;
+    use super::{
+        parse_trust_threshold, TxCreateClientCmd, TxUpdateClientCmd, TxUpgradeClientCmd,
+        TxUpgradeClientsCmd,
+    };
+
+    use std::str::FromStr;
+
+    use abscissa_core::clap::Parser;
+    use humantime::Duration;
+    use ibc::core::ics24_host::identifier::{ChainId, ClientId};
+    use tendermint_light_client_verifier::types::TrustThreshold;
 
     #[test]
     fn test_parse_trust_threshold() {
@@ -436,5 +491,355 @@ mod tests {
         let threshold = parse_trust_threshold("\t3 / 5  ").unwrap();
         assert_eq!(threshold.numerator(), 3);
         assert_eq!(threshold.denominator(), 5);
+    }
+
+    #[test]
+    fn test_create_client_required_only() {
+        assert_eq!(
+            TxCreateClientCmd {
+                dst_chain_id: ChainId::from_string("host_chain"),
+                src_chain_id: ChainId::from_string("reference_chain"),
+                clock_drift: None,
+                trusting_period: None,
+                trust_threshold: None
+            },
+            TxCreateClientCmd::parse_from(&[
+                "test",
+                "--host-chain",
+                "host_chain",
+                "--reference-chain",
+                "reference_chain"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_create_client_clock_drift() {
+        assert_eq!(
+            TxCreateClientCmd {
+                dst_chain_id: ChainId::from_string("host_chain"),
+                src_chain_id: ChainId::from_string("reference_chain"),
+                clock_drift: Some("5s".parse::<Duration>().unwrap()),
+                trusting_period: None,
+                trust_threshold: None
+            },
+            TxCreateClientCmd::parse_from(&[
+                "test",
+                "--host-chain",
+                "host_chain",
+                "--reference-chain",
+                "reference_chain",
+                "--clock-drift",
+                "5sec"
+            ])
+        );
+        assert_eq!(
+            TxCreateClientCmd {
+                dst_chain_id: ChainId::from_string("host_chain"),
+                src_chain_id: ChainId::from_string("reference_chain"),
+                clock_drift: Some("3s".parse::<Duration>().unwrap()),
+                trusting_period: None,
+                trust_threshold: None
+            },
+            TxCreateClientCmd::parse_from(&[
+                "test",
+                "--host-chain",
+                "host_chain",
+                "--reference-chain",
+                "reference_chain",
+                "--clock-drift",
+                "3s"
+            ])
+        );
+    }
+
+    #[test]
+    fn test_create_client_trusting_period() {
+        assert_eq!(
+            TxCreateClientCmd {
+                dst_chain_id: ChainId::from_string("host_chain"),
+                src_chain_id: ChainId::from_string("reference_chain"),
+                clock_drift: None,
+                trusting_period: Some("5s".parse::<Duration>().unwrap()),
+                trust_threshold: None
+            },
+            TxCreateClientCmd::parse_from(&[
+                "test",
+                "--host-chain",
+                "host_chain",
+                "--reference-chain",
+                "reference_chain",
+                "--trusting-period",
+                "5sec"
+            ])
+        );
+        assert_eq!(
+            TxCreateClientCmd {
+                dst_chain_id: ChainId::from_string("host_chain"),
+                src_chain_id: ChainId::from_string("reference_chain"),
+                clock_drift: None,
+                trusting_period: Some("3s".parse::<Duration>().unwrap()),
+                trust_threshold: None
+            },
+            TxCreateClientCmd::parse_from(&[
+                "test",
+                "--host-chain",
+                "host_chain",
+                "--reference-chain",
+                "reference_chain",
+                "--trusting-period",
+                "3s"
+            ])
+        );
+    }
+
+    #[test]
+    fn test_create_client_trust_threshold() {
+        assert_eq!(
+            TxCreateClientCmd {
+                dst_chain_id: ChainId::from_string("host_chain"),
+                src_chain_id: ChainId::from_string("reference_chain"),
+                clock_drift: None,
+                trusting_period: None,
+                trust_threshold: Some(TrustThreshold::new(1, 2).unwrap())
+            },
+            TxCreateClientCmd::parse_from(&[
+                "test",
+                "--host-chain",
+                "host_chain",
+                "--reference-chain",
+                "reference_chain",
+                "--trust-threshold",
+                "1/2"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_create_client_all_options() {
+        assert_eq!(
+            TxCreateClientCmd {
+                dst_chain_id: ChainId::from_string("host_chain"),
+                src_chain_id: ChainId::from_string("reference_chain"),
+                clock_drift: Some("5s".parse::<Duration>().unwrap()),
+                trusting_period: Some("3s".parse::<Duration>().unwrap()),
+                trust_threshold: Some(TrustThreshold::new(1, 2).unwrap())
+            },
+            TxCreateClientCmd::parse_from(&[
+                "test",
+                "--host-chain",
+                "host_chain",
+                "--reference-chain",
+                "reference_chain",
+                "--clock-drift",
+                "5sec",
+                "--trusting-period",
+                "3s",
+                "--trust-threshold",
+                "1/2"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_create_client_no_host_chain() {
+        assert!(TxCreateClientCmd::try_parse_from(&[
+            "test",
+            "--reference-chain",
+            "reference_chain",
+            "--clock-drift",
+            "5sec",
+            "--trusting-period",
+            "3s",
+            "--trust-threshold",
+            "1/2"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_create_client_no_reference_chain() {
+        assert!(TxCreateClientCmd::try_parse_from(&[
+            "test",
+            "--host-chain",
+            "host_chain",
+            "--clock-drift",
+            "5sec",
+            "--trusting-period",
+            "3s",
+            "--trust-threshold",
+            "1/2"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_create_client_no_chain() {
+        assert!(TxCreateClientCmd::try_parse_from(&[
+            "test",
+            "--clock-drift",
+            "5sec",
+            "--trusting-period",
+            "3s",
+            "--trust-threshold",
+            "1/2"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_update_client_required_only() {
+        assert_eq!(
+            TxUpdateClientCmd {
+                dst_chain_id: ChainId::from_string("host_chain"),
+                dst_client_id: ClientId::from_str("client_to_update").unwrap(),
+                target_height: None,
+                trusted_height: None
+            },
+            TxUpdateClientCmd::parse_from(&[
+                "test",
+                "--host-chain",
+                "host_chain",
+                "--client",
+                "client_to_update"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_update_client_height() {
+        assert_eq!(
+            TxUpdateClientCmd {
+                dst_chain_id: ChainId::from_string("host_chain"),
+                dst_client_id: ClientId::from_str("client_to_update").unwrap(),
+                target_height: Some(42),
+                trusted_height: None
+            },
+            TxUpdateClientCmd::parse_from(&[
+                "test",
+                "--host-chain",
+                "host_chain",
+                "--client",
+                "client_to_update",
+                "--height",
+                "42"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_update_client_trusted_height() {
+        assert_eq!(
+            TxUpdateClientCmd {
+                dst_chain_id: ChainId::from_string("host_chain"),
+                dst_client_id: ClientId::from_str("client_to_update").unwrap(),
+                target_height: None,
+                trusted_height: Some(42)
+            },
+            TxUpdateClientCmd::parse_from(&[
+                "test",
+                "--host-chain",
+                "host_chain",
+                "--client",
+                "client_to_update",
+                "--trusted-height",
+                "42"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_update_client_all_options() {
+        assert_eq!(
+            TxUpdateClientCmd {
+                dst_chain_id: ChainId::from_string("host_chain"),
+                dst_client_id: ClientId::from_str("client_to_update").unwrap(),
+                target_height: Some(21),
+                trusted_height: Some(42)
+            },
+            TxUpdateClientCmd::parse_from(&[
+                "test",
+                "--host-chain",
+                "host_chain",
+                "--client",
+                "client_to_update",
+                "--height",
+                "21",
+                "--trusted-height",
+                "42"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_update_client_no_chain() {
+        assert!(TxUpdateClientCmd::try_parse_from(&[
+            "test",
+            "--client",
+            "client_to_update",
+            "--height",
+            "21",
+            "--trusted-height",
+            "42"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_update_client_no_client() {
+        assert!(TxUpdateClientCmd::try_parse_from(&[
+            "test",
+            "--host-chain",
+            "host_chain",
+            "--height",
+            "21",
+            "--trusted-height",
+            "42"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_upgrade_client_required_only() {
+        assert_eq!(
+            TxUpgradeClientCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                client_id: ClientId::from_str("client_to_upgrade").unwrap()
+            },
+            TxUpgradeClientCmd::parse_from(&[
+                "test",
+                "--host-chain",
+                "chain_id",
+                "--client",
+                "client_to_upgrade"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_upgrade_client_no_chain() {
+        assert!(
+            TxUpgradeClientCmd::try_parse_from(&["test", "--client", "client_to_upgrade"]).is_err()
+        )
+    }
+
+    #[test]
+    fn test_upgrade_client_no_client() {
+        assert!(TxUpgradeClientCmd::try_parse_from(&["test", "--host-chain", "chain_id"]).is_err())
+    }
+
+    #[test]
+    fn test_upgrade_clients_required_only() {
+        assert_eq!(
+            TxUpgradeClientsCmd {
+                src_chain_id: ChainId::from_string("chain_id")
+            },
+            TxUpgradeClientsCmd::parse_from(&["test", "--reference-chain", "chain_id"])
+        )
+    }
+
+    #[test]
+    fn test_upgrade_clients_no_chain() {
+        assert!(TxUpgradeClientsCmd::try_parse_from(&["test"]).is_err())
     }
 }

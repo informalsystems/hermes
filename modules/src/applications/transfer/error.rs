@@ -4,7 +4,7 @@ use core::str::Utf8Error;
 use flex_error::{define_error, DisplayOnly, TraceError};
 use subtle_encoding::Error as EncodingError;
 use tendermint_proto::Error as TendermintProtoError;
-use uint::FromStrRadixErr;
+use uint::FromDecStrErr;
 
 use crate::core::ics04_channel::channel::Order;
 use crate::core::ics04_channel::error as channel_error;
@@ -69,7 +69,7 @@ define_error! {
             | e | { format_args!("trace length must be even but got: {0}", e.len) },
 
         InvalidAmount
-            [ TraceError<FromStrRadixErr> ]
+            [ TraceError<FromDecStrErr> ]
             | _ | { "invalid amount" },
 
         InvalidToken
@@ -88,10 +88,6 @@ define_error! {
         ParseHex
             [ TraceError<EncodingError> ]
             | _ | { "invalid hex string" },
-
-        ChanSeqExceedsLimit
-            { sequence: u64 }
-            | e | { format_args!("channel sequence ({0}) exceeds limit of {1}", e.sequence, u32::MAX) },
 
         ChannelNotUnordered
             { order: Order }

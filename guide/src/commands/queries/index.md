@@ -13,7 +13,8 @@ The `query` command provides the following sub-commands:
 | `channel`              | [Query information about channels](./channel.md)                       |
 | `channels`             | [Query the identifiers of all channels on a given chain](./channel.md) |
 | `packet`               | [Query information about packets](./packet.md)                         |
-| `tx`                   | [Query information about transactions](./tx.md)                         |
+| `transfer`             | [Query information about token transfers](./transfer.md)               |
+| `tx`                   | [Query information about transactions](./tx.md)                        |
 
 ## Usage
 
@@ -32,4 +33,6 @@ SUBCOMMANDS:
     channel        Query information about channels
     channels       Query the identifiers of all channels on a given chain
     packet         Query information about packets
+    transfer       Query information about token transfers
+    tx             Query information about transactions
 ```

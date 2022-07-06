@@ -56,6 +56,7 @@
      - [Channel Open](./commands/raw/channel-open.md)
      - [Channel Close](./commands/raw/channel-close.md)
      - [Packet](./commands/raw/packet.md)
+     - [Upgrade](./commands/raw/upgrade.md)
 - [Help](./help.md)
 - [Glossary](./glossary.md)
 ---

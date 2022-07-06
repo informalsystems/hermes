@@ -10,6 +10,7 @@ pub mod handler;
 pub mod msgs;
 pub mod packet;
 pub mod packet_id;
+pub mod timeout;
 
 pub mod commitment;
 mod version;

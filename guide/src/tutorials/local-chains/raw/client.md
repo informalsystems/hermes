@@ -7,7 +7,7 @@ First you will need to create a client for each chain:
 This command submits a transaction to a destination chain (`ibc-0`) with a request to create a client for a source chain (`ibc-1`):
 
 ```shell
-hermes tx raw create-client ibc-0 ibc-1
+hermes tx raw create-client --host-chain ibc-0 --reference-chain ibc-1
 ```
 
 if the command is successful a message similar to the one below will be displayed `status:success`:
@@ -34,7 +34,7 @@ if the command is successful a message similar to the one below will be displaye
 You can also execute a __query__ to view the client state on destination chain `ibc-0` by specifying the `client_id` value `07-tendermint-0`:
 
 ```shell
-hermes query client state ibc-0 07-tendermint-0
+hermes query client state --chain ibc-0 --client 07-tendermint-0
 ```
 
 which show a message similar to the one below:
@@ -72,7 +72,7 @@ Success: ClientState {
 Now let's do the same for `ibc-1` as the destination chain:
 
 ```shell
-hermes tx raw create-client ibc-1 ibc-0
+hermes tx raw create-client --host-chain ibc-1 --reference-chain ibc-0
 ```
 
 Take note of the `client_id` allocated for this client. In the examples we assume is `07-tendermint-1` (this client identity is obtained by creating two clients on ibc-1 for ibc-0).
@@ -105,11 +105,11 @@ Success: CreateClient(
 Client states can be updated by sending an `update-client` transaction:
 
 ```shell
-hermes tx raw update-client ibc-0 07-tendermint-0
+hermes tx raw update-client --host-chain ibc-0 --client 07-tendermint-0
 ```
 
 ```shell
-hermes tx raw update-client ibc-1 07-tendermint-1
+hermes tx raw update-client --host-chain ibc-1 --client 07-tendermint-1
 ```
 
 ## Next Steps

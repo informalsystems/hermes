@@ -13,11 +13,11 @@ use crate::commands::CliCmd;
 #[clap(author, about, version)]
 pub struct EntryPoint {
     /// Path to the configuration file
-    #[clap(short = 'c', long, help = "path to configuration file")]
+    #[clap(long = "config", help = "Path to configuration file")]
     pub config: Option<PathBuf>,
 
     /// Toggle JSON output mode one verbosity setting
-    #[clap(short = 'j', long, help = "enable JSON output")]
+    #[clap(long = "json", help = "Enable JSON output")]
     pub json: bool,
 
     /// Subcommand to execute.
@@ -53,7 +53,7 @@ impl Configurable<Config> for EntryPoint {
         }
 
         match &self.config {
-            // Use explicit `-c`/`--config` argument if passed
+            // Use explicit `--config` argument if passed
             Some(cfg) => Some(cfg.clone()),
 
             // Otherwise defer to the toplevel command's config path logic

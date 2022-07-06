@@ -10,6 +10,15 @@ use opentelemetry_prometheus::PrometheusExporter;
 use prometheus::proto::MetricFamily;
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
+use tendermint::Time;
+
+use dashmap::DashMap;
+
+use crate::path_identifier::PathIdentifier;
+
+const NO_PENDING_PACKETS: u64 = 0;
+const HISTORY_SET_CAPACITY: usize = 1000;
+const HISTORY_RESET_THRESHOLD: usize = 900;
 
 #[derive(Copy, Clone, Debug)]
 pub enum WorkerType {
@@ -68,7 +77,8 @@ pub struct TelemetryState {
     /// How many messages Hermes submitted to the chain, per chain
     msg_num: Counter<u64>,
 
-    /// The balance in each wallet that Hermes is using, per wallet, denom and chain
+    /// The balance in each wallet that Hermes is using, per wallet, denom and chain.
+    /// The amount given is of unit: 10^6 * `denom`
     wallet_balance: ValueRecorder<u64>,
 
     /// Indicates the latency for all transactions submitted to a specific chain,
@@ -84,6 +94,27 @@ pub struct TelemetryState {
     /// Records the time at which we started processing an event batch.
     /// Used for computing the `tx_latency` metric.
     in_flight_events: moka::sync::Cache<String, Instant>,
+
+    /// Counts the number of SendPacket Hermes transfers.
+    send_packet_count: Counter<u64>,
+
+    /// Counts the number of WriteAcknowledgement Hermes transfers.
+    acknowledgement_count: Counter<u64>,
+
+    /// Counts the number of SendPacket Hermes transfers from ClearPacket.
+    cleared_count: Counter<u64>,
+
+    /// Records the sequence number of the oldest SendPacket for which no
+    /// WriteAcknowledgement has been received. The value is 0 if all the
+    /// WriteAcknowledgement were received.
+    oldest_sequence: ValueRecorder<u64>,
+
+    /// Record the timestamp related to the oldest sequence number.
+    /// The timestamp is the time passed since since the unix epoch in seconds.
+    oldest_timestamp: ValueRecorder<u64>,
+
+    /// History of SendPacket sequence numbers received and not yet Acknowledged.
+    sequences_histories: DashMap<PathIdentifier, DashMap<u64, u64>>,
 }
 
 impl TelemetryState {
@@ -210,7 +241,8 @@ impl TelemetryState {
         self.msg_num.add(count, labels);
     }
 
-    /// The balance in each wallet that Hermes is using, per account, denom and chain
+    /// The balance in each wallet that Hermes is using, per account, denom and chain.
+    /// The amount given is of unit: 10^6 * `denom`
     pub fn wallet_balance(&self, chain_id: &ChainId, account: &str, amount: u64, denom: &str) {
         let labels = &[
             KeyValue::new("chain", chain_id.to_string()),
@@ -228,7 +260,7 @@ impl TelemetryState {
 
     pub fn tx_submitted(
         &self,
-
+        tx_count: usize,
         tracking_id: impl ToString,
         chain_id: &ChainId,
         channel_id: &ChannelId,
@@ -248,12 +280,15 @@ impl TelemetryState {
                 KeyValue::new("port", port_id.to_string()),
             ];
 
-            self.tx_latency_submitted.record(latency, labels);
+            for _ in 0..tx_count {
+                self.tx_latency_submitted.record(latency, labels);
+            }
         }
     }
 
     pub fn tx_confirmed(
         &self,
+        tx_count: usize,
         tracking_id: impl ToString,
         chain_id: &ChainId,
         channel_id: &ChannelId,
@@ -273,25 +308,195 @@ impl TelemetryState {
                 KeyValue::new("port", port_id.to_string()),
             ];
 
-            self.tx_latency_confirmed.record(latency, labels);
+            for _ in 0..tx_count {
+                self.tx_latency_confirmed.record(latency, labels);
+            }
+        }
+    }
+
+    pub fn send_packet_count(
+        &self,
+        _seq_nr: u64,
+        _height: u64,
+        chain_id: &ChainId,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_chain_id: &ChainId,
+    ) {
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("counterparty", counterparty_chain_id.to_string()),
+            KeyValue::new("channel", channel_id.to_string()),
+            KeyValue::new("port", port_id.to_string()),
+        ];
+
+        self.send_packet_count.add(1, labels);
+    }
+
+    pub fn acknowledgement_count(
+        &self,
+        _seq_nr: u64,
+        _height: u64,
+        chain_id: &ChainId,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_chain_id: &ChainId,
+    ) {
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("counterparty", counterparty_chain_id.to_string()),
+            KeyValue::new("channel", channel_id.to_string()),
+            KeyValue::new("port", port_id.to_string()),
+        ];
+
+        self.acknowledgement_count.add(1, labels);
+    }
+
+    pub fn cleared_count(
+        &self,
+        _seq_nr: u64,
+        _height: u64,
+        chain_id: &ChainId,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_chain_id: &ChainId,
+    ) {
+        let labels: &[KeyValue; 4] = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("counterparty", counterparty_chain_id.to_string()),
+            KeyValue::new("channel", channel_id.to_string()),
+            KeyValue::new("port", port_id.to_string()),
+        ];
+
+        self.cleared_count.add(1, labels);
+    }
+
+    pub fn record_send_history(
+        &self,
+        seq_nr: u64,
+        _height: u64,
+        chain_id: &ChainId,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_chain_id: &ChainId,
+    ) {
+        // Unique Identifier for a chain/channel/port.
+        let uid: PathIdentifier = PathIdentifier::new(
+            chain_id.to_string(),
+            channel_id.to_string(),
+            port_id.to_string(),
+        );
+
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("counterparty", counterparty_chain_id.to_string()),
+            KeyValue::new("channel", channel_id.to_string()),
+            KeyValue::new("port", port_id.to_string()),
+        ];
+
+        // Retrieve timestamp for recieved SendPacket.
+        let now = Time::now();
+        let timestamp = match now.duration_since(Time::unix_epoch()) {
+            Ok(ts) => ts.as_secs(),
+            Err(_) => 0,
+        };
+
+        // If there are no HashSet for this uid, create a new one.
+        // Else update the min value.
+        if let Some(set) = self.sequences_histories.get(&uid) {
+            // Avoid having the DashSet growing more than a given threshold, by removing
+            // the oldest sequence number entry.
+            if set.len() > HISTORY_RESET_THRESHOLD {
+                if let Some(min) = set.iter().map(|v| *v.key()).min() {
+                    set.remove(&min);
+                }
+            }
+            set.insert(seq_nr, timestamp);
+            // Record the min of the HashSet as the oldest sequence.
+            if let Some(min) = set.iter().map(|v| *v.key()).min() {
+                // Updated oldest sequence number and add associated timestamp to labels.
+                self.oldest_sequence.record(min, labels);
+                self.oldest_timestamp.record(timestamp, labels);
+            }
+        } else {
+            let new_dashmap = DashMap::with_capacity(HISTORY_SET_CAPACITY);
+            new_dashmap.insert(seq_nr, timestamp);
+
+            // Updated oldest sequence number and add associated timestamp to labels.
+            self.oldest_sequence.record(seq_nr, labels);
+            self.oldest_timestamp.record(timestamp, labels);
+
+            self.sequences_histories.insert(uid, new_dashmap);
+        }
+    }
+
+    pub fn record_ack_history(
+        &self,
+        seq_nr: u64,
+        _height: u64,
+        chain_id: &ChainId,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_chain_id: &ChainId,
+    ) {
+        // Unique Identifier for a chain/channel/port.
+        let uid: PathIdentifier = PathIdentifier::new(
+            chain_id.to_string(),
+            channel_id.to_string(),
+            port_id.to_string(),
+        );
+
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("counterparty", counterparty_chain_id.to_string()),
+            KeyValue::new("channel", channel_id.to_string()),
+            KeyValue::new("port", port_id.to_string()),
+        ];
+
+        // If there are no HashSet for this uid, create a new one.
+        if let Some(set) = self.sequences_histories.get(&uid) {
+            match set.remove(&seq_nr) {
+                Some(_) => {
+                    // Record the min of the HashSet as the oldest sequence.
+                    if let Some(min) = set.iter().map(|v| *v.key()).min() {
+                        if let Some(timestamp) = set.get(&min) {
+                            self.oldest_timestamp.record(*timestamp, labels);
+                        } else {
+                            self.oldest_timestamp.record(0, labels);
+                        }
+                        self.oldest_sequence.record(min, labels);
+                    } else {
+                        self.oldest_sequence.record(NO_PENDING_PACKETS, labels);
+                        self.oldest_timestamp.record(0, labels);
+                    }
+                }
+                None => {}
+            }
         }
     }
 }
 
 use std::sync::Arc;
 
-use opentelemetry::metrics::Descriptor;
+use opentelemetry::metrics::{Descriptor, Unit};
 use opentelemetry::sdk::export::metrics::{Aggregator, AggregatorSelector};
 use opentelemetry::sdk::metrics::aggregators::{histogram, last_value, sum};
 
 #[derive(Debug)]
 struct CustomAggregatorSelector;
+
 impl AggregatorSelector for CustomAggregatorSelector {
     fn aggregator_for(&self, descriptor: &Descriptor) -> Option<Arc<dyn Aggregator + Send + Sync>> {
         match descriptor.name() {
             "wallet_balance" => Some(Arc::new(last_value())),
-            "tx_latency_submitted" => Some(Arc::new(histogram(descriptor, &[0.5, 0.9, 0.99]))),
-            "tx_latency_confirmed" => Some(Arc::new(histogram(descriptor, &[0.5, 0.9, 0.99]))),
+            "oldest_sequence" => Some(Arc::new(last_value())),
+            "oldest_timestamp" => Some(Arc::new(last_value())),
+            // Prometheus' supports only collector for histogram, sum, and last value aggregators.
+            // https://docs.rs/opentelemetry-prometheus/0.10.0/src/opentelemetry_prometheus/lib.rs.html#411-418
+            // TODO: Once quantile sketches are supported, replace histograms with that.
+            // For the moment, disable histogram buckets since no values make sense for all use-cases.
+            "tx_latency_submitted" => Some(Arc::new(histogram(descriptor, &[]))),
+            "tx_latency_confirmed" => Some(Arc::new(histogram(descriptor, &[]))),
             _ => Some(Arc::new(sum())),
         }
     }
@@ -367,11 +572,27 @@ impl Default for TelemetryState {
 
             wallet_balance: meter
                 .u64_value_recorder("wallet_balance")
-                .with_description("The balance in each wallet that Hermes is using, per wallet, denom and chain")
+                .with_description("The balance in each wallet that Hermes is using, per wallet, denom and chain. The amount is of unit: 10^6 * `denom`")
+                .init(),
+
+            send_packet_count: meter
+                .u64_counter("send_packet_count")
+                .with_description("Number of SendPacket relayed")
+                .init(),
+
+            acknowledgement_count: meter
+                .u64_counter("acknowledgement_count")
+                .with_description("Number of WriteAcknowledgement relayed")
+                .init(),
+
+            cleared_count: meter
+                .u64_counter("cleared_count")
+                .with_description("Number of SendPacket relayed through ClearPendingPackets")
                 .init(),
 
             tx_latency_submitted: meter
                 .u64_value_recorder("tx_latency_submitted")
+                .with_unit(Unit::new("milliseconds"))
                 .with_description("The latency for all transactions submitted to a specific chain, \
                     i.e. the difference between the moment when Hermes received a batch of events \
                     and when it submitted the corresponding transaction(s). Milliseconds.")
@@ -379,15 +600,29 @@ impl Default for TelemetryState {
 
             tx_latency_confirmed: meter
                 .u64_value_recorder("tx_latency_confirmed")
-                .with_description("The latency for all transactions submitted to a specific chain, \
+                .with_unit(Unit::new("milliseconds"))
+                .with_description("The latency for all transactions submitted & confirmed to a specific chain, \
                     i.e. the difference between the moment when Hermes received a batch of events \
                     until the corresponding transaction(s) were confirmed. Milliseconds.")
                 .init(),
 
             in_flight_events: moka::sync::Cache::builder()
-                    .time_to_live(Duration::from_secs(60 * 60)) // Remove entries after 1 hour
-                    .time_to_idle(Duration::from_secs(30 * 60)) // Remove entries if they have been idle for 30 minutes
-                    .build(),
+                .time_to_live(Duration::from_secs(60 * 60)) // Remove entries after 1 hour
+                .time_to_idle(Duration::from_secs(30 * 60)) // Remove entries if they have been idle for 30 minutes
+                .build(),
+
+            sequences_histories: DashMap::new(),
+
+            oldest_sequence: meter
+                .u64_value_recorder("oldest_sequence")
+                .with_description("The sequence number of the oldest pending SendPacket. If this value is 0, it means there are no pending SendPacket")
+                .init(),
+
+            oldest_timestamp: meter
+                .u64_value_recorder("oldest_timestamp")
+                .with_unit(Unit::new("seconds"))
+                .with_description("The timestamp of the oldest sequence number in seconds")
+                .init(),
         }
     }
 }

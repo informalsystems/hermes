@@ -371,7 +371,7 @@ impl ChainHandle for BaseChainHandle {
     ) -> Result<Proofs, Error> {
         self.send(|reply_to| ChainRequest::BuildChannelProofs {
             port_id: port_id.clone(),
-            channel_id: *channel_id,
+            channel_id: channel_id.clone(),
             height,
             reply_to,
         })
@@ -388,7 +388,7 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::BuildPacketProofs {
             packet_type,
             port_id: port_id.clone(),
-            channel_id: *channel_id,
+            channel_id: channel_id.clone(),
             sequence,
             height,
             reply_to,

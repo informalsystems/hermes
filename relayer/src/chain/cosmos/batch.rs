@@ -1,12 +1,12 @@
 use ibc::events::IbcEvent;
 use ibc_proto::google::protobuf::Any;
 use prost::Message;
-use tendermint::abci::transaction::Hash as TxHash;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 
 use crate::chain::cosmos::retry::send_tx_with_account_sequence_retry;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
+use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use crate::chain::cosmos::wait::wait_for_block_commits;
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error;
@@ -25,7 +25,7 @@ pub async fn send_batched_messages_and_wait_commit(
         return Ok(Vec::new());
     }
 
-    let tx_hashes = send_messages_as_batches(
+    let mut tx_sync_results = send_messages_as_batches(
         config,
         max_msg_num,
         max_tx_size,
@@ -36,14 +36,19 @@ pub async fn send_batched_messages_and_wait_commit(
     )
     .await?;
 
-    let events = wait_for_block_commits(
+    wait_for_block_commits(
         &config.chain_id,
         &config.rpc_client,
         &config.rpc_address,
         &config.rpc_timeout,
-        &tx_hashes,
+        &mut tx_sync_results,
     )
     .await?;
+
+    let events = tx_sync_results
+        .into_iter()
+        .flat_map(|el| el.events)
+        .collect();
 
     Ok(events)
 }
@@ -83,23 +88,46 @@ async fn send_messages_as_batches(
     account: &mut Account,
     tx_memo: &Memo,
     messages: Vec<Any>,
-) -> Result<Vec<TxHash>, Error> {
+) -> Result<Vec<TxSyncResult>, Error> {
     if messages.is_empty() {
         return Ok(Vec::new());
     }
 
     let batches = batch_messages(max_msg_num, max_tx_size, messages)?;
 
-    let mut tx_hashes = Vec::new();
+    let mut tx_sync_results = Vec::new();
 
     for batch in batches {
+        let message_count = batch.len();
+
         let response =
             send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, batch).await?;
 
-        tx_hashes.push(response.hash);
+        if response.code.is_err() {
+            let events_per_tx = vec![IbcEvent::ChainError(format!(
+                "check_tx (broadcast_tx_sync) on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
+                config.chain_id, response.hash, response.code, response.log
+            )); message_count];
+
+            let tx_sync_result = TxSyncResult {
+                response,
+                events: events_per_tx,
+                status: TxStatus::ReceivedResponse,
+            };
+
+            tx_sync_results.push(tx_sync_result);
+        } else {
+            let tx_sync_result = TxSyncResult {
+                response,
+                events: Vec::new(),
+                status: TxStatus::Pending { message_count },
+            };
+
+            tx_sync_results.push(tx_sync_result);
+        }
     }
 
-    Ok(tx_hashes)
+    Ok(tx_sync_results)
 }
 
 fn batch_messages(

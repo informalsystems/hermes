@@ -178,8 +178,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
             trace!("trying to confirm {} ", tx_hashes);
 
             // Check for TX events for the given pending transaction hashes.
-            let events_result = self.check_tx_events(tx_hashes);
-            let res = match events_result {
+            let relay_summary = match self.check_tx_events(tx_hashes) {
                 Ok(None) => {
                     // There is no events for the associated transactions.
                     // This means the transaction has not yet been committed.
@@ -230,7 +229,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                         Ok(None)
                     }
                 }
-                Ok(Some(events)) => {
+                Ok(Some(mut events)) => {
                     // We get a list of events for the transaction hashes,
                     // Meaning the transaction has been committed successfully
                     // to the chain.
@@ -244,6 +243,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
 
                     telemetry!(
                         tx_confirmed,
+                        tx_hashes.0.len(),
                         pending.tracking_id(),
                         &self.chain.id(),
                         &self.channel_id,
@@ -251,11 +251,11 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                         &self.counterparty_chain_id
                     );
 
-                    // Convert the events to RelaySummary and return them.
-                    let mut summary = RelaySummary::from_events(events);
-                    summary.extend(RelaySummary::from_events(pending.error_events));
+                    // Append the events corresponding to errors from the pending tx.
+                    events.extend(pending.error_events);
 
-                    Ok(Some(summary))
+                    // Convert the events to RelaySummary and return them.
+                    Ok(Some(RelaySummary::from_events(events)))
                 }
                 Err(e) => {
                     // There are errors querying for the transaction hashes.
@@ -282,7 +282,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                 );
             }
 
-            res
+            relay_summary
         } else {
             Ok(None)
         }

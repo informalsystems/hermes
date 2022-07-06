@@ -4,12 +4,12 @@ use flex_error::{define_error, DetailOnly};
 use ibc::applications::transfer::error::Error as Ics20Error;
 use ibc::applications::transfer::msgs::transfer::MsgTransfer;
 use ibc::applications::transfer::Amount;
+use ibc::core::ics04_channel::timeout::TimeoutHeight;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
 use ibc::signer::Signer;
 use ibc::timestamp::{Timestamp, TimestampOverflowError};
 use ibc::tx_msg::Msg;
-use ibc::Height;
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::google::protobuf::Any;
 
@@ -65,7 +65,7 @@ define_error! {
 
 #[derive(Copy, Clone)]
 pub struct TransferTimeout {
-    pub timeout_height: Option<Height>,
+    pub timeout_height: TimeoutHeight,
     pub timeout_timestamp: Timestamp,
 }
 
@@ -86,9 +86,12 @@ impl TransferTimeout {
         destination_chain_status: &ChainStatus,
     ) -> Result<Self, TransferError> {
         let timeout_height = if timeout_height_offset == 0 {
-            None
+            TimeoutHeight::no_timeout()
         } else {
-            Some(destination_chain_status.height.add(timeout_height_offset))
+            destination_chain_status
+                .height
+                .add(timeout_height_offset)
+                .into()
         };
 
         let timeout_timestamp = if timeout_duration == Duration::ZERO {
@@ -124,7 +127,7 @@ pub fn build_transfer_message(
     denom: String,
     sender: Signer,
     receiver: Signer,
-    timeout_height: Option<Height>,
+    timeout_height: TimeoutHeight,
     timeout_timestamp: Timestamp,
 ) -> Any {
     let msg = MsgTransfer {
@@ -164,7 +167,7 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
 
     let message = build_transfer_message(
         opts.packet_src_port_id.clone(),
-        opts.packet_src_channel_id,
+        opts.packet_src_channel_id.clone(),
         opts.amount,
         opts.denom.clone(),
         sender,

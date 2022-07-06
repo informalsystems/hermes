@@ -15,12 +15,15 @@ The `tx raw` command provides the following sub-commands:
 | `chan-open-init`       | [Initialize a channel (ChannelOpenInit)](./channel-open.md#channel-open-init)                              |
 | `chan-open-try`        | [Relay the channel attempt (ChannelOpenTry)](./channel-open.md#channel-open-try)                           |
 | `chan-open-ack`        | [Relay acknowledgment of a channel attempt (ChannelOpenAck)](./channel-open.md#channel-open-ack)           |
-| `chan-open-close`      | [Confirm opening of a channel (ChannelOpenConfirm)](./channel-open.md#channel-open-close)                  |
+| `chan-open-confirm`    | [Confirm opening of a channel (ChannelOpenConfirm)](./channel-open.md#channel-open-close)                  |
 | `chan-close-init`      | [Initiate the closing of a channel (ChannelCloseInit)](./channel-close.md#channel-close-init)              |
 | `chan-close-confirm`   | [Confirm the closing of a channel (ChannelCloseConfirm)](./channel-close.md#channel-close-confirm)         |
-| `ft-transfer`          | [Send a fungible token transfer test transaction (ICS20 MsgTransfer](./packet.md#fungible-token-transfer) |
+| `ft-transfer`          | [Send a fungible token transfer test transaction (ICS20 MsgTransfer](./packet.md#fungible-token-transfer)  |
 | `packet-recv`          | [Relay receive or timeout packets](./packet.md#relay-receive-and-timeout-packets)                          |
 | `packet-ack`           | [Relay acknowledgment packets](./packet.md#relay-acknowledgment-packets)                                   |
+| `upgrade-chain`        | [Send an IBC upgrade plan](./upgrade.md)
+| `upgrade-client`       | [Upgrade the specified client on destination chain](./upgrade.md)
+| `upgrade-clients`      | [Upgrade all IBC clients that target a specific chain](./upgrade.md)
 
 The main purpose of these commands is to support development and testing, and continuous integration. These CLIs take quite a few parameters and they are explained in the individual sub-sections.
 
@@ -55,6 +58,7 @@ In the command template above:
      - [Channel Open](./channel-open.md)
      - [Channel Close](./channel-close.md)
      - [Packet](./packet.md)
+     - [Upgrade](./upgrade.md)
 
 ## Usage
 
@@ -82,4 +86,7 @@ SUBCOMMANDS:
     ft-transfer         Send a fungible token transfer test transaction (ICS20 MsgTransfer)
     packet-recv         Relay receive or timeout packets
     packet-ack          Relay acknowledgment packets
+    upgrade-chain       Send an IBC upgrade plan
+    upgrade-client      Upgrade the specified client on destination chain
+    upgrade-clients     Upgrade all IBC clients that target a specific chain
 ```

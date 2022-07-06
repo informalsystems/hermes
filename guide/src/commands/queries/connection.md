@@ -8,13 +8,13 @@ Use the `query connections` command to query the identifiers of all connections 
 
 ```shell
 USAGE:
-    hermes query connections <OPTIONS>
+    hermes query connections --chain <CHAIN_ID>
 
 DESCRIPTION:
     Query the identifiers of all connections on a chain
 
-POSITIONAL ARGUMENTS:
-    chain_id                  identifier of the chain to query
+REQUIRED:
+        --chain <CHAIN_ID>    Identifier of the chain to query
 ```
 
 __Example__
@@ -22,7 +22,7 @@ __Example__
 Query all connections on `ibc-1`:
 
 ```shell
-hermes query connections ibc-1
+hermes query connections --chain ibc-1
 ```
 
 ```json
@@ -58,17 +58,17 @@ Use the `query connection end` command to query the connection end:
 
 ```shell
 USAGE:
-    hermes query connection end <OPTIONS>
+    hermes query connection end [OPTIONS] --chain <CHAIN_ID> --connection <CONNECTION_ID>
 
 DESCRIPTION:
-    query connection end
+    Query connection end
 
-POSITIONAL ARGUMENTS:
-    chain_id                  identifier of the chain to query
-    connection_id             identifier of the connection to query
+OPTIONS:
+        --height <HEIGHT>    Height of the state to query. Leave unspecified for latest height.
 
-FLAGS:
-    -H, --height HEIGHT       height of the state to query
+REQUIRED:
+        --chain <CHAIN_ID>              Identifier of the chain to query
+        --connection <CONNECTION_ID>    Identifier of the connection to query [aliases: conn]
 ```
 
 __Example__
@@ -76,7 +76,7 @@ __Example__
 Query the connection end of connection `connection-1` on `ibc-1`:
 
 ```shell
-hermes query connection end ibc-1 connection-1
+hermes query connection end --chain ibc-1 --connection connection-1
 ```
 
 ```json
@@ -115,14 +115,14 @@ Use the `query connection channels` command to query the identifiers of the chan
 
 ```shell
 USAGE:
-    hermes query connection channels <OPTIONS>
+    hermes query connection channels --chain <CHAIN_ID> --connection <CONNECTION_ID>
 
 DESCRIPTION:
-    query connection channels
+    Query connection channels
 
-POSITIONAL ARGUMENTS:
-    chain_id                  identifier of the chain to query
-    connection_id             identifier of the connection to query
+REQUIRED:
+        --chain <CHAIN_ID>              Identifier of the chain to query
+        --connection <CONNECTION_ID>    Identifier of the connection to query [aliases: conn]
 ```
 
 __Example__
@@ -130,7 +130,7 @@ __Example__
 Query the channels associated with connection `connection-1` on `ibc-1`:
 
 ```shell
-hermes query connection channels ibc-1 connection-1
+hermes query connection channels --chain ibc-1 --connection connection-1
 ```
 
 ```json
