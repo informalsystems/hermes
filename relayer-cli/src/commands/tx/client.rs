@@ -281,7 +281,7 @@ impl Runnable for TxUpgradeClientCmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
-        info!(
+        debug!(
             "Reference application latest height: {}",
             reference_application_latest_height
         );
@@ -294,7 +294,7 @@ impl Runnable for TxUpgradeClientCmd {
                 Err(e) => Output::error(format!("{}", e)).exit(),
             };
 
-            info!(
+            debug!(
                 "Reference application latest height: {}",
                 reference_application_latest_height
             );

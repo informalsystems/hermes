@@ -39,7 +39,7 @@ gaiad version --log_level error --long | head -n4
   ports_start_at = 27010
 ```
 * Run the command `gm start`
-* Go to the file `$HOME/.gm/ibc-0/config/genesis.json` and change `max_deposit_period` and `voting_period` to a lower value, such as 200s
+* Go to the file `$HOME/.gm/ibc-0/config/genesis.json` and change `max_deposit_period` and `voting_period` to a lower value, such as 120s
 * Run the commands: `gm reset`, `gm hermes config` and `gm hermes keys`
 
 ### Test upgrading chain and client
@@ -187,11 +187,11 @@ gaiad version --log_level error --long | head -n4
     txhash: 50CC1C39FBB14F99580A916ADE7F02883FFCC35D7862153F16BE86138151E17C
     ```
 
-  
+
 5. Test the `upgrade client` CLI
 
     The following command waits for the reference chain `ibc-0` to halt and then performs the upgrade for client `07-tendermint-0` on `ibc-1`. It outputs two events, one for the updated client state,
-    and another for the upgraded state.  
+    and another for the upgraded state.
     The `--upgrade-height 65` value is taken from the `height` in the upgrade plan output.
 
     ```shell
