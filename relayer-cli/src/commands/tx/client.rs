@@ -219,10 +219,10 @@ pub struct TxUpgradeClientCmd {
     #[clap(
         long = "upgrade-height",
         required = true,
-        value_name = "HOST_TARGET_UPGRADE_HEIGHT",
-        help = "The height at which the host chain should halt in order to perform the client upgrade"
+        value_name = "REFERENCE_UPGRADE_HEIGHT",
+        help = "The height at which the reference chain halts for the client upgrade"
     )]
-    host_target_upgrade_height: u64,
+    reference_upgrade_height: u64,
 }
 
 impl Runnable for TxUpgradeClientCmd {
@@ -256,8 +256,8 @@ impl Runnable for TxUpgradeClientCmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
-        let host_target_upgrade_height =
-            Height::new(host_chain.id().version(), self.host_target_upgrade_height)
+        let reference_upgrade_height =
+            Height::new(host_chain.id().version(), self.reference_upgrade_height)
                 .unwrap_or_else(exit_with_unrecoverable_error);
 
         let client = ForeignClient::find(host_chain, reference_chain, &self.client_id)
@@ -278,7 +278,7 @@ impl Runnable for TxUpgradeClientCmd {
         // than the height according to Tendermint. As a result, the target height at which the
         // upgrade occurs at (the application height) is 1 less than the height specified by
         // the user, hence the strictly less-than check in the while loop.
-        while host_application_latest_height != host_target_upgrade_height {
+        while host_application_latest_height != reference_upgrade_height {
             thread::sleep(Duration::from_millis(500));
 
             host_application_latest_height = match client.src_chain().query_latest_height() {
@@ -292,7 +292,7 @@ impl Runnable for TxUpgradeClientCmd {
             );
         }
 
-        let outcome = client.upgrade(host_target_upgrade_height);
+        let outcome = client.upgrade(host_application_latest_height);
 
         match outcome {
             Ok(receipt) => Output::success(receipt).exit(),

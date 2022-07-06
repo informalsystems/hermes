@@ -80,9 +80,10 @@ gaiad version --log_level error --long | head -n4
 
     Note that the height offset should be picked such that the proposal plan height is reached after the `200s` voting period.
 
- 3. Verify that the proposal was accepted:
+ 3. Verify that the proposal was accepted by querying the upgrade plan to check that it was submitted correctly.
 
-    Query the upgrade plan to check that it was submitted correctly.
+     > Note: You can find the RPC port used to query the local node by running
+     > `gm ports` in order to see a list of the ports being used.
 
     ```shell
     gaiad --node tcp://localhost:<RPC PORT> query gov proposal 1 --home $HOME/.gm/ibc-0/
