@@ -348,8 +348,7 @@ impl Runnable for TxUpgradeClientsCmd {
             .decrement()
             .expect("Upgrade height cannot be 1");
 
-        let mut reference_application_latest_height = match reference_chain.query_latest_height()
-        {
+        let mut reference_application_latest_height = match reference_chain.query_latest_height() {
             Ok(height) => height,
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
@@ -930,7 +929,13 @@ mod tests {
                 reference_chain_id: ChainId::from_string("chain_id"),
                 reference_upgrade_height: 42,
             },
-            TxUpgradeClientsCmd::parse_from(&["test", "--reference-chain", "chain_id", "--upgrade-height", "42"])
+            TxUpgradeClientsCmd::parse_from(&[
+                "test",
+                "--reference-chain",
+                "chain_id",
+                "--upgrade-height",
+                "42"
+            ])
         )
     }
 
