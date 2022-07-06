@@ -299,7 +299,8 @@ mod tests {
         assert_eq!(
             QueryChannelsCmd {
                 chain_id: ChainId::from_string("chain_id"),
-                verbose: false
+                verbose: false,
+                dst_chain_id: None,
             },
             QueryChannelsCmd::parse_from(&["test", "--chain", "chain_id"])
         )
@@ -310,9 +311,28 @@ mod tests {
         assert_eq!(
             QueryChannelsCmd {
                 chain_id: ChainId::from_string("chain_id"),
-                verbose: true
+                verbose: true,
+                dst_chain_id: None,
             },
             QueryChannelsCmd::parse_from(&["test", "--chain", "chain_id", "--verbose"])
+        )
+    }
+
+    #[test]
+    fn test_query_channels_counterparty_chain() {
+        assert_eq!(
+            QueryChannelsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                verbose: false,
+                dst_chain_id: Some(ChainId::from_string("counterparty_chain")),
+            },
+            QueryChannelsCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--counterparty-chain",
+                "counterparty_chain"
+            ])
         )
     }
 
