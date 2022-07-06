@@ -339,8 +339,8 @@ and issues of this kind be dealt with on a case-by-case basis.
 ### Light client registry
 
 With the proposals in this ADR, the `ibc` crate would be light client agnostic, however, the host implementation must
-still be aware of all light clients that it wishes to support. For e.g., after an upgrade a blockchain must be able to
-deserialize types from the persistent store.
+still be aware of all light clients that it wishes to support. For e.g., a blockchain must be able to deserialize types
+from the persistent store after a restart.
 Furthermore, protobuf has emerged as the canonical serialization scheme for IBC, and IBC's message definitions usually
 serialize light client types using the `google::protobuf::Any` type where the `type_url` is accepted to uniquely
 represent specific light client types, although this has not been standardized yet.
