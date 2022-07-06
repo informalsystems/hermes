@@ -270,6 +270,7 @@ impl Runnable for TxUpgradeClientCmd {
             self.reference_upgrade_height,
         )
         .unwrap_or_else(exit_with_unrecoverable_error);
+
         let target_reference_application_height = reference_upgrade_height
             .decrement()
             .expect("Upgrade height cannot be 1");
