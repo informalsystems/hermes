@@ -224,7 +224,7 @@ pub fn restore_key(
 /// If it already exists and overwrite is false, abort the command with an error.
 /// If overwrite is true, output a warning message informing the key will be overwritten.
 fn check_key_exists(keyring: &KeyRing, key_name: &str, overwrite: bool) {
-    if let Ok(_) = keyring.get_key(key_name) {
+    if keyring.get_key(key_name).is_ok() {
         if overwrite {
             warn!("Key {} will be overwritten", key_name);
         } else {
