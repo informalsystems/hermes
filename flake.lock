@@ -76,11 +76,11 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1657102239,
-        "narHash": "sha256-zrCFXOwH6HOwpxsn5SODC3j/yE6JZO7etmUemQ5yXdk=",
+        "lastModified": 1657103197,
+        "narHash": "sha256-37Og2DnucAcZSGDeAn/HXfVl7a/THLN9sNSCC/WUv/E=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "48f3e042da77530a08fba6adb59406fe2c0d85ec",
+        "rev": "27201c38a38e1901f7eb2e2d7b53a6fdd99a5845",
         "type": "github"
       },
       "original": {
@@ -456,11 +456,11 @@
     },
     "nixpkgs_3": {
       "locked": {
-        "lastModified": 1657056915,
-        "narHash": "sha256-pzpuGI0+UHNlWae91QYeAlK0rY0FGZJAhHfRArHNwKY=",
+        "lastModified": 1657086189,
+        "narHash": "sha256-wSiZ7wBqke9qCDOyYhAU68HT63iZQWrsxG6NlTfBzto=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "c9ad20e7ebbe27a29d12353d15cdc853f896291b",
+        "rev": "e120ef6a5a7d835e19082d037f6a079e836ce8ca",
         "type": "github"
       },
       "original": {
