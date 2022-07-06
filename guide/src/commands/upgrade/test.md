@@ -14,7 +14,7 @@ gaiad version --log_level error --long | head -n4
 > Note: The `gm.toml` file that we're using here looks like this:
 ```
 [global]
-  add_to_hermes = false
+  add_to_hermes = true
   auto_maintain_config = true
   extra_wallets = 2
   gaiad_binary = "$GOPATH/bin/gaiad"
@@ -219,10 +219,11 @@ gaiad version --log_level error --long | head -n4
 6. Test the `upgrade client` CLI
 
     The following command performs the upgrade for client `07-tendermint-0`. It outputs two events, one for the updated client state,
-    and another for the upgraded state.
+    and another for the upgraded state.  
+    The `--upgrade-height 332` value is taken from the `height` in the upgrade plan output.
 
     ```shell
-    hermes upgrade client --host-chain ibc-1 --client 07-tendermint-0 --upgrade-height 0-332
+    hermes upgrade client --host-chain ibc-1 --client 07-tendermint-0 --upgrade-height 332
     ```
     ```json
     Success: [
