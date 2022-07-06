@@ -15,7 +15,7 @@ use ibc_relayer::chain::requests::{
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::{CreateOptions, ForeignClient};
 use tendermint_light_client_verifier::types::TrustThreshold;
-use tracing::info;
+use tracing::debug;
 
 use crate::application::app_config;
 use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic, ChainHandlePair};
@@ -353,7 +353,7 @@ impl Runnable for TxUpgradeClientsCmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
-        info!(
+        debug!(
             "Reference application latest height: {}",
             reference_application_latest_height
         );
@@ -366,7 +366,7 @@ impl Runnable for TxUpgradeClientsCmd {
                 Err(e) => Output::error(format!("{}", e)).exit(),
             };
 
-            info!(
+            debug!(
                 "Reference application latest height: {}",
                 reference_application_latest_height
             );
