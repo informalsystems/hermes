@@ -220,6 +220,7 @@ pub struct TxUpgradeClientCmd {
         long = "upgrade-height",
         required = true,
         value_name = "REFERENCE_UPGRADE_HEIGHT",
+        help_heading = "REQUIRED",
         help = "The height at which the reference chain halts for the client upgrade"
     )]
     reference_upgrade_height: u64,
@@ -829,14 +830,17 @@ mod tests {
         assert_eq!(
             TxUpgradeClientCmd {
                 chain_id: ChainId::from_string("chain_id"),
-                client_id: ClientId::from_str("client_to_upgrade").unwrap()
+                client_id: ClientId::from_str("client_to_upgrade").unwrap(),
+                reference_upgrade_height: 42,
             },
             TxUpgradeClientCmd::parse_from(&[
                 "test",
                 "--host-chain",
                 "chain_id",
                 "--client",
-                "client_to_upgrade"
+                "client_to_upgrade",
+                "--upgrade-height",
+                "42"
             ])
         )
     }
@@ -844,13 +848,18 @@ mod tests {
     #[test]
     fn test_upgrade_client_no_chain() {
         assert!(
-            TxUpgradeClientCmd::try_parse_from(&["test", "--client", "client_to_upgrade"]).is_err()
+            TxUpgradeClientCmd::try_parse_from(&["test", "--client", "client_to_upgrade", "--upgrade-height", "42"]).is_err()
         )
     }
 
     #[test]
     fn test_upgrade_client_no_client() {
-        assert!(TxUpgradeClientCmd::try_parse_from(&["test", "--host-chain", "chain_id"]).is_err())
+        assert!(TxUpgradeClientCmd::try_parse_from(&["test", "--host-chain", "chain_id", "--upgrade-height", "42"]).is_err())
+    }
+
+    #[test]
+    fn test_upgrade_client_no_upgrade_height() {
+        assert!(TxUpgradeClientCmd::try_parse_from(&["test", "--host-chain", "chain_id", "--client", "client_to_upgrade"]).is_err())
     }
 
     #[test]
