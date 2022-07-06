@@ -202,7 +202,7 @@ jobs:
           NO_COLOR_LOG: 1
           CHAIN_COMMAND_PATH: simd
         run: |
-          nix shell .#ibc-go-main-simapp -c cargo \
+          nix shell .#ibc-go-v4-simapp -c cargo \
             test -p ibc-integration-test --features ics29-fee --no-fail-fast -- \
             --nocapture --test-threads=1 fee::
 

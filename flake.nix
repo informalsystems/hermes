@@ -36,6 +36,7 @@
               gaia6-ordered
               ibc-go-v2-simapp
               ibc-go-v3-simapp
+              ibc-go-v4-simapp
               ibc-go-main-simapp
               ibc-go-ics29-simapp
               wasmd
