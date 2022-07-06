@@ -257,7 +257,6 @@ impl Runnable for TxUpgradeClientCmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
-
         let client = ForeignClient::find(reference_chain, host_chain, &self.client_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
@@ -266,11 +265,14 @@ impl Runnable for TxUpgradeClientCmd {
         // than the height according to Tendermint. As a result, the target height at which the
         // upgrade occurs at (the application height) is 1 less than the height specified by
         // the user, hence the strictly less-than check in the while loop.
-        let reference_upgrade_height =
-            Height::new(client.src_chain().id().version(), self.reference_upgrade_height)
-                .unwrap_or_else(exit_with_unrecoverable_error);
-        let target_reference_application_latest_height = reference_upgrade_height.decrement()
-                .expect("Upgrade height cannot be 1");
+        let reference_upgrade_height = Height::new(
+            client.src_chain().id().version(),
+            self.reference_upgrade_height,
+        )
+        .unwrap_or_else(exit_with_unrecoverable_error);
+        let target_reference_application_latest_height = reference_upgrade_height
+            .decrement()
+            .expect("Upgrade height cannot be 1");
 
         let mut reference_application_latest_height = match client.src_chain().query_latest_height()
         {
@@ -283,9 +285,7 @@ impl Runnable for TxUpgradeClientCmd {
             reference_application_latest_height
         );
 
-        while reference_application_latest_height
-            != target_reference_application_latest_height
-        {
+        while reference_application_latest_height != target_reference_application_latest_height {
             thread::sleep(Duration::from_millis(500));
 
             reference_application_latest_height = match client.src_chain().query_latest_height() {
@@ -853,19 +853,38 @@ mod tests {
 
     #[test]
     fn test_upgrade_client_no_chain() {
-        assert!(
-            TxUpgradeClientCmd::try_parse_from(&["test", "--client", "client_to_upgrade", "--upgrade-height", "42"]).is_err()
-        )
+        assert!(TxUpgradeClientCmd::try_parse_from(&[
+            "test",
+            "--client",
+            "client_to_upgrade",
+            "--upgrade-height",
+            "42"
+        ])
+        .is_err())
     }
 
     #[test]
     fn test_upgrade_client_no_client() {
-        assert!(TxUpgradeClientCmd::try_parse_from(&["test", "--host-chain", "chain_id", "--upgrade-height", "42"]).is_err())
+        assert!(TxUpgradeClientCmd::try_parse_from(&[
+            "test",
+            "--host-chain",
+            "chain_id",
+            "--upgrade-height",
+            "42"
+        ])
+        .is_err())
     }
 
     #[test]
     fn test_upgrade_client_no_upgrade_height() {
-        assert!(TxUpgradeClientCmd::try_parse_from(&["test", "--host-chain", "chain_id", "--client", "client_to_upgrade"]).is_err())
+        assert!(TxUpgradeClientCmd::try_parse_from(&[
+            "test",
+            "--host-chain",
+            "chain_id",
+            "--client",
+            "client_to_upgrade"
+        ])
+        .is_err())
     }
 
     #[test]
