@@ -344,6 +344,35 @@ impl Runnable for TxUpgradeClientsCmd {
         )
         .unwrap_or_else(exit_with_unrecoverable_error);
 
+        let target_reference_application_height = reference_upgrade_height
+            .decrement()
+            .expect("Upgrade height cannot be 1");
+
+        let mut reference_application_latest_height = match reference_chain.query_latest_height()
+        {
+            Ok(height) => height,
+            Err(e) => Output::error(format!("{}", e)).exit(),
+        };
+
+        info!(
+            "Reference application latest height: {}",
+            reference_application_latest_height
+        );
+
+        while reference_application_latest_height != target_reference_application_height {
+            thread::sleep(Duration::from_millis(500));
+
+            reference_application_latest_height = match reference_chain.query_latest_height() {
+                Ok(height) => height,
+                Err(e) => Output::error(format!("{}", e)).exit(),
+            };
+
+            info!(
+                "Reference application latest height: {}",
+                reference_application_latest_height
+            );
+        }
+
         let results = config
             .chains
             .iter()
@@ -898,9 +927,10 @@ mod tests {
     fn test_upgrade_clients_required_only() {
         assert_eq!(
             TxUpgradeClientsCmd {
-                reference_chain_id: ChainId::from_string("chain_id")
+                reference_chain_id: ChainId::from_string("chain_id"),
+                reference_upgrade_height: 42,
             },
-            TxUpgradeClientsCmd::parse_from(&["test", "--reference-chain", "chain_id"])
+            TxUpgradeClientsCmd::parse_from(&["test", "--reference-chain", "chain_id", "--upgrade-height", "42"])
         )
     }
 
