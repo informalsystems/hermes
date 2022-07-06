@@ -318,38 +318,42 @@ pub struct TxUpgradeClientsCmd {
         help_heading = "REQUIRED",
         help = "Identifier of the chain that underwent an upgrade; all clients targeting this chain will be upgraded"
     )]
-    src_chain_id: ChainId,
+    reference_chain_id: ChainId,
+
+    #[clap(
+        long = "upgrade-height",
+        required = true,
+        value_name = "REFERENCE_UPGRADE_HEIGHT",
+        help_heading = "REQUIRED",
+        help = "The height at which the reference chain halts for the client upgrade"
+    )]
+    reference_upgrade_height: u64,
 }
 
 impl Runnable for TxUpgradeClientsCmd {
     fn run(&self) {
         let config = app_config();
-        let src_chain = match spawn_chain_runtime(&config, &self.src_chain_id) {
+        let reference_chain = match spawn_chain_runtime(&config, &self.reference_chain_id) {
             Ok(handle) => handle,
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
-        let src_upgrade_height = {
-            let src_application_height = match src_chain.query_latest_height() {
-                Ok(height) => height,
-                Err(e) => Output::error(format!("{}", e)).exit(),
-            };
-
-            // When the chain is halted, the application height reports a height
-            // 1 less than the halted height
-            src_application_height.increment()
-        };
+        let reference_upgrade_height = Height::new(
+            reference_chain.id().version(),
+            self.reference_upgrade_height,
+        )
+        .unwrap_or_else(exit_with_unrecoverable_error);
 
         let results = config
             .chains
             .iter()
             .filter_map(|chain| {
-                (self.src_chain_id != chain.id).then(|| {
+                (self.reference_chain_id != chain.id).then(|| {
                     self.upgrade_clients_for_chain(
                         &config,
-                        src_chain.clone(),
+                        reference_chain.clone(),
                         &chain.id,
-                        &src_upgrade_height,
+                        &reference_upgrade_height,
                     )
                 })
             })
@@ -367,26 +371,28 @@ impl TxUpgradeClientsCmd {
     fn upgrade_clients_for_chain<Chain: ChainHandle>(
         &self,
         config: &Config,
-        src_chain: Chain,
-        dst_chain_id: &ChainId,
-        src_upgrade_height: &Height,
+        reference_chain: Chain,
+        host_chain_id: &ChainId,
+        reference_upgrade_height: &Height,
     ) -> UpgradeClientsForChainResult {
-        let dst_chain = spawn_chain_runtime_generic::<Chain>(config, dst_chain_id)?;
+        let host_chain = spawn_chain_runtime_generic::<Chain>(config, host_chain_id)?;
 
         let req = QueryClientStatesRequest {
             pagination: Some(PageRequest::all()),
         };
-        let outputs = dst_chain
+        let outputs = host_chain
             .query_clients(req)
             .map_err(Error::relayer)?
             .into_iter()
-            .filter_map(|c| (self.src_chain_id == c.client_state.chain_id()).then(|| c.client_id))
+            .filter_map(|c| {
+                (self.reference_chain_id == c.client_state.chain_id()).then(|| c.client_id)
+            })
             .map(|id| {
                 TxUpgradeClientsCmd::upgrade_client(
                     id,
-                    dst_chain.clone(),
-                    src_chain.clone(),
-                    src_upgrade_height,
+                    host_chain.clone(),
+                    reference_chain.clone(),
+                    reference_upgrade_height,
                 )
             })
             .collect();
@@ -396,14 +402,14 @@ impl TxUpgradeClientsCmd {
 
     fn upgrade_client<Chain: ChainHandle>(
         client_id: ClientId,
-        dst_chain: Chain,
-        src_chain: Chain,
-        src_upgrade_height: &Height,
+        host_chain: Chain,
+        reference_chain: Chain,
+        reference_upgrade_height: &Height,
     ) -> Result<Vec<IbcEvent>, Error> {
-        let client = ForeignClient::restore(client_id, dst_chain, src_chain);
+        let client = ForeignClient::restore(client_id, host_chain, reference_chain);
 
         client
-            .upgrade(*src_upgrade_height)
+            .upgrade(*reference_upgrade_height)
             .map_err(Error::foreign_client)
     }
 }
@@ -892,7 +898,7 @@ mod tests {
     fn test_upgrade_clients_required_only() {
         assert_eq!(
             TxUpgradeClientsCmd {
-                src_chain_id: ChainId::from_string("chain_id")
+                reference_chain_id: ChainId::from_string("chain_id")
             },
             TxUpgradeClientsCmd::parse_from(&["test", "--reference-chain", "chain_id"])
         )
