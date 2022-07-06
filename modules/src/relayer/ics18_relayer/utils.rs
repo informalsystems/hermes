@@ -67,10 +67,10 @@ mod tests {
     /// Implements a "ping pong" of client update messages, so that two chains repeatedly
     /// process a client update message and update their height in succession.
     fn client_update_ping_pong() {
-        let chain_a_start_height = Height::new(1, 11);
-        let chain_b_start_height = Height::new(1, 20);
-        let client_on_b_for_a_height = Height::new(1, 10); // Should be smaller than `chain_a_start_height`
-        let client_on_a_for_b_height = Height::new(1, 20); // Should be smaller than `chain_b_start_height`
+        let chain_a_start_height = Height::new(1, 11).unwrap();
+        let chain_b_start_height = Height::new(1, 20).unwrap();
+        let client_on_b_for_a_height = Height::new(1, 10).unwrap(); // Should be smaller than `chain_a_start_height`
+        let client_on_a_for_b_height = Height::new(1, 20).unwrap(); // Should be smaller than `chain_b_start_height`
         let num_iterations = 4;
 
         let client_on_a_for_b = ClientId::new(ClientType::Tendermint, 0).unwrap();

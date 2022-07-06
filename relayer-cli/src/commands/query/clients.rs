@@ -13,12 +13,13 @@ use crate::error::Error;
 use crate::prelude::*;
 
 /// Query clients command
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct QueryAllClientsCmd {
     #[clap(
         long = "host-chain",
         required = true,
         value_name = "HOST_CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -106,5 +107,65 @@ impl Runnable for QueryAllClientsCmd {
             }
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::QueryAllClientsCmd;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::ChainId;
+
+    #[test]
+    fn test_query_clients_required_only() {
+        assert_eq!(
+            QueryAllClientsCmd {
+                chain_id: ChainId::from_string("chain_host_id"),
+                src_chain_id: None,
+                omit_chain_ids: false
+            },
+            QueryAllClientsCmd::parse_from(&["test", "--host-chain", "chain_host_id"])
+        )
+    }
+
+    #[test]
+    fn test_query_clients_omit_chain_ids() {
+        assert_eq!(
+            QueryAllClientsCmd {
+                chain_id: ChainId::from_string("chain_host_id"),
+                src_chain_id: None,
+                omit_chain_ids: true
+            },
+            QueryAllClientsCmd::parse_from(&[
+                "test",
+                "--host-chain",
+                "chain_host_id",
+                "--omit-chain-ids"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_clients_reference_chain() {
+        assert_eq!(
+            QueryAllClientsCmd {
+                chain_id: ChainId::from_string("chain_host_id"),
+                src_chain_id: Some(ChainId::from_string("reference_chain_id")),
+                omit_chain_ids: false
+            },
+            QueryAllClientsCmd::parse_from(&[
+                "test",
+                "--host-chain",
+                "chain_host_id",
+                "--reference-chain",
+                "reference_chain_id"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_clients_no_chain() {
+        assert!(QueryAllClientsCmd::try_parse_from(&["test"]).is_err())
     }
 }

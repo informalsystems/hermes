@@ -43,8 +43,8 @@ impl TryFrom<RawMsgConnectionOpenConfirm> for MsgConnectionOpenConfirm {
     fn try_from(msg: RawMsgConnectionOpenConfirm) -> Result<Self, Self::Error> {
         let proof_height = msg
             .proof_height
-            .ok_or_else(Error::missing_proof_height)?
-            .into();
+            .and_then(|raw_height| raw_height.try_into().ok())
+            .ok_or_else(Error::missing_proof_height)?;
 
         Ok(Self {
             connection_id: msg

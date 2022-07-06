@@ -17,12 +17,13 @@ use crate::conclude::{exit_with_unrecoverable_error, json, Output};
 /// If no key name is given, it will be taken from the configuration file.
 /// If successful the balance and denominator of the account, associated with the key name
 /// on the given chain, will be displayed.
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct KeyBalanceCmd {
     #[clap(
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the chain"
     )]
     chain_id: ChainId,
@@ -67,5 +68,41 @@ impl Runnable for KeyBalanceCmd {
             ))
             .exit(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::KeyBalanceCmd;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::ChainId;
+
+    #[test]
+    fn test_keys_balance_required_only() {
+        assert_eq!(
+            KeyBalanceCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                key_name: None
+            },
+            KeyBalanceCmd::parse_from(&["test", "--chain", "chain_id"])
+        )
+    }
+
+    #[test]
+    fn test_keys_balance_name() {
+        assert_eq!(
+            KeyBalanceCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                key_name: Some("kname".to_owned())
+            },
+            KeyBalanceCmd::parse_from(&["test", "--chain", "chain_id", "--key-name", "kname"])
+        )
+    }
+
+    #[test]
+    fn test_keys_balance_no_chain() {
+        assert!(KeyBalanceCmd::try_parse_from(&["test", "--key-name", "kname"]).is_err())
     }
 }

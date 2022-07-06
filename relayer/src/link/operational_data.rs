@@ -360,8 +360,8 @@ impl ConnectionDelay {
         if latest_height >= acceptable_height {
             0
         } else {
-            debug_assert!(acceptable_height.revision_number == latest_height.revision_number);
-            acceptable_height.revision_height - latest_height.revision_height
+            debug_assert!(acceptable_height.revision_number() == latest_height.revision_number());
+            acceptable_height.revision_height() - latest_height.revision_height()
         }
     }
 

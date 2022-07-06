@@ -35,7 +35,7 @@ pub trait Ics20Reader: ChannelReader {
     fn get_channel_escrow_address(
         &self,
         port_id: &PortId,
-        channel_id: ChannelId,
+        channel_id: &ChannelId,
     ) -> Result<<Self as Ics20Reader>::AccountId, Ics20Error> {
         let hash = cosmos_adr028_escrow_address(port_id, channel_id);
         String::from_utf8(hex::encode_upper(hash))
@@ -60,7 +60,7 @@ pub trait Ics20Reader: ChannelReader {
 }
 
 // https://github.com/cosmos/cosmos-sdk/blob/master/docs/architecture/adr-028-public-key-addresses.md
-fn cosmos_adr028_escrow_address(port_id: &PortId, channel_id: ChannelId) -> Vec<u8> {
+fn cosmos_adr028_escrow_address(port_id: &PortId, channel_id: &ChannelId) -> Vec<u8> {
     let contents = format!("{}/{}", port_id, channel_id);
 
     let mut hasher = Sha256::new();
@@ -112,13 +112,9 @@ fn validate_transfer_channel_params(
     ctx: &mut impl Ics20Context,
     order: Order,
     port_id: &PortId,
-    channel_id: &ChannelId,
+    _channel_id: &ChannelId,
     version: &Version,
 ) -> Result<(), Ics20Error> {
-    if channel_id.sequence() > (u32::MAX as u64) {
-        return Err(Ics20Error::chan_seq_exceeds_limit(channel_id.sequence()));
-    }
-
     if order != Order::Unordered {
         return Err(Ics20Error::channel_not_unordered(order));
     }
@@ -321,7 +317,7 @@ pub(crate) mod test {
             let port_id = port_id.parse().unwrap();
             let channel_id = channel_id.parse().unwrap();
             let gen_address = {
-                let addr = cosmos_adr028_escrow_address(&port_id, channel_id);
+                let addr = cosmos_adr028_escrow_address(&port_id, &channel_id);
                 bech32::encode("cosmos", addr)
             };
             assert_eq!(gen_address, address.to_owned())

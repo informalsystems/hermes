@@ -131,10 +131,10 @@ pub struct Attributes {
 impl Default for Attributes {
     fn default() -> Self {
         Attributes {
-            height: Height::default(),
+            height: Height::new(0, 1).unwrap(),
             client_id: Default::default(),
             client_type: ClientType::Tendermint,
-            consensus_height: Height::default(),
+            consensus_height: Height::new(0, 1).unwrap(),
         }
     }
 }
@@ -374,7 +374,7 @@ mod tests {
 
     #[test]
     fn client_event_to_abci_event() {
-        let height = Height::new(1, 1);
+        let height = Height::new(1, 1).unwrap();
         let attributes = Attributes {
             height,
             client_id: "test_client".parse().unwrap(),

@@ -59,8 +59,8 @@ impl TryFrom<RawMsgChannelOpenConfirm> for MsgChannelOpenConfirm {
             None,
             raw_msg
                 .proof_height
-                .ok_or_else(Error::missing_height)?
-                .into(),
+                .and_then(|raw_height| raw_height.try_into().ok())
+                .ok_or_else(Error::missing_height)?,
         )
         .map_err(Error::invalid_proof)?;
 
@@ -180,7 +180,7 @@ mod tests {
             Test {
                 name: "Bad channel, name too long".to_string(),
                 raw: RawMsgChannelOpenConfirm {
-                    channel_id: "channel-12839128379182739812739879".to_string(),
+                    channel_id: "channel-128391283791827398127398791283912837918273981273987912839".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,

@@ -12,7 +12,7 @@ class Packet:
     destination_port: PortId
     destination_channel: ChannelId
     data: Hex
-    timeout_height: Height
+    timeout_height: TimeoutHeight
     timeout_timestamp: Timestamp
 
 

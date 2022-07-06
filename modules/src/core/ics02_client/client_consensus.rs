@@ -129,7 +129,10 @@ impl TryFrom<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {
             .ok_or_else(Error::empty_consensus_state_response)?;
 
         Ok(AnyConsensusStateWithHeight {
-            height: value.height.ok_or_else(Error::missing_height)?.into(),
+            height: value
+                .height
+                .and_then(|raw_height| raw_height.try_into().ok())
+                .ok_or_else(Error::missing_height)?,
             consensus_state: state,
         })
     }

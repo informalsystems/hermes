@@ -40,6 +40,7 @@ impl Header {
             ChainId::chain_version(self.signed_header.header.chain_id.as_str()),
             u64::from(self.signed_header.header.height),
         )
+        .expect("malformed tendermint header domain type has an illegal height of 0")
     }
 
     pub fn compatible_with(&self, other_header: &Header) -> bool {
@@ -104,8 +105,8 @@ impl TryFrom<RawHeader> for Header {
                 .map_err(Error::invalid_raw_header)?,
             trusted_height: raw
                 .trusted_height
-                .ok_or_else(Error::missing_trusted_height)?
-                .into(),
+                .and_then(|raw_height| raw_height.try_into().ok())
+                .ok_or_else(Error::missing_trusted_height)?,
             trusted_validator_set: raw
                 .trusted_validators
                 .ok_or_else(Error::missing_trusted_validator_set)?
@@ -113,10 +114,10 @@ impl TryFrom<RawHeader> for Header {
                 .map_err(Error::invalid_raw_header)?,
         };
 
-        if header.height().revision_number != header.trusted_height.revision_number {
+        if header.height().revision_number() != header.trusted_height.revision_number() {
             return Err(Error::mismatched_revisions(
-                header.trusted_height.revision_number,
-                header.height().revision_number,
+                header.trusted_height.revision_number(),
+                header.height().revision_number(),
             ));
         }
 
@@ -199,7 +200,7 @@ pub mod test_util {
         Header {
             signed_header: shdr,
             validator_set: vs.clone(),
-            trusted_height: Height::new(0, 1),
+            trusted_height: Height::new(0, 1).unwrap(),
             trusted_validator_set: vs,
         }
     }
