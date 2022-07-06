@@ -12,6 +12,7 @@ use ibc_relayer::{
     config::{ChainConfig, Config},
     keyring::{HDPath, KeyEntry, KeyRing, Store},
 };
+use tracing::warn;
 
 use crate::application::app_config;
 use crate::conclude::Output;
@@ -79,6 +80,12 @@ pub struct KeysAddCmd {
         default_value = "m/44'/118'/0'/0/0"
     )]
     hd_path: String,
+
+    #[clap(
+        long = "overwrite",
+        help = "Overwrite the key if there is already one with the same key name"
+    )]
+    overwrite: bool,
 }
 
 impl KeysAddCmd {
@@ -122,7 +129,13 @@ impl Runnable for KeysAddCmd {
         // Check if --key-file or --mnemonic-file was given as input.
         match (self.key_file.clone(), self.mnemonic_file.clone()) {
             (Some(key_file), _) => {
-                let key = add_key(&opts.config, &opts.name, &key_file, &opts.hd_path);
+                let key = add_key(
+                    &opts.config,
+                    &opts.name,
+                    &key_file,
+                    &opts.hd_path,
+                    self.overwrite,
+                );
                 match key {
                     Ok(key) => Output::success_msg(format!(
                         "Added key '{}' ({}) on chain {}",
@@ -137,7 +150,13 @@ impl Runnable for KeysAddCmd {
                 }
             }
             (_, Some(mnemonic_file)) => {
-                let key = restore_key(&mnemonic_file, &opts.name, &opts.hd_path, &opts.config);
+                let key = restore_key(
+                    &mnemonic_file,
+                    &opts.name,
+                    &opts.hd_path,
+                    &opts.config,
+                    self.overwrite,
+                );
 
                 match key {
                     Ok(key) => Output::success_msg(format!(
@@ -168,8 +187,11 @@ pub fn add_key(
     key_name: &str,
     file: &Path,
     hd_path: &HDPath,
+    overwrite: bool,
 ) -> Result<KeyEntry, Box<dyn std::error::Error>> {
     let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
+
+    check_key_exists(&keyring, key_name, overwrite);
 
     let key_contents = fs::read_to_string(file).map_err(|_| "error reading the key file")?;
     let key = keyring.key_from_seed_file(&key_contents, hd_path)?;
@@ -183,15 +205,32 @@ pub fn restore_key(
     key_name: &str,
     hdpath: &HDPath,
     config: &ChainConfig,
+    overwrite: bool,
 ) -> Result<KeyEntry, Box<dyn std::error::Error>> {
     let mnemonic_content =
         fs::read_to_string(mnemonic).map_err(|_| "error reading the mnemonic file")?;
 
     let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
+
+    check_key_exists(&keyring, key_name, overwrite);
+
     let key_entry = keyring.key_from_mnemonic(&mnemonic_content, hdpath, &config.address_type)?;
 
     keyring.add_key(key_name, key_entry.clone())?;
     Ok(key_entry)
+}
+
+/// Check if the key with the given key name already exists.
+/// If it already exists and overwrite is false, abort the command with an error.
+/// If overwrite is true, output a warning message informing the key will be overwritten.
+fn check_key_exists(keyring: &KeyRing, key_name: &str, overwrite: bool) {
+    if let Ok(_) = keyring.get_key(key_name) {
+        if overwrite {
+            warn!("Key {} will be overwritten", key_name);
+        } else {
+            Output::error(format!("A key with name '{}' already exists", key_name)).exit();
+        }
+    }
 }
 
 #[cfg(test)]
@@ -211,7 +250,8 @@ mod tests {
                 key_file: Some(PathBuf::from("key_file")),
                 mnemonic_file: None,
                 key_name: None,
-                hd_path: "m/44'/118'/0'/0/0".to_string()
+                hd_path: "m/44'/118'/0'/0/0".to_string(),
+                overwrite: false,
             },
             KeysAddCmd::parse_from(&["test", "--chain", "chain_id", "--key-file", "key_file"])
         )
@@ -225,7 +265,8 @@ mod tests {
                 key_file: None,
                 mnemonic_file: Some(PathBuf::from("mnemonic_file")),
                 key_name: None,
-                hd_path: "m/44'/118'/0'/0/0".to_string()
+                hd_path: "m/44'/118'/0'/0/0".to_string(),
+                overwrite: false
             },
             KeysAddCmd::parse_from(&[
                 "test",
@@ -233,6 +274,50 @@ mod tests {
                 "chain_id",
                 "--mnemonic-file",
                 "mnemonic_file"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_keys_add_key_file_overwrite() {
+        assert_eq!(
+            KeysAddCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                key_file: Some(PathBuf::from("key_file")),
+                mnemonic_file: None,
+                key_name: None,
+                hd_path: "m/44'/118'/0'/0/0".to_string(),
+                overwrite: true,
+            },
+            KeysAddCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--key-file",
+                "key_file",
+                "--overwrite"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_keys_add_mnemonic_file_overwrite() {
+        assert_eq!(
+            KeysAddCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                key_file: None,
+                mnemonic_file: Some(PathBuf::from("mnemonic_file")),
+                key_name: None,
+                hd_path: "m/44'/118'/0'/0/0".to_string(),
+                overwrite: true,
+            },
+            KeysAddCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--mnemonic-file",
+                "mnemonic_file",
+                "--overwrite"
             ])
         )
     }
