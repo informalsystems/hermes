@@ -1,6 +1,6 @@
 //! Application-local prelude.
 //!
-//! Cconveniently import types/functions/macros
+//! Conveniently import types/functions/macros
 //! which are generally useful and should be available in every module with
 //! `use crate::prelude::*;
 

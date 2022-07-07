@@ -1,4 +1,4 @@
-//! All errors which can be reaised from a command.
+//! All errors which can be raised from a command.
 
 use flex_error::define_error;
 
