@@ -19,14 +19,14 @@ impl From<&IdentifiedChannelEnd> for PathIdentifiers {
     fn from(ice: &IdentifiedChannelEnd) -> Self {
         let counterparty = ice.channel_end.counterparty();
         let counterparty_channel_id = counterparty
-            .channel_id
+            .channel_id()
             .expect("no channel identifier in counterparty channel end");
 
         Self {
             port_id: ice.port_id.clone(),
-            channel_id: ice.channel_id,
+            channel_id: ice.channel_id.clone(),
             counterparty_port_id: counterparty.port_id.clone(),
-            counterparty_channel_id,
+            counterparty_channel_id: counterparty_channel_id.clone(),
         }
     }
 }

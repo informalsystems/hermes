@@ -18,38 +18,38 @@ DESCRIPTION:
 
 FLAGS:
         --amount <AMOUNT>
-            amount of coins (samoleans, by default) to send (e.g. `100000`)
+            Amount of coins (samoleans, by default) to send (e.g. `100000`)
 
         --dst-chain <DST_CHAIN_ID>
-            identifier of the destination chain
+            Identifier of the destination chain
 
         --src-chain <SRC_CHAIN_ID>
-            identifier of the source chain
+            Identifier of the source chain
 
         --src-chan <SRC_CHANNEL_ID>
-            identifier of the source channel
+            Identifier of the source channel
 
         --src-port <SRC_PORT_ID>
-            identifier of the source port
+            Identifier of the source port
 
 OPTIONS:
         --denom <DENOM>
-            denomination of the coins to send [default: samoleans]
+            Denomination of the coins to send [default: samoleans]
 
         --key-name <KEY_NAME>
-            use the given signing key name (default: `key_name` config)
+            Use the given signing key name (default: `key_name` config)
 
         --number-msgs <NUMBER_MSGS>
-            number of messages to send
+            Number of messages to send
 
         --receiver <RECEIVER>
-            receiving account address on the destination chain
+            Receiving account address on the destination chain
 
         --timeout-height-offset <TIMEOUT_HEIGHT_OFFSET>
-            timeout in number of blocks since current [default: 0]
+            Timeout in number of blocks since current [default: 0]
 
         --timeout-seconds <TIMEOUT_SECONDS>
-            timeout in seconds since current [default: 0]
+            Timeout in seconds since current [default: 0]
 ```
 
 __Example__

@@ -13,14 +13,12 @@ USAGE:
 DESCRIPTION:
     Query the identifiers of all channels on a given chain
 
-FLAGS:
-        --chain <CHAIN_ID>
-            identifier of the chain to query
-
 OPTIONS:
-        --verbose
-            enable verbose output, displaying the client and connection ids for each channel in the
-            response
+        --verbose    Enable verbose output, displaying the client and connection ids for each
+                     channel in the response
+
+REQUIRED:
+        --chain <CHAIN_ID>    Identifier of the chain to query
 ```
 
 __Example__
@@ -80,13 +78,13 @@ USAGE:
 DESCRIPTION:
     Query channel end
 
-FLAGS:
-        --chain <CHAIN_ID>        Identifier of the chain to query
-        --channel <CHANNEL_ID>    Identifier of the channel to query
-        --port <PORT_ID>          Identifier of the port to query
-
 OPTIONS:
-        --height <HEIGHT>         Height of the state to query
+        --height <HEIGHT>    Height of the state to query
+
+REQUIRED:
+        --chain <CHAIN_ID>        Identifier of the chain to query
+        --channel <CHANNEL_ID>    Identifier of the channel to query [aliases: chan]
+        --port <PORT_ID>          Identifier of the port to query
 ```
 
 __Example__
@@ -132,15 +130,15 @@ USAGE:
 DESCRIPTION:
     Query channel ends and underlying connection and client objects
 
-FLAGS:
-        --chain <CHAIN_ID>        Identifier of the chain to query
-        --channel <CHANNEL_ID>    Identifier of the channel to query
-        --port <PORT_ID>          Identifier of the port to query
-
 OPTIONS:
-        --height <HEIGHT>         Height of the state to query
-        --verbose                 enable verbose output, displaying all details of channels,
-                                  connections & clients
+        --height <HEIGHT>    Height of the state to query
+        --verbose            Enable verbose output, displaying all details of channels, connections
+                             & clients
+
+REQUIRED:
+        --chain <CHAIN_ID>        Identifier of the chain to query
+        --channel <CHANNEL_ID>    Identifier of the channel to query [aliases: chan]
+        --port <PORT_ID>          Identifier of the port to query
 ```
 
 __Example__
@@ -202,9 +200,9 @@ USAGE:
 DESCRIPTION:
     Query channel's client state
 
-FLAGS:
+REQUIRED:
         --chain <CHAIN_ID>        Identifier of the chain to query
-        --channel <CHANNEL_ID>    Identifier of the channel to query
+        --channel <CHANNEL_ID>    Identifier of the channel to query [aliases: chan]
         --port <PORT_ID>          Identifier of the port to query
 ```
 

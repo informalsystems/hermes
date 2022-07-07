@@ -108,9 +108,10 @@ mod tests {
             ..msg_conn_init_default.clone()
         };
         let default_context = MockContext::default();
-        let good_context = default_context
-            .clone()
-            .with_client(&msg_conn_init_default.client_id, Height::new(0, 10));
+        let good_context = default_context.clone().with_client(
+            &msg_conn_init_default.client_id,
+            Height::new(0, 10).unwrap(),
+        );
 
         let tests: Vec<Test> = vec![
             Test {

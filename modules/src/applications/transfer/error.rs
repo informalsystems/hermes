@@ -88,10 +88,6 @@ define_error! {
             [ TraceError<EncodingError> ]
             | _ | { "invalid hex string" },
 
-        ChanSeqExceedsLimit
-            { sequence: u64 }
-            | e | { format_args!("channel sequence ({0}) exceeds limit of {1}", e.sequence, u32::MAX) },
-
         ChannelNotUnordered
             { order: Order }
             | e | { format_args!("expected '{0}' channel, got '{1}'", Order::Unordered, e.order) },

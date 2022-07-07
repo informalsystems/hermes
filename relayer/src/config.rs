@@ -328,7 +328,11 @@ pub struct ChainConfig {
     pub store_prefix: String,
     pub default_gas: Option<u64>,
     pub max_gas: Option<u64>,
+
+    // This field is deprecated, use `gas_multiplier` instead
     pub gas_adjustment: Option<f64>,
+    pub gas_multiplier: Option<f64>,
+
     pub fee_granter: Option<String>,
     #[serde(default)]
     pub max_msg_num: MaxMsgNum,

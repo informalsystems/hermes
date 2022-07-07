@@ -11,6 +11,12 @@ class Height:
 
 
 @dataclass
+class TimeoutHeight:
+    revision_height: int
+    revision_number: int
+
+
+@dataclass
 class Duration:
     nanos: int
     secs: int
@@ -38,6 +44,7 @@ Sequence = NewType('Sequence', str)
 Timestamp = NewType('Timestamp', int)
 ClientType = NewType('ClientType', str)
 BlockHeight = NewType('BlockHeight', str)
+
 
 def split():
     sleep(0.5)

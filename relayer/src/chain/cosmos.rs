@@ -175,7 +175,7 @@ impl CosmosSdkChain {
         }
 
         // Get the latest height and convert to tendermint Height
-        let latest_height = TmHeight::try_from(self.query_chain_latest_height()?.revision_height)
+        let latest_height = TmHeight::try_from(self.query_chain_latest_height()?.revision_height())
             .map_err(Error::invalid_height)?;
 
         // Check on the configured max_tx_size against the consensus parameters at latest height
@@ -349,7 +349,7 @@ impl CosmosSdkChain {
             &self.config.rpc_addr,
             path,
             Path::Upgrade(query_data).to_string(),
-            TmHeight::try_from(query_height.revision_height).map_err(Error::invalid_height)?,
+            TmHeight::try_from(query_height.revision_height()).map_err(Error::invalid_height)?,
             true,
         ))?;
 
@@ -714,10 +714,11 @@ impl ChainEndpoint for CosmosSdkChain {
             .block_metas;
 
         return if let Some(latest_app_block) = blocks.first() {
-            let height = ICSHeight {
-                revision_number: ChainId::chain_version(latest_app_block.header.chain_id.as_str()),
-                revision_height: u64::from(abci_info.last_block_height),
-            };
+            let height = ICSHeight::new(
+                ChainId::chain_version(latest_app_block.header.chain_id.as_str()),
+                u64::from(abci_info.last_block_height),
+            )
+            .map_err(|_| Error::invalid_height_no_source())?;
             let timestamp = latest_app_block.header.time.into();
 
             Ok(ChainStatus { height, timestamp })
@@ -801,7 +802,7 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(|_| Error::invalid_height_no_source())?;
 
         let (upgraded_client_state_raw, proof) = self.query_client_upgrade_state(
-            ClientUpgradePath::UpgradedClientState(upgrade_height.revision_height),
+            ClientUpgradePath::UpgradedClientState(upgrade_height.revision_height()),
             query_height,
         )?;
 
@@ -825,7 +826,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         // Fetch the consensus state and its proof.
         let (upgraded_consensus_state_raw, proof) = self.query_client_upgrade_state(
-            ClientUpgradePath::UpgradedClientConsensusState(upgrade_height.revision_height),
+            ClientUpgradePath::UpgradedClientConsensusState(upgrade_height.revision_height()),
             query_height,
         )?;
 
@@ -878,8 +879,8 @@ impl ChainEndpoint for CosmosSdkChain {
         let res = self.query(
             ClientConsensusStatePath {
                 client_id: request.client_id.clone(),
-                epoch: request.consensus_height.revision_number,
-                height: request.consensus_height.revision_height,
+                epoch: request.consensus_height.revision_number(),
+                height: request.consensus_height.revision_height(),
             },
             request.query_height,
             matches!(include_proof, IncludeProof::Yes),
@@ -1225,8 +1226,8 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let height = response
             .height
-            .ok_or_else(|| Error::grpc_response_param("height".to_string()))?
-            .into();
+            .and_then(|raw_height| raw_height.try_into().ok())
+            .ok_or_else(|| Error::grpc_response_param("height".to_string()))?;
 
         Ok((commitment_sequences, height))
     }
@@ -1343,8 +1344,8 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let height = response
             .height
-            .ok_or_else(|| Error::grpc_response_param("height".to_string()))?
-            .into();
+            .and_then(|raw_height| raw_height.try_into().ok())
+            .ok_or_else(|| Error::grpc_response_param("height".to_string()))?;
 
         Ok((acks_sequences, height))
     }
@@ -1482,7 +1483,8 @@ impl ChainEndpoint for CosmosSdkChain {
 
                     if let Some(block) = response.blocks.first().map(|first| &first.block) {
                         let response_height =
-                            ICSHeight::new(self.id().version(), u64::from(block.header.height));
+                            ICSHeight::new(self.id().version(), u64::from(block.header.height))
+                                .map_err(|_| Error::invalid_height_no_source())?;
 
                         if let QueryHeight::Specific(query_height) = request.height {
                             if response_height > query_height {
@@ -1525,7 +1527,7 @@ impl ChainEndpoint for CosmosSdkChain {
         let height = match request.height {
             QueryHeight::Latest => TmHeight::from(0u32),
             QueryHeight::Specific(ibc_height) => {
-                TmHeight::try_from(ibc_height.revision_height).map_err(Error::invalid_height)?
+                TmHeight::try_from(ibc_height.revision_height()).map_err(Error::invalid_height)?
             }
         };
 
@@ -1750,15 +1752,21 @@ mod tests {
         let mut clients: Vec<IdentifiedAnyClientState> = vec![
             IdentifiedAnyClientState::new(
                 ClientId::new(ClientType::Tendermint, 4).unwrap(),
-                AnyClientState::Mock(MockClientState::new(MockHeader::new(Height::new(0, 0)))),
+                AnyClientState::Mock(MockClientState::new(MockHeader::new(
+                    Height::new(0, 1).unwrap(),
+                ))),
             ),
             IdentifiedAnyClientState::new(
                 ClientId::new(ClientType::Tendermint, 1).unwrap(),
-                AnyClientState::Mock(MockClientState::new(MockHeader::new(Height::new(0, 0)))),
+                AnyClientState::Mock(MockClientState::new(MockHeader::new(
+                    Height::new(0, 1).unwrap(),
+                ))),
             ),
             IdentifiedAnyClientState::new(
                 ClientId::new(ClientType::Tendermint, 7).unwrap(),
-                AnyClientState::Mock(MockClientState::new(MockHeader::new(Height::new(0, 0)))),
+                AnyClientState::Mock(MockClientState::new(MockHeader::new(
+                    Height::new(0, 1).unwrap(),
+                ))),
             ),
         ];
         clients.sort_by_cached_key(|c| client_id_suffix(&c.client_id).unwrap_or(0));

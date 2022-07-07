@@ -122,7 +122,7 @@ impl IbcTestRunner {
     }
 
     pub fn chain_id(chain_id: String, height: Height) -> ChainId {
-        ChainId::new(chain_id, height.revision_number)
+        ChainId::new(chain_id, height.revision_number())
     }
 
     pub fn version() -> Version {
@@ -143,7 +143,7 @@ impl IbcTestRunner {
     }
 
     pub fn height(height: Height) -> Height {
-        Height::new(height.revision_number, height.revision_height)
+        Height::new(height.revision_number(), height.revision_height()).unwrap()
     }
 
     fn mock_header(height: Height) -> MockHeader {

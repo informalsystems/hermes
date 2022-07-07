@@ -1,6 +1,4 @@
-use core::num::ParseIntError;
-
-use flex_error::{define_error, TraceError};
+use flex_error::define_error;
 use serde::Serialize;
 
 use crate::prelude::*;
@@ -31,13 +29,6 @@ define_error! {
         ChainIdInvalidFormat
             { id: String }
             | e | { format_args!("chain identifiers are expected to be in epoch format {0}", e.id) },
-
-        ChannelIdInvalidFormat
-            | _ | { "channel identifiers are expected to be in `channel-{N}` format" },
-
-        ChannelIdParseFailure
-            [ TraceError<ParseIntError> ]
-            | _ | { "failed to parse channel identifier" },
 
         InvalidCounterpartyChannelId
             |_| { "Invalid channel id in counterparty" }
