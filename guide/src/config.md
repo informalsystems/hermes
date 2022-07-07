@@ -36,7 +36,7 @@ For example, if there are only two chains configured, then Hermes will only rela
 i.e. the two chains will serve as a source for each other, and likewise as a destination for each other's relevant events.
 Hermes will ignore all events that pertain to chains which are unknown (ie. not present in config.toml).
 
-To restrict relaying on specific channels, or uni-directionally, you can use [packet filtering policies](https://github.com/informalsystems/ibc-rs/blob/v1.0.0-rc.0/config.toml#L207-L224).
+To restrict relaying on specific channels, or uni-directionally, you can use [packet filtering policies](https://github.com/informalsystems/ibc-rs/blob/v1.0.0-rc.0/config.toml#L209-L231).
 
 ## Adding private keys
 
