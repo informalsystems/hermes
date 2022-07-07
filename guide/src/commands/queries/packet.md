@@ -17,8 +17,8 @@ SUBCOMMANDS:
     commitment            Query packet commitment
     commitments           Query packet commitments
     pending               Output a summary of pending packets in both directions
-    pending-acks          Query unreceived acknowledgments
-    pending-sends         Query unreceived packets
+    pending-acks          Query pending acknowledgments
+    pending-sends         Query pending packets
     help                  Print this message or the help of the given subcommand(s)
 ```
 
@@ -236,10 +236,10 @@ USAGE:
     hermes query packet pending-sends --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
 
 DESCRIPTION:
-    Query unreceived packets
+    Query pending packets
 
 REQUIRED:
-        --chain <CHAIN_ID>        Identifier of the chain for the unreceived sequences
+        --chain <CHAIN_ID>        Identifier of the chain for the pending sequences
         --channel <CHANNEL_ID>    Channel identifier [aliases: chan]
         --port <PORT_ID>          Port identifier
 ```
@@ -269,10 +269,10 @@ USAGE:
     hermes query packet pending-acks --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
 
 DESCRIPTION:
-    Query unreceived acknowledgments
+    Query pending acknowledgments
 
 REQUIRED:
-        --chain <CHAIN_ID>        Identifier of the chain to query the unreceived acknowledgments
+        --chain <CHAIN_ID>        Identifier of the chain to query the pending acknowledgments
         --channel <CHANNEL_ID>    Channel identifier [aliases: chan]
         --port <PORT_ID>          Port identifier
 ```

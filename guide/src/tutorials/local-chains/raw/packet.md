@@ -32,7 +32,7 @@ First, we'll send `9999` `samoleans` from `ibc-0` to `ibc-1`.
     hermes query packet commitments --chain ibc-0 --port transfer --channel channel-0
     ```
 
-- query unreceived packets on `ibc-1`
+- query pending packets on `ibc-1`
 
     ```shell
     hermes query packet pending-sends --chain ibc-1 --port transfer --channel channel-1
@@ -44,7 +44,7 @@ First, we'll send `9999` `samoleans` from `ibc-0` to `ibc-1`.
     hermes tx raw packet-recv --dst-chain ibc-1 --src-chain ibc-0 --src-port transfer --src-chan channel-0
     ```
 
-- query unreceived acks on `ibc-0`
+- query pending acks on `ibc-0`
 
     ```shell
     hermes query packet pending-acks --chain ibc-0 --port transfer --channel channel-0
