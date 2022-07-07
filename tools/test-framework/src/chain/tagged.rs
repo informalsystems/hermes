@@ -6,6 +6,7 @@ use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use serde::Serialize;
 use serde_json as json;
+use tendermint::abci::responses::Event;
 
 use crate::chain::driver::interchain::{
     interchain_submit, query_interchain_account, register_interchain_account,
@@ -36,8 +37,11 @@ pub trait TaggedChainDriverExt<Chain> {
 
     fn tx_config(&self) -> MonoTagged<Chain, &TxConfig>;
 
-    fn send_tx(&self, wallet: &MonoTagged<Chain, &Wallet>, messages: Vec<Any>)
-        -> Result<(), Error>;
+    fn send_tx(
+        &self,
+        wallet: &MonoTagged<Chain, &Wallet>,
+        messages: Vec<Any>,
+    ) -> Result<Vec<Event>, Error>;
 
     /**
        Tagged version of [`ChainDriver::query_balance`].
@@ -146,7 +150,7 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
         &self,
         wallet: &MonoTagged<Chain, &Wallet>,
         messages: Vec<Any>,
-    ) -> Result<(), Error> {
+    ) -> Result<Vec<Event>, Error> {
         self.value().send_tx(wallet.value(), messages)
     }
 

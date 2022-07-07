@@ -20,6 +20,7 @@ use ibc::core::ics24_host::identifier::ChainId;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
+use tendermint::abci::responses::Event;
 
 use crate::chain::exec::{simple_exec, ExecOutput};
 use crate::error::{handle_generic_error, Error};
@@ -474,7 +475,7 @@ impl ChainDriver {
         Ok(amount)
     }
 
-    pub fn send_tx(&self, wallet: &Wallet, messages: Vec<Any>) -> Result<(), Error> {
+    pub fn send_tx(&self, wallet: &Wallet, messages: Vec<Any>) -> Result<Vec<Event>, Error> {
         self.runtime
             .block_on(simple_send_tx(&self.tx_config, &wallet.key, messages))
     }

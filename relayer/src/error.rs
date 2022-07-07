@@ -142,6 +142,10 @@ define_error! {
         EmptyResponseProof
             |_| { "empty response proof" },
 
+        RpcResponse
+            { detail: String }
+            | e | { format!("RPC client returns error response: {}", e.detail) },
+
         MalformedProof
             [ ProofError ]
             |_| { "malformed proof" },
