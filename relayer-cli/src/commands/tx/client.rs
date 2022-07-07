@@ -950,7 +950,15 @@ mod tests {
     }
 
     #[test]
+    fn test_upgrade_clients_no_upgrade_height() {
+        assert!(
+            TxUpgradeClientsCmd::try_parse_from(&["test", "--reference-chain", "chain_id",])
+                .is_err()
+        )
+    }
+
+    #[test]
     fn test_upgrade_clients_no_chain() {
-        assert!(TxUpgradeClientsCmd::try_parse_from(&["test"]).is_err())
+        assert!(TxUpgradeClientsCmd::try_parse_from(&["test", "--upgrade-height", "42"]).is_err())
     }
 }
