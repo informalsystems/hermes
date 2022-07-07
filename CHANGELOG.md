@@ -57,7 +57,7 @@ eg. feature, bug fix, etc.
 - Add unit tests for all Hermes commands with at least one argument
   ([#2358](https://github.com/informalsystems/ibc-rs/issues/2358))
 
-### IMPROVEMENTS
+#### IMPROVEMENTS
 
 - Add support for selecting a specific wallet in the `clear packets` CLI flow ([#2111](https://github.com/informalsystems/ibc-rs/issues/2111))
 - Added a required flag `--upgrade-height` that halts the reference chain at the
