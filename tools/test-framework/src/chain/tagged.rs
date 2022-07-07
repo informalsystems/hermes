@@ -41,7 +41,7 @@ pub trait TaggedChainDriverExt<Chain> {
         &self,
         wallet: &MonoTagged<Chain, &Wallet>,
         messages: Vec<Any>,
-    ) -> Result<Vec<Event>, Error>;
+    ) -> Result<Vec<Vec<Event>>, Error>;
 
     /**
        Tagged version of [`ChainDriver::query_balance`].
@@ -150,7 +150,7 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
         &self,
         wallet: &MonoTagged<Chain, &Wallet>,
         messages: Vec<Any>,
-    ) -> Result<Vec<Event>, Error> {
+    ) -> Result<Vec<Vec<Event>>, Error> {
         self.value().send_tx(wallet.value(), messages)
     }
 

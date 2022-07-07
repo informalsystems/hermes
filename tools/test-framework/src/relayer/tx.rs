@@ -1,19 +1,12 @@
 use core::str::FromStr;
 use core::time::Duration;
-use eyre::eyre;
 use http::uri::Uri;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_proto::cosmos::tx::v1beta1::Fee;
-use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::gas::calculate_fee;
-use ibc_relayer::chain::cosmos::query::account::query_account;
-use ibc_relayer::chain::cosmos::tx::estimate_fee_and_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::cosmos::types::gas::GasConfig;
-use ibc_relayer::chain::cosmos::wait::wait_tx_succeed;
 use ibc_relayer::config::GasPrice;
-use ibc_relayer::keyring::KeyEntry;
-use tendermint::abci::responses::Event;
 use tendermint_rpc::{HttpClient, Url};
 
 use crate::error::{handle_generic_error, Error};
@@ -69,44 +62,4 @@ pub fn new_tx_config_for_test(
         rpc_timeout,
         address_type,
     })
-}
-
-/**
- A simplified version of send_tx that does not depend on `ChainHandle`.
-
- This allows different wallet ([`KeyEntry`]) to be used for submitting
- transactions. The simple behavior as follows:
-
- - Query the account information on the fly. This may introduce more
-   overhead in production, but does not matter in testing.
- - Do not split the provided messages into smaller batches.
- - Wait for TX sync result, and error if any result contains
-   error event.
-*/
-pub async fn simple_send_tx(
-    config: &TxConfig,
-    key_entry: &KeyEntry,
-    messages: Vec<Any>,
-) -> Result<Vec<Event>, Error> {
-    let account = query_account(&config.grpc_address, &key_entry.account)
-        .await?
-        .into();
-
-    let response =
-        estimate_fee_and_send_tx(config, key_entry, &account, &Default::default(), messages)
-            .await?;
-
-    if response.code.is_err() {
-        return Err(eyre!("send_tx returns error response: {:?}", response).into());
-    }
-
-    let response = wait_tx_succeed(
-        &config.rpc_client,
-        &config.rpc_address,
-        &config.rpc_timeout,
-        &response.hash,
-    )
-    .await?;
-
-    Ok(response.tx_result.events)
 }

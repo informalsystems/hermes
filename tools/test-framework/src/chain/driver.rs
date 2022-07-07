@@ -18,6 +18,7 @@ use tracing::debug;
 
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_proto::google::protobuf::Any;
+use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
 use tendermint::abci::responses::Event;
@@ -25,7 +26,7 @@ use tendermint::abci::responses::Event;
 use crate::chain::exec::{simple_exec, ExecOutput};
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::denom::Denom;
-use crate::relayer::tx::{new_tx_config_for_test, simple_send_tx};
+use crate::relayer::tx::new_tx_config_for_test;
 use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::process::ChildProcess;
 use crate::types::wallet::{Wallet, WalletAddress, WalletId};
@@ -475,9 +476,12 @@ impl ChainDriver {
         Ok(amount)
     }
 
-    pub fn send_tx(&self, wallet: &Wallet, messages: Vec<Any>) -> Result<Vec<Event>, Error> {
-        self.runtime
-            .block_on(simple_send_tx(&self.tx_config, &wallet.key, messages))
+    pub fn send_tx(&self, wallet: &Wallet, messages: Vec<Any>) -> Result<Vec<Vec<Event>>, Error> {
+        let events =
+            self.runtime
+                .block_on(simple_send_tx(&self.tx_config, &wallet.key, messages))?;
+
+        Ok(events)
     }
 
     /**

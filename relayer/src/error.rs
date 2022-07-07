@@ -15,6 +15,7 @@ use tendermint_light_client::errors::{
 use tendermint_proto::Error as TendermintProtoError;
 use tendermint_rpc::endpoint::abci_query::AbciQuery;
 use tendermint_rpc::endpoint::broadcast::tx_commit::TxResult;
+use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxSyncResponse;
 use tendermint_rpc::Error as TendermintRpcError;
 use tonic::{
     metadata::errors::InvalidMetadataValue, transport::Error as TransportError,
@@ -56,10 +57,9 @@ define_error! {
 
         CheckTx
             {
-                detail: SdkError,
-                tx: TxResult
+                response: TxSyncResponse,
             }
-            |e| { format!("CheckTx commit returned an error: {0}, raw result: {1:?}", e.detail, e.tx) },
+            | e | { format!("CheckTx returned an error: {:?}", e.response) },
 
         DeliverTx
             {
