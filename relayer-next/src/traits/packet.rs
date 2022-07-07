@@ -16,7 +16,7 @@ where
 
     fn sequence(&self) -> &Sequence<SrcChain, DstChain>;
 
-    fn timeout_height(&self) -> &Height<DstChain>;
+    fn timeout_height(&self) -> Option<Height<DstChain>>;
 
     fn timeout_timestamp(&self) -> &Timestamp<DstChain>;
 }

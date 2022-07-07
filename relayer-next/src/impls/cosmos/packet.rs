@@ -1,5 +1,6 @@
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics04_channel::packet::Sequence;
+use ibc::core::ics04_channel::timeout::TimeoutHeight;
 use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc::timestamp::Timestamp;
 use ibc::Height;
@@ -34,8 +35,11 @@ where
         &self.sequence
     }
 
-    fn timeout_height(&self) -> &Height {
-        &self.timeout_height
+    fn timeout_height(&self) -> Option<Height> {
+        match self.timeout_height {
+            TimeoutHeight::Never => None,
+            TimeoutHeight::At(h) => Some(h),
+        }
     }
 
     fn timeout_timestamp(&self) -> &Timestamp {

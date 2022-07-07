@@ -25,7 +25,7 @@ where
             .handle
             .query_unreceived_packets(QueryUnreceivedPacketsRequest {
                 port_id: port_id.clone(),
-                channel_id: *channel_id,
+                channel_id: channel_id.clone(),
                 packet_commitment_sequences: vec![*sequence],
             })
             .map_err(Error::relayer)?;
