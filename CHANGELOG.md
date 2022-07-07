@@ -1,5 +1,112 @@
 # CHANGELOG
 
+## v1.0.0-rc.0
+
+*July 7th, 2022*
+
+This is the release candidate 0 for Hermes v1.0.0 🎉
+
+### Note for operators
+
+> ⚠️  This release contains multiple breaking changes to the Hermes command-line interface and configuration.
+> ⚠️  Please consult the [UPGRADING document for instructions](UPGRADING.md) to update to Hermes v1.0.0-rc.0.
+
+### BREAKING CHANGES
+
+- [IBC Modules](modules)
+  - Change `ChannelId` representation to a string, allowing all IDs valid per ICS 024
+    ([#2330](https://github.com/informalsystems/ibc-rs/issues/2330)).
+- [Relayer CLI](relayer-cli)
+  - New ADR to describe unifying CLI flags
+    ([#594](https://github.com/informalsystems/ibc-rs/issues/594))
+  - Merged commands `keys add` and `keys restore` into single command `keys add`. The flag to specify the key name for the CLI command `keys add` has been changed from `-n` to `-k`. Restoring a key now takes a file containing the mnemonic as input instead of directly taking the mnemonic. ([#1075](https://github.com/informalsystems/ibc-rs/issues/1075))
+  - Deprecate `gas_adjustment` setting in favor of new `gas_multiplier` setting
+    ([#2174](https://github.com/informalsystems/ibc-rs/issues/2174))
+  - Updated all CLI commands to take flags instead of positional arguments.
+    ([#2239](https://github.com/informalsystems/ibc-rs/issues/2239))
+  - Rename `query packet unreceived-packets` to `query packet pending-sends`
+    and `query packet unreceived-acks` to `query packet pending-acks`
+    ([#2379](https://github.com/informalsystems/ibc-rs/issues/2379))
+
+### BUG FIXES
+
+- [IBC Modules](modules)
+  - Fix `recv_packet` handler incorrectly querying `packet_receipt` and `next_sequence_recv` using
+    packet's `source_{port, channel}`.
+    ([#2293](https://github.com/informalsystems/ibc-rs/issues/2293))
+  - Permit channel identifiers with length up to 64 characters,
+    as per the ICS 024 specification.
+    ([#2330](https://github.com/informalsystems/ibc-rs/issues/2330)).
+- [Relayer Library](relayer)
+  - Fix `execute_schedule` method dropping operational data due to improper
+    handling of errors. ([#2118](https://github.com/informalsystems/ibc-rs/issues/1153))
+  - Fix duplicate packets being generated on start. ([#2093](https://github.com/informalsystems/ibc-rs/issues/2093))
+  - Use appropriate height when querying for client upgrade state
+    ([#2185](https://github.com/informalsystems/ibc-rs/issues/2185))
+  - Fix the channel handshake issues that occur when concurrent relayers are
+    present ([#2254](https://github.com/informalsystems/ibc-rs/issues/2254))
+  - When Hermes submits `N` messages to a chain, it will now always gets back `N` responses, even in the presence of errors.
+    ([#2333](https://github.com/informalsystems/ibc-rs/issues/2333))
+- [Relayer CLI](relayer-cli)
+  - CLI command `config validate` now correctly outputs an error if the configuration file
+    does not exist or is empty. ([#2143](https://github.com/informalsystems/ibc-rs/issues/2143))
+  - Fix the flow for crate connection to ensure success
+    despite concurrent relayers racing to finish the handshake.
+    ([#2168](https://github.com/informalsystems/ibc-rs/issues/2168))
+
+### FEATURES
+
+- [IBC Proto](proto)
+  - Generate gRPC server code under feature 'server'
+    ([#2277](https://github.com/informalsystems/ibc-rs/issues/2277))
+- [Relayer Library](relayer)
+  - Add preliminary support for multiple chain types, which can be specified in
+    the chain configuration. At the moment only the `CosmosSdk` chain type is
+    supported. ([#2240](https://github.com/informalsystems/ibc-rs/issues/2240))
+  - Add support for fetching & parsing the Tendermint version of a network that
+    Hermes is connected to. ([#2301](https://github.com/informalsystems/ibc-rs/issues/2301))
+- [Relayer CLI](relayer-cli)
+  - Added CLI command `keys balance` which outputs the balance of an account associated with a
+    key. ([#912](https://github.com/informalsystems/ibc-rs/issues/912))
+  - Added CLI command `query channel client` which outputs the channel's client state.
+    ([#999](https://github.com/informalsystems/ibc-rs/issues/999))
+  - Added CLI command `query transfer denom-trace` which outputs the base denomination and path of a given
+    trace hash. ([#2201](https://github.com/informalsystems/ibc-rs/issues/2201))
+  - Add unit tests for all Hermes commands with at least one argument
+    ([#2358](https://github.com/informalsystems/ibc-rs/issues/2358))
+- [Telemetry & Metrics](telemetry)
+  - Added new metrics to track the number of relayed SendPacket and
+    WriteAcknowledgement, the sequence number and the timestamp of the
+    oldest pending SendPacket ([#2175](https://github.com/informalsystems/ibc-
+    rs/issues/2175))
+
+### IMPROVEMENTS
+
+- [IBC Modules](modules)
+  - Remove the concept of a zero Height
+    ([#1009](https://github.com/informalsystems/ibc-rs/issues/1009))
+  - Complete ICS20 implementation ([#1759](https://github.com/informalsystems/ibc-rs/issues/1759))
+  - Derive `serde::{Serialize, Deserialize}` for `U256`. ([#2279](https://github.com/informalsystems/ibc-rs/issues/2279))
+  - Remove unnecessary supertraits requirements from ICS20 traits.
+    ([#2280](https://github.com/informalsystems/ibc-rs/pull/2280))
+- [Relayer Library](relayer)
+  - Added handler for SDK Err(13) in order to output an understanble error
+    message. ([#1400](https://github.com/informalsystems/ibc-rs/issues/1400))
+  - Do not retry indefinitely on command handling failure in the packet worker
+    ([#2155](https://github.com/informalsystems/ibc-rs/issues/2155))
+  - Consolidate ChainEndpoint::proven_* methods with their corresponding query_*()
+    form ([#2223](https://github.com/informalsystems/ibc-rs/issues/2223))
+  - Reduce relaying delay when some account mismatch errors occur during Tx
+    simulation ([#2249](https://github.com/informalsystems/ibc-rs/issues/2249))
+- [Relayer CLI](relayer-cli)
+  - Add support for selecting a specific wallet in the `clear packets` CLI flow ([#2111](https://github.com/informalsystems/ibc-rs/issues/2111))
+  - Added a required flag `--upgrade-height` that halts the reference chain at the
+    specified height when performing a client upgrade
+    ([#2300](https://github.com/informalsystems/ibc-rs/issues/2300))
+  - Added `--yes` flag to the `create channel` flow to enable skipping the
+    `--new-client-connection` step ([#2317](https://github.com/informalsystems/ibc-rs/issues/2317))
+
+
 ## v0.15.0
 
 *May 23rd, 2022*
