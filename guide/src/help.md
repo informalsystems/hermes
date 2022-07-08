@@ -439,26 +439,26 @@ In order to test the correct operation during the channel close, perform the ste
   this path).
 
   ```shell
-  hermes tx raw ft-transfer --dst-chain ibc-0 --src-chain ibc-1 --src-port transfer --src-chan channel-1 --amount 5555 --timeout-height-offset 1000 --number-msgs 1 --denom samoleans
+  hermes tx ft-transfer --receiver-chain ibc-0 --sender-chain ibc-1 --sender-port transfer --sender-channel channel-1 --amount 5555 --timeout-height-offset 1000 --number-msgs 1 --denom samoleans
   ```
 
 - now do the first step of channel closing: the channel will transition
 to close-open:
 
     ```shell
-    hermes --config config.toml tx raw chan-close-init --dst-chain ibc-0 --src-chain ibc-1 --dst-conn connection-0 --dst-port transfer --src-port transfer --dst-chan channel-0 --src-chan channel-1
+    hermes --config config.toml tx chan-close-init --receiver-chain ibc-0 --sender-chain ibc-1 --receiver-connection connection-0 --receiver-port transfer --sender-port transfer --receiver-channel channel-0 --sender-channel channel-1
     ```
 
 - trigger timeout on close to ibc-1
 
     ```shell
-    hermes --config config.toml tx raw packet-recv --dst-chain ibc-0 --src-chain ibc-1 --src-port transfer --src-chan channel-1
+    hermes --config config.toml tx packet-recv --receiver-chain ibc-0 --sender-chain ibc-1 --sender-port transfer --sender-channel channel-1
     ```
 
 - close-close
 
     ```shell
-    hermes --config config.toml tx raw chan-close-confirm --dst-chain ibc-1 --src-chain ibc-0 --dst-conn connection-1 --dst-port transfer --src-port transfer --dst-chan channel-1 --src-chan channel-0
+    hermes --config config.toml tx chan-close-confirm --receiver-chain ibc-1 --sender-chain ibc-0 --receiver-connection connection-1 --receiver-port transfer --sender-port transfer --receiver-channel channel-1 --sender-channel channel-0
     ```
 
 - verify that the two ends are in Close state:
@@ -543,10 +543,10 @@ methods involved in a command.
 __NOTE__: To be able to see the profiling output, the realyer needs to be compiled with
 the `profiling` feature and the [log level][log-level] should be `info` level or lower.
 
-#### Example output for `tx raw conn-init` command
+#### Example output for `tx conn-init` command
 
 ```
-hermes --config config.toml tx raw conn-init --dst-chain ibc-0 --src-chain ibc-1 --dst-client 07-tendermint-0 --src-client 07-tendermint-0
+hermes --config config.toml tx conn-init --b-chain ibc-0 --a-chain ibc-1 --b-client 07-tendermint-0 --a-client 07-tendermint-0
 ```
 
 ```
