@@ -1,3 +1,4 @@
+use alloc::collections::BTreeSet;
 use async_trait::async_trait;
 use core::marker::PhantomData;
 
@@ -28,37 +29,27 @@ where
         context: &Context,
         messages: Vec<Message>,
     ) -> Result<Vec<Vec<Event>>, Context::Error> {
-        let min_source_height = messages
+        let source_heights: BTreeSet<Height> = messages
             .iter()
-            .map(|message| message.source_height())
-            .reduce(|height1, height2| match (height1, height2) {
-                (Some(h1), Some(h2)) => {
-                    if h1 > h2 {
-                        Some(h1)
-                    } else {
-                        Some(h2)
-                    }
-                }
-                (Some(h1), None) => Some(h1),
-                (None, h2) => h2,
-            })
-            .flatten();
+            .map(|message| message.source_height().into_iter())
+            .flatten()
+            .collect();
 
-        match min_source_height {
-            Some(height) => {
-                let mut in_messages = context.build_update_client_messages(height).await?;
+        let mut in_messages = Vec::new();
 
-                let update_messages_count = in_messages.len();
-
-                in_messages.extend(messages);
-
-                let in_events = Sender::send_messages(context, in_messages).await?;
-
-                let events = in_events.into_iter().take(update_messages_count).collect();
-
-                Ok(events)
-            }
-            None => Sender::send_messages(context, messages).await,
+        for height in source_heights {
+            let messages = context.build_update_client_messages(height).await?;
+            in_messages.extend(messages);
         }
+
+        let update_messages_count = in_messages.len();
+
+        in_messages.extend(messages);
+
+        let in_events = Sender::send_messages(context, in_messages).await?;
+
+        let events = in_events.into_iter().take(update_messages_count).collect();
+
+        Ok(events)
     }
 }
