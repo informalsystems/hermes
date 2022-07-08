@@ -312,13 +312,13 @@ Follow the steps below to connect three chains together and relay packets betwee
     (...)
     ```
 
-8. Query the unreceived packets and acknowledgments on `ibc-1` and `ibc-2` from a different terminal:
+8. Query the pending packets and acknowledgments on `ibc-1` and `ibc-2` from a different terminal:
 
     ```shell
-    hermes query packet unreceived-packets --chain ibc-1 --port transfer --channel channel-0
-    hermes query packet unreceived-acks --chain ibc-0 --port transfer --channel channel-0
-    hermes query packet unreceived-packets --chain ibc-2 --port transfer --channel channel-0
-    hermes query packet unreceived-acks --chain ibc-1 --port transfer --channel channel-1
+    hermes query packet pending-sends --chain ibc-1 --port transfer --channel channel-0
+    hermes query packet pending-acks --chain ibc-0 --port transfer --channel channel-0
+    hermes query packet pending-sends --chain ibc-2 --port transfer --channel channel-0
+    hermes query packet pending-acks --chain ibc-1 --port transfer --channel channel-1
     ```
 
     If everything went well, each of these commands should result in:
