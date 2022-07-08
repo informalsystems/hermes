@@ -3,14 +3,9 @@ use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_framework::impls::messages::skip_update_client::SkipUpdateClient;
-use ibc_relayer_framework::traits::chain_context::{ChainContext, IbcChainContext};
 use ibc_relayer_framework::traits::messages::update_client::{
     UpdateClientContext, UpdateClientMessageBuilder,
 };
-use ibc_relayer_framework::traits::queries::consensus_state::{
-    ConsensusStateContext, ConsensusStateQuerier,
-};
-use ibc_relayer_framework::traits::target::ChainTarget;
 
 use crate::cosmos::error::Error;
 use crate::cosmos::handler::CosmosRelayHandler;
@@ -24,12 +19,7 @@ impl<SrcChain, DstChain, Target> UpdateClientContext<Target>
 where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
-    Target: ChainTarget<CosmosRelayHandler<SrcChain, DstChain>>,
-    CosmosRelayHandler<SrcChain, DstChain>: CosmosChainTarget<SrcChain, DstChain, Target>,
-    Target::CounterpartyChain: ChainContext<Height = Height>,
-    Target::TargetChain: IbcChainContext<Target::CounterpartyChain, IbcMessage = CosmosIbcMessage>,
-    Target::CounterpartyChain: ConsensusStateContext<Target::TargetChain>,
-    Target::TargetChain: ConsensusStateQuerier<Target::CounterpartyChain>,
+    Target: CosmosChainTarget<SrcChain, DstChain>,
 {
     type UpdateClientMessageBuilder = SkipUpdateClient<CosmosUpdateClient>;
 }
@@ -41,17 +31,13 @@ impl<SrcChain, DstChain, Target>
 where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
-    Target: ChainTarget<CosmosRelayHandler<SrcChain, DstChain>>,
-    CosmosRelayHandler<SrcChain, DstChain>: CosmosChainTarget<SrcChain, DstChain, Target>,
-    Target::CounterpartyChain: ChainContext<Height = Height>,
-    Target::TargetChain: IbcChainContext<Target::CounterpartyChain, IbcMessage = CosmosIbcMessage>,
+    Target: CosmosChainTarget<SrcChain, DstChain>,
 {
     async fn build_update_client_messages(
         context: &CosmosRelayHandler<SrcChain, DstChain>,
         height: Height,
     ) -> Result<Vec<CosmosIbcMessage>, Error> {
-        let messages = context
-            .target_foreign_client()
+        let messages = Target::target_foreign_client(context)
             .build_update_client_with_trusted(height, None)
             .map_err(Error::foreign_client)?;
 
