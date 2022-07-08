@@ -2,9 +2,13 @@ use async_trait::async_trait;
 use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer_framework::impls::messages::skip_update_client::SkipUpdateClient;
 use ibc_relayer_framework::traits::chain_context::{ChainContext, IbcChainContext};
 use ibc_relayer_framework::traits::messages::update_client::{
     UpdateClientContext, UpdateClientMessageBuilder,
+};
+use ibc_relayer_framework::traits::queries::consensus_state::{
+    ConsensusStateContext, ConsensusStateQuerier,
 };
 use ibc_relayer_framework::traits::target::ChainTarget;
 
@@ -24,8 +28,10 @@ where
     CosmosRelayHandler<SrcChain, DstChain>: CosmosChainTarget<SrcChain, DstChain, Target>,
     Target::CounterpartyChain: ChainContext<Height = Height>,
     Target::TargetChain: IbcChainContext<Target::CounterpartyChain, IbcMessage = CosmosIbcMessage>,
+    Target::CounterpartyChain: ConsensusStateContext<Target::TargetChain>,
+    Target::TargetChain: ConsensusStateQuerier<Target::CounterpartyChain>,
 {
-    type UpdateClientMessageBuilder = CosmosUpdateClient;
+    type UpdateClientMessageBuilder = SkipUpdateClient<CosmosUpdateClient>;
 }
 
 #[async_trait]

@@ -1,6 +1,7 @@
 use crate::traits::chain_context::IbcChainContext;
 use crate::traits::core::Async;
 use crate::traits::relay_context::RelayContext;
+use crate::types::aliases::ClientId;
 
 pub struct SourceTarget;
 
@@ -14,6 +15,12 @@ pub trait ChainTarget<Relay: RelayContext>: Async + private::Sealed {
     fn target_chain(context: &Relay) -> &Self::TargetChain;
 
     fn counterparty_chain(context: &Relay) -> &Self::CounterpartyChain;
+
+    fn target_client_id(context: &Relay) -> &ClientId<Self::TargetChain, Self::CounterpartyChain>;
+
+    fn counterparty_client_id(
+        context: &Relay,
+    ) -> &ClientId<Self::CounterpartyChain, Self::TargetChain>;
 }
 
 impl private::Sealed for SourceTarget {}
@@ -30,6 +37,16 @@ impl<Relay: RelayContext> ChainTarget<Relay> for SourceTarget {
     fn counterparty_chain(context: &Relay) -> &Self::CounterpartyChain {
         context.destination_chain()
     }
+
+    fn target_client_id(context: &Relay) -> &ClientId<Self::TargetChain, Self::CounterpartyChain> {
+        context.source_client_id()
+    }
+
+    fn counterparty_client_id(
+        context: &Relay,
+    ) -> &ClientId<Self::CounterpartyChain, Self::TargetChain> {
+        context.destination_client_id()
+    }
 }
 
 impl<Relay: RelayContext> ChainTarget<Relay> for DestinationTarget {
@@ -42,6 +59,16 @@ impl<Relay: RelayContext> ChainTarget<Relay> for DestinationTarget {
 
     fn counterparty_chain(context: &Relay) -> &Self::CounterpartyChain {
         context.source_chain()
+    }
+
+    fn target_client_id(context: &Relay) -> &ClientId<Self::TargetChain, Self::CounterpartyChain> {
+        context.destination_client_id()
+    }
+
+    fn counterparty_client_id(
+        context: &Relay,
+    ) -> &ClientId<Self::CounterpartyChain, Self::TargetChain> {
+        context.source_client_id()
     }
 }
 
