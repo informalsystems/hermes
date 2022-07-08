@@ -3,7 +3,9 @@ use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_framework::traits::chain_context::{ChainContext, IbcChainContext};
-use ibc_relayer_framework::traits::messages::update_client::UpdateClientMessageBuilder;
+use ibc_relayer_framework::traits::messages::update_client::{
+    UpdateClientContext, UpdateClientMessageBuilder,
+};
 use ibc_relayer_framework::traits::target::ChainTarget;
 
 use crate::cosmos::error::Error;
@@ -11,23 +13,38 @@ use crate::cosmos::handler::CosmosRelayHandler;
 use crate::cosmos::message::CosmosIbcMessage;
 use crate::cosmos::target::CosmosChainTarget;
 
-#[async_trait]
-impl<SrcChain, DstChain, Target>
-    UpdateClientMessageBuilder<CosmosRelayHandler<SrcChain, DstChain>, Target>
+pub struct CosmosUpdateClient;
+
+impl<SrcChain, DstChain, Target> UpdateClientContext<Target>
     for CosmosRelayHandler<SrcChain, DstChain>
 where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
     Target: ChainTarget<CosmosRelayHandler<SrcChain, DstChain>>,
-    Self: CosmosChainTarget<SrcChain, DstChain, Target>,
+    CosmosRelayHandler<SrcChain, DstChain>: CosmosChainTarget<SrcChain, DstChain, Target>,
+    Target::CounterpartyChain: ChainContext<Height = Height>,
+    Target::TargetChain: IbcChainContext<Target::CounterpartyChain, IbcMessage = CosmosIbcMessage>,
+{
+    type UpdateClientMessageBuilder = CosmosUpdateClient;
+}
+
+#[async_trait]
+impl<SrcChain, DstChain, Target>
+    UpdateClientMessageBuilder<CosmosRelayHandler<SrcChain, DstChain>, Target>
+    for CosmosUpdateClient
+where
+    SrcChain: ChainHandle,
+    DstChain: ChainHandle,
+    Target: ChainTarget<CosmosRelayHandler<SrcChain, DstChain>>,
+    CosmosRelayHandler<SrcChain, DstChain>: CosmosChainTarget<SrcChain, DstChain, Target>,
     Target::CounterpartyChain: ChainContext<Height = Height>,
     Target::TargetChain: IbcChainContext<Target::CounterpartyChain, IbcMessage = CosmosIbcMessage>,
 {
     async fn build_update_client_messages(
-        &self,
+        context: &CosmosRelayHandler<SrcChain, DstChain>,
         height: Height,
     ) -> Result<Vec<CosmosIbcMessage>, Error> {
-        let messages = self
+        let messages = context
             .target_foreign_client()
             .build_update_client_with_trusted(height, None)
             .map_err(Error::foreign_client)?;
