@@ -1602,7 +1602,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ibc-relayer-next"
+name = "ibc-relayer-cosmos"
 version = "0.16.0"
 dependencies = [
  "async-trait",
@@ -1611,6 +1611,7 @@ dependencies = [
  "ibc",
  "ibc-proto",
  "ibc-relayer",
+ "ibc-relayer-framework",
  "itertools",
  "prost",
  "serde",
@@ -1620,6 +1621,14 @@ dependencies = [
  "tendermint-light-client-verifier",
  "tendermint-proto",
  "tendermint-rpc",
+ "tokio",
+]
+
+[[package]]
+name = "ibc-relayer-framework"
+version = "0.16.0"
+dependencies = [
+ "async-trait",
  "tokio",
 ]
 

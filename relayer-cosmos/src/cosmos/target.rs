@@ -1,8 +1,8 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer_framework::traits::target::{ChainTarget, DestinationTarget, SourceTarget};
 
-use crate::impls::cosmos::handler::CosmosRelayHandler;
-use crate::traits::target::{ChainTarget, DestinationTarget, SourceTarget};
+use crate::cosmos::handler::CosmosRelayHandler;
 
 pub trait CosmosChainTarget<SrcChain, DstChain, Target>
 where

@@ -2,14 +2,14 @@ use async_trait::async_trait;
 use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer_framework::traits::chain_context::{ChainContext, IbcChainContext};
+use ibc_relayer_framework::traits::messages::update_client::UpdateClientMessageBuilder;
+use ibc_relayer_framework::traits::target::ChainTarget;
 
-use crate::impls::cosmos::error::Error;
-use crate::impls::cosmos::handler::CosmosRelayHandler;
-use crate::impls::cosmos::message::CosmosIbcMessage;
-use crate::impls::cosmos::target::CosmosChainTarget;
-use crate::traits::chain_context::{ChainContext, IbcChainContext};
-use crate::traits::messages::update_client::UpdateClientMessageBuilder;
-use crate::traits::target::ChainTarget;
+use crate::cosmos::error::Error;
+use crate::cosmos::handler::CosmosRelayHandler;
+use crate::cosmos::message::CosmosIbcMessage;
+use crate::cosmos::target::CosmosChainTarget;
 
 #[async_trait]
 impl<SrcChain, DstChain, Target>

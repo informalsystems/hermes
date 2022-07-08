@@ -5,11 +5,11 @@ use ibc::core::ics04_channel::packet::PacketMsgType;
 use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer_framework::traits::messages::receive_packet::ReceivePacketMessageBuilder;
 
-use crate::impls::cosmos::error::Error;
-use crate::impls::cosmos::handler::CosmosRelayHandler;
-use crate::impls::cosmos::message::CosmosIbcMessage;
-use crate::traits::messages::receive_packet::ReceivePacketMessageBuilder;
+use crate::cosmos::error::Error;
+use crate::cosmos::handler::CosmosRelayHandler;
+use crate::cosmos::message::CosmosIbcMessage;
 
 #[async_trait]
 impl<SrcChain, DstChain> ReceivePacketMessageBuilder<CosmosRelayHandler<SrcChain, DstChain>>

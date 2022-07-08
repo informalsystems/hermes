@@ -1,8 +1,6 @@
 extern crate alloc;
 
-pub mod impls;
-pub mod traits;
-pub mod types;
+pub mod cosmos;
 
 #[cfg(test)]
 pub mod tests;

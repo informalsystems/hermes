@@ -2,17 +2,17 @@ use async_trait::async_trait;
 use ibc::events::IbcEvent;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::tracking::TrackedMsgs;
+use ibc_relayer_framework::impls::message_senders::chain_sender::SendIbcMessagesToChain;
+use ibc_relayer_framework::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
+use ibc_relayer_framework::traits::ibc_message_sender::IbcMessageSender;
+use ibc_relayer_framework::traits::ibc_message_sender::IbcMessageSenderContext;
+use ibc_relayer_framework::traits::message::Message;
+use ibc_relayer_framework::traits::message_sender::{MessageSender, MessageSenderContext};
+use ibc_relayer_framework::traits::target::ChainTarget;
 
-use crate::impls::cosmos::error::Error;
-use crate::impls::cosmos::handler::{CosmosChainHandler, CosmosRelayHandler};
-use crate::impls::cosmos::message::CosmosIbcMessage;
-use crate::impls::message_senders::chain_sender::SendIbcMessagesToChain;
-use crate::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
-use crate::traits::ibc_message_sender::IbcMessageSender;
-use crate::traits::ibc_message_sender::IbcMessageSenderContext;
-use crate::traits::message::Message;
-use crate::traits::message_sender::{MessageSender, MessageSenderContext};
-use crate::traits::target::ChainTarget;
+use crate::cosmos::error::Error;
+use crate::cosmos::handler::{CosmosChainHandler, CosmosRelayHandler};
+use crate::cosmos::message::CosmosIbcMessage;
 
 pub struct CosmosBaseMessageSender;
 

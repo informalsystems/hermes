@@ -7,14 +7,14 @@ use ibc::timestamp::Timestamp;
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer_framework::traits::chain_context::{ChainContext, IbcChainContext};
+use ibc_relayer_framework::traits::core::Async;
+use ibc_relayer_framework::traits::core::ErrorContext;
+use ibc_relayer_framework::traits::ibc_event_context::IbcEventContext;
+use ibc_relayer_framework::traits::relay_context::RelayContext;
 
-use crate::impls::cosmos::error::Error;
-use crate::impls::cosmos::message::CosmosIbcMessage;
-use crate::traits::chain_context::{ChainContext, IbcChainContext};
-use crate::traits::core::Async;
-use crate::traits::core::ErrorContext;
-use crate::traits::ibc_event_context::IbcEventContext;
-use crate::traits::relay_context::RelayContext;
+use crate::cosmos::error::Error;
+use crate::cosmos::message::CosmosIbcMessage;
 
 pub struct CosmosChainHandler<Handle> {
     pub handle: Handle,

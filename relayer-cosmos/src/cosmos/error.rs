@@ -2,9 +2,8 @@ use eyre::Report;
 use flex_error::{define_error, TraceError};
 use ibc_relayer::error::Error as RelayerError;
 use ibc_relayer::foreign_client::ForeignClientError;
+use ibc_relayer_framework::traits::ibc_message_sender::MismatchIbcEventsCountError;
 use prost::EncodeError;
-
-use crate::traits::ibc_message_sender::MismatchIbcEventsCountError;
 
 define_error! {
     Error {

@@ -4,10 +4,10 @@ use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortI
 use ibc::events::IbcEvent;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
+use ibc_relayer_framework::traits::chain_context::{ChainContext, IbcChainContext};
+use ibc_relayer_framework::traits::relay_context::RelayContext;
 
-use crate::impls::cosmos::message::CosmosIbcMessage;
-use crate::traits::chain_context::{ChainContext, IbcChainContext};
-use crate::traits::relay_context::RelayContext;
+use crate::cosmos::message::CosmosIbcMessage;
 
 pub trait CosmosChainContext:
     ChainContext<Height = Height, Timestamp = Timestamp, Message = CosmosIbcMessage, Event = IbcEvent>

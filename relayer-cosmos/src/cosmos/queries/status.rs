@@ -3,11 +3,11 @@ use ibc::timestamp::Timestamp;
 use ibc::Height;
 use ibc_relayer::chain::endpoint::ChainStatus as CosmosChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer_framework::traits::core::Async;
+use ibc_relayer_framework::traits::queries::status::{ChainStatus, ChainStatusQuerier};
 
-use crate::impls::cosmos::error::Error;
-use crate::impls::cosmos::handler::CosmosChainHandler;
-use crate::traits::core::Async;
-use crate::traits::queries::status::{ChainStatus, ChainStatusQuerier};
+use crate::cosmos::error::Error;
+use crate::cosmos::handler::CosmosChainHandler;
 
 impl<Chain> ChainStatus<CosmosChainHandler<Chain>> for CosmosChainStatus
 where

@@ -1,12 +1,12 @@
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer_framework::impls::packet_relayers::base_receive_packet::BaseReceivePacketRelayer;
+use ibc_relayer_framework::impls::packet_relayers::skip_received_packet::SkipReceivedPacketRelayer;
+use ibc_relayer_framework::traits::messages::receive_packet::ReceivePacketRelayer;
 
-use crate::impls::cosmos::error::Error;
-use crate::impls::cosmos::handler::CosmosRelayHandler;
-use crate::impls::packet_relayers::base_receive_packet::BaseReceivePacketRelayer;
-use crate::impls::packet_relayers::skip_received_packet::SkipReceivedPacketRelayer;
-use crate::traits::messages::receive_packet::ReceivePacketRelayer;
+use crate::cosmos::error::Error;
+use crate::cosmos::handler::CosmosRelayHandler;
 
 pub async fn run_receive_packet_relayer<ChainA, ChainB>(
     context: &CosmosRelayHandler<ChainA, ChainB>,

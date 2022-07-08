@@ -4,10 +4,10 @@ use ibc::core::ics04_channel::timeout::TimeoutHeight;
 use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc::timestamp::Timestamp;
 use ibc::Height;
+use ibc_relayer_framework::traits::core::Async;
+use ibc_relayer_framework::traits::packet::IbcPacket;
 
-use crate::impls::cosmos::handler::CosmosChainHandler;
-use crate::traits::core::Async;
-use crate::traits::packet::IbcPacket;
+use crate::cosmos::handler::CosmosChainHandler;
 
 impl<SrcChain, DstChain> IbcPacket<CosmosChainHandler<SrcChain>, CosmosChainHandler<DstChain>>
     for Packet
