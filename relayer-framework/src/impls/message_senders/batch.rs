@@ -5,7 +5,7 @@ use core::time::Duration;
 use std::collections::VecDeque;
 use std::time::Instant;
 use tokio::sync::mpsc::{channel, error::TryRecvError, Receiver, Sender};
-use tokio::sync::oneshot::{channel as once_channel, error::RecvError, Sender as OnceSender};
+use tokio::sync::oneshot::{channel as once_channel, Sender as OnceSender};
 use tokio::task;
 use tokio::time::sleep;
 
@@ -16,9 +16,7 @@ use crate::traits::message::Message as ChainMessage;
 use crate::traits::relay_context::RelayContext;
 use crate::traits::target::ChainTarget;
 
-pub struct SendError {
-    pub message: String,
-}
+pub struct ChannelClosedError;
 
 pub struct BatchedMessageSender<Sender>(PhantomData<Sender>);
 
@@ -43,8 +41,7 @@ where
     Event: Async,
     Error: Async,
     Sender: Async,
-    Error: From<SendError>,
-    Error: From<RecvError>,
+    Error: From<ChannelClosedError>,
     Context: RelayContext<Error = Error>,
     Context: BatchMessageContext<Message, Event, Error>,
     Target: ChainTarget<Context, TargetChain = TargetChain>,
@@ -66,11 +63,9 @@ where
             .sender
             .send(batch)
             .await
-            .map_err(|e| SendError {
-                message: e.to_string(),
-            })?;
+            .map_err(|_| ChannelClosedError)?;
 
-        let events = receiver.await??;
+        let events = receiver.await.map_err(|_| ChannelClosedError)??;
 
         Ok(events)
     }

@@ -1,4 +1,5 @@
 pub mod chain_context;
+pub mod channel;
 pub mod core;
 pub mod ibc_event_context;
 pub mod ibc_message_sender;
