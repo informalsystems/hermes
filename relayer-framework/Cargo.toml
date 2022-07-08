@@ -19,5 +19,3 @@ all-features = true
 
 [dependencies]
 async-trait = "0.1.56"
-tokio = "1.19.2"
-futures = "0.3.21"

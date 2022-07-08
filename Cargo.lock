@@ -1629,8 +1629,6 @@ name = "ibc-relayer-framework"
 version = "0.16.0"
 dependencies = [
  "async-trait",
- "futures",
- "tokio",
 ]
 
 [[package]]
