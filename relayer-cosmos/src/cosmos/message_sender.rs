@@ -1,7 +1,6 @@
 use async_trait::async_trait;
-use ibc::events::IbcEvent;
+use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer_framework::impls::message_senders::chain_sender::SendIbcMessagesToChain;
 use ibc_relayer_framework::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
 use ibc_relayer_framework::traits::ibc_message_sender::IbcMessageSender;
@@ -9,6 +8,7 @@ use ibc_relayer_framework::traits::ibc_message_sender::IbcMessageSenderContext;
 use ibc_relayer_framework::traits::message::Message;
 use ibc_relayer_framework::traits::message_sender::{MessageSender, MessageSenderContext};
 use ibc_relayer_framework::traits::target::ChainTarget;
+use tendermint::abci::responses::Event;
 
 use crate::cosmos::error::Error;
 use crate::cosmos::handler::{CosmosChainHandler, CosmosRelayHandler};
@@ -42,26 +42,19 @@ where
     async fn send_messages(
         context: &CosmosChainHandler<Chain>,
         messages: Vec<CosmosIbcMessage>,
-    ) -> Result<Vec<Vec<IbcEvent>>, Error> {
-        let signer = context.handle.get_signer().map_err(Error::relayer)?;
+    ) -> Result<Vec<Vec<Event>>, Error> {
+        let signer = &context.signer;
 
         let raw_messages = messages
             .into_iter()
-            .map(|message| message.encode_raw(&signer))
+            .map(|message| message.encode_raw(signer))
             .collect::<Result<Vec<_>, _>>()
             .map_err(Error::encode)?;
 
-        let tracked_messages = TrackedMsgs::new_static(raw_messages, "CosmosChainHandler");
-
-        let events = context
-            .handle
-            .send_messages_and_wait_commit(tracked_messages)
+        let events = simple_send_tx(&context.tx_config, &context.key_entry, raw_messages)
+            .await
             .map_err(Error::relayer)?;
 
-        // TODO: properly group IBC events by orginal order by
-        // calling send_tx functions without going through ChainHandle
-        let nested_events = events.into_iter().map(|event| vec![event]).collect();
-
-        Ok(nested_events)
+        Ok(events)
     }
 }

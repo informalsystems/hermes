@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 
-use crate::traits::chain_context::IbcChainContext;
 use crate::traits::core::Async;
 use crate::traits::ibc_event_context::IbcEventContext;
 use crate::traits::ibc_message_sender::{
@@ -20,8 +19,12 @@ where
     Context: ReceivePacketMessageBuilder<Context>,
     Context: IbcMessageSenderContext<DestinationTarget>,
     Context: RelayContext<DstChain = DstChain>,
-    DstChain: IbcChainContext<Context::SrcChain, IbcMessage = Message, IbcEvent = Event>,
-    DstChain: IbcEventContext<Context::SrcChain, WriteAcknowledgementEvent = AckEvent>,
+    DstChain: IbcEventContext<
+        Context::SrcChain,
+        WriteAcknowledgementEvent = AckEvent,
+        IbcMessage = Message,
+        IbcEvent = Event,
+    >,
     Context::Error: From<MismatchIbcEventsCountError>,
     Message: Async,
     AckEvent: TryFrom<Event>,

@@ -2,22 +2,28 @@ use ibc::core::ics04_channel::events::WriteAcknowledgement;
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use ibc::events::IbcEvent;
+use ibc::signer::Signer;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
+use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer::keyring::KeyEntry;
 use ibc_relayer_framework::traits::chain_context::{ChainContext, IbcChainContext};
 use ibc_relayer_framework::traits::core::Async;
 use ibc_relayer_framework::traits::core::ErrorContext;
 use ibc_relayer_framework::traits::ibc_event_context::IbcEventContext;
 use ibc_relayer_framework::traits::relay_context::RelayContext;
+use tendermint::abci::responses::Event;
 
 use crate::cosmos::error::Error;
 use crate::cosmos::message::CosmosIbcMessage;
 
 pub struct CosmosChainHandler<Handle> {
     pub handle: Handle,
+    pub signer: Signer,
+    pub tx_config: TxConfig,
+    pub key_entry: KeyEntry,
 }
 
 pub struct CosmosRelayHandler<SrcChain, DstChain> {
@@ -38,7 +44,7 @@ impl<Handle: Async> ChainContext for CosmosChainHandler<Handle> {
 
     type Message = CosmosIbcMessage;
 
-    type Event = IbcEvent;
+    type Event = Event;
 }
 
 impl<Chain, Counterparty> IbcChainContext<CosmosChainHandler<Counterparty>>
@@ -59,7 +65,7 @@ where
 
     type IbcMessage = CosmosIbcMessage;
 
-    type IbcEvent = IbcEvent;
+    type IbcEvent = Event;
 }
 
 impl<Chain, Counterparty> IbcEventContext<CosmosChainHandler<Counterparty>>

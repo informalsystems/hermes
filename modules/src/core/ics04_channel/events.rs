@@ -911,6 +911,24 @@ impl WriteAcknowledgement {
     }
 }
 
+impl TryFrom<AbciEvent> for WriteAcknowledgement {
+    type Error = ();
+
+    fn try_from(event: AbciEvent) -> Result<Self, ()> {
+        if let Ok(IbcEventType::WriteAck) = event.type_str.parse() {
+            extract_packet_and_write_ack_from_tx(&event)
+                .map(|(packet, write_ack)| WriteAcknowledgement {
+                    height: Height::new(0, 1).unwrap(),
+                    packet,
+                    ack: write_ack,
+                })
+                .map_err(|_| ())
+        } else {
+            Err(())
+        }
+    }
+}
+
 impl From<WriteAcknowledgement> for IbcEvent {
     fn from(v: WriteAcknowledgement) -> Self {
         IbcEvent::WriteAcknowledgement(v)
