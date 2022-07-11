@@ -51,7 +51,7 @@ pub trait Ics20Reader: ChannelReader {
 }
 
 // https://github.com/cosmos/cosmos-sdk/blob/master/docs/architecture/adr-028-public-key-addresses.md
-fn cosmos_adr028_escrow_address(port_id: &PortId, channel_id: &ChannelId) -> Vec<u8> {
+pub fn cosmos_adr028_escrow_address(port_id: &PortId, channel_id: &ChannelId) -> Vec<u8> {
     let contents = format!("{}/{}", port_id, channel_id);
 
     let mut hasher = Sha256::new();
