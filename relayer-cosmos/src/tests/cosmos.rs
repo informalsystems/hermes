@@ -3,7 +3,7 @@ use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_framework::impls::packet_relayers::base_receive_packet::BaseReceivePacketRelayer;
 use ibc_relayer_framework::impls::packet_relayers::skip_received_packet::SkipReceivedPacketRelayer;
-use ibc_relayer_framework::traits::messages::receive_packet::ReceivePacketRelayer;
+use ibc_relayer_framework::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
 
 use crate::cosmos::error::Error;
 use crate::cosmos::handler::CosmosRelayHandler;

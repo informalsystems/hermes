@@ -6,7 +6,8 @@ use crate::traits::ibc_event_context::IbcEventContext;
 use crate::traits::ibc_message_sender::{
     IbcMessageSenderContext, IbcMessageSenderExt, MismatchIbcEventsCountError,
 };
-use crate::traits::messages::receive_packet::{ReceivePacketMessageBuilder, ReceivePacketRelayer};
+use crate::traits::messages::receive_packet::ReceivePacketMessageBuilder;
+use crate::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
 use crate::traits::relay_context::RelayContext;
 use crate::traits::target::DestinationTarget;
 use crate::types::aliases::{Height, Packet, WriteAcknowledgementEvent};

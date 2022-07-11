@@ -4,6 +4,7 @@ use ibc::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics04_channel::packet::PacketMsgType;
 use ibc::tx_msg::Msg;
+use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_framework::traits::messages::ack_packet::AckPacketMessageBuilder;
 
@@ -20,6 +21,7 @@ where
 {
     async fn build_ack_packet_message(
         &self,
+        destination_height: &Height,
         packet: &Packet,
         event: &WriteAcknowledgement,
     ) -> Result<CosmosIbcMessage, Error> {
@@ -33,7 +35,7 @@ where
                 &packet.destination_port,
                 &packet.destination_channel,
                 packet.sequence,
-                height,
+                *destination_height,
             )
             .map_err(Error::relayer)?;
 
