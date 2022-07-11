@@ -7,7 +7,9 @@ use ibc::events::{IbcEvent, WithBlockDataType};
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::{QueryHeight, QueryPacketEventDataRequest, QueryTxRequest};
+use crate::chain::requests::{
+    QueryBlockRequest, QueryHeight, QueryPacketEventDataRequest, QueryTxRequest,
+};
 use crate::link::error::LinkError;
 use crate::path::PathIdentifiers;
 
@@ -88,14 +90,13 @@ pub fn query_send_packet_events<ChainA: ChainHandle>(
 
     query.sequences.retain(|seq| !recvd_sequences.contains(seq));
 
-    // let (start_block_events, end_block_events) = if !query.sequences.is_empty() {
-    //     src_chain
-    //         .query_blocks(QueryBlockRequest::Packet(query))
-    //         .map_err(LinkError::relayer)?
-    // } else {
-    //     Default::default()
-    // };
-    let (start_block_events, end_block_events) = (vec![], vec![]);
+    let (start_block_events, end_block_events) = if !query.sequences.is_empty() {
+        src_chain
+            .query_blocks(QueryBlockRequest::Packet(query))
+            .map_err(LinkError::relayer)?
+    } else {
+        Default::default()
+    };
 
     trace!("start_block_events {:?}", start_block_events);
     trace!("tx_events {:?}", tx_events);

@@ -32,7 +32,7 @@ use ibc::{
 use super::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::CosmosSdkChain;
 use crate::chain::psql_cosmos::batch::send_batched_messages_and_wait_commit;
-use crate::chain::psql_cosmos::query::query_txs;
+use crate::chain::psql_cosmos::query::{query_blocks, query_txs};
 use crate::denom::DenomTrace;
 use crate::{
     account::Balance,
@@ -363,7 +363,10 @@ impl ChainEndpoint for PsqlChain {
         &self,
         request: QueryBlockRequest,
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
-        self.chain.query_blocks(request)
+        // Currently the psql tendermint DB does not distinguish between begin and end block events.
+        // The SQL query in `query_blocks` returns all block events
+        let all_block_events = self.block_on(query_blocks(&self.pool, self.id(), &request))?;
+        Ok((all_block_events, vec![]))
     }
 
     fn query_host_consensus_state(

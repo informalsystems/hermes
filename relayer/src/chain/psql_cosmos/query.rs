@@ -12,13 +12,14 @@ use ibc::core::ics02_client::events as ClientEvents;
 use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics24_host::identifier::ChainId;
-use ibc::events::{from_tx_response_event, IbcEvent};
+use ibc::events::{self, from_tx_response_event, IbcEvent};
 use ibc::Height as ICSHeight;
 
 use crate::chain::cosmos::types::tx::TxSyncResult;
 use crate::chain::psql_cosmos::wait::empty_event_present;
 use crate::chain::requests::{
-    QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest, QueryTxRequest,
+    QueryBlockRequest, QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest,
+    QueryTxRequest,
 };
 use crate::error::Error;
 
@@ -548,7 +549,7 @@ pub async fn query_hashes_and_update_tx_sync_results(
 }
 
 #[derive(Debug, sqlx::FromRow)]
-struct SqlBlockEvents {
+struct SqlPacketBlockEvents {
     block_id: i64,
     r#type: String,
     packet_src_port: String,
@@ -556,12 +557,16 @@ struct SqlBlockEvents {
     packet_dst_port: String,
     packet_dst_channel: String,
     packet_src_channel: String,
+    packet_timeout_height: String,
+    packet_timeout_timestamp: String,
+    packet_data: String,
+    packet_ack: String,
 }
 
 async fn block_results_by_packet_fields(
     pool: &PgPool,
     search: &QueryPacketEventDataRequest,
-) -> Result<Vec<SqlBlockEvents>, Error> {
+) -> Result<Vec<SqlPacketBlockEvents>, Error> {
     // Convert from `[Sequence(1), Sequence(2)]` to String `"('1', '2')"`
     let seqs = search
         .clone()
@@ -572,7 +577,7 @@ async fn block_results_by_packet_fields(
     let seqs_string = format!("({})", seqs.join(", "));
 
     let sql_select_string = format!(
-        "SELECT * FROM ibc_block_events WHERE \
+        "SELECT DISTINCT * FROM ibc_block_events WHERE \
         packet_sequence IN {} and \
         type = $1 and \
         packet_src_channel = $2 and \
@@ -580,7 +585,7 @@ async fn block_results_by_packet_fields(
         seqs_string
     );
 
-    let results = sqlx::query_as::<_, SqlBlockEvents>(sql_select_string.as_str())
+    let results = sqlx::query_as::<_, SqlPacketBlockEvents>(sql_select_string.as_str())
         .bind(search.event_id.as_str())
         .bind(search.source_channel_id.to_string())
         .bind(search.source_port_id.to_string())
@@ -589,4 +594,80 @@ async fn block_results_by_packet_fields(
         .map_err(Error::sqlx)?;
 
     Ok(results)
+}
+
+pub async fn query_blocks(
+    pool: &PgPool,
+    chain_id: &ChainId,
+    search: &QueryBlockRequest,
+) -> Result<Vec<IbcEvent>, Error> {
+    match search {
+        QueryBlockRequest::Packet(request) => {
+            crate::time!("query_blocks: query packet events");
+
+            Ok(block_search_response_from_packet_query(pool, chain_id, request).await?)
+        }
+    }
+}
+
+fn ibc_packet_event_from_sql_block_query(
+    chain_id: &ChainId,
+    event: &SqlPacketBlockEvents,
+) -> Option<IbcEvent> {
+    fn ibc_packet_from_sql_block_by_packet_query(event: &SqlPacketBlockEvents) -> Packet {
+        Packet {
+            sequence: event.packet_sequence.parse().unwrap(),
+            source_port: event.packet_src_port.parse().unwrap(),
+            source_channel: event.packet_src_channel.parse().unwrap(),
+            destination_port: event.packet_dst_port.parse().unwrap(),
+            destination_channel: event.packet_dst_channel.parse().unwrap(),
+            data: Vec::from(event.packet_data.as_bytes()),
+            timeout_height: event.packet_timeout_height.parse().unwrap(),
+            timeout_timestamp: event.packet_timeout_timestamp.parse().unwrap(),
+        }
+    }
+
+    match event.r#type.as_str() {
+        events::SEND_PACKET_EVENT => {
+            Some(IbcEvent::SendPacket(ChannelEvents::SendPacket {
+                height: ICSHeight::new(
+                    ChainId::chain_version(chain_id.to_string().as_str()),
+                    event.block_id as u64, // TODO - get the height for the block with block_id
+                ),
+                packet: ibc_packet_from_sql_block_by_packet_query(event),
+            }))
+        }
+        events::WRITE_ACK_EVENT => {
+            Some(IbcEvent::WriteAcknowledgement(
+                ChannelEvents::WriteAcknowledgement {
+                    height: ICSHeight::new(
+                        ChainId::chain_version(chain_id.to_string().as_str()),
+                        event.block_id as u64, // TODO - get the height for the block with block_id
+                    ),
+                    packet: ibc_packet_from_sql_block_by_packet_query(event),
+                    ack: Vec::from(event.packet_ack.as_bytes()),
+                },
+            ))
+        }
+        _ => None,
+    }
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn block_search_response_from_packet_query(
+    pool: &PgPool,
+    chain_id: &ChainId,
+    search: &QueryPacketEventDataRequest,
+) -> Result<Vec<IbcEvent>, Error> {
+    trace!("block_search_response_from_packet_query");
+
+    let results = block_results_by_packet_fields(pool, search).await?;
+    let total_count = results.len() as u32;
+
+    let events = results
+        .into_iter()
+        .filter_map(|result| ibc_packet_event_from_sql_block_query(chain_id, &result))
+        .collect();
+
+    Ok(events)
 }

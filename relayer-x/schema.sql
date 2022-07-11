@@ -136,6 +136,18 @@ CREATE VIEW ibc_block_events AS SELECT * FROM (
     NATURAL JOIN (
         SELECT block_id, value AS packet_dst_channel FROM block_events WHERE key = 'packet_dst_channel'
         ) dst_channel
+    NATURAL JOIN (
+        SELECT block_id, value AS packet_timeout_height FROM block_events WHERE key = 'packet_timeout_height'
+    ) packet_timeout_height
+        NATURAL JOIN (
+        SELECT block_id, value AS packet_timeout_timestamp FROM block_events WHERE key = 'packet_timeout_timestamp'
+    ) packet_timeout_timestamp
+    NATURAL JOIN (
+        SELECT block_id, value AS packet_data FROM block_events WHERE key = 'packet_data'
+    ) packet_data
+    NATURAL JOIN (
+        SELECT block_id, value AS packet_ack FROM block_events WHERE key = 'packet_ack'
+    ) packet_ack
 ORDER BY seq.packet_sequence, src_port.block_id;
 
 -- A joined view of all IBC client transaction events.
