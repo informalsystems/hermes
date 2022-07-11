@@ -1,253 +1,143 @@
-/// IdentifiedClientState defines a client state with an additional client
-/// identifier field.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// Metadata defines the ICS29 channel specific metadata encoded into the channel version bytestring
+/// See ICS004: <https://github.com/cosmos/ibc/tree/master/spec/core/ics-004-channel-and-packet-semantics#Versioning>
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct IdentifiedClientState {
-    /// client identifier
+pub struct Metadata {
+    /// fee_version defines the ICS29 fee version
     #[prost(string, tag="1")]
-    pub client_id: ::prost::alloc::string::String,
-    /// client state
-    #[prost(message, optional, tag="2")]
-    pub client_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
-}
-/// ConsensusStateWithHeight defines a consensus state with an additional height
-/// field.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ConsensusStateWithHeight {
-    /// consensus state height
-    #[prost(message, optional, tag="1")]
-    pub height: ::core::option::Option<Height>,
-    /// consensus state
-    #[prost(message, optional, tag="2")]
-    pub consensus_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
-}
-/// ClientConsensusStates defines all the stored consensus states for a given
-/// client.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ClientConsensusStates {
-    /// client identifier
-    #[prost(string, tag="1")]
-    pub client_id: ::prost::alloc::string::String,
-    /// consensus states and their heights associated with the client
-    #[prost(message, repeated, tag="2")]
-    pub consensus_states: ::prost::alloc::vec::Vec<ConsensusStateWithHeight>,
-}
-/// ClientUpdateProposal is a governance proposal. If it passes, the substitute
-/// client's latest consensus state is copied over to the subject client. The proposal
-/// handler may fail if the subject and the substitute do not match in client and
-/// chain parameters (with exception to latest height, frozen height, and chain-id).
-#[derive(::serde::Serialize, ::serde::Deserialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ClientUpdateProposal {
-    /// the title of the update proposal
-    #[prost(string, tag="1")]
-    pub title: ::prost::alloc::string::String,
-    /// the description of the proposal
+    pub fee_version: ::prost::alloc::string::String,
+    /// app_version defines the underlying application version, which may or may not be a JSON encoded bytestring
     #[prost(string, tag="2")]
-    pub description: ::prost::alloc::string::String,
-    /// the client identifier for the client to be updated if the proposal passes
-    #[prost(string, tag="3")]
-    pub subject_client_id: ::prost::alloc::string::String,
-    /// the substitute client identifier for the client standing in for the subject
-    /// client
-    #[prost(string, tag="4")]
-    pub substitute_client_id: ::prost::alloc::string::String,
+    pub app_version: ::prost::alloc::string::String,
 }
-/// UpgradeProposal is a gov Content type for initiating an IBC breaking
-/// upgrade.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// Fee defines the ICS29 receive, acknowledgement and timeout fees
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct UpgradeProposal {
-    #[prost(string, tag="1")]
-    pub title: ::prost::alloc::string::String,
-    #[prost(string, tag="2")]
-    pub description: ::prost::alloc::string::String,
-    #[prost(message, optional, tag="3")]
-    pub plan: ::core::option::Option<super::super::super::super::cosmos::upgrade::v1beta1::Plan>,
-    /// An UpgradedClientState must be provided to perform an IBC breaking upgrade.
-    /// This will make the chain commit to the correct upgraded (self) client state
-    /// before the upgrade occurs, so that connecting chains can verify that the
-    /// new upgraded client is valid by verifying a proof on the previous version
-    /// of the chain. This will allow IBC connections to persist smoothly across
-    /// planned chain upgrades
-    #[prost(message, optional, tag="4")]
-    pub upgraded_client_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
-}
-/// Height is a monotonically increasing data type
-/// that can be compared against another Height for the purposes of updating and
-/// freezing clients
-///
-/// Normally the RevisionHeight is incremented at each height while keeping
-/// RevisionNumber the same. However some consensus algorithms may choose to
-/// reset the height in certain conditions e.g. hard forks, state-machine
-/// breaking changes In these cases, the RevisionNumber is incremented so that
-/// height continues to be monitonically increasing even as the RevisionHeight
-/// gets reset
-#[derive(::serde::Serialize, ::serde::Deserialize)]
-#[derive(Eq, PartialOrd, Ord)]
-#[cfg_attr(feature = "json-schema", derive(::schemars::JsonSchema))]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Height {
-    /// the revision that the client is currently on
-    #[prost(uint64, tag="1")]
-    #[serde(default)]
-    pub revision_number: u64,
-    /// the height within the given revision
-    #[prost(uint64, tag="2")]
-    #[serde(default)]
-    pub revision_height: u64,
-}
-/// Params defines the set of IBC light client parameters.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Params {
-    /// allowed_clients defines the list of allowed client state types.
-    #[prost(string, repeated, tag="1")]
-    pub allowed_clients: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-}
-/// GenesisState defines the ibc client submodule's genesis state.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// client states with their corresponding identifiers
+pub struct Fee {
+    /// the packet receive fee
     #[prost(message, repeated, tag="1")]
-    pub clients: ::prost::alloc::vec::Vec<IdentifiedClientState>,
-    /// consensus states from each client
+    pub recv_fee: ::prost::alloc::vec::Vec<super::super::super::super::cosmos::base::v1beta1::Coin>,
+    /// the packet acknowledgement fee
     #[prost(message, repeated, tag="2")]
-    pub clients_consensus: ::prost::alloc::vec::Vec<ClientConsensusStates>,
-    /// metadata from each client
+    pub ack_fee: ::prost::alloc::vec::Vec<super::super::super::super::cosmos::base::v1beta1::Coin>,
+    /// the packet timeout fee
     #[prost(message, repeated, tag="3")]
-    pub clients_metadata: ::prost::alloc::vec::Vec<IdentifiedGenesisMetadata>,
-    #[prost(message, optional, tag="4")]
-    pub params: ::core::option::Option<Params>,
-    /// create localhost on initialization
-    #[prost(bool, tag="5")]
-    pub create_localhost: bool,
-    /// the sequence for the next generated client identifier
-    #[prost(uint64, tag="6")]
-    pub next_client_sequence: u64,
+    pub timeout_fee: ::prost::alloc::vec::Vec<super::super::super::super::cosmos::base::v1beta1::Coin>,
 }
-/// GenesisMetadata defines the genesis type for metadata that clients may return
-/// with ExportMetadata
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// PacketFee contains ICS29 relayer fees, refund address and optional list of permitted relayers
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisMetadata {
-    /// store key of metadata without clientID-prefix
-    #[prost(bytes="vec", tag="1")]
-    pub key: ::prost::alloc::vec::Vec<u8>,
-    /// metadata value
-    #[prost(bytes="vec", tag="2")]
-    pub value: ::prost::alloc::vec::Vec<u8>,
-}
-/// IdentifiedGenesisMetadata has the client metadata with the corresponding
-/// client id.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct IdentifiedGenesisMetadata {
-    #[prost(string, tag="1")]
-    pub client_id: ::prost::alloc::string::String,
-    #[prost(message, repeated, tag="2")]
-    pub client_metadata: ::prost::alloc::vec::Vec<GenesisMetadata>,
-}
-/// MsgCreateClient defines a message to create an IBC client
-#[derive(::serde::Serialize, ::serde::Deserialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgCreateClient {
-    /// light client state
+pub struct PacketFee {
+    /// fee encapsulates the recv, ack and timeout fees associated with an IBC packet
     #[prost(message, optional, tag="1")]
-    pub client_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
-    /// consensus state associated with the client that corresponds to a given
-    /// height.
-    #[prost(message, optional, tag="2")]
-    pub consensus_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
-    /// signer address
-    #[prost(string, tag="3")]
-    pub signer: ::prost::alloc::string::String,
+    pub fee: ::core::option::Option<Fee>,
+    /// the refund address for unspent fees
+    #[prost(string, tag="2")]
+    pub refund_address: ::prost::alloc::string::String,
+    /// optional list of relayers permitted to receive fees
+    #[prost(string, repeated, tag="3")]
+    pub relayers: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
-/// MsgCreateClientResponse defines the Msg/CreateClient response type.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// PacketFees contains a list of type PacketFee
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgCreateClientResponse {
+pub struct PacketFees {
+    /// list of packet fees
+    #[prost(message, repeated, tag="1")]
+    pub packet_fees: ::prost::alloc::vec::Vec<PacketFee>,
 }
-/// MsgUpdateClient defines an sdk.Msg to update a IBC client state using
-/// the given header.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// IdentifiedPacketFees contains a list of type PacketFee and associated PacketId
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateClient {
-    /// client unique identifier
+pub struct IdentifiedPacketFees {
+    /// unique packet identifier comprised of the channel ID, port ID and sequence
+    #[prost(message, optional, tag="1")]
+    pub packet_id: ::core::option::Option<super::super::super::core::channel::v1::PacketId>,
+    /// list of packet fees
+    #[prost(message, repeated, tag="2")]
+    pub packet_fees: ::prost::alloc::vec::Vec<PacketFee>,
+}
+/// MsgRegisterPayee defines the request type for the RegisterPayee rpc
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgRegisterPayee {
+    /// unique port identifier
     #[prost(string, tag="1")]
-    pub client_id: ::prost::alloc::string::String,
-    /// header to update the light client
-    #[prost(message, optional, tag="2")]
-    pub header: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
-    /// signer address
+    pub port_id: ::prost::alloc::string::String,
+    /// unique channel identifier
+    #[prost(string, tag="2")]
+    pub channel_id: ::prost::alloc::string::String,
+    /// the relayer address
     #[prost(string, tag="3")]
-    pub signer: ::prost::alloc::string::String,
+    pub relayer: ::prost::alloc::string::String,
+    /// the payee address
+    #[prost(string, tag="4")]
+    pub payee: ::prost::alloc::string::String,
 }
-/// MsgUpdateClientResponse defines the Msg/UpdateClient response type.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// MsgRegisterPayeeResponse defines the response type for the RegisterPayee rpc
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateClientResponse {
+pub struct MsgRegisterPayeeResponse {
 }
-/// MsgUpgradeClient defines an sdk.Msg to upgrade an IBC client to a new client
-/// state
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// MsgRegisterCounterpartyPayee defines the request type for the RegisterCounterpartyPayee rpc
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpgradeClient {
-    /// client unique identifier
+pub struct MsgRegisterCounterpartyPayee {
+    /// unique port identifier
     #[prost(string, tag="1")]
-    pub client_id: ::prost::alloc::string::String,
-    /// upgraded client state
-    #[prost(message, optional, tag="2")]
-    pub client_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
-    /// upgraded consensus state, only contains enough information to serve as a
-    /// basis of trust in update logic
-    #[prost(message, optional, tag="3")]
-    pub consensus_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
-    /// proof that old chain committed to new client
-    #[prost(bytes="vec", tag="4")]
-    pub proof_upgrade_client: ::prost::alloc::vec::Vec<u8>,
-    /// proof that old chain committed to new consensus state
-    #[prost(bytes="vec", tag="5")]
-    pub proof_upgrade_consensus_state: ::prost::alloc::vec::Vec<u8>,
-    /// signer address
-    #[prost(string, tag="6")]
-    pub signer: ::prost::alloc::string::String,
-}
-/// MsgUpgradeClientResponse defines the Msg/UpgradeClient response type.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpgradeClientResponse {
-}
-/// MsgSubmitMisbehaviour defines an sdk.Msg type that submits Evidence for
-/// light client misbehaviour.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSubmitMisbehaviour {
-    /// client unique identifier
-    #[prost(string, tag="1")]
-    pub client_id: ::prost::alloc::string::String,
-    /// misbehaviour used for freezing the light client
-    #[prost(message, optional, tag="2")]
-    pub misbehaviour: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
-    /// signer address
+    pub port_id: ::prost::alloc::string::String,
+    /// unique channel identifier
+    #[prost(string, tag="2")]
+    pub channel_id: ::prost::alloc::string::String,
+    /// the relayer address
     #[prost(string, tag="3")]
-    pub signer: ::prost::alloc::string::String,
+    pub relayer: ::prost::alloc::string::String,
+    /// the counterparty payee address
+    #[prost(string, tag="4")]
+    pub counterparty_payee: ::prost::alloc::string::String,
 }
-/// MsgSubmitMisbehaviourResponse defines the Msg/SubmitMisbehaviour response
-/// type.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// MsgRegisterCounterpartyPayeeResponse defines the response type for the RegisterCounterpartyPayee rpc
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgSubmitMisbehaviourResponse {
+pub struct MsgRegisterCounterpartyPayeeResponse {
+}
+/// MsgPayPacketFee defines the request type for the PayPacketFee rpc
+/// This Msg can be used to pay for a packet at the next sequence send & should be combined with the Msg that will be
+/// paid for
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgPayPacketFee {
+    /// fee encapsulates the recv, ack and timeout fees associated with an IBC packet
+    #[prost(message, optional, tag="1")]
+    pub fee: ::core::option::Option<Fee>,
+    /// the source port unique identifier
+    #[prost(string, tag="2")]
+    pub source_port_id: ::prost::alloc::string::String,
+    /// the source channel unique identifer
+    #[prost(string, tag="3")]
+    pub source_channel_id: ::prost::alloc::string::String,
+    /// account address to refund fee if necessary
+    #[prost(string, tag="4")]
+    pub signer: ::prost::alloc::string::String,
+    /// optional list of relayers permitted to the receive packet fees
+    #[prost(string, repeated, tag="5")]
+    pub relayers: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+}
+/// MsgPayPacketFeeResponse defines the response type for the PayPacketFee rpc
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgPayPacketFeeResponse {
+}
+/// MsgPayPacketFeeAsync defines the request type for the PayPacketFeeAsync rpc
+/// This Msg can be used to pay for a packet at a specified sequence (instead of the next sequence send)
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgPayPacketFeeAsync {
+    /// unique packet identifier comprised of the channel ID, port ID and sequence
+    #[prost(message, optional, tag="1")]
+    pub packet_id: ::core::option::Option<super::super::super::core::channel::v1::PacketId>,
+    /// the packet fee associated with a particular IBC packet
+    #[prost(message, optional, tag="2")]
+    pub packet_fee: ::core::option::Option<PacketFee>,
+}
+/// MsgPayPacketFeeAsyncResponse defines the response type for the PayPacketFeeAsync rpc
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgPayPacketFeeAsyncResponse {
 }
 /// Generated client implementations.
 #[cfg(feature = "client")]
 pub mod msg_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    /// Msg defines the ibc/client Msg service.
+    /// Msg defines the ICS29 Msg service.
     #[derive(Debug, Clone)]
     pub struct MsgClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -308,11 +198,15 @@ pub mod msg_client {
             self.inner = self.inner.accept_gzip();
             self
         }
-        /// CreateClient defines a rpc handler method for MsgCreateClient.
-        pub async fn create_client(
+        /// RegisterPayee defines a rpc handler method for MsgRegisterPayee
+        /// RegisterPayee is called by the relayer on each channelEnd and allows them to set an optional
+        /// payee to which reverse and timeout relayer packet fees will be paid out. The payee should be registered on
+        /// the source chain from which packets originate as this is where fee distribution takes place. This function may be
+        /// called more than once by a relayer, in which case, the latest payee is always used.
+        pub async fn register_payee(
             &mut self,
-            request: impl tonic::IntoRequest<super::MsgCreateClient>,
-        ) -> Result<tonic::Response<super::MsgCreateClientResponse>, tonic::Status> {
+            request: impl tonic::IntoRequest<super::MsgRegisterPayee>,
+        ) -> Result<tonic::Response<super::MsgRegisterPayeeResponse>, tonic::Status> {
             self.inner
                 .ready()
                 .await
@@ -324,56 +218,20 @@ pub mod msg_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.client.v1.Msg/CreateClient",
+                "/ibc.applications.fee.v1.Msg/RegisterPayee",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
-        /// UpdateClient defines a rpc handler method for MsgUpdateClient.
-        pub async fn update_client(
+        /// RegisterCounterpartyPayee defines a rpc handler method for MsgRegisterCounterpartyPayee
+        /// RegisterCounterpartyPayee is called by the relayer on each channelEnd and allows them to specify the counterparty
+        /// payee address before relaying. This ensures they will be properly compensated for forward relaying since
+        /// the destination chain must include the registered counterparty payee address in the acknowledgement. This function
+        /// may be called more than once by a relayer, in which case, the latest counterparty payee address is always used.
+        pub async fn register_counterparty_payee(
             &mut self,
-            request: impl tonic::IntoRequest<super::MsgUpdateClient>,
-        ) -> Result<tonic::Response<super::MsgUpdateClientResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.client.v1.Msg/UpdateClient",
-            );
-            self.inner.unary(request.into_request(), path, codec).await
-        }
-        /// UpgradeClient defines a rpc handler method for MsgUpgradeClient.
-        pub async fn upgrade_client(
-            &mut self,
-            request: impl tonic::IntoRequest<super::MsgUpgradeClient>,
-        ) -> Result<tonic::Response<super::MsgUpgradeClientResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.client.v1.Msg/UpgradeClient",
-            );
-            self.inner.unary(request.into_request(), path, codec).await
-        }
-        /// SubmitMisbehaviour defines a rpc handler method for MsgSubmitMisbehaviour.
-        pub async fn submit_misbehaviour(
-            &mut self,
-            request: impl tonic::IntoRequest<super::MsgSubmitMisbehaviour>,
+            request: impl tonic::IntoRequest<super::MsgRegisterCounterpartyPayee>,
         ) -> Result<
-            tonic::Response<super::MsgSubmitMisbehaviourResponse>,
+            tonic::Response<super::MsgRegisterCounterpartyPayeeResponse>,
             tonic::Status,
         > {
             self.inner
@@ -387,7 +245,56 @@ pub mod msg_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.client.v1.Msg/SubmitMisbehaviour",
+                "/ibc.applications.fee.v1.Msg/RegisterCounterpartyPayee",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// PayPacketFee defines a rpc handler method for MsgPayPacketFee
+        /// PayPacketFee is an open callback that may be called by any module/user that wishes to escrow funds in order to
+        /// incentivize the relaying of the packet at the next sequence
+        /// NOTE: This method is intended to be used within a multi msg transaction, where the subsequent msg that follows
+        /// initiates the lifecycle of the incentivized packet
+        pub async fn pay_packet_fee(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgPayPacketFee>,
+        ) -> Result<tonic::Response<super::MsgPayPacketFeeResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.applications.fee.v1.Msg/PayPacketFee",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// PayPacketFeeAsync defines a rpc handler method for MsgPayPacketFeeAsync
+        /// PayPacketFeeAsync is an open callback that may be called by any module/user that wishes to escrow funds in order to
+        /// incentivize the relaying of a known packet (i.e. at a particular sequence)
+        pub async fn pay_packet_fee_async(
+            &mut self,
+            request: impl tonic::IntoRequest<super::MsgPayPacketFeeAsync>,
+        ) -> Result<
+            tonic::Response<super::MsgPayPacketFeeAsyncResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.applications.fee.v1.Msg/PayPacketFeeAsync",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -401,31 +308,45 @@ pub mod msg_server {
     ///Generated trait containing gRPC methods that should be implemented for use with MsgServer.
     #[async_trait]
     pub trait Msg: Send + Sync + 'static {
-        /// CreateClient defines a rpc handler method for MsgCreateClient.
-        async fn create_client(
+        /// RegisterPayee defines a rpc handler method for MsgRegisterPayee
+        /// RegisterPayee is called by the relayer on each channelEnd and allows them to set an optional
+        /// payee to which reverse and timeout relayer packet fees will be paid out. The payee should be registered on
+        /// the source chain from which packets originate as this is where fee distribution takes place. This function may be
+        /// called more than once by a relayer, in which case, the latest payee is always used.
+        async fn register_payee(
             &self,
-            request: tonic::Request<super::MsgCreateClient>,
-        ) -> Result<tonic::Response<super::MsgCreateClientResponse>, tonic::Status>;
-        /// UpdateClient defines a rpc handler method for MsgUpdateClient.
-        async fn update_client(
+            request: tonic::Request<super::MsgRegisterPayee>,
+        ) -> Result<tonic::Response<super::MsgRegisterPayeeResponse>, tonic::Status>;
+        /// RegisterCounterpartyPayee defines a rpc handler method for MsgRegisterCounterpartyPayee
+        /// RegisterCounterpartyPayee is called by the relayer on each channelEnd and allows them to specify the counterparty
+        /// payee address before relaying. This ensures they will be properly compensated for forward relaying since
+        /// the destination chain must include the registered counterparty payee address in the acknowledgement. This function
+        /// may be called more than once by a relayer, in which case, the latest counterparty payee address is always used.
+        async fn register_counterparty_payee(
             &self,
-            request: tonic::Request<super::MsgUpdateClient>,
-        ) -> Result<tonic::Response<super::MsgUpdateClientResponse>, tonic::Status>;
-        /// UpgradeClient defines a rpc handler method for MsgUpgradeClient.
-        async fn upgrade_client(
-            &self,
-            request: tonic::Request<super::MsgUpgradeClient>,
-        ) -> Result<tonic::Response<super::MsgUpgradeClientResponse>, tonic::Status>;
-        /// SubmitMisbehaviour defines a rpc handler method for MsgSubmitMisbehaviour.
-        async fn submit_misbehaviour(
-            &self,
-            request: tonic::Request<super::MsgSubmitMisbehaviour>,
+            request: tonic::Request<super::MsgRegisterCounterpartyPayee>,
         ) -> Result<
-            tonic::Response<super::MsgSubmitMisbehaviourResponse>,
+            tonic::Response<super::MsgRegisterCounterpartyPayeeResponse>,
             tonic::Status,
         >;
+        /// PayPacketFee defines a rpc handler method for MsgPayPacketFee
+        /// PayPacketFee is an open callback that may be called by any module/user that wishes to escrow funds in order to
+        /// incentivize the relaying of the packet at the next sequence
+        /// NOTE: This method is intended to be used within a multi msg transaction, where the subsequent msg that follows
+        /// initiates the lifecycle of the incentivized packet
+        async fn pay_packet_fee(
+            &self,
+            request: tonic::Request<super::MsgPayPacketFee>,
+        ) -> Result<tonic::Response<super::MsgPayPacketFeeResponse>, tonic::Status>;
+        /// PayPacketFeeAsync defines a rpc handler method for MsgPayPacketFeeAsync
+        /// PayPacketFeeAsync is an open callback that may be called by any module/user that wishes to escrow funds in order to
+        /// incentivize the relaying of a known packet (i.e. at a particular sequence)
+        async fn pay_packet_fee_async(
+            &self,
+            request: tonic::Request<super::MsgPayPacketFeeAsync>,
+        ) -> Result<tonic::Response<super::MsgPayPacketFeeAsyncResponse>, tonic::Status>;
     }
-    /// Msg defines the ibc/client Msg service.
+    /// Msg defines the ICS29 Msg service.
     #[derive(Debug)]
     pub struct MsgServer<T: Msg> {
         inner: _Inner<T>,
@@ -473,23 +394,23 @@ pub mod msg_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/ibc.core.client.v1.Msg/CreateClient" => {
+                "/ibc.applications.fee.v1.Msg/RegisterPayee" => {
                     #[allow(non_camel_case_types)]
-                    struct CreateClientSvc<T: Msg>(pub Arc<T>);
-                    impl<T: Msg> tonic::server::UnaryService<super::MsgCreateClient>
-                    for CreateClientSvc<T> {
-                        type Response = super::MsgCreateClientResponse;
+                    struct RegisterPayeeSvc<T: Msg>(pub Arc<T>);
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgRegisterPayee>
+                    for RegisterPayeeSvc<T> {
+                        type Response = super::MsgRegisterPayeeResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::MsgCreateClient>,
+                            request: tonic::Request<super::MsgRegisterPayee>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
-                                (*inner).create_client(request).await
+                                (*inner).register_payee(request).await
                             };
                             Box::pin(fut)
                         }
@@ -499,7 +420,7 @@ pub mod msg_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = CreateClientSvc(inner);
+                        let method = RegisterPayeeSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -511,101 +432,25 @@ pub mod msg_server {
                     };
                     Box::pin(fut)
                 }
-                "/ibc.core.client.v1.Msg/UpdateClient" => {
+                "/ibc.applications.fee.v1.Msg/RegisterCounterpartyPayee" => {
                     #[allow(non_camel_case_types)]
-                    struct UpdateClientSvc<T: Msg>(pub Arc<T>);
-                    impl<T: Msg> tonic::server::UnaryService<super::MsgUpdateClient>
-                    for UpdateClientSvc<T> {
-                        type Response = super::MsgUpdateClientResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::MsgUpdateClient>,
-                        ) -> Self::Future {
-                            let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).update_client(request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = UpdateClientSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/ibc.core.client.v1.Msg/UpgradeClient" => {
-                    #[allow(non_camel_case_types)]
-                    struct UpgradeClientSvc<T: Msg>(pub Arc<T>);
-                    impl<T: Msg> tonic::server::UnaryService<super::MsgUpgradeClient>
-                    for UpgradeClientSvc<T> {
-                        type Response = super::MsgUpgradeClientResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::MsgUpgradeClient>,
-                        ) -> Self::Future {
-                            let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).upgrade_client(request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = UpgradeClientSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/ibc.core.client.v1.Msg/SubmitMisbehaviour" => {
-                    #[allow(non_camel_case_types)]
-                    struct SubmitMisbehaviourSvc<T: Msg>(pub Arc<T>);
+                    struct RegisterCounterpartyPayeeSvc<T: Msg>(pub Arc<T>);
                     impl<
                         T: Msg,
-                    > tonic::server::UnaryService<super::MsgSubmitMisbehaviour>
-                    for SubmitMisbehaviourSvc<T> {
-                        type Response = super::MsgSubmitMisbehaviourResponse;
+                    > tonic::server::UnaryService<super::MsgRegisterCounterpartyPayee>
+                    for RegisterCounterpartyPayeeSvc<T> {
+                        type Response = super::MsgRegisterCounterpartyPayeeResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::MsgSubmitMisbehaviour>,
+                            request: tonic::Request<super::MsgRegisterCounterpartyPayee>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
-                                (*inner).submit_misbehaviour(request).await
+                                (*inner).register_counterparty_payee(request).await
                             };
                             Box::pin(fut)
                         }
@@ -615,7 +460,83 @@ pub mod msg_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = SubmitMisbehaviourSvc(inner);
+                        let method = RegisterCounterpartyPayeeSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/ibc.applications.fee.v1.Msg/PayPacketFee" => {
+                    #[allow(non_camel_case_types)]
+                    struct PayPacketFeeSvc<T: Msg>(pub Arc<T>);
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgPayPacketFee>
+                    for PayPacketFeeSvc<T> {
+                        type Response = super::MsgPayPacketFeeResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::MsgPayPacketFee>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).pay_packet_fee(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = PayPacketFeeSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/ibc.applications.fee.v1.Msg/PayPacketFeeAsync" => {
+                    #[allow(non_camel_case_types)]
+                    struct PayPacketFeeAsyncSvc<T: Msg>(pub Arc<T>);
+                    impl<T: Msg> tonic::server::UnaryService<super::MsgPayPacketFeeAsync>
+                    for PayPacketFeeAsyncSvc<T> {
+                        type Response = super::MsgPayPacketFeeAsyncResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::MsgPayPacketFeeAsync>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).pay_packet_fee_async(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = PayPacketFeeAsyncSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -663,206 +584,247 @@ pub mod msg_server {
         }
     }
     impl<T: Msg> tonic::transport::NamedService for MsgServer<T> {
-        const NAME: &'static str = "ibc.core.client.v1.Msg";
+        const NAME: &'static str = "ibc.applications.fee.v1.Msg";
     }
 }
-/// QueryClientStateRequest is the request type for the Query/ClientState RPC
-/// method
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// GenesisState defines the ICS29 fee middleware genesis state
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryClientStateRequest {
-    /// client state unique identifier
+pub struct GenesisState {
+    /// list of identified packet fees
+    #[prost(message, repeated, tag="1")]
+    pub identified_fees: ::prost::alloc::vec::Vec<IdentifiedPacketFees>,
+    /// list of fee enabled channels
+    #[prost(message, repeated, tag="2")]
+    pub fee_enabled_channels: ::prost::alloc::vec::Vec<FeeEnabledChannel>,
+    /// list of registered payees
+    #[prost(message, repeated, tag="3")]
+    pub registered_payees: ::prost::alloc::vec::Vec<RegisteredPayee>,
+    /// list of registered counterparty payees
+    #[prost(message, repeated, tag="4")]
+    pub registered_counterparty_payees: ::prost::alloc::vec::Vec<RegisteredCounterpartyPayee>,
+    /// list of forward relayer addresses
+    #[prost(message, repeated, tag="5")]
+    pub forward_relayers: ::prost::alloc::vec::Vec<ForwardRelayerAddress>,
+}
+/// FeeEnabledChannel contains the PortID & ChannelID for a fee enabled channel
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FeeEnabledChannel {
+    /// unique port identifier
     #[prost(string, tag="1")]
-    pub client_id: ::prost::alloc::string::String,
+    pub port_id: ::prost::alloc::string::String,
+    /// unique channel identifier
+    #[prost(string, tag="2")]
+    pub channel_id: ::prost::alloc::string::String,
 }
-/// QueryClientStateResponse is the response type for the Query/ClientState RPC
-/// method. Besides the client state, it includes a proof and the height from
-/// which the proof was retrieved.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// RegisteredPayee contains the relayer address and payee address for a specific channel
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryClientStateResponse {
-    /// client state associated with the request identifier
-    #[prost(message, optional, tag="1")]
-    pub client_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
-    /// merkle proof of existence
-    #[prost(bytes="vec", tag="2")]
-    pub proof: ::prost::alloc::vec::Vec<u8>,
-    /// height at which the proof was retrieved
-    #[prost(message, optional, tag="3")]
-    pub proof_height: ::core::option::Option<Height>,
+pub struct RegisteredPayee {
+    /// unique channel identifier
+    #[prost(string, tag="1")]
+    pub channel_id: ::prost::alloc::string::String,
+    /// the relayer address
+    #[prost(string, tag="2")]
+    pub relayer: ::prost::alloc::string::String,
+    /// the payee address
+    #[prost(string, tag="3")]
+    pub payee: ::prost::alloc::string::String,
 }
-/// QueryClientStatesRequest is the request type for the Query/ClientStates RPC
-/// method
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// RegisteredCounterpartyPayee contains the relayer address and counterparty payee address for a specific channel (used
+/// for recv fee distribution)
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryClientStatesRequest {
-    /// pagination request
+pub struct RegisteredCounterpartyPayee {
+    /// unique channel identifier
+    #[prost(string, tag="1")]
+    pub channel_id: ::prost::alloc::string::String,
+    /// the relayer address
+    #[prost(string, tag="2")]
+    pub relayer: ::prost::alloc::string::String,
+    /// the counterparty payee address
+    #[prost(string, tag="3")]
+    pub counterparty_payee: ::prost::alloc::string::String,
+}
+/// ForwardRelayerAddress contains the forward relayer address and PacketId used for async acknowledgements
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ForwardRelayerAddress {
+    /// the forward relayer address
+    #[prost(string, tag="1")]
+    pub address: ::prost::alloc::string::String,
+    /// unique packet identifer comprised of the channel ID, port ID and sequence
+    #[prost(message, optional, tag="2")]
+    pub packet_id: ::core::option::Option<super::super::super::core::channel::v1::PacketId>,
+}
+/// QueryIncentivizedPacketsRequest defines the request type for the IncentivizedPackets rpc
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryIncentivizedPacketsRequest {
+    /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag="1")]
     pub pagination: ::core::option::Option<super::super::super::super::cosmos::base::query::v1beta1::PageRequest>,
-}
-/// QueryClientStatesResponse is the response type for the Query/ClientStates RPC
-/// method.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryClientStatesResponse {
-    /// list of stored ClientStates of the chain.
-    #[prost(message, repeated, tag="1")]
-    pub client_states: ::prost::alloc::vec::Vec<IdentifiedClientState>,
-    /// pagination response
-    #[prost(message, optional, tag="2")]
-    pub pagination: ::core::option::Option<super::super::super::super::cosmos::base::query::v1beta1::PageResponse>,
-}
-/// QueryConsensusStateRequest is the request type for the Query/ConsensusState
-/// RPC method. Besides the consensus state, it includes a proof and the height
-/// from which the proof was retrieved.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryConsensusStateRequest {
-    /// client identifier
-    #[prost(string, tag="1")]
-    pub client_id: ::prost::alloc::string::String,
-    /// consensus state revision number
+    /// block height at which to query
     #[prost(uint64, tag="2")]
-    pub revision_number: u64,
-    /// consensus state revision height
-    #[prost(uint64, tag="3")]
-    pub revision_height: u64,
-    /// latest_height overrrides the height field and queries the latest stored
-    /// ConsensusState
-    #[prost(bool, tag="4")]
-    pub latest_height: bool,
+    pub query_height: u64,
 }
-/// QueryConsensusStateResponse is the response type for the Query/ConsensusState
-/// RPC method
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// QueryIncentivizedPacketsResponse defines the response type for the IncentivizedPackets rpc
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryConsensusStateResponse {
-    /// consensus state associated with the client identifier at the given height
-    #[prost(message, optional, tag="1")]
-    pub consensus_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
-    /// merkle proof of existence
-    #[prost(bytes="vec", tag="2")]
-    pub proof: ::prost::alloc::vec::Vec<u8>,
-    /// height at which the proof was retrieved
-    #[prost(message, optional, tag="3")]
-    pub proof_height: ::core::option::Option<Height>,
-}
-/// QueryConsensusStatesRequest is the request type for the Query/ConsensusStates
-/// RPC method.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryConsensusStatesRequest {
-    /// client identifier
-    #[prost(string, tag="1")]
-    pub client_id: ::prost::alloc::string::String,
-    /// pagination request
-    #[prost(message, optional, tag="2")]
-    pub pagination: ::core::option::Option<super::super::super::super::cosmos::base::query::v1beta1::PageRequest>,
-}
-/// QueryConsensusStatesResponse is the response type for the
-/// Query/ConsensusStates RPC method
-#[derive(::serde::Serialize, ::serde::Deserialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryConsensusStatesResponse {
-    /// consensus states associated with the identifier
+pub struct QueryIncentivizedPacketsResponse {
+    /// list of identified fees for incentivized packets
     #[prost(message, repeated, tag="1")]
-    pub consensus_states: ::prost::alloc::vec::Vec<ConsensusStateWithHeight>,
-    /// pagination response
-    #[prost(message, optional, tag="2")]
-    pub pagination: ::core::option::Option<super::super::super::super::cosmos::base::query::v1beta1::PageResponse>,
+    pub incentivized_packets: ::prost::alloc::vec::Vec<IdentifiedPacketFees>,
 }
-/// QueryConsensusStateHeightsRequest is the request type for Query/ConsensusStateHeights
-/// RPC method.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// QueryIncentivizedPacketRequest defines the request type for the IncentivizedPacket rpc
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryConsensusStateHeightsRequest {
-    /// client identifier
-    #[prost(string, tag="1")]
-    pub client_id: ::prost::alloc::string::String,
-    /// pagination request
-    #[prost(message, optional, tag="2")]
+pub struct QueryIncentivizedPacketRequest {
+    /// unique packet identifier comprised of channel ID, port ID and sequence
+    #[prost(message, optional, tag="1")]
+    pub packet_id: ::core::option::Option<super::super::super::core::channel::v1::PacketId>,
+    /// block height at which to query
+    #[prost(uint64, tag="2")]
+    pub query_height: u64,
+}
+/// QueryIncentivizedPacketsResponse defines the response type for the IncentivizedPacket rpc
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryIncentivizedPacketResponse {
+    /// the identified fees for the incentivized packet
+    #[prost(message, optional, tag="1")]
+    pub incentivized_packet: ::core::option::Option<IdentifiedPacketFees>,
+}
+/// QueryIncentivizedPacketsForChannelRequest defines the request type for querying for all incentivized packets
+/// for a specific channel
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryIncentivizedPacketsForChannelRequest {
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag="1")]
     pub pagination: ::core::option::Option<super::super::super::super::cosmos::base::query::v1beta1::PageRequest>,
+    #[prost(string, tag="2")]
+    pub port_id: ::prost::alloc::string::String,
+    #[prost(string, tag="3")]
+    pub channel_id: ::prost::alloc::string::String,
+    /// Height to query at
+    #[prost(uint64, tag="4")]
+    pub query_height: u64,
 }
-/// QueryConsensusStateHeightsResponse is the response type for the
-/// Query/ConsensusStateHeights RPC method
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// QueryIncentivizedPacketsResponse defines the response type for the incentivized packets RPC
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryConsensusStateHeightsResponse {
-    /// consensus state heights
+pub struct QueryIncentivizedPacketsForChannelResponse {
+    /// Map of all incentivized_packets
     #[prost(message, repeated, tag="1")]
-    pub consensus_state_heights: ::prost::alloc::vec::Vec<Height>,
-    /// pagination response
-    #[prost(message, optional, tag="2")]
-    pub pagination: ::core::option::Option<super::super::super::super::cosmos::base::query::v1beta1::PageResponse>,
+    pub incentivized_packets: ::prost::alloc::vec::Vec<IdentifiedPacketFees>,
 }
-/// QueryClientStatusRequest is the request type for the Query/ClientStatus RPC
-/// method
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// QueryTotalRecvFeesRequest defines the request type for the TotalRecvFees rpc
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryClientStatusRequest {
-    /// client unique identifier
+pub struct QueryTotalRecvFeesRequest {
+    /// the packet identifier for the associated fees
+    #[prost(message, optional, tag="1")]
+    pub packet_id: ::core::option::Option<super::super::super::core::channel::v1::PacketId>,
+}
+/// QueryTotalRecvFeesResponse defines the response type for the TotalRecvFees rpc
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryTotalRecvFeesResponse {
+    /// the total packet receive fees
+    #[prost(message, repeated, tag="1")]
+    pub recv_fees: ::prost::alloc::vec::Vec<super::super::super::super::cosmos::base::v1beta1::Coin>,
+}
+/// QueryTotalAckFeesRequest defines the request type for the TotalAckFees rpc
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryTotalAckFeesRequest {
+    /// the packet identifier for the associated fees
+    #[prost(message, optional, tag="1")]
+    pub packet_id: ::core::option::Option<super::super::super::core::channel::v1::PacketId>,
+}
+/// QueryTotalAckFeesResponse defines the response type for the TotalAckFees rpc
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryTotalAckFeesResponse {
+    /// the total packet acknowledgement fees
+    #[prost(message, repeated, tag="1")]
+    pub ack_fees: ::prost::alloc::vec::Vec<super::super::super::super::cosmos::base::v1beta1::Coin>,
+}
+/// QueryTotalTimeoutFeesRequest defines the request type for the TotalTimeoutFees rpc
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryTotalTimeoutFeesRequest {
+    /// the packet identifier for the associated fees
+    #[prost(message, optional, tag="1")]
+    pub packet_id: ::core::option::Option<super::super::super::core::channel::v1::PacketId>,
+}
+/// QueryTotalTimeoutFeesResponse defines the response type for the TotalTimeoutFees rpc
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryTotalTimeoutFeesResponse {
+    /// the total packet timeout fees
+    #[prost(message, repeated, tag="1")]
+    pub timeout_fees: ::prost::alloc::vec::Vec<super::super::super::super::cosmos::base::v1beta1::Coin>,
+}
+/// QueryPayeeRequest defines the request type for the Payee rpc
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryPayeeRequest {
+    /// unique channel identifier
     #[prost(string, tag="1")]
-    pub client_id: ::prost::alloc::string::String,
+    pub channel_id: ::prost::alloc::string::String,
+    /// the relayer address to which the distribution address is registered
+    #[prost(string, tag="2")]
+    pub relayer: ::prost::alloc::string::String,
 }
-/// QueryClientStatusResponse is the response type for the Query/ClientStatus RPC
-/// method. It returns the current status of the IBC client.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// QueryPayeeResponse defines the response type for the Payee rpc
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryClientStatusResponse {
+pub struct QueryPayeeResponse {
+    /// the payee address to which packet fees are paid out
     #[prost(string, tag="1")]
-    pub status: ::prost::alloc::string::String,
+    pub payee_address: ::prost::alloc::string::String,
 }
-/// QueryClientParamsRequest is the request type for the Query/ClientParams RPC
-/// method.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// QueryCounterpartyPayeeRequest defines the request type for the CounterpartyPayee rpc
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryClientParamsRequest {
+pub struct QueryCounterpartyPayeeRequest {
+    /// unique channel identifier
+    #[prost(string, tag="1")]
+    pub channel_id: ::prost::alloc::string::String,
+    /// the relayer address to which the counterparty is registered
+    #[prost(string, tag="2")]
+    pub relayer: ::prost::alloc::string::String,
 }
-/// QueryClientParamsResponse is the response type for the Query/ClientParams RPC
-/// method.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// QueryCounterpartyPayeeResponse defines the response type for the CounterpartyPayee rpc
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryClientParamsResponse {
-    /// params defines the parameters of the module.
+pub struct QueryCounterpartyPayeeResponse {
+    /// the counterparty payee address used to compensate forward relaying
+    #[prost(string, tag="1")]
+    pub counterparty_payee: ::prost::alloc::string::String,
+}
+/// QueryFeeEnabledChannelsRequest defines the request type for the FeeEnabledChannels rpc
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryFeeEnabledChannelsRequest {
+    /// pagination defines an optional pagination for the request.
     #[prost(message, optional, tag="1")]
-    pub params: ::core::option::Option<Params>,
+    pub pagination: ::core::option::Option<super::super::super::super::cosmos::base::query::v1beta1::PageRequest>,
+    /// block height at which to query
+    #[prost(uint64, tag="2")]
+    pub query_height: u64,
 }
-/// QueryUpgradedClientStateRequest is the request type for the
-/// Query/UpgradedClientState RPC method
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// QueryFeeEnabledChannelsResponse defines the response type for the FeeEnabledChannels rpc
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryUpgradedClientStateRequest {
+pub struct QueryFeeEnabledChannelsResponse {
+    /// list of fee enabled channels
+    #[prost(message, repeated, tag="1")]
+    pub fee_enabled_channels: ::prost::alloc::vec::Vec<FeeEnabledChannel>,
 }
-/// QueryUpgradedClientStateResponse is the response type for the
-/// Query/UpgradedClientState RPC method.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// QueryFeeEnabledChannelRequest defines the request type for the FeeEnabledChannel rpc
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryUpgradedClientStateResponse {
-    /// client state associated with the request identifier
-    #[prost(message, optional, tag="1")]
-    pub upgraded_client_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
+pub struct QueryFeeEnabledChannelRequest {
+    /// unique port identifier
+    #[prost(string, tag="1")]
+    pub port_id: ::prost::alloc::string::String,
+    /// unique channel identifier
+    #[prost(string, tag="2")]
+    pub channel_id: ::prost::alloc::string::String,
 }
-/// QueryUpgradedConsensusStateRequest is the request type for the
-/// Query/UpgradedConsensusState RPC method
-#[derive(::serde::Serialize, ::serde::Deserialize)]
+/// QueryFeeEnabledChannelResponse defines the response type for the FeeEnabledChannel rpc
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryUpgradedConsensusStateRequest {
-}
-/// QueryUpgradedConsensusStateResponse is the response type for the
-/// Query/UpgradedConsensusState RPC method.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryUpgradedConsensusStateResponse {
-    /// Consensus state associated with the request identifier
-    #[prost(message, optional, tag="1")]
-    pub upgraded_consensus_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
+pub struct QueryFeeEnabledChannelResponse {
+    /// boolean flag representing the fee enabled channel status
+    #[prost(bool, tag="1")]
+    pub fee_enabled: bool,
 }
 /// Generated client implementations.
 #[cfg(feature = "client")]
 pub mod query_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
-    /// Query provides defines the gRPC querier service
+    /// Query defines the ICS29 gRPC querier service.
     #[derive(Debug, Clone)]
     pub struct QueryClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -923,74 +885,12 @@ pub mod query_client {
             self.inner = self.inner.accept_gzip();
             self
         }
-        /// ClientState queries an IBC light client.
-        pub async fn client_state(
+        /// IncentivizedPackets returns all incentivized packets and their associated fees
+        pub async fn incentivized_packets(
             &mut self,
-            request: impl tonic::IntoRequest<super::QueryClientStateRequest>,
-        ) -> Result<tonic::Response<super::QueryClientStateResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.client.v1.Query/ClientState",
-            );
-            self.inner.unary(request.into_request(), path, codec).await
-        }
-        /// ClientStates queries all the IBC light clients of a chain.
-        pub async fn client_states(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryClientStatesRequest>,
-        ) -> Result<tonic::Response<super::QueryClientStatesResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.client.v1.Query/ClientStates",
-            );
-            self.inner.unary(request.into_request(), path, codec).await
-        }
-        /// ConsensusState queries a consensus state associated with a client state at
-        /// a given height.
-        pub async fn consensus_state(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryConsensusStateRequest>,
-        ) -> Result<tonic::Response<super::QueryConsensusStateResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.client.v1.Query/ConsensusState",
-            );
-            self.inner.unary(request.into_request(), path, codec).await
-        }
-        /// ConsensusStates queries all the consensus state associated with a given
-        /// client.
-        pub async fn consensus_states(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryConsensusStatesRequest>,
+            request: impl tonic::IntoRequest<super::QueryIncentivizedPacketsRequest>,
         ) -> Result<
-            tonic::Response<super::QueryConsensusStatesResponse>,
+            tonic::Response<super::QueryIncentivizedPacketsResponse>,
             tonic::Status,
         > {
             self.inner
@@ -1004,16 +904,16 @@ pub mod query_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.client.v1.Query/ConsensusStates",
+                "/ibc.applications.fee.v1.Query/IncentivizedPackets",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
-        /// ConsensusStateHeights queries the height of every consensus states associated with a given client.
-        pub async fn consensus_state_heights(
+        /// IncentivizedPacket returns all packet fees for a packet given its identifier
+        pub async fn incentivized_packet(
             &mut self,
-            request: impl tonic::IntoRequest<super::QueryConsensusStateHeightsRequest>,
+            request: impl tonic::IntoRequest<super::QueryIncentivizedPacketRequest>,
         ) -> Result<
-            tonic::Response<super::QueryConsensusStateHeightsResponse>,
+            tonic::Response<super::QueryIncentivizedPacketResponse>,
             tonic::Status,
         > {
             self.inner
@@ -1027,56 +927,18 @@ pub mod query_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.client.v1.Query/ConsensusStateHeights",
+                "/ibc.applications.fee.v1.Query/IncentivizedPacket",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
-        /// Status queries the status of an IBC client.
-        pub async fn client_status(
+        /// Gets all incentivized packets for a specific channel
+        pub async fn incentivized_packets_for_channel(
             &mut self,
-            request: impl tonic::IntoRequest<super::QueryClientStatusRequest>,
-        ) -> Result<tonic::Response<super::QueryClientStatusResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.client.v1.Query/ClientStatus",
-            );
-            self.inner.unary(request.into_request(), path, codec).await
-        }
-        /// ClientParams queries all parameters of the ibc client.
-        pub async fn client_params(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryClientParamsRequest>,
-        ) -> Result<tonic::Response<super::QueryClientParamsResponse>, tonic::Status> {
-            self.inner
-                .ready()
-                .await
-                .map_err(|e| {
-                    tonic::Status::new(
-                        tonic::Code::Unknown,
-                        format!("Service was not ready: {}", e.into()),
-                    )
-                })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.client.v1.Query/ClientParams",
-            );
-            self.inner.unary(request.into_request(), path, codec).await
-        }
-        /// UpgradedClientState queries an Upgraded IBC light client.
-        pub async fn upgraded_client_state(
-            &mut self,
-            request: impl tonic::IntoRequest<super::QueryUpgradedClientStateRequest>,
+            request: impl tonic::IntoRequest<
+                super::QueryIncentivizedPacketsForChannelRequest,
+            >,
         ) -> Result<
-            tonic::Response<super::QueryUpgradedClientStateResponse>,
+            tonic::Response<super::QueryIncentivizedPacketsForChannelResponse>,
             tonic::Status,
         > {
             self.inner
@@ -1090,16 +952,56 @@ pub mod query_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.client.v1.Query/UpgradedClientState",
+                "/ibc.applications.fee.v1.Query/IncentivizedPacketsForChannel",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
-        /// UpgradedConsensusState queries an Upgraded IBC consensus state.
-        pub async fn upgraded_consensus_state(
+        /// TotalRecvFees returns the total receive fees for a packet given its identifier
+        pub async fn total_recv_fees(
             &mut self,
-            request: impl tonic::IntoRequest<super::QueryUpgradedConsensusStateRequest>,
+            request: impl tonic::IntoRequest<super::QueryTotalRecvFeesRequest>,
+        ) -> Result<tonic::Response<super::QueryTotalRecvFeesResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.applications.fee.v1.Query/TotalRecvFees",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// TotalAckFees returns the total acknowledgement fees for a packet given its identifier
+        pub async fn total_ack_fees(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryTotalAckFeesRequest>,
+        ) -> Result<tonic::Response<super::QueryTotalAckFeesResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.applications.fee.v1.Query/TotalAckFees",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// TotalTimeoutFees returns the total timeout fees for a packet given its identifier
+        pub async fn total_timeout_fees(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryTotalTimeoutFeesRequest>,
         ) -> Result<
-            tonic::Response<super::QueryUpgradedConsensusStateResponse>,
+            tonic::Response<super::QueryTotalTimeoutFeesResponse>,
             tonic::Status,
         > {
             self.inner
@@ -1113,7 +1015,96 @@ pub mod query_client {
                 })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
-                "/ibc.core.client.v1.Query/UpgradedConsensusState",
+                "/ibc.applications.fee.v1.Query/TotalTimeoutFees",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// Payee returns the registered payee address for a specific channel given the relayer address
+        pub async fn payee(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryPayeeRequest>,
+        ) -> Result<tonic::Response<super::QueryPayeeResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.applications.fee.v1.Query/Payee",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// CounterpartyPayee returns the registered counterparty payee for forward relaying
+        pub async fn counterparty_payee(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryCounterpartyPayeeRequest>,
+        ) -> Result<
+            tonic::Response<super::QueryCounterpartyPayeeResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.applications.fee.v1.Query/CounterpartyPayee",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// FeeEnabledChannels returns a list of all fee enabled channels
+        pub async fn fee_enabled_channels(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryFeeEnabledChannelsRequest>,
+        ) -> Result<
+            tonic::Response<super::QueryFeeEnabledChannelsResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.applications.fee.v1.Query/FeeEnabledChannels",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// FeeEnabledChannel returns true if the provided port and channel identifiers belong to a fee enabled channel
+        pub async fn fee_enabled_channel(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryFeeEnabledChannelRequest>,
+        ) -> Result<
+            tonic::Response<super::QueryFeeEnabledChannelResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.applications.fee.v1.Query/FeeEnabledChannel",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -1127,64 +1118,79 @@ pub mod query_server {
     ///Generated trait containing gRPC methods that should be implemented for use with QueryServer.
     #[async_trait]
     pub trait Query: Send + Sync + 'static {
-        /// ClientState queries an IBC light client.
-        async fn client_state(
+        /// IncentivizedPackets returns all incentivized packets and their associated fees
+        async fn incentivized_packets(
             &self,
-            request: tonic::Request<super::QueryClientStateRequest>,
-        ) -> Result<tonic::Response<super::QueryClientStateResponse>, tonic::Status>;
-        /// ClientStates queries all the IBC light clients of a chain.
-        async fn client_states(
-            &self,
-            request: tonic::Request<super::QueryClientStatesRequest>,
-        ) -> Result<tonic::Response<super::QueryClientStatesResponse>, tonic::Status>;
-        /// ConsensusState queries a consensus state associated with a client state at
-        /// a given height.
-        async fn consensus_state(
-            &self,
-            request: tonic::Request<super::QueryConsensusStateRequest>,
-        ) -> Result<tonic::Response<super::QueryConsensusStateResponse>, tonic::Status>;
-        /// ConsensusStates queries all the consensus state associated with a given
-        /// client.
-        async fn consensus_states(
-            &self,
-            request: tonic::Request<super::QueryConsensusStatesRequest>,
-        ) -> Result<tonic::Response<super::QueryConsensusStatesResponse>, tonic::Status>;
-        /// ConsensusStateHeights queries the height of every consensus states associated with a given client.
-        async fn consensus_state_heights(
-            &self,
-            request: tonic::Request<super::QueryConsensusStateHeightsRequest>,
+            request: tonic::Request<super::QueryIncentivizedPacketsRequest>,
         ) -> Result<
-            tonic::Response<super::QueryConsensusStateHeightsResponse>,
+            tonic::Response<super::QueryIncentivizedPacketsResponse>,
             tonic::Status,
         >;
-        /// Status queries the status of an IBC client.
-        async fn client_status(
+        /// IncentivizedPacket returns all packet fees for a packet given its identifier
+        async fn incentivized_packet(
             &self,
-            request: tonic::Request<super::QueryClientStatusRequest>,
-        ) -> Result<tonic::Response<super::QueryClientStatusResponse>, tonic::Status>;
-        /// ClientParams queries all parameters of the ibc client.
-        async fn client_params(
-            &self,
-            request: tonic::Request<super::QueryClientParamsRequest>,
-        ) -> Result<tonic::Response<super::QueryClientParamsResponse>, tonic::Status>;
-        /// UpgradedClientState queries an Upgraded IBC light client.
-        async fn upgraded_client_state(
-            &self,
-            request: tonic::Request<super::QueryUpgradedClientStateRequest>,
+            request: tonic::Request<super::QueryIncentivizedPacketRequest>,
         ) -> Result<
-            tonic::Response<super::QueryUpgradedClientStateResponse>,
+            tonic::Response<super::QueryIncentivizedPacketResponse>,
             tonic::Status,
         >;
-        /// UpgradedConsensusState queries an Upgraded IBC consensus state.
-        async fn upgraded_consensus_state(
+        /// Gets all incentivized packets for a specific channel
+        async fn incentivized_packets_for_channel(
             &self,
-            request: tonic::Request<super::QueryUpgradedConsensusStateRequest>,
+            request: tonic::Request<super::QueryIncentivizedPacketsForChannelRequest>,
         ) -> Result<
-            tonic::Response<super::QueryUpgradedConsensusStateResponse>,
+            tonic::Response<super::QueryIncentivizedPacketsForChannelResponse>,
+            tonic::Status,
+        >;
+        /// TotalRecvFees returns the total receive fees for a packet given its identifier
+        async fn total_recv_fees(
+            &self,
+            request: tonic::Request<super::QueryTotalRecvFeesRequest>,
+        ) -> Result<tonic::Response<super::QueryTotalRecvFeesResponse>, tonic::Status>;
+        /// TotalAckFees returns the total acknowledgement fees for a packet given its identifier
+        async fn total_ack_fees(
+            &self,
+            request: tonic::Request<super::QueryTotalAckFeesRequest>,
+        ) -> Result<tonic::Response<super::QueryTotalAckFeesResponse>, tonic::Status>;
+        /// TotalTimeoutFees returns the total timeout fees for a packet given its identifier
+        async fn total_timeout_fees(
+            &self,
+            request: tonic::Request<super::QueryTotalTimeoutFeesRequest>,
+        ) -> Result<
+            tonic::Response<super::QueryTotalTimeoutFeesResponse>,
+            tonic::Status,
+        >;
+        /// Payee returns the registered payee address for a specific channel given the relayer address
+        async fn payee(
+            &self,
+            request: tonic::Request<super::QueryPayeeRequest>,
+        ) -> Result<tonic::Response<super::QueryPayeeResponse>, tonic::Status>;
+        /// CounterpartyPayee returns the registered counterparty payee for forward relaying
+        async fn counterparty_payee(
+            &self,
+            request: tonic::Request<super::QueryCounterpartyPayeeRequest>,
+        ) -> Result<
+            tonic::Response<super::QueryCounterpartyPayeeResponse>,
+            tonic::Status,
+        >;
+        /// FeeEnabledChannels returns a list of all fee enabled channels
+        async fn fee_enabled_channels(
+            &self,
+            request: tonic::Request<super::QueryFeeEnabledChannelsRequest>,
+        ) -> Result<
+            tonic::Response<super::QueryFeeEnabledChannelsResponse>,
+            tonic::Status,
+        >;
+        /// FeeEnabledChannel returns true if the provided port and channel identifiers belong to a fee enabled channel
+        async fn fee_enabled_channel(
+            &self,
+            request: tonic::Request<super::QueryFeeEnabledChannelRequest>,
+        ) -> Result<
+            tonic::Response<super::QueryFeeEnabledChannelResponse>,
             tonic::Status,
         >;
     }
-    /// Query provides defines the gRPC querier service
+    /// Query defines the ICS29 gRPC querier service.
     #[derive(Debug)]
     pub struct QueryServer<T: Query> {
         inner: _Inner<T>,
@@ -1232,25 +1238,27 @@ pub mod query_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/ibc.core.client.v1.Query/ClientState" => {
+                "/ibc.applications.fee.v1.Query/IncentivizedPackets" => {
                     #[allow(non_camel_case_types)]
-                    struct ClientStateSvc<T: Query>(pub Arc<T>);
+                    struct IncentivizedPacketsSvc<T: Query>(pub Arc<T>);
                     impl<
                         T: Query,
-                    > tonic::server::UnaryService<super::QueryClientStateRequest>
-                    for ClientStateSvc<T> {
-                        type Response = super::QueryClientStateResponse;
+                    > tonic::server::UnaryService<super::QueryIncentivizedPacketsRequest>
+                    for IncentivizedPacketsSvc<T> {
+                        type Response = super::QueryIncentivizedPacketsResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::QueryClientStateRequest>,
+                            request: tonic::Request<
+                                super::QueryIncentivizedPacketsRequest,
+                            >,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
-                                (*inner).client_state(request).await
+                                (*inner).incentivized_packets(request).await
                             };
                             Box::pin(fut)
                         }
@@ -1260,7 +1268,7 @@ pub mod query_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = ClientStateSvc(inner);
+                        let method = IncentivizedPacketsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -1272,25 +1280,27 @@ pub mod query_server {
                     };
                     Box::pin(fut)
                 }
-                "/ibc.core.client.v1.Query/ClientStates" => {
+                "/ibc.applications.fee.v1.Query/IncentivizedPacket" => {
                     #[allow(non_camel_case_types)]
-                    struct ClientStatesSvc<T: Query>(pub Arc<T>);
+                    struct IncentivizedPacketSvc<T: Query>(pub Arc<T>);
                     impl<
                         T: Query,
-                    > tonic::server::UnaryService<super::QueryClientStatesRequest>
-                    for ClientStatesSvc<T> {
-                        type Response = super::QueryClientStatesResponse;
+                    > tonic::server::UnaryService<super::QueryIncentivizedPacketRequest>
+                    for IncentivizedPacketSvc<T> {
+                        type Response = super::QueryIncentivizedPacketResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::QueryClientStatesRequest>,
+                            request: tonic::Request<
+                                super::QueryIncentivizedPacketRequest,
+                            >,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
-                                (*inner).client_states(request).await
+                                (*inner).incentivized_packet(request).await
                             };
                             Box::pin(fut)
                         }
@@ -1300,7 +1310,7 @@ pub mod query_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = ClientStatesSvc(inner);
+                        let method = IncentivizedPacketSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -1312,95 +1322,15 @@ pub mod query_server {
                     };
                     Box::pin(fut)
                 }
-                "/ibc.core.client.v1.Query/ConsensusState" => {
+                "/ibc.applications.fee.v1.Query/IncentivizedPacketsForChannel" => {
                     #[allow(non_camel_case_types)]
-                    struct ConsensusStateSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryConsensusStateRequest>
-                    for ConsensusStateSvc<T> {
-                        type Response = super::QueryConsensusStateResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::QueryConsensusStateRequest>,
-                        ) -> Self::Future {
-                            let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).consensus_state(request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = ConsensusStateSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/ibc.core.client.v1.Query/ConsensusStates" => {
-                    #[allow(non_camel_case_types)]
-                    struct ConsensusStatesSvc<T: Query>(pub Arc<T>);
-                    impl<
-                        T: Query,
-                    > tonic::server::UnaryService<super::QueryConsensusStatesRequest>
-                    for ConsensusStatesSvc<T> {
-                        type Response = super::QueryConsensusStatesResponse;
-                        type Future = BoxFuture<
-                            tonic::Response<Self::Response>,
-                            tonic::Status,
-                        >;
-                        fn call(
-                            &mut self,
-                            request: tonic::Request<super::QueryConsensusStatesRequest>,
-                        ) -> Self::Future {
-                            let inner = self.0.clone();
-                            let fut = async move {
-                                (*inner).consensus_states(request).await
-                            };
-                            Box::pin(fut)
-                        }
-                    }
-                    let accept_compression_encodings = self.accept_compression_encodings;
-                    let send_compression_encodings = self.send_compression_encodings;
-                    let inner = self.inner.clone();
-                    let fut = async move {
-                        let inner = inner.0;
-                        let method = ConsensusStatesSvc(inner);
-                        let codec = tonic::codec::ProstCodec::default();
-                        let mut grpc = tonic::server::Grpc::new(codec)
-                            .apply_compression_config(
-                                accept_compression_encodings,
-                                send_compression_encodings,
-                            );
-                        let res = grpc.unary(method, req).await;
-                        Ok(res)
-                    };
-                    Box::pin(fut)
-                }
-                "/ibc.core.client.v1.Query/ConsensusStateHeights" => {
-                    #[allow(non_camel_case_types)]
-                    struct ConsensusStateHeightsSvc<T: Query>(pub Arc<T>);
+                    struct IncentivizedPacketsForChannelSvc<T: Query>(pub Arc<T>);
                     impl<
                         T: Query,
                     > tonic::server::UnaryService<
-                        super::QueryConsensusStateHeightsRequest,
-                    > for ConsensusStateHeightsSvc<T> {
-                        type Response = super::QueryConsensusStateHeightsResponse;
+                        super::QueryIncentivizedPacketsForChannelRequest,
+                    > for IncentivizedPacketsForChannelSvc<T> {
+                        type Response = super::QueryIncentivizedPacketsForChannelResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
@@ -1408,12 +1338,12 @@ pub mod query_server {
                         fn call(
                             &mut self,
                             request: tonic::Request<
-                                super::QueryConsensusStateHeightsRequest,
+                                super::QueryIncentivizedPacketsForChannelRequest,
                             >,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
-                                (*inner).consensus_state_heights(request).await
+                                (*inner).incentivized_packets_for_channel(request).await
                             };
                             Box::pin(fut)
                         }
@@ -1423,7 +1353,7 @@ pub mod query_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = ConsensusStateHeightsSvc(inner);
+                        let method = IncentivizedPacketsForChannelSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -1435,25 +1365,25 @@ pub mod query_server {
                     };
                     Box::pin(fut)
                 }
-                "/ibc.core.client.v1.Query/ClientStatus" => {
+                "/ibc.applications.fee.v1.Query/TotalRecvFees" => {
                     #[allow(non_camel_case_types)]
-                    struct ClientStatusSvc<T: Query>(pub Arc<T>);
+                    struct TotalRecvFeesSvc<T: Query>(pub Arc<T>);
                     impl<
                         T: Query,
-                    > tonic::server::UnaryService<super::QueryClientStatusRequest>
-                    for ClientStatusSvc<T> {
-                        type Response = super::QueryClientStatusResponse;
+                    > tonic::server::UnaryService<super::QueryTotalRecvFeesRequest>
+                    for TotalRecvFeesSvc<T> {
+                        type Response = super::QueryTotalRecvFeesResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::QueryClientStatusRequest>,
+                            request: tonic::Request<super::QueryTotalRecvFeesRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
-                                (*inner).client_status(request).await
+                                (*inner).total_recv_fees(request).await
                             };
                             Box::pin(fut)
                         }
@@ -1463,7 +1393,7 @@ pub mod query_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = ClientStatusSvc(inner);
+                        let method = TotalRecvFeesSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -1475,25 +1405,25 @@ pub mod query_server {
                     };
                     Box::pin(fut)
                 }
-                "/ibc.core.client.v1.Query/ClientParams" => {
+                "/ibc.applications.fee.v1.Query/TotalAckFees" => {
                     #[allow(non_camel_case_types)]
-                    struct ClientParamsSvc<T: Query>(pub Arc<T>);
+                    struct TotalAckFeesSvc<T: Query>(pub Arc<T>);
                     impl<
                         T: Query,
-                    > tonic::server::UnaryService<super::QueryClientParamsRequest>
-                    for ClientParamsSvc<T> {
-                        type Response = super::QueryClientParamsResponse;
+                    > tonic::server::UnaryService<super::QueryTotalAckFeesRequest>
+                    for TotalAckFeesSvc<T> {
+                        type Response = super::QueryTotalAckFeesResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::QueryClientParamsRequest>,
+                            request: tonic::Request<super::QueryTotalAckFeesRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
-                                (*inner).client_params(request).await
+                                (*inner).total_ack_fees(request).await
                             };
                             Box::pin(fut)
                         }
@@ -1503,7 +1433,7 @@ pub mod query_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = ClientParamsSvc(inner);
+                        let method = TotalAckFeesSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -1515,14 +1445,130 @@ pub mod query_server {
                     };
                     Box::pin(fut)
                 }
-                "/ibc.core.client.v1.Query/UpgradedClientState" => {
+                "/ibc.applications.fee.v1.Query/TotalTimeoutFees" => {
                     #[allow(non_camel_case_types)]
-                    struct UpgradedClientStateSvc<T: Query>(pub Arc<T>);
+                    struct TotalTimeoutFeesSvc<T: Query>(pub Arc<T>);
                     impl<
                         T: Query,
-                    > tonic::server::UnaryService<super::QueryUpgradedClientStateRequest>
-                    for UpgradedClientStateSvc<T> {
-                        type Response = super::QueryUpgradedClientStateResponse;
+                    > tonic::server::UnaryService<super::QueryTotalTimeoutFeesRequest>
+                    for TotalTimeoutFeesSvc<T> {
+                        type Response = super::QueryTotalTimeoutFeesResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::QueryTotalTimeoutFeesRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).total_timeout_fees(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = TotalTimeoutFeesSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/ibc.applications.fee.v1.Query/Payee" => {
+                    #[allow(non_camel_case_types)]
+                    struct PayeeSvc<T: Query>(pub Arc<T>);
+                    impl<T: Query> tonic::server::UnaryService<super::QueryPayeeRequest>
+                    for PayeeSvc<T> {
+                        type Response = super::QueryPayeeResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::QueryPayeeRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move { (*inner).payee(request).await };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = PayeeSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/ibc.applications.fee.v1.Query/CounterpartyPayee" => {
+                    #[allow(non_camel_case_types)]
+                    struct CounterpartyPayeeSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<super::QueryCounterpartyPayeeRequest>
+                    for CounterpartyPayeeSvc<T> {
+                        type Response = super::QueryCounterpartyPayeeResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::QueryCounterpartyPayeeRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).counterparty_payee(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = CounterpartyPayeeSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/ibc.applications.fee.v1.Query/FeeEnabledChannels" => {
+                    #[allow(non_camel_case_types)]
+                    struct FeeEnabledChannelsSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<super::QueryFeeEnabledChannelsRequest>
+                    for FeeEnabledChannelsSvc<T> {
+                        type Response = super::QueryFeeEnabledChannelsResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
@@ -1530,12 +1576,12 @@ pub mod query_server {
                         fn call(
                             &mut self,
                             request: tonic::Request<
-                                super::QueryUpgradedClientStateRequest,
+                                super::QueryFeeEnabledChannelsRequest,
                             >,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
-                                (*inner).upgraded_client_state(request).await
+                                (*inner).fee_enabled_channels(request).await
                             };
                             Box::pin(fut)
                         }
@@ -1545,7 +1591,7 @@ pub mod query_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = UpgradedClientStateSvc(inner);
+                        let method = FeeEnabledChannelsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -1557,28 +1603,25 @@ pub mod query_server {
                     };
                     Box::pin(fut)
                 }
-                "/ibc.core.client.v1.Query/UpgradedConsensusState" => {
+                "/ibc.applications.fee.v1.Query/FeeEnabledChannel" => {
                     #[allow(non_camel_case_types)]
-                    struct UpgradedConsensusStateSvc<T: Query>(pub Arc<T>);
+                    struct FeeEnabledChannelSvc<T: Query>(pub Arc<T>);
                     impl<
                         T: Query,
-                    > tonic::server::UnaryService<
-                        super::QueryUpgradedConsensusStateRequest,
-                    > for UpgradedConsensusStateSvc<T> {
-                        type Response = super::QueryUpgradedConsensusStateResponse;
+                    > tonic::server::UnaryService<super::QueryFeeEnabledChannelRequest>
+                    for FeeEnabledChannelSvc<T> {
+                        type Response = super::QueryFeeEnabledChannelResponse;
                         type Future = BoxFuture<
                             tonic::Response<Self::Response>,
                             tonic::Status,
                         >;
                         fn call(
                             &mut self,
-                            request: tonic::Request<
-                                super::QueryUpgradedConsensusStateRequest,
-                            >,
+                            request: tonic::Request<super::QueryFeeEnabledChannelRequest>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move {
-                                (*inner).upgraded_consensus_state(request).await
+                                (*inner).fee_enabled_channel(request).await
                             };
                             Box::pin(fut)
                         }
@@ -1588,7 +1631,7 @@ pub mod query_server {
                     let inner = self.inner.clone();
                     let fut = async move {
                         let inner = inner.0;
-                        let method = UpgradedConsensusStateSvc(inner);
+                        let method = FeeEnabledChannelSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(
@@ -1636,6 +1679,19 @@ pub mod query_server {
         }
     }
     impl<T: Query> tonic::transport::NamedService for QueryServer<T> {
-        const NAME: &'static str = "ibc.core.client.v1.Query";
+        const NAME: &'static str = "ibc.applications.fee.v1.Query";
     }
+}
+/// IncentivizedAcknowledgement is the acknowledgement format to be used by applications wrapped in the fee middleware
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct IncentivizedAcknowledgement {
+    /// the underlying app acknowledgement bytes
+    #[prost(bytes="vec", tag="1")]
+    pub app_acknowledgement: ::prost::alloc::vec::Vec<u8>,
+    /// the relayer address which submits the recv packet message
+    #[prost(string, tag="2")]
+    pub forward_relayer_address: ::prost::alloc::string::String,
+    /// success flag of the base application callback
+    #[prost(bool, tag="3")]
+    pub underlying_app_success: bool,
 }
