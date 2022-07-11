@@ -1,6 +1,5 @@
 use alloc::collections::BTreeSet;
 use async_trait::async_trait;
-use core::marker::PhantomData;
 
 use crate::std_prelude::*;
 use crate::traits::chain_context::IbcChainContext;
@@ -11,7 +10,7 @@ use crate::traits::messages::update_client::{UpdateClientContext, UpdateClientMe
 use crate::traits::relay_context::RelayContext;
 use crate::traits::target::ChainTarget;
 
-pub struct SendIbcMessagesWithUpdateClient<Sender>(PhantomData<Sender>);
+pub struct SendIbcMessagesWithUpdateClient<Sender>(pub Sender);
 
 #[async_trait]
 impl<Sender, Context, Target, Height, TargetChain, CounterpartyChain, Message, Event>

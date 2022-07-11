@@ -6,7 +6,6 @@ use ibc::signer::Signer;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
-use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::keyring::KeyEntry;
 use ibc_relayer_framework::traits::chain_context::{ChainContext, IbcChainContext};
@@ -87,8 +86,8 @@ where
 
 impl<SrcChain, DstChain> RelayContext for CosmosRelayHandler<SrcChain, DstChain>
 where
-    SrcChain: ChainHandle,
-    DstChain: ChainHandle,
+    SrcChain: Async,
+    DstChain: Async,
 {
     type SrcChain = CosmosChainHandler<SrcChain>;
 
@@ -105,10 +104,10 @@ where
     }
 
     fn source_client_id(&self) -> &ClientId {
-        self.dst_to_src_client.id()
+        &self.dst_to_src_client.id
     }
 
     fn destination_client_id(&self) -> &ClientId {
-        self.src_to_dst_client.id()
+        &self.src_to_dst_client.id
     }
 }
