@@ -26,7 +26,7 @@ pub struct QueryConnectionsCmd {
     #[clap(
         long = "counterparty-chain",
         value_name = "COUNTERPARTY_CHAIN_ID",
-        help = "Filter the query response by the this counterparty chain"
+        help = "Filter the query response by the counterparty chain"
     )]
     counterparty_chain_id: Option<ChainId>,
 

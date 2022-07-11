@@ -15,7 +15,7 @@ DESCRIPTION:
 
 OPTIONS:
         --counterparty-chain <COUNTERPARTY_CHAIN_ID>
-            Filter the query response by the this counterparty chain
+            Filter the query response by the counterparty chain
 
         --verbose
             Enable verbose output, displaying the client for each connection in the response
