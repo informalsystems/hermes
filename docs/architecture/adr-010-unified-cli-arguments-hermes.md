@@ -185,6 +185,10 @@ The following are not yet implemented:
 
 The PR which updates the flags for all the commands as described in this ADR: [#2275](https://github.com/informalsystems/ibc-rs/pull/2275)
 
+__08.07.22__
+
+* Created a new PR, [#2391](https://github.com/informalsystems/ibc-rs/pull/2391), to add the optional flags for the `query connections` command, issue [#2310](https://github.com/informalsystems/ibc-rs/issues/2310)
+
 ## Consequences
 
 ### Positive
