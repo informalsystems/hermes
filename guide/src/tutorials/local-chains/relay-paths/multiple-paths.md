@@ -20,7 +20,7 @@ Follow the steps below to connect three chains together and relay packets betwee
 
     [global.hermes]
         binary = "$HOME/ibc-rs/target/debug/hermes" #change this path according to your setup
-        config = "$HOME/.hermes/config.toml"
+        config = "./hermes"
         log_level = "info"
         telemetry_enabled = true
         telemetry_host = "127.0.0.1"
