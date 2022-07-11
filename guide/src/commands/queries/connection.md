@@ -13,6 +13,13 @@ USAGE:
 DESCRIPTION:
     Query the identifiers of all connections on a chain
 
+OPTIONS:
+        --counterparty-chain <COUNTERPARTY_CHAIN_ID>
+            Filter the query response by the this counterparty chain
+
+        --verbose
+            Enable verbose output, displaying the client for each connection in the response
+
 REQUIRED:
         --chain <CHAIN_ID>    Identifier of the chain to query
 ```
