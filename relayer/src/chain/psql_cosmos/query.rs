@@ -512,8 +512,6 @@ pub async fn query_hashes_and_update_tx_sync_events(
         .collect::<Vec<&mut TxSyncResult>>();
 
     for (tx_sync_result, events) in solved_results.iter_mut().zip(solved_txs_events.iter()) {
-        tx_sync_result.status = TxStatus::ReceivedResponse;
-
         // Transaction was included in a block. Check if it was an error.
         let tx_chain_error = events
             .iter()
@@ -530,6 +528,7 @@ pub async fn query_hashes_and_update_tx_sync_events(
         } else {
             tx_sync_result.events = events.clone();
         }
+        tx_sync_result.status = TxStatus::ReceivedResponse;
     }
     Ok(())
 }

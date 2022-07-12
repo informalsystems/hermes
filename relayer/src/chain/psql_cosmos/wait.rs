@@ -56,15 +56,6 @@ pub async fn wait_for_block_commits(
     }
 }
 
-// pub fn empty_event_present(events: &[IbcEvent]) -> bool {
-//     events.iter().any(|ev| matches!(ev, IbcEvent::Empty(_)))
-// }
-//
-// fn all_tx_results_found(tx_sync_results: &[TxSyncResult]) -> bool {
-//     tx_sync_results
-//         .iter()
-//         .all(|r| !empty_event_present(&r.events))
-// }
 fn all_tx_results_found(tx_sync_results: &[TxSyncResult]) -> bool {
     tx_sync_results
         .iter()
