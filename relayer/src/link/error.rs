@@ -15,7 +15,7 @@ define_error! {
     LinkError {
         Relayer
             [ Error ]
-            |_| { "failed with underlying error" },
+            |_| { "link failed with underlying error" },
 
         Supervisor
             [ SupervisorError ]
@@ -103,6 +103,9 @@ define_error! {
             |e| {
                 format!("unexpected query tx response: {}", e.event)
             },
+
+        UpdateClientEventNotFound
+            | _ | { "update client event not found in tx response" },
 
         InvalidChannelState
             {

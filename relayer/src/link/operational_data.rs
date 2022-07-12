@@ -13,6 +13,7 @@ use ibc::Height;
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::IncludeProof;
 use crate::chain::requests::QueryClientStateRequest;
+use crate::chain::requests::QueryHeight;
 use crate::chain::tracking::TrackedMsgs;
 use crate::chain::tracking::TrackingId;
 use crate::link::error::LinkError;
@@ -181,7 +182,7 @@ impl OperationalData {
                     .query_client_state(
                         QueryClientStateRequest {
                             client_id: relay_path.src_client_id().clone(),
-                            height: Height::zero(),
+                            height: QueryHeight::Latest,
                         },
                         IncludeProof::No,
                     )
@@ -192,7 +193,7 @@ impl OperationalData {
                     .query_client_state(
                         QueryClientStateRequest {
                             client_id: relay_path.dst_client_id().clone(),
-                            height: Height::zero(),
+                            height: QueryHeight::Latest,
                         },
                         IncludeProof::No,
                     )
@@ -359,8 +360,8 @@ impl ConnectionDelay {
         if latest_height >= acceptable_height {
             0
         } else {
-            debug_assert!(acceptable_height.revision_number == latest_height.revision_number);
-            acceptable_height.revision_height - latest_height.revision_height
+            debug_assert!(acceptable_height.revision_number() == latest_height.revision_number());
+            acceptable_height.revision_height() - latest_height.revision_height()
         }
     }
 

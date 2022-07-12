@@ -1,16 +1,13 @@
 use flex_error::define_error;
 use serde::{Deserialize, Serialize};
 
-use ibc::{
-    core::{
-        ics02_client::{client_state::ClientState, events::UpdateClient},
-        ics03_connection::events::Attributes as ConnectionAttributes,
-        ics04_channel::events::{
-            Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement,
-        },
-        ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+use ibc::core::{
+    ics02_client::{client_state::ClientState, events::UpdateClient},
+    ics03_connection::events::Attributes as ConnectionAttributes,
+    ics04_channel::events::{
+        Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement,
     },
-    Height,
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
 };
 
 use crate::chain::{
@@ -19,7 +16,7 @@ use crate::chain::{
         counterparty_chain_from_connection,
     },
     handle::ChainHandle,
-    requests::{IncludeProof, QueryClientStateRequest},
+    requests::{IncludeProof, QueryClientStateRequest, QueryHeight},
 };
 use crate::error::Error as RelayerError;
 use crate::supervisor::Error as SupervisorError;
@@ -307,7 +304,7 @@ impl Object {
             .query_client_state(
                 QueryClientStateRequest {
                     client_id: e.client_id().clone(),
-                    height: Height::zero(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -397,7 +394,7 @@ impl Object {
         Ok(Channel {
             dst_chain_id,
             src_chain_id: src_chain.id(),
-            src_channel_id: *channel_id,
+            src_channel_id: channel_id.clone(),
             src_port_id: attributes.port_id().clone(),
         }
         .into())
@@ -418,7 +415,7 @@ impl Object {
         Ok(Packet {
             dst_chain_id,
             src_chain_id: src_chain.id(),
-            src_channel_id: e.packet.source_channel,
+            src_channel_id: e.packet.source_channel.clone(),
             src_port_id: e.packet.source_port.clone(),
         }
         .into())
@@ -439,7 +436,7 @@ impl Object {
         Ok(Packet {
             dst_chain_id,
             src_chain_id: src_chain.id(),
-            src_channel_id: e.packet.destination_channel,
+            src_channel_id: e.packet.destination_channel.clone(),
             src_port_id: e.packet.destination_port.clone(),
         }
         .into())
@@ -460,7 +457,7 @@ impl Object {
         Ok(Packet {
             dst_chain_id,
             src_chain_id: src_chain.id(),
-            src_channel_id: *e.src_channel_id(),
+            src_channel_id: e.src_channel_id().clone(),
             src_port_id: e.src_port_id().clone(),
         }
         .into())
@@ -477,7 +474,7 @@ impl Object {
         Ok(Packet {
             dst_chain_id,
             src_chain_id: src_chain.id(),
-            src_channel_id: *e.channel_id(),
+            src_channel_id: e.channel_id().clone(),
             src_port_id: e.port_id().clone(),
         }
         .into())

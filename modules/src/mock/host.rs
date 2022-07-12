@@ -40,7 +40,8 @@ impl HostBlock {
             HostBlock::SyntheticTendermint(light_block) => Height::new(
                 ChainId::chain_version(light_block.signed_header.header.chain_id.as_str()),
                 light_block.signed_header.header.height.value(),
-            ),
+            )
+            .unwrap(),
         }
     }
 
@@ -63,7 +64,7 @@ impl HostBlock {
     ) -> HostBlock {
         match chain_type {
             HostType::Mock => HostBlock::Mock(MockHeader {
-                height: Height::new(chain_id.version(), height),
+                height: Height::new(chain_id.version(), height).unwrap(),
                 timestamp,
             }),
             HostType::SyntheticTendermint => HostBlock::SyntheticTendermint(Box::new(
@@ -117,7 +118,7 @@ impl From<TmLightBlock> for TMHeader {
         TMHeader {
             signed_header: light_block.signed_header,
             validator_set: light_block.validators,
-            trusted_height: Default::default(),
+            trusted_height: Height::new(0, 1).unwrap(),
             trusted_validator_set: light_block.next_validators,
         }
     }

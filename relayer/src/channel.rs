@@ -24,7 +24,7 @@ use crate::chain::counterparty::{channel_connection_client, channel_state_on_des
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::{
     IncludeProof, PageRequest, QueryChannelRequest, QueryConnectionChannelsRequest,
-    QueryConnectionRequest,
+    QueryConnectionRequest, QueryHeight,
 };
 use crate::chain::tracking::TrackedMsgs;
 use crate::connection::Connection;
@@ -38,39 +38,48 @@ use crate::util::task::Next;
 pub mod error;
 pub mod version;
 
-mod retry_strategy {
+mod handshake_retry {
+    //! Provides utility methods and constants to configure the retry behavior
+    //! for the channel handshake algorithm.
+
+    use crate::channel::ChannelError;
+    use crate::util::retry::{clamp_total, ConstantGrowth};
     use core::time::Duration;
 
-    use retry::delay::Fibonacci;
+    /// Approximate number of retries per block.
+    const PER_BLOCK_RETRIES: u32 = 10;
 
-    use crate::util::retry::clamp_total;
+    /// Defines the increment in delay between subsequent retries.
+    /// A value of `0` will make the retry delay constant.
+    const DELAY_INCREMENT: u64 = 0;
 
-    // Default parameters for the retrying mechanism
-    const MAX_DELAY: Duration = Duration::from_secs(60); // 1 minute
-    const MAX_TOTAL_DELAY: Duration = Duration::from_secs(10 * 60); // 10 minutes
-    const INITIAL_DELAY: Duration = Duration::from_secs(1); // 1 second
+    /// Maximum retry delay expressed in number of blocks
+    const BLOCK_NUMBER_DELAY: u32 = 10;
 
-    pub fn default() -> impl Iterator<Item = Duration> {
-        clamp_total(Fibonacci::from(INITIAL_DELAY), MAX_DELAY, MAX_TOTAL_DELAY)
+    /// The default retry strategy.
+    /// We retry with a constant backoff strategy. The strategy is parametrized by the
+    /// maximum block time expressed as a `Duration`.
+    pub fn default_strategy(max_block_times: Duration) -> impl Iterator<Item = Duration> {
+        let retry_delay = max_block_times / PER_BLOCK_RETRIES;
+
+        clamp_total(
+            ConstantGrowth::new(retry_delay, Duration::from_secs(DELAY_INCREMENT)),
+            retry_delay,
+            max_block_times * BLOCK_NUMBER_DELAY,
+        )
     }
-}
 
-pub fn from_retry_error(e: retry::Error<ChannelError>, description: String) -> ChannelError {
-    match e {
-        retry::Error::Operation {
-            error,
-            total_delay,
-            tries,
-        } => {
-            let detail = error::ChannelErrorDetail::MaxRetry(error::MaxRetrySubdetail {
-                description,
-                tries,
+    /// Translates from an error type that the `retry` mechanism threw into
+    /// a crate specific error of [`ChannelError`] type.
+    pub fn from_retry_error(e: retry::Error<ChannelError>, description: String) -> ChannelError {
+        match e {
+            retry::Error::Operation {
+                error: _,
                 total_delay,
-                source: Box::new(error.0),
-            });
-            ChannelError(detail, error.1)
+                tries,
+            } => ChannelError::max_retry(description, tries, total_delay),
+            retry::Error::Internal(reason) => ChannelError::retry_internal(reason),
         }
-        retry::Error::Internal(reason) => ChannelError::retry_internal(reason),
     }
 }
 
@@ -211,7 +220,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: connection_id.clone(),
-                    height: Height::zero(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -262,8 +271,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_channel(
                 QueryChannelRequest {
                     port_id: channel.src_port_id.clone(),
-                    channel_id: channel.src_channel_id,
-                    height,
+                    channel_id: channel.src_channel_id.clone(),
+                    height: QueryHeight::Specific(height),
                 },
                 IncludeProof::No,
             )
@@ -271,7 +280,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let a_connection_id = a_channel.connection_hops().first().ok_or_else(|| {
             ChannelError::supervisor(SupervisorError::missing_connection_hops(
-                channel.src_channel_id,
+                channel.src_channel_id.clone(),
                 chain.id(),
             ))
         })?;
@@ -280,7 +289,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: a_connection_id.clone(),
-                    height: Height::zero(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -292,7 +301,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .cloned()
             .ok_or_else(|| {
                 ChannelError::supervisor(SupervisorError::channel_connection_uninitialized(
-                    channel.src_channel_id,
+                    channel.src_channel_id.clone(),
                     chain.id(),
                     a_connection.counterparty().clone(),
                 ))
@@ -305,7 +314,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 a_connection.client_id().clone(),
                 a_connection_id.clone(),
                 channel.src_port_id.clone(),
-                Some(channel.src_channel_id),
+                Some(channel.src_channel_id.clone()),
                 None,
             ),
             b_side: ChannelSide::new(
@@ -313,7 +322,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 a_connection.counterparty().client_id().clone(),
                 b_connection_id.clone(),
                 a_channel.remote.port_id.clone(),
-                a_channel.remote.channel_id,
+                a_channel.remote.channel_id.clone(),
                 None,
             ),
             connection_delay: a_connection.delay_period(),
@@ -348,6 +357,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         &self.b_side.chain
     }
 
+    pub fn a_chain(&self) -> ChainA {
+        self.a_side.chain.clone()
+    }
+
+    pub fn b_chain(&self) -> ChainB {
+        self.b_side.chain.clone()
+    }
+
     pub fn src_client_id(&self) -> &ClientId {
         &self.a_side.client_id
     }
@@ -380,12 +397,73 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         self.b_side.channel_id()
     }
 
+    pub fn a_channel_id(&self) -> Option<&ChannelId> {
+        self.a_side.channel_id()
+    }
+
+    pub fn b_channel_id(&self) -> Option<&ChannelId> {
+        self.b_side.channel_id()
+    }
+
     pub fn src_version(&self) -> Option<&Version> {
         self.a_side.version.as_ref()
     }
 
     pub fn dst_version(&self) -> Option<&Version> {
         self.b_side.version.as_ref()
+    }
+
+    fn a_channel(&self, channel_id: Option<&ChannelId>) -> Result<ChannelEnd, ChannelError> {
+        if let Some(id) = channel_id {
+            self.a_chain()
+                .query_channel(
+                    QueryChannelRequest {
+                        port_id: self.a_side.port_id.clone(),
+                        channel_id: id.clone(),
+                        height: QueryHeight::Latest,
+                    },
+                    IncludeProof::No,
+                )
+                .map(|(channel_end, _)| channel_end)
+                .map_err(|e| ChannelError::chain_query(self.a_chain().id(), e))
+        } else {
+            Ok(ChannelEnd::default())
+        }
+    }
+
+    fn b_channel(&self, channel_id: Option<&ChannelId>) -> Result<ChannelEnd, ChannelError> {
+        if let Some(id) = channel_id {
+            self.b_chain()
+                .query_channel(
+                    QueryChannelRequest {
+                        port_id: self.b_side.port_id.clone(),
+                        channel_id: id.clone(),
+                        height: QueryHeight::Latest,
+                    },
+                    IncludeProof::No,
+                )
+                .map(|(channel_end, _)| channel_end)
+                .map_err(|e| ChannelError::chain_query(self.b_chain().id(), e))
+        } else {
+            Ok(ChannelEnd::default())
+        }
+    }
+
+    /// Returns a `Duration` representing the maximum value among the
+    /// [`ChainConfig.max_block_time`] for the two networks that
+    /// this channel belongs to.
+    fn max_block_times(&self) -> Result<Duration, ChannelError> {
+        let a_block_time = self
+            .a_chain()
+            .config()
+            .map_err(ChannelError::relayer)?
+            .max_block_time;
+        let b_block_time = self
+            .b_chain()
+            .config()
+            .map_err(ChannelError::relayer)?
+            .max_block_time;
+        Ok(a_block_time.max(b_block_time))
     }
 
     pub fn flipped(&self) -> Channel<ChainB, ChainA> {
@@ -397,51 +475,211 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
     }
 
-    fn do_chan_open_init_and_send(&mut self) -> Result<(), ChannelError> {
-        let event = self.flipped().build_chan_open_init_and_send()?;
+    /// Queries the chains for latest channel end information. It verifies the relayer channel
+    /// IDs and updates them if needed.
+    /// Returns the states of the two channel ends.
+    ///
+    /// The relayer channel stores the channel identifiers on the two chains a and b.
+    /// These identifiers need to be cross validated with the corresponding on-chain ones at some
+    /// handshake steps.
+    /// This is required because of crossing handshake messages in the presence of multiple relayers.
+    ///
+    /// Chain a is queried with the relayer's `a_side.channel_id` (`relayer_a_id`) with result
+    /// `a_channel`. If the counterparty id of this channel, `a_counterparty_id`,
+    /// is some id then it must match the relayer's `b_side.channel_id` (`relayer_b_id`).
+    /// A similar check is done for the `b_side` of the channel.
+    ///
+    ///  a                                 relayer                                    b
+    ///  |                     a_side -- channel -- b_side                         |
+    ///  a_id _____________> relayer_a_id             relayer_b_id <______________> b_id
+    ///  |                      \                                /                    |
+    /// a_counterparty_id <_____________________________________/                     |
+    ///                           \____________________________________>   b_counterparty_id
+    ///
+    /// There are two cases to consider.
+    ///
+    /// Case 1 (fix channel ID):
+    ///  a                                                      b
+    ///  | <-- Init (r1)                                        |
+    ///  | a_id = 1, a_counterparty_id = None                   |
+    ///  |                                         Try (r2) --> |
+    ///  |                    b_id = 100, b_counterparty_id = 1 |
+    ///  |                                         Try (r1) --> |
+    ///  |                    b_id = 101, b_counterparty_id = 1 |
+    ///  | <-- Ack (r2)
+    ///  | a_id = 1, a_counterparty_id = 100
+    ///
+    /// Here relayer r1 has a_side channel 1 and b_side channel 101
+    /// while on chain a the counterparty of channel 1 is 100. r1 needs to update
+    /// its b_side to 100
+    ///
+    /// Case 2 (update from None to some channel ID):
+    ///  a                                                      b
+    ///  | <-- Init (r1)                                        |
+    ///  | a_id = 1, a_counterparty_id = None                   |
+    ///  |                                         Try (r2) --> |
+    ///  |                    b_id = 100, b_counterparty_id = 1 |
+    ///  | <-- Ack (r2)
+    ///  | a_id = 1, a_counterparty_id = 100
+    ///
+    /// Here relayer r1 has a_side channel 1 and b_side is unknown
+    /// while on chain a the counterparty of channel 1 is 100. r1 needs to update
+    /// its b_side to 100
+    fn update_channel_and_query_states(&mut self) -> Result<(State, State), ChannelError> {
+        let relayer_a_id = self.a_side.channel_id();
+        let relayer_b_id = self.b_side.channel_id().cloned();
 
-        info!("done {} => {:#?}\n", self.src_chain().id(), event);
+        let a_channel = self.a_channel(relayer_a_id)?;
+        let a_counterparty_id = a_channel.counterparty().channel_id();
 
-        let channel_id = extract_channel_id(&event)?;
-        self.a_side.channel_id = Some(*channel_id);
-        info!("successfully opened init channel");
+        if a_counterparty_id.is_some() && a_counterparty_id != relayer_b_id.as_ref() {
+            warn!(
+                "updating the expected {:?} of side_b({}) since it is different than the \
+                counterparty of {:?}: {:?}, on {}. This is typically caused by crossing handshake \
+                messages in the presence of multiple relayers.",
+                relayer_b_id,
+                self.b_chain().id(),
+                relayer_a_id,
+                a_counterparty_id,
+                self.a_chain().id(),
+            );
+            self.b_side.channel_id = a_counterparty_id.cloned();
+        }
 
-        Ok(())
+        let updated_relayer_b_id = self.b_side.channel_id();
+        let b_channel = self.b_channel(updated_relayer_b_id)?;
+        let b_counterparty_id = b_channel.counterparty().channel_id();
+
+        if b_counterparty_id.is_some() && b_counterparty_id != relayer_a_id {
+            if updated_relayer_b_id == relayer_b_id.as_ref() {
+                warn!(
+                    "updating the expected {:?} of side_a({}) since it is different than the \
+                counterparty of {:?}: {:?}, on {}. This is typically caused by crossing handshake \
+                messages in the presence of multiple relayers.",
+                    relayer_a_id,
+                    self.a_chain().id(),
+                    updated_relayer_b_id,
+                    b_counterparty_id,
+                    self.b_chain().id(),
+                );
+                self.a_side.channel_id = b_counterparty_id.cloned();
+            } else {
+                panic!(
+                    "mismatched channel ids in channel ends: {} - {:?} and {} - {:?}",
+                    self.a_chain().id(),
+                    a_channel,
+                    self.b_chain().id(),
+                    b_channel,
+                );
+            }
+        }
+        Ok((*a_channel.state(), *b_channel.state()))
     }
 
-    // Check that the channel was created on a_chain
-    fn do_chan_open_init_and_send_with_retry(&mut self) -> Result<(), ChannelError> {
-        retry_with_index(retry_strategy::default(), |_| {
-            self.do_chan_open_init_and_send()
-        })
-        .map_err(|err| {
-            error!("failed to open channel after {} retries", err);
+    /// Sends a channel open handshake message.
+    /// The message sent depends on the chain status of the channel ends.
+    fn do_chan_open_handshake(&mut self) -> Result<(), ChannelError> {
+        let (a_state, b_state) = self.update_channel_and_query_states()?;
+        debug!(
+            "do_chan_open_handshake with channel end states: {}, {}",
+            a_state, b_state
+        );
 
-            from_retry_error(
-                err,
-                format!("failed to finish channel open init for {:?}", self),
-            )
-        })?;
+        match (a_state, b_state) {
+            // send the Init message to chain a (source)
+            (State::Uninitialized, State::Uninitialized) => {
+                let event = self
+                    .flipped()
+                    .build_chan_open_init_and_send()
+                    .map_err(|e| {
+                        error!("failed ChanOpenInit {:?}: {:?}", self.a_side, e);
+                        e
+                    })?;
+                let channel_id = extract_channel_id(&event)?;
+                self.a_side.channel_id = Some(channel_id.clone());
+            }
 
-        Ok(())
+            // send the Try message to chain a (source)
+            (State::Uninitialized, State::Init) | (State::Init, State::Init) => {
+                let event = self.flipped().build_chan_open_try_and_send().map_err(|e| {
+                    error!("failed ChanOpenTry {:?}: {:?}", self.a_side, e);
+                    e
+                })?;
+
+                let channel_id = extract_channel_id(&event)?;
+                self.a_side.channel_id = Some(channel_id.clone());
+            }
+
+            // send the Try message to chain b (destination)
+            (State::Init, State::Uninitialized) => {
+                let event = self.build_chan_open_try_and_send().map_err(|e| {
+                    error!("failed ChanOpenTry {:?}: {:?}", self.b_side, e);
+                    e
+                })?;
+
+                let channel_id = extract_channel_id(&event)?;
+                self.b_side.channel_id = Some(channel_id.clone());
+            }
+
+            // send the Ack message to chain a (source)
+            (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
+                self.flipped().build_chan_open_ack_and_send().map_err(|e| {
+                    error!("failed ChanOpenAck {:?}: {:?}", self.a_side, e);
+                    e
+                })?;
+            }
+
+            // send the Ack message to chain b (destination)
+            (State::TryOpen, State::Init) => {
+                self.build_chan_open_ack_and_send().map_err(|e| {
+                    error!("failed ChanOpenAck {:?}: {:?}", self.b_side, e);
+                    e
+                })?;
+            }
+
+            // send the Confirm message to chain b (destination)
+            (State::Open, State::TryOpen) => {
+                self.build_chan_open_confirm_and_send().map_err(|e| {
+                    error!("failed ChanOpenConfirm {:?}: {:?}", self.b_side, e);
+                    e
+                })?;
+            }
+
+            // send the Confirm message to chain a (source)
+            (State::TryOpen, State::Open) => {
+                self.flipped()
+                    .build_chan_open_confirm_and_send()
+                    .map_err(|e| {
+                        error!("failed ChanOpenConfirm {:?}: {:?}", self.a_side, e);
+                        e
+                    })?;
+            }
+
+            (State::Open, State::Open) => {
+                info!("channel handshake already finished for {:#?}\n", self);
+                return Ok(());
+            }
+
+            (a_state, b_state) => {
+                warn!(
+                    "do_conn_open_handshake does not handle channel end state combination: \
+                    {}-{}, {}-{}. will retry to account for RPC node data availability issues.",
+                    self.a_chain().id(),
+                    a_state,
+                    self.b_chain().id(),
+                    b_state
+                );
+            }
+        }
+        Err(ChannelError::handshake_finalize())
     }
 
-    fn do_chan_open_try_and_send(&mut self) -> Result<(), ChannelError> {
-        let event = self.build_chan_open_try_and_send().map_err(|e| {
-            error!("failed ChanOpenTry {:?}: {:?}", self.b_side, e);
-            e
-        })?;
+    /// Executes the channel handshake protocol (ICS004)
+    fn handshake(&mut self) -> Result<(), ChannelError> {
+        let max_block_times = self.max_block_times()?;
 
-        let channel_id = extract_channel_id(&event)?;
-        self.b_side.channel_id = Some(*channel_id);
-
-        println!("done {} => {:#?}\n", self.dst_chain().id(), event);
-        Ok(())
-    }
-
-    fn do_chan_open_try_and_send_with_retry(&mut self) -> Result<(), ChannelError> {
-        retry_with_index(retry_strategy::default(), |_| {
-            if let Err(e) = self.do_chan_open_try_and_send() {
+        retry_with_index(handshake_retry::default_strategy(max_block_times), |_| {
+            if let Err(e) = self.do_chan_open_handshake() {
                 if e.is_expired_or_frozen_error() {
                     RetryResult::Err(e)
                 } else {
@@ -453,209 +691,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         })
         .map_err(|err| {
             error!("failed to open channel after {} retries", retry_count(&err));
-
-            from_retry_error(
-                err,
-                format!("failed to finish channel open try for {:?}", self),
-            )
-        })?;
-
-        Ok(())
-    }
-
-    /// Sends the last two steps, consisting of `Ack` and `Confirm`
-    /// messages, for finalizing the channel open handshake.
-    ///
-    /// Assumes that the channel open handshake was previously
-    /// started (with `Init` & `Try` steps).
-    ///
-    /// Returns `Ok` when both channel ends are in state `Open`.
-    /// Also returns `Ok` if the channel is undergoing a closing handshake.
-    ///
-    /// An `Err` can signal two cases:
-    ///     - the common-case flow for the handshake protocol was interrupted,
-    ///         e.g., by a competing relayer.
-    ///     - Rpc problems (a query or submitting a tx failed).
-    /// In both `Err` cases, there should be retry calling this method.
-    fn do_chan_open_finalize(&self) -> Result<(), ChannelError> {
-        fn query_channel_states<ChainA: ChainHandle, ChainB: ChainHandle>(
-            channel: &Channel<ChainA, ChainB>,
-        ) -> Result<(State, State), ChannelError> {
-            let src_channel_id = channel
-                .src_channel_id()
-                .ok_or_else(ChannelError::missing_local_channel_id)?;
-
-            let dst_channel_id = channel
-                .dst_channel_id()
-                .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
-
-            debug!(
-                "do_chan_open_finalize for src_channel_id: {}, dst_channel_id: {}",
-                src_channel_id, dst_channel_id
-            );
-
-            // Continue loop if query error
-            let (a_channel, _) = channel
-                .src_chain()
-                .query_channel(
-                    QueryChannelRequest {
-                        port_id: channel.src_port_id().clone(),
-                        channel_id: *src_channel_id,
-                        height: Height::zero(),
-                    },
-                    IncludeProof::No,
-                )
-                .map_err(|e| {
-                    ChannelError::handshake_finalize(
-                        channel.src_port_id().clone(),
-                        *src_channel_id,
-                        channel.src_chain().id(),
-                        e,
-                    )
-                })?;
-
-            let (b_channel, _) = channel
-                .dst_chain()
-                .query_channel(
-                    QueryChannelRequest {
-                        port_id: channel.dst_port_id().clone(),
-                        channel_id: *dst_channel_id,
-                        height: Height::zero(),
-                    },
-                    IncludeProof::No,
-                )
-                .map_err(|e| {
-                    ChannelError::handshake_finalize(
-                        channel.dst_port_id().clone(),
-                        *dst_channel_id,
-                        channel.dst_chain().id(),
-                        e,
-                    )
-                })?;
-
-            Ok((*a_channel.state(), *b_channel.state()))
-        }
-
-        fn expect_channel_states<ChainA: ChainHandle, ChainB: ChainHandle>(
-            ctx: &Channel<ChainA, ChainB>,
-            a1: State,
-            b1: State,
-        ) -> Result<(), ChannelError> {
-            let (a2, b2) = query_channel_states(ctx)?;
-
-            if (a1, b1) == (a2, b2) {
-                Ok(())
-            } else {
-                warn!(
-                    "expected channels to progress to states {}, {}), instead got ({}, {})",
-                    a1, b1, a2, b2
-                );
-
-                debug!("returning PartialOpenHandshake to retry");
-
-                // One more step (confirm) left.
-                // Returning error signals that the caller should retry.
-                Err(ChannelError::partial_open_handshake(a1, b1))
-            }
-        }
-
-        let (a_state, b_state) = query_channel_states(self)?;
-        debug!(
-            "do_chan_open_finalize with channel states: {}, {}",
-            a_state, b_state
-        );
-
-        match (a_state, b_state) {
-            // Handle sending the Ack message to the source chain,
-            // then the Confirm message to the destination.
-            (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
-                self.flipped().build_chan_open_ack_and_send()?;
-
-                expect_channel_states(self, State::Open, State::TryOpen)?;
-
-                self.build_chan_open_confirm_and_send()?;
-
-                expect_channel_states(self, State::Open, State::Open)?;
-
-                Ok(())
-            }
-
-            // Handle sending the Ack message to the destination chain,
-            // then the Confirm to the source chain.
-            (State::TryOpen, State::Init) => {
-                self.flipped().build_chan_open_ack_and_send()?;
-
-                expect_channel_states(self, State::TryOpen, State::Open)?;
-
-                self.flipped().build_chan_open_confirm_and_send()?;
-
-                expect_channel_states(self, State::Open, State::Open)?;
-
-                Ok(())
-            }
-
-            // Handle sending the Confirm message to the destination chain.
-            (State::Open, State::TryOpen) => {
-                self.build_chan_open_confirm_and_send()?;
-
-                expect_channel_states(self, State::Open, State::Open)?;
-
-                Ok(())
-            }
-
-            // Send Confirm to the source chain.
-            (State::TryOpen, State::Open) => {
-                self.flipped().build_chan_open_confirm_and_send()?;
-
-                expect_channel_states(self, State::Open, State::Open)?;
-
-                Ok(())
-            }
-
-            (State::Open, State::Open) => {
-                info!("channel handshake already finished for {:#?}\n", self);
-                Ok(())
-            }
-
-            // In all other conditions, return Ok, since the channel open handshake does not apply.
-            _ => Ok(()),
-        }
-    }
-
-    /// Takes a partially open channel and finalizes the open handshake protocol.
-    ///
-    /// Pre-condition: the channel identifiers are established on both ends
-    ///   (i.e., `OpenInit` and `OpenTry` have executed previously for this channel).
-    ///
-    /// Post-condition: the channel state is `Open` on both ends if successful.
-    fn do_chan_open_finalize_with_retry(&self) -> Result<(), ChannelError> {
-        retry_with_index(retry_strategy::default(), |_| {
-            if let Err(e) = self.do_chan_open_finalize() {
-                if e.is_expired_or_frozen_error() {
-                    RetryResult::Err(e)
-                } else {
-                    RetryResult::Retry(e)
-                }
-            } else {
-                RetryResult::Ok(())
-            }
-        })
-        .map_err(|err| {
-            error!("failed to open channel after {} retries", err);
-            from_retry_error(
+            handshake_retry::from_retry_error(
                 err,
                 format!("failed to finish channel handshake for {:?}", self),
             )
         })?;
 
         Ok(())
-    }
-
-    /// Executes the channel handshake protocol (ICS004)
-    fn handshake(&mut self) -> Result<(), ChannelError> {
-        self.do_chan_open_init_and_send_with_retry()?;
-        self.do_chan_open_try_and_send_with_retry()?;
-        self.do_chan_open_finalize_with_retry()
     }
 
     pub fn counterparty_state(&self) -> Result<State, ChannelError> {
@@ -666,14 +708,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let channel_deps =
             channel_connection_client(self.src_chain(), self.src_port_id(), channel_id)
-                .map_err(|e| ChannelError::query_channel(*channel_id, e))?;
+                .map_err(|e| ChannelError::query_channel(channel_id.clone(), e))?;
 
         channel_state_on_destination(
             &channel_deps.channel,
             &channel_deps.connection,
             self.dst_chain(),
         )
-        .map_err(|e| ChannelError::query_channel(*channel_id, e))
+        .map_err(|e| ChannelError::query_channel(channel_id.clone(), e))
     }
 
     pub fn handshake_step(
@@ -739,7 +781,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             self.src_chain().clone(),
         );
 
-        client.build_update_client(height).map_err(|e| {
+        client.wait_and_build_update_client(height).map_err(|e| {
             ChannelError::client_operation(self.dst_client_id().clone(), self.dst_chain().id(), e)
         })
     }
@@ -810,7 +852,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             })?;
 
         match result {
-            IbcEvent::OpenInitChannel(_) => Ok(result),
+            IbcEvent::OpenInitChannel(_) => {
+                info!("🎊  {} => {:#?}\n", self.dst_chain().id(), result);
+                Ok(result)
+            }
             IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e)),
             _ => Err(ChannelError::invalid_event(result)),
         }
@@ -860,8 +905,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_channel(
                 QueryChannelRequest {
                     port_id: self.dst_port_id().clone(),
-                    channel_id: *dst_channel_id,
-                    height: Height::zero(),
+                    channel_id: dst_channel_id.clone(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -873,11 +918,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             return Err(ChannelError::missing_channel_on_destination());
         }
 
-        check_destination_channel_state(
-            *dst_channel_id,
-            dst_channel,
-            dst_expected_channel.clone(),
-        )?;
+        check_destination_channel_state(dst_channel_id, &dst_channel, &dst_expected_channel)?;
 
         Ok(dst_expected_channel)
     }
@@ -894,8 +935,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_channel(
                 QueryChannelRequest {
                     port_id: self.src_port_id().clone(),
-                    channel_id: *src_channel_id,
-                    height: Height::zero(),
+                    channel_id: src_channel_id.clone(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -907,7 +948,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 self.dst_port_id().clone(),
                 self.src_chain().id(),
                 src_channel.counterparty().port_id().clone(),
-                *src_channel_id,
+                src_channel_id.clone(),
             ));
         }
 
@@ -916,7 +957,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: self.dst_connection_id().clone(),
-                    height: Height::zero(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -956,9 +997,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
 
         let previous_channel_id = if src_channel.counterparty().channel_id.is_none() {
-            self.b_side.channel_id
+            self.b_side.channel_id.clone()
         } else {
-            src_channel.counterparty().channel_id
+            src_channel.counterparty().channel_id.clone()
         };
 
         // Build the domain type message
@@ -997,7 +1038,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             })?;
 
         match result {
-            IbcEvent::OpenTryChannel(_) => Ok(result),
+            IbcEvent::OpenTryChannel(_) => {
+                info!("🎊  {} => {:#?}\n", self.dst_chain().id(), result);
+                Ok(result)
+            }
             IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e)),
             _ => Err(ChannelError::invalid_event(result)),
         }
@@ -1021,8 +1065,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_channel(
                 QueryChannelRequest {
                     port_id: self.src_port_id().clone(),
-                    channel_id: *src_channel_id,
-                    height: Height::zero(),
+                    channel_id: src_channel_id.clone(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -1033,7 +1077,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: self.dst_connection_id().clone(),
-                    height: Height::zero(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -1061,8 +1105,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         // Build the domain type message
         let new_msg = MsgChannelOpenAck {
             port_id: self.dst_port_id().clone(),
-            channel_id: *dst_channel_id,
-            counterparty_channel_id: *src_channel_id,
+            channel_id: dst_channel_id.clone(),
+            counterparty_channel_id: src_channel_id.clone(),
             counterparty_version: src_channel.version().clone(),
             proofs,
             signer,
@@ -1086,7 +1130,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 .map_err(|e| ChannelError::submit(channel.dst_chain().id(), e))?;
 
             // Find the relevant event for channel open ack
-            let event = events
+            let result = events
                 .into_iter()
                 .find(|event| {
                     matches!(event, IbcEvent::OpenAckChannel(_))
@@ -1096,18 +1140,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     ChannelError::missing_event("no chan ack event was in the response".to_string())
                 })?;
 
-            match event {
+            match result {
                 IbcEvent::OpenAckChannel(_) => {
-                    info!(
-                        "done with ChanAck step {} => {:#?}\n",
-                        channel.dst_chain().id(),
-                        event
-                    );
-
-                    Ok(event)
+                    info!("🎊  {} => {:#?}\n", channel.dst_chain().id(), result);
+                    Ok(result)
                 }
                 IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e)),
-                _ => Err(ChannelError::invalid_event(event)),
+                _ => Err(ChannelError::invalid_event(result)),
             }
         }
 
@@ -1134,8 +1173,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_channel(
                 QueryChannelRequest {
                     port_id: self.src_port_id().clone(),
-                    channel_id: *src_channel_id,
-                    height: Height::zero(),
+                    channel_id: src_channel_id.clone(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -1146,7 +1185,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: self.dst_connection_id().clone(),
-                    height: Height::zero(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -1174,7 +1213,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         // Build the domain type message
         let new_msg = MsgChannelOpenConfirm {
             port_id: self.dst_port_id().clone(),
-            channel_id: *dst_channel_id,
+            channel_id: dst_channel_id.clone(),
             proofs,
             signer,
         };
@@ -1196,7 +1235,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 .map_err(|e| ChannelError::submit(channel.dst_chain().id(), e))?;
 
             // Find the relevant event for channel open confirm
-            let event = events
+            let result = events
                 .into_iter()
                 .find(|event| {
                     matches!(event, IbcEvent::OpenConfirmChannel(_))
@@ -1208,13 +1247,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     )
                 })?;
 
-            match event {
+            match result {
                 IbcEvent::OpenConfirmChannel(_) => {
-                    info!("done {} => {:#?}\n", channel.dst_chain().id(), event);
-                    Ok(event)
+                    info!("🎊  {} => {:#?}\n", channel.dst_chain().id(), result);
+                    Ok(result)
                 }
                 IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e)),
-                _ => Err(ChannelError::invalid_event(event)),
+                _ => Err(ChannelError::invalid_event(result)),
             }
         }
 
@@ -1235,8 +1274,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_channel(
                 QueryChannelRequest {
                     port_id: self.dst_port_id().clone(),
-                    channel_id: *dst_channel_id,
-                    height: Height::zero(),
+                    channel_id: dst_channel_id.clone(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -1250,7 +1289,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         // Build the domain type message
         let new_msg = MsgChannelCloseInit {
             port_id: self.dst_port_id().clone(),
-            channel_id: *dst_channel_id,
+            channel_id: dst_channel_id.clone(),
             signer,
         };
 
@@ -1279,7 +1318,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             })?;
 
         match result {
-            IbcEvent::CloseInitChannel(_) => Ok(result),
+            IbcEvent::CloseInitChannel(_) => {
+                info!("👋 {} => {:#?}\n", self.dst_chain().id(), result);
+                Ok(result)
+            }
             IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e)),
             _ => Err(ChannelError::invalid_event(result)),
         }
@@ -1302,8 +1344,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_channel(
                 QueryChannelRequest {
                     port_id: self.src_port_id().clone(),
-                    channel_id: *src_channel_id,
-                    height: Height::zero(),
+                    channel_id: src_channel_id.clone(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -1314,7 +1356,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: self.dst_connection_id().clone(),
-                    height: Height::zero(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -1342,7 +1384,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         // Build the domain type message
         let new_msg = MsgChannelCloseConfirm {
             port_id: self.dst_port_id().clone(),
-            channel_id: *dst_channel_id,
+            channel_id: dst_channel_id.clone(),
             proofs,
             signer,
         };
@@ -1373,7 +1415,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             })?;
 
         match result {
-            IbcEvent::CloseConfirmChannel(_) => Ok(result),
+            IbcEvent::CloseConfirmChannel(_) => {
+                info!("👋 {} => {:#?}\n", self.dst_chain().id(), result);
+                Ok(result)
+            }
             IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e)),
             _ => Err(ChannelError::invalid_event(result)),
         }
@@ -1414,9 +1459,9 @@ pub enum ChannelMsgType {
 }
 
 fn check_destination_channel_state(
-    channel_id: ChannelId,
-    existing_channel: ChannelEnd,
-    expected_channel: ChannelEnd,
+    channel_id: &ChannelId,
+    existing_channel: &ChannelEnd,
+    expected_channel: &ChannelEnd,
 ) -> Result<(), ChannelError> {
     let good_connection_hops =
         existing_channel.connection_hops() == expected_channel.connection_hops();
@@ -1434,6 +1479,6 @@ fn check_destination_channel_state(
     if good_state && good_connection_hops && good_channel_port_ids {
         Ok(())
     } else {
-        Err(ChannelError::channel_already_exist(channel_id))
+        Err(ChannelError::channel_already_exist(channel_id.clone()))
     }
 }

@@ -1,6 +1,6 @@
 # Summary
 
-# Hermes (v0.15.0)
+# Hermes (v1.0.0-rc.0)
 
 ---
 - [Introduction](./index.md)
@@ -50,12 +50,14 @@
      - [Channel](./commands/queries/channel.md)
      - [Packet](./commands/queries/packet.md)
      - [Tx](./commands/queries/tx.md)
+     - [Transfer](./commands/queries/transfer.md)
    - [Raw transactions](./commands/raw/index.md)
      - [Client](./commands/raw/client.md)
      - [Connection](./commands/raw/connection.md)
      - [Channel Open](./commands/raw/channel-open.md)
      - [Channel Close](./commands/raw/channel-close.md)
      - [Packet](./commands/raw/packet.md)
+     - [Upgrade](./commands/raw/upgrade.md)
 - [Help](./help.md)
 - [Glossary](./glossary.md)
 ---

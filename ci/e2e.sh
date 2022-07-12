@@ -16,7 +16,7 @@ echo "--------------------------------------------------------------------------
 echo "Show relayer version"
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo Config: "$CONFIG_PATH"
-$RELAYER_CMD -c "$CONFIG_PATH" version
+$RELAYER_CMD --config "$CONFIG_PATH" version
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Setting up chains"
 echo "-----------------------------------------------------------------------------------------------------------------"
@@ -34,10 +34,10 @@ echo "==========================================================================
 echo "-----------------------------------------------------------------------------------------------------------------"
 echo "Add keys for chains"
 echo "-----------------------------------------------------------------------------------------------------------------"
-hermes -c "$CONFIG_PATH" keys add "$CHAIN_A" -f user_seed_"$CHAIN_A".json
-hermes -c "$CONFIG_PATH" keys add "$CHAIN_B" -f user_seed_"$CHAIN_B".json
-hermes -c "$CONFIG_PATH" keys add "$CHAIN_A" -f user2_seed_"$CHAIN_A".json  -k user2
-hermes -c "$CONFIG_PATH" keys add "$CHAIN_B" -f user2_seed_"$CHAIN_B".json  -k user2
+hermes --config "$CONFIG_PATH" keys add --chain "$CHAIN_A" --key-file user_seed_"$CHAIN_A".json
+hermes --config "$CONFIG_PATH" keys add --chain "$CHAIN_B" --key-file user_seed_"$CHAIN_B".json
+hermes --config "$CONFIG_PATH" keys add --chain "$CHAIN_A" --key-file user2_seed_"$CHAIN_A".json  --key-name user2
+hermes --config "$CONFIG_PATH" keys add --chain "$CHAIN_B" --key-file user2_seed_"$CHAIN_B".json  --key-name user2
 
 echo "================================================================================================================="
 echo "                                             END-TO-END TESTS                                                    "

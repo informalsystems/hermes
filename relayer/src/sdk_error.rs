@@ -13,8 +13,17 @@ define_error! {
             |_| { "Expected error code, instead got Ok" },
 
         UnknownSdk
+            {
+                codespace: String,
+                code: u32,
+            }
+            | e | {
+                format_args!("unknown SDK error with code space: {}, code: {}", e.codespace, e.code)
+            },
+
+        UnknownTxSync
             { code: u32 }
-            |e| { format!("unknown SDK error: {}", e.code) },
+            | e | { format_args!("unknown TX sync response error: {}", e.code) },
 
         OutOfGas
             { code: u32 }
@@ -169,7 +178,7 @@ pub fn sdk_error_from_tx_result(result: &TxResult) -> SdkError {
                 SdkError::client(client_error_from_code(code))
             } else {
                 // TODO: Implement mapping for other codespaces in ibc-go
-                SdkError::unknown_sdk(code)
+                SdkError::unknown_sdk(codespace, code)
             }
         }
     }
@@ -186,6 +195,6 @@ pub fn sdk_error_from_tx_sync_error_code(code: u32) -> SdkError {
         // on the Hermes side. We'll inform the user to check for misconfig.
         11 => SdkError::out_of_gas(code),
         13 => SdkError::insufficient_fee(code),
-        _ => SdkError::unknown_sdk(code),
+        _ => SdkError::unknown_tx_sync(code),
     }
 }

@@ -1,10 +1,7 @@
 use http::uri::Uri;
-use ibc::core::ics02_client::client_consensus::QueryClientEventRequest;
-use ibc::core::ics04_channel::channel::QueryPacketEventDataRequest;
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics23_commitment::merkle::{convert_tm_to_ics_merkle_proof, MerkleProof};
 use ibc::core::ics24_host::identifier::ChainId;
-use ibc::query::QueryTxHash;
 use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
 use ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
 use tendermint::abci::Path as TendermintABCIPath;
@@ -13,10 +10,12 @@ use tendermint_rpc::query::Query;
 use tendermint_rpc::{Client, HttpClient, Url};
 
 use crate::chain::cosmos::version::Specs;
+use crate::chain::requests::{QueryClientEventRequest, QueryPacketEventDataRequest, QueryTxHash};
 use crate::error::Error;
 
 pub mod account;
 pub mod balance;
+pub mod denom_trace;
 pub mod status;
 pub mod tx;
 
@@ -60,7 +59,8 @@ pub fn header_query(request: &QueryClientEventRequest) -> Query {
         format!("{}.consensus_height", request.event_id.as_str()),
         format!(
             "{}-{}",
-            request.consensus_height.revision_number, request.consensus_height.revision_height
+            request.consensus_height.revision_number(),
+            request.consensus_height.revision_height()
         ),
     )
 }

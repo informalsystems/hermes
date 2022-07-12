@@ -1,7 +1,7 @@
 #####################################################
 ####                 Relayer image               ####
 #####################################################
-FROM ubuntu:21.04
+FROM --platform=linux/amd64 ubuntu:21.04
 LABEL maintainer="hello@informal.systems"
 
 ARG RELEASE

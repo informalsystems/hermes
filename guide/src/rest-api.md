@@ -39,7 +39,7 @@ as the version of the REST server itself (under the `ibc-relayer-rest` key).
 [
   {
     "name": "ibc-relayer",
-    "version": "0.15.0"
+    "version": "v1.0.0-rc.0"
   },
   {
     "name": "ibc-relayer-rest",
@@ -94,7 +94,7 @@ where `:id` stands for the identififer.
     "key_name": "testkey",
     "store_prefix": "ibc",
     "max_gas": 900000000,
-    "gas_adjustment": null,
+    "gas_multiplier": 1.0,
     "max_msg_num": 60,
     "max_tx_size": 2097152,
     "clock_drift": "5s",

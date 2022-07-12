@@ -11,10 +11,15 @@ The `start` command can be used to start hermes in IBC event listen mode.
 
 ```shell
 USAGE:
-    hermes start <OPTIONS>
+    hermes start [OPTIONS]
 
 DESCRIPTION:
-    Start the relayer in multi-chain mode. Relays packets and channel handshake messages between all chains in the config.
+    Start the relayer in multi-chain mode.
+
+    Relays packets and open handshake messages between all chains in the config.
+
+OPTIONS:
+        --full-scan    Force a full scan of the chains for clients, connections and channels
 ```
 
 As described in next sub-sections, the type of relaying can be configured in the `global` section of the configuration file, by specifying different values in `strategy` field.

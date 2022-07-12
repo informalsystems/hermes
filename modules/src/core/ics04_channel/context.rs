@@ -19,6 +19,7 @@ use crate::timestamp::Timestamp;
 use crate::Height;
 
 use super::packet::{PacketResult, Sequence};
+use super::timeout::TimeoutHeight;
 
 /// A context supplying all the necessary read-only dependencies for processing any `ChannelMsg`.
 pub trait ChannelReader {
@@ -67,20 +68,29 @@ pub trait ChannelReader {
         key: &(PortId, ChannelId, Sequence),
     ) -> Result<AcknowledgementCommitment, Error>;
 
+    /// Compute the commitment for a packet.
+    /// Note that the absence of `timeout_height` is treated as
+    /// `{revision_number: 0, revision_height: 0}` to be consistent with ibc-go,
+    /// where this value is used to mean "no timeout height":
+    /// <https://github.com/cosmos/ibc-go/blob/04791984b3d6c83f704c4f058e6ca0038d155d91/modules/core/04-channel/keeper/packet.go#L206>
     fn packet_commitment(
         &self,
         packet_data: Vec<u8>,
-        timeout_height: Height,
+        timeout_height: TimeoutHeight,
         timeout_timestamp: Timestamp,
     ) -> PacketCommitment {
-        let mut input = timeout_timestamp.nanoseconds().to_be_bytes().to_vec();
-        let revision_number = timeout_height.revision_number.to_be_bytes();
-        input.append(&mut revision_number.to_vec());
-        let revision_height = timeout_height.revision_height.to_be_bytes();
-        input.append(&mut revision_height.to_vec());
-        let data = self.hash(packet_data);
-        input.append(&mut data.to_vec());
-        self.hash(input).into()
+        let mut hash_input = timeout_timestamp.nanoseconds().to_be_bytes().to_vec();
+
+        let revision_number = timeout_height.commitment_revision_number().to_be_bytes();
+        hash_input.append(&mut revision_number.to_vec());
+
+        let revision_height = timeout_height.commitment_revision_height().to_be_bytes();
+        hash_input.append(&mut revision_height.to_vec());
+
+        let packet_data_hash = self.hash(packet_data);
+        hash_input.append(&mut packet_data_hash.to_vec());
+
+        self.hash(hash_input).into()
     }
 
     fn ack_commitment(&self, ack: Acknowledgement) -> AcknowledgementCommitment {
@@ -134,7 +144,7 @@ pub trait ChannelKeeper {
     fn store_channel_result(&mut self, result: ChannelResult) -> Result<(), Error> {
         // The handler processed this channel & some modifications occurred, store the new end.
         self.store_channel(
-            (result.port_id.clone(), result.channel_id),
+            (result.port_id.clone(), result.channel_id.clone()),
             &result.channel_end,
         )?;
 
@@ -146,12 +156,18 @@ pub trait ChannelKeeper {
             // Associate also the channel end to its connection.
             self.store_connection_channels(
                 result.channel_end.connection_hops()[0].clone(),
-                &(result.port_id.clone(), result.channel_id),
+                &(result.port_id.clone(), result.channel_id.clone()),
             )?;
 
             // Initialize send, recv, and ack sequence numbers.
-            self.store_next_sequence_send((result.port_id.clone(), result.channel_id), 1.into())?;
-            self.store_next_sequence_recv((result.port_id.clone(), result.channel_id), 1.into())?;
+            self.store_next_sequence_send(
+                (result.port_id.clone(), result.channel_id.clone()),
+                1.into(),
+            )?;
+            self.store_next_sequence_recv(
+                (result.port_id.clone(), result.channel_id.clone()),
+                1.into(),
+            )?;
             self.store_next_sequence_ack((result.port_id, result.channel_id), 1.into())?;
         }
 
@@ -162,37 +178,29 @@ pub trait ChannelKeeper {
         match general_result {
             PacketResult::Send(res) => {
                 self.store_next_sequence_send(
-                    (res.port_id.clone(), res.channel_id),
+                    (res.port_id.clone(), res.channel_id.clone()),
                     res.seq_number,
                 )?;
 
                 self.store_packet_commitment(
-                    (res.port_id.clone(), res.channel_id, res.seq),
+                    (res.port_id.clone(), res.channel_id.clone(), res.seq),
                     res.commitment,
                 )?;
             }
-            PacketResult::Recv(res) => {
-                let res = match res {
-                    RecvPacketResult::Success(res) => res,
-                    RecvPacketResult::NoOp => unreachable!(),
-                };
-                match res.receipt {
-                    None => {
-                        // Ordered channel
-                        self.store_next_sequence_recv(
-                            (res.port_id.clone(), res.channel_id),
-                            res.seq_number,
-                        )?
-                    }
-                    Some(r) => {
-                        // Unordered channel
-                        self.store_packet_receipt(
-                            (res.port_id.clone(), res.channel_id, res.seq),
-                            r,
-                        )?
-                    }
-                }
-            }
+            PacketResult::Recv(res) => match res {
+                RecvPacketResult::Ordered {
+                    port_id,
+                    channel_id,
+                    next_seq_recv,
+                } => self.store_next_sequence_recv((port_id, channel_id), next_seq_recv)?,
+                RecvPacketResult::Unordered {
+                    port_id,
+                    channel_id,
+                    sequence,
+                    receipt,
+                } => self.store_packet_receipt((port_id, channel_id, sequence), receipt)?,
+                RecvPacketResult::NoOp => unreachable!(),
+            },
             PacketResult::WriteAck(res) => {
                 self.store_packet_acknowledgement(
                     (res.port_id.clone(), res.channel_id, res.seq),
@@ -218,9 +226,9 @@ pub trait ChannelKeeper {
             PacketResult::Timeout(res) => {
                 if let Some(c) = res.channel {
                     //Ordered Channel
-                    self.store_channel((res.port_id.clone(), res.channel_id), &c)?;
+                    self.store_channel((res.port_id.clone(), res.channel_id.clone()), &c)?;
                 }
-                self.delete_packet_commitment((res.port_id.clone(), res.channel_id, res.seq))?;
+                self.delete_packet_commitment((res.port_id, res.channel_id, res.seq))?;
             }
         }
         Ok(())

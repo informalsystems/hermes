@@ -9,6 +9,8 @@ pub mod clear_packet;
 pub mod client_expiration;
 mod client_settings;
 pub mod connection_delay;
+pub mod denom_trace;
+pub mod error_events;
 pub mod execute_schedule;
 pub mod memo;
 pub mod python;

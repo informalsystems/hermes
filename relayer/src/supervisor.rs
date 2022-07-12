@@ -648,6 +648,37 @@ fn process_batch<Chain: ChainHandle>(
             .get_or_spawn(object.dst_chain_id())
             .map_err(Error::spawn)?;
 
+        if let Object::Packet(_path) = object.clone() {
+            // Update telemetry info
+            telemetry!({
+                for e in events.clone() {
+                    match e {
+                        IbcEvent::SendPacket(send_packet_ev) => {
+                            ibc_telemetry::global().send_packet_count(
+                                send_packet_ev.packet.sequence.into(),
+                                send_packet_ev.height().revision_height(),
+                                &src.id(),
+                                &_path.src_channel_id,
+                                &_path.src_port_id,
+                                &dst.id(),
+                            );
+                        }
+                        IbcEvent::WriteAcknowledgement(write_ack_ev) => {
+                            ibc_telemetry::global().acknowledgement_count(
+                                write_ack_ev.packet.sequence.into(),
+                                write_ack_ev.height().revision_height(),
+                                &dst.id(),
+                                &_path.src_channel_id,
+                                &_path.src_port_id,
+                                &src.id(),
+                            );
+                        }
+                        _ => {}
+                    }
+                }
+            });
+        }
+
         let worker = workers.get_or_spawn(object, src, dst, config);
 
         worker.send_events(

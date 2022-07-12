@@ -107,6 +107,16 @@ impl Denom {
         Denom::Base(denom.to_string())
     }
 
+    pub fn hash_only(&self) -> String {
+        match self {
+            Denom::Base(denom) => denom.to_string(),
+            Denom::Ibc { hashed, .. } => match hashed.find('/') {
+                Some(index) => hashed[index + 1..].to_string(),
+                None => hashed.to_string(),
+            },
+        }
+    }
+
     pub fn as_str(&self) -> &str {
         match self {
             Denom::Base(denom) => denom,

@@ -27,7 +27,6 @@ use ibc::{
     },
     events::IbcEvent,
     proofs::Proofs,
-    query::{QueryBlockRequest, QueryTxRequest},
     signer::Signer,
     Height,
 };
@@ -36,6 +35,7 @@ use crate::{
     account::Balance,
     config::ChainConfig,
     connection::ConnectionMsgType,
+    denom::DenomTrace,
     error::Error,
     event::{
         bus::EventBus,
@@ -50,15 +50,15 @@ use super::{
     endpoint::{ChainEndpoint, ChainStatus, HealthCheck},
     handle::{ChainHandle, ChainRequest, ReplyTo, Subscription},
     requests::{
-        IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
-        QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
-        QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
-        QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
-        QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementRequest,
-        QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest,
-        QueryPacketCommitmentsRequest, QueryPacketReceiptRequest, QueryUnreceivedAcksRequest,
-        QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
-        QueryUpgradedConsensusStateRequest,
+        IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
+        QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
+        QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
+        QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
+        QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
+        QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
+        QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
+        QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+        QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
     },
     tracking::TrackedMsgs,
 };
@@ -241,7 +241,7 @@ where
                                 .map_err(Error::send)?;
 
                             break;
-                        }
+                        },
 
                         Ok(ChainRequest::HealthCheck { reply_to }) => {
                             self.health_check(reply_to)?
@@ -261,39 +261,39 @@ where
 
                         Ok(ChainRequest::Signer { reply_to }) => {
                             self.get_signer(reply_to)?
-                        }
+                        },
 
                         Ok(ChainRequest::Config { reply_to }) => {
                             self.get_config(reply_to)?
-                        }
+                        },
 
                         Ok(ChainRequest::GetKey { reply_to }) => {
                             self.get_key(reply_to)?
-                        }
+                        },
 
                         Ok(ChainRequest::AddKey { key_name, key, reply_to }) => {
                             self.add_key(key_name, key, reply_to)?
-                        }
+                        },
 
                         Ok(ChainRequest::IbcVersion { reply_to }) => {
                             self.ibc_version(reply_to)?
-                        }
+                        },
 
                         Ok(ChainRequest::BuildHeader { trusted_height, target_height, client_state, reply_to }) => {
                             self.build_header(trusted_height, target_height, client_state, reply_to)?
-                        }
+                        },
 
                         Ok(ChainRequest::BuildClientState { height, settings, reply_to }) => {
                             self.build_client_state(height, settings, reply_to)?
-                        }
+                        },
 
                         Ok(ChainRequest::BuildConsensusState { trusted, target, client_state, reply_to }) => {
                             self.build_consensus_state(trusted, target, client_state, reply_to)?
-                        }
+                        },
 
                        Ok(ChainRequest::BuildMisbehaviour { client_state, update_event, reply_to }) => {
                             self.check_misbehaviour(update_event, client_state, reply_to)?
-                        }
+                        },
 
                         Ok(ChainRequest::BuildConnectionProofsAndClientState { message_type, connection_id, client_id, height, reply_to }) => {
                             self.build_connection_proofs_and_client_state(message_type, connection_id, client_id, height, reply_to)?
@@ -305,11 +305,15 @@ where
 
                         Ok(ChainRequest::QueryBalance { key_name, reply_to }) => {
                             self.query_balance(key_name, reply_to)?
-                        }
+                        },
+
+                        Ok(ChainRequest::QueryDenomTrace { hash, reply_to }) => {
+                            self.query_denom_trace(hash, reply_to)?
+                        },
 
                         Ok(ChainRequest::QueryApplicationStatus { reply_to }) => {
                             self.query_application_status(reply_to)?
-                        }
+                        },
 
                         Ok(ChainRequest::QueryClients { request, reply_to }) => {
                             self.query_clients(request, reply_to)?
@@ -333,11 +337,11 @@ where
 
                         Ok(ChainRequest::QueryUpgradedClientState { request, reply_to }) => {
                             self.query_upgraded_client_state(request, reply_to)?
-                        }
+                        },
 
                        Ok(ChainRequest::QueryUpgradedConsensusState { request, reply_to }) => {
                             self.query_upgraded_consensus_state(request, reply_to)?
-                        }
+                        },
 
                         Ok(ChainRequest::QueryCommitmentPrefix { reply_to }) => {
                             self.query_commitment_prefix(reply_to)?
@@ -476,6 +480,11 @@ where
     ) -> Result<(), Error> {
         let balance = self.chain.query_balance(key_name);
         reply_to.send(balance).map_err(Error::send)
+    }
+
+    fn query_denom_trace(&self, hash: String, reply_to: ReplyTo<DenomTrace>) -> Result<(), Error> {
+        let denom_trace = self.chain.query_denom_trace(hash);
+        reply_to.send(denom_trace).map_err(Error::send)
     }
 
     fn query_application_status(&self, reply_to: ReplyTo<ChainStatus>) -> Result<(), Error> {

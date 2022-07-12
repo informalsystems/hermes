@@ -3,13 +3,13 @@
 Hermes accepts global options which affect all commands.
 
 ```shell
-hermes 0.15.0
+hermes v1.0.0-rc.0
 Informal Systems <hello@informal.systems>
 Implementation of `hermes`, an IBC Relayer developed in Rust.
 
 FLAGS:
-    -c, --config CONFIG       path to configuration file
-    -j, --json                enable JSON output
+        --config <CONFIG>    Path to configuration file
+        --json               Enable JSON output
 ```
 
 The flags must be specified right after the `hermes` command and before any subcommand.
@@ -19,7 +19,7 @@ __Example__
 To start the relayer using the configuration file at `/home/my_chain.toml` and enable JSON output:
 
 ```shell
-hermes -c /home/my_chain.toml --json start
+hermes --config /home/my_chain.toml --json start
 ```
 
 ## JSON output
@@ -34,7 +34,7 @@ To process all the output using `jq`, one can redirect `stderr` to `stdout` with
 __Example__
 
 ```shell
-hermes -c /home/my_chain.toml --json create client ibc-0 ibc-1
+hermes --config /home/my_chain.toml --json create client --host-chain ibc-0 --reference-chain ibc-1
 ```
 
 ```json
@@ -51,7 +51,7 @@ __Example__
 To improve the readability, pipe all of the output to `jq`:
 
 ```
-hermes -c /home/my_chain.toml --json create client ibc-0 ibc-1 2>&1 | jq
+hermes --config /home/my_chain.toml --json create client --host-chain ibc-0 --reference-chain ibc-1 2>&1 | jq
 ```
 
 ```json
@@ -105,7 +105,7 @@ __Example__
 To extract the identifer of the newly created client above:
 
 ```
-hermes -c /home/my_chain.toml --json create client ibc-0 ibc-1 | jq '.result.CreateClient.client_id'
+hermes --config /home/my_chain.toml --json create client --host-chain ibc-0 --reference-chain ibc-1 | jq '.result.CreateClient.client_id'
 ```
 
 ```

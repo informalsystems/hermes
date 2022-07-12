@@ -10,31 +10,53 @@ use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortI
 use ibc::Height;
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{
-    IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest,
+    IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
 use ibc_relayer::registry::Registry;
 
-use crate::conclude::Output;
+use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct QueryChannelEndsCmd {
-    #[clap(required = true, help = "identifier of the chain to query")]
+    #[clap(
+        long = "chain",
+        required = true,
+        value_name = "CHAIN_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the chain to query"
+    )]
     chain_id: ChainId,
 
-    #[clap(required = true, help = "identifier of the port to query")]
+    #[clap(
+        long = "port",
+        required = true,
+        value_name = "PORT_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the port to query"
+    )]
     port_id: PortId,
 
-    #[clap(required = true, help = "identifier of the channel to query")]
+    #[clap(
+        long = "channel",
+        visible_alias = "chan",
+        required = true,
+        value_name = "CHANNEL_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the channel to query"
+    )]
     channel_id: ChannelId,
 
-    #[clap(short = 'H', long, help = "height of the state to query")]
+    #[clap(
+        long = "height",
+        value_name = "HEIGHT",
+        help = "Height of the state to query"
+    )]
     height: Option<u64>,
 
     #[clap(
-        short = 'v',
-        long,
-        help = "enable verbose output, displaying all details of channels, connections & clients"
+        long = "verbose",
+        help = "Enable verbose output, displaying all details of channels, connections & clients"
     )]
     verbose: bool,
 }
@@ -69,23 +91,28 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
 
     let config = app_config();
 
-    let chain_id = cmd.chain_id.clone();
-    let port_id = cmd.port_id.clone();
-    let channel_id = cmd.channel_id;
+    let QueryChannelEndsCmd {
+        chain_id,
+        port_id,
+        channel_id,
+        ..
+    } = cmd;
 
     let mut registry = <Registry<Chain>>::new((*config).clone());
-    let chain = registry.get_or_spawn(&chain_id)?;
+    let chain = registry.get_or_spawn(chain_id)?;
 
     let chain_height = match cmd.height {
-        Some(height) => Height::new(chain.id().version(), height),
+        Some(height) => {
+            Height::new(chain.id().version(), height).unwrap_or_else(exit_with_unrecoverable_error)
+        }
         None => chain.query_latest_height()?,
     };
 
     let (channel_end, _) = chain.query_channel(
         QueryChannelRequest {
             port_id: port_id.clone(),
-            channel_id,
-            height: chain_height,
+            channel_id: channel_id.clone(),
+            height: QueryHeight::Specific(chain_height),
         },
         IncludeProof::No,
     )?;
@@ -111,7 +138,7 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
     let (connection_end, _) = chain.query_connection(
         QueryConnectionRequest {
             connection_id: connection_id.clone(),
-            height: chain_height,
+            height: QueryHeight::Specific(chain_height),
         },
         IncludeProof::No,
     )?;
@@ -121,7 +148,7 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
     let (client_state, _) = chain.query_client_state(
         QueryClientStateRequest {
             client_id: client_id.clone(),
-            height: chain_height,
+            height: QueryHeight::Specific(chain_height),
         },
         IncludeProof::No,
     )?;
@@ -152,12 +179,13 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
 
     let counterparty_chain_id = client_state.chain_id();
     let counterparty_chain = registry.get_or_spawn(&counterparty_chain_id)?;
-    let counterparty_chain_height = counterparty_chain.query_latest_height()?;
+    let counterparty_chain_height_query =
+        QueryHeight::Specific(counterparty_chain.query_latest_height()?);
 
     let (counterparty_connection_end, _) = counterparty_chain.query_connection(
         QueryConnectionRequest {
             connection_id: counterparty_connection_id.clone(),
-            height: counterparty_chain_height,
+            height: counterparty_chain_height_query,
         },
         IncludeProof::No,
     )?;
@@ -165,7 +193,7 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
     let (counterparty_client_state, _) = counterparty_chain.query_client_state(
         QueryClientStateRequest {
             client_id: counterparty_client_id.clone(),
-            height: counterparty_chain_height,
+            height: counterparty_chain_height_query,
         },
         IncludeProof::No,
     )?;
@@ -173,8 +201,8 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
     let (counterparty_channel_end, _) = counterparty_chain.query_channel(
         QueryChannelRequest {
             port_id: counterparty_port_id.clone(),
-            channel_id: counterparty_channel_id,
-            height: counterparty_chain_height,
+            channel_id: counterparty_channel_id.clone(),
+            height: counterparty_chain_height_query,
         },
         IncludeProof::No,
     )?;
@@ -193,11 +221,11 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
         Output::success(res).exit();
     } else {
         let res = ChannelEndsSummary {
-            chain_id,
+            chain_id: chain_id.clone(),
             client_id,
             connection_id,
-            channel_id,
-            port_id,
+            channel_id: channel_id.clone(),
+            port_id: port_id.clone(),
 
             counterparty_chain_id,
             counterparty_client_id,
@@ -216,5 +244,138 @@ impl Runnable for QueryChannelEndsCmd {
             Ok(()) => {}
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::QueryChannelEndsCmd;
+
+    use std::str::FromStr;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+
+    #[test]
+    fn test_query_channel_ends_required_only() {
+        assert_eq!(
+            QueryChannelEndsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                port_id: PortId::from_str("port_id").unwrap(),
+                channel_id: ChannelId::from_str("channel-07").unwrap(),
+                height: None,
+                verbose: false
+            },
+            QueryChannelEndsCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--port",
+                "port_id",
+                "--channel",
+                "channel-07"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_channel_ends_chan_alias() {
+        assert_eq!(
+            QueryChannelEndsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                port_id: PortId::from_str("port_id").unwrap(),
+                channel_id: ChannelId::from_str("channel-07").unwrap(),
+                height: None,
+                verbose: false
+            },
+            QueryChannelEndsCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--port",
+                "port_id",
+                "--chan",
+                "channel-07"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_channel_ends_height() {
+        assert_eq!(
+            QueryChannelEndsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                port_id: PortId::from_str("port_id").unwrap(),
+                channel_id: ChannelId::from_str("channel-07").unwrap(),
+                height: Some(42),
+                verbose: false
+            },
+            QueryChannelEndsCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--port",
+                "port_id",
+                "--channel",
+                "channel-07",
+                "--height",
+                "42"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_channel_ends_verbose() {
+        assert_eq!(
+            QueryChannelEndsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                port_id: PortId::from_str("port_id").unwrap(),
+                channel_id: ChannelId::from_str("channel-07").unwrap(),
+                height: None,
+                verbose: true
+            },
+            QueryChannelEndsCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--port",
+                "port_id",
+                "--channel",
+                "channel-07",
+                "--verbose"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_channel_client_no_chan() {
+        assert!(QueryChannelEndsCmd::try_parse_from(&[
+            "test", "--chain", "chain_id", "--port", "port_id"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_query_channel_client_no_port() {
+        assert!(QueryChannelEndsCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_id",
+            "--channel",
+            "channel-07"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_query_channel_client_no_chain() {
+        assert!(QueryChannelEndsCmd::try_parse_from(&[
+            "test",
+            "--port",
+            "port_id",
+            "--channel",
+            "channel-07"
+        ])
+        .is_err())
     }
 }

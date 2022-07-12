@@ -19,6 +19,7 @@
     unused_lifetimes,
     unused_qualifications
 )]
+#![allow(deprecated)]
 
 extern crate alloc;
 
@@ -26,13 +27,11 @@ pub mod application;
 pub mod cli_utils;
 pub mod commands;
 pub mod components;
+pub mod conclude;
 pub mod config;
-pub mod prelude;
-
+pub mod entry;
 pub mod error;
-
-pub(crate) mod conclude;
-pub(crate) mod entry;
+pub mod prelude;
 
 /// The path to the default configuration file, relative to the home directory.
 pub const DEFAULT_CONFIG_PATH: &str = ".hermes/config.toml";

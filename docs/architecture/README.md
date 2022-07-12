@@ -36,3 +36,4 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 | [007](./adr-007-error.md) | Error Management | Accepted |
 | [008](./adr-008-ics20-implementation.md)         | ICS20 implementation              | Accepted |
 | [009](./adr-009-chain-endpoint-handle-standardization.md) | ChainEndpoint and ChainHandle methods standardization | Accepted |
+| [010](./adr-010-unified-cli-arguments-hermes.md) | Unified approach for CLI arguments for Hermes v1.0.0 | Proposed |

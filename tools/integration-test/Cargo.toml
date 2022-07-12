@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-integration-test"
-version    = "0.15.0"
+version    = "0.16.0"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -23,9 +23,8 @@ tendermint      = { version = "=0.23.7" }
 tendermint-rpc  = { version = "=0.23.7", features = ["http-client", "websocket-client"] }
 
 serde_json = "1"
-modelator = { git = "https://github.com/informalsystems/modelator", optional = true }
 time = "0.3"
-serde = "1.0.136"
+serde = "1.0.139"
 
 [features]
 default = []
@@ -34,7 +33,7 @@ manual = []
 ordered = []
 ica = []
 experimental = []
-mbt = ["modelator"]
+mbt = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"

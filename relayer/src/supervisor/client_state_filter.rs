@@ -8,11 +8,10 @@ use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc::core::ics03_connection::connection::ConnectionEnd;
 use ibc::core::ics04_channel::error::Error as ChannelError;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::{
-    IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest,
+    IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
 use crate::error::Error as RelayerError;
 use crate::object;
@@ -116,7 +115,7 @@ impl FilterPolicy {
                 .query_client_state(
                     QueryClientStateRequest {
                         client_id: counterparty_client_id.clone(),
-                        height: Height::zero(),
+                        height: QueryHeight::Latest,
                     },
                     IncludeProof::No,
                 )
@@ -233,7 +232,7 @@ impl FilterPolicy {
             .query_client_state(
                 QueryClientStateRequest {
                     client_id: obj.dst_client_id.clone(),
-                    height: Height::zero(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -275,7 +274,7 @@ impl FilterPolicy {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: obj.src_connection_id.clone(),
-                    height: Height::zero(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -285,7 +284,7 @@ impl FilterPolicy {
             .query_client_state(
                 QueryClientStateRequest {
                     client_id: connection_end.client_id().clone(),
-                    height: Height::zero(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -307,7 +306,7 @@ impl FilterPolicy {
         port_id: &PortId,
         channel_id: &ChannelId,
     ) -> Result<Permission, FilterError> {
-        let identifier = CacheKey::Channel(chain_id.clone(), port_id.clone(), *channel_id);
+        let identifier = CacheKey::Channel(chain_id.clone(), port_id.clone(), channel_id.clone());
 
         trace!(
             "[client filter] controlling permissions for {:?}",
@@ -328,8 +327,8 @@ impl FilterPolicy {
             .query_channel(
                 QueryChannelRequest {
                     port_id: port_id.clone(),
-                    channel_id: *channel_id,
-                    height: Height::zero(),
+                    channel_id: channel_id.clone(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -346,7 +345,7 @@ impl FilterPolicy {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: conn_id.clone(),
-                    height: Height::zero(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -356,7 +355,7 @@ impl FilterPolicy {
             .query_client_state(
                 QueryClientStateRequest {
                     client_id: connection_end.client_id().clone(),
-                    height: Height::zero(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
@@ -370,7 +369,7 @@ impl FilterPolicy {
             conn_id,
         )?;
 
-        let key = CacheKey::Channel(chain_id.clone(), port_id.clone(), *channel_id);
+        let key = CacheKey::Channel(chain_id.clone(), port_id.clone(), channel_id.clone());
 
         debug!(
             "[client filter] {:?}: relay for channel {:?}: ",

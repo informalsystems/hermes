@@ -11,25 +11,45 @@ __NOTE:__ This command is mainly used for testing the packet features of the rel
 
 ```shell
 USAGE:
-    hermes tx raw ft-transfer <OPTIONS>
+    hermes tx raw ft-transfer [OPTIONS] --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --src-port <SRC_PORT_ID> --src-chan <SRC_CHANNEL_ID> --amount <AMOUNT>
 
 DESCRIPTION:
     Send a fungible token transfer test transaction (ICS20 MsgTransfer)
 
-POSITIONAL ARGUMENTS:
-    dst_chain_id              identifier of the destination chain
-    src_chain_id              identifier of the source chain
-    src_port_id               identifier of the source port
-    src_channel_id            identifier of the source channel
-    amount                    amount of coins (samoleans, by default) to send (e.g. `100000`)
-
 FLAGS:
-    -o, --timeout-height-offset TIMEOUT-HEIGHT-OFFSET  timeout in number of blocks since current
-    -t, --timeout-seconds TIMEOUT-SECONDS              timeout in seconds since current
-    -r, --receiver RECEIVER                            receiving account address on the destination chain
-    -d, --denom DENOM                                  denomination of the coins to send (default: samoleans)
-    -n, --number-msgs NUMBER-MSGS                      number of messages to send
-    -k, --key KEY                                      use the given signing key (default: `key_name` config)
+        --amount <AMOUNT>
+            Amount of coins (samoleans, by default) to send (e.g. `100000`)
+
+        --dst-chain <DST_CHAIN_ID>
+            Identifier of the destination chain
+
+        --src-chain <SRC_CHAIN_ID>
+            Identifier of the source chain
+
+        --src-chan <SRC_CHANNEL_ID>
+            Identifier of the source channel
+
+        --src-port <SRC_PORT_ID>
+            Identifier of the source port
+
+OPTIONS:
+        --denom <DENOM>
+            Denomination of the coins to send [default: samoleans]
+
+        --key-name <KEY_NAME>
+            Use the given signing key name (default: `key_name` config)
+
+        --number-msgs <NUMBER_MSGS>
+            Number of messages to send
+
+        --receiver <RECEIVER>
+            Receiving account address on the destination chain
+
+        --timeout-height-offset <TIMEOUT_HEIGHT_OFFSET>
+            Timeout in number of blocks since current [default: 0]
+
+        --timeout-seconds <TIMEOUT_SECONDS>
+            Timeout in seconds since current [default: 0]
 ```
 
 __Example__
@@ -37,7 +57,7 @@ __Example__
 Send two transfer packets from the `transfer` module and `channel-0` of `ibc-0` to `ibc-1`. Each transfer if for `9999` samoleans (default denomination) and a timeout offset of `10` blocks. The transfer fee is paid by the relayer account on `ibc-1`.
 
 ```shell
-hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 2
+hermes tx raw ft-transfer --dst-chain ibc-1 --src-chain ibc-0 --src-port transfer --src-chan channel-0 --amount 9999 --timeout-height-offset 1000 --number-msgs 2
 ```
 
 ```json
@@ -65,10 +85,10 @@ Success: [
 
 The transfer packets are stored on `ibc-0` and can be relayed.
 
-> To send transfer packets with a custom receiver address use the `--receiver | -r` flag.
+> To send transfer packets with a custom receiver address use the `--receiver` flag.
 
 ```shell
-hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 9999 -o 1000 -n 1 -r board:1938586739
+hermes tx raw ft-transfer --dst-chain ibc-1 --src-chain ibc-0 --src-port transfer --src-chan channel-0 --amount 9999 --timeout-height-offset 1000 --number-msgs 1 --receiver board:1938586739
 ```
 
 ```json
@@ -91,16 +111,16 @@ Use the `tx raw packet-recv` command to relay the packets sent but not yet recei
 
 ```shell
 USAGE:
-    hermes tx raw packet-recv <OPTIONS>
+    hermes tx raw packet-recv --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --src-port <SRC_PORT_ID> --src-chan <SRC_CHANNEL_ID>
 
 DESCRIPTION:
     Relay receive or timeout packets
 
-POSITIONAL ARGUMENTS:
-    dst_chain_id              identifier of the destination chain
-    src_chain_id              identifier of the source chain
-    src_port_id               identifier of the source port
-    src_channel_id            identifier of the source channel
+FLAGS:
+        --dst-chain <DST_CHAIN_ID>     Identifier of the destination chain
+        --src-chain <SRC_CHAIN_ID>     Identifier of the source chain
+        --src-chan <SRC_CHANNEL_ID>    Identifier of the source channel
+        --src-port <SRC_PORT_ID>       Identifier of the source port
 ```
 
 __Example__
@@ -110,7 +130,7 @@ Send the two transfer packets to the `ibc-1` module bound to the `transfer` port
 __NOTE__: The relayer prepends a client update message before the receive messages.
 
 ```shell
-hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0
+hermes tx raw packet-recv --dst-chain ibc-1 --src-chain ibc-0 --src-port transfer --src-chan channel-0
 ```
 
 ```json
@@ -203,16 +223,16 @@ Use the `tx raw packet-ack` command to relay acknowledgments to the original sou
 
 ```shell
 USAGE:
-    hermes tx raw packet-ack <OPTIONS>
+    hermes tx raw packet-ack --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --src-port <SRC_PORT_ID> --src-chan <SRC_CHANNEL_ID>
 
 DESCRIPTION:
     Relay acknowledgment packets
 
-POSITIONAL ARGUMENTS:
-    dst_chain_id              identifier of the destination chain
-    src_chain_id              identifier of the source chain
-    src_port_id               identifier of the source port
-    src_channel_id            identifier of the source channel
+FLAGS:
+        --dst-chain <DST_CHAIN_ID>     Identifier of the destination chain
+        --src-chain <SRC_CHAIN_ID>     Identifier of the source chain
+        --src-chan <SRC_CHANNEL_ID>    Identifier of the source channel
+        --src-port <SRC_PORT_ID>       Identifier of the source port
 ```
 
 __Example__
@@ -222,7 +242,7 @@ Send the acknowledgments to the `ibc-0` module bound to the `transfer` port and 
 __NOTE__: The relayer prepends a client update message before the acknowledgments.
 
 ```shell
-hermes tx raw packet-ack ibc-0 ibc-1 transfer channel-1
+hermes tx raw packet-ack --dst-chain ibc-0 --src-chain ibc-1 --src-port transfer --src-chan channel-1
 ```
 
 ```json

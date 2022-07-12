@@ -19,7 +19,6 @@ use ibc::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofB
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::events::IbcEvent;
 use ibc::proofs::{ConsensusProof, Proofs};
-use ibc::query::{QueryBlockRequest, QueryTxRequest};
 use ibc::signer::Signer;
 use ibc::timestamp::Timestamp;
 use ibc::Height as ICSHeight;
@@ -39,14 +38,15 @@ use crate::chain::requests::{
 use crate::chain::tracking::TrackedMsgs;
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
+use crate::denom::DenomTrace;
 use crate::error::{Error, QUERY_PROOF_EXPECT_MSG};
 use crate::event::monitor::{EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 
 use super::requests::{
-    IncludeProof, QueryPacketAcknowledgementRequest, QueryPacketCommitmentRequest,
-    QueryPacketReceiptRequest,
+    IncludeProof, QueryBlockRequest, QueryHeight, QueryPacketAcknowledgementRequest,
+    QueryPacketCommitmentRequest, QueryPacketReceiptRequest, QueryTxRequest,
 };
 
 /// The result of a health check.
@@ -137,6 +137,9 @@ pub trait ChainEndpoint: Sized {
     /// Query the balance of the given account for the denom used to pay tx fees.
     /// If no account is given, behavior must be specified, e.g. retrieve it from configuration file.
     fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error>;
+
+    /// Query the denomination trace given a trace hash.
+    fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error>;
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error>;
 
@@ -358,7 +361,7 @@ pub trait ChainEndpoint: Sized {
         let (connection_end, maybe_connection_proof) = self.query_connection(
             QueryConnectionRequest {
                 connection_id: connection_id.clone(),
-                height,
+                height: QueryHeight::Specific(height),
             },
             IncludeProof::Yes,
         )?;
@@ -396,7 +399,7 @@ pub trait ChainEndpoint: Sized {
                 let (client_state_value, maybe_client_state_proof) = self.query_client_state(
                     QueryClientStateRequest {
                         client_id: client_id.clone(),
-                        height,
+                        height: QueryHeight::Specific(height),
                     },
                     IncludeProof::Yes,
                 )?;
@@ -412,7 +415,7 @@ pub trait ChainEndpoint: Sized {
                         QueryConsensusStateRequest {
                             client_id: client_id.clone(),
                             consensus_height: client_state_value.latest_height(),
-                            query_height: height,
+                            query_height: QueryHeight::Specific(height),
                         },
                         IncludeProof::Yes,
                     )?;
@@ -458,8 +461,8 @@ pub trait ChainEndpoint: Sized {
         let (_, maybe_channel_proof) = self.query_channel(
             QueryChannelRequest {
                 port_id: port_id.clone(),
-                channel_id: *channel_id,
-                height,
+                channel_id: channel_id.clone(),
+                height: QueryHeight::Specific(height),
             },
             IncludeProof::Yes,
         )?;
@@ -487,7 +490,7 @@ pub trait ChainEndpoint: Sized {
                         port_id,
                         channel_id,
                         sequence,
-                        height,
+                        height: QueryHeight::Specific(height),
                     },
                     IncludeProof::Yes,
                 )?;
@@ -500,7 +503,7 @@ pub trait ChainEndpoint: Sized {
                         port_id,
                         channel_id,
                         sequence,
-                        height,
+                        height: QueryHeight::Specific(height),
                     },
                     IncludeProof::Yes,
                 )?;
@@ -513,7 +516,7 @@ pub trait ChainEndpoint: Sized {
                         port_id,
                         channel_id,
                         sequence,
-                        height,
+                        height: QueryHeight::Specific(height),
                     },
                     IncludeProof::Yes,
                 )?;
@@ -525,7 +528,7 @@ pub trait ChainEndpoint: Sized {
                     QueryNextSequenceReceiveRequest {
                         port_id,
                         channel_id,
-                        height,
+                        height: QueryHeight::Specific(height),
                     },
                     IncludeProof::Yes,
                 )?;
@@ -537,8 +540,8 @@ pub trait ChainEndpoint: Sized {
                     let (_, maybe_channel_proof) = self.query_channel(
                         QueryChannelRequest {
                             port_id: port_id.clone(),
-                            channel_id,
-                            height,
+                            channel_id: channel_id.clone(),
+                            height: QueryHeight::Specific(height),
                         },
                         IncludeProof::Yes,
                     )?;
@@ -553,7 +556,7 @@ pub trait ChainEndpoint: Sized {
                         port_id,
                         channel_id,
                         sequence,
-                        height,
+                        height: QueryHeight::Specific(height),
                     },
                     IncludeProof::Yes,
                 )?;

@@ -72,41 +72,38 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
         )
     };
 
-    let mut current_command = None;
-
     spawn_background_task(span, Some(Duration::from_millis(200)), move || {
-        if current_command.is_none() {
-            // Only try to receive the next command if the
-            // previous command was processed successfully.
-            current_command = cmd_rx.try_recv().ok();
-        }
-
-        if let Some(cmd) = &current_command {
+        if let Ok(cmd) = cmd_rx.try_recv() {
+            // Try to clear pending packets. At different levels down in `handle_packet_cmd` there
+            // are retries mechanisms for MAX_RETRIES (current value hardcoded at 5).
+            // If clearing fails after all these retries with ignorable error the task continues
+            // (see `handle_link_error_in_task`) and clearing is retried with the next
+            // (`NewBlock`) `cmd` that matches the clearing interval.
             handle_packet_cmd(
                 &mut link.lock().unwrap(),
                 &mut should_clear_on_start,
                 clear_interval,
                 &path,
-                cmd.clone(),
+                cmd,
             )?;
-
-            // Only reset current_command if handle_packet_cmd succeeds.
-            // Otherwise the same command will be retried in the next step.
-            current_command = None;
         }
 
         Ok(Next::Continue)
     })
 }
 
-/// Receives worker commands, which may be:
-///     - IbcEvent => then it updates schedule
-///     - NewBlock => schedules packet clearing
-///     - Shutdown => exits
+/// Receives worker commands and handles them accordingly.
 ///
-/// Regardless of the incoming command, this method
-/// also refreshes and executes any scheduled operational
-/// data that is ready.
+/// Given an `IbcEvent` command, updates the schedule and initiates
+/// packet clearing if the `should_clear_on_start` flag has been toggled.
+///
+/// Given a `NewBlock` command, checks if packet clearing should occur
+/// and performs it if so.
+///
+/// Given a `ClearPendingPackets` command, clears pending packets.
+///
+/// Regardless of the incoming command, this method also refreshes and
+/// and executes any scheduled operational data that is ready.
 fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     link: &mut Link<ChainA, ChainB>,
     should_clear_on_start: &mut bool,
@@ -114,36 +111,54 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     path: &Packet,
     cmd: WorkerCmd,
 ) -> Result<(), TaskError<RunError>> {
-    match cmd {
-        WorkerCmd::IbcEvents { batch } => handle_update_schedule(link, clear_interval, path, batch),
-
-        // Handle the arrival of an event signaling that the
-        // source chain has advanced to a new block.
-        WorkerCmd::NewBlock {
-            height,
-            new_block: _,
-        } => {
+    // Handle packet clearing which is triggered from a command
+    let (do_clear, maybe_height) = match &cmd {
+        WorkerCmd::IbcEvents { batch } => {
             if *should_clear_on_start {
-                handle_clear_packet(link, clear_interval, path, Some(height))?;
-
-                // Clear the flag only if handle_clear_packet succeeds
-                *should_clear_on_start = false;
-                Ok(())
-            } else if should_clear_packets(clear_interval, height) {
-                handle_clear_packet(link, clear_interval, path, Some(height))
+                (true, Some(batch.height))
             } else {
-                Ok(())
+                (false, None)
             }
         }
 
-        WorkerCmd::ClearPendingPackets => handle_clear_packet(link, clear_interval, path, None),
+        // Handle the arrival of an event signaling that the
+        // source chain has advanced to a new block
+        WorkerCmd::NewBlock { height, .. } => {
+            if *should_clear_on_start || should_clear_packets(clear_interval, *height) {
+                (true, Some(*height))
+            } else {
+                (false, None)
+            }
+        }
+
+        WorkerCmd::ClearPendingPackets => (true, None),
+    };
+
+    if do_clear {
+        // Reset the `clear_on_start` flag and attempt packet clearing once now.
+        // More clearing will be done at clear interval.
+        if *should_clear_on_start {
+            *should_clear_on_start = false;
+        }
+        handle_clear_packet(link, clear_interval, path, maybe_height)?;
+    }
+
+    // Handle command-specific task
+    if let WorkerCmd::IbcEvents { batch } = cmd {
+        handle_update_schedule(link, clear_interval, path, batch)
+    } else {
+        Ok(())
     }
 }
 
-/// Whether or not to clear pending packets at this `step` for the given height.
-/// Packets are cleared if `clear_interval` is not `0` and if we have reached the interval.
+/// Whether or not to clear pending packets at this `step` for some height.
+/// If the relayer has been configured to clear packets on start and that has not
+/// occurred yet, then packets are cleared.
+///
+/// If the specified height is reached, then packets are cleared if `clear_interval`
+/// is not `0` and if we have reached the interval.
 fn should_clear_packets(clear_interval: u64, height: Height) -> bool {
-    clear_interval != 0 && height.revision_height % clear_interval == 0
+    clear_interval != 0 && height.revision_height() % clear_interval == 0
 }
 
 fn handle_update_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(

@@ -240,7 +240,7 @@ impl ChannelReader for DummyTransferModule {
     fn channel_end(&self, pcid: &(PortId, ChannelId)) -> Result<ChannelEnd, Error> {
         match self.ibc_store.lock().unwrap().channels.get(pcid) {
             Some(channel_end) => Ok(channel_end.clone()),
-            None => Err(Error::channel_not_found(pcid.0.clone(), pcid.1)),
+            None => Err(Error::channel_not_found(pcid.0.clone(), pcid.1.clone())),
         }
     }
 
@@ -343,7 +343,7 @@ impl ChannelReader for DummyTransferModule {
     }
 
     fn host_height(&self) -> Height {
-        Height::zero()
+        Height::new(0, 1).unwrap()
     }
 
     fn host_consensus_state(&self, _height: Height) -> Result<AnyConsensusState, Error> {

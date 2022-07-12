@@ -5,7 +5,7 @@ use tonic::codegen::http::Uri;
 use tracing::{debug, error, span, warn, Level};
 
 use crate::chain::cosmos::encode::sign_tx;
-use crate::chain::cosmos::gas::{gas_amount_to_fees, PrettyFee};
+use crate::chain::cosmos::gas::{gas_amount_to_fee, PrettyFee};
 use crate::chain::cosmos::simulate::send_tx_simulate;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
@@ -70,7 +70,7 @@ async fn estimate_fee_with_tx(
         ));
     }
 
-    let adjusted_fee = gas_amount_to_fees(gas_config, estimated_gas);
+    let adjusted_fee = gas_amount_to_fee(gas_config, estimated_gas);
 
     debug!(
         id = %chain_id,
@@ -149,7 +149,10 @@ fn can_recover_from_simulation_failure(e: &Error) -> bool {
     use crate::error::ErrorDetail::*;
 
     match e.detail() {
-        GrpcStatus(detail) => detail.is_client_state_height_too_low(),
+        GrpcStatus(detail) => {
+            detail.is_client_state_height_too_low()
+                || detail.is_account_sequence_mismatch_that_can_be_ignored()
+        }
         _ => false,
     }
 }

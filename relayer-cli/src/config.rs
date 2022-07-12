@@ -1,4 +1,4 @@
-//! Cli Config
+//! Validation code for the Hermes configuration file.
 //!
 //! See instructions in `commands.rs` to specify the path to your
 //! application's configuration file and/or command-line options
@@ -9,7 +9,7 @@ use std::path::PathBuf;
 
 use flex_error::{define_error, TraceError};
 use ibc::core::ics24_host::identifier::ChainId;
-use ibc_relayer::config::{Config, ModeConfig};
+use ibc_relayer::config::{ChainConfig, Config, ModeConfig};
 use tendermint_light_client_verifier::types::TrustThreshold;
 use tracing_subscriber::filter::ParseError;
 
@@ -45,7 +45,7 @@ define_error! {
         DuplicateChains
             { chain_id: ChainId }
             |e| {
-                format!("config file has duplicate entry for the chain with id {0}",
+                format!("config file has duplicate entry for the chain '{0}'",
                     e.chain_id)
             },
 
@@ -56,19 +56,35 @@ define_error! {
                 reason: String
             }
             |e| {
-                format!("config file specifies an invalid `trust_threshold` ({0}) for the chain with id {1}, caused by: {2}",
+                format!("config file specifies an invalid `trust_threshold` ({0}) for the chain '{1}', caused by: {2}",
                     e.threshold, e.chain_id, e.reason)
             },
 
-        InvalidGasAdjustment
+        InvalidGasMultiplier
             {
-                gas_adjustment: f64,
+                gas_multiplier: f64,
                 chain_id: ChainId,
-                reason: String
             }
             |e| {
-                format!("config file specifies an invalid `gas_adjustment` ({0}) for the chain with id {1}, caused by: {2}",
-                    e.gas_adjustment, e.chain_id, e.reason)
+                format!(
+                    "config file specifies an invalid `gas_multiplier` ({0}) for the chain '{1}', \
+                    the value must be greater than or equal to 1.0",
+                    e.gas_multiplier, e.chain_id
+                )
+            },
+
+        DeprecatedGasAdjustment
+            {
+                gas_adjustment: f64,
+                gas_multiplier: f64,
+                chain_id: ChainId,
+            }
+            |e| {
+                format!(
+                    "config file specifies deprecated setting `gas_adjustment = {1}` for the chain '{0}'; \
+                    to get the same behavior, use `gas_multiplier = {2}",
+                    e.chain_id, e.gas_adjustment, e.gas_multiplier
+                )
             },
     }
 }
@@ -92,7 +108,7 @@ pub fn validate_config(config: &Config) -> Result<(), Diagnostic<Error>> {
         validate_trust_threshold(&c.id, c.trust_threshold)?;
 
         // Validate gas-related settings
-        validate_gas_settings(&c.id, c.gas_adjustment)?;
+        validate_gas_settings(&c.id, c)?;
     }
 
     // Check for invalid mode config
@@ -153,18 +169,27 @@ fn validate_trust_threshold(
     Ok(())
 }
 
-fn validate_gas_settings(
-    id: &ChainId,
-    gas_adjustment: Option<f64>,
-) -> Result<(), Diagnostic<Error>> {
-    match gas_adjustment {
-        Some(gas_adjustment) if !(0.0..=1.0).contains(&gas_adjustment) => {
-            Err(Diagnostic::Error(Error::invalid_gas_adjustment(
-                gas_adjustment,
+fn validate_gas_settings(id: &ChainId, config: &ChainConfig) -> Result<(), Diagnostic<Error>> {
+    // Check that the gas_multiplier is greater than or equal to 1.0
+    if let Some(gas_multiplier) = config.gas_multiplier {
+        if gas_multiplier < 1.0 {
+            return Err(Diagnostic::Error(Error::invalid_gas_multiplier(
+                gas_multiplier,
                 id.clone(),
-                "gas adjustment must be between 0.0 and 1.0 inclusive".to_string(),
-            )))
+            )));
         }
-        _ => Ok(()),
     }
+
+    // Check that the gas_adjustment option is not set
+    if let Some(gas_adjustment) = config.gas_adjustment {
+        let gas_multiplier = gas_adjustment + 1.0;
+
+        return Err(Diagnostic::Error(Error::deprecated_gas_adjustment(
+            gas_adjustment,
+            gas_multiplier,
+            id.clone(),
+        )));
+    }
+
+    Ok(())
 }

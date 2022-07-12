@@ -55,7 +55,7 @@ class Cmd(Generic[T]):
         return f"{self.name} {' '.join(self.args())}"
 
     def run(self, config: Config, retries: int = 0) -> CmdResult[T]:
-        full_cmd = f'{config.relayer_cmd} -c {config.config_file} --json'.split(' ')
+        full_cmd = f'{config.relayer_cmd} --config {config.config_file} --json'.split(' ')
         full_cmd.extend(self.name.split(' '))
         full_cmd.extend(self.args())
         l.debug(' '.join(full_cmd))

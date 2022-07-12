@@ -11,7 +11,7 @@ use ibc_relayer::chain::cosmos::query::account::query_account;
 use ibc_relayer::chain::cosmos::tx::estimate_fee_and_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::cosmos::types::gas::GasConfig;
-use ibc_relayer::chain::cosmos::types::tx::TxSyncResult;
+use ibc_relayer::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use ibc_relayer::chain::cosmos::wait::wait_for_block_commits;
 use ibc_relayer::config::GasPrice;
 use ibc_relayer::keyring::KeyEntry;
@@ -21,7 +21,7 @@ use crate::error::{handle_generic_error, Error};
 
 pub fn gas_config_for_test() -> GasConfig {
     let max_gas = 3000000;
-    let gas_adjustment = 0.1;
+    let gas_multiplier = 1.1;
     let gas_price = GasPrice::new(0.001, "stake".to_string());
 
     let default_gas = max_gas;
@@ -37,7 +37,7 @@ pub fn gas_config_for_test() -> GasConfig {
     GasConfig {
         default_gas,
         max_gas,
-        gas_adjustment,
+        gas_multiplier,
         gas_price,
         max_fee,
         fee_granter,
@@ -99,11 +99,10 @@ pub async fn simple_send_tx(
         estimate_fee_and_send_tx(config, key_entry, &account, &Default::default(), messages)
             .await?;
 
-    let events_per_tx = vec![IbcEvent::default(); message_count];
-
     let tx_sync_result = TxSyncResult {
         response,
-        events: events_per_tx,
+        events: Vec::new(),
+        status: TxStatus::Pending { message_count },
     };
 
     let mut tx_sync_results = vec![tx_sync_result];

@@ -17,6 +17,7 @@ mod clients;
 mod connection;
 mod connections;
 mod packet;
+mod transfer;
 mod tx;
 
 /// `query` subcommand
@@ -50,11 +51,15 @@ pub enum QueryCmd {
     /// Query information about transactions
     #[clap(subcommand)]
     Tx(tx::QueryTxCmd),
+
+    /// Query information about token transfers
+    #[clap(subcommand)]
+    Transfer(transfer::TransferCmd),
 }
 
 #[derive(Command, Debug, Parser, Runnable)]
 pub enum QueryClientCmds {
-    /// Query the client full state
+    /// Query the client state
     State(client::QueryClientStateCmd),
 
     /// Query the client consensus state

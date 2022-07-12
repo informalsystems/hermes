@@ -1,6 +1,7 @@
 # Start the local chains
 
 In this chapter, you will learn how to spawn two Gaia chains, and use Hermes to relay packets between them.
+
 To spawn the chains and configure Hermes accordingly, we will make use of Gaiad Manager `gm` that we installed in the last section [Install Gaiad Manager](gaiad-manager.md)
 
 ### Stop existing `gaiad` processes

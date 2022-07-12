@@ -6,7 +6,7 @@ your configuration file.
 
 ```shell
 USAGE:
-    hermes config validate <OPTIONS>
+    hermes config validate
 
 DESCRIPTION:
     validate the relayer configuration
@@ -30,13 +30,13 @@ Success: "validation passed successfully"
 Validate a config file at an arbitrary location:
 
 ```shell
-hermes -c ./config.toml config validate
+hermes --config ./config.toml config validate
 ```
 
 This one fails validation because we mistakenly added two separate sections for
 the same chain `ibc-1`:
 
 ```text
-hermes -c ./config.toml  config validate
-error: hermes fatal error: config error: config file has duplicate entry for the chain with id ibc-1
+hermes --config ./config.toml config validate
+error: hermes fatal error: config error: config file has duplicate entry for the chain 'ibc-1'
 ```

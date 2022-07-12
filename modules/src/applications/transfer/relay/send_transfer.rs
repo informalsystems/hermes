@@ -26,21 +26,26 @@ where
         return Err(Error::send_disabled());
     }
 
+    let source_channel_key = (msg.source_port.clone(), msg.source_channel.clone());
     let source_channel_end = ctx
-        .channel_end(&(msg.source_port.clone(), msg.source_channel))
+        .channel_end(&source_channel_key)
         .map_err(Error::ics04_channel)?;
 
     let destination_port = source_channel_end.counterparty().port_id().clone();
-    let destination_channel = *source_channel_end
+    let destination_channel = source_channel_end
         .counterparty()
         .channel_id()
         .ok_or_else(|| {
-            Error::destination_channel_not_found(msg.source_port.clone(), msg.source_channel)
-        })?;
+            Error::destination_channel_not_found(
+                msg.source_port.clone(),
+                msg.source_channel.clone(),
+            )
+        })?
+        .clone();
 
     // get the next sequence
     let sequence = ctx
-        .get_next_sequence_send(&(msg.source_port.clone(), msg.source_channel))
+        .get_next_sequence_send(&source_channel_key)
         .map_err(Error::ics04_channel)?;
 
     let token = msg.token.try_into().map_err(|_| Error::invalid_token())?;
@@ -56,9 +61,9 @@ where
         .try_into()
         .map_err(|_| Error::parse_account_failure())?;
 
-    if is_sender_chain_source(msg.source_port.clone(), msg.source_channel, &denom) {
+    if is_sender_chain_source(msg.source_port.clone(), msg.source_channel.clone(), &denom) {
         let escrow_address =
-            ctx.get_channel_escrow_address(&msg.source_port, msg.source_channel)?;
+            ctx.get_channel_escrow_address(&msg.source_port, &msg.source_channel)?;
         ctx.send_coins(&sender, &escrow_address, &coin)?;
     } else {
         ctx.burn_coins(&sender, &coin)?;

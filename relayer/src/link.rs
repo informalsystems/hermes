@@ -1,13 +1,10 @@
-use ibc::{
-    core::{
-        ics03_connection::connection::State as ConnectionState,
-        ics04_channel::channel::State as ChannelState,
-        ics24_host::identifier::{ChannelId, PortChannelId, PortId},
-    },
-    Height,
+use ibc::core::{
+    ics03_connection::connection::State as ConnectionState,
+    ics04_channel::channel::State as ChannelState,
+    ics24_host::identifier::{ChannelId, PortChannelId, PortId},
 };
 
-use crate::chain::requests::QueryChannelRequest;
+use crate::chain::requests::{QueryChannelRequest, QueryHeight};
 use crate::chain::{counterparty::check_channel_counterparty, requests::QueryConnectionRequest};
 use crate::chain::{handle::ChainHandle, requests::IncludeProof};
 use crate::channel::{Channel, ChannelSide};
@@ -64,42 +61,50 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             .query_channel(
                 QueryChannelRequest {
                     port_id: opts.src_port_id.clone(),
-                    channel_id: opts.src_channel_id,
-                    height: Height::default(),
+                    channel_id: opts.src_channel_id.clone(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
             .map_err(|e| {
-                LinkError::channel_not_found(a_port_id.clone(), *a_channel_id, a_chain.id(), e)
+                LinkError::channel_not_found(
+                    a_port_id.clone(),
+                    a_channel_id.clone(),
+                    a_chain.id(),
+                    e,
+                )
             })?;
 
         if !a_channel.state_matches(&ChannelState::Open)
             && !a_channel.state_matches(&ChannelState::Closed)
         {
             return Err(LinkError::invalid_channel_state(
-                *a_channel_id,
+                a_channel_id.clone(),
                 a_chain.id(),
             ));
         }
 
         let b_channel_id = a_channel
             .counterparty()
-            .channel_id
-            .ok_or_else(|| LinkError::counterparty_channel_not_found(*a_channel_id))?;
+            .channel_id()
+            .ok_or_else(|| LinkError::counterparty_channel_not_found(a_channel_id.clone()))?;
 
         if a_channel.connection_hops().is_empty() {
-            return Err(LinkError::no_connection_hop(*a_channel_id, a_chain.id()));
+            return Err(LinkError::no_connection_hop(
+                a_channel_id.clone(),
+                a_chain.id(),
+            ));
         }
 
         // Check that the counterparty details on the destination chain matches the source chain
         check_channel_counterparty(
             b_chain.clone(),
             &PortChannelId {
-                channel_id: b_channel_id,
+                channel_id: b_channel_id.clone(),
                 port_id: a_channel.counterparty().port_id.clone(),
             },
             &PortChannelId {
-                channel_id: *a_channel_id,
+                channel_id: a_channel_id.clone(),
                 port_id: opts.src_port_id.clone(),
             },
         )
@@ -111,14 +116,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             .query_connection(
                 QueryConnectionRequest {
                     connection_id: a_connection_id.clone(),
-                    height: Height::zero(),
+                    height: QueryHeight::Latest,
                 },
                 IncludeProof::No,
             )
             .map_err(LinkError::relayer)?;
 
         if !a_connection.state_matches(&ConnectionState::Open) {
-            return Err(LinkError::channel_not_opened(*a_channel_id, a_chain.id()));
+            return Err(LinkError::channel_not_opened(
+                a_channel_id.clone(),
+                a_chain.id(),
+            ));
         }
 
         let channel = Channel {
@@ -136,7 +144,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 a_connection.counterparty().client_id().clone(),
                 a_connection.counterparty().connection_id().unwrap().clone(),
                 a_channel.counterparty().port_id.clone(),
-                Some(b_channel_id),
+                Some(b_channel_id.clone()),
                 None,
             ),
             connection_delay: a_connection.delay_period(),
@@ -150,7 +158,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
     pub fn reverse(&self, with_tx_confirmation: bool) -> Result<Link<ChainB, ChainA>, LinkError> {
         let opts = LinkParameters {
             src_port_id: self.a_to_b.dst_port_id().clone(),
-            src_channel_id: *self.a_to_b.dst_channel_id(),
+            src_channel_id: self.a_to_b.dst_channel_id().clone(),
         };
         let chain_b = self.a_to_b.dst_chain().clone();
         let chain_a = self.a_to_b.src_chain().clone();
