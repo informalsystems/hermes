@@ -100,6 +100,7 @@ fn run_query_channels<Chain: ChainHandle>(
                 },
                 IncludeProof::No,
             )?;
+
             let client_id = connection_end.client_id().clone();
             let (client_state, _) = chain.query_client_state(
                 QueryClientStateRequest {
