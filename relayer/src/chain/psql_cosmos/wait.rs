@@ -6,10 +6,8 @@ use itertools::Itertools;
 use sqlx::PgPool;
 use tracing::{info, trace};
 
-use ibc::events::IbcEvent;
-
 use crate::chain::cosmos::types::config::TxConfig;
-use crate::chain::cosmos::types::tx::TxSyncResult;
+use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use crate::chain::psql_cosmos::query::query_hashes_and_update_tx_sync_results;
 use crate::error::Error;
 
@@ -58,12 +56,17 @@ pub async fn wait_for_block_commits(
     }
 }
 
-pub fn empty_event_present(events: &[IbcEvent]) -> bool {
-    events.iter().any(|ev| matches!(ev, IbcEvent::Empty(_)))
-}
-
+// pub fn empty_event_present(events: &[IbcEvent]) -> bool {
+//     events.iter().any(|ev| matches!(ev, IbcEvent::Empty(_)))
+// }
+//
+// fn all_tx_results_found(tx_sync_results: &[TxSyncResult]) -> bool {
+//     tx_sync_results
+//         .iter()
+//         .all(|r| !empty_event_present(&r.events))
+// }
 fn all_tx_results_found(tx_sync_results: &[TxSyncResult]) -> bool {
     tx_sync_results
         .iter()
-        .all(|r| !empty_event_present(&r.events))
+        .all(|r| matches!(r.status, TxStatus::ReceivedResponse))
 }

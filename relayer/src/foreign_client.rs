@@ -448,7 +448,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .map_err(|_| {
                 ForeignClientError::client_upgrade_no_source(
                     self.id.clone(),
-                    self.src_chain.id(),
+                    self.dst_chain.id(),
                     format!(
                         "is chain {} halted at height {}?",
                         self.src_chain().id(),
@@ -977,7 +977,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         // Wait for the source network to produce block(s) & reach `target_height`.
         while src_application_latest_height()? < target_height {
-            thread::sleep(Duration::from_millis(100))
+            thread::sleep(Duration::from_millis(100));
         }
 
         self.build_update_client_with_trusted(target_height, trusted_height)

@@ -10,13 +10,12 @@ use tracing::{info, trace};
 
 use ibc::core::ics02_client::events as ClientEvents;
 use ibc::core::ics04_channel::events as ChannelEvents;
-use ibc::core::ics04_channel::packet::Packet;
+use ibc::core::ics04_channel::packet::{parse_timeout_height, Packet};
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::{self, from_tx_response_event, IbcEvent};
 use ibc::Height as ICSHeight;
 
-use crate::chain::cosmos::types::tx::TxSyncResult;
-use crate::chain::psql_cosmos::wait::empty_event_present;
+use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use crate::chain::requests::{
     QueryBlockRequest, QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest,
     QueryTxRequest,
@@ -145,7 +144,7 @@ async fn tx_result_by_header_fields(
     )
     .bind(search.event_id.as_str())
     .bind(search.client_id.as_str())
-    .bind(format!("{}", search.consensus_height.revision_height))
+    .bind(format!("{}", search.consensus_height.revision_height()))
     .fetch_one(pool)
     .await
     .map_err(Error::sqlx)?;
@@ -202,7 +201,7 @@ fn update_client_events_from_tx_search_response(
     request: &QueryClientEventRequest,
     response: ResultTx,
 ) -> Option<IbcEvent> {
-    let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
+    let height = ICSHeight::new(chain_id.version(), u64::from(response.height)).unwrap();
     if let QueryHeight::Specific(query_height) = request.query_height {
         if height > query_height {
             return None;
@@ -313,7 +312,7 @@ fn packet_events_from_tx_search_response(
 ) -> Vec<IbcEvent> {
     let mut events = vec![];
     for response in responses {
-        let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
+        let height = ICSHeight::new(chain_id.version(), u64::from(response.height)).unwrap();
         if let QueryHeight::Specific(specific_query_height) = request.height {
             if height > specific_query_height {
                 continue;
@@ -369,7 +368,8 @@ pub async fn query_txs(
             let hash = tx.0.to_string();
             let raw_tx_result = tx_result_by_hash(pool, hash.as_str()).await?;
             let height =
-                ICSHeight::new(chain_id.version(), raw_tx_result.height.try_into().unwrap());
+                ICSHeight::new(chain_id.version(), raw_tx_result.height.try_into().unwrap())
+                    .unwrap();
 
             let deliver_tx = raw_tx_result.result.unwrap();
             let tx_result = proto_to_deliver_tx(deliver_tx)?;
@@ -456,7 +456,7 @@ fn all_ibc_events_from_tx_result_batch(
 ) -> Vec<Vec<IbcEvent>> {
     let mut events: Vec<Vec<IbcEvent>> = vec![];
     for response in responses {
-        let height = ICSHeight::new(chain_id.version(), u64::from(response.height));
+        let height = ICSHeight::new(chain_id.version(), u64::from(response.height)).unwrap();
 
         let new_events = if response.tx_result.code.is_err() {
             vec![IbcEvent::ChainError(format!(
@@ -484,7 +484,7 @@ pub async fn query_hashes_and_update_tx_sync_events(
     // get the hashes of the transactions for which events have not been retrieved yet
     let unsolved_hashes = tx_sync_results
         .iter_mut()
-        .filter(|result| empty_event_present(&result.events))
+        .filter(|result| matches!(result.status, TxStatus::Pending { .. }))
         .map(|res| res.response.hash)
         .collect();
 
@@ -512,6 +512,8 @@ pub async fn query_hashes_and_update_tx_sync_events(
         .collect::<Vec<&mut TxSyncResult>>();
 
     for (tx_sync_result, events) in solved_results.iter_mut().zip(solved_txs_events.iter()) {
+        tx_sync_result.status = TxStatus::ReceivedResponse;
+
         // Transaction was included in a block. Check if it was an error.
         let tx_chain_error = events
             .iter()
@@ -622,7 +624,7 @@ fn ibc_packet_event_from_sql_block_query(
             destination_port: event.packet_dst_port.parse().unwrap(),
             destination_channel: event.packet_dst_channel.parse().unwrap(),
             data: Vec::from(event.packet_data.as_bytes()),
-            timeout_height: event.packet_timeout_height.parse().unwrap(),
+            timeout_height: parse_timeout_height(&event.packet_timeout_height).unwrap(),
             timeout_timestamp: event.packet_timeout_timestamp.parse().unwrap(),
         }
     }
@@ -633,7 +635,8 @@ fn ibc_packet_event_from_sql_block_query(
                 height: ICSHeight::new(
                     ChainId::chain_version(chain_id.to_string().as_str()),
                     event.block_id as u64, // TODO - get the height for the block with block_id
-                ),
+                )
+                .unwrap(),
                 packet: ibc_packet_from_sql_block_by_packet_query(event),
             }))
         }
@@ -643,7 +646,8 @@ fn ibc_packet_event_from_sql_block_query(
                     height: ICSHeight::new(
                         ChainId::chain_version(chain_id.to_string().as_str()),
                         event.block_id as u64, // TODO - get the height for the block with block_id
-                    ),
+                    )
+                    .unwrap(),
                     packet: ibc_packet_from_sql_block_by_packet_query(event),
                     ack: Vec::from(event.packet_ack.as_bytes()),
                 },

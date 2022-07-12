@@ -125,22 +125,24 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let src_chain_id = src_chain.id();
         let dst_chain_id = dst_chain.id();
 
-        let src_channel_id = *channel
+        let src_channel_id = channel
             .src_channel_id()
-            .ok_or_else(|| LinkError::missing_channel_id(src_chain.id()))?;
+            .ok_or_else(|| LinkError::missing_channel_id(src_chain.id()))?
+            .clone();
 
-        let dst_channel_id = *channel
+        let dst_channel_id = channel
             .dst_channel_id()
-            .ok_or_else(|| LinkError::missing_channel_id(dst_chain.id()))?;
+            .ok_or_else(|| LinkError::missing_channel_id(dst_chain.id()))?
+            .clone();
 
         let src_port_id = channel.src_port_id().clone();
         let dst_port_id = channel.dst_port_id().clone();
 
         let path = PathIdentifiers {
             port_id: dst_port_id.clone(),
-            channel_id: dst_channel_id,
+            channel_id: dst_channel_id.clone(),
             counterparty_port_id: src_port_id.clone(),
-            counterparty_channel_id: src_channel_id,
+            counterparty_channel_id: src_channel_id.clone(),
         };
 
         Ok(Self {
@@ -206,7 +208,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .query_channel(
                 QueryChannelRequest {
                     port_id: self.src_port_id().clone(),
-                    channel_id: *self.src_channel_id(),
+                    channel_id: self.src_channel_id().clone(),
                     height: height_query,
                 },
                 IncludeProof::No,
@@ -220,7 +222,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .query_channel(
                 QueryChannelRequest {
                     port_id: self.dst_port_id().clone(),
-                    channel_id: *self.dst_channel_id(),
+                    channel_id: self.dst_channel_id().clone(),
                     height: height_query,
                 },
                 IncludeProof::No,
@@ -339,7 +341,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // Build the domain type message
         let new_msg = MsgChannelCloseConfirm {
             port_id: self.dst_port_id().clone(),
-            channel_id: *self.dst_channel_id(),
+            channel_id: self.dst_channel_id().clone(),
             proofs,
             signer: self.dst_signer()?,
         };
@@ -436,6 +438,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     pub fn update_schedule(&self, batch: EventBatch) -> Result<(), LinkError> {
         // Collect relevant events from the incoming batch & adjust their height.
         let events = self.filter_relaying_events(batch.events, batch.tracking_id);
+
+        // Update telemetry info
+        telemetry!({
+            for e in events.events() {
+                self.record_send_packet_and_acknowledgment_history(e);
+            }
+        });
 
         // Transform the events into operational data items
         self.events_to_operational_data(events)
@@ -610,6 +619,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 Ok(reply) => {
                     // Done with this op. data
                     info!("success");
+                    telemetry!({
+                        let (chain, counterparty, channel_id, port_id) =
+                            self.target_info(odata.target);
+
+                        ibc_telemetry::global().tx_submitted(
+                            reply.len(),
+                            odata.tracking_id,
+                            &chain,
+                            channel_id,
+                            port_id,
+                            &counterparty,
+                        );
+                    });
 
                     return Ok(reply);
                 }
@@ -733,18 +755,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         let msgs = odata.assemble_msgs(self)?;
 
-        telemetry!({
-            let (chain, counterparty, channel_id, port_id) = self.target_info(odata.target);
-
-            ibc_telemetry::global().tx_submitted(
-                msgs.tracking_id,
-                &chain,
-                channel_id,
-                port_id,
-                &counterparty,
-            );
-        });
-
         match odata.target {
             OperationalDataTarget::Source => S::submit(self.src_chain(), msgs),
             OperationalDataTarget::Destination => S::submit(self.dst_chain(), msgs),
@@ -772,7 +782,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .dst_chain()
             .query_unreceived_packets(QueryUnreceivedPacketsRequest {
                 port_id: self.dst_port_id().clone(),
-                channel_id: *self.dst_channel_id(),
+                channel_id: self.dst_channel_id().clone(),
                 packet_commitment_sequences: vec![packet.sequence],
             })
             .map_err(LinkError::relayer)?;
@@ -788,7 +798,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .query_packet_commitment(
                 QueryPacketCommitmentRequest {
                     port_id: self.src_port_id().clone(),
-                    channel_id: *self.src_channel_id(),
+                    channel_id: self.src_channel_id().clone(),
                     sequence: packet.sequence,
                     height: QueryHeight::Latest,
                 },
@@ -813,7 +823,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .dst_chain()
             .query_unreceived_acknowledgements(QueryUnreceivedAcksRequest {
                 port_id: self.dst_port_id().clone(),
-                channel_id: *self.dst_channel_id(),
+                channel_id: self.dst_channel_id().clone(),
                 packet_ack_sequences: vec![packet.sequence],
             })
             .map_err(LinkError::relayer)?;
@@ -848,7 +858,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         match events.first() {
             Some(IbcEvent::UpdateClient(event)) => Ok(event.height()),
             Some(event) => Err(LinkError::unexpected_event(event.clone())),
-            None => Err(LinkError::unexpected_event(IbcEvent::default())),
+            None => Err(LinkError::update_client_event_not_found()),
         }
     }
 
@@ -1077,6 +1087,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             &self.path_id,
             query_send_packet_events,
         ) {
+            // Update telemetry info
+            telemetry!({
+                for e in events_chunk.clone() {
+                    self.record_cleared_send_packet_and_acknowledgment(e);
+                }
+            });
             self.events_to_operational_data(TrackedEvents::new(events_chunk, tracking_id))?;
         }
 
@@ -1197,7 +1213,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 .query_next_sequence_receive(
                     QueryNextSequenceReceiveRequest {
                         port_id: self.dst_port_id().clone(),
-                        channel_id: *dst_channel_id,
+                        channel_id: dst_channel_id.clone(),
                         height: QueryHeight::Specific(height),
                     },
                     IncludeProof::No,
@@ -1715,6 +1731,68 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 self.dst_channel_id(),
                 self.dst_port_id(),
             ),
+        }
+    }
+
+    #[cfg(feature = "telemetry")]
+    fn record_send_packet_and_acknowledgment_history(&self, event: &IbcEvent) {
+        match event {
+            IbcEvent::SendPacket(send_packet_ev) => {
+                ibc_telemetry::global().record_send_history(
+                    send_packet_ev.packet.sequence.into(),
+                    send_packet_ev.height().revision_height(),
+                    &self.src_chain().id(),
+                    self.src_channel_id(),
+                    self.src_port_id(),
+                    &self.dst_chain().id(),
+                );
+            }
+            IbcEvent::WriteAcknowledgement(write_ack_ev) => {
+                ibc_telemetry::global().record_ack_history(
+                    write_ack_ev.packet.sequence.into(),
+                    write_ack_ev.height().revision_height(),
+                    &self.dst_chain().id(),
+                    self.dst_channel_id(),
+                    self.dst_port_id(),
+                    &self.src_chain().id(),
+                );
+            }
+            _ => {}
+        }
+    }
+
+    #[cfg(feature = "telemetry")]
+    fn record_cleared_send_packet_and_acknowledgment(&self, event: IbcEvent) {
+        match event {
+            IbcEvent::SendPacket(send_packet_ev) => {
+                ibc_telemetry::global().send_packet_count(
+                    send_packet_ev.packet.sequence.into(),
+                    send_packet_ev.height().revision_height(),
+                    &self.src_chain().id(),
+                    self.src_channel_id(),
+                    self.src_port_id(),
+                    &self.dst_chain().id(),
+                );
+                ibc_telemetry::global().cleared_count(
+                    send_packet_ev.packet.sequence.into(),
+                    send_packet_ev.height().revision_height(),
+                    &self.src_chain().id(),
+                    self.src_channel_id(),
+                    self.src_port_id(),
+                    &self.dst_chain().id(),
+                );
+            }
+            IbcEvent::WriteAcknowledgement(write_ack_ev) => {
+                ibc_telemetry::global().acknowledgement_count(
+                    write_ack_ev.packet.sequence.into(),
+                    write_ack_ev.height().revision_height(),
+                    &self.dst_chain().id(),
+                    self.src_channel_id(),
+                    self.src_port_id(),
+                    &self.src_chain().id(),
+                );
+            }
+            _ => {}
         }
     }
 }

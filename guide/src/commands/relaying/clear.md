@@ -10,14 +10,21 @@ and [packet-acks](../raw/packet.md#relay-acknowledgment-packets).
 
 ```
 USAGE:
-    hermes clear packets --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
+    hermes clear packets [OPTIONS] --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
 
 DESCRIPTION:
-    Clear outstanding packets (i.e. packet-recv and packet-ack) on a given channel in both directions.
-
+    Clear outstanding packets (i.e., packet-recv and packet-ack) on a given channel in both directions.
     The channel is identified by the chain, port, and channel IDs at one of its ends
 
-FLAGS:
+OPTIONS:
+        --counterparty-key-name <COUNTERPARTY_KEY_NAME>
+            use the given signing key for the counterparty chain (default: `counterparty_key_name`
+            config)
+
+        --key-name <KEY_NAME>
+            use the given signing key for the specified chain (default: `key_name` config)
+
+REQUIRED:
         --chain <CHAIN_ID>        Identifier of the chain
         --channel <CHANNEL_ID>    Identifier of the channel
         --port <PORT_ID>          Identifier of the port
@@ -136,10 +143,10 @@ Success: [
 ```
 
 2. Because the relayer is not running these packets won't be relayed,
-as can be seen with the `query packet unreceived-packets` command:
+as can be seen with the `query packet pending-sends` command:
 
 ```
-❯ hermes query packet unreceived-packets --chain ibc1 --port transfer --channel channel-13
+❯ hermes query packet pending-sends --chain ibc1 --port transfer --channel channel-13
 2022-02-24T14:21:28.874190Z  INFO ThreadId(01) using default configuration from '/Users/coromac/.hermes/config.toml'
 Success: [
     14,
@@ -433,8 +440,7 @@ Success: [
 4. The packets have now been successfully relayed:
 
 ```
-❯ hermes query packet unreceived-packets --chain ibc1 --port transfer --channel channel-13
+❯ hermes query packet pending-sends --chain ibc1 --port transfer --channel channel-13
 2022-02-24T14:21:28.874190Z  INFO ThreadId(01) using default configuration from '/Users/coromac/.hermes/config.toml'
 Success: []
 ```
-

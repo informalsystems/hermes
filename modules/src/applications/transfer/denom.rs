@@ -297,7 +297,7 @@ impl FromStr for Amount {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let amount = U256::from_str_radix(s, 10).map_err(Error::invalid_amount)?;
+        let amount = U256::from_dec_str(s).map_err(Error::invalid_amount)?;
         Ok(Self(amount))
     }
 }

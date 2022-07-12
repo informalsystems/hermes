@@ -9,11 +9,12 @@ USAGE:
 DESCRIPTION:
     Listen to and display IBC events emitted by a chain
 
-FLAGS:
-        --chain <CHAIN_ID>    Identifier of the chain to listen for events from
-
 OPTIONS:
-        --events <EVENT>...   Add an event type to listen for, can be repeated. Listen for all events by default (available: Tx, NewBlock)
+        --events <EVENT>...    Add an event type to listen for, can be repeated. Listen for all
+                               events by default (available: Tx, NewBlock)
+
+REQUIRED:
+        --chain <CHAIN_ID>    Identifier of the chain to listen for events from
 ```
 
 __Example__

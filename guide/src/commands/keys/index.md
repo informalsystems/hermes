@@ -66,30 +66,26 @@ You can save this to a file (e.g. `key_seed.json`) and use it to add to the rela
 
 ### Adding and restoring Keys
 
-The command `keys add` has two exclusive flags, `--key-file` and `--mnemonic-file` which are respectively used to add and restore a key.
+The command `keys add` has two exclusive flags, `--key-file` and `--mnemonic-file` which are respectively used to add and restore a key.  
+If a key with the same `key_name` already exists, the flag `--overwrite` must be passed in order to overwrite the existing key or else the command will abort.
 
 ```shell
-    hermes keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE> --mnemonic-file <MNEMONIC_FILE>
+    hermes keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>
+
+    hermes keys add [OPTIONS] --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>
 
 DESCRIPTION:
     Adds key to a configured chain or restores a key to a configured chain using a mnemonic
 
-FLAGS:
-        --chain <CHAIN_ID>
-            identifier of the chain
-
-        --key-file <KEY_FILE>
-            path to the key file
-
-        --mnemonic-file <MNEMONIC_FILE>
-            path to file containing mnemonic to restore the key from
-
 OPTIONS:
-        --key-name <KEY_NAME>
-            name of the key (defaults to the `key_name` defined in the config)
+        --hd-path <HD_PATH>      Derivation path for this key [default: m/44'/118'/0'/0/0]
+        --key-name <KEY_NAME>    Name of the key (defaults to the `key_name` defined in the config)
+        --overwrite              Overwrite the key if there is already one with the same key name
 
-        --hd-path <HD_PATH>
-            derivation path for this key [default: m/44'/118'/0'/0/0]
+FLAGS:
+        --chain <CHAIN_ID>                 Identifier of the chain
+        --key-file <KEY_FILE>              Path to the key file
+        --mnemonic-file <MNEMONIC_FILE>    Path to file containing mnemonic to restore the key from
 ```
 
 #### Add a private key to a chain from a key file
@@ -100,19 +96,14 @@ OPTIONS:
 DESCRIPTION:
     Adds key to a configured chain or restores a key to a configured chain using a mnemonic
 
-FLAGS:
-        --chain <CHAIN_ID>
-            identifier of the chain
-
-        --key-file <KEY_FILE>
-            path to the key file
-
 OPTIONS:
-        --key-name <KEY_NAME>
-            name of the key (defaults to the `key_name` defined in the config)
+        --hd-path <HD_PATH>      Derivation path for this key [default: m/44'/118'/0'/0/0]
+        --key-name <KEY_NAME>    Name of the key (defaults to the `key_name` defined in the config)
+        --overwrite              Overwrite the key if there is already one with the same key name
 
-        --hd-path <HD_PATH>
-            derivation path for this key [default: m/44'/118'/0'/0/0]
+FLAGS:
+        --chain <CHAIN_ID>                 Identifier of the chain
+        --key-file <KEY_FILE>              Path to the key file
 ```
 
 To add a private key file to a chain:
@@ -155,19 +146,14 @@ Success: Added key testkey ([ADDRESS]) on [CHAIN ID] chain
 DESCRIPTION:
     Adds key to a configured chain or restores a key to a configured chain using a mnemonic
 
-FLAGS:
-        --chain <CHAIN_ID>
-            identifier of the chain
-
-        --mnemonic-file <MNEMONIC_FILE>
-            path to file containing mnemonic to restore the key from
-
 OPTIONS:
-        --key-name <KEY_NAME>
-            name of the key (defaults to the `key_name` defined in the config)
+        --hd-path <HD_PATH>      Derivation path for this key [default: m/44'/118'/0'/0/0]
+        --key-name <KEY_NAME>    Name of the key (defaults to the `key_name` defined in the config)
+        --overwrite              Overwrite the key if there is already one with the same key name
 
-        --hd-path <HD_PATH>
-            derivation path for this key [default: m/44'/118'/0'/0/0]
+FLAGS:
+        --chain <CHAIN_ID>                 Identifier of the chain
+        --mnemonic-file <MNEMONIC_FILE>    Path to file containing mnemonic to restore the key from
 ```
 
 To restore a key from its mnemonic:
@@ -212,14 +198,14 @@ USAGE:
     hermes keys delete [OPTIONS] --chain <CHAIN_ID>
 
 DESCRIPTION:
-    Delete key(s) from a configured chain
+    hermes keys delete --chain <CHAIN_ID> --key-name <KEY_NAME>
+
+    hermes keys delete --chain <CHAIN_ID> --all
 
 FLAGS:
-        --chain <CHAIN_ID>    Identifier of the chain
-
-OPTIONS:
-        --key-name <KEY_NAME>    Name of the key
         --all                    Delete all keys
+        --chain <CHAIN_ID>       Identifier of the chain
+        --key-name <KEY_NAME>    Name of the key
 ```
 
 #### Delete private keys that was previously added to a chain
@@ -247,7 +233,7 @@ USAGE:
 DESCRIPTION:
     List keys configured on a chain
 
-FLAGS:
+REQUIRED:
         --chain <CHAIN_ID>    Identifier of the chain
 ```
 
@@ -307,11 +293,12 @@ USAGE:
 DESCRIPTION:
     Query balance for a key from a configured chain. If no key is given, the key is retrieved from the configuration file
 
-FLAGS:
-        --chain <CHAIN_ID>        Identifier of the chain
-
 OPTIONS:
-        --key-name <KEY_NAME>     (optional) name of the key (defaults to the `key_name` defined in the config)
+        --key-name <KEY_NAME>    (optional) name of the key (defaults to the `key_name` defined in
+                                 the config)
+
+REQUIRED:
+        --chain <CHAIN_ID>    Identifier of the chain
 ```
 
 If the command is successful a message with the following format will be displayed:

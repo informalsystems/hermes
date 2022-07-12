@@ -17,12 +17,13 @@ use crate::error::Error;
 use crate::prelude::app_config;
 
 /// Query the events emitted by transaction
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct QueryTxEventsCmd {
     #[clap(
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -31,6 +32,7 @@ pub struct QueryTxEventsCmd {
         long = "hash",
         required = true,
         value_name = "HASH",
+        help_heading = "REQUIRED",
         help = "Transaction hash to query"
     )]
     hash: String,
@@ -58,5 +60,34 @@ impl Runnable for QueryTxEventsCmd {
             Ok(res) => Output::success(res).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::QueryTxEventsCmd;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::ChainId;
+
+    #[test]
+    fn test_query_tx_events() {
+        assert_eq!(
+            QueryTxEventsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                hash: "abcdefg".to_owned()
+            },
+            QueryTxEventsCmd::parse_from(&["test", "--chain", "chain_id", "--hash", "abcdefg"])
+        )
+    }
+
+    #[test]
+    fn test_query_tx_events_no_hash() {
+        assert!(QueryTxEventsCmd::try_parse_from(&["test", "--chain", "chain_id"]).is_err())
+    }
+
+    #[test]
+    fn test_query_tx_events_no_chain() {
+        assert!(QueryTxEventsCmd::try_parse_from(&["test", "--hash", "abcdefg"]).is_err())
     }
 }

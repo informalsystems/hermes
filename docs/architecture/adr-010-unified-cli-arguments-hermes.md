@@ -35,9 +35,9 @@ The following commands are implemented, with the binary name `hermes` often omit
 * `update client --host-chain <HOST_CHAIN_ID> --client <CLIENT_ID>`
     * Optional: `[--height <REFERENCE_HEIGHT>] [--trusted-height <REFERENCE_TRUSTED_HEIGHT>]`
 
-* `upgrade client --host-chain <HOST_CHAIN_ID> --client <CLIENT_ID>`
+* `upgrade client --host-chain <HOST_CHAIN_ID> --client <CLIENT_ID> --upgrade-height <REFERENCE_UPGRADE_HEIGHT>`
 
-* `upgrade clients --reference-chain <REFERENCE_CHAIN_ID>`
+* `upgrade clients --reference-chain <REFERENCE_CHAIN_ID> --upgrade-height <REFERENCE_UPGRADE_HEIGHT>`
     * Optional: `[--host-chain <HOST_CHAIN_ID>]`
 
 ### Create a connection
@@ -51,14 +51,17 @@ The following commands are implemented, with the binary name `hermes` often omit
 ### Create a channel
 
 * `create channel --a-chain <A_CHAIN_ID> --a-connection <A_CONNECTION_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>`
-    * Optional: `[--chan-version <VERSION>] [--order <ORDER>]`
+    * Optional: `[--channel-version <VERSION>] [--order <ORDER>]`
 
-* `create channel --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID> --new-client-conn`
-    * Optional: `[--chan-version <VERSION>] [--order <ORDER>]`
+* `create channel --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID> --new-client-connection`
+    * Optional: `[--channel-version <VERSION>] [--order <ORDER>] [--yes]`
 
 ### Commands for keys
 
-* `keys add --chain <CHAIN_ID> --key-file <KEY_FILE> --mnemonic-file <MNEMONIC_FILE>`
+* `keys add --chain <CHAIN_ID> --key-file <KEY_FILE>`
+    * Optional: `[--hd-path <HD_PATH>] [--key-name <KEY_NAME>]`
+
+* `keys add --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>`
     * Optional: `[--hd-path <HD_PATH>] [--key-name <KEY_NAME>]`
 
 * `keys balance --chain <CHAIN_ID>`
@@ -86,7 +89,8 @@ The following commands are implemented, with the binary name `hermes` often omit
 
 ### Clear packets
 
-* `clear packets --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
+* `clear packets [OPTIONS] --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
+    * Optional: `[--key-name <KEY>] [--counterparty-key-name <KEY>]`
 
 ### Queries
 
@@ -144,9 +148,9 @@ __Packet__
 
 * `query packet pending --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
 
-* `query packet unreceived-acks --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
+* `query packet pending-acks --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
 
-* `query packet unreceived-packets --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
+* `query packet pending-sends --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
 
 __Transfer__
 

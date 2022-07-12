@@ -6,7 +6,7 @@ use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use crate::chain::cosmos::retry::send_tx_with_account_sequence_retry;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
-use crate::chain::cosmos::types::tx::TxSyncResult;
+use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use crate::chain::cosmos::wait::wait_for_block_commits;
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error;
@@ -99,18 +99,34 @@ pub async fn send_messages_as_batches(
     let mut tx_sync_results = Vec::new();
 
     for batch in batches {
-        let events_per_tx = vec![IbcEvent::default(); batch.len()];
+        let message_count = batch.len();
 
         let response =
             send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, batch, 0)
                 .await?;
 
-        let tx_sync_result = TxSyncResult {
-            response,
-            events: events_per_tx,
-        };
+        if response.code.is_err() {
+            let events_per_tx = vec![IbcEvent::ChainError(format!(
+                "check_tx (broadcast_tx_sync) on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
+                config.chain_id, response.hash, response.code, response.log
+            )); message_count];
 
-        tx_sync_results.push(tx_sync_result);
+            let tx_sync_result = TxSyncResult {
+                response,
+                events: events_per_tx,
+                status: TxStatus::ReceivedResponse,
+            };
+
+            tx_sync_results.push(tx_sync_result);
+        } else {
+            let tx_sync_result = TxSyncResult {
+                response,
+                events: Vec::new(),
+                status: TxStatus::Pending { message_count },
+            };
+
+            tx_sync_results.push(tx_sync_result);
+        }
     }
 
     Ok(tx_sync_results)

@@ -63,7 +63,7 @@ fn version() {
 
     let rest_api_version = VersionInfo {
         name: "ibc-relayer-rest".to_string(),
-        version: "0.15.0".to_string(),
+        version: "0.16.0".to_string(),
     };
 
     let result = vec![version.clone(), rest_api_version];
@@ -102,7 +102,7 @@ key_name = 'testkey'
 store_prefix = 'ibc'
 max_gas = 3000000
 gas_price = { price = 0.001, denom = 'stake' }
-gas_adjustment = 0.1
+gas_multiplier = 1.1
 max_msg_num = 30
 max_tx_size = 2097152
 clock_drift = '5s'

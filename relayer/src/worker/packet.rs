@@ -72,27 +72,20 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
         )
     };
 
-    let mut current_command = None;
-
     spawn_background_task(span, Some(Duration::from_millis(200)), move || {
-        if current_command.is_none() {
-            // Only try to receive the next command if the
-            // previous command was processed successfully.
-            current_command = cmd_rx.try_recv().ok();
-        }
-
-        if let Some(cmd) = &current_command {
+        if let Ok(cmd) = cmd_rx.try_recv() {
+            // Try to clear pending packets. At different levels down in `handle_packet_cmd` there
+            // are retries mechanisms for MAX_RETRIES (current value hardcoded at 5).
+            // If clearing fails after all these retries with ignorable error the task continues
+            // (see `handle_link_error_in_task`) and clearing is retried with the next
+            // (`NewBlock`) `cmd` that matches the clearing interval.
             handle_packet_cmd(
                 &mut link.lock().unwrap(),
                 &mut should_clear_on_start,
                 clear_interval,
                 &path,
-                cmd.clone(),
+                cmd,
             )?;
-
-            // Only reset current_command if handle_packet_cmd succeeds.
-            // Otherwise the same command will be retried in the next step.
-            current_command = None;
         }
 
         Ok(Next::Continue)
@@ -142,12 +135,12 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     };
 
     if do_clear {
-        handle_clear_packet(link, clear_interval, path, maybe_height)?;
-
-        // Reset the `clear_on_start` flag
+        // Reset the `clear_on_start` flag and attempt packet clearing once now.
+        // More clearing will be done at clear interval.
         if *should_clear_on_start {
             *should_clear_on_start = false;
         }
+        handle_clear_packet(link, clear_interval, path, maybe_height)?;
     }
 
     // Handle command-specific task
@@ -165,7 +158,7 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
 /// If the specified height is reached, then packets are cleared if `clear_interval`
 /// is not `0` and if we have reached the interval.
 fn should_clear_packets(clear_interval: u64, height: Height) -> bool {
-    clear_interval != 0 && height.revision_height % clear_interval == 0
+    clear_interval != 0 && height.revision_height() % clear_interval == 0
 }
 
 fn handle_update_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(

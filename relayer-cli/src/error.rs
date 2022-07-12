@@ -1,3 +1,5 @@
+//! All errors which can be raised from a command.
+
 use flex_error::define_error;
 
 use tendermint::Error as TendermintError;
@@ -54,7 +56,7 @@ define_error! {
         MissingChainConfig
             { chain_id: ChainId }
             | e | {
-                format_args!("missing chain with id '{}' in configuration file",
+                format_args!("missing chain '{}' in configuration file",
                     e.chain_id)
             },
 

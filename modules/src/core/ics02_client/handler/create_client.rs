@@ -97,7 +97,7 @@ mod tests {
     fn test_create_client_ok() {
         let ctx = MockContext::default();
         let signer = get_dummy_account_id();
-        let height = Height::new(0, 42);
+        let height = Height::new(0, 42).unwrap();
 
         let msg = MsgCreateAnyClient::new(
             MockClientState::new(MockHeader::new(height)).into(),
@@ -141,50 +141,28 @@ mod tests {
     fn test_create_client_ok_multiple() {
         let existing_client_id = ClientId::default();
         let signer = get_dummy_account_id();
-        let height = Height::new(0, 80);
+        let height_1 = Height::new(0, 80).unwrap();
+        let height_2 = Height::new(0, 42).unwrap();
+        let height_3 = Height::new(0, 50).unwrap();
 
-        let ctx = MockContext::default().with_client(&existing_client_id, height);
+        let ctx = MockContext::default().with_client(&existing_client_id, height_1);
 
         let create_client_msgs: Vec<MsgCreateAnyClient> = vec![
             MsgCreateAnyClient::new(
-                MockClientState::new(MockHeader::new(Height {
-                    revision_height: 42,
-                    ..height
-                }))
-                .into(),
-                MockConsensusState::new(MockHeader::new(Height {
-                    revision_height: 42,
-                    ..height
-                }))
-                .into(),
+                MockClientState::new(MockHeader::new(height_2)).into(),
+                MockConsensusState::new(MockHeader::new(height_2)).into(),
                 signer.clone(),
             )
             .unwrap(),
             MsgCreateAnyClient::new(
-                MockClientState::new(MockHeader::new(Height {
-                    revision_height: 42,
-                    ..height
-                }))
-                .into(),
-                MockConsensusState::new(MockHeader::new(Height {
-                    revision_height: 42,
-                    ..height
-                }))
-                .into(),
+                MockClientState::new(MockHeader::new(height_2)).into(),
+                MockConsensusState::new(MockHeader::new(height_2)).into(),
                 signer.clone(),
             )
             .unwrap(),
             MsgCreateAnyClient::new(
-                MockClientState::new(MockHeader::new(Height {
-                    revision_height: 50,
-                    ..height
-                }))
-                .into(),
-                MockConsensusState::new(MockHeader::new(Height {
-                    revision_height: 50,
-                    ..height
-                }))
-                .into(),
+                MockClientState::new(MockHeader::new(height_3)).into(),
+                MockConsensusState::new(MockHeader::new(height_3)).into(),
                 signer,
             )
             .unwrap(),
@@ -243,7 +221,7 @@ mod tests {
             Duration::from_secs(64000),
             Duration::from_secs(128000),
             Duration::from_millis(3000),
-            Height::new(0, u64::from(tm_header.height)),
+            Height::new(0, u64::from(tm_header.height)).unwrap(),
             ProofSpecs::default(),
             vec!["".to_string()],
             AllowUpdate {

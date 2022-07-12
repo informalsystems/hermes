@@ -46,7 +46,7 @@ impl TryFrom<QueryHeight> for TMBlockHeight {
     fn try_from(height_query: QueryHeight) -> Result<Self, Self::Error> {
         let height = match height_query {
             QueryHeight::Latest => 0u64,
-            QueryHeight::Specific(height) => height.revision_height,
+            QueryHeight::Specific(height) => height.revision_height(),
         };
 
         Self::try_from(height).map_err(Error::invalid_height)
@@ -59,7 +59,7 @@ impl TryFrom<QueryHeight> for AsciiMetadataValue {
     fn try_from(height_query: QueryHeight) -> Result<Self, Self::Error> {
         let height = match height_query {
             QueryHeight::Latest => 0u64,
-            QueryHeight::Specific(height) => height.revision_height,
+            QueryHeight::Specific(height) => height.revision_height(),
         };
 
         str::parse(&height.to_string()).map_err(Error::invalid_metadata)

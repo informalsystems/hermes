@@ -24,7 +24,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
     let mut output = HandlerOutput::builder();
 
     let source_channel_end =
-        ctx.channel_end(&(packet.source_port.clone(), packet.source_channel))?;
+        ctx.channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))?;
 
     if source_channel_end.state_matches(&State::Closed) {
         return Err(Error::channel_closed(packet.source_channel));
@@ -32,7 +32,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
 
     let counterparty = Counterparty::new(
         packet.destination_port.clone(),
-        Some(packet.destination_channel),
+        Some(packet.destination_channel.clone()),
     );
 
     if !source_channel_end.counterparty_matches(&counterparty) {
@@ -55,7 +55,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
 
     let latest_height = client_state.latest_height();
 
-    if !packet.timeout_height.is_zero() && packet.timeout_height <= latest_height {
+    if packet.timeout_height.has_expired(latest_height) {
         return Err(Error::low_packet_height(
             latest_height,
             packet.timeout_height,
@@ -70,7 +70,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
     }
 
     let next_seq_send =
-        ctx.get_next_sequence_send(&(packet.source_port.clone(), packet.source_channel))?;
+        ctx.get_next_sequence_send(&(packet.source_port.clone(), packet.source_channel.clone()))?;
 
     if packet.sequence != next_seq_send {
         return Err(Error::invalid_packet_sequence(
@@ -83,7 +83,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
 
     let result = PacketResult::Send(SendPacketResult {
         port_id: packet.source_port.clone(),
-        channel_id: packet.source_channel,
+        channel_id: packet.source_channel.clone(),
         seq: packet.sequence,
         seq_number: next_seq_send.increment(),
         commitment: ctx.packet_commitment(
@@ -137,14 +137,6 @@ mod tests {
 
         let context = MockContext::default();
 
-        let timestamp = Timestamp::now().add(Duration::from_secs(10));
-        //CD:TODO remove unwrap
-        let mut packet: Packet = get_dummy_raw_packet(1, timestamp.unwrap().nanoseconds())
-            .try_into()
-            .unwrap();
-        packet.sequence = 1.into();
-        packet.data = vec![0];
-
         let channel_end = ChannelEnd::new(
             State::TryOpen,
             Order::default(),
@@ -165,11 +157,36 @@ mod tests {
             ZERO_DURATION,
         );
 
-        let mut packet_old: Packet = get_dummy_raw_packet(1, 1).try_into().unwrap();
-        packet_old.sequence = 1.into();
-        packet_old.data = vec![0];
+        let timestamp_future = Timestamp::now().add(Duration::from_secs(10)).unwrap();
+        let timestamp_ns_past = 1;
 
-        let client_height = Height::new(0, Height::default().revision_height + 1);
+        let timeout_height_future = 10;
+
+        let mut packet: Packet =
+            get_dummy_raw_packet(timeout_height_future, timestamp_future.nanoseconds())
+                .try_into()
+                .unwrap();
+        packet.sequence = 1.into();
+        packet.data = vec![0];
+
+        let mut packet_with_timestamp_old: Packet =
+            get_dummy_raw_packet(timeout_height_future, timestamp_ns_past)
+                .try_into()
+                .unwrap();
+        packet_with_timestamp_old.sequence = 1.into();
+        packet_with_timestamp_old.data = vec![0];
+
+        let client_raw_height = 5;
+        let packet_timeout_equal_client_height: Packet =
+            get_dummy_raw_packet(client_raw_height, timestamp_future.nanoseconds())
+                .try_into()
+                .unwrap();
+        let packet_timeout_one_before_client_height: Packet =
+            get_dummy_raw_packet(client_raw_height - 1, timestamp_future.nanoseconds())
+                .try_into()
+                .unwrap();
+
+        let client_height = Height::new(0, client_raw_height).unwrap();
 
         let tests: Vec<Test> = vec![
             Test {
@@ -182,7 +199,7 @@ mod tests {
                 name: "Good parameters".to_string(),
                 ctx: context
                     .clone()
-                    .with_client(&ClientId::default(), Height::default())
+                    .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end.clone())
                     .with_channel(PortId::default(), ChannelId::default(), channel_end.clone())
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
@@ -190,13 +207,35 @@ mod tests {
                 want_pass: true,
             },
             Test {
-                name: "Packet timeout".to_string(),
+                name: "Packet timeout height same as destination chain height".to_string(),
+                ctx: context
+                    .clone()
+                    .with_client(&ClientId::default(), client_height)
+                    .with_connection(ConnectionId::default(), connection_end.clone())
+                    .with_channel(PortId::default(), ChannelId::default(), channel_end.clone())
+                    .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
+                packet: packet_timeout_equal_client_height,
+                want_pass: true,
+            },
+            Test {
+                name: "Packet timeout height one more than destination chain height".to_string(),
+                ctx: context
+                    .clone()
+                    .with_client(&ClientId::default(), client_height)
+                    .with_connection(ConnectionId::default(), connection_end.clone())
+                    .with_channel(PortId::default(), ChannelId::default(), channel_end.clone())
+                    .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
+                packet: packet_timeout_one_before_client_height,
+                want_pass: false,
+            },
+            Test {
+                name: "Packet timeout due to timestamp".to_string(),
                 ctx: context
                     .with_client(&ClientId::default(), client_height)
                     .with_connection(ConnectionId::default(), connection_end)
                     .with_channel(PortId::default(), ChannelId::default(), channel_end)
                     .with_send_sequence(PortId::default(), ChannelId::default(), 1.into()),
-                packet: packet_old,
+                packet: packet_with_timestamp_old,
                 want_pass: false,
             },
         ]

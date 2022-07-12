@@ -31,7 +31,7 @@ USAGE:
 DESCRIPTION:
     Query the events emitted by transaction
 
-FLAGS:
+REQUIRED:
         --chain <CHAIN_ID>    Identifier of the chain to query
         --hash <HASH>         Transaction hash to query
 ```
