@@ -2,6 +2,7 @@
    Methods for tagged version of the chain driver.
 */
 
+use ibc::core::ics04_channel::packet::Packet;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use serde::Serialize;
@@ -96,7 +97,7 @@ pub trait TaggedChainDriverExt<Chain> {
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         denom: &MonoTagged<Chain, &Denom>,
         amount: u64,
-    ) -> Result<(), Error>;
+    ) -> Result<Packet, Error>;
 
     fn local_transfer_token(
         &self,
@@ -180,7 +181,7 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         denom: &MonoTagged<Chain, &Denom>,
         amount: u64,
-    ) -> Result<(), Error> {
+    ) -> Result<Packet, Error> {
         self.value().runtime.block_on(ibc_token_transfer(
             &self.tx_config(),
             port_id,

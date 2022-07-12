@@ -18,6 +18,7 @@ use tendermint::abci::responses::Event;
 use crate::cosmos::error::Error;
 use crate::cosmos::message::CosmosIbcMessage;
 
+#[derive(Clone)]
 pub struct CosmosChainHandler<Handle> {
     pub handle: Handle,
     pub signer: Signer,
@@ -25,6 +26,7 @@ pub struct CosmosChainHandler<Handle> {
     pub key_entry: KeyEntry,
 }
 
+#[derive(Clone)]
 pub struct CosmosRelayHandler<SrcChain, DstChain> {
     pub src_handle: CosmosChainHandler<SrcChain>,
     pub dst_handle: CosmosChainHandler<DstChain>,

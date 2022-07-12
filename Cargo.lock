@@ -1475,6 +1475,8 @@ dependencies = [
  "ibc-proto",
  "ibc-relayer",
  "ibc-relayer-cli",
+ "ibc-relayer-cosmos",
+ "ibc-relayer-framework",
  "ibc-test-framework",
  "serde",
  "serde_json",

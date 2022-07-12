@@ -143,7 +143,7 @@ fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Result<Attribu
     Ok(attr)
 }
 
-fn extract_packet_and_write_ack_from_tx(
+pub fn extract_packet_and_write_ack_from_tx(
     event: &tendermint::abci::Event,
 ) -> Result<(Packet, Vec<u8>), Error> {
     let mut packet = Packet::default();

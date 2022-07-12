@@ -14,6 +14,7 @@ pub mod error_events;
 pub mod events;
 pub mod execute_schedule;
 pub mod memo;
+pub mod next;
 pub mod python;
 mod query_packet;
 pub mod supervisor;

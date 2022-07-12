@@ -5,8 +5,11 @@
 
 use core::ops::Add;
 use core::time::Duration;
+use eyre::eyre;
 
 use ibc::applications::transfer::error::Error as Ics20Error;
+use ibc::core::ics04_channel::events::extract_packet_and_write_ack_from_tx;
+use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics04_channel::timeout::TimeoutHeight;
 use ibc::timestamp::Timestamp;
 use ibc_proto::google::protobuf::Any;
@@ -83,10 +86,21 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
     recipient: &MonoTagged<DstChain, &WalletAddress>,
     denom: &MonoTagged<SrcChain, &Denom>,
     amount: u64,
-) -> Result<(), Error> {
+) -> Result<Packet, Error> {
     let message = build_transfer_message(port_id, channel_id, sender, recipient, denom, amount)?;
 
-    simple_send_tx(tx_config.value(), &sender.value().key, vec![message]).await?;
+    let events = simple_send_tx(tx_config.value(), &sender.value().key, vec![message]).await?;
 
-    Ok(())
+    let (packet, _) = events[0]
+        .iter()
+        .find_map(|event| {
+            if event.type_str == "send_packet" {
+                extract_packet_and_write_ack_from_tx(&event).ok()
+            } else {
+                None
+            }
+        })
+        .ok_or_else(|| eyre!("failed to find send packet event"))?;
+
+    Ok(packet)
 }

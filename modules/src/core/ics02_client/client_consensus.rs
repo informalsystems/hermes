@@ -36,6 +36,7 @@ pub trait ConsensusState: Clone + core::fmt::Debug + Send + Sync {
     fn wrap_any(self) -> AnyConsensusState;
 }
 
+#[non_exhaustive]
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(tag = "type")]
 pub enum AnyConsensusState {
