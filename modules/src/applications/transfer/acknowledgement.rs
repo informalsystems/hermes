@@ -20,7 +20,6 @@ pub enum ConstAckSuccess {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
 pub enum Acknowledgement {
     /// Successful Acknowledgement
     /// e.g. `{"result":"AQ=="}`
@@ -28,6 +27,7 @@ pub enum Acknowledgement {
     Success(ConstAckSuccess),
     /// Error Acknowledgement
     /// e.g. `{"error":"cannot unmarshal ICS-20 transfer packet data"}`
+    #[serde(rename = "error")]
     Error(String),
 }
 
