@@ -2,6 +2,7 @@ use crate::prelude::*;
 use core::cmp::Ordering;
 
 use core::num::ParseIntError;
+use core::ops::Add;
 use core::str::FromStr;
 
 use flex_error::{define_error, TraceError};
@@ -65,6 +66,17 @@ impl Height {
 
     pub fn decrement(&self) -> Result<Height, Error> {
         self.sub(1)
+    }
+}
+
+impl Add<u64> for Height {
+    type Output = Self;
+
+    fn add(self, delta: u64) -> Self {
+        Self {
+            revision_number: self.revision_number,
+            revision_height: self.revision_height + delta,
+        }
     }
 }
 

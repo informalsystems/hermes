@@ -3,6 +3,7 @@ use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_framework::impls::messages::skip_update_client::SkipUpdateClient;
+use ibc_relayer_framework::impls::messages::wait_update_client::WaitUpdateClient;
 use ibc_relayer_framework::traits::messages::update_client::{
     UpdateClientContext, UpdateClientMessageBuilder,
 };
@@ -21,7 +22,7 @@ where
     DstChain: ChainHandle,
     Target: CosmosChainTarget<SrcChain, DstChain>,
 {
-    type UpdateClientMessageBuilder = SkipUpdateClient<CosmosUpdateClient>;
+    type UpdateClientMessageBuilder = SkipUpdateClient<WaitUpdateClient<CosmosUpdateClient>>;
 }
 
 #[async_trait]
@@ -35,16 +36,16 @@ where
 {
     async fn build_update_client_messages(
         context: &CosmosRelayHandler<SrcChain, DstChain>,
-        height: Height,
+        height: &Height,
     ) -> Result<Vec<CosmosIbcMessage>, Error> {
         let messages = Target::target_foreign_client(context)
-            .build_update_client_with_trusted(height, None)
+            .build_update_client_with_trusted(height.increment(), None)
             .map_err(Error::foreign_client)?;
 
         let ibc_messages = messages
             .into_iter()
             .map(|update_message| {
-                CosmosIbcMessage::new(Some(height), move |signer| {
+                CosmosIbcMessage::new(Some(*height), move |signer| {
                     let mut update_message = update_message.clone();
                     update_message.signer = signer.clone();
                     Ok(update_message.to_any())

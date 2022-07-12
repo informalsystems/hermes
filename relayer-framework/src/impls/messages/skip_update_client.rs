@@ -22,7 +22,7 @@ where
 {
     async fn build_update_client_messages(
         context: &Relay,
-        height: Height<Target::CounterpartyChain>,
+        height: &Height<Target::CounterpartyChain>,
     ) -> Result<Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>, Relay::Error> {
         let target_chain = Target::target_chain(context);
         let target_client_id = Target::target_client_id(context);

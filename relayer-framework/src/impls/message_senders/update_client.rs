@@ -39,7 +39,7 @@ where
 
         for height in source_heights {
             let messages =
-                Context::UpdateClientMessageBuilder::build_update_client_messages(context, height)
+                Context::UpdateClientMessageBuilder::build_update_client_messages(context, &height)
                     .await?;
             in_messages.extend(messages);
         }

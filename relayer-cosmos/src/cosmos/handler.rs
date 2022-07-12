@@ -1,3 +1,5 @@
+use async_trait::async_trait;
+use core::time::Duration;
 use ibc::core::ics04_channel::events::WriteAcknowledgement;
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics04_channel::packet::Sequence;
@@ -13,7 +15,9 @@ use ibc_relayer_framework::traits::core::Async;
 use ibc_relayer_framework::traits::core::ErrorContext;
 use ibc_relayer_framework::traits::ibc_event_context::IbcEventContext;
 use ibc_relayer_framework::traits::relay_context::RelayContext;
+use ibc_relayer_framework::traits::sleep::SleepContext;
 use tendermint::abci::responses::Event;
+use tokio::time::sleep;
 
 use crate::cosmos::error::Error;
 use crate::cosmos::message::CosmosIbcMessage;
@@ -111,5 +115,19 @@ where
 
     fn destination_client_id(&self) -> &ClientId {
         &self.src_to_dst_client.id
+    }
+}
+
+#[async_trait]
+impl<Chain> SleepContext for CosmosChainHandler<Chain> {
+    async fn sleep(duration: Duration) {
+        sleep(duration).await;
+    }
+}
+
+#[async_trait]
+impl<SrcChain, DstChain> SleepContext for CosmosRelayHandler<SrcChain, DstChain> {
+    async fn sleep(duration: Duration) {
+        sleep(duration).await;
     }
 }
