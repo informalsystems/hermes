@@ -1,4 +1,4 @@
-//! Cli Abscissa Application
+//! Definition of the application, based on the Abscissa framework
 
 use std::path::PathBuf;
 

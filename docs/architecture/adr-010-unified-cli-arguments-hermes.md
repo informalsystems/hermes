@@ -2,6 +2,7 @@
 
 ## Changelog
 * 15.06.2022: Proposed.
+* 28.06.2022: Accepted.
 
 ## Context
 
@@ -148,9 +149,9 @@ __Packet__
 
 * `query packet pending --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
 
-* `query packet unreceived-acks --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
+* `query packet pending-acks --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
 
-* `query packet unreceived-packets --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
+* `query packet pending-sends --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
 
 __Transfer__
 
@@ -251,6 +252,14 @@ The PR which updates the flags for all the commands as described in this ADR: [#
 __07.07.22__
 
 Added `tx raw` commands to the ADR
+
+__08.07.22__
+
+* Created a new PR, [#2384](https://github.com/informalsystems/ibc-rs/pull/2384), to add the optional flag for the `upgrade clients` command, issue [#2311](https://github.com/informalsystems/ibc-rs/issues/2311)
+
+__11.07.22__
+
+* Created a new PR, [#2391](https://github.com/informalsystems/ibc-rs/pull/2391), to add the optional flags for the `query connections` command, issue [#2310](https://github.com/informalsystems/ibc-rs/issues/2310)
 
 ## Consequences
 

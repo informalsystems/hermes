@@ -5,16 +5,16 @@
 - balance at ibc-0
 
     ```shell
-    gaiad --node tcp://localhost:26657 query bank balances $(gaiad --home data/ibc-0 keys --keyring-backend="test" show user -a)
+    gaiad --node tcp://localhost:27010 query bank balances $(gaiad --home ~/.gm/ibc-0 keys --keyring-backend="test" show wallet -a)
     ```
 
 - balance at ibc-1
 
     ```shell
-    gaiad --node tcp://localhost:26557 query bank balances $(gaiad --home data/ibc-1 keys --keyring-backend="test" show user -a)
+    gaiad --node tcp://localhost:27020 query bank balances $(gaiad --home ~/.gm/ibc-1 keys --keyring-backend="test" show wallet -a)
     ```
 
-> Note that the addresses used in the two commands above are configured in `dev-env`.
+> Note that the RPC addresses used in the two commands above are configured in `~/.hermes/config.toml` file. It can also be found with `gm status`
 
 ### 4.2 Packet relaying
 
@@ -32,10 +32,10 @@ First, we'll send `9999` `samoleans` from `ibc-0` to `ibc-1`.
     hermes query packet commitments --chain ibc-0 --port transfer --channel channel-0
     ```
 
-- query unreceived packets on `ibc-1`
+- query pending packets on `ibc-1`
 
     ```shell
-    hermes query packet unreceived-packets --chain ibc-1 --port transfer --channel channel-1
+    hermes query packet pending-sends --chain ibc-1 --port transfer --channel channel-1
     ```
 
 - send `recv_packet` to `ibc-1`
@@ -44,10 +44,10 @@ First, we'll send `9999` `samoleans` from `ibc-0` to `ibc-1`.
     hermes tx raw packet-recv --dst-chain ibc-1 --src-chain ibc-0 --src-port transfer --src-chan channel-0
     ```
 
-- query unreceived acks on `ibc-0`
+- query pending acks on `ibc-0`
 
     ```shell
-    hermes query packet unreceived-acks --chain ibc-0 --port transfer --channel channel-0
+    hermes query packet pending-acks --chain ibc-0 --port transfer --channel channel-0
     ```
 
 - send acknowledgement to `ibc-0`

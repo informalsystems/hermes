@@ -1,3 +1,5 @@
+//! Various utilities for the Hermes CLI
+
 use alloc::sync::Arc;
 
 use tokio::runtime::Runtime as TokioRuntime;
@@ -50,12 +52,20 @@ impl ChainHandlePair<BaseChainHandle> {
     }
 }
 
-/// Spawns a chain runtime from the configuration and given a chain identifier.
+/// Spawns a chain runtime for the chain in the configuration identified by given a chain identifier.
+///
+/// This function will use the default [`ChainHandle`] implementation, ie. the [`BaseChainHandle`].
+///
 /// Returns the corresponding handle if successful.
 pub fn spawn_chain_runtime(config: &Config, chain_id: &ChainId) -> Result<impl ChainHandle, Error> {
     spawn_chain_runtime_generic::<BaseChainHandle>(config, chain_id)
 }
 
+/// Spawns a chain runtime for the chain in the configuraiton identified by the given chain identifier.
+///
+/// The `Handle` type parameter allows choosing which kind of [`ChainHandle`] implementation to use.
+///
+/// Returns the corresponding handle if successful.
 pub fn spawn_chain_runtime_generic<Handle: ChainHandle>(
     config: &Config,
     chain_id: &ChainId,
@@ -66,6 +76,9 @@ pub fn spawn_chain_runtime_generic<Handle: ChainHandle>(
 
 /// Spawns a chain runtime for specified chain identifier, queries the counterparty chain associated
 /// with specified port and channel id, and spawns a chain runtime for the counterparty chain.
+///
+/// The `Handle` type parameter allows choosing which kind of `ChainHandle` implementation to use.
+///
 /// Returns a tuple with a pair of associated chain handles and the ChannelEnd
 pub fn spawn_chain_counterparty<Chain: ChainHandle>(
     config: &Config,

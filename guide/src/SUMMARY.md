@@ -1,6 +1,6 @@
 # Summary
 
-# Hermes (v0.15.0)
+# Hermes (v1.0.0-rc.0)
 
 ---
 - [Introduction](./index.md)
@@ -15,8 +15,9 @@
 - [Telemetry](./telemetry.md)
 - [REST API](./rest-api.md)
 - [Tutorials](./tutorials/index.md)
-   - [Local chains](./tutorials/local-chains/index.md)
+   - [Local chains](./tutorials/local-chains/index.md)     
      - [Install Gaia](./tutorials/local-chains/gaia.md)
+     - [Install Gaiad Manager](./tutorials/local-chains/gaiad-manager.md)
      - [Start the local chains](./tutorials/local-chains/start.md)
      - [Identifiers](./tutorials/local-chains/identifiers.md)
      - [Connect the chains using relay paths](./tutorials/local-chains/relay-paths/index.md)
