@@ -1,6 +1,6 @@
 # Tutorials
 
-This section includes tutorials for some common relayer uses cases and commands. You can also refer to the [Commands Reference](../commands/index.md) section to learn more about individual commands.
+This section includes tutorials for some common relayer use cases and commands. You can also refer to the [Commands Reference](../commands/index.md) section to learn more about individual commands.
 
 ## Basic tutorials
 
