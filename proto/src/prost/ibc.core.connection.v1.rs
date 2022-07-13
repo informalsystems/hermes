@@ -128,20 +128,6 @@ pub enum State {
     /// A connection end has completed the handshake.
     Open = 3,
 }
-/// GenesisState defines the ibc connection submodule's genesis state.
-#[derive(::serde::Serialize, ::serde::Deserialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    #[prost(message, repeated, tag="1")]
-    pub connections: ::prost::alloc::vec::Vec<IdentifiedConnection>,
-    #[prost(message, repeated, tag="2")]
-    pub client_connection_paths: ::prost::alloc::vec::Vec<ConnectionPaths>,
-    /// the sequence for the next generated connection identifier
-    #[prost(uint64, tag="3")]
-    pub next_connection_sequence: u64,
-    #[prost(message, optional, tag="4")]
-    pub params: ::core::option::Option<Params>,
-}
 /// MsgConnectionOpenInit defines the msg sent by an account on Chain A to
 /// initialize a connection with Chain B.
 #[derive(::serde::Serialize, ::serde::Deserialize)]
@@ -1342,4 +1328,18 @@ pub mod query_server {
     impl<T: Query> tonic::transport::NamedService for QueryServer<T> {
         const NAME: &'static str = "ibc.core.connection.v1.Query";
     }
+}
+/// GenesisState defines the ibc connection submodule's genesis state.
+#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    #[prost(message, repeated, tag="1")]
+    pub connections: ::prost::alloc::vec::Vec<IdentifiedConnection>,
+    #[prost(message, repeated, tag="2")]
+    pub client_connection_paths: ::prost::alloc::vec::Vec<ConnectionPaths>,
+    /// the sequence for the next generated connection identifier
+    #[prost(uint64, tag="3")]
+    pub next_connection_sequence: u64,
+    #[prost(message, optional, tag="4")]
+    pub params: ::core::option::Option<Params>,
 }
