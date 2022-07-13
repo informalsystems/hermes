@@ -2,6 +2,7 @@
 
 ## Changelog
 * 15.06.2022: Proposed.
+* 28.06.2022: Accepted.
 
 ## Context
 
@@ -184,6 +185,14 @@ The following are not yet implemented:
 * Updating `query channel ends` to `query channel full`
 
 The PR which updates the flags for all the commands as described in this ADR: [#2275](https://github.com/informalsystems/ibc-rs/pull/2275)
+
+__08.07.22__
+
+* Created a new PR, [#2384](https://github.com/informalsystems/ibc-rs/pull/2384), to add the optional flag for the `upgrade clients` command, issue [#2311](https://github.com/informalsystems/ibc-rs/issues/2311)
+
+__11.07.22__
+
+* Created a new PR, [#2391](https://github.com/informalsystems/ibc-rs/pull/2391), to add the optional flags for the `query connections` command, issue [#2310](https://github.com/informalsystems/ibc-rs/issues/2310)
 
 ## Consequences
 
