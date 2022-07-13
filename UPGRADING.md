@@ -28,7 +28,7 @@ $ hermes create client --host-chain ibc-0 --reference-chain ibc-1
 
 Please [consult the ADR][flags-adr] which describes the new CLI flags for all commands.
 
-[flags-adr]: docs/architecture/adr-010-unified-cli-arguments-hermes.md
+[flags-adr]: https://github.com/informalsystems/ibc-rs/blob/v1.0.0-rc.0/docs/architecture/adr-010-unified-cli-arguments-hermes.md
 
 ### The `keys restore` command has been merged into `keys add`
 

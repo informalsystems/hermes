@@ -173,6 +173,69 @@ __Tx__
 
 * `health-check`
 
+### Tx
+
+__conn-init__
+
+* `tx conn-init --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-client <B_CLIENT_ID> --a-client <A_CLIENT_ID>`
+
+__conn-ack__
+
+* `tx conn-ack --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-client <B_CLIENT_ID> --a-client <A_CLIENT_ID> --b-connection <B_CONNECTION_ID> --a-connection <A_CONNECTION_ID>`
+
+__conn-confirm__
+
+* `tx conn-confirm --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-client <B_CLIENT_ID> --a-client <A_CLIENT_ID> --b-connection <B_CONNECTION_ID> --a-connection <A_CONNECTION_ID>`
+
+__conn-try__
+
+* `tx conn-try [OPTIONS] --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-client <B_CLIENT_ID> --a-client <A_CLIENT_ID> --a-connection <A_CONNECTION_ID>`
+    * Optional: `[--b-connection <B_CONNECTION_ID>]`
+
+__chan-open-init__
+
+* `tx chan-open-init [OPTIONS] --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-connection <B_CONNECTION_ID> --b-port <B_PORT_ID> --a-port <A_PORT_ID>`
+    * Optional: `[--order <ORDER>]`
+
+__chan-open-ack__
+
+* `tx chan-open-ack --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-connection <B_CONNECTION_ID> --b-port <B_PORT_ID> --a-port <A_PORT_ID> --b-channel <B_CHANNEL_ID> --a-channel <A_CHANNEL_ID>`
+
+__chan-open-confirm__
+
+* `tx chan-open-confirm --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-connection <B_CONNECTION_ID> --b-port <B_PORT_ID> --a-port <A_PORT_ID> --b-channel <B_CHANNEL_ID> --a-channel <A_CHANNEL_ID>`
+
+__chan-open-try__
+
+* `tx chan-open-try [OPTIONS] --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-connection <B_CONNECTION_ID> --b-port <B_PORT_ID> --a-port <A_PORT_ID> --a-channel <A_CHANNEL_ID>`
+    * Optional: `[--b-channel <B_CHANNEL_ID>]`
+
+__chan-close-init__
+
+* `tx chan-close-init --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-connection <B_CONNECTION_ID> --b-port <B_PORT_ID> --a-port <A_PORT_ID> --b-channel <B_CHANNEL_ID> --a-channel <A_CHANNEL_ID>`
+
+__chan-close-confirm__
+
+* `tx chan-close-confirm --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-connection <B_CONNECTION_ID> --b-port <B_PORT_ID> --a-port <A_PORT_ID> --b-channel <B_CHANNEL_ID> --a-channel <A_CHANNEL_ID>`
+
+__upgrade-chain__
+
+* `tx upgrade-chain [OPTIONS] --receiver-chain <RECEIVER_CHAIN_ID> --sender-chain <SENDER_CHAIN_ID> --sender-client <SENDER_CLIENT_ID> --amount <AMOUNT> --height-offset <HEIGHT_OFFSET>`
+    * Optional: `[--denom <DENOM>] [--new-chain <CHAIN_ID>] [--new-unbonding <UNBONDING_PERIOD>] [--upgrade-name <UPGRADE_NAME>]`
+
+__packet-recv__
+
+* `tx raw packet-recv --receiver-chain <RECEIVER_CHAIN_ID> --sender-chain <SENDER_CHAIN_ID> --sender-port <SENDER_PORT_ID> --sender-channel <SENDER_CHANNEL_ID>`
+
+__packet-ack__
+
+* `tx packet-ack --receiver-chain <RECEIVER_CHAIN_ID> --sender-chain <SENDER_CHAIN_ID> --sender-port <SENDER_PORT_ID> --sender-channel <SENDER_CHANNEL_ID>`
+
+__ft-transfer__
+
+* `tx ft-transfer [OPTIONS] --receiver-chain <RECEIVER_CHAIN_ID> --sender-chain <SENDER_CHAIN_ID> --sender-port <SENDER_PORT_ID> --sender-channel <SENDER_CHANNEL_ID> --amount <AMOUNT>`
+    * Optional: `[--denom <DENOM>] [--key-name <KEY_NAME>] [--number-msgs <NUMBER_MSGS>] [--receiver <RECEIVER>] [--timeout-height-offset <TIMEOUT_HEIGHT_OFFSET>] [--timeout-seconds <TIMEOUT_SECONDS>]`
+
 ## Status
 
 Proposed.
@@ -185,6 +248,10 @@ The following are not yet implemented:
 * Updating `query channel ends` to `query channel full`
 
 The PR which updates the flags for all the commands as described in this ADR: [#2275](https://github.com/informalsystems/ibc-rs/pull/2275)
+
+__07.07.22__
+
+Added `tx raw` commands to the ADR
 
 __08.07.22__
 
