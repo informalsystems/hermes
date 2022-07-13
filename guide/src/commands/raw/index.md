@@ -34,7 +34,6 @@ In the command template above:
 - `ibc-datagram` - identifies the "main" IBC message that is being sent, e.g. `conn-init`, `conn-try`, `chan-open-init`, etc. To ensure successful processing on the receiving chain, the majority of these commands build and send two messages: one `UpdateClient` message followed by the actual IBC message. These two messages are included in a single transaction. This is done for all IBC datagrams that include proofs collected from the source chain.
 
     The messages that do not require proofs are:
-    - `MsgCreateClient` (`create-client` command),
     - `MsgConnectionOpenInit` (`conn-open-init` command),
     - `MsgChannelOpenInit` (`chan-open-init` command),
     - `MsgChannelCloseInit` (`chan-close-init` command) and

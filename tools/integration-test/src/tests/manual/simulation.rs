@@ -59,7 +59,7 @@ impl BinaryChannelTest for SimulationTest {
 }
 
 /**
-   Perform the same operation as `hermes tx raw ft-transfer`.
+   Perform the same operation as `hermes tx ft-transfer`.
 
    The function call skips the checks done in the CLI, as we already
    have the necessary information given to us by the test framework.
