@@ -73,6 +73,14 @@ pub mod default {
     pub fn connection_delay() -> Duration {
         ZERO_DURATION
     }
+
+    pub fn base_divider() -> u64 {
+        10
+    }
+
+    pub fn exponent_divider() -> u32 {
+        6
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -360,6 +368,11 @@ pub struct ChainConfig {
     pub memo_prefix: Memo,
     #[serde(default, with = "self::proof_specs")]
     pub proof_specs: ProofSpecs,
+
+    #[serde(default = "default::base_divider")]
+    pub base_divider: u64,
+    #[serde(default = "default::exponent_divider")]
+    pub exponent_divider: u32,
 
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     /// The trust threshold defines what fraction of the total voting power of a known

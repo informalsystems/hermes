@@ -41,7 +41,12 @@ pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
         //
         // Example input that overflows, from sifchain-1: `349999631379421794336`.
         //
-        if let Some(_scaled_amount) = scale_down(amount) {
+        let chain_config = chain.config().unwrap();
+        if let Some(_scaled_amount) = scale_down(
+            amount,
+            chain_config.base_divider,
+            chain_config.exponent_divider,
+        ) {
             telemetry!(
                 wallet_balance,
                 &chain.id(),
@@ -62,8 +67,8 @@ pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
 
 /// Scale down the given amount by a factor of 10^6,
 /// and return it as a `u64` if it fits.
-fn scale_down(amount: U256) -> Option<u64> {
-    amount.div(10_u64.pow(6)).try_into().ok()
+fn scale_down(amount: U256, base: u64, exponent: u32) -> Option<u64> {
+    amount.div(base.pow(exponent)).try_into().ok()
 }
 
 #[cfg(test)]
@@ -76,7 +81,7 @@ mod tests {
         let u: U256 =
             U256::from_dec_str("349999631379421794336").expect("failed to parse into U256");
 
-        let s = scale_down(u);
+        let s = scale_down(u, 10, 6);
         assert_eq!(s, Some(349999631379421_u64));
     }
 }

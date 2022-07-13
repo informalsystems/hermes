@@ -188,6 +188,13 @@ clock_drift = '5s'
 # Note: This MUST be the same as the `max_expected_time_per_block` genesis parameter for Tendermint chains.
 max_block_time = '30s'
 
+# Specify the base and exponent used to convert a balance to a readible balance.
+# E.g. with base_divier = 10 and exponent_divider = 6 the balance will be converted
+# from 10^6 to 1.
+# Default is base_divider = 10 and exponent_divider 6
+base_divider = 10
+exponent_divider = 6
+
 # Specify the amount of time to be used as the light client trusting period.
 # It should be significantly less than the unbonding period
 # (e.g. unbonding period = 3 weeks, trusting period = 2 weeks).

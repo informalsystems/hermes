@@ -151,6 +151,8 @@ impl FullNode {
             address_type: Default::default(),
             memo_prefix: Default::default(),
             proof_specs: Default::default(),
+            base_divider: Default::default(),
+            exponent_divider: Default::default(),
         })
     }
 
