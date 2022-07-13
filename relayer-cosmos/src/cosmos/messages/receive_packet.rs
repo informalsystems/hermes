@@ -7,13 +7,13 @@ use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_framework::traits::messages::receive_packet::ReceivePacketMessageBuilder;
 
+use crate::cosmos::context::relay::CosmosRelayContext;
 use crate::cosmos::error::Error;
-use crate::cosmos::handler::CosmosRelayHandler;
 use crate::cosmos::message::CosmosIbcMessage;
 
 #[async_trait]
-impl<SrcChain, DstChain> ReceivePacketMessageBuilder<CosmosRelayHandler<SrcChain, DstChain>>
-    for CosmosRelayHandler<SrcChain, DstChain>
+impl<SrcChain, DstChain> ReceivePacketMessageBuilder<CosmosRelayContext<SrcChain, DstChain>>
+    for CosmosRelayContext<SrcChain, DstChain>
 where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,

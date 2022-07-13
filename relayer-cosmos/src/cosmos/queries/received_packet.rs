@@ -5,12 +5,12 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::QueryUnreceivedPacketsRequest;
 use ibc_relayer_framework::traits::queries::received_packet::ReceivedPacketQuerier;
 
+use crate::cosmos::context::chain::CosmosChainContext;
 use crate::cosmos::error::Error;
-use crate::cosmos::handler::CosmosChainHandler;
 
 #[async_trait]
-impl<Chain, Counterparty> ReceivedPacketQuerier<CosmosChainHandler<Counterparty>>
-    for CosmosChainHandler<Chain>
+impl<Chain, Counterparty> ReceivedPacketQuerier<CosmosChainContext<Counterparty>>
+    for CosmosChainContext<Chain>
 where
     Chain: ChainHandle,
     Counterparty: ChainHandle,

@@ -7,9 +7,9 @@ use ibc::Height;
 use ibc_relayer_framework::traits::core::Async;
 use ibc_relayer_framework::traits::packet::IbcPacket;
 
-use crate::cosmos::handler::CosmosChainHandler;
+use crate::cosmos::context::chain::CosmosChainContext;
 
-impl<SrcChain, DstChain> IbcPacket<CosmosChainHandler<SrcChain>, CosmosChainHandler<DstChain>>
+impl<SrcChain, DstChain> IbcPacket<CosmosChainContext<SrcChain>, CosmosChainContext<DstChain>>
     for Packet
 where
     SrcChain: Async,

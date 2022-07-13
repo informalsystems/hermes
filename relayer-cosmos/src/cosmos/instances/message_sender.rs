@@ -7,10 +7,11 @@ use ibc_relayer_framework::traits::ibc_message_sender::{
 use ibc_relayer_framework::traits::message_sender::MessageSender;
 use ibc_relayer_framework::traits::target::{DestinationTarget, SourceTarget};
 
-use crate::cosmos::handler::{CosmosChainHandler, CosmosRelayHandler};
+use crate::cosmos::context::chain::CosmosChainContext;
+use crate::cosmos::context::relay::CosmosRelayContext;
 use crate::cosmos::message_sender::CosmosBaseMessageSender;
 
-pub fn base_message_sender<Chain>() -> impl MessageSender<CosmosChainHandler<Chain>>
+pub fn base_message_sender<Chain>() -> impl MessageSender<CosmosChainContext<Chain>>
 where
     Chain: ChainHandle,
 {
@@ -18,7 +19,7 @@ where
 }
 
 pub fn base_source_message_sender<SrcChain, DstChain>(
-) -> impl IbcMessageSender<CosmosRelayHandler<SrcChain, DstChain>, SourceTarget>
+) -> impl IbcMessageSender<CosmosRelayContext<SrcChain, DstChain>, SourceTarget>
 where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
@@ -27,7 +28,7 @@ where
 }
 
 pub fn base_destination_message_sender<SrcChain, DstChain>(
-) -> impl IbcMessageSender<CosmosRelayHandler<SrcChain, DstChain>, DestinationTarget>
+) -> impl IbcMessageSender<CosmosRelayContext<SrcChain, DstChain>, DestinationTarget>
 where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
@@ -36,7 +37,7 @@ where
 }
 
 pub fn source_update_client_message_sender<SrcChain, DstChain>(
-) -> impl IbcMessageSender<CosmosRelayHandler<SrcChain, DstChain>, SourceTarget>
+) -> impl IbcMessageSender<CosmosRelayContext<SrcChain, DstChain>, SourceTarget>
 where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
@@ -45,7 +46,7 @@ where
 }
 
 pub fn destination_update_client_message_sender<SrcChain, DstChain>(
-) -> impl IbcMessageSender<CosmosRelayHandler<SrcChain, DstChain>, DestinationTarget>
+) -> impl IbcMessageSender<CosmosRelayContext<SrcChain, DstChain>, DestinationTarget>
 where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
@@ -54,7 +55,7 @@ where
 }
 
 pub fn source_message_sender_context<SrcChain, DstChain>(
-    handler: &CosmosRelayHandler<SrcChain, DstChain>,
+    handler: &CosmosRelayContext<SrcChain, DstChain>,
 ) -> &impl IbcMessageSenderContext<SourceTarget>
 where
     SrcChain: ChainHandle,
@@ -64,7 +65,7 @@ where
 }
 
 pub fn destination_message_sender_context<SrcChain, DstChain>(
-    handler: &CosmosRelayHandler<SrcChain, DstChain>,
+    handler: &CosmosRelayContext<SrcChain, DstChain>,
 ) -> &impl IbcMessageSenderContext<DestinationTarget>
 where
     SrcChain: ChainHandle,

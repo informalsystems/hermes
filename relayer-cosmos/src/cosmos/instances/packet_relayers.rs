@@ -8,11 +8,11 @@ use ibc_relayer_framework::traits::packet_relayer::PacketRelayer;
 use ibc_relayer_framework::traits::packet_relayers::ack_packet::AckPacketRelayer;
 use ibc_relayer_framework::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
 
-use crate::cosmos::handler::CosmosRelayHandler;
+use crate::cosmos::context::relay::CosmosRelayContext;
 
 pub fn full_packet_relayer<ChainA, ChainB>(
     max_retry: usize,
-) -> impl PacketRelayer<CosmosRelayHandler<ChainA, ChainB>>
+) -> impl PacketRelayer<CosmosRelayContext<ChainA, ChainB>>
 where
     ChainA: ChainHandle,
     ChainB: ChainHandle,
@@ -31,7 +31,7 @@ where
 }
 
 pub fn receive_packet_relayer<ChainA, ChainB>(
-) -> impl ReceivePacketRelayer<CosmosRelayHandler<ChainA, ChainB>>
+) -> impl ReceivePacketRelayer<CosmosRelayContext<ChainA, ChainB>>
 where
     ChainA: ChainHandle,
     ChainB: ChainHandle,
@@ -40,7 +40,7 @@ where
 }
 
 pub fn ack_packet_relayer<ChainA, ChainB>(
-) -> impl AckPacketRelayer<CosmosRelayHandler<ChainA, ChainB>>
+) -> impl AckPacketRelayer<CosmosRelayContext<ChainA, ChainB>>
 where
     ChainA: ChainHandle,
     ChainB: ChainHandle,

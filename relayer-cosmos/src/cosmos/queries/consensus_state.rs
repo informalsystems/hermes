@@ -10,11 +10,11 @@ use ibc_relayer_framework::traits::queries::consensus_state::{
     ConsensusStateContext, ConsensusStateQuerier,
 };
 
+use crate::cosmos::context::chain::CosmosChainContext;
 use crate::cosmos::error::Error;
-use crate::cosmos::handler::CosmosChainHandler;
 
-impl<Chain, Counterparty> ConsensusStateContext<CosmosChainHandler<Counterparty>>
-    for CosmosChainHandler<Chain>
+impl<Chain, Counterparty> ConsensusStateContext<CosmosChainContext<Counterparty>>
+    for CosmosChainContext<Chain>
 where
     Chain: Async,
     Counterparty: Async,
@@ -23,8 +23,8 @@ where
 }
 
 #[async_trait]
-impl<Chain, Counterparty> ConsensusStateQuerier<CosmosChainHandler<Counterparty>>
-    for CosmosChainHandler<Chain>
+impl<Chain, Counterparty> ConsensusStateQuerier<CosmosChainContext<Counterparty>>
+    for CosmosChainContext<Chain>
 where
     Chain: ChainHandle,
     Counterparty: Async,

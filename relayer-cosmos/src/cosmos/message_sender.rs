@@ -11,24 +11,25 @@ use ibc_relayer_framework::traits::message_sender::{MessageSender, MessageSender
 use ibc_relayer_framework::traits::target::ChainTarget;
 use tendermint::abci::responses::Event;
 
+use crate::cosmos::context::chain::CosmosChainContext;
+use crate::cosmos::context::relay::CosmosRelayContext;
 use crate::cosmos::error::Error;
-use crate::cosmos::handler::{CosmosChainHandler, CosmosRelayHandler};
 use crate::cosmos::message::CosmosIbcMessage;
 
 pub struct CosmosBaseMessageSender;
 
 impl<SrcChain, DstChain, Target> IbcMessageSenderContext<Target>
-    for CosmosRelayHandler<SrcChain, DstChain>
+    for CosmosRelayContext<SrcChain, DstChain>
 where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
-    Target: ChainTarget<CosmosRelayHandler<SrcChain, DstChain>>,
+    Target: ChainTarget<CosmosRelayContext<SrcChain, DstChain>>,
     SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>: IbcMessageSender<Self, Target>,
 {
     type IbcMessageSender = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
 }
 
-impl<Chain> MessageSenderContext for CosmosChainHandler<Chain>
+impl<Chain> MessageSenderContext for CosmosChainContext<Chain>
 where
     Chain: ChainHandle,
 {
@@ -36,12 +37,12 @@ where
 }
 
 #[async_trait]
-impl<Chain> MessageSender<CosmosChainHandler<Chain>> for CosmosBaseMessageSender
+impl<Chain> MessageSender<CosmosChainContext<Chain>> for CosmosBaseMessageSender
 where
     Chain: ChainHandle,
 {
     async fn send_messages(
-        context: &CosmosChainHandler<Chain>,
+        context: &CosmosChainContext<Chain>,
         messages: Vec<CosmosIbcMessage>,
     ) -> Result<Vec<Vec<Event>>, Error> {
         let signer = &context.signer;

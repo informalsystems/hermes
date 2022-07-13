@@ -6,10 +6,10 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_framework::traits::core::Async;
 use ibc_relayer_framework::traits::queries::status::{ChainStatus, ChainStatusQuerier};
 
+use crate::cosmos::context::chain::CosmosChainContext;
 use crate::cosmos::error::Error;
-use crate::cosmos::handler::CosmosChainHandler;
 
-impl<Chain> ChainStatus<CosmosChainHandler<Chain>> for CosmosChainStatus
+impl<Chain> ChainStatus<CosmosChainContext<Chain>> for CosmosChainStatus
 where
     Chain: Async,
 {
@@ -23,7 +23,7 @@ where
 }
 
 #[async_trait]
-impl<Chain> ChainStatusQuerier for CosmosChainHandler<Chain>
+impl<Chain> ChainStatusQuerier for CosmosChainContext<Chain>
 where
     Chain: ChainHandle,
 {

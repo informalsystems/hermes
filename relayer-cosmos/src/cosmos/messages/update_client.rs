@@ -8,15 +8,15 @@ use ibc_relayer_framework::traits::messages::update_client::{
     UpdateClientContext, UpdateClientMessageBuilder,
 };
 
+use crate::cosmos::context::relay::CosmosRelayContext;
 use crate::cosmos::error::Error;
-use crate::cosmos::handler::CosmosRelayHandler;
 use crate::cosmos::message::CosmosIbcMessage;
 use crate::cosmos::target::CosmosChainTarget;
 
 pub struct CosmosUpdateClient;
 
 impl<SrcChain, DstChain, Target> UpdateClientContext<Target>
-    for CosmosRelayHandler<SrcChain, DstChain>
+    for CosmosRelayContext<SrcChain, DstChain>
 where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
@@ -27,7 +27,7 @@ where
 
 #[async_trait]
 impl<SrcChain, DstChain, Target>
-    UpdateClientMessageBuilder<CosmosRelayHandler<SrcChain, DstChain>, Target>
+    UpdateClientMessageBuilder<CosmosRelayContext<SrcChain, DstChain>, Target>
     for CosmosUpdateClient
 where
     SrcChain: ChainHandle,
@@ -35,7 +35,7 @@ where
     Target: CosmosChainTarget<SrcChain, DstChain>,
 {
     async fn build_update_client_messages(
-        context: &CosmosRelayHandler<SrcChain, DstChain>,
+        context: &CosmosRelayContext<SrcChain, DstChain>,
         height: &Height,
     ) -> Result<Vec<CosmosIbcMessage>, Error> {
         let messages = Target::target_foreign_client(context)
