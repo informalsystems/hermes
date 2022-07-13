@@ -4,95 +4,75 @@ Hermes can relay packets over all current or future paths between the configured
 
 Follow the steps below to connect three chains together and relay packets between them:
 
-1. Paste the following configuration in the standard Hermes configuration file at `~/.hermes/config.toml`:
+1. Add the config for the third chain to the existing `$HOME/.gm/gm.toml` file
 
     ```toml
     [global]
-    log_level = 'info'
+    add_to_hermes = false
+    auto_maintain_config = true
+    extra_wallets = 2
+    gaiad_binary = "~/go/bin/gaiad"
+    hdpath = ""
+    home_dir = "$HOME/.gm"
+    ports_start_at = 27000
+    validator_mnemonic = ""
+    wallet_mnemonic = ""
 
-    [mode]
+    [global.hermes]
+        binary = "$HOME/ibc-rs/target/debug/hermes" #change this path according to your setup
+        config = "./hermes"
+        log_level = "info"
+        telemetry_enabled = true
+        telemetry_host = "127.0.0.1"
+        telemetry_port = 3001
 
-    [mode.clients]
-    enabled = true
-    refresh = true
-    misbehaviour = true
+    [ibc-0]
+    ports_start_at = 27010
 
-    [mode.connections]
-    enabled = false
+    [ibc-1]
+    ports_start_at = 27020
 
-    [mode.channels]
-    enabled = false
+    [node-0]
+    add_to_hermes = true
+    network = "ibc-0"
+    ports_start_at = 27030
 
-    [mode.packets]
-    enabled = true
-    clear_interval = 100
-    clear_on_start = true
-    tx_confirmation = true
+    [node-1]
+    add_to_hermes = true
+    network = "ibc-1"
+    ports_start_at = 27040
 
-    [[chains]]
-    id = 'ibc-0'
-    rpc_addr = 'http://127.0.0.1:26657'
-    grpc_addr = 'http://127.0.0.1:9090'
-    websocket_addr = 'ws://127.0.0.1:26657/websocket'
-    rpc_timeout = '10s'
-    account_prefix = 'cosmos'
-    key_name = 'testkey'
-    store_prefix = 'ibc'
-    max_gas = 2000000
-    gas_price = { price = 0.001, denom = 'stake' }
-    gas_multiplier = 1.0
-    clock_drift = '5s'
-    trusting_period = '14days'
-    trust_threshold = { numerator = '1', denominator = '3' }
+    [ibc-2]
+    ports_start_at = 27050
 
-    [[chains]]
-    id = 'ibc-1'
-    rpc_addr = 'http://127.0.0.1:26557'
-    grpc_addr = 'http://127.0.0.1:9091'
-    websocket_addr = 'ws://127.0.0.1:26557/websocket'
-    rpc_timeout = '10s'
-    account_prefix = 'cosmos'
-    key_name = 'testkey'
-    store_prefix = 'ibc'
-    max_gas = 2000000
-    gas_price = { price = 0.001, denom = 'stake' }
-    gas_multiplier = 1.0
-    clock_drift = '5s'
-    trusting_period = '14days'
-    trust_threshold = { numerator = '1', denominator = '3' }
-
-    [[chains]]
-    id = 'ibc-2'
-    rpc_addr = 'http://127.0.0.1:26457'
-    grpc_addr = 'http://127.0.0.1:9092'
-    websocket_addr = 'ws://127.0.0.1:26457/websocket'
-    rpc_timeout = '10s'
-    account_prefix = 'cosmos'
-    key_name = 'testkey'
-    store_prefix = 'ibc'
-    max_gas = 2000000
-    gas_price = { price = 0.001, denom = 'stake' }
-    gas_multiplier = 1.0
-    clock_drift = '5s'
-    trusting_period = '14days'
-    trust_threshold = { numerator = '1', denominator = '3' }
+    [node-2]
+    add_to_hermes = true
+    network = "ibc-2"
+    ports_start_at = 27060
     ```
 
-    This configuration has three chains `ibc-0`, `ibc-1` and `ibc-2`.
-
-2. Run the `dev-env` script with the parameters below to start three chains:
+2. Start the third chain
 
     ```bash
-    ./scripts/dev-env ~/.hermes/config.toml ibc-0 ibc-1 ibc-2
+    gm start
+    ```
+3. Update the `$HOME/.hermes/.config.toml` file
+
+    ```bash
+    gm hermes config
+    ```
+4. Associate the keys to the new chain
+
+    ```bash
+    gm hermes keys
+    ```
+5. Check the status of the chains
+
+    ```bash
+    gm status
     ```
 
-    > __NOTE__: The script will prompt you to delete the data folder, double check the path and
-    > if it points to the `data` directory in the current directory, answer __'yes'__.
-
-    The script configures and starts three __`gaiad`__ instances, named __`ibc-0`__, and __`ibc-1`__, and __`ibc-2`__.
-
-
-3. Create a channel between `ibc-0` and `ibc-1`. Since this is the first time
+6. Create a channel between `ibc-0` and `ibc-1`. Since this is the first time
    we're connecting these two chains, we'll need to spin up a client and a
    connection between them as well. The `create channel` command gives us the
    convenient option to create a client and a connection. Keep in mind that this
@@ -162,7 +142,7 @@ Follow the steps below to connect three chains together and relay packets betwee
 
     Note that the channel identifier on both `ibc-0` and `ibc-1` is `channel-0`.
 
-4. Create a channel between `ibc-1` and `ibc-2` using the structure of the
+7. Create a channel between `ibc-1` and `ibc-2` using the structure of the
    previous invocation we used to create a channel between `ibc-0` and `ibc-1`:
 
     ```shell
@@ -225,7 +205,7 @@ Follow the steps below to connect three chains together and relay packets betwee
 
     Note that the channel identifier on `ibc-1` is `channel-1`, and on `ibc-2` it is `channel-0`.
 
-5. Start Hermes using the `start` command:
+8. Start Hermes using the `start` command:
 
     ```shell
     hermes start
@@ -234,7 +214,7 @@ Follow the steps below to connect three chains together and relay packets betwee
    Hermes will first relay the pending packets that have not been relayed and then
    start passive relaying by listening to and acting on packet events.
 
-6. In a separate terminal, use the `ft-transfer` command to send:
+9. In a separate terminal, use the `ft-transfer` command to send:
 
     - Two packets from `ibc-0` to `ibc-1` from source channel `channel-0`
 
@@ -282,7 +262,7 @@ Follow the steps below to connect three chains together and relay packets betwee
       ]
       ```
 
-7. Observe the output on the relayer terminal, verify that the send events are processed, and that the `recv_packets` are sent out.
+10. Observe the output on the relayer terminal, verify that the send events are processed, and that the `recv_packets` are sent out.
 
     ```text
     (...)
@@ -311,8 +291,8 @@ Follow the steps below to connect three chains together and relay packets betwee
 
     (...)
     ```
-
-8. Query the pending packets and acknowledgments on `ibc-1` and `ibc-2` from a different terminal:
+    
+11. Query the unreceived packets and acknowledgments on `ibc-1` and `ibc-2` from a different terminal:
 
     ```shell
     hermes query packet pending-sends --chain ibc-1 --port transfer --channel channel-0

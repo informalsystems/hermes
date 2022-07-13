@@ -187,7 +187,6 @@ gaiad version --log_level error --long | head -n4
     txhash: 50CC1C39FBB14F99580A916ADE7F02883FFCC35D7862153F16BE86138151E17C
     ```
 
-
 5. Test the `upgrade client` CLI
 
     The following command waits for the reference chain `ibc-0` to halt and then performs the upgrade for client `07-tendermint-0` on `ibc-1`. It outputs two events, one for the updated client state,

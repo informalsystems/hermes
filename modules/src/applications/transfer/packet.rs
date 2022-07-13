@@ -10,6 +10,7 @@ use super::{Amount, PrefixedCoin, PrefixedDenom};
 use crate::signer::Signer;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(try_from = "RawPacketData", into = "RawPacketData")]
 pub struct PacketData {
     pub token: PrefixedCoin,
     pub sender: Signer,

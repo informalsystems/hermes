@@ -142,6 +142,7 @@ impl CompileCmd {
             .type_attribute(".ibc.core.connection.v1.Version", attrs_jsonschema)
             .type_attribute(".ibc.core.types.v1", attrs_serde)
             .type_attribute(".ibc.applications.transfer.v1", attrs_serde)
+            .type_attribute(".ibc.applications.transfer.v2", attrs_serde)
             .type_attribute(
                 ".ibc.applications.interchain_accounts.controller.v1",
                 attrs_serde,
