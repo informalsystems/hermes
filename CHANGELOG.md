@@ -27,9 +27,14 @@ eg. feature, bug fix, etc.
 
 #### BREAKING CHANGES
 
-- New ADR to describe unifying CLI flags
+- New ADR which describes the changes to the Hermes commands, specifically
+  the move to flags instead of positional arguments.
   ([#594](https://github.com/informalsystems/ibc-rs/issues/594))
-- Merged commands `keys add` and `keys restore` into single command `keys add`. The flag to specify the key name for the CLI command `keys add` has been changed from `-n` to `-k`. Restoring a key now takes a file containing the mnemonic as input instead of directly taking the mnemonic. ([#1075](https://github.com/informalsystems/ibc-rs/issues/1075))
+- Merged commands `keys add` and `keys restore` into single command `keys add`.
+  The flag to specify the key name for the CLI command `keys add` has been changed
+  from `-n` to `-k`. Restoring a key now takes a file containing the mnemonic as
+  input instead of directly taking the mnemonic.
+  ([#1075](https://github.com/informalsystems/ibc-rs/issues/1075))
 - Deprecate `gas_adjustment` setting in favor of new `gas_multiplier` setting
   ([#2174](https://github.com/informalsystems/ibc-rs/issues/2174))
 - Updated all CLI commands to take flags instead of positional arguments.
@@ -124,12 +129,12 @@ eg. feature, bug fix, etc.
 
 #### IMPROVEMENTS
 
-- Added handler for SDK Err(13) in order to output an understanble error
+- Added handler for SDK error 13 in order to output an understandable error
   message. ([#1400](https://github.com/informalsystems/ibc-rs/issues/1400))
 - Do not retry indefinitely on command handling failure in the packet worker
   ([#2155](https://github.com/informalsystems/ibc-rs/issues/2155))
-- Consolidate ChainEndpoint::proven_* methods with their corresponding query_*()
-  form ([#2223](https://github.com/informalsystems/ibc-rs/issues/2223))
+- Consolidate `ChainEndpoint::proven_*` methods with their corresponding `query_*` form
+  ([#2223](https://github.com/informalsystems/ibc-rs/issues/2223))
 - Reduce relaying delay when some account mismatch errors occur during Tx
   simulation ([#2249](https://github.com/informalsystems/ibc-rs/issues/2249))
 
@@ -137,10 +142,9 @@ eg. feature, bug fix, etc.
 
 #### FEATURES
 
-- Added new metrics to track the number of relayed SendPacket and
-  WriteAcknowledgement, the sequence number and the timestamp of the
-  oldest pending SendPacket ([#2175](https://github.com/informalsystems/ibc-
-  rs/issues/2175))
+- Added new metrics to track the number of relayed `SendPacket` and `WriteAcknowledgement`
+  messages, the sequence number and the timestamp of the oldest pending `SendPacket`
+  ([#2175](https://github.com/informalsystems/ibc-rs/issues/2175))
 
 
 ## v0.15.0
