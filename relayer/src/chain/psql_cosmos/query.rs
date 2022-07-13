@@ -1,6 +1,7 @@
 use eyre::WrapErr;
 use prost::Message;
-use sqlx::PgPool;
+use sqlx::{types::Json, PgPool};
+
 use tendermint::abci::transaction::Hash;
 use tendermint::abci::{self, responses::Codespace, tag::Tag, Event, Gas, Info, Log};
 use tendermint_proto::abci::TxResult;
@@ -16,6 +17,7 @@ use ibc::events::{self, from_tx_response_event, IbcEvent};
 use ibc::Height as ICSHeight;
 
 use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
+use crate::chain::psql_cosmos::update::{IbcData, IbcSnapshot};
 use crate::chain::requests::{
     QueryBlockRequest, QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest,
     QueryTxRequest,
@@ -673,4 +675,36 @@ pub async fn block_search_response_from_packet_query(
         .collect();
 
     Ok(events)
+}
+
+// TODO to get rid of this struct??
+// impl FromRow for IbcSnapshot
+#[derive(Debug, sqlx::FromRow)]
+struct IbcSnapshotJson {
+    pub height: f64,
+    pub json_data: Json<IbcData>,
+}
+
+pub async fn query_ibc_data(pool: &PgPool, query_height: u64) -> Result<IbcSnapshot, Error> {
+    // At this point it is assumed that the ibc blob is saved for a height only on start
+    // and everytime there is a change.
+    // The query therefore should get the entry with highest height smaller than the query height.
+    let sql_select_string = format!(
+        "SELECT * FROM ibc_json WHERE height=\
+        (SELECT MAX(height) FROM ibc_json WHERE height <={})",
+        query_height
+    );
+
+    let result = sqlx::query_as::<_, IbcSnapshotJson>(sql_select_string.as_str())
+        .fetch_one(pool)
+        .await
+        .map_err(Error::sqlx)?;
+
+    let response = IbcSnapshot {
+        height: result.height as u64,
+        json_data: IbcData {
+            connections: result.json_data.connections.clone(),
+        },
+    };
+    Ok(response)
 }

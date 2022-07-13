@@ -611,6 +611,12 @@ fn process_batch<Chain: ChainHandle>(
 
     telemetry!(received_event_batch, batch.tracking_id);
 
+    let src1 = registry
+        .get_or_spawn(&src_chain.id())
+        .map_err(Error::spawn)?;
+
+    handle_events_locally(&src1, batch);
+
     let collected = collect_events(config, workers, &src_chain, batch);
 
     // If there is a NewBlock event, forward this event first to any workers affected by it.
@@ -690,6 +696,15 @@ fn process_batch<Chain: ChainHandle>(
     }
 
     Ok(())
+}
+
+pub fn handle_events_locally<Chain: ChainHandle>(chain: &Chain, batch: &EventBatch) {
+    match chain.try_handle_ibc_event_batch(batch.clone()) {
+        Ok(()) => {}
+        Err(e) => {
+            error!("error while handling batch {}", e);
+        }
+    }
 }
 
 /// Process the given batch if it does not contain any errors,

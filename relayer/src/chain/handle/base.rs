@@ -47,6 +47,7 @@ use crate::{
     connection::ConnectionMsgType,
     denom::DenomTrace,
     error::Error,
+    event::monitor::EventBatch,
     keyring::KeyEntry,
 };
 
@@ -160,6 +161,10 @@ impl ChainHandle for BaseChainHandle {
 
     fn query_application_status(&self) -> Result<ChainStatus, Error> {
         self.send(|reply_to| ChainRequest::QueryApplicationStatus { reply_to })
+    }
+
+    fn handle_ibc_event_batch(&self, batch: EventBatch) -> Result<(), Error> {
+        self.send(|reply_to| ChainRequest::HandleIbcEventBatch { batch, reply_to })
     }
 
     fn query_clients(

@@ -43,6 +43,7 @@ use crate::chain::tracking::TrackedMsgs;
 use crate::config::ChainConfig;
 use crate::denom::DenomTrace;
 use crate::error::Error;
+use crate::event::monitor::EventBatch;
 use crate::util::lock::LockExt;
 use crate::{connection::ConnectionMsgType, keyring::KeyEntry};
 
@@ -175,6 +176,11 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     fn query_latest_height(&self) -> Result<Height, Error> {
         self.inc_metric("query_latest_height");
         self.inner().query_latest_height()
+    }
+
+    fn handle_ibc_event_batch(&self, batch: EventBatch) -> Result<(), Error> {
+        self.inc_metric("handle_ibc_event_batch");
+        self.inner().handle_ibc_event_batch(batch)
     }
 
     fn query_clients(

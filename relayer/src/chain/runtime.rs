@@ -315,6 +315,10 @@ where
                             self.query_application_status(reply_to)?
                         },
 
+                        Ok(ChainRequest::HandleIbcEventBatch { batch, reply_to }) => {
+                            self.handle_ibc_event_batch(batch, reply_to)?
+                        },
+
                         Ok(ChainRequest::QueryClients { request, reply_to }) => {
                             self.query_clients(request, reply_to)?
                         },
@@ -620,6 +624,15 @@ where
         reply_to: ReplyTo<Vec<IdentifiedAnyClientState>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_clients(request);
+        reply_to.send(result).map_err(Error::send)
+    }
+
+    fn handle_ibc_event_batch(
+        &mut self,
+        batch: EventBatch,
+        reply_to: ReplyTo<()>,
+    ) -> Result<(), Error> {
+        let result = self.chain.handle_ibc_event_batch(batch);
         reply_to.send(result).map_err(Error::send)
     }
 

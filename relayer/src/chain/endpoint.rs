@@ -40,7 +40,7 @@ use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
 use crate::denom::DenomTrace;
 use crate::error::{Error, QUERY_PROOF_EXPECT_MSG};
-use crate::event::monitor::{EventReceiver, TxMonitorCmd};
+use crate::event::monitor::{EventBatch, EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 
@@ -150,6 +150,10 @@ pub trait ChainEndpoint: Sized {
 
     /// Query the latest height and timestamp the application is at
     fn query_application_status(&self) -> Result<ChainStatus, Error>;
+
+    fn handle_ibc_event_batch(&mut self, _batch: EventBatch) -> Result<(), Error> {
+        unimplemented!()
+    }
 
     /// Performs a query to retrieve the state of all clients that a chain hosts.
     fn query_clients(

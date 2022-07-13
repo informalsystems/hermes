@@ -6,9 +6,9 @@ use core::future::Future;
 use semver::Version;
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use tendermint_rpc::endpoint::broadcast::tx_sync;
+use tonic::metadata::AsciiMetadataValue;
 use tracing::{info, span, Level};
 
-use super::requests::{QueryBlockRequest, QueryTxRequest};
 use ibc::{
     core::{
         ics02_client::{
@@ -28,12 +28,15 @@ use ibc::{
     events::IbcEvent,
     Height,
 };
+use ibc_proto::ibc::core::connection::v1::QueryConnectionsResponse;
 
-use super::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::CosmosSdkChain;
 use crate::chain::psql_cosmos::batch::send_batched_messages_and_wait_commit;
-use crate::chain::psql_cosmos::query::{query_blocks, query_txs};
+use crate::chain::psql_cosmos::query::{query_blocks, query_ibc_data, query_txs};
+use crate::chain::psql_cosmos::update::init_dbs;
+use crate::chain::psql_cosmos::update::{IbcData, IbcSnapshot};
 use crate::denom::DenomTrace;
+use crate::event::monitor::EventBatch;
 use crate::{
     account::Balance,
     chain::{
@@ -49,8 +52,12 @@ use crate::{
     light_client::{tendermint::LightClient as TmLightClient, LightClient, Verified},
 };
 
+use super::cosmos::query::account::get_or_fetch_account;
+use super::requests::{QueryBlockRequest, QueryTxRequest};
+
 pub mod batch;
 pub mod query;
+pub mod update;
 pub mod wait;
 
 flex_error::define_error! {
@@ -65,6 +72,7 @@ pub struct PsqlChain {
     chain: CosmosSdkChain,
     pool: PgPool,
     rt: Arc<tokio::runtime::Runtime>,
+    starting: bool,
 }
 
 impl PsqlChain {
@@ -107,7 +115,74 @@ impl PsqlChain {
         )
         .await
     }
+
+    fn query_connections_raw(
+        &self,
+        query_height: &QueryHeight,
+        request: QueryConnectionsRequest,
+    ) -> Result<QueryConnectionsResponse, Error> {
+        crate::time!("query_connections");
+        crate::telemetry!(query, self.id(), "query_connections");
+
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(
+                    self.chain.grpc_addr.clone(),
+                ),
+            )
+            .map_err(Error::grpc_transport)?;
+
+        let mut request = tonic::Request::new(request.into());
+        let height_param = AsciiMetadataValue::try_from(*query_height)?;
+
+        request
+            .metadata_mut()
+            .insert("x-cosmos-block-height", height_param);
+        Ok(self
+            .block_on(client.connections(request))
+            .map_err(Error::grpc_status)?
+            .into_inner())
+    }
+
+    fn ibc_snapshot(&self, query_height: &QueryHeight) -> Result<IbcSnapshot, Error> {
+        let QueryConnectionsResponse {
+            height,
+            connections,
+            ..
+        } =
+            self.query_connections_raw(query_height, QueryConnectionsRequest { pagination: None })?;
+
+        let response_height = height
+            .ok_or_else(|| Error::grpc_response_param("height".to_string()))?
+            .revision_height;
+
+        Ok(IbcSnapshot {
+            height: response_height,
+            json_data: IbcData { connections },
+        })
+    }
+
+    fn update_with_events(&mut self, batch: EventBatch) -> Result<(), Error> {
+        if self.starting {
+            let snapshot = self.ibc_snapshot(&QueryHeight::Specific(batch.height))?;
+            self.block_on(init_dbs(&self.pool.clone(), &snapshot))?;
+            self.starting = false;
+        }
+        for event in batch.events.iter() {
+            self.update_with_event(event)?;
+        }
+        Ok(())
+    }
+
+    fn update_with_event(&mut self, event: &IbcEvent) -> Result<(), Error> {
+        match event {
+            IbcEvent::NewBlock(b) => Ok(()),
+            IbcEvent::OpenInitConnection(oi) => Ok(()),
+            _ => Ok(()),
+        }
+    }
 }
+
 impl ChainEndpoint for PsqlChain {
     type LightBlock = <CosmosSdkChain as ChainEndpoint>::LightBlock;
 
@@ -135,7 +210,12 @@ impl ChainEndpoint for PsqlChain {
 
         let chain = CosmosSdkChain::bootstrap(config, rt.clone())?;
 
-        Ok(Self { chain, pool, rt })
+        Ok(Self {
+            chain,
+            pool,
+            rt,
+            starting: true,
+        })
     }
 
     fn init_light_client(&self) -> Result<Self::LightClient, Error> {
@@ -220,6 +300,12 @@ impl ChainEndpoint for PsqlChain {
         self.chain.query_application_status()
     }
 
+    fn handle_ibc_event_batch(&mut self, batch: EventBatch) -> Result<(), Error> {
+        crate::time!("handle_ibc_event_batch");
+        crate::telemetry!(query, self.id(), "handle_ibc_event_batch");
+        self.update_with_events(batch)
+    }
+
     fn query_clients(
         &self,
         request: QueryClientStatesRequest,
@@ -268,7 +354,18 @@ impl ChainEndpoint for PsqlChain {
         &self,
         request: QueryConnectionsRequest,
     ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
-        self.chain.query_connections(request)
+        let query_height = self
+            .chain
+            .query_application_status()?
+            .height
+            .revision_height();
+        let ibc_data = self.block_on(query_ibc_data(&self.pool, query_height))?;
+        Ok(ibc_data
+            .json_data
+            .connections
+            .into_iter()
+            .filter_map(|co| IdentifiedConnectionEnd::try_from(co).ok())
+            .collect())
     }
 
     fn query_client_connections(

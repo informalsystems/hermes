@@ -44,6 +44,7 @@ use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
 use crate::denom::DenomTrace;
 use crate::error::Error;
+use crate::event::monitor::EventBatch;
 use crate::keyring::KeyEntry;
 use crate::telemetry;
 
@@ -155,6 +156,10 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         }
 
         Ok(result)
+    }
+
+    fn handle_ibc_event_batch(&self, batch: EventBatch) -> Result<(), Error> {
+        self.inner.handle_ibc_event_batch(batch)
     }
 
     fn query_clients(

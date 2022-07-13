@@ -4,6 +4,8 @@ use core::fmt::{self, Debug};
 use crossbeam_channel as channel;
 use serde::Serialize;
 
+pub use base::BaseChainHandle;
+pub use counting::CountingChainHandle;
 use ibc::{
     core::{
         ics02_client::{
@@ -32,6 +34,7 @@ use ibc::{
 
 use crate::{
     account::Balance,
+    chain::ChainType,
     config::ChainConfig,
     connection::ConnectionMsgType,
     denom::DenomTrace,
@@ -60,9 +63,6 @@ use super::{
 mod base;
 mod cache;
 mod counting;
-
-pub use base::BaseChainHandle;
-pub use counting::CountingChainHandle;
 
 pub type CachingChainHandle = cache::CachingChainHandle<BaseChainHandle>;
 pub type CountingAndCachingChainHandle =
@@ -163,6 +163,11 @@ pub enum ChainRequest {
 
     QueryApplicationStatus {
         reply_to: ReplyTo<ChainStatus>,
+    },
+
+    HandleIbcEventBatch {
+        batch: EventBatch,
+        reply_to: ReplyTo<()>,
     },
 
     QueryClients {
@@ -406,6 +411,17 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
 
     fn query_latest_height(&self) -> Result<Height, Error> {
         Ok(self.query_application_status()?.height)
+    }
+
+    fn handle_ibc_event_batch(&self, _batch: EventBatch) -> Result<(), Error> {
+        unimplemented!()
+    }
+
+    fn try_handle_ibc_event_batch(&self, batch: EventBatch) -> Result<(), Error> {
+        if self.config().unwrap().r#type != ChainType::CosmosPsql {
+            return Ok(());
+        }
+        self.handle_ibc_event_batch(batch)
     }
 
     /// Performs a query to retrieve the state of all clients that a chain hosts.
