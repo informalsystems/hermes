@@ -333,6 +333,13 @@ pub struct TxUpgradeClientsCmd {
         help = "The height at which the reference chain halts for the client upgrade"
     )]
     reference_upgrade_height: u64,
+
+    #[clap(
+        long = "host-chain",
+        value_name = "HOST_CHAIN_ID",
+        help = "Identifier of the chain hosting the clients to be upgraded"
+    )]
+    host_chain_id: Option<ChainId>,
 }
 
 impl Runnable for TxUpgradeClientsCmd {
@@ -386,7 +393,10 @@ impl Runnable for TxUpgradeClientsCmd {
             .chains
             .iter()
             .filter_map(|chain| {
-                (self.reference_chain_id != chain.id).then(|| {
+                (self.reference_chain_id != chain.id
+                    && (self.host_chain_id.is_none()
+                        || self.host_chain_id == Some(chain.id.clone())))
+                .then(|| {
                     self.upgrade_clients_for_chain(
                         &config,
                         reference_chain.clone(),
@@ -938,6 +948,7 @@ mod tests {
             TxUpgradeClientsCmd {
                 reference_chain_id: ChainId::from_string("chain_id"),
                 reference_upgrade_height: 42,
+                host_chain_id: None,
             },
             TxUpgradeClientsCmd::parse_from(&[
                 "test",
@@ -945,6 +956,26 @@ mod tests {
                 "chain_id",
                 "--upgrade-height",
                 "42"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_upgrade_clients_host_chain() {
+        assert_eq!(
+            TxUpgradeClientsCmd {
+                reference_chain_id: ChainId::from_string("chain_id"),
+                reference_upgrade_height: 42,
+                host_chain_id: Some(ChainId::from_string("chain_host_id")),
+            },
+            TxUpgradeClientsCmd::parse_from(&[
+                "test",
+                "--reference-chain",
+                "chain_id",
+                "--upgrade-height",
+                "42",
+                "--host-chain",
+                "chain_host_id",
             ])
         )
     }
