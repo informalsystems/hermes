@@ -13,6 +13,7 @@ use ibc_relayer_framework::traits::ibc_message_sender::IbcMessageSenderContext;
 use ibc_relayer_framework::traits::relay_context::RelayContext;
 use ibc_relayer_framework::traits::sleep::SleepContext;
 use ibc_relayer_framework::traits::target::{DestinationTarget, SourceTarget};
+use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{channel, Sender};
 use tokio::time::sleep;
 
@@ -35,6 +36,7 @@ where
     pub dst_handle: CosmosChainContext<DstChain>,
     pub src_to_dst_client: ForeignClient<DstChain, SrcChain>,
     pub dst_to_src_client: ForeignClient<SrcChain, DstChain>,
+    pub runtime: Arc<Runtime>,
     pub src_message_sink:
         Sender<MessageBatch<CosmosChainContext<SrcChain>, CosmosChainContext<DstChain>>>,
     pub dst_message_sink:
@@ -56,11 +58,14 @@ where
         let (src_message_sink, src_message_receiver) = channel(batch_config.buffer_size);
         let (dst_message_sink, dst_message_receiver) = channel(batch_config.buffer_size);
 
+        let runtime = Arc::new(Runtime::new().unwrap());
+
         let context = Arc::new(Self {
             src_handle,
             dst_handle,
             src_to_dst_client,
             dst_to_src_client,
+            runtime: runtime.clone(),
             src_message_sink,
             dst_message_sink,
         });
@@ -68,12 +73,14 @@ where
         CosmosMessageSender::spawn_batch_message_handler::<_, SourceTarget>(
             context.clone(),
             batch_config.clone(),
+            &runtime,
             src_message_receiver,
         );
 
         CosmosMessageSender::spawn_batch_message_handler::<_, DestinationTarget>(
             context.clone(),
             batch_config.clone(),
+            &runtime,
             dst_message_receiver,
         );
 

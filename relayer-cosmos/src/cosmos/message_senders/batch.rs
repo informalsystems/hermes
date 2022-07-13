@@ -11,9 +11,9 @@ use ibc_relayer_framework::traits::relay_context::RelayContext;
 use ibc_relayer_framework::traits::target::ChainTarget;
 use ibc_relayer_framework::types::aliases::{IbcEvent, IbcMessage};
 use std::time::Instant;
+use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{error::TryRecvError, Receiver, Sender};
 use tokio::sync::oneshot::{channel as once_channel, Sender as OnceSender};
-use tokio::task;
 use tokio::time::sleep;
 
 #[derive(Debug, Clone)]
@@ -108,6 +108,7 @@ impl<Sender> BatchedMessageSender<Sender> {
     pub fn spawn_batch_message_handler<Relay, Target>(
         context: Arc<Relay>,
         config: BatchConfig,
+        runtime: &Runtime,
         receiver: Receiver<MessageBatch<Target::TargetChain, Target::CounterpartyChain>>,
     ) where
         Relay: RelayContext,
@@ -115,7 +116,7 @@ impl<Sender> BatchedMessageSender<Sender> {
         Sender: IbcMessageSender<Relay, Target>,
         Relay::Error: BatchError,
     {
-        task::spawn(async move {
+        runtime.spawn(async move {
             Self::run_loop(
                 &context,
                 config.max_message_count,
