@@ -617,4 +617,4 @@ Success: CreateClient(
 [profiling]: ./help.md#profiling
 [feature]: ./help.md#new-feature-request
 [patching]: ./help.md#patching-gaia
-[chan-close]: ./commands/raw/channel-close.md#channel-close-init
+[chan-close]: ./commands/tx/channel-close.md#channel-close-init
