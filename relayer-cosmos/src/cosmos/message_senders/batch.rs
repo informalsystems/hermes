@@ -11,10 +11,31 @@ use ibc_relayer_framework::traits::relay_context::RelayContext;
 use ibc_relayer_framework::traits::target::ChainTarget;
 use ibc_relayer_framework::types::aliases::{IbcEvent, IbcMessage};
 use std::time::Instant;
-use tokio::sync::mpsc::{channel, error::TryRecvError, Receiver, Sender};
+use tokio::sync::mpsc::{error::TryRecvError, Receiver, Sender};
 use tokio::sync::oneshot::{channel as once_channel, Sender as OnceSender};
 use tokio::task;
 use tokio::time::sleep;
+
+#[derive(Debug, Clone)]
+pub struct BatchConfig {
+    pub max_message_count: usize,
+    pub max_tx_size: usize,
+    pub buffer_size: usize,
+    pub max_delay: Duration,
+    pub sleep_time: Duration,
+}
+
+impl Default for BatchConfig {
+    fn default() -> Self {
+        Self {
+            max_message_count: 10,
+            max_tx_size: 1000,
+            buffer_size: 1000,
+            max_delay: Duration::from_secs(1),
+            sleep_time: Duration::from_millis(50),
+        }
+    }
+}
 
 pub struct ChannelClosedError;
 
@@ -29,19 +50,16 @@ where
     result_sender: OnceSender<Result<Vec<Vec<IbcEvent<Chain, Counterparty>>>, Chain::Error>>,
 }
 
-pub struct MessageSink<Chain, Counterparty>
-where
-    Chain: IbcChainContext<Counterparty>,
-    Counterparty: ChainContext,
-{
-    sender: Sender<MessageBatch<Chain, Counterparty>>,
-}
-
 pub trait BatchMessageContext<Target>: RelayContext
 where
     Target: ChainTarget<Self>,
 {
-    fn message_sink(&self) -> &MessageSink<Target::TargetChain, Target::CounterpartyChain>;
+    fn message_sink(&self)
+        -> &Sender<MessageBatch<Target::TargetChain, Target::CounterpartyChain>>;
+}
+
+pub trait BatchError {
+    fn to_batch_error(&self) -> Self;
 }
 
 #[async_trait]
@@ -76,7 +94,6 @@ where
 
         context
             .message_sink()
-            .sender
             .send(batch)
             .await
             .map_err(|_| ChannelClosedError)?;
@@ -88,35 +105,27 @@ where
 }
 
 impl<Sender> BatchedMessageSender<Sender> {
-    pub async fn new_sink<Relay, Target>(
+    pub fn spawn_batch_message_handler<Relay, Target>(
         context: Arc<Relay>,
-        max_message_count: usize,
-        max_tx_size: usize,
-        buffer_size: usize,
-        max_delay: Duration,
-        sleep_time: Duration,
-    ) -> MessageSink<Target::TargetChain, Target::CounterpartyChain>
-    where
+        config: BatchConfig,
+        receiver: Receiver<MessageBatch<Target::TargetChain, Target::CounterpartyChain>>,
+    ) where
         Relay: RelayContext,
         Target: ChainTarget<Relay>,
         Sender: IbcMessageSender<Relay, Target>,
-        Relay::Error: Clone,
+        Relay::Error: BatchError,
     {
-        let (sender, receiver) = channel(buffer_size);
-
         task::spawn(async move {
             Self::run_loop(
                 &context,
-                max_message_count,
-                max_tx_size,
-                max_delay,
-                sleep_time,
+                config.max_message_count,
+                config.max_tx_size,
+                config.max_delay,
+                config.sleep_time,
                 receiver,
             )
             .await;
         });
-
-        MessageSink { sender }
     }
 
     async fn run_loop<Relay, Target>(
@@ -127,7 +136,7 @@ impl<Sender> BatchedMessageSender<Sender> {
         sleep_time: Duration,
         mut receiver: Receiver<MessageBatch<Target::TargetChain, Target::CounterpartyChain>>,
     ) where
-        Relay::Error: Clone,
+        Relay::Error: BatchError,
         Relay: RelayContext,
         Target: ChainTarget<Relay>,
         Sender: IbcMessageSender<Relay, Target>,
@@ -173,7 +182,7 @@ impl<Sender> BatchedMessageSender<Sender> {
         pending_batches: VecDeque<MessageBatch<Target::TargetChain, Target::CounterpartyChain>>,
     ) -> VecDeque<MessageBatch<Target::TargetChain, Target::CounterpartyChain>>
     where
-        Relay::Error: Clone,
+        Relay::Error: BatchError,
         Relay: RelayContext,
         Target: ChainTarget<Relay>,
         Sender: IbcMessageSender<Relay, Target>,
@@ -210,7 +219,7 @@ impl<Sender> BatchedMessageSender<Sender> {
         Sender: IbcMessageSender<Relay, Target>,
         Target::TargetChain:
             IbcChainContext<Target::CounterpartyChain, IbcMessage = Message, IbcEvent = Event>,
-        Error: Clone,
+        Error: BatchError,
     {
         let (messages, senders): (Vec<_>, Vec<_>) = ready_batches
             .into_iter()
@@ -227,7 +236,7 @@ impl<Sender> BatchedMessageSender<Sender> {
         match send_result {
             Err(e) => {
                 for (_, sender) in senders.into_iter() {
-                    let _ = sender.send(Err(e.clone()));
+                    let _ = sender.send(Err(e.to_batch_error()));
                 }
             }
             Ok(all_events) => {
