@@ -158,7 +158,7 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
 /// If the specified height is reached, then packets are cleared if `clear_interval`
 /// is not `0` and if we have reached the interval.
 fn should_clear_packets(clear_interval: u64, height: Height) -> bool {
-    clear_interval != 0 && height.revision_height % clear_interval == 0
+    clear_interval != 0 && height.revision_height() % clear_interval == 0
 }
 
 fn handle_update_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(

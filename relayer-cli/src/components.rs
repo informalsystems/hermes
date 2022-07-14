@@ -1,3 +1,5 @@
+//! Various components for internal use by the Abscissa subsystem.
+
 use abscissa_core::{Component, FrameworkError, FrameworkErrorKind};
 use tracing_subscriber::{filter::EnvFilter, util::SubscriberInitExt, FmtSubscriber};
 
@@ -42,6 +44,13 @@ impl JsonTracing {
 }
 
 #[derive(Component, Debug)]
+
+/// A custom component for parametrizing `tracing` in the relayer.
+/// Primarily used for:
+///
+/// - Customizing the log output level, for filtering the output produced via tracing macros
+///   (`debug!`, `info!`, etc.) or abscissa macros (`status_err`, `status_info`, etc.).
+/// - Enabling pretty output with coloring
 pub struct PrettyTracing;
 
 impl PrettyTracing {

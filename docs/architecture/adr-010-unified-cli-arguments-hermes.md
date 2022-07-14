@@ -2,6 +2,7 @@
 
 ## Changelog
 * 15.06.2022: Proposed.
+* 28.06.2022: Accepted.
 
 ## Context
 
@@ -35,9 +36,9 @@ The following commands are implemented, with the binary name `hermes` often omit
 * `update client --host-chain <HOST_CHAIN_ID> --client <CLIENT_ID>`
     * Optional: `[--height <REFERENCE_HEIGHT>] [--trusted-height <REFERENCE_TRUSTED_HEIGHT>]`
 
-* `upgrade client --host-chain <HOST_CHAIN_ID> --client <CLIENT_ID>`
+* `upgrade client --host-chain <HOST_CHAIN_ID> --client <CLIENT_ID> --upgrade-height <REFERENCE_UPGRADE_HEIGHT>`
 
-* `upgrade clients --reference-chain <REFERENCE_CHAIN_ID>`
+* `upgrade clients --reference-chain <REFERENCE_CHAIN_ID> --upgrade-height <REFERENCE_UPGRADE_HEIGHT>`
     * Optional: `[--host-chain <HOST_CHAIN_ID>]`
 
 ### Create a connection
@@ -51,14 +52,17 @@ The following commands are implemented, with the binary name `hermes` often omit
 ### Create a channel
 
 * `create channel --a-chain <A_CHAIN_ID> --a-connection <A_CONNECTION_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>`
-    * Optional: `[--chan-version <VERSION>] [--order <ORDER>]`
+    * Optional: `[--channel-version <VERSION>] [--order <ORDER>]`
 
-* `create channel --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID> --new-client-conn`
-    * Optional: `[--chan-version <VERSION>] [--order <ORDER>]`
+* `create channel --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID> --new-client-connection`
+    * Optional: `[--channel-version <VERSION>] [--order <ORDER>] [--yes]`
 
 ### Commands for keys
 
-* `keys add --chain <CHAIN_ID> --key-file <KEY_FILE> --mnemonic-file <MNEMONIC_FILE>`
+* `keys add --chain <CHAIN_ID> --key-file <KEY_FILE>`
+    * Optional: `[--hd-path <HD_PATH>] [--key-name <KEY_NAME>]`
+
+* `keys add --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>`
     * Optional: `[--hd-path <HD_PATH>] [--key-name <KEY_NAME>]`
 
 * `keys balance --chain <CHAIN_ID>`
@@ -86,8 +90,8 @@ The following commands are implemented, with the binary name `hermes` often omit
 
 ### Clear packets
 
-* `clear packets --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
-  --key-name <KEY> --counterparty-key-name <KEY>`
+* `clear packets [OPTIONS] --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
+    * Optional: `[--key-name <KEY>] [--counterparty-key-name <KEY>]`
 
 ### Queries
 
@@ -145,9 +149,9 @@ __Packet__
 
 * `query packet pending --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
 
-* `query packet unreceived-acks --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
+* `query packet pending-acks --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
 
-* `query packet unreceived-packets --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
+* `query packet pending-sends --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>`
 
 __Transfer__
 
@@ -169,6 +173,69 @@ __Tx__
 
 * `health-check`
 
+### Tx
+
+__conn-init__
+
+* `tx conn-init --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-client <B_CLIENT_ID> --a-client <A_CLIENT_ID>`
+
+__conn-ack__
+
+* `tx conn-ack --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-client <B_CLIENT_ID> --a-client <A_CLIENT_ID> --b-connection <B_CONNECTION_ID> --a-connection <A_CONNECTION_ID>`
+
+__conn-confirm__
+
+* `tx conn-confirm --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-client <B_CLIENT_ID> --a-client <A_CLIENT_ID> --b-connection <B_CONNECTION_ID> --a-connection <A_CONNECTION_ID>`
+
+__conn-try__
+
+* `tx conn-try [OPTIONS] --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-client <B_CLIENT_ID> --a-client <A_CLIENT_ID> --a-connection <A_CONNECTION_ID>`
+    * Optional: `[--b-connection <B_CONNECTION_ID>]`
+
+__chan-open-init__
+
+* `tx chan-open-init [OPTIONS] --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-connection <B_CONNECTION_ID> --b-port <B_PORT_ID> --a-port <A_PORT_ID>`
+    * Optional: `[--order <ORDER>]`
+
+__chan-open-ack__
+
+* `tx chan-open-ack --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-connection <B_CONNECTION_ID> --b-port <B_PORT_ID> --a-port <A_PORT_ID> --b-channel <B_CHANNEL_ID> --a-channel <A_CHANNEL_ID>`
+
+__chan-open-confirm__
+
+* `tx chan-open-confirm --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-connection <B_CONNECTION_ID> --b-port <B_PORT_ID> --a-port <A_PORT_ID> --b-channel <B_CHANNEL_ID> --a-channel <A_CHANNEL_ID>`
+
+__chan-open-try__
+
+* `tx chan-open-try [OPTIONS] --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-connection <B_CONNECTION_ID> --b-port <B_PORT_ID> --a-port <A_PORT_ID> --a-channel <A_CHANNEL_ID>`
+    * Optional: `[--b-channel <B_CHANNEL_ID>]`
+
+__chan-close-init__
+
+* `tx chan-close-init --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-connection <B_CONNECTION_ID> --b-port <B_PORT_ID> --a-port <A_PORT_ID> --b-channel <B_CHANNEL_ID> --a-channel <A_CHANNEL_ID>`
+
+__chan-close-confirm__
+
+* `tx chan-close-confirm --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-connection <B_CONNECTION_ID> --b-port <B_PORT_ID> --a-port <A_PORT_ID> --b-channel <B_CHANNEL_ID> --a-channel <A_CHANNEL_ID>`
+
+__upgrade-chain__
+
+* `tx upgrade-chain [OPTIONS] --receiver-chain <RECEIVER_CHAIN_ID> --sender-chain <SENDER_CHAIN_ID> --sender-client <SENDER_CLIENT_ID> --amount <AMOUNT> --height-offset <HEIGHT_OFFSET>`
+    * Optional: `[--denom <DENOM>] [--new-chain <CHAIN_ID>] [--new-unbonding <UNBONDING_PERIOD>] [--upgrade-name <UPGRADE_NAME>]`
+
+__packet-recv__
+
+* `tx raw packet-recv --receiver-chain <RECEIVER_CHAIN_ID> --sender-chain <SENDER_CHAIN_ID> --sender-port <SENDER_PORT_ID> --sender-channel <SENDER_CHANNEL_ID>`
+
+__packet-ack__
+
+* `tx packet-ack --receiver-chain <RECEIVER_CHAIN_ID> --sender-chain <SENDER_CHAIN_ID> --sender-port <SENDER_PORT_ID> --sender-channel <SENDER_CHANNEL_ID>`
+
+__ft-transfer__
+
+* `tx ft-transfer [OPTIONS] --receiver-chain <RECEIVER_CHAIN_ID> --sender-chain <SENDER_CHAIN_ID> --sender-port <SENDER_PORT_ID> --sender-channel <SENDER_CHANNEL_ID> --amount <AMOUNT>`
+    * Optional: `[--denom <DENOM>] [--key-name <KEY_NAME>] [--number-msgs <NUMBER_MSGS>] [--receiver <RECEIVER>] [--timeout-height-offset <TIMEOUT_HEIGHT_OFFSET>] [--timeout-seconds <TIMEOUT_SECONDS>]`
+
 ## Status
 
 Proposed.
@@ -181,6 +248,18 @@ The following are not yet implemented:
 * Updating `query channel ends` to `query channel full`
 
 The PR which updates the flags for all the commands as described in this ADR: [#2275](https://github.com/informalsystems/ibc-rs/pull/2275)
+
+__07.07.22__
+
+Added `tx raw` commands to the ADR
+
+__08.07.22__
+
+* Created a new PR, [#2384](https://github.com/informalsystems/ibc-rs/pull/2384), to add the optional flag for the `upgrade clients` command, issue [#2311](https://github.com/informalsystems/ibc-rs/issues/2311)
+
+__11.07.22__
+
+* Created a new PR, [#2391](https://github.com/informalsystems/ibc-rs/pull/2391), to add the optional flags for the `query connections` command, issue [#2310](https://github.com/informalsystems/ibc-rs/issues/2310)
 
 ## Consequences
 

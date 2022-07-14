@@ -14,7 +14,9 @@ USAGE:
     hermes start [OPTIONS]
 
 DESCRIPTION:
-    Start the relayer in multi-chain mode. Relays packets and channel handshake messages between all chains in the config.
+    Start the relayer in multi-chain mode.
+
+    Relays packets and open handshake messages between all chains in the config.
 
 OPTIONS:
         --full-scan    Force a full scan of the chains for clients, connections and channels

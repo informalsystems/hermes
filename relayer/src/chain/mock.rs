@@ -90,7 +90,7 @@ impl ChainEndpoint for MockChain {
                 config.id.clone(),
                 HostType::SyntheticTendermint,
                 50,
-                Height::new(config.id.version(), 20),
+                Height::new(config.id.version(), 20).unwrap(),
             ),
             _event_sender: sender,
             event_receiver: receiver,

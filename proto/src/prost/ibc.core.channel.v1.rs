@@ -113,6 +113,22 @@ pub struct PacketState {
     #[prost(bytes="vec", tag="4")]
     pub data: ::prost::alloc::vec::Vec<u8>,
 }
+/// PacketId is an identifer for a unique Packet
+/// Source chains refer to packets by source port/channel
+/// Destination chains refer to packets by destination port/channel
+#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PacketId {
+    /// channel port identifier
+    #[prost(string, tag="1")]
+    pub port_id: ::prost::alloc::string::String,
+    /// channel unique identifier
+    #[prost(string, tag="2")]
+    pub channel_id: ::prost::alloc::string::String,
+    /// packet sequence
+    #[prost(uint64, tag="3")]
+    pub sequence: u64,
+}
 /// Acknowledgement is the recommended acknowledgement format to be used by
 /// app-specific protocols.
 /// NOTE: The field numbers 21 and 22 were explicitly chosen to avoid accidental
@@ -223,6 +239,8 @@ pub struct MsgChannelOpenInit {
 pub struct MsgChannelOpenInitResponse {
     #[prost(string, tag="1")]
     pub channel_id: ::prost::alloc::string::String,
+    #[prost(string, tag="2")]
+    pub version: ::prost::alloc::string::String,
 }
 /// MsgChannelOpenInit defines a msg sent by a Relayer to try to open a channel
 /// on Chain B. The version field within the Channel field has been deprecated. Its
@@ -252,6 +270,8 @@ pub struct MsgChannelOpenTry {
 #[derive(::serde::Serialize, ::serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgChannelOpenTryResponse {
+    #[prost(string, tag="1")]
+    pub version: ::prost::alloc::string::String,
 }
 /// MsgChannelOpenAck defines a msg sent by a Relayer to Chain A to acknowledge
 /// the change of channel state to TRYOPEN on Chain B.
@@ -356,6 +376,8 @@ pub struct MsgRecvPacket {
 #[derive(::serde::Serialize, ::serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgRecvPacketResponse {
+    #[prost(enumeration="ResponseResultType", tag="1")]
+    pub result: i32,
 }
 /// MsgTimeout receives timed-out packet
 #[derive(::serde::Serialize, ::serde::Deserialize)]
@@ -376,6 +398,8 @@ pub struct MsgTimeout {
 #[derive(::serde::Serialize, ::serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgTimeoutResponse {
+    #[prost(enumeration="ResponseResultType", tag="1")]
+    pub result: i32,
 }
 /// MsgTimeoutOnClose timed-out packet upon counterparty channel closure.
 #[derive(::serde::Serialize, ::serde::Deserialize)]
@@ -398,6 +422,8 @@ pub struct MsgTimeoutOnClose {
 #[derive(::serde::Serialize, ::serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgTimeoutOnCloseResponse {
+    #[prost(enumeration="ResponseResultType", tag="1")]
+    pub result: i32,
 }
 /// MsgAcknowledgement receives incoming IBC acknowledgement
 #[derive(::serde::Serialize, ::serde::Deserialize)]
@@ -418,6 +444,20 @@ pub struct MsgAcknowledgement {
 #[derive(::serde::Serialize, ::serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgAcknowledgementResponse {
+    #[prost(enumeration="ResponseResultType", tag="1")]
+    pub result: i32,
+}
+/// ResponseResultType defines the possible outcomes of the execution of a message
+#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum ResponseResultType {
+    /// Default zero value enumeration
+    Unspecified = 0,
+    /// The message did not call the IBC application callbacks (because, for example, the packet had already been relayed)
+    Noop = 1,
+    /// The message was executed successfully
+    Success = 2,
 }
 /// Generated client implementations.
 #[cfg(feature = "client")]

@@ -25,7 +25,7 @@ hermes [--config CONFIG_FILE] COMMAND
 The configuration file must have one `global` section, and one `chains` section for each chain.
 
 > **Note:** As of 0.6.0, the Hermes configuration file is self-documented.
-> Please read the configuration file [`config.toml`](https://github.com/informalsystems/ibc-rs/blob/v0.15.0/config.toml)
+> Please read the configuration file [`config.toml`](https://github.com/informalsystems/ibc-rs/blob/v1.0.0-rc.0/config.toml)
 > itself for the most up-to-date documentation of parameters.
 
 By default, Hermes will relay on all channels available between all the configured chains.
@@ -36,7 +36,7 @@ For example, if there are only two chains configured, then Hermes will only rela
 i.e. the two chains will serve as a source for each other, and likewise as a destination for each other's relevant events.
 Hermes will ignore all events that pertain to chains which are unknown (ie. not present in config.toml).
 
-To restrict relaying on specific channels, or uni-directionally, you can use [packet filtering policies](https://github.com/informalsystems/ibc-rs/blob/v0.15.0/config.toml#L207-L224).
+To restrict relaying on specific channels, or uni-directionally, you can use [packet filtering policies](https://github.com/informalsystems/ibc-rs/blob/v1.0.0-rc.0/config.toml#L209-L231).
 
 ## Adding private keys
 
@@ -96,84 +96,6 @@ list = [
   ['ica*', '*'], # deny relaying on all channels whose port starts with `ica`
 ]
 ```
-
-## Update the configuration without restarting Hermes
-
-> ⚠️  This feature has been removed in Hermes v0.12.0.
-
-Before Hermes 0.6.1, the only way to get Hermes to pick up a change in the
-configuration was to stop and restart Hermes.
-
-As of version 0.6.1, Hermes will react to receiving a `SIGHUP` signal
-by reloading the `[chains]` section of the configuration, and
-stopping, starting or restarting the affected workers.
-
-> **Warning:** the configuration reload feature only supports
-> adding, removing, or updating configuration of chains. It does
-> not support dynamically changing global features, such as the
-> filtering mechanism or logging level.
-
-For example, say you start with the configuration given in the previous section
-in `~/.hermes/config.toml`, ie. with two chains `ibc-0` and `ibc-1`.
-
-1. Start three chains `ibc-0`, `ibc-1` and `ibc-2`:
-
-    ```shell
-    ./scripts/dev-env ibc-0 ibc-1 ibc-2
-    ```
-
-2. Start Hermes
-
-    ```shell
-    hermes start
-    ```
-
-3. Add the configuration for the chain `ibc-2` to the configuration file:
-
-    ```toml
-    [[chains]]
-    id = 'ibc-2'
-    rpc_addr = 'http://127.0.0.1:26457'
-    grpc_addr = 'http://127.0.0.1:9092'
-    websocket_addr = 'ws://127.0.0.1:26457/websocket'
-    rpc_timeout = '10s'
-    account_prefix = 'cosmos'
-    key_name = 'testkey'
-    store_prefix = 'ibc'
-    max_gas = 20000000
-    gas_price = { price = 0.001, denom = 'stake' }
-    clock_drift = '5s'
-    trusting_period = '14days'
-    ```
-
-4. Change the configuration of the chain `ibc-0`, eg. the `max_gas` property.
-
-5. Send a `SIGHUP` signal to the `hermes` process:
-
-    > ⚠️  **Warning:** the command below will send a `SIGHUP` signal to the first
-    > process in the list emitted by `ps aux` which contains the string `hermes`.
-    > Alternatively, you can look up the process ID (PID) of the `hermes` process
-    > you want to target and use `kill -SIGHUP PID`.
-
-    ```shell
-    ps aux | rg hermes | awk '{ print $2 }' | head -n1 | xargs -I{} kill -SIGHUP {}
-    ```
-
-6. Watch the output of Hermes, it will show that Hermes has picked up the changes in
-   the config. Hermes is now relaying between the three chains and using the new
-   maximum amount of gas specified for `ibc-0`.
-
-   ```
-   ...
-
-   INFO reloading configuration (triggered by SIGHUP)
-   INFO configuration successfully reloaded
-   INFO updating existing chain chain.id=ibc-1
-   INFO adding new chain chain.id=ibc-2
-   ```
-
-To make sure Hermes ends up in the expected state, check out the documentation
-on [inspecting the relayer state](help.md#inspecting-the-relayer-state).
 
 ## Next steps
 

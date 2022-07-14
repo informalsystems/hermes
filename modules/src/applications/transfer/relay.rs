@@ -24,12 +24,12 @@ fn refund_packet_token(
 
     if is_sender_chain_source(
         packet.source_port.clone(),
-        packet.source_channel,
+        packet.source_channel.clone(),
         &data.token.denom,
     ) {
         // unescrow tokens back to sender
         let escrow_address =
-            ctx.get_channel_escrow_address(&packet.source_port, packet.source_channel)?;
+            ctx.get_channel_escrow_address(&packet.source_port, &packet.source_channel)?;
 
         ctx.send_coins(&escrow_address, &sender, &data.token)
     }

@@ -12,6 +12,7 @@ use ibc_relayer::{
     config::{ChainConfig, Config},
     keyring::{HDPath, KeyEntry, KeyRing, Store},
 };
+use tracing::warn;
 
 use crate::application::app_config;
 use crate::conclude::Output;
@@ -31,14 +32,25 @@ use crate::conclude::Output;
 /// The key-file and mnemonic-file flags can't be given at the same time, this will cause a terminating error.
 /// If successful the key will be created or restored, depending on which flag was given.
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[clap(
+    override_usage = "hermes keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>
+
+    hermes keys add [OPTIONS] --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>"
+)]
 pub struct KeysAddCmd {
-    #[clap(long = "chain", required = true, help = "Identifier of the chain")]
+    #[clap(
+        long = "chain",
+        required = true,
+        help_heading = "FLAGS",
+        help = "Identifier of the chain"
+    )]
     chain_id: ChainId,
 
     #[clap(
         long = "key-file",
         required = true,
         value_name = "KEY_FILE",
+        help_heading = "FLAGS",
         help = "Path to the key file",
         group = "add-restore"
     )]
@@ -48,6 +60,7 @@ pub struct KeysAddCmd {
         long = "mnemonic-file",
         required = true,
         value_name = "MNEMONIC_FILE",
+        help_heading = "FLAGS",
         help = "Path to file containing mnemonic to restore the key from",
         group = "add-restore"
     )]
@@ -67,6 +80,12 @@ pub struct KeysAddCmd {
         default_value = "m/44'/118'/0'/0/0"
     )]
     hd_path: String,
+
+    #[clap(
+        long = "overwrite",
+        help = "Overwrite the key if there is already one with the same key name"
+    )]
+    overwrite: bool,
 }
 
 impl KeysAddCmd {
@@ -110,7 +129,13 @@ impl Runnable for KeysAddCmd {
         // Check if --key-file or --mnemonic-file was given as input.
         match (self.key_file.clone(), self.mnemonic_file.clone()) {
             (Some(key_file), _) => {
-                let key = add_key(&opts.config, &opts.name, &key_file, &opts.hd_path);
+                let key = add_key(
+                    &opts.config,
+                    &opts.name,
+                    &key_file,
+                    &opts.hd_path,
+                    self.overwrite,
+                );
                 match key {
                     Ok(key) => Output::success_msg(format!(
                         "Added key '{}' ({}) on chain {}",
@@ -125,7 +150,13 @@ impl Runnable for KeysAddCmd {
                 }
             }
             (_, Some(mnemonic_file)) => {
-                let key = restore_key(&mnemonic_file, &opts.name, &opts.hd_path, &opts.config);
+                let key = restore_key(
+                    &mnemonic_file,
+                    &opts.name,
+                    &opts.hd_path,
+                    &opts.config,
+                    self.overwrite,
+                );
 
                 match key {
                     Ok(key) => Output::success_msg(format!(
@@ -143,8 +174,10 @@ impl Runnable for KeysAddCmd {
             // This case should never trigger.
             // The 'required' parameter for the flags will trigger an error if both flags have not been given.
             // And the 'group' parameter for the flags will trigger an error if both flags are given.
-            _ => Output::error("--mnemonic-file and --key-file can't both be None".to_string())
-                .exit(),
+            _ => Output::error(
+                "--mnemonic-file and --key-file can't both be set or both None".to_string(),
+            )
+            .exit(),
         }
     }
 }
@@ -154,8 +187,11 @@ pub fn add_key(
     key_name: &str,
     file: &Path,
     hd_path: &HDPath,
+    overwrite: bool,
 ) -> Result<KeyEntry, Box<dyn std::error::Error>> {
     let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
+
+    check_key_exists(&keyring, key_name, overwrite);
 
     let key_contents = fs::read_to_string(file).map_err(|_| "error reading the key file")?;
     let key = keyring.key_from_seed_file(&key_contents, hd_path)?;
@@ -169,13 +205,144 @@ pub fn restore_key(
     key_name: &str,
     hdpath: &HDPath,
     config: &ChainConfig,
+    overwrite: bool,
 ) -> Result<KeyEntry, Box<dyn std::error::Error>> {
     let mnemonic_content =
         fs::read_to_string(mnemonic).map_err(|_| "error reading the mnemonic file")?;
 
     let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
+
+    check_key_exists(&keyring, key_name, overwrite);
+
     let key_entry = keyring.key_from_mnemonic(&mnemonic_content, hdpath, &config.address_type)?;
 
     keyring.add_key(key_name, key_entry.clone())?;
     Ok(key_entry)
+}
+
+/// Check if the key with the given key name already exists.
+/// If it already exists and overwrite is false, abort the command with an error.
+/// If overwrite is true, output a warning message informing the key will be overwritten.
+fn check_key_exists(keyring: &KeyRing, key_name: &str, overwrite: bool) {
+    if keyring.get_key(key_name).is_ok() {
+        if overwrite {
+            warn!("Key {} will be overwritten", key_name);
+        } else {
+            Output::error(format!("A key with name '{}' already exists", key_name)).exit();
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::KeysAddCmd;
+    use std::path::PathBuf;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::ChainId;
+
+    #[test]
+    fn test_keys_add_key_file() {
+        assert_eq!(
+            KeysAddCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                key_file: Some(PathBuf::from("key_file")),
+                mnemonic_file: None,
+                key_name: None,
+                hd_path: "m/44'/118'/0'/0/0".to_string(),
+                overwrite: false,
+            },
+            KeysAddCmd::parse_from(&["test", "--chain", "chain_id", "--key-file", "key_file"])
+        )
+    }
+
+    #[test]
+    fn test_keys_add_mnemonic_file() {
+        assert_eq!(
+            KeysAddCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                key_file: None,
+                mnemonic_file: Some(PathBuf::from("mnemonic_file")),
+                key_name: None,
+                hd_path: "m/44'/118'/0'/0/0".to_string(),
+                overwrite: false
+            },
+            KeysAddCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--mnemonic-file",
+                "mnemonic_file"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_keys_add_key_file_overwrite() {
+        assert_eq!(
+            KeysAddCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                key_file: Some(PathBuf::from("key_file")),
+                mnemonic_file: None,
+                key_name: None,
+                hd_path: "m/44'/118'/0'/0/0".to_string(),
+                overwrite: true,
+            },
+            KeysAddCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--key-file",
+                "key_file",
+                "--overwrite"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_keys_add_mnemonic_file_overwrite() {
+        assert_eq!(
+            KeysAddCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                key_file: None,
+                mnemonic_file: Some(PathBuf::from("mnemonic_file")),
+                key_name: None,
+                hd_path: "m/44'/118'/0'/0/0".to_string(),
+                overwrite: true,
+            },
+            KeysAddCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--mnemonic-file",
+                "mnemonic_file",
+                "--overwrite"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_keys_add_no_file_nor_mnemonic() {
+        assert!(KeysAddCmd::try_parse_from(&["test", "--chain", "chain_id"]).is_err());
+    }
+
+    #[test]
+    fn test_keys_add_key_and_mnemonic() {
+        assert!(KeysAddCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_id",
+            "--key-file",
+            "key_file",
+            "--mnemonic-file",
+            "mnemonic_file"
+        ])
+        .is_err());
+    }
+
+    #[test]
+    fn test_keys_add_no_chain() {
+        assert!(KeysAddCmd::try_parse_from(&["test", "--key-file", "key_file"]).is_err());
+    }
 }

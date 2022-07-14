@@ -58,7 +58,7 @@ impl WorkerMap {
                     "waiting for worker loop to end"
                 );
 
-                let _ = handle.join();
+                handle.join();
 
                 trace!(
                     worker.id = %id, worker.object = %object.short_name(),
@@ -109,7 +109,7 @@ impl WorkerMap {
         for worker in self.to_notify(src_chain_id) {
             // Ignore send error if the worker task handling
             // NewBlock cmd has been terminated.
-            let _ = worker.send_new_block(height, new_block);
+            worker.send_new_block(height, new_block);
         }
     }
 

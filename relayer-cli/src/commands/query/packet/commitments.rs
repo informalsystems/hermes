@@ -18,12 +18,13 @@ struct PacketSeqs {
     seqs: Vec<Sequence>,
 }
 
-#[derive(Clone, Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct QueryPacketCommitmentsCmd {
     #[clap(
         long = "chain",
         required = true,
         value_name = "CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the chain to query"
     )]
     chain_id: ChainId,
@@ -32,15 +33,17 @@ pub struct QueryPacketCommitmentsCmd {
         long = "port",
         required = true,
         value_name = "PORT_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the port to query"
     )]
     port_id: PortId,
 
     #[clap(
         long = "channel",
-        alias = "chan",
+        visible_alias = "chan",
         required = true,
         value_name = "CHANNEL_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the channel to query"
     )]
     channel_id: ChannelId,
@@ -70,5 +73,87 @@ impl Runnable for QueryPacketCommitmentsCmd {
             Ok(p) => Output::success(p).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::QueryPacketCommitmentsCmd;
+
+    use std::str::FromStr;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+
+    #[test]
+    fn test_query_packet_commitments() {
+        assert_eq!(
+            QueryPacketCommitmentsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                port_id: PortId::from_str("port_id").unwrap(),
+                channel_id: ChannelId::from_str("channel-07").unwrap()
+            },
+            QueryPacketCommitmentsCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--port",
+                "port_id",
+                "--channel",
+                "channel-07"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_packet_commitments_chan_alias() {
+        assert_eq!(
+            QueryPacketCommitmentsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                port_id: PortId::from_str("port_id").unwrap(),
+                channel_id: ChannelId::from_str("channel-07").unwrap()
+            },
+            QueryPacketCommitmentsCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--port",
+                "port_id",
+                "--chan",
+                "channel-07"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_packet_commitments_no_chan() {
+        assert!(QueryPacketCommitmentsCmd::try_parse_from(&[
+            "test", "--chain", "chain_id", "--port", "port_id"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_query_packet_commitments_no_port() {
+        assert!(QueryPacketCommitmentsCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_id",
+            "--channel",
+            "channel-07"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_query_packet_commitments_no_chain() {
+        assert!(QueryPacketCommitmentsCmd::try_parse_from(&[
+            "test",
+            "--port",
+            "port_id",
+            "--channel",
+            "channel-07"
+        ])
+        .is_err())
     }
 }

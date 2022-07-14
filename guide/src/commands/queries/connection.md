@@ -13,7 +13,14 @@ USAGE:
 DESCRIPTION:
     Query the identifiers of all connections on a chain
 
-FLAGS:
+OPTIONS:
+        --counterparty-chain <COUNTERPARTY_CHAIN_ID>
+            Filter the query response by the counterparty chain
+
+        --verbose
+            Enable verbose output, displaying the client for each connection in the response
+
+REQUIRED:
         --chain <CHAIN_ID>    Identifier of the chain to query
 ```
 
@@ -63,12 +70,12 @@ USAGE:
 DESCRIPTION:
     Query connection end
 
-FLAGS:
-        --chain <CHAIN_ID>              Identifier of the chain to query
-        --connection <CONNECTION_ID>    Identifier of the connection to query
-
 OPTIONS:
-        --height <HEIGHT>               Height of the state to query
+        --height <HEIGHT>    Height of the state to query. Leave unspecified for latest height.
+
+REQUIRED:
+        --chain <CHAIN_ID>              Identifier of the chain to query
+        --connection <CONNECTION_ID>    Identifier of the connection to query [aliases: conn]
 ```
 
 __Example__
@@ -120,9 +127,9 @@ USAGE:
 DESCRIPTION:
     Query connection channels
 
-FLAGS:
+REQUIRED:
         --chain <CHAIN_ID>              Identifier of the chain to query
-        --connection <CONNECTION_ID>    Identifier of the connection to query
+        --connection <CONNECTION_ID>    Identifier of the connection to query [aliases: conn]
 ```
 
 __Example__
