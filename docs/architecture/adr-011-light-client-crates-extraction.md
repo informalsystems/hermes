@@ -201,7 +201,7 @@ fn downcast_header(h: &dyn Header) -> Result<&TmHeader, Ics02Error> {
 }
 ```
 
-### Special case: removing `AnyClient`
+### Special case: removing `AnyClient` and merging `ClientDef` into `ClientState`
 
 The `AnyClient` enum is special as it is mostly stateless and always created on-the-fly (using `ClientType`) during
 verification in the handlers. e.g. `update_client::process()` ->
@@ -211,38 +211,65 @@ pub fn process(
     ctx: &dyn ClientReader,
     /* ... */
 ) -> HandlerResult<ClientResult, Error> {
-    /* ... */
-
     let client_type = ctx.client_type(&client_id)?;
 
     let client_def = AnyClient::from_client_type(client_type);
 
+    let client_state = ctx.client_state(&client_id)?;
+
+    /* ... */
+
+    let (new_client_state, new_consensus_state) = client_def
+        .check_header_and_update_state(ctx, client_id, client_state, header)?;
+
     /* ... */
 }
 ```
 
-This is problematic because it means the module code must be aware of a `ClientType` -> `ClientDef` mapping. This can be
-solved by requiring the `ClientReader` trait to provide us with its `ClientDef` implementation.
+The `AnyClient` enum implements the `ClientDef` trait that defines all light client verification functions. Note that
+hosts are not required to store it on-chain.
+
+Creating a `ClientDef` instance on-the-fly is problematic because that would require the module code to be aware of
+a `ClientType` -> `ClientDef` mapping for all known `ClientType`s. This can be solved by merging the trait methods of
+the `ClientDef` trait into the `ClientState` trait, and removing the `ClientDef` trait altogether ->
 
 ```rust
-pub trait ClientReader {
-    /// Return the `ClientDef` implementation for the client with specified `ClientId`
-    fn client_def(&self, client_id: &ClientId) -> Box<dyn ClientDef>;
+pub trait ClientState {
+    /* All ClientState methods */
+
+    fn chain_id(&self) -> ChainId;
+
+    fn client_type(&self) -> ClientType;
+
+    /* ... */
+
+    /* Followed by all ClientDef methods */
+
+    fn check_header_and_update_state(
+        &self,
+        ctx: &dyn ClientReader,
+        client_id: ClientId,
+        client_state: &dyn ClientState,
+        header: &dyn Header,
+    ) -> Result<Box<dyn ClientState>, Box<dyn ConsensusState>, Error>;
 
     /* ... */
 }
 ```
 
-Now, we can use the `ClientReader` to get the `ClientDef` implementation for a particular `ClientId` ->
+Now, we can use the `ClientState` instance to access the verification functions directly ->
 
 ```rust
 pub fn process(
     ctx: &dyn ClientReader,
     /* ... */
 ) -> HandlerResult<ClientResult, Error> {
+    let client_state = ctx.client_state(&client_id)?;
+
     /* ... */
 
-    let client_def = ctx.client_def(&client_id);
+    let (new_client_state, new_consensus_state) = client_state
+        .check_header_and_update_state(ctx, client_id, client_state, header)?;
 
     /* ... */
 }
