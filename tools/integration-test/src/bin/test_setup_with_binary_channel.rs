@@ -19,7 +19,7 @@
 
     ```bash
     $ source /path/to/ibc-rs/data/test-1790156739/binary-channels.env
-    $ cargo run --bin hermes -- -c $RELAYER_CONFIG tx raw ft-transfer \
+    $ cargo run --bin hermes -- -c $RELAYER_CONFIG tx ft-transfer \
         $CHAIN_ID_B $CHAIN_ID_A $PORT_A $CHANNEL_ID_A 9999 -o 1000 \
         -k $NODE_A_WALLETS_USER1_KEY_ID -d $NODE_A_DENOM
     ```
