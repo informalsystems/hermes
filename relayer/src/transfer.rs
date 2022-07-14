@@ -1,3 +1,6 @@
+use ibc::signer::SignerError;
+use std::str::FromStr;
+
 use core::time::Duration;
 
 use flex_error::{define_error, DetailOnly};
@@ -20,6 +23,9 @@ use crate::error::Error;
 
 define_error! {
     TransferError {
+        Address
+            [ SignerError ]
+            |_| { "receiver address error "},
         Relayer
             [ Error ]
             |_| { "relayer error" },
@@ -151,7 +157,10 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
     packet_dst_chain: &DstChain, // the chain whose account eventually gets credited
     opts: &TransferOptions,
 ) -> Result<Vec<IbcEvent>, TransferError> {
-    let receiver = packet_dst_chain.get_signer().map_err(TransferError::key)?;
+    let receiver = match &opts.receiver {
+        Some(receiver) => Signer::from_str(receiver).map_err(TransferError::address)?,
+        None => packet_dst_chain.get_signer().map_err(TransferError::key)?,
+    };
 
     let sender = packet_src_chain.get_signer().map_err(TransferError::key)?;
 
