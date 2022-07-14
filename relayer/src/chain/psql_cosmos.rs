@@ -7,7 +7,7 @@ use semver::Version;
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use tendermint_rpc::endpoint::broadcast::tx_sync;
 use tonic::metadata::AsciiMetadataValue;
-use tracing::{info, span, Level};
+use tracing::{info, span, warn, Level};
 
 use ibc::{
     core::{
@@ -359,13 +359,24 @@ impl ChainEndpoint for PsqlChain {
             .query_application_status()?
             .height
             .revision_height();
-        let ibc_data = self.block_on(query_ibc_data(&self.pool, query_height))?;
-        Ok(ibc_data
-            .json_data
-            .connections
-            .into_iter()
-            .filter_map(|co| IdentifiedConnectionEnd::try_from(co).ok())
-            .collect())
+        match self.block_on(query_ibc_data(&self.pool, query_height)) {
+            Ok(snapshot) => {
+                let ibc_data = self.block_on(query_ibc_data(&self.pool, query_height))?;
+                Ok(ibc_data
+                    .json_data
+                    .connections
+                    .into_iter()
+                    .filter_map(|co| IdentifiedConnectionEnd::try_from(co).ok())
+                    .collect())
+            }
+            Err(e) => {
+                warn!(
+                    "unable to query_connections via psql connection ({}), falling back to gRPC",
+                    e
+                );
+                self.chain.query_connections(request)
+            }
+        }
     }
 
     fn query_client_connections(

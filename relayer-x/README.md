@@ -37,20 +37,6 @@ The script does the following:
 - starts two gaia chains
 
 ## Run hermes
-### Tendermint queries
-Most of the tendermint RPCs that use the indexer have been implemented:
-- All Tx tendermint psql queries:
-  - Tx by hash - required for all hermes CLIs and packet relaying
-  - client header by id and height - required to retrieve headers used in previous client updates (misbehavior)
-  - packet data by packet fields
-
-- Not implemented:
-  - block query - required to extract events from begin/end block
-
-Other tendermint RPCs stay the same (e.g. query status, abci_status, etc)
-
-### Application queries
-Not implemented, gRPC is still used
 
 ### Run hermes and the IBC proxy node
 In this mode hermes is configured to send all the RPC requests to the IBC proxy node who performs psql queries for all Tx RPC queries and relays all others RPCs to `<ibc_proxy_rpc_port>`.
@@ -79,3 +65,22 @@ Hermes chain configuration should look like this:
   websocket_addr = 'ws://127.0.0.1:26657/websocket'
   ```
 
+### pSQL and Queries
+When running with psql enabled tendermint node a few tables are maintained by the node. See the [schema.sql](https://github.com/informalsystems/ibc-rs/blob/anca/ibcnode/relayer-x/schema.sql) file for a description.
+In addition, on start, the relayer creates the `ibc_json` table if not already created.
+It stores the IBC data (in json format) for the height of the first event received.
+
+### Tendermint queries
+All tendermint RPCs that use the indexer have been implemented:
+- Tx by hash - required for all hermes CLIs and packet relaying
+- client header by id and height - required to retrieve headers used in previous client updates (misbehavior)
+- packet data by packet fields
+- block query - required to extract events from begin/end block
+
+Other tendermint RPCs stay the same (e.g. query status, abci_status, etc)
+
+### Application queries
+Currently:
+- the IBC data includes connections only
+- used for `query_connections()` chain API, falls back to gRPC query if the table is not created
+- all other APIs use gRPC
