@@ -68,7 +68,7 @@ __Note__: This assumes you are running this the first time, if not, please ensur
     __Note__: If this is the first time you're running this command, the `informaldev/ibc-0:[RELEASE TAG]` and `informaldev/ibc-1:[RELEASE TAG]` container images will be pulled from the Docker Hub. For instructions on how to update these images in Docker Hub please see the [upgrading the release](#upgrading-chains) section.
 
 
-5. Run the command below to execute the relayer end to end (e2e) test. This command will execute the `e2e.sh` on the relayer container. The script will configure the light clients for both chains, add the private keys for both chains and run transactions on both chains (e.g. create-client transaction).
+5. Run the command below to execute the relayer end to end (e2e) test. This command will execute the `e2e.sh` on the relayer container. The script will configure the light clients for both chains, add the private keys for both chains and run transactions on both chains (e.g. create client transaction).
 
     `docker exec relayer /bin/sh -c /relayer/e2e.sh`
 

@@ -70,7 +70,7 @@ pub struct TxCreateClientCmd {
 }
 
 /// Sample to run this tx:
-///     `hermes tx raw create-client --dst-chain ibc-0 --src-chain ibc-1`
+///     `hermes create client --host-chain ibc-0 --reference-chain ibc-1`
 impl Runnable for TxCreateClientCmd {
     fn run(&self) {
         let config = app_config();
