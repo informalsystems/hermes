@@ -1,13 +1,16 @@
+use ibc::core::ics24_host::identifier::ConnectionId;
+
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use std::collections::HashMap;
 
-use ibc_proto::ibc::core::connection::v1::IdentifiedConnection as RawIdentifiedConnection;
+use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 
 use crate::error::Error;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct IbcData {
-    pub connections: Vec<RawIdentifiedConnection>,
+    pub connections: HashMap<ConnectionId, IdentifiedConnectionEnd>,
     // ..
 }
 
@@ -23,7 +26,7 @@ pub async fn init_dbs(pool: &PgPool, snapshot: &IbcSnapshot) -> Result<(), Error
         r#"
         CREATE TABLE IF NOT EXISTS ibc_json (
             height DOUBLE PRECISION PRIMARY KEY,
-            json_data JSON
+            json_data JSONB
         );"#,
     )
     .execute(pool)

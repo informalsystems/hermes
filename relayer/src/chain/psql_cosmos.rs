@@ -2,6 +2,7 @@
 
 use alloc::sync::Arc;
 use core::future::Future;
+use std::collections::HashMap;
 
 use semver::Version;
 use sqlx::postgres::{PgPool, PgPoolOptions};
@@ -28,11 +29,10 @@ use ibc::{
     events::IbcEvent,
     Height,
 };
-use ibc_proto::ibc::core::connection::v1::QueryConnectionsResponse;
 
 use crate::chain::cosmos::CosmosSdkChain;
 use crate::chain::psql_cosmos::batch::send_batched_messages_and_wait_commit;
-use crate::chain::psql_cosmos::query::{query_blocks, query_ibc_data, query_txs};
+use crate::chain::psql_cosmos::query::{query_blocks, query_connections, query_txs};
 use crate::chain::psql_cosmos::update::init_dbs;
 use crate::chain::psql_cosmos::update::{IbcData, IbcSnapshot};
 use crate::denom::DenomTrace;
@@ -116,11 +116,11 @@ impl PsqlChain {
         .await
     }
 
-    fn query_connections_raw(
+    fn query_connections_internal(
         &self,
         query_height: &QueryHeight,
         request: QueryConnectionsRequest,
-    ) -> Result<QueryConnectionsResponse, Error> {
+    ) -> Result<(Height, Vec<IdentifiedConnectionEnd>), Error> {
         crate::time!("query_connections");
         crate::telemetry!(query, self.id(), "query_connections");
 
@@ -138,27 +138,48 @@ impl PsqlChain {
         request
             .metadata_mut()
             .insert("x-cosmos-block-height", height_param);
-        Ok(self
+
+        let response = self
             .block_on(client.connections(request))
             .map_err(Error::grpc_status)?
-            .into_inner())
+            .into_inner();
+
+        let response_height = response
+            .height
+            .unwrap()
+            .try_into()
+            .map_err(|_| Error::invalid_height_no_source())?;
+
+        let connections = response
+            .connections
+            .into_iter()
+            .filter_map(|co| IdentifiedConnectionEnd::try_from(co).ok())
+            .collect();
+
+        Ok((response_height, connections))
     }
 
     fn ibc_snapshot(&self, query_height: &QueryHeight) -> Result<IbcSnapshot, Error> {
-        let QueryConnectionsResponse {
-            height,
-            connections,
-            ..
-        } =
-            self.query_connections_raw(query_height, QueryConnectionsRequest { pagination: None })?;
+        let (response_height, connections) = self.query_connections_internal(
+            query_height,
+            QueryConnectionsRequest { pagination: None },
+        )?;
 
-        let response_height = height
-            .ok_or_else(|| Error::grpc_response_param("height".to_string()))?
-            .revision_height;
+        let height = response_height.revision_height();
+
+        let mut connections_map = HashMap::new();
+
+        for c in connections.iter() {
+            connections_map
+                .entry(c.connection_id.clone())
+                .or_insert_with(|| c.clone());
+        }
 
         Ok(IbcSnapshot {
-            height: response_height,
-            json_data: IbcData { connections },
+            height,
+            json_data: IbcData {
+                connections: connections_map,
+            },
         })
     }
 
@@ -359,16 +380,8 @@ impl ChainEndpoint for PsqlChain {
             .query_application_status()?
             .height
             .revision_height();
-        match self.block_on(query_ibc_data(&self.pool, query_height)) {
-            Ok(snapshot) => {
-                let ibc_data = self.block_on(query_ibc_data(&self.pool, query_height))?;
-                Ok(ibc_data
-                    .json_data
-                    .connections
-                    .into_iter()
-                    .filter_map(|co| IdentifiedConnectionEnd::try_from(co).ok())
-                    .collect())
-            }
+        match self.block_on(query_connections(&self.pool, query_height)) {
+            Ok(connections) => Ok(connections),
             Err(e) => {
                 warn!(
                     "unable to query_connections via psql connection ({}), falling back to gRPC",

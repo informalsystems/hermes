@@ -10,6 +10,7 @@ use tendermint_rpc::endpoint::tx_search::Response as TxSearchResponse;
 use tracing::{info, trace};
 
 use ibc::core::ics02_client::events as ClientEvents;
+use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics04_channel::packet::{parse_timeout_height, Packet};
 use ibc::core::ics24_host::identifier::ChainId;
@@ -680,12 +681,15 @@ pub async fn block_search_response_from_packet_query(
 // TODO to get rid of this struct??
 // impl FromRow for IbcSnapshot
 #[derive(Debug, sqlx::FromRow)]
-struct IbcSnapshotJson {
+pub struct IbcSnapshotJson {
     pub height: f64,
     pub json_data: Json<IbcData>,
 }
 
-pub async fn query_ibc_data(pool: &PgPool, query_height: u64) -> Result<IbcSnapshot, Error> {
+pub async fn query_ibc_data_json(
+    pool: &PgPool,
+    query_height: u64,
+) -> Result<IbcSnapshotJson, Error> {
     // At this point it is assumed that the ibc blob is saved for a height only on start
     // and everytime there is a change.
     // The query therefore should get the entry with highest height smaller than the query height.
@@ -695,10 +699,14 @@ pub async fn query_ibc_data(pool: &PgPool, query_height: u64) -> Result<IbcSnaps
         query_height
     );
 
-    let result = sqlx::query_as::<_, IbcSnapshotJson>(sql_select_string.as_str())
+    sqlx::query_as::<_, IbcSnapshotJson>(sql_select_string.as_str())
         .fetch_one(pool)
         .await
-        .map_err(Error::sqlx)?;
+        .map_err(Error::sqlx)
+}
+
+pub async fn query_ibc_data(pool: &PgPool, query_height: u64) -> Result<IbcSnapshot, Error> {
+    let result = query_ibc_data_json(pool, query_height).await?;
 
     let response = IbcSnapshot {
         height: result.height as u64,
@@ -707,4 +715,13 @@ pub async fn query_ibc_data(pool: &PgPool, query_height: u64) -> Result<IbcSnaps
         },
     };
     Ok(response)
+}
+
+pub async fn query_connections(
+    pool: &PgPool,
+    query_height: u64,
+) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
+    let result = query_ibc_data(pool, query_height).await?;
+
+    Ok(result.json_data.connections.values().cloned().collect())
 }
