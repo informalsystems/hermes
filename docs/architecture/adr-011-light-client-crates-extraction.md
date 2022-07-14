@@ -391,7 +391,8 @@ fn decode_header(any_header: Any) -> Result<Box<dyn Header>, Error> {
 
 This way we have a standardized list of supported light clients so that host implementations would not have to directly
 import every single light client crate that they wish to support. The crate could feature gate light client support to
-provide hosts with a more granular control of which light clients they wish to support.
+provide hosts with a more granular control of which light clients they wish to support. The crate could additionally
+reexport concrete light client types to allow users to downcast trait objects returned by the library.
 
 The crate must come with a disclaimer that inclusion in the registry does not imply any guarantees on the correctness of
 the light client implementations themselves.
