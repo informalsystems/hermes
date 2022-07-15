@@ -525,11 +525,11 @@ impl AggregatorSelector for CustomAggregatorSelector {
             // For the moment, disable histogram buckets since no values make sense for all use-cases.
             "tx_latency_submitted" => Some(Arc::new(histogram(
                 descriptor,
-                &[10.0, 50.0, 100.0, 200.0, 500.0, 1000.0, 2000.0],
+                &[200.0, 500.0, 1000.0, 2000.0, 5000.0, 10000.0],
             ))),
             "tx_latency_confirmed" => Some(Arc::new(histogram(
                 descriptor,
-                &[10.0, 50.0, 100.0, 200.0, 500.0, 1000.0, 2000.0],
+                &[1000.0, 5000.0, 9000.0, 13000.0, 17000.0, 20000.0],
             ))),
             _ => Some(Arc::new(sum())),
         }

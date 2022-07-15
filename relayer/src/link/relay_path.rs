@@ -1090,7 +1090,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             // Update telemetry info
             telemetry!({
                 for e in events_chunk.clone() {
-                    self.record_cleared_send_packet_and_acknowledgment(e);
+                    self.record_cleared_send_packet(e);
                 }
             });
             self.events_to_operational_data(TrackedEvents::new(events_chunk, tracking_id))?;
@@ -1137,6 +1137,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             &self.path_id,
             query_write_ack_events,
         ) {
+            telemetry!(self.record_cleared_acknowledgments(events_chunk.clone()));
             self.events_to_operational_data(TrackedEvents::new(events_chunk, tracking_id))?;
         }
 
@@ -1762,7 +1763,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     #[cfg(feature = "telemetry")]
-    fn record_cleared_send_packet_and_acknowledgment(&self, event: IbcEvent) {
+    fn record_cleared_send_packet(&self, event: IbcEvent) {
         match event {
             IbcEvent::SendPacket(send_packet_ev) => {
                 ibc_telemetry::global().send_packet_count(
@@ -1782,17 +1783,26 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     &self.dst_chain().id(),
                 );
             }
-            IbcEvent::WriteAcknowledgement(write_ack_ev) => {
-                ibc_telemetry::global().clear_acknowledgment_packet_count(
-                    write_ack_ev.packet.sequence.into(),
-                    write_ack_ev.height().revision_height(),
-                    &self.dst_chain().id(),
-                    self.src_channel_id(),
-                    self.src_port_id(),
-                    &self.src_chain().id(),
-                );
-            }
             _ => {}
+        }
+    }
+
+    #[cfg(feature = "telemetry")]
+    fn record_cleared_acknowledgments(&self, events: Vec<IbcEvent>) {
+        for e in events {
+            match e {
+                IbcEvent::WriteAcknowledgement(write_ack_ev) => {
+                    ibc_telemetry::global().clear_acknowledgment_packet_count(
+                        write_ack_ev.packet.sequence.into(),
+                        write_ack_ev.height().revision_height(),
+                        &self.dst_chain().id(),
+                        self.src_channel_id(),
+                        self.src_port_id(),
+                        &self.src_chain().id(),
+                    );
+                }
+                _ => {}
+            }
         }
     }
 }
