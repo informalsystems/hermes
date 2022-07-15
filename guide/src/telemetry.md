@@ -48,8 +48,8 @@ The following table describes the metrics currently tracked by the telemetry ser
 | `query_cache_hits`           | Number of cache hits for queries emitted by the relayer, per chain and query type | `u64` Counter |
 | `send_packet_count`          | Number of SendPacket events processed | `u64` Counter |
 | `acknowledgement_count`      | Number of WriteAcknowledgement events processed      | `u64` Counter       |
-| `cleared_send_packet_count`    | Number of SendPacket events processed during ClearPendingPackets | `u64` Counter   |
-| `cleared_acknowledgment_count` | Number of WriteAcknowledgement events processed during ClearPendingPackets | `u64` Counter   |
+| `cleared_send_packet_count`    | Number of SendPacket events processed during the initial and periodic clearing | `u64` Counter   |
+| `cleared_acknowledgment_count` | Number of WriteAcknowledgement events processed during the initial and periodic clearing | `u64` Counter   |
 | `oldest_sequence`            | The sequence number of the oldest SendPacket event observed without its corresponding WriteAcknowledgement event. If this value is 0, it means Hermes observed a WriteAcknowledgment event for all the SendPacket events | `u64` ValueRecorder |
 | `oldest_timestamp`           | The timestamp of the oldest sequence number in seconds | `u64` ValueRecorder |
 
@@ -76,7 +76,7 @@ cache_hits{chain="ibc-0",query_type="query_connection"} 39
 cache_hits{chain="ibc-1",query_type="query_channel"} 57
 cache_hits{chain="ibc-1",query_type="query_client_state"} 29
 cache_hits{chain="ibc-1",query_type="query_connection"} 24
-# HELP cleared_send_packet_count Number of SendPacket events processed during ClearPendingPackets
+# HELP cleared_send_packet_count Number of SendPacket events processed during the initial and periodic clearing
 # TYPE cleared_send_packet_count counter
 cleared_send_packet_count{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer"} 15
 # HELP ibc_acknowledgment_packets Number of confirmed acknowledgment packets relayed per channel. Available if relayer runs with Tx confirmation enabled

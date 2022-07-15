@@ -166,7 +166,9 @@ impl TelemetryState {
             KeyValue::new("src_port", src_port.to_string()),
         ];
 
-        self.receive_packets.add(count, labels);
+        if count > 0 {
+            self.receive_packets.add(count, labels);
+        }
     }
 
     /// Number of acknowledgment packets relayed, per channel
@@ -183,7 +185,9 @@ impl TelemetryState {
             KeyValue::new("src_port", src_port.to_string()),
         ];
 
-        self.acknowledgment_packets.add(count, labels);
+        if count > 0 {
+            self.acknowledgment_packets.add(count, labels);
+        }
     }
 
     /// Number of timeout packets relayed, per channel
@@ -200,7 +204,9 @@ impl TelemetryState {
             KeyValue::new("src_port", src_port.to_string()),
         ];
 
-        self.timeout_packets.add(count, labels);
+        if count > 0 {
+            self.timeout_packets.add(count, labels);
+        }
     }
 
     /// Number of queries emitted by the relayer, per chain and query type
@@ -371,7 +377,7 @@ impl TelemetryState {
             KeyValue::new("port", port_id.to_string()),
         ];
 
-        self.clear_send_packet_count.add(1, labels);
+        self.cleared_send_packet_count.add(1, labels);
     }
 
     pub fn clear_acknowledgment_packet_count(
@@ -390,7 +396,7 @@ impl TelemetryState {
             KeyValue::new("port", port_id.to_string()),
         ];
 
-        self.clear_acknowledgment_packet_count.add(1, labels);
+        self.cleared_acknowledgment_count.add(1, labels);
     }
 
     pub fn record_send_history(
@@ -615,12 +621,12 @@ impl Default for TelemetryState {
 
             cleared_send_packet_count: meter
                 .u64_counter("cleared_send_packet_count")
-                .with_description("Number of SendPacket events processed during ClearPendingPackets")
+                .with_description("Number of SendPacket events processed during the initial and periodic clearing")
                 .init(),
 
             cleared_acknowledgment_count: meter
                 .u64_counter("cleared_acknowledgment_count")
-                .with_description("Number of WriteAcknowledgment events processed during ClearPendingPackets")
+                .with_description("Number of WriteAcknowledgment events processed during the initial and periodic clearing")
                 .init(),
 
             tx_latency_submitted: meter
