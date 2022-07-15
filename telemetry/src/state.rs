@@ -102,10 +102,10 @@ pub struct TelemetryState {
     acknowledgement_count: Counter<u64>,
 
     /// Counts the number of SendPacket events Hermes processes from ClearPendingPackets.
-    clear_send_packet_count: Counter<u64>,
+    cleared_send_packet_count: Counter<u64>,
 
     /// Counts the number of WriteAcknowledgment events Hermes processes from ClearPendingPackets.
-    clear_acknowledgment_packet_count: Counter<u64>,
+    cleared_acknowledgment_count: Counter<u64>,
 
     /// Records the sequence number of the oldest SendPacket for which no
     /// WriteAcknowledgement has been received. The value is 0 if all the
@@ -613,13 +613,13 @@ impl Default for TelemetryState {
                 .with_description("Number of WriteAcknowledgement events processed")
                 .init(),
 
-            clear_send_packet_count: meter
-                .u64_counter("clear_send_packet_count")
+            cleared_send_packet_count: meter
+                .u64_counter("cleared_send_packet_count")
                 .with_description("Number of SendPacket events processed during ClearPendingPackets")
                 .init(),
 
-            clear_acknowledgment_packet_count: meter
-                .u64_counter("clear_acknowledgment_packet_count")
+            cleared_acknowledgment_count: meter
+                .u64_counter("cleared_acknowledgment_count")
                 .with_description("Number of WriteAcknowledgment events processed during ClearPendingPackets")
                 .init(),
 
