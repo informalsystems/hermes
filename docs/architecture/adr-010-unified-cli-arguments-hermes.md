@@ -173,7 +173,7 @@ __Tx__
 
 * `health-check`
 
-### Tx
+### Tx
 
 __conn-init__
 
