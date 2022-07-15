@@ -1773,7 +1773,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     self.src_port_id(),
                     &self.dst_chain().id(),
                 );
-                ibc_telemetry::global().cleared_count(
+                ibc_telemetry::global().clear_send_packet_count(
                     send_packet_ev.packet.sequence.into(),
                     send_packet_ev.height().revision_height(),
                     &self.src_chain().id(),
@@ -1783,7 +1783,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 );
             }
             IbcEvent::WriteAcknowledgement(write_ack_ev) => {
-                ibc_telemetry::global().acknowledgement_count(
+                ibc_telemetry::global().clear_acknowledgment_packet_count(
                     write_ack_ev.packet.sequence.into(),
                     write_ack_ev.height().revision_height(),
                     &self.dst_chain().id(),

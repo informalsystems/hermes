@@ -101,8 +101,11 @@ pub struct TelemetryState {
     /// Counts the number of WriteAcknowledgement Hermes transfers.
     acknowledgement_count: Counter<u64>,
 
-    /// Counts the number of SendPacket Hermes transfers from ClearPacket.
-    cleared_count: Counter<u64>,
+    /// Counts the number of SendPacket events Hermes processes from ClearPendingPackets.
+    clear_send_packet_count: Counter<u64>,
+
+    /// Counts the number of WriteAcknowledgment events Hermes processes from ClearPendingPackets.
+    clear_acknowledgment_packet_count: Counter<u64>,
 
     /// Records the sequence number of the oldest SendPacket for which no
     /// WriteAcknowledgement has been received. The value is 0 if all the
@@ -352,7 +355,7 @@ impl TelemetryState {
         self.acknowledgement_count.add(1, labels);
     }
 
-    pub fn cleared_count(
+    pub fn clear_send_packet_count(
         &self,
         _seq_nr: u64,
         _height: u64,
@@ -368,7 +371,26 @@ impl TelemetryState {
             KeyValue::new("port", port_id.to_string()),
         ];
 
-        self.cleared_count.add(1, labels);
+        self.clear_send_packet_count.add(1, labels);
+    }
+
+    pub fn clear_acknowledgment_packet_count(
+        &self,
+        _seq_nr: u64,
+        _height: u64,
+        chain_id: &ChainId,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_chain_id: &ChainId,
+    ) {
+        let labels: &[KeyValue; 4] = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("counterparty", counterparty_chain_id.to_string()),
+            KeyValue::new("channel", channel_id.to_string()),
+            KeyValue::new("port", port_id.to_string()),
+        ];
+
+        self.clear_acknowledgment_packet_count.add(1, labels);
     }
 
     pub fn record_send_history(
@@ -495,8 +517,14 @@ impl AggregatorSelector for CustomAggregatorSelector {
             // https://docs.rs/opentelemetry-prometheus/0.10.0/src/opentelemetry_prometheus/lib.rs.html#411-418
             // TODO: Once quantile sketches are supported, replace histograms with that.
             // For the moment, disable histogram buckets since no values make sense for all use-cases.
-            "tx_latency_submitted" => Some(Arc::new(histogram(descriptor, &[]))),
-            "tx_latency_confirmed" => Some(Arc::new(histogram(descriptor, &[]))),
+            "tx_latency_submitted" => Some(Arc::new(histogram(
+                descriptor,
+                &[10.0, 50.0, 100.0, 200.0, 500.0, 1000.0, 2000.0],
+            ))),
+            "tx_latency_confirmed" => Some(Arc::new(histogram(
+                descriptor,
+                &[10.0, 50.0, 100.0, 200.0, 500.0, 1000.0, 2000.0],
+            ))),
             _ => Some(Arc::new(sum())),
         }
     }
@@ -530,17 +558,17 @@ impl Default for TelemetryState {
 
             receive_packets: meter
                 .u64_counter("ibc_receive_packets")
-                .with_description("Number of receive packets relayed per channel")
+                .with_description("Number of confirmed receive packets relayed per channel. Available if relayer runs with Tx confirmation enabled")
                 .init(),
 
             acknowledgment_packets: meter
                 .u64_counter("ibc_acknowledgment_packets")
-                .with_description("Number of acknowledgment packets relayed per channel")
+                .with_description("Number of confirmed acknowledgment packets relayed per channel. Available if relayer runs with Tx confirmation enabled")
                 .init(),
 
             timeout_packets: meter
                 .u64_counter("ibc_timeout_packets")
-                .with_description("Number of timeout packets relayed per channel")
+                .with_description("Number of confirmed timeout packets relayed per channel. Available if relayer runs with Tx confirmation enabled")
                 .init(),
 
             queries: meter
@@ -577,17 +605,22 @@ impl Default for TelemetryState {
 
             send_packet_count: meter
                 .u64_counter("send_packet_count")
-                .with_description("Number of SendPacket relayed")
+                .with_description("Number of SendPacket events processed")
                 .init(),
 
             acknowledgement_count: meter
                 .u64_counter("acknowledgement_count")
-                .with_description("Number of WriteAcknowledgement relayed")
+                .with_description("Number of WriteAcknowledgement events processed")
                 .init(),
 
-            cleared_count: meter
-                .u64_counter("cleared_count")
-                .with_description("Number of SendPacket relayed through ClearPendingPackets")
+            clear_send_packet_count: meter
+                .u64_counter("clear_send_packet_count")
+                .with_description("Number of SendPacket events processed during ClearPendingPackets")
+                .init(),
+
+            clear_acknowledgment_packet_count: meter
+                .u64_counter("clear_acknowledgment_packet_count")
+                .with_description("Number of WriteAcknowledgment events processed during ClearPendingPackets")
                 .init(),
 
             tx_latency_submitted: meter
@@ -615,7 +648,7 @@ impl Default for TelemetryState {
 
             oldest_sequence: meter
                 .u64_value_recorder("oldest_sequence")
-                .with_description("The sequence number of the oldest pending SendPacket. If this value is 0, it means there are no pending SendPacket")
+                .with_description("The sequence number of the oldest SendPacket observed without its corresponding WriteAcknowledgement event. If this value is 0, it means Hermes observed a WriteAcknowledgment event for all the SendPacket events")
                 .init(),
 
             oldest_timestamp: meter
