@@ -1764,44 +1764,38 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
     #[cfg(feature = "telemetry")]
     fn record_cleared_send_packet(&self, event: IbcEvent) {
-        match event {
-            IbcEvent::SendPacket(send_packet_ev) => {
-                ibc_telemetry::global().send_packet_count(
-                    send_packet_ev.packet.sequence.into(),
-                    send_packet_ev.height().revision_height(),
-                    &self.src_chain().id(),
-                    self.src_channel_id(),
-                    self.src_port_id(),
-                    &self.dst_chain().id(),
-                );
-                ibc_telemetry::global().clear_send_packet_count(
-                    send_packet_ev.packet.sequence.into(),
-                    send_packet_ev.height().revision_height(),
-                    &self.src_chain().id(),
-                    self.src_channel_id(),
-                    self.src_port_id(),
-                    &self.dst_chain().id(),
-                );
-            }
-            _ => {}
+        if let IbcEvent::SendPacket(send_packet_ev) = event {
+            ibc_telemetry::global().send_packet_count(
+                send_packet_ev.packet.sequence.into(),
+                send_packet_ev.height().revision_height(),
+                &self.src_chain().id(),
+                self.src_channel_id(),
+                self.src_port_id(),
+                &self.dst_chain().id(),
+            );
+            ibc_telemetry::global().clear_send_packet_count(
+                send_packet_ev.packet.sequence.into(),
+                send_packet_ev.height().revision_height(),
+                &self.src_chain().id(),
+                self.src_channel_id(),
+                self.src_port_id(),
+                &self.dst_chain().id(),
+            );
         }
     }
 
     #[cfg(feature = "telemetry")]
     fn record_cleared_acknowledgments(&self, events: Vec<IbcEvent>) {
         for e in events {
-            match e {
-                IbcEvent::WriteAcknowledgement(write_ack_ev) => {
-                    ibc_telemetry::global().clear_acknowledgment_packet_count(
-                        write_ack_ev.packet.sequence.into(),
-                        write_ack_ev.height().revision_height(),
-                        &self.dst_chain().id(),
-                        self.src_channel_id(),
-                        self.src_port_id(),
-                        &self.src_chain().id(),
-                    );
-                }
-                _ => {}
+            if let IbcEvent::WriteAcknowledgement(write_ack_ev) = e {
+                ibc_telemetry::global().clear_acknowledgment_packet_count(
+                    write_ack_ev.packet.sequence.into(),
+                    write_ack_ev.height().revision_height(),
+                    &self.dst_chain().id(),
+                    self.src_channel_id(),
+                    self.src_port_id(),
+                    &self.src_chain().id(),
+                );
             }
         }
     }
