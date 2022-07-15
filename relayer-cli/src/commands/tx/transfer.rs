@@ -78,7 +78,7 @@ pub struct TxIcs20MsgTransferCmd {
 
     #[clap(
         long = "receiver",
-        help = "Receiving account address on the destination chain"
+        help = "The account address on the destination chain which will receive the tokens. If omitted, the relayer's wallet on the destination chain will be used"
     )]
     receiver: Option<String>,
 

@@ -23,7 +23,7 @@ use crate::error::Error;
 
 define_error! {
     TransferError {
-        Address
+        ReceiverAddress
             [ SignerError ]
             |_| { "receiver address error "},
         Relayer
@@ -158,7 +158,7 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
     opts: &TransferOptions,
 ) -> Result<Vec<IbcEvent>, TransferError> {
     let receiver = match &opts.receiver {
-        Some(receiver) => Signer::from_str(receiver).map_err(TransferError::address)?,
+        Some(receiver) => Signer::from_str(receiver).map_err(TransferError::receiver_address)?,
         None => packet_dst_chain.get_signer().map_err(TransferError::key)?,
     };
 
