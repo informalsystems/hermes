@@ -153,4 +153,30 @@ mod test {
     fn test_protobuf_object_safety() {
         let _test: Option<Box<dyn Protobuf<Any, Error = Error>>> = None;
     }
+
+    #[test]
+    fn test_protobuf_blanket_impls() {
+        trait Foo: Protobuf<Any, Error = Error> {}
+
+        #[derive(Clone)]
+        struct Domain;
+
+        impl Foo for Domain {}
+
+        impl Protobuf<Any> for Domain {}
+
+        impl TryFrom<Any> for Domain {
+            type Error = Error;
+
+            fn try_from(_: Any) -> Result<Self, Self::Error> {
+                unimplemented!()
+            }
+        }
+
+        impl From<Domain> for Any {
+            fn from(_: Domain) -> Self {
+                unimplemented!()
+            }
+        }
+    }
 }
