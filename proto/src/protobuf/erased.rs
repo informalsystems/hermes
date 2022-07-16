@@ -1,21 +1,25 @@
+use core::convert::{Into as CoreInto, TryFrom as CoreTryFrom};
+
 mod sealed {
-    pub trait SealedToBoxed<T: ?Sized> {}
-    impl<T, U: Clone + Into<T>> SealedToBoxed<T> for U {}
-    pub trait SealedTryFromIfSized<T> {}
-    impl<T, U: TryFrom<T>> SealedTryFromIfSized<T> for U {}
+    use super::*;
+
+    pub trait SealedInto<T: ?Sized> {}
+    impl<T, U: Clone + CoreInto<T>> SealedInto<T> for U {}
+    pub trait SealedTryFrom<T> {}
+    impl<T, U: CoreTryFrom<T>> SealedTryFrom<T> for U {}
 }
 
-pub trait ToBoxed<T: ?Sized>: sealed::SealedToBoxed<T> {
-    fn to_boxed(&self) -> Box<T>;
+pub trait Into<T: ?Sized>: sealed::SealedInto<T> {
+    fn into(&self) -> Box<T>;
 }
 
-impl<T, U: Clone + Into<T>> ToBoxed<T> for U {
-    fn to_boxed(&self) -> Box<T> {
+impl<T, U: Clone + CoreInto<T>> Into<T> for U {
+    fn into(&self) -> Box<T> {
         Box::new(self.clone().into())
     }
 }
 
-pub trait TryFromIfSized<T>: sealed::SealedTryFromIfSized<T> {
+pub trait TryFrom<T>: sealed::SealedTryFrom<T> {
     type Error;
 
     fn try_from(t: T) -> Result<Self, Self::Error>
@@ -23,13 +27,13 @@ pub trait TryFromIfSized<T>: sealed::SealedTryFromIfSized<T> {
         Self: Sized;
 }
 
-impl<T, U: TryFrom<T>> TryFromIfSized<T> for U {
-    type Error = <Self as TryFrom<T>>::Error;
+impl<T, U: CoreTryFrom<T>> TryFrom<T> for U {
+    type Error = <Self as CoreTryFrom<T>>::Error;
 
     fn try_from(t: T) -> Result<Self, Self::Error>
     where
         Self: Sized,
     {
-        <Self as TryFrom<T>>::try_from(t)
+        <Self as CoreTryFrom<T>>::try_from(t)
     }
 }

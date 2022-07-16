@@ -7,13 +7,12 @@ use bytes::Buf;
 use prost::encoding::encoded_len_varint;
 use prost::Message;
 
-use self::erased::{ToBoxed, TryFromIfSized};
 pub use self::error::Error;
 
 pub trait Protobuf<T: Message + Default>
 where
-    Self: TryFromIfSized<T> + ToBoxed<T>,
-    <Self as TryFromIfSized<T>>::Error: Display,
+    Self: erased::TryFrom<T> + erased::Into<T>,
+    <Self as erased::TryFrom<T>>::Error: Display,
 {
     /// Encode into a buffer in Protobuf format.
     ///
@@ -22,7 +21,7 @@ where
     ///
     /// [`prost::Message::encode`]: https://docs.rs/prost/*/prost/trait.Message.html#method.encode
     fn encode(&self, buf: &mut Vec<u8>) -> Result<(), Error> {
-        self.to_boxed().encode(buf).map_err(Error::encode_message)
+        self.into().encode(buf).map_err(Error::encode_message)
     }
 
     /// Encode with a length-delimiter to a buffer in Protobuf format.
@@ -34,7 +33,7 @@ where
     ///
     /// [`prost::Message::encode_length_delimited`]: https://docs.rs/prost/*/prost/trait.Message.html#method.encode_length_delimited
     fn encode_length_delimited(&self, buf: &mut Vec<u8>) -> Result<(), Error> {
-        self.to_boxed()
+        self.into()
             .encode_length_delimited(buf)
             .map_err(Error::encode_message)
     }
@@ -81,7 +80,7 @@ where
     ///
     /// [`prost::Message::encoded_len`]: https://docs.rs/prost/*/prost/trait.Message.html#method.encoded_len
     fn encoded_len(&self) -> usize {
-        self.to_boxed().encoded_len()
+        self.into().encoded_len()
     }
 
     /// Encodes into a Protobuf-encoded `Vec<u8>`.
@@ -119,6 +118,8 @@ where
 
 #[cfg(test)]
 mod test {
+    use core::convert::{From, TryFrom};
+
     use super::*;
     use crate::google::protobuf::Any;
 

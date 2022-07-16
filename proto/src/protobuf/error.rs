@@ -4,7 +4,7 @@ use core::num::TryFromIntError;
 use flex_error::{define_error, DisplayOnly};
 use prost::{DecodeError, EncodeError};
 
-use crate::protobuf::TryFromIfSized;
+use super::erased::TryFrom;
 
 define_error! {
     Error {
@@ -33,7 +33,7 @@ impl Error {
     pub fn try_from<Raw, T, E>(e: E) -> Error
     where
         E: Display,
-        T: TryFromIfSized<Raw, Error = E>,
+        T: TryFrom<Raw, Error = E>,
     {
         Error::try_from_protobuf(format!("{}", e))
     }
