@@ -30,6 +30,7 @@ tonic       = { version = "0.7", optional = true, default-features = false }
 serde       = { version = "1.0", default-features = false }
 schemars    = { version = "0.8", optional = true }
 base64      = { version = "0.13", default-features = false, features = ["alloc"] }
+flex-error = { version = "0.4.4", default-features = false }
 
 [dependencies.tendermint-proto]
 version          = "=0.23.8"
