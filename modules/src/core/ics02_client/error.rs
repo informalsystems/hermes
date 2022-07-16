@@ -1,8 +1,8 @@
 use crate::prelude::*;
 
 use flex_error::{define_error, TraceError};
+use ibc_proto::protobuf::Error as TendermintProtoError;
 use tendermint::Error as TendermintError;
-use tendermint_proto::Error as TendermintProtoError;
 
 use crate::clients::ics07_tendermint::error::Error as Ics07Error;
 use crate::core::ics02_client::client_type::ClientType;

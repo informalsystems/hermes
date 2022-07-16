@@ -2,12 +2,11 @@ use crate::prelude::*;
 
 use core::convert::Infallible;
 
+use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
+use ibc_proto::protobuf::Protobuf;
 use serde::Serialize;
 use tendermint::{hash::Algorithm, time::Time, Hash};
 use tendermint_proto::google::protobuf as tpb;
-use tendermint_proto::Protobuf;
-
-use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;

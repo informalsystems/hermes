@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 use ibc_proto::google::protobuf::Any;
-use tendermint_proto::Protobuf;
+use ibc_proto::protobuf::Protobuf;
 
 use crate::clients::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
 use crate::core::ics02_client::error::Error;

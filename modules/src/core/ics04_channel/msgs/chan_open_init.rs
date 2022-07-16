@@ -6,7 +6,7 @@ use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
-use tendermint_proto::Protobuf;
+use ibc_proto::protobuf::Protobuf;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenInit";
 

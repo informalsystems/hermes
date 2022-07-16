@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 use ibc_proto::ibc::core::client::v1::MsgSubmitMisbehaviour as RawMsgSubmitMisbehaviour;
-use tendermint_proto::Protobuf;
+use ibc_proto::protobuf::Protobuf;
 
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::misbehaviour::AnyMisbehaviour;
