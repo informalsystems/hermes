@@ -8,7 +8,14 @@ use prost::Message;
 
 pub use error::Error;
 
-pub trait ToBoxed<T: ?Sized> {
+mod sealed {
+    pub trait SealedToBoxed<T: ?Sized> {}
+    impl<T, U: Clone + Into<T>> SealedToBoxed<T> for U {}
+    pub trait SealedTryFromIfSized<T> {}
+    impl<T, U: TryFrom<T>> SealedTryFromIfSized<T> for U {}
+}
+
+pub trait ToBoxed<T: ?Sized>: sealed::SealedToBoxed<T> {
     fn to_boxed(&self) -> Box<T>;
 }
 
@@ -18,7 +25,7 @@ impl<T, U: Clone + Into<T>> ToBoxed<T> for U {
     }
 }
 
-pub trait TryFromIfSized<T> {
+pub trait TryFromIfSized<T>: sealed::SealedTryFromIfSized<T> {
     type Error;
 
     fn try_from(t: T) -> Result<Self, Self::Error>
