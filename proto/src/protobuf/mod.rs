@@ -126,3 +126,14 @@ where
         Self::decode_length_delimited(v)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::google::protobuf::Any;
+
+    #[test]
+    fn test_protobuf_object_safety() {
+        let _test: Option<Box<dyn Protobuf<Any, Error = Error>>> = None;
+    }
+}
