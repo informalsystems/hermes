@@ -12,9 +12,9 @@ pub trait ToBoxed<T: ?Sized> {
     fn to_boxed(&self) -> Box<T>;
 }
 
-impl<T: From<U>, U: Clone> ToBoxed<T> for U {
+impl<T, U: Clone + Into<T>> ToBoxed<T> for U {
     fn to_boxed(&self) -> Box<T> {
-        Box::new(T::from(self.clone().into()))
+        Box::new(self.clone().into())
     }
 }
 
