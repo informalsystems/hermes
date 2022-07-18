@@ -151,6 +151,9 @@ binary="path/to/your/hermes"
 This configuration specifies 2 networks (chains), `ibc-0` and `ibc-1`. A typical workflow might look like:
 
 ```bash
+# Start the two chains
+$ gm start
+
 # Generate the config for `hermes`. 
 # Notably, this will create the appropriate `[[chains]]` entries for `ibc-0` and `ibc-1`.
 $ gm hermes config
@@ -158,11 +161,8 @@ $ gm hermes config
 # Generate the keys so that `hermes` can sign transactions on both chains
 $ gm hermes keys
 
-# Start the two chains
-$ gm start
-
 # Create a connection 
-$ hermes create connection ibc-0 ibc-1
+$ hermes create connection --a-chain ibc-0 --b-chain ibc-1
 ```
 
 ## Tribal knowledge (things they don't tell you)
