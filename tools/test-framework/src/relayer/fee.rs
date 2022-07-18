@@ -2,7 +2,9 @@ use core::time::Duration;
 use http::uri::Uri;
 use ibc::applications::ics29_fee::msgs::pay_packet::build_pay_packet_message;
 use ibc::applications::ics29_fee::msgs::pay_packet_async::build_pay_packet_fee_async_message;
-use ibc::applications::ics29_fee::msgs::register_counterparty::build_register_counterparty_payee_message;
+use ibc::applications::ics29_fee::msgs::register_payee::{
+    build_register_counterparty_payee_message, build_register_payee_message,
+};
 use ibc::applications::ics29_fee::packet_fee::IdentifiedPacketFees;
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::events::IbcEvent;
@@ -105,6 +107,33 @@ pub async fn register_counterparty_payee<Chain, Counterparty>(
             .0
             .parse()
             .map_err(handle_generic_error)?,
+        channel_id.value(),
+        port_id.value(),
+    )
+    .map_err(handle_generic_error)?;
+
+    let messages = vec![message];
+
+    simple_send_tx(tx_config.value(), &wallet.value().key, messages).await?;
+
+    Ok(())
+}
+
+pub async fn register_payee<Chain, Counterparty>(
+    tx_config: &MonoTagged<Chain, &TxConfig>,
+    wallet: &MonoTagged<Chain, &Wallet>,
+    payee: &MonoTagged<Chain, &WalletAddress>,
+    channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
+    port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,
+) -> Result<(), Error> {
+    let message = build_register_payee_message(
+        &wallet
+            .value()
+            .address
+            .0
+            .parse()
+            .map_err(handle_generic_error)?,
+        &payee.value().0.parse().map_err(handle_generic_error)?,
         channel_id.value(),
         port_id.value(),
     )

@@ -9,7 +9,7 @@ use crate::error::Error;
 use crate::ibc::token::TaggedTokenRef;
 use crate::relayer::fee::{
     ibc_token_transfer_with_fee, pay_packet_fee, query_counterparty_payee,
-    query_incentivized_packets, register_counterparty_payee,
+    query_incentivized_packets, register_counterparty_payee, register_payee,
 };
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
@@ -44,6 +44,14 @@ pub trait ChainFeeMethodsExt<Chain> {
         &self,
         wallet: &MonoTagged<Chain, &Wallet>,
         counterparty_payee: &MonoTagged<Counterparty, &WalletAddress>,
+        channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
+        port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,
+    ) -> Result<(), Error>;
+
+    fn register_payee<Counterparty>(
+        &self,
+        wallet: &MonoTagged<Chain, &Wallet>,
+        payee: &MonoTagged<Chain, &WalletAddress>,
         channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
         port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,
     ) -> Result<(), Error>;
@@ -121,6 +129,22 @@ impl<'a, Chain: Send> ChainFeeMethodsExt<Chain> for MonoTagged<Chain, &'a ChainD
             &self.tx_config(),
             wallet,
             counterparty_payee,
+            channel_id,
+            port_id,
+        ))
+    }
+
+    fn register_payee<Counterparty>(
+        &self,
+        wallet: &MonoTagged<Chain, &Wallet>,
+        payee: &MonoTagged<Chain, &WalletAddress>,
+        channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
+        port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,
+    ) -> Result<(), Error> {
+        self.value().runtime.block_on(register_payee(
+            &self.tx_config(),
+            wallet,
+            payee,
             channel_id,
             port_id,
         ))

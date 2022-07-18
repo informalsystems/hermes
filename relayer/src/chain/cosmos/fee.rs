@@ -1,4 +1,4 @@
-use ibc::applications::ics29_fee::msgs::register_counterparty::build_register_counterparty_payee_message;
+use ibc::applications::ics29_fee::msgs::register_payee::build_register_counterparty_payee_message;
 use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc::signer::Signer;
 
