@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = github:nixos/nixpkgs/nixpkgs-unstable;
     flake-utils.url = github:numtide/flake-utils;
-    cosmos-nix.url = github:informalsystems/cosmos.nix/ibc-go-ics29-simapp;
+    cosmos-nix.url = github:informalsystems/cosmos.nix;
   };
 
   outputs = inputs:
@@ -38,7 +38,6 @@
               ibc-go-v3-simapp
               ibc-go-v4-simapp
               ibc-go-main-simapp
-              ibc-go-ics29-simapp
               wasmd
               apalache
             ;
