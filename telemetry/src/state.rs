@@ -522,7 +522,6 @@ impl AggregatorSelector for CustomAggregatorSelector {
             // Prometheus' supports only collector for histogram, sum, and last value aggregators.
             // https://docs.rs/opentelemetry-prometheus/0.10.0/src/opentelemetry_prometheus/lib.rs.html#411-418
             // TODO: Once quantile sketches are supported, replace histograms with that.
-            // For the moment, disable histogram buckets since no values make sense for all use-cases.
             "tx_latency_submitted" => Some(Arc::new(histogram(
                 descriptor,
                 &[200.0, 500.0, 1000.0, 2000.0, 5000.0, 10000.0],
