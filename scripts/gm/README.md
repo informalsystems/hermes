@@ -186,9 +186,10 @@ $ hermes create connection --a-chain ibc-0 --b-chain ibc-1
 ### `gm help`
 **Description**: shows the help screen
 
-### `gm hermes cc`
-**Description**: create and print the `hermes create channel` commands to obtain a fully interconnected IBC mesh
-on the screen.
+### `gm hermes cc [--exec]`
+**Description**: create and print the `hermes create channel` commands to obtain a fully interconnected IBC mesh on the screen.
+
+`--exec` executes the commands with `--new-client-connection` flag set to `yes`.
 
 Tip: Pick and choose the ones you want to create.
 

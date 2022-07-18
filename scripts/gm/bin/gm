@@ -95,7 +95,27 @@ case "${1:-help}" in
         ;;
       cc)
         parse_config_file
-        hermes_cc
+        if [ $# -eq 1 ]; then
+          hermes_cc
+        else 
+          if [ $# -eq 2 ] && [ "$2" = "--exec" ]; then
+            hermes_cc | sed 's/$/ --new-client-connection --yes/' | bash
+
+            # Hermes throws errors when we try to open channels concurrently.
+            # Otherwise uncomment this code
+
+            #tmp_output=$(hermes_cc | sed 's/$/ --new-client-connection --yes$/')
+            #OLD_IFS=$IFS
+            #IFS="$"
+            #for cmd in $tmp_output; do
+              #eval $cmd &
+            #done
+            # wait 
+            #IFS=$OLD_IFS
+          else 
+            echo "usage : gm hermes cc [--exec]"
+          fi
+        fi
         ;;
       *)
         hermes_usage
