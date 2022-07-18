@@ -83,6 +83,7 @@ jobs:
         simapp:
           - ibc-go-v2-simapp
           - ibc-go-v3-simapp
+          - ibc-go-v4-simapp
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v15
