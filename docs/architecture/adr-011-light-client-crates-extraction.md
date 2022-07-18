@@ -173,20 +173,8 @@ pub struct UpdateClient {
 }
 ```
 
-This can be solved using the `ibc_proto::google::protobuf::Any` type instead and having the light client traits provide
-an encoding to `Any` ->
-
-```rust
-use ibc_proto::google::protobuf::Any;
-
-pub trait Header {
-    /// Encode to canonical protobuf representation
-    fn encode_any(&self) -> Any;
-
-    /* ... */
-}
-```
-
+This can be solved using the `ibc_proto::google::protobuf::Any` type instead thereby deferring the actual
+encoding/decoding to the hosts themselves during handler execution.
 Thankfully, the core modules code doesn't use the `serde` derivations except in logs and errors. Host and light-client
 implementations can optionally choose to downcast to the concrete type and use it's `serde` derivations directly (if
 available).
