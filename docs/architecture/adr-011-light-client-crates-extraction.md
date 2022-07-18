@@ -77,21 +77,66 @@ parameters & cannot use `Self`. These restrictions, their implications, and poss
 
 #### Traits that require `Self: Sized` cannot be used as supertraits
 
-Common traits that the light client traits depend on that have the `Self: Sized` requirement
-are `core::convert::{Into<T>, From<T>, ...}`, `tendermint_proto::Protobuf`, `Clone`, etc.
+Supertraits of the light client traits that have the `Self: Sized` requirement
+include `core::convert::{Into<T>, From<T>, ...}`, `tendermint_proto::Protobuf`, `Clone`, etc.
 
-An easy workaround is to add these methods directly to the trait, for e.g. we add an `encode_vec()` method to
-the `Header` trait directly.
+The `erased-serde` crate employs a novel technique to provide object safe versions of `serde` traits that can operate
+seamlessly with their original non-object safe counterparts. Some elements of this technique can be used to provide an
+object safe version of the `tendermint_proto::Protobuf` trait that can be used as a supertrait ->
 
 ```rust
-pub trait ClientState {
-    /// Encode to canonical binary representation
-    fn encode_vec(&self) -> Vec<u8>;
+mod erased {
+    use core::convert::{Into as CoreInto, TryFrom as CoreTryFrom};
 
-    /* ... */
+    mod sealed {
+        use super::*;
+
+        pub trait SealedInto<T: ?Sized> {}
+
+        impl<T, U: Clone + CoreInto<T>> SealedInto<T> for U {}
+
+        pub trait SealedTryFrom<T> {}
+
+        impl<T, U: CoreTryFrom<T>> SealedTryFrom<T> for U {}
+    }
+
+    pub trait Into<T: ?Sized>: sealed::SealedInto<T> {
+        fn into(&self) -> Box<T>;
+    }
+
+    impl<T, U: Clone + CoreInto<T>> Into<T> for U {
+        fn into(&self) -> Box<T> {
+            Box::new(self.clone().into())
+        }
+    }
+
+    pub trait TryFrom<T>: sealed::SealedTryFrom<T> {
+        type Error;
+
+        fn try_from(t: T) -> Result<Self, Self::Error>
+            where
+                Self: Sized;
+    }
+
+    impl<T, U: CoreTryFrom<T>> TryFrom<T> for U {
+        type Error = <Self as CoreTryFrom<T>>::Error;
+
+        fn try_from(t: T) -> Result<Self, Self::Error>
+            where
+                Self: Sized,
+        {
+            <Self as CoreTryFrom<T>>::try_from(t)
+        }
+    }
 }
-/// instead of ->
-/// pub trait ClientState: Protobuf<Any> { /* ... */}
+
+pub trait Protobuf<T: Message + Default>
+    where
+        Self: erased::TryFrom<T> + erased::Into<T>,
+        <Self as erased::TryFrom<T>>::Error: Display,
+{ /* ... */ }
+
+pub trait Header: Protobuf<Any> {}
 ```
 
 #### `Clone` cannot be a supertrait and cannot be derived for types containing boxed trait objects
@@ -448,4 +493,4 @@ Proposed
 * Experimental PR for extracting `ibc-base` crate ([PR #2327](https://github.com/informalsystems/ibc-rs/pull/2327))
 * Rationale behind design choice for `Any*` enums
   ([ADR003: Dealing with chain-specific datatypes](https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/adr-003-handler-implementation.md#dealing-with-chain-specific-datatypes))
-
+* `erased-serde`: [How it works?](https://github.com/dtolnay/erased-serde/blob/master/explanation/main.rs)
