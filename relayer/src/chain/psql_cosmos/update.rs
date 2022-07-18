@@ -1,16 +1,18 @@
-use ibc::core::ics24_host::identifier::ConnectionId;
+use ibc::core::ics24_host::identifier::{ChannelId, ConnectionId};
 
+use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use std::collections::HashMap;
 
-use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
+use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 
 use crate::error::Error;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct IbcData {
     pub connections: HashMap<ConnectionId, IdentifiedConnectionEnd>,
+    pub channels: HashMap<ChannelId, IdentifiedChannelEnd>,
     // ..
 }
 

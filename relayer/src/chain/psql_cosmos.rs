@@ -32,7 +32,9 @@ use ibc::{
 
 use crate::chain::cosmos::CosmosSdkChain;
 use crate::chain::psql_cosmos::batch::send_batched_messages_and_wait_commit;
-use crate::chain::psql_cosmos::query::{query_blocks, query_connections, query_txs};
+use crate::chain::psql_cosmos::query::{
+    query_blocks, query_channel, query_channels, query_connections, query_txs,
+};
 use crate::chain::psql_cosmos::update::init_dbs;
 use crate::chain::psql_cosmos::update::{IbcData, IbcSnapshot};
 use crate::denom::DenomTrace;
@@ -116,13 +118,23 @@ impl PsqlChain {
         .await
     }
 
-    fn query_connections_internal(
+    fn solve_query_height(&self, query_height: &QueryHeight) -> Result<Height, Error> {
+        let solved_height = if let QueryHeight::Specific(height) = query_height {
+            *height
+        } else {
+            self.chain.query_application_status()?.height
+        };
+        Ok(solved_height)
+    }
+
+    fn populate_connections(
         &self,
         query_height: &QueryHeight,
         request: QueryConnectionsRequest,
-    ) -> Result<(Height, Vec<IdentifiedConnectionEnd>), Error> {
-        crate::time!("query_connections");
-        crate::telemetry!(query, self.id(), "query_connections");
+        snapshot: &mut IbcSnapshot,
+    ) -> Result<(), Error> {
+        crate::time!("populate_connections");
+        crate::telemetry!(query, self.id(), "populate_connections");
 
         let mut client = self
             .block_on(
@@ -150,37 +162,113 @@ impl PsqlChain {
             .try_into()
             .map_err(|_| Error::invalid_height_no_source())?;
 
-        let connections = response
+        if let QueryHeight::Specific(height) = query_height {
+            if height != &response_height {
+                return Err(Error::invalid_height_no_source());
+            }
+        }
+
+        let connections: Vec<IdentifiedConnectionEnd> = response
             .connections
             .into_iter()
             .filter_map(|co| IdentifiedConnectionEnd::try_from(co).ok())
             .collect();
 
-        Ok((response_height, connections))
-    }
-
-    fn ibc_snapshot(&self, query_height: &QueryHeight) -> Result<IbcSnapshot, Error> {
-        let (response_height, connections) = self.query_connections_internal(
-            query_height,
-            QueryConnectionsRequest { pagination: None },
-        )?;
-
-        let height = response_height.revision_height();
-
-        let mut connections_map = HashMap::new();
-
         for c in connections.iter() {
-            connections_map
+            snapshot
+                .json_data
+                .connections
                 .entry(c.connection_id.clone())
                 .or_insert_with(|| c.clone());
         }
+        snapshot.height = response_height.revision_height();
+        Ok(())
+    }
 
-        Ok(IbcSnapshot {
-            height,
+    fn populate_channels(
+        &self,
+        query_height: &QueryHeight,
+        request: QueryChannelsRequest,
+        snapshot: &mut IbcSnapshot,
+    ) -> Result<(), Error> {
+        crate::time!("populate_channels");
+        crate::telemetry!(query, self.id(), "populate_channels");
+
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                    self.chain.grpc_addr.clone(),
+                ),
+            )
+            .map_err(Error::grpc_transport)?;
+
+        let mut request = tonic::Request::new(request.into());
+        let height_param = AsciiMetadataValue::try_from(*query_height)?;
+
+        request
+            .metadata_mut()
+            .insert("x-cosmos-block-height", height_param);
+
+        let response = self
+            .block_on(client.channels(request))
+            .map_err(Error::grpc_status)?
+            .into_inner();
+
+        let response_height = response
+            .height
+            .unwrap()
+            .try_into()
+            .map_err(|_| Error::invalid_height_no_source())?;
+
+        if let QueryHeight::Specific(height) = query_height {
+            if height != &response_height {
+                return Err(Error::invalid_height_no_source());
+            }
+        }
+
+        let channels: Vec<IdentifiedChannelEnd> = response
+            .channels
+            .into_iter()
+            .filter_map(|ch| IdentifiedChannelEnd::try_from(ch).ok())
+            .collect();
+
+        for c in channels.iter() {
+            snapshot
+                .json_data
+                .channels
+                .entry(c.channel_id.clone())
+                .or_insert_with(|| c.clone());
+        }
+
+        Ok(())
+    }
+
+    fn ibc_snapshot(&self, query_height: &QueryHeight) -> Result<IbcSnapshot, Error> {
+        let solved_query_height = self.solve_query_height(query_height)?;
+
+        let mut result = IbcSnapshot {
+            height: solved_query_height.revision_height(),
             json_data: IbcData {
-                connections: connections_map,
+                connections: HashMap::new(),
+                channels: HashMap::new(),
             },
-        })
+        };
+
+        // todo - fix "ibc" deserialization error:
+        // sqlx: error occurred while decoding column "json_data": invalid type: string "ibc", expected struct CommitmentPrefix at line 1 column 756
+        // self.populate_connections(
+        //     &QueryHeight::Specific(solved_query_height),
+        //     QueryConnectionsRequest { pagination: None },
+        //     &mut result,
+        // )?;
+
+        self.populate_channels(
+            &QueryHeight::Specific(solved_query_height),
+            QueryChannelsRequest { pagination: None },
+            &mut result,
+        )?;
+
+        Ok(result)
     }
 
     fn update_with_events(&mut self, batch: EventBatch) -> Result<(), Error> {
@@ -381,7 +469,11 @@ impl ChainEndpoint for PsqlChain {
             .height
             .revision_height();
         match self.block_on(query_connections(&self.pool, query_height)) {
-            Ok(connections) => Ok(connections),
+            Ok(connections) => {
+                // todo - remove this warn once the "ibc" prefix deserialization is fixed
+                warn!("this doesn't currently work as connections are not populated");
+                Ok(connections)
+            }
             Err(e) => {
                 warn!(
                     "unable to query_connections via psql connection ({}), falling back to gRPC",
@@ -418,7 +510,21 @@ impl ChainEndpoint for PsqlChain {
         &self,
         request: QueryChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
-        self.chain.query_channels(request)
+        let query_height = self
+            .chain
+            .query_application_status()?
+            .height
+            .revision_height();
+        match self.block_on(query_channels(&self.pool, query_height)) {
+            Ok(channels) => Ok(channels),
+            Err(e) => {
+                warn!(
+                    "unable to query_channels via psql connection ({}), falling back to gRPC",
+                    e
+                );
+                self.chain.query_channels(request)
+            }
+        }
     }
 
     fn query_channel(
@@ -426,7 +532,24 @@ impl ChainEndpoint for PsqlChain {
         request: QueryChannelRequest,
         include_proof: IncludeProof,
     ) -> Result<(ChannelEnd, Option<MerkleProof>), Error> {
-        self.chain.query_channel(request, include_proof)
+        match include_proof {
+            IncludeProof::Yes => self.chain.query_channel(request, include_proof),
+            IncludeProof::No => {
+                let query_height = self.solve_query_height(&request.height)?.revision_height();
+
+                match self.block_on(query_channel(
+                    &self.pool,
+                    query_height,
+                    request.channel_id.clone(),
+                )) {
+                    Ok(Some(channel)) => Ok((channel.channel_end, None)),
+                    _ => {
+                        warn!("unable to query_channel via psql connection, falling back to gRPC");
+                        self.chain.query_channel(request, include_proof)
+                    }
+                }
+            }
+        }
     }
 
     fn query_channel_client_state(

@@ -11,9 +11,10 @@ use tracing::{info, trace};
 
 use ibc::core::ics02_client::events as ClientEvents;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
+use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics04_channel::packet::{parse_timeout_height, Packet};
-use ibc::core::ics24_host::identifier::ChainId;
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId};
 use ibc::events::{self, from_tx_response_event, IbcEvent};
 use ibc::Height as ICSHeight;
 
@@ -712,6 +713,7 @@ pub async fn query_ibc_data(pool: &PgPool, query_height: u64) -> Result<IbcSnaps
         height: result.height as u64,
         json_data: IbcData {
             connections: result.json_data.connections.clone(),
+            channels: result.json_data.channels.clone(),
         },
     };
     Ok(response)
@@ -724,4 +726,24 @@ pub async fn query_connections(
     let result = query_ibc_data(pool, query_height).await?;
 
     Ok(result.json_data.connections.values().cloned().collect())
+}
+
+pub async fn query_channels(
+    pool: &PgPool,
+    query_height: u64,
+) -> Result<Vec<IdentifiedChannelEnd>, Error> {
+    let result = query_ibc_data(pool, query_height).await?;
+
+    Ok(result.json_data.channels.values().cloned().collect())
+}
+
+pub async fn query_channel(
+    pool: &PgPool,
+    query_height: u64,
+    id: ChannelId,
+) -> Result<Option<IdentifiedChannelEnd>, Error> {
+    let result = query_ibc_data(pool, query_height).await?;
+
+    let ch = result.json_data.channels.get(&id).cloned();
+    Ok(ch)
 }
