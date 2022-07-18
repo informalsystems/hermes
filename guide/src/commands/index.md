@@ -36,6 +36,6 @@ Commands to monitor clients and submit evidence of misbehaviour
 
 Commands to execute queries on configured chains
 
-**[Transactions](./raw/index.md)**
+**[Transactions](./tx/index.md)**
 
 Commands to submit individual transactions to configured chains
