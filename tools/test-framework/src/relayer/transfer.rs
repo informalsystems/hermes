@@ -1,6 +1,6 @@
 /*!
    Functions for performing IBC transfer that works similar to
-   `hermes tx raw ft-transfer`.
+   `hermes tx ft-transfer`.
 */
 
 use core::ops::Add;

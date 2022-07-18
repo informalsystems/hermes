@@ -66,7 +66,8 @@ You can save this to a file (e.g. `key_seed.json`) and use it to add to the rela
 
 ### Adding and restoring Keys
 
-The command `keys add` has two exclusive flags, `--key-file` and `--mnemonic-file` which are respectively used to add and restore a key.
+The command `keys add` has two exclusive flags, `--key-file` and `--mnemonic-file` which are respectively used to add and restore a key.  
+If a key with the same `key_name` already exists, the flag `--overwrite` must be passed in order to overwrite the existing key or else the command will abort.
 
 ```shell
     hermes keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>
@@ -79,6 +80,7 @@ DESCRIPTION:
 OPTIONS:
         --hd-path <HD_PATH>      Derivation path for this key [default: m/44'/118'/0'/0/0]
         --key-name <KEY_NAME>    Name of the key (defaults to the `key_name` defined in the config)
+        --overwrite              Overwrite the key if there is already one with the same key name
 
 FLAGS:
         --chain <CHAIN_ID>                 Identifier of the chain
@@ -97,6 +99,7 @@ DESCRIPTION:
 OPTIONS:
         --hd-path <HD_PATH>      Derivation path for this key [default: m/44'/118'/0'/0/0]
         --key-name <KEY_NAME>    Name of the key (defaults to the `key_name` defined in the config)
+        --overwrite              Overwrite the key if there is already one with the same key name
 
 FLAGS:
         --chain <CHAIN_ID>                 Identifier of the chain
@@ -146,6 +149,7 @@ DESCRIPTION:
 OPTIONS:
         --hd-path <HD_PATH>      Derivation path for this key [default: m/44'/118'/0'/0/0]
         --key-name <KEY_NAME>    Name of the key (defaults to the `key_name` defined in the config)
+        --overwrite              Overwrite the key if there is already one with the same key name
 
 FLAGS:
         --chain <CHAIN_ID>                 Identifier of the chain

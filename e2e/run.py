@@ -22,30 +22,30 @@ def passive_packets(
 
     # 1. create some unreceived acks
 
-    # hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 10000 -o 1000 -n 2
+    # hermes tx ft-transfer --receiver-chain ibc-1 --sender-chain ibc-0 --sender-port transfer --sender-channel channel-0 --amount 10000 --timeout-height-offset 1000 --number-msgs 2
     packet.packet_send(c, src=ibc0, dst=ibc1, src_port=port_id,
                        src_channel=ibc0_channel_id, amount=10000, height_offset=1000, number_msgs=2)
 
-    # hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 10000 -o 1000 -n 2
+    # hermes tx ft-transfer --receiver-chain ibc-0 --sender-chain ibc-1 --sender-port transfer --sender-channel channel-1 --amount 10000 --timeout-height-offset 1000 --number-msgs 2
     packet.packet_send(c, src=ibc1, dst=ibc0, src_port=port_id,
                        src_channel=ibc1_channel_id, amount=10000, height_offset=1000, number_msgs=2)
     sleep(5.0)
 
-    # hermes tx raw packet-recv ibc-1 ibc-0 transfer channel-0
+    # hermes tx packet-recv --receiver-chain ibc-1 --sender-chain ibc-0 --sender-port transfer --sender-channel channel-0
     packet.packet_recv(c, src=ibc0, dst=ibc1,
                        src_port=port_id, src_channel=ibc0_channel_id)
 
-    # hermes tx raw packet-recv ibc-0 ibc-1 transfer channel-1
+    # hermes tx packet-recv --receiver-chain ibc-0 --sender-chain ibc-1 --sender-port transfer --sender-channel channel-1
     packet.packet_recv(c, src=ibc1, dst=ibc0,
                        src_port=port_id, src_channel=ibc1_channel_id)
 
     # 2. create some unreceived packets
 
-    # hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 10000 -o 1000 -n 3
+    # hermes tx ft-transfer --receiver-chain ibc-0 --sender-chain ibc-1 --sender-port transfer --sender-channel channel-1 --amount 10000 --timeout-height-offset 1000 --number-msgs 3
     packet.packet_send(c, src=ibc1, dst=ibc0, src_port=port_id,
                        src_channel=ibc1_channel_id, amount=10000, height_offset=1000, number_msgs=3)
 
-    # hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 10000 -o 1000 -n 4
+    # hermes tx ft-transfer --receiver-chain ibc-1 --sender-chain ibc-0 --sender-port transfer --sender-channel channel-0 --amount 10000 --timeout-height-offset 1000 --number-msgs 4
     packet.packet_send(c, src=ibc0, dst=ibc1, src_port=port_id,
                        src_channel=ibc0_channel_id, amount=10000, height_offset=1000, number_msgs=4)
 
@@ -53,25 +53,25 @@ def passive_packets(
 
     # 3. verify the expected number of unreceived packets and acks on each channel end
 
-    # hermes query packet unreceived-packets ibc-0 transfer channel-0
+    # hermes query packet pending-sends --chain ibc-0 --port transfer --channel channel-0
     unreceived = packet.query_unreceived_packets(
         c, chain=ibc0, port=port_id, channel=ibc0_channel_id)
 
     assert (len(unreceived) == 3), (unreceived, "unreceived packet mismatch")
 
-    # hermes query packet unreceived-acks ibc-1 transfer channel-1
+    # hermes query packet pending-acks --chain ibc-1 --port transfer --channel channel-1
     unreceived = packet.query_unreceived_acks(
         c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
 
     assert (len(unreceived) == 2), (unreceived, "unreceived packet mismatch")
 
-    # hermes query packet unreceived-packets ibc-1 transfer channel-1
+    # hermes query packet pending-sends --chain ibc-1 --port transfer --channel channel-1
     unreceived = packet.query_unreceived_packets(
         c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
 
     assert (len(unreceived) == 4), (unreceived, "unreceived packet mismatch")
 
-    # hermes query packet unreceived-acks ibc-0 transfer channel-0
+    # hermes query packet pending-acks --chain ibc-0 --port transfer --channel channel-0
     unreceived = packet.query_unreceived_acks(
         c, chain=ibc0, port=port_id, channel=ibc0_channel_id)
 
@@ -84,28 +84,28 @@ def passive_packets(
     sleep(20.0)
 
     # 6. verify that there are no pending packets
-    # hermes query packet unreceived-packets ibc-1 transfer channel-1
+    # hermes query packet pending-sends --chain ibc-1 --port transfer --channel channel-1
     unreceived = packet.query_unreceived_packets(
         c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
 
     assert (len(unreceived) == 0), (unreceived,
                                     "unreceived packets mismatch (expected 0)")
 
-    # hermes query packet unreceived-acks ibc-1 transfer channel-1
+    # hermes query packet pending-acks --chain ibc-1 --port transfer --channel channel-1
     unreceived = packet.query_unreceived_acks(
         c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
 
     assert (len(unreceived) == 0), (unreceived,
                                     "unreceived acks mismatch (expected 0)")
 
-    # hermes query packet unreceived-packets ibc-0 transfer channel-0
+    # hermes query packet pending-sends --chain ibc-0 --port transfer --channel channel-0
     unreceived = packet.query_unreceived_packets(
         c, chain=ibc0, port=port_id, channel=ibc0_channel_id)
 
     assert (len(unreceived) == 0), (unreceived,
                                     "unreceived packets mismatch (expected 0)")
 
-    # hermes query packet unreceived-acks ibc-0 transfer channel-0
+    # hermes query packet pending-acks --chain ibc-0 --port transfer --channel channel-0
     unreceived = packet.query_unreceived_acks(
         c, chain=ibc0, port=port_id, channel=ibc0_channel_id)
 
@@ -113,39 +113,39 @@ def passive_packets(
                                     "unreceived acks mismatch (expected 0)")
 
     # 7. send some packets
-    # hermes tx raw ft-transfer ibc-0 ibc-1 transfer channel-1 10000 1000 -n 3
+    # hermes tx ft-transfer --receiver-chain ibc-0 --sender-chain ibc-1 --sender-port transfer --sender-channel channel-1 --amount 10000 --timeout-height-offset 1000 --number-msgs 3
     packet.packet_send(c, src=ibc1, dst=ibc0, src_port=port_id,
                        src_channel=ibc1_channel_id, amount=10000, height_offset=1000, number_msgs=3)
 
-    # hermes tx raw ft-transfer ibc-1 ibc-0 transfer channel-0 10000 1000 -n 4
+    # hermes tx ft-transfer --receiver-chain ibc-1 --sender-chain ibc-0 --sender-port transfer --sender-channel channel-0 --amount 10000 --timeout-height-offset 1000 --number-msgs 4
     packet.packet_send(c, src=ibc0, dst=ibc1, src_port=port_id,
                        src_channel=ibc0_channel_id, amount=10000, height_offset=1000, number_msgs=4)
 
     sleep(20.0)
 
     # 8. verify that there are no pending packets
-    # hermes query packet unreceived-packets ibc-1 transfer channel-1
+    # hermes query packet pending-sends --chain ibc-1 --port transfer --channel channel-1
     unreceived = packet.query_unreceived_packets(
         c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
 
     assert (len(unreceived) == 0), (unreceived,
                                     "unreceived packets mismatch (expected 0)")
 
-    # hermes query packet unreceived-acks ibc-1 transfer channel-1
+    # hermes query packet pending-acks --chain ibc-1 --port transfer --channel channel-1
     unreceived = packet.query_unreceived_acks(
         c, chain=ibc1, port=port_id, channel=ibc1_channel_id)
 
     assert (len(unreceived) == 0), (unreceived,
                                     "unreceived acks mismatch (expected 0)")
 
-    # hermes query packet unreceived-packets ibc-0 transfer channel-0
+    # hermes query packet pending-sends --chain ibc-0 --port transfer --channel channel-0
     unreceived = packet.query_unreceived_packets(
         c, chain=ibc0, port=port_id, channel=ibc0_channel_id)
 
     assert (len(unreceived) == 0), (unreceived,
                                     "unreceived packets mismatch (expected 0)")
 
-    # hermes query packet unreceived-acks ibc-0 transfer channel-0
+    # hermes query packet pending-acks --chain ibc-0 --port transfer --channel channel-0
     unreceived = packet.query_unreceived_acks(
         c, chain=ibc0, port=port_id, channel=ibc0_channel_id)
 

@@ -35,7 +35,7 @@ REQUIRED:
 1. Without Hermes running, send 3 packets over a channel, here `channel-13`:
 
 ```
-❯ hermes tx raw ft-transfer --dst-chain ibc1 --src-chain ibc0 --src-port transfer --src-chan channel-13 --amount 9999 --timeout-height-offset 1000 --number-msgs 3
+❯ hermes tx ft-transfer --receiver-chain ibc1 --sender-chain ibc0 --sender-port transfer --sender-channel channel-13 --amount 9999 --timeout-height-offset 1000 --number-msgs 3
 2022-02-24T14:16:28.295526Z  INFO ThreadId(01) using default configuration from '/Users/coromac/.hermes/config.toml'
 2022-02-24T14:16:28.330860Z  INFO ThreadId(15) send_tx{id=ibc0}: refresh: retrieved account sequence=61 number=1
 2022-02-24T14:16:28.350022Z  INFO ThreadId(15) wait_for_block_commits: waiting for commit of tx hashes(s) AE4C3186778488E45670EB7303FA77E69B39F4E7C7494B05EC51E55136A373D6 id=ibc0
@@ -143,10 +143,10 @@ Success: [
 ```
 
 2. Because the relayer is not running these packets won't be relayed,
-as can be seen with the `query packet unreceived-packets` command:
+as can be seen with the `query packet pending-sends` command:
 
 ```
-❯ hermes query packet unreceived-packets --chain ibc1 --port transfer --channel channel-13
+❯ hermes query packet pending-sends --chain ibc1 --port transfer --channel channel-13
 2022-02-24T14:21:28.874190Z  INFO ThreadId(01) using default configuration from '/Users/coromac/.hermes/config.toml'
 Success: [
     14,
@@ -440,7 +440,7 @@ Success: [
 4. The packets have now been successfully relayed:
 
 ```
-❯ hermes query packet unreceived-packets --chain ibc1 --port transfer --channel channel-13
+❯ hermes query packet pending-sends --chain ibc1 --port transfer --channel channel-13
 2022-02-24T14:21:28.874190Z  INFO ThreadId(01) using default configuration from '/Users/coromac/.hermes/config.toml'
 Success: []
 ```
