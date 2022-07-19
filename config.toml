@@ -188,10 +188,13 @@ clock_drift = '5s'
 # Note: This MUST be the same as the `max_expected_time_per_block` genesis parameter for Tendermint chains.
 max_block_time = '30s'
 
-# Specify the exponent used to convert a balance to a readible balance.
-# E.g. with exponent_divider = 6 the raw balance will be divided by 10^6.
-# Default exponent_divider 6
-exponent_divider = 6
+# Specify the order of magnitude used to convert a balance to a readable balance.
+# This configuration will only affect the value displayed by the telemetry metric `wallet_balance`.
+# E.g. with wallet_metric_scale = 6 the raw balance will be divided by 10^6, so if the
+# raw balance is 10'000'000, the telemetry will display
+# `wallet_balance{account=<ACCOUNT_ID>, chain=<CHAIN_ID>, denom=<DENOM>} 10`
+# Default wallet_metric_scale 0
+wallet_metric_scale = 0
 
 # Specify the amount of time to be used as the light client trusting period.
 # It should be significantly less than the unbonding period

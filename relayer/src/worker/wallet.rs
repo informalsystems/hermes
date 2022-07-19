@@ -42,7 +42,7 @@ pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
         // Example input that overflows, from sifchain-1: `349999631379421794336`.
         //
         let chain_config = chain.config().unwrap();
-        if let Some(_scaled_amount) = scale_down(amount, chain_config.exponent_divider) {
+        if let Some(_scaled_amount) = scale_down(amount, chain_config.wallet_metric_scale) {
             telemetry!(
                 wallet_balance,
                 &chain.id(),
@@ -53,7 +53,7 @@ pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
         } else {
             trace!(
                 %amount, denom = %balance.denom, account = %key.account,
-                "amount cannot be scaled down to fit into u64 and therefore won't be reported to telemetry"
+                "amount cannot be scaled down to fit into u64 and therefore won't be reported to telemetry.\nPlease increase the value of `wallet_metric_scale` in Hermes `config.toml`.\nTo convert from uatom to atom set `wallet_metric_scale = 6`."
             );
         }
 

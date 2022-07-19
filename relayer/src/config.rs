@@ -74,8 +74,8 @@ pub mod default {
         ZERO_DURATION
     }
 
-    pub fn exponent_divider() -> u32 {
-        6
+    pub fn wallet_metric_scale() -> u32 {
+        0
     }
 }
 
@@ -365,8 +365,8 @@ pub struct ChainConfig {
     #[serde(default, with = "self::proof_specs")]
     pub proof_specs: ProofSpecs,
 
-    #[serde(default = "default::exponent_divider")]
-    pub exponent_divider: u32,
+    #[serde(default = "default::wallet_metric_scale")]
+    pub wallet_metric_scale: u32,
 
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     /// The trust threshold defines what fraction of the total voting power of a known
