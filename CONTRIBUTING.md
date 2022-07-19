@@ -197,7 +197,7 @@ review and merging. Larger change sets should be broken up across multiple PRs.
 Commits should be concise but informative, and moderately clean. Commits will be squashed into a
 single commit for the PR with all the commit messages.
 
-In order to help facilitate the PR review process, tag *one*person as the
+In order to help facilitate the PR review process, tag *one* person as the
 reviewer of the PR. If you are unsure of who to tag, your point of contact on
 the ibc-rs team is always a natural candidate; they'll make sure that the PR gets
 reviewed by whomever is most appropriate to review it. It also helps to notify
