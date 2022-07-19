@@ -316,7 +316,6 @@ gm start
 gm hermes config
 gm hermes keys
 gm hermes cc 
-
 ```
 
 This will
