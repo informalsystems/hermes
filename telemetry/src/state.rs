@@ -572,7 +572,7 @@ impl Default for TelemetryState {
 
             wallet_balance: meter
                 .u64_value_recorder("wallet_balance")
-                .with_description("The balance of the wallet specified by the private key in `config.toml`, for each chain. The amount is of unit: 10^exponent_divider * `denom`")
+                .with_description("The balance of each wallet Hermes uses per chain. The amount is of unit: 10^exponent_divider * `denom`")
                 .init(),
 
             send_packet_count: meter
