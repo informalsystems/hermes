@@ -34,38 +34,46 @@ macro_rules! conn_open_cmd {
     };
 }
 
-#[derive(Clone, Command, Debug, Parser)]
-pub struct TxRawConnInitCmd {
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
+pub struct TxConnInitCmd {
     #[clap(
-        long = "dst-chain",
+        long = "b-chain",
         required = true,
+        value_name = "B_CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "src-chain",
+        long = "a-chain",
         required = true,
+        value_name = "A_CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
-        long = "dst-client",
+        long = "b-client",
         required = true,
+        value_name = "B_CLIENT_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the destination client"
     )]
     dst_client_id: ClientId,
 
     #[clap(
-        long = "src-client",
+        long = "a-client",
         required = true,
+        value_name = "A_CLIENT_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the source client"
     )]
     src_client_id: ClientId,
 }
 
-impl Runnable for TxRawConnInitCmd {
+impl Runnable for TxConnInitCmd {
     fn run(&self) {
         conn_open_cmd!(
             "ConnOpenInit",
@@ -82,55 +90,64 @@ impl Runnable for TxRawConnInitCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser)]
-pub struct TxRawConnTryCmd {
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
+pub struct TxConnTryCmd {
     #[clap(
-        long = "dst-chain",
+        long = "b-chain",
         required = true,
+        value_name = "B_CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "src-chain",
+        long = "a-chain",
         required = true,
+        value_name = "A_CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
-        long = "dst-client",
+        long = "b-client",
         required = true,
+        value_name = "B_CLIENT_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the destination client"
     )]
     dst_client_id: ClientId,
 
     #[clap(
-        long = "src-client",
+        long = "a-client",
         required = true,
+        value_name = "A_CLIENT_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the source client"
     )]
     src_client_id: ClientId,
 
     #[clap(
-        long = "src-connection",
-        alias = "src-conn",
+        long = "a-connection",
+        visible_alias = "a-conn",
         required = true,
-        help = "Identifier of the source connection (required)",
-        value_name = "ID"
+        value_name = "A_CONNECTION_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the source connection (required)"
     )]
     src_conn_id: ConnectionId,
 
     #[clap(
-        long = "dst-connection",
-        alias = "dst-conn",
-        help = "Identifier of the destination connection (optional)",
-        value_name = "ID"
+        long = "b-connection",
+        visible_alias = "b-conn",
+        value_name = "B_CONNECTION_ID",
+        help = "Identifier of the destination connection (optional)"
     )]
     dst_conn_id: Option<ConnectionId>,
 }
 
-impl Runnable for TxRawConnTryCmd {
+impl Runnable for TxConnTryCmd {
     fn run(&self) {
         conn_open_cmd!(
             "ConnOpenTry",
@@ -155,56 +172,66 @@ impl Runnable for TxRawConnTryCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser)]
-pub struct TxRawConnAckCmd {
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
+pub struct TxConnAckCmd {
     #[clap(
-        long = "dst-chain",
+        long = "b-chain",
         required = true,
+        value_name = "B_CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "src-chain",
+        long = "a-chain",
         required = true,
+        value_name = "A_CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
-        long = "dst-client",
+        long = "b-client",
         required = true,
+        value_name = "B_CLIENT_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the destination client"
     )]
     dst_client_id: ClientId,
 
     #[clap(
-        long = "src-client",
+        long = "a-client",
         required = true,
+        value_name = "A_CLIENT_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the source client"
     )]
     src_client_id: ClientId,
 
     #[clap(
-        long = "dst-connection",
-        alias = "dst-conn",
+        long = "b-connection",
+        visible_alias = "b-conn",
         required = true,
-        help = "Identifier of the destination connection (required)",
-        value_name = "ID"
+        value_name = "B_CONNECTION_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the destination connection (required)"
     )]
     dst_conn_id: ConnectionId,
 
     #[clap(
-        long = "src-connection",
-        alias = "src-conn",
+        long = "a-connection",
+        visible_alias = "a-conn",
         required = true,
-        help = "Identifier of the source connection (required)",
-        value_name = "ID"
+        value_name = "A_CONNECTION_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the source connection (required)"
     )]
     src_conn_id: ConnectionId,
 }
 
-impl Runnable for TxRawConnAckCmd {
+impl Runnable for TxConnAckCmd {
     fn run(&self) {
         conn_open_cmd!(
             "ConnOpenAck",
@@ -229,56 +256,66 @@ impl Runnable for TxRawConnAckCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser)]
-pub struct TxRawConnConfirmCmd {
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
+pub struct TxConnConfirmCmd {
     #[clap(
-        long = "dst-chain",
+        long = "b-chain",
         required = true,
+        value_name = "B_CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "src-chain",
+        long = "a-chain",
         required = true,
+        value_name = "A_CHAIN_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
-        long = "dst-client",
+        long = "b-client",
         required = true,
+        value_name = "B_CLIENT_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the destination client"
     )]
     dst_client_id: ClientId,
 
     #[clap(
-        long = "src-client",
+        long = "a-client",
         required = true,
+        value_name = "A_CLIENT_ID",
+        help_heading = "REQUIRED",
         help = "Identifier of the source client"
     )]
     src_client_id: ClientId,
 
     #[clap(
-        long = "dst-connection",
-        alias = "dst-conn",
+        long = "b-connection",
+        visible_alias = "b-conn",
         required = true,
-        help = "Identifier of the destination connection (required)",
-        value_name = "ID"
+        value_name = "B_CONNECTION_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the destination connection (required)"
     )]
     dst_conn_id: ConnectionId,
 
     #[clap(
-        long = "src-connection",
-        alias = "src-conn",
+        long = "a-connection",
+        visible_alias = "a-conn",
         required = true,
-        help = "Identifier of the source connection (required)",
-        value_name = "ID"
+        value_name = "A_CONNECTION_ID",
+        help_heading = "REQUIRED",
+        help = "Identifier of the source connection (required)"
     )]
     src_conn_id: ConnectionId,
 }
 
-impl Runnable for TxRawConnConfirmCmd {
+impl Runnable for TxConnConfirmCmd {
     fn run(&self) {
         conn_open_cmd!(
             "ConnOpenConfirm",
@@ -300,5 +337,591 @@ impl Runnable for TxRawConnConfirmCmd {
                 }
             }
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{TxConnAckCmd, TxConnConfirmCmd, TxConnInitCmd, TxConnTryCmd};
+
+    use std::str::FromStr;
+
+    use abscissa_core::clap::Parser;
+    use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+
+    #[test]
+    fn test_conn_init() {
+        assert_eq!(
+            TxConnInitCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                dst_client_id: ClientId::from_str("client_b-01").unwrap(),
+                src_client_id: ClientId::from_str("client_a-01").unwrap()
+            },
+            TxConnInitCmd::parse_from(&[
+                "test",
+                "--b-chain",
+                "chain_b",
+                "--a-chain",
+                "chain_a",
+                "--b-client",
+                "client_b-01",
+                "--a-client",
+                "client_a-01"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_conn_init_no_a_client() {
+        assert!(TxConnInitCmd::try_parse_from(&[
+            "test",
+            "--b-chain",
+            "chain_b",
+            "--a-chain",
+            "chain_a",
+            "--b-client",
+            "client_b-01"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_conn_init_no_b_client() {
+        assert!(TxConnInitCmd::try_parse_from(&[
+            "test",
+            "--b-chain",
+            "chain_b",
+            "--a-chain",
+            "chain_a",
+            "--a-client",
+            "client_a-01"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_conn_init_no_a_chain() {
+        assert!(TxConnInitCmd::try_parse_from(&[
+            "test",
+            "--b-chain",
+            "chain_b",
+            "--b-client",
+            "client_b-01",
+            "--a-client",
+            "client_a-01"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_conn_init_no_b_chain() {
+        assert!(TxConnInitCmd::try_parse_from(&[
+            "test",
+            "--a-chain",
+            "chain_a",
+            "--b-client",
+            "client_b-01",
+            "--a-client",
+            "client_a-01"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_conn_try_required_only() {
+        assert_eq!(
+            TxConnTryCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                dst_client_id: ClientId::from_str("client_b-01").unwrap(),
+                src_client_id: ClientId::from_str("client_a-01").unwrap(),
+                src_conn_id: ConnectionId::from_str("connection_a").unwrap(),
+                dst_conn_id: None
+            },
+            TxConnTryCmd::parse_from(&[
+                "test",
+                "--b-chain",
+                "chain_b",
+                "--a-chain",
+                "chain_a",
+                "--b-client",
+                "client_b-01",
+                "--a-client",
+                "client_a-01",
+                "--a-connection",
+                "connection_a"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_conn_try_b_connection() {
+        assert_eq!(
+            TxConnTryCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                dst_client_id: ClientId::from_str("client_b-01").unwrap(),
+                src_client_id: ClientId::from_str("client_a-01").unwrap(),
+                src_conn_id: ConnectionId::from_str("connection_a").unwrap(),
+                dst_conn_id: Some(ConnectionId::from_str("connection_b").unwrap())
+            },
+            TxConnTryCmd::parse_from(&[
+                "test",
+                "--b-chain",
+                "chain_b",
+                "--a-chain",
+                "chain_a",
+                "--b-client",
+                "client_b-01",
+                "--a-client",
+                "client_a-01",
+                "--a-connection",
+                "connection_a",
+                "--b-connection",
+                "connection_b"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_conn_try_b_connection_aliases() {
+        assert_eq!(
+            TxConnTryCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                dst_client_id: ClientId::from_str("client_b-01").unwrap(),
+                src_client_id: ClientId::from_str("client_a-01").unwrap(),
+                src_conn_id: ConnectionId::from_str("connection_a").unwrap(),
+                dst_conn_id: Some(ConnectionId::from_str("connection_b").unwrap())
+            },
+            TxConnTryCmd::parse_from(&[
+                "test",
+                "--b-chain",
+                "chain_b",
+                "--a-chain",
+                "chain_a",
+                "--b-client",
+                "client_b-01",
+                "--a-client",
+                "client_a-01",
+                "--a-conn",
+                "connection_a",
+                "--b-conn",
+                "connection_b"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_conn_try_no_a_connection() {
+        assert!(TxConnTryCmd::try_parse_from(&[
+            "test",
+            "--b-chain",
+            "chain_b",
+            "--a-chain",
+            "chain_a",
+            "--b-client",
+            "client_b-01",
+            "--a-client",
+            "client_a-01"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_conn_try_no_a_client() {
+        assert!(TxConnTryCmd::try_parse_from(&[
+            "test",
+            "--b-chain",
+            "chain_b",
+            "--a-chain",
+            "chain_a",
+            "--b-client",
+            "client_b-01",
+            "--a-connection",
+            "connection_a"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_conn_try_no_b_client() {
+        assert!(TxConnTryCmd::try_parse_from(&[
+            "test",
+            "--b-chain",
+            "chain_b",
+            "--a-chain",
+            "chain_a",
+            "--a-client",
+            "client_a-01",
+            "--a-connection",
+            "connection_a"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_conn_try_no_a_chain() {
+        assert!(TxConnTryCmd::try_parse_from(&[
+            "test",
+            "--b-chain",
+            "chain_b",
+            "--b-client",
+            "client_b-01",
+            "--a-client",
+            "client_a-01",
+            "--a-connection",
+            "connection_a"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_conn_try_no_b_chain() {
+        assert!(TxConnTryCmd::try_parse_from(&[
+            "test",
+            "--a-chain",
+            "chain_a",
+            "--b-client",
+            "client_b-01",
+            "--a-client",
+            "client_a-01",
+            "--a-connection",
+            "connection_a"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_conn_ack() {
+        assert_eq!(
+            TxConnAckCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                dst_client_id: ClientId::from_str("client_b-01").unwrap(),
+                src_client_id: ClientId::from_str("client_a-01").unwrap(),
+                dst_conn_id: ConnectionId::from_str("connection_b").unwrap(),
+                src_conn_id: ConnectionId::from_str("connection_a").unwrap()
+            },
+            TxConnAckCmd::parse_from(&[
+                "test",
+                "--b-chain",
+                "chain_b",
+                "--a-chain",
+                "chain_a",
+                "--b-client",
+                "client_b-01",
+                "--a-client",
+                "client_a-01",
+                "--b-connection",
+                "connection_b",
+                "--a-connection",
+                "connection_a"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_conn_ack_aliases() {
+        assert_eq!(
+            TxConnAckCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                dst_client_id: ClientId::from_str("client_b-01").unwrap(),
+                src_client_id: ClientId::from_str("client_a-01").unwrap(),
+                dst_conn_id: ConnectionId::from_str("connection_b").unwrap(),
+                src_conn_id: ConnectionId::from_str("connection_a").unwrap()
+            },
+            TxConnAckCmd::parse_from(&[
+                "test",
+                "--b-chain",
+                "chain_b",
+                "--a-chain",
+                "chain_a",
+                "--b-client",
+                "client_b-01",
+                "--a-client",
+                "client_a-01",
+                "--b-conn",
+                "connection_b",
+                "--a-conn",
+                "connection_a"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_conn_ack_no_a_connection() {
+        assert!(TxConnAckCmd::try_parse_from(&[
+            "test",
+            "--b-chain",
+            "chain_b",
+            "--a-chain",
+            "chain_a",
+            "--b-client",
+            "client_b-01",
+            "--a-client",
+            "client_a-01",
+            "--b-connection",
+            "connection_b"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_conn_ack_no_b_connection() {
+        assert!(TxConnAckCmd::try_parse_from(&[
+            "test",
+            "--b-chain",
+            "chain_b",
+            "--a-chain",
+            "chain_a",
+            "--b-client",
+            "client_b-01",
+            "--a-client",
+            "client_a-01",
+            "--a-connection",
+            "connection_a"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_conn_ack_no_a_client() {
+        assert!(TxConnAckCmd::try_parse_from(&[
+            "test",
+            "--b-chain",
+            "chain_b",
+            "--a-chain",
+            "chain_a",
+            "--b-client",
+            "client_b-01",
+            "--b-connection",
+            "connection_b",
+            "--a-connection",
+            "connection_a"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_conn_ack_no_b_client() {
+        assert!(TxConnAckCmd::try_parse_from(&[
+            "test",
+            "--b-chain",
+            "chain_b",
+            "--a-chain",
+            "chain_a",
+            "--a-client",
+            "client_a-01",
+            "--b-connection",
+            "connection_b",
+            "--a-connection",
+            "connection_a"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_conn_ack_no_a_chain() {
+        assert!(TxConnAckCmd::try_parse_from(&[
+            "test",
+            "--b-chain",
+            "chain_b",
+            "--b-client",
+            "client_b-01",
+            "--a-client",
+            "client_a-01",
+            "--b-connection",
+            "connection_b",
+            "--a-connection",
+            "connection_a"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_conn_ack_no_b_chain() {
+        assert!(TxConnAckCmd::try_parse_from(&[
+            "test",
+            "--a-chain",
+            "chain_a",
+            "--b-client",
+            "client_b-01",
+            "--a-client",
+            "client_a-01",
+            "--b-connection",
+            "connection_b",
+            "--a-connection",
+            "connection_a"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_conn_confirm() {
+        assert_eq!(
+            TxConnConfirmCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                dst_client_id: ClientId::from_str("client_b-01").unwrap(),
+                src_client_id: ClientId::from_str("client_a-01").unwrap(),
+                dst_conn_id: ConnectionId::from_str("connection_b").unwrap(),
+                src_conn_id: ConnectionId::from_str("connection_a").unwrap()
+            },
+            TxConnConfirmCmd::parse_from(&[
+                "test",
+                "--b-chain",
+                "chain_b",
+                "--a-chain",
+                "chain_a",
+                "--b-client",
+                "client_b-01",
+                "--a-client",
+                "client_a-01",
+                "--b-connection",
+                "connection_b",
+                "--a-connection",
+                "connection_a"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_conn_confirm_aliases() {
+        assert_eq!(
+            TxConnConfirmCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                dst_client_id: ClientId::from_str("client_b-01").unwrap(),
+                src_client_id: ClientId::from_str("client_a-01").unwrap(),
+                dst_conn_id: ConnectionId::from_str("connection_b").unwrap(),
+                src_conn_id: ConnectionId::from_str("connection_a").unwrap()
+            },
+            TxConnConfirmCmd::parse_from(&[
+                "test",
+                "--b-chain",
+                "chain_b",
+                "--a-chain",
+                "chain_a",
+                "--b-client",
+                "client_b-01",
+                "--a-client",
+                "client_a-01",
+                "--b-conn",
+                "connection_b",
+                "--a-conn",
+                "connection_a"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_conn_confirm_no_a_connection() {
+        assert!(TxConnConfirmCmd::try_parse_from(&[
+            "test",
+            "--b-chain",
+            "chain_b",
+            "--a-chain",
+            "chain_a",
+            "--b-client",
+            "client_b-01",
+            "--a-client",
+            "client_a-01",
+            "--b-connection",
+            "connection_b"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_conn_confirm_no_b_connection() {
+        assert!(TxConnConfirmCmd::try_parse_from(&[
+            "test",
+            "--b-chain",
+            "chain_b",
+            "--a-chain",
+            "chain_a",
+            "--b-client",
+            "client_b-01",
+            "--a-client",
+            "client_a-01",
+            "--a-connection",
+            "connection_a"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_conn_confirm_no_a_client() {
+        assert!(TxConnConfirmCmd::try_parse_from(&[
+            "test",
+            "--b-chain",
+            "chain_b",
+            "--a-chain",
+            "chain_a",
+            "--b-client",
+            "client_b-01",
+            "--b-connection",
+            "connection_b",
+            "--a-connection",
+            "connection_a"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_conn_confirm_no_b_client() {
+        assert!(TxConnConfirmCmd::try_parse_from(&[
+            "test",
+            "--b-chain",
+            "chain_b",
+            "--a-chain",
+            "chain_a",
+            "--a-client",
+            "client_a-01",
+            "--b-connection",
+            "connection_b",
+            "--a-connection",
+            "connection_a"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_conn_confirm_no_a_chain() {
+        assert!(TxConnConfirmCmd::try_parse_from(&[
+            "test",
+            "--b-chain",
+            "chain_b",
+            "--b-client",
+            "client_b-01",
+            "--a-client",
+            "client_a-01",
+            "--b-connection",
+            "connection_b",
+            "--a-connection",
+            "connection_a"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_conn_confirm_no_b_chain() {
+        assert!(TxConnConfirmCmd::try_parse_from(&[
+            "test",
+            "--a-chain",
+            "chain_a",
+            "--b-client",
+            "client_b-01",
+            "--a-client",
+            "client_a-01",
+            "--b-connection",
+            "connection_b",
+            "--a-connection",
+            "connection_a"
+        ])
+        .is_err())
     }
 }

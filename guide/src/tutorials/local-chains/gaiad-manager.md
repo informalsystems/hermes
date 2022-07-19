@@ -65,9 +65,9 @@ your path.
 
 **Description**: This file contains all the high-level node configuration that `gm` is aware of. Note that all entries under `[global]` are also valid entries under any `[node]` header, and can be used to override the global entries for specific nodes/validators.
 
-**Entries**: All entries are defined and documented in the [gm.toml](gm.toml) example configuration file.
+**Entries**: All entries are defined and documented in the `scripts/gm/gm.toml` example configuration file.
 
-Copy and paste below to $HOME/.gm/gm.toml
+Copy and paste below to `$HOME/.gm/gm.toml`
 
 The following configuration you need to specify 2 `gaiad` chains. `hermes` will know about these chains.
 
