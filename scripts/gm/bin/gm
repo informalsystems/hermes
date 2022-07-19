@@ -55,7 +55,7 @@ Usage:
 
 SUBCOMMANDS  DESCRIPTION
 
-cc           print a list of hermes commands to create IBC connections
+cc           print a list of hermes commands to create IBC connections and channels. add --exec to automatically execute the commands. 
 config       update hermes config.toml with the current gm network details
 help         print this help and exit
 keys         add keys to $HOME/.hermes
@@ -99,19 +99,7 @@ case "${1:-help}" in
           hermes_cc
         else 
           if [ $# -eq 2 ] && [ "$2" = "--exec" ]; then
-            hermes_cc | sed 's/$/ --new-client-connection --yes/' | bash
-
-            # Hermes throws errors when we try to open channels concurrently.
-            # Otherwise uncomment this code
-
-            #tmp_output=$(hermes_cc | sed 's/$/ --new-client-connection --yes$/')
-            #OLD_IFS=$IFS
-            #IFS="$"
-            #for cmd in $tmp_output; do
-              #eval $cmd &
-            #done
-            # wait 
-            #IFS=$OLD_IFS
+            hermes_cc | bash
           else 
             echo "usage : gm hermes cc [--exec]"
           fi
