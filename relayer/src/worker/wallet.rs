@@ -42,10 +42,7 @@ pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
         // Example input that overflows, from sifchain-1: `349999631379421794336`.
         //
         let chain_config = chain.config().unwrap();
-        if let Some(_scaled_amount) = scale_down(
-            amount,
-            chain_config.exponent_divider,
-        ) {
+        if let Some(_scaled_amount) = scale_down(amount, chain_config.exponent_divider) {
             telemetry!(
                 wallet_balance,
                 &chain.id(),
