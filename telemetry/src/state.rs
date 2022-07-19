@@ -78,7 +78,7 @@ pub struct TelemetryState {
     msg_num: Counter<u64>,
 
     /// The balance in each wallet that Hermes is using, per wallet, denom and chain.
-    /// The amount given is of unit: base_divider^exponent_divider * `denom`
+    /// The amount given is of unit: 10^exponent_divider * `denom`
     wallet_balance: ValueRecorder<u64>,
 
     /// Indicates the latency for all transactions submitted to a specific chain,
@@ -572,7 +572,7 @@ impl Default for TelemetryState {
 
             wallet_balance: meter
                 .u64_value_recorder("wallet_balance")
-                .with_description("The balance in each wallet that Hermes is using, per wallet, denom and chain. The amount is of unit: base_divider^exponent_divider * `denom`")
+                .with_description("The balance of the wallet specified by the private key in `config.toml`, for each chain. The amount is of unit: 10^exponent_divider * `denom`")
                 .init(),
 
             send_packet_count: meter

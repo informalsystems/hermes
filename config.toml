@@ -188,11 +188,9 @@ clock_drift = '5s'
 # Note: This MUST be the same as the `max_expected_time_per_block` genesis parameter for Tendermint chains.
 max_block_time = '30s'
 
-# Specify the base and exponent used to convert a balance to a readible balance.
-# E.g. with base_divier = 10 and exponent_divider = 6 the balance will be converted
-# from 10^6 to 1.
-# Default is base_divider = 10 and exponent_divider 6
-base_divider = 10
+# Specify the exponent used to convert a balance to a readible balance.
+# E.g. with exponent_divider = 6 the raw balance will be divided by 10^6.
+# Default exponent_divider 6
 exponent_divider = 6
 
 # Specify the amount of time to be used as the light client trusting period.

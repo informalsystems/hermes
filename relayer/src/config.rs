@@ -74,10 +74,6 @@ pub mod default {
         ZERO_DURATION
     }
 
-    pub fn base_divider() -> u64 {
-        10
-    }
-
     pub fn exponent_divider() -> u32 {
         6
     }
@@ -369,8 +365,6 @@ pub struct ChainConfig {
     #[serde(default, with = "self::proof_specs")]
     pub proof_specs: ProofSpecs,
 
-    #[serde(default = "default::base_divider")]
-    pub base_divider: u64,
     #[serde(default = "default::exponent_divider")]
     pub exponent_divider: u32,
 

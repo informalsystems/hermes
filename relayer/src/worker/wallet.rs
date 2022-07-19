@@ -44,7 +44,6 @@ pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
         let chain_config = chain.config().unwrap();
         if let Some(_scaled_amount) = scale_down(
             amount,
-            chain_config.base_divider,
             chain_config.exponent_divider,
         ) {
             telemetry!(
@@ -65,10 +64,10 @@ pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
     })
 }
 
-/// Scale down the given amount by a factor of 10^6,
+/// Scale down the given amount by a factor of 10^exponent,
 /// and return it as a `u64` if it fits.
-fn scale_down(amount: U256, base: u64, exponent: u32) -> Option<u64> {
-    amount.div(base.pow(exponent)).try_into().ok()
+fn scale_down(amount: U256, exponent: u32) -> Option<u64> {
+    amount.div(10_u64.pow(exponent)).try_into().ok()
 }
 
 #[cfg(test)]
@@ -81,7 +80,25 @@ mod tests {
         let u: U256 =
             U256::from_dec_str("349999631379421794336").expect("failed to parse into U256");
 
-        let s = scale_down(u, 10, 6);
+        let s = scale_down(u, 6);
         assert_eq!(s, Some(349999631379421_u64));
+    }
+
+    #[test]
+    fn example_result_too_big() {
+        let u: U256 =
+            U256::from_dec_str("349999631379421794336").expect("failed to parse into U256");
+
+        let s = scale_down(u, 0);
+        assert!(s.is_none());
+    }
+
+    #[test]
+    fn example_zero_exponent() {
+        let expected = 3499996313794217_u64;
+        let u: U256 = U256::from(expected);
+
+        let s = scale_down(u, 0);
+        assert_eq!(s, Some(expected));
     }
 }

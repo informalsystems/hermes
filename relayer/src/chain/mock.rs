@@ -484,7 +484,6 @@ pub mod test_utils {
             address_type: AddressType::default(),
             memo_prefix: Default::default(),
             proof_specs: Default::default(),
-            base_divider: Default::default(),
             exponent_divider: Default::default(),
         }
     }
