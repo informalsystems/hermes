@@ -43,10 +43,31 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        gaiad:
-          - gaia5
-          - gaia6
-          - gaia7
+        chain:
+          - package: gaia5
+            command: gaiad
+            account_prefix: cosmos
+          - package: gaia6
+            command: gaiad
+            account_prefix: cosmos
+          - package: gaia7
+            command: gaiad
+            account_prefix: cosmos
+          - package: ibc-go-v2-simapp
+            command: simd
+            account_prefix: cosmos
+          - package: ibc-go-v3-simapp
+            command: simd
+            account_prefix: cosmos
+          - package: ibc-go-v4-simapp
+            command: simd
+            account_prefix: cosmos
+          - package: osmosis
+            command: osmosisd
+            account_prefix: osmo
+          - package: wasmd
+            command: wasmd
+            account_prefix: wasm
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v15
@@ -71,45 +92,12 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
+          CHAIN_COMMAND_PATH: ${{ matrix.chain.command }}
+          ACCOUNT_PREFIX: ${{ matrix.chain.account_prefix }}
         run: |
-          nix shell .#python .#${{ matrix.gaiad }} -c cargo \
+          nix shell .#python .#${{ matrix.chain.package }} -c cargo \
             test -p ibc-integration-test --no-fail-fast -- \
             --nocapture --test-threads=2
-
-  ibc-go-integration-test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        simapp:
-          - ibc-go-v2-simapp
-          - ibc-go-v3-simapp
-    steps:
-      - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v15
-        with:
-          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
-          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v10
-        with:
-          name: cosmos
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v1
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p ibc-integration-test --no-fail-fast --no-run
-      - env:
-          RUST_LOG: info
-          RUST_BACKTRACE: 1
-          CHAIN_COMMAND_PATH: simd
-        run: |
-          nix shell .#python .#${{ matrix.simapp }} -c cargo \
-            test -p ibc-integration-test --no-fail-fast -- --nocapture --test-threads=2
 
   ordered-channel-test:
     runs-on: ubuntu-latest
