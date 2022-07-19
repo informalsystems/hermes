@@ -207,11 +207,11 @@ Slack or Discord, as it is easy for GitHub notifications to get lost or buried.
 ## Reviewing Pull Requests
 
 If you're tagged as the reviewer of a PR, you are responsible for seeing it
-through to completion. This includes shepherding the work and getting it merged
-as per the contribution guidelines.
+through to completion. This includes shepherding the work, helping to ensure the
+PR doesn't get blocked and/or bogged down, and getting it merged as per the contribution guidelines.
 
 If you're tagged as a reviewer on a PR that affects a part of the code base that
-you are unfamiliar with, feel free to hand it off to someone (with their
+you are unfamiliar with, you can hand it off to someone (with their
 consent) who is more appropriate to shepherd the PR through to completion.
 
 ## Releases
