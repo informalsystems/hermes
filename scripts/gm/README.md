@@ -325,6 +325,4 @@ This will
 * generate the config for hermes
 * print the `create client` commands for a full-mesh connection among the IBC node networks.
 
-
-
 Pick and choose the connections from the list that you want to create or run `gm hermes cc --exec` to run all the commands.
