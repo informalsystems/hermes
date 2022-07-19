@@ -1,4 +1,5 @@
 use core::time::Duration;
+use std::thread;
 
 use ibc_proto::google::protobuf::Any;
 use serde::Serialize;
@@ -916,6 +917,24 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         }
     }
 
+    /// Wait for the application on destination chain to advance beyond `consensus_height`.
+    fn wait_for_dest_app_height_higher_than_consensus_proof_height(
+        &self,
+        consensus_height: &Height,
+    ) -> Result<(), ConnectionError> {
+        let dst_application_latest_height = || {
+            self.dst_chain()
+                .query_latest_height()
+                .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))
+        };
+
+        while *consensus_height >= dst_application_latest_height()? {
+            warn!("client consensus proof height too high, wait for destination chain to advance beyond {}", consensus_height);
+            thread::sleep(Duration::from_millis(100));
+        }
+        Ok(())
+    }
+
     /// Attempts to build a MsgConnOpenTry.
     pub fn build_conn_try(&self) -> Result<Vec<Any>, ConnectionError> {
         let src_connection_id = self
@@ -1024,6 +1043,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         };
 
         msgs.push(new_msg.to_any());
+        // wait for the height of the application on the destination chain to be higher than
+        // the height of the consensus state included in the proofs.
+        self.wait_for_dest_app_height_higher_than_consensus_proof_height(
+            &src_client_target_height,
+        )?;
         Ok(msgs)
     }
 
@@ -1130,6 +1154,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         };
 
         msgs.push(new_msg.to_any());
+
+        // wait for the height of the application on the destination chain to be higher than
+        // the height of the consensus state included in the proofs.
+        self.wait_for_dest_app_height_higher_than_consensus_proof_height(
+            &src_client_target_height,
+        )?;
+
         Ok(msgs)
     }
 
