@@ -53,7 +53,9 @@ pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
         } else {
             trace!(
                 %amount, denom = %balance.denom, account = %key.account,
-                "amount cannot be scaled down to fit into u64 and therefore won't be reported to telemetry.\nPlease increase the value of `wallet_metric_scale` in Hermes `config.toml`.\nTo convert from uatom to atom set `wallet_metric_scale = 6`."
+                "amount cannot be scaled down to fit into u64 and therefore won't be reported to telemetry. \
+                Please increase the value of `wallet_metric_scale` in Hermes `config.toml`.\
+                For example, to report the balance as atoms instead of uatoms, set `wallet_metric_scale = 6`."
             );
         }
 
