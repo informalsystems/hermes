@@ -151,6 +151,9 @@ binary="path/to/your/hermes"
 This configuration specifies 2 networks (chains), `ibc-0` and `ibc-1`. A typical workflow might look like:
 
 ```bash
+# Start the two chains
+$ gm start
+
 # Generate the config for `hermes`. 
 # Notably, this will create the appropriate `[[chains]]` entries for `ibc-0` and `ibc-1`.
 $ gm hermes config
@@ -158,11 +161,8 @@ $ gm hermes config
 # Generate the keys so that `hermes` can sign transactions on both chains
 $ gm hermes keys
 
-# Start the two chains
-$ gm start
-
 # Create a connection 
-$ hermes create connection ibc-0 ibc-1
+$ hermes create connection --a-chain ibc-0 --b-chain ibc-1
 ```
 
 ## Tribal knowledge (things they don't tell you)
@@ -186,9 +186,10 @@ $ hermes create connection ibc-0 ibc-1
 ### `gm help`
 **Description**: shows the help screen
 
-### `gm hermes cc`
-**Description**: create and print the `hermes create channel` commands to obtain a fully interconnected IBC mesh
-on the screen.
+### `gm hermes cc [--exec]`
+**Description**: create and print the `hermes create channel` commands to obtain a fully interconnected IBC mesh on the screen.
+
+`--exec` executes the commands.
 
 Tip: Pick and choose the ones you want to create.
 
@@ -314,7 +315,7 @@ Run the below:
 gm start
 gm hermes config
 gm hermes keys
-gm hermes cc
+gm hermes cc 
 ```
 
 This will
@@ -323,4 +324,4 @@ This will
 * generate the config for hermes
 * print the `create client` commands for a full-mesh connection among the IBC node networks.
 
-Pick and choose the connections from the list that you want to create.
+Pick and choose the connections from the list that you want to create or run `gm hermes cc --exec` to run all the commands.
