@@ -1315,6 +1315,7 @@ mod tests {
     use test_log::test;
 
     use alloc::str::FromStr;
+    use std::any::Any;
 
     use crate::core::ics04_channel::channel::{Counterparty, Order};
     use crate::core::ics04_channel::error::Error;
@@ -1484,7 +1485,11 @@ mod tests {
             }
         }
 
-        impl Acknowledgement for MockAck {}
+        impl Acknowledgement for MockAck {
+            fn as_any(&self) -> &dyn Any {
+                self
+            }
+        }
 
         #[derive(Debug, Default)]
         struct FooModule {
