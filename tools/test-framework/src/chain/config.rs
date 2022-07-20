@@ -47,6 +47,17 @@ pub fn disable_grpc_web(config: &mut Value) -> Result<(), Error> {
     Ok(())
 }
 
+pub fn disable_api(config: &mut Value) -> Result<(), Error> {
+    if let Some(field) = config.get_mut("api") {
+        field
+            .as_table_mut()
+            .ok_or_else(|| eyre!("expect object"))?
+            .insert("enable".to_string(), false.into());
+    }
+
+    Ok(())
+}
+
 /// Set the `p2p` field in the full node config.
 pub fn set_p2p_port(config: &mut Value, port: u16) -> Result<(), Error> {
     config

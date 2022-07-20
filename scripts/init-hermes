@@ -63,14 +63,14 @@ cargo build -q --locked
 
 # add the key seeds to the keyring of each chain
 echo "Importing keys..."
-cargo run -q --bin hermes -- --config "$CONFIG_FILE" keys add --chain "$CHAIN_0_ID" --key-file "$GAIA_DATA/$CHAIN_0_ID/user_seed.json"
-cargo run -q --bin hermes -- --config "$CONFIG_FILE" keys add --chain "$CHAIN_0_ID" --key-file "$GAIA_DATA/$CHAIN_0_ID/user2_seed.json" --key-name user2
-cargo run -q --bin hermes -- --config "$CONFIG_FILE" keys add --chain "$CHAIN_1_ID" --key-file "$GAIA_DATA/$CHAIN_1_ID/user2_seed.json" --key-name user2
-cargo run -q --bin hermes -- --config "$CONFIG_FILE" keys add --chain "$CHAIN_1_ID" --key-file "$GAIA_DATA/$CHAIN_1_ID/user_seed.json"
+cargo run -q --bin hermes -- --config "$CONFIG_FILE" keys add --chain "$CHAIN_0_ID" --key-file "$GAIA_DATA/$CHAIN_0_ID/user_seed.json" --overwrite
+cargo run -q --bin hermes -- --config "$CONFIG_FILE" keys add --chain "$CHAIN_0_ID" --key-file "$GAIA_DATA/$CHAIN_0_ID/user2_seed.json" --key-name user2 --overwrite
+cargo run -q --bin hermes -- --config "$CONFIG_FILE" keys add --chain "$CHAIN_1_ID" --key-file "$GAIA_DATA/$CHAIN_1_ID/user2_seed.json" --key-name user2 --overwrite
+cargo run -q --bin hermes -- --config "$CONFIG_FILE" keys add --chain "$CHAIN_1_ID" --key-file "$GAIA_DATA/$CHAIN_1_ID/user_seed.json" --overwrite
 
 if [ -n "$CHAIN_2_ID" ]; then
-  cargo run -q --bin hermes -- --config "$CONFIG_FILE" keys add --chain "$CHAIN_2_ID" --key-file "$GAIA_DATA/$CHAIN_2_ID/user_seed.json"
-  cargo run -q --bin hermes -- --config "$CONFIG_FILE" keys add --chain "$CHAIN_2_ID" --key-file "$GAIA_DATA/$CHAIN_2_ID/user2_seed.json" --key-name user2
+  cargo run -q --bin hermes -- --config "$CONFIG_FILE" keys add --chain "$CHAIN_2_ID" --key-file "$GAIA_DATA/$CHAIN_2_ID/user_seed.json" --overwrite
+  cargo run -q --bin hermes -- --config "$CONFIG_FILE" keys add --chain "$CHAIN_2_ID" --key-file "$GAIA_DATA/$CHAIN_2_ID/user2_seed.json" --key-name user2 --overwrite
 fi
 
 echo "Done!"
