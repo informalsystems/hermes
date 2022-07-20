@@ -51,6 +51,7 @@ The following table describes the metrics currently tracked by the telemetry ser
 | `cleared_count`              | Number of SendPacket relayed through ClearPendingPackets | `u64` Counter   |
 | `oldest_sequence`            | The sequence number of the oldest pending SendPacket. If this value is 0, it means there are no pending SendPacket | `u64` ValueRecorder |
 | `oldest_timestamp`           | The timestamp of the oldest sequence number in seconds | `u64` ValueRecorder |
+| `client_update_message_count` | Number of MsgUpdateAnyClient relayed                | `u64` Counter       |
 
 ## Integration with Prometheus
 
@@ -75,6 +76,10 @@ cache_hits{chain="ibc-1",query_type="query_connection"} 12
 cache_hits{chain="ibc-2",query_type="query_channel"} 10
 cache_hits{chain="ibc-2",query_type="query_client_state"} 17
 cache_hits{chain="ibc-2",query_type="query_connection"} 13
+# HELP client_update_message_count Number of MsgUpdateAnyClient relayed
+# TYPE client_update_message_count counter
+client_update_message_count{chain="ibc-0",counterparty="ibc-1"} 1
+client_update_message_count{chain="ibc-1",counterparty="ibc-0"} 1
 # HELP ibc_acknowledgment_packets Number of acknowledgment packets relayed per channel
 # TYPE ibc_acknowledgment_packets counter
 ibc_acknowledgment_packets{src_chain="ibc-0",src_channel="channel-0",src_port="transfer"} 0

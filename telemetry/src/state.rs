@@ -115,6 +115,9 @@ pub struct TelemetryState {
 
     /// History of SendPacket sequence numbers received and not yet Acknowledged.
     sequences_histories: DashMap<PathIdentifier, DashMap<u64, u64>>,
+
+    /// Counts the number of MsgUpdateAnyClient relayed
+    client_update_message_count: Counter<u64>,
 }
 
 impl TelemetryState {
@@ -474,6 +477,14 @@ impl TelemetryState {
             }
         }
     }
+
+    pub fn client_update_message_count(&self, chain_id: &ChainId, counterparty_chain_id: &ChainId) {
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("counterparty", counterparty_chain_id.to_string()),
+        ];
+        self.client_update_message_count.add(1, labels);
+    }
 }
 
 use std::sync::Arc;
@@ -622,6 +633,11 @@ impl Default for TelemetryState {
                 .u64_value_recorder("oldest_timestamp")
                 .with_unit(Unit::new("seconds"))
                 .with_description("The timestamp of the oldest sequence number in seconds")
+                .init(),
+
+            client_update_message_count: meter
+                .u64_counter("client_update_message_count")
+                .with_description("Number of MsgUpdateAnyClient relayed")
                 .init(),
         }
     }

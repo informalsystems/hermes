@@ -1069,6 +1069,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 }
                 .to_any(),
             );
+            ibc_telemetry::global()
+                .client_update_message_count(&self.src_chain.id(), &self.dst_chain.id());
         }
 
         debug!(
@@ -1086,6 +1088,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             }
             .to_any(),
         );
+        ibc_telemetry::global()
+            .client_update_message_count(&self.src_chain.id(), &self.dst_chain.id());
 
         Ok(msgs)
     }
