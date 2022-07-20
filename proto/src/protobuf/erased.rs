@@ -1,3 +1,4 @@
+use alloc::boxed::Box;
 use core::convert::{Into as CoreInto, TryFrom as CoreTryFrom};
 
 mod sealed {

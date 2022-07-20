@@ -1,6 +1,7 @@
 mod erased;
 mod error;
 
+use alloc::vec::Vec;
 use core::fmt::Display;
 
 use bytes::Buf;

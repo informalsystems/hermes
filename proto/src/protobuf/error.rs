@@ -1,4 +1,7 @@
+use alloc::format;
+use alloc::string::String;
 use core::fmt::Display;
+use core::format_args;
 use core::num::TryFromIntError;
 
 use flex_error::{define_error, DisplayOnly};
@@ -11,7 +14,7 @@ define_error! {
         TryFromProtobuf
             { reason: String }
             | e | {
-                format!("error converting message type into domain type: {}",
+                format_args!("error converting message type into domain type: {}",
                     e.reason)
             },
 
