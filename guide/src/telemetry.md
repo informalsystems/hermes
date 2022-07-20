@@ -38,7 +38,8 @@ The following table describes the metrics currently tracked by the telemetry ser
 | `ibc_receive_packets`        | Number of receive packets relayed per channel        | `u64` Counter       |
 | `ibc_acknowledgment_packets` | Number of acknowledgment packets relayed per channel | `u64` Counter       |
 | `ibc_timeout_packets`        | Number of timeout packets relayed per channel        | `u64` Counter       |
-| `wallet_balance`             | The balance of each wallet Hermes uses per chain     | `f64` ValueRecorder |
+| `wallet_balance`             | The balance of each wallet Hermes uses per chain. Please note that when converting the balance to f64 a loss in
+                precision might be introduced in the displayed value     | `f64` ValueRecorder |
 | `ws_events`                  | How many IBC events did Hermes receive via the websocket subscription, in total since starting up, per chain. | Counter       |
 | `ws_reconnect`               | Number of times Hermes had to reconnect to the WebSocket endpoint                                                             | Counter       |
 | `tx_latency_submitted`       | Latency for all transactions submitted to a chain (i.e., difference between the moment when Hermes received an event until the corresponding transaction(s) were submitted). | `u64` ValueRecorder       |
