@@ -256,11 +256,11 @@ impl PsqlChain {
 
         // todo - fix "ibc" deserialization error:
         // sqlx: error occurred while decoding column "json_data": invalid type: string "ibc", expected struct CommitmentPrefix at line 1 column 756
-        // self.populate_connections(
-        //     &QueryHeight::Specific(solved_query_height),
-        //     QueryConnectionsRequest { pagination: None },
-        //     &mut result,
-        // )?;
+        self.populate_connections(
+            &QueryHeight::Specific(solved_query_height),
+            QueryConnectionsRequest { pagination: None },
+            &mut result,
+        )?;
 
         self.populate_channels(
             &QueryHeight::Specific(solved_query_height),
@@ -304,7 +304,7 @@ impl ChainEndpoint for PsqlChain {
     type LightClient = PsqlLightClient;
 
     fn bootstrap(config: ChainConfig, rt: Arc<tokio::runtime::Runtime>) -> Result<Self, Error> {
-        info!("bootsrapping");
+        info!("bootstrapping");
 
         let psql_conn = config
             .psql_conn
@@ -468,12 +468,9 @@ impl ChainEndpoint for PsqlChain {
             .query_application_status()?
             .height
             .revision_height();
+
         match self.block_on(query_connections(&self.pool, query_height)) {
-            Ok(connections) => {
-                // todo - remove this warn once the "ibc" prefix deserialization is fixed
-                warn!("this doesn't currently work as connections are not populated");
-                Ok(connections)
-            }
+            Ok(connections) => Ok(connections),
             Err(e) => {
                 warn!(
                     "unable to query_connections via psql connection ({}), falling back to gRPC",

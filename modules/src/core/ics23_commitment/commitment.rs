@@ -109,7 +109,7 @@ impl TryFrom<CommitmentProofBytes> for RawMerkleProof {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Hash, Deserialize, Default)]
+#[derive(Clone, PartialEq, Eq, Hash, Default)]
 pub struct CommitmentPrefix {
     bytes: Vec<u8>,
 }
@@ -136,6 +136,12 @@ impl TryFrom<Vec<u8>> for CommitmentPrefix {
     }
 }
 
+impl fmt::Display for CommitmentPrefix {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 impl fmt::Debug for CommitmentPrefix {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let converted = core::str::from_utf8(self.as_bytes());
@@ -152,6 +158,18 @@ impl Serialize for CommitmentPrefix {
         S: serde::Serializer,
     {
         format!("{:?}", self).serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for CommitmentPrefix {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Ok(Self {
+            bytes: s.into_bytes(),
+        })
     }
 }
 
