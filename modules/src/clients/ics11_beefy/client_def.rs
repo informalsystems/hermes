@@ -405,8 +405,8 @@ fn verify_membership<HostFunctions: HostFunctionsProvider, P: Into<Path>>(
     }
     let path: Path = path.into();
     let path = path.to_string();
-    let path = vec![prefix.as_bytes(), path.as_bytes()];
-    let key = codec::Encode::encode(&path);
+    let mut key = prefix.as_bytes().to_vec();
+    key.extend(path.as_bytes());
     let trie_proof: Vec<u8> = proof.clone().into();
     let trie_proof: Vec<Vec<u8>> = codec::Decode::decode(&mut &*trie_proof)
         .map_err(|e| Error::beefy(BeefyError::scale_decode(e)))?;
@@ -425,8 +425,8 @@ fn verify_non_membership<HostFunctions: HostFunctionsProvider, P: Into<Path>>(
     }
     let path: Path = path.into();
     let path = path.to_string();
-    let path = vec![prefix.as_bytes(), path.as_bytes()];
-    let key = codec::Encode::encode(&path);
+    let mut key = prefix.as_bytes().to_vec();
+    key.extend(path.as_bytes());
     let trie_proof: Vec<u8> = proof.clone().into();
     let trie_proof: Vec<Vec<u8>> = codec::Decode::decode(&mut &*trie_proof)
         .map_err(|e| Error::beefy(BeefyError::scale_decode(e)))?;
