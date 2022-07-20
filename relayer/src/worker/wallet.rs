@@ -1,8 +1,6 @@
-use std::{ops::Div, time::Duration};
+use std::time::Duration;
 
-use tracing::{error_span, trace};
-
-use ibc::bigint::U256;
+use tracing::{error_span, trace, warn};
 
 use crate::{
     chain::handle::ChainHandle,
@@ -22,61 +20,42 @@ pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
             TaskError::Ignore(format!("failed to query balance for the account: {e}"))
         })?;
 
-        let amount: U256 = U256::from_dec_str(&balance.amount).map_err(|_| {
-            TaskError::Ignore(format!(
-                "failed to parse amount into U256: {}",
-                balance.amount
-            ))
-        })?;
-
-        trace!(%amount, denom = %balance.denom, account = %key.account, "wallet balance");
-
-        // The input domain `balance.amount` may exceed u64::MAX, which is the
-        // largest value that can be reported via the Prometheus exporter.
-        //
-        // To work around this, we scale down the amount by 10^6 in an attempt
-        // to fit it into a u64, effectively turning the denomination from
-        // eg. uatom to atom. If the scaled down amount does not fit, we do
-        // not report it.
-        //
-        // Example input that overflows, from sifchain-1: `349999631379421794336`.
-        //
-        if let Some(_scaled_amount) = scale_down(amount) {
-            telemetry!(
-                wallet_balance,
-                &chain.id(),
-                &key.account,
-                _scaled_amount,
-                &balance.denom,
-            );
-        } else {
-            trace!(
-                %amount, denom = %balance.denom, account = %key.account,
-                "amount cannot be scaled down to fit into u64 and therefore won't be reported to telemetry"
-            );
+        match balance.amount.parse::<f64>() {
+            Ok(amount) => {
+                telemetry!(
+                    wallet_balance,
+                    &chain.id(),
+                    &key.account,
+                    amount,
+                    &balance.denom,
+                );
+                trace!(%amount, denom = %balance.denom, account = %key.account, "wallet balance");
+            }
+            Err(e) => {
+                trace!(
+                    %balance.amount, denom = %balance.denom, account = %key.account,
+                    "Error parsing amount into f64 and therefore won't be reported to telemetry"
+                );
+                warn!(
+                    "Error parsing balance amount `{}` in f64: {}",
+                    balance.amount, e
+                );
+            }
         }
-
         Ok(Next::Continue)
     })
 }
 
-/// Scale down the given amount by a factor of 10^6,
-/// and return it as a `u64` if it fits.
-fn scale_down(amount: U256) -> Option<u64> {
-    amount.div(10_u64.pow(6)).try_into().ok()
-}
-
 #[cfg(test)]
 mod tests {
-    use super::scale_down;
     use ibc::bigint::U256;
 
+    // Test to confirm that any u256 fits in f64
     #[test]
-    fn example_input() {
-        let u: U256 =
-            U256::from_dec_str("349999631379421794336").expect("failed to parse into U256");
+    fn from_u256_max_to_f64() {
+        let f64_max = f64::MAX;
+        let u256_max = U256::MAX;
 
-        let s = scale_down(u);
-        assert_eq!(s, Some(349999631379421_u64));
+        assert!(f64_max > u256_max.to_string().parse::<f64>().unwrap());
     }
 }

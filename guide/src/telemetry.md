@@ -38,7 +38,7 @@ The following table describes the metrics currently tracked by the telemetry ser
 | `ibc_receive_packets`        | Number of receive packets relayed per channel        | `u64` Counter       |
 | `ibc_acknowledgment_packets` | Number of acknowledgment packets relayed per channel | `u64` Counter       |
 | `ibc_timeout_packets`        | Number of timeout packets relayed per channel        | `u64` Counter       |
-| `wallet_balance`             | How much balance (coins) there is left in each wallet key that Hermes is using. | `u64` ValueRecorder       |
+| `wallet_balance`             | The balance of each wallet Hermes uses per chain     | `f64` ValueRecorder |
 | `ws_events`                  | How many IBC events did Hermes receive via the websocket subscription, in total since starting up, per chain. | Counter       |
 | `ws_reconnect`               | Number of times Hermes had to reconnect to the WebSocket endpoint                                                             | Counter       |
 | `tx_latency_submitted`       | Latency for all transactions submitted to a chain (i.e., difference between the moment when Hermes received an event until the corresponding transaction(s) were submitted). | `u64` ValueRecorder       |
@@ -173,9 +173,9 @@ tx_latency_submitted_sum{chain="ibc-2",channel="channel-0",counterparty="ibc-0",
 tx_latency_submitted_count{chain="ibc-2",channel="channel-0",counterparty="ibc-0",port="transfer"} 1
 # HELP wallet_balance The balance in each wallet that Hermes is using, per wallet, denom and chain. The amount is of unit: 10^6 * `denom`
 # TYPE wallet_balance gauge
-wallet_balance{account="cosmos1lfq283ph84d49hywahpngxueqsv4wgxt6x5d7z",chain="ibc-0",denom="stake"} 95
-wallet_balance{account="cosmos1mmkyea9pmqhlewrap0urpes2vx0r4gnz7eq5vl",chain="ibc-1",denom="stake"} 93
-wallet_balance{account="cosmos1pmypcnlkgzfuayzlxr3w9ykp7d0pd4lg027e46",chain="ibc-2",denom="stake"} 94
+wallet_balance{account="cosmos1lfq283ph84d49hywahpngxueqsv4wgxt6x5d7z",chain="ibc-0",denom="stake"} 99981718
+wallet_balance{account="cosmos1mmkyea9pmqhlewrap0urpes2vx0r4gnz7eq5vl",chain="ibc-1",denom="stake"} 99984434
+wallet_balance{account="cosmos1pmypcnlkgzfuayzlxr3w9ykp7d0pd4lg027e46",chain="ibc-2",denom="stake"} 99977817
 # HELP workers Number of workers per object
 # TYPE workers gauge
 workers{type="client"} 6
