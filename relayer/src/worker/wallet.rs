@@ -52,7 +52,7 @@ mod tests {
 
     // Test to confirm that any u256 fits in f64
     #[test]
-    fn from_u256_max_to_f64() {
+    fn compare_f64_max_to_u256_max() {
         let f64_max = f64::MAX;
         let u256_max = U256::MAX;
 
