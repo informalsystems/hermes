@@ -1,7 +1,7 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 use core::str::FromStr;
-use ibc::applications::ics29_fee::msgs::register_payee::build_register_payee_message;
+use ibc::applications::ics29_fee::msgs::register_payee::build_register_counterparty_payee_message;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::signer::Signer;
 use ibc_relayer::chain::handle::ChainHandle;
@@ -12,7 +12,7 @@ use crate::cli_utils::spawn_chain_runtime;
 use crate::error::Error;
 
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
-pub struct RegisterPayeeCmd {
+pub struct RegisterCounterpartyPayeeCmd {
     #[clap(
         long = "chain",
         required = true,
@@ -38,33 +38,33 @@ pub struct RegisterPayeeCmd {
     port_id: PortId,
 
     #[clap(
-        long = "payee-address",
+        long = "counterparty-payee-address",
         required = true,
         help_heading = "FLAGS",
-        help = "Payee address"
+        help = "CounterpartyPayee address"
     )]
-    payee_address: String,
+    counterparty_payee_address: String,
 }
 
-impl Runnable for RegisterPayeeCmd {
+impl Runnable for RegisterCounterpartyPayeeCmd {
     fn run(&self) {
-        run_register_payee_command(
+        run_register_counterparty_payee_command(
             &self.chain_id,
             &self.channel_id,
             &self.port_id,
-            &self.payee_address,
+            &self.counterparty_payee_address,
         )
         .unwrap()
     }
 }
 
-fn run_register_payee_command(
+fn run_register_counterparty_payee_command(
     chain_id: &ChainId,
     channel_id: &ChannelId,
     port_id: &PortId,
-    payee_address: &str,
+    counterparty_payee_address: &str,
 ) -> Result<(), Error> {
-    let payee = Signer::from_str(payee_address).map_err(Error::signer)?;
+    let counterparty_payee = Signer::from_str(counterparty_payee_address).map_err(Error::signer)?;
 
     let config = app_config();
 
@@ -72,8 +72,13 @@ fn run_register_payee_command(
 
     let signer = chain_handle.get_signer().map_err(Error::relayer)?;
 
-    let message =
-        build_register_payee_message(&signer, &payee, &channel_id, &port_id).map_err(Error::fee)?;
+    let message = build_register_counterparty_payee_message(
+        &signer,
+        &counterparty_payee,
+        &channel_id,
+        &port_id,
+    )
+    .map_err(Error::fee)?;
 
     let messages = TrackedMsgs::new_static(vec![message], "cli");
 
@@ -81,7 +86,7 @@ fn run_register_payee_command(
         .send_messages_and_wait_commit(messages)
         .map_err(Error::relayer)?;
 
-    println!("Successfully registered payee.");
+    println!("Successfully registered counterparty payee.");
 
     Ok(())
 }
