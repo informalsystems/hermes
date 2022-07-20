@@ -503,6 +503,15 @@ impl From<ModuleEvent> for IbcEvent {
     }
 }
 
+impl From<IbcEvent> for ModuleEvent {
+    fn from(e: IbcEvent) -> Self {
+        match e {
+            IbcEvent::AppModule(app_module) => app_module,
+            _ => unimplemented!(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct ModuleEventAttribute {
     pub key: String,

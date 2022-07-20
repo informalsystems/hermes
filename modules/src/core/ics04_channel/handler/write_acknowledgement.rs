@@ -56,8 +56,8 @@ pub fn process(
     }
 
     let result = PacketResult::WriteAck(WriteAckPacketResult {
-        port_id: packet.source_port.clone(),
-        channel_id: packet.source_channel.clone(),
+        port_id: packet.destination_port.clone(),
+        channel_id: packet.destination_channel.clone(),
         seq: packet.sequence,
         ack_commitment: ctx.ack_commitment(ack.clone().into()),
     });
