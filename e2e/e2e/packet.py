@@ -36,10 +36,10 @@ class TxPacketSend(Cmd[TxPacketSendRes]):
 
     def args(self) -> List[str]:
         args = [
-            "--receiver-chain", self.dst_chain_id,
-            "--sender-chain", self.src_chain_id,
-            "--sender-port", self.src_port,
-            "--sender-channel", self.src_channel,
+            "--dst-chain", self.dst_chain_id,
+            "--src-chain", self.src_chain_id,
+            "--src-port", self.src_port,
+            "--src-channel", self.src_channel,
             "--amount", str(self.amount),
             "--timeout-height-offset", str(self.height_offset),
         ]
@@ -75,7 +75,7 @@ class TxPacketRecv(Cmd[TxPacketRecvRes]):
     src_channel: ChannelId
 
     def args(self) -> List[str]:
-        return ["--receiver-chain", self.dst_chain_id, "--sender-chain", self.src_chain_id, "--sender-port", self.src_port, "--sender-channel", self.src_channel]
+        return ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id, "--src-port", self.src_port, "--src-channel", self.src_channel]
 
     def process(self, result: Any) -> TxPacketRecvRes:
         entry = find_entry(result, 'WriteAcknowledgement')
@@ -99,7 +99,7 @@ class TxPacketTimeout(Cmd[TxPacketTimeoutRes]):
     src_channel: ChannelId
 
     def args(self) -> List[str]:
-        return ["--receiver-chain", self.dst_chain_id, "--sender-chain", self.src_chain_id, "--sender-port", self.src_port, "--sender-channel", self.src_channel]
+        return ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id, "--src-port", self.src_port, "--src-channel", self.src_channel]
 
     def process(self, result: Any) -> TxPacketTimeoutRes:
         entry = find_entry(result, 'TimeoutPacket')
@@ -124,7 +124,7 @@ class TxPacketAck(Cmd[TxPacketAckRes]):
     src_channel: ChannelId
 
     def args(self) -> List[str]:
-        return ["--receiver-chain", self.dst_chain_id, "--sender-chain", self.src_chain_id, "--sender-port", self.src_port, "--sender-channel", self.src_channel]
+        return ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id, "--src-port", self.src_port, "--src-channel", self.src_channel]
 
     def process(self, result: Any) -> TxPacketAckRes:
         entry = find_entry(result, 'AcknowledgePacket')
