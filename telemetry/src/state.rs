@@ -604,8 +604,7 @@ impl Default for TelemetryState {
 
             wallet_balance: meter
                 .f64_value_recorder("wallet_balance")
-                .with_description("The balance of each wallet Hermes uses per chain. Please note that when converting the balance to f64 a loss in
-                precision might be introduced in the displayed value")
+                .with_description("The balance of each wallet Hermes uses per chain. Please note that when converting the balance to f64 a loss in precision might be introduced in the displayed value")
                 .init(),
 
             send_packet_count: meter

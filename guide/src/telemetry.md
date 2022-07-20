@@ -68,123 +68,116 @@ For example, with two channels and after transferring some tokens between the ch
 ```text
 # HELP acknowledgement_count Number of WriteAcknowledgement events processed
 # TYPE acknowledgement_count counter
-acknowledgement_count{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer"} 35
+acknowledgement_count{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer"} 25
 # HELP cache_hits Number of cache hits for queries emitted by the relayer, per chain and query type
 # TYPE cache_hits counter
-cache_hits{chain="ibc-0",query_type="query_channel"} 37
-cache_hits{chain="ibc-0",query_type="query_client_state"} 45
-cache_hits{chain="ibc-0",query_type="query_connection"} 39
-cache_hits{chain="ibc-1",query_type="query_channel"} 57
-cache_hits{chain="ibc-1",query_type="query_client_state"} 29
-cache_hits{chain="ibc-1",query_type="query_connection"} 24
+cache_hits{chain="ibc-0",query_type="query_channel"} 63
+cache_hits{chain="ibc-0",query_type="query_client_state"} 25
+cache_hits{chain="ibc-0",query_type="query_connection"} 19
+cache_hits{chain="ibc-1",query_type="query_channel"} 28
+cache_hits{chain="ibc-1",query_type="query_client_state"} 36
+cache_hits{chain="ibc-1",query_type="query_connection"} 29
+# HELP cleared_acknowledgment_count Number of WriteAcknowledgment events processed during the initial and periodic clearing
+# TYPE cleared_acknowledgment_count counter
+cleared_acknowledgment_count{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer"} 20
 # HELP cleared_send_packet_count Number of SendPacket events processed during the initial and periodic clearing
 # TYPE cleared_send_packet_count counter
-cleared_send_packet_count{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer"} 15
+cleared_send_packet_count{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer"} 10
 # HELP ibc_acknowledgment_packets Number of confirmed acknowledgment packets relayed per channel. Available if relayer runs with Tx confirmation enabled
 # TYPE ibc_acknowledgment_packets counter
-ibc_acknowledgment_packets{src_chain="ibc-0",src_channel="channel-0",src_port="transfer"} 15
-ibc_acknowledgment_packets{src_chain="ibc-1",src_channel="channel-0",src_port="transfer"} 0
+ibc_acknowledgment_packets{src_chain="ibc-1",src_channel="channel-0",src_port="transfer"} 30
 # HELP ibc_receive_packets Number of confirmed receive packets relayed per channel. Available if relayer runs with Tx confirmation enabled
 # TYPE ibc_receive_packets counter
-ibc_receive_packets{src_chain="ibc-0",src_channel="channel-0",src_port="transfer"} 0
-ibc_receive_packets{src_chain="ibc-1",src_channel="channel-0",src_port="transfer"} 35
-# HELP ibc_timeout_packets Number of confirmed timeout packets relayed per channel. Available if relayer runs with Tx confirmation enabled
-# TYPE ibc_timeout_packets counter
-ibc_timeout_packets{src_chain="ibc-0",src_channel="channel-0",src_port="transfer"} 0
-ibc_timeout_packets{src_chain="ibc-1",src_channel="channel-0",src_port="transfer"} 0
+ibc_receive_packets{src_chain="ibc-0",src_channel="channel-0",src_port="transfer"} 25
 # HELP msg_num How many messages Hermes submitted to the chain, per chain
 # TYPE msg_num counter
-msg_num{chain="ibc-0"} 37
-msg_num{chain="ibc-1"} 37
+msg_num{chain="ibc-0"} 48
+msg_num{chain="ibc-1"} 27
 # HELP oldest_sequence The sequence number of the oldest SendPacket event observed without its corresponding WriteAcknowledgement event. If this value is 0, it means Hermes observed a WriteAcknowledgment event for all the SendPacket events
 # TYPE oldest_sequence gauge
-oldest_sequence{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer"} 0
+oldest_sequence{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer"} 0
 # HELP oldest_timestamp The timestamp of the oldest sequence number in seconds
 # TYPE oldest_timestamp gauge
-oldest_timestamp{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer"} 0
+oldest_timestamp{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer"} 0
 # HELP queries Number of queries emitted by the relayer, per chain and query type
 # TYPE queries counter
-queries{chain="ibc-0",query_type="query_application_status"} 151
-queries{chain="ibc-0",query_type="query_channel"} 72
+queries{chain="ibc-0",query_type="query_application_status"} 71
+queries{chain="ibc-0",query_type="query_channel"} 1
 queries{chain="ibc-0",query_type="query_client_connections"} 1
-queries{chain="ibc-0",query_type="query_client_state"} 140
+queries{chain="ibc-0",query_type="query_client_state"} 58
 queries{chain="ibc-0",query_type="query_clients"} 1
 queries{chain="ibc-0",query_type="query_connection"} 1
 queries{chain="ibc-0",query_type="query_connection_channels"} 1
-queries{chain="ibc-0",query_type="query_consensus_state"} 143
+queries{chain="ibc-0",query_type="query_consensus_state"} 61
 queries{chain="ibc-0",query_type="query_consensus_states"} 1
 queries{chain="ibc-0",query_type="query_latest_height"} 1
-queries{chain="ibc-0",query_type="query_packet_acknowledgements"} 2
-queries{chain="ibc-0",query_type="query_packet_commitments"} 3
+queries{chain="ibc-0",query_type="query_packet_acknowledgements"} 1
+queries{chain="ibc-0",query_type="query_packet_commitments"} 4
 queries{chain="ibc-0",query_type="query_staking_params"} 2
-queries{chain="ibc-0",query_type="query_txs"} 50
-queries{chain="ibc-0",query_type="query_unreceived_packets"} 72
-queries{chain="ibc-1",query_type="query_application_status"} 151
-queries{chain="ibc-1",query_type="query_channel"} 2
+queries{chain="ibc-0",query_type="query_txs"} 32
+queries{chain="ibc-0",query_type="query_unreceived_acknowledgements"} 92
+queries{chain="ibc-1",query_type="query_application_status"} 70
+queries{chain="ibc-1",query_type="query_channel"} 51
 queries{chain="ibc-1",query_type="query_client_connections"} 1
-queries{chain="ibc-1",query_type="query_client_state"} 139
+queries{chain="ibc-1",query_type="query_client_state"} 56
 queries{chain="ibc-1",query_type="query_clients"} 1
 queries{chain="ibc-1",query_type="query_connection"} 1
 queries{chain="ibc-1",query_type="query_connection_channels"} 1
-queries{chain="ibc-1",query_type="query_consensus_state"} 143
+queries{chain="ibc-1",query_type="query_consensus_state"} 60
 queries{chain="ibc-1",query_type="query_consensus_states"} 1
 queries{chain="ibc-1",query_type="query_latest_height"} 1
-queries{chain="ibc-1",query_type="query_packet_acknowledgements"} 1
-queries{chain="ibc-1",query_type="query_packet_commitments"} 4
+queries{chain="ibc-1",query_type="query_packet_acknowledgements"} 2
+queries{chain="ibc-1",query_type="query_packet_commitments"} 3
 queries{chain="ibc-1",query_type="query_staking_params"} 2
-queries{chain="ibc-1",query_type="query_txs"} 32
-queries{chain="ibc-1",query_type="query_unreceived_acknowledgements"} 71
+queries{chain="ibc-1",query_type="query_txs"} 38
+queries{chain="ibc-1",query_type="query_unreceived_packets"} 52
 # HELP send_packet_count Number of SendPacket events processed
 # TYPE send_packet_count counter
-send_packet_count{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer"} 35
+send_packet_count{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer"} 25
 # HELP tx_latency_confirmed The latency for all transactions submitted & confirmed to a specific chain, i.e. the difference between the moment when Hermes received a batch of events until the corresponding transaction(s) were confirmed. Milliseconds.
 # TYPE tx_latency_confirmed histogram
-tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="10"} 0
-tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="50"} 0
-tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="100"} 0
-tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="200"} 0
-tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="500"} 0
 tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="1000"} 0
-tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="2000"} 0
-tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="+Inf"} 1
-tx_latency_confirmed_sum{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer"} 4400
-tx_latency_confirmed_count{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer"} 1
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="10"} 0
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="50"} 0
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="100"} 0
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="200"} 0
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="500"} 0
+tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="5000"} 2
+tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="9000"} 2
+tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="13000"} 2
+tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="17000"} 2
+tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="20000"} 2
+tx_latency_confirmed_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="+Inf"} 2
+tx_latency_confirmed_sum{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer"} 7518
+tx_latency_confirmed_count{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer"} 2
 tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="1000"} 0
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="2000"} 0
-tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="+Inf"} 1
-tx_latency_confirmed_sum{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer"} 2018
-tx_latency_confirmed_count{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer"} 1
+tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="5000"} 2
+tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="9000"} 2
+tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="13000"} 2
+tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="17000"} 2
+tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="20000"} 2
+tx_latency_confirmed_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="+Inf"} 2
+tx_latency_confirmed_sum{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer"} 5291
+tx_latency_confirmed_count{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer"} 2
 # HELP tx_latency_submitted The latency for all transactions submitted to a specific chain, i.e. the difference between the moment when Hermes received a batch of events and when it submitted the corresponding transaction(s). Milliseconds.
 # TYPE tx_latency_submitted histogram
-tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="10"} 0
-tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="50"} 0
-tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="100"} 0
 tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="200"} 0
 tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="500"} 1
-tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="1000"} 1
-tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="2000"} 1
-tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="+Inf"} 1
-tx_latency_submitted_sum{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer"} 361
-tx_latency_submitted_count{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer"} 1
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="10"} 0
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="50"} 0
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="100"} 0
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="200"} 0
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="500"} 0
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="1000"} 1
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="2000"} 1
-tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="+Inf"} 1
-tx_latency_submitted_sum{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer"} 573
-tx_latency_submitted_count{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer"} 1
-# HELP wallet_balance The balance in each wallet that Hermes is using, per wallet, denom and chain. The amount is of unit: 10^6 * `denom`
+tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="1000"} 2
+tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="2000"} 2
+tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="5000"} 2
+tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="10000"} 2
+tx_latency_submitted_bucket{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer",le="+Inf"} 2
+tx_latency_submitted_sum{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer"} 1175
+tx_latency_submitted_count{chain="ibc-0",channel="channel-0",counterparty="ibc-1",port="transfer"} 2
+tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="200"} 1
+tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="500"} 2
+tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="1000"} 2
+tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="2000"} 2
+tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="5000"} 2
+tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="10000"} 2
+tx_latency_submitted_bucket{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer",le="+Inf"} 2
+tx_latency_submitted_sum{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer"} 542
+tx_latency_submitted_count{chain="ibc-1",channel="channel-0",counterparty="ibc-0",port="transfer"} 2
+# HELP wallet_balance The balance of each wallet Hermes uses per chain. Please note that when converting the balance to f64 a loss in precision might be introduced in the displayed value
 # TYPE wallet_balance gauge
-wallet_balance{account="cosmos1lfq283ph84d49hywahpngxueqsv4wgxt6x5d7z",chain="ibc-0",denom="stake"} 99981718
-wallet_balance{account="cosmos1mmkyea9pmqhlewrap0urpes2vx0r4gnz7eq5vl",chain="ibc-1",denom="stake"} 99984434
+wallet_balance{account="cosmos1a9emd54sp0xsw77e2pzcc2pjfp7jvtl64p64w7",chain="ibc-1",denom="stake"} 99940782
+wallet_balance{account="cosmos1s9jwwt60edxhy0ez84h3wfujerj5mgzhmasy23",chain="ibc-0",denom="stake"} 99962295
 # HELP workers Number of workers per object
 # TYPE workers gauge
 workers{type="client"} 2
@@ -192,7 +185,7 @@ workers{type="packet"} 2
 workers{type="wallet"} 2
 # HELP ws_events How many IBC events did Hermes receive via the WebSocket subscription, per chain
 # TYPE ws_events counter
-ws_events{chain="ibc-0"} 63
-ws_events{chain="ibc-1"} 62
+ws_events{chain="ibc-0"} 57
+ws_events{chain="ibc-1"} 37
 ```
 
