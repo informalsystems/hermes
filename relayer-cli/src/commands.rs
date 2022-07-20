@@ -4,6 +4,7 @@ mod clear;
 mod completions;
 mod config;
 mod create;
+mod fee;
 mod health;
 mod keys;
 mod listen;
@@ -17,9 +18,9 @@ mod version;
 
 use self::{
     clear::ClearCmds, completions::CompletionsCmd, config::ConfigCmd, create::CreateCmds,
-    health::HealthCheckCmd, keys::KeysCmd, listen::ListenCmd, misbehaviour::MisbehaviourCmd,
-    query::QueryCmd, start::StartCmd, tx::TxCmd, update::UpdateCmds, upgrade::UpgradeCmds,
-    version::VersionCmd,
+    fee::command::FeeCmd, health::HealthCheckCmd, keys::KeysCmd, listen::ListenCmd,
+    misbehaviour::MisbehaviourCmd, query::QueryCmd, start::StartCmd, tx::TxCmd, update::UpdateCmds,
+    upgrade::UpgradeCmds, version::VersionCmd,
 };
 
 use core::time::Duration;
@@ -76,6 +77,9 @@ pub enum CliCmd {
     /// Create and send IBC transactions
     #[clap(subcommand)]
     Tx(TxCmd),
+
+    #[clap(subcommand)]
+    Fee(FeeCmd),
 
     /// Listen to and display IBC events emitted by a chain
     Listen(ListenCmd),

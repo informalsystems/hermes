@@ -10,13 +10,13 @@ use ibc::applications::transfer::error::Error as Ics20Error;
 use ibc::core::ics04_channel::timeout::TimeoutHeight;
 use ibc::timestamp::Timestamp;
 use ibc_proto::google::protobuf::Any;
+use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::transfer::build_transfer_message as raw_build_transfer_message;
 use ibc_relayer::transfer::TransferError;
 
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::token::TaggedTokenRef;
-use crate::relayer::tx::simple_send_tx;
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress};

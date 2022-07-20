@@ -4,6 +4,7 @@
 
 use ibc::events::IbcEvent;
 use ibc_proto::google::protobuf::Any;
+use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use serde_json as json;
 
@@ -12,7 +13,6 @@ use crate::chain::driver::ChainDriver;
 use crate::error::Error;
 use crate::ibc::denom::Denom;
 use crate::ibc::token::{TaggedDenomExt, TaggedToken, TaggedTokenRef};
-use crate::relayer::tx::simple_send_tx;
 use crate::types::id::TaggedChainIdRef;
 use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress};
@@ -88,11 +88,14 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
         wallet: &MonoTagged<Chain, &Wallet>,
         messages: Vec<Any>,
     ) -> Result<Vec<IbcEvent>, Error> {
-        self.value().runtime.block_on(simple_send_tx(
-            &self.value().tx_config,
-            &wallet.value().key,
-            messages,
-        ))
+        self.value()
+            .runtime
+            .block_on(simple_send_tx(
+                &self.value().tx_config,
+                &wallet.value().key,
+                messages,
+            ))
+            .map_err(Error::relayer)
     }
 
     fn query_balance(

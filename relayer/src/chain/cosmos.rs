@@ -9,7 +9,6 @@ use core::{
 use num_bigint::BigInt;
 use std::thread;
 
-use bitcoin::hashes::hex::ToHex;
 use tendermint::block::Height as TmHeight;
 use tendermint::{
     abci::{Event, Path as TendermintABCIPath},
@@ -55,7 +54,7 @@ use crate::chain::client::ClientSettings;
 use crate::chain::cosmos::batch::{
     send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
 };
-use crate::chain::cosmos::encode::encode_to_bech32;
+use crate::chain::cosmos::encode::key_entry_to_signer;
 use crate::chain::cosmos::fee::maybe_register_counterparty_payee;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
 use crate::chain::cosmos::query::account::get_or_fetch_account;
@@ -609,15 +608,11 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("get_signer");
 
         // Get the key from key seed file
-        let key = self
-            .keybase()
-            .get_key(&self.config.key_name)
-            .map_err(|e| Error::key_not_found(self.config.key_name.clone(), e))?;
+        let key_entry = self.key()?;
 
-        let bech32 = encode_to_bech32(&key.address.to_hex(), &self.config.account_prefix)?;
-        bech32
-            .parse()
-            .map_err(|e| Error::ics02(ClientError::signer(e)))
+        let signer = key_entry_to_signer(&key_entry, &self.config.account_prefix)?;
+
+        Ok(signer)
     }
 
     /// Get the chain configuration

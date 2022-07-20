@@ -12,12 +12,12 @@ use ibc_relayer::chain::cosmos::query::fee::{
     query_counterparty_payee as raw_query_counterparty_payee,
     query_incentivized_packets as raw_query_incentivized_packets,
 };
+use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::token::{TaggedTokenExt, TaggedTokenRef};
 use crate::relayer::transfer::build_transfer_message;
-use crate::relayer::tx::simple_send_tx;
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::{DualTagged, MonoTagged};
 use crate::types::wallet::{Wallet, WalletAddress};
@@ -85,7 +85,11 @@ pub async fn pay_packet_fee<Chain, Counterparty>(
     )
     .map_err(handle_generic_error)?;
 
-    simple_send_tx(tx_config.value(), &payer.value().key, vec![message]).await
+    let events = simple_send_tx(tx_config.value(), &payer.value().key, vec![message])
+        .await
+        .map_err(Error::relayer)?;
+
+    Ok(events)
 }
 
 pub async fn register_counterparty_payee<Chain, Counterparty>(

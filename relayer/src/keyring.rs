@@ -3,7 +3,6 @@ use std::ffi::OsStr;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 
-use crate::config::AddressType;
 use bech32::{ToBase32, Variant};
 use bip39::{Language, Mnemonic, Seed};
 use bitcoin::{
@@ -13,7 +12,7 @@ use bitcoin::{
 };
 use hdpath::StandardHDPath;
 use ibc::core::ics24_host::identifier::ChainId;
-use k256::ecdsa::{signature::Signer, Signature, SigningKey};
+use k256::ecdsa::{signature::Signer as _, Signature, SigningKey};
 use ripemd160::Ripemd160;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -24,6 +23,8 @@ pub use pub_key::EncodedPubKey;
 
 pub mod errors;
 mod pub_key;
+
+use crate::config::AddressType;
 
 pub type HDPath = StandardHDPath;
 

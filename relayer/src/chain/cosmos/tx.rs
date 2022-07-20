@@ -1,3 +1,4 @@
+use ibc::events::IbcEvent;
 use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_proto::google::protobuf::Any;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
@@ -5,8 +6,11 @@ use tendermint_rpc::{Client, HttpClient, Url};
 
 use crate::chain::cosmos::encode::sign_and_encode_tx;
 use crate::chain::cosmos::estimate::estimate_tx_fees;
+use crate::chain::cosmos::query::account::query_account;
+use crate::chain::cosmos::query::tx::all_ibc_events_from_tx_search_response;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
+use crate::chain::cosmos::wait::wait_tx_succeed;
 use crate::config::types::Memo;
 use crate::error::Error;
 use crate::keyring::KeyEntry;
@@ -50,4 +54,46 @@ async fn broadcast_tx_sync(
         .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
 
     Ok(response)
+}
+
+/**
+ A simplified version of send_tx that does not depend on `ChainHandle`.
+
+ This allows different wallet ([`KeyEntry`]) to be used for submitting
+ transactions. The simple behavior as follows:
+
+ - Query the account information on the fly. This may introduce more
+   overhead in production, but does not matter in testing.
+ - Do not split the provided messages into smaller batches.
+ - Wait for TX sync result, and error if any result contains
+   error event.
+*/
+pub async fn simple_send_tx(
+    config: &TxConfig,
+    key_entry: &KeyEntry,
+    messages: Vec<Any>,
+) -> Result<Vec<IbcEvent>, Error> {
+    let account = query_account(&config.grpc_address, &key_entry.account)
+        .await?
+        .into();
+
+    let response =
+        estimate_fee_and_send_tx(config, key_entry, &account, &Default::default(), messages)
+            .await?;
+
+    if response.code.is_err() {
+        return Err(Error::check_tx(response));
+    }
+
+    let response = wait_tx_succeed(
+        &config.rpc_client,
+        &config.rpc_address,
+        &config.rpc_timeout,
+        &response.hash,
+    )
+    .await?;
+
+    let events = all_ibc_events_from_tx_search_response(&config.chain_id, response);
+
+    Ok(events)
 }
