@@ -13,37 +13,37 @@ use crate::prelude::*;
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct TxPacketRecvCmd {
     #[clap(
-        long = "receiver-chain",
+        long = "dst-chain",
         required = true,
-        value_name = "RECEIVER_CHAIN_ID",
+        value_name = "DST_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "sender-chain",
+        long = "src-chain",
         required = true,
-        value_name = "SENDER_CHAIN_ID",
+        value_name = "SRC_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
-        long = "sender-port",
+        long = "src-port",
         required = true,
-        value_name = "SENDER_PORT_ID",
+        value_name = "SRC_PORT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source port"
     )]
     src_port_id: PortId,
 
     #[clap(
-        long = "sender-channel",
-        visible_alias = "sender-chan",
+        long = "src-channel",
+        visible_alias = "src-chan",
         required = true,
-        value_name = "SENDER_CHANNEL_ID",
+        value_name = "SRC_CHANNEL_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source channel"
     )]
@@ -82,37 +82,37 @@ impl Runnable for TxPacketRecvCmd {
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct TxPacketAckCmd {
     #[clap(
-        long = "receiver-chain",
+        long = "dst-chain",
         required = true,
-        value_name = "RECEIVER_CHAIN_ID",
+        value_name = "DST_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "sender-chain",
+        long = "src-chain",
         required = true,
-        value_name = "SENDER_CHAIN_ID",
+        value_name = "SRC_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
-        long = "sender-port",
+        long = "src-port",
         required = true,
-        value_name = "SENDER_PORT_ID",
+        value_name = "SRC_PORT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source port"
     )]
     src_port_id: PortId,
 
     #[clap(
-        long = "sender-channel",
-        visible_alias = "sender-chan",
+        long = "src-channel",
+        visible_alias = "src-chan",
         required = true,
-        value_name = "SENDER_CHANNEL_ID",
+        value_name = "SRC_CHANNEL_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source channel"
     )]
@@ -167,13 +167,13 @@ mod tests {
             },
             TxPacketRecvCmd::parse_from(&[
                 "test",
-                "--receiver-chain",
+                "--dst-chain",
                 "chain_receiver",
-                "--sender-chain",
+                "--src-chain",
                 "chain_sender",
-                "--sender-port",
+                "--src-port",
                 "port_sender",
-                "--sender-channel",
+                "--src-channel",
                 "channel_sender"
             ])
         )
@@ -190,13 +190,13 @@ mod tests {
             },
             TxPacketRecvCmd::parse_from(&[
                 "test",
-                "--receiver-chain",
+                "--dst-chain",
                 "chain_receiver",
-                "--sender-chain",
+                "--src-chain",
                 "chain_sender",
-                "--sender-port",
+                "--src-port",
                 "port_sender",
-                "--sender-chan",
+                "--src-chan",
                 "channel_sender"
             ])
         )
@@ -206,11 +206,11 @@ mod tests {
     fn test_packet_recv_no_sender_channel() {
         assert!(TxPacketRecvCmd::try_parse_from(&[
             "test",
-            "--receiver-chain",
+            "--dst-chain",
             "chain_receiver",
-            "--sender-chain",
+            "--src-chain",
             "chain_sender",
-            "--sender-port",
+            "--src-port",
             "port_sender"
         ])
         .is_err())
@@ -220,11 +220,11 @@ mod tests {
     fn test_packet_recv_no_sender_port() {
         assert!(TxPacketRecvCmd::try_parse_from(&[
             "test",
-            "--receiver-chain",
+            "--dst-chain",
             "chain_receiver",
-            "--sender-chain",
+            "--src-chain",
             "chain_sender",
-            "--sender-channel",
+            "--src-channel",
             "channel_sender"
         ])
         .is_err())
@@ -234,11 +234,11 @@ mod tests {
     fn test_packet_recv_no_sender_chain() {
         assert!(TxPacketRecvCmd::try_parse_from(&[
             "test",
-            "--receiver-chain",
+            "--dst-chain",
             "chain_receiver",
-            "--sender-port",
+            "--src-port",
             "port_sender",
-            "--sender-channel",
+            "--src-channel",
             "channel_sender"
         ])
         .is_err())
@@ -248,11 +248,11 @@ mod tests {
     fn test_packet_recv_no_receiver_chain() {
         assert!(TxPacketRecvCmd::try_parse_from(&[
             "test",
-            "--sender-chain",
+            "--src-chain",
             "chain_sender",
-            "--sender-port",
+            "--src-port",
             "port_sender",
-            "--sender-channel",
+            "--src-channel",
             "channel_sender"
         ])
         .is_err())
@@ -269,13 +269,13 @@ mod tests {
             },
             TxPacketAckCmd::parse_from(&[
                 "test",
-                "--receiver-chain",
+                "--dst-chain",
                 "chain_receiver",
-                "--sender-chain",
+                "--src-chain",
                 "chain_sender",
-                "--sender-port",
+                "--src-port",
                 "port_sender",
-                "--sender-channel",
+                "--src-channel",
                 "channel_sender"
             ])
         )
@@ -292,13 +292,13 @@ mod tests {
             },
             TxPacketAckCmd::parse_from(&[
                 "test",
-                "--receiver-chain",
+                "--dst-chain",
                 "chain_receiver",
-                "--sender-chain",
+                "--src-chain",
                 "chain_sender",
-                "--sender-port",
+                "--src-port",
                 "port_sender",
-                "--sender-chan",
+                "--src-chan",
                 "channel_sender"
             ])
         )
@@ -308,11 +308,11 @@ mod tests {
     fn test_packet_ack_no_sender_channel() {
         assert!(TxPacketAckCmd::try_parse_from(&[
             "test",
-            "--receiver-chain",
+            "--dst-chain",
             "chain_receiver",
-            "--sender-chain",
+            "--src-chain",
             "chain_sender",
-            "--sender-port",
+            "--src-port",
             "port_sender"
         ])
         .is_err())
@@ -322,11 +322,11 @@ mod tests {
     fn test_packet_ack_no_sender_port() {
         assert!(TxPacketAckCmd::try_parse_from(&[
             "test",
-            "--receiver-chain",
+            "--dst-chain",
             "chain_receiver",
-            "--sender-chain",
+            "--src-chain",
             "chain_sender",
-            "--sender-channel",
+            "--src-channel",
             "channel_sender"
         ])
         .is_err())
@@ -336,11 +336,11 @@ mod tests {
     fn test_packet_ack_no_sender_chain() {
         assert!(TxPacketAckCmd::try_parse_from(&[
             "test",
-            "--receiver-chain",
+            "--dst-chain",
             "chain_receiver",
-            "--sender-port",
+            "--src-port",
             "port_sender",
-            "--sender-channel",
+            "--src-channel",
             "channel_sender"
         ])
         .is_err())
@@ -350,11 +350,11 @@ mod tests {
     fn test_packet_ack_no_receiver_chain() {
         assert!(TxPacketAckCmd::try_parse_from(&[
             "test",
-            "--sender-chain",
+            "--src-chain",
             "chain_sender",
-            "--sender-port",
+            "--src-port",
             "port_sender",
-            "--sender-channel",
+            "--src-channel",
             "channel_sender"
         ])
         .is_err())

@@ -15,31 +15,31 @@ use crate::prelude::*;
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct TxIbcUpgradeChainCmd {
     #[clap(
-        long = "receiver-chain",
+        long = "reference-chain",
         required = true,
-        value_name = "RECEIVER_CHAIN_ID",
+        value_name = "REFERENCE_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the chain to upgrade"
     )]
-    dst_chain_id: ChainId,
+    reference_chain_id: ChainId,
 
     #[clap(
-        long = "sender-chain",
+        long = "host-chain",
         required = true,
-        value_name = "SENDER_CHAIN_ID",
+        value_name = "HOST_CHAIN_ID",
         help_heading = "REQUIRED",
-        help = "Identifier of the source chain"
+        help = "Identifier of the host chain"
     )]
-    src_chain_id: ChainId,
+    host_chain_id: ChainId,
 
     #[clap(
-        long = "sender-client",
+        long = "host-client",
         required = true,
-        value_name = "SENDER_CLIENT_ID",
+        value_name = "HOST_CLIENT_ID",
         help_heading = "REQUIRED",
-        help = "Identifier of the client on source chain from which the plan is created"
+        help = "Identifier of the client on the host chain from which the plan is created"
     )]
-    src_client_id: ClientId,
+    host_client_id: ClientId,
 
     #[clap(
         long = "amount",
@@ -90,31 +90,32 @@ pub struct TxIbcUpgradeChainCmd {
 
 impl TxIbcUpgradeChainCmd {
     fn validate_options(&self, config: &Config) -> Result<UpgradePlanOptions, String> {
-        let src_chain_config = config.find_chain(&self.src_chain_id).ok_or_else(|| {
+        let host_chain_config = config.find_chain(&self.host_chain_id).ok_or_else(|| {
             format!(
                 "missing configuration for source chain '{}'",
-                self.src_chain_id
+                self.host_chain_id
             )
         })?;
 
-        let dst_chain_config = config.find_chain(&self.dst_chain_id).ok_or_else(|| {
-            format!(
-                "missing configuration for destination chain '{}'",
-                self.dst_chain_id
-            )
-        })?;
+        let reference_chain_config =
+            config.find_chain(&self.reference_chain_id).ok_or_else(|| {
+                format!(
+                    "missing configuration for destination chain '{}'",
+                    self.reference_chain_id
+                )
+            })?;
 
         let opts = UpgradePlanOptions {
-            dst_chain_config: dst_chain_config.clone(),
-            src_chain_config: src_chain_config.clone(),
-            src_client_id: self.src_client_id.clone(),
+            dst_chain_config: reference_chain_config.clone(),
+            src_chain_config: host_chain_config.clone(),
+            src_client_id: self.host_client_id.clone(),
             amount: self.amount,
             denom: self.denom.as_deref().unwrap_or("stake").into(),
             height_offset: self.height_offset,
             upgraded_chain_id: self
                 .new_chain_id
                 .clone()
-                .unwrap_or_else(|| self.dst_chain_id.clone()),
+                .unwrap_or_else(|| self.reference_chain_id.clone()),
             upgraded_unbonding_period: self.new_unbonding.map(Duration::from_secs),
             upgrade_plan_name: self
                 .upgrade_name
@@ -137,13 +138,13 @@ impl Runnable for TxIbcUpgradeChainCmd {
 
         info!("Message {:?}", opts);
 
-        let src_chain = spawn_chain_runtime(&config, &self.src_chain_id)
+        let host_chain = spawn_chain_runtime(&config, &self.host_chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let dst_chain = spawn_chain_runtime(&config, &self.dst_chain_id)
+        let reference_chain = spawn_chain_runtime(&config, &self.reference_chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let res = build_and_send_ibc_upgrade_proposal(dst_chain, src_chain, &opts)
+        let res = build_and_send_ibc_upgrade_proposal(reference_chain, host_chain, &opts)
             .map_err(Error::upgrade_chain);
 
         match res {
@@ -165,9 +166,9 @@ mod tests {
     fn test_upgrade_chain_required_only() {
         assert_eq!(
             TxIbcUpgradeChainCmd {
-                dst_chain_id: ChainId::from_string("chain_receiver"),
-                src_chain_id: ChainId::from_string("chain_sender"),
-                src_client_id: ClientId::from_str("client_sender").unwrap(),
+                reference_chain_id: ChainId::from_string("chain_receiver"),
+                host_chain_id: ChainId::from_string("chain_sender"),
+                host_client_id: ClientId::from_str("client_sender").unwrap(),
                 amount: 42,
                 height_offset: 21,
                 new_chain_id: None,
@@ -177,11 +178,11 @@ mod tests {
             },
             TxIbcUpgradeChainCmd::parse_from(&[
                 "test",
-                "--receiver-chain",
+                "--reference-chain",
                 "chain_receiver",
-                "--sender-chain",
+                "--host-chain",
                 "chain_sender",
-                "--sender-client",
+                "--host-client",
                 "client_sender",
                 "--amount",
                 "42",
@@ -195,9 +196,9 @@ mod tests {
     fn test_upgrade_chain_denom() {
         assert_eq!(
             TxIbcUpgradeChainCmd {
-                dst_chain_id: ChainId::from_string("chain_receiver"),
-                src_chain_id: ChainId::from_string("chain_sender"),
-                src_client_id: ClientId::from_str("client_sender").unwrap(),
+                reference_chain_id: ChainId::from_string("chain_receiver"),
+                host_chain_id: ChainId::from_string("chain_sender"),
+                host_client_id: ClientId::from_str("client_sender").unwrap(),
                 amount: 42,
                 height_offset: 21,
                 new_chain_id: None,
@@ -207,11 +208,11 @@ mod tests {
             },
             TxIbcUpgradeChainCmd::parse_from(&[
                 "test",
-                "--receiver-chain",
+                "--reference-chain",
                 "chain_receiver",
-                "--sender-chain",
+                "--host-chain",
                 "chain_sender",
-                "--sender-client",
+                "--host-client",
                 "client_sender",
                 "--amount",
                 "42",
@@ -227,9 +228,9 @@ mod tests {
     fn test_upgrade_chain_new_chain() {
         assert_eq!(
             TxIbcUpgradeChainCmd {
-                dst_chain_id: ChainId::from_string("chain_receiver"),
-                src_chain_id: ChainId::from_string("chain_sender"),
-                src_client_id: ClientId::from_str("client_sender").unwrap(),
+                reference_chain_id: ChainId::from_string("chain_receiver"),
+                host_chain_id: ChainId::from_string("chain_sender"),
+                host_client_id: ClientId::from_str("client_sender").unwrap(),
                 amount: 42,
                 height_offset: 21,
                 new_chain_id: Some(ChainId::from_string("new_chain")),
@@ -239,11 +240,11 @@ mod tests {
             },
             TxIbcUpgradeChainCmd::parse_from(&[
                 "test",
-                "--receiver-chain",
+                "--reference-chain",
                 "chain_receiver",
-                "--sender-chain",
+                "--host-chain",
                 "chain_sender",
-                "--sender-client",
+                "--host-client",
                 "client_sender",
                 "--amount",
                 "42",
@@ -259,9 +260,9 @@ mod tests {
     fn test_upgrade_chain_new_unbonding() {
         assert_eq!(
             TxIbcUpgradeChainCmd {
-                dst_chain_id: ChainId::from_string("chain_receiver"),
-                src_chain_id: ChainId::from_string("chain_sender"),
-                src_client_id: ClientId::from_str("client_sender").unwrap(),
+                reference_chain_id: ChainId::from_string("chain_receiver"),
+                host_chain_id: ChainId::from_string("chain_sender"),
+                host_client_id: ClientId::from_str("client_sender").unwrap(),
                 amount: 42,
                 height_offset: 21,
                 new_chain_id: None,
@@ -271,11 +272,11 @@ mod tests {
             },
             TxIbcUpgradeChainCmd::parse_from(&[
                 "test",
-                "--receiver-chain",
+                "--reference-chain",
                 "chain_receiver",
-                "--sender-chain",
+                "--host-chain",
                 "chain_sender",
-                "--sender-client",
+                "--host-client",
                 "client_sender",
                 "--amount",
                 "42",
@@ -291,9 +292,9 @@ mod tests {
     fn test_upgrade_chain_upgrade_name() {
         assert_eq!(
             TxIbcUpgradeChainCmd {
-                dst_chain_id: ChainId::from_string("chain_receiver"),
-                src_chain_id: ChainId::from_string("chain_sender"),
-                src_client_id: ClientId::from_str("client_sender").unwrap(),
+                reference_chain_id: ChainId::from_string("chain_receiver"),
+                host_chain_id: ChainId::from_string("chain_sender"),
+                host_client_id: ClientId::from_str("client_sender").unwrap(),
                 amount: 42,
                 height_offset: 21,
                 new_chain_id: None,
@@ -303,11 +304,11 @@ mod tests {
             },
             TxIbcUpgradeChainCmd::parse_from(&[
                 "test",
-                "--receiver-chain",
+                "--reference-chain",
                 "chain_receiver",
-                "--sender-chain",
+                "--host-chain",
                 "chain_sender",
-                "--sender-client",
+                "--host-client",
                 "client_sender",
                 "--amount",
                 "42",
@@ -323,11 +324,11 @@ mod tests {
     fn test_upgrade_chain_no_height_offset() {
         assert!(TxIbcUpgradeChainCmd::try_parse_from(&[
             "test",
-            "--receiver-chain",
+            "--reference-chain",
             "chain_receiver",
-            "--sender-chain",
+            "--sendhostin",
             "chain_sender",
-            "--sender-client",
+            "--host-client",
             "client_sender",
             "--amount",
             "42"
@@ -339,11 +340,11 @@ mod tests {
     fn test_upgrade_chain_no_amount() {
         assert!(TxIbcUpgradeChainCmd::try_parse_from(&[
             "test",
-            "--receiver-chain",
+            "--reference-chain",
             "chain_receiver",
-            "--sender-chain",
+            "--sendhostin",
             "chain_sender",
-            "--sender-client",
+            "--host-client",
             "client_sender",
             "--height-offset",
             "21"
@@ -355,9 +356,9 @@ mod tests {
     fn test_upgrade_chain_no_sender_client() {
         assert!(TxIbcUpgradeChainCmd::try_parse_from(&[
             "test",
-            "--receiver-chain",
+            "--reference-chain",
             "chain_receiver",
-            "--sender-chain",
+            "--sendhostin",
             "chain_sender",
             "--amount",
             "42",
@@ -371,9 +372,9 @@ mod tests {
     fn test_upgrade_chain_no_sender_chain() {
         assert!(TxIbcUpgradeChainCmd::try_parse_from(&[
             "test",
-            "--receiver-chain",
+            "--reference-chain",
             "chain_receiver",
-            "--sender-client",
+            "--host-client",
             "client_sender",
             "--amount",
             "42",
@@ -387,9 +388,9 @@ mod tests {
     fn test_upgrade_chain_no_receiver_chain() {
         assert!(TxIbcUpgradeChainCmd::try_parse_from(&[
             "test",
-            "--sender-chain",
+            "--sendhostin",
             "chain_sender",
-            "--sender-client",
+            "--host-client",
             "client_sender",
             "--amount",
             "42",
