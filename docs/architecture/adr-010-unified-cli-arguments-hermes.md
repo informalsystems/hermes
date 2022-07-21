@@ -177,63 +177,63 @@ __Tx__
 
 __conn-init__
 
-* `tx conn-init --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-client <B_CLIENT_ID> --a-client <A_CLIENT_ID>`
+* `tx conn-init --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-client <DST_CLIENT_ID> --src-client <SRC_CLIENT_ID>`
 
 __conn-ack__
 
-* `tx conn-ack --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-client <B_CLIENT_ID> --a-client <A_CLIENT_ID> --b-connection <B_CONNECTION_ID> --a-connection <A_CONNECTION_ID>`
+* `tx conn-ack --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-client <DST_CLIENT_ID> --src-client <SRC_CLIENT_ID> --dst-connection <DST_CONNECTION_ID> --src-connection <SRC_CONNECTION_ID>`
 
 __conn-confirm__
 
-* `tx conn-confirm --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-client <B_CLIENT_ID> --a-client <A_CLIENT_ID> --b-connection <B_CONNECTION_ID> --a-connection <A_CONNECTION_ID>`
+* `tx conn-confirm --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-client <DST_CLIENT_ID> --src-client <SRC_CLIENT_ID> --dst-connection <DST_CONNECTION_ID> --src-connection <SRC_CONNECTION_ID>`
 
 __conn-try__
 
-* `tx conn-try [OPTIONS] --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-client <B_CLIENT_ID> --a-client <A_CLIENT_ID> --a-connection <A_CONNECTION_ID>`
-    * Optional: `[--b-connection <B_CONNECTION_ID>]`
+* `tx conn-try [OPTIONS] --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-client <DST_CLIENT_ID> --src-client <SRC_CLIENT_ID> --src-connection <SRC_CONNECTION_ID>`
+    * Optional: `[--dst-connection <DST_CONNECTION_ID>]`
 
 __chan-open-init__
 
-* `tx chan-open-init [OPTIONS] --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-connection <B_CONNECTION_ID> --b-port <B_PORT_ID> --a-port <A_PORT_ID>`
+* `tx chan-open-init [OPTIONS] --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-connection <DST_CONNECTION_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID>`
     * Optional: `[--order <ORDER>]`
 
 __chan-open-ack__
 
-* `tx chan-open-ack --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-connection <B_CONNECTION_ID> --b-port <B_PORT_ID> --a-port <A_PORT_ID> --b-channel <B_CHANNEL_ID> --a-channel <A_CHANNEL_ID>`
+* `tx chan-open-ack --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-connection <DST_CONNECTION_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID> --dst-channel <DST_CHANNEL_ID> --src-channel <SRC_CHANNEL_ID>`
 
 __chan-open-confirm__
 
-* `tx chan-open-confirm --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-connection <B_CONNECTION_ID> --b-port <B_PORT_ID> --a-port <A_PORT_ID> --b-channel <B_CHANNEL_ID> --a-channel <A_CHANNEL_ID>`
+* `tx chan-open-confirm --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-connection <DST_CONNECTION_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID> --dst-channel <DST_CHANNEL_ID> --src-channel <SRC_CHANNEL_ID>`
 
 __chan-open-try__
 
-* `tx chan-open-try [OPTIONS] --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-connection <B_CONNECTION_ID> --b-port <B_PORT_ID> --a-port <A_PORT_ID> --a-channel <A_CHANNEL_ID>`
-    * Optional: `[--b-channel <B_CHANNEL_ID>]`
+* `tx chan-open-try [OPTIONS] --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-connection <DST_CONNECTION_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID> --src-channel <SRC_CHANNEL_ID>`
+    * Optional: `[--dst-channel <DST_CHANNEL_ID>]`
 
 __chan-close-init__
 
-* `tx chan-close-init --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-connection <B_CONNECTION_ID> --b-port <B_PORT_ID> --a-port <A_PORT_ID> --b-channel <B_CHANNEL_ID> --a-channel <A_CHANNEL_ID>`
+* `tx chan-close-init --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-connection <DST_CONNECTION_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID> --dst-channel <DST_CHANNEL_ID> --src-channel <SRC_CHANNEL_ID>`
 
 __chan-close-confirm__
 
-* `tx chan-close-confirm --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-connection <B_CONNECTION_ID> --b-port <B_PORT_ID> --a-port <A_PORT_ID> --b-channel <B_CHANNEL_ID> --a-channel <A_CHANNEL_ID>`
+* `tx chan-close-confirm --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-connection <DST_CONNECTION_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID> --dst-channel <DST_CHANNEL_ID> --src-channel <SRC_CHANNEL_ID>`
 
 __upgrade-chain__
 
-* `tx upgrade-chain [OPTIONS] --receiver-chain <RECEIVER_CHAIN_ID> --sender-chain <SENDER_CHAIN_ID> --sender-client <SENDER_CLIENT_ID> --amount <AMOUNT> --height-offset <HEIGHT_OFFSET>`
+* `tx upgrade-chain [OPTIONS] --reference-chain <REFERENCE_CHAIN_ID> --host-chain <HOST_CHAIN_ID> --host-client <HOST_CLIENT_ID> --amount <AMOUNT> --height-offset <HEIGHT_OFFSET>`
     * Optional: `[--denom <DENOM>] [--new-chain <CHAIN_ID>] [--new-unbonding <UNBONDING_PERIOD>] [--upgrade-name <UPGRADE_NAME>]`
 
 __packet-recv__
 
-* `tx raw packet-recv --receiver-chain <RECEIVER_CHAIN_ID> --sender-chain <SENDER_CHAIN_ID> --sender-port <SENDER_PORT_ID> --sender-channel <SENDER_CHANNEL_ID>`
+* `tx packet-recv --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --src-port <SRC_PORT_ID> --src-channel <SRC_CHANNEL_ID>`
 
 __packet-ack__
 
-* `tx packet-ack --receiver-chain <RECEIVER_CHAIN_ID> --sender-chain <SENDER_CHAIN_ID> --sender-port <SENDER_PORT_ID> --sender-channel <SENDER_CHANNEL_ID>`
+* `tx packet-ack --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --src-port <SRC_PORT_ID> --src-channel <SRC_CHANNEL_ID>`
 
 __ft-transfer__
 
-* `tx ft-transfer [OPTIONS] --receiver-chain <RECEIVER_CHAIN_ID> --sender-chain <SENDER_CHAIN_ID> --sender-port <SENDER_PORT_ID> --sender-channel <SENDER_CHANNEL_ID> --amount <AMOUNT>`
+* `tx ft-transfer [OPTIONS] --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --src-port <SRC_PORT_ID> --src-channel <SRC_CHANNEL_ID> --amount <AMOUNT>`
     * Optional: `[--denom <DENOM>] [--key-name <KEY_NAME>] [--number-msgs <NUMBER_MSGS>] [--receiver <RECEIVER>] [--timeout-height-offset <TIMEOUT_HEIGHT_OFFSET>] [--timeout-seconds <TIMEOUT_SECONDS>]`
 
 ## Status

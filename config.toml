@@ -59,9 +59,10 @@ clear_on_start = true
 # (to any chain in this config file) have been successfully delivered.
 # If they have not been, and `clear_interval = 0`, then those packets are
 # queued up for re-submission.
-# Experimental feature. Affects telemetry if set to false.
-# [Default: true]
-tx_confirmation = true
+# Experimental feature. If set to `false`, the following telemetry metrics will be disabled:
+# `ibc_acknowledgment_packets`, `ibc_receive_packets` and `ibc_timeout_packets`.
+# [Default: false]
+tx_confirmation = false
 
 # Auto register the counterparty payee on a destination chain to
 # the relayer's address on the source chain. This can be used

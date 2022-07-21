@@ -52,46 +52,46 @@ macro_rules! tx_chan_cmd {
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct TxChanOpenInitCmd {
     #[clap(
-        long = "b-chain",
+        long = "dst-chain",
         required = true,
-        value_name = "B_CHAIN_ID",
+        value_name = "DST_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "a-chain",
+        long = "src-chain",
         required = true,
-        value_name = "A_CHAIN_ID",
+        value_name = "SRC_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
-        long = "b-connection",
-        visible_alias = "b-conn",
+        long = "dst-connection",
+        visible_alias = "dst-conn",
         required = true,
-        value_name = "B_CONNECTION_ID",
+        value_name = "DST_CONNECTION_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination connection"
     )]
     dst_conn_id: ConnectionId,
 
     #[clap(
-        long = "b-port",
+        long = "dst-port",
         required = true,
-        value_name = "B_PORT_ID",
+        value_name = "DST_PORT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination port"
     )]
     dst_port_id: PortId,
 
     #[clap(
-        long = "a-port",
+        long = "src-port",
         required = true,
-        value_name = "A_PORT_ID",
+        value_name = "SRC_PORT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source port"
     )]
@@ -164,65 +164,65 @@ impl Runnable for TxChanOpenInitCmd {
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct TxChanOpenTryCmd {
     #[clap(
-        long = "b-chain",
+        long = "dst-chain",
         required = true,
-        value_name = "B_CHAIN_ID",
+        value_name = "DST_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "a-chain",
+        long = "src-chain",
         required = true,
-        value_name = "A_CHAIN_ID",
+        value_name = "SRC_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
-        long = "b-connection",
-        visible_alias = "b-conn",
+        long = "dst-connection",
+        visible_alias = "dst-conn",
         required = true,
-        value_name = "B_CONNECTION_ID",
+        value_name = "DST_CONNECTION_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination connection"
     )]
     dst_conn_id: ConnectionId,
 
     #[clap(
-        long = "b-port",
+        long = "dst-port",
         required = true,
-        value_name = "B_PORT_ID",
+        value_name = "DST_PORT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination port"
     )]
     dst_port_id: PortId,
 
     #[clap(
-        long = "a-port",
+        long = "src-port",
         required = true,
-        value_name = "A_PORT_ID",
+        value_name = "SRC_PORT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source port"
     )]
     src_port_id: PortId,
 
     #[clap(
-        long = "a-channel",
-        visible_alias = "a-chan",
+        long = "src-channel",
+        visible_alias = "src-chan",
         required = true,
-        value_name = "A_CHANNEL_ID",
+        value_name = "SRC_CHANNEL_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source channel (required)"
     )]
     src_chan_id: ChannelId,
 
     #[clap(
-        long = "b-channel",
-        visible_alias = "b-chan",
-        value_name = "B_CHANNEL_ID",
+        long = "dst-channel",
+        visible_alias = "dst-chan",
+        value_name = "DST_CHANNEL_ID",
         help = "Identifier of the destination channel (optional)"
     )]
     dst_chan_id: Option<ChannelId>,
@@ -263,66 +263,66 @@ impl Runnable for TxChanOpenTryCmd {
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct TxChanOpenAckCmd {
     #[clap(
-        long = "b-chain",
+        long = "dst-chain",
         required = true,
-        value_name = "B_CHAIN_ID",
+        value_name = "DST_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "a-chain",
+        long = "src-chain",
         required = true,
-        value_name = "A_CHAIN_ID",
+        value_name = "SRC_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
-        long = "b-connection",
-        visible_alias = "b-conn",
+        long = "dst-connection",
+        visible_alias = "dst-conn",
         required = true,
-        value_name = "B_CONNECTION_ID",
+        value_name = "DST_CONNECTION_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination connection"
     )]
     dst_conn_id: ConnectionId,
 
     #[clap(
-        long = "b-port",
+        long = "dst-port",
         required = true,
-        value_name = "B_PORT_ID",
+        value_name = "DST_PORT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination port"
     )]
     dst_port_id: PortId,
 
     #[clap(
-        long = "a-port",
+        long = "src-port",
         required = true,
-        value_name = "A_PORT_ID",
+        value_name = "SRC_PORT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source port"
     )]
     src_port_id: PortId,
 
     #[clap(
-        long = "b-channel",
-        visible_alias = "b-chan",
+        long = "dst-channel",
+        visible_alias = "dst-chan",
         required = true,
-        value_name = "B_CHANNEL_ID",
+        value_name = "DST_CHANNEL_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination channel (required)"
     )]
     dst_chan_id: ChannelId,
 
     #[clap(
-        long = "a-channel",
-        visible_alias = "a-chan",
+        long = "src-channel",
+        visible_alias = "src-chan",
         required = true,
-        value_name = "A_CHANNEL_ID",
+        value_name = "SRC_CHANNEL_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source channel (required)"
     )]
@@ -364,66 +364,66 @@ impl Runnable for TxChanOpenAckCmd {
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct TxChanOpenConfirmCmd {
     #[clap(
-        long = "b-chain",
+        long = "dst-chain",
         required = true,
-        value_name = "B_CHAIN_ID",
+        value_name = "DST_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "a-chain",
+        long = "src-chain",
         required = true,
-        value_name = "A_CHAIN_ID",
+        value_name = "SRC_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
-        long = "b-connection",
-        visible_alias = "b-conn",
+        long = "dst-connection",
+        visible_alias = "dst-conn",
         required = true,
-        value_name = "B_CONNECTION_ID",
+        value_name = "DST_CONNECTION_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination connection"
     )]
     dst_conn_id: ConnectionId,
 
     #[clap(
-        long = "b-port",
+        long = "dst-port",
         required = true,
-        value_name = "B_PORT_ID",
+        value_name = "DST_PORT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination port"
     )]
     dst_port_id: PortId,
 
     #[clap(
-        long = "a-port",
+        long = "src-port",
         required = true,
-        value_name = "A_PORT_ID",
+        value_name = "SRC_PORT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source port"
     )]
     src_port_id: PortId,
 
     #[clap(
-        long = "b-channel",
-        visible_alias = "b-chan",
+        long = "dst-channel",
+        visible_alias = "dst-chan",
         required = true,
-        value_name = "B_CHANNEL_ID",
+        value_name = "DST_CHANNEL_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination channel (required)"
     )]
     dst_chan_id: ChannelId,
 
     #[clap(
-        long = "a-channel",
-        visible_alias = "a-chan",
+        long = "src-channel",
+        visible_alias = "src-chan",
         required = true,
-        value_name = "A_CHANNEL_ID",
+        value_name = "SRC_CHANNEL_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source channel (required)"
     )]
@@ -465,66 +465,66 @@ impl Runnable for TxChanOpenConfirmCmd {
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct TxChanCloseInitCmd {
     #[clap(
-        long = "b-chain",
+        long = "dst-chain",
         required = true,
-        value_name = "B_CHAIN_ID",
+        value_name = "DST_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "a-chain",
+        long = "src-chain",
         required = true,
-        value_name = "A_CHAIN_ID",
+        value_name = "SRC_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
-        long = "b-connection",
-        visible_alias = "b-conn",
+        long = "dst-connection",
+        visible_alias = "dst-conn",
         required = true,
-        value_name = "B_CONNECTION_ID",
+        value_name = "DST_CONNECTION_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination connection"
     )]
     dst_conn_id: ConnectionId,
 
     #[clap(
-        long = "b-port",
+        long = "dst-port",
         required = true,
-        value_name = "B_PORT_ID",
+        value_name = "DST_PORT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination port"
     )]
     dst_port_id: PortId,
 
     #[clap(
-        long = "a-port",
+        long = "src-port",
         required = true,
-        value_name = "A_PORT_ID",
+        value_name = "SRC_PORT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source port"
     )]
     src_port_id: PortId,
 
     #[clap(
-        long = "b-channel",
-        visible_alias = "b-chan",
+        long = "dst-channel",
+        visible_alias = "dst-chan",
         required = true,
-        value_name = "B_CHANNEL_ID",
+        value_name = "DST_CHANNEL_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination channel (required)"
     )]
     dst_chan_id: ChannelId,
 
     #[clap(
-        long = "a-channel",
-        visible_alias = "a-chan",
+        long = "src-channel",
+        visible_alias = "src-chan",
         required = true,
-        value_name = "A_CHANNEL_ID",
+        value_name = "SRC_CHANNEL_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source channel (required)"
     )]
@@ -566,66 +566,66 @@ impl Runnable for TxChanCloseInitCmd {
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct TxChanCloseConfirmCmd {
     #[clap(
-        long = "b-chain",
+        long = "dst-chain",
         required = true,
-        value_name = "B_CHAIN_ID",
+        value_name = "DST_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "a-chain",
+        long = "src-chain",
         required = true,
-        value_name = "A_CHAIN_ID",
+        value_name = "SRC_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
-        long = "b-connection",
-        visible_alias = "b-conn",
+        long = "dst-connection",
+        visible_alias = "dst-conn",
         required = true,
-        value_name = "B_CONNECTION_ID",
+        value_name = "DST_CONNECTION_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination connection"
     )]
     dst_conn_id: ConnectionId,
 
     #[clap(
-        long = "b-port",
+        long = "dst-port",
         required = true,
-        value_name = "B_PORT_ID",
+        value_name = "DST_PORT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination port"
     )]
     dst_port_id: PortId,
 
     #[clap(
-        long = "a-port",
+        long = "src-port",
         required = true,
-        value_name = "A_PORT_ID",
+        value_name = "SRC_PORT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source port"
     )]
     src_port_id: PortId,
 
     #[clap(
-        long = "b-channel",
-        visible_alias = "b-chan",
+        long = "dst-channel",
+        visible_alias = "dst-chan",
         required = true,
-        value_name = "B_CHANNEL_ID",
+        value_name = "DST_CHANNEL_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination channel (required)"
     )]
     dst_chan_id: ChannelId,
 
     #[clap(
-        long = "a-channel",
-        visible_alias = "a-chan",
+        long = "src-channel",
+        visible_alias = "src-chan",
         required = true,
-        value_name = "A_CHANNEL_ID",
+        value_name = "SRC_CHANNEL_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source channel (required)"
     )]
@@ -692,15 +692,15 @@ mod tests {
             },
             TxChanOpenInitCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-connection",
+                "--dst-connection",
                 "connection_b",
-                "--b-port",
+                "--dst-port",
                 "port_b",
-                "--a-port",
+                "--src-port",
                 "port_a"
             ])
         )
@@ -719,15 +719,15 @@ mod tests {
             },
             TxChanOpenInitCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-connection",
+                "--dst-connection",
                 "connection_b",
-                "--b-port",
+                "--dst-port",
                 "port_b",
-                "--a-port",
+                "--src-port",
                 "port_a",
                 "--order",
                 "ordered"
@@ -748,15 +748,15 @@ mod tests {
             },
             TxChanOpenInitCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-conn",
+                "--dst-conn",
                 "connection_b",
-                "--b-port",
+                "--dst-port",
                 "port_b",
-                "--a-port",
+                "--src-port",
                 "port_a"
             ])
         )
@@ -766,13 +766,13 @@ mod tests {
     fn test_chan_open_init_no_a_port() {
         assert!(TxChanOpenInitCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b"
         ])
         .is_err())
@@ -782,13 +782,13 @@ mod tests {
     fn test_chan_open_init_no_b_port() {
         assert!(TxChanOpenInitCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--a-port",
+            "--src-port",
             "port_a"
         ])
         .is_err())
@@ -798,13 +798,13 @@ mod tests {
     fn test_chan_open_init_no_b_connection() {
         assert!(TxChanOpenInitCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a"
         ])
         .is_err())
@@ -814,13 +814,13 @@ mod tests {
     fn test_chan_open_init_no_a_chain() {
         assert!(TxChanOpenInitCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a"
         ])
         .is_err())
@@ -830,13 +830,13 @@ mod tests {
     fn test_chan_open_init_no_b_chain() {
         assert!(TxChanOpenInitCmd::try_parse_from(&[
             "test",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a"
         ])
         .is_err())
@@ -856,17 +856,17 @@ mod tests {
             },
             TxChanOpenTryCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-connection",
+                "--dst-connection",
                 "connection_b",
-                "--b-port",
+                "--dst-port",
                 "port_b",
-                "--a-port",
+                "--src-port",
                 "port_a",
-                "--a-channel",
+                "--src-channel",
                 "channel_a"
             ])
         )
@@ -886,19 +886,19 @@ mod tests {
             },
             TxChanOpenTryCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-connection",
+                "--dst-connection",
                 "connection_b",
-                "--b-port",
+                "--dst-port",
                 "port_b",
-                "--a-port",
+                "--src-port",
                 "port_a",
-                "--a-channel",
+                "--src-channel",
                 "channel_a",
-                "--b-channel",
+                "--dst-channel",
                 "channel_b"
             ])
         )
@@ -918,19 +918,19 @@ mod tests {
             },
             TxChanOpenTryCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-conn",
+                "--dst-conn",
                 "connection_b",
-                "--b-port",
+                "--dst-port",
                 "port_b",
-                "--a-port",
+                "--src-port",
                 "port_a",
-                "--a-chan",
+                "--src-chan",
                 "channel_a",
-                "--b-chan",
+                "--dst-chan",
                 "channel_b"
             ])
         )
@@ -940,15 +940,15 @@ mod tests {
     fn test_chan_open_try_no_a_channel() {
         assert!(TxChanOpenTryCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a"
         ])
         .is_err())
@@ -958,15 +958,15 @@ mod tests {
     fn test_chan_open_try_no_a_port() {
         assert!(TxChanOpenTryCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -976,15 +976,15 @@ mod tests {
     fn test_chan_open_try_no_b_port() {
         assert!(TxChanOpenTryCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -994,15 +994,15 @@ mod tests {
     fn test_chan_open_try_no_b_connection() {
         assert!(TxChanOpenTryCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1012,15 +1012,15 @@ mod tests {
     fn test_chan_open_try_no_a_chain() {
         assert!(TxChanOpenTryCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1030,15 +1030,15 @@ mod tests {
     fn test_chan_open_try_no_b_chain() {
         assert!(TxChanOpenTryCmd::try_parse_from(&[
             "test",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1058,19 +1058,19 @@ mod tests {
             },
             TxChanOpenAckCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-connection",
+                "--dst-connection",
                 "connection_b",
-                "--b-port",
+                "--dst-port",
                 "port_b",
-                "--a-port",
+                "--src-port",
                 "port_a",
-                "--b-channel",
+                "--dst-channel",
                 "channel_b",
-                "--a-channel",
+                "--src-channel",
                 "channel_a"
             ])
         )
@@ -1090,19 +1090,19 @@ mod tests {
             },
             TxChanOpenAckCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-conn",
+                "--dst-conn",
                 "connection_b",
-                "--b-port",
+                "--dst-port",
                 "port_b",
-                "--a-port",
+                "--src-port",
                 "port_a",
-                "--b-chan",
+                "--dst-chan",
                 "channel_b",
-                "--a-chan",
+                "--src-chan",
                 "channel_a"
             ])
         )
@@ -1112,17 +1112,17 @@ mod tests {
     fn test_chan_open_ack_no_a_channel() {
         assert!(TxChanOpenAckCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--b-channel",
+            "--dst-channel",
             "channel_b"
         ])
         .is_err())
@@ -1132,17 +1132,17 @@ mod tests {
     fn test_chan_open_ack_no_b_channel() {
         assert!(TxChanOpenAckCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1152,17 +1152,17 @@ mod tests {
     fn test_chan_open_ack_no_a_port() {
         assert!(TxChanOpenAckCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--b-channel",
+            "--dst-channel",
             "channel_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1172,17 +1172,17 @@ mod tests {
     fn test_chan_open_ack_no_b_port() {
         assert!(TxChanOpenAckCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--b-channel",
+            "--dst-channel",
             "channel_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1192,17 +1192,17 @@ mod tests {
     fn test_chan_open_ack_no_b_connection() {
         assert!(TxChanOpenAckCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--b-channel",
+            "--dst-channel",
             "channel_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1212,17 +1212,17 @@ mod tests {
     fn test_chan_open_ack_no_a_chain() {
         assert!(TxChanOpenAckCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--b-channel",
+            "--dst-channel",
             "channel_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1232,17 +1232,17 @@ mod tests {
     fn test_chan_open_ack_no_b_chain() {
         assert!(TxChanOpenAckCmd::try_parse_from(&[
             "test",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--b-channel",
+            "--dst-channel",
             "channel_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1262,19 +1262,19 @@ mod tests {
             },
             TxChanOpenConfirmCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-connection",
+                "--dst-connection",
                 "connection_b",
-                "--b-port",
+                "--dst-port",
                 "port_b",
-                "--a-port",
+                "--src-port",
                 "port_a",
-                "--b-channel",
+                "--dst-channel",
                 "channel_b",
-                "--a-channel",
+                "--src-channel",
                 "channel_a"
             ])
         )
@@ -1294,19 +1294,19 @@ mod tests {
             },
             TxChanOpenConfirmCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-conn",
+                "--dst-conn",
                 "connection_b",
-                "--b-port",
+                "--dst-port",
                 "port_b",
-                "--a-port",
+                "--src-port",
                 "port_a",
-                "--b-chan",
+                "--dst-chan",
                 "channel_b",
-                "--a-chan",
+                "--src-chan",
                 "channel_a"
             ])
         )
@@ -1316,17 +1316,17 @@ mod tests {
     fn test_chan_open_confirm_no_a_channel() {
         assert!(TxChanOpenConfirmCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--b-channel",
+            "--dst-channel",
             "channel_b"
         ])
         .is_err())
@@ -1336,17 +1336,17 @@ mod tests {
     fn test_chan_open_confirm_no_b_channel() {
         assert!(TxChanOpenConfirmCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1356,17 +1356,17 @@ mod tests {
     fn test_chan_open_confirm_no_a_port() {
         assert!(TxChanOpenConfirmCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--b-channel",
+            "--dst-channel",
             "channel_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1376,17 +1376,17 @@ mod tests {
     fn test_chan_open_confirm_no_b_port() {
         assert!(TxChanOpenConfirmCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--b-channel",
+            "--dst-channel",
             "channel_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1396,17 +1396,17 @@ mod tests {
     fn test_chan_open_confirm_no_b_connection() {
         assert!(TxChanOpenConfirmCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--b-channel",
+            "--dst-channel",
             "channel_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1416,17 +1416,17 @@ mod tests {
     fn test_chan_open_confirm_no_a_chain() {
         assert!(TxChanOpenConfirmCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--b-channel",
+            "--dst-channel",
             "channel_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1436,17 +1436,17 @@ mod tests {
     fn test_chan_open_confirm_no_b_chain() {
         assert!(TxChanOpenConfirmCmd::try_parse_from(&[
             "test",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--b-channel",
+            "--dst-channel",
             "channel_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1466,19 +1466,19 @@ mod tests {
             },
             TxChanCloseInitCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-connection",
+                "--dst-connection",
                 "connection_b",
-                "--b-port",
+                "--dst-port",
                 "port_b",
-                "--a-port",
+                "--src-port",
                 "port_a",
-                "--b-channel",
+                "--dst-channel",
                 "channel_b",
-                "--a-channel",
+                "--src-channel",
                 "channel_a"
             ])
         )
@@ -1498,19 +1498,19 @@ mod tests {
             },
             TxChanCloseInitCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-conn",
+                "--dst-conn",
                 "connection_b",
-                "--b-port",
+                "--dst-port",
                 "port_b",
-                "--a-port",
+                "--src-port",
                 "port_a",
-                "--b-chan",
+                "--dst-chan",
                 "channel_b",
-                "--a-chan",
+                "--src-chan",
                 "channel_a"
             ])
         )
@@ -1520,17 +1520,17 @@ mod tests {
     fn test_chan_close_init_no_a_channel() {
         assert!(TxChanCloseInitCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--b-channel",
+            "--dst-channel",
             "channel_b"
         ])
         .is_err())
@@ -1540,17 +1540,17 @@ mod tests {
     fn test_chan_close_init_no_b_channel() {
         assert!(TxChanCloseInitCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1560,17 +1560,17 @@ mod tests {
     fn test_chan_close_init_no_a_port() {
         assert!(TxChanCloseInitCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--b-channel",
+            "--dst-channel",
             "channel_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1580,17 +1580,17 @@ mod tests {
     fn test_chan_close_init_no_b_port() {
         assert!(TxChanCloseInitCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--b-channel",
+            "--dst-channel",
             "channel_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1600,17 +1600,17 @@ mod tests {
     fn test_chan_close_init_no_b_connection() {
         assert!(TxChanCloseInitCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--b-channel",
+            "--dst-channel",
             "channel_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1620,17 +1620,17 @@ mod tests {
     fn test_chan_close_init_no_a_chain() {
         assert!(TxChanCloseInitCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--b-channel",
+            "--dst-channel",
             "channel_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1640,17 +1640,17 @@ mod tests {
     fn test_chan_close_init_no_b_chain() {
         assert!(TxChanCloseInitCmd::try_parse_from(&[
             "test",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--b-channel",
+            "--dst-channel",
             "channel_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1670,19 +1670,19 @@ mod tests {
             },
             TxChanCloseConfirmCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-connection",
+                "--dst-connection",
                 "connection_b",
-                "--b-port",
+                "--dst-port",
                 "port_b",
-                "--a-port",
+                "--src-port",
                 "port_a",
-                "--b-channel",
+                "--dst-channel",
                 "channel_b",
-                "--a-channel",
+                "--src-channel",
                 "channel_a"
             ])
         )
@@ -1702,19 +1702,19 @@ mod tests {
             },
             TxChanCloseConfirmCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-conn",
+                "--dst-conn",
                 "connection_b",
-                "--b-port",
+                "--dst-port",
                 "port_b",
-                "--a-port",
+                "--src-port",
                 "port_a",
-                "--b-chan",
+                "--dst-chan",
                 "channel_b",
-                "--a-chan",
+                "--src-chan",
                 "channel_a"
             ])
         )
@@ -1724,17 +1724,17 @@ mod tests {
     fn test_chan_close_confirm_no_a_channel() {
         assert!(TxChanCloseConfirmCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--b-channel",
+            "--dst-channel",
             "channel_b"
         ])
         .is_err())
@@ -1744,17 +1744,17 @@ mod tests {
     fn test_chan_close_confirm_no_b_channel() {
         assert!(TxChanCloseConfirmCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1764,17 +1764,17 @@ mod tests {
     fn test_chan_close_confirm_no_a_port() {
         assert!(TxChanCloseConfirmCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--b-channel",
+            "--dst-channel",
             "channel_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1784,17 +1784,17 @@ mod tests {
     fn test_chan_close_confirm_no_b_port() {
         assert!(TxChanCloseConfirmCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--b-channel",
+            "--dst-channel",
             "channel_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1804,17 +1804,17 @@ mod tests {
     fn test_chan_close_confirm_no_b_connection() {
         assert!(TxChanCloseConfirmCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--b-channel",
+            "--dst-channel",
             "channel_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1824,17 +1824,17 @@ mod tests {
     fn test_chan_close_confirm_no_a_chain() {
         assert!(TxChanCloseConfirmCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--b-channel",
+            "--dst-channel",
             "channel_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
@@ -1844,17 +1844,17 @@ mod tests {
     fn test_chan_close_confirm_no_b_chain() {
         assert!(TxChanCloseConfirmCmd::try_parse_from(&[
             "test",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--b-port",
+            "--dst-port",
             "port_b",
-            "--a-port",
+            "--src-port",
             "port_a",
-            "--b-channel",
+            "--dst-channel",
             "channel_b",
-            "--a-channel",
+            "--src-channel",
             "channel_a"
         ])
         .is_err())
