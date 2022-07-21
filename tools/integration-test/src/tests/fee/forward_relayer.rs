@@ -33,8 +33,8 @@ impl BinaryChannelTest for ForwardRelayerTest {
 
         let port_a = channel.port_a.as_ref();
         let port_b = channel.port_b.as_ref();
-        let channel_id_a = channel.channel_id_a.as_ref();
 
+        let channel_id_a = channel.channel_id_a.as_ref();
         let channel_id_b = channel.channel_id_b.as_ref();
 
         let wallets_a = chains.node_a.wallets();
