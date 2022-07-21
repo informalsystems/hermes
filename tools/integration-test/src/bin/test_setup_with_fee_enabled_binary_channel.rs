@@ -1,13 +1,13 @@
 /*!
     This is a simple wrapper around [`BinaryChannelTest`] and turn it into
     an executable that can be used for manual testing with two test chains
-    with connected channel being setup.
+    with connected channel with fee enabled.
 
     When the command is executed, you should see log messages such as
     following near the end:
 
     ```bash
-    $ cargo run --bin test_setup_with_binary_channel
+    $ cargo run --bin test_setup_with_fee_enabled_binary_channel
     ...
     INFO ibc_integration_test::framework::binary::channel: written channel environment to /path/to/ibc-rs/data/test-3742758098/binary-channels.env
     WARN ibc_integration_test::util::suspend: suspending the test indefinitely. you can still interact with any spawned chains and relayers

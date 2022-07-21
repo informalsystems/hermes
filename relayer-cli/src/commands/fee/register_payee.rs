@@ -68,12 +68,12 @@ fn run_register_payee_command(
 
     let config = app_config();
 
-    let chain_handle = spawn_chain_runtime(&config, &chain_id)?;
+    let chain_handle = spawn_chain_runtime(&config, chain_id)?;
 
     let signer = chain_handle.get_signer().map_err(Error::relayer)?;
 
     let message =
-        build_register_payee_message(&signer, &payee, &channel_id, &port_id).map_err(Error::fee)?;
+        build_register_payee_message(&signer, &payee, channel_id, port_id).map_err(Error::fee)?;
 
     let messages = TrackedMsgs::new_static(vec![message], "cli");
 

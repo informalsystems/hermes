@@ -68,15 +68,15 @@ fn run_register_counterparty_payee_command(
 
     let config = app_config();
 
-    let chain_handle = spawn_chain_runtime(&config, &chain_id)?;
+    let chain_handle = spawn_chain_runtime(&config, chain_id)?;
 
     let signer = chain_handle.get_signer().map_err(Error::relayer)?;
 
     let message = build_register_counterparty_payee_message(
         &signer,
         &counterparty_payee,
-        &channel_id,
-        &port_id,
+        channel_id,
+        port_id,
     )
     .map_err(Error::fee)?;
 
