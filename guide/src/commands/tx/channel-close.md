@@ -12,38 +12,38 @@ Use the `chan-close-init` command to initialize the closure of a channel.
 
 ```shell
 USAGE:
-    hermes tx chan-close-init --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-connection <B_CONNECTION_ID> --b-port <B_PORT_ID> --a-port <A_PORT_ID> --b-channel <B_CHANNEL_ID> --a-channel <A_CHANNEL_ID>
+    hermes tx chan-close-init --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-connection <DST_CONNECTION_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID> --dst-channel <DST_CHANNEL_ID> --src-channel <SRC_CHANNEL_ID>
 
 DESCRIPTION:
     Initiate the closing of a channel (ChannelCloseInit)
 
 REQUIRED:
-        --a-chain <A_CHAIN_ID>
+        --src-chain <SRC_CHAIN_ID>
             Identifier of the source chain
 
-        --a-channel <A_CHANNEL_ID>
-            Identifier of the source channel (required) [aliases: a-chan]
+        --src-channel <SRC_CHANNEL_ID>
+            Identifier of the source channel (required) [aliases: src-chan]
 
-        --a-port <A_PORT_ID>
+        --src-port <SRC_PORT_ID>
             Identifier of the source port
 
-        --b-chain <B_CHAIN_ID>
+        --dst-chain <DST_CHAIN_ID>
             Identifier of the destination chain
 
-        --b-channel <B_CHANNEL_ID>
-            Identifier of the destination channel (required) [aliases: b-chan]
+        --dst-channel <DST_CHANNEL_ID>
+            Identifier of the destination channel (required) [aliases: dst-chan]
 
-        --b-connection <B_CONNECTION_ID>
-            Identifier of the destination connection [aliases: b-conn]
+        --dst-connection <DST_CONNECTION_ID>
+            Identifier of the destination connection [aliases: dst-conn]
 
-        --b-port <B_PORT_ID>
+        --dst-port <DST_PORT_ID>
             Identifier of the destination port
 ```
 
 __Example__
 
 ```shell
-hermes tx chan-close-init --b-chain ibc-0 --a-chain ibc-1 --b-connection connection-0 --b-port transfer --a-port transfer --b-channel channel-0 --a-channel channel-1
+hermes tx chan-close-init --dst-chain ibc-0 --src-chain ibc-1 --dst-connection connection-0 --dst-port transfer --src-port transfer --dst-channel channel-0 --src-channel channel-1
 ```
 
 ```json
@@ -84,31 +84,31 @@ Use the `chan-close-confirm` command to confirm the closure of a channel.
 
 ```shell
 USAGE:
-    hermes tx chan-close-confirm --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-connection <B_CONNECTION_ID> --b-port <B_PORT_ID> --a-port <A_PORT_ID> --b-channel <B_CHANNEL_ID> --a-channel <A_CHANNEL_ID>
+    hermes tx chan-close-confirm --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-connection <DST_CONNECTION_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID> --dst-channel <DST_CHANNEL_ID> --src-channel <SRC_CHANNEL_ID>
 
 DESCRIPTION:
     Confirm the closing of a channel (ChannelCloseConfirm)
 
 REQUIRED:
-        --a-chain <A_CHAIN_ID>
+        --src-chain <SRC_CHAIN_ID>
             Identifier of the source chain
 
-        --a-channel <A_CHANNEL_ID>
-            Identifier of the source channel (required) [aliases: a-chan]
+        --src-channel <SRC_CHANNEL_ID>
+            Identifier of the source channel (required) [aliases: src-chan]
 
-        --a-port <A_PORT_ID>
+        --src-port <SRC_PORT_ID>
             Identifier of the source port
 
-        --b-chain <B_CHAIN_ID>
+        --dst-chain <DST_CHAIN_ID>
             Identifier of the destination chain
 
-        --b-channel <B_CHANNEL_ID>
-            Identifier of the destination channel (required) [aliases: b-chan]
+        --dst-channel <DST_CHANNEL_ID>
+            Identifier of the destination channel (required) [aliases: dst-chan]
 
-        --b-connection <B_CONNECTION_ID>
-            Identifier of the destination connection [aliases: b-conn]
+        --dst-connection <DST_CONNECTION_ID>
+            Identifier of the destination connection [aliases: dst-conn]
 
-        --b-port <B_PORT_ID>
+        --dst-port <DST_PORT_ID>
             Identifier of the destination port
 
 ```
@@ -116,7 +116,7 @@ REQUIRED:
 __Example__
 
 ```shell
-hermes tx chan-close-confirm --b-chain ibc-1 --a-chain ibc-0 --b-connection connection-1 --a-port transfer --b-port transfer --b-channel channel-1 --a-channel channel-0
+hermes tx chan-close-confirm --dst-chain ibc-1 --src-chain ibc-0 --dst-connection connection-1 --src-port transfer --dst-port transfer --dst-channel channel-1 --src-channel channel-0
 ```
 
 ```json
