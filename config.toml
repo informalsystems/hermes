@@ -63,6 +63,15 @@ clear_on_start = true
 # [Default: true]
 tx_confirmation = true
 
+# Auto register the counterparty payee on a destination chain to
+# the relayer's address on the source chain. This can be used
+# for simple configuration of the relayer to receive fees for
+# relaying RecvPacket on fee-enabled channels.
+# For more complex configuration, turn this off and use the CLI
+# to manually register the payee addresses.
+# [Default: false]
+auto_register_counterparty_payee = false
+
 # The REST section defines parameters for Hermes' built-in RESTful API.
 # https://hermes.informal.systems/rest.html
 [rest]
