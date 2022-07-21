@@ -37,36 +37,36 @@ macro_rules! conn_open_cmd {
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct TxConnInitCmd {
     #[clap(
-        long = "b-chain",
+        long = "dst-chain",
         required = true,
-        value_name = "B_CHAIN_ID",
+        value_name = "DST_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "a-chain",
+        long = "src-chain",
         required = true,
-        value_name = "A_CHAIN_ID",
+        value_name = "SRC_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
-        long = "b-client",
+        long = "dst-client",
         required = true,
-        value_name = "B_CLIENT_ID",
+        value_name = "DST_CLIENT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination client"
     )]
     dst_client_id: ClientId,
 
     #[clap(
-        long = "a-client",
+        long = "src-client",
         required = true,
-        value_name = "A_CLIENT_ID",
+        value_name = "SRC_CLIENT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source client"
     )]
@@ -93,55 +93,55 @@ impl Runnable for TxConnInitCmd {
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct TxConnTryCmd {
     #[clap(
-        long = "b-chain",
+        long = "dst-chain",
         required = true,
-        value_name = "B_CHAIN_ID",
+        value_name = "DST_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "a-chain",
+        long = "src-chain",
         required = true,
-        value_name = "A_CHAIN_ID",
+        value_name = "SRC_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
-        long = "b-client",
+        long = "dst-client",
         required = true,
-        value_name = "B_CLIENT_ID",
+        value_name = "DST_CLIENT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination client"
     )]
     dst_client_id: ClientId,
 
     #[clap(
-        long = "a-client",
+        long = "src-client",
         required = true,
-        value_name = "A_CLIENT_ID",
+        value_name = "SRC_CLIENT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source client"
     )]
     src_client_id: ClientId,
 
     #[clap(
-        long = "a-connection",
-        visible_alias = "a-conn",
+        long = "src-connection",
+        visible_alias = "src-conn",
         required = true,
-        value_name = "A_CONNECTION_ID",
+        value_name = "SRC_CONNECTION_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source connection (required)"
     )]
     src_conn_id: ConnectionId,
 
     #[clap(
-        long = "b-connection",
-        visible_alias = "b-conn",
-        value_name = "B_CONNECTION_ID",
+        long = "dst-connection",
+        visible_alias = "dst-conn",
+        value_name = "DST_CONNECTION_ID",
         help = "Identifier of the destination connection (optional)"
     )]
     dst_conn_id: Option<ConnectionId>,
@@ -175,56 +175,56 @@ impl Runnable for TxConnTryCmd {
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct TxConnAckCmd {
     #[clap(
-        long = "b-chain",
+        long = "dst-chain",
         required = true,
-        value_name = "B_CHAIN_ID",
+        value_name = "DST_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "a-chain",
+        long = "src-chain",
         required = true,
-        value_name = "A_CHAIN_ID",
+        value_name = "SRC_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
-        long = "b-client",
+        long = "dst-client",
         required = true,
-        value_name = "B_CLIENT_ID",
+        value_name = "DST_CLIENT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination client"
     )]
     dst_client_id: ClientId,
 
     #[clap(
-        long = "a-client",
+        long = "src-client",
         required = true,
-        value_name = "A_CLIENT_ID",
+        value_name = "SRC_CLIENT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source client"
     )]
     src_client_id: ClientId,
 
     #[clap(
-        long = "b-connection",
-        visible_alias = "b-conn",
+        long = "dst-connection",
+        visible_alias = "dst-conn",
         required = true,
-        value_name = "B_CONNECTION_ID",
+        value_name = "DST_CONNECTION_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination connection (required)"
     )]
     dst_conn_id: ConnectionId,
 
     #[clap(
-        long = "a-connection",
-        visible_alias = "a-conn",
+        long = "src-connection",
+        visible_alias = "src-conn",
         required = true,
-        value_name = "A_CONNECTION_ID",
+        value_name = "SRC_CONNECTION_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source connection (required)"
     )]
@@ -259,56 +259,56 @@ impl Runnable for TxConnAckCmd {
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct TxConnConfirmCmd {
     #[clap(
-        long = "b-chain",
+        long = "dst-chain",
         required = true,
-        value_name = "B_CHAIN_ID",
+        value_name = "DST_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
 
     #[clap(
-        long = "a-chain",
+        long = "src-chain",
         required = true,
-        value_name = "A_CHAIN_ID",
+        value_name = "SRC_CHAIN_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
 
     #[clap(
-        long = "b-client",
+        long = "dst-client",
         required = true,
-        value_name = "B_CLIENT_ID",
+        value_name = "DST_CLIENT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination client"
     )]
     dst_client_id: ClientId,
 
     #[clap(
-        long = "a-client",
+        long = "src-client",
         required = true,
-        value_name = "A_CLIENT_ID",
+        value_name = "SRC_CLIENT_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source client"
     )]
     src_client_id: ClientId,
 
     #[clap(
-        long = "b-connection",
-        visible_alias = "b-conn",
+        long = "dst-connection",
+        visible_alias = "dst-conn",
         required = true,
-        value_name = "B_CONNECTION_ID",
+        value_name = "DST_CONNECTION_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the destination connection (required)"
     )]
     dst_conn_id: ConnectionId,
 
     #[clap(
-        long = "a-connection",
-        visible_alias = "a-conn",
+        long = "src-connection",
+        visible_alias = "src-conn",
         required = true,
-        value_name = "A_CONNECTION_ID",
+        value_name = "SRC_CONNECTION_ID",
         help_heading = "REQUIRED",
         help = "Identifier of the source connection (required)"
     )]
@@ -360,13 +360,13 @@ mod tests {
             },
             TxConnInitCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-client",
+                "--dst-client",
                 "client_b-01",
-                "--a-client",
+                "--src-client",
                 "client_a-01"
             ])
         )
@@ -376,11 +376,11 @@ mod tests {
     fn test_conn_init_no_a_client() {
         assert!(TxConnInitCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-client",
+            "--dst-client",
             "client_b-01"
         ])
         .is_err())
@@ -390,11 +390,11 @@ mod tests {
     fn test_conn_init_no_b_client() {
         assert!(TxConnInitCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--a-client",
+            "--src-client",
             "client_a-01"
         ])
         .is_err())
@@ -404,11 +404,11 @@ mod tests {
     fn test_conn_init_no_a_chain() {
         assert!(TxConnInitCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--b-client",
+            "--dst-client",
             "client_b-01",
-            "--a-client",
+            "--src-client",
             "client_a-01"
         ])
         .is_err())
@@ -418,11 +418,11 @@ mod tests {
     fn test_conn_init_no_b_chain() {
         assert!(TxConnInitCmd::try_parse_from(&[
             "test",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-client",
+            "--dst-client",
             "client_b-01",
-            "--a-client",
+            "--src-client",
             "client_a-01"
         ])
         .is_err())
@@ -441,15 +441,15 @@ mod tests {
             },
             TxConnTryCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-client",
+                "--dst-client",
                 "client_b-01",
-                "--a-client",
+                "--src-client",
                 "client_a-01",
-                "--a-connection",
+                "--src-connection",
                 "connection_a"
             ])
         )
@@ -468,17 +468,17 @@ mod tests {
             },
             TxConnTryCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-client",
+                "--dst-client",
                 "client_b-01",
-                "--a-client",
+                "--src-client",
                 "client_a-01",
-                "--a-connection",
+                "--src-connection",
                 "connection_a",
-                "--b-connection",
+                "--dst-connection",
                 "connection_b"
             ])
         )
@@ -497,17 +497,17 @@ mod tests {
             },
             TxConnTryCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-client",
+                "--dst-client",
                 "client_b-01",
-                "--a-client",
+                "--src-client",
                 "client_a-01",
-                "--a-conn",
+                "--src-conn",
                 "connection_a",
-                "--b-conn",
+                "--dst-conn",
                 "connection_b"
             ])
         )
@@ -517,13 +517,13 @@ mod tests {
     fn test_conn_try_no_a_connection() {
         assert!(TxConnTryCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-client",
+            "--dst-client",
             "client_b-01",
-            "--a-client",
+            "--src-client",
             "client_a-01"
         ])
         .is_err())
@@ -533,13 +533,13 @@ mod tests {
     fn test_conn_try_no_a_client() {
         assert!(TxConnTryCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-client",
+            "--dst-client",
             "client_b-01",
-            "--a-connection",
+            "--src-connection",
             "connection_a"
         ])
         .is_err())
@@ -549,13 +549,13 @@ mod tests {
     fn test_conn_try_no_b_client() {
         assert!(TxConnTryCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--a-client",
+            "--src-client",
             "client_a-01",
-            "--a-connection",
+            "--src-connection",
             "connection_a"
         ])
         .is_err())
@@ -565,13 +565,13 @@ mod tests {
     fn test_conn_try_no_a_chain() {
         assert!(TxConnTryCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--b-client",
+            "--dst-client",
             "client_b-01",
-            "--a-client",
+            "--src-client",
             "client_a-01",
-            "--a-connection",
+            "--src-connection",
             "connection_a"
         ])
         .is_err())
@@ -581,13 +581,13 @@ mod tests {
     fn test_conn_try_no_b_chain() {
         assert!(TxConnTryCmd::try_parse_from(&[
             "test",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-client",
+            "--dst-client",
             "client_b-01",
-            "--a-client",
+            "--src-client",
             "client_a-01",
-            "--a-connection",
+            "--src-connection",
             "connection_a"
         ])
         .is_err())
@@ -606,17 +606,17 @@ mod tests {
             },
             TxConnAckCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-client",
+                "--dst-client",
                 "client_b-01",
-                "--a-client",
+                "--src-client",
                 "client_a-01",
-                "--b-connection",
+                "--dst-connection",
                 "connection_b",
-                "--a-connection",
+                "--src-connection",
                 "connection_a"
             ])
         )
@@ -635,17 +635,17 @@ mod tests {
             },
             TxConnAckCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-client",
+                "--dst-client",
                 "client_b-01",
-                "--a-client",
+                "--src-client",
                 "client_a-01",
-                "--b-conn",
+                "--dst-conn",
                 "connection_b",
-                "--a-conn",
+                "--src-conn",
                 "connection_a"
             ])
         )
@@ -655,15 +655,15 @@ mod tests {
     fn test_conn_ack_no_a_connection() {
         assert!(TxConnAckCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-client",
+            "--dst-client",
             "client_b-01",
-            "--a-client",
+            "--src-client",
             "client_a-01",
-            "--b-connection",
+            "--dst-connection",
             "connection_b"
         ])
         .is_err())
@@ -673,15 +673,15 @@ mod tests {
     fn test_conn_ack_no_b_connection() {
         assert!(TxConnAckCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-client",
+            "--dst-client",
             "client_b-01",
-            "--a-client",
+            "--src-client",
             "client_a-01",
-            "--a-connection",
+            "--src-connection",
             "connection_a"
         ])
         .is_err())
@@ -691,15 +691,15 @@ mod tests {
     fn test_conn_ack_no_a_client() {
         assert!(TxConnAckCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-client",
+            "--dst-client",
             "client_b-01",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--a-connection",
+            "--src-connection",
             "connection_a"
         ])
         .is_err())
@@ -709,15 +709,15 @@ mod tests {
     fn test_conn_ack_no_b_client() {
         assert!(TxConnAckCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--a-client",
+            "--src-client",
             "client_a-01",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--a-connection",
+            "--src-connection",
             "connection_a"
         ])
         .is_err())
@@ -727,15 +727,15 @@ mod tests {
     fn test_conn_ack_no_a_chain() {
         assert!(TxConnAckCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--b-client",
+            "--dst-client",
             "client_b-01",
-            "--a-client",
+            "--src-client",
             "client_a-01",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--a-connection",
+            "--src-connection",
             "connection_a"
         ])
         .is_err())
@@ -745,15 +745,15 @@ mod tests {
     fn test_conn_ack_no_b_chain() {
         assert!(TxConnAckCmd::try_parse_from(&[
             "test",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-client",
+            "--dst-client",
             "client_b-01",
-            "--a-client",
+            "--src-client",
             "client_a-01",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--a-connection",
+            "--src-connection",
             "connection_a"
         ])
         .is_err())
@@ -772,17 +772,17 @@ mod tests {
             },
             TxConnConfirmCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-client",
+                "--dst-client",
                 "client_b-01",
-                "--a-client",
+                "--src-client",
                 "client_a-01",
-                "--b-connection",
+                "--dst-connection",
                 "connection_b",
-                "--a-connection",
+                "--src-connection",
                 "connection_a"
             ])
         )
@@ -801,17 +801,17 @@ mod tests {
             },
             TxConnConfirmCmd::parse_from(&[
                 "test",
-                "--b-chain",
+                "--dst-chain",
                 "chain_b",
-                "--a-chain",
+                "--src-chain",
                 "chain_a",
-                "--b-client",
+                "--dst-client",
                 "client_b-01",
-                "--a-client",
+                "--src-client",
                 "client_a-01",
-                "--b-conn",
+                "--dst-conn",
                 "connection_b",
-                "--a-conn",
+                "--src-conn",
                 "connection_a"
             ])
         )
@@ -821,15 +821,15 @@ mod tests {
     fn test_conn_confirm_no_a_connection() {
         assert!(TxConnConfirmCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-client",
+            "--dst-client",
             "client_b-01",
-            "--a-client",
+            "--src-client",
             "client_a-01",
-            "--b-connection",
+            "--dst-connection",
             "connection_b"
         ])
         .is_err())
@@ -839,15 +839,15 @@ mod tests {
     fn test_conn_confirm_no_b_connection() {
         assert!(TxConnConfirmCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-client",
+            "--dst-client",
             "client_b-01",
-            "--a-client",
+            "--src-client",
             "client_a-01",
-            "--a-connection",
+            "--src-connection",
             "connection_a"
         ])
         .is_err())
@@ -857,15 +857,15 @@ mod tests {
     fn test_conn_confirm_no_a_client() {
         assert!(TxConnConfirmCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-client",
+            "--dst-client",
             "client_b-01",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--a-connection",
+            "--src-connection",
             "connection_a"
         ])
         .is_err())
@@ -875,15 +875,15 @@ mod tests {
     fn test_conn_confirm_no_b_client() {
         assert!(TxConnConfirmCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--a-client",
+            "--src-client",
             "client_a-01",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--a-connection",
+            "--src-connection",
             "connection_a"
         ])
         .is_err())
@@ -893,15 +893,15 @@ mod tests {
     fn test_conn_confirm_no_a_chain() {
         assert!(TxConnConfirmCmd::try_parse_from(&[
             "test",
-            "--b-chain",
+            "--dst-chain",
             "chain_b",
-            "--b-client",
+            "--dst-client",
             "client_b-01",
-            "--a-client",
+            "--src-client",
             "client_a-01",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--a-connection",
+            "--src-connection",
             "connection_a"
         ])
         .is_err())
@@ -911,15 +911,15 @@ mod tests {
     fn test_conn_confirm_no_b_chain() {
         assert!(TxConnConfirmCmd::try_parse_from(&[
             "test",
-            "--a-chain",
+            "--src-chain",
             "chain_a",
-            "--b-client",
+            "--dst-client",
             "client_b-01",
-            "--a-client",
+            "--src-client",
             "client_a-01",
-            "--b-connection",
+            "--dst-connection",
             "connection_b",
-            "--a-connection",
+            "--src-connection",
             "connection_a"
         ])
         .is_err())

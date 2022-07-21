@@ -35,16 +35,16 @@ Use the `conn-init` command to initialize a new connection on a chain.
 
 ```shell
 USAGE:
-    hermes tx conn-init --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-client <B_CLIENT_ID> --a-client <A_CLIENT_ID>
+    hermes tx conn-init --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-client <DST_CLIENT_ID> --src-client <SRC_CLIENT_ID>
 
 DESCRIPTION:
     Initialize a connection (ConnectionOpenInit)
 
 REQUIRED:
-        --a-chain <A_CHAIN_ID>      Identifier of the source chain
-        --a-client <A_CLIENT_ID>    Identifier of the source client
-        --b-chain <B_CHAIN_ID>      Identifier of the destination chain
-        --b-client <B_CLIENT_ID>    Identifier of the destination client
+        --src-chain <SRC_CHAIN_ID>      Identifier of the source chain
+        --src-client <SRC_CLIENT_ID>    Identifier of the source client
+        --dst-chain <DST_CHAIN_ID>      Identifier of the destination chain
+        --dst-client <DST_CLIENT_ID>    Identifier of the destination client
 ```
 
 __Example__
@@ -55,7 +55,7 @@ identifier `07-tendermint-1` on chain `ibc-1`, we can initialize a connection be
 First, let's initialize the connection on `ibc-0`:
 
 ```shell
-hermes tx conn-init --b-chain ibc-0 --a-chain ibc-1 --b-client 07-tendermint-0 --a-client 07-tendermint-1
+hermes tx conn-init --dst-chain ibc-0 --src-chain ibc-1 --dst-client 07-tendermint-0 --src-client 07-tendermint-1
 ```
 
 ```json
@@ -94,29 +94,29 @@ Use the `conn-try` command to establish a counterparty to the connection on the 
 
 ```shell
 USAGE:
-    hermes tx conn-try [OPTIONS] --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-client <B_CLIENT_ID> --a-client <A_CLIENT_ID> --a-connection <A_CONNECTION_ID>
+    hermes tx conn-try [OPTIONS] --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-client <DST_CLIENT_ID> --src-client <SRC_CLIENT_ID> --src-connection <SRC_CONNECTION_ID>
 
 DESCRIPTION:
     Relay the connection attempt (ConnectionOpenTry)
 
 OPTIONS:
-        --b-connection <B_CONNECTION_ID>
-            Identifier of the destination connection (optional) [aliases: b-conn]
+        --dst-connection <DST_CONNECTION_ID>
+            Identifier of the destination connection (optional) [aliases: dst-conn]
 
 REQUIRED:
-        --a-chain <A_CHAIN_ID>
+        --src-chain <SRC_CHAIN_ID>
             Identifier of the source chain
 
-        --a-client <A_CLIENT_ID>
+        --src-client <SRC_CLIENT_ID>
             Identifier of the source client
 
-        --a-connection <A_CONNECTION_ID>
-            Identifier of the source connection (required) [aliases: a-conn]
+        --src-connection <SRC_CONNECTION_ID>
+            Identifier of the source connection (required) [aliases: src-conn]
 
-        --b-chain <B_CHAIN_ID>
+        --dst-chain <DST_CHAIN_ID>
             Identifier of the destination chain
 
-        --b-client <B_CLIENT_ID>
+        --dst-client <DST_CLIENT_ID>
             Identifier of the destination client
 ```
 
@@ -125,7 +125,7 @@ __Example__
 Let's now create the counterparty to `connection-0` on chain `ibc-1`:
 
 ```shell
-hermes tx conn-try --b-chain ibc-1 --a-chain ibc-0 --b-client 07-tendermint-1 --a-client 07-tendermint-0 --a-connection connection-0
+hermes tx conn-try --dst-chain ibc-1 --src-chain ibc-0 --dst-client 07-tendermint-1 --src-client 07-tendermint-0 --src-connection connection-0
 ```
 
 ```json
@@ -168,29 +168,29 @@ Use the `conn-ack` command to acknowledge the connection on the initial chain.
 
 ```shell
 USAGE:
-    hermes tx conn-ack --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-client <B_CLIENT_ID> --a-client <A_CLIENT_ID> --b-connection <B_CONNECTION_ID> --a-connection <A_CONNECTION_ID>
+    hermes tx conn-ack --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-client <DST_CLIENT_ID> --src-client <SRC_CLIENT_ID> --dst-connection <DST_CONNECTION_ID> --src-connection <SRC_CONNECTION_ID>
 
 DESCRIPTION:
     Relay acknowledgment of a connection attempt (ConnectionOpenAck)
 
 REQUIRED:
-        --a-chain <A_CHAIN_ID>
+        --src-chain <SRC_CHAIN_ID>
             Identifier of the source chain
 
-        --a-client <A_CLIENT_ID>
+        --src-client <SRC_CLIENT_ID>
             Identifier of the source client
 
-        --a-connection <A_CONNECTION_ID>
-            Identifier of the source connection (required) [aliases: a-conn]
+        --src-connection <SRC_CONNECTION_ID>
+            Identifier of the source connection (required) [aliases: src-conn]
 
-        --b-chain <B_CHAIN_ID>
+        --dst-chain <DST_CHAIN_ID>
             Identifier of the destination chain
 
-        --b-client <B_CLIENT_ID>
+        --dst-client <DST_CLIENT_ID>
             Identifier of the destination client
 
-        --b-connection <B_CONNECTION_ID>
-            Identifier of the destination connection (required) [aliases: b-conn]
+        --dst-connection <DST_CONNECTION_ID>
+            Identifier of the destination connection (required) [aliases: dst-conn]
 ```
 
 __Example__
@@ -198,7 +198,7 @@ __Example__
 We can now acknowledge on `ibc-0` that `ibc-1` has accepted the connection attempt:
 
 ```shell
-hermes tx conn-ack --b-chain ibc-0 --a-chain ibc-1 --b-client 07-tendermint-0 --a-client 07-tendermint-1 --b-connection connection-0 --a-connection connection-1
+hermes tx conn-ack --dst-chain ibc-0 --src-chain ibc-1 --dst-client 07-tendermint-0 --src-client 07-tendermint-1 --dst-connection connection-0 --src-connection connection-1
 ```
 
 ```json
@@ -240,29 +240,29 @@ and finish the handshake, after which the connection is open on both chains.
 
 ```shell
 USAGE:
-    hermes tx conn-confirm --b-chain <B_CHAIN_ID> --a-chain <A_CHAIN_ID> --b-client <B_CLIENT_ID> --a-client <A_CLIENT_ID> --b-connection <B_CONNECTION_ID> --a-connection <A_CONNECTION_ID>
+    hermes tx conn-confirm --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-client <DST_CLIENT_ID> --src-client <SRC_CLIENT_ID> --dst-connection <DST_CONNECTION_ID> --src-connection <SRC_CONNECTION_ID>
 
 DESCRIPTION:
     Confirm opening of a connection (ConnectionOpenConfirm)
 
 REQUIRED:
-        --a-chain <A_CHAIN_ID>
+        --src-chain <SRC_CHAIN_ID>
             Identifier of the source chain
 
-        --a-client <A_CLIENT_ID>
+        --src-client <SRC_CLIENT_ID>
             Identifier of the source client
 
-        --a-connection <A_CONNECTION_ID>
-            Identifier of the source connection (required) [aliases: a-conn]
+        --src-connection <SRC_CONNECTION_ID>
+            Identifier of the source connection (required) [aliases: src-conn]
 
-        --b-chain <B_CHAIN_ID>
+        --dst-chain <DST_CHAIN_ID>
             Identifier of the destination chain
 
-        --b-client <B_CLIENT_ID>
+        --dst-client <DST_CLIENT_ID>
             Identifier of the destination client
 
-        --b-connection <B_CONNECTION_ID>
-            Identifier of the destination connection (required) [aliases: b-conn]
+        --dst-connection <DST_CONNECTION_ID>
+            Identifier of the destination connection (required) [aliases: dst-conn]
 ```
 
 __Example__
@@ -270,7 +270,7 @@ __Example__
 Confirm on `ibc-1` that `ibc-0` has accepted the connection attempt.
 
 ```shell
-hermes tx conn-confirm --b-chain ibc-1 --a-chain ibc-0 --b-client 07-tendermint-1 --a-client 07-tendermint-0 --b-connection connection-1 --a-connection connection-0
+hermes tx conn-confirm --dst-chain ibc-1 --src-chain ibc-0 --dst-client 07-tendermint-1 --src-client 07-tendermint-0 --dst-connection connection-1 --src-connection connection-0
 ```
 
 ```json
