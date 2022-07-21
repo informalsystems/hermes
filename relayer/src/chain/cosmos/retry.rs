@@ -59,9 +59,8 @@ async fn refresh_account_and_retry_send_tx_with_account_sequence(
 ) -> Result<Response, Error> {
     // Re-fetch the account s.n.
     refresh_account(&config.grpc_address, &key_entry.account, account).await?;
-    // Backoff and retry
+    // Retry after delay.
     thread::sleep(Duration::from_millis(ACCOUNT_SEQUENCE_RETRY_DELAY));
-    // Now retry.
     estimate_fee_and_send_tx(config, key_entry, account, tx_memo, messages.clone()).await
 }
 
@@ -72,14 +71,16 @@ async fn do_send_tx_with_account_sequence_retry(
     tx_memo: &Memo,
     messages: Vec<Any>,
 ) -> Result<Response, Error> {
-
     match estimate_fee_and_send_tx(config, key_entry, account, tx_memo, messages.clone()).await {
         // Gas estimation failed with acct. s.n. mismatch at estimate gas step.
-        // It indicates that the account sequence cached by hermes is stale.
+        // It indicates that the account sequence cached by hermes is stale (got < expected).
         // This can happen when the same account is used by another agent.
         Err(ref e) if mismatch_account_sequence_number_error_requires_refresh(e) => {
-            warn!("failed at estimate_gas step mismatching account sequence. \
-                refresh account sequence number and retry once");
+            warn!(
+                "failed at estimate_gas step mismatching account sequence {}. \
+                refresh account sequence number and retry once",
+                e
+            );
             refresh_account_and_retry_send_tx_with_account_sequence(
                 config, key_entry, account, tx_memo, messages,
             )
@@ -88,20 +89,19 @@ async fn do_send_tx_with_account_sequence_retry(
 
         // Gas estimation succeeded but broadcast_tx_sync failed with a retry-able error.
         Ok(ref response) if response.code == Code::Err(INCORRECT_ACCOUNT_SEQUENCE_ERR) => {
-            warn!("failed at broadcast step with incorrect account sequence.  \
-                refresh account sequence number and retry once");
-            // If after the max retry we still get an account sequence mismatch error,
-            // we ignore the error and return the original response to downstream.
-            // We do not return an error here, because the current convention
-            // let the caller handle error responses separately.
+            warn!(
+                "failed at broadcast_tx_sync step with incorrect account sequence {:?}.  \
+                refresh account sequence number and retry once",
+                response
+            );
             refresh_account_and_retry_send_tx_with_account_sequence(
                 config, key_entry, account, tx_memo, messages,
             )
             .await
         }
 
-        // Catch-all arm for the Ok variant.
-        // This is the case when gas estimation succeeded.
+        // Gas estimation succeeded and broadcast_tx_sync was either successful or has failed with
+        // an unrecoverable error.
         Ok(response) => {
             // Gas estimation and broadcast_tx_sync were successful.
             match response.code {
@@ -126,7 +126,6 @@ async fn do_send_tx_with_account_sequence_retry(
             }
         }
 
-        // Catch-all case for the Err variant.
         // Gas estimation failure or other unrecoverable error, propagate.
         Err(e) => Err(e),
     }
