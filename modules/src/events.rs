@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use alloc::collections::btree_map::BTreeMap as HashMap;
+
 use core::convert::{TryFrom, TryInto};
 use core::fmt;
 use core::str::FromStr;
@@ -328,23 +328,6 @@ impl TryFrom<IbcEvent> for AbciEvent {
     }
 }
 
-// This is tendermint specific
-pub fn from_tx_response_event(height: Height, event: &tendermint::abci::Event) -> Option<IbcEvent> {
-    // Return the first hit we find
-    if let Some(mut client_res) = ClientEvents::try_from_tx(event) {
-        client_res.set_height(height);
-        Some(client_res)
-    } else if let Some(mut conn_res) = ConnectionEvents::try_from_tx(event) {
-        conn_res.set_height(height);
-        Some(conn_res)
-    } else if let Some(mut chan_res) = ChannelEvents::try_from_tx(event) {
-        chan_res.set_height(height);
-        Some(chan_res)
-    } else {
-        None
-    }
-}
-
 impl IbcEvent {
     pub fn to_json(&self) -> String {
         match serde_json::to_string(self) {
@@ -531,55 +514,4 @@ impl From<ModuleEventAttribute> for Tag {
                 .expect("Value::from_str() impl is infallible"),
         }
     }
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct RawObject<'a> {
-    pub height: Height,
-    pub action: String,
-    pub idx: usize,
-    pub events: &'a HashMap<String, Vec<String>>,
-}
-
-impl<'a> RawObject<'a> {
-    pub fn new(
-        height: Height,
-        action: String,
-        idx: usize,
-        events: &'a HashMap<String, Vec<String>>,
-    ) -> RawObject<'a> {
-        RawObject {
-            height,
-            action,
-            idx,
-            events,
-        }
-    }
-}
-
-pub fn extract_events(
-    events: &HashMap<String, Vec<String>>,
-    action_string: &str,
-) -> Result<(), Error> {
-    if let Some(message_action) = events.get("message.action") {
-        if message_action.contains(&action_string.to_owned()) {
-            return Ok(());
-        }
-        return Err(Error::missing_action_string());
-    }
-    Err(Error::incorrect_event_type(action_string.to_string()))
-}
-
-pub fn extract_attribute(object: &RawObject<'_>, key: &str) -> Result<String, Error> {
-    let value = object
-        .events
-        .get(key)
-        .ok_or_else(|| Error::missing_key(key.to_string()))?[object.idx]
-        .clone();
-
-    Ok(value)
-}
-
-pub fn maybe_extract_attribute(object: &RawObject<'_>, key: &str) -> Option<String> {
-    object.events.get(key).map(|tags| tags[object.idx].clone())
 }
