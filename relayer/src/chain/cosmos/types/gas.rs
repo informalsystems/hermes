@@ -7,7 +7,7 @@ use crate::config::{ChainConfig, GasPrice};
 const DEFAULT_MAX_GAS: u64 = 400_000;
 
 /// By default, we do not increase the estimated gas to compute the fee.
-const DEFAULT_GAS_MULTIPLIER: f64 = 1.0;
+const DEFAULT_GAS_MULTIPLIER: f64 = 1.1;
 
 const DEFAULT_FEE_GRANTER: &str = "";
 

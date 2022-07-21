@@ -1051,7 +1051,7 @@ hermes_cc() {
   do
     for j in $(seq $((i+1)) $N)
     do
-      echo "\"${HERMES_BINARY}\" create channel --a-chain $(n_from_a "$i" "$CHAINS") --b-chain $(n_from_a "$j" "$CHAINS") --a-port transfer --b-port transfer"
+      echo "\"${HERMES_BINARY}\" create channel --a-chain $(n_from_a "$i" "$CHAINS") --b-chain $(n_from_a "$j" "$CHAINS") --a-port transfer --b-port transfer --new-client-connection --yes"
     done
   done
 }

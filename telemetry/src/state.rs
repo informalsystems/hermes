@@ -77,9 +77,8 @@ pub struct TelemetryState {
     /// How many messages Hermes submitted to the chain, per chain
     msg_num: Counter<u64>,
 
-    /// The balance in each wallet that Hermes is using, per wallet, denom and chain.
-    /// The amount given is of unit: 10^6 * `denom`
-    wallet_balance: ValueRecorder<u64>,
+    /// The balance of each wallet Hermes uses per chain
+    wallet_balance: ValueRecorder<f64>,
 
     /// Indicates the latency for all transactions submitted to a specific chain,
     /// i.e. the difference between the moment when Hermes received a batch of events
@@ -243,7 +242,7 @@ impl TelemetryState {
 
     /// The balance in each wallet that Hermes is using, per account, denom and chain.
     /// The amount given is of unit: 10^6 * `denom`
-    pub fn wallet_balance(&self, chain_id: &ChainId, account: &str, amount: u64, denom: &str) {
+    pub fn wallet_balance(&self, chain_id: &ChainId, account: &str, amount: f64, denom: &str) {
         let labels = &[
             KeyValue::new("chain", chain_id.to_string()),
             KeyValue::new("account", account.to_string()),
@@ -571,8 +570,9 @@ impl Default for TelemetryState {
                 .init(),
 
             wallet_balance: meter
-                .u64_value_recorder("wallet_balance")
-                .with_description("The balance in each wallet that Hermes is using, per wallet, denom and chain. The amount is of unit: 10^6 * `denom`")
+                .f64_value_recorder("wallet_balance")
+                .with_description("The balance of each wallet Hermes uses per chain. Please note that when converting the balance to f64 a loss in
+                precision might be introduced in the displayed value")
                 .init(),
 
             send_packet_count: meter
