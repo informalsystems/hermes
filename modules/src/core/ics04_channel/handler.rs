@@ -1,17 +1,19 @@
 //! This module implements the processing logic for ICS4 (channel) messages.
+use crate::prelude::*;
 
-use crate::applications::transfer::acknowledgement::Acknowledgement as TransferAcknowledgement;
+use crate::applications::transfer::acknowledgement::Acknowledgement;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::msgs::ChannelMsg;
+use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::{msgs::PacketMsg, packet::PacketResult};
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::core::ics26_routing::context::{
-    Ics26Context, ModuleId, ModuleOutputBuilder, OnRecvPacketAck, Router,
+    Acknowledgement as GenericAcknowledgement, Ics26Context, ModuleId, ModuleOutputBuilder,
+    OnRecvPacketAck, Router,
 };
 use crate::handler::{HandlerOutput, HandlerOutputBuilder};
-use core::any::TypeId;
 
 pub mod acknowledgement;
 pub mod chan_close_confirm;
@@ -214,37 +216,11 @@ where
                 OnRecvPacketAck::Successful(acknowledgement, write_fn) => {
                     write_fn(cb.as_any_mut()).map_err(Error::app_module)?;
 
-                    let type_id = acknowledgement.as_any().type_id();
-                    // process write acknowledgement
-                    if TypeId::of::<TransferAcknowledgement>() == type_id {
-                        let ack = acknowledgement
-                            .as_any()
-                            .downcast_ref::<TransferAcknowledgement>()
-                            .expect("downcast_ref TransferAcknowledgement error");
-
-                        let write_ack_output = write_acknowledgement::process(
-                            ctx,
-                            msg.packet.clone(),
-                            ack.as_ref().to_vec(),
-                        )?;
-
-                        let HandlerOutput {
-                            result,
-                            log,
-                            events,
-                        } = write_ack_output;
-
-                        // store write ack result
-                        ctx.store_packet_result(result)?;
-
-                        let inner_module_output = ModuleOutputBuilder::new()
-                            .with_log(log)
-                            .with_events(events.into_iter().map(|event| event.into()).collect());
-
-                        module_output.merge(inner_module_output);
-                    }
+                    process_write_ack(ctx, msg.packet.clone(), acknowledgement, module_output)?
                 }
-                OnRecvPacketAck::Failed(_) => {}
+                OnRecvPacketAck::Failed(acknowledgement) => {
+                    process_write_ack(ctx, msg.packet.clone(), acknowledgement, module_output)?
+                }
             }
         }
         PacketMsg::AckPacket(msg) => cb.on_acknowledgement_packet(
@@ -260,5 +236,39 @@ where
             cb.on_timeout_packet(module_output, &msg.packet, &msg.signer)?
         }
     };
+    Ok(())
+}
+
+fn process_write_ack<Ctx>(
+    ctx: &mut Ctx,
+    packet: Packet,
+    acknowledgement: Box<dyn GenericAcknowledgement>,
+    module_output: &mut ModuleOutputBuilder,
+) -> Result<(), Error>
+where
+    Ctx: Ics26Context,
+{
+    let ack = acknowledgement
+        .as_any()
+        .downcast_ref::<Acknowledgement>()
+        .expect("downcast_ref Acknowledgement error");
+
+    let write_ack_output = write_acknowledgement::process(ctx, packet, ack.as_ref().to_vec())?;
+
+    let HandlerOutput {
+        result,
+        log,
+        events,
+    } = write_ack_output;
+
+    // store write ack result
+    ctx.store_packet_result(result)?;
+
+    let inner_module_output = ModuleOutputBuilder::new()
+        .with_log(log)
+        .with_events(events.into_iter().map(|event| event.into()).collect());
+
+    module_output.merge(inner_module_output);
+
     Ok(())
 }
