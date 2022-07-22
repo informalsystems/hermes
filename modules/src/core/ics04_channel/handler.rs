@@ -194,11 +194,28 @@ pub fn packet_callback<Ctx>(
     ctx: &mut Ctx,
     module_id: &ModuleId,
     msg: &PacketMsg,
-    module_output: &mut ModuleOutputBuilder,
+    output: &mut HandlerOutputBuilder<()>,
 ) -> Result<(), Error>
 where
     Ctx: Ics26Context,
 {
+    let mut module_output = ModuleOutputBuilder::new();
+    let mut core_output = HandlerOutputBuilder::new();
+
+    let result = do_packet_callback(ctx, module_id, msg, &mut module_output, &mut core_output);
+    output.merge(module_output);
+    output.merge(core_output);
+
+    result
+}
+
+fn do_packet_callback(
+    ctx: &mut impl Ics26Context,
+    module_id: &ModuleId,
+    msg: &PacketMsg,
+    module_output: &mut ModuleOutputBuilder,
+    core_output: &mut HandlerOutputBuilder<()>,
+) -> Result<(), Error> {
     let cb = ctx
         .router_mut()
         .get_route_mut(module_id)
@@ -209,15 +226,15 @@ where
             let result = cb.on_recv_packet(module_output, &msg.packet, &msg.signer);
             match result {
                 OnRecvPacketAck::Nil(write_fn) => {
-                    write_fn(cb.as_any_mut()).map_err(Error::app_module)?;
+                    write_fn(cb.as_any_mut()).map_err(Error::app_module)
                 }
                 OnRecvPacketAck::Successful(ack, write_fn) => {
                     write_fn(cb.as_any_mut()).map_err(Error::app_module)?;
 
-                    process_write_ack(ctx, msg.packet.clone(), ack.as_ref(), module_output)?
+                    process_write_ack(ctx, msg.packet.clone(), ack.as_ref(), core_output)
                 }
                 OnRecvPacketAck::Failed(ack) => {
-                    process_write_ack(ctx, msg.packet.clone(), ack.as_ref(), module_output)?
+                    process_write_ack(ctx, msg.packet.clone(), ack.as_ref(), core_output)
                 }
             }
         }
@@ -226,43 +243,35 @@ where
             &msg.packet,
             &msg.acknowledgement,
             &msg.signer,
-        )?,
-        PacketMsg::ToPacket(msg) => {
-            cb.on_timeout_packet(module_output, &msg.packet, &msg.signer)?
-        }
+        ),
+        PacketMsg::ToPacket(msg) => cb.on_timeout_packet(module_output, &msg.packet, &msg.signer),
         PacketMsg::ToClosePacket(msg) => {
-            cb.on_timeout_packet(module_output, &msg.packet, &msg.signer)?
+            cb.on_timeout_packet(module_output, &msg.packet, &msg.signer)
         }
-    };
-    Ok(())
+    }
 }
 
-fn process_write_ack<Ctx>(
-    ctx: &mut Ctx,
+fn process_write_ack(
+    ctx: &mut impl Ics26Context,
     packet: Packet,
     acknowledgement: &dyn Acknowledgement,
-    module_output: &mut ModuleOutputBuilder,
-) -> Result<(), Error>
-where
-    Ctx: Ics26Context,
-{
-    let write_ack_output =
-        write_acknowledgement::process(ctx, packet, acknowledgement.as_ref().to_vec().into())?;
-
+    core_output: &mut HandlerOutputBuilder<()>,
+) -> Result<(), Error> {
     let HandlerOutput {
         result,
         log,
         events,
-    } = write_ack_output;
+    } = write_acknowledgement::process(ctx, packet, acknowledgement.as_ref().to_vec().into())?;
 
     // store write ack result
     ctx.store_packet_result(result)?;
 
-    let inner_module_output = ModuleOutputBuilder::new()
-        .with_log(log)
-        .with_events(events.into_iter().map(|event| event.into()).collect());
-
-    module_output.merge(inner_module_output);
+    core_output.merge_output(
+        HandlerOutput::builder()
+            .with_log(log)
+            .with_events(events)
+            .with_result(()),
+    );
 
     Ok(())
 }

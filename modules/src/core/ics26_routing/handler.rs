@@ -111,9 +111,7 @@ where
                 return Ok(handler_builder.with_result(()));
             }
 
-            let mut module_output = ModuleOutputBuilder::new();
-            let cb_result = ics4_packet_callback(ctx, &module_id, &msg, &mut module_output);
-            handler_builder.merge(module_output);
+            let cb_result = ics4_packet_callback(ctx, &module_id, &msg, &mut handler_builder);
             cb_result.map_err(Error::ics04_channel)?;
 
             // Apply any results to the host chain store.
