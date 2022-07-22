@@ -1,7 +1,6 @@
 //! This module implements the processing logic for ICS4 (channel) messages.
 use crate::prelude::*;
 
-use crate::applications::transfer::acknowledgement::Acknowledgement;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::error::Error;
@@ -10,8 +9,7 @@ use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::{msgs::PacketMsg, packet::PacketResult};
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::core::ics26_routing::context::{
-    Acknowledgement as GenericAcknowledgement, Ics26Context, ModuleId, ModuleOutputBuilder,
-    OnRecvPacketAck, Router,
+    Acknowledgement, Ics26Context, ModuleId, ModuleOutputBuilder, OnRecvPacketAck, Router,
 };
 use crate::handler::{HandlerOutput, HandlerOutputBuilder};
 
@@ -213,13 +211,13 @@ where
                 OnRecvPacketAck::Nil(write_fn) => {
                     write_fn(cb.as_any_mut()).map_err(Error::app_module)?;
                 }
-                OnRecvPacketAck::Successful(acknowledgement, write_fn) => {
+                OnRecvPacketAck::Successful(ack, write_fn) => {
                     write_fn(cb.as_any_mut()).map_err(Error::app_module)?;
 
-                    process_write_ack(ctx, msg.packet.clone(), acknowledgement, module_output)?
+                    process_write_ack(ctx, msg.packet.clone(), ack.as_ref(), module_output)?
                 }
-                OnRecvPacketAck::Failed(acknowledgement) => {
-                    process_write_ack(ctx, msg.packet.clone(), acknowledgement, module_output)?
+                OnRecvPacketAck::Failed(ack) => {
+                    process_write_ack(ctx, msg.packet.clone(), ack.as_ref(), module_output)?
                 }
             }
         }
@@ -242,18 +240,14 @@ where
 fn process_write_ack<Ctx>(
     ctx: &mut Ctx,
     packet: Packet,
-    acknowledgement: Box<dyn GenericAcknowledgement>,
+    acknowledgement: &dyn Acknowledgement,
     module_output: &mut ModuleOutputBuilder,
 ) -> Result<(), Error>
 where
     Ctx: Ics26Context,
 {
-    let ack = acknowledgement
-        .as_any()
-        .downcast_ref::<Acknowledgement>()
-        .expect("downcast_ref Acknowledgement error");
-
-    let write_ack_output = write_acknowledgement::process(ctx, packet, ack.as_ref().to_vec())?;
+    let write_ack_output =
+        write_acknowledgement::process(ctx, packet, acknowledgement.as_ref().to_vec().into())?;
 
     let HandlerOutput {
         result,
