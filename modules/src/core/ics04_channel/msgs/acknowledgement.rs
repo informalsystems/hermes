@@ -16,6 +16,12 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgAcknowledgement";
 #[derive(Clone, Debug, PartialEq, From, Into)]
 pub struct Acknowledgement(Vec<u8>);
 
+impl Acknowledgement {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
 impl AsRef<[u8]> for Acknowledgement {
     fn as_ref(&self) -> &[u8] {
         self.0.as_slice()
