@@ -9,14 +9,14 @@ use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 
 use crate::error::Error;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 pub struct IbcData {
     pub connections: HashMap<ConnectionId, IdentifiedConnectionEnd>,
     pub channels: HashMap<ChannelId, IdentifiedChannelEnd>,
     // ..
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct IbcSnapshot {
     pub height: u64,
     pub json_data: IbcData,

@@ -8,8 +8,10 @@ use semver::Version;
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use tendermint_rpc::endpoint::broadcast::tx_sync;
 use tonic::metadata::AsciiMetadataValue;
-use tracing::{info, span, warn, Level};
+use tracing::{debug, info, span, warn, Level};
 
+use ibc::core::ics04_channel::channel::{Counterparty, Order, State};
+use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc::{
     core::{
         ics02_client::{
@@ -22,6 +24,7 @@ use ibc::{
         ics04_channel::{
             channel::{ChannelEnd, IdentifiedChannelEnd},
             packet::Sequence,
+            Version as ChannelVersion,
         },
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
         ics24_host::identifier::{ChainId, ConnectionId},
@@ -33,7 +36,7 @@ use ibc::{
 use crate::chain::cosmos::CosmosSdkChain;
 use crate::chain::psql_cosmos::batch::send_batched_messages_and_wait_commit;
 use crate::chain::psql_cosmos::query::{
-    query_blocks, query_channel, query_channels, query_connections, query_txs,
+    query_blocks, query_channel, query_channels, query_connections, query_ibc_data, query_txs,
 };
 use crate::chain::psql_cosmos::update::init_dbs;
 use crate::chain::psql_cosmos::update::{IbcData, IbcSnapshot};
@@ -254,8 +257,6 @@ impl PsqlChain {
             },
         };
 
-        // todo - fix "ibc" deserialization error:
-        // sqlx: error occurred while decoding column "json_data": invalid type: string "ibc", expected struct CommitmentPrefix at line 1 column 756
         self.populate_connections(
             &QueryHeight::Specific(solved_query_height),
             QueryConnectionsRequest { pagination: None },
@@ -273,21 +274,105 @@ impl PsqlChain {
 
     fn update_with_events(&mut self, batch: EventBatch) -> Result<(), Error> {
         if self.starting {
-            let snapshot = self.ibc_snapshot(&QueryHeight::Specific(batch.height))?;
+            let snapshot =
+                self.ibc_snapshot(&QueryHeight::Specific(batch.height.decrement().unwrap()))?;
             self.block_on(init_dbs(&self.pool.clone(), &snapshot))?;
             self.starting = false;
         }
+
+        let height = batch.height.revision_height();
+        let latest = self.block_on(query_ibc_data(&self.pool, height))?;
+        let mut work_copy = latest.clone();
+        work_copy.height = height;
+
         for event in batch.events.iter() {
-            self.update_with_event(event)?;
+            // best effort to maintain the IBC snapshot based on events
+            self.update_with_event(event, &mut work_copy);
         }
-        Ok(())
+
+        if work_copy.json_data != latest.json_data {
+            self.block_on(init_dbs(&self.pool, &work_copy))
+        } else {
+            Ok(())
+        }
     }
 
-    fn update_with_event(&mut self, event: &IbcEvent) -> Result<(), Error> {
-        match event {
-            IbcEvent::NewBlock(b) => Ok(()),
-            IbcEvent::OpenInitConnection(oi) => Ok(()),
-            _ => Ok(()),
+    fn maybe_chain_channel(
+        &self,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+    ) -> Option<IdentifiedChannelEnd> {
+        let channel = self.chain.query_channel(
+            QueryChannelRequest {
+                port_id: port_id.clone(),
+                channel_id: channel_id.clone(),
+                height: QueryHeight::Latest,
+            },
+            IncludeProof::No,
+        );
+        match channel {
+            Ok((channel_end, _p)) => Some(IdentifiedChannelEnd {
+                port_id: port_id.clone(),
+                channel_id: channel_id.clone(),
+                channel_end,
+            }),
+            Err(_e) => None,
+        }
+    }
+
+    fn try_update_with_channel_event(&mut self, event: &IbcEvent, result: &mut IbcSnapshot) {
+        // Channel events do not include the ordering and version so a channel cannot be currently
+        // fully constructed from an event. Because of this we need to query the chain directly for
+        // Init and Try events.
+        let channel = match event {
+            IbcEvent::OpenInitChannel(ev) => {
+                self.maybe_chain_channel(&ev.port_id, &ev.channel_id.clone().unwrap())
+            }
+            IbcEvent::OpenTryChannel(ev) => {
+                self.maybe_chain_channel(&ev.port_id, &ev.channel_id.clone().unwrap())
+            }
+            _ => None,
+        };
+
+        match channel {
+            None => {
+                let new_partial_channel = channel_from_event(event).unwrap();
+                if let Some(ch) = result
+                    .json_data
+                    .channels
+                    .get_mut(&new_partial_channel.channel_id)
+                {
+                    debug!(
+                        "psql chain {} - changing channel {} from {} to {} due to event {}",
+                        self.chain.id(),
+                        ch.channel_id,
+                        ch.channel_end.state.clone(),
+                        new_partial_channel.channel_end.state,
+                        event
+                    );
+                    ch.channel_end.state = new_partial_channel.channel_end.state;
+                    ch.channel_end.remote = new_partial_channel.channel_end.remote;
+                }
+            }
+            Some(channel) => {
+                debug!(
+                    "psql chain {} - changing channel {} from uninit to {} due to event {}",
+                    self.chain.id(),
+                    channel.channel_id,
+                    channel.channel_end.state.clone(),
+                    event
+                );
+                result
+                    .json_data
+                    .channels
+                    .insert(channel.channel_id.clone(), channel);
+            }
+        }
+    }
+
+    fn update_with_event(&mut self, event: &IbcEvent, result: &mut IbcSnapshot) {
+        if is_channel_event(event) {
+            self.try_update_with_channel_event(event, result);
         }
     }
 }
@@ -529,6 +614,8 @@ impl ChainEndpoint for PsqlChain {
         request: QueryChannelRequest,
         include_proof: IncludeProof,
     ) -> Result<(ChannelEnd, Option<MerkleProof>), Error> {
+        crate::time!("query_channel_psql");
+        crate::telemetry!(query, self.id(), "query_channel_psql");
         match include_proof {
             IncludeProof::Yes => self.chain.query_channel(request, include_proof),
             IncludeProof::No => {
@@ -708,5 +795,44 @@ impl LightClient<PsqlChain> for PsqlLightClient {
 
     fn fetch(&mut self, height: Height) -> Result<<PsqlChain as ChainEndpoint>::LightBlock, Error> {
         self.0.fetch(height)
+    }
+}
+
+pub fn is_channel_event(event: &IbcEvent) -> bool {
+    matches!(
+        event,
+        &IbcEvent::OpenInitChannel(_)
+            | &IbcEvent::OpenTryChannel(_)
+            | &IbcEvent::OpenAckChannel(_)
+            | &IbcEvent::OpenConfirmChannel(_)
+    )
+}
+
+macro_rules! event_to_channel {
+    ($ev:expr, $state:expr) => {
+        IdentifiedChannelEnd {
+            port_id: $ev.port_id.clone(),
+            channel_id: $ev.channel_id.clone().unwrap(),
+            channel_end: ChannelEnd {
+                state: $state,
+                ordering: Order::None, // missing
+                remote: Counterparty {
+                    port_id: $ev.counterparty_port_id.clone(),
+                    channel_id: $ev.counterparty_channel_id.clone(),
+                },
+                connection_hops: vec![$ev.connection_id.clone()],
+                version: ChannelVersion::empty(), // missing
+            },
+        }
+    };
+}
+
+pub fn channel_from_event(event: &IbcEvent) -> Option<IdentifiedChannelEnd> {
+    match event {
+        IbcEvent::OpenInitChannel(ev) => Some(event_to_channel!(ev, State::Init)),
+        IbcEvent::OpenTryChannel(ev) => Some(event_to_channel!(ev, State::TryOpen)),
+        IbcEvent::OpenAckChannel(ev) => Some(event_to_channel!(ev, State::Open)),
+        IbcEvent::OpenConfirmChannel(ev) => Some(event_to_channel!(ev, State::Open)),
+        _ => None,
     }
 }
