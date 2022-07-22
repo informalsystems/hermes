@@ -219,7 +219,7 @@ Follow the steps below to connect three chains together and relay packets betwee
     - Two packets from `ibc-0` to `ibc-1` from source channel `channel-0`
 
       ```shell
-      hermes tx raw ft-transfer --dst-chain ibc-1 --src-chain ibc-0 --src-port transfer --src-chan channel-0 --amount 9999 --timeout-height-offset 1000 --number-msgs 2
+      hermes tx ft-transfer --receiver-chain ibc-1 --sender-chain ibc-0 --sender-port transfer --sender-channel channel-0 --amount 9999 --timeout-height-offset 1000 --number-msgs 2
       ```
 
       ```json
@@ -242,7 +242,7 @@ Follow the steps below to connect three chains together and relay packets betwee
     - Two packets from `ibc-1` to `ibc-2` from source channel `channel-1`
 
       ```shell
-      hermes tx raw ft-transfer --dst-chain ibc-2 --src-chain ibc-1 --src-port transfer --src-chan channel-1 --amount 9999 --timeout-height-offset 1000 --number-msgs 2
+      hermes tx ft-transfer --receiver-chain ibc-2 --sender-chain ibc-1 --sender-port transfer --sender-channel channel-1 --amount 9999 --timeout-height-offset 1000 --number-msgs 2
       ```
 
       ```json

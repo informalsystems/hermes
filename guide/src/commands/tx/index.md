@@ -1,13 +1,11 @@
-# Raw Transactions
+# Transactions
 
 There are a number of simple commands that perform minimal validation, build and send IBC transactions.
 
-The `tx raw` command provides the following sub-commands:
+The `tx` command provides the following sub-commands:
 
 | CLI name               | Description                                                                                                     |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `create-client`        | [Create a client for source chain on destination chain](./client.md#create-client)                         |
-| `update-client`        | [Update the specified client on destination chain](./client.md#update-client)                              |
 | `conn-init`            | [Initialize a connection (ConnectionOpenInit)](./connection.md#connection-init)                            |
 | `conn-try`             | [Relay the connection attempt (ConnectionOpenTry)](./connection.md#connection-try)                         |
 | `conn-ack`             | [Relay acknowledgment of a connection attempt (ConnectionOpenAck)](./connection.md#connection-ack)         |
@@ -22,15 +20,13 @@ The `tx raw` command provides the following sub-commands:
 | `packet-recv`          | [Relay receive or timeout packets](./packet.md#relay-receive-and-timeout-packets)                          |
 | `packet-ack`           | [Relay acknowledgment packets](./packet.md#relay-acknowledgment-packets)                                   |
 | `upgrade-chain`        | [Send an IBC upgrade plan](./upgrade.md)
-| `upgrade-client`       | [Upgrade the specified client on destination chain](./upgrade.md)
-| `upgrade-clients`      | [Upgrade all IBC clients that target a specific chain](./upgrade.md)
 
 The main purpose of these commands is to support development and testing, and continuous integration. These CLIs take quite a few parameters and they are explained in the individual sub-sections.
 
 At a high level, most commands follow this template:
 
 ```shell
-hermes tx raw <ibc-datagram> <dst-chain-id> <src-chain-id> [-d <dst-obj-id> -s <src-obj-id>]*
+hermes tx <ibc-datagram> <dst-chain-id> <src-chain-id> [-d <dst-obj-id> -s <src-obj-id>]*
 ```
 
 In the command template above:
@@ -38,7 +34,6 @@ In the command template above:
 - `ibc-datagram` - identifies the "main" IBC message that is being sent, e.g. `conn-init`, `conn-try`, `chan-open-init`, etc. To ensure successful processing on the receiving chain, the majority of these commands build and send two messages: one `UpdateClient` message followed by the actual IBC message. These two messages are included in a single transaction. This is done for all IBC datagrams that include proofs collected from the source chain.
 
     The messages that do not require proofs are:
-    - `MsgCreateClient` (`create-client` command),
     - `MsgConnectionOpenInit` (`conn-open-init` command),
     - `MsgChannelOpenInit` (`chan-open-init` command),
     - `MsgChannelCloseInit` (`chan-close-init` command) and
@@ -52,8 +47,7 @@ In the command template above:
 
 - `src-obj-id` - the identifier of an object on the source chain, required by the datagram, e.d. the `client-id` of the connection on source chain.
 
-- More details about the `tx raw` commands can be found in the following sections:
-     - [Client](./client.md)
+- More details about the `tx` commands can be found in the following sections:
      - [Connection](./connection.md)
      - [Channel Open](./channel-open.md)
      - [Channel Close](./channel-close.md)
@@ -64,15 +58,13 @@ In the command template above:
 
 ```shell
 USAGE:
-    hermes tx raw <SUBCOMMAND>
+    hermes tx <SUBCOMMAND>
 
 DESCRIPTION:
     Raw commands for sending transactions to a configured chain.
 
 SUBCOMMANDS:
     help                Get usage information
-    create-client       Create a client for source chain on destination chain
-    update-client       Update the specified client on destination chain
     conn-init           Initialize a connection (ConnectionOpenInit)
     conn-try            Relay the connection attempt (ConnectionOpenTry)
     conn-ack            Relay acknowledgment of a connection attempt (ConnectionOpenAck)
@@ -87,6 +79,4 @@ SUBCOMMANDS:
     packet-recv         Relay receive or timeout packets
     packet-ack          Relay acknowledgment packets
     upgrade-chain       Send an IBC upgrade plan
-    upgrade-client      Upgrade the specified client on destination chain
-    upgrade-clients     Upgrade all IBC clients that target a specific chain
 ```

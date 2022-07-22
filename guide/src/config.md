@@ -40,7 +40,7 @@ To restrict relaying on specific channels, or uni-directionally, you can use [pa
 
 ## Adding private keys
 
-For each chain configured you need to add a private key for that chain in order to submit [transactions](./commands/raw/index.md),
+For each chain configured you need to add a private key for that chain in order to submit [transactions](./commands/tx/index.md),
 please refer to the [Keys](./commands/keys/index.md) sections in order to learn how to add the private keys that are used by the relayer.
 
 ## Connecting via TLS

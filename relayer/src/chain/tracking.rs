@@ -14,6 +14,8 @@ pub enum TrackingId {
     /// corresponding event batch, eg. when performing actions from
     /// the CLI or during packet clearing.
     Static(&'static str),
+    /// Random identifier used to track latency of packet clearing.
+    ClearedUuid(Uuid),
 }
 
 impl TrackingId {
@@ -26,6 +28,10 @@ impl TrackingId {
     pub fn new_static(s: &'static str) -> Self {
         Self::Static(s)
     }
+
+    pub fn new_cleared_uuid() -> Self {
+        Self::ClearedUuid(Uuid::new_v4())
+    }
 }
 
 impl fmt::Display for TrackingId {
@@ -37,6 +43,13 @@ impl fmt::Display for TrackingId {
                 s.fmt(f)
             }
             TrackingId::Static(s) => s.fmt(f),
+            TrackingId::ClearedUuid(u) => {
+                let mut uuid = "cleared/".to_owned();
+                let mut s = u.to_string();
+                s.truncate(8);
+                uuid.push_str(&s);
+                uuid.fmt(f)
+            }
         }
     }
 }

@@ -13,7 +13,7 @@ class ClientCreated:
 
 
 @dataclass
-@cmd("tx raw create-client")
+@cmd("create client")
 class TxCreateClient(Cmd[ClientCreated]):
     dst_chain_id: ChainId
     src_chain_id: ChainId
@@ -37,7 +37,7 @@ class ClientUpdated:
 
 
 @dataclass
-@cmd("tx raw update-client")
+@cmd("update client")
 class TxUpdateClient(Cmd[ClientUpdated]):
     dst_chain_id: ChainId
     dst_client_id: ClientId

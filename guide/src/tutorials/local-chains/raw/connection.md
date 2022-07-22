@@ -4,7 +4,7 @@
 
 Initialize a new connection on `ibc-0`:
 ```shell
-hermes tx raw conn-init --dst-chain ibc-0 --src-chain ibc-1 --dst-client 07-tendermint-0 --src-client 07-tendermint-1
+hermes conn-init --b-chain ibc-0 --a-chain ibc-1 --b-client 07-tendermint-0 --a-client 07-tendermint-1
 ```
 
 Take note of the ID allocated by the chain, e.g. `connection-0` on `ibc-0` in order to use it in the `conn-try` command below.
@@ -13,7 +13,7 @@ Take note of the ID allocated by the chain, e.g. `connection-0` on `ibc-0` in or
 
 Send a connection try to `ibc-1`:
 ```shell
-hermes tx raw conn-try --dst-chain ibc-1 --src-chain ibc-0 --dst-client 07-tendermint-1 --src-client 07-tendermint-0 --src-conn connection-0
+hermes tx conn-try --b-chain ibc-1 --a-chain ibc-0 --b-client 07-tendermint-1 --a-client 07-tendermint-0 --a-connection connection-0
 ```
 
 Take note of the ID allocated by the chain, e.g. `connection-1` on `ibc-1`. Use in the `conn-ack` CLI
@@ -22,14 +22,14 @@ Take note of the ID allocated by the chain, e.g. `connection-1` on `ibc-1`. Use 
 
 Send a connection open acknowledgment to `ibc-0`:
 ```shell
-hermes tx raw conn-ack --dst-chain ibc-0 --src-chain ibc-1 --dst-client 07-tendermint-0 --src-client 07-tendermint-1 --dst-conn connection-0 --src-conn connection-1
+hermes tx conn-ack --b-chain ibc-0 --a-chain ibc-1 --b-client 07-tendermint-0 --a-client 07-tendermint-1 --b-connection connection-0 --a-connection connection-1
 ```
 
 ## 2.4 `conn-confirm`
 
 Send the open confirmation to `ibc-1`:
 ```shell
-hermes tx raw conn-confirm --dst-chain ibc-1 --src-chain ibc-0 --dst-client 07-tendermint-1 --src-client 07-tendermint-0 --dst-conn connection-1 --src-conn connection-0
+hermes tx conn-confirm --b-chain ibc-1 --a-chain ibc-0 --b-client 07-tendermint-1 --a-client 07-tendermint-0 --b-connection connection-1 --a-connection connection-0
 ```
 
 ## 2.5 `query connection`

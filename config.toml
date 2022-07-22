@@ -59,9 +59,10 @@ clear_on_start = true
 # (to any chain in this config file) have been successfully delivered.
 # If they have not been, and `clear_interval = 0`, then those packets are
 # queued up for re-submission.
-# Experimental feature. Affects telemetry if set to false.
-# [Default: true]
-tx_confirmation = true
+# Experimental feature. If set to `false`, the following telemetry metrics will be disabled:
+# `ibc_acknowledgment_packets`, `ibc_receive_packets` and `ibc_timeout_packets`.
+# [Default: false]
+tx_confirmation = false
 
 # The REST section defines parameters for Hermes' built-in RESTful API.
 # https://hermes.informal.systems/rest.html
@@ -174,9 +175,9 @@ gas_price = { price = 0.001, denom = 'stake' }
 # is 80_000, then gas used to compute the fee will be adjusted to
 # 80_000 * 1.1 = 88_000.
 #
-# Default: 1.0, ie. the gas is not increased.
+# Default: 1.1, ie. the gas is increased by 10%
 # Minimum value: 1.0
-gas_multiplier = 1.0
+gas_multiplier = 1.1
 
 # Specify how many IBC messages at most to include in a single transaction.
 # Default: 30
@@ -259,7 +260,7 @@ store_prefix = 'ibc'
 default_gas = 100000
 max_gas = 400000
 gas_price = { price = 0.001, denom = 'stake' }
-gas_multiplier = 1.0
+gas_multiplier = 1.1
 max_msg_num = 30
 max_tx_size = 2097152
 clock_drift = '5s'
