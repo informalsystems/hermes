@@ -1,4 +1,3 @@
-use core::any::Any;
 use core::fmt::{Display, Formatter};
 
 use serde::{Deserialize, Serialize};
@@ -60,11 +59,7 @@ impl Display for Acknowledgement {
     }
 }
 
-impl AckTrait for Acknowledgement {
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-}
+impl AckTrait for Acknowledgement {}
 
 #[cfg(test)]
 mod test {

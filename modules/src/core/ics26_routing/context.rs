@@ -77,9 +77,7 @@ impl Borrow<str> for ModuleId {
 }
 
 /// Types implementing this trait are expected to implement `From<GenericAcknowledgement>`
-pub trait Acknowledgement: AsRef<[u8]> {
-    fn as_any(&self) -> &dyn Any;
-}
+pub trait Acknowledgement: AsRef<[u8]> {}
 
 pub type WriteFn = dyn FnOnce(&mut dyn Any) -> Result<(), String>;
 
