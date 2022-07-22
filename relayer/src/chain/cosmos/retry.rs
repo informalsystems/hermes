@@ -1,5 +1,3 @@
-use core::future::Future;
-use core::pin::Pin;
 use core::time::Duration;
 use ibc_proto::google::protobuf::Any;
 use std::thread;
@@ -17,23 +15,16 @@ use crate::keyring::KeyEntry;
 use crate::sdk_error::sdk_error_from_tx_sync_error_code;
 use crate::telemetry;
 
-// Maximum number of retries for send_tx in the case of
-// an account sequence mismatch at broadcast step.
-const MAX_ACCOUNT_SEQUENCE_RETRY: u64 = 1;
-
-// Backoff multiplier to apply while retrying in the case
-// of account sequence mismatch.
-const BACKOFF_MULTIPLIER_ACCOUNT_SEQUENCE_RETRY: u64 = 300;
+// Delay in milliseconds before retrying in the case of account sequence mismatch.
+const ACCOUNT_SEQUENCE_RETRY_DELAY: u64 = 300;
 
 // The error "incorrect account sequence" is defined as the unique error code 32 in cosmos-sdk:
 // https://github.com/cosmos/cosmos-sdk/blob/v0.44.0/types/errors/errors.go#L115-L117
 const INCORRECT_ACCOUNT_SEQUENCE_ERR: u32 = 32;
 
-/// Try to `send_tx` with retry on account sequence error.
+/// Try to `send_tx` and retry on account sequence error with re-cached account s.n.
 /// An account sequence error can occur if the account sequence that
-/// the relayer caches becomes outdated. This may happen if the relayer
-/// wallet is used concurrently elsewhere, or when tx fees are mis-configured
-/// leading to transactions hanging in the mempool.
+/// the relayer caches becomes outdated.
 ///
 /// Account sequence mismatch error can occur at two separate steps:
 ///   1. as Err variant, propagated from the `estimate_gas` step.
@@ -41,17 +32,13 @@ const INCORRECT_ACCOUNT_SEQUENCE_ERR: u32 = 32;
 ///     the `broadcast_tx_sync` step.
 ///
 /// We treat both cases by re-fetching the account sequence number
-/// from the full node.
-/// Upon case #1, we do not retry submitting the same tx (retry happens
-/// nonetheless at the worker `step` level). Upon case #2, we retry
-/// submitting the same transaction.
+/// from the full node and retrying once with the new account s.n.
 pub async fn send_tx_with_account_sequence_retry(
     config: &TxConfig,
     key_entry: &KeyEntry,
     account: &mut Account,
     tx_memo: &Memo,
     messages: Vec<Any>,
-    retry_counter: u64,
 ) -> Result<Response, Error> {
     crate::time!("send_tx_with_account_sequence_retry");
 
@@ -60,114 +47,89 @@ pub async fn send_tx_with_account_sequence_retry(
 
     telemetry!(msg_num, &config.chain_id, messages.len() as u64);
 
-    do_send_tx_with_account_sequence_retry(
-        config,
-        key_entry,
-        account,
-        tx_memo,
-        messages,
-        retry_counter,
-    )
-    .await
+    do_send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, messages).await
 }
 
-// We have to do explicit return of `Box<dyn Future>` because Rust
-// do not currently support recursive async functions behind the
-// `async fn` syntactic sugar.
-pub fn do_send_tx_with_account_sequence_retry<'a>(
-    config: &'a TxConfig,
-    key_entry: &'a KeyEntry,
-    account: &'a mut Account,
-    tx_memo: &'a Memo,
+
+async fn refresh_account_and_retry_send_tx_with_account_sequence(
+    config: &TxConfig,
+    key_entry: &KeyEntry,
+    account: &mut Account,
+    tx_memo: &Memo,
     messages: Vec<Any>,
-    retry_counter: u64,
-) -> Pin<Box<dyn Future<Output = Result<Response, Error>> + 'a>> {
-    Box::pin(async move {
-        debug!(
-            "sending {} messages using account sequence {}",
-            messages.len(),
-            account.sequence,
-        );
+) -> Result<Response, Error> {
+    // Re-fetch the account s.n.
+    refresh_account(&config.grpc_address, &key_entry.account, account).await?;
+    // Retry after delay.
+    thread::sleep(Duration::from_millis(ACCOUNT_SEQUENCE_RETRY_DELAY));
+    estimate_fee_and_send_tx(config, key_entry, account, tx_memo, messages.clone()).await
+}
 
-        let tx_result =
-            estimate_fee_and_send_tx(config, key_entry, account, tx_memo, messages.clone()).await;
+async fn do_send_tx_with_account_sequence_retry(
+    config: &TxConfig,
+    key_entry: &KeyEntry,
+    account: &mut Account,
+    tx_memo: &Memo,
+    messages: Vec<Any>,
+) -> Result<Response, Error> {
+    match estimate_fee_and_send_tx(config, key_entry, account, tx_memo, messages.clone()).await {
+        // Gas estimation failed with acct. s.n. mismatch at estimate gas step.
+        // It indicates that the account sequence cached by hermes is stale (got < expected).
+        // This can happen when the same account is used by another agent.
+        Err(ref e) if mismatch_account_sequence_number_error_requires_refresh(e) => {
+            warn!(
+                "failed at estimate_gas step mismatching account sequence {}. \
+                refresh account sequence number and retry once",
+                e
+            );
+            refresh_account_and_retry_send_tx_with_account_sequence(
+                config, key_entry, account, tx_memo, messages,
+            )
+            .await
+        }
 
-        match tx_result {
-            // Gas estimation failed with acct. s.n. mismatch at estimate gas step.
-            // It indicates that the account sequence cached by hermes is stale.
-            // This can happen when the same account is used by another agent.
-            Err(e) if mismatch_account_sequence_number_error_requires_refresh(&e) => {
-                warn!("failed at estimate_gas step mismatching account sequence: dropping the tx & refreshing account sequence number");
-                refresh_account(&config.grpc_address, &key_entry.account, account).await?;
-                // Note: propagating error here can lead to bug & dropped packets:
-                // https://github.com/informalsystems/ibc-rs/issues/1153
-                // But periodic packet clearing will catch any dropped packets.
-                Err(e)
-            }
+        // Gas estimation succeeded but broadcast_tx_sync failed with a retry-able error.
+        Ok(ref response) if response.code == Code::Err(INCORRECT_ACCOUNT_SEQUENCE_ERR) => {
+            warn!(
+                "failed at broadcast_tx_sync step with incorrect account sequence {:?}.  \
+                refresh account sequence number and retry once",
+                response
+            );
+            refresh_account_and_retry_send_tx_with_account_sequence(
+                config, key_entry, account, tx_memo, messages,
+            )
+            .await
+        }
 
-            // Gas estimation succeeded. Broadcasting failed with a retry-able error.
-            Ok(response) if response.code == Code::Err(INCORRECT_ACCOUNT_SEQUENCE_ERR) => {
-                if retry_counter < MAX_ACCOUNT_SEQUENCE_RETRY {
-                    let retry_counter = retry_counter + 1;
-                    warn!("failed at broadcast step with incorrect account sequence. retrying ({}/{})",
-                        retry_counter, MAX_ACCOUNT_SEQUENCE_RETRY);
-                    // Backoff & re-fetch the account s.n.
-                    let backoff = retry_counter * BACKOFF_MULTIPLIER_ACCOUNT_SEQUENCE_RETRY;
+        // Gas estimation succeeded and broadcast_tx_sync was either successful or has failed with
+        // an unrecoverable error.
+        Ok(response) => {
+            // Gas estimation and broadcast_tx_sync were successful.
+            match response.code {
+                Code::Ok => {
+                    // Increase account s.n.
+                    debug!("broadcast_tx_sync: {:?}", response);
+                    account.sequence.increment_mut();
+                    Ok(response)
+                }
 
-                    thread::sleep(Duration::from_millis(backoff));
-                    refresh_account(&config.grpc_address, &key_entry.account, account).await?;
-
-                    // Now retry.
-                    do_send_tx_with_account_sequence_retry(
-                        config,
-                        key_entry,
-                        account,
-                        tx_memo,
-                        messages,
-                        retry_counter + 1,
-                    )
-                    .await
-                } else {
-                    // If after the max retry we still get an account sequence mismatch error,
-                    // we ignore the error and return the original response to downstream.
-                    // We do not return an error here, because the current convention
-                    // let the caller handle error responses separately.
-                    error!("failed due to account sequence errors. the relayer wallet may be used elsewhere concurrently.");
+                // Gas estimation succeeded, but broadcast_tx_sync failed with unrecoverable error.
+                Code::Err(code) => {
+                    // Do not increase the account s.n. since CheckTx step of broadcast_tx_sync has failed.
+                    // Log the error.
+                    error!(
+                        "broadcast_tx_sync: {:?}: diagnostic: {:?}",
+                        response,
+                        sdk_error_from_tx_sync_error_code(code)
+                    );
                     Ok(response)
                 }
             }
-
-            // Catch-all arm for the Ok variant.
-            // This is the case when gas estimation succeeded.
-            Ok(response) => {
-                match response.code {
-                    // Gas estimation succeeded and broadcasting was successful.
-                    Code::Ok => {
-                        debug!("broadcast_tx_sync: {:?}", response);
-
-                        account.sequence.increment_mut();
-                        Ok(response)
-                    }
-
-                    // Gas estimation succeeded, but broadcasting failed with unrecoverable error.
-                    Code::Err(code) => {
-                        // Do not increase the account s.n. if CheckTx failed.
-                        // Log the error.
-                        error!(
-                            "broadcast_tx_sync: {:?}: diagnostic: {:?}",
-                            response,
-                            sdk_error_from_tx_sync_error_code(code)
-                        );
-                        Ok(response)
-                    }
-                }
-            }
-
-            // Catch-all case for the Err variant.
-            // Gas estimation failure or other unrecoverable error, propagate.
-            Err(e) => Err(e),
         }
-    })
+
+        // Gas estimation failure or other unrecoverable error, propagate.
+        Err(e) => Err(e),
+    }
 }
 
 /// Determine whether the given error yielded by `tx_simulate`

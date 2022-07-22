@@ -54,7 +54,7 @@ use crate::{
 use super::{reply_channel, ChainHandle, ChainRequest, HealthCheck, ReplyTo, Subscription};
 
 /// A basic chain handle implementation.
-/// For use in interactive CLIs, e.g., `query`, `tx raw`, etc.
+/// For use in interactive CLIs, e.g., `query`, `tx`, etc.
 #[derive(Debug, Clone)]
 pub struct BaseChainHandle {
     /// Chain identifier

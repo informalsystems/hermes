@@ -33,9 +33,12 @@
               gaia6
               gaia7
               ica
+              osmosis
+              wasmd
               gaia6-ordered
               ibc-go-v2-simapp
               ibc-go-v3-simapp
+              ibc-go-v4-simapp
               apalache
             ;
 

@@ -51,7 +51,7 @@ pub mod default {
     }
 
     pub fn tx_confirmation() -> bool {
-        true
+        false
     }
 
     pub fn clear_packets_interval() -> u64 {
@@ -155,7 +155,7 @@ impl Default for ModeConfig {
                 enabled: true,
                 clear_interval: default::clear_packets_interval(),
                 clear_on_start: true,
-                tx_confirmation: true,
+                tx_confirmation: false,
             },
         }
     }

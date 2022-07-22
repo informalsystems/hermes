@@ -72,8 +72,7 @@ pub async fn send_batched_messages_and_wait_check_tx(
 
     for batch in batches {
         let response =
-            send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, batch, 0)
-                .await?;
+            send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, batch).await?;
 
         responses.push(response);
     }
@@ -102,8 +101,7 @@ pub async fn send_messages_as_batches(
         let message_count = batch.len();
 
         let response =
-            send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, batch, 0)
-                .await?;
+            send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, batch).await?;
 
         if response.code.is_err() {
             let events_per_tx = vec![IbcEvent::ChainError(format!(

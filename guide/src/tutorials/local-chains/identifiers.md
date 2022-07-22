@@ -14,7 +14,7 @@ __`07-tendermint-<n>`__ for tendermint clients
 For example `07-tendermint-0` is assigned to the first client created on `ibc-1`:
 
  ```shell
-hermes tx raw create-client --host-chain ibc-1 --reference-chain ibc-0
+hermes create client --host-chain ibc-1 --reference-chain ibc-0
  ```
 
  ```json
@@ -47,7 +47,7 @@ __`connection-<n>`__ for connections
 For example `connection-0` is assigned to the first connection created on `ibc-1`:
 
 ```shell
-hermes tx raw conn-init --dst-chain ibc-1 --src-chain ibc-0 --dst-client 07-tendermint-0 --src-client 07-tendermint-0
+hermes tx conn-init --b-chain ibc-1 --a-chain ibc-0 --b-client 07-tendermint-0 --a-client 07-tendermint-0
 ```
 
 ```json
@@ -83,7 +83,7 @@ We will create a second connection on `ibc-1` with identifier `connection-1` in 
 For example `channel-0` is assigned to the first channel created on `ibc-1`:
 
 ```shell
-hermes tx raw chan-open-init --dst-chain ibc-1 --src-chain ibc-0 --dst-conn connection-0 --dst-port transfer --src-port transfer
+hermes tx chan-open-init --b-chain ibc-1 --a-chain ibc-0 --b-connection connection-0 --b-port transfer --a-port transfer
 ```
 
 ```json
@@ -125,6 +125,6 @@ Before going over the next sections, please ensure the commands above are execut
 The following sections describe the commands to connect and relay packets between two chains. You can:
 
 1. use a [simplified approach](./relay-paths/index.md) for managing relaying paths, or
-2. use [individual (raw) transactions](./raw/index.md) to create
+2. use [individual (raw) transactions](./tx/index.md) to create
    all the necessary chain objects (clients, connections, channels) and relay packets.
 
