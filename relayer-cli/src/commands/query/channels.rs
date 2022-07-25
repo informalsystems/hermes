@@ -41,6 +41,13 @@ pub struct QueryChannelsCmd {
         help = "Enable verbose output, displaying the client and connection ids for each channel in the response"
     )]
     verbose: bool,
+
+    #[clap(
+        long = "show-counterparty",
+        help = "Show the counterparty chain's id for each channel"
+    )]
+    show_counterparty: bool,
+
 }
 
 fn run_query_channels<Chain: ChainHandle>(
@@ -48,12 +55,12 @@ fn run_query_channels<Chain: ChainHandle>(
 ) -> Result<QueryChannelsOutput, Box<dyn std::error::Error>> {
     debug!("Options: {:?}", cmd);
 
-    let mut output = if cmd.verbose {
-        QueryChannelsOutput::verbose()
-    } else {
-        QueryChannelsOutput::summary()
+    let mut output = match (cmd.verbose, cmd.show_counterparty){
+        (true, _) => QueryChannelsOutput::verbose(),
+        (false, true) => QueryChannelsOutput::pretty(),
+        (false, false) => QueryChannelsOutput::summary(),
     };
-
+    
     let config = app_config();
     let chain_id = cmd.chain_id.clone();
 
@@ -90,9 +97,11 @@ fn run_query_channels<Chain: ChainHandle>(
             })?
             .clone();
 
+        let mut counterparty_chain_id = None;
+
         // If a counterparty chain is specified as a filter, check and skip the
         // channel if required.
-        if let Some(dst_chain_id) = &cmd.dst_chain_id {
+        if cmd.show_counterparty || cmd.dst_chain_id.is_some() {
             let (connection_end, _) = chain.query_connection(
                 QueryConnectionRequest {
                     connection_id: connection_id.clone(),
@@ -109,34 +118,59 @@ fn run_query_channels<Chain: ChainHandle>(
                 },
                 IncludeProof::No,
             )?;
-
-            let counterparty_chain_id = client_state.chain_id();
-            if counterparty_chain_id != *dst_chain_id {
-                continue;
+            let cid = client_state.chain_id().clone();
+            
+            if let Some(dst_chain_id) = &cmd.dst_chain_id { 
+                if cid != *dst_chain_id {
+                    continue;
+                }
             }
+
+            counterparty_chain_id = Some(cid);
         }
 
-        if cmd.verbose {
-            let channel_ends = query_channel_ends(
-                &mut registry,
-                &chain,
-                channel_end,
-                connection_id,
-                chain_id,
-                port_id,
-                channel_id,
-                QueryHeight::Specific(chain_height),
-            );
-
-            match channel_ends {
-                Ok(channel_ends) => output.push_verbose(channel_ends),
-                Err(e) => error!("failed to query channel ends: {}", e),
+        match output {
+            QueryChannelsOutput::Verbose(_) => {
+                let channel_ends = query_channel_ends(
+                    &mut registry,
+                    &chain,
+                    channel_end,
+                    connection_id,
+                    chain_id,
+                    port_id,
+                    channel_id,
+                    QueryHeight::Specific(chain_height),
+                );
+    
+                match channel_ends {
+                    Ok(channel_ends) => output.push_verbose(channel_ends),
+                    Err(e) => error!("failed to query channel ends: {}", e),
+                }
             }
-        } else {
-            output.push_summary(PortChannelId {
-                channel_id,
-                port_id,
-            });
+            QueryChannelsOutput::Pretty(_) => {
+                // Get counterparty channel_id and port_id
+                let counterparty_channel = channel_end.counterparty().clone(); 
+                let counterparty_channel_id = counterparty_channel.channel_id;
+                let counterparty_channel_port = counterparty_channel.port_id;
+
+                let pretty = PrettyOutput {
+                    channel_a : channel_id,
+                    port_a : port_id,
+                    chain_id_a: chain_id,
+                    channel_b : counterparty_channel_id,
+                    port_b : counterparty_channel_port,
+                    chain_id_b: counterparty_chain_id,
+                };
+
+                output.push_pretty(pretty)
+                
+            }
+            QueryChannelsOutput::Summary(_) => {
+                output.push_summary(PortChannelId {
+                    channel_id,
+                    port_id,
+                });
+            }
         }
     }
 
@@ -242,11 +276,23 @@ impl Runnable for QueryChannelsCmd {
     }
 }
 
+
+#[derive(Serialize, Debug)]
+struct PrettyOutput {
+    channel_a : ChannelId,
+    port_a : PortId,
+    chain_id_a: ChainId,
+    channel_b : Option<ChannelId>,
+    port_b : PortId,
+    chain_id_b: Option<ChainId>,
+}
+
 #[derive(Serialize)]
 #[serde(untagged)]
 enum QueryChannelsOutput {
     Verbose(Vec<ChannelEnds>),
     Summary(Vec<PortChannelId>),
+    Pretty(Vec<PrettyOutput>),
 }
 
 impl QueryChannelsOutput {
@@ -256,6 +302,20 @@ impl QueryChannelsOutput {
 
     fn summary() -> Self {
         Self::Summary(Vec::new())
+    }
+
+    fn pretty() -> Self {
+        Self::Pretty(Vec::new())
+    }
+
+    fn push_pretty(&mut self, pe: PrettyOutput) {
+        assert!(matches!(self, Self::Pretty(_)));
+
+        if let Self::Pretty(ref mut pes) = self {
+            pes.push(pe);
+        } else {
+            unreachable!();
+        }
     }
 
     fn push_verbose(&mut self, ce: ChannelEnds) {
@@ -284,6 +344,27 @@ impl Debug for QueryChannelsOutput {
         match self {
             QueryChannelsOutput::Verbose(output) => write!(f, "{:#?}", output),
             QueryChannelsOutput::Summary(output) => write!(f, "{:#?}", output),
+            QueryChannelsOutput::Pretty(output) => {
+                output
+                    .iter()
+                    .try_for_each(|pretty_print| {
+                        write!(f, "\n{}: {}/{} --- {}: {}/{}", 
+                            &pretty_print.chain_id_a.as_str(),
+                            &pretty_print.port_a.as_str(),
+                            &pretty_print.channel_a.as_str(),
+                            match &pretty_print.chain_id_b {
+                                Some(chain_id_b) => chain_id_b.as_str(),
+                                None => "None",
+                            },
+                            &pretty_print.port_b.as_str(),
+                            match &pretty_print.channel_b {
+                                Some(channel_b) => channel_b.as_str(),
+                                None => "None",
+                            },
+                        )
+                    })?;
+                Ok(())
+            }
         }
     }
 }
