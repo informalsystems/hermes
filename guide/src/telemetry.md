@@ -51,8 +51,8 @@ The following table describes the metrics currently tracked by the telemetry ser
 | `acknowledgement_count`      | Number of WriteAcknowledgement events processed      | `u64` Counter       |
 | `cleared_send_packet_count`    | Number of SendPacket events processed during the initial and periodic clearing | `u64` Counter   |
 | `cleared_acknowledgment_count` | Number of WriteAcknowledgement events processed during the initial and periodic clearing | `u64` Counter   |
-| `oldest_sequence`            | The sequence number of the oldest SendPacket event observed without its corresponding WriteAcknowledgement event. If this value is 0, it means Hermes observed a WriteAcknowledgment event for all the SendPacket events | `u64` ValueRecorder |
-| `oldest_timestamp`           | The timestamp of the oldest sequence number in seconds | `u64` ValueRecorder |
+| `oldest_sequence`            | Sequence number of the oldest pending SendPacket event | `u64` ValueRecorder |
+| `oldest_timestamp`           | Local timestamp of the oldest pending SendPacket event | `u64` ValueRecorder |
 
 ## Integration with Prometheus
 
