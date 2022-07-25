@@ -271,22 +271,19 @@ fn timeout_metrics(path: &Packet, summary: &RelaySummary) {
     summary
         .events
         .iter()
-        .filter(|e| matches!(e, TimeoutPacket(_)))
+        .filter(|event| matches!(event, TimeoutPacket(_)))
         .for_each(|e| {
             let height = e.height().revision_height(); // TODO : remove height argument
-            match e.packet() {
-                Some(packet) => {
-                    telemetry!(
-                        record_ack_history,
-                        u64::from(packet.sequence),
-                        height,
-                        &path.src_chain_id,
-                        &path.src_channel_id,
-                        &path.src_port_id,
-                        &path.dst_chain_id,
-                    );
-                }
-                None => {}
+            if let Some(packet) = e.packet() {
+                telemetry!(
+                    record_ack_history,
+                    u64::from(packet.sequence),
+                    height,
+                    &path.src_chain_id,
+                    &path.src_channel_id,
+                    &path.src_port_id,
+                    &path.dst_chain_id,
+                );
             }
             count += 1
         });
