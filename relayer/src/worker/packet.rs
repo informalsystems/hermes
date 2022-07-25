@@ -267,17 +267,35 @@ fn acknowledgment_metrics(path: &Packet, summary: &RelaySummary) {
 #[cfg(feature = "telemetry")]
 fn timeout_metrics(path: &Packet, summary: &RelaySummary) {
     use ibc::events::IbcEvent::TimeoutPacket;
-    let count = summary
+    let mut count = 0;
+    summary
         .events
         .iter()
         .filter(|e| matches!(e, TimeoutPacket(_)))
-        .count();
+        .for_each(|e| {
+            let height = e.height().revision_height(); // TODO : remove height argument
+            match e.packet() {
+                Some(packet) => {
+                    telemetry!(
+                        record_ack_history,
+                        u64::from(packet.sequence),
+                        height,
+                        &path.src_chain_id,
+                        &path.src_channel_id,
+                        &path.src_port_id,
+                        &path.dst_chain_id,
+                    );
+                }
+                None => {}
+            }
+            count += 1
+        });
 
     telemetry!(
         ibc_timeout_packets,
         &path.src_chain_id,
         &path.src_channel_id,
         &path.src_port_id,
-        count as u64,
+        count,
     );
 }

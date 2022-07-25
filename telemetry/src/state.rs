@@ -652,13 +652,13 @@ impl Default for TelemetryState {
 
             oldest_sequence: meter
                 .u64_value_recorder("oldest_sequence")
-                .with_description("The sequence number of the oldest SendPacket event observed without its corresponding WriteAcknowledgement event. If this value is 0, it means Hermes observed a WriteAcknowledgment event for all the SendPacket events")
+                .with_description("Sequence number of the oldest pending SendPacket event.")
                 .init(),
 
             oldest_timestamp: meter
                 .u64_value_recorder("oldest_timestamp")
                 .with_unit(Unit::new("seconds"))
-                .with_description("The timestamp of the oldest sequence number in seconds")
+                .with_description("Local timestamp of the oldest pending SendPacket event")
                 .init(),
         }
     }
