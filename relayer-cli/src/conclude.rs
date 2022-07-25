@@ -56,6 +56,7 @@
 //! ```
 
 use core::fmt;
+use console::style;
 
 use serde::Serialize;
 use tracing::warn;
@@ -72,7 +73,11 @@ pub fn exit_with(out: Output) -> ! {
     if json() {
         println!("{}", serde_json::to_string(&out.into_json()).unwrap());
     } else {
-        println!("{}: {}", out.status, out.result);
+        let status = match out.status {
+            Status::Success => style("SUCCESS").green(),
+            Status::Error => style("ERROR").red(),
+        };
+        println!("{} {}", status, out.result);
     }
 
     // The return code
