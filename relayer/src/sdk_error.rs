@@ -192,7 +192,7 @@ pub fn sdk_error_from_tx_sync_error_code(code: u32) -> SdkError {
     match code {
         // The primary reason (we know of) causing broadcast_tx_sync to fail
         // is due to "out of gas" errors. These are unrecoverable at the moment
-        // on the Hermes side. We'll inform the user to check for misconfig.
+        // on Hermes side. We'll inform the user to check for misconfiguration.
         11 => SdkError::out_of_gas(code),
         13 => SdkError::insufficient_fee(code),
         _ => SdkError::unknown_tx_sync(code),
