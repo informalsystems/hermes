@@ -1,5 +1,4 @@
 use sha2::{Digest, Sha256};
-use subtle_encoding::hex;
 
 use super::error::Error as Ics20Error;
 use crate::applications::transfer::acknowledgement::Acknowledgement;
@@ -36,15 +35,7 @@ pub trait Ics20Reader: ChannelReader {
         &self,
         port_id: &PortId,
         channel_id: &ChannelId,
-    ) -> Result<<Self as Ics20Reader>::AccountId, Ics20Error> {
-        let hash = cosmos_adr028_escrow_address(port_id, channel_id);
-        String::from_utf8(hex::encode_upper(hash))
-            .expect("hex encoded bytes are not valid UTF8")
-            .parse::<Signer>()
-            .map_err(Ics20Error::signer)?
-            .try_into()
-            .map_err(|_| Ics20Error::parse_account_failure())
-    }
+    ) -> Result<<Self as Ics20Reader>::AccountId, Ics20Error>;
 
     /// Returns true iff send is enabled.
     fn is_send_enabled(&self) -> bool;
@@ -60,7 +51,7 @@ pub trait Ics20Reader: ChannelReader {
 }
 
 // https://github.com/cosmos/cosmos-sdk/blob/master/docs/architecture/adr-028-public-key-addresses.md
-fn cosmos_adr028_escrow_address(port_id: &PortId, channel_id: &ChannelId) -> Vec<u8> {
+pub fn cosmos_adr028_escrow_address(port_id: &PortId, channel_id: &ChannelId) -> Vec<u8> {
     let contents = format!("{}/{}", port_id, channel_id);
 
     let mut hasher = Sha256::new();

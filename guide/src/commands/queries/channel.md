@@ -14,8 +14,12 @@ DESCRIPTION:
     Query the identifiers of all channels on a given chain
 
 OPTIONS:
-        --verbose    Enable verbose output, displaying the client and connection ids for each
-                     channel in the response
+        --counterparty-chain <COUNTERPARTY_CHAIN_ID>
+            Filter the query response by the this counterparty chain
+
+        --verbose
+            Enable verbose output, displaying the client and connection ids for each channel in the
+            response
 
 REQUIRED:
         --chain <CHAIN_ID>    Identifier of the chain to query

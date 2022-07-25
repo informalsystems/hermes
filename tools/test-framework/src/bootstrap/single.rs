@@ -91,6 +91,7 @@ pub fn bootstrap_single_node(
         config::set_p2p_port(config, chain_driver.p2p_port)?;
         config::set_timeout_commit(config, Duration::from_secs(1))?;
         config::set_timeout_propose(config, Duration::from_secs(1))?;
+        config::set_mode(config, "validator")?;
 
         config_modifier(config)?;
 
@@ -100,6 +101,7 @@ pub fn bootstrap_single_node(
     chain_driver.update_chain_config("app.toml", |config| {
         config::set_grpc_port(config, chain_driver.grpc_port)?;
         config::disable_grpc_web(config)?;
+        config::disable_api(config)?;
 
         Ok(())
     })?;
