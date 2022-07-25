@@ -44,7 +44,7 @@ pub struct QueryChannelsCmd {
 
     #[clap(
         long = "show-counterparty",
-        help = "Show the counterparty chain's id for each channel"
+        help = "Show the counterparty chain's id for each channel",
     )]
     show_counterparty: bool,
 
@@ -383,6 +383,7 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 verbose: false,
                 dst_chain_id: None,
+                show_counterparty : false,
             },
             QueryChannelsCmd::parse_from(&["test", "--chain", "chain_id"])
         )
@@ -395,6 +396,7 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 verbose: true,
                 dst_chain_id: None,
+                show_counterparty : false,
             },
             QueryChannelsCmd::parse_from(&["test", "--chain", "chain_id", "--verbose"])
         )
@@ -407,6 +409,7 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 verbose: false,
                 dst_chain_id: Some(ChainId::from_string("counterparty_chain")),
+                show_counterparty : false,
             },
             QueryChannelsCmd::parse_from(&[
                 "test",
@@ -422,4 +425,64 @@ mod tests {
     fn test_query_channels_no_chain() {
         assert!(QueryChannelsCmd::try_parse_from(&["test"]).is_err())
     }
+
+    #[test]
+    fn test_query_channels_show_counterparty() {
+        assert_eq!(
+            QueryChannelsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                verbose: false,
+                dst_chain_id: None,
+                show_counterparty : true
+            },
+            QueryChannelsCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--show--counterparty",
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_channels_show_counterparty_dst_chain() {
+        assert_eq!(
+            QueryChannelsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                verbose: false,
+                dst_chain_id: Some(ChainId::from_string("counterparty_chain")),
+                show_counterparty : true
+            },
+            QueryChannelsCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--show--counterparty",
+                "--counterparty-chain",
+                "counterparty_chain"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_query_channels_show_counterparty_verbose() {
+        assert_eq!(
+            QueryChannelsCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                verbose: true,
+                dst_chain_id: None,
+                show_counterparty : true
+            },
+            QueryChannelsCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_id",
+                "--show--counterparty",
+                "--verbose",
+            ])
+        )
+    }
+
+
+
 }
