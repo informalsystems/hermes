@@ -1,13 +1,15 @@
 //! This module implements the processing logic for ICS4 (channel) messages.
+use crate::prelude::*;
 
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::msgs::ChannelMsg;
+use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics04_channel::{msgs::PacketMsg, packet::PacketResult};
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::core::ics26_routing::context::{
-    Ics26Context, ModuleId, ModuleOutputBuilder, OnRecvPacketAck, Router,
+    Acknowledgement, Ics26Context, ModuleId, ModuleOutputBuilder, OnRecvPacketAck, Router,
 };
 use crate::handler::{HandlerOutput, HandlerOutputBuilder};
 
@@ -192,11 +194,28 @@ pub fn packet_callback<Ctx>(
     ctx: &mut Ctx,
     module_id: &ModuleId,
     msg: &PacketMsg,
-    module_output: &mut ModuleOutputBuilder,
+    output: &mut HandlerOutputBuilder<()>,
 ) -> Result<(), Error>
 where
     Ctx: Ics26Context,
 {
+    let mut module_output = ModuleOutputBuilder::new();
+    let mut core_output = HandlerOutputBuilder::new();
+
+    let result = do_packet_callback(ctx, module_id, msg, &mut module_output, &mut core_output);
+    output.merge(module_output);
+    output.merge(core_output);
+
+    result
+}
+
+fn do_packet_callback(
+    ctx: &mut impl Ics26Context,
+    module_id: &ModuleId,
+    msg: &PacketMsg,
+    module_output: &mut ModuleOutputBuilder,
+    core_output: &mut HandlerOutputBuilder<()>,
+) -> Result<(), Error> {
     let cb = ctx
         .router_mut()
         .get_route_mut(module_id)
@@ -206,10 +225,17 @@ where
         PacketMsg::RecvPacket(msg) => {
             let result = cb.on_recv_packet(module_output, &msg.packet, &msg.signer);
             match result {
-                OnRecvPacketAck::Nil(write_fn) | OnRecvPacketAck::Successful(_, write_fn) => {
-                    write_fn(cb.as_any_mut()).map_err(Error::app_module)?;
+                OnRecvPacketAck::Nil(write_fn) => {
+                    write_fn(cb.as_any_mut()).map_err(Error::app_module)
                 }
-                OnRecvPacketAck::Failed(_) => {}
+                OnRecvPacketAck::Successful(ack, write_fn) => {
+                    write_fn(cb.as_any_mut()).map_err(Error::app_module)?;
+
+                    process_write_ack(ctx, msg.packet.clone(), ack.as_ref(), core_output)
+                }
+                OnRecvPacketAck::Failed(ack) => {
+                    process_write_ack(ctx, msg.packet.clone(), ack.as_ref(), core_output)
+                }
             }
         }
         PacketMsg::AckPacket(msg) => cb.on_acknowledgement_packet(
@@ -217,13 +243,35 @@ where
             &msg.packet,
             &msg.acknowledgement,
             &msg.signer,
-        )?,
-        PacketMsg::ToPacket(msg) => {
-            cb.on_timeout_packet(module_output, &msg.packet, &msg.signer)?
-        }
+        ),
+        PacketMsg::ToPacket(msg) => cb.on_timeout_packet(module_output, &msg.packet, &msg.signer),
         PacketMsg::ToClosePacket(msg) => {
-            cb.on_timeout_packet(module_output, &msg.packet, &msg.signer)?
+            cb.on_timeout_packet(module_output, &msg.packet, &msg.signer)
         }
-    };
+    }
+}
+
+fn process_write_ack(
+    ctx: &mut impl Ics26Context,
+    packet: Packet,
+    acknowledgement: &dyn Acknowledgement,
+    core_output: &mut HandlerOutputBuilder<()>,
+) -> Result<(), Error> {
+    let HandlerOutput {
+        result,
+        log,
+        events,
+    } = write_acknowledgement::process(ctx, packet, acknowledgement.as_ref().to_vec().into())?;
+
+    // store write ack result
+    ctx.store_packet_result(result)?;
+
+    core_output.merge_output(
+        HandlerOutput::builder()
+            .with_log(log)
+            .with_events(events)
+            .with_result(()),
+    );
+
     Ok(())
 }

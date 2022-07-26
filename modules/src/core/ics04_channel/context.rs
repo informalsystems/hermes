@@ -94,7 +94,7 @@ pub trait ChannelReader {
     }
 
     fn ack_commitment(&self, ack: Acknowledgement) -> AcknowledgementCommitment {
-        self.hash(ack.into_bytes()).into()
+        self.hash(ack.into()).into()
     }
 
     /// A hashing function for packet commitments
