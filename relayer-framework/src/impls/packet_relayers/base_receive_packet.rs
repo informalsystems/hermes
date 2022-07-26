@@ -39,7 +39,7 @@ where
     ) -> Result<Option<WriteAcknowledgementEvent<DstChain, Context::SrcChain>>, Context::Error>
     {
         let message = context
-            .build_receive_packet_message(source_height, &packet)
+            .build_receive_packet_message(source_height, packet)
             .await?;
 
         let events = context.send_message(message).await?;

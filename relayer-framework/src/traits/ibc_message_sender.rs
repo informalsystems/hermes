@@ -71,7 +71,7 @@ where
         &self,
         messages: Vec<Message>,
     ) -> Result<Vec<Vec<Event>>, Context::Error> {
-        Context::IbcMessageSender::send_messages(&self, messages).await
+        Context::IbcMessageSender::send_messages(self, messages).await
     }
 
     async fn send_messages_fixed<const COUNT: usize>(

@@ -28,7 +28,7 @@ where
         let target_client_id = Target::target_client_id(context);
 
         let consensus_state = target_chain
-            .query_consensus_state(target_client_id, &height)
+            .query_consensus_state(target_client_id, height)
             .await;
 
         match consensus_state {

@@ -31,8 +31,7 @@ where
     ) -> Result<Vec<Vec<Event>>, Context::Error> {
         let source_heights: BTreeSet<Height> = messages
             .iter()
-            .map(|message| message.source_height().into_iter())
-            .flatten()
+            .flat_map(|message| message.source_height().into_iter())
             .collect();
 
         let mut in_messages = Vec::new();

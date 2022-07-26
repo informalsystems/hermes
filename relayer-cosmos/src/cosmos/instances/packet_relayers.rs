@@ -22,12 +22,10 @@ where
         ack_relayer: ack_packet_relayer(),
     };
 
-    let relayer2 = RetryRelayer {
+    RetryRelayer {
         max_retry,
         in_relayer: relayer1,
-    };
-
-    relayer2
+    }
 }
 
 pub fn receive_packet_relayer<ChainA, ChainB>(

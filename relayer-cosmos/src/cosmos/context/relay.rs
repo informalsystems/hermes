@@ -79,7 +79,7 @@ where
 
         CosmosMessageSender::spawn_batch_message_handler::<_, DestinationTarget>(
             context.clone(),
-            batch_config.clone(),
+            batch_config,
             &runtime,
             dst_message_receiver,
         );

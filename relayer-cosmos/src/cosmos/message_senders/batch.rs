@@ -323,10 +323,9 @@ where
     // it means there are single batch that are too big to fit in.
     // In that case put the first remaining batch as ready.
     if ready_batches.is_empty() && !remaining_batches.is_empty() {
-        remaining_batches.pop_front().and_then(|batch| {
+        if let Some(batch) = remaining_batches.pop_front() {
             ready_batches.push_back(batch);
-            Some(())
-        });
+        }
     }
 
     BatchResult {

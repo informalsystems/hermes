@@ -39,7 +39,7 @@ where
             .query_consensus_state(
                 QueryConsensusStateRequest {
                     client_id: client_id.clone(),
-                    consensus_height: height.clone(),
+                    consensus_height: *height,
                     query_height: QueryHeight::Latest,
                 },
                 IncludeProof::No,

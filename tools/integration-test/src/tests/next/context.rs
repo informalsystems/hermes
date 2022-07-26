@@ -41,13 +41,11 @@ where
         key_entry: chains.node_b.value().wallets.relayer.key.clone(),
     };
 
-    let relay_handler = CosmosRelayContext::new(
+    CosmosRelayContext::new(
         handler_a,
         handler_b,
         chains.foreign_clients.client_a_to_b.clone(),
         chains.foreign_clients.client_b_to_a.clone(),
         Default::default(),
-    );
-
-    relay_handler
+    )
 }

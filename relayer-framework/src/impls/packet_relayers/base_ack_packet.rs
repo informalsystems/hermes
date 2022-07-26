@@ -27,7 +27,7 @@ where
         ack: &WriteAcknowledgementEvent<Context::DstChain, Context::SrcChain>,
     ) -> Result<(), Error> {
         let message = context
-            .build_ack_packet_message(destination_height, &packet, ack)
+            .build_ack_packet_message(destination_height, packet, ack)
             .await?;
 
         context.send_message(message).await?;

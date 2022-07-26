@@ -34,21 +34,21 @@ tokio = "1.19.2"
 itertools = "0.10.3"
 
 [dependencies.tendermint]
-version = "=0.23.7"
+version = "=0.23.8"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.23.7"
+version = "=0.23.8"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.23.7"
+version = "=0.23.8"
 default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-light-client-verifier]
-version = "=0.23.7"
+version = "=0.23.8"
 default-features = false
 
 [dependencies.tendermint-proto]
-version = "=0.23.7"
+version = "=0.23.8"
