@@ -161,6 +161,7 @@ store_prefix = 'ibc'
 default_gas = 100000
 
 # Specify the maximum amount of gas to be used as the gas limit for a transaction.
+# If `default_gas` is unspecified, then `max_gas` will be used as `default_gas`.
 # Default: 400 000
 max_gas = 400000
 
@@ -168,10 +169,10 @@ max_gas = 400000
 # the denomination of the fee. Required
 gas_price = { price = 0.001, denom = 'stake' }
 
-# Multiply this amoutn by the gas estimate used to compute the fee
-# to account for potential estimation error.
+# Multiply this amount with the gas estimate, used to compute the fee
+# and account for potential estimation error.
 #
-# Example: With this setting is set to 1.1, then if the estimated gas
+# Example: With this setting set to 1.1, then if the estimated gas
 # is 80_000, then gas used to compute the fee will be adjusted to
 # 80_000 * 1.1 = 88_000.
 #
