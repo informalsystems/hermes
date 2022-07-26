@@ -432,7 +432,7 @@ mod tests {
                 dst_chain_id: None,
                 show_counterparty: true
             },
-            QueryChannelsCmd::parse_from(&["test", "--chain", "chain_id", "--show--counterparty",])
+            QueryChannelsCmd::parse_from(&["test", "--chain", "chain_id", "--show-counterparty",])
         )
     }
 
