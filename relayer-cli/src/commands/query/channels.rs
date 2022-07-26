@@ -449,7 +449,7 @@ mod tests {
                 "test",
                 "--chain",
                 "chain_id",
-                "--show--counterparty",
+                "--show-counterparty",
                 "--counterparty-chain",
                 "counterparty_chain"
             ])
@@ -469,7 +469,7 @@ mod tests {
                 "test",
                 "--chain",
                 "chain_id",
-                "--show--counterparty",
+                "--show-counterparty",
                 "--verbose",
             ])
         )
