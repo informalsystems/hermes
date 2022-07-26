@@ -204,7 +204,7 @@ reviewed by whomever is most appropriate to review it. It also helps to notify
 the person whom you tagged as reviewer through direct means, such as through
 Slack or Discord, as it is easy for GitHub notifications to get lost or buried.
 
-## Reviewing Pull Requests
+## Responsibilities of a PR Reviewer
 
 If you're tagged as the reviewer of a PR, you are responsible for seeing it
 through to completion. This includes shepherding the work, helping to ensure the
