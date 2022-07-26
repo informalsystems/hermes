@@ -44,7 +44,7 @@ pub struct QueryChannelsCmd {
 
     #[clap(
         long = "show-counterparty",
-        help = "Show the counterparty chain's id for each channel"
+        help = "Show the counterparty chain, port and channel"
     )]
     show_counterparty: bool,
 }
