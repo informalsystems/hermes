@@ -15,7 +15,7 @@ use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics04_channel::packet::{parse_timeout_height, Packet};
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId};
-use ibc::events::{self, from_tx_response_event, IbcEvent};
+use ibc::events::{self, from_tx_response_event, IbcEvent, WithBlockDataType};
 use ibc::Height as ICSHeight;
 
 use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
@@ -335,14 +335,14 @@ fn packet_events_from_tx_search_response(
     events
 }
 
-pub async fn query_txs(
+pub async fn query_txs_from_tendermint(
     pool: &PgPool,
     chain_id: &ChainId,
     search: &QueryTxRequest,
 ) -> Result<Vec<IbcEvent>, Error> {
     match search {
         QueryTxRequest::Packet(request) => {
-            crate::time!("query_txs: query packet events");
+            crate::time!("query_txs_from_tendermint: query packet events");
 
             let responses = tx_search_response_from_packet_query(pool, request).await?;
             let events = packet_events_from_tx_search_response(chain_id, request, responses.txs);
@@ -385,6 +385,45 @@ pub async fn query_txs(
             }
             Ok(all_ibc_events_from_tx_search_response(height, tx_result))
         }
+    }
+}
+
+pub async fn query_txs_from_ibc_snapshots(
+    pool: &PgPool,
+    chain_id: &ChainId,
+    search: &QueryTxRequest,
+) -> Result<Vec<IbcEvent>, Error> {
+    match search {
+        QueryTxRequest::Packet(request) => {
+            crate::time!("query_txs_from_ibc_snapshots: query packet events");
+            match request.event_id {
+                WithBlockDataType::SendPacket => match request.height {
+                    QueryHeight::Latest => Ok(vec![]),
+                    QueryHeight::Specific(h) => {
+                        let all_packets = query_sent_packets(pool, h.revision_height()).await?;
+                        let events = all_packets
+                            .into_iter()
+                            .filter_map(|packet| {
+                                if packet.source_port == request.source_port_id
+                                    && packet.source_channel == request.source_channel_id
+                                    && request.sequences.contains(&packet.sequence)
+                                {
+                                    Some(IbcEvent::SendPacket(ChannelEvents::SendPacket {
+                                        height: h,
+                                        packet,
+                                    }))
+                                } else {
+                                    None
+                                }
+                            })
+                            .collect();
+                        Ok(events)
+                    }
+                },
+                _ => query_txs_from_tendermint(pool, chain_id, search).await,
+            }
+        }
+        _ => query_txs_from_tendermint(pool, chain_id, search).await,
     }
 }
 

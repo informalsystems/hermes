@@ -35,7 +35,8 @@ use ibc::{
 use crate::chain::cosmos::CosmosSdkChain;
 use crate::chain::psql_cosmos::batch::send_batched_messages_and_wait_commit;
 use crate::chain::psql_cosmos::query::{
-    query_blocks, query_channel, query_channels, query_connections, query_ibc_data, query_txs,
+    query_blocks, query_channel, query_channels, query_connections, query_ibc_data,
+    query_txs_from_ibc_snapshots, query_txs_from_tendermint,
 };
 use crate::chain::psql_cosmos::update::{update_dbs, PacketId};
 use crate::chain::psql_cosmos::update::{IbcData, IbcSnapshot};
@@ -304,7 +305,7 @@ impl PsqlChain {
         }
         sequences.sort_unstable();
 
-        let results = self.block_on(query_txs(
+        let results = self.block_on(query_txs_from_tendermint(
             &self.pool,
             self.id(),
             &QueryTxRequest::Packet(QueryPacketEventDataRequest {
@@ -814,7 +815,11 @@ impl ChainEndpoint for PsqlChain {
         crate::time!("query_txs");
         crate::telemetry!(query, self.id(), "query_txs");
 
-        self.block_on(query_txs(&self.pool, self.id(), &request))
+        self.block_on(query_txs_from_ibc_snapshots(
+            &self.pool,
+            self.id(),
+            &request,
+        ))
     }
 
     fn query_blocks(
