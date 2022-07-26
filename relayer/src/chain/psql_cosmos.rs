@@ -10,8 +10,6 @@ use tendermint_rpc::endpoint::broadcast::tx_sync;
 use tonic::metadata::AsciiMetadataValue;
 use tracing::{debug, info, span, warn, Level};
 
-use ibc::core::ics04_channel::channel::{Counterparty, Order, State};
-use ibc::core::ics24_host::identifier::{ChannelId, PortId};
 use ibc::{
     core::{
         ics02_client::{
@@ -22,14 +20,15 @@ use ibc::{
         },
         ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
         ics04_channel::{
-            channel::{ChannelEnd, IdentifiedChannelEnd},
+            channel::{ChannelEnd, Counterparty, IdentifiedChannelEnd, Order, State},
             packet::Sequence,
             Version as ChannelVersion,
         },
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
-        ics24_host::identifier::{ChainId, ConnectionId},
+        ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortId},
     },
-    events::IbcEvent,
+    downcast,
+    events::{IbcEvent, WithBlockDataType},
     Height,
 };
 
@@ -38,7 +37,7 @@ use crate::chain::psql_cosmos::batch::send_batched_messages_and_wait_commit;
 use crate::chain::psql_cosmos::query::{
     query_blocks, query_channel, query_channels, query_connections, query_ibc_data, query_txs,
 };
-use crate::chain::psql_cosmos::update::init_dbs;
+use crate::chain::psql_cosmos::update::{update_dbs, PacketId};
 use crate::chain::psql_cosmos::update::{IbcData, IbcSnapshot};
 use crate::denom::DenomTrace;
 use crate::event::monitor::EventBatch;
@@ -188,7 +187,7 @@ impl PsqlChain {
         Ok(())
     }
 
-    fn populate_channels(
+    fn populate_channels_and_pending_packets(
         &self,
         query_height: &QueryHeight,
         request: QueryChannelsRequest,
@@ -241,6 +240,102 @@ impl PsqlChain {
                 .channels
                 .entry(c.channel_id.clone())
                 .or_insert_with(|| c.clone());
+            self.populate_packets(query_height, c, snapshot)?;
+        }
+
+        Ok(())
+    }
+
+    fn populate_packets(
+        &self,
+        query_height: &QueryHeight,
+        c: &IdentifiedChannelEnd,
+        snapshot: &mut IbcSnapshot,
+    ) -> Result<(), Error> {
+        crate::time!("populate_packets");
+        crate::telemetry!(query, self.id(), "populate_packets");
+
+        let request = QueryPacketCommitmentsRequest {
+            port_id: c.port_id.clone(),
+            channel_id: c.channel_id.clone(),
+            pagination: None,
+        };
+
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                    self.chain.grpc_addr.clone(),
+                ),
+            )
+            .map_err(Error::grpc_transport)?;
+
+        let mut request = tonic::Request::new(request.into());
+        let height_param = AsciiMetadataValue::try_from(*query_height)?;
+
+        request
+            .metadata_mut()
+            .insert("x-cosmos-block-height", height_param);
+
+        let response = self
+            .block_on(client.packet_commitments(request))
+            .map_err(Error::grpc_status)?
+            .into_inner();
+
+        let response_height = response
+            .height
+            .unwrap()
+            .try_into()
+            .map_err(|_| Error::invalid_height_no_source())?;
+
+        if let QueryHeight::Specific(height) = query_height {
+            if height != &response_height {
+                return Err(Error::invalid_height_no_source());
+            }
+        }
+
+        let mut sequences: Vec<Sequence> = response
+            .commitments
+            .into_iter()
+            .map(|v| v.sequence.into())
+            .collect();
+
+        if sequences.is_empty() {
+            return Ok(());
+        }
+        sequences.sort_unstable();
+
+        let results = self.block_on(query_txs(
+            &self.pool,
+            self.id(),
+            &QueryTxRequest::Packet(QueryPacketEventDataRequest {
+                event_id: WithBlockDataType::SendPacket,
+                source_channel_id: c.channel_id.clone(),
+                source_port_id: c.port_id.clone(),
+                destination_channel_id: c.channel_end.remote.channel_id.as_ref().unwrap().clone(),
+                destination_port_id: c.channel_end.remote.port_id.clone(),
+                sequences,
+                height: *query_height,
+            }),
+        ))?;
+
+        for ev in results.iter() {
+            let send_packet = downcast!(ev.clone() => IbcEvent::SendPacket)
+                .ok_or_else(Error::invalid_height_no_source)?;
+            let packet_id = PacketId {
+                channel_id: c.channel_id.clone(),
+                port_id: c.port_id.clone(),
+                sequence: send_packet.packet.sequence,
+            };
+
+            snapshot
+                .json_data
+                .pending_sent_packets
+                .entry(PacketId {
+                    channel_id: c.channel_id.clone(),
+                    port_id: c.port_id.clone(),
+                    sequence: send_packet.packet.sequence,
+                })
+                .or_insert_with(|| send_packet.packet);
         }
 
         Ok(())
@@ -254,6 +349,7 @@ impl PsqlChain {
             json_data: IbcData {
                 connections: HashMap::new(),
                 channels: HashMap::new(),
+                pending_sent_packets: HashMap::new(),
             },
         };
 
@@ -263,7 +359,7 @@ impl PsqlChain {
             &mut result,
         )?;
 
-        self.populate_channels(
+        self.populate_channels_and_pending_packets(
             &QueryHeight::Specific(solved_query_height),
             QueryChannelsRequest { pagination: None },
             &mut result,
@@ -276,7 +372,8 @@ impl PsqlChain {
         if self.starting {
             let snapshot =
                 self.ibc_snapshot(&QueryHeight::Specific(batch.height.decrement().unwrap()))?;
-            self.block_on(init_dbs(&self.pool.clone(), &snapshot))?;
+            debug!("Got snapshot {:?}", snapshot);
+            self.block_on(update_dbs(&self.pool.clone(), &snapshot))?;
             self.starting = false;
         }
 
@@ -291,7 +388,7 @@ impl PsqlChain {
         }
 
         if work_copy.json_data != latest.json_data {
-            self.block_on(init_dbs(&self.pool, &work_copy))
+            self.block_on(update_dbs(&self.pool, &work_copy))
         } else {
             Ok(())
         }

@@ -50,7 +50,6 @@ pub async fn send_tx_with_account_sequence_retry(
     do_send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, messages).await
 }
 
-
 async fn refresh_account_and_retry_send_tx_with_account_sequence(
     config: &TxConfig,
     key_entry: &KeyEntry,

@@ -19,7 +19,7 @@ use ibc::events::{self, from_tx_response_event, IbcEvent};
 use ibc::Height as ICSHeight;
 
 use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
-use crate::chain::psql_cosmos::update::{IbcData, IbcSnapshot};
+use crate::chain::psql_cosmos::update::{IbcData, IbcSnapshot, PacketId};
 use crate::chain::requests::{
     QueryBlockRequest, QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest,
     QueryTxRequest,
@@ -714,6 +714,7 @@ pub async fn query_ibc_data(pool: &PgPool, query_height: u64) -> Result<IbcSnaps
         json_data: IbcData {
             connections: result.json_data.connections.clone(),
             channels: result.json_data.channels.clone(),
+            pending_sent_packets: result.json_data.pending_sent_packets.clone(),
         },
     };
     Ok(response)
@@ -743,7 +744,26 @@ pub async fn query_channel(
     id: ChannelId,
 ) -> Result<Option<IdentifiedChannelEnd>, Error> {
     let result = query_ibc_data(pool, query_height).await?;
+    Ok(result.json_data.channels.get(&id).cloned())
+}
 
-    let ch = result.json_data.channels.get(&id).cloned();
-    Ok(ch)
+pub async fn query_sent_packets(pool: &PgPool, query_height: u64) -> Result<Vec<Packet>, Error> {
+    let result = query_ibc_data(pool, query_height).await?;
+
+    Ok(result
+        .json_data
+        .pending_sent_packets
+        .values()
+        .cloned()
+        .collect())
+}
+
+pub async fn query_sent_packet(
+    pool: &PgPool,
+    query_height: u64,
+    id: PacketId,
+) -> Result<Option<Packet>, Error> {
+    let result = query_ibc_data(pool, query_height).await?;
+    let p = result.json_data.pending_sent_packets.get(&id).cloned();
+    Ok(p)
 }
