@@ -1,6 +1,6 @@
 # Global options
 
-Hermes accepts global options which affect all commands.
+Hermes accepts _global_ options which affect all commands.
 
 ```shell
 hermes v1.0.0-rc.0
@@ -12,14 +12,27 @@ FLAGS:
         --json               Enable JSON output
 ```
 
-The flags must be specified right after the `hermes` command and before any subcommand.
+## Ordering of command-line options
+
+The global options must be specified right after the `hermes` command and _before_ any subcommand.
+The non-global options have to be specified _after_ the subcommand.
+
+```shell
+hermes <GLOBAL_OPTIONS> subcommand <OPTIONS>
+```
 
 __Example__
 
-To start the relayer using the configuration file at `/home/my_chain.toml` and enable JSON output:
+To `start` the relayer using the configuration file at `/home/my_chain.toml` and enable JSON output:
 
 ```shell
 hermes --config /home/my_chain.toml --json start
+```
+
+To `query` all clients on a chain while enabling JSON output:
+
+```shell
+hermes --json query clients --host-chain ibc-1
 ```
 
 ## JSON output
