@@ -44,10 +44,9 @@ pub struct QueryChannelsCmd {
 
     #[clap(
         long = "show-counterparty",
-        help = "Show the counterparty chain's id for each channel",
+        help = "Show the counterparty chain's id for each channel"
     )]
     show_counterparty: bool,
-
 }
 
 fn run_query_channels<Chain: ChainHandle>(
@@ -55,12 +54,12 @@ fn run_query_channels<Chain: ChainHandle>(
 ) -> Result<QueryChannelsOutput, Box<dyn std::error::Error>> {
     debug!("Options: {:?}", cmd);
 
-    let mut output = match (cmd.verbose, cmd.show_counterparty){
+    let mut output = match (cmd.verbose, cmd.show_counterparty) {
         (true, _) => QueryChannelsOutput::verbose(),
         (false, true) => QueryChannelsOutput::pretty(),
         (false, false) => QueryChannelsOutput::summary(),
     };
-    
+
     let config = app_config();
     let chain_id = cmd.chain_id.clone();
 
@@ -119,8 +118,8 @@ fn run_query_channels<Chain: ChainHandle>(
                 IncludeProof::No,
             )?;
             let cid = client_state.chain_id().clone();
-            
-            if let Some(dst_chain_id) = &cmd.dst_chain_id { 
+
+            if let Some(dst_chain_id) = &cmd.dst_chain_id {
                 if cid != *dst_chain_id {
                     continue;
                 }
@@ -141,7 +140,7 @@ fn run_query_channels<Chain: ChainHandle>(
                     channel_id,
                     QueryHeight::Specific(chain_height),
                 );
-    
+
                 match channel_ends {
                     Ok(channel_ends) => output.push_verbose(channel_ends),
                     Err(e) => error!("failed to query channel ends: {}", e),
@@ -149,21 +148,20 @@ fn run_query_channels<Chain: ChainHandle>(
             }
             QueryChannelsOutput::Pretty(_) => {
                 // Get counterparty channel_id and port_id
-                let counterparty_channel = channel_end.counterparty().clone(); 
+                let counterparty_channel = channel_end.counterparty().clone();
                 let counterparty_channel_id = counterparty_channel.channel_id;
                 let counterparty_channel_port = counterparty_channel.port_id;
 
                 let pretty = PrettyOutput {
-                    channel_a : channel_id,
-                    port_a : port_id,
+                    channel_a: channel_id,
+                    port_a: port_id,
                     chain_id_a: chain_id,
-                    channel_b : counterparty_channel_id,
-                    port_b : counterparty_channel_port,
+                    channel_b: counterparty_channel_id,
+                    port_b: counterparty_channel_port,
                     chain_id_b: counterparty_chain_id,
                 };
 
                 output.push_pretty(pretty)
-                
             }
             QueryChannelsOutput::Summary(_) => {
                 output.push_summary(PortChannelId {
@@ -276,14 +274,13 @@ impl Runnable for QueryChannelsCmd {
     }
 }
 
-
 #[derive(Serialize, Debug)]
 struct PrettyOutput {
-    channel_a : ChannelId,
-    port_a : PortId,
+    channel_a: ChannelId,
+    port_a: PortId,
     chain_id_a: ChainId,
-    channel_b : Option<ChannelId>,
-    port_b : PortId,
+    channel_b: Option<ChannelId>,
+    port_b: PortId,
     chain_id_b: Option<ChainId>,
 }
 
@@ -345,24 +342,24 @@ impl Debug for QueryChannelsOutput {
             QueryChannelsOutput::Verbose(output) => write!(f, "{:#?}", output),
             QueryChannelsOutput::Summary(output) => write!(f, "{:#?}", output),
             QueryChannelsOutput::Pretty(output) => {
-                output
-                    .iter()
-                    .try_for_each(|pretty_print| {
-                        write!(f, "\n{}: {}/{} --- {}: {}/{}", 
-                            &pretty_print.chain_id_a.as_str(),
-                            &pretty_print.port_a.as_str(),
-                            &pretty_print.channel_a.as_str(),
-                            match &pretty_print.chain_id_b {
-                                Some(chain_id_b) => chain_id_b.as_str(),
-                                None => "None",
-                            },
-                            &pretty_print.port_b.as_str(),
-                            match &pretty_print.channel_b {
-                                Some(channel_b) => channel_b.as_str(),
-                                None => "None",
-                            },
-                        )
-                    })?;
+                output.iter().try_for_each(|pretty_print| {
+                    write!(
+                        f,
+                        "\n{}: {}/{} --- {}: {}/{}",
+                        &pretty_print.chain_id_a.as_str(),
+                        &pretty_print.port_a.as_str(),
+                        &pretty_print.channel_a.as_str(),
+                        match &pretty_print.chain_id_b {
+                            Some(chain_id_b) => chain_id_b.as_str(),
+                            None => "None",
+                        },
+                        &pretty_print.port_b.as_str(),
+                        match &pretty_print.channel_b {
+                            Some(channel_b) => channel_b.as_str(),
+                            None => "None",
+                        },
+                    )
+                })?;
                 Ok(())
             }
         }
@@ -383,7 +380,7 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 verbose: false,
                 dst_chain_id: None,
-                show_counterparty : false,
+                show_counterparty: false,
             },
             QueryChannelsCmd::parse_from(&["test", "--chain", "chain_id"])
         )
@@ -396,7 +393,7 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 verbose: true,
                 dst_chain_id: None,
-                show_counterparty : false,
+                show_counterparty: false,
             },
             QueryChannelsCmd::parse_from(&["test", "--chain", "chain_id", "--verbose"])
         )
@@ -409,7 +406,7 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 verbose: false,
                 dst_chain_id: Some(ChainId::from_string("counterparty_chain")),
-                show_counterparty : false,
+                show_counterparty: false,
             },
             QueryChannelsCmd::parse_from(&[
                 "test",
@@ -433,14 +430,9 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 verbose: false,
                 dst_chain_id: None,
-                show_counterparty : true
+                show_counterparty: true
             },
-            QueryChannelsCmd::parse_from(&[
-                "test",
-                "--chain",
-                "chain_id",
-                "--show--counterparty",
-            ])
+            QueryChannelsCmd::parse_from(&["test", "--chain", "chain_id", "--show--counterparty",])
         )
     }
 
@@ -451,7 +443,7 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 verbose: false,
                 dst_chain_id: Some(ChainId::from_string("counterparty_chain")),
-                show_counterparty : true
+                show_counterparty: true
             },
             QueryChannelsCmd::parse_from(&[
                 "test",
@@ -471,7 +463,7 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 verbose: true,
                 dst_chain_id: None,
-                show_counterparty : true
+                show_counterparty: true
             },
             QueryChannelsCmd::parse_from(&[
                 "test",
@@ -482,7 +474,4 @@ mod tests {
             ])
         )
     }
-
-
-
 }
