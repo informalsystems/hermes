@@ -8,7 +8,7 @@ use semver::Version;
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use tendermint_rpc::endpoint::broadcast::tx_sync;
 use tonic::metadata::AsciiMetadataValue;
-use tracing::{debug, info, span, warn, Level};
+use tracing::{debug, info, span, trace, warn, Level};
 
 use ibc::{
     core::{
@@ -372,7 +372,6 @@ impl PsqlChain {
         if self.starting {
             let snapshot =
                 self.ibc_snapshot(&QueryHeight::Specific(batch.height.decrement().unwrap()))?;
-            debug!("Got snapshot {:?}", snapshot);
             self.block_on(update_dbs(&self.pool.clone(), &snapshot))?;
             self.starting = false;
         }
@@ -467,9 +466,43 @@ impl PsqlChain {
         }
     }
 
-    fn update_with_event(&mut self, event: &IbcEvent, result: &mut IbcSnapshot) {
+    fn try_update_with_packet_event(&mut self, event: &IbcEvent, snapshot: &mut IbcSnapshot) {
+        match event {
+            IbcEvent::SendPacket(sp) => {
+                let key = PacketId {
+                    port_id: sp.src_port_id().clone(),
+                    channel_id: sp.src_channel_id().clone(),
+                    sequence: sp.packet.sequence,
+                };
+                snapshot
+                    .json_data
+                    .pending_sent_packets
+                    .entry(key)
+                    .and_modify(|e| *e = sp.packet.clone())
+                    .or_insert_with(|| sp.packet.clone());
+            }
+            IbcEvent::AcknowledgePacket(ap) => {
+                let key = PacketId {
+                    port_id: ap.src_port_id().clone(),
+                    channel_id: ap.src_channel_id().clone(),
+                    sequence: ap.packet.sequence,
+                };
+                let removed = snapshot.json_data.pending_sent_packets.remove(&key);
+                match removed {
+                    Some(p) => trace!("removed pending packet {:?}", key),
+                    None => debug!("no pending send packet found by ack event for {:?}", key),
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn update_with_event(&mut self, event: &IbcEvent, snapshot: &mut IbcSnapshot) {
         if is_channel_event(event) {
-            self.try_update_with_channel_event(event, result);
+            self.try_update_with_channel_event(event, snapshot);
+        }
+        if is_packet_event(event) {
+            self.try_update_with_packet_event(event, snapshot);
         }
     }
 }
@@ -902,6 +935,15 @@ pub fn is_channel_event(event: &IbcEvent) -> bool {
             | &IbcEvent::OpenTryChannel(_)
             | &IbcEvent::OpenAckChannel(_)
             | &IbcEvent::OpenConfirmChannel(_)
+    )
+}
+
+pub fn is_packet_event(event: &IbcEvent) -> bool {
+    matches!(
+        event,
+        &IbcEvent::SendPacket(_)
+            | &IbcEvent::WriteAcknowledgement(_)
+            | &IbcEvent::AcknowledgePacket(_)
     )
 }
 
