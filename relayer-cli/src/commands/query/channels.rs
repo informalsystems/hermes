@@ -130,7 +130,7 @@ fn run_query_channels<Chain: ChainHandle>(
 
         match output {
             QueryChannelsOutput::Verbose(_) => {
-                let channel_ends = query_channel_ends(
+                match query_channel_ends(
                     &mut registry,
                     &chain,
                     channel_end,
@@ -139,9 +139,7 @@ fn run_query_channels<Chain: ChainHandle>(
                     port_id,
                     channel_id,
                     QueryHeight::Specific(chain_height),
-                );
-
-                match channel_ends {
+                ) {
                     Ok(channel_ends) => output.push_verbose(channel_ends),
                     Err(e) => error!("failed to query channel ends: {}", e),
                 }
