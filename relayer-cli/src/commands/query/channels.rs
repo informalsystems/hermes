@@ -304,32 +304,26 @@ impl QueryChannelsOutput {
     }
 
     fn push_pretty(&mut self, pe: PrettyOutput) {
-        assert!(matches!(self, Self::Pretty(_)));
-
-        if let Self::Pretty(ref mut pes) = self {
-            pes.push(pe);
-        } else {
-            unreachable!();
+        match self {
+            Self::Pretty(pes) => pes.push(pe),
+            Self::Verbose(_) => Output::error("PrettyOutput and QueryChannelsOutput::Verbose are incompatible").exit(),
+            Self::Summary(_) => Output::error("PrettyOutput and QueryChannelsOutput::Summary are incompatible").exit(),
         }
     }
 
     fn push_verbose(&mut self, ce: ChannelEnds) {
-        assert!(matches!(self, Self::Verbose(_)));
-
-        if let Self::Verbose(ref mut ces) = self {
-            ces.push(ce);
-        } else {
-            unreachable!();
+        match self {
+            Self::Pretty(_) => Output::error("ChannelEnds and QueryChannelsOutput::Pretty are incompatible").exit(),
+            Self::Verbose(ces) => ces.push(ce),
+            Self::Summary(_) => Output::error("ChannelEnds and QueryChannelsOutput::Summary are incompatible").exit(),
         }
     }
 
     fn push_summary(&mut self, pc: PortChannelId) {
-        assert!(matches!(self, Self::Summary(_)));
-
-        if let Self::Summary(ref mut pcs) = self {
-            pcs.push(pc);
-        } else {
-            unreachable!();
+        match self {
+            Self::Pretty(_) => Output::error("PortChannelId and QueryChannelsOutput::Pretty are incompatible").exit(),
+            Self::Verbose(_) => Output::error("PortChannelId and QueryChannelsOutput::Verbose are incompatible").exit(),
+            Self::Summary(pcs) => pcs.push(pc),
         }
     }
 }
