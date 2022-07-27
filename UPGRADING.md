@@ -7,6 +7,16 @@
 > in reverse chronological order to update to v1.0.0-rc.0 first and then
 > follow these instructions.
 
+
+### Default value of `tx_confirmation` setting has changed
+
+The default value of the configuration `tx_confirmation`
+in Hermes `config.toml` has been changed from `true` to `false`.
+
+If you previously did not specify a value for this setting, you will
+have to set `tx_confirmation = true` in `config.toml` under
+the `[mode.packets]` section.
+
 ### All `tx raw` subcommands were moved to the `tx` namespace
 
 The `raw` prefix was removed from all the commands listed below,

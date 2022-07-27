@@ -32,6 +32,9 @@ This is the second release candidate for Hermes v1.0.0 🎉
   ([#2410](https://github.com/informalsystems/ibc-rs/issues/2410))
 - Rename flags of `tx upgrade-chain` command from `--src`/`--dst` to `--reference`/`--host`
   ([#2376](https://github.com/informalsystems/ibc-rs/issues/2376))
+- The default value of the configuration `tx_confirmation`
+  in Hermes `config.toml` has been changed from `true` to `false`.
+  ([#2408](https://github.com/informalsystems/ibc-rs/issues/2408))
 
 #### BUG FIXES
 
@@ -110,12 +113,10 @@ This is the second release candidate for Hermes v1.0.0 🎉
 
 - Updated telemetry metric `wallet_balance` to f64 and removed downscaling
   displayed value. Please note that when converting the balance to f64 a loss in
-  precision might be introduced in the displayed value.
+  precision might be introduced in the displayed value
   ([#2381](https://github.com/informalsystems/ibc-rs/issues/2381))
 - Improved naming and description of some telemetry metrics and added
-  histogram buckets for `tx_latency` metrics.
-  In addition the default value of the configuration `tx_confirmation`
-  in Hermes `config.toml` has been changed from `true` to `false`.
+  histogram buckets for `tx_latency` metrics
   ([#2408](https://github.com/informalsystems/ibc-rs/issues/2408))
 
 ## v1.0.0-rc.0
