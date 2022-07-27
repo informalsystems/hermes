@@ -771,7 +771,6 @@ pub async fn query_connections(
     query_height: &QueryHeight,
 ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
     let result = query_ibc_data(pool, query_height).await?;
-
     Ok(result.json_data.connections.values().cloned().collect())
 }
 
@@ -781,7 +780,6 @@ pub async fn query_connection(
     id: &ConnectionId,
 ) -> Result<Option<IdentifiedConnectionEnd>, Error> {
     let result = query_ibc_data(pool, query_height).await?;
-
     Ok(result.json_data.connections.get(id).cloned())
 }
 
@@ -790,7 +788,6 @@ pub async fn query_channels(
     query_height: &QueryHeight,
 ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
     let result = query_ibc_data(pool, query_height).await?;
-
     Ok(result.json_data.channels.values().cloned().collect())
 }
 

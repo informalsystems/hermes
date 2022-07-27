@@ -72,15 +72,29 @@ flex_error::define_error! {
     PsqlError {
         MissingConnectionConfig
             { chain_id: ChainId }
-            |e| { format_args!("missing `psql_conn` config for chain '{}'", e.chain_id) }
+            |e| { format_args!("missing `psql_conn` config for chain '{}'", e.chain_id) },
+        UnexpectedEvent
+            { event: IbcEvent }
+            |e| { format_args!("unexpected event '{}'", e.event) },
+        ConnectionNotFound
+            { connection_id: ConnectionId }
+            |e| { format_args!("connection not found '{}'", e.connection_id) },
+        ChannelNotFound
+            { channel_id: ChannelId }
+            |e| { format_args!("channel not found '{}'", e.channel_id) },
     }
+}
+#[derive(PartialEq)]
+pub enum PsqlSyncStatus {
+    Unknown,
+    Synced,
 }
 
 pub struct PsqlChain {
     chain: CosmosSdkChain,
     pool: PgPool,
     rt: Arc<tokio::runtime::Runtime>,
-    starting: bool,
+    sync_state: PsqlSyncStatus,
 }
 
 impl PsqlChain {
@@ -88,6 +102,10 @@ impl PsqlChain {
     fn block_on<F: Future>(&self, f: F) -> F::Output {
         crate::time!("block_on");
         self.rt.block_on(f)
+    }
+
+    pub fn is_synced(&self) -> bool {
+        self.sync_state == PsqlSyncStatus::Synced
     }
 
     async fn do_send_messages_and_wait_commit(
@@ -315,7 +333,7 @@ impl PsqlChain {
 
         for ev in results.iter() {
             let send_packet = downcast!(ev.clone() => IbcEvent::SendPacket)
-                .ok_or_else(Error::invalid_height_no_source)?;
+                .ok_or_else(|| PsqlError::unexpected_event(ev.clone()))?;
             let packet_id = PacketId {
                 channel_id: c.channel_id.clone(),
                 port_id: c.port_id.clone(),
@@ -364,10 +382,10 @@ impl PsqlChain {
 
     fn update_with_events(&mut self, batch: EventBatch) -> Result<(), Error> {
         let previous_height = batch.height.decrement().unwrap();
-        if self.starting {
+        if !self.is_synced() {
             let snapshot = self.ibc_snapshot(&previous_height)?;
             self.block_on(update_dbs(&self.pool.clone(), &snapshot))?;
-            self.starting = false;
+            self.sync_state = PsqlSyncStatus::Synced;
         }
 
         let mut work_copy = self.block_on(query_ibc_data(
@@ -450,7 +468,7 @@ impl PsqlChain {
             }
             Some(connection) => {
                 debug!(
-                    "psql chain {} - changing connection {} from uninit to {} due to event {}",
+                    "psql chain {} - changing connection {} from UNINITIALIZED to {} due to event {}",
                     self.chain.id(),
                     connection.connection_id,
                     connection.connection_end.state.clone(),
@@ -523,7 +541,7 @@ impl PsqlChain {
             }
             Some(channel) => {
                 debug!(
-                    "psql chain {} - changing channel {} from uninit to {} due to event {}",
+                    "psql chain {} - changing channel {} from UNINITIALIZED to {} due to event {}",
                     self.chain.id(),
                     channel.channel_id,
                     channel.channel_end.state.clone(),
@@ -662,7 +680,7 @@ impl ChainEndpoint for PsqlChain {
             chain,
             pool,
             rt,
-            starting: true,
+            sync_state: PsqlSyncStatus::Unknown,
         })
     }
 
@@ -745,9 +763,13 @@ impl ChainEndpoint for PsqlChain {
     }
 
     fn query_application_status(&self) -> Result<ChainStatus, Error> {
-        crate::time!("query_application_status_psql");
-        crate::telemetry!(query, self.id(), "query_application_status_psql");
-        self.block_on(query_application_status(&self.pool))
+        if self.is_synced() {
+            crate::time!("query_application_status_psql");
+            crate::telemetry!(query, self.id(), "query_application_status_psql");
+            self.block_on(query_application_status(&self.pool))
+        } else {
+            self.chain.query_application_status()
+        }
     }
 
     fn handle_ibc_event_batch(&mut self, batch: EventBatch) -> Result<(), Error> {
@@ -804,18 +826,13 @@ impl ChainEndpoint for PsqlChain {
         &self,
         request: QueryConnectionsRequest,
     ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
-        match self.block_on(query_connections(&self.pool, &QueryHeight::Latest)) {
-            Ok(connections) => {
-                crate::telemetry!(query, self.id(), "query_connections_psql");
-                Ok(connections)
-            }
-            Err(e) => {
-                warn!(
-                    "unable to query_connections via psql connection ({}), falling back to gRPC",
-                    e
-                );
-                self.chain.query_connections(request)
-            }
+        if self.is_synced() {
+            crate::time!("query_connections_psql");
+            crate::telemetry!(query, self.id(), "query_connections_psql");
+            self.block_on(query_connections(&self.pool, &QueryHeight::Latest))
+        } else {
+            warn!("chain psql dbs not synchronized, falling back to gRPC query");
+            self.chain.query_connections(request)
         }
     }
 
@@ -834,21 +851,24 @@ impl ChainEndpoint for PsqlChain {
         match include_proof {
             IncludeProof::Yes => self.chain.query_connection(request, include_proof),
             IncludeProof::No => {
-                match self.block_on(query_connection(
-                    &self.pool,
-                    &request.height,
-                    &request.connection_id,
-                )) {
-                    Ok(Some(connection)) => {
-                        crate::telemetry!(query, self.id(), "query_connections_psql");
-                        Ok((connection.connection_end, None))
-                    }
-                    _ => {
-                        warn!(
-                            "unable to query_connection via psql connection, falling back to gRPC"
-                        );
-                        self.chain.query_connection(request, include_proof)
-                    }
+                if self.is_synced() {
+                    crate::time!("query_connection_psql");
+                    crate::telemetry!(query, self.id(), "query_connection_psql");
+                    Ok((
+                        self.block_on(query_connection(
+                            &self.pool,
+                            &request.height,
+                            &request.connection_id,
+                        ))?
+                        .ok_or_else(|| {
+                            PsqlError::connection_not_found(request.connection_id.clone())
+                        })?
+                        .connection_end,
+                        None,
+                    ))
+                } else {
+                    warn!("chain psql dbs not synchronized, falling back to gRPC query");
+                    self.chain.query_connection(request, include_proof)
                 }
             }
         }
@@ -865,19 +885,13 @@ impl ChainEndpoint for PsqlChain {
         &self,
         request: QueryChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
-        crate::time!("query_channels");
-        match self.block_on(query_channels(&self.pool, &QueryHeight::Latest)) {
-            Ok(channels) => {
-                crate::telemetry!(query, self.id(), "query_channels_psql");
-                Ok(channels)
-            }
-            Err(e) => {
-                warn!(
-                    "unable to query_channels via psql connection ({}), falling back to gRPC",
-                    e
-                );
-                self.chain.query_channels(request)
-            }
+        if self.is_synced() {
+            crate::time!("query_channels_psql");
+            crate::telemetry!(query, self.id(), "query_channels_psql");
+            self.block_on(query_channels(&self.pool, &QueryHeight::Latest))
+        } else {
+            warn!("chain psql dbs not synchronized, falling back to gRPC query");
+            self.chain.query_channels(request)
         }
     }
 
@@ -886,24 +900,27 @@ impl ChainEndpoint for PsqlChain {
         request: QueryChannelRequest,
         include_proof: IncludeProof,
     ) -> Result<(ChannelEnd, Option<MerkleProof>), Error> {
-        crate::time!("query_channel_psql");
-
         match include_proof {
             IncludeProof::Yes => self.chain.query_channel(request, include_proof),
             IncludeProof::No => {
-                match self.block_on(query_channel(
-                    &self.pool,
-                    &request.height,
-                    &request.channel_id,
-                )) {
-                    Ok(Some(channel)) => {
-                        crate::telemetry!(query, self.id(), "query_channel_psql");
-                        Ok((channel.channel_end, None))
-                    }
-                    _ => {
-                        warn!("unable to query_channel via psql connection, falling back to gRPC");
-                        self.chain.query_channel(request, include_proof)
-                    }
+                crate::time!("query_connection_psql");
+                crate::telemetry!(query, self.id(), "query_connection_psql");
+                if self.is_synced() {
+                    crate::time!("query_channel_psql");
+                    crate::telemetry!(query, self.id(), "query_channel_psql");
+                    Ok((
+                        self.block_on(query_channel(
+                            &self.pool,
+                            &request.height,
+                            &request.channel_id,
+                        ))?
+                        .ok_or_else(|| PsqlError::channel_not_found(request.channel_id.clone()))?
+                        .channel_end,
+                        None,
+                    ))
+                } else {
+                    warn!("chain psql dbs not synchronized, falling back to gRPC query");
+                    self.chain.query_channel(request, include_proof)
                 }
             }
         }
@@ -955,7 +972,7 @@ impl ChainEndpoint for PsqlChain {
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
         crate::time!("query_txs_psql");
-        crate::telemetry!(query, self.id(), "query_txs");
+        crate::telemetry!(query, self.id(), "query_txs_psql");
 
         self.block_on(query_txs_from_ibc_snapshots(
             &self.pool,
@@ -970,6 +987,8 @@ impl ChainEndpoint for PsqlChain {
     ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
         // Currently the psql tendermint DB does not distinguish between begin and end block events.
         // The SQL query in `query_blocks` returns all block events
+        crate::time!("query_blocks_psql");
+        crate::telemetry!(query, self.id(), "query_blocks_psql");
         let all_block_events = self.block_on(query_blocks(&self.pool, self.id(), &request))?;
         Ok((all_block_events, vec![]))
     }
