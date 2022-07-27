@@ -70,7 +70,7 @@ quickly even with such simple example:
 
 - The full details of the `Person` struct must be fetched regardless of
   whether the greet function needs it.
-- The concrete implementation of `Database` is exposed to the gree function,
+- The concrete implementation of `Database` is exposed to the greet function,
   making it difficult to work with other databases.
 - The concrete error `DbError` from the database query is leaked into the
   greet function implementation.
@@ -85,7 +85,7 @@ implementations. For example:
 - We may want to have different database implementations, such as mock
   database or in-memory database.
 - We may want to have multiple concrete person types, so that the database
-  only fetches the essentiall information. e.g. `PersonWithName`,
+  only fetches the essential information. e.g. `PersonWithName`,
   `PersonWithFullDetails`, `PersonWithRoles` etc.
 
 ## Comparison with Dynamic Typing
@@ -108,11 +108,11 @@ in many ways:
 - The function can work with any `db` value, as long as they provide a valid
   `query_person` method.
 - The function can work with any `person` value returned from `db.query_person`,
-  as long as it contains a `name` field that can be serialized into string.
+  as long as it contains a `name` field that can be converted into string.
 - The error can be thrown implicitly by `db.query_person` as an exception.
 
-On the upside, the dynamic nature of the `greet` function means that it can be
-easily reused across multiple database and person implementations. On the
+On the upside, the dynamic nature of the `greet` function means that it can
+easily be reused across multiple database and person implementations. On the
 downside, since there is no type information, it is easy to accidentally call
 `greet` with invalid implementations and only discover the errors late during
 runtime execution.
@@ -185,6 +185,7 @@ in a slightly different context. So let's make the context generic instead:
 
 ```rust
 # struct PersonId(String);
+
 # struct Person {
 #   id: PersonId,
 #   name: String,
@@ -192,6 +193,7 @@ in a slightly different context. So let's make the context generic instead:
 #
 # struct Database { /* ... */}
 # struct DbError { /* ... */}
+
 # impl Database {
 #   fn query_person(&self, person_id: &PersonId) -> Result<Person, DbError> {
 #     unimplemented!() // stub
@@ -224,6 +226,7 @@ long as it contains a field for `Database`. For example:
 
 ```rust
 # struct Database { /* ... */}
+#
 # trait ContextWithDatabase {
 #   fn database(&self) -> &Database;
 # }
@@ -254,6 +257,7 @@ directly from the context:
 # }
 #
 struct Error { /* ... */}
+
 trait QueryPersonContext {
   fn query_person(&self, person_id: &PersonId) ->  Result<Person, Error>;
 }
@@ -324,9 +328,9 @@ instead of directly in the `QueryPersonContext` trait. As we will see later,
 this is essential to allow multiple context traits to access the same
 `Error` type.
 
-In the `greet` function, we keep on requiring the generic `Context` type to
+In the `greet` function, we require the generic `Context` type to
 implement `QueryPersonContext`. But since `ErrorContext` is a supertrait of
-`QueryPersonContext`, we would also able to access the type as
+`QueryPersonContext`, we would also able to access the error type as
 `Context::Error`.
 
 ## Explicit Associated Type Binding
@@ -392,7 +396,7 @@ person types.
 This may be essential for reasons such as performance. For instance,
 depending on where `greet` is called, it may be desirable to load
 all details about a person from the database so that it can be
-cached, or minimal details to save bandwidth.
+cached, or with minimal details to save bandwidth.
 
 From the perspective of `greet`, it does not matter what fields a `Person`
 type has, as long as it can extract the name of the person as string.
@@ -689,9 +693,9 @@ manually pass in dependencies like `query_person` and return nested closures.
 
 When we delegate the management of the context dependencies to Rust's trait
 system, we can think of Rust making automatic binding of depedencies similar
-to what's being done in the code above. The binding is not only automated
-but also much more efficient, because it is done at compile time, which allows
-Rust to perform any further optimization such as inlining the code.
+to what's being done in the code above. The binding is not only automated,
+but also much more efficient. Because the binding is done at compile time,
+it allows Rust to perform any further optimization such as inlining the code.
 
 As we will see later, the same resolution can be applied to _nested_
 dependencies. Thanks to how the trait system works, we can specify
@@ -732,8 +736,6 @@ The full implementation is as follows:
 #
 trait SimpleTime {
   fn is_daytime(&self) -> bool;
-
-  fn duration_since(&self, other: &Self) -> Duration;
 }
 
 trait TimeContext {
@@ -773,10 +775,7 @@ where
 ```
 
 For demo purpose, we first define a `SimpleTime` trait that provides an
-`is_daytime` method to tell whether the a time value is in daytime. For
-practical purposes, `SimpleTime` also provides a `duration_since` method
-that can compare the time that has passed between two time values.
-
+`is_daytime` method to tell whether the a time value is in daytime.
 Following that, we define a `TimeContext` trait that provides a `now` method
 to fetch the current time from the context. Notice that the associated type
 `Time` does _not_ implement `SimpleTime`. This is so that we can learn how
@@ -983,6 +982,8 @@ can look at how we can define a fully application context that satisfies the
 constraints of both greeters. To better structure our application, we also
 separate out different parts of the code into separate modules.
 
+First, we put all the abstract traits into a `traits` module:
+
 ```rust
 mod app {
   mod traits {
@@ -1014,14 +1015,14 @@ mod app {
 }
 ```
 
-First, we put all the abstract traits into a `traits` module. This module do
-not contain any concrete type definition, and thus can have minimal dependency
-to external crates.
+This module do not contain any concrete type definition, and thus can have
+minimal dependency to external crates.
 
 In practice, the trait definitions can be placed in different sub-modules, so
 that we can have more fine grained control of which traits a component depends
 on.
 
+Next, we define `SimpleGreeter` and `DaytimeGreeter` in separate modules.
 
 ```rust
 mod app {
@@ -1120,12 +1121,14 @@ mod app {
 }
 ```
 
-Next, we define `SimpleGreeter` and `DaytimeGreeter` in separate modules.
 The two greeter components do not depend on each other, but they all depend
 on the `traits` crate to make use the abstract definitions. Since these
 components do not depend on other crates, they are also _abstract_ components
 that can be instantiated with _any_ context types that satisfy the trait
 bounds.
+
+Next, we define our concrete `AppContext` struct that implements all
+context traits:
 
 ```rust
 mod app {
@@ -1252,8 +1255,7 @@ mod app {
 }
 ```
 
-Next, we define our concrete `AppContext` struct that implements all
-context traits. Compared to before, we define a `DummyTime` struct that
+Compared to before, we define a `DummyTime` struct that
 mocks the current time with either day time or night time. We then
 implement `TimeContext` for `AppContext`, with `DummyTime` being the
 `Time` type. We also add `ShopClosedError<DummyTime>` as a variant to
@@ -1266,6 +1268,10 @@ dependencies also help us better understand what features are really needed
 from the concrete types. If we know that our application only need the
 `SimpleTime` trait, then there are more options out there that we can
 try out and switch easily.
+
+Finally, we define an `instances` module to encapsulate the witness of
+satisfying all dependencies required from `AppContext` to implement
+the `Greeter` components:
 
 ```rust
 mod app {
@@ -1453,10 +1459,6 @@ mod app {
 }
 ```
 
-Finally, we define an `instances` module to encapsulate the witness of
-satisfying all dependencies required from `AppContext` to implement
-the `Greeter` components.
-
 We first have a `base_greeter` function which witnesses that `SimpleGreeter`
 implements `Greeter<AppContext>`. We then define an `app_greeter` function
 which witnesses that `DaytimeGreeter<SimpleGreeter>` _also_ implements
@@ -1466,7 +1468,7 @@ Notice that in the `app_greeter` body, we construct the greeter with
 `DaytimeGreeter(base_greeter())` instead of `DaytimeGreeter(SimpleGreeter)`.
 In theory, both expressions are valid and have the same effect. But by calling
 `base_greeter` inside `app_greeter`, we are stating that `app_greeter` do
-_not_ actually care what the concrete type of the base greeter is, aside from
+_not_ actually care which concrete type of the base greeter has, aside from
 it implementing `Greeter<AppContext>`.
 
 Having separate witness functions can also help us debug any error in
@@ -1478,7 +1480,7 @@ because it is not aware of the base greeter being `SimpleGreeter`.
 
 If we were to write the complex expression in one go, like
 `DaytimeGreeter(SimpleGreeter)`, it would be less clear which part of the
-expression caused the type error. Things would get worse if we have even
+expression caused the type error. Things would get worse if we have more
 complex component composition. Therefore it is always a good practice to
 define the component instantiation in multiple smaller functions, so that
 it is clear to the reader whether the dependencies are being resolved
