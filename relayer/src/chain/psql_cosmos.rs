@@ -831,7 +831,10 @@ impl ChainEndpoint for PsqlChain {
             crate::telemetry!(query, self.id(), "query_connections_psql");
             self.block_on(query_connections(&self.pool, &QueryHeight::Latest))
         } else {
-            warn!("chain psql dbs not synchronized, falling back to gRPC query");
+            warn!(
+                "chain psql dbs not synchronized on {}, falling back to gRPC query_connections",
+                self.chain.id()
+            );
             self.chain.query_connections(request)
         }
     }
@@ -867,7 +870,8 @@ impl ChainEndpoint for PsqlChain {
                         None,
                     ))
                 } else {
-                    warn!("chain psql dbs not synchronized, falling back to gRPC query");
+                    warn!("chain psql dbs not synchronized on {}, falling back to gRPC query_connection for {}",
+                    self.chain.id(), request.connection_id);
                     self.chain.query_connection(request, include_proof)
                 }
             }
@@ -890,7 +894,10 @@ impl ChainEndpoint for PsqlChain {
             crate::telemetry!(query, self.id(), "query_channels_psql");
             self.block_on(query_channels(&self.pool, &QueryHeight::Latest))
         } else {
-            warn!("chain psql dbs not synchronized, falling back to gRPC query");
+            warn!(
+                "chain psql dbs not synchronized on {}, falling back to gRPC query_channels",
+                self.chain.id()
+            );
             self.chain.query_channels(request)
         }
     }
@@ -903,8 +910,6 @@ impl ChainEndpoint for PsqlChain {
         match include_proof {
             IncludeProof::Yes => self.chain.query_channel(request, include_proof),
             IncludeProof::No => {
-                crate::time!("query_connection_psql");
-                crate::telemetry!(query, self.id(), "query_connection_psql");
                 if self.is_synced() {
                     crate::time!("query_channel_psql");
                     crate::telemetry!(query, self.id(), "query_channel_psql");
@@ -919,7 +924,8 @@ impl ChainEndpoint for PsqlChain {
                         None,
                     ))
                 } else {
-                    warn!("chain psql dbs not synchronized, falling back to gRPC query");
+                    warn!("chain psql dbs not synchronized on {}, falling back to gRPC query_channel for {}/{}",
+                    self.chain.id(), request.port_id, request.channel_id);
                     self.chain.query_channel(request, include_proof)
                 }
             }
@@ -971,14 +977,19 @@ impl ChainEndpoint for PsqlChain {
     }
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
-        crate::time!("query_txs_psql");
-        crate::telemetry!(query, self.id(), "query_txs_psql");
-
-        self.block_on(query_txs_from_ibc_snapshots(
-            &self.pool,
-            self.id(),
-            &request,
-        ))
+        if self.is_synced() {
+            crate::time!("query_txs_snapshots_psql");
+            crate::telemetry!(query, self.id(), "query_txs_snapshots_psql");
+            self.block_on(query_txs_from_ibc_snapshots(
+                &self.pool,
+                self.id(),
+                &request,
+            ))
+        } else {
+            crate::time!("query_txs_tendermint_psql");
+            crate::telemetry!(query, self.id(), "query_txs_tendermint_psql");
+            self.block_on(query_txs_from_tendermint(&self.pool, self.id(), &request))
+        }
     }
 
     fn query_blocks(
