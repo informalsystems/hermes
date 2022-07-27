@@ -49,17 +49,20 @@ pub(crate) fn process(
         conn_id
     ));
 
+    let event_attributes = Attributes {
+        connection_id: Some(conn_id.clone()),
+        height: ctx.host_height(),
+        client_id: new_connection_end.client_id().clone(),
+        counterparty_connection_id: new_connection_end.counterparty().connection_id.clone(),
+        counterparty_client_id: new_connection_end.counterparty().client_id().clone(),
+    };
+
     let result = ConnectionResult {
-        connection_id: conn_id.clone(),
+        connection_id: conn_id,
         connection_id_state: ConnectionIdState::Generated,
         connection_end: new_connection_end,
     };
 
-    let event_attributes = Attributes {
-        connection_id: Some(conn_id),
-        height: ctx.host_height(),
-        ..Default::default()
-    };
     output.emit(IbcEvent::OpenInitConnection(event_attributes.into()));
 
     Ok(output.with_result(result))

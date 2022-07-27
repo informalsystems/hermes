@@ -125,6 +125,15 @@ pub(crate) fn process<HostFunctions: HostFunctionsProvider>(
     // Transition the channel end to the new state & pick a version.
     new_channel_end.set_state(State::TryOpen);
 
+    let event_attributes = Attributes {
+        channel_id: Some(channel_id),
+        height: ctx.host_height(),
+        port_id: msg.port_id.clone(),
+        connection_id: new_channel_end.connection_hops[0].clone(),
+        counterparty_port_id: new_channel_end.counterparty().port_id.clone(),
+        counterparty_channel_id: new_channel_end.counterparty().channel_id.clone(),
+    };
+
     let result = ChannelResult {
         port_id: msg.port_id.clone(),
         channel_id_state: if matches!(msg.previous_channel_id, None) {
@@ -136,11 +145,6 @@ pub(crate) fn process<HostFunctions: HostFunctionsProvider>(
         channel_end: new_channel_end,
     };
 
-    let event_attributes = Attributes {
-        channel_id: Some(channel_id),
-        height: ctx.host_height(),
-        ..Default::default()
-    };
     output.emit(IbcEvent::OpenTryChannel(
         event_attributes
             .try_into()

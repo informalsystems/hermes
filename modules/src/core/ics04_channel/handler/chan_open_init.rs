@@ -58,6 +58,15 @@ pub(crate) fn process(
 
     output.log("success: no channel found");
 
+    let event_attributes = Attributes {
+        channel_id: Some(chan_id),
+        height: ctx.host_height(),
+        port_id: msg.port_id.clone(),
+        connection_id: new_channel_end.connection_hops[0].clone(),
+        counterparty_port_id: new_channel_end.counterparty().port_id.clone(),
+        counterparty_channel_id: new_channel_end.counterparty().channel_id.clone(),
+    };
+
     let result = ChannelResult {
         port_id: msg.port_id.clone(),
         channel_id: chan_id,
@@ -65,11 +74,6 @@ pub(crate) fn process(
         channel_id_state: ChannelIdState::Generated,
     };
 
-    let event_attributes = Attributes {
-        channel_id: Some(chan_id),
-        height: ctx.host_height(),
-        ..Default::default()
-    };
     output.emit(IbcEvent::OpenInitChannel(
         event_attributes
             .try_into()

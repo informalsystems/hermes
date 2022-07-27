@@ -79,6 +79,15 @@ pub(crate) fn process<HostFunctions: HostFunctionsProvider>(
     // Transition the channel end to the new state & pick a version.
     channel_end.set_state(State::Closed);
 
+    let event_attributes = Attributes {
+        channel_id: Some(msg.channel_id),
+        height: ctx.host_height(),
+        port_id: msg.port_id.clone(),
+        connection_id: channel_end.connection_hops[0].clone(),
+        counterparty_port_id: channel_end.counterparty().port_id.clone(),
+        counterparty_channel_id: channel_end.counterparty().channel_id.clone(),
+    };
+
     let result = ChannelResult {
         port_id: msg.port_id.clone(),
         channel_id: msg.channel_id,
@@ -86,11 +95,6 @@ pub(crate) fn process<HostFunctions: HostFunctionsProvider>(
         channel_end,
     };
 
-    let event_attributes = Attributes {
-        channel_id: Some(msg.channel_id),
-        height: ctx.host_height(),
-        ..Default::default()
-    };
     output.emit(IbcEvent::CloseConfirmChannel(
         event_attributes
             .try_into()

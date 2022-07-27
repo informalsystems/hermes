@@ -4,7 +4,6 @@ use core::fmt::Debug;
 use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics02_client::client_def::{AnyClient, ClientDef, ConsensusUpdateResult};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
-#[cfg(any(test, feature = "ics11_beefy"))]
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
@@ -53,8 +52,7 @@ pub fn process<HostFunctions: HostFunctionsProvider>(
         return Err(Error::client_frozen(client_id));
     }
 
-    #[cfg(any(test, feature = "ics11_beefy"))]
-    if client_type != ClientType::Beefy {
+    if client_type == ClientType::Tendermint {
         // Read consensus state from the host chain store.
         let latest_consensus_state = ctx
             .consensus_state(&client_id, client_state.latest_height())
@@ -90,7 +88,8 @@ pub fn process<HostFunctions: HostFunctionsProvider>(
     let event_attributes = Attributes {
         client_id: client_id.clone(),
         height: ctx.host_height(),
-        ..Default::default()
+        client_type,
+        consensus_height: client_state.latest_height(),
     };
 
     if found_misbehaviour {

@@ -77,17 +77,20 @@ pub(crate) fn process<HostFunctions: HostFunctionsProvider>(
 
     output.log("success: connection verification passed");
 
+    let event_attributes = Attributes {
+        connection_id: Some(msg.connection_id.clone()),
+        height: ctx.host_height(),
+        client_id: conn_end.client_id().clone(),
+        counterparty_connection_id: conn_end.counterparty().connection_id.clone(),
+        counterparty_client_id: conn_end.counterparty().client_id().clone(),
+    };
+
     let result = ConnectionResult {
         connection_id: msg.connection_id,
         connection_id_state: ConnectionIdState::Reused,
         connection_end: conn_end,
     };
 
-    let event_attributes = Attributes {
-        connection_id: Some(result.connection_id.clone()),
-        height: ctx.host_height(),
-        ..Default::default()
-    };
     output.emit(IbcEvent::OpenAckConnection(event_attributes.into()));
 
     Ok(output.with_result(result))

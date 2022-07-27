@@ -59,17 +59,18 @@ pub fn process<HostFunctions: HostFunctionsProvider>(
 
     // Not implemented yet: https://github.com/informalsystems/ibc-rs/issues/722
     // todo!()
+    let event_attributes = Attributes {
+        client_id: client_id.clone(),
+        height: ctx.host_height(),
+        client_type,
+        consensus_height: new_client_state.latest_height(),
+    };
 
     let result = ClientResult::Upgrade(Result {
-        client_id: client_id.clone(),
+        client_id,
         client_state: new_client_state,
         consensus_state: Some(new_consensus_state),
     });
-    let event_attributes = Attributes {
-        client_id,
-        height: ctx.host_height(),
-        ..Default::default()
-    };
 
     output.emit(IbcEvent::UpgradeClient(event_attributes.into()));
     Ok(output.with_result(result))

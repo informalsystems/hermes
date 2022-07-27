@@ -58,7 +58,8 @@ pub fn process(
     let event_attributes = Attributes {
         client_id,
         height: ctx.host_height(),
-        ..Default::default()
+        client_type: msg.client_state.client_type(),
+        consensus_height: msg.client_state.latest_height(),
     };
     output.emit(IbcEvent::CreateClient(event_attributes.into()));
 

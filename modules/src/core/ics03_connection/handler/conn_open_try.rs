@@ -101,8 +101,16 @@ pub(crate) fn process<HostFunctions: HostFunctionsProvider>(
 
     output.log("success: connection verification passed");
 
+    let event_attributes = Attributes {
+        connection_id: Some(conn_id.clone()),
+        height: ctx.host_height(),
+        client_id: new_connection_end.client_id().clone(),
+        counterparty_connection_id: new_connection_end.counterparty().connection_id.clone(),
+        counterparty_client_id: new_connection_end.counterparty().client_id().clone(),
+    };
+
     let result = ConnectionResult {
-        connection_id: conn_id.clone(),
+        connection_id: conn_id,
         connection_id_state: if matches!(msg.previous_connection_id, None) {
             ConnectionIdState::Generated
         } else {
@@ -111,11 +119,6 @@ pub(crate) fn process<HostFunctions: HostFunctionsProvider>(
         connection_end: new_connection_end,
     };
 
-    let event_attributes = Attributes {
-        connection_id: Some(conn_id),
-        height: ctx.host_height(),
-        ..Default::default()
-    };
     output.emit(IbcEvent::OpenTryConnection(event_attributes.into()));
 
     Ok(output.with_result(result))
