@@ -15,7 +15,7 @@ use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics04_channel::packet::{parse_timeout_height, Packet};
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId};
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId};
 use ibc::events::{self, from_tx_response_event, IbcEvent, WithBlockDataType};
 use ibc::Height as ICSHeight;
 
@@ -773,6 +773,16 @@ pub async fn query_connections(
     let result = query_ibc_data(pool, query_height).await?;
 
     Ok(result.json_data.connections.values().cloned().collect())
+}
+
+pub async fn query_connection(
+    pool: &PgPool,
+    query_height: &QueryHeight,
+    id: &ConnectionId,
+) -> Result<Option<IdentifiedConnectionEnd>, Error> {
+    let result = query_ibc_data(pool, query_height).await?;
+
+    Ok(result.json_data.connections.get(id).cloned())
 }
 
 pub async fn query_channels(

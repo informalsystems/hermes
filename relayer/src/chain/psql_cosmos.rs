@@ -23,9 +23,8 @@ use ibc::{
         },
         ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
         ics04_channel::{
-            channel::{ChannelEnd, Counterparty, IdentifiedChannelEnd, Order, State},
+            channel::{ChannelEnd, IdentifiedChannelEnd},
             packet::Sequence,
-            Version as ChannelVersion,
         },
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
         ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortId},
@@ -38,8 +37,8 @@ use ibc::{
 use crate::chain::cosmos::CosmosSdkChain;
 use crate::chain::psql_cosmos::batch::send_batched_messages_and_wait_commit;
 use crate::chain::psql_cosmos::query::{
-    query_application_status, query_blocks, query_channel, query_channels, query_connections,
-    query_ibc_data, query_txs_from_ibc_snapshots, query_txs_from_tendermint,
+    query_application_status, query_blocks, query_channel, query_channels, query_connection,
+    query_connections, query_ibc_data, query_txs_from_ibc_snapshots, query_txs_from_tendermint,
 };
 use crate::chain::psql_cosmos::update::{update_dbs, PacketId};
 use crate::chain::psql_cosmos::update::{IbcData, IbcSnapshot};
@@ -64,6 +63,7 @@ use super::cosmos::query::account::get_or_fetch_account;
 use super::requests::{QueryBlockRequest, QueryTxRequest};
 
 pub mod batch;
+mod events;
 pub mod query;
 pub mod update;
 pub mod wait;
@@ -111,7 +111,7 @@ impl PsqlChain {
         .await?;
 
         send_batched_messages_and_wait_commit(
-            // TODO AZ
+            // TODO - look into moving some chain. members to self
             &self.pool,
             &self.chain.tx_config,
             self.chain.config.max_msg_num,
@@ -384,6 +384,78 @@ impl PsqlChain {
         self.block_on(update_dbs(&self.pool, &work_copy))
     }
 
+    fn maybe_chain_connection(
+        &self,
+        connection_id: &ConnectionId,
+    ) -> Option<IdentifiedConnectionEnd> {
+        let connection = self.chain.query_connection(
+            QueryConnectionRequest {
+                connection_id: connection_id.clone(),
+                height: QueryHeight::Latest,
+            },
+            IncludeProof::No,
+        );
+        match connection {
+            Ok((connection_end, _p)) => Some(IdentifiedConnectionEnd {
+                connection_id: connection_id.clone(),
+                connection_end,
+            }),
+            Err(e) => None,
+        }
+    }
+
+    fn try_update_with_connection_event(&mut self, event: &IbcEvent, result: &mut IbcSnapshot) {
+        // Connection events do not include the delay and version so a connection cannot be currently
+        // fully constructed from an event. Because of this we need to query the chain directly for
+        // Init and Try events.
+        let connection = match event {
+            IbcEvent::OpenInitConnection(ev) => {
+                self.maybe_chain_connection(&ev.connection_id().cloned().unwrap())
+            }
+            IbcEvent::OpenTryConnection(ev) => {
+                self.maybe_chain_connection(&ev.connection_id().cloned().unwrap())
+            }
+            _ => None,
+        };
+
+        match connection {
+            None => {
+                let new_partial_connection = events::connection_from_event(event).unwrap();
+                if let Some(ch) = result
+                    .json_data
+                    .connections
+                    .get_mut(&new_partial_connection.connection_id)
+                {
+                    debug!(
+                        "psql chain {} - changing connection {} from {} to {} due to event {}",
+                        self.chain.id(),
+                        ch.connection_id,
+                        ch.connection_end.state.clone(),
+                        new_partial_connection.connection_end.state,
+                        event
+                    );
+                    ch.connection_end.state = new_partial_connection.connection_end.state;
+                    // Update counterparty client and connection IDs only, don't overwrite the prefix.
+                    ch.connection_end.counterparty.client_id = new_partial_connection.connection_end.counterparty().client_id.clone();
+                    ch.connection_end.counterparty.connection_id = new_partial_connection.connection_end.counterparty().connection_id.clone();
+                }
+            }
+            Some(connection) => {
+                debug!(
+                    "psql chain {} - changing connection {} from uninit to {} due to event {}",
+                    self.chain.id(),
+                    connection.connection_id,
+                    connection.connection_end.state.clone(),
+                    event
+                );
+                result
+                    .json_data
+                    .connections
+                    .insert(connection.connection_id.clone(), connection);
+            }
+        }
+    }
+
     fn maybe_chain_channel(
         &self,
         port_id: &PortId,
@@ -423,7 +495,7 @@ impl PsqlChain {
 
         match channel {
             None => {
-                let new_partial_channel = channel_from_event(event).unwrap();
+                let new_partial_channel = events::channel_from_event(event).unwrap();
                 if let Some(ch) = result
                     .json_data
                     .channels
@@ -537,15 +609,15 @@ impl PsqlChain {
             }
         }
 
-        // TODO
-        // if is_connection_event(event) {
-        //     self.try_update_with_connection_event(event, snapshot);
-        // }
+        if events::is_connection_event(event) {
+            dbg!(&event);
+            self.try_update_with_connection_event(event, snapshot);
+        }
 
-        if is_channel_event(event) {
+        if events::is_channel_event(event) {
             self.try_update_with_channel_event(event, snapshot);
         }
-        if is_packet_event(event) {
+        if events::is_packet_event(event) {
             self.try_update_with_packet_event(event, snapshot);
         }
     }
@@ -725,7 +797,10 @@ impl ChainEndpoint for PsqlChain {
         request: QueryConnectionsRequest,
     ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
         match self.block_on(query_connections(&self.pool, &QueryHeight::Latest)) {
-            Ok(connections) => Ok(connections),
+            Ok(connections) => {
+                crate::telemetry!(query, self.id(), "query_connections_psql");
+                Ok(connections)
+            }
             Err(e) => {
                 warn!(
                     "unable to query_connections via psql connection ({}), falling back to gRPC",
@@ -748,7 +823,27 @@ impl ChainEndpoint for PsqlChain {
         request: QueryConnectionRequest,
         include_proof: IncludeProof,
     ) -> Result<(ConnectionEnd, Option<MerkleProof>), Error> {
-        self.chain.query_connection(request, include_proof)
+        match include_proof {
+            IncludeProof::Yes => self.chain.query_connection(request, include_proof),
+            IncludeProof::No => {
+                match self.block_on(query_connection(
+                    &self.pool,
+                    &request.height,
+                    &request.connection_id,
+                )) {
+                    Ok(Some(connection)) => {
+                        crate::telemetry!(query, self.id(), "query_connections_psql");
+                        Ok((connection.connection_end, None))
+                    }
+                    _ => {
+                        warn!(
+                            "unable to query_connection via psql connection, falling back to gRPC"
+                        );
+                        self.chain.query_connection(request, include_proof)
+                    }
+                }
+            }
+        }
     }
 
     fn query_connection_channels(
@@ -762,8 +857,12 @@ impl ChainEndpoint for PsqlChain {
         &self,
         request: QueryChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
+        crate::time!("query_channels");
         match self.block_on(query_channels(&self.pool, &QueryHeight::Latest)) {
-            Ok(channels) => Ok(channels),
+            Ok(channels) => {
+                crate::telemetry!(query, self.id(), "query_channels_psql");
+                Ok(channels)
+            }
             Err(e) => {
                 warn!(
                     "unable to query_channels via psql connection ({}), falling back to gRPC",
@@ -780,7 +879,6 @@ impl ChainEndpoint for PsqlChain {
         include_proof: IncludeProof,
     ) -> Result<(ChannelEnd, Option<MerkleProof>), Error> {
         crate::time!("query_channel_psql");
-        crate::telemetry!(query, self.id(), "query_channel_psql");
 
         match include_proof {
             IncludeProof::Yes => self.chain.query_channel(request, include_proof),
@@ -790,7 +888,10 @@ impl ChainEndpoint for PsqlChain {
                     &request.height,
                     &request.channel_id,
                 )) {
-                    Ok(Some(channel)) => Ok((channel.channel_end, None)),
+                    Ok(Some(channel)) => {
+                        crate::telemetry!(query, self.id(), "query_channel_psql");
+                        Ok((channel.channel_end, None))
+                    }
                     _ => {
                         warn!("unable to query_channel via psql connection, falling back to gRPC");
                         self.chain.query_channel(request, include_proof)
@@ -963,53 +1064,5 @@ impl LightClient<PsqlChain> for PsqlLightClient {
 
     fn fetch(&mut self, height: Height) -> Result<<PsqlChain as ChainEndpoint>::LightBlock, Error> {
         self.0.fetch(height)
-    }
-}
-
-pub fn is_channel_event(event: &IbcEvent) -> bool {
-    matches!(
-        event,
-        &IbcEvent::OpenInitChannel(_)
-            | &IbcEvent::OpenTryChannel(_)
-            | &IbcEvent::OpenAckChannel(_)
-            | &IbcEvent::OpenConfirmChannel(_)
-    )
-}
-
-pub fn is_packet_event(event: &IbcEvent) -> bool {
-    matches!(
-        event,
-        &IbcEvent::SendPacket(_)
-            | &IbcEvent::WriteAcknowledgement(_)
-            | &IbcEvent::AcknowledgePacket(_)
-    )
-}
-
-macro_rules! event_to_channel {
-    ($ev:expr, $state:expr) => {
-        IdentifiedChannelEnd {
-            port_id: $ev.port_id.clone(),
-            channel_id: $ev.channel_id.clone().unwrap(),
-            channel_end: ChannelEnd {
-                state: $state,
-                ordering: Order::None, // missing
-                remote: Counterparty {
-                    port_id: $ev.counterparty_port_id.clone(),
-                    channel_id: $ev.counterparty_channel_id.clone(),
-                },
-                connection_hops: vec![$ev.connection_id.clone()],
-                version: ChannelVersion::empty(), // missing
-            },
-        }
-    };
-}
-
-pub fn channel_from_event(event: &IbcEvent) -> Option<IdentifiedChannelEnd> {
-    match event {
-        IbcEvent::OpenInitChannel(ev) => Some(event_to_channel!(ev, State::Init)),
-        IbcEvent::OpenTryChannel(ev) => Some(event_to_channel!(ev, State::TryOpen)),
-        IbcEvent::OpenAckChannel(ev) => Some(event_to_channel!(ev, State::Open)),
-        IbcEvent::OpenConfirmChannel(ev) => Some(event_to_channel!(ev, State::Open)),
-        _ => None,
     }
 }

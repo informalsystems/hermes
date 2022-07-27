@@ -86,7 +86,7 @@ impl From<IdentifiedConnectionEnd> for RawIdentifiedConnection {
 pub struct ConnectionEnd {
     pub state: State,
     client_id: ClientId,
-    counterparty: Counterparty,
+    pub counterparty: Counterparty,
     versions: Vec<Version>,
     delay_period: Duration,
 }
@@ -240,7 +240,7 @@ impl ConnectionEnd {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Counterparty {
-    client_id: ClientId,
+    pub client_id: ClientId,
     pub connection_id: Option<ConnectionId>,
     prefix: CommitmentPrefix,
 }
