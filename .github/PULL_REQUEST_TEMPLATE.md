@@ -1,5 +1,5 @@
 <!-- < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < < ☺
-v                               ✰  Thanks for creating a PR! ✰    
+v                               ✰  Thanks for creating a PR! ✰
 v    Before smashing the submit button please review the checkboxes.
 v    If a checkbox is n/a - please still include it but + a little note why
 ☺ > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > >  -->
@@ -17,9 +17,10 @@ ______
 
 ### PR author checklist:
 - [ ] Added changelog entry, using [`unclog`](https://github.com/informalsystems/unclog).
-- [ ] Added tests: integration (for Hermes) or unit/mock tests (for modules). 
+- [ ] Added tests: integration (for Hermes) or unit/mock tests (for modules).
 - [ ] Linked to GitHub issue.
 - [ ] Updated code comments and documentation (e.g., `docs/`).
+- [ ] Tagged *one* reviewer who will be the one responsible for shepherding this PR.
 
 ### Reviewer checklist:
 
