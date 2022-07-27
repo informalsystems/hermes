@@ -42,6 +42,9 @@ This is the second release candidate for Hermes v1.0.0 🎉
 
 #### FEATURES
 
+- Add an optional `--show-counterparty` flag to `hermes query channels` which outputs every channel
+  along with its corresponding port, and the counterparty chain's id, in a pretty way
+  ([#2429](https://github.com/informalsystems/ibc-rs/issues/2429))
 - New optional flags `--counterparty-chain` and `--verbose` for the command `query connections`
   ([#2310](https://github.com/informalsystems/ibc-rs/issues/2310))
 - Added new optional flag `--host-chain` to filter which clients are upgraded when running `upgrade clients` command
