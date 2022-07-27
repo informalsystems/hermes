@@ -73,8 +73,8 @@ jobs:
         id: docker_build
         uses: docker/build-push-action@v2
         with:
-          context: ./ci/
-          file: ./ci/hermes.Dockerfile
+          context: ./ci/release/
+          file: ./ci/release/hermes.Dockerfile
           push: true
           build-args: TAG=v${{env.TAG}}
           tags: informalsystems/hermes:${{env.TAG}}
