@@ -1,9 +1,9 @@
 # Technical Background
 
-This section covers the technical background for understanding the programming
-techniques used by the relayer framework. Readers with background in
-dynamic-typed programming languages such as JavaScript and Python may find
-the techniques used here to be similar to dynamic typed programming,
+This section covers the technical background needed for understanding the programming
+techniques used by the relayer framework. Readers with backgrounds in
+dynamic-typed programming languages such as JavaScript or Python may find
+the techniques used here to be similar to dynamic-typed programming,
 but with static type guarantees.
 
 We will start with simple examples and then slowly relate them to the design
@@ -20,8 +20,8 @@ fn greet(name: String) {
 }
 ```
 
-When calling the greet function from a larger context, we may want to pass
-a `Person` struct with a `name` attribute on it, so that the caller do not
+When calling the `greet` function from a larger context, we may want to pass
+a `Person` struct with a `name` attribute on it, so that the caller does not
 have to know how to get the person's name.
 
 ```rust
@@ -36,7 +36,7 @@ fn greet(person: &Person) {
 }
 ```
 
-But the caller of the greet function might not have the person's information
+But the caller of the `greet` function might not have the person's information
 on hand, as it may be stored in a database. So we might want to implement
 a greet function that accepts a `PersonId` and a database handler, so that
 it can load the person's information from the database, and then greets them.
