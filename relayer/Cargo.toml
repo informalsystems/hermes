@@ -40,7 +40,7 @@ prost-types = { version = "0.10" }
 tonic = { version = "0.7.2", features = ["tls", "tls-roots"] }
 futures = "0.3.21"
 crossbeam-channel = "0.5.5"
-k256 = { version = "0.10.4", features = ["ecdsa-core", "ecdsa", "sha256"]}
+k256 = { version = "0.11.3", features = ["ecdsa-core", "ecdsa", "sha256"]}
 hex = "0.4"
 bitcoin = { version = "=0.28", features = ["use-serde"] }
 tiny-bip39 = "1.0.0"
@@ -73,24 +73,24 @@ version = "0.4.1"
 features = ["num-bigint", "serde"]
 
 [dependencies.tendermint]
-version = "=0.23.7"
+version = "=0.23.8"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.23.7"
+version = "=0.23.8"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.23.7"
+version = "=0.23.8"
 default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-light-client-verifier]
-version = "=0.23.7"
+version = "=0.23.8"
 default-features = false
 
 [dependencies.tendermint-proto]
-version = "=0.23.7"
+version = "=0.23.8"
 
 [dev-dependencies]
 ibc = { version = "0.16.0", path = "../modules", features = ["mocks"] }
@@ -100,4 +100,4 @@ tracing-subscriber = { version = "0.3.14", features = ["fmt", "env-filter", "jso
 test-log = { version = "0.2.10", features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
-tendermint-testgen = { version = "=0.23.7" }
+tendermint-testgen = { version = "=0.23.8" }
