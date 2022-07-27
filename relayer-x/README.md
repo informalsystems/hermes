@@ -53,7 +53,7 @@ Hermes chain configuration should look like this (type shown for clarification, 
   ```
 
 ### Run hermes with `CosmosPsql` configured chains
-In this mode hermes performs psql queries (currently limited to tendermint Tx queries).
+In this mode hermes performs psql queries on the Tendermint and IBC psql DBs.
 Hermes chain configuration should look like this:
   ```
   [[chains]]
@@ -66,9 +66,9 @@ Hermes chain configuration should look like this:
   ```
 
 ### pSQL and Queries
-When running with psql enabled tendermint node a few tables are maintained by the node. See the [schema.sql](https://github.com/informalsystems/ibc-rs/blob/anca/ibcnode/relayer-x/schema.sql) file for a description.
+A few tables are maintained by a psql enabled tendermint node. See the [schema.sql](https://github.com/informalsystems/ibc-rs/blob/anca/ibcnode/relayer-x/schema.sql) file for a description.
 In addition, on start, the relayer creates the `ibc_json` table if not already created.
-It stores the IBC data (in json format) for the height of the first event received.
+It stores snapshots of the chain IBC data (in json format) for the last N heights (N=8, hardcoded atm).
 
 ### Tendermint queries
 All tendermint RPCs that use the indexer have been implemented:
@@ -77,10 +77,14 @@ All tendermint RPCs that use the indexer have been implemented:
 - packet data by packet fields
 - block query - required to extract events from begin/end block
 
-Other tendermint RPCs stay the same (e.g. query status, abci_status, etc)
+Other tendermint RPCs stay the same (e.g. query with proofs)
 
 ### Application queries
-Currently:
-- the IBC data includes connections only
-- used for `query_connections()` chain API, falls back to gRPC query if the table is not created
-- all other APIs use gRPC
+Currently the IBC snapshot per height includes:
+- the chain status, used for `query_application_status()`
+- connection information, used to query connection(s)
+- channel information, used to query channel(s)
+- send packets, used to query packet data (instead of `query_txs()`)
+
+The IBC DB is currently maintained and used only by `hermes start`.
+All other CLIs still use gRPC to query the application state and sqlx for some of the tendermint queries (`query_txs()` and `query_blocks()`)
