@@ -436,8 +436,16 @@ impl PsqlChain {
                     );
                     ch.connection_end.state = new_partial_connection.connection_end.state;
                     // Update counterparty client and connection IDs only, don't overwrite the prefix.
-                    ch.connection_end.counterparty.client_id = new_partial_connection.connection_end.counterparty().client_id.clone();
-                    ch.connection_end.counterparty.connection_id = new_partial_connection.connection_end.counterparty().connection_id.clone();
+                    ch.connection_end.counterparty.client_id = new_partial_connection
+                        .connection_end
+                        .counterparty()
+                        .client_id
+                        .clone();
+                    ch.connection_end.counterparty.connection_id = new_partial_connection
+                        .connection_end
+                        .counterparty()
+                        .connection_id
+                        .clone();
                 }
             }
             Some(connection) => {
@@ -610,13 +618,13 @@ impl PsqlChain {
         }
 
         if events::is_connection_event(event) {
-            dbg!(&event);
             self.try_update_with_connection_event(event, snapshot);
         }
 
         if events::is_channel_event(event) {
             self.try_update_with_channel_event(event, snapshot);
         }
+
         if events::is_packet_event(event) {
             self.try_update_with_packet_event(event, snapshot);
         }
