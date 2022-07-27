@@ -44,3 +44,11 @@ as different components that can be specified independently. With dependency
 injection, each component can independently specify the dependency it needs
 from the surrounding context, and composition of components can be done
 without knowing the detailed dependency of each component.
+
+# Technical Background
+
+A [technical background](crate::docs::technical_background) is provided to
+help readers understand the techniques used by the relayer framework to
+compose various components together. It is highly recommended for readers
+of all level of expertise to read the document before continue reading
+the code and documentation.

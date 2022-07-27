@@ -477,7 +477,7 @@ trait Greeter<Context>
 where
   Context: PersonContext + ErrorContext,
 {
-  fn greet(context: &Context, person_id: &Context::PersonId)
+  fn greet(&self, context: &Context, person_id: &Context::PersonId)
     -> Result<(), Context::Error>;
 }
 
@@ -487,7 +487,7 @@ impl<Context> Greeter<Context> for SimpleGreeter
 where
   Context: QueryPersonContext,
 {
-  fn greet(context: &Context, person_id: &Context::PersonId)
+  fn greet(&self, context: &Context, person_id: &Context::PersonId)
     -> Result<(), Context::Error>
   {
     let person = context.query_person(person_id)?;
@@ -522,6 +522,9 @@ the person's name.
 
 ## Context Implementation
 
+With the basic traits implemented, we now look at how we can define a
+concrete context that satisfies the traits:
+
 ```rust
 # trait NamedPerson {
 #   fn name(&self) -> &str;
@@ -545,7 +548,7 @@ the person's name.
 # where
 #   Context: PersonContext + ErrorContext,
 # {
-#   fn greet(context: &Context, person_id: &Context::PersonId)
+#   fn greet(&self, context: &Context, person_id: &Context::PersonId)
 #     -> Result<(), Context::Error>;
 # }
 #
@@ -555,7 +558,7 @@ the person's name.
 # where
 #   Context: QueryPersonContext,
 # {
-#   fn greet(context: &Context, person_id: &Context::PersonId)
+#   fn greet(&self, context: &Context, person_id: &Context::PersonId)
 #     -> Result<(), Context::Error>
 #   {
 #     let person = context.query_person(person_id)?;
@@ -563,21 +566,27 @@ the person's name.
 #     Ok(())
 #   }
 # }
-// Database stubs
-struct Database;
-struct DbError;
-
 struct BasicPerson {
   name: String,
 }
 
-enum AppError {
-  Database(DbError),
-  // ...
+impl NamedPerson for BasicPerson {
+  fn name(&self) -> &str {
+    &self.name
+  }
 }
 
 struct AppContext {
   database: Database,
+}
+
+// Database stubs
+struct Database;
+struct DbError;
+
+enum AppError {
+  Database(DbError),
+  // ...
 }
 
 impl ErrorContext for AppContext {
@@ -587,12 +596,6 @@ impl ErrorContext for AppContext {
 impl PersonContext for AppContext {
   type PersonId = String;
   type Person = BasicPerson;
-}
-
-impl NamedPerson for BasicPerson {
-  fn name(&self) -> &str {
-    &self.name
-  }
 }
 
 impl QueryPersonContext for AppContext {
@@ -607,3 +610,876 @@ fn app_greeter() -> impl Greeter<AppContext> {
   SimpleGreeter
 }
 ```
+
+We first define a `BasicPerson` struct with only a `name` field,
+since that is the minimal information required for `greet` to work.
+We implement `NamedPerson` for `BasicPerson`, by simply returning
+`&self.name`.
+
+We also define an `AppContext` struct, with a stub database field.
+For demo purpose, we have a dummy `Database` struct, and a `DbError`
+type to represent database errors. We also define an `AppError`
+enum to represent all application errors, with one of them being
+`DbError`.
+
+We implement `ErrorContext` for `AppContext`, with `AppError` as
+the `Error` type. We also implement `PersonContext` for `AppContext`,
+with the `PersonId` associated type being `String`, and the `Person`
+associated type being `BasicPerson`. We also implement `QueryPersonContext`,
+but leave the `query_person` as a stub for performing database query
+in an actual application.
+
+Finally, we implement an `app_greeter` function as a _witness_ that
+we can construct a type that implements `Greeter<AppContext>`.
+The function is implemented by simply returning `SimpleGreeter`.
+The fact that the function compiles provide evidence that
+`SimpleGreeter` can _always_ be used as a `Greeter<AppContext>`.
+
+## Compile-Time Dependency Injection
+
+The `app_greeter` function above demonstrates a form of _dependency injection_
+done at compile time. This is because for any code to use a type implementing
+`Greeter<Context>`, they only need to know that `Context` implements
+`ErrorContext` and `PersonContext`. But to make `SimpleGreeter` implement
+`Greeter<Context>`, it also needs `Context` to implement `QueryPersonContext`.
+
+When we return `SimpleGreeter` inside `app_greeter`, the Rust compiler would
+figure out that `SimpleGreeter` requires `AppContext` to implement
+`QueryPersonContext`. It would then try to automatically _resolve_ the
+dependency by searching for an implementation of `QueryPersonContext`
+for `AppContext`. Upon finding the implementation, Rust "binds" that
+implementation with `SimpleGreeter`, and return it as an existential
+type that implements `Greeter<AppContext>`. As a result,
+We can treat the type returned from `app_greeter` as an abstract type,
+and "forget" the fact that `AppContext` implements `QueryPersonContext`.
+
+This pattern of making use of Rust's trait system for depedency injection
+efficiently solves the
+[context and capabilities problem](https://tmandry.gitlab.io/blog/posts/2021-12-21-context-capabilities/)
+in Rust. Without it, we would have to rely on more exotic language features
+that are not available in Rust, or resort to manual passing of dependencies
+by hands.
+
+For example, we could perform manual binding for an implementation similar
+to `SimpleGreeter` as a purely generic function as follows:
+
+```rust
+# trait NamedPerson {
+#   fn name(&self) -> &str;
+# }
+#
+fn make_simpler_greeter<Context, PersonId, Person, Error>(
+  query_person: impl Fn(&Context, &PersonId) -> Result<Person, Error>,
+) -> impl Fn(&Context, &PersonId) -> Result<(), Error>
+where
+  Person: NamedPerson,
+{
+  move | context, person_id | {
+    let person = query_person(context, person_id)?;
+    println!("Hello, {}", person.name());
+    Ok(())
+  }
+}
+```
+
+As we can see, the ad hoc function `make_simpler_greeter` that we defined is
+much more verbose than the earlier trait-based implementation. We would
+have to explicitly track 4 generic type parameters, and we would have to
+manually pass in dependencies like `query_person` and return nested closures.
+
+When we delegate the management of the context dependencies to Rust's trait
+system, we can think of Rust making automatic binding of depedencies similar
+to what's being done in the code above. The binding is not only automated
+but also much more efficient, because it is done at compile time, which allows
+Rust to perform any further optimization such as inlining the code.
+
+As we will see later, the same resolution can be applied to _nested_
+dependencies. Thanks to how the trait system works, we can specify
+complex dependencies for our components, and have Rust figure out
+how to stitch together the dependencies and construct the combined
+components that we need.
+
+## Component Composition
+
+Now suppose that we want to extend our greeter component such that it only
+greets a person at day time during office hours. We could directly modify
+the `Greeter` implementation for `SimpleGreeter` to do that, but that may
+complicate the implementation and makes it more difficult to understand
+the core logic. Alternatively, we could define a new `DaytimeGreeter`
+component that _wraps_ around the original `SimpleGreeter`.
+
+In this new `DaytimeGreeter` component, it would need to know how to
+get the current time of the system, as well as how to tell whether
+a given time value is at daytime. Following the context pattern we
+learned, we will also define a `TimeContext` trait for getting the time.
+
+The full implementation is as follows:
+
+```rust
+# use core::time::Duration;
+# trait NamedPerson {
+#   fn name(&self) -> &str;
+# }
+#
+# trait ErrorContext {
+#   type Error;
+# }
+#
+# trait PersonContext {
+#   type PersonId;
+#   type Person: NamedPerson;
+# }
+#
+trait SimpleTime {
+  fn is_daytime(&self) -> bool;
+
+  fn duration_since(&self, other: &Self) -> Duration;
+}
+
+trait TimeContext {
+  type Time;
+
+  fn now(&self) -> Self::Time;
+}
+
+trait Greeter<Context>
+where
+  Context: PersonContext + ErrorContext,
+{
+  fn greet(&self, context: &Context, person_id: &Context::PersonId)
+    -> Result<(), Context::Error>;
+}
+
+struct DaytimeGreeter<InGreeter>(InGreeter);
+
+impl<Context, InGreeter> Greeter<Context> for DaytimeGreeter<InGreeter>
+where
+  InGreeter: Greeter<Context>,
+  Context: TimeContext + PersonContext + ErrorContext,
+  Context::Time: SimpleTime,
+{
+  fn greet(&self, context: &Context, person_id: &Context::PersonId)
+    -> Result<(), Context::Error>
+  {
+    let now = context.now();
+    if now.is_daytime() {
+      self.0.greet(context, person_id)?;
+    } else {
+      println!("Sorry, the shop has closed now!");
+    }
+    Ok(())
+  }
+}
+```
+
+For demo purpose, we first define a `SimpleTime` trait that provides an
+`is_daytime` method to tell whether the a time value is in daytime. For
+practical purposes, `SimpleTime` also provides a `duration_since` method
+that can compare the time that has passed between two time values.
+
+Following that, we define a `TimeContext` trait that provides a `now` method
+to fetch the current time from the context. Notice that the associated type
+`Time` does _not_ implement `SimpleTime`. This is so that we can learn how
+to inject the `SimpleTime` constraint as an _indirect dependency_ using the
+same dependency injection technique.
+
+We then define the `DaytimeGreeter` with a `InGreeter` type parameter, which
+would act as the inner `Greeter` component. We then define a generic
+implementation of `Greeter<Context>` for `DaytimeGreeter<InGreeter>`.
+In the trait bounds, we require the inner greeter `InGreeter` to also
+implement `Greeter<Context>`, since the core logic is implemented over there.
+
+Aside from `PersonContext` and `ErrorContext`, we also requires `Context`
+to implement `TimeContext` for `DaytimeGreeter` to fetch the current time.
+Other than that, we also explicitly requires that the associated type
+`Context::Time` to implement `SimpleTime`.
+
+By specifying `SimpleTime` as an explicit dependency, we relax the requirement
+of how the `TimeContext` trait can be used by other components. So if
+`SimpleTime` is only ever used by `DaytimeGreeter`, and if an application
+do not need `DaytimeGreeter`, then a concrete context can skip implementing
+`SimpleTime` for its time type, even if the trait `TimeContext` is used by
+other components.
+
+## Error Injection
+
+In our earlier implementation of `DaytimeGreeter`, the greeter simply prints
+out that the shop has closed, and then return successfully without calling
+the inner greeter. But what if we want `DaytimeGreeter` to return an error
+during night time? Since the associated type `Error` in `ErrorContext`
+is abstract, there is no obvious way we can construct an error value of
+type `Error`.
+
+On the other hand, we learned in the earlier section that we can specify
+additional trait bound for `Context::Time` to implement `SimpleTime`.
+Similarly, we can also specify additional trait bounds for `Context::Error`
+so that we gain additional knowledge on how to construct an error value.
+
+We can do this by defining a custom `ShopClosedError` struct, and require
+`Context::Error` to implement a `From` instance for conversion from
+`ShopClosedError`:
+
+```rust
+# use core::time::Duration;
+# trait NamedPerson {
+#   fn name(&self) -> &str;
+# }
+#
+# trait ErrorContext {
+#   type Error;
+# }
+#
+# trait PersonContext {
+#   type PersonId;
+#   type Person: NamedPerson;
+# }
+#
+# trait SimpleTime {
+#   fn is_daytime(&self) -> bool;
+#
+#   fn duration_since(&self, other: &Self) -> Duration;
+# }
+#
+# trait TimeContext {
+#   type Time;
+#
+#   fn now(&self) -> Self::Time;
+# }
+#
+# trait Greeter<Context>
+# where
+#   Context: PersonContext + ErrorContext,
+# {
+#   fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#     -> Result<(), Context::Error>;
+# }
+#
+struct ShopClosedError<Time> { time: Time }
+
+struct DaytimeGreeter<InGreeter>(InGreeter);
+
+impl<Context, InGreeter> Greeter<Context> for DaytimeGreeter<InGreeter>
+where
+  InGreeter: Greeter<Context>,
+  Context: TimeContext + PersonContext + ErrorContext,
+  Context::Time: SimpleTime,
+  Context::Error: From<ShopClosedError<Context::Time>>,
+{
+  fn greet(&self, context: &Context, person_id: &Context::PersonId)
+    -> Result<(), Context::Error>
+  {
+    let now = context.now();
+    if now.is_daytime() {
+      self.0.greet(context, person_id)
+    } else {
+      Err(ShopClosedError { time: now }.into())
+    }
+  }
+}
+```
+
+The `ShopClosedError` is parameterized by a generic `Time` type, so that
+it can provide detail about the time that caused `ShopClosedError` to be
+raised. In the `Greeter` implementation for `DaytimeGreeter`, we add an
+addition trait bound to require `Context::Error` to implement
+`From<ShopClosedError<Context::Time>>`. With that, if the time returned
+by `context.now()` is in night time, we can construct a `ShopClosedError`
+and turn it into `Context::Error` using the `into` method.
+
+What we have done above is essentially specifying an _error injection method_
+for injecting a sub-error type into the main error type. With this, individual
+components do not need to know about the concrete application error and all
+the possible errors that can be raised. But they can still _inject_ specific
+error into the main error type by requiring additional `From` constraints.
+
+For instance, `DaytimeGreeter` do not need to be aware of whether the inner
+greeter component would raise a database error. And from the `impl` definition,
+we can be confident that `DaytimeGreeter` itself cannot raise any sub-error
+other than `ShopClosedError`.
+
+## Explicit Associated Type Bindings
+
+When specifying the constraints for indirect depedencies, we have to keep using
+the `Context::` prefix to access associated types like `Context::Error`. Worse,
+once we start using nested associated types, we would have to resort to use
+fully qualified syntaxes like `<Context::Foo as Foo>::Bar` instead of
+`Context::Foo::Bar`.
+
+To help simplify the trait bounds for components like `DaytimeGreeter`, we
+can use the explicit associated type bindings we learn earlier:
+
+```rust
+# use core::time::Duration;
+# trait NamedPerson {
+#   fn name(&self) -> &str;
+# }
+#
+# trait ErrorContext {
+#   type Error;
+# }
+#
+# trait PersonContext {
+#   type PersonId;
+#   type Person: NamedPerson;
+# }
+#
+# trait SimpleTime {
+#   fn is_daytime(&self) -> bool;
+#
+#   fn duration_since(&self, other: &Self) -> Duration;
+# }
+#
+# trait TimeContext {
+#   type Time;
+#
+#   fn now(&self) -> Self::Time;
+# }
+#
+# trait Greeter<Context>
+# where
+#   Context: PersonContext + ErrorContext,
+# {
+#   fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#     -> Result<(), Context::Error>;
+# }
+#
+# struct ShopClosedError<Time> { time: Time }
+#
+# struct DaytimeGreeter<InGreeter>(InGreeter);
+#
+impl<Context, InGreeter, Time, Error, PersonId>
+  Greeter<Context> for DaytimeGreeter<InGreeter>
+where
+  InGreeter: Greeter<Context>,
+  Context: ErrorContext<Error=Error>,
+  Context: PersonContext<PersonId=PersonId>,
+  Context: TimeContext<Time=Time>,
+  Time: SimpleTime,
+  Error: From<ShopClosedError<Time>>,
+{
+  fn greet(&self, context: &Context, person_id: &PersonId)
+    -> Result<(), Error>
+  {
+    let now = context.now();
+    if now.is_daytime() {
+      self.0.greet(context, person_id)
+    } else {
+      Err(ShopClosedError { time: now }.into())
+    }
+  }
+}
+```
+
+In our new `Greeter` implementation, we introduce the generic parameters
+`Time`, `Error`, and `PersonId`. We then bind the types to the associated
+types of the context traits, such as `ErrorContext<Error=Error>`. With the
+bindings in place we can have simpler trait bounds like `Time: SimpleTime`
+to be specified in place of the more verbose `Context::Time: SimpleTime`.
+
+## Concrete Composition
+
+Now that we have both `SimpleGreeter` and `DaytimeGreeter` implemented, we
+can look at how we can define a fully application context that satisfies the
+constraints of both greeters. To better structure our application, we also
+separate out different parts of the code into separate modules.
+
+```rust
+mod app {
+  mod traits {
+    pub trait NamedPerson {
+      fn name(&self) -> &str;
+    }
+
+    pub trait SimpleTime {
+      fn is_daytime(&self) -> bool;
+    }
+
+    pub trait ErrorContext {
+      type Error;
+    }
+
+    pub trait PersonContext {
+      type PersonId;
+      type Person: NamedPerson;
+    }
+
+    pub trait TimeContext {
+      type Time;
+
+      fn now(&self) -> Self::Time;
+    }
+  }
+
+  // ...
+}
+```
+
+First, we put all the abstract traits into a `traits` module. This module do
+not contain any concrete type definition, and thus can have minimal dependency
+to external crates.
+
+In practice, the trait definitions can be placed in different sub-modules, so
+that we can have more fine grained control of which traits a component depends
+on.
+
+
+```rust
+mod app {
+  mod traits {
+    // ...
+#    pub trait NamedPerson {
+#      fn name(&self) -> &str;
+#    }
+#
+#    pub trait SimpleTime {
+#      fn is_daytime(&self) -> bool;
+#    }
+#
+#    pub trait ErrorContext {
+#      type Error;
+#    }
+#
+#    pub trait PersonContext {
+#      type PersonId;
+#      type Person: NamedPerson;
+#    }
+#
+#    pub trait TimeContext {
+#      type Time;
+#
+#      fn now(&self) -> Self::Time;
+#    }
+#
+#    pub trait QueryPersonContext: PersonContext + ErrorContext {
+#      fn query_person(&self, person_id: &Self::PersonId)
+#        -> Result<Self::Person, Self::Error>;
+#    }
+#
+#    pub trait Greeter<Context>
+#    where
+#      Context: PersonContext + ErrorContext,
+#    {
+#      fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#        -> Result<(), Context::Error>;
+#    }
+  }
+
+  mod simple_greeter {
+    use super::traits::{Greeter, NamedPerson, QueryPersonContext};
+
+    pub struct SimpleGreeter;
+
+    impl<Context> Greeter<Context> for SimpleGreeter
+    where
+      Context: QueryPersonContext,
+    {
+      fn greet(&self, context: &Context, person_id: &Context::PersonId)
+        -> Result<(), Context::Error>
+      {
+        let person = context.query_person(person_id)?;
+        println!("Hello, {}", person.name());
+        Ok(())
+      }
+    }
+  }
+
+  mod daytime_greeter {
+    use super::traits::{
+      Greeter, ErrorContext, PersonContext,
+      TimeContext, SimpleTime,
+    };
+
+    pub struct DaytimeGreeter<InGreeter>(pub InGreeter);
+
+    pub struct ShopClosedError<Time> { time: Time }
+
+    impl<Context, InGreeter, Time, Error, PersonId>
+      Greeter<Context> for DaytimeGreeter<InGreeter>
+    where
+      InGreeter: Greeter<Context>,
+      Context: ErrorContext<Error=Error>,
+      Context: PersonContext<PersonId=PersonId>,
+      Context: TimeContext<Time=Time>,
+      Time: SimpleTime,
+      Error: From<ShopClosedError<Time>>,
+    {
+      fn greet(&self, context: &Context, person_id: &PersonId)
+        -> Result<(), Error>
+      {
+        let now = context.now();
+        if now.is_daytime() {
+          self.0.greet(context, person_id)
+        } else {
+          Err(ShopClosedError { time: now }.into())
+        }
+      }
+    }
+  }
+
+  // ...
+}
+```
+
+Next, we define `SimpleGreeter` and `DaytimeGreeter` in separate modules.
+The two greeter components do not depend on each other, but they all depend
+on the `traits` crate to make use the abstract definitions. Since these
+components do not depend on other crates, they are also _abstract_ components
+that can be instantiated with _any_ context types that satisfy the trait
+bounds.
+
+```rust
+mod app {
+  mod traits {
+    // ...
+#    pub trait NamedPerson {
+#      fn name(&self) -> &str;
+#    }
+#
+#    pub trait SimpleTime {
+#      fn is_daytime(&self) -> bool;
+#    }
+#
+#    pub trait ErrorContext {
+#      type Error;
+#    }
+#
+#    pub trait PersonContext {
+#      type PersonId;
+#      type Person: NamedPerson;
+#    }
+#
+#    pub trait TimeContext {
+#      type Time;
+#
+#      fn now(&self) -> Self::Time;
+#    }
+#
+#    pub trait QueryPersonContext: PersonContext + ErrorContext {
+#      fn query_person(&self, person_id: &Self::PersonId)
+#        -> Result<Self::Person, Self::Error>;
+#    }
+#
+#    pub trait Greeter<Context>
+#    where
+#      Context: PersonContext + ErrorContext,
+#    {
+#      fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#        -> Result<(), Context::Error>;
+#    }
+  }
+
+  mod simple_greeter {
+    // ...
+  }
+
+  mod daytime_greeter {
+    pub struct ShopClosedError<Time> { time: Time }
+    // ...
+  }
+
+  mod context {
+    use super::traits::*;
+    use super::daytime_greeter::ShopClosedError;
+
+    #[derive(Copy, Clone, PartialEq, Eq)]
+    pub enum DummyTime {
+      DayTime,
+      NightTime,
+    }
+
+    pub struct BasicPerson {
+      name: String,
+    }
+
+    pub struct AppContext {
+      database: Database,
+      time: DummyTime,
+    }
+
+    // Database stubs
+    struct Database;
+    struct DbError;
+
+    pub enum AppError {
+      Database(DbError),
+      ShopClosed(ShopClosedError<DummyTime>),
+      // ...
+    }
+
+    impl ErrorContext for AppContext {
+      type Error = AppError;
+    }
+
+    impl PersonContext for AppContext {
+      type PersonId = String;
+      type Person = BasicPerson;
+    }
+
+    impl TimeContext for AppContext {
+      type Time = DummyTime;
+
+      fn now(&self) -> DummyTime {
+        self.time
+      }
+    }
+
+    impl QueryPersonContext for AppContext {
+      fn query_person(&self, person_id: &Self::PersonId)
+        -> Result<Self::Person, Self::Error>
+      {
+        unimplemented!() // database stub
+      }
+    }
+
+    impl NamedPerson for BasicPerson {
+      fn name(&self) -> &str {
+        &self.name
+      }
+    }
+
+    impl SimpleTime for DummyTime {
+      fn is_daytime(&self) -> bool {
+        self == &DummyTime::DayTime
+      }
+    }
+
+    impl From<ShopClosedError<DummyTime>> for AppError {
+      fn from(err: ShopClosedError<DummyTime>) -> Self {
+        Self::ShopClosed(err)
+      }
+    }
+  }
+}
+```
+
+Next, we define our concrete `AppContext` struct that implements all
+context traits. Compared to before, we define a `DummyTime` struct that
+mocks the current time with either day time or night time. We then
+implement `TimeContext` for `AppContext`, with `DummyTime` being the
+`Time` type. We also add `ShopClosedError<DummyTime>` as a variant to
+`AppError`, and define a `From` instance for it.
+
+As we can see in this exercise, by having all types used by the greeter
+components as abstract types, it becomes very easy to mock up dependencies
+like time without having to commit to a specific time library. The explicit
+dependencies also help us better understand what features are really needed
+from the concrete types. If we know that our application only need the
+`SimpleTime` trait, then there are more options out there that we can
+try out and switch easily.
+
+```rust
+mod app {
+  mod traits {
+    // ...
+#    pub trait NamedPerson {
+#      fn name(&self) -> &str;
+#    }
+#
+#    pub trait SimpleTime {
+#      fn is_daytime(&self) -> bool;
+#    }
+#
+#    pub trait ErrorContext {
+#      type Error;
+#    }
+#
+#    pub trait PersonContext {
+#      type PersonId;
+#      type Person: NamedPerson;
+#    }
+#
+#    pub trait TimeContext {
+#      type Time;
+#
+#      fn now(&self) -> Self::Time;
+#    }
+#
+#    pub trait QueryPersonContext: PersonContext + ErrorContext {
+#      fn query_person(&self, person_id: &Self::PersonId)
+#        -> Result<Self::Person, Self::Error>;
+#    }
+#
+#    pub trait Greeter<Context>
+#    where
+#      Context: PersonContext + ErrorContext,
+#    {
+#      fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#        -> Result<(), Context::Error>;
+#    }
+  }
+
+  mod simple_greeter {
+    // ...
+#    use super::traits::{Greeter, NamedPerson, QueryPersonContext};
+#
+#    pub struct SimpleGreeter;
+#
+#    impl<Context> Greeter<Context> for SimpleGreeter
+#    where
+#      Context: QueryPersonContext,
+#    {
+#      fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#        -> Result<(), Context::Error>
+#      {
+#        let person = context.query_person(person_id)?;
+#        println!("Hello, {}", person.name());
+#        Ok(())
+#      }
+#    }
+  }
+
+  mod daytime_greeter {
+    // ...
+#    use super::traits::{
+#      Greeter, ErrorContext, PersonContext,
+#      TimeContext, SimpleTime,
+#    };
+#
+#    pub struct DaytimeGreeter<InGreeter>(pub InGreeter);
+#
+#    pub struct ShopClosedError<Time> { time: Time }
+#
+#    impl<Context, InGreeter, Time, Error, PersonId>
+#      Greeter<Context> for DaytimeGreeter<InGreeter>
+#    where
+#      InGreeter: Greeter<Context>,
+#      Context: ErrorContext<Error=Error>,
+#      Context: PersonContext<PersonId=PersonId>,
+#      Context: TimeContext<Time=Time>,
+#      Time: SimpleTime,
+#      Error: From<ShopClosedError<Time>>,
+#    {
+#      fn greet(&self, context: &Context, person_id: &PersonId)
+#        -> Result<(), Error>
+#      {
+#        let now = context.now();
+#        if now.is_daytime() {
+#          self.0.greet(context, person_id)
+#        } else {
+#          Err(ShopClosedError { time: now }.into())
+#        }
+#      }
+#    }
+  }
+
+  mod context {
+    // ...
+#    use super::traits::*;
+#    use super::daytime_greeter::ShopClosedError;
+#
+#    #[derive(Copy, Clone, PartialEq, Eq)]
+#    pub enum DummyTime {
+#      DayTime,
+#      NightTime,
+#    }
+#
+#    pub struct BasicPerson {
+#      name: String,
+#    }
+#
+#    pub struct AppContext {
+#      database: Database,
+#      time: DummyTime,
+#    }
+#
+#    // Database stubs
+#    struct Database;
+#    struct DbError;
+#
+#    pub enum AppError {
+#      Database(DbError),
+#      ShopClosed(ShopClosedError<DummyTime>),
+#      // ...
+#    }
+#
+#    impl ErrorContext for AppContext {
+#      type Error = AppError;
+#    }
+#
+#    impl PersonContext for AppContext {
+#      type PersonId = String;
+#      type Person = BasicPerson;
+#    }
+#
+#    impl TimeContext for AppContext {
+#      type Time = DummyTime;
+#
+#      fn now(&self) -> DummyTime {
+#        self.time
+#      }
+#    }
+#
+#    impl QueryPersonContext for AppContext {
+#      fn query_person(&self, person_id: &Self::PersonId)
+#        -> Result<Self::Person, Self::Error>
+#      {
+#        unimplemented!() // database stub
+#      }
+#    }
+#
+#    impl NamedPerson for BasicPerson {
+#      fn name(&self) -> &str {
+#        &self.name
+#      }
+#    }
+#
+#    impl SimpleTime for DummyTime {
+#      fn is_daytime(&self) -> bool {
+#        self == &DummyTime::DayTime
+#      }
+#    }
+#
+#    impl From<ShopClosedError<DummyTime>> for AppError {
+#      fn from(err: ShopClosedError<DummyTime>) -> Self {
+#        Self::ShopClosed(err)
+#      }
+#    }
+  }
+
+  mod instances {
+    use super::traits::Greeter;
+    use super::context::AppContext;
+    use super::simple_greeter::SimpleGreeter;
+    use super::daytime_greeter::DaytimeGreeter;
+
+    pub fn base_greeter() -> impl Greeter<AppContext> {
+      SimpleGreeter
+    }
+
+    pub fn app_greeter() -> impl Greeter<AppContext> {
+      DaytimeGreeter(base_greeter())
+    }
+  }
+}
+```
+
+Finally, we define an `instances` module to encapsulate the witness of
+satisfying all dependencies required from `AppContext` to implement
+the `Greeter` components.
+
+We first have a `base_greeter` function which witnesses that `SimpleGreeter`
+implements `Greeter<AppContext>`. We then define an `app_greeter` function
+which witnesses that `DaytimeGreeter<SimpleGreeter>` _also_ implements
+`Greeter<AppContext>`.
+
+Notice that in the `app_greeter` body, we construct the greeter with
+`DaytimeGreeter(base_greeter())` instead of `DaytimeGreeter(SimpleGreeter)`.
+In theory, both expressions are valid and have the same effect. But by calling
+`base_greeter` inside `app_greeter`, we are stating that `app_greeter` do
+_not_ actually care what the concrete type of the base greeter is, aside from
+it implementing `Greeter<AppContext>`.
+
+Having separate witness functions can also help us debug any error in
+dependencies much more easily. Let's say if we forgot to implement
+`QueryPersonContext` for `AppContext`, the dependency for `SimpleGreeter`
+would not be satisfied, and we would get a type error in `base_greeter`.
+On the other hand, the body of `app_greeter` would not get any error,
+because it is not aware of the base greeter being `SimpleGreeter`.
+
+If we were to write the complex expression in one go, like
+`DaytimeGreeter(SimpleGreeter)`, it would be less clear which part of the
+expression caused the type error. Things would get worse if we have even
+complex component composition. Therefore it is always a good practice to
+define the component instantiation in multiple smaller functions, so that
+it is clear to the reader whether the dependencies are being resolved
+correctly.
