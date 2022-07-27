@@ -1269,6 +1269,11 @@ from the concrete types. If we know that our application only need the
 `SimpleTime` trait, then there are more options out there that we can
 try out and switch easily.
 
+It is also worth noting that it doesn't matter whether the concrete types
+`AppContext` and `BasicPerson` can have private fields or public fields.
+Since the components do not have access to the concrete types, all concrete
+fields are essentially private and can only be exposed via trait methods.
+
 Finally, we define an `instances` module to encapsulate the witness of
 satisfying all dependencies required from `AppContext` to implement
 the `Greeter` components:
@@ -1485,3 +1490,20 @@ complex component composition. Therefore it is always a good practice to
 define the component instantiation in multiple smaller functions, so that
 it is clear to the reader whether the dependencies are being resolved
 correctly.
+
+## Reader Monad
+
+Readers from functional programming background such as Haskellers may notice
+that the context pattern look similar to the reader monad pattern. This is
+correct, as we are defining a global `Context` type and pass it as a function
+argument to all code that requires the context. Additionally, we make use
+of the trait (typeclass) system in Rust for compile-time dependency injection,
+and the same pattern can be applied for the context type used in reader monads.
+
+For Rust readers, the main difference of the pattern described here with the
+reader monad is that we are passing the context value as explicit argument
+without using any monadic construct. This is slightly more verbose, but
+the benefit is we still get to enjoy much of the benefits of reader monad
+without requiring Rust programmers to learn what a monad really is.
+(hint: if you know how to use `Result` and `Option`, you might already
+understand monad without you knowing it)
