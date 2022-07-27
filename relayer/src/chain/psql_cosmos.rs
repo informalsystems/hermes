@@ -6,10 +6,13 @@ use std::collections::HashMap;
 
 use semver::Version;
 use sqlx::postgres::{PgPool, PgPoolOptions};
+use tendermint::block;
 use tendermint_rpc::endpoint::broadcast::tx_sync;
+use tendermint_rpc::Client;
 use tonic::metadata::AsciiMetadataValue;
 use tracing::{debug, info, span, trace, warn, Level};
 
+use ibc::core::ics02_client::events::NewBlock;
 use ibc::{
     core::{
         ics02_client::{
@@ -35,8 +38,8 @@ use ibc::{
 use crate::chain::cosmos::CosmosSdkChain;
 use crate::chain::psql_cosmos::batch::send_batched_messages_and_wait_commit;
 use crate::chain::psql_cosmos::query::{
-    query_blocks, query_channel, query_channels, query_connections, query_ibc_data,
-    query_txs_from_ibc_snapshots, query_txs_from_tendermint,
+    query_application_status, query_blocks, query_channel, query_channels, query_connections,
+    query_ibc_data, query_txs_from_ibc_snapshots, query_txs_from_tendermint,
 };
 use crate::chain::psql_cosmos::update::{update_dbs, PacketId};
 use crate::chain::psql_cosmos::update::{IbcData, IbcSnapshot};
@@ -119,15 +122,6 @@ impl PsqlChain {
             proto_msgs,
         )
         .await
-    }
-
-    fn solve_query_height(&self, query_height: &QueryHeight) -> Result<Height, Error> {
-        let solved_height = if let QueryHeight::Specific(height) = query_height {
-            *height
-        } else {
-            self.chain.query_application_status()?.height
-        };
-        Ok(solved_height)
     }
 
     fn populate_connections(
@@ -342,12 +336,11 @@ impl PsqlChain {
         Ok(())
     }
 
-    fn ibc_snapshot(&self, query_height: &QueryHeight) -> Result<IbcSnapshot, Error> {
-        let solved_query_height = self.solve_query_height(query_height)?;
-
+    fn ibc_snapshot(&self, query_height: &Height) -> Result<IbcSnapshot, Error> {
         let mut result = IbcSnapshot {
-            height: solved_query_height.revision_height(),
+            height: query_height.revision_height(),
             json_data: IbcData {
+                app_status: self.chain_status_on_start(query_height).unwrap(),
                 connections: HashMap::new(),
                 channels: HashMap::new(),
                 pending_sent_packets: HashMap::new(),
@@ -355,13 +348,13 @@ impl PsqlChain {
         };
 
         self.populate_connections(
-            &QueryHeight::Specific(solved_query_height),
+            &QueryHeight::Specific(*query_height),
             QueryConnectionsRequest { pagination: None },
             &mut result,
         )?;
 
         self.populate_channels_and_pending_packets(
-            &QueryHeight::Specific(solved_query_height),
+            &QueryHeight::Specific(*query_height),
             QueryChannelsRequest { pagination: None },
             &mut result,
         )?;
@@ -370,28 +363,25 @@ impl PsqlChain {
     }
 
     fn update_with_events(&mut self, batch: EventBatch) -> Result<(), Error> {
+        let previous_height = batch.height.decrement().unwrap();
         if self.starting {
-            let snapshot =
-                self.ibc_snapshot(&QueryHeight::Specific(batch.height.decrement().unwrap()))?;
+            let snapshot = self.ibc_snapshot(&previous_height)?;
             self.block_on(update_dbs(&self.pool.clone(), &snapshot))?;
             self.starting = false;
         }
 
-        let height = batch.height.revision_height();
-        let latest = self.block_on(query_ibc_data(&self.pool, height))?;
-        let mut work_copy = latest.clone();
-        work_copy.height = height;
+        let mut work_copy = self.block_on(query_ibc_data(
+            &self.pool,
+            &QueryHeight::Specific(previous_height),
+        ))?;
+        work_copy.height = batch.height.revision_height();
 
         for event in batch.events.iter() {
             // best effort to maintain the IBC snapshot based on events
             self.update_with_event(event, &mut work_copy);
         }
 
-        if work_copy.json_data != latest.json_data {
-            self.block_on(update_dbs(&self.pool, &work_copy))
-        } else {
-            Ok(())
-        }
+        self.block_on(update_dbs(&self.pool, &work_copy))
     }
 
     fn maybe_chain_channel(
@@ -498,7 +488,60 @@ impl PsqlChain {
         }
     }
 
+    // Get the chain status on start. The block at height needs to be retrieved via RPC as
+    // there is no available event for height.
+    fn chain_status_on_start(&self, height: &Height) -> Option<ChainStatus> {
+        crate::time!("chain_status_on_start");
+        crate::telemetry!(query, self.id(), "chain_status_on_start");
+        let tm_height = block::Height::try_from(height.revision_height()).unwrap();
+
+        self.block_on(self.chain.rpc_client.blockchain(tm_height, tm_height))
+            .map_or_else(
+                |_| None,
+                |response| {
+                    response.block_metas.first().map(|b| ChainStatus {
+                        height: *height,
+                        timestamp: b.header.time.into(),
+                    })
+                },
+            )
+    }
+
+    // Currently same as chain_status_on_start since the block is not propagated from the monitor
+    // to the supervisor and then here in the runtime.
+    // TODO - include the block in the NewBlock event and use here.
+    fn chain_status_from_block_event(&self, block_event: &NewBlock) -> Option<ChainStatus> {
+        crate::time!("chain_status_from_event");
+        crate::telemetry!(query, self.id(), "chain_status_from_event");
+
+        let tm_height = block::Height::try_from(block_event.height.revision_height()).unwrap();
+        self.block_on(self.chain.rpc_client.blockchain(tm_height, tm_height))
+            .map_or_else(
+                |_| None,
+                |response| {
+                    response.block_metas.first().map(|b| ChainStatus {
+                        height: block_event.height,
+                        timestamp: b.header.time.into(),
+                    })
+                },
+            )
+    }
+
     fn update_with_event(&mut self, event: &IbcEvent, snapshot: &mut IbcSnapshot) {
+        // TODO - There should be a NewBlock event in the caller's batch.
+        // If not we need to figure out that the app_status has not been updated in this snapshot
+        // and do an explicit block query.
+        if let IbcEvent::NewBlock(b) = event {
+            if let Some(status) = self.chain_status_from_block_event(b) {
+                snapshot.json_data.app_status = status
+            }
+        }
+
+        // TODO
+        // if is_connection_event(event) {
+        //     self.try_update_with_connection_event(event, snapshot);
+        // }
+
         if is_channel_event(event) {
             self.try_update_with_channel_event(event, snapshot);
         }
@@ -622,7 +665,9 @@ impl ChainEndpoint for PsqlChain {
     }
 
     fn query_application_status(&self) -> Result<ChainStatus, Error> {
-        self.chain.query_application_status()
+        crate::time!("query_application_status_psql");
+        crate::telemetry!(query, self.id(), "query_application_status_psql");
+        self.block_on(query_application_status(&self.pool))
     }
 
     fn handle_ibc_event_batch(&mut self, batch: EventBatch) -> Result<(), Error> {
@@ -679,13 +724,7 @@ impl ChainEndpoint for PsqlChain {
         &self,
         request: QueryConnectionsRequest,
     ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
-        let query_height = self
-            .chain
-            .query_application_status()?
-            .height
-            .revision_height();
-
-        match self.block_on(query_connections(&self.pool, query_height)) {
+        match self.block_on(query_connections(&self.pool, &QueryHeight::Latest)) {
             Ok(connections) => Ok(connections),
             Err(e) => {
                 warn!(
@@ -723,12 +762,7 @@ impl ChainEndpoint for PsqlChain {
         &self,
         request: QueryChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
-        let query_height = self
-            .chain
-            .query_application_status()?
-            .height
-            .revision_height();
-        match self.block_on(query_channels(&self.pool, query_height)) {
+        match self.block_on(query_channels(&self.pool, &QueryHeight::Latest)) {
             Ok(channels) => Ok(channels),
             Err(e) => {
                 warn!(
@@ -747,15 +781,14 @@ impl ChainEndpoint for PsqlChain {
     ) -> Result<(ChannelEnd, Option<MerkleProof>), Error> {
         crate::time!("query_channel_psql");
         crate::telemetry!(query, self.id(), "query_channel_psql");
+
         match include_proof {
             IncludeProof::Yes => self.chain.query_channel(request, include_proof),
             IncludeProof::No => {
-                let query_height = self.solve_query_height(&request.height)?.revision_height();
-
                 match self.block_on(query_channel(
                     &self.pool,
-                    query_height,
-                    request.channel_id.clone(),
+                    &request.height,
+                    &request.channel_id,
                 )) {
                     Ok(Some(channel)) => Ok((channel.channel_end, None)),
                     _ => {
@@ -812,7 +845,7 @@ impl ChainEndpoint for PsqlChain {
     }
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
-        crate::time!("query_txs");
+        crate::time!("query_txs_psql");
         crate::telemetry!(query, self.id(), "query_txs");
 
         self.block_on(query_txs_from_ibc_snapshots(

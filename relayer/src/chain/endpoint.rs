@@ -1,5 +1,7 @@
 use alloc::sync::Arc;
 use core::convert::TryFrom;
+use serde::{Deserialize, Serialize};
+
 use ibc::core::ics23_commitment::merkle::MerkleProof;
 
 use tokio::runtime::Runtime as TokioRuntime;
@@ -57,7 +59,7 @@ pub enum HealthCheck {
 }
 
 /// The result of the application status query.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ChainStatus {
     pub height: ICSHeight,
     pub timestamp: Timestamp,

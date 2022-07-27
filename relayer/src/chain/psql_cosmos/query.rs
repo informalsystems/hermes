@@ -10,6 +10,7 @@ use tendermint_rpc::endpoint::tx_search::Response as TxSearchResponse;
 use tracing::{info, trace};
 
 use ibc::core::ics02_client::events as ClientEvents;
+use ibc::core::ics02_client::height::Height;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::events as ChannelEvents;
@@ -19,6 +20,7 @@ use ibc::events::{self, from_tx_response_event, IbcEvent, WithBlockDataType};
 use ibc::Height as ICSHeight;
 
 use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
+use crate::chain::endpoint::ChainStatus;
 use crate::chain::psql_cosmos::update::{IbcData, IbcSnapshot, PacketId};
 use crate::chain::requests::{
     QueryBlockRequest, QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest,
@@ -397,29 +399,26 @@ pub async fn query_txs_from_ibc_snapshots(
         QueryTxRequest::Packet(request) => {
             crate::time!("query_txs_from_ibc_snapshots: query packet events");
             match request.event_id {
-                WithBlockDataType::SendPacket => match request.height {
-                    QueryHeight::Latest => Ok(vec![]),
-                    QueryHeight::Specific(h) => {
-                        let all_packets = query_sent_packets(pool, h.revision_height()).await?;
-                        let events = all_packets
-                            .into_iter()
-                            .filter_map(|packet| {
-                                if packet.source_port == request.source_port_id
-                                    && packet.source_channel == request.source_channel_id
-                                    && request.sequences.contains(&packet.sequence)
-                                {
-                                    Some(IbcEvent::SendPacket(ChannelEvents::SendPacket {
-                                        height: h,
-                                        packet,
-                                    }))
-                                } else {
-                                    None
-                                }
-                            })
-                            .collect();
-                        Ok(events)
-                    }
-                },
+                WithBlockDataType::SendPacket => {
+                    let (height, all_packets) = query_sent_packets(pool, &request.height).await?;
+                    let events = all_packets
+                        .into_iter()
+                        .filter_map(|packet| {
+                            if packet.source_port == request.source_port_id
+                                && packet.source_channel == request.source_channel_id
+                                && request.sequences.contains(&packet.sequence)
+                            {
+                                Some(IbcEvent::SendPacket(ChannelEvents::SendPacket {
+                                    height,
+                                    packet,
+                                }))
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
+                    Ok(events)
+                }
                 _ => query_txs_from_tendermint(pool, chain_id, search).await,
             }
         }
@@ -728,16 +727,15 @@ pub struct IbcSnapshotJson {
 
 pub async fn query_ibc_data_json(
     pool: &PgPool,
-    query_height: u64,
+    query_height: &QueryHeight,
 ) -> Result<IbcSnapshotJson, Error> {
-    // At this point it is assumed that the ibc blob is saved for a height only on start
-    // and everytime there is a change.
-    // The query therefore should get the entry with highest height smaller than the query height.
-    let sql_select_string = format!(
-        "SELECT * FROM ibc_json WHERE height=\
-        (SELECT MAX(height) FROM ibc_json WHERE height <={})",
-        query_height
-    );
+    let sql_select_string = match query_height {
+        QueryHeight::Latest => "SELECT * FROM ibc_json ORDER BY height DESC LIMIT 1".to_string(),
+        QueryHeight::Specific(h) => format!(
+            "SELECT * FROM ibc_json WHERE height={}",
+            h.revision_height()
+        ),
+    };
 
     sqlx::query_as::<_, IbcSnapshotJson>(sql_select_string.as_str())
         .fetch_one(pool)
@@ -745,12 +743,16 @@ pub async fn query_ibc_data_json(
         .map_err(Error::sqlx)
 }
 
-pub async fn query_ibc_data(pool: &PgPool, query_height: u64) -> Result<IbcSnapshot, Error> {
+pub async fn query_ibc_data(
+    pool: &PgPool,
+    query_height: &QueryHeight,
+) -> Result<IbcSnapshot, Error> {
     let result = query_ibc_data_json(pool, query_height).await?;
 
     let response = IbcSnapshot {
         height: result.height as u64,
         json_data: IbcData {
+            app_status: result.json_data.app_status.clone(),
             connections: result.json_data.connections.clone(),
             channels: result.json_data.channels.clone(),
             pending_sent_packets: result.json_data.pending_sent_packets.clone(),
@@ -759,9 +761,14 @@ pub async fn query_ibc_data(pool: &PgPool, query_height: u64) -> Result<IbcSnaps
     Ok(response)
 }
 
+pub async fn query_application_status(pool: &PgPool) -> Result<ChainStatus, Error> {
+    let result = query_ibc_data(pool, &QueryHeight::Latest).await?;
+    Ok(result.json_data.app_status)
+}
+
 pub async fn query_connections(
     pool: &PgPool,
-    query_height: u64,
+    query_height: &QueryHeight,
 ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
     let result = query_ibc_data(pool, query_height).await?;
 
@@ -770,7 +777,7 @@ pub async fn query_connections(
 
 pub async fn query_channels(
     pool: &PgPool,
-    query_height: u64,
+    query_height: &QueryHeight,
 ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
     let result = query_ibc_data(pool, query_height).await?;
 
@@ -779,30 +786,36 @@ pub async fn query_channels(
 
 pub async fn query_channel(
     pool: &PgPool,
-    query_height: u64,
-    id: ChannelId,
+    query_height: &QueryHeight,
+    id: &ChannelId,
 ) -> Result<Option<IdentifiedChannelEnd>, Error> {
     let result = query_ibc_data(pool, query_height).await?;
-    Ok(result.json_data.channels.get(&id).cloned())
+    Ok(result.json_data.channels.get(id).cloned())
 }
 
-pub async fn query_sent_packets(pool: &PgPool, query_height: u64) -> Result<Vec<Packet>, Error> {
+pub async fn query_sent_packets(
+    pool: &PgPool,
+    query_height: &QueryHeight,
+) -> Result<(Height, Vec<Packet>), Error> {
     let result = query_ibc_data(pool, query_height).await?;
 
-    Ok(result
-        .json_data
-        .pending_sent_packets
-        .values()
-        .cloned()
-        .collect())
+    Ok((
+        result.json_data.app_status.height,
+        result
+            .json_data
+            .pending_sent_packets
+            .values()
+            .cloned()
+            .collect(),
+    ))
 }
 
 pub async fn query_sent_packet(
     pool: &PgPool,
-    query_height: u64,
-    id: PacketId,
+    query_height: &QueryHeight,
+    id: &PacketId,
 ) -> Result<Option<Packet>, Error> {
     let result = query_ibc_data(pool, query_height).await?;
-    let p = result.json_data.pending_sent_packets.get(&id).cloned();
+    let p = result.json_data.pending_sent_packets.get(id).cloned();
     Ok(p)
 }

@@ -110,7 +110,7 @@ pub const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 pub struct CosmosSdkChain {
     pub(crate) config: ChainConfig,
     pub(crate) tx_config: TxConfig,
-    rpc_client: HttpClient,
+    pub(crate) rpc_client: HttpClient,
     pub(crate) grpc_addr: Uri,
     rt: Arc<TokioRuntime>,
     keybase: KeyRing,

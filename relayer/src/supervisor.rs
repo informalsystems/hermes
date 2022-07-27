@@ -611,11 +611,12 @@ fn process_batch<Chain: ChainHandle>(
 
     telemetry!(received_event_batch, batch.tracking_id);
 
+    // TODO - figure out how to use `src` here and share with the workers below.
     let src1 = registry
         .get_or_spawn(&src_chain.id())
         .map_err(Error::spawn)?;
 
-    handle_events_locally(&src1, batch);
+    handle_events_in_runtime(&src1, batch);
 
     let collected = collect_events(config, workers, &src_chain, batch);
 
@@ -698,7 +699,7 @@ fn process_batch<Chain: ChainHandle>(
     Ok(())
 }
 
-pub fn handle_events_locally<Chain: ChainHandle>(chain: &Chain, batch: &EventBatch) {
+pub fn handle_events_in_runtime<Chain: ChainHandle>(chain: &Chain, batch: &EventBatch) {
     match chain.try_handle_ibc_event_batch(batch.clone()) {
         Ok(()) => {}
         Err(e) => {

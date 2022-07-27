@@ -7,10 +7,13 @@ use serde::{Deserialize, Serialize, Serializer};
 use sqlx::PgPool;
 use std::collections::HashMap;
 
+use crate::chain::endpoint::ChainStatus;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::packet::{Packet, Sequence};
 
 use crate::error::Error;
+
+const NUMBER_OF_SNAPSHOTS: u64 = 8;
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd)]
 pub struct PacketId {
@@ -43,12 +46,26 @@ impl<'de> Deserialize<'de> for PacketId {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct IbcData {
+    pub app_status: ChainStatus,
     pub connections: HashMap<ConnectionId, IdentifiedConnectionEnd>,
     pub channels: HashMap<ChannelId, IdentifiedChannelEnd>, // TODO - use PortChannelId key
     pub pending_sent_packets: HashMap<PacketId, Packet>,    // TODO - use IbcEvent val (??)
-                                                            // ..
+                                                            // TODO consider:
+                                                            // - to help with reducing RPCs from update client
+                                                            //   (update on NewBlock event, beefed up with block data, probably still the validators RPC is needed)
+                                                            // pub signed_header: SignedHeader,
+                                                            // pub validator_set: ValidatorSet,
+                                                            // - to get clients, their state and consensus states, etc
+                                                            //   (update on create and update client events)
+                                                            // pub client_states: HashMap<ClientId, ClientState>
+                                                            // pub consensus_states: HashMap<(ClientId, Height), ConsensusState>
+                                                            // - to help with packet acknowledgments...this is tricky as we need to pass from
+                                                            //   the counterparty chain:
+                                                            //     1. data (seqs for packets with commitments) on start
+                                                            //     2. Acknowledge and Timeout packet events in order to clear
+                                                            // pub pending_ack_packets: HashMap<PacketId, Packet>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -59,6 +76,8 @@ pub struct IbcSnapshot {
 
 pub async fn update_dbs(pool: &PgPool, snapshot: &IbcSnapshot) -> Result<(), Error> {
     // create the ibc table if it does not exist
+    crate::time!("update_dbs");
+
     sqlx::query(
         r#"
         CREATE TABLE IF NOT EXISTS ibc_json (
@@ -82,5 +101,17 @@ pub async fn update_dbs(pool: &PgPool, snapshot: &IbcSnapshot) -> Result<(), Err
         .execute(pool)
         .await
         .map_err(Error::sqlx)?;
+
+    // delete oldest snapshots
+    if snapshot.height > NUMBER_OF_SNAPSHOTS {
+        let sql_delete_oldest_cmd = format!(
+            "DELETE FROM ibc_json WHERE height<={}",
+            snapshot.height - NUMBER_OF_SNAPSHOTS
+        );
+        sqlx::query(sql_delete_oldest_cmd.as_str())
+            .execute(pool)
+            .await
+            .map_err(Error::sqlx)?;
+    }
     Ok(())
 }
