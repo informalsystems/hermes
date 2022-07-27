@@ -273,12 +273,10 @@ fn timeout_metrics(path: &Packet, summary: &RelaySummary) {
         .iter()
         .filter(|event| matches!(event, TimeoutPacket(_)))
         .for_each(|e| {
-            let height = e.height().revision_height(); // TODO : remove height argument
             if let Some(packet) = e.packet() {
                 telemetry!(
-                    record_ack_history,
+                    backlog_remove,
                     u64::from(packet.sequence),
-                    height,
                     &path.src_chain_id,
                     &path.src_channel_id,
                     &path.src_port_id,
