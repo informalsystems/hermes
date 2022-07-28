@@ -1,8 +1,8 @@
 use crate::prelude::*;
 
-use tendermint_proto::Protobuf;
-
+use derive_more::{From, Into};
 use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
+use tendermint_proto::Protobuf;
 
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::Packet;
@@ -13,22 +13,12 @@ use crate::tx_msg::Msg;
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgAcknowledgement";
 
 /// A generic Acknowledgement type that modules may interpret as they like.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, From, Into)]
 pub struct Acknowledgement(Vec<u8>);
 
 impl Acknowledgement {
-    pub fn into_bytes(self) -> Vec<u8> {
-        self.0
-    }
-
-    pub fn from_bytes(bytes: Vec<u8>) -> Self {
-        bytes.into()
-    }
-}
-
-impl From<Vec<u8>> for Acknowledgement {
-    fn from(bytes: Vec<u8>) -> Self {
-        Self(bytes)
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 }
 
@@ -123,7 +113,7 @@ impl From<MsgAcknowledgement> for RawMsgAcknowledgement {
     fn from(domain_msg: MsgAcknowledgement) -> Self {
         RawMsgAcknowledgement {
             packet: Some(domain_msg.packet.into()),
-            acknowledgement: domain_msg.acknowledgement.into_bytes(),
+            acknowledgement: domain_msg.acknowledgement.into(),
             signer: domain_msg.signer.to_string(),
             proof_height: Some(domain_msg.proofs.height().into()),
             proof_acked: domain_msg.proofs.object_proof().clone().into(),

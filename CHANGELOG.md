@@ -1,5 +1,124 @@
 # CHANGELOG
 
+## v1.0.0-rc.1
+
+This is the second release candidate for Hermes v1.0.0 🎉
+
+### Note for operators
+
+> ⚠️  This release contains multiple breaking changes to the Hermes command-line interface and configuration.
+> ⚠️  Please consult the [UPGRADING document for instructions](UPGRADING.md) to update to Hermes v1.0.0-rc.1.
+
+### General
+
+- Bump `ibc-proto` crate to 0.19.1
+- Bump `ibc`, `ibc-relayer`, `ibc-telemetry`, `ibc-relayer-rest` crates to v0.17.0
+- Bump tendermint-rs dependencies to 0.23.8
+  ([#2455](https://github.com/informalsystems/ibc-rs/issues/2455))
+
+### Hermes - [`ibc-relayer-cli`](relayer-cli) (v1.0.0-rc.1)
+
+#### BREAKING CHANGES
+
+- Drop the `raw` prefix from all the `tx raw` commands
+  ([#2315](https://github.com/informalsystems/ibc-rs/issues/2315)
+- Remove the four duplicate commands:
+  * `tx raw update-client`, which is the same as `update client`
+  * `tx raw upgrade-client`, which is the same as `upgrade client`
+  * `tx raw upgrade-clients`, which is the same as `upgrade clients`
+  * `tx raw create-client`, which is the same as `create client`
+  * ([#2315](https://github.com/informalsystems/ibc-rs/issues/2376))
+- Rename `--a-` and `--b-` prefixes in `hermes tx` subcommands to `--src-` and `--dst-`
+  ([#2410](https://github.com/informalsystems/ibc-rs/issues/2410))
+- Rename flags of `tx upgrade-chain` command from `--src`/`--dst` to `--reference`/`--host`
+  ([#2376](https://github.com/informalsystems/ibc-rs/issues/2376))
+- The default value of the configuration `tx_confirmation`
+  in Hermes `config.toml` has been changed from `true` to `false`.
+  ([#2408](https://github.com/informalsystems/ibc-rs/issues/2408))
+
+#### BUG FIXES
+
+- Fixed filtering counterparty chain in Hermes command `query channels`
+  ([#1132](https://github.com/informalsystems/ibc-rs/issues/1132))
+- Fixed command `tx raw ft-transfer` to correctly use the address given by the `--receiver` flag
+  ([#2405](https://github.com/informalsystems/ibc-rs/issues/2405))
+
+#### FEATURES
+
+- Add an optional `--show-counterparty` flag to `hermes query channels` which outputs every channel
+  along with its corresponding port, and the counterparty chain's id, in a pretty way
+  ([#2429](https://github.com/informalsystems/ibc-rs/issues/2429))
+- New optional flags `--counterparty-chain` and `--verbose` for the command `query connections`
+  ([#2310](https://github.com/informalsystems/ibc-rs/issues/2310))
+- Added new optional flag `--host-chain` to filter which clients are upgraded when running `upgrade clients` command
+  ([#2311](https://github.com/informalsystems/ibc-rs/issues/2311))
+
+#### IMPROVEMENTS
+
+- Hermes command `keys add` now checks for existing key and overwrites only if the flag `--overwrite` is passed
+  ([#2375](https://github.com/informalsystems/ibc-rs/issues/2375))
+- Rename `--a-` and `--b-` prefixes in `hermes tx` subcommands to `--src-` and `--dst-`
+  ([#2410](https://github.com/informalsystems/ibc-rs/issues/2410))
+- Increase default value for `gas_multiplier` setting to 1.1
+  ([#2435](https://github.com/informalsystems/ibc-rs/issues/2435))
+- Output status is now colored in green for success and red for error
+  ([#2431](https://github.com/informalsystems/ibc-rs/issues/2431))
+
+
+### IBC Proto - [`ibc-proto`](proto) (v0.19.1)
+
+#### IMPROVEMENTS
+
+- Update Protobuf definitions for IBC-Go to v4.0.0-rc0 and Cosmos SDK to v0.45.6
+  ([#2403](https://github.com/informalsystems/ibc-rs/issues/2403))
+
+
+### IBC Modules - [`ibc`](modules) (v0.17.0)
+
+#### BREAKING CHANGES
+
+- Remove provided `Ics20Reader::get_channel_escrow_address()` implementation and make `cosmos_adr028_escrow_address()` public.
+  ([#2387](https://github.com/informalsystems/ibc-rs/issues/2387))
+
+#### BUG FIXES
+
+- Fix serialization for ICS20 packet data structures
+  ([#2386](https://github.com/informalsystems/ibc-rs/issues/2386)).
+- Properly process `WriteAcknowledgement`s on packet callback
+  ([#2424](https://github.com/informalsystems/ibc-rs/issues/2424)).
+- Fix `write_acknowledgement` handler which incorrectly used packet's `source_{port, channel}` as key for storing acks
+  ([#2428](https://github.com/informalsystems/ibc-rs/issues/2428))
+
+#### IMPROVEMENTS
+
+- Propose ADR011 for light client extraction.
+  ([#2356](https://github.com/informalsystems/ibc-rs/pull/2356)).
+
+
+### Relayer Library - [`ibc-relayer`](relayer) (v0.17.0)
+
+#### BUG FIXES
+
+- Fix a regression where Hermes would not retry relaying packet on account
+  mismatch error when the sequence number used was smaller than the expected one
+  ([#2411](https://github.com/informalsystems/ibc-rs/issues/2411))
+- Fix a bug where the relayer would fail to relay any packets when the
+  `/acbi_info` endpoint of a chain did not include `data` and `version` fields
+  ([#2444](https://github.com/informalsystems/ibc-rs/issues/2444))
+
+
+### Telemetry & Metrics - [`ibc-telemetry`](telemetry) (v0.17.0)
+
+#### IMPROVEMENTS
+
+- Updated telemetry metric `wallet_balance` to f64 and removed downscaling
+  displayed value. Please note that when converting the balance to f64 a loss in
+  precision might be introduced in the displayed value
+  ([#2381](https://github.com/informalsystems/ibc-rs/issues/2381))
+- Improved naming and description of some telemetry metrics and added
+  histogram buckets for `tx_latency` metrics
+  ([#2408](https://github.com/informalsystems/ibc-rs/issues/2408))
+
 ## v1.0.0-rc.0
 
 *July 7th, 2022*
