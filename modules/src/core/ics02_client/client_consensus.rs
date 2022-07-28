@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use core::any::Any as AnyTrait;
+use core::any::Any as CoreAny;
 use core::marker::{Send, Sync};
 
 use ibc_proto::google::protobuf::Any as ProtoAny;
@@ -33,12 +33,12 @@ pub trait ConsensusState: core::fmt::Debug + Send + Sync + AsAny {
     fn encode_vec(&self) -> Result<Vec<u8>, Error>;
 }
 
-pub trait AsAny: AnyTrait {
-    fn as_any(&self) -> &dyn AnyTrait;
+pub trait AsAny: CoreAny {
+    fn as_any(&self) -> &dyn CoreAny;
 }
 
-impl<M: AnyTrait + ConsensusState> AsAny for M {
-    fn as_any(&self) -> &dyn AnyTrait {
+impl<M: CoreAny + ConsensusState> AsAny for M {
+    fn as_any(&self) -> &dyn CoreAny {
         self
     }
 }
