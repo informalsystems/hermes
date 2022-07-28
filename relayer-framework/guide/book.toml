@@ -6,4 +6,4 @@ src = "src"
 title = "IBC Relayer Framework Guide"
 
 [rust]
-edition = "2021"
+edition = "2018"

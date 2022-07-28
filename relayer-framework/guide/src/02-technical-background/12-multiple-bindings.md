@@ -10,7 +10,7 @@ To help simplify the trait bounds for components like `DaytimeGreeter`, we
 can use the explicit associated type bindings we learn earlier:
 
 ```rust
-# use core::time::Duration;
+# use std::time::Duration;
 # trait NamedPerson {
 #   fn name(&self) -> &str;
 # }

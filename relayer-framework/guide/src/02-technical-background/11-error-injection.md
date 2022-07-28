@@ -17,7 +17,7 @@ We can do this by defining a custom `ShopClosedError` struct, and require
 `ShopClosedError`:
 
 ```rust
-# use core::time::Duration;
+# use std::time::Duration;
 # trait NamedPerson {
 #   fn name(&self) -> &str;
 # }

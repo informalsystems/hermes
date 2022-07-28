@@ -1,7 +1,8 @@
 # Multiple Context Implementations
 
 ```rust
-# use core::fmt::Display;
+# use std::fmt::Display;
+# use std::convert::{TryFrom, TryInto};
 #
 # trait NamedPerson {
 #   fn name(&self) -> &str;

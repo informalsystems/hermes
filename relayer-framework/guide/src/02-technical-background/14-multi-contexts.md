@@ -24,6 +24,8 @@ We could implement `QueryPersonContext` for any context type that
 contains `FsKvStore` in its field:
 
 ```rust
+# use std::convert::{TryFrom, TryInto};
+#
 # struct FsKvStore { /* ... */ }
 # struct KvStoreError { /* ... */ }
 #
@@ -146,7 +148,8 @@ With this, we can now define a context-generic implementation of
 `PersonQuerier` for any context that has an `FsKvStore`:
 
 ```rust
-# use core::fmt::Display;
+# use std::fmt::Display;
+# use std::convert::{TryFrom, TryInto};
 #
 # struct FsKvStore { /* ... */ }
 # struct KvStoreError { /* ... */ }

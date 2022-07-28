@@ -1,9 +1,10 @@
 # Caching App Context
 
 ```rust
-# use core::hash::Hash;
-# use core::fmt::Display;
+# use std::hash::Hash;
+# use std::fmt::Display;
 # use std::collections::HashMap;
+# use std::convert::{TryFrom, TryInto};
 #
 # trait NamedPerson {
 #   fn name(&self) -> &str;

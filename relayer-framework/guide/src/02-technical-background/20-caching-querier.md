@@ -1,7 +1,7 @@
 # Caching Querier
 
 ```rust
-# use core::hash::Hash;
+# use std::hash::Hash;
 # use std::collections::HashMap;
 #
 # trait ErrorContext {

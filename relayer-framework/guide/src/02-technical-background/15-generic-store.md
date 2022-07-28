@@ -10,7 +10,8 @@ for example be able to swap our store implementation from file-based
 to in-memory easily.
 
 ```rust
-# use core::fmt::Display;
+# use std::fmt::Display;
+# use std::convert::{TryFrom, TryInto};
 #
 # trait ErrorContext {
 #   type Error;

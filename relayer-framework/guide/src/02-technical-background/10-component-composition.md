@@ -15,7 +15,8 @@ learned, we will also define a `TimeContext` trait for getting the time.
 The full implementation is as follows:
 
 ```rust
-# use core::time::Duration;
+# use std::time::Duration;
+#
 # trait NamedPerson {
 #   fn name(&self) -> &str;
 # }
