@@ -48,7 +48,7 @@ All commands under the `tx` namespace, with the exception of `tx upgrade-chain`,
 
 The `tx upgrade-chain` command now uses `--reference-` and `--host-` prefixes.
 
-Please check the commands help or [ADR 010](adr-010) for the full updated list of commands.
+Please check the commands help or [ADR 010][adr-010] for the full updated list of commands.
 
 ## v1.0.0-rc.0
 
