@@ -2,12 +2,11 @@
 
 When specifying the constraints for indirect depedencies, we have to keep using
 the `Context::` prefix to access associated types like `Context::Error`. Worse,
-once we start using nested associated types, we would have to resort to use
-fully qualified syntaxes like `<Context::Foo as Foo>::Bar` instead of
-`Context::Foo::Bar`.
+once we start using nested associated types, we have to resort to using fully
+qualified syntax like `<Context::Foo as Foo>::Bar`; `Context::Foo::Bar` doesn't work.
 
 To help simplify the trait bounds for components like `DaytimeGreeter`, we
-can use the explicit associated type bindings we learn earlier:
+can use the explicit associated type bindings we learned about earlier:
 
 ```rust
 # use std::time::Duration;
