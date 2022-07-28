@@ -229,7 +229,7 @@ impl TryFrom<RawClientState> for ClientState {
 
     fn try_from(raw: RawClientState) -> Result<Self, Self::Error> {
         let frozen_height = {
-            let height = raw.frozen_height.into();
+            let height = Height::new(0, raw.frozen_height.into());
             if height == Height::zero() {
                 None
             } else {
