@@ -93,10 +93,10 @@ pub struct TelemetryState {
     /// Used for computing the `tx_latency` metric.
     in_flight_events: moka::sync::Cache<String, Instant>,
 
-    /// Counts the number of SendPacket Hermes transfers.
+    /// Counts the number of SendPacket Hermes relays.
     send_packet_count: Counter<u64>,
 
-    /// Counts the number of WriteAcknowledgement Hermes transfers.
+    /// Counts the number of WriteAcknowledgement Hermes relays.
     acknowledgement_count: Counter<u64>,
 
     /// Counts the number of SendPacket events Hermes processes from ClearPendingPackets.
@@ -105,27 +105,27 @@ pub struct TelemetryState {
     /// Counts the number of WriteAcknowledgment events Hermes processes from ClearPendingPackets.
     cleared_acknowledgment_count: Counter<u64>,
 
-    /// Records the sequence number of the oldest SendPacket for which no
-    /// WriteAcknowledgement has been received. The value is 0 if all the
-    /// WriteAcknowledgement were received.
+    /// Records the sequence number of the oldest pending packet. This corresponds to
+    /// the sequence number of the oldest SendPacket event for which no
+    /// WriteAcknowledgement or Timeout events have been received. The value is 0 if all the
+    /// SendPacket events were relayed.
     backlog_oldest_sequence: ValueRecorder<u64>,
 
-    /// Record the timestamp related to the oldest sequence number.
+    /// Record the timestamp related to `backlog_oldest_sequence`.
     /// The timestamp is the time passed since since the unix epoch in seconds.
     backlog_oldest_timestamp: ValueRecorder<u64>,
 
     /// Records the length of the backlog, i.e., how many packets are pending.
     backlog_size: ValueRecorder<u64>,
 
-    /// Stores the global backlog for all the paths the relayer is active on.
-    /// The global backlog is a map of inner backlogs, one inner backlog per path.
+    /// Stores the backlogs for all the paths the relayer is active on.
+    /// This is a map of multiple inner backlogs, one inner backlog per path.
     ///
-    /// Each inner backlog is also represented as a [`DashMap`].
-    /// Each inner backlog captures the sequence numbers for all SendPacket events that
-    /// the relayer observed, and for which there was no associated Acknowledgement or
-    /// Timeout event. Beside the sequence number, it also stores the timestamp when that
-    /// sequence was inserted.
-    backlog: DashMap<PathIdentifier, DashMap<u64, u64>>,
+    /// Each inner backlog is represented as a [`DashMap`].
+    /// Each inner backlog captures the sequence numbers & timestamp for all SendPacket events
+    /// that the relayer observed, and for which there was no associated Acknowledgement or
+    /// Timeout event.
+    backlogs: DashMap<PathIdentifier, DashMap<u64, u64>>,
 }
 
 impl TelemetryState {
@@ -439,7 +439,7 @@ impl TelemetryState {
         };
 
         // Update the backlog with the incoming data and retrieve the oldest values
-        let (oldest_sn, oldest_ts, total) = if let Some(path_backlog) = self.backlog.get(&path_uid)
+        let (oldest_sn, oldest_ts, total) = if let Some(path_backlog) = self.backlogs.get(&path_uid)
         {
             // Avoid having the inner backlog map growing more than a given threshold, by removing
             // the oldest sequence number entry.
@@ -459,7 +459,7 @@ impl TelemetryState {
                     (min, 0, path_backlog.len() as u64)
                 }
             } else {
-                // We just inserted a new key/value, so it is unlikely to happen,
+                // We just inserted a new key/value, so this else branch is unlikely to activate,
                 // but it can happen in case of concurrent updates to the backlog.
                 (
                     EMPTY_BACKLOG_SYMBOL,
@@ -472,7 +472,7 @@ impl TelemetryState {
             let new_path_backlog = DashMap::with_capacity(BACKLOG_CAPACITY);
             new_path_backlog.insert(seq_nr, timestamp);
             // Record it in the global backlog
-            self.backlog.insert(path_uid, new_path_backlog);
+            self.backlogs.insert(path_uid, new_path_backlog);
 
             // Return the current event information to be recorded in telemetry
             (seq_nr, timestamp, 1)
@@ -510,7 +510,7 @@ impl TelemetryState {
             KeyValue::new("port", port_id.to_string()),
         ];
 
-        if let Some(path_backlog) = self.backlog.get(&path_uid) {
+        if let Some(path_backlog) = self.backlogs.get(&path_uid) {
             match path_backlog.remove(&seq_nr) {
                 Some(_) => {
                     // The oldest pending sequence number is the minimum key in the inner (path) backlog.
@@ -685,22 +685,22 @@ impl Default for TelemetryState {
                 .time_to_idle(Duration::from_secs(30 * 60)) // Remove entries if they have been idle for 30 minutes
                 .build(),
 
-            backlog: DashMap::new(),
+            backlogs: DashMap::new(),
 
             backlog_oldest_sequence: meter
                 .u64_value_recorder("backlog_oldest_sequence")
-                .with_description("Sequence number of the oldest pending packet in the backlog")
+                .with_description("Sequence number of the oldest pending packet in the backlog, per channel")
                 .init(),
 
             backlog_oldest_timestamp: meter
                 .u64_value_recorder("backlog_oldest_timestamp")
                 .with_unit(Unit::new("seconds"))
-                .with_description("Local timestamp for the oldest pending packet in the backlog")
+                .with_description("Local timestamp for the oldest pending packet in the backlog, per channel")
                 .init(),
 
             backlog_size: meter
                 .u64_value_recorder("backlog_size")
-                .with_description("Total number of pending packets")
+                .with_description("Total number of pending packets, per channel")
                 .init(),
         }
     }

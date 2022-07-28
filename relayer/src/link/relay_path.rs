@@ -443,7 +443,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // Update telemetry info
         telemetry!({
             for e in events.events() {
-                self.record_send_packet_and_acknowledgment_backlog(e);
+                self.backlog_update(e);
             }
         });
 
@@ -1737,7 +1737,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     #[cfg(feature = "telemetry")]
-    fn record_send_packet_and_acknowledgment_backlog(&self, event: &IbcEvent) {
+    fn backlog_update(&self, event: &IbcEvent) {
         match event {
             IbcEvent::SendPacket(send_packet_ev) => {
                 ibc_telemetry::global().backlog_insert(
@@ -1755,6 +1755,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     self.dst_channel_id(),
                     self.dst_port_id(),
                     &self.src_chain().id(),
+                );
+            }
+            IbcEvent::TimeoutPacket(timeout_packet) => {
+                ibc_telemetry::global().backlog_remove(
+                    timeout_packet.packet.sequence.into(),
+                    &self.src_chain().id(),
+                    self.src_channel_id(),
+                    self.src_port_id(),
+                    &self.dst_chain().id(),
                 );
             }
             _ => {}

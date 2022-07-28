@@ -51,9 +51,9 @@ The following table describes the metrics currently tracked by the telemetry ser
 | `acknowledgement_count`      | Number of WriteAcknowledgement events processed      | `u64` Counter       |
 | `cleared_send_packet_count`    | Number of SendPacket events processed during the initial and periodic clearing | `u64` Counter   |
 | `cleared_acknowledgment_count` | Number of WriteAcknowledgement events processed during the initial and periodic clearing | `u64` Counter   |
-| `backlog_oldest_sequence`      | Sequence number of the oldest pending packet in the backlog | `u64` ValueRecorder |
-| `backlog_oldest_timestamp`     | Local timestamp for the oldest pending packet in the backlog | `u64` ValueRecorder |
-| `backlog_size`                 | Total number of unrelayed packets | `u64` ValueRecorder |
+| `backlog_oldest_sequence`      | Sequence number of the oldest pending packet in the backlog, per channel | `u64` ValueRecorder |
+| `backlog_oldest_timestamp`     | Local timestamp for the oldest pending packet in the backlog, per channel | `u64` ValueRecorder |
+| `backlog_size`                 | Total number of pending packets, per channel | `u64` ValueRecorder |
 
 ## Integration with Prometheus
 
