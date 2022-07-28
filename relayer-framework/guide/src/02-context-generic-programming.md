@@ -1,4 +1,4 @@
-# Technical Background
+# Context-Generic Programming
 
 This section covers the technical background needed for understanding the programming
 techniques used by the relayer framework. Readers with backgrounds in

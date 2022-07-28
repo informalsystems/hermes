@@ -1,0 +1,2864 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>IBC Relayer Framework Guide</title>
+        
+        <meta name="robots" content="noindex" />
+        
+        
+
+
+        <!-- Custom HTML head -->
+        
+
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        
+        <link rel="icon" href="favicon.svg">
+        
+        
+        <link rel="shortcut icon" href="favicon.png">
+        
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        
+        <link rel="stylesheet" href="css/print.css" media="print">
+        
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        
+        <link rel="stylesheet" href="fonts/fonts.css">
+        
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="01-introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="02-technical-background.html"><strong aria-hidden="true">2.</strong> Technical Background</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="02-technical-background/01-simple-greeter.html"><strong aria-hidden="true">2.1.</strong> Simple Greeter</a></li><li class="chapter-item expanded "><a href="02-technical-background/02-dynamic-typing.html"><strong aria-hidden="true">2.2.</strong> Comparison with Dynamic Typing</a></li><li class="chapter-item expanded "><a href="02-technical-background/03-generic-context.html"><strong aria-hidden="true">2.3.</strong> Generic Context</a></li><li class="chapter-item expanded "><a href="02-technical-background/04-error-context.html"><strong aria-hidden="true">2.4.</strong> Error Context</a></li><li class="chapter-item expanded "><a href="02-technical-background/05-explicit-binding.html"><strong aria-hidden="true">2.5.</strong> Explicit Associated Type Binding</a></li><li class="chapter-item expanded "><a href="02-technical-background/06-generic-person.html"><strong aria-hidden="true">2.6.</strong> Generic Person</a></li><li class="chapter-item expanded "><a href="02-technical-background/07-programs-as-types.html"><strong aria-hidden="true">2.7.</strong> Programs as Types</a></li><li class="chapter-item expanded "><a href="02-technical-background/08-context-implementation.html"><strong aria-hidden="true">2.8.</strong> Context Implementation</a></li><li class="chapter-item expanded "><a href="02-technical-background/09-dependency-injection.html"><strong aria-hidden="true">2.9.</strong> Compile-Time Dependency Injection</a></li><li class="chapter-item expanded "><a href="02-technical-background/10-component-composition.html"><strong aria-hidden="true">2.10.</strong> Component Composition</a></li><li class="chapter-item expanded "><a href="02-technical-background/11-error-injection.html"><strong aria-hidden="true">2.11.</strong> Error Injection</a></li><li class="chapter-item expanded "><a href="02-technical-background/12-multiple-bindings.html"><strong aria-hidden="true">2.12.</strong> Multiple Type Bindings</a></li><li class="chapter-item expanded "><a href="02-technical-background/13-concrete-composition.html"><strong aria-hidden="true">2.13.</strong> Concrete Composition</a></li><li class="chapter-item expanded "><a href="02-technical-background/14-multi-contexts.html"><strong aria-hidden="true">2.14.</strong> Multiple Context Implementations</a></li><li class="chapter-item expanded "><a href="02-technical-background/15-generic-store.html"><strong aria-hidden="true">2.15.</strong> Generic Store</a></li><li class="chapter-item expanded "><a href="02-technical-background/16-querier-consumer.html"><strong aria-hidden="true">2.16.</strong> Querier Consumer</a></li><li class="chapter-item expanded "><a href="02-technical-background/17-selfless-components.html"><strong aria-hidden="true">2.17.</strong> Selfless Components</a></li><li class="chapter-item expanded "><a href="02-technical-background/18-store-context-impl.html"><strong aria-hidden="true">2.18.</strong> Store Context Implementation</a></li><li class="chapter-item expanded "><a href="02-technical-background/19-multi-context-impls.html"><strong aria-hidden="true">2.19.</strong> Multiple Context Implementations</a></li><li class="chapter-item expanded "><a href="02-technical-background/20-caching-querier.html"><strong aria-hidden="true">2.20.</strong> Caching Querier</a></li><li class="chapter-item expanded "><a href="02-technical-background/21-caching-app-context.html"><strong aria-hidden="true">2.21.</strong> Caching App Context</a></li></ol></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">IBC Relayer Framework Guide</h1>
+
+                    <div class="right-buttons">
+                        
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
+                        
+
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
+<p>The <code>ibc-relayer-framework</code> crate provides an abstract interface for implementing
+IBC relayers, with <em>zero</em> dependency on concrete chain definitions. Using traits
+and associated types, the relayer framework allows various dependencies of the
+relayer to be loaded via dependency injection without requiring global dependencies
+to be specified.</p>
+<p>Using the relayer framework, different chain implementations can be instantiated
+by defining the concrete type definitions and methods for communicating with the
+blockchain. Relaying between different chain implementations is made possible by
+having abstract relaying logic, which can be instantiated along with the concrete
+chain implementations.</p>
+<h2 id="problem-statement"><a class="header" href="#problem-statement">Problem Statement</a></h2>
+<p>The IBC relayer framework is designed to solve multiple problems simultaneously:</p>
+<ul>
+<li>
+<p>The need for multiple relaying strategies, including cross-cutting concerns for:</p>
+<ul>
+<li>Updating client mechanics</li>
+<li>Message batching</li>
+<li>Retrying on errors</li>
+<li>Logging</li>
+<li>Telemetrics</li>
+<li>Caching</li>
+</ul>
+</li>
+<li>
+<p>Handling differences in protobuf definitions and behavior that arise from different Cosmos
+chain implementations such as:</p>
+<ul>
+<li>Tendermint</li>
+<li>Cosmos SDK</li>
+<li>ibc-go</li>
+</ul>
+</li>
+<li>
+<p>Handling relaying from non-Cosmos SDK chains, such as:</p>
+<ul>
+<li>Nomic</li>
+<li>Penumbra</li>
+</ul>
+</li>
+<li>
+<p>Handling relaying from non-Cosmos chains, such as:</p>
+<ul>
+<li>Substrate</li>
+</ul>
+</li>
+</ul>
+<p>The relayer framework solves all these problems by separating out each concern
+into different components that can be specified independently. With dependency
+injection, each component can independently specify the dependency it needs
+from the surrounding context, and composition of components can be done
+without knowing the detailed dependency of each component.</p>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="technical-background"><a class="header" href="#technical-background">Technical Background</a></h1>
+<p>This section covers the technical background needed for understanding the programming
+techniques used by the relayer framework. Readers with backgrounds in
+dynamically-typed programming languages such as JavaScript or Python may find
+the techniques used here to be similar to dynamic typing, but with static type guarantees.</p>
+<p>We will start with simple examples and then slowly relate them to the design
+of the relayer framework.</p>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="simple-greeter"><a class="header" href="#simple-greeter">Simple Greeter</a></h1>
+<p>Let's say we want to write a simple greeter program that greets a person.
+The simplest way is to write a function like follows:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn greet(name: String) {
+  println!(&quot;Hello, {}!&quot;, name);
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>When calling the <code>greet</code> function from a larger context, we may want to pass
+a <code>Person</code> struct with a <code>name</code> attribute on it, so that the caller does not
+have to know how to get the person's name.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>struct Person {
+  name: String,
+  address: String,
+  // ...
+}
+
+fn greet(person: &amp;Person) {
+  println!(&quot;Hello, {}!&quot;, person.name);
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>But the caller of the <code>greet</code> function might not have the person's information
+on hand, as it may be stored in a database. So we might want to implement
+a <code>greet</code> function that accepts a <code>PersonId</code> and a database handler, so that
+it can load the person's information from the database, and then greets them.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>struct PersonId(String);
+struct Person {
+  id: PersonId,
+  name: String,
+  address: String,
+  // ...
+}
+
+struct Database { /* ... */}
+struct DbError { /* ... */}
+impl Database {
+  fn query_person(&amp;self, person_id: &amp;PersonId) -&gt; Result&lt;Person, DbError&gt; {
+    unimplemented!() // stub
+  }
+}
+
+fn greet(db: &amp;Database, person_id: &amp;PersonId) -&gt; Result&lt;(), DbError&gt; {
+  let person = db.query_person(person_id)?;
+  println!(&quot;Hello, {}&quot;, person.name);
+  Ok(())
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>As the application grows, we can see that the complexity creeps in pretty
+quickly even with such a simple example:</p>
+<ul>
+<li>The full details of the <code>Person</code> struct must be fetched regardless of
+whether the <code>greet</code> function needs it.</li>
+<li>The concrete implementation of <code>Database</code> is exposed to the greet function,
+making it difficult to work with other databases.</li>
+<li>The concrete error <code>DbError</code> from the database query is leaked into the
+<code>greet</code> function implementation.</li>
+</ul>
+<p>When the application is still in its early stages, it might be tempting to
+leave these concerns aside and not worry about them too much. But eventually,
+we will reach a point where we need our application to work with different
+implementations. For example:</p>
+<ul>
+<li>We may want a caching layer to cache the person's information instead of
+querying directly from the database all the time.</li>
+<li>We may want to have different database implementations, such as a mocked-up
+database or an in-memory database.</li>
+<li>We may want to have multiple concrete person types, so that the database
+only fetches the essential information. e.g. <code>PersonWithName</code>,
+<code>PersonWithFullDetails</code>, <code>PersonWithRoles</code> etc.</li>
+</ul>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="comparison-with-dynamic-typing"><a class="header" href="#comparison-with-dynamic-typing">Comparison with Dynamic Typing</a></h1>
+<p>One thing worth noting with our <code>greet</code> example in Rust is that many of the
+problems mentioned are applicable because we are programming in a statically-typed
+language. If we were to re-implement the <code>greet</code> function in a dynamically-
+typed language like JavaScript, many of these problems go away:</p>
+<pre><code class="language-javascript">function greet(db, person_id) {
+  let person = db.query_person(person_id)
+  console.log(`Hello, ${person.name}!`)
+}
+</code></pre>
+<p>Thanks to dynamic typing, the JavaScript <code>greet</code> function above is general
+in several ways:</p>
+<ul>
+<li>The function can work with any <code>db</code> value, as long as it provides a valid
+<code>query_person</code> method.</li>
+<li>The function can work with any <code>person</code> value returned from <code>db.query_person</code>,
+as long as it contains a <code>name</code> field that can be converted into a string.</li>
+<li>The error can be thrown implicitly by <code>db.query_person</code> as an exception.</li>
+</ul>
+<p>On the upside, the dynamic nature of the <code>greet</code> function means that it can
+easily be reused across multiple database and person implementations. On the
+downside, since there is no type information, it is easy to accidentally call
+<code>greet</code> with invalid implementations and only discover the errors late during
+runtime execution.</p>
+<p>Ideally, we would like to have the same benefits of writing generalized programs
+in dynamically-typed contexts, but still enjoy the benefits of type checking when there are
+mismatches in the specialized implementation.</p>
+<h2 id="dynamic-context"><a class="header" href="#dynamic-context">Dynamic Context</a></h2>
+<p>The first thing to notice when writing generalized functions is that there are
+usually contextual values in the surrounding environment that are needed for
+the program to execute successfully.</p>
+<p>In our dynamic <code>greet</code> example, we can generalize the <code>db</code> value and think of it
+as a <code>context</code> value, which may contain other environment parameters such as
+what kind of greeting is used.</p>
+<pre><code class="language-javascript">function greet(context, person_id) {
+  let person = context.query_person(person_id)
+  console.log(`Hello, ${person.name}!`)
+}
+</code></pre>
+<p>In the OOP world, the <code>context</code> value is typically referred to as a <code>this</code> or <code>self</code>
+value. However, for clarity and for more structured composition, it is better
+to think of it as a fully abstract value with unknown type. This allows the
+context value to be augmented in a functional way, without having to resort to
+using any OOP class hierarchy.</p>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="generic-context"><a class="header" href="#generic-context">Generic Context</a></h1>
+<p>Now getting back to Rust, we can first redefine our <code>greet</code> function in Rust
+to use a concrete <code>Context</code> type:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">struct PersonId(String);
+</span><span class="boring">struct Person {
+</span><span class="boring">  id: PersonId,
+</span><span class="boring">  name: String,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct Database { /* ... */}
+</span><span class="boring">struct DbError { /* ... */}
+</span><span class="boring">impl Database {
+</span><span class="boring">  fn query_person(&amp;self, person_id: &amp;PersonId) -&gt; Result&lt;Person, DbError&gt; {
+</span><span class="boring">    unimplemented!() // stub
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span>struct Context {
+  database: Database,
+  // ...
+}
+
+fn greet(context: &amp;Context, person_id: &amp;PersonId) -&gt; Result&lt;(), DbError&gt; {
+  let person = context.database.query_person(person_id)?;
+  println!(&quot;Hello, {}&quot;, person.name);
+  Ok(())
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>At this stage, we have a concrete <code>Context</code> struct that contains the database
+handle as well as other environment parameters that we may need. However,
+<code>Context</code> is still concrete, so it is difficult to reuse the <code>greet</code> function
+in a different context. So let's make the <code>Context</code> generic instead:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">struct PersonId(String);
+</span>
+<span class="boring">struct Person {
+</span><span class="boring">  id: PersonId,
+</span><span class="boring">  name: String,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct Database { /* ... */}
+</span><span class="boring">struct DbError { /* ... */}
+</span>
+<span class="boring">impl Database {
+</span><span class="boring">  fn query_person(&amp;self, person_id: &amp;PersonId) -&gt; Result&lt;Person, DbError&gt; {
+</span><span class="boring">    unimplemented!() // stub
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span>trait ContextWithDatabase {
+  fn database(&amp;self) -&gt; &amp;Database;
+}
+
+fn greet&lt;Context&gt;(context: &amp;Context, person_id: &amp;PersonId)
+  -&gt; Result&lt;(), DbError&gt;
+where
+  Context: ContextWithDatabase,
+{
+  let person = context.database().query_person(person_id)?;
+  println!(&quot;Hello, {}&quot;, person.name);
+  Ok(())
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>In our first attempt, we turn <code>Context</code> into a generic type parameter.
+With that, the concrete details of the context are lost, and we no longer
+know how to access the fields such as the database. But we can recover that
+by defining a <code>ContextWithDatabase</code> trait, which provides read-only
+access to extract a reference to <code>Database</code> from the context.</p>
+<p>With that, we are able to make <code>greet</code> work with any context type as
+long as it contains a field for <code>Database</code>. For example:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">struct Database { /* ... */}
+</span><span class="boring">
+</span><span class="boring">trait ContextWithDatabase {
+</span><span class="boring">  fn database(&amp;self) -&gt; &amp;Database;
+</span><span class="boring">}
+</span><span class="boring">
+</span>struct AppContext {
+  database: Database
+}
+
+impl ContextWithDatabase for AppContext {
+  fn database(&amp;self) -&gt; &amp;Database {
+    &amp;self.database
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>However, since the <code>Database</code> type is concrete, it is challenging if we
+want to run <code>greet</code> with an environment without a database, such as
+an in-memory key-value store, cache store, or a blockchain. What we can do
+instead is to define methods such that we can query for a person's details
+directly from the context:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">struct PersonId(String);
+</span><span class="boring">struct Person {
+</span><span class="boring">  id: PersonId,
+</span><span class="boring">  name: String,
+</span><span class="boring">}
+</span><span class="boring">
+</span>struct Error { /* ... */}
+
+trait QueryPersonContext {
+  fn query_person(&amp;self, person_id: &amp;PersonId) -&gt;  Result&lt;Person, Error&gt;;
+}
+
+fn greet&lt;Context&gt;(context: &amp;Context, person_id: &amp;PersonId)
+  -&gt; Result&lt;(), Error&gt;
+where
+  Context: QueryPersonContext,
+{
+  let person = context.query_person(person_id)?;
+  println!(&quot;Hello, {}&quot;, person.name);
+  Ok(())
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>We define a <code>QueryPersonContext</code> trait that exposes a method for querying for a
+person's details directly from the context. With that, we can have our <code>greet</code>
+function work with any context type that knows how to query for person details,
+regardless of whether it is implemented as a database query.</p>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="error-context"><a class="header" href="#error-context">Error Context</a></h1>
+<p>One thing to note however is that the <code>Error</code> type in <code>QueryPersonContext</code>
+is concrete. With that, it would be problematic if we want to define new contexts
+that have different query methods but also return different errors. While it
+is possible to define a dynamic error type such as <code>Box&lt;dyn Error&gt;</code>, such type
+erasure would mean that we lose information about what kinds of errors can happen
+when we try to query for <code>Person</code> details.</p>
+<p>We can instead make the error type <em>generic</em>. But instead of using it as a
+generic parameter for <code>greet</code>, we can define it as an <em>associated type</em> for
+the generic type <code>Context</code>:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">struct PersonId(String);
+</span><span class="boring">struct Person {
+</span><span class="boring">  id: PersonId,
+</span><span class="boring">  name: String,
+</span><span class="boring">}
+</span><span class="boring">
+</span>trait ErrorContext {
+  type Error;
+}
+
+trait QueryPersonContext: ErrorContext {
+  fn query_person(&amp;self, person_id: &amp;PersonId) -&gt;  Result&lt;Person, Self::Error&gt;;
+}
+
+fn greet&lt;Context&gt;(context: &amp;Context, person_id: &amp;PersonId)
+  -&gt; Result&lt;(), Context::Error&gt;
+where
+  Context: QueryPersonContext,
+{
+  let person = context.query_person(person_id)?;
+  println!(&quot;Hello, {}&quot;, person.name);
+  Ok(())
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>We define a new <code>ErrorContext</code> trait with only one thing, which is the <code>Error</code>
+associated type. Aside from that, there is nothing known about the <code>Error</code>
+type, but that is ok as we will see later on. The trait <code>QueryPersonContext</code>
+then has <code>ErrorContext</code> as its supertrait, esentially allowing it to access
+the associated type as <code>Self::Error</code> in the return type of <code>query_person</code>.</p>
+<p>We define the <code>Error</code> associated type in a separate <code>ErrorContext</code> trait,
+instead of directly in the <code>QueryPersonContext</code> trait. As we will see later,
+this is essential to allow multiple context traits to access the same
+<code>Error</code> type.</p>
+<p>In the <code>greet</code> function, we require the generic <code>Context</code> type to
+implement <code>QueryPersonContext</code>. But since <code>ErrorContext</code> is a supertrait of
+<code>QueryPersonContext</code>, we would also able to access the error type as
+<code>Context::Error</code>.</p>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="explicit-associated-type-binding"><a class="header" href="#explicit-associated-type-binding">Explicit Associated Type Binding</a></h1>
+<p>As we can see, by having generic type parameters as associated types in the
+traits that <code>Context</code> implements, we are able to keep just one generic type
+parameter in the <code>greet</code> function.</p>
+<p>However, it is still possible for us to explicitly pull out <code>Error</code> as a generic
+type parameter and bind to the <code>Error</code> associated type as follows:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">struct PersonId(String);
+</span><span class="boring">struct Person {
+</span><span class="boring">  id: PersonId,
+</span><span class="boring">  name: String,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait ErrorContext {
+</span><span class="boring">  type Error;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait QueryPersonContext: ErrorContext {
+</span><span class="boring">  fn query_person(&amp;self, person_id: &amp;PersonId) -&gt;  Result&lt;Person, Self::Error&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span>fn greet&lt;Context, Error&gt;(context: &amp;Context, person_id: &amp;PersonId)
+  -&gt; Result&lt;(), Error&gt;
+where
+  Context: QueryPersonContext&lt;Error=Error&gt;,
+{
+  let person = context.query_person(person_id)?;
+  println!(&quot;Hello, {}&quot;, person.name);
+  Ok(())
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>By specifying the trait bound <code>Context: QueryPersonContext&lt;Error=Error&gt;</code>,
+we state that the <code>greet</code> function works with any generic type <code>Error</code>,
+provided that <code>Context::Error</code> is the same as <code>Error</code>. With the explicit
+binding, we are able to have <code>greet</code> return <code>Result&lt;(), Error&gt;</code> instead of
+<code>Result&lt;(), Context::Error&gt;</code>.</p>
+<p>There are sometimes benefits when we bind the associated types to an explicit
+generic type parameter. For one, the inferred type shown in IDEs like
+Rust Analyzer would be simpler, as they are shown as <code>Error</code> instead of
+the fully qualified syntax <code>&lt;Context as ErrorContext&gt;::Error</code>.
+As we will see later, explicit type parameters also help us by providing a
+way to specify the additional trait bounds of the associated types.</p>
+<p>Aside from that, it is up to the programmer to decide whether to bind
+the associated types to explicit type parameters. The key thing to understand
+here is that the explicit bindings are optional, and we can choose to
+omit such parameters whenever it is appropriate.</p>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="generic-person"><a class="header" href="#generic-person">Generic Person</a></h1>
+<p>Right now, our <code>Error</code> type has become generic, but our <code>Person</code> type is
+still concrete. We may also want to make the <code>Person</code> type generic in a
+similar way, so that the <code>greet</code> function can work with any other
+person types.</p>
+<p>This may be essential for reasons such as performance. For instance,
+depending on where <code>greet</code> is called, it may be desirable to load
+all details about a person from the database so that it can be
+cached, or conversely, it might be desirable to load minimal details in order to
+save bandwidth.</p>
+<p>From the perspective of <code>greet</code>, it does not matter what fields a <code>Person</code>
+type has, as long as it can extract the name of the person as a string.
+So we can generalize the <code>Person</code> type as follows:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>trait NamedPerson {
+  fn name(&amp;self) -&gt; &amp;str;
+}
+
+trait ErrorContext {
+  type Error;
+}
+
+trait PersonContext {
+  type PersonId;
+  type Person: NamedPerson;
+}
+
+trait QueryPersonContext: PersonContext + ErrorContext {
+  fn query_person(&amp;self, person_id: &amp;Self::PersonId)
+    -&gt; Result&lt;Self::Person, Self::Error&gt;;
+}
+
+fn greet&lt;Context&gt;(context: &amp;Context, person_id: &amp;Context::PersonId)
+  -&gt; Result&lt;(), Context::Error&gt;
+where
+  Context: QueryPersonContext,
+{
+  let person = context.query_person(person_id)?;
+  println!(&quot;Hello, {}&quot;, person.name());
+  Ok(())
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>We first define a <code>NamedPerson</code> trait, with a <code>name</code> method to extract a string
+out from the person. We also define a <code>PersonContext</code> trait that has two
+associated types: <code>PersonId</code> and <code>Person</code>. The <code>PersonId</code> type is completely
+generic, as we don't care whether it is a string, an integer, or a UUID.
+The associated type <code>Person</code> is also generic, but we also add a trait bound
+that the type must implement <code>NamedPerson</code>.</p>
+<p>The <code>QueryPersonContext</code> is now defined with <code>PersonContext</code> as another of its
+supertraits. With that, the <code>query_person</code> method becomes completely abstract.
+A generic consumer would only know that, given an abstract type
+<code>Context::PersonId</code>, it can query the <code>Context</code> and either get back an abstract
+type <code>Context::Person</code> that implements <code>NamedPerson</code>, or get back an abstract
+error <code>Context::Error</code>.</p>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="programs-as-types"><a class="header" href="#programs-as-types">Programs as Types</a></h1>
+<p>The <code>greet</code> function that we have defined at this point can now work with
+any context type that implements the required traits. In practice, we may
+also want to implement different versions of the <code>greet</code> function so that
+they can be consumed generically by other components.</p>
+<p>With the generic context design, we define a <code>Greeter</code> interface that
+is parameterized by a generic context, and can be used by any other
+components that also share the same context. This can be defined as
+follows:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">trait NamedPerson {
+</span><span class="boring">  fn name(&amp;self) -&gt; &amp;str;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait ErrorContext {
+</span><span class="boring">  type Error;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonContext {
+</span><span class="boring">  type PersonId;
+</span><span class="boring">  type Person: NamedPerson;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait QueryPersonContext: PersonContext + ErrorContext {
+</span><span class="boring">  fn query_person(&amp;self, person_id: &amp;Self::PersonId)
+</span><span class="boring">    -&gt; Result&lt;Self::Person, Self::Error&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span>trait Greeter&lt;Context&gt;
+where
+  Context: PersonContext + ErrorContext,
+{
+  fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+    -&gt; Result&lt;(), Context::Error&gt;;
+}
+
+struct SimpleGreeter;
+
+impl&lt;Context&gt; Greeter&lt;Context&gt; for SimpleGreeter
+where
+  Context: QueryPersonContext,
+{
+  fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+    -&gt; Result&lt;(), Context::Error&gt;
+  {
+    let person = context.query_person(person_id)?;
+    println!(&quot;Hello, {}&quot;, person.name());
+    Ok(())
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>The <code>Greeter</code> trait is defined to be parameterized by a generic <code>Context</code> type,
+which is required to implement both <code>PersonContext</code> and <code>ErrorContext</code>.
+The <code>greet</code> method is then defined without generic parameters, as these have been
+captured in the trait definition. We then define an empty struct <code>SimpleGreeter</code>,
+which is there only to implement the <code>Greeter</code> trait for any <code>Context</code> type
+that implements <code>QueryPersonContext</code>.</p>
+<p>It is worth noticing here that in the main <code>Greeter</code> trait definition,
+the <code>Context</code> type, is only required to implement <code>PersonContext</code> and
+<code>ErrorContext</code>, but there is no mention of the <code>QueryPersonContext</code>
+trait bound. On the other hand, the concrete <code>Greeter</code> implementation
+for <code>SimpleGreeter</code> can require the additional trait bound
+<code>Context: QueryPersonContext</code> in its <code>impl</code> definition.</p>
+<p>This demonstrates the benefits of separating the <code>QueryPersonContext</code>
+from the <code>PersonContext</code> trait: From the perspective of a consumer
+that uses the <code>Greeter</code> component, it does not need to know whether
+the generic context type implements <code>QueryPersonContext</code>. This means
+that from the trait bounds alone, we can tell whether a piece of code
+can call <code>query_person</code> directly, or whether it can only call the
+<code>greet</code> method to greet a person without knowing how the greeter determined
+the person's name.</p>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="context-implementation"><a class="header" href="#context-implementation">Context Implementation</a></h1>
+<p>With the basic traits implemented, we now look at how we can define a
+concrete context that satisfies the traits:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">trait NamedPerson {
+</span><span class="boring">  fn name(&amp;self) -&gt; &amp;str;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait ErrorContext {
+</span><span class="boring">  type Error;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonContext {
+</span><span class="boring">  type PersonId;
+</span><span class="boring">  type Person: NamedPerson;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait QueryPersonContext: PersonContext + ErrorContext {
+</span><span class="boring">  fn query_person(&amp;self, person_id: &amp;Self::PersonId)
+</span><span class="boring">    -&gt; Result&lt;Self::Person, Self::Error&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait Greeter&lt;Context&gt;
+</span><span class="boring">where
+</span><span class="boring">  Context: PersonContext + ErrorContext,
+</span><span class="boring">{
+</span><span class="boring">  fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">    -&gt; Result&lt;(), Context::Error&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct SimpleGreeter;
+</span><span class="boring">
+</span><span class="boring">impl&lt;Context&gt; Greeter&lt;Context&gt; for SimpleGreeter
+</span><span class="boring">where
+</span><span class="boring">  Context: QueryPersonContext,
+</span><span class="boring">{
+</span><span class="boring">  fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">    -&gt; Result&lt;(), Context::Error&gt;
+</span><span class="boring">  {
+</span><span class="boring">    let person = context.query_person(person_id)?;
+</span><span class="boring">    println!(&quot;Hello, {}&quot;, person.name());
+</span><span class="boring">    Ok(())
+</span><span class="boring">  }
+</span><span class="boring">}
+</span>struct BasicPerson {
+  name: String,
+}
+
+impl NamedPerson for BasicPerson {
+  fn name(&amp;self) -&gt; &amp;str {
+    &amp;self.name
+  }
+}
+
+struct AppContext {
+  database: Database,
+}
+
+// Database stubs
+struct Database;
+struct DbError;
+
+enum AppError {
+  Database(DbError),
+  // ...
+}
+
+impl ErrorContext for AppContext {
+  type Error = AppError;
+}
+
+impl PersonContext for AppContext {
+  type PersonId = String;
+  type Person = BasicPerson;
+}
+
+impl QueryPersonContext for AppContext {
+  fn query_person(&amp;self, person_id: &amp;Self::PersonId)
+    -&gt; Result&lt;Self::Person, Self::Error&gt;
+  {
+    unimplemented!() // database stub
+  }
+}
+
+fn app_greeter() -&gt; impl Greeter&lt;AppContext&gt; {
+  SimpleGreeter
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>We first define a <code>BasicPerson</code> struct with only a <code>name</code> field,
+since that is the minimal information required for <code>greet</code> to work.
+We implement <code>NamedPerson</code> for <code>BasicPerson</code>, by simply returning
+<code>&amp;self.name</code>.</p>
+<p>We also define an <code>AppContext</code> struct with a stub database field.
+For demonstration purposes, we have a dummy <code>Database</code> struct, and a <code>DbError</code>
+type to represent database errors. We also define an <code>AppError</code>
+enum to represent all application errors, with one of them being
+<code>DbError</code>.</p>
+<p>We implement <code>ErrorContext</code> for <code>AppContext</code>, with <code>AppError</code> as
+the <code>Error</code> type. We also implement <code>PersonContext</code> for <code>AppContext</code>,
+with the <code>PersonId</code> associated type being <code>String</code> and the <code>Person</code>
+associated type being <code>BasicPerson</code>. We also implement <code>QueryPersonContext</code>
+but leave the <code>query_person</code> as a stub for performing database queries
+in an actual application.</p>
+<p>Finally, we implement an <code>app_greeter</code> function as a <em>witness</em> that
+we can construct a type that implements <code>Greeter&lt;AppContext&gt;</code>.
+The function is implemented by simply returning <code>SimpleGreeter</code>.
+The fact that the function compiles proves that <code>SimpleGreeter</code>
+can <em>always</em> be used as a <code>Greeter&lt;AppContext&gt;</code>.</p>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="compile-time-dependency-injection"><a class="header" href="#compile-time-dependency-injection">Compile-Time Dependency Injection</a></h1>
+<p>The <code>app_greeter</code> function above demonstrates a form of <em>dependency injection</em>
+done at compile time. This is because for any code to use a type implementing
+<code>Greeter&lt;Context&gt;</code>, they only need to know that <code>Context</code> implements
+<code>ErrorContext</code> and <code>PersonContext</code>. But to make <code>SimpleGreeter</code> implement
+<code>Greeter&lt;Context&gt;</code>, it also needs <code>Context</code> to implement <code>QueryPersonContext</code>.</p>
+<p>When we return <code>SimpleGreeter</code> inside <code>app_greeter</code>, the Rust compiler would
+figure out that <code>SimpleGreeter</code> requires <code>AppContext</code> to implement
+<code>QueryPersonContext</code>. It would then try to automatically <em>resolve</em> the
+dependency by searching for an implementation of <code>QueryPersonContext</code>
+for <code>AppContext</code>. Upon finding the implementation, Rust &quot;binds&quot; that
+implementation with <code>SimpleGreeter</code>, and return it as an existential
+type that implements <code>Greeter&lt;AppContext&gt;</code>. As a result,
+We can treat the type returned from <code>app_greeter</code> as an abstract type,
+and &quot;forget&quot; the fact that <code>AppContext</code> implements <code>QueryPersonContext</code>.</p>
+<p>This pattern of making use of Rust's trait system for depedency injection
+efficiently solves the
+<a href="https://tmandry.gitlab.io/blog/posts/2021-12-21-context-capabilities/">context and capabilities problem</a>
+in Rust. Without it, we would have to rely on more exotic language features
+that are not available in Rust, or resort to manual passing of dependencies
+by hands.</p>
+<p>For example, we could perform manual binding for an implementation similar
+to <code>SimpleGreeter</code> as a purely generic function as follows:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">trait NamedPerson {
+</span><span class="boring">  fn name(&amp;self) -&gt; &amp;str;
+</span><span class="boring">}
+</span><span class="boring">
+</span>fn make_simpler_greeter&lt;Context, PersonId, Person, Error&gt;(
+  query_person: impl Fn(&amp;Context, &amp;PersonId) -&gt; Result&lt;Person, Error&gt;,
+) -&gt; impl Fn(&amp;Context, &amp;PersonId) -&gt; Result&lt;(), Error&gt;
+where
+  Person: NamedPerson,
+{
+  move | context, person_id | {
+    let person = query_person(context, person_id)?;
+    println!(&quot;Hello, {}&quot;, person.name());
+    Ok(())
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>As we can see, the ad hoc function <code>make_simpler_greeter</code> that we defined is
+much more verbose than the earlier trait-based implementation. We would
+have to explicitly track 4 generic type parameters, and we would have to
+manually pass in dependencies like <code>query_person</code> and return nested closures.</p>
+<p>When we delegate the management of the context dependencies to Rust's trait
+system, we can think of Rust making automatic binding of depedencies similar
+to what's being done in the code above. The binding is not only automated,
+but also much more efficient. Because the binding is done at compile time,
+it allows Rust to perform any further optimization such as inlining the code.</p>
+<p>As we will see later, the same resolution can be applied to <em>nested</em>
+dependencies. Thanks to how the trait system works, we can specify
+complex dependencies for our components, and have Rust figure out
+how to stitch together the dependencies and construct the combined
+components that we need.</p>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="component-composition"><a class="header" href="#component-composition">Component Composition</a></h1>
+<p>Now suppose that we want to extend our greeter component such that it only
+greets a person at day time during office hours. We could directly modify
+the <code>Greeter</code> implementation for <code>SimpleGreeter</code> to do that, but that may
+complicate the implementation and makes it more difficult to understand
+the core logic. Alternatively, we could define a new <code>DaytimeGreeter</code>
+component that <em>wraps</em> around the original <code>SimpleGreeter</code>.</p>
+<p>In this new <code>DaytimeGreeter</code> component, it would need to know how to
+get the current time of the system, as well as how to tell whether
+a given time value is at daytime. Following the context pattern we
+learned, we will also define a <code>TimeContext</code> trait for getting the time.</p>
+<p>The full implementation is as follows:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use std::time::Duration;
+</span><span class="boring">
+</span><span class="boring">trait NamedPerson {
+</span><span class="boring">  fn name(&amp;self) -&gt; &amp;str;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait ErrorContext {
+</span><span class="boring">  type Error;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonContext {
+</span><span class="boring">  type PersonId;
+</span><span class="boring">  type Person: NamedPerson;
+</span><span class="boring">}
+</span><span class="boring">
+</span>trait SimpleTime {
+  fn is_daytime(&amp;self) -&gt; bool;
+}
+
+trait TimeContext {
+  type Time;
+
+  fn now(&amp;self) -&gt; Self::Time;
+}
+
+trait Greeter&lt;Context&gt;
+where
+  Context: PersonContext + ErrorContext,
+{
+  fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+    -&gt; Result&lt;(), Context::Error&gt;;
+}
+
+struct DaytimeGreeter&lt;InGreeter&gt;(InGreeter);
+
+impl&lt;Context, InGreeter&gt; Greeter&lt;Context&gt; for DaytimeGreeter&lt;InGreeter&gt;
+where
+  InGreeter: Greeter&lt;Context&gt;,
+  Context: TimeContext + PersonContext + ErrorContext,
+  Context::Time: SimpleTime,
+{
+  fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+    -&gt; Result&lt;(), Context::Error&gt;
+  {
+    let now = context.now();
+    if now.is_daytime() {
+      self.0.greet(context, person_id)?;
+    } else {
+      println!(&quot;Sorry, the shop has closed now!&quot;);
+    }
+    Ok(())
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>For demo purpose, we first define a <code>SimpleTime</code> trait that provides an
+<code>is_daytime</code> method to tell whether the a time value is in daytime.
+Following that, we define a <code>TimeContext</code> trait that provides a <code>now</code> method
+to fetch the current time from the context. Notice that the associated type
+<code>Time</code> does <em>not</em> implement <code>SimpleTime</code>. This is so that we can learn how
+to inject the <code>SimpleTime</code> constraint as an <em>indirect dependency</em> using the
+same dependency injection technique.</p>
+<p>We then define the <code>DaytimeGreeter</code> with a <code>InGreeter</code> type parameter, which
+would act as the inner <code>Greeter</code> component. We then define a generic
+implementation of <code>Greeter&lt;Context&gt;</code> for <code>DaytimeGreeter&lt;InGreeter&gt;</code>.
+In the trait bounds, we require the inner greeter <code>InGreeter</code> to also
+implement <code>Greeter&lt;Context&gt;</code>, since the core logic is implemented over there.</p>
+<p>Aside from <code>PersonContext</code> and <code>ErrorContext</code>, we also requires <code>Context</code>
+to implement <code>TimeContext</code> for <code>DaytimeGreeter</code> to fetch the current time.
+Other than that, we also explicitly requires that the associated type
+<code>Context::Time</code> to implement <code>SimpleTime</code>.</p>
+<p>By specifying <code>SimpleTime</code> as an explicit dependency, we relax the requirement
+of how the <code>TimeContext</code> trait can be used by other components. So if
+<code>SimpleTime</code> is only ever used by <code>DaytimeGreeter</code>, and if an application
+do not need <code>DaytimeGreeter</code>, then a concrete context can skip implementing
+<code>SimpleTime</code> for its time type, even if the trait <code>TimeContext</code> is used by
+other components.</p>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="error-injection"><a class="header" href="#error-injection">Error Injection</a></h1>
+<p>In our earlier implementation of <code>DaytimeGreeter</code>, the greeter simply prints
+out that the shop has closed, and then return successfully without calling
+the inner greeter. But what if we want <code>DaytimeGreeter</code> to return an error
+during night time? Since the associated type <code>Error</code> in <code>ErrorContext</code>
+is abstract, there is no obvious way we can construct an error value of
+type <code>Error</code>.</p>
+<p>On the other hand, we learned in the earlier section that we can specify
+additional trait bound for <code>Context::Time</code> to implement <code>SimpleTime</code>.
+Similarly, we can also specify additional trait bounds for <code>Context::Error</code>
+so that we gain additional knowledge on how to construct an error value.</p>
+<p>We can do this by defining a custom <code>ShopClosedError</code> struct, and require
+<code>Context::Error</code> to implement a <code>From</code> instance for conversion from
+<code>ShopClosedError</code>:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use std::time::Duration;
+</span><span class="boring">trait NamedPerson {
+</span><span class="boring">  fn name(&amp;self) -&gt; &amp;str;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait ErrorContext {
+</span><span class="boring">  type Error;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonContext {
+</span><span class="boring">  type PersonId;
+</span><span class="boring">  type Person: NamedPerson;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait SimpleTime {
+</span><span class="boring">  fn is_daytime(&amp;self) -&gt; bool;
+</span><span class="boring">
+</span><span class="boring">  fn duration_since(&amp;self, other: &amp;Self) -&gt; Duration;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait TimeContext {
+</span><span class="boring">  type Time;
+</span><span class="boring">
+</span><span class="boring">  fn now(&amp;self) -&gt; Self::Time;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait Greeter&lt;Context&gt;
+</span><span class="boring">where
+</span><span class="boring">  Context: PersonContext + ErrorContext,
+</span><span class="boring">{
+</span><span class="boring">  fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">    -&gt; Result&lt;(), Context::Error&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span>struct ShopClosedError&lt;Time&gt; { time: Time }
+
+struct DaytimeGreeter&lt;InGreeter&gt;(InGreeter);
+
+impl&lt;Context, InGreeter&gt; Greeter&lt;Context&gt; for DaytimeGreeter&lt;InGreeter&gt;
+where
+  InGreeter: Greeter&lt;Context&gt;,
+  Context: TimeContext + PersonContext + ErrorContext,
+  Context::Time: SimpleTime,
+  Context::Error: From&lt;ShopClosedError&lt;Context::Time&gt;&gt;,
+{
+  fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+    -&gt; Result&lt;(), Context::Error&gt;
+  {
+    let now = context.now();
+    if now.is_daytime() {
+      self.0.greet(context, person_id)
+    } else {
+      Err(ShopClosedError { time: now }.into())
+    }
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>The <code>ShopClosedError</code> is parameterized by a generic <code>Time</code> type, so that
+it can provide detail about the time that caused <code>ShopClosedError</code> to be
+raised. In the <code>Greeter</code> implementation for <code>DaytimeGreeter</code>, we add an
+addition trait bound to require <code>Context::Error</code> to implement
+<code>From&lt;ShopClosedError&lt;Context::Time&gt;&gt;</code>. With that, if the time returned
+by <code>context.now()</code> is in night time, we can construct a <code>ShopClosedError</code>
+and turn it into <code>Context::Error</code> using the <code>into</code> method.</p>
+<p>What we have done above is essentially specifying an <em>error injection method</em>
+for injecting a sub-error type into the main error type. With this, individual
+components do not need to know about the concrete application error and all
+the possible errors that can be raised. But they can still <em>inject</em> specific
+error into the main error type by requiring additional <code>From</code> constraints.</p>
+<p>For instance, <code>DaytimeGreeter</code> do not need to be aware of whether the inner
+greeter component would raise a database error. And from the <code>impl</code> definition,
+we can be confident that <code>DaytimeGreeter</code> itself cannot raise any sub-error
+other than <code>ShopClosedError</code>.</p>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="multiple-type-bindings"><a class="header" href="#multiple-type-bindings">Multiple Type Bindings</a></h1>
+<p>When specifying the constraints for indirect depedencies, we have to keep using
+the <code>Context::</code> prefix to access associated types like <code>Context::Error</code>. Worse,
+once we start using nested associated types, we would have to resort to use
+fully qualified syntaxes like <code>&lt;Context::Foo as Foo&gt;::Bar</code> instead of
+<code>Context::Foo::Bar</code>.</p>
+<p>To help simplify the trait bounds for components like <code>DaytimeGreeter</code>, we
+can use the explicit associated type bindings we learn earlier:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use std::time::Duration;
+</span><span class="boring">trait NamedPerson {
+</span><span class="boring">  fn name(&amp;self) -&gt; &amp;str;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait ErrorContext {
+</span><span class="boring">  type Error;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonContext {
+</span><span class="boring">  type PersonId;
+</span><span class="boring">  type Person: NamedPerson;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait SimpleTime {
+</span><span class="boring">  fn is_daytime(&amp;self) -&gt; bool;
+</span><span class="boring">
+</span><span class="boring">  fn duration_since(&amp;self, other: &amp;Self) -&gt; Duration;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait TimeContext {
+</span><span class="boring">  type Time;
+</span><span class="boring">
+</span><span class="boring">  fn now(&amp;self) -&gt; Self::Time;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait Greeter&lt;Context&gt;
+</span><span class="boring">where
+</span><span class="boring">  Context: PersonContext + ErrorContext,
+</span><span class="boring">{
+</span><span class="boring">  fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">    -&gt; Result&lt;(), Context::Error&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct ShopClosedError&lt;Time&gt; { time: Time }
+</span><span class="boring">
+</span><span class="boring">struct DaytimeGreeter&lt;InGreeter&gt;(InGreeter);
+</span><span class="boring">
+</span>impl&lt;Context, InGreeter, Time, Error, PersonId&gt;
+  Greeter&lt;Context&gt; for DaytimeGreeter&lt;InGreeter&gt;
+where
+  InGreeter: Greeter&lt;Context&gt;,
+  Context: ErrorContext&lt;Error=Error&gt;,
+  Context: PersonContext&lt;PersonId=PersonId&gt;,
+  Context: TimeContext&lt;Time=Time&gt;,
+  Time: SimpleTime,
+  Error: From&lt;ShopClosedError&lt;Time&gt;&gt;,
+{
+  fn greet(&amp;self, context: &amp;Context, person_id: &amp;PersonId)
+    -&gt; Result&lt;(), Error&gt;
+  {
+    let now = context.now();
+    if now.is_daytime() {
+      self.0.greet(context, person_id)
+    } else {
+      Err(ShopClosedError { time: now }.into())
+    }
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>In our new <code>Greeter</code> implementation, we introduce the generic parameters
+<code>Time</code>, <code>Error</code>, and <code>PersonId</code>. We then bind the types to the associated
+types of the context traits, such as <code>ErrorContext&lt;Error=Error&gt;</code>. With the
+bindings in place we can have simpler trait bounds like <code>Time: SimpleTime</code>
+to be specified in place of the more verbose <code>Context::Time: SimpleTime</code>.</p>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="concrete-composition"><a class="header" href="#concrete-composition">Concrete Composition</a></h1>
+<p>Now that we have both <code>SimpleGreeter</code> and <code>DaytimeGreeter</code> implemented, we
+can look at how we can define a fully application context that satisfies the
+constraints of both greeters. To better structure our application, we also
+separate out different parts of the code into separate modules.</p>
+<p>First, we put all the abstract traits into a <code>traits</code> module:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>mod app {
+  mod traits {
+    pub trait NamedPerson {
+      fn name(&amp;self) -&gt; &amp;str;
+    }
+
+    pub trait SimpleTime {
+      fn is_daytime(&amp;self) -&gt; bool;
+    }
+
+    pub trait ErrorContext {
+      type Error;
+    }
+
+    pub trait PersonContext {
+      type PersonId;
+      type Person: NamedPerson;
+    }
+
+    pub trait TimeContext {
+      type Time;
+
+      fn now(&amp;self) -&gt; Self::Time;
+    }
+  }
+
+  // ...
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>This module do not contain any concrete type definition, and thus can have
+minimal dependency to external crates.</p>
+<p>In practice, the trait definitions can be placed in different sub-modules, so
+that we can have more fine grained control of which traits a component depends
+on.</p>
+<p>Next, we define <code>SimpleGreeter</code> and <code>DaytimeGreeter</code> in separate modules.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>mod app {
+  mod traits {
+    // ...
+<span class="boring">   pub trait NamedPerson {
+</span><span class="boring">     fn name(&amp;self) -&gt; &amp;str;
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   pub trait SimpleTime {
+</span><span class="boring">     fn is_daytime(&amp;self) -&gt; bool;
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   pub trait ErrorContext {
+</span><span class="boring">     type Error;
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   pub trait PersonContext {
+</span><span class="boring">     type PersonId;
+</span><span class="boring">     type Person: NamedPerson;
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   pub trait TimeContext {
+</span><span class="boring">     type Time;
+</span><span class="boring">
+</span><span class="boring">     fn now(&amp;self) -&gt; Self::Time;
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   pub trait QueryPersonContext: PersonContext + ErrorContext {
+</span><span class="boring">     fn query_person(&amp;self, person_id: &amp;Self::PersonId)
+</span><span class="boring">       -&gt; Result&lt;Self::Person, Self::Error&gt;;
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   pub trait Greeter&lt;Context&gt;
+</span><span class="boring">   where
+</span><span class="boring">     Context: PersonContext + ErrorContext,
+</span><span class="boring">   {
+</span><span class="boring">     fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">       -&gt; Result&lt;(), Context::Error&gt;;
+</span><span class="boring">   }
+</span>  }
+
+  mod simple_greeter {
+    use super::traits::{Greeter, NamedPerson, QueryPersonContext};
+
+    pub struct SimpleGreeter;
+
+    impl&lt;Context&gt; Greeter&lt;Context&gt; for SimpleGreeter
+    where
+      Context: QueryPersonContext,
+    {
+      fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+        -&gt; Result&lt;(), Context::Error&gt;
+      {
+        let person = context.query_person(person_id)?;
+        println!(&quot;Hello, {}&quot;, person.name());
+        Ok(())
+      }
+    }
+  }
+
+  mod daytime_greeter {
+    use super::traits::{
+      Greeter, ErrorContext, PersonContext,
+      TimeContext, SimpleTime,
+    };
+
+    pub struct DaytimeGreeter&lt;InGreeter&gt;(pub InGreeter);
+
+    pub struct ShopClosedError&lt;Time&gt; { time: Time }
+
+    impl&lt;Context, InGreeter, Time, Error, PersonId&gt;
+      Greeter&lt;Context&gt; for DaytimeGreeter&lt;InGreeter&gt;
+    where
+      InGreeter: Greeter&lt;Context&gt;,
+      Context: ErrorContext&lt;Error=Error&gt;,
+      Context: PersonContext&lt;PersonId=PersonId&gt;,
+      Context: TimeContext&lt;Time=Time&gt;,
+      Time: SimpleTime,
+      Error: From&lt;ShopClosedError&lt;Time&gt;&gt;,
+    {
+      fn greet(&amp;self, context: &amp;Context, person_id: &amp;PersonId)
+        -&gt; Result&lt;(), Error&gt;
+      {
+        let now = context.now();
+        if now.is_daytime() {
+          self.0.greet(context, person_id)
+        } else {
+          Err(ShopClosedError { time: now }.into())
+        }
+      }
+    }
+  }
+
+  // ...
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>The two greeter components do not depend on each other, but they all depend
+on the <code>traits</code> crate to make use the abstract definitions. Since these
+components do not depend on other crates, they are also <em>abstract</em> components
+that can be instantiated with <em>any</em> context types that satisfy the trait
+bounds.</p>
+<p>Next, we define our concrete <code>AppContext</code> struct that implements all
+context traits:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>mod app {
+  mod traits {
+    // ...
+<span class="boring">   pub trait NamedPerson {
+</span><span class="boring">     fn name(&amp;self) -&gt; &amp;str;
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   pub trait SimpleTime {
+</span><span class="boring">     fn is_daytime(&amp;self) -&gt; bool;
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   pub trait ErrorContext {
+</span><span class="boring">     type Error;
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   pub trait PersonContext {
+</span><span class="boring">     type PersonId;
+</span><span class="boring">     type Person: NamedPerson;
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   pub trait TimeContext {
+</span><span class="boring">     type Time;
+</span><span class="boring">
+</span><span class="boring">     fn now(&amp;self) -&gt; Self::Time;
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   pub trait QueryPersonContext: PersonContext + ErrorContext {
+</span><span class="boring">     fn query_person(&amp;self, person_id: &amp;Self::PersonId)
+</span><span class="boring">       -&gt; Result&lt;Self::Person, Self::Error&gt;;
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   pub trait Greeter&lt;Context&gt;
+</span><span class="boring">   where
+</span><span class="boring">     Context: PersonContext + ErrorContext,
+</span><span class="boring">   {
+</span><span class="boring">     fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">       -&gt; Result&lt;(), Context::Error&gt;;
+</span><span class="boring">   }
+</span>  }
+
+  mod simple_greeter {
+    // ...
+  }
+
+  mod daytime_greeter {
+    pub struct ShopClosedError&lt;Time&gt; { time: Time }
+    // ...
+  }
+
+  mod context {
+    use super::traits::*;
+    use super::daytime_greeter::ShopClosedError;
+
+    #[derive(Copy, Clone, PartialEq, Eq)]
+    pub enum DummyTime {
+      DayTime,
+      NightTime,
+    }
+
+    pub struct BasicPerson {
+      name: String,
+    }
+
+    pub struct AppContext {
+      database: Database,
+      time: DummyTime,
+    }
+
+    // Database stubs
+    struct Database;
+    struct DbError;
+
+    pub enum AppError {
+      Database(DbError),
+      ShopClosed(ShopClosedError&lt;DummyTime&gt;),
+      // ...
+    }
+
+    impl ErrorContext for AppContext {
+      type Error = AppError;
+    }
+
+    impl PersonContext for AppContext {
+      type PersonId = String;
+      type Person = BasicPerson;
+    }
+
+    impl TimeContext for AppContext {
+      type Time = DummyTime;
+
+      fn now(&amp;self) -&gt; DummyTime {
+        self.time
+      }
+    }
+
+    impl QueryPersonContext for AppContext {
+      fn query_person(&amp;self, person_id: &amp;Self::PersonId)
+        -&gt; Result&lt;Self::Person, Self::Error&gt;
+      {
+        unimplemented!() // database stub
+      }
+    }
+
+    impl NamedPerson for BasicPerson {
+      fn name(&amp;self) -&gt; &amp;str {
+        &amp;self.name
+      }
+    }
+
+    impl SimpleTime for DummyTime {
+      fn is_daytime(&amp;self) -&gt; bool {
+        self == &amp;DummyTime::DayTime
+      }
+    }
+
+    impl From&lt;ShopClosedError&lt;DummyTime&gt;&gt; for AppError {
+      fn from(err: ShopClosedError&lt;DummyTime&gt;) -&gt; Self {
+        Self::ShopClosed(err)
+      }
+    }
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Compared to before, we define a <code>DummyTime</code> struct that
+mocks the current time with either day time or night time. We then
+implement <code>TimeContext</code> for <code>AppContext</code>, with <code>DummyTime</code> being the
+<code>Time</code> type. We also add <code>ShopClosedError&lt;DummyTime&gt;</code> as a variant to
+<code>AppError</code>, and define a <code>From</code> instance for it.</p>
+<p>As we can see in this exercise, by having all types used by the greeter
+components as abstract types, it becomes very easy to mock up dependencies
+like time without having to commit to a specific time library. The explicit
+dependencies also help us better understand what features are really needed
+from the concrete types. If we know that our application only need the
+<code>SimpleTime</code> trait, then there are more options out there that we can
+try out and switch easily.</p>
+<p>It is also worth noting that it doesn't matter whether the concrete types
+<code>AppContext</code> and <code>BasicPerson</code> can have private fields or public fields.
+Since the components do not have access to the concrete types, all concrete
+fields are essentially private and can only be exposed via trait methods.</p>
+<p>Finally, we define an <code>instances</code> module to encapsulate the witness of
+satisfying all dependencies required from <code>AppContext</code> to implement
+the <code>Greeter</code> components:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>mod app {
+  mod traits {
+    // ...
+<span class="boring">   pub trait NamedPerson {
+</span><span class="boring">     fn name(&amp;self) -&gt; &amp;str;
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   pub trait SimpleTime {
+</span><span class="boring">     fn is_daytime(&amp;self) -&gt; bool;
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   pub trait ErrorContext {
+</span><span class="boring">     type Error;
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   pub trait PersonContext {
+</span><span class="boring">     type PersonId;
+</span><span class="boring">     type Person: NamedPerson;
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   pub trait TimeContext {
+</span><span class="boring">     type Time;
+</span><span class="boring">
+</span><span class="boring">     fn now(&amp;self) -&gt; Self::Time;
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   pub trait QueryPersonContext: PersonContext + ErrorContext {
+</span><span class="boring">     fn query_person(&amp;self, person_id: &amp;Self::PersonId)
+</span><span class="boring">       -&gt; Result&lt;Self::Person, Self::Error&gt;;
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   pub trait Greeter&lt;Context&gt;
+</span><span class="boring">   where
+</span><span class="boring">     Context: PersonContext + ErrorContext,
+</span><span class="boring">   {
+</span><span class="boring">     fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">       -&gt; Result&lt;(), Context::Error&gt;;
+</span><span class="boring">   }
+</span>  }
+
+  mod simple_greeter {
+    // ...
+<span class="boring">   use super::traits::{Greeter, NamedPerson, QueryPersonContext};
+</span><span class="boring">
+</span><span class="boring">   pub struct SimpleGreeter;
+</span><span class="boring">
+</span><span class="boring">   impl&lt;Context&gt; Greeter&lt;Context&gt; for SimpleGreeter
+</span><span class="boring">   where
+</span><span class="boring">     Context: QueryPersonContext,
+</span><span class="boring">   {
+</span><span class="boring">     fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">       -&gt; Result&lt;(), Context::Error&gt;
+</span><span class="boring">     {
+</span><span class="boring">       let person = context.query_person(person_id)?;
+</span><span class="boring">       println!(&quot;Hello, {}&quot;, person.name());
+</span><span class="boring">       Ok(())
+</span><span class="boring">     }
+</span><span class="boring">   }
+</span>  }
+
+  mod daytime_greeter {
+    // ...
+<span class="boring">   use super::traits::{
+</span><span class="boring">     Greeter, ErrorContext, PersonContext,
+</span><span class="boring">     TimeContext, SimpleTime,
+</span><span class="boring">   };
+</span><span class="boring">
+</span><span class="boring">   pub struct DaytimeGreeter&lt;InGreeter&gt;(pub InGreeter);
+</span><span class="boring">
+</span><span class="boring">   pub struct ShopClosedError&lt;Time&gt; { time: Time }
+</span><span class="boring">
+</span><span class="boring">   impl&lt;Context, InGreeter, Time, Error, PersonId&gt;
+</span><span class="boring">     Greeter&lt;Context&gt; for DaytimeGreeter&lt;InGreeter&gt;
+</span><span class="boring">   where
+</span><span class="boring">     InGreeter: Greeter&lt;Context&gt;,
+</span><span class="boring">     Context: ErrorContext&lt;Error=Error&gt;,
+</span><span class="boring">     Context: PersonContext&lt;PersonId=PersonId&gt;,
+</span><span class="boring">     Context: TimeContext&lt;Time=Time&gt;,
+</span><span class="boring">     Time: SimpleTime,
+</span><span class="boring">     Error: From&lt;ShopClosedError&lt;Time&gt;&gt;,
+</span><span class="boring">   {
+</span><span class="boring">     fn greet(&amp;self, context: &amp;Context, person_id: &amp;PersonId)
+</span><span class="boring">       -&gt; Result&lt;(), Error&gt;
+</span><span class="boring">     {
+</span><span class="boring">       let now = context.now();
+</span><span class="boring">       if now.is_daytime() {
+</span><span class="boring">         self.0.greet(context, person_id)
+</span><span class="boring">       } else {
+</span><span class="boring">         Err(ShopClosedError { time: now }.into())
+</span><span class="boring">       }
+</span><span class="boring">     }
+</span><span class="boring">   }
+</span>  }
+
+  mod context {
+    // ...
+<span class="boring">   use super::traits::*;
+</span><span class="boring">   use super::daytime_greeter::ShopClosedError;
+</span><span class="boring">
+</span><span class="boring">   #[derive(Copy, Clone, PartialEq, Eq)]
+</span><span class="boring">   pub enum DummyTime {
+</span><span class="boring">     DayTime,
+</span><span class="boring">     NightTime,
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   pub struct BasicPerson {
+</span><span class="boring">     name: String,
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   pub struct AppContext {
+</span><span class="boring">     database: Database,
+</span><span class="boring">     time: DummyTime,
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   // Database stubs
+</span><span class="boring">   struct Database;
+</span><span class="boring">   struct DbError;
+</span><span class="boring">
+</span><span class="boring">   pub enum AppError {
+</span><span class="boring">     Database(DbError),
+</span><span class="boring">     ShopClosed(ShopClosedError&lt;DummyTime&gt;),
+</span><span class="boring">     // ...
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   impl ErrorContext for AppContext {
+</span><span class="boring">     type Error = AppError;
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   impl PersonContext for AppContext {
+</span><span class="boring">     type PersonId = String;
+</span><span class="boring">     type Person = BasicPerson;
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   impl TimeContext for AppContext {
+</span><span class="boring">     type Time = DummyTime;
+</span><span class="boring">
+</span><span class="boring">     fn now(&amp;self) -&gt; DummyTime {
+</span><span class="boring">       self.time
+</span><span class="boring">     }
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   impl QueryPersonContext for AppContext {
+</span><span class="boring">     fn query_person(&amp;self, person_id: &amp;Self::PersonId)
+</span><span class="boring">       -&gt; Result&lt;Self::Person, Self::Error&gt;
+</span><span class="boring">     {
+</span><span class="boring">       unimplemented!() // database stub
+</span><span class="boring">     }
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   impl NamedPerson for BasicPerson {
+</span><span class="boring">     fn name(&amp;self) -&gt; &amp;str {
+</span><span class="boring">       &amp;self.name
+</span><span class="boring">     }
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   impl SimpleTime for DummyTime {
+</span><span class="boring">     fn is_daytime(&amp;self) -&gt; bool {
+</span><span class="boring">       self == &amp;DummyTime::DayTime
+</span><span class="boring">     }
+</span><span class="boring">   }
+</span><span class="boring">
+</span><span class="boring">   impl From&lt;ShopClosedError&lt;DummyTime&gt;&gt; for AppError {
+</span><span class="boring">     fn from(err: ShopClosedError&lt;DummyTime&gt;) -&gt; Self {
+</span><span class="boring">       Self::ShopClosed(err)
+</span><span class="boring">     }
+</span><span class="boring">   }
+</span>  }
+
+  mod instances {
+    use super::traits::Greeter;
+    use super::context::AppContext;
+    use super::simple_greeter::SimpleGreeter;
+    use super::daytime_greeter::DaytimeGreeter;
+
+    pub fn base_greeter() -&gt; impl Greeter&lt;AppContext&gt; {
+      SimpleGreeter
+    }
+
+    pub fn app_greeter() -&gt; impl Greeter&lt;AppContext&gt; {
+      DaytimeGreeter(base_greeter())
+    }
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>We first have a <code>base_greeter</code> function which witnesses that <code>SimpleGreeter</code>
+implements <code>Greeter&lt;AppContext&gt;</code>. We then define an <code>app_greeter</code> function
+which witnesses that <code>DaytimeGreeter&lt;SimpleGreeter&gt;</code> <em>also</em> implements
+<code>Greeter&lt;AppContext&gt;</code>.</p>
+<p>Notice that in the <code>app_greeter</code> body, we construct the greeter with
+<code>DaytimeGreeter(base_greeter())</code> instead of <code>DaytimeGreeter(SimpleGreeter)</code>.
+In theory, both expressions are valid and have the same effect. But by calling
+<code>base_greeter</code> inside <code>app_greeter</code>, we are stating that <code>app_greeter</code> do
+<em>not</em> actually care which concrete type of the base greeter has, aside from
+it implementing <code>Greeter&lt;AppContext&gt;</code>.</p>
+<p>Having separate witness functions can also help us debug any error in
+dependencies much more easily. Let's say if we forgot to implement
+<code>QueryPersonContext</code> for <code>AppContext</code>, the dependency for <code>SimpleGreeter</code>
+would not be satisfied, and we would get a type error in <code>base_greeter</code>.
+On the other hand, the body of <code>app_greeter</code> would not get any error,
+because it is not aware of the base greeter being <code>SimpleGreeter</code>.</p>
+<p>If we were to write the complex expression in one go, like
+<code>DaytimeGreeter(SimpleGreeter)</code>, it would be less clear which part of the
+expression caused the type error. Things would get worse if we have more
+complex component composition. Therefore it is always a good practice to
+define the component instantiation in multiple smaller functions, so that
+it is clear to the reader whether the dependencies are being resolved
+correctly.</p>
+<h2 id="reader-monad"><a class="header" href="#reader-monad">Reader Monad</a></h2>
+<p>Readers from functional programming background such as Haskellers may notice
+that the context pattern look similar to the reader monad pattern. This is
+correct, as we are defining a global <code>Context</code> type and pass it as a function
+argument to all code that requires the context. Additionally, we make use
+of the trait (typeclass) system in Rust for compile-time dependency injection,
+and the same pattern can be applied for the context type used in reader monads.</p>
+<p>For Rust readers, the main difference of the pattern described here with the
+reader monad is that we are passing the context value as explicit argument
+without using any monadic construct. This is slightly more verbose, but
+the benefit is we still get to enjoy much of the benefits of reader monad
+without requiring Rust programmers to learn what a monad really is.
+(hint: if you know how to use <code>Result</code> and <code>Option</code>, you might already
+understand monad without realizing it).</p>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="multiple-context-implementations"><a class="header" href="#multiple-context-implementations">Multiple Context Implementations</a></h1>
+<p>We now look at the problem of having multiple context implementations,
+and how to deduplicate them. For this we will focus on just implementation
+for <code>QueryPersonContext</code> that is being used by <code>SimpleGreeter</code>.</p>
+<p>The requirement for querying a person details can be implemented in many
+ways, such as using a key-value store (KV store) or an SQL database.
+Now suppose we have the following API for a KV store:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>struct FsKvStore { /* ... */ }
+struct KvStoreError { /* ... */ }
+
+impl FsKvStore {
+  fn get(&amp;self, key: &amp;str) -&gt; Result&lt;Vec&lt;u8&gt;, KvStoreError&gt; {
+    unimplemented!() // stub
+  }
+  // ...
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>We could implement <code>QueryPersonContext</code> for any context type that
+contains <code>FsKvStore</code> in its field:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use std::convert::{TryFrom, TryInto};
+</span><span class="boring">
+</span><span class="boring">struct FsKvStore { /* ... */ }
+</span><span class="boring">struct KvStoreError { /* ... */ }
+</span><span class="boring">
+</span><span class="boring">impl FsKvStore {
+</span><span class="boring">  fn get(&amp;self, key: &amp;str) -&gt; Result&lt;Vec&lt;u8&gt;, KvStoreError&gt; {
+</span><span class="boring">    unimplemented!() // stub
+</span><span class="boring">  }
+</span><span class="boring">  // ...
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait ErrorContext {
+</span><span class="boring">  type Error;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonContext {
+</span><span class="boring">  type PersonId;
+</span><span class="boring">  type Person;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait QueryPersonContext: PersonContext + ErrorContext {
+</span><span class="boring">  fn query_person(&amp;self, person_id: &amp;Self::PersonId)
+</span><span class="boring">    -&gt; Result&lt;Self::Person, Self::Error&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span>struct BasicPerson {
+  name: String,
+}
+
+struct ParseError { /* ... */ }
+
+impl TryFrom&lt;Vec&lt;u8&gt;&gt; for BasicPerson {
+  type Error = ParseError;
+
+  fn try_from(bytes: Vec&lt;u8&gt;) -&gt; Result&lt;Self, Self::Error&gt; {
+    unimplemented!() // stub
+  }
+}
+
+struct AppContext {
+  kv_store: FsKvStore,
+  // ...
+}
+
+enum AppError {
+  KvStore(KvStoreError),
+  Parse(ParseError),
+  // ...
+}
+
+impl ErrorContext for AppContext {
+  type Error = AppError;
+}
+
+impl PersonContext for AppContext {
+  type PersonId = String;
+  type Person = BasicPerson;
+}
+
+impl QueryPersonContext for AppContext {
+  fn query_person(&amp;self, person_id: &amp;Self::PersonId)
+    -&gt; Result&lt;Self::Person, Self::Error&gt;
+  {
+    let key = format!(&quot;persons/{}&quot;, person_id);
+    let bytes = self.kv_store.get(&amp;key)
+      .map_err(AppError::KvStore)?;
+
+    let person = bytes.try_into()
+      .map_err(AppError::Parse)?;
+
+    Ok(person)
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Even this simplified version of implementation for <code>query_person</code> involves
+quite a bit of logic. First, we need to implement serialization logic
+to parse <code>BasicPerson</code> from raw bytes. We also need to implement the logic
+of mapping the namespaced key from the person ID, as well as mapping
+the errors in each operation into <code>AppError</code>.</p>
+<p>Fortunately with the context traits design pattern, components like
+<code>SimpleGreeter</code> do not need to be aware of how <code>QueryPersonContext</code> is
+implemented, or the existence of the key-value store in the context.
+However, it would still be problematic if we need to re-implement
+<code>QueryPersonContext</code> for every new context type that we implement.</p>
+<p>To avoid copying the body of <code>query_person</code> for all context types,
+we want to have a <em>generic</em> implementation of <code>QueryPersonContext</code>
+for <em>any</em> context that has <code>FsKvStore</code> in one of its fields.
+But if we recall from earlier sections, we already come up with
+the design pattern for implementing context-generic components
+like <code>Greeter</code>. So why not just turn <code>QueryPersonContext</code> itself
+into a context-generic component?</p>
+<p>In fact, with a little re-arrangement, we can redefine
+<code>QueryPersonContext</code> as <code>PersonQuerier</code> as follows:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">trait ErrorContext {
+</span><span class="boring">  type Error;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonContext {
+</span><span class="boring">  type PersonId;
+</span><span class="boring">  type Person;
+</span><span class="boring">}
+</span><span class="boring">
+</span>trait PersonQuerier&lt;Context&gt;
+where
+  Context: PersonContext + ErrorContext,
+{
+   fn query_person(context: &amp;Context, person_id: &amp;Context::PersonId)
+     -&gt; Result&lt;Context::Person, Context::Error&gt;;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>We now have a <code>PersonQuerier</code> component that is parameterized by a generic
+<code>Context</code> type, and it looks very similar to how we define <code>Greeter</code>.
+With this, we can now define a context-generic implementation of
+<code>PersonQuerier</code> for any context that has an <code>FsKvStore</code>:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use std::fmt::Display;
+</span><span class="boring">use std::convert::{TryFrom, TryInto};
+</span><span class="boring">
+</span><span class="boring">struct FsKvStore { /* ... */ }
+</span><span class="boring">struct KvStoreError { /* ... */ }
+</span><span class="boring">
+</span><span class="boring">impl FsKvStore {
+</span><span class="boring">  fn get(&amp;self, key: &amp;str) -&gt; Result&lt;Vec&lt;u8&gt;, KvStoreError&gt; {
+</span><span class="boring">    unimplemented!() // stub
+</span><span class="boring">  }
+</span><span class="boring">  // ...
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait ErrorContext {
+</span><span class="boring">  type Error;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonContext {
+</span><span class="boring">  type PersonId;
+</span><span class="boring">  type Person;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonQuerier&lt;Context&gt;
+</span><span class="boring">where
+</span><span class="boring">  Context: PersonContext + ErrorContext,
+</span><span class="boring">{
+</span><span class="boring">   fn query_person(context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">     -&gt; Result&lt;Context::Person, Context::Error&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span>trait KvStoreContext {
+  fn kv_store(&amp;self) -&gt; &amp;FsKvStore;
+}
+
+struct KvStorePersonQuerier;
+
+impl&lt;Context, PersonId, Person, Error, ParseError&gt;
+  PersonQuerier&lt;Context&gt; for KvStorePersonQuerier
+where
+  Context: KvStoreContext,
+  Context: PersonContext&lt;Person=Person, PersonId=PersonId&gt;,
+  Context: ErrorContext&lt;Error=Error&gt;,
+  PersonId: Display,
+  Person: TryFrom&lt;Vec&lt;u8&gt;, Error=ParseError&gt;,
+  Error: From&lt;KvStoreError&gt;,
+  Error: From&lt;ParseError&gt;,
+{
+  fn query_person(context: &amp;Context, person_id: &amp;PersonId)
+    -&gt; Result&lt;Person, Error&gt;
+  {
+    let key = format!(&quot;persons/{}&quot;, person_id);
+
+    let bytes = context.kv_store().get(&amp;key)?;
+
+    let person = bytes.try_into()?;
+
+    Ok(person)
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>We first define a <code>KvStoreContext</code> trait, which allows us to extract
+a reference to <code>FsKvStore</code> out of a context that implements it.
+Following that, we define <code>KvStorePersonQuerier</code> as an empty struct,
+similar to how we defined <code>SimpleGreeter</code>.</p>
+<p>We then implement <code>PersonQuerier</code> for <code>KvStorePersonQuerier</code> to
+work with any <code>Context</code> type, given that several additional constraints
+are satisfied. We also use explicit type parameter bindings to simplify
+the specification of our constraints.</p>
+<p>We require <code>Context</code> to implement <code>KvStoreContext</code>, so that we can
+extract <code>FsKvStore</code> from it. We also require <code>Context::PersonId</code> to
+implement <code>Display</code>, so that we can format the key as string. Similarly,
+we require that <code>Context::Person</code> implements <code>TryFrom&lt;Vec&lt;u8&gt;&gt;</code>,
+and binds the conversion error to an additional type binding <code>ParseError</code>.</p>
+<p>The above bindings essentially make it possible for <code>KvStorePersonQuerier</code>
+to work with not only any context that provides <code>FsKvStore</code>, but also
+any <code>Context::PersonId</code> and <code>Context::Person</code> types as long as they
+implement the <code>Display</code> and <code>TryFrom</code> traits.</p>
+<p>We additionally require <code>Context::Error</code> to allow injection of sub-errors
+from <code>KvStoreError</code> and <code>ParseError</code>, so that we can propagate the errors
+inside <code>query_person</code>.</p>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="generic-store"><a class="header" href="#generic-store">Generic Store</a></h1>
+<p>We managed to get <code>KvStorePersonQuerier</code> we defined earlier to not only
+work with a generic context containing an <code>FsKvStore</code>, but also work
+with any <code>PersonId</code> and <code>Person</code> types that satisfy some constraints.</p>
+<p>We can further generalize the implementation of <code>KvStorePersonQuerier</code>
+to work with <em>any</em> key-value store implementation. With that, we will
+for example be able to swap our store implementation from file-based
+to in-memory easily.</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use std::fmt::Display;
+</span><span class="boring">use std::convert::{TryFrom, TryInto};
+</span><span class="boring">
+</span><span class="boring">trait ErrorContext {
+</span><span class="boring">  type Error;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonContext {
+</span><span class="boring">  type PersonId;
+</span><span class="boring">  type Person;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonQuerier&lt;Context&gt;
+</span><span class="boring">where
+</span><span class="boring">  Context: PersonContext + ErrorContext,
+</span><span class="boring">{
+</span><span class="boring">   fn query_person(context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">     -&gt; Result&lt;Context::Person, Context::Error&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span>trait KvStore: ErrorContext {
+  fn get(&amp;self, key: &amp;str) -&gt; Result&lt;Vec&lt;u8&gt;, Self::Error&gt;;
+}
+
+trait KvStoreContext {
+  type Store: KvStore;
+
+  fn store(&amp;self) -&gt; &amp;Self::Store;
+}
+
+struct KvStorePersonQuerier;
+
+impl&lt;Context, Store, PersonId, Person, Error, ParseError, StoreError&gt;
+  PersonQuerier&lt;Context&gt; for KvStorePersonQuerier
+where
+  Context: KvStoreContext&lt;Store=Store&gt;,
+  Context: PersonContext&lt;Person=Person, PersonId=PersonId&gt;,
+  Context: ErrorContext&lt;Error=Error&gt;,
+  Store: KvStore&lt;Error=StoreError&gt;,
+  PersonId: Display,
+  Person: TryFrom&lt;Vec&lt;u8&gt;, Error=ParseError&gt;,
+  Error: From&lt;StoreError&gt;,
+  Error: From&lt;ParseError&gt;,
+{
+  fn query_person(context: &amp;Context, person_id: &amp;PersonId)
+    -&gt; Result&lt;Person, Error&gt;
+  {
+    let key = format!(&quot;persons/{}&quot;, person_id);
+
+    let bytes = context.store().get(&amp;key)?;
+
+    let person = bytes.try_into()?;
+
+    Ok(person)
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>We first define a <code>KvStore</code> trait that provides a <code>get</code> method for reading
+values from the store. It also has <code>ErrorContext</code> as its supertrait, so
+that we can reuse the <code>Error</code> associated type.</p>
+<p>We then redefine the <code>KvStoreContext</code> to contain an associated type <code>Store</code>,
+which is required to implement the <code>KvStore</code> trait. We then make the
+<code>store</code> method return a reference to <code>Self::Store</code>.</p>
+<p>Inside the <code>PersonQuerier</code> implementation for <code>KvStorePersonQuerier</code>, we
+introduce two new explicit type bindings: <code>Store</code> for <code>Context::Store</code>,
+and <code>StoreError</code> for <code>Store::Error</code>. We also require the main
+<code>Error</code> type to implement <code>From&lt;StoreError&gt;</code>, so that any error from
+the store can be propagated.</p>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="querier-consumer"><a class="header" href="#querier-consumer">Querier Consumer</a></h1>
+<p>Now that we have a context-generic implementation of <code>KvStorePersonQuerier</code>,
+we can try to use it from <code>SimpleGreeter</code>. To do that, <code>SimpleGreeter</code> has
+to somehow get <code>KvStorePersonQuerier</code> from <code>Context</code>, and use it as a
+<code>PersonQuerier</code>.</p>
+<p>Recall that <code>KvStorePersonQuerier</code> itself is not a context, and therefore
+it does not implement other context traits like <code>PersonContext</code>. What we
+need instead is for concrete contexts like <code>AppContext</code> to specify that
+their implementation of <code>PersonQuerier</code> is <code>KvStorePersonQuerier</code>.
+We can do that by defining a <code>PersonQuerierContext</code> trait as follows:</p>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">trait NamedPerson {
+</span><span class="boring">  fn name(&amp;self) -&gt; &amp;str;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait ErrorContext {
+</span><span class="boring">  type Error;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonContext {
+</span><span class="boring">  type PersonId;
+</span><span class="boring">  type Person: NamedPerson;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait Greeter&lt;Context&gt;
+</span><span class="boring">where
+</span><span class="boring">  Context: PersonContext + ErrorContext,
+</span><span class="boring">{
+</span><span class="boring">  fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">    -&gt; Result&lt;(), Context::Error&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span>trait PersonQuerier&lt;Context&gt;
+where
+  Context: PersonContext + ErrorContext,
+{
+   fn query_person(context: &amp;Context, person_id: &amp;Context::PersonId)
+     -&gt; Result&lt;Context::Person, Context::Error&gt;;
+}
+
+trait PersonQuerierContext:
+  PersonContext + ErrorContext + Sized
+{
+  type PersonQuerier: PersonQuerier&lt;Self&gt;;
+}
+
+struct SimpleGreeter;
+
+impl&lt;Context&gt; Greeter&lt;Context&gt; for SimpleGreeter
+where
+  Context: PersonQuerierContext,
+{
+  fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+    -&gt; Result&lt;(), Context::Error&gt;
+  {
+    let person = Context::PersonQuerier::query_person(context, person_id)?;
+    println!(&quot;Hello, {}&quot;, person.name());
+    Ok(())
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>While the <code>PersonQuerier</code> is implemented by component types like
+<code>KvStorePersonQuerier</code>, the <code>PersonQuerierContext</code> trait is implemented by
+context types like <code>AppContext</code>. Compared to the earlier design of
+<code>QueryPersonContext</code>, the context is now offering a <em>component</em> for
+querying person that also works in the <em>current context</em>.</p>
+<p>We can see that the <code>PersonQuerierContext</code> trait has <code>PersonContext</code>
+and <code>ErrorContext</code> as its supertraits, indicating that the concrete context
+also needs to implement the other two traits first. Due to quirks in Rust,
+the trait also requires the <code>Sized</code> supertrait, which is already implemented
+by most types other than <code>dyn Trait</code> types, so that we can use <code>Self</code> inside
+other generic parameters.</p>
+<p>In the body of <code>PersonQuerierContext</code>, we define a <code>PersonQuerier</code> associated
+type, which implements the trait <code>PersonQuerier&lt;Self&gt;</code>. This looks a little
+self-referential, as the context is providing a type that is referencing back
+to itself. But with the dependency injection mechanism of the traits system,
+this in fact works most of the time as long as there is no actual cyclic
+dependencies.</p>
+<p>Now inside the <code>Greet</code> implementation for <code>SimpleGreeter</code>, we require the
+generic <code>Context</code> to implement <code>PersonQuerierContext</code>. Inside the <code>greet</code>
+method, we then call <code>Context::PersonQuerier::query_person</code> and pass in
+the <code>context</code> as first argument to query for the person details.</p>
+<p>In summary, what we achieved at this point is as follows:</p>
+<ul>
+<li>We define a context-generic component for <code>PersonQuerier</code> as
+<code>KvStorePersonQuerier</code>.</li>
+<li>We define another context-generic component for <code>Greet</code> as <code>SimpleGreeter</code>,
+which <em>depends</em> on a <code>PersonQuerier</code> component provided from the context.</li>
+<li>The Rust trait system <em>resolves</em> the dependency graph, constructs
+<code>KvStorePersonQuerier</code> from its <em>indirect dependencies</em> from the context,
+and &quot;pass&quot; it as the <code>PersonQuerier</code> dependency to <code>SimpleGreeter</code>.</li>
+</ul>
+<p>By using dependency injection, we don't need to know that in order to build
+<code>SimpleGreeter</code>, we need to first build <code>KvStorePersonQuerier</code>, but in order
+to build <code>KvStorePersonQuerier</code>, we need to first build <code>FsKvStore</code>. During
+compile-time, Rust does all the wiring for free, and we do not even need to
+pay for the cost of doing such wiring at run time.</p>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="selfless-components"><a class="header" href="#selfless-components">Selfless Components</a></h1>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">trait NamedPerson {
+</span><span class="boring">  fn name(&amp;self) -&gt; &amp;str;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait ErrorContext {
+</span><span class="boring">  type Error;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonContext {
+</span><span class="boring">  type PersonId;
+</span><span class="boring">  type Person: NamedPerson;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait Greeter&lt;Context&gt;
+</span><span class="boring">where
+</span><span class="boring">  Context: PersonContext + ErrorContext,
+</span><span class="boring">{
+</span><span class="boring">  fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">    -&gt; Result&lt;(), Context::Error&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span>trait PersonQuerier&lt;Context&gt;
+where
+  Context: PersonContext + ErrorContext,
+{
+   fn query_person(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+     -&gt; Result&lt;Context::Person, Context::Error&gt;;
+}
+
+trait PersonQuerierContext:
+  PersonContext + ErrorContext + Sized
+{
+  type PersonQuerier: PersonQuerier&lt;Self&gt;;
+
+  fn person_querier(&amp;self) -&gt; &amp;Self::PersonQuerier;
+}
+
+struct SimpleGreeter;
+
+impl&lt;Context&gt; Greeter&lt;Context&gt; for SimpleGreeter
+where
+  Context: PersonQuerierContext,
+{
+  fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+    -&gt; Result&lt;(), Context::Error&gt;
+  {
+    let person = context.person_querier().query_person(context, person_id)?;
+    println!(&quot;Hello, {}&quot;, person.name());
+    Ok(())
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="store-context-implementation"><a class="header" href="#store-context-implementation">Store Context Implementation</a></h1>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use std::fmt::Display;
+</span><span class="boring">use std::convert::{TryFrom, TryInto};
+</span><span class="boring">
+</span><span class="boring">trait NamedPerson {
+</span><span class="boring">  fn name(&amp;self) -&gt; &amp;str;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait ErrorContext {
+</span><span class="boring">  type Error;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonContext {
+</span><span class="boring">  type PersonId;
+</span><span class="boring">  type Person: NamedPerson;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait Greeter&lt;Context&gt;
+</span><span class="boring">where
+</span><span class="boring">  Context: PersonContext + ErrorContext,
+</span><span class="boring">{
+</span><span class="boring">  fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">    -&gt; Result&lt;(), Context::Error&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonQuerier&lt;Context&gt;
+</span><span class="boring">where
+</span><span class="boring">  Context: PersonContext + ErrorContext,
+</span><span class="boring">{
+</span><span class="boring">   fn query_person(context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">     -&gt; Result&lt;Context::Person, Context::Error&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait KvStore: ErrorContext {
+</span><span class="boring">  fn get(&amp;self, key: &amp;str) -&gt; Result&lt;Vec&lt;u8&gt;, Self::Error&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait KvStoreContext {
+</span><span class="boring">  type Store: KvStore;
+</span><span class="boring">
+</span><span class="boring">  fn store(&amp;self) -&gt; &amp;Self::Store;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct KvStorePersonQuerier;
+</span><span class="boring">
+</span><span class="boring">impl&lt;Context, Store, PersonId, Person, Error, ParseError, StoreError&gt;
+</span><span class="boring">  PersonQuerier&lt;Context&gt; for KvStorePersonQuerier
+</span><span class="boring">where
+</span><span class="boring">  Context: KvStoreContext&lt;Store=Store&gt;,
+</span><span class="boring">  Context: PersonContext&lt;Person=Person, PersonId=PersonId&gt;,
+</span><span class="boring">  Context: ErrorContext&lt;Error=Error&gt;,
+</span><span class="boring">  Store: KvStore&lt;Error=StoreError&gt;,
+</span><span class="boring">  PersonId: Display,
+</span><span class="boring">  Person: TryFrom&lt;Vec&lt;u8&gt;, Error=ParseError&gt;,
+</span><span class="boring">  Error: From&lt;StoreError&gt;,
+</span><span class="boring">  Error: From&lt;ParseError&gt;,
+</span><span class="boring">{
+</span><span class="boring">  fn query_person(context: &amp;Context, person_id: &amp;PersonId)
+</span><span class="boring">    -&gt; Result&lt;Person, Error&gt;
+</span><span class="boring">  {
+</span><span class="boring">    let key = format!(&quot;persons/{}&quot;, person_id);
+</span><span class="boring">
+</span><span class="boring">    let bytes = context.store().get(&amp;key)?;
+</span><span class="boring">
+</span><span class="boring">    let person = bytes.try_into()?;
+</span><span class="boring">
+</span><span class="boring">    Ok(person)
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonQuerierContext:
+</span><span class="boring">  PersonContext + ErrorContext + Sized
+</span><span class="boring">{
+</span><span class="boring">  type PersonQuerier: PersonQuerier&lt;Self&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct SimpleGreeter;
+</span><span class="boring">
+</span><span class="boring">impl&lt;Context&gt; Greeter&lt;Context&gt; for SimpleGreeter
+</span><span class="boring">where
+</span><span class="boring">  Context: PersonQuerierContext,
+</span><span class="boring">{
+</span><span class="boring">  fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">    -&gt; Result&lt;(), Context::Error&gt;
+</span><span class="boring">  {
+</span><span class="boring">    let person = Context::PersonQuerier::query_person(context, person_id)?;
+</span><span class="boring">    println!(&quot;Hello, {}&quot;, person.name());
+</span><span class="boring">    Ok(())
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct BasicPerson {
+</span><span class="boring">  name: String,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl NamedPerson for BasicPerson {
+</span><span class="boring">  fn name(&amp;self) -&gt; &amp;str {
+</span><span class="boring">    &amp;self.name
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span>struct FsKvStore { /* ... */ }
+struct KvStoreError { /* ... */ }
+
+struct ParseError { /* ... */ }
+
+impl ErrorContext for FsKvStore {
+  type Error = KvStoreError;
+}
+
+impl KvStore for FsKvStore {
+  fn get(&amp;self, key: &amp;str) -&gt; Result&lt;Vec&lt;u8&gt;, Self::Error&gt; {
+    unimplemented!() // stub
+  }
+}
+
+impl TryFrom&lt;Vec&lt;u8&gt;&gt; for BasicPerson {
+  type Error = ParseError;
+
+  fn try_from(bytes: Vec&lt;u8&gt;) -&gt; Result&lt;Self, Self::Error&gt; {
+    unimplemented!() // stub
+  }
+}
+
+enum AppError {
+  KvStore(KvStoreError),
+  Parse(ParseError),
+  // ...
+}
+
+impl From&lt;KvStoreError&gt; for AppError {
+  fn from(err: KvStoreError) -&gt; Self {
+    Self::KvStore(err)
+  }
+}
+
+impl From&lt;ParseError&gt; for AppError {
+  fn from(err: ParseError) -&gt; Self {
+    Self::Parse(err)
+  }
+}
+
+struct AppContext {
+  kv_store: FsKvStore,
+  // ...
+}
+
+impl ErrorContext for AppContext {
+  type Error = AppError;
+}
+
+impl PersonContext for AppContext {
+  type PersonId = String;
+  type Person = BasicPerson;
+}
+
+impl KvStoreContext for AppContext {
+  type Store = FsKvStore;
+
+  fn store(&amp;self) -&gt; &amp;Self::Store {
+    &amp;self.kv_store
+  }
+}
+
+impl PersonQuerierContext for AppContext {
+  type PersonQuerier = KvStorePersonQuerier;
+}
+
+fn app_greeter() -&gt; impl Greeter&lt;AppContext&gt; {
+  SimpleGreeter
+}
+<span class="boring">}
+</span></code></pre></pre>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="multiple-context-implementations-1"><a class="header" href="#multiple-context-implementations-1">Multiple Context Implementations</a></h1>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use std::fmt::Display;
+</span><span class="boring">use std::convert::{TryFrom, TryInto};
+</span><span class="boring">
+</span><span class="boring">trait NamedPerson {
+</span><span class="boring">  fn name(&amp;self) -&gt; &amp;str;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait ErrorContext {
+</span><span class="boring">  type Error;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonContext {
+</span><span class="boring">  type PersonId;
+</span><span class="boring">  type Person: NamedPerson;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait Greeter&lt;Context&gt;
+</span><span class="boring">where
+</span><span class="boring">  Context: PersonContext + ErrorContext,
+</span><span class="boring">{
+</span><span class="boring">  fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">    -&gt; Result&lt;(), Context::Error&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonQuerier&lt;Context&gt;
+</span><span class="boring">where
+</span><span class="boring">  Context: PersonContext + ErrorContext,
+</span><span class="boring">{
+</span><span class="boring">   fn query_person(context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">     -&gt; Result&lt;Context::Person, Context::Error&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait KvStore: ErrorContext {
+</span><span class="boring">  fn get(&amp;self, key: &amp;str) -&gt; Result&lt;Vec&lt;u8&gt;, Self::Error&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait KvStoreContext {
+</span><span class="boring">  type Store: KvStore;
+</span><span class="boring">
+</span><span class="boring">  fn store(&amp;self) -&gt; &amp;Self::Store;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct KvStorePersonQuerier;
+</span><span class="boring">
+</span><span class="boring">impl&lt;Context, Store, PersonId, Person, Error, ParseError, StoreError&gt;
+</span><span class="boring">  PersonQuerier&lt;Context&gt; for KvStorePersonQuerier
+</span><span class="boring">where
+</span><span class="boring">  Context: KvStoreContext&lt;Store=Store&gt;,
+</span><span class="boring">  Context: PersonContext&lt;Person=Person, PersonId=PersonId&gt;,
+</span><span class="boring">  Context: ErrorContext&lt;Error=Error&gt;,
+</span><span class="boring">  Store: KvStore&lt;Error=StoreError&gt;,
+</span><span class="boring">  PersonId: Display,
+</span><span class="boring">  Person: TryFrom&lt;Vec&lt;u8&gt;, Error=ParseError&gt;,
+</span><span class="boring">  Error: From&lt;StoreError&gt;,
+</span><span class="boring">  Error: From&lt;ParseError&gt;,
+</span><span class="boring">{
+</span><span class="boring">  fn query_person(context: &amp;Context, person_id: &amp;PersonId)
+</span><span class="boring">    -&gt; Result&lt;Person, Error&gt;
+</span><span class="boring">  {
+</span><span class="boring">    let key = format!(&quot;persons/{}&quot;, person_id);
+</span><span class="boring">
+</span><span class="boring">    let bytes = context.store().get(&amp;key)?;
+</span><span class="boring">
+</span><span class="boring">    let person = bytes.try_into()?;
+</span><span class="boring">
+</span><span class="boring">    Ok(person)
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonQuerierContext:
+</span><span class="boring">  PersonContext + ErrorContext + Sized
+</span><span class="boring">{
+</span><span class="boring">  type PersonQuerier: PersonQuerier&lt;Self&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct SimpleGreeter;
+</span><span class="boring">
+</span><span class="boring">impl&lt;Context&gt; Greeter&lt;Context&gt; for SimpleGreeter
+</span><span class="boring">where
+</span><span class="boring">  Context: PersonQuerierContext,
+</span><span class="boring">{
+</span><span class="boring">  fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">    -&gt; Result&lt;(), Context::Error&gt;
+</span><span class="boring">  {
+</span><span class="boring">    let person = Context::PersonQuerier::query_person(context, person_id)?;
+</span><span class="boring">    println!(&quot;Hello, {}&quot;, person.name());
+</span><span class="boring">    Ok(())
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct BasicPerson {
+</span><span class="boring">  name: String,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl NamedPerson for BasicPerson {
+</span><span class="boring">  fn name(&amp;self) -&gt; &amp;str {
+</span><span class="boring">    &amp;self.name
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct FsKvStore { /* ... */ }
+</span><span class="boring">struct KvStoreError { /* ... */ }
+</span><span class="boring">
+</span><span class="boring">struct ParseError { /* ... */ }
+</span><span class="boring">
+</span><span class="boring">impl ErrorContext for FsKvStore {
+</span><span class="boring">  type Error = KvStoreError;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl KvStore for FsKvStore {
+</span><span class="boring">  fn get(&amp;self, key: &amp;str) -&gt; Result&lt;Vec&lt;u8&gt;, Self::Error&gt; {
+</span><span class="boring">    unimplemented!() // stub
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl TryFrom&lt;Vec&lt;u8&gt;&gt; for BasicPerson {
+</span><span class="boring">  type Error = ParseError;
+</span><span class="boring">
+</span><span class="boring">  fn try_from(bytes: Vec&lt;u8&gt;) -&gt; Result&lt;Self, Self::Error&gt; {
+</span><span class="boring">    unimplemented!() // stub
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">enum AppError {
+</span><span class="boring">  KvStore(KvStoreError),
+</span><span class="boring">  Parse(ParseError),
+</span><span class="boring">  // ...
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl From&lt;KvStoreError&gt; for AppError {
+</span><span class="boring">  fn from(err: KvStoreError) -&gt; Self {
+</span><span class="boring">    Self::KvStore(err)
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl From&lt;ParseError&gt; for AppError {
+</span><span class="boring">  fn from(err: ParseError) -&gt; Self {
+</span><span class="boring">    Self::Parse(err)
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span>struct Foo;
+struct Bar;
+
+struct FooContext {
+  kv_store: FsKvStore,
+  foo: Foo,
+  // ...
+}
+
+struct BarContext {
+  kv_store: FsKvStore,
+  bar: Bar,
+  // ...
+}
+
+impl ErrorContext for FooContext {
+  type Error = AppError;
+}
+
+impl ErrorContext for BarContext {
+  type Error = AppError;
+}
+
+impl PersonContext for FooContext {
+  type PersonId = String;
+  type Person = BasicPerson;
+}
+
+impl PersonContext for BarContext {
+  type PersonId = String;
+  type Person = BasicPerson;
+}
+
+impl KvStoreContext for FooContext {
+  type Store = FsKvStore;
+
+  fn store(&amp;self) -&gt; &amp;Self::Store {
+    &amp;self.kv_store
+  }
+}
+
+impl KvStoreContext for BarContext {
+  type Store = FsKvStore;
+
+  fn store(&amp;self) -&gt; &amp;Self::Store {
+    &amp;self.kv_store
+  }
+}
+
+impl PersonQuerierContext for FooContext {
+  type PersonQuerier = KvStorePersonQuerier;
+}
+
+impl PersonQuerierContext for BarContext {
+  type PersonQuerier = KvStorePersonQuerier;
+}
+
+fn foo_greeter() -&gt; impl Greeter&lt;FooContext&gt; {
+  SimpleGreeter
+}
+
+fn bar_greeter() -&gt; impl Greeter&lt;BarContext&gt; {
+  SimpleGreeter
+}
+<span class="boring">}
+</span></code></pre></pre>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="caching-querier"><a class="header" href="#caching-querier">Caching Querier</a></h1>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use std::hash::Hash;
+</span><span class="boring">use std::collections::HashMap;
+</span><span class="boring">
+</span><span class="boring">trait ErrorContext {
+</span><span class="boring">  type Error;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonContext {
+</span><span class="boring">  type PersonId;
+</span><span class="boring">  type Person;
+</span><span class="boring">}
+</span><span class="boring">
+</span>trait PersonQuerier&lt;Context&gt;
+where
+  Context: PersonContext + ErrorContext,
+{
+   fn query_person(context: &amp;Context, person_id: &amp;Context::PersonId)
+     -&gt; Result&lt;Context::Person, Context::Error&gt;;
+}
+
+trait PersonCacheContext: PersonContext {
+  fn person_cache(&amp;self) -&gt; &amp;HashMap&lt;Self::PersonId, Self::Person&gt;;
+}
+
+struct CachingPersonQuerier&lt;InQuerier&gt;(InQuerier);
+
+impl&lt;Context, InQuerier&gt; PersonQuerier&lt;Context&gt;
+  for CachingPersonQuerier&lt;InQuerier&gt;
+where
+  InQuerier: PersonQuerier&lt;Context&gt;,
+  Context: PersonCacheContext,
+  Context: ErrorContext,
+  Context::PersonId: Hash + Eq,
+  Context::Person: Clone,
+{
+  fn query_person(context: &amp;Context, person_id: &amp;Context::PersonId)
+    -&gt; Result&lt;Context::Person, Context::Error&gt;
+  {
+    let entry = context.person_cache().get(person_id);
+
+    match entry {
+      Some(person) =&gt; Ok(person.clone()),
+      None =&gt; InQuerier::query_person(context, person_id),
+    }
+  }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<div id="chapter_begin" style="break-before: page; page-break-before: always;"></div><h1 id="caching-app-context"><a class="header" href="#caching-app-context">Caching App Context</a></h1>
+<pre><pre class="playground"><code class="language-rust edition2018">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span><span class="boring">use std::hash::Hash;
+</span><span class="boring">use std::fmt::Display;
+</span><span class="boring">use std::collections::HashMap;
+</span><span class="boring">use std::convert::{TryFrom, TryInto};
+</span><span class="boring">
+</span><span class="boring">trait NamedPerson {
+</span><span class="boring">  fn name(&amp;self) -&gt; &amp;str;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait ErrorContext {
+</span><span class="boring">  type Error;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonContext {
+</span><span class="boring">  type PersonId;
+</span><span class="boring">  type Person: NamedPerson;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait Greeter&lt;Context&gt;
+</span><span class="boring">where
+</span><span class="boring">  Context: PersonContext + ErrorContext,
+</span><span class="boring">{
+</span><span class="boring">  fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">    -&gt; Result&lt;(), Context::Error&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonQuerier&lt;Context&gt;
+</span><span class="boring">where
+</span><span class="boring">  Context: PersonContext + ErrorContext,
+</span><span class="boring">{
+</span><span class="boring">   fn query_person(context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">     -&gt; Result&lt;Context::Person, Context::Error&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait KvStore: ErrorContext {
+</span><span class="boring">  fn get(&amp;self, key: &amp;str) -&gt; Result&lt;Vec&lt;u8&gt;, Self::Error&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait KvStoreContext {
+</span><span class="boring">  type Store: KvStore;
+</span><span class="boring">
+</span><span class="boring">  fn store(&amp;self) -&gt; &amp;Self::Store;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct KvStorePersonQuerier;
+</span><span class="boring">
+</span><span class="boring">impl&lt;Context, Store, PersonId, Person, Error, ParseError, StoreError&gt;
+</span><span class="boring">  PersonQuerier&lt;Context&gt; for KvStorePersonQuerier
+</span><span class="boring">where
+</span><span class="boring">  Context: KvStoreContext&lt;Store=Store&gt;,
+</span><span class="boring">  Context: PersonContext&lt;Person=Person, PersonId=PersonId&gt;,
+</span><span class="boring">  Context: ErrorContext&lt;Error=Error&gt;,
+</span><span class="boring">  Store: KvStore&lt;Error=StoreError&gt;,
+</span><span class="boring">  PersonId: Display,
+</span><span class="boring">  Person: TryFrom&lt;Vec&lt;u8&gt;, Error=ParseError&gt;,
+</span><span class="boring">  Error: From&lt;StoreError&gt;,
+</span><span class="boring">  Error: From&lt;ParseError&gt;,
+</span><span class="boring">{
+</span><span class="boring">  fn query_person(context: &amp;Context, person_id: &amp;PersonId)
+</span><span class="boring">    -&gt; Result&lt;Person, Error&gt;
+</span><span class="boring">  {
+</span><span class="boring">    let key = format!(&quot;persons/{}&quot;, person_id);
+</span><span class="boring">
+</span><span class="boring">    let bytes = context.store().get(&amp;key)?;
+</span><span class="boring">
+</span><span class="boring">    let person = bytes.try_into()?;
+</span><span class="boring">
+</span><span class="boring">    Ok(person)
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonQuerierContext:
+</span><span class="boring">  PersonContext + ErrorContext + Sized
+</span><span class="boring">{
+</span><span class="boring">  type PersonQuerier: PersonQuerier&lt;Self&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct SimpleGreeter;
+</span><span class="boring">
+</span><span class="boring">impl&lt;Context&gt; Greeter&lt;Context&gt; for SimpleGreeter
+</span><span class="boring">where
+</span><span class="boring">  Context: PersonQuerierContext,
+</span><span class="boring">{
+</span><span class="boring">  fn greet(&amp;self, context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">    -&gt; Result&lt;(), Context::Error&gt;
+</span><span class="boring">  {
+</span><span class="boring">    let person = Context::PersonQuerier::query_person(context, person_id)?;
+</span><span class="boring">    println!(&quot;Hello, {}&quot;, person.name());
+</span><span class="boring">    Ok(())
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span>#[derive(Clone)]
+struct BasicPerson {
+  name: String,
+}
+
+<span class="boring">impl NamedPerson for BasicPerson {
+</span><span class="boring">  fn name(&amp;self) -&gt; &amp;str {
+</span><span class="boring">    &amp;self.name
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">trait PersonCacheContext: PersonContext {
+</span><span class="boring">  fn person_cache(&amp;self) -&gt; &amp;HashMap&lt;Self::PersonId, Self::Person&gt;;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct CachingPersonQuerier&lt;InQuerier&gt;(InQuerier);
+</span><span class="boring">
+</span><span class="boring">impl&lt;Context, InQuerier&gt; PersonQuerier&lt;Context&gt;
+</span><span class="boring">  for CachingPersonQuerier&lt;InQuerier&gt;
+</span><span class="boring">where
+</span><span class="boring">  InQuerier: PersonQuerier&lt;Context&gt;,
+</span><span class="boring">  Context: PersonCacheContext,
+</span><span class="boring">  Context: ErrorContext,
+</span><span class="boring">  Context::PersonId: Hash + Eq,
+</span><span class="boring">  Context::Person: Clone,
+</span><span class="boring">{
+</span><span class="boring">  fn query_person(context: &amp;Context, person_id: &amp;Context::PersonId)
+</span><span class="boring">    -&gt; Result&lt;Context::Person, Context::Error&gt;
+</span><span class="boring">  {
+</span><span class="boring">    let entry = context.person_cache().get(person_id);
+</span><span class="boring">
+</span><span class="boring">    match entry {
+</span><span class="boring">      Some(person) =&gt; Ok(person.clone()),
+</span><span class="boring">      None =&gt; InQuerier::query_person(context, person_id),
+</span><span class="boring">    }
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct FsKvStore { /* ... */ }
+</span><span class="boring">struct KvStoreError { /* ... */ }
+</span><span class="boring">
+</span><span class="boring">struct ParseError { /* ... */ }
+</span><span class="boring">
+</span><span class="boring">impl ErrorContext for FsKvStore {
+</span><span class="boring">  type Error = KvStoreError;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl KvStore for FsKvStore {
+</span><span class="boring">  fn get(&amp;self, key: &amp;str) -&gt; Result&lt;Vec&lt;u8&gt;, Self::Error&gt; {
+</span><span class="boring">    unimplemented!() // stub
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl TryFrom&lt;Vec&lt;u8&gt;&gt; for BasicPerson {
+</span><span class="boring">  type Error = ParseError;
+</span><span class="boring">
+</span><span class="boring">  fn try_from(bytes: Vec&lt;u8&gt;) -&gt; Result&lt;Self, Self::Error&gt; {
+</span><span class="boring">    unimplemented!() // stub
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">enum AppError {
+</span><span class="boring">  KvStore(KvStoreError),
+</span><span class="boring">  Parse(ParseError),
+</span><span class="boring">  // ...
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl From&lt;KvStoreError&gt; for AppError {
+</span><span class="boring">  fn from(err: KvStoreError) -&gt; Self {
+</span><span class="boring">    Self::KvStore(err)
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl From&lt;ParseError&gt; for AppError {
+</span><span class="boring">  fn from(err: ParseError) -&gt; Self {
+</span><span class="boring">    Self::Parse(err)
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span>struct AppContext {
+  kv_store: FsKvStore,
+  person_cache: HashMap&lt;String, BasicPerson&gt;,
+  // ...
+}
+
+<span class="boring">impl ErrorContext for AppContext {
+</span><span class="boring">  type Error = AppError;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl PersonContext for AppContext {
+</span><span class="boring">  type PersonId = String;
+</span><span class="boring">  type Person = BasicPerson;
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">impl KvStoreContext for AppContext {
+</span><span class="boring">  type Store = FsKvStore;
+</span><span class="boring">
+</span><span class="boring">  fn store(&amp;self) -&gt; &amp;Self::Store {
+</span><span class="boring">    &amp;self.kv_store
+</span><span class="boring">  }
+</span><span class="boring">}
+</span><span class="boring">
+</span>impl PersonCacheContext for AppContext {
+  fn person_cache(&amp;self) -&gt; &amp;HashMap&lt;String, BasicPerson&gt; {
+    &amp;self.person_cache
+  }
+}
+
+impl PersonQuerierContext for AppContext {
+  type PersonQuerier = CachingPersonQuerier&lt;KvStorePersonQuerier&gt;;
+}
+
+fn app_greeter() -&gt; impl Greeter&lt;AppContext&gt; {
+  SimpleGreeter
+}
+<span class="boring">}
+</span></code></pre></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+
+                
+            </nav>
+
+        </div>
+
+        
+        <!-- Livereload script (if served using the cli tool) -->
+        <script type="text/javascript">
+            var socket = new WebSocket("ws://localhost:3000/__livereload");
+            socket.onmessage = function (event) {
+                if (event.data === "reload") {
+                    socket.close();
+                    location.reload();
+                }
+            };
+
+            window.onbeforeunload = function() {
+                socket.close();
+            }
+        </script>
+        
+
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+        
+        <script type="text/javascript">
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+        
+        
+
+    </body>
+</html>
