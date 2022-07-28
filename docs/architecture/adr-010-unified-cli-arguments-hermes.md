@@ -133,7 +133,7 @@ __Channel__
     * Optional: `[--height <HEIGHT>] [--verbose]`
 
 * `query channels --chain <CHAIN_ID>`
-    * Optional: `[--counterparty-chain <COUNTERPARTY_CHAIN_ID>] [--verbose]`
+    * Optional: `[--counterparty-chain <COUNTERPARTY_CHAIN_ID>] [--verbose] [--show-counterparty]`
 
 __Packet__
 

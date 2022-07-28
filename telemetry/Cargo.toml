@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-telemetry"
-version      = "0.16.0"
+version      = "0.17.0"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
@@ -13,7 +13,7 @@ description  = """
 """
 
 [dependencies]
-ibc = { version = "0.16.0", path = "../modules" }
+ibc = { version = "0.17.0", path = "../modules" }
 
 crossbeam-channel        = "0.5.5"
 once_cell                = "1.13.0"
