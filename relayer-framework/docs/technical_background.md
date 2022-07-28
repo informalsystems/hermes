@@ -1826,6 +1826,17 @@ the store can be propagated.
 
 ## Querier Consumer
 
+Now that we have a context-generic implementation of `KvStorePersonQuerier`,
+we can try to use it from `SimpleGreeter`. To do that, `SimpleGreeter` has
+to somehow get `KvStorePersonQuerier` from `Context`, and use it as a
+`PersonQuerier`.
+
+Recall that `KvStorePersonQuerier` itself is not a context, and therefore
+it does not implement other context traits like `PersonContext`. What we
+need instead is for concrete contexts like `AppContext` to specify that
+their implementation of `PersonQuerier` is `KvStorePersonQuerier`.
+We can do that by defining a `PersonQuerierContext` trait as follows:
+
 ```rust
 # trait NamedPerson {
 #   fn name(&self) -> &str;
@@ -1875,5 +1886,747 @@ where
     println!("Hello, {}", person.name());
     Ok(())
   }
+}
+```
+
+While the `PersonQuerier` is implemented by component types like
+`KvStorePersonQuerier`, the `PersonQuerierContext` trait is implemented by
+context types like `AppContext`. Compared to the earlier design of
+`QueryPersonContext`, the context is now offering a _component_ for
+querying person that also works in the _current context_.
+
+We can see that the `PersonQuerierContext` trait has `PersonContext`
+and `ErrorContext` as its supertraits, indicating that the concrete context
+also needs to implement the other two traits first. Due to quirks in Rust,
+the trait also requires the `Sized` supertrait, which is already implemented
+by most types other than `dyn Trait` types, so that we can use `Self` inside
+other generic parameters.
+
+In the body of `PersonQuerierContext`, we define a `PersonQuerier` associated
+type, which implements the trait `PersonQuerier<Self>`. This looks a little
+self-referential, as the context is providing a type that is referencing back
+to itself. But with the dependency injection mechanism of the traits system,
+this in fact works most of the time as long as there is no actual cyclic
+dependencies.
+
+Now inside the `Greet` implementation for `SimpleGreeter`, we require the
+generic `Context` to implement `PersonQuerierContext`. Inside the `greet`
+method, we then call `Context::PersonQuerier::query_person` and pass in
+the `context` as first argument to query for the person details.
+
+In summary, what we achieved at this point is as follows:
+
+- We define a context-generic component for `PersonQuerier` as
+  `KvStorePersonQuerier`.
+- We define another context-generic component for `Greet` as `SimpleGreeter`,
+  which _depends_ on a `PersonQuerier` component provided from the context.
+- The Rust trait system _resolves_ the dependency graph, constructs
+  `KvStorePersonQuerier` from its _indirect dependencies_ from the context,
+  and "pass" it as the `PersonQuerier` dependency to `SimpleGreeter`.
+
+By using dependency injection, we don't need to know that in order to build
+`SimpleGreeter`, we need to first build `KvStorePersonQuerier`, but in order
+to build `KvStorePersonQuerier`, we need to first build `FsKvStore`. During
+compile-time, Rust does all the wiring for free, and we do not even need to
+pay for the cost of doing such wiring at run time.
+
+## Self-less Components
+
+```rust
+# trait NamedPerson {
+#   fn name(&self) -> &str;
+# }
+#
+# trait ErrorContext {
+#   type Error;
+# }
+#
+# trait PersonContext {
+#   type PersonId;
+#   type Person: NamedPerson;
+# }
+#
+# trait Greeter<Context>
+# where
+#   Context: PersonContext + ErrorContext,
+# {
+#   fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#     -> Result<(), Context::Error>;
+# }
+#
+trait PersonQuerier<Context>
+where
+  Context: PersonContext + ErrorContext,
+{
+   fn query_person(&self, context: &Context, person_id: &Context::PersonId)
+     -> Result<Context::Person, Context::Error>;
+}
+
+trait PersonQuerierContext:
+  PersonContext + ErrorContext + Sized
+{
+  type PersonQuerier: PersonQuerier<Self>;
+
+  fn person_querier(&self) -> &Self::PersonQuerier;
+}
+
+struct SimpleGreeter;
+
+impl<Context> Greeter<Context> for SimpleGreeter
+where
+  Context: PersonQuerierContext,
+{
+  fn greet(&self, context: &Context, person_id: &Context::PersonId)
+    -> Result<(), Context::Error>
+  {
+    let person = context.person_querier().query_person(context, person_id)?;
+    println!("Hello, {}", person.name());
+    Ok(())
+  }
+}
+```
+
+## Context Implementation
+
+```rust
+# use core::fmt::Display;
+#
+# trait NamedPerson {
+#   fn name(&self) -> &str;
+# }
+#
+# trait ErrorContext {
+#   type Error;
+# }
+#
+# trait PersonContext {
+#   type PersonId;
+#   type Person: NamedPerson;
+# }
+#
+# trait Greeter<Context>
+# where
+#   Context: PersonContext + ErrorContext,
+# {
+#   fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#     -> Result<(), Context::Error>;
+# }
+#
+# trait PersonQuerier<Context>
+# where
+#   Context: PersonContext + ErrorContext,
+# {
+#    fn query_person(context: &Context, person_id: &Context::PersonId)
+#      -> Result<Context::Person, Context::Error>;
+# }
+#
+# trait KvStore: ErrorContext {
+#   fn get(&self, key: &str) -> Result<Vec<u8>, Self::Error>;
+# }
+#
+# trait KvStoreContext {
+#   type Store: KvStore;
+#
+#   fn store(&self) -> &Self::Store;
+# }
+#
+# struct KvStorePersonQuerier;
+#
+# impl<Context, Store, PersonId, Person, Error, ParseError, StoreError>
+#   PersonQuerier<Context> for KvStorePersonQuerier
+# where
+#   Context: KvStoreContext<Store=Store>,
+#   Context: PersonContext<Person=Person, PersonId=PersonId>,
+#   Context: ErrorContext<Error=Error>,
+#   Store: KvStore<Error=StoreError>,
+#   PersonId: Display,
+#   Person: TryFrom<Vec<u8>, Error=ParseError>,
+#   Error: From<StoreError>,
+#   Error: From<ParseError>,
+# {
+#   fn query_person(context: &Context, person_id: &PersonId)
+#     -> Result<Person, Error>
+#   {
+#     let key = format!("persons/{}", person_id);
+#
+#     let bytes = context.store().get(&key)?;
+#
+#     let person = bytes.try_into()?;
+#
+#     Ok(person)
+#   }
+# }
+#
+# trait PersonQuerierContext:
+#   PersonContext + ErrorContext + Sized
+# {
+#   type PersonQuerier: PersonQuerier<Self>;
+# }
+#
+# struct SimpleGreeter;
+#
+# impl<Context> Greeter<Context> for SimpleGreeter
+# where
+#   Context: PersonQuerierContext,
+# {
+#   fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#     -> Result<(), Context::Error>
+#   {
+#     let person = Context::PersonQuerier::query_person(context, person_id)?;
+#     println!("Hello, {}", person.name());
+#     Ok(())
+#   }
+# }
+#
+# struct BasicPerson {
+#   name: String,
+# }
+#
+# impl NamedPerson for BasicPerson {
+#   fn name(&self) -> &str {
+#     &self.name
+#   }
+# }
+#
+struct FsKvStore { /* ... */ }
+struct KvStoreError { /* ... */ }
+
+struct ParseError { /* ... */ }
+
+impl ErrorContext for FsKvStore {
+  type Error = KvStoreError;
+}
+
+impl KvStore for FsKvStore {
+  fn get(&self, key: &str) -> Result<Vec<u8>, Self::Error> {
+    unimplemented!() // stub
+  }
+}
+
+impl TryFrom<Vec<u8>> for BasicPerson {
+  type Error = ParseError;
+
+  fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+    unimplemented!() // stub
+  }
+}
+
+enum AppError {
+  KvStore(KvStoreError),
+  Parse(ParseError),
+  // ...
+}
+
+impl From<KvStoreError> for AppError {
+  fn from(err: KvStoreError) -> Self {
+    Self::KvStore(err)
+  }
+}
+
+impl From<ParseError> for AppError {
+  fn from(err: ParseError) -> Self {
+    Self::Parse(err)
+  }
+}
+
+struct AppContext {
+  kv_store: FsKvStore,
+  // ...
+}
+
+impl ErrorContext for AppContext {
+  type Error = AppError;
+}
+
+impl PersonContext for AppContext {
+  type PersonId = String;
+  type Person = BasicPerson;
+}
+
+impl KvStoreContext for AppContext {
+  type Store = FsKvStore;
+
+  fn store(&self) -> &Self::Store {
+    &self.kv_store
+  }
+}
+
+impl PersonQuerierContext for AppContext {
+  type PersonQuerier = KvStorePersonQuerier;
+}
+
+fn app_greeter() -> impl Greeter<AppContext> {
+  SimpleGreeter
+}
+```
+
+## Multiple Context Implementations
+
+```rust
+# use core::fmt::Display;
+#
+# trait NamedPerson {
+#   fn name(&self) -> &str;
+# }
+#
+# trait ErrorContext {
+#   type Error;
+# }
+#
+# trait PersonContext {
+#   type PersonId;
+#   type Person: NamedPerson;
+# }
+#
+# trait Greeter<Context>
+# where
+#   Context: PersonContext + ErrorContext,
+# {
+#   fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#     -> Result<(), Context::Error>;
+# }
+#
+# trait PersonQuerier<Context>
+# where
+#   Context: PersonContext + ErrorContext,
+# {
+#    fn query_person(context: &Context, person_id: &Context::PersonId)
+#      -> Result<Context::Person, Context::Error>;
+# }
+#
+# trait KvStore: ErrorContext {
+#   fn get(&self, key: &str) -> Result<Vec<u8>, Self::Error>;
+# }
+#
+# trait KvStoreContext {
+#   type Store: KvStore;
+#
+#   fn store(&self) -> &Self::Store;
+# }
+#
+# struct KvStorePersonQuerier;
+#
+# impl<Context, Store, PersonId, Person, Error, ParseError, StoreError>
+#   PersonQuerier<Context> for KvStorePersonQuerier
+# where
+#   Context: KvStoreContext<Store=Store>,
+#   Context: PersonContext<Person=Person, PersonId=PersonId>,
+#   Context: ErrorContext<Error=Error>,
+#   Store: KvStore<Error=StoreError>,
+#   PersonId: Display,
+#   Person: TryFrom<Vec<u8>, Error=ParseError>,
+#   Error: From<StoreError>,
+#   Error: From<ParseError>,
+# {
+#   fn query_person(context: &Context, person_id: &PersonId)
+#     -> Result<Person, Error>
+#   {
+#     let key = format!("persons/{}", person_id);
+#
+#     let bytes = context.store().get(&key)?;
+#
+#     let person = bytes.try_into()?;
+#
+#     Ok(person)
+#   }
+# }
+#
+# trait PersonQuerierContext:
+#   PersonContext + ErrorContext + Sized
+# {
+#   type PersonQuerier: PersonQuerier<Self>;
+# }
+#
+# struct SimpleGreeter;
+#
+# impl<Context> Greeter<Context> for SimpleGreeter
+# where
+#   Context: PersonQuerierContext,
+# {
+#   fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#     -> Result<(), Context::Error>
+#   {
+#     let person = Context::PersonQuerier::query_person(context, person_id)?;
+#     println!("Hello, {}", person.name());
+#     Ok(())
+#   }
+# }
+#
+# struct BasicPerson {
+#   name: String,
+# }
+#
+# impl NamedPerson for BasicPerson {
+#   fn name(&self) -> &str {
+#     &self.name
+#   }
+# }
+#
+# struct FsKvStore { /* ... */ }
+# struct KvStoreError { /* ... */ }
+#
+# struct ParseError { /* ... */ }
+#
+# impl ErrorContext for FsKvStore {
+#   type Error = KvStoreError;
+# }
+#
+# impl KvStore for FsKvStore {
+#   fn get(&self, key: &str) -> Result<Vec<u8>, Self::Error> {
+#     unimplemented!() // stub
+#   }
+# }
+#
+# impl TryFrom<Vec<u8>> for BasicPerson {
+#   type Error = ParseError;
+#
+#   fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+#     unimplemented!() // stub
+#   }
+# }
+#
+# enum AppError {
+#   KvStore(KvStoreError),
+#   Parse(ParseError),
+#   // ...
+# }
+#
+# impl From<KvStoreError> for AppError {
+#   fn from(err: KvStoreError) -> Self {
+#     Self::KvStore(err)
+#   }
+# }
+#
+# impl From<ParseError> for AppError {
+#   fn from(err: ParseError) -> Self {
+#     Self::Parse(err)
+#   }
+# }
+#
+struct Foo;
+struct Bar;
+
+struct FooContext {
+  kv_store: FsKvStore,
+  foo: Foo,
+  // ...
+}
+
+struct BarContext {
+  kv_store: FsKvStore,
+  bar: Bar,
+  // ...
+}
+
+impl ErrorContext for FooContext {
+  type Error = AppError;
+}
+
+impl ErrorContext for BarContext {
+  type Error = AppError;
+}
+
+impl PersonContext for FooContext {
+  type PersonId = String;
+  type Person = BasicPerson;
+}
+
+impl PersonContext for BarContext {
+  type PersonId = String;
+  type Person = BasicPerson;
+}
+
+impl KvStoreContext for FooContext {
+  type Store = FsKvStore;
+
+  fn store(&self) -> &Self::Store {
+    &self.kv_store
+  }
+}
+
+impl KvStoreContext for BarContext {
+  type Store = FsKvStore;
+
+  fn store(&self) -> &Self::Store {
+    &self.kv_store
+  }
+}
+
+impl PersonQuerierContext for FooContext {
+  type PersonQuerier = KvStorePersonQuerier;
+}
+
+impl PersonQuerierContext for BarContext {
+  type PersonQuerier = KvStorePersonQuerier;
+}
+
+fn foo_greeter() -> impl Greeter<FooContext> {
+  SimpleGreeter
+}
+
+fn bar_greeter() -> impl Greeter<BarContext> {
+  SimpleGreeter
+}
+```
+
+## Caching Querier
+
+```rust
+# use core::hash::Hash;
+# use std::collections::HashMap;
+#
+# trait ErrorContext {
+#   type Error;
+# }
+#
+# trait PersonContext {
+#   type PersonId;
+#   type Person;
+# }
+#
+trait PersonQuerier<Context>
+where
+  Context: PersonContext + ErrorContext,
+{
+   fn query_person(context: &Context, person_id: &Context::PersonId)
+     -> Result<Context::Person, Context::Error>;
+}
+
+trait PersonCacheContext: PersonContext {
+  fn person_cache(&self) -> &HashMap<Self::PersonId, Self::Person>;
+}
+
+struct CachingPersonQuerier<InQuerier>(InQuerier);
+
+impl<Context, InQuerier> PersonQuerier<Context>
+  for CachingPersonQuerier<InQuerier>
+where
+  InQuerier: PersonQuerier<Context>,
+  Context: PersonCacheContext,
+  Context: ErrorContext,
+  Context::PersonId: Hash + Eq,
+  Context::Person: Clone,
+{
+  fn query_person(context: &Context, person_id: &Context::PersonId)
+    -> Result<Context::Person, Context::Error>
+  {
+    let entry = context.person_cache().get(person_id);
+
+    match entry {
+      Some(person) => Ok(person.clone()),
+      None => InQuerier::query_person(context, person_id),
+    }
+  }
+}
+```
+
+## Caching App Context
+
+```rust
+# use core::hash::Hash;
+# use core::fmt::Display;
+# use std::collections::HashMap;
+#
+# trait NamedPerson {
+#   fn name(&self) -> &str;
+# }
+#
+# trait ErrorContext {
+#   type Error;
+# }
+#
+# trait PersonContext {
+#   type PersonId;
+#   type Person: NamedPerson;
+# }
+#
+# trait Greeter<Context>
+# where
+#   Context: PersonContext + ErrorContext,
+# {
+#   fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#     -> Result<(), Context::Error>;
+# }
+#
+# trait PersonQuerier<Context>
+# where
+#   Context: PersonContext + ErrorContext,
+# {
+#    fn query_person(context: &Context, person_id: &Context::PersonId)
+#      -> Result<Context::Person, Context::Error>;
+# }
+#
+# trait KvStore: ErrorContext {
+#   fn get(&self, key: &str) -> Result<Vec<u8>, Self::Error>;
+# }
+#
+# trait KvStoreContext {
+#   type Store: KvStore;
+#
+#   fn store(&self) -> &Self::Store;
+# }
+#
+# struct KvStorePersonQuerier;
+#
+# impl<Context, Store, PersonId, Person, Error, ParseError, StoreError>
+#   PersonQuerier<Context> for KvStorePersonQuerier
+# where
+#   Context: KvStoreContext<Store=Store>,
+#   Context: PersonContext<Person=Person, PersonId=PersonId>,
+#   Context: ErrorContext<Error=Error>,
+#   Store: KvStore<Error=StoreError>,
+#   PersonId: Display,
+#   Person: TryFrom<Vec<u8>, Error=ParseError>,
+#   Error: From<StoreError>,
+#   Error: From<ParseError>,
+# {
+#   fn query_person(context: &Context, person_id: &PersonId)
+#     -> Result<Person, Error>
+#   {
+#     let key = format!("persons/{}", person_id);
+#
+#     let bytes = context.store().get(&key)?;
+#
+#     let person = bytes.try_into()?;
+#
+#     Ok(person)
+#   }
+# }
+#
+# trait PersonQuerierContext:
+#   PersonContext + ErrorContext + Sized
+# {
+#   type PersonQuerier: PersonQuerier<Self>;
+# }
+#
+# struct SimpleGreeter;
+#
+# impl<Context> Greeter<Context> for SimpleGreeter
+# where
+#   Context: PersonQuerierContext,
+# {
+#   fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#     -> Result<(), Context::Error>
+#   {
+#     let person = Context::PersonQuerier::query_person(context, person_id)?;
+#     println!("Hello, {}", person.name());
+#     Ok(())
+#   }
+# }
+#
+#[derive(Clone)]
+struct BasicPerson {
+  name: String,
+}
+
+# impl NamedPerson for BasicPerson {
+#   fn name(&self) -> &str {
+#     &self.name
+#   }
+# }
+#
+# trait PersonCacheContext: PersonContext {
+#   fn person_cache(&self) -> &HashMap<Self::PersonId, Self::Person>;
+# }
+#
+# struct CachingPersonQuerier<InQuerier>(InQuerier);
+#
+# impl<Context, InQuerier> PersonQuerier<Context>
+#   for CachingPersonQuerier<InQuerier>
+# where
+#   InQuerier: PersonQuerier<Context>,
+#   Context: PersonCacheContext,
+#   Context: ErrorContext,
+#   Context::PersonId: Hash + Eq,
+#   Context::Person: Clone,
+# {
+#   fn query_person(context: &Context, person_id: &Context::PersonId)
+#     -> Result<Context::Person, Context::Error>
+#   {
+#     let entry = context.person_cache().get(person_id);
+#
+#     match entry {
+#       Some(person) => Ok(person.clone()),
+#       None => InQuerier::query_person(context, person_id),
+#     }
+#   }
+# }
+#
+# struct FsKvStore { /* ... */ }
+# struct KvStoreError { /* ... */ }
+#
+# struct ParseError { /* ... */ }
+#
+# impl ErrorContext for FsKvStore {
+#   type Error = KvStoreError;
+# }
+#
+# impl KvStore for FsKvStore {
+#   fn get(&self, key: &str) -> Result<Vec<u8>, Self::Error> {
+#     unimplemented!() // stub
+#   }
+# }
+#
+# impl TryFrom<Vec<u8>> for BasicPerson {
+#   type Error = ParseError;
+#
+#   fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+#     unimplemented!() // stub
+#   }
+# }
+#
+# enum AppError {
+#   KvStore(KvStoreError),
+#   Parse(ParseError),
+#   // ...
+# }
+#
+# impl From<KvStoreError> for AppError {
+#   fn from(err: KvStoreError) -> Self {
+#     Self::KvStore(err)
+#   }
+# }
+#
+# impl From<ParseError> for AppError {
+#   fn from(err: ParseError) -> Self {
+#     Self::Parse(err)
+#   }
+# }
+#
+struct AppContext {
+  kv_store: FsKvStore,
+  person_cache: HashMap<String, BasicPerson>,
+  // ...
+}
+
+# impl ErrorContext for AppContext {
+#   type Error = AppError;
+# }
+#
+# impl PersonContext for AppContext {
+#   type PersonId = String;
+#   type Person = BasicPerson;
+# }
+#
+# impl KvStoreContext for AppContext {
+#   type Store = FsKvStore;
+#
+#   fn store(&self) -> &Self::Store {
+#     &self.kv_store
+#   }
+# }
+#
+impl PersonCacheContext for AppContext {
+  fn person_cache(&self) -> &HashMap<String, BasicPerson> {
+    &self.person_cache
+  }
+}
+
+impl PersonQuerierContext for AppContext {
+  type PersonQuerier = CachingPersonQuerier<KvStorePersonQuerier>;
+}
+
+fn app_greeter() -> impl Greeter<AppContext> {
+  SimpleGreeter
 }
 ```
