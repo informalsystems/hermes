@@ -7,7 +7,7 @@ complicate the implementation and makes it more difficult to understand
 the core logic. Alternatively, we could define a new `DaytimeGreeter`
 component that _wraps_ around the original `SimpleGreeter`.
 
-In this new `DaytimeGreeter` component, it would need to know how to
+This new `DaytimeGreeter` component would need to know how to
 get the current time of the system, as well as how to tell whether
 a given time value is at daytime. Following the context pattern we
 learned, we will also define a `TimeContext` trait for getting the time.
@@ -70,28 +70,28 @@ where
 }
 ```
 
-For demo purpose, we first define a `SimpleTime` trait that provides an
-`is_daytime` method to tell whether the a time value is in daytime.
+For demonstration purposes, we first define a `SimpleTime` trait that provides an
+`is_daytime` method to tell whether the current time value is considered daytime.
 Following that, we define a `TimeContext` trait that provides a `now` method
 to fetch the current time from the context. Notice that the associated type
 `Time` does _not_ implement `SimpleTime`. This is so that we can learn how
 to inject the `SimpleTime` constraint as an _indirect dependency_ using the
 same dependency injection technique.
 
-We then define the `DaytimeGreeter` with a `InGreeter` type parameter, which
+We then define the `DaytimeGreeter` with an `InGreeter` type parameter, which
 would act as the inner `Greeter` component. We then define a generic
 implementation of `Greeter<Context>` for `DaytimeGreeter<InGreeter>`.
 In the trait bounds, we require the inner greeter `InGreeter` to also
 implement `Greeter<Context>`, since the core logic is implemented over there.
 
-Aside from `PersonContext` and `ErrorContext`, we also requires `Context`
+Aside from `PersonContext` and `ErrorContext`, we also require `Context`
 to implement `TimeContext` for `DaytimeGreeter` to fetch the current time.
-Other than that, we also explicitly requires that the associated type
-`Context::Time` to implement `SimpleTime`.
+Other than that, we also explicitly require that the associated type
+`Context::Time` implements `SimpleTime`.
 
 By specifying `SimpleTime` as an explicit dependency, we relax the requirement
 of how the `TimeContext` trait can be used by other components. So if
 `SimpleTime` is only ever used by `DaytimeGreeter`, and if an application
-do not need `DaytimeGreeter`, then a concrete context can skip implementing
+does not need `DaytimeGreeter`, then a concrete context can skip implementing
 `SimpleTime` for its time type, even if the trait `TimeContext` is used by
 other components.
