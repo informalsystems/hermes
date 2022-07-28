@@ -1,10 +1,9 @@
 # Technical Background
 
-This section covers the technical background for understanding the programming
-techniques used by the relayer framework. Readers with background in
-dynamic-typed programming languages such as JavaScript and Python may find
-the techniques used here to be similar to dynamic typed programming,
-but with static type guarantees.
+This section covers the technical background needed for understanding the programming
+techniques used by the relayer framework. Readers with backgrounds in
+dynamically-typed programming languages such as JavaScript or Python may find
+the techniques used here to be similar to dynamic typing, but with static type guarantees.
 
 We will start with simple examples and then slowly relate them to the design
 of the relayer framework.
@@ -20,8 +19,8 @@ fn greet(name: String) {
 }
 ```
 
-When calling the greet function from a larger context, we may want to pass
-a `Person` struct with a `name` attribute on it, so that the caller do not
+When calling the `greet` function from a larger context, we may want to pass
+a `Person` struct with a `name` attribute on it, so that the caller does not
 have to know how to get the person's name.
 
 ```rust
@@ -36,9 +35,9 @@ fn greet(person: &Person) {
 }
 ```
 
-But the caller of the greet function might not have the person's information
+But the caller of the `greet` function might not have the person's information
 on hand, as it may be stored in a database. So we might want to implement
-a greet function that accepts a `PersonId` and a database handler, so that
+a `greet` function that accepts a `PersonId` and a database handler, so that
 it can load the person's information from the database, and then greets them.
 
 ```rust
@@ -66,34 +65,34 @@ fn greet(db: &Database, person_id: &PersonId) -> Result<(), DbError> {
 ```
 
 As the application grows, we can see that the complexity creeps in pretty
-quickly even with such simple example:
+quickly even with such a simple example:
 
 - The full details of the `Person` struct must be fetched regardless of
-  whether the greet function needs it.
+  whether the `greet` function needs it.
 - The concrete implementation of `Database` is exposed to the greet function,
   making it difficult to work with other databases.
 - The concrete error `DbError` from the database query is leaked into the
-  greet function implementation.
+  `greet` function implementation.
 
-When the application is still in its early stage, it might be tempting to
-leave these concerns aside, and not worry about them too much. But eventually
+When the application is still in its early stages, it might be tempting to
+leave these concerns aside and not worry about them too much. But eventually,
 we will reach a point where we need our application to work with different
 implementations. For example:
 
 - We may want a caching layer to cache the person's information instead of
-  querying directly from database all the time.
-- We may want to have different database implementations, such as mock
-  database or in-memory database.
+  querying directly from the database all the time.
+- We may want to have different database implementations, such as a mocked-up
+  database or an in-memory database.
 - We may want to have multiple concrete person types, so that the database
   only fetches the essential information. e.g. `PersonWithName`,
   `PersonWithFullDetails`, `PersonWithRoles` etc.
 
 ## Comparison with Dynamic Typing
 
-One thing worth noting with our greet example in Rust is that many of the
-problems are applicable because we are programming in a static typed
-language. If we were to re-implement the greet function in a dynamic
-typed language like JavaScript, many of the problems will go away:
+One thing worth noting with our `greet` example in Rust is that many of the
+problems mentioned are applicable because we are programming in a statically-typed
+language. If we were to re-implement the `greet` function in a dynamically-
+typed language like JavaScript, many of these problems go away:
 
 ```javascript
 function greet(db, person_id) {
@@ -103,12 +102,12 @@ function greet(db, person_id) {
 ```
 
 Thanks to dynamic typing, the JavaScript `greet` function above is general
-in many ways:
+in several ways:
 
-- The function can work with any `db` value, as long as they provide a valid
+- The function can work with any `db` value, as long as it provides a valid
   `query_person` method.
 - The function can work with any `person` value returned from `db.query_person`,
-  as long as it contains a `name` field that can be converted into string.
+  as long as it contains a `name` field that can be converted into a string.
 - The error can be thrown implicitly by `db.query_person` as an exception.
 
 On the upside, the dynamic nature of the `greet` function means that it can
@@ -118,18 +117,18 @@ downside, since there is no type information, it is easy to accidentally call
 runtime execution.
 
 Ideally, we would like to have the same benefits of writing generalized programs
-in dynamic types, but still enjoy the benefits of type checking when there are
-mismatch in the specialized implementation.
+in dynamically-typed contexts, but still enjoy the benefits of type checking when there are
+mismatches in the specialized implementation.
 
 ## Dynamic Context
 
 The first thing to notice when writing generalized functions is that there are
-usually contextual values of the surrounding environment that is needed for
+usually contextual values in the surrounding environment that are needed for
 the program to execute successfully.
 
-In our dynamic greet example, we can generalize the `db` value and think of it
+In our dynamic `greet` example, we can generalize the `db` value and think of it
 as a `context` value, which may contain other environment parameters such as
-configuration for the greet word used.
+what kind of greeting is used.
 
 ```javascript
 function greet(context, person_id) {
@@ -138,11 +137,11 @@ function greet(context, person_id) {
 }
 ```
 
-In the OOP world, the `context` value is typically referred to as a `self`
-value. However for clarity and more structured composition, it is better
-to think of it as a fully abstract value with unknown type. This would
-allow the context value to be augmented in a functional way, without
-having to resort to using any OOP class hierarchy.
+In the OOP world, the `context` value is typically referred to as a `this` or `self`
+value. However, for clarity and for more structured composition, it is better
+to think of it as a fully abstract value with unknown type. This allows the
+context value to be augmented in a functional way, without having to resort to
+using any OOP class hierarchy.
 
 ## Static Context
 
@@ -179,9 +178,9 @@ fn greet(context: &Context, person_id: &PersonId) -> Result<(), DbError> {
 ## Generic Context
 
 At this stage, we have a concrete `Context` struct that contains the database
-handle as well as other environment parameters that we may need. However since
-the context is concrete, it is still difficult to reuse the greet function
-in a slightly different context. So let's make the context generic instead:
+handle as well as other environment parameters that we may need. However,
+`Context` is still concrete, so it is difficult to reuse the `greet` function
+in a different context. So let's make the `Context` generic instead:
 
 ```rust
 # struct PersonId(String);
@@ -216,9 +215,9 @@ where
 ```
 
 In our first attempt, we turn `Context` into a generic type parameter.
-With that, the concrete detail of the context is lost, and we no longer
-know how to access the fields such as database. But we can recover that
-by defining a `ContextWithDatabase` trait, which provides read only
+With that, the concrete details of the context are lost, and we no longer
+know how to access the fields such as the database. But we can recover that
+by defining a `ContextWithDatabase` trait, which provides read-only
 access to extract a reference to `Database` from the context.
 
 With that, we are able to make `greet` work with any context type as
@@ -242,8 +241,8 @@ impl ContextWithDatabase for AppContext {
 }
 ```
 
-However since the `Database` type is concrete, it is challenging if we
-want to run `greet` with an environment without database, such as
+However, since the `Database` type is concrete, it is challenging if we
+want to run `greet` with an environment without a database, such as
 an in-memory key-value store, cache store, or a blockchain. What we can do
 instead is to define methods such that we can query for a person's details
 directly from the context:
@@ -273,7 +272,7 @@ where
 }
 ```
 
-We define a `QueryPersonContext` trait that exposes method for querying for a
+We define a `QueryPersonContext` trait that exposes a method for querying for a
 person's details directly from the context. With that, we can have our `greet`
 function work with any context type that knows how to query for person details,
 regardless of whether it is implemented as a database query.
@@ -281,13 +280,13 @@ regardless of whether it is implemented as a database query.
 ## Error Context
 
 One thing to note however is that the `Error` type in `QueryPersonContext`
-is concrete. With that it would be problematic if we want to define new contexts
-that have different query methods but also returns different errors. While it
+is concrete. With that, it would be problematic if we want to define new contexts
+that have different query methods but also return different errors. While it
 is possible to define a dynamic error type such as `Box<dyn Error>`, such type
-erasure would mean that we lost information about what kind of error can happen
-when we try to query for a person detail.
+erasure would mean that we lose information about what kinds of errors can happen
+when we try to query for `Person` details.
 
-We can instead make the error type _generic_. But instead of putting it as a
+We can instead make the error type _generic_. But instead of using it as a
 generic parameter for `greet`, we can define it as an _associated type_ for
 the generic type `Context`:
 
@@ -339,8 +338,8 @@ As we can see, by having generic type parameters as associated types in the
 traits that `Context` implements, we are able to keep just one generic type
 parameter in the `greet` function.
 
-However it is still possible for us to explicitly pull out `Error` as a generic
-type parameter, and then binding it to the `Error` associated type as follows:
+However, it is still possible for us to explicitly pull out `Error` as a generic
+type parameter and bind to the `Error` associated type as follows:
 
 ```rust
 # struct PersonId(String);
@@ -378,28 +377,29 @@ There are sometimes benefits when we bind the associated types to an explicit
 generic type parameter. For one, the inferred type shown in IDEs like
 Rust Analyzer would be simpler, as they are shown as `Error` instead of
 the fully qualified syntax `<Context as ErrorContext>::Error`.
-As we will see later, explicit type parameters also help us have a shorter
+As we will see later, explicit type parameters also help us by providing a
 way to specify the additional trait bounds of the associated types.
 
 Aside from that, it is up to the programmer to decide whether to bind
-the associated types to explicit type parameters. The key to understand
+the associated types to explicit type parameters. The key thing to understand
 here is that the explicit bindings are optional, and we can choose to
 omit such parameters whenever it is appropriate.
 
 ## Generic Person
 
-Right now our `Error` type has become generic, but our `Person` type is
-still concrete. We may also want to make the `Person` type generic in
+Right now, our `Error` type has become generic, but our `Person` type is
+still concrete. We may also want to make the `Person` type generic in a
 similar way, so that the `greet` function can work with any other
 person types.
 
 This may be essential for reasons such as performance. For instance,
 depending on where `greet` is called, it may be desirable to load
 all details about a person from the database so that it can be
-cached, or with minimal details to save bandwidth.
+cached, or conversely, it might be desirable to load minimal details in order to
+save bandwidth.
 
 From the perspective of `greet`, it does not matter what fields a `Person`
-type has, as long as it can extract the name of the person as string.
+type has, as long as it can extract the name of the person as a string.
 So we can generalize the `Person` type as follows:
 
 ```rust
@@ -435,14 +435,14 @@ where
 We first define a `NamedPerson` trait, with a `name` method to extract a string
 out from the person. We also define a `PersonContext` trait that has two
 associated types: `PersonId` and `Person`. The `PersonId` type is completely
-abstract, as we don't care whether it is a string, an integer, or a UUID.
-The associated type `Person` is also abstract, but we also add a trait bound
+generic, as we don't care whether it is a string, an integer, or a UUID.
+The associated type `Person` is also generic, but we also add a trait bound
 that the type must implement `NamedPerson`.
 
 The `QueryPersonContext` is now defined with `PersonContext` as another of its
-supertrait. With that, the `query_person` method becomes completely abstract.
-A generic consumer would only know that given an abstract type
-`Context::PersonId`, it can query from the context and either get back an abstract
+supertraits. With that, the `query_person` method becomes completely abstract.
+A generic consumer would only know that, given an abstract type
+`Context::PersonId`, it can query the `Context` and either get back an abstract
 type `Context::Person` that implements `NamedPerson`, or get back an abstract
 error `Context::Error`.
 
@@ -450,7 +450,7 @@ error `Context::Error`.
 
 The `greet` function that we have defined at this point can now work with
 any context type that implements the required traits. In practice, we may
-also want to implement different versions of the greet function so that
+also want to implement different versions of the `greet` function so that
 they can be consumed generically by other components.
 
 With the generic context design, we define a `Greeter` interface that
@@ -503,13 +503,13 @@ where
 
 The `Greeter` trait is defined to be parameterized by a generic `Context` type,
 which is required to implement both `PersonContext` and `ErrorContext`.
-The `greet` method is then defined without generic parameter, as it has been
-captured in the trait parameter. We then define an empty struct `SimpleGreeter`,
+The `greet` method is then defined without generic parameters, as these have been
+captured in the trait definition. We then define an empty struct `SimpleGreeter`,
 which is there only to implement the `Greeter` trait for any `Context` type
 that implements `QueryPersonContext`.
 
 It is worth noticing here that in the main `Greeter` trait definition,
-the `Context` type is only required to implement `PersonContext` and
+the `Context` type, is only required to implement `PersonContext` and
 `ErrorContext`, but there is no mention of the `QueryPersonContext`
 trait bound. On the other hand, the concrete `Greeter` implementation
 for `SimpleGreeter` can require the additional trait bound
@@ -521,7 +521,7 @@ that uses the `Greeter` component, it does not need to know whether
 the generic context type implements `QueryPersonContext`. This means
 that from the trait bounds alone, we can tell whether a piece of code
 can call `query_person` directly, or whether it can only call the
-`greet` method to greet a person without knowing how the greeter find out
+`greet` method to greet a person without knowing how the greeter determined
 the person's name.
 
 ## Context Implementation
@@ -620,24 +620,24 @@ since that is the minimal information required for `greet` to work.
 We implement `NamedPerson` for `BasicPerson`, by simply returning
 `&self.name`.
 
-We also define an `AppContext` struct, with a stub database field.
-For demo purpose, we have a dummy `Database` struct, and a `DbError`
+We also define an `AppContext` struct with a stub database field.
+For demonstration purposes, we have a dummy `Database` struct, and a `DbError`
 type to represent database errors. We also define an `AppError`
 enum to represent all application errors, with one of them being
 `DbError`.
 
 We implement `ErrorContext` for `AppContext`, with `AppError` as
 the `Error` type. We also implement `PersonContext` for `AppContext`,
-with the `PersonId` associated type being `String`, and the `Person`
-associated type being `BasicPerson`. We also implement `QueryPersonContext`,
-but leave the `query_person` as a stub for performing database query
+with the `PersonId` associated type being `String` and the `Person`
+associated type being `BasicPerson`. We also implement `QueryPersonContext`
+but leave the `query_person` as a stub for performing database queries
 in an actual application.
 
 Finally, we implement an `app_greeter` function as a _witness_ that
 we can construct a type that implements `Greeter<AppContext>`.
 The function is implemented by simply returning `SimpleGreeter`.
-The fact that the function compiles provide evidence that
-`SimpleGreeter` can _always_ be used as a `Greeter<AppContext>`.
+The fact that the function compiles proves that `SimpleGreeter`
+can _always_ be used as a `Greeter<AppContext>`.
 
 ## Compile-Time Dependency Injection
 
@@ -1506,7 +1506,7 @@ without using any monadic construct. This is slightly more verbose, but
 the benefit is we still get to enjoy much of the benefits of reader monad
 without requiring Rust programmers to learn what a monad really is.
 (hint: if you know how to use `Result` and `Option`, you might already
-understand monad without you knowing it)
+understand monad without realizing it).
 
 ## Multiple Context Implementations
 
