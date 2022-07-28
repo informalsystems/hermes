@@ -228,7 +228,14 @@ impl TryFrom<RawClientState> for ClientState {
     type Error = Error;
 
     fn try_from(raw: RawClientState) -> Result<Self, Self::Error> {
-        let frozen_height = Some(Height::new(0, raw.frozen_height));
+        let frozen_height = {
+            let height = raw.frozen_height.into();
+            if height == Height::zero() {
+                None
+            } else {
+                Some(height)
+            }
+        };
 
         let authority_set = raw
             .authority
