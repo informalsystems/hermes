@@ -8,6 +8,7 @@ use tendermint::abci::transaction::Hash as TxHash;
 use tendermint::abci::Event;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tendermint_rpc::{Client, HttpClient, Order, Url};
+use tracing::warn;
 
 use crate::chain::cosmos::query::{header_query, packet_query, tx_hash_query};
 use crate::chain::requests::{
@@ -36,10 +37,39 @@ pub async fn query_txs(
     crate::telemetry!(query, chain_id, "query_txs");
 
     match request {
-        QueryTxRequest::Packet(request) => {
+        QueryTxRequest::Packet( request) => {
             crate::time!("query_txs: query packet events");
 
             let mut result: Vec<IbcEvent> = vec![];
+
+            let tm_height = match request.height {
+                QueryHeight::Latest => tendermint::block::Height::default(),
+                QueryHeight::Specific(h) => {
+                    tendermint::block::Height::try_from(h.revision_height()).unwrap()
+                }
+            };
+            let exact_block_results = rpc_client
+                .block_results(tm_height)
+                .await
+                .map_err(|e| Error::rpc(rpc_address.clone(), e))?
+                .txs_results;
+
+            if let Some(txs) = exact_block_results {
+                for tx in txs.iter() {
+                    let tx_copy = tx.clone();
+                    result.append(
+                        &mut tx_copy
+                            .events
+                            .into_iter()
+                            .filter_map(|e| filter_matching_event(e, &request, &request.sequences))
+                            .collect(),
+                    )
+                }
+            }
+            warn!(
+                "FOUR PACKETS: found following results in block at height {}: {:?}",
+                request.height, result
+            );
 
             for seq in &request.sequences {
                 // query first (and only) Tx that includes the event specified in the query request
@@ -201,24 +231,24 @@ fn packet_from_tx_search_response(
         .tx_result
         .events
         .into_iter()
-        .find_map(|ev| filter_matching_event(ev, request, seq)))
+        .find_map(|ev| filter_matching_event(ev, request, &[seq])))
 }
 
 fn filter_matching_event(
     event: Event,
     request: &QueryPacketEventDataRequest,
-    seq: Sequence,
+    seqs: &[Sequence],
 ) -> Option<IbcEvent> {
     fn matches_packet(
         request: &QueryPacketEventDataRequest,
-        seq: Sequence,
+        seqs: Vec<Sequence>,
         packet: &Packet,
     ) -> bool {
         packet.source_port == request.source_port_id
             && packet.source_channel == request.source_channel_id
             && packet.destination_port == request.destination_port_id
             && packet.destination_channel == request.destination_channel_id
-            && packet.sequence == seq
+            && seqs.contains(&packet.sequence)
     }
 
     if event.type_str != request.event_id.as_str() {
@@ -227,11 +257,13 @@ fn filter_matching_event(
 
     let ibc_event = ChannelEvents::try_from_tx(&event)?;
     match ibc_event {
-        IbcEvent::SendPacket(ref send_ev) if matches_packet(request, seq, &send_ev.packet) => {
+        IbcEvent::SendPacket(ref send_ev)
+            if matches_packet(request, seqs.to_vec(), &send_ev.packet) =>
+        {
             Some(ibc_event)
         }
         IbcEvent::WriteAcknowledgement(ref ack_ev)
-            if matches_packet(request, seq, &ack_ev.packet) =>
+            if matches_packet(request, seqs.to_vec(), &ack_ev.packet) =>
         {
             Some(ibc_event)
         }

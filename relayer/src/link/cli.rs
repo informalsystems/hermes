@@ -65,8 +65,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
-    /// Implements the `packet-recv` CLI
     pub fn relay_recv_packet_and_timeout_messages(&self) -> Result<Vec<IbcEvent>, LinkError> {
+        self.relay_recv_packet_and_timeout_messages_with_packet_data_query_height(None)
+    }
+    /// Implements the `packet-recv` CLI
+    pub fn relay_recv_packet_and_timeout_messages_with_packet_data_query_height(
+        &self,
+        packet_data_query_height: Option<Height>,
+    ) -> Result<Vec<IbcEvent>, LinkError> {
         let _span = error_span!(
             "PacketRecvCmd",
             src_chain = %self.a_to_b.src_chain().id(),
@@ -93,6 +99,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         self.relay_packet_messages(
             sequences,
             src_response_height,
+            packet_data_query_height,
             query_send_packet_events,
             TrackingId::new_static("packet-recv"),
         )
@@ -126,6 +133,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         self.relay_packet_messages(
             sequences,
             src_response_height,
+            Some(src_response_height),
             query_write_ack_events,
             TrackingId::new_static("packet-ack"),
         )
@@ -135,6 +143,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         &self,
         sequences: Vec<Sequence>,
         src_response_height: Height,
+        packet_data_query_height: Option<Height>,
         query_fn: impl Fn(
             &ChainA,
             &PathIdentifiers,
@@ -145,14 +154,27 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
     ) -> Result<Vec<IbcEvent>, LinkError> {
         let mut results = vec![];
 
+        let solved_query_height = match packet_data_query_height {
+            Some(height) => height,
+            None => src_response_height,
+        };
         for events_chunk in query_packet_events_with(
             &sequences,
-            src_response_height,
+            solved_query_height,
             self.a_to_b.src_chain(),
             &self.a_to_b.path_id,
             query_fn,
         ) {
-            let tracked_events = TrackedEvents::new(events_chunk, tracking_id);
+            let updated_event_chunk = events_chunk
+                .iter()
+                .map(|e| {
+                    let mut ue = e.clone();
+                    ue.set_height(src_response_height);
+                    ue
+                })
+                .collect();
+
+            let tracked_events = TrackedEvents::new(updated_event_chunk, tracking_id);
             self.a_to_b.events_to_operational_data(tracked_events)?;
 
             // In case of zero connection delay, the op. data will already be ready

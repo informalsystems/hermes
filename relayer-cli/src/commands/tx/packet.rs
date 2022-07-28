@@ -1,8 +1,10 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
+use ibc::core::ics02_client::height::Height;
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::events::IbcEvent;
+use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::link::{Link, LinkParameters};
 
 use crate::cli_utils::ChainHandlePair;
@@ -48,6 +50,14 @@ pub struct TxPacketRecvCmd {
         help = "Identifier of the source channel"
     )]
     src_channel_id: ChannelId,
+
+    #[clap(
+        long = "packet-data-query-height",
+        required = false,
+        help_heading = "NOT REQUIRED",
+        help = "Height at which the packet data is queried"
+    )]
+    packet_data_query_height: Option<u64>,
 }
 
 impl Runnable for TxPacketRecvCmd {
@@ -68,8 +78,14 @@ impl Runnable for TxPacketRecvCmd {
             Err(e) => Output::error(format!("{}", e)).exit(),
         };
 
+        let packet_data_query_height = self
+            .packet_data_query_height
+            .map(|height| Height::new(link.a_to_b.src_chain().id().version(), height).unwrap());
+
         let res: Result<Vec<IbcEvent>, Error> = link
-            .relay_recv_packet_and_timeout_messages()
+            .relay_recv_packet_and_timeout_messages_with_packet_data_query_height(
+                packet_data_query_height,
+            )
             .map_err(Error::link);
 
         match res {
@@ -163,7 +179,8 @@ mod tests {
                 dst_chain_id: ChainId::from_string("chain_receiver"),
                 src_chain_id: ChainId::from_string("chain_sender"),
                 src_port_id: PortId::from_str("port_sender").unwrap(),
-                src_channel_id: ChannelId::from_str("channel_sender").unwrap()
+                src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
+                packet_data_query_height: None
             },
             TxPacketRecvCmd::parse_from(&[
                 "test",
@@ -186,7 +203,8 @@ mod tests {
                 dst_chain_id: ChainId::from_string("chain_receiver"),
                 src_chain_id: ChainId::from_string("chain_sender"),
                 src_port_id: PortId::from_str("port_sender").unwrap(),
-                src_channel_id: ChannelId::from_str("channel_sender").unwrap()
+                src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
+                packet_data_query_height: None
             },
             TxPacketRecvCmd::parse_from(&[
                 "test",
