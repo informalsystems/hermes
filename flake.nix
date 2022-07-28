@@ -42,6 +42,10 @@
               apalache
             ;
 
+            inherit (nixpkgs)
+              mdbook
+            ;
+
             python = nixpkgs.python3.withPackages (p: [
               p.toml
             ]);
