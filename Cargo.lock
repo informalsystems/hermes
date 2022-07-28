@@ -1574,7 +1574,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-cosmos"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "async-trait",
  "eyre",
@@ -1597,7 +1597,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-framework"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "async-trait",
 ]
