@@ -7,7 +7,7 @@ use core::{fmt, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 
-use crate::core::ics02_client::context::{ClientKeeper, ClientReader, LightClientReader};
+use crate::core::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::core::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::core::ics04_channel::channel::{Counterparty, Order};
 use crate::core::ics04_channel::context::{ChannelKeeper, ChannelMetaReader, ChannelReader};
@@ -26,7 +26,6 @@ use crate::signer::Signer;
 /// representation of a chain from the perspective of the IBC module of that chain.
 pub trait Ics26Context:
     ClientReader
-    + LightClientReader
     + ClientKeeper
     + ConnectionReader
     + ConnectionKeeper
