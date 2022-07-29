@@ -217,10 +217,67 @@ the code can be used with different sets of protobuf definitions, even if
 there are other protobuf structs that are incompatible but are unused by
 the given code.
 
-## Solution
+## Multi-Versioned RPC APIs
 
-The relayer framework aims to solve all these problems by separating out each
-concern into different components that can be specified independently. Using
-dependency injection, each component can independently specify the dependency
-it needs from the surrounding context, and composition of components can be
-done without knowing the detailed dependency of each component.
+Cosmos chain implementations do not only provide protobuf definitions, but
+also offer RPC and GRPC services. However similar to the protobuf definitions,
+the RPC APIs can change and break in subtle ways.
+
+A common form of breakage is when the APIs require additional input fields or
+return additional/less fields in the response. Another form of breakage is on
+subtle changes in the JSON scheme and causing mismatch in field names.
+
+With the current relayer design, there is often no way to solve it on the
+relayer side, other than reporting the errors and hope that the upstream
+APIs revert the changes.
+
+A more appropriate design is to allow the API clients to be customized and
+overridden depending on the chains. So if a particular API has breaking
+changes, there can be two version of API clients to choose from.
+
+## Support for Non-SDK Chains
+
+Cosmos chains that are based on Cosmos SDK offer a fairly standard set of
+GRPC APIs by reusing what has already been implemented in Cosmos SDK.
+But with the decoupling offered by Tendermint and ABCI, there are also
+Cosmos chains that are not implemented using Go and Cosmos SDK.
+
+These non-SDK chains may not necessary offer the same GRPC APIs or protobuf
+definitions. So the relayer may break in unexpected ways when relaying from
+non-SDK chains.
+
+While non-SDK chains may be incentivized to preserve the same behavior as
+SDK chains, this puts unnecessary burden to the chain developers. Furthermore,
+not all chains are compelled to use Hermes as the IBC relayer, and Hermes
+may lose its competitive advantage if there are relayers that can work better
+with non-SDK chains.
+
+For the long term health of the Cosmos ecosystem, it is also worthwhile to
+encourage alternative implementations of Cosmos SDK and IBC in languages
+other than Go. For this, the Hermes relayer should be made customizable so that
+non-SDK chain developers can more easily customize the relayer to work with
+their custom chains.
+
+## Support for Non-Cosmos Chains
+
+The biggest challenge with the current relayer architecture is to extend it
+to work with non-Cosmos chains like Substrate. In particular, the relayer
+data structures are tightly coupled with Cosmos-related protobuf definitions
+and RPC APIs. But non-Cosmos chains are not obligated to use protobuf or
+GRPC.
+
+The relayer code is also tightly coupled with concrete data structures, making
+it difficult to extend the data structures to work differently for non-Cosmos
+chains. This problem is seen most notably in the definition of sum types like
+`AnyClientState`, in attempt to have global types but still support variants
+of the concrete data structures.
+
+All these means that the core relayer code and global types have to go through
+significant changes to support a new non-Cosmos chain. Due to conflicts and
+additional dependencies, this often result in forks of the relayer just so
+that changes can be made without interfering with the core relayer development.
+
+The primary goal for us with a new relayer design is to have a minimal set of
+assumptions on how an IBC-like relaying should work, and expose the relayer
+core logic as a libary so that non-Cosmos chains can use the library to develop
+custom relayers without having to fork the entire relayer.
