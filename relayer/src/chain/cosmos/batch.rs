@@ -1,3 +1,5 @@
+use core::mem;
+
 use ibc::events::IbcEvent;
 use ibc_proto::google::protobuf::Any;
 use prost::Message;
@@ -145,16 +147,26 @@ fn batch_messages(
     let mut current_batch = vec![];
 
     for message in messages.into_iter() {
-        current_count += 1;
-        current_size += message.encoded_len();
-        current_batch.push(message);
+        let message_len = message.encoded_len();
 
-        if current_count >= max_message_count || current_size >= max_tx_size {
-            let insert_batch = current_batch.drain(..).collect();
+        if message_len >= max_tx_size {
+            return Err(Error::message_exceeds_max_tx_size(message_len));
+        }
+
+        if current_count >= max_message_count || current_size + message_len >= max_tx_size {
+            let insert_batch = mem::replace(&mut current_batch, vec![]);
+            assert!(
+                !insert_batch.is_empty(),
+                "max message count should not be 0"
+            );
             batches.push(insert_batch);
             current_count = 0;
             current_size = 0;
         }
+
+        current_count += 1;
+        current_size += message_len;
+        current_batch.push(message);
     }
 
     if !current_batch.is_empty() {
