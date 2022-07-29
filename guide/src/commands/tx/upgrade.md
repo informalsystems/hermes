@@ -10,7 +10,7 @@ Use this to make an upgrade proposal.
 
 ```shell
 USAGE:
-    hermes tx upgrade-chain [OPTIONS] --receiver-chain <RECEIVER_CHAIN_ID> --sender-chain <SENDER_CHAIN_ID> --sender-client <SENDER_CLIENT_ID> --amount <AMOUNT> --height-offset <HEIGHT_OFFSET>
+    hermes tx upgrade-chain [OPTIONS] --reference-chain <REFERENCE_CHAIN_ID> --host-chain <HOST_CHAIN_ID> --host-client <HOST_CLIENT_ID> --amount <AMOUNT> --height-offset <HEIGHT_OFFSET>
 
 DESCRIPTION:
     Send an IBC upgrade plan
@@ -35,13 +35,13 @@ REQUIRED:
         --height-offset <HEIGHT_OFFSET>
             Upgrade height offset in number of blocks since current
 
-        --receiver-chain <RECEIVER_CHAIN_ID>
+        --reference-chain <REFERENCE_CHAIN_ID>
             Identifier of the chain to upgrade
 
-        --sender-chain <SENDER_CHAIN_ID>
+        --host-chain <HOST_CHAIN_ID>
             Identifier of the source chain
 
-        --sender-client <SENDER_CLIENT_ID>
+        --host-client <HOST_CLIENT_ID>
             Identifier of the client on source chain from which the plan is created
 ```
 
@@ -50,7 +50,7 @@ __Example__
 An upgrade proposal is made for `ibc-0`, for height `300` blocks from latest height, with `10000000stake` deposited. The proposal will include the upgraded client state constructed from the state of `07-tendermint-0` client on `ibc-1`.
 
 ```shell
-hermes tx upgrade-chain --receiver-chain ibc-0 --sender-chain ibc-1 --sender-client 07-tendermint-0 --amount 10000000 --height-offset 300
+hermes tx upgrade-chain --reference-chain ibc-0 --host-chain ibc-1 --host-client 07-tendermint-0 --amount 10000000 --height-offset 300
 ```
 
 ```
