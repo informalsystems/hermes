@@ -1,5 +1,5 @@
 
-- renamed `oldest_sequence` as `backlog_oldest_sequence`
+- Renamed `oldest_sequence` as `backlog_oldest_sequence`
 - Renamed `oldest_timestamp` as `backlog_oldest_timestamp`
 - Introduced `backlog_size` Prometheus metric to complement the other `backlog_*` data, as a metric reporting how many packets are pending on a channel
 - Ensures the `backlog_oldest_sequence` and `backlog_oldest_timestamp` are correctly updated when a timeout occurs or when another relayer clears the channel.
