@@ -1585,7 +1585,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub enum MisbehaviourResults {
     CannotExecute,
     EvidenceSubmitted(Vec<IbcEvent>),
