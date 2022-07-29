@@ -184,46 +184,47 @@ pub trait EventType {
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
-pub struct OpenInit {
-    pub height: Height,
-    pub port_id: PortId,
-    pub channel_id: Option<ChannelId>,
-    pub connection_id: ConnectionId,
-    pub counterparty_port_id: PortId,
-    pub counterparty_channel_id: Option<ChannelId>,
-}
+pub struct OpenInit(Attributes);
 
 impl OpenInit {
+    pub fn attributes(&self) -> &Attributes {
+        &self.0
+    }
     pub fn channel_id(&self) -> Option<&ChannelId> {
-        self.channel_id.as_ref()
+        self.0.channel_id.as_ref()
     }
     pub fn port_id(&self) -> &PortId {
-        &self.port_id
+        &self.0.port_id
     }
     pub fn height(&self) -> Height {
-        self.height
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
-        self.height = height;
+        self.0.height = height;
     }
 }
 
-impl From<OpenInit> for Attributes {
-    fn from(ev: OpenInit) -> Self {
-        Self {
-            height: ev.height,
-            port_id: ev.port_id,
-            channel_id: ev.channel_id,
-            connection_id: ev.connection_id,
-            counterparty_port_id: ev.counterparty_port_id,
-            counterparty_channel_id: ev.counterparty_channel_id,
-        }
+impl TryFrom<Attributes> for OpenInit {
+    type Error = EventError;
+
+    fn try_from(attrs: Attributes) -> Result<Self, Self::Error> {
+        Ok(OpenInit(attrs))
     }
 }
 
 impl From<OpenInit> for IbcEvent {
     fn from(v: OpenInit) -> Self {
         IbcEvent::OpenInitChannel(v)
+    }
+}
+
+impl From<OpenInit> for AbciEvent {
+    fn from(v: OpenInit) -> Self {
+        let attributes = Vec::<Tag>::from(v.0);
+        AbciEvent {
+            type_str: IbcEventType::OpenInitChannel.as_str().to_string(),
+            attributes,
+        }
     }
 }
 
@@ -234,45 +235,47 @@ impl EventType for OpenInit {
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
-pub struct OpenTry {
-    pub height: Height,
-    pub port_id: PortId,
-    pub channel_id: Option<ChannelId>,
-    pub connection_id: ConnectionId,
-    pub counterparty_port_id: PortId,
-    pub counterparty_channel_id: Option<ChannelId>,
-}
+pub struct OpenTry(Attributes);
 
-impl From<OpenTry> for Attributes {
-    fn from(ev: OpenTry) -> Self {
-        Self {
-            height: ev.height,
-            port_id: ev.port_id,
-            channel_id: ev.channel_id,
-            connection_id: ev.connection_id,
-            counterparty_port_id: ev.counterparty_port_id,
-            counterparty_channel_id: ev.counterparty_channel_id,
-        }
-    }
-}
 impl OpenTry {
+    pub fn attributes(&self) -> &Attributes {
+        &self.0
+    }
     pub fn channel_id(&self) -> Option<&ChannelId> {
-        self.channel_id.as_ref()
+        self.0.channel_id.as_ref()
     }
     pub fn port_id(&self) -> &PortId {
-        &self.port_id
+        &self.0.port_id
     }
     pub fn height(&self) -> Height {
-        self.height
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
-        self.height = height;
+        self.0.height = height;
+    }
+}
+
+impl TryFrom<Attributes> for OpenTry {
+    type Error = EventError;
+
+    fn try_from(attrs: Attributes) -> Result<Self, Self::Error> {
+        Ok(OpenTry(attrs))
     }
 }
 
 impl From<OpenTry> for IbcEvent {
     fn from(v: OpenTry) -> Self {
         IbcEvent::OpenTryChannel(v)
+    }
+}
+
+impl From<OpenTry> for AbciEvent {
+    fn from(v: OpenTry) -> Self {
+        let attributes = Vec::<Tag>::from(v.0);
+        AbciEvent {
+            type_str: IbcEventType::OpenTryChannel.as_str().to_string(),
+            attributes,
+        }
     }
 }
 
@@ -283,50 +286,51 @@ impl EventType for OpenTry {
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
-pub struct OpenAck {
-    pub height: Height,
-    pub port_id: PortId,
-    pub channel_id: Option<ChannelId>,
-    pub counterparty_channel_id: Option<ChannelId>,
-    pub connection_id: ConnectionId,
-    pub counterparty_port_id: PortId,
-}
-
-impl From<OpenAck> for Attributes {
-    fn from(ev: OpenAck) -> Self {
-        Self {
-            height: ev.height,
-            port_id: ev.port_id,
-            channel_id: ev.channel_id,
-            connection_id: ev.connection_id,
-            counterparty_port_id: ev.counterparty_port_id,
-            counterparty_channel_id: ev.counterparty_channel_id,
-        }
-    }
-}
+pub struct OpenAck(Attributes);
 
 impl OpenAck {
+    pub fn attributes(&self) -> &Attributes {
+        &self.0
+    }
     pub fn channel_id(&self) -> Option<&ChannelId> {
-        self.channel_id.as_ref()
+        self.0.channel_id.as_ref()
     }
     pub fn port_id(&self) -> &PortId {
-        &self.port_id
+        &self.0.port_id
     }
     pub fn height(&self) -> Height {
-        self.height
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
-        self.height = height;
+        self.0.height = height;
     }
 
     pub fn counterparty_channel_id(&self) -> Option<&ChannelId> {
-        self.counterparty_channel_id.as_ref()
+        self.0.counterparty_channel_id.as_ref()
+    }
+}
+
+impl TryFrom<Attributes> for OpenAck {
+    type Error = EventError;
+
+    fn try_from(attrs: Attributes) -> Result<Self, Self::Error> {
+        Ok(OpenAck(attrs))
     }
 }
 
 impl From<OpenAck> for IbcEvent {
     fn from(v: OpenAck) -> Self {
         IbcEvent::OpenAckChannel(v)
+    }
+}
+
+impl From<OpenAck> for AbciEvent {
+    fn from(v: OpenAck) -> Self {
+        let attributes = Vec::<Tag>::from(v.0);
+        AbciEvent {
+            type_str: IbcEventType::OpenAckChannel.as_str().to_string(),
+            attributes,
+        }
     }
 }
 
@@ -337,46 +341,47 @@ impl EventType for OpenAck {
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
-pub struct OpenConfirm {
-    pub height: Height,
-    pub port_id: PortId,
-    pub channel_id: Option<ChannelId>,
-    pub connection_id: ConnectionId,
-    pub counterparty_port_id: PortId,
-    pub counterparty_channel_id: Option<ChannelId>,
-}
-
-impl From<OpenConfirm> for Attributes {
-    fn from(ev: OpenConfirm) -> Self {
-        Self {
-            height: ev.height,
-            port_id: ev.port_id,
-            channel_id: ev.channel_id,
-            connection_id: ev.connection_id,
-            counterparty_port_id: ev.counterparty_port_id,
-            counterparty_channel_id: ev.counterparty_channel_id,
-        }
-    }
-}
+pub struct OpenConfirm(Attributes);
 
 impl OpenConfirm {
+    pub fn attributes(&self) -> &Attributes {
+        &self.0
+    }
     pub fn channel_id(&self) -> Option<&ChannelId> {
-        self.channel_id.as_ref()
+        self.0.channel_id.as_ref()
     }
     pub fn port_id(&self) -> &PortId {
-        &self.port_id
+        &self.0.port_id
     }
     pub fn height(&self) -> Height {
-        self.height
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
-        self.height = height;
+        self.0.height = height;
+    }
+}
+
+impl TryFrom<Attributes> for OpenConfirm {
+    type Error = EventError;
+
+    fn try_from(attrs: Attributes) -> Result<Self, Self::Error> {
+        Ok(OpenConfirm(attrs))
     }
 }
 
 impl From<OpenConfirm> for IbcEvent {
     fn from(v: OpenConfirm) -> Self {
         IbcEvent::OpenConfirmChannel(v)
+    }
+}
+
+impl From<OpenConfirm> for AbciEvent {
+    fn from(v: OpenConfirm) -> Self {
+        let attributes = Vec::<Tag>::from(v.0);
+        AbciEvent {
+            type_str: IbcEventType::OpenConfirmChannel.as_str().to_string(),
+            attributes,
+        }
     }
 }
 
@@ -387,66 +392,43 @@ impl EventType for OpenConfirm {
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
-pub struct CloseInit {
-    pub height: Height,
-    pub port_id: PortId,
-    pub channel_id: ChannelId,
-    pub connection_id: ConnectionId,
-    pub counterparty_port_id: PortId,
-    pub counterparty_channel_id: Option<ChannelId>,
-}
-
-impl From<CloseInit> for Attributes {
-    fn from(ev: CloseInit) -> Self {
-        Self {
-            height: ev.height,
-            port_id: ev.port_id,
-            channel_id: Some(ev.channel_id),
-            connection_id: ev.connection_id,
-            counterparty_port_id: ev.counterparty_port_id,
-            counterparty_channel_id: ev.counterparty_channel_id,
-        }
-    }
-}
+pub struct CloseInit(Attributes);
 
 impl CloseInit {
+    pub fn attributes(&self) -> &Attributes {
+        &self.0
+    }
     pub fn port_id(&self) -> &PortId {
-        &self.port_id
+        &self.0.port_id
     }
 
-    pub fn channel_id(&self) -> &ChannelId {
-        &self.channel_id
+    pub fn channel_id(&self) -> ChannelId {
+        // Safety - We ensure that the `channel_id` is present in `TryFrom<Attributes>`
+        self.0.channel_id.clone().unwrap()
     }
 
     pub fn counterparty_port_id(&self) -> &PortId {
-        &self.counterparty_port_id
+        &self.0.counterparty_port_id
     }
 
     pub fn counterparty_channel_id(&self) -> Option<&ChannelId> {
-        self.counterparty_channel_id.as_ref()
+        self.0.counterparty_channel_id.as_ref()
     }
 
     pub fn height(&self) -> Height {
-        self.height
+        self.0.height
     }
 
     pub fn set_height(&mut self, height: Height) {
-        self.height = height;
+        self.0.height = height;
     }
 }
 
 impl TryFrom<Attributes> for CloseInit {
     type Error = EventError;
     fn try_from(attrs: Attributes) -> Result<Self, Self::Error> {
-        if let Some(channel_id) = attrs.channel_id() {
-            Ok(CloseInit {
-                height: attrs.height,
-                port_id: attrs.port_id.clone(),
-                channel_id: channel_id.clone(),
-                connection_id: attrs.connection_id.clone(),
-                counterparty_port_id: attrs.counterparty_port_id.clone(),
-                counterparty_channel_id: attrs.counterparty_channel_id,
-            })
+        if let Some(_channel_id) = attrs.channel_id() {
+            Ok(CloseInit(attrs))
         } else {
             Err(EventError::channel(Error::missing_channel_id()))
         }
@@ -459,6 +441,16 @@ impl From<CloseInit> for IbcEvent {
     }
 }
 
+impl From<CloseInit> for AbciEvent {
+    fn from(v: CloseInit) -> Self {
+        let attributes = Vec::<Tag>::from(v.0);
+        AbciEvent {
+            type_str: IbcEventType::CloseInitChannel.as_str().to_string(),
+            attributes,
+        }
+    }
+}
+
 impl core::fmt::Display for CloseInit {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(
@@ -466,7 +458,7 @@ impl core::fmt::Display for CloseInit {
             "{} {} {:?}",
             self.height(),
             IbcEventType::CloseInitChannel.as_str(),
-            Attributes::from(self.clone())
+            self.0
         )
     }
 }
@@ -478,37 +470,28 @@ impl EventType for CloseInit {
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
-pub struct CloseConfirm {
-    pub height: Height,
-    pub channel_id: Option<ChannelId>,
-    pub port_id: PortId,
-    pub connection_id: ConnectionId,
-    pub counterparty_port_id: PortId,
-    pub counterparty_channel_id: Option<ChannelId>,
-}
-
-impl From<CloseConfirm> for Attributes {
-    fn from(ev: CloseConfirm) -> Self {
-        Self {
-            height: ev.height,
-            port_id: ev.port_id,
-            channel_id: ev.channel_id,
-            connection_id: ev.connection_id,
-            counterparty_port_id: ev.counterparty_port_id,
-            counterparty_channel_id: ev.counterparty_channel_id,
-        }
-    }
-}
+pub struct CloseConfirm(Attributes);
 
 impl CloseConfirm {
+    pub fn attributes(&self) -> &Attributes {
+        &self.0
+    }
     pub fn channel_id(&self) -> Option<&ChannelId> {
-        self.channel_id.as_ref()
+        self.0.channel_id.as_ref()
     }
     pub fn height(&self) -> Height {
-        self.height
+        self.0.height
     }
     pub fn set_height(&mut self, height: Height) {
-        self.height = height;
+        self.0.height = height;
+    }
+}
+
+impl TryFrom<Attributes> for CloseConfirm {
+    type Error = EventError;
+
+    fn try_from(attrs: Attributes) -> Result<Self, Self::Error> {
+        Ok(CloseConfirm(attrs))
     }
 }
 
@@ -518,56 +501,21 @@ impl From<CloseConfirm> for IbcEvent {
     }
 }
 
+impl From<CloseConfirm> for AbciEvent {
+    fn from(v: CloseConfirm) -> Self {
+        let attributes = Vec::<Tag>::from(v.0);
+        AbciEvent {
+            type_str: IbcEventType::CloseConfirmChannel.as_str().to_string(),
+            attributes,
+        }
+    }
+}
+
 impl EventType for CloseConfirm {
     fn event_type() -> IbcEventType {
         IbcEventType::CloseConfirmChannel
     }
 }
-
-macro_rules! impl_try_from_attribute_for_event {
-    ($($event:ty),+) => {
-        $(impl TryFrom<Attributes> for $event {
-            type Error = EventError;
-
-            fn try_from(attrs: Attributes) -> Result<Self, Self::Error> {
-                Ok(Self {
-                    height: attrs.height,
-                    port_id: attrs.port_id,
-                    channel_id: attrs.channel_id,
-                    connection_id: attrs.connection_id,
-                    counterparty_port_id: attrs.counterparty_port_id,
-                    counterparty_channel_id: attrs.counterparty_channel_id,
-                })
-            }
-        })+
-    };
-}
-
-impl_try_from_attribute_for_event!(OpenInit, OpenTry, OpenAck, OpenConfirm, CloseConfirm);
-
-macro_rules! impl_from_ibc_to_abci_event {
-    ($($event:ty),+) => {
-        $(impl From<$event> for AbciEvent {
-            fn from(v: $event) -> Self {
-                let attributes = Vec::<Tag>::from(Attributes::from(v));
-                let type_str = <$event>::event_type().as_str().to_string();
-                AbciEvent {
-                    type_str,
-                    attributes,
-                }
-            }
-        })+
-    };
-}
-
-impl_from_ibc_to_abci_event!(
-    OpenInit,
-    OpenTry,
-    OpenAck,
-    OpenConfirm,
-    CloseInit,
-    CloseConfirm
-);
 
 #[derive(Serialize, Clone, PartialEq, Eq)]
 pub struct SendPacket {

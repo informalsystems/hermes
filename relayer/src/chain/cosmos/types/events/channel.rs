@@ -402,22 +402,22 @@ mod tests {
             match try_from_tx(&event) {
                 Some(e) => match e {
                     IbcEvent::OpenInitChannel(e) => {
-                        assert_eq!(Attributes::from(e), open_init.clone().into())
+                        assert_eq!(e.attributes(), open_init.attributes())
                     }
                     IbcEvent::OpenTryChannel(e) => {
-                        assert_eq!(Attributes::from(e), open_try.clone().into())
+                        assert_eq!(e.attributes(), open_try.attributes())
                     }
                     IbcEvent::OpenAckChannel(e) => {
-                        assert_eq!(Attributes::from(e), open_ack.clone().into())
+                        assert_eq!(e.attributes(), open_ack.attributes())
                     }
                     IbcEvent::OpenConfirmChannel(e) => {
-                        assert_eq!(Attributes::from(e), open_confirm.clone().into())
+                        assert_eq!(e.attributes(), open_confirm.attributes())
                     }
                     IbcEvent::CloseInitChannel(e) => {
-                        assert_eq!(Attributes::from(e), close_init.clone().into())
+                        assert_eq!(e.attributes(), close_init.attributes())
                     }
                     IbcEvent::CloseConfirmChannel(e) => {
-                        assert_eq!(Attributes::from(e), close_confirm.clone().into())
+                        assert_eq!(e.attributes(), close_confirm.attributes())
                     }
                     _ => panic!("unexpected event type"),
                 },

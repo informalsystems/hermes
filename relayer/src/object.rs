@@ -468,13 +468,13 @@ impl Object {
         e: &CloseInit,
         src_chain: &impl ChainHandle,
     ) -> Result<Self, ObjectError> {
-        let dst_chain_id = counterparty_chain_from_channel(src_chain, e.channel_id(), e.port_id())
+        let dst_chain_id = counterparty_chain_from_channel(src_chain, &e.channel_id(), e.port_id())
             .map_err(ObjectError::supervisor)?;
 
         Ok(Packet {
             dst_chain_id,
             src_chain_id: src_chain.id(),
-            src_channel_id: e.channel_id().clone(),
+            src_channel_id: e.channel_id(),
             src_port_id: e.port_id().clone(),
         }
         .into())

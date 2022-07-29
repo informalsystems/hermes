@@ -418,14 +418,14 @@ pub fn collect_events(
             }
             IbcEvent::OpenInitChannel(..) | IbcEvent::OpenTryChannel(..) => {
                 collect_event(&mut collected, event.clone(), mode.channels.enabled, || {
-                    event.clone().channel_attributes().and_then(|attr| {
+                    event.channel_attributes().and_then(|attr| {
                         Object::channel_from_chan_open_events(&attr, src_chain).ok()
                     })
                 });
             }
             IbcEvent::OpenAckChannel(open_ack) => {
                 // Create client and packet workers here as channel end must be opened
-                let attributes = open_ack.clone().into();
+                let attributes = open_ack.attributes();
                 collect_event(&mut collected, event.clone(), mode.clients.enabled, || {
                     Object::client_from_chan_open_events(&attributes, src_chain).ok()
                 });
@@ -436,7 +436,7 @@ pub fn collect_events(
                 });
             }
             IbcEvent::OpenConfirmChannel(open_confirm) => {
-                let attributes = open_confirm.clone().into();
+                let attributes = open_confirm.attributes();
                 // Create client worker here as channel end must be opened
                 collect_event(&mut collected, event.clone(), mode.clients.enabled, || {
                     Object::client_from_chan_open_events(&attributes, src_chain).ok()

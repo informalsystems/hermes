@@ -212,7 +212,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .ok_or_else(|| ChannelError::invalid_event(channel_open_event.to_string()))?;
 
         let port_id = channel_event_attributes.port_id.clone();
-        let channel_id = channel_event_attributes.channel_id;
+        let channel_id = channel_event_attributes.channel_id.clone();
 
         let connection_id = channel_event_attributes.connection_id.clone();
         let (connection, _) = chain
@@ -251,7 +251,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 connection.counterparty().client_id().clone(),
                 counterparty_connection_id.clone(),
                 channel_event_attributes.counterparty_port_id.clone(),
-                channel_event_attributes.counterparty_channel_id,
+                channel_event_attributes.counterparty_channel_id.clone(),
                 None,
             ),
             connection_delay: connection.delay_period(),

@@ -378,7 +378,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     }
                 }
                 IbcEvent::CloseInitChannel(chan_close_ev) => {
-                    if src_channel_id == chan_close_ev.channel_id()
+                    if src_channel_id == &chan_close_ev.channel_id()
                         && self.src_port_id() == chan_close_ev.port_id()
                     {
                         result.push(event);

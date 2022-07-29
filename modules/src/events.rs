@@ -417,12 +417,12 @@ impl IbcEvent {
         }
     }
 
-    pub fn channel_attributes(self) -> Option<ChannelAttributes> {
+    pub fn channel_attributes(&self) -> Option<&ChannelAttributes> {
         match self {
-            IbcEvent::OpenInitChannel(ev) => Some(ev.into()),
-            IbcEvent::OpenTryChannel(ev) => Some(ev.into()),
-            IbcEvent::OpenAckChannel(ev) => Some(ev.into()),
-            IbcEvent::OpenConfirmChannel(ev) => Some(ev.into()),
+            IbcEvent::OpenInitChannel(ev) => Some(ev.attributes()),
+            IbcEvent::OpenTryChannel(ev) => Some(ev.attributes()),
+            IbcEvent::OpenAckChannel(ev) => Some(ev.attributes()),
+            IbcEvent::OpenConfirmChannel(ev) => Some(ev.attributes()),
             _ => None,
         }
     }

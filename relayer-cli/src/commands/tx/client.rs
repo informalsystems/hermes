@@ -524,12 +524,12 @@ impl OutputBuffer {
     fn into_result(self) -> Result<Vec<Vec<IbcEvent>>, Self> {
         let mut all_events = vec![];
         let mut has_err = false;
-        'outer: for outer_result in &self.0 {
+        'outer: for outer_result in self.0 {
             match outer_result {
                 Ok(inner_results) => {
                     for inner_result in inner_results {
                         match inner_result {
-                            Ok(events) => all_events.push(events.clone()),
+                            Ok(events) => all_events.push(events),
                             Err(_) => {
                                 has_err = true;
                                 break 'outer;

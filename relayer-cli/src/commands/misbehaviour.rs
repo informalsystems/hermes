@@ -65,7 +65,7 @@ pub fn monitor_misbehaviour(
         match event_batch.deref() {
             Ok(event_batch) => {
                 for event in &event_batch.events {
-                    match event {
+                    match event.as_ref() {
                         IbcEvent::UpdateClient(update) => {
                             debug!("{:?}", update);
                             misbehaviour_handling(
@@ -128,7 +128,7 @@ fn misbehaviour_handling<Chain: ChainHandle>(
         })?;
 
     let client = ForeignClient::restore(client_id, chain, counterparty_chain);
-    let result = client.detect_misbehaviour_and_submit_evidence(update);
+    let result = client.detect_misbehaviour_and_submit_evidence(update.map(|client| &client));
     if let MisbehaviourResults::EvidenceSubmitted(events) = result {
         info!("evidence submission result {:?}", events);
     }
