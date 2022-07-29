@@ -1,6 +1,7 @@
 # Summary
 
 - [Introduction](./01-introduction.md)
+  - [Problem Statement](./01-introduction/01-problem-statement.md)
 - [Context-Generic Programming](./02-context-generic-programming.md)
   - [Simple Greeter](./context-generic-programming/01-simple-greeter.md)
   - [Comparison with Dynamic Typing](./context-generic-programming/02-dynamic-typing.md)
