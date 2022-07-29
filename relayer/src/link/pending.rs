@@ -27,7 +27,6 @@ pub const TIMEOUT: Duration = Duration::from_secs(300);
 ///     - the target chain to query for confirmations,
 ///     - timestamp to track time-outs and declare an
 ///         operational data as pending.
-#[derive(Clone)]
 pub struct PendingData {
     pub original_od: OperationalData,
     pub tx_hashes: TxHashes,
