@@ -2,7 +2,7 @@ use core::fmt;
 
 use ibc::events::IbcEvent;
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct RelaySummary {
     pub events: Vec<IbcEvent>,
     // errors: todo!(),
