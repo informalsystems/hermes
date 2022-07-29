@@ -2,7 +2,7 @@
 
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, State};
-use crate::core::ics04_channel::context::{ChannelMetaReader, ChannelReader};
+use crate::core::ics04_channel::context::{ChannelReader, ChannelReaderLightClient};
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::events::Attributes;
 use crate::core::ics04_channel::handler::verify::verify_channel_proofs;
@@ -13,7 +13,7 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process<Ctx: ChannelReader + ChannelMetaReader>(
+pub(crate) fn process<Ctx: ChannelReader + ChannelReaderLightClient>(
     ctx: &Ctx,
     msg: &MsgChannelOpenTry,
 ) -> HandlerResult<ChannelResult, Error> {

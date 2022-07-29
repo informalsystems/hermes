@@ -3,7 +3,7 @@ use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
-use crate::core::ics04_channel::context::{ChannelMetaReader, ChannelReader};
+use crate::core::ics04_channel::context::{ChannelReader, ChannelReaderLightClient};
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement;
 use crate::core::ics04_channel::packet::{Packet, Sequence};
@@ -12,7 +12,7 @@ use crate::proofs::Proofs;
 use crate::Height;
 
 /// Entry point for verifying all proofs bundled in any ICS4 message for channel protocols.
-pub fn verify_channel_proofs<Ctx: ChannelReader + ChannelMetaReader>(
+pub fn verify_channel_proofs<Ctx: ChannelReader + ChannelReaderLightClient>(
     ctx: &Ctx,
     height: Height,
     channel_end: &ChannelEnd,
@@ -51,7 +51,7 @@ pub fn verify_channel_proofs<Ctx: ChannelReader + ChannelMetaReader>(
 }
 
 /// Entry point for verifying all proofs bundled in a ICS4 packet recv. message.
-pub fn verify_packet_recv_proofs<Ctx: ChannelReader + ChannelMetaReader>(
+pub fn verify_packet_recv_proofs<Ctx: ChannelReader + ChannelReaderLightClient>(
     ctx: &Ctx,
     height: Height,
     packet: &Packet,
@@ -96,7 +96,7 @@ pub fn verify_packet_recv_proofs<Ctx: ChannelReader + ChannelMetaReader>(
 }
 
 /// Entry point for verifying all proofs bundled in an ICS4 packet ack message.
-pub fn verify_packet_acknowledgement_proofs<Ctx: ChannelReader + ChannelMetaReader>(
+pub fn verify_packet_acknowledgement_proofs<Ctx: ChannelReader + ChannelReaderLightClient>(
     ctx: &Ctx,
     height: Height,
     packet: &Packet,
@@ -138,7 +138,7 @@ pub fn verify_packet_acknowledgement_proofs<Ctx: ChannelReader + ChannelMetaRead
 }
 
 /// Entry point for verifying all timeout proofs.
-pub fn verify_next_sequence_recv<Ctx: ChannelReader + ChannelMetaReader>(
+pub fn verify_next_sequence_recv<Ctx: ChannelReader + ChannelReaderLightClient>(
     ctx: &Ctx,
     height: Height,
     connection_end: &ConnectionEnd,
@@ -176,7 +176,7 @@ pub fn verify_next_sequence_recv<Ctx: ChannelReader + ChannelMetaReader>(
     Ok(())
 }
 
-pub fn verify_packet_receipt_absence<Ctx: ChannelReader + ChannelMetaReader>(
+pub fn verify_packet_receipt_absence<Ctx: ChannelReader + ChannelReaderLightClient>(
     ctx: &Ctx,
     height: Height,
     connection_end: &ConnectionEnd,

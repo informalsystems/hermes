@@ -140,7 +140,7 @@ pub trait ChannelReader {
 
 /// Defines a subset of the `ChannelReader`'s methods that a light-client implementation can access.
 /// A blanket implementation of this trait is provided for all types that implement `ChannelReader`.
-pub trait ChannelMetaReader {
+pub trait ChannelReaderLightClient {
     /// Returns the current height of the local chain.
     fn host_height(&self) -> Height;
 
@@ -158,7 +158,7 @@ pub trait ChannelMetaReader {
     fn block_delay(&self, delay_period_time: Duration) -> u64;
 }
 
-impl<T: ChannelReader> ChannelMetaReader for T {
+impl<T: ChannelReader> ChannelReaderLightClient for T {
     fn host_height(&self) -> Height {
         ChannelReader::host_height(self)
     }

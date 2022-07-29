@@ -69,7 +69,7 @@ pub trait ClientReader {
 ///
 /// Note: This trait is not a supertrait of `ClientReader` because it uses trait objects and cannot
 /// depend on `AnyClientState` and `AnyConsensusState` due to a circular dependency problem.
-pub trait LightClientReader {
+pub trait ClientReaderLightClient {
     fn consensus_state(
         &self,
         client_id: &ClientId,
@@ -94,7 +94,7 @@ pub trait LightClientReader {
     fn host_timestamp(&self) -> Timestamp;
 }
 
-impl<T: ClientReader> LightClientReader for T {
+impl<T: ClientReader> ClientReaderLightClient for T {
     fn consensus_state(
         &self,
         client_id: &ClientId,

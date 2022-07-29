@@ -4,13 +4,13 @@ use crate::clients::ics07_tendermint::client_def::TendermintClient;
 use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::context::LightClientReader;
+use crate::core::ics02_client::context::ClientReaderLightClient;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::header::{AnyHeader, Header};
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
-use crate::core::ics04_channel::context::ChannelMetaReader;
+use crate::core::ics04_channel::context::ChannelReaderLightClient;
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
@@ -30,7 +30,7 @@ pub trait ClientDef {
 
     fn check_header_and_update_state(
         &self,
-        ctx: &dyn LightClientReader,
+        ctx: &dyn ClientReaderLightClient,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
@@ -108,7 +108,7 @@ pub trait ClientDef {
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_data(
         &self,
-        ctx: &dyn ChannelMetaReader,
+        ctx: &dyn ChannelReaderLightClient,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -124,7 +124,7 @@ pub trait ClientDef {
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn ChannelMetaReader,
+        ctx: &dyn ChannelReaderLightClient,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -140,7 +140,7 @@ pub trait ClientDef {
     #[allow(clippy::too_many_arguments)]
     fn verify_next_sequence_recv(
         &self,
-        ctx: &dyn ChannelMetaReader,
+        ctx: &dyn ChannelReaderLightClient,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -155,7 +155,7 @@ pub trait ClientDef {
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_receipt_absence(
         &self,
-        ctx: &dyn ChannelMetaReader,
+        ctx: &dyn ChannelReaderLightClient,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -195,7 +195,7 @@ impl ClientDef for AnyClient {
     /// Validates an incoming `header` against the latest consensus state of this client.
     fn check_header_and_update_state(
         &self,
-        ctx: &dyn LightClientReader,
+        ctx: &dyn ClientReaderLightClient,
         client_id: ClientId,
         client_state: AnyClientState,
         header: AnyHeader,
@@ -427,7 +427,7 @@ impl ClientDef for AnyClient {
     }
     fn verify_packet_data(
         &self,
-        ctx: &dyn ChannelMetaReader,
+        ctx: &dyn ChannelReaderLightClient,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -484,7 +484,7 @@ impl ClientDef for AnyClient {
 
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn ChannelMetaReader,
+        ctx: &dyn ChannelReaderLightClient,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -541,7 +541,7 @@ impl ClientDef for AnyClient {
 
     fn verify_next_sequence_recv(
         &self,
-        ctx: &dyn ChannelMetaReader,
+        ctx: &dyn ChannelReaderLightClient,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -594,7 +594,7 @@ impl ClientDef for AnyClient {
     }
     fn verify_packet_receipt_absence(
         &self,
-        ctx: &dyn ChannelMetaReader,
+        ctx: &dyn ChannelReaderLightClient,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,

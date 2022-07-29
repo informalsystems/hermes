@@ -1,6 +1,6 @@
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::commitment::AcknowledgementCommitment;
-use crate::core::ics04_channel::context::ChannelMetaReader;
+use crate::core::ics04_channel::context::ChannelReaderLightClient;
 use crate::core::ics04_channel::events::WriteAcknowledgement;
 use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement;
 use crate::core::ics04_channel::packet::{Packet, PacketResult, Sequence};
@@ -20,7 +20,7 @@ pub struct WriteAckPacketResult {
     pub ack_commitment: AcknowledgementCommitment,
 }
 
-pub fn process<Ctx: ChannelReader + ChannelMetaReader>(
+pub fn process<Ctx: ChannelReader + ChannelReaderLightClient>(
     ctx: &Ctx,
     packet: Packet,
     ack: Acknowledgement,
