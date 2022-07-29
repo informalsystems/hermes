@@ -183,7 +183,7 @@ pub trait EventType {
     fn event_type() -> IbcEventType;
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct OpenInit {
     pub height: Height,
     pub port_id: PortId,
@@ -233,7 +233,7 @@ impl EventType for OpenInit {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct OpenTry {
     pub height: Height,
     pub port_id: PortId,
@@ -282,7 +282,7 @@ impl EventType for OpenTry {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct OpenAck {
     pub height: Height,
     pub port_id: PortId,
@@ -336,7 +336,7 @@ impl EventType for OpenAck {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct OpenConfirm {
     pub height: Height,
     pub port_id: PortId,
@@ -386,7 +386,7 @@ impl EventType for OpenConfirm {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct CloseInit {
     pub height: Height,
     pub port_id: PortId,
@@ -477,7 +477,7 @@ impl EventType for CloseInit {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct CloseConfirm {
     pub height: Height,
     pub channel_id: Option<ChannelId>,
@@ -569,7 +569,7 @@ impl_from_ibc_to_abci_event!(
     CloseConfirm
 );
 
-#[derive(Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Serialize, Clone, PartialEq, Eq)]
 pub struct SendPacket {
     pub height: Height,
     pub packet: Packet,
@@ -626,7 +626,7 @@ impl core::fmt::Debug for SendPacket {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct ReceivePacket {
     pub height: Height,
     pub packet: Packet,
@@ -677,7 +677,7 @@ impl core::fmt::Display for ReceivePacket {
     }
 }
 
-#[derive(Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Serialize, Clone, PartialEq, Eq)]
 pub struct WriteAcknowledgement {
     pub height: Height,
     pub packet: Packet,
@@ -752,7 +752,7 @@ impl core::fmt::Debug for WriteAcknowledgement {
     }
 }
 
-#[derive(Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Serialize, Clone, PartialEq, Eq)]
 pub struct AcknowledgePacket {
     pub height: Height,
     pub packet: Packet,
@@ -803,7 +803,7 @@ impl core::fmt::Debug for AcknowledgePacket {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct TimeoutPacket {
     pub height: Height,
     pub packet: Packet,
@@ -854,7 +854,7 @@ impl core::fmt::Display for TimeoutPacket {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct TimeoutOnClosePacket {
     pub height: Height,
     pub packet: Packet,
