@@ -1093,7 +1093,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         ) {
             // Update telemetry info
             telemetry!({
-                for e in events_chunk.clone() {
+                for e in events_chunk.iter() {
                     self.record_cleared_send_packet(e);
                 }
             });
@@ -1141,7 +1141,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             &self.path_id,
             query_write_ack_events,
         ) {
-            telemetry!(self.record_cleared_acknowledgments(events_chunk.clone()));
+            telemetry!(self.record_cleared_acknowledgments(&events_chunk));
             self.events_to_operational_data(TrackedEvents::new(events_chunk, tracking_id))?;
         }
 
@@ -1774,7 +1774,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     #[cfg(feature = "telemetry")]
-    fn record_cleared_send_packet(&self, event: IbcEvent) {
+    fn record_cleared_send_packet(&self, event: &IbcEvent) {
         if let IbcEvent::SendPacket(send_packet_ev) = event {
             ibc_telemetry::global().send_packet_count(
                 send_packet_ev.packet.sequence.into(),
@@ -1796,7 +1796,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     #[cfg(feature = "telemetry")]
-    fn record_cleared_acknowledgments(&self, events: Vec<IbcEvent>) {
+    fn record_cleared_acknowledgments(&self, events: &[IbcEvent]) {
         for e in events {
             if let IbcEvent::WriteAcknowledgement(write_ack_ev) = e {
                 ibc_telemetry::global().clear_acknowledgment_packet_count(
