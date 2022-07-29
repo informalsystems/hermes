@@ -181,11 +181,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     pub fn restore_from_event(
         chain: ChainA,
         counterparty_chain: ChainB,
-        connection_open_event: IbcEvent,
+        connection_open_event: &IbcEvent,
     ) -> Result<Connection<ChainA, ChainB>, ConnectionError> {
         let connection_event_attributes = connection_open_event
             .connection_attributes()
-            .ok_or_else(|| ConnectionError::invalid_event(connection_open_event.clone()))?;
+            .ok_or_else(|| ConnectionError::invalid_event(connection_open_event.to_string()))?;
 
         let connection_id = connection_event_attributes.connection_id.clone();
 
@@ -748,7 +748,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         }
     }
 
-    pub fn step_event(&mut self, event: IbcEvent, index: u64) -> RetryResult<Next, u64> {
+    pub fn step_event(&mut self, event: &IbcEvent, index: u64) -> RetryResult<Next, u64> {
         let state = match event {
             IbcEvent::OpenInitConnection(_) => State::Init,
             IbcEvent::OpenTryConnection(_) => State::TryOpen,
@@ -912,7 +912,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 Ok(result)
             }
             IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
-            _ => Err(ConnectionError::invalid_event(result)),
+            _ => Err(ConnectionError::invalid_event(result.to_string())),
         }
     }
 
@@ -1052,7 +1052,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 Ok(result)
             }
             IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
-            _ => Err(ConnectionError::invalid_event(result)),
+            _ => Err(ConnectionError::invalid_event(result.to_string())),
         }
     }
 
@@ -1158,7 +1158,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 Ok(result)
             }
             IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
-            _ => Err(ConnectionError::invalid_event(result)),
+            _ => Err(ConnectionError::invalid_event(result.to_string())),
         }
     }
 
@@ -1246,7 +1246,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 Ok(result)
             }
             IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
-            _ => Err(ConnectionError::invalid_event(result)),
+            _ => Err(ConnectionError::invalid_event(result.to_string())),
         }
     }
 

@@ -214,7 +214,7 @@ impl FromStr for IbcEventType {
 }
 
 /// Events created by the IBC component of a chain, destined for a relayer.
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Serialize, PartialEq, Eq)]
 pub enum IbcEvent {
     NewBlock(NewBlock),
 

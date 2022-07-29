@@ -651,7 +651,7 @@ fn process_batch<Chain: ChainHandle>(
         if let Object::Packet(_path) = object.clone() {
             // Update telemetry info
             telemetry!({
-                for e in events.clone() {
+                for e in events {
                     match e {
                         IbcEvent::SendPacket(send_packet_ev) => {
                             ibc_telemetry::global().send_packet_count(

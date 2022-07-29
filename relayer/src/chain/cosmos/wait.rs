@@ -78,13 +78,15 @@ async fn update_tx_sync_result(
             tx_sync_result.status = TxStatus::ReceivedResponse;
 
             if response.tx_result.code.is_err() {
-                tx_sync_result.events = vec![
-                    IbcEvent::ChainError(format!(
+                let mut events = Vec::with_capacity(message_count);
+                for _ in 0..message_count {
+                    events.push(IbcEvent::ChainError(format!(
                         "deliver_tx for {} reports error: code={:?}, log={:?}",
                         response.hash, response.tx_result.code, response.tx_result.log
-                    ));
-                    message_count
-                ];
+                    )));
+                }
+
+                tx_sync_result.events = events;
             } else {
                 let height = Height::new(chain_id.version(), u64::from(response.height)).unwrap();
 

@@ -104,14 +104,16 @@ async fn send_messages_as_batches(
             send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, batch).await?;
 
         if response.code.is_err() {
-            let events_per_tx = vec![IbcEvent::ChainError(format!(
+            let mut events = Vec::with_capacity(message_count);
+            for _ in 0..message_count {
+                events.push(IbcEvent::ChainError(format!(
                 "check_tx (broadcast_tx_sync) on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
-                config.chain_id, response.hash, response.code, response.log
-            )); message_count];
+                config.chain_id, response.hash, response.code, response.log)));
+            }
 
             let tx_sync_result = TxSyncResult {
                 response,
-                events: events_per_tx,
+                events,
                 status: TxStatus::ReceivedResponse,
             };
 

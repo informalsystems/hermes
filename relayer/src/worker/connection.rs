@@ -41,7 +41,7 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                             .map_err(|e| TaskError::Fatal(RunError::connection(e)))?;
 
                             retry_with_index(retry_strategy::worker_default_strategy(), |index| {
-                                handshake_connection.step_event(event.clone(), index)
+                                handshake_connection.step_event(event, index)
                             })
                             .map_err(|e| TaskError::Fatal(RunError::retry(e)))
                         } else {

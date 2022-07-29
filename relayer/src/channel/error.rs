@@ -3,7 +3,6 @@ use flex_error::define_error;
 use ibc::core::ics02_client::error::Error as ClientError;
 use ibc::core::ics04_channel::channel::State;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortChannelId, PortId};
-use ibc::events::IbcEvent;
 
 use crate::error::Error as RelayerError;
 use crate::foreign_client::{ForeignClientError, HasExpiredOrFrozenError};
@@ -171,10 +170,10 @@ define_error! {
             },
 
         InvalidEvent
-            { event: IbcEvent }
+            { event_str: String }
             | e | {
                 format_args!("channel object cannot be built from event: {}",
-                    e.event)
+                    e.event_str)
             },
 
         MaxRetry

@@ -205,12 +205,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     pub fn restore_from_event(
         chain: ChainA,
         counterparty_chain: ChainB,
-        channel_open_event: IbcEvent,
+        channel_open_event: &IbcEvent,
     ) -> Result<Channel<ChainA, ChainB>, ChannelError> {
         let channel_event_attributes = channel_open_event
-            .clone()
             .channel_attributes()
-            .ok_or_else(|| ChannelError::invalid_event(channel_open_event))?;
+            .ok_or_else(|| ChannelError::invalid_event(channel_open_event.to_string()))?;
 
         let port_id = channel_event_attributes.port_id.clone();
         let channel_id = channel_event_attributes.channel_id;
@@ -762,7 +761,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
     }
 
-    pub fn step_event(&mut self, event: IbcEvent, index: u64) -> RetryResult<Next, u64> {
+    pub fn step_event(&mut self, event: &IbcEvent, index: u64) -> RetryResult<Next, u64> {
         let state = match event {
             IbcEvent::OpenInitChannel(_) => State::Init,
             IbcEvent::OpenTryChannel(_) => State::TryOpen,
@@ -857,7 +856,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 Ok(result)
             }
             IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e)),
-            _ => Err(ChannelError::invalid_event(result)),
+            _ => Err(ChannelError::invalid_event(result.to_string())),
         }
     }
 
@@ -1043,7 +1042,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 Ok(result)
             }
             IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e)),
-            _ => Err(ChannelError::invalid_event(result)),
+            _ => Err(ChannelError::invalid_event(result.to_string())),
         }
     }
 
@@ -1146,7 +1145,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     Ok(result)
                 }
                 IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e)),
-                _ => Err(ChannelError::invalid_event(result)),
+                _ => Err(ChannelError::invalid_event(result.to_string())),
             }
         }
 
@@ -1253,7 +1252,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     Ok(result)
                 }
                 IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e)),
-                _ => Err(ChannelError::invalid_event(result)),
+                _ => Err(ChannelError::invalid_event(result.to_string())),
             }
         }
 
@@ -1323,7 +1322,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 Ok(result)
             }
             IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e)),
-            _ => Err(ChannelError::invalid_event(result)),
+            _ => Err(ChannelError::invalid_event(result.to_string())),
         }
     }
 
@@ -1420,7 +1419,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 Ok(result)
             }
             IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e)),
-            _ => Err(ChannelError::invalid_event(result)),
+            _ => Err(ChannelError::invalid_event(result.to_string())),
         }
     }
 

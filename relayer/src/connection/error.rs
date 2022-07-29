@@ -2,7 +2,6 @@ use core::time::Duration;
 use flex_error::define_error;
 use ibc::core::ics03_connection::connection::{Counterparty, State};
 use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
-use ibc::events::IbcEvent;
 
 use crate::error::Error as RelayerError;
 use crate::foreign_client::{ForeignClientError, HasExpiredOrFrozenError};
@@ -74,10 +73,10 @@ define_error! {
             },
 
         InvalidEvent
-            { event: IbcEvent }
+            { event_str: String }
             |e| {
                 format!("a connection object cannot be built from {}",
-                    e.event)
+                    e.event_str)
             },
 
         RetryInternal

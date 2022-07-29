@@ -268,10 +268,10 @@ define_error! {
             },
 
         MissingClientIdFromEvent
-            { event: IbcEvent }
+            { event_str: String }
             |e| {
                 format_args!("cannot extract client_id from result: {:?}",
-                    e.event)
+                    e.event_str)
             },
 
         ChainErrorEvent
@@ -648,7 +648,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             })?;
 
         assert!(!res.is_empty());
-        Ok(res[0].clone())
+        Ok(res[0])
     }
 
     /// Sends the client creation transaction & subsequently sets the id of this ForeignClient
@@ -1199,8 +1199,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // same consensus height. This could happen when multiple client updates with same header
         // were submitted to chain. However this is not what it's observed during testing.
         // Regardless, just take the event from the first update.
-        let event = events[0].clone();
-        let update = downcast!(event.clone() => IbcEvent::UpdateClient).ok_or_else(|| {
+        let event = events[0];
+        let update = downcast!(event => IbcEvent::UpdateClient).ok_or_else(|| {
             ForeignClientError::unexpected_event(
                 self.id().clone(),
                 self.dst_chain.id(),
@@ -1598,7 +1598,7 @@ pub fn extract_client_id(event: &IbcEvent) -> Result<&ClientId, ForeignClientErr
         IbcEvent::CreateClient(ev) => Ok(ev.client_id()),
         IbcEvent::UpdateClient(ev) => Ok(ev.client_id()),
         _ => Err(ForeignClientError::missing_client_id_from_event(
-            event.clone(),
+            event.to_string(),
         )),
     }
 }
