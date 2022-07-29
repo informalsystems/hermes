@@ -847,7 +847,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         client_id: ClientId,
         consensus_height: Height,
     ) -> Result<Height, LinkError> {
-        let events = chain
+        let mut events = chain
             .query_txs(QueryTxRequest::Client(QueryClientEventRequest {
                 query_height: QueryHeight::Latest,
                 event_id: WithBlockDataType::UpdateClient,

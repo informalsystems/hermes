@@ -633,7 +633,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     ) -> Result<IbcEvent, ForeignClientError> {
         let new_msg = self.build_create_client(options)?;
 
-        let res = self
+        let mut res = self
             .dst_chain
             .send_messages_and_wait_commit(TrackedMsgs::new_single(
                 new_msg.to_any(),
@@ -648,7 +648,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             })?;
 
         assert!(!res.is_empty());
-        Ok(res[0])
+        Ok(res.remove(0))
     }
 
     /// Sends the client creation transaction & subsequently sets the id of this ForeignClient
@@ -1199,13 +1199,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // same consensus height. This could happen when multiple client updates with same header
         // were submitted to chain. However this is not what it's observed during testing.
         // Regardless, just take the event from the first update.
-        let event = events[0];
+        let event = events.remove(0);
+        let event_json = event.to_json();
         let update = downcast!(event => IbcEvent::UpdateClient).ok_or_else(|| {
-            ForeignClientError::unexpected_event(
-                self.id().clone(),
-                self.dst_chain.id(),
-                event.to_json(),
-            )
+            ForeignClientError::unexpected_event(self.id().clone(), self.dst_chain.id(), event_json)
         })?;
         Ok(Some(update))
     }

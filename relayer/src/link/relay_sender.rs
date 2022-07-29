@@ -56,8 +56,8 @@ impl Submit for SyncSender {
         );
 
         let ev = tx_events
-            .into_iter()
-            .find(|event| matches!(event, IbcEvent::ChainError(_)));
+            .iter()
+            .find(|event| matches!(*event, IbcEvent::ChainError(_)));
 
         match ev {
             Some(ev) => Err(LinkError::send(ev.to_string())),

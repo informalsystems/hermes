@@ -387,13 +387,13 @@ pub fn collect_events(
 
     let mode = config.mode;
 
-    for event in batch.events {
+    for event in &batch.events {
         match event.as_ref() {
             IbcEvent::NewBlock(new_block) => {
                 collected.new_block = Some(new_block.clone());
             }
-            IbcEvent::UpdateClient(ref update) => {
-                collect_event(&mut collected, event, mode.clients.enabled, || {
+            IbcEvent::UpdateClient(update) => {
+                collect_event(&mut collected, event.clone(), mode.clients.enabled, || {
                     // Collect update client events only if the worker exists
                     if let Ok(object) = Object::for_update_client(update, src_chain) {
                         workers.contains(&object).then(|| object)
@@ -405,14 +405,19 @@ pub fn collect_events(
             IbcEvent::OpenInitConnection(..)
             | IbcEvent::OpenTryConnection(..)
             | IbcEvent::OpenAckConnection(..) => {
-                collect_event(&mut collected, event, mode.connections.enabled, || {
-                    event.connection_attributes().and_then(|attr| {
-                        Object::connection_from_conn_open_events(attr, src_chain).ok()
-                    })
-                });
+                collect_event(
+                    &mut collected,
+                    event.clone(),
+                    mode.connections.enabled,
+                    || {
+                        event.connection_attributes().and_then(|attr| {
+                            Object::connection_from_conn_open_events(attr, src_chain).ok()
+                        })
+                    },
+                );
             }
             IbcEvent::OpenInitChannel(..) | IbcEvent::OpenTryChannel(..) => {
-                collect_event(&mut collected, event, mode.channels.enabled, || {
+                collect_event(&mut collected, event.clone(), mode.channels.enabled, || {
                     event.clone().channel_attributes().and_then(|attr| {
                         Object::channel_from_chan_open_events(&attr, src_chain).ok()
                     })
@@ -421,39 +426,39 @@ pub fn collect_events(
             IbcEvent::OpenAckChannel(open_ack) => {
                 // Create client and packet workers here as channel end must be opened
                 let attributes = open_ack.clone().into();
-                collect_event(&mut collected, event, mode.clients.enabled, || {
+                collect_event(&mut collected, event.clone(), mode.clients.enabled, || {
                     Object::client_from_chan_open_events(&attributes, src_chain).ok()
                 });
 
                 // If handshake message relaying is enabled create worker to send the MsgChannelOpenConfirm message
-                collect_event(&mut collected, event, mode.channels.enabled, || {
+                collect_event(&mut collected, event.clone(), mode.channels.enabled, || {
                     Object::channel_from_chan_open_events(&attributes, src_chain).ok()
                 });
             }
             IbcEvent::OpenConfirmChannel(open_confirm) => {
                 let attributes = open_confirm.clone().into();
                 // Create client worker here as channel end must be opened
-                collect_event(&mut collected, event, mode.clients.enabled, || {
+                collect_event(&mut collected, event.clone(), mode.clients.enabled, || {
                     Object::client_from_chan_open_events(&attributes, src_chain).ok()
                 });
             }
             IbcEvent::SendPacket(ref packet) => {
-                collect_event(&mut collected, event, mode.packets.enabled, || {
+                collect_event(&mut collected, event.clone(), mode.packets.enabled, || {
                     Object::for_send_packet(packet, src_chain).ok()
                 });
             }
             IbcEvent::TimeoutPacket(ref packet) => {
-                collect_event(&mut collected, event, mode.packets.enabled, || {
+                collect_event(&mut collected, event.clone(), mode.packets.enabled, || {
                     Object::for_timeout_packet(packet, src_chain).ok()
                 });
             }
             IbcEvent::WriteAcknowledgement(ref packet) => {
-                collect_event(&mut collected, event, mode.packets.enabled, || {
+                collect_event(&mut collected, event.clone(), mode.packets.enabled, || {
                     Object::for_write_ack(packet, src_chain).ok()
                 });
             }
             IbcEvent::CloseInitChannel(ref packet) => {
-                collect_event(&mut collected, event, mode.packets.enabled, || {
+                collect_event(&mut collected, event.clone(), mode.packets.enabled, || {
                     Object::for_close_init_channel(packet, src_chain).ok()
                 });
             }
@@ -654,7 +659,7 @@ fn process_batch<Chain: ChainHandle>(
         if let Object::Packet(_path) = object.clone() {
             // Update telemetry info
             telemetry!({
-                for e in events {
+                for e in &events {
                     match e.as_ref() {
                         IbcEvent::SendPacket(send_packet_ev) => {
                             ibc_telemetry::global().send_packet_count(
