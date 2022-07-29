@@ -49,32 +49,8 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                         }
                     }
 
-                    WorkerCmd::NewBlock {
-                        height: current_height,
-                        new_block: _,
-                    } => {
-                        debug!("starts processing block event at {}", current_height);
+                    WorkerCmd::NewBlock { .. } => Ok(Next::Continue),
 
-                        let height = current_height
-                            .decrement()
-                            .map_err(|e| TaskError::Fatal(RunError::ics02(e)))?;
-
-                        let (mut handshake_connection, state) =
-                            RelayConnection::restore_from_state(
-                                chains.a.clone(),
-                                chains.b.clone(),
-                                connection.clone(),
-                                height,
-                            )
-                            .map_err(|e| TaskError::Fatal(RunError::connection(e)))?;
-
-                        retry_with_index(retry_strategy::worker_default_strategy(), |index| {
-                            handshake_connection.step_state(state, index)
-                        })
-                        .map_err(|e| TaskError::Fatal(RunError::retry(e)))
-                    }
-
-                    // nothing to do
                     WorkerCmd::ClearPendingPackets => Ok(Next::Continue),
                 }
             } else {
