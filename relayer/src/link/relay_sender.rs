@@ -56,12 +56,11 @@ impl Submit for SyncSender {
         );
 
         let ev = tx_events
-            .clone()
             .into_iter()
             .find(|event| matches!(event, IbcEvent::ChainError(_)));
 
         match ev {
-            Some(ev) => Err(LinkError::send(ev)),
+            Some(ev) => Err(LinkError::send(ev.to_string())),
             None => Ok(RelaySummary::from_events(tx_events)),
         }
     }

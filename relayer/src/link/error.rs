@@ -71,9 +71,9 @@ define_error! {
             |_| { "clearing of old packets failed" },
 
         Send
-            { event: IbcEvent }
+            { event_str: String }
             |e| {
-                format!("chain error when sending messages: {0}", e.event)
+                format!("chain error when sending messages: {0}", e.event_str)
             },
 
         MissingChannelId

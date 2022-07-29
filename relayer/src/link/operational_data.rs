@@ -53,6 +53,13 @@ impl TrackedEvents {
         }
     }
 
+    pub fn new_arc(events: Vec<Arc<IbcEvent>>, tracking_id: TrackingId) -> Self {
+        Self {
+            events,
+            tracking_id,
+        }
+    }
+
     pub fn is_empty(&self) -> bool {
         self.events.is_empty()
     }

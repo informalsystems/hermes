@@ -1301,10 +1301,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     ///
     pub fn detect_misbehaviour(
         &self,
-        mut update: Option<UpdateClient>,
+        mut update: Option<&UpdateClient>,
     ) -> Result<Option<MisbehaviourEvidence>, ForeignClientError> {
         thread::sleep(Duration::from_millis(100));
-        let span_guard = update.as_ref().map(|ev| ev.consensus_height());
+        let span_guard = update.map(|ev| ev.consensus_height());
         let _span = span!(
             tracing::Level::DEBUG,
             "detect_misbehaviour",
@@ -1350,7 +1350,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         let start_time = Instant::now();
         for target_height in consensus_state_heights {
             // Start with specified update event or the one for latest consensus height
-            let update_event = if let Some(ref event) = update {
+            let update_event = if let Some(event) = update {
                 // we are here only on the first iteration when called with `Some` update event
                 event.clone()
             } else if let Some(event) = self.update_client_event(target_height)? {
@@ -1507,10 +1507,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
     pub fn detect_misbehaviour_and_submit_evidence(
         &self,
-        update_event: Option<UpdateClient>,
+        update_event: Option<&UpdateClient>,
     ) -> MisbehaviourResults {
         // check evidence of misbehaviour for all updates or one
-        let result = match self.detect_misbehaviour(update_event.clone()) {
+        let result = match self.detect_misbehaviour(update_event) {
             Err(e) => Err(e),
             Ok(None) => Ok(vec![]), // no evidence found
             Ok(Some(detected)) => {

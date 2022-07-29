@@ -36,7 +36,7 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                             let mut handshake_connection = RelayConnection::restore_from_event(
                                 chains.a.clone(),
                                 chains.b.clone(),
-                                event.clone(),
+                                event.as_ref(),
                             )
                             .map_err(|e| TaskError::Fatal(RunError::connection(e)))?;
 

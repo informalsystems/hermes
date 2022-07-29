@@ -1,5 +1,6 @@
 use alloc::collections::BTreeMap as HashMap;
 use alloc::collections::VecDeque;
+use alloc::sync::Arc;
 use std::ops::Sub;
 use std::time::{Duration, Instant};
 
@@ -353,7 +354,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Only events for a port/channel matching one of the channel ends should be processed.
     fn filter_relaying_events(
         &self,
-        events: Vec<IbcEvent>,
+        events: Vec<Arc<IbcEvent>>,
         tracking_id: TrackingId,
     ) -> TrackedEvents {
         let src_channel_id = self.src_channel_id();
@@ -361,7 +362,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let mut result = vec![];
 
         for event in events.into_iter() {
-            match &event {
+            match event.as_ref() {
                 IbcEvent::SendPacket(send_packet_ev) => {
                     if src_channel_id == send_packet_ev.src_channel_id()
                         && self.src_port_id() == send_packet_ev.src_port_id()
@@ -395,7 +396,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         // Transform into `TrackedEvents`
-        TrackedEvents::new(result, tracking_id)
+        TrackedEvents::new_arc(result, tracking_id)
     }
 
     fn relay_pending_packets(&self, height: Option<Height>) -> Result<(), LinkError> {
@@ -641,7 +642,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 }
                 Err(LinkError(error::LinkErrorDetail::Send(e), _)) => {
                     // This error means we could retry
-                    error!("error {}", e.event);
+                    error!("error {}", e.event_str);
                     if i + 1 == MAX_RETRIES {
                         error!("{}/{} retries exhausted. giving up", i + 1, MAX_RETRIES)
                     } else {
