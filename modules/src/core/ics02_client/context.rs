@@ -7,7 +7,7 @@ use alloc::boxed::Box;
 use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::error::{Error, ErrorDetail};
+use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::handler::ClientResult::{self, Create, Update, Upgrade};
 use crate::core::ics24_host::identifier::ClientId;
 use crate::timestamp::Timestamp;
@@ -27,22 +27,6 @@ pub trait ClientReader {
         client_id: &ClientId,
         height: Height,
     ) -> Result<AnyConsensusState, Error>;
-
-    /// Similar to `consensus_state`, attempt to retrieve the consensus state,
-    /// but return `None` if no state exists at the given height.
-    fn maybe_consensus_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<Option<AnyConsensusState>, Error> {
-        match self.consensus_state(client_id, height) {
-            Ok(cs) => Ok(Some(cs)),
-            Err(e) => match e.detail() {
-                ErrorDetail::ConsensusStateNotFound(_) => Ok(None),
-                _ => Err(e),
-            },
-        }
-    }
 
     /// Search for the lowest consensus state higher than `height`.
     fn next_consensus_state(
@@ -91,22 +75,6 @@ pub trait LightClientReader {
         client_id: &ClientId,
         height: Height,
     ) -> Result<Box<dyn ConsensusState>, Error>;
-
-    /// Similar to `consensus_state`, attempt to retrieve the consensus state,
-    /// but return `None` if no state exists at the given height.
-    fn maybe_consensus_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<Option<Box<dyn ConsensusState>>, Error> {
-        match self.consensus_state(client_id, height) {
-            Ok(cs) => Ok(Some(cs)),
-            Err(e) => match e.detail() {
-                ErrorDetail::ConsensusStateNotFound(_) => Ok(None),
-                _ => Err(e),
-            },
-        }
-    }
 
     /// Search for the lowest consensus state higher than `height`.
     fn next_consensus_state(

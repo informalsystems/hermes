@@ -15,7 +15,7 @@ use crate::core::ics02_client::client_def::ClientDef;
 use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::context::LightClientReader;
-use crate::core::ics02_client::error::Error as Ics02Error;
+use crate::core::ics02_client::error::{Error as Ics02Error, ErrorDetail as Ics02ErrorDetail};
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
@@ -52,6 +52,20 @@ impl ClientDef for TendermintClient {
         client_state: Self::ClientState,
         header: Self::Header,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Ics02Error> {
+        fn maybe_consensus_state(
+            ctx: &dyn LightClientReader,
+            client_id: &ClientId,
+            height: Height,
+        ) -> Result<Option<Box<dyn ConsensusState>>, Ics02Error> {
+            match ctx.consensus_state(client_id, height) {
+                Ok(cs) => Ok(Some(cs)),
+                Err(e) => match e.detail() {
+                    Ics02ErrorDetail::ConsensusStateNotFound(_) => Ok(None),
+                    _ => Err(e),
+                },
+            }
+        }
+
         if header.height().revision_number() != client_state.chain_id.version() {
             return Err(Ics02Error::client_specific(
                 Error::mismatched_revisions(
@@ -66,7 +80,7 @@ impl ClientDef for TendermintClient {
         // match the untrusted header.
         let header_consensus_state = TmConsensusState::from(header.clone());
         let existing_consensus_state =
-            match ctx.maybe_consensus_state(&client_id, header.height())? {
+            match maybe_consensus_state(ctx, &client_id, header.height())? {
                 Some(cs) => {
                     let cs = downcast_consensus_state(cs.as_ref())?;
                     // If this consensus state matches, skip verification
