@@ -1,3 +1,4 @@
+use alloc::sync::Arc;
 use core::fmt;
 use core::mem;
 
@@ -67,7 +68,7 @@ impl WorkerHandle {
     pub fn send_events(
         &self,
         height: Height,
-        events: Vec<IbcEvent>,
+        events: Vec<Arc<IbcEvent>>,
         chain_id: ChainId,
         tracking_id: TrackingId,
     ) {

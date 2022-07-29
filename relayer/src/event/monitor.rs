@@ -55,7 +55,7 @@ pub struct EventBatch {
     pub chain_id: ChainId,
     pub tracking_id: TrackingId,
     pub height: Height,
-    pub events: Vec<IbcEvent>,
+    pub events: Vec<Arc<IbcEvent>>,
 }
 
 type SubscriptionResult = core::result::Result<RpcEvent, RpcError>;
@@ -449,7 +449,10 @@ fn stream_batches(
             .copied()
             .expect("internal error: found empty group"); // SAFETY: upheld by `group_while`
 
-        let mut events = events.into_iter().map(|(_, e)| e).collect::<Vec<_>>();
+        let mut events = events
+            .into_iter()
+            .map(|(_, e)| Arc::new(e))
+            .collect::<Vec<_>>();
         sort_events(&mut events);
 
         EventBatch {
@@ -463,8 +466,8 @@ fn stream_batches(
 
 /// Sort the given events by putting the NewBlock event first,
 /// and leaving the other events as is.
-fn sort_events(events: &mut [IbcEvent]) {
-    events.sort_by(|a, b| match (a, b) {
+fn sort_events(events: &mut [Arc<IbcEvent>]) {
+    events.sort_by(|a, b| match (a.as_ref(), b.as_ref()) {
         (IbcEvent::NewBlock(_), _) => Ordering::Less,
         _ => Ordering::Equal,
     })

@@ -10,7 +10,10 @@ use itertools::Itertools;
 use tracing::{debug, error, error_span, info, trace, warn};
 
 use ibc::{
-    core::ics24_host::identifier::{ChainId, ChannelId, PortId},
+    core::{
+        ics02_client::events::NewBlock,
+        ics24_host::identifier::{ChainId, ChannelId, PortId},
+    },
     events::IbcEvent,
     Height,
 };
@@ -356,7 +359,7 @@ fn relay_on_object<Chain: ChainHandle>(
 /// and add the given `event` to the `collected` events for this `object`.
 fn collect_event<F>(
     collected: &mut CollectedEvents,
-    event: &IbcEvent,
+    event: Arc<IbcEvent>,
     enabled: bool,
     object_ctor: F,
 ) where
@@ -384,10 +387,10 @@ pub fn collect_events(
 
     let mode = config.mode;
 
-    for event in &batch.events {
-        match event {
-            IbcEvent::NewBlock(_) => {
-                collected.new_block = Some(event.clone());
+    for event in batch.events {
+        match event.as_ref() {
+            IbcEvent::NewBlock(new_block) => {
+                collected.new_block = Some(new_block.clone());
             }
             IbcEvent::UpdateClient(ref update) => {
                 collect_event(&mut collected, event, mode.clients.enabled, || {
@@ -614,7 +617,7 @@ fn process_batch<Chain: ChainHandle>(
     let collected = collect_events(config, workers, &src_chain, batch);
 
     // If there is a NewBlock event, forward this event first to any workers affected by it.
-    if let Some(IbcEvent::NewBlock(new_block)) = collected.new_block {
+    if let Some(new_block) = collected.new_block {
         workers.notify_new_block(&src_chain.id(), batch.height, new_block);
     }
 
@@ -652,7 +655,7 @@ fn process_batch<Chain: ChainHandle>(
             // Update telemetry info
             telemetry!({
                 for e in events {
-                    match e {
+                    match e.as_ref() {
                         IbcEvent::SendPacket(send_packet_ev) => {
                             ibc_telemetry::global().send_packet_count(
                                 send_packet_ev.packet.sequence.into(),
@@ -737,9 +740,9 @@ pub struct CollectedEvents {
     pub chain_id: ChainId,
     /// [`NewBlock`](ibc::events::IbcEventType::NewBlock) event
     /// collected from the [`EventBatch`].
-    pub new_block: Option<IbcEvent>,
+    pub new_block: Option<NewBlock>,
     /// Mapping between [`Object`]s and their associated [`IbcEvent`]s.
-    pub per_object: HashMap<Object, Vec<IbcEvent>>,
+    pub per_object: HashMap<Object, Vec<Arc<IbcEvent>>>,
     /// Unique identifier for tracking this event batch
     pub tracking_id: TrackingId,
 }
