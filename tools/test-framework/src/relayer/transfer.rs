@@ -8,13 +8,13 @@ use core::time::Duration;
 use eyre::eyre;
 
 use ibc::applications::transfer::error::Error as Ics20Error;
-use ibc::core::ics04_channel::events::extract_packet_and_write_ack_from_tx;
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics04_channel::timeout::TimeoutHeight;
 use ibc::timestamp::Timestamp;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
+use ibc_relayer::chain::cosmos::types::events::channel::extract_packet_and_write_ack_from_tx;
 use ibc_relayer::transfer::build_transfer_message as raw_build_transfer_message;
 use ibc_relayer::transfer::TransferError;
 

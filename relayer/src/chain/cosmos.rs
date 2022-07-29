@@ -32,7 +32,6 @@ use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::error::Error as ClientError;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
-use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics04_channel::packet::{Packet, Sequence};
 use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
@@ -67,6 +66,7 @@ use crate::chain::cosmos::query::tx::query_txs;
 use crate::chain::cosmos::query::version::fetch_version_specs;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
+use crate::chain::cosmos::types::events::channel as channel_events;
 use crate::chain::cosmos::types::gas::{default_gas_from_config, max_gas_from_config};
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
 use crate::chain::tracking::TrackedMsgs;
@@ -1619,7 +1619,7 @@ fn filter_matching_event(
         return None;
     }
 
-    let ibc_event = ChannelEvents::try_from_tx(&event)?;
+    let ibc_event = channel_events::try_from_tx(&event)?;
     match ibc_event {
         IbcEvent::SendPacket(ref send_ev) if matches_packet(request, seq, &send_ev.packet) => {
             Some(ibc_event)
