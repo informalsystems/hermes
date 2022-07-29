@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-relayer-cli"
-version    = "0.15.0"
+version    = "0.15.1"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -26,11 +26,11 @@ telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server = ["ibc-relayer-rest"]
 
 [dependencies]
-ibc              = { version = "0.15.0", path = "../modules", features = ["std", "clock"] }
-ibc-relayer      = { version = "0.15.0", path = "../relayer" }
+ibc              = { version = "0.15.1", path = "../modules", features = ["std", "clock"] }
+ibc-relayer      = { version = "0.15.1", path = "../relayer" }
 ibc-proto        = { version = "0.18.0", path = "../proto" }
-ibc-telemetry    = { version = "0.15.0", path = "../telemetry", optional = true }
-ibc-relayer-rest = { version = "0.15.0", path = "../relayer-rest", optional = true }
+ibc-telemetry    = { version = "0.15.1", path = "../telemetry", optional = true }
+ibc-relayer-rest = { version = "0.15.1", path = "../relayer-rest", optional = true }
 
 clap = { version = "3.1", features = ["cargo"] }
 clap_complete = "3.1"
@@ -55,7 +55,7 @@ atty = "0.2.14"
 flex-error = { version = "0.4.4", default-features = false, features = ["std", "eyre_tracer"] }
 signal-hook = "0.3.14"
 dialoguer = "0.10.1"
-console = "0.15.0"
+console = "0.15.1"
 
 [dependencies.tendermint-proto]
 version = "=0.23.7"

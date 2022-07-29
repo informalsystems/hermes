@@ -1,5 +1,17 @@
 # CHANGELOG
 
+
+## v0.15.1
+*July 29th, 2022*
+
+This release mainly shorten `--new-client-connection` to `--new-client-conn` with `--yes` flag to skip new_client_connection confirmation.
+
+### IMPROVEMENTS
+
+- [Relayer CLI](relayer-cli)
+  - Added `--yes` flag to the `create channel` flow to enable skipping the `--new-client-connection` step, and shorten `--new-client-connection` -> `--new-client-conn`
+    ([#2316](https://github.com/informalsystems/ibc-rs/pull/2316))
+
 ## v0.15.0
 
 *May 23rd, 2022*
