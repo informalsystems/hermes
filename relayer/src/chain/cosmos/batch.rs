@@ -154,7 +154,7 @@ fn batch_messages(
         }
 
         if current_count >= max_message_count || current_size + message_len >= max_tx_size {
-            let insert_batch = mem::replace(&mut current_batch, vec![]);
+            let insert_batch = mem::take(&mut current_batch);
             assert!(
                 !insert_batch.is_empty(),
                 "max message count should not be 0"
