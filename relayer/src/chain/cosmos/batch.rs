@@ -175,3 +175,57 @@ fn batch_messages(
 
     Ok(batches)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::batch_messages;
+    use crate::config::types::{MaxMsgNum, MaxTxSize};
+    use ibc_proto::google::protobuf::Any;
+
+    #[test]
+    fn batch_does_not_exceed_max_tx_size() {
+        let messages = vec![
+            Any {
+                type_url: "/example.Foo".into(),
+                value: vec![0; 6],
+            },
+            Any {
+                type_url: "/example.Bar".into(),
+                value: vec![0; 4],
+            },
+            Any {
+                type_url: "/example.Baz".into(),
+                value: vec![0; 2],
+            },
+        ];
+        let batches =
+            batch_messages(MaxMsgNum::default(), MaxTxSize::new(42).unwrap(), messages).unwrap();
+        assert_eq!(batches.len(), 2);
+        assert_eq!(batches[0].len(), 2);
+        assert_eq!(batches[0][0].type_url, "/example.Foo");
+        assert_eq!(batches[0][0].value.len(), 6);
+        assert_eq!(batches[0][1].type_url, "/example.Bar");
+        assert_eq!(batches[0][1].value.len(), 4);
+        assert_eq!(batches[1].len(), 1);
+        assert_eq!(batches[1][0].type_url, "/example.Baz");
+        assert_eq!(batches[1][0].value.len(), 2);
+    }
+
+    #[test]
+    fn batch_error_on_oversized_message() {
+        let messages = vec![Any {
+            type_url: "/example.Foo".into(),
+            value: vec![0; 6],
+        }];
+        let batches = batch_messages(
+            MaxMsgNum::default(),
+            MaxTxSize::new(22).unwrap(),
+            messages.clone(),
+        )
+        .unwrap();
+        assert_eq!(batches.len(), 1);
+        assert_eq!(batches[0].len(), 1);
+        let res = batch_messages(MaxMsgNum::default(), MaxTxSize::new(21).unwrap(), messages);
+        assert!(res.is_err());
+    }
+}
