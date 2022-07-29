@@ -68,10 +68,10 @@ use prost::Message;
 pub use self::error::Error;
 
 /// Object safe equivalent of `tendermint_proto::Protobuf`.
-pub trait Protobuf<T: Message + Default>
+pub trait Protobuf<Raw: Message + Default>
 where
-    Self: erased::TryFrom<T> + erased::Into<T>,
-    <Self as erased::TryFrom<T>>::Error: Display,
+    Self: erased::TryFrom<Raw> + erased::Into<Raw>,
+    <Self as erased::TryFrom<Raw>>::Error: Display,
 {
     /// Encode into a buffer in Protobuf format.
     ///
@@ -109,9 +109,9 @@ where
     where
         Self: Sized,
     {
-        let raw = T::decode(buf).map_err(Error::decode_message)?;
+        let raw = Raw::decode(buf).map_err(Error::decode_message)?;
 
-        Self::try_from(raw).map_err(Error::try_from::<T, Self, _>)
+        Self::try_from(raw).map_err(Error::try_from::<Raw, Self, _>)
     }
 
     /// Constructor that attempts to decode a length-delimited instance from
@@ -127,9 +127,9 @@ where
     where
         Self: Sized,
     {
-        let raw = T::decode_length_delimited(buf).map_err(Error::decode_message)?;
+        let raw = Raw::decode_length_delimited(buf).map_err(Error::decode_message)?;
 
-        Self::try_from(raw).map_err(Error::try_from::<T, Self, _>)
+        Self::try_from(raw).map_err(Error::try_from::<Raw, Self, _>)
     }
 
     /// Returns the encoded length of the message without a length delimiter.
