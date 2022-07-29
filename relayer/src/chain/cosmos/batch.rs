@@ -149,11 +149,11 @@ fn batch_messages(
     for message in messages.into_iter() {
         let message_len = message.encoded_len();
 
-        if message_len >= max_tx_size {
+        if message_len > max_tx_size {
             return Err(Error::message_exceeds_max_tx_size(message_len));
         }
 
-        if current_count >= max_message_count || current_size + message_len >= max_tx_size {
+        if current_count >= max_message_count || current_size + message_len > max_tx_size {
             let insert_batch = mem::take(&mut current_batch);
             assert!(
                 !insert_batch.is_empty(),
