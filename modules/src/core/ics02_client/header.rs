@@ -18,7 +18,7 @@ pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.He
 pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
 
 /// Abstract of consensus state update information
-pub trait Header: Clone + core::fmt::Debug + Send + Sync {
+pub trait Header: core::fmt::Debug + Send + Sync {
     /// The type of client (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 
@@ -27,9 +27,6 @@ pub trait Header: Clone + core::fmt::Debug + Send + Sync {
 
     /// The timestamp of the consensus state
     fn timestamp(&self) -> Timestamp;
-
-    /// Wrap into an `AnyHeader`
-    fn wrap_any(self) -> AnyHeader;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
@@ -67,10 +64,6 @@ impl Header for AnyHeader {
             Self::Mock(header) => header.timestamp(),
         }
     }
-
-    fn wrap_any(self) -> AnyHeader {
-        self
-    }
 }
 
 impl AnyHeader {
@@ -94,7 +87,7 @@ impl TryFrom<Any> for AnyHeader {
     fn try_from(raw: Any) -> Result<Self, Error> {
         match raw.type_url.as_str() {
             TENDERMINT_HEADER_TYPE_URL => {
-                let val = decode_header(raw.value.deref()).map_err(Error::tendermint)?;
+                let val = decode_header(raw.value.deref())?;
 
                 Ok(AnyHeader::Tendermint(val))
             }
@@ -126,5 +119,18 @@ impl From<AnyHeader> for Any {
                     .expect("encoding to `Any` from `AnyHeader::Mock`"),
             },
         }
+    }
+}
+
+#[cfg(any(test, feature = "mocks"))]
+impl From<MockHeader> for AnyHeader {
+    fn from(header: MockHeader) -> Self {
+        Self::Mock(header)
+    }
+}
+
+impl From<TendermintHeader> for AnyHeader {
+    fn from(header: TendermintHeader) -> Self {
+        Self::Tendermint(header)
     }
 }

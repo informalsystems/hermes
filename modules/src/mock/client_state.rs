@@ -2,7 +2,6 @@ use crate::prelude::*;
 
 use alloc::collections::btree_map::BTreeMap as HashMap;
 
-use core::convert::Infallible;
 use core::time::Duration;
 
 use ibc_proto::protobuf::Protobuf;
@@ -66,12 +65,6 @@ impl MockClientState {
     }
 }
 
-impl From<MockClientState> for AnyClientState {
-    fn from(mcs: MockClientState) -> Self {
-        Self::Mock(mcs)
-    }
-}
-
 impl TryFrom<RawMockClientState> for MockClientState {
     type Error = Error;
 
@@ -110,12 +103,12 @@ impl ClientState for MockClientState {
         self.frozen_height
     }
 
-    fn upgrade(self, _upgrade_height: Height, _upgrade_options: (), _chain_id: ChainId) -> Self {
+    fn upgrade(&mut self, _upgrade_height: Height, _upgrade_options: (), _chain_id: ChainId) {
         todo!()
     }
 
-    fn wrap_any(self) -> AnyClientState {
-        AnyClientState::Mock(self)
+    fn encode_vec(&self) -> Result<Vec<u8>, Error> {
+        Protobuf::encode_vec(self).map_err(Error::invalid_any_client_state)
     }
 }
 
@@ -170,15 +163,7 @@ impl From<MockConsensusState> for RawMockConsensusState {
     }
 }
 
-impl From<MockConsensusState> for AnyConsensusState {
-    fn from(mcs: MockConsensusState) -> Self {
-        Self::Mock(mcs)
-    }
-}
-
 impl ConsensusState for MockConsensusState {
-    type Error = Infallible;
-
     fn client_type(&self) -> ClientType {
         ClientType::Mock
     }
@@ -187,7 +172,7 @@ impl ConsensusState for MockConsensusState {
         &self.root
     }
 
-    fn wrap_any(self) -> AnyConsensusState {
-        AnyConsensusState::Mock(self)
+    fn encode_vec(&self) -> Result<Vec<u8>, Error> {
+        Protobuf::encode_vec(self).map_err(Error::invalid_any_consensus_state)
     }
 }

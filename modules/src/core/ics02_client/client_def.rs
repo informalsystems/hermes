@@ -4,13 +4,13 @@ use crate::clients::ics07_tendermint::client_def::TendermintClient;
 use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::context::ClientReader;
+use crate::core::ics02_client::context::ClientReaderLightClient;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::header::{AnyHeader, Header};
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
-use crate::core::ics04_channel::context::ChannelReader;
+use crate::core::ics04_channel::context::ChannelReaderLightClient;
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
@@ -23,20 +23,19 @@ use crate::Height;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_def::MockClient;
 
-pub trait ClientDef: Clone {
+pub trait ClientDef {
     type Header: Header;
     type ClientState: ClientState;
     type ConsensusState: ConsensusState;
 
     fn check_header_and_update_state(
         &self,
-        ctx: &dyn ClientReader,
+        ctx: &dyn ClientReaderLightClient,
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Self::Header,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Error>;
 
-    /// TODO
     fn verify_upgrade_and_update_state(
         &self,
         client_state: &Self::ClientState,
@@ -62,7 +61,7 @@ pub trait ClientDef: Clone {
         root: &CommitmentRoot,
         client_id: &ClientId,
         consensus_height: Height,
-        expected_consensus_state: &AnyConsensusState,
+        expected_consensus_state: &dyn ConsensusState,
     ) -> Result<(), Error>;
 
     /// Verify a `proof` that a connection state matches that of the input `connection_end`.
@@ -94,7 +93,7 @@ pub trait ClientDef: Clone {
 
     /// Verify the client state for this chain that it is stored on the counterparty chain.
     #[allow(clippy::too_many_arguments)]
-    fn verify_client_full_state(
+    fn verify_client_full_state<U>(
         &self,
         client_state: &Self::ClientState,
         height: Height,
@@ -102,14 +101,14 @@ pub trait ClientDef: Clone {
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         client_id: &ClientId,
-        expected_client_state: &AnyClientState,
+        expected_client_state: &dyn ClientState<UpgradeOptions = U>,
     ) -> Result<(), Error>;
 
     /// Verify a `proof` that a packet has been commited.
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_data(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn ChannelReaderLightClient,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -125,7 +124,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn ChannelReaderLightClient,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -141,7 +140,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_next_sequence_recv(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn ChannelReaderLightClient,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -156,7 +155,7 @@ pub trait ClientDef: Clone {
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_receipt_absence(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn ChannelReaderLightClient,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -196,7 +195,7 @@ impl ClientDef for AnyClient {
     /// Validates an incoming `header` against the latest consensus state of this client.
     fn check_header_and_update_state(
         &self,
-        ctx: &dyn ClientReader,
+        ctx: &dyn ClientReaderLightClient,
         client_id: ClientId,
         client_state: AnyClientState,
         header: AnyHeader,
@@ -246,7 +245,7 @@ impl ClientDef for AnyClient {
         root: &CommitmentRoot,
         client_id: &ClientId,
         consensus_height: Height,
-        expected_consensus_state: &AnyConsensusState,
+        expected_consensus_state: &dyn ConsensusState,
     ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {
@@ -379,7 +378,7 @@ impl ClientDef for AnyClient {
         }
     }
 
-    fn verify_client_full_state(
+    fn verify_client_full_state<U>(
         &self,
         client_state: &Self::ClientState,
         height: Height,
@@ -387,7 +386,7 @@ impl ClientDef for AnyClient {
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         client_id: &ClientId,
-        client_state_on_counterparty: &AnyClientState,
+        client_state_on_counterparty: &dyn ClientState<UpgradeOptions = U>,
     ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => {
@@ -428,7 +427,7 @@ impl ClientDef for AnyClient {
     }
     fn verify_packet_data(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn ChannelReaderLightClient,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -485,7 +484,7 @@ impl ClientDef for AnyClient {
 
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn ChannelReaderLightClient,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -542,7 +541,7 @@ impl ClientDef for AnyClient {
 
     fn verify_next_sequence_recv(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn ChannelReaderLightClient,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
@@ -595,7 +594,7 @@ impl ClientDef for AnyClient {
     }
     fn verify_packet_receipt_absence(
         &self,
-        ctx: &dyn ChannelReader,
+        ctx: &dyn ChannelReaderLightClient,
         client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,

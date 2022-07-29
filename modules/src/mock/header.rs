@@ -6,7 +6,6 @@ use ibc_proto::ibc::mock::Header as RawMockHeader;
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
-use crate::core::ics02_client::header::AnyHeader;
 use crate::core::ics02_client::header::Header;
 use crate::mock::client_state::MockConsensusState;
 use crate::timestamp::Timestamp;
@@ -71,12 +70,6 @@ impl MockHeader {
     }
 }
 
-impl From<MockHeader> for AnyHeader {
-    fn from(mh: MockHeader) -> Self {
-        Self::Mock(mh)
-    }
-}
-
 impl Header for MockHeader {
     fn client_type(&self) -> ClientType {
         ClientType::Mock
@@ -89,10 +82,6 @@ impl Header for MockHeader {
     fn timestamp(&self) -> Timestamp {
         self.timestamp
     }
-
-    fn wrap_any(self) -> AnyHeader {
-        AnyHeader::Mock(self)
-    }
 }
 
 impl From<MockHeader> for AnyConsensusState {
@@ -104,11 +93,12 @@ impl From<MockHeader> for AnyConsensusState {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::core::ics02_client::header::AnyHeader;
 
     #[test]
     fn encode_any() {
         let header = MockHeader::new(Height::new(1, 10).unwrap()).with_timestamp(Timestamp::none());
-        let bytes = header.wrap_any().encode_vec().unwrap();
+        let bytes = AnyHeader::from(header).encode_vec().unwrap();
 
         assert_eq!(
             &bytes,

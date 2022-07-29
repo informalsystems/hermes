@@ -19,14 +19,12 @@ pub const TENDERMINT_MISBEHAVIOR_TYPE_URL: &str = "/ibc.lightclients.tendermint.
 #[cfg(any(test, feature = "mocks"))]
 pub const MOCK_MISBEHAVIOUR_TYPE_URL: &str = "/ibc.mock.Misbehavior";
 
-pub trait Misbehaviour: Clone + core::fmt::Debug + Send + Sync {
+pub trait Misbehaviour: core::fmt::Debug + Send + Sync {
     /// The type of client (eg. Tendermint)
     fn client_id(&self) -> &ClientId;
 
     /// The height of the consensus state
     fn height(&self) -> Height;
-
-    fn wrap_any(self) -> AnyMisbehaviour;
 }
 
 #[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound once possible
@@ -55,10 +53,6 @@ impl Misbehaviour for AnyMisbehaviour {
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(misbehaviour) => misbehaviour.height(),
         }
-    }
-
-    fn wrap_any(self) -> AnyMisbehaviour {
-        self
     }
 }
 
@@ -111,6 +105,19 @@ impl core::fmt::Display for AnyMisbehaviour {
             #[cfg(any(test, feature = "mocks"))]
             AnyMisbehaviour::Mock(mock) => write!(f, "{:?}", mock),
         }
+    }
+}
+
+#[cfg(any(test, feature = "mocks"))]
+impl From<MockMisbehaviour> for AnyMisbehaviour {
+    fn from(misbehaviour: MockMisbehaviour) -> Self {
+        Self::Mock(misbehaviour)
+    }
+}
+
+impl From<TmMisbehaviour> for AnyMisbehaviour {
+    fn from(misbehaviour: TmMisbehaviour) -> Self {
+        Self::Tendermint(misbehaviour)
     }
 }
 

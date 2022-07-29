@@ -12,7 +12,6 @@ use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
-use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
@@ -219,11 +218,11 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
     }
 
     fn upgrade(
-        mut self,
+        &mut self,
         upgrade_height: Height,
         upgrade_options: UpgradeOptions,
         chain_id: ChainId,
-    ) -> Self {
+    ) {
         // Reset custom fields to zero values
         self.trusting_period = ZERO_DURATION;
         self.trust_level = TrustThreshold::ZERO;
@@ -236,12 +235,10 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
         self.latest_height = upgrade_height;
         self.unbonding_period = upgrade_options.unbonding_period;
         self.chain_id = chain_id;
-
-        self
     }
 
-    fn wrap_any(self) -> AnyClientState {
-        AnyClientState::Tendermint(self)
+    fn encode_vec(&self) -> Result<Vec<u8>, Ics02Error> {
+        Protobuf::encode_vec(self).map_err(Ics02Error::invalid_any_client_state)
     }
 }
 
@@ -635,31 +632,28 @@ pub mod test_util {
     use tendermint::block::Header;
 
     use crate::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
-    use crate::core::ics02_client::client_state::AnyClientState;
     use crate::core::ics02_client::height::Height;
     use crate::core::ics24_host::identifier::ChainId;
 
-    pub fn get_dummy_tendermint_client_state(tm_header: Header) -> AnyClientState {
-        AnyClientState::Tendermint(
-            ClientState::new(
-                ChainId::from(tm_header.chain_id.clone()),
-                Default::default(),
-                Duration::from_secs(64000),
-                Duration::from_secs(128000),
-                Duration::from_millis(3000),
-                Height::new(
-                    ChainId::chain_version(tm_header.chain_id.as_str()),
-                    u64::from(tm_header.height),
-                )
-                .unwrap(),
-                Default::default(),
-                vec!["".to_string()],
-                AllowUpdate {
-                    after_expiry: false,
-                    after_misbehaviour: false,
-                },
+    pub fn get_dummy_tendermint_client_state(tm_header: Header) -> ClientState {
+        ClientState::new(
+            ChainId::from(tm_header.chain_id.clone()),
+            Default::default(),
+            Duration::from_secs(64000),
+            Duration::from_secs(128000),
+            Duration::from_millis(3000),
+            Height::new(
+                ChainId::chain_version(tm_header.chain_id.as_str()),
+                u64::from(tm_header.height),
             )
             .unwrap(),
+            Default::default(),
+            vec!["".to_string()],
+            AllowUpdate {
+                after_expiry: false,
+                after_misbehaviour: false,
+            },
         )
+        .unwrap()
     }
 }
