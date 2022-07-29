@@ -34,6 +34,8 @@ use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets
 use crate::error::Error as RelayerError;
 use crate::spawn::SpawnError;
 
+use crate::telemetry;
+
 flex_error::define_error! {
     Error {
         Spawn
@@ -288,6 +290,8 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
 
         info!("scanning chain...");
 
+        telemetry!(init_per_chain, &chain_config.id);
+
         let chain = match self.registry.get_or_spawn(&chain_config.id) {
             Ok(chain_handle) => chain_handle,
             Err(e) => {
@@ -339,6 +343,15 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
                     counterparty_connection_state,
                     client,
                 }) => {
+                    let counterparty_chain_id = client.client_state.chain_id();
+                    init_telemetry(
+                        &chain.id(),
+                        &client.client_id,
+                        &counterparty_chain_id,
+                        &channel.channel_id,
+                        &port_id,
+                    );
+
                     let client_scan = scan
                         .clients
                         .entry(client.client_id.clone())
@@ -367,6 +380,14 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         info!("scanning all clients...");
 
         let clients = query_all_clients(chain)?;
+
+        /*
+        TODO : query all clients and connections and channels
+        
+        if self.config.telemetry.enabled {
+            // query channels for all clients
+        }
+        */
 
         for client in clients {
             if let Some(client_scan) = self.scan_client(chain, client)? {
@@ -643,14 +664,16 @@ fn scan_allowed_channel<Chain: ChainHandle>(
     info!(client = %client_id, "querying client...");
     let client = query_client(chain, client_id)?;
 
+    let counterparty_chain_id = client.client_state.chain_id();
+
     info!(
         client = %client_id,
-        counterparty_chain = %client.client_state.chain_id(),
+        counterparty_chain = %counterparty_chain_id,
         "found counterparty chain for client",
     );
 
     let counterparty_chain = registry
-        .get_or_spawn(&client.client_state.chain_id())
+        .get_or_spawn(&counterparty_chain_id)
         .map_err(Error::spawn)?;
 
     let counterparty_channel =
@@ -814,4 +837,22 @@ fn query_connection_channels<Chain: ChainHandle>(
             pagination: Some(PageRequest::all()),
         })
         .map_err(Error::query)
+}
+
+fn init_telemetry(
+    chain_id: &ChainId,
+    client: &ClientId,
+    counterparty_chain_id: &ChainId,
+    channel_id: &ChannelId,
+    port_id: &PortId,
+) {
+    telemetry!(init_per_client, &chain_id, &client);
+    telemetry!(init_per_channel, &chain_id, &channel_id, &port_id);
+    telemetry!(
+        init_per_path,
+        chain_id,
+        counterparty_chain_id,
+        &channel_id,
+        &port_id
+    )
 }

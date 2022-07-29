@@ -11,6 +11,10 @@ use opentelemetry_prometheus::PrometheusExporter;
 use prometheus::proto::MetricFamily;
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
+
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
+
 use tendermint::Time;
 
 use crate::path_identifier::PathIdentifier;
@@ -19,7 +23,41 @@ const EMPTY_BACKLOG_SYMBOL: u64 = 0;
 const BACKLOG_CAPACITY: usize = 1000;
 const BACKLOG_RESET_THRESHOLD: usize = 900;
 
-#[derive(Copy, Clone, Debug)]
+const QUERY_TYPES_CACHE: [&'static str; 4] = [
+    "query_latest_height",
+    "query_client_state",
+    "query_connection",
+    "query_channel",
+]; // TODO : use enum
+
+const QUERY_TYPES: [&'static str; 24] = [
+    "query_latest_height",
+    "query_blocks",
+    "query_txs",
+    "query_next_sequence_receive",
+    "query_unreceived_acknowledgements",
+    "query_packet_acknowledgements",
+    "query_unreceived_packets",
+    "query_packet_commitments",
+    "query_channel_client_state",
+    "query_channel",
+    "query_channels",
+    "query_connection_channels",
+    "query_connection",
+    "query_connections",
+    "query_client_connections",
+    "query_consensus_state",
+    "query_consensus_states",
+    "query_upgraded_consensus_state",
+    "query_client_state",
+    "query_clients",
+    "query_application_status",
+    "query_commitment_prefix",
+    "query_latest_height",
+    "query_staking_params",
+]; // TODO : use an enum instead of a string array
+
+#[derive(Copy, Clone, Debug, EnumIter)]
 pub enum WorkerType {
     Client,
     Connection,
@@ -134,6 +172,84 @@ impl TelemetryState {
         self.exporter.registry().gather()
     }
 
+    pub fn init_per_chain(&self, chain_id: &ChainId) {
+        let labels = &[KeyValue::new("chain", chain_id.to_string())];
+
+        self.ws_reconnect.add(0, labels);
+        self.ws_events.add(0, labels);
+        self.msg_num.add(0, labels);
+
+        // TODO : tx_latency
+        self.init_queries(chain_id);
+    }
+
+    pub fn init_per_channel(
+        &self,
+        src_chain: &ChainId,
+        src_channel: &ChannelId,
+        src_port: &PortId,
+    ) {
+        let labels = &[
+            KeyValue::new("src_chain", src_chain.to_string()),
+            KeyValue::new("src_channel", src_channel.to_string()),
+            KeyValue::new("src_port", src_port.to_string()),
+        ];
+
+        self.receive_packets.add(0, labels);
+        self.acknowledgment_packets.add(0, labels);
+        self.timeout_packets.add(0, labels);
+    }
+
+    pub fn init_per_path(
+        &self,
+        chain: &ChainId,
+        counterparty: &ChainId,
+        channel: &ChannelId,
+        port: &PortId,
+    ) {
+        let labels = &[
+            KeyValue::new("chain", chain.to_string()),
+            KeyValue::new("counterparty", counterparty.to_string()),
+            KeyValue::new("channel", channel.to_string()),
+            KeyValue::new("port", port.to_string()),
+        ];
+
+        self.send_packet_count.add(0, labels);
+        self.acknowledgement_count.add(0, labels);
+        self.cleared_send_packet_count.add(0, labels);
+        self.cleared_acknowledgment_count.add(0, labels);
+        self.backlog_oldest_sequence.record(0, labels);
+        self.backlog_oldest_timestamp.record(0, labels);
+        self.backlog_size.record(0, labels);
+    }
+
+    pub fn init_per_client(&self, chain_id: &ChainId, client: &ClientId) {
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("client", client.to_string()),
+        ];
+        self.ibc_client_updates.add(0, labels);
+        self.ibc_client_misbehaviours.add(0, labels);
+    }
+
+    fn init_queries(&self, chain_id: &ChainId) {
+        for query_type in QUERY_TYPES {
+            let labels = &[
+                KeyValue::new("chain", chain_id.to_string()),
+                KeyValue::new("query_type", query_type),
+            ];
+
+            self.queries.add(0, labels);
+        }
+        for query_type in QUERY_TYPES_CACHE {
+            let labels = &[
+                KeyValue::new("chain", chain_id.to_string()),
+                KeyValue::new("query_type", query_type),
+            ];
+            self.query_cache_hits.add(0, labels);
+        }
+    }
+
     /// Update the number of workers per object
     pub fn worker(&self, worker_type: WorkerType, count: i64) {
         let labels = &[KeyValue::new("type", worker_type.to_string())];
@@ -168,13 +284,13 @@ impl TelemetryState {
         src_port: &PortId,
         count: u64,
     ) {
-        let labels = &[
-            KeyValue::new("src_chain", src_chain.to_string()),
-            KeyValue::new("src_channel", src_channel.to_string()),
-            KeyValue::new("src_port", src_port.to_string()),
-        ];
-
         if count > 0 {
+            let labels = &[
+                KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("src_port", src_port.to_string()),
+            ];
+
             self.receive_packets.add(count, labels);
         }
     }
@@ -187,13 +303,13 @@ impl TelemetryState {
         src_port: &PortId,
         count: u64,
     ) {
-        let labels = &[
-            KeyValue::new("src_chain", src_chain.to_string()),
-            KeyValue::new("src_channel", src_channel.to_string()),
-            KeyValue::new("src_port", src_port.to_string()),
-        ];
-
         if count > 0 {
+            let labels = &[
+                KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("src_port", src_port.to_string()),
+            ];
+
             self.acknowledgment_packets.add(count, labels);
         }
     }
@@ -206,13 +322,12 @@ impl TelemetryState {
         src_port: &PortId,
         count: u64,
     ) {
-        let labels = &[
-            KeyValue::new("src_chain", src_chain.to_string()),
-            KeyValue::new("src_channel", src_channel.to_string()),
-            KeyValue::new("src_port", src_port.to_string()),
-        ];
-
         if count > 0 {
+            let labels = &[
+                KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("src_port", src_port.to_string()),
+            ];
             self.timeout_packets.add(count, labels);
         }
     }
@@ -579,7 +694,7 @@ impl Default for TelemetryState {
 
         let meter = global::meter("hermes");
 
-        Self {
+        let state = Self {
             exporter,
 
             workers: meter
@@ -702,6 +817,12 @@ impl Default for TelemetryState {
                 .u64_value_recorder("backlog_size")
                 .with_description("Total number of pending packets, per channel")
                 .init(),
+        };
+
+        for worker_type in WorkerType::iter() {
+            state.worker(worker_type, 0);
         }
+
+        state
     }
 }
