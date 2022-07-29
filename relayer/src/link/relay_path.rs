@@ -485,8 +485,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let span = span!(Level::DEBUG, "generate", id = %events.tracking_id());
         let _enter = span.enter();
 
-        let input = events.events();
-        let src_height = match input.get(0) {
+        let src_height = match events.events().first() {
             None => return Ok((None, None)),
             Some(ev) => ev.height(),
         };
@@ -514,12 +513,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             self.channel.connection_delay,
         );
 
-        for event in input {
-            trace!("processing event: {}", event);
-            let (dst_msg, src_msg) = match event {
-                IbcEvent::CloseInitChannel(_) => {
-                    (Some(self.build_chan_close_confirm_from_event(event)?), None)
-                }
+        for event in events.into_events() {
+            trace!("processing event: {}", event.as_ref());
+            let (dst_msg, src_msg) = match event.as_ref() {
+                IbcEvent::CloseInitChannel(_) => (
+                    Some(self.build_chan_close_confirm_from_event(&event)?),
+                    None,
+                ),
                 IbcEvent::TimeoutPacket(ref timeout_ev) => {
                     // When a timeout packet for an ordered channel is processed on-chain (src here)
                     // the chain closes the channel but no close init event is emitted, instead
@@ -531,7 +531,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                             .src_channel(QueryHeight::Specific(timeout_ev.height))?
                             .state_matches(&ChannelState::Closed)
                     {
-                        (Some(self.build_chan_close_confirm_from_event(event)?), None)
+                        (
+                            Some(self.build_chan_close_confirm_from_event(&event)?),
+                            None,
+                        )
                     } else {
                         (None, None)
                     }
@@ -565,7 +568,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
             // Collect messages to be sent to the destination chain (e.g., RecvPacket)
             if let Some(msg) = dst_msg {
-                debug!("{} from {}", msg.type_url, event);
+                debug!("{} from {}", msg.type_url, event.as_ref());
                 dst_od.batch.push(TransitMessage {
                     event: event.clone(),
                     msg,
@@ -577,7 +580,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 // For Ordered channels a single timeout event should be sent as this closes the channel.
                 // Otherwise a multi message transaction will fail.
                 if self.unordered_channel() || src_od.batch.is_empty() {
-                    debug!("{} from {}", msg.type_url, event);
+                    debug!("{} from {}", msg.type_url, event.as_ref());
                     src_od.batch.push(TransitMessage {
                         event: event.clone(),
                         msg,
@@ -1526,7 +1529,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             for gm in odata.batch.iter() {
                 let TransitMessage { event, .. } = gm;
 
-                match event {
+                match event.as_ref() {
                     IbcEvent::SendPacket(e) => {
                         // Catch any SendPacket event that timed-out
                         if self.send_packet_event_handled(e)? {

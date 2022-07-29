@@ -1,3 +1,4 @@
+use alloc::sync::Arc;
 use core::fmt;
 use core::iter;
 use std::time::{Duration, Instant};
@@ -40,14 +41,14 @@ impl fmt::Display for OperationalDataTarget {
 /// A set of [`IbcEvent`]s that have an associated
 /// tracking number to ensure better observability.
 pub struct TrackedEvents {
-    events: Vec<IbcEvent>,
+    events: Vec<Arc<IbcEvent>>,
     tracking_id: TrackingId,
 }
 
 impl TrackedEvents {
     pub fn new(events: Vec<IbcEvent>, tracking_id: TrackingId) -> Self {
         Self {
-            events,
+            events: events.into_iter().map(|ev| Arc::new(ev)).collect(),
             tracking_id,
         }
     }
@@ -56,8 +57,12 @@ impl TrackedEvents {
         self.events.is_empty()
     }
 
-    pub fn events(&self) -> &[IbcEvent] {
-        &self.events
+    pub fn events(&self) -> Vec<&IbcEvent> {
+        self.events.iter().map(|ev| ev.as_ref()).collect()
+    }
+
+    pub fn into_events(self) -> Vec<Arc<IbcEvent>> {
+        self.events
     }
 
     pub fn tracking_id(&self) -> TrackingId {
@@ -76,7 +81,7 @@ impl TrackedEvents {
 /// alongside the event which generated it.
 #[derive(Clone)]
 pub struct TransitMessage {
-    pub event: IbcEvent,
+    pub event: Arc<IbcEvent>,
     pub msg: Any,
 }
 
@@ -139,7 +144,7 @@ impl OperationalData {
 
     /// Transforms `self` into the list of events accompanied with the tracking ID.
     pub fn into_events(self) -> TrackedEvents {
-        let events = self.batch.into_iter().map(|gm| gm.event).collect();
+        let events = self.batch.into_iter().map(|gm| gm.event.clone()).collect();
 
         TrackedEvents {
             events,
