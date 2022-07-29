@@ -929,7 +929,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         };
 
         while *consensus_height >= dst_application_latest_height()? {
-            warn!("client consensus proof height too high, wait for destination chain to advance beyond {}", consensus_height);
+            warn!(
+                "client consensus proof height too high, \
+                 waiting for destination chain to advance beyond {}",
+                consensus_height
+            );
+
+            thread::sleep(Duration::from_millis(500));
 
             thread::sleep(Duration::from_millis(100));
         }
