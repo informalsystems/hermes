@@ -1,7 +1,5 @@
 use crate::prelude::*;
 
-use core::convert::Infallible;
-
 use serde::Serialize;
 use tendermint::{hash::Algorithm, time::Time, Hash};
 use tendermint_proto::google::protobuf as tpb;
@@ -11,8 +9,8 @@ use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensus
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
-use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_type::ClientType;
+use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics23_commitment::commitment::CommitmentRoot;
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -33,8 +31,6 @@ impl ConsensusState {
 }
 
 impl crate::core::ics02_client::client_consensus::ConsensusState for ConsensusState {
-    type Error = Infallible;
-
     fn client_type(&self) -> ClientType {
         ClientType::Tendermint
     }
@@ -43,8 +39,8 @@ impl crate::core::ics02_client::client_consensus::ConsensusState for ConsensusSt
         &self.root
     }
 
-    fn wrap_any(self) -> AnyConsensusState {
-        AnyConsensusState::Tendermint(self)
+    fn encode_vec(&self) -> Result<Vec<u8>, Ics02Error> {
+        Protobuf::encode_vec(self).map_err(Ics02Error::invalid_any_consensus_state)
     }
 }
 

@@ -19,11 +19,8 @@ use ibc::{
     },
     core::{
         ics02_client::{
-            client_state::AnyClientState,
-            client_type::ClientType,
-            events::UpdateClient,
-            header::{AnyHeader, Header},
-            misbehaviour::{Misbehaviour, MisbehaviourEvidence},
+            client_state::AnyClientState, client_type::ClientType, events::UpdateClient,
+            header::AnyHeader, misbehaviour::MisbehaviourEvidence,
         },
         ics24_host::identifier::ChainId,
     },
@@ -153,11 +150,11 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
                 header1: update_header,
                 header2: witness,
             }
-            .wrap_any();
+            .into();
 
             Ok(Some(MisbehaviourEvidence {
                 misbehaviour,
-                supporting_headers: supporting.into_iter().map(TmHeader::wrap_any).collect(),
+                supporting_headers: supporting.into_iter().map(Into::into).collect(),
             }))
         } else {
             Ok(None)

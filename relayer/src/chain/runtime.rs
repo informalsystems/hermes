@@ -8,10 +8,10 @@ use tracing::error;
 use ibc::{
     core::{
         ics02_client::{
-            client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState},
-            client_state::{AnyClientState, ClientState, IdentifiedAnyClientState},
+            client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
+            client_state::{AnyClientState, IdentifiedAnyClientState},
             events::UpdateClient,
-            header::{AnyHeader, Header},
+            header::AnyHeader,
             misbehaviour::MisbehaviourEvidence,
         },
         ics03_connection::{
@@ -538,8 +538,8 @@ where
                 &mut self.light_client,
             )
             .map(|(header, support)| {
-                let header = header.wrap_any();
-                let support = support.into_iter().map(|h| h.wrap_any()).collect();
+                let header = header.into();
+                let support = support.into_iter().map(|h| h.into()).collect();
                 (header, support)
             });
 
@@ -556,7 +556,7 @@ where
         let client_state = self
             .chain
             .build_client_state(height, settings)
-            .map(|cs| cs.wrap_any());
+            .map(|cs| cs.into());
 
         reply_to.send(client_state).map_err(Error::send)
     }
@@ -574,7 +574,7 @@ where
         let consensus_state = self
             .chain
             .build_consensus_state(verified.target)
-            .map(|cs| cs.wrap_any());
+            .map(|cs| cs.into());
 
         reply_to.send(consensus_state).map_err(Error::send)
     }
@@ -608,8 +608,7 @@ where
             height,
         );
 
-        let result = result
-            .map(|(opt_client_state, proofs)| (opt_client_state.map(|cs| cs.wrap_any()), proofs));
+        let result = result.map(|(opt_client_state, proofs)| (opt_client_state, proofs));
 
         reply_to.send(result).map_err(Error::send)
     }
@@ -638,10 +637,7 @@ where
         include_proof: IncludeProof,
         reply_to: ReplyTo<(AnyClientState, Option<MerkleProof>)>,
     ) -> Result<(), Error> {
-        let res = self
-            .chain
-            .query_client_state(request, include_proof)
-            .map(|(cs, proof)| (cs.wrap_any(), proof));
+        let res = self.chain.query_client_state(request, include_proof);
 
         reply_to.send(res).map_err(Error::send)
     }
@@ -651,10 +647,7 @@ where
         request: QueryUpgradedClientStateRequest,
         reply_to: ReplyTo<(AnyClientState, MerkleProof)>,
     ) -> Result<(), Error> {
-        let result = self
-            .chain
-            .query_upgraded_client_state(request)
-            .map(|(cl, proof)| (cl.wrap_any(), proof));
+        let result = self.chain.query_upgraded_client_state(request);
 
         reply_to.send(result).map_err(Error::send)
     }
@@ -684,10 +677,7 @@ where
         request: QueryUpgradedConsensusStateRequest,
         reply_to: ReplyTo<(AnyConsensusState, MerkleProof)>,
     ) -> Result<(), Error> {
-        let result = self
-            .chain
-            .query_upgraded_consensus_state(request)
-            .map(|(cs, proof)| (cs.wrap_any(), proof));
+        let result = self.chain.query_upgraded_consensus_state(request);
 
         reply_to.send(result).map_err(Error::send)
     }
@@ -897,7 +887,7 @@ where
         let result = self
             .chain
             .query_host_consensus_state(request)
-            .map(|h| h.wrap_any());
+            .map(|h| h.into());
 
         reply_to.send(result).map_err(Error::send)?;
 

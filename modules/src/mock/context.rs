@@ -209,7 +209,7 @@ impl MockContext {
 
                 let consensus_state = AnyConsensusState::from(light_block.clone());
                 let client_state =
-                    get_dummy_tendermint_client_state(light_block.signed_header.header);
+                    get_dummy_tendermint_client_state(light_block.signed_header.header).into();
 
                 // Return the tuple.
                 (Some(client_state), consensus_state)
@@ -261,7 +261,7 @@ impl MockContext {
 
                 let consensus_state = AnyConsensusState::from(light_block.clone());
                 let client_state =
-                    get_dummy_tendermint_client_state(light_block.signed_header.header);
+                    get_dummy_tendermint_client_state(light_block.signed_header.header).into();
 
                 // Return the tuple.
                 (Some(client_state), consensus_state)

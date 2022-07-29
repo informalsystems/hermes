@@ -369,7 +369,6 @@ impl From<UpgradeClient> for AbciEvent {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::ics02_client::header::Header;
     use crate::mock::header::MockHeader;
 
     #[test]
@@ -389,8 +388,8 @@ mod tests {
         let upgrade_client = UpgradeClient::from(attributes.clone());
         abci_events.push(AbciEvent::from(upgrade_client.clone()));
         let mut update_client = UpdateClient::from(attributes);
-        let header = MockHeader::new(height).wrap_any();
-        update_client.header = Some(header);
+        let header = MockHeader::new(height);
+        update_client.header = Some(header.into());
         abci_events.push(AbciEvent::from(update_client.clone()));
 
         for event in abci_events {

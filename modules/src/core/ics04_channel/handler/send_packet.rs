@@ -94,7 +94,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
     });
 
     output.emit(IbcEvent::SendPacket(SendPacket {
-        height: ctx.host_height(),
+        height: ChannelReader::host_height(ctx),
         packet,
     }));
 

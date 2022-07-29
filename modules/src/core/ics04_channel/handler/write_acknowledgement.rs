@@ -1,5 +1,6 @@
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::commitment::AcknowledgementCommitment;
+use crate::core::ics04_channel::context::ChannelReaderLightClient;
 use crate::core::ics04_channel::events::WriteAcknowledgement;
 use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement;
 use crate::core::ics04_channel::packet::{Packet, PacketResult, Sequence};
@@ -19,8 +20,8 @@ pub struct WriteAckPacketResult {
     pub ack_commitment: AcknowledgementCommitment,
 }
 
-pub fn process(
-    ctx: &dyn ChannelReader,
+pub fn process<Ctx: ChannelReader + ChannelReaderLightClient>(
+    ctx: &Ctx,
     packet: Packet,
     ack: Acknowledgement,
 ) -> HandlerResult<PacketResult, Error> {
@@ -66,7 +67,7 @@ pub fn process(
     output.log("success: packet write acknowledgement");
 
     output.emit(IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
-        height: ctx.host_height(),
+        height: ChannelReader::host_height(ctx),
         packet,
         ack: ack.into(),
     }));

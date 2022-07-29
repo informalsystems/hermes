@@ -1,5 +1,6 @@
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order};
+use crate::core::ics04_channel::context::ChannelReaderLightClient;
 use crate::core::ics04_channel::events::TimeoutOnClosePacket;
 use crate::core::ics04_channel::handler::verify::verify_channel_proofs;
 use crate::core::ics04_channel::handler::verify::{
@@ -14,8 +15,8 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub fn process(
-    ctx: &dyn ChannelReader,
+pub fn process<Ctx: ChannelReader + ChannelReaderLightClient>(
+    ctx: &Ctx,
     msg: &MsgTimeoutOnClose,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
@@ -126,7 +127,7 @@ pub fn process(
     output.log("success: packet timeout ");
 
     output.emit(IbcEvent::TimeoutOnClosePacket(TimeoutOnClosePacket {
-        height: ctx.host_height(),
+        height: ChannelReader::host_height(ctx),
         packet: packet.clone(),
     }));
 

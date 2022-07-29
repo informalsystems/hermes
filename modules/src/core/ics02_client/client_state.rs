@@ -8,6 +8,7 @@ use tendermint_proto::Protobuf;
 use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
 
 use crate::clients::ics07_tendermint::client_state;
+use crate::clients::ics07_tendermint::client_state::ClientState as TmClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
@@ -21,7 +22,7 @@ use crate::Height;
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
 
-pub trait ClientState: Clone + core::fmt::Debug + Send + Sync {
+pub trait ClientState: core::fmt::Debug + Send + Sync {
     /// Client-specific options for upgrading the client
     type UpgradeOptions;
 
@@ -47,14 +48,13 @@ pub trait ClientState: Clone + core::fmt::Debug + Send + Sync {
     /// Resets all fields except the blockchain-specific ones,
     /// and updates the given fields.
     fn upgrade(
-        self,
+        &mut self,
         upgrade_height: Height,
         upgrade_options: Self::UpgradeOptions,
         chain_id: ChainId,
-    ) -> Self;
+    );
 
-    /// Wrap into an `AnyClientState`
-    fn wrap_any(self) -> AnyClientState;
+    fn encode_vec(&self) -> Result<Vec<u8>, Error>;
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -182,15 +182,13 @@ impl From<AnyClientState> for Any {
         match value {
             AnyClientState::Tendermint(value) => Any {
                 type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
-                value: value
-                    .encode_vec()
+                value: ClientState::encode_vec(&value)
                     .expect("encoding to `Any` from `AnyClientState::Tendermint`"),
             },
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(value) => Any {
                 type_url: MOCK_CLIENT_STATE_TYPE_URL.to_string(),
-                value: value
-                    .encode_vec()
+                value: ClientState::encode_vec(&value)
                     .expect("encoding to `Any` from `AnyClientState::Mock`"),
             },
         }
@@ -222,25 +220,36 @@ impl ClientState for AnyClientState {
     }
 
     fn upgrade(
-        self,
+        &mut self,
         upgrade_height: Height,
         upgrade_options: Self::UpgradeOptions,
         chain_id: ChainId,
-    ) -> Self {
+    ) {
         match self {
-            AnyClientState::Tendermint(tm_state) => tm_state
-                .upgrade(upgrade_height, upgrade_options.into_tendermint(), chain_id)
-                .wrap_any(),
+            AnyClientState::Tendermint(tm_state) => {
+                tm_state.upgrade(upgrade_height, upgrade_options.into_tendermint(), chain_id)
+            }
 
             #[cfg(any(test, feature = "mocks"))]
-            AnyClientState::Mock(mock_state) => {
-                mock_state.upgrade(upgrade_height, (), chain_id).wrap_any()
-            }
+            AnyClientState::Mock(mock_state) => mock_state.upgrade(upgrade_height, (), chain_id),
         }
     }
 
-    fn wrap_any(self) -> AnyClientState {
-        self
+    fn encode_vec(&self) -> Result<Vec<u8>, Error> {
+        Protobuf::encode_vec(self).map_err(Error::invalid_any_client_state)
+    }
+}
+
+impl From<TmClientState> for AnyClientState {
+    fn from(cs: TmClientState) -> Self {
+        Self::Tendermint(cs)
+    }
+}
+
+#[cfg(any(test, feature = "mocks"))]
+impl From<MockClientState> for AnyClientState {
+    fn from(cs: MockClientState) -> Self {
+        Self::Mock(cs)
     }
 }
 
@@ -299,7 +308,8 @@ mod tests {
 
     #[test]
     fn any_client_state_serialization() {
-        let tm_client_state = get_dummy_tendermint_client_state(get_dummy_tendermint_header());
+        let tm_client_state: AnyClientState =
+            get_dummy_tendermint_client_state(get_dummy_tendermint_header()).into();
 
         let raw: Any = tm_client_state.clone().into();
         let tm_client_state_back = AnyClientState::try_from(raw).unwrap();

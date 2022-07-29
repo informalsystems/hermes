@@ -2,10 +2,12 @@
 //! that any host chain must implement to be able to process any `ClientMsg`. See
 //! "ADR 003: IBC protocol implementation" for more details.
 
-use crate::core::ics02_client::client_consensus::AnyConsensusState;
+use alloc::boxed::Box;
+
+use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::error::{Error, ErrorDetail};
+use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::handler::ClientResult::{self, Create, Update, Upgrade};
 use crate::core::ics24_host::identifier::ClientId;
 use crate::timestamp::Timestamp;
@@ -25,22 +27,6 @@ pub trait ClientReader {
         client_id: &ClientId,
         height: Height,
     ) -> Result<AnyConsensusState, Error>;
-
-    /// Similar to `consensus_state`, attempt to retrieve the consensus state,
-    /// but return `None` if no state exists at the given height.
-    fn maybe_consensus_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<Option<AnyConsensusState>, Error> {
-        match self.consensus_state(client_id, height) {
-            Ok(cs) => Ok(Some(cs)),
-            Err(e) => match e.detail() {
-                ErrorDetail::ConsensusStateNotFound(_) => Ok(None),
-                _ => Err(e),
-            },
-        }
-    }
 
     /// Search for the lowest consensus state higher than `height`.
     fn next_consensus_state(
@@ -76,6 +62,68 @@ pub trait ClientReader {
     /// Returns a natural number, counting how many clients have been created thus far.
     /// The value of this counter should increase only via method `ClientKeeper::increase_client_counter`.
     fn client_counter(&self) -> Result<u64, Error>;
+}
+
+/// Defines a subset of the `ClientReader`'s methods that a light-client implementation can access.
+/// A blanket implementation of this trait is provided for all types that implement `ClientReader`.
+///
+/// Note: This trait is not a supertrait of `ClientReader` because it uses trait objects and cannot
+/// depend on `AnyClientState` and `AnyConsensusState` due to a circular dependency problem.
+pub trait ClientReaderLightClient {
+    fn consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<Box<dyn ConsensusState>, Error>;
+
+    /// Search for the lowest consensus state higher than `height`.
+    fn next_consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<Option<Box<dyn ConsensusState>>, Error>;
+
+    /// Search for the highest consensus state lower than `height`.
+    fn prev_consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<Option<Box<dyn ConsensusState>>, Error>;
+
+    /// Returns the current timestamp of the local chain.
+    fn host_timestamp(&self) -> Timestamp;
+}
+
+impl<T: ClientReader> ClientReaderLightClient for T {
+    fn consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<Box<dyn ConsensusState>, Error> {
+        ClientReader::consensus_state(self, client_id, height).map(|cs| cs.boxed_dyn())
+    }
+
+    fn next_consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<Option<Box<dyn ConsensusState>>, Error> {
+        ClientReader::next_consensus_state(self, client_id, height)
+            .map(|cs| cs.map(AnyConsensusState::boxed_dyn))
+    }
+
+    fn prev_consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<Option<Box<dyn ConsensusState>>, Error> {
+        ClientReader::prev_consensus_state(self, client_id, height)
+            .map(|cs| cs.map(AnyConsensusState::boxed_dyn))
+    }
+
+    fn host_timestamp(&self) -> Timestamp {
+        ClientReader::host_timestamp(self)
+    }
 }
 
 /// Defines the write-only part of ICS2 (client functions) context.
