@@ -930,8 +930,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         while *consensus_height >= dst_application_latest_height()? {
             warn!("client consensus proof height too high, wait for destination chain to advance beyond {}", consensus_height);
+
             thread::sleep(Duration::from_millis(100));
         }
+
         Ok(())
     }
 
@@ -1043,11 +1045,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         };
 
         msgs.push(new_msg.to_any());
-        // wait for the height of the application on the destination chain to be higher than
+
+        // Wait for the height of the application on the destination chain to be higher than
         // the height of the consensus state included in the proofs.
         self.wait_for_dest_app_height_higher_than_consensus_proof_height(
             &src_client_target_height,
         )?;
+
         Ok(msgs)
     }
 
@@ -1155,7 +1159,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         msgs.push(new_msg.to_any());
 
-        // wait for the height of the application on the destination chain to be higher than
+        // Wait for the height of the application on the destination chain to be higher than
         // the height of the consensus state included in the proofs.
         self.wait_for_dest_app_height_higher_than_consensus_proof_height(
             &src_client_target_height,
