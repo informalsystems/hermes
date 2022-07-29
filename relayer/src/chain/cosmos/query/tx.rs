@@ -8,7 +8,7 @@ use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tendermint_rpc::{Client, HttpClient, Order, Url};
 
 use crate::chain::cosmos::query::{header_query, packet_query, tx_hash_query};
-use crate::chain::cosmos::types::events::{channel_events, client_events, from_tx_response_event};
+use crate::chain::cosmos::types::events;
 use crate::chain::requests::{
     QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest, QueryTxHash, QueryTxRequest,
 };
@@ -159,7 +159,7 @@ fn update_client_from_tx_search_response(
         .events
         .into_iter()
         .filter(|event| event.type_str == request.event_id.as_str())
-        .flat_map(|event| client_events::try_from_tx(&event))
+        .flat_map(|event| events::client::try_from_tx(&event))
         .flat_map(|event| match event {
             IbcEvent::UpdateClient(mut update) => {
                 update.common.height = height;
@@ -224,7 +224,7 @@ fn filter_matching_event(
         return None;
     }
 
-    let ibc_event = channel_events::try_from_tx(&event)?;
+    let ibc_event = events::channel::try_from_tx(&event)?;
     match ibc_event {
         IbcEvent::SendPacket(ref send_ev) if matches_packet(request, seq, &send_ev.packet) => {
             Some(ibc_event)
@@ -275,7 +275,7 @@ fn all_ibc_events_from_tx_search_response(
         let result = deliver_tx_result
             .events
             .iter()
-            .flat_map(|event| from_tx_response_event(height, event).into_iter())
+            .flat_map(|event| events::from_tx_response_event(height, event).into_iter())
             .collect::<Vec<_>>();
 
         result
