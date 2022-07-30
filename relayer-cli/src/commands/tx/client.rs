@@ -527,9 +527,8 @@ impl OutputBuffer {
             match outer_result {
                 Ok(inner_results) => {
                     for inner_result in inner_results {
-                        match inner_result {
-                            Err(_) => return Err(self),
-                            _ => {}
+                        if inner_result.is_err() {
+                            return Err(self);
                         }
                     }
                 }
@@ -540,16 +539,12 @@ impl OutputBuffer {
         // At this point, we know we won't error.
         let mut all_events = vec![];
         for outer_result in self.0 {
-            match outer_result {
-                Ok(inner_results) => {
-                    for inner_result in inner_results {
-                        match inner_result {
-                            Ok(events) => all_events.push(events),
-                            Err(_) => {}
-                        }
+            if let Ok(inner_results) = outer_result {
+                for inner_result in inner_results {
+                    if let Ok(events) = inner_result {
+                        all_events.push(events)
                     }
                 }
-                Err(_) => {}
             }
         }
 

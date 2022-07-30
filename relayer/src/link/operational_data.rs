@@ -48,7 +48,7 @@ pub struct TrackedEvents {
 impl TrackedEvents {
     pub fn new(events: Vec<IbcEvent>, tracking_id: TrackingId) -> Self {
         Self {
-            events: events.into_iter().map(|ev| Arc::new(ev)).collect(),
+            events: events.into_iter().map(Arc::new).collect(),
             tracking_id,
         }
     }
@@ -151,7 +151,7 @@ impl OperationalData {
 
     /// Transforms `self` into the list of events accompanied with the tracking ID.
     pub fn into_events(self) -> TrackedEvents {
-        let events = self.batch.into_iter().map(|gm| gm.event.clone()).collect();
+        let events = self.batch.into_iter().map(|gm| gm.event).collect();
 
         TrackedEvents {
             events,

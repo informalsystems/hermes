@@ -67,7 +67,7 @@ pub fn init_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     let channel_id = extract_channel_id(&event)?.clone();
 
-    let channel2 = Channel::restore_from_event(handle_b.clone(), handle_a.clone(), event)?;
+    let channel2 = Channel::restore_from_event(handle_b.clone(), handle_a.clone(), &event)?;
 
     Ok((DualTagged::new(channel_id), channel2))
 }

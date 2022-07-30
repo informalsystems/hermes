@@ -42,10 +42,7 @@ impl Runnable for MisbehaviourCmd {
 
         let res = monitor_misbehaviour(&self.chain_id, &self.client_id, &config);
         match res {
-            Ok(some_event) => match some_event {
-                Some(event) => Output::success(event.as_ref()).exit(),
-                None => todo!(),
-            },
+            Ok(some_event) => Output::success(some_event).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
