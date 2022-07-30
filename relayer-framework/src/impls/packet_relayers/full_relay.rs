@@ -29,22 +29,18 @@ where
         context: &Context,
         packet: &Packet<Context>,
     ) -> Result<(), Context::Error> {
-        let source_height = context.source_chain().query_chain_status().await?.height();
+        let source_status = context.source_chain().query_chain_status().await?;
 
         let write_ack = self
             .receive_relayer
-            .relay_receive_packet(context, &source_height, packet)
+            .relay_receive_packet(context, source_status.height(), packet)
             .await?;
 
         if let Some(ack) = write_ack {
-            let destination_height = context
-                .destination_chain()
-                .query_chain_status()
-                .await?
-                .height();
+            let destination_status = context.destination_chain().query_chain_status().await?;
 
             self.ack_relayer
-                .relay_ack_packet(context, &destination_height, packet, &ack)
+                .relay_ack_packet(context, destination_status.height(), packet, &ack)
                 .await?;
         }
 

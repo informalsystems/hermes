@@ -39,9 +39,10 @@ where
         let chain = Target::counterparty_chain(context);
 
         loop {
-            let current_height = chain.query_chain_status().await?.height();
+            let current_status = chain.query_chain_status().await?;
+            let current_height = current_status.height();
 
-            if &current_height > height {
+            if current_height > height {
                 return InUpdateClient::build_update_client_messages(context, height).await;
             } else {
                 CounterpartyChain::sleep(Duration::from_millis(100)).await;

@@ -2,12 +2,12 @@ use async_trait::async_trait;
 
 use crate::std_prelude::*;
 use crate::traits::chain_context::ChainContext;
-use crate::types::aliases::{Height, Timestamp};
+use crate::traits::core::Async;
 
-pub trait ChainStatus<Context: ChainContext> {
-    fn height(&self) -> Height<Context>;
+pub trait ChainStatus<Context: ChainContext>: Async {
+    fn height(&self) -> &Context::Height;
 
-    fn timestamp(&self) -> Timestamp<Context>;
+    fn timestamp(&self) -> &Context::Timestamp;
 }
 
 pub trait ChainStatusContext: ChainContext {

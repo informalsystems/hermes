@@ -17,16 +17,16 @@ impl<Chain> ChainStatus<CosmosChainContext<Chain>> for CosmosChainStatus
 where
     Chain: Async,
 {
-    fn height(&self) -> Height {
-        self.height
+    fn height(&self) -> &Height {
+        &self.height
     }
 
-    fn timestamp(&self) -> Timestamp {
-        self.timestamp
+    fn timestamp(&self) -> &Timestamp {
+        &self.timestamp
     }
 }
 
-impl<Chain: ChainHandle> ChainStatusContext for CosmosChainContext<Chain> {
+impl<Chain: Async> ChainStatusContext for CosmosChainContext<Chain> {
     type ChainStatus = CosmosChainStatus;
 }
 

@@ -28,3 +28,4 @@
 
 - [Relayer Architecture](./03-relayer-architecture.md)
   - [Chain Context](./03-relayer-architecture/01-chain-context.md)
+  - [Chain Status Component](./03-relayer-architecture/02-chain-status.md)
