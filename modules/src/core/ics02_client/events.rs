@@ -28,7 +28,7 @@ pub const HEADER_ATTRIBUTE_KEY: &str = "header";
 
 /// NewBlock event signals the committing & execution of a new block.
 // TODO - find a better place for NewBlock
-#[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, Copy, PartialEq, Eq)]
 pub struct NewBlock {
     pub height: Height,
 }
@@ -111,7 +111,7 @@ impl core::fmt::Display for Attributes {
 }
 
 /// CreateClient event signals the creation of a new on-chain client (IBC client).
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct CreateClient(pub Attributes);
 
 impl CreateClient {
@@ -155,7 +155,7 @@ impl core::fmt::Display for CreateClient {
 }
 
 /// UpdateClient event signals a recent update of an on-chain client (IBC Client).
-#[derive(Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Serialize, Clone, PartialEq, Eq)]
 pub struct UpdateClient {
     pub common: Attributes,
     pub header: Option<AnyHeader>,
@@ -229,7 +229,7 @@ impl core::fmt::Debug for UpdateClient {
 
 /// ClientMisbehaviour event signals the update of an on-chain client (IBC Client) with evidence of
 /// misbehaviour.
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct ClientMisbehaviour(pub Attributes);
 
 impl ClientMisbehaviour {
@@ -267,7 +267,7 @@ impl From<ClientMisbehaviour> for AbciEvent {
 }
 
 /// Signals a recent upgrade of an on-chain client (IBC Client).
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub struct UpgradeClient(pub Attributes);
 
 impl UpgradeClient {
