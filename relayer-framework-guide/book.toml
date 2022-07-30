@@ -2,7 +2,7 @@
 authors = ["Soares Chen"]
 language = "en"
 multilingual = false
-src = "src"
+src = "docs"
 title = "IBC Relayer Framework Guide (DRAFT)"
 
 [rust]

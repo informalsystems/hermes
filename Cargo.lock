@@ -1603,6 +1603,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ibc-relayer-framework-guide"
+version = "0.17.0"
+dependencies = [
+ "async-trait",
+ "ibc",
+ "ibc-relayer",
+ "ibc-relayer-cosmos",
+ "ibc-relayer-framework",
+]
+
+[[package]]
 name = "ibc-relayer-rest"
 version = "0.17.0"
 dependencies = [
