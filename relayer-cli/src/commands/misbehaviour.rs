@@ -1,5 +1,6 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
+use alloc::sync::Arc;
 use ibc::core::ics02_client::events::UpdateClient;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::events::IbcEvent;
@@ -41,7 +42,10 @@ impl Runnable for MisbehaviourCmd {
 
         let res = monitor_misbehaviour(&self.chain_id, &self.client_id, &config);
         match res {
-            Ok(some_event) => Output::success(some_event).exit(),
+            Ok(some_event) => match some_event {
+                Some(event) => Output::success(event.as_ref()).exit(),
+                None => todo!(),
+            },
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
@@ -51,7 +55,7 @@ pub fn monitor_misbehaviour(
     chain_id: &ChainId,
     client_id: &ClientId,
     config: &Config,
-) -> Result<Option<IbcEvent>, Box<dyn std::error::Error>> {
+) -> Result<Option<Arc<IbcEvent>>, Box<dyn std::error::Error>> {
     let chain = spawn_chain_runtime(config, chain_id)
         .map_err(|e| format!("could not spawn the chain runtime for {}: {}", chain_id, e))?;
 
@@ -128,7 +132,7 @@ fn misbehaviour_handling<Chain: ChainHandle>(
         })?;
 
     let client = ForeignClient::restore(client_id, chain, counterparty_chain);
-    let result = client.detect_misbehaviour_and_submit_evidence(update.map(|client| &client));
+    let result = client.detect_misbehaviour_and_submit_evidence((&update).as_ref());
     if let MisbehaviourResults::EvidenceSubmitted(events) = result {
         info!("evidence submission result {:?}", events);
     }

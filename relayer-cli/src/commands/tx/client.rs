@@ -522,32 +522,38 @@ impl fmt::Display for OutputBuffer {
 
 impl OutputBuffer {
     fn into_result(self) -> Result<Vec<Vec<IbcEvent>>, Self> {
+        // Note: This needs a refactor. Returning `Self` as the `Error` forced me to create this duplicate loop.
+        for outer_result in &self.0 {
+            match outer_result {
+                Ok(inner_results) => {
+                    for inner_result in inner_results {
+                        match inner_result {
+                            Err(_) => return Err(self),
+                            _ => {}
+                        }
+                    }
+                }
+                Err(_) => return Err(self),
+            }
+        }
+
+        // At this point, we know we won't error.
         let mut all_events = vec![];
-        let mut has_err = false;
-        'outer: for outer_result in self.0 {
+        for outer_result in self.0 {
             match outer_result {
                 Ok(inner_results) => {
                     for inner_result in inner_results {
                         match inner_result {
                             Ok(events) => all_events.push(events),
-                            Err(_) => {
-                                has_err = true;
-                                break 'outer;
-                            }
+                            Err(_) => {}
                         }
                     }
                 }
-                Err(_) => {
-                    has_err = true;
-                    break 'outer;
-                }
+                Err(_) => {}
             }
         }
-        if has_err {
-            Err(self)
-        } else {
-            Ok(all_events)
-        }
+
+        Ok(all_events)
     }
 }
 
