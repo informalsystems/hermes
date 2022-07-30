@@ -130,8 +130,8 @@ where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
 {
-    type IbcMessageSender =
-        BatchedMessageSender<SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>>;
+    type IbcMessageSender = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
+    // BatchedMessageSender<SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>>;
 }
 
 impl<SrcChain, DstChain> IbcMessageSenderContext<DestinationTarget>
@@ -140,8 +140,8 @@ where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
 {
-    type IbcMessageSender =
-        BatchedMessageSender<SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>>;
+    type IbcMessageSender = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
+    // BatchedMessageSender<SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>>;
 }
 
 #[async_trait]
