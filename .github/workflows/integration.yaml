@@ -97,7 +97,7 @@ jobs:
         run: |
           nix shell .#python .#${{ matrix.chain.package }} -c cargo \
             test -p ibc-integration-test --no-fail-fast -- \
-            --nocapture --test-threads=2
+            --nocapture --test-threads=1
 
   ordered-channel-test:
     runs-on: ubuntu-latest
