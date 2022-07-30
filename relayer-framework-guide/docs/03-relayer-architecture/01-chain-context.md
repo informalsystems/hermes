@@ -93,7 +93,7 @@ use tendermint::abci::responses::Event;
 # use ibc_relayer_framework::traits::core::ErrorContext;
 # use ibc_relayer_framework::traits::chain_context::ChainContext;
 
-struct Error { /* ... */}
+struct Error { /* ... */ }
 
 struct CosmosChainContext<Handle> {
     handle: Handle,

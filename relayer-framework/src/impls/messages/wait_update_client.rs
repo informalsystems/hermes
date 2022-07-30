@@ -7,7 +7,7 @@ use crate::std_prelude::*;
 use crate::traits::chain_context::IbcChainContext;
 use crate::traits::core::Async;
 use crate::traits::messages::update_client::UpdateClientMessageBuilder;
-use crate::traits::queries::status::{ChainStatus, ChainStatusQuerier};
+use crate::traits::queries::status::{ChainStatus, ChainStatusQuerierContext};
 use crate::traits::relay_context::RelayContext;
 use crate::traits::sleep::SleepContext;
 use crate::traits::target::ChainTarget;
@@ -28,7 +28,7 @@ where
     InUpdateClient: UpdateClientMessageBuilder<Relay, Target>,
     CounterpartyChain: IbcChainContext<TargetChain, Height = Height, Error = Error>,
     TargetChain: IbcChainContext<CounterpartyChain>,
-    CounterpartyChain: ChainStatusQuerier,
+    CounterpartyChain: ChainStatusQuerierContext,
     CounterpartyChain: SleepContext,
     Height: Ord + Async,
 {

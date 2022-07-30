@@ -67,5 +67,5 @@ pub mod c02_context_generic_programming {
 #[doc = include_str!("../docs/03-relayer-architecture.md")]
 pub mod c03_relayer_architecture {
     #[doc = include_str!("../docs/03-relayer-architecture/01-chain-context.md")]
-    pub mod chain_context {}
+    pub mod c01_chain_context {}
 }
