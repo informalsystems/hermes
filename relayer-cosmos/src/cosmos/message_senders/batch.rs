@@ -3,7 +3,7 @@ use alloc::sync::Arc;
 use async_trait::async_trait;
 use core::marker::PhantomData;
 use core::time::Duration;
-use ibc_relayer_framework::traits::chain_context::{ChainContext, IbcChainContext};
+use ibc_relayer_framework::traits::chain_context::IbcChainContext;
 use ibc_relayer_framework::traits::core::Async;
 use ibc_relayer_framework::traits::ibc_message_sender::IbcMessageSender;
 use ibc_relayer_framework::traits::message::Message as ChainMessage;
@@ -41,21 +41,22 @@ pub struct ChannelClosedError;
 
 pub struct BatchedMessageSender<Sender>(PhantomData<Sender>);
 
-pub struct MessageBatch<Chain, Counterparty>
+pub struct MessageBatch<Relay, Target>
 where
-    Chain: IbcChainContext<Counterparty>,
-    Counterparty: ChainContext,
+    Relay: RelayContext,
+    Target: ChainTarget<Relay>,
 {
-    messages: Vec<IbcMessage<Chain, Counterparty>>,
-    result_sender: OnceSender<Result<Vec<Vec<IbcEvent<Chain, Counterparty>>>, Chain::Error>>,
+    messages: Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
+    result_sender: OnceSender<
+        Result<Vec<Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>>, Relay::Error>,
+    >,
 }
 
 pub trait BatchMessageContext<Target>: RelayContext
 where
     Target: ChainTarget<Self>,
 {
-    fn message_sink(&self)
-        -> &Sender<MessageBatch<Target::TargetChain, Target::CounterpartyChain>>;
+    fn message_sink(&self) -> &Sender<MessageBatch<Self, Target>>;
 }
 
 pub trait BatchError {
@@ -109,7 +110,7 @@ impl<Sender> BatchedMessageSender<Sender> {
         context: Arc<Relay>,
         config: BatchConfig,
         runtime: &Runtime,
-        receiver: Receiver<MessageBatch<Target::TargetChain, Target::CounterpartyChain>>,
+        receiver: Receiver<MessageBatch<Relay, Target>>,
     ) where
         Relay: RelayContext,
         Target: ChainTarget<Relay>,
@@ -135,7 +136,7 @@ impl<Sender> BatchedMessageSender<Sender> {
         max_tx_size: usize,
         max_delay: Duration,
         sleep_time: Duration,
-        mut receiver: Receiver<MessageBatch<Target::TargetChain, Target::CounterpartyChain>>,
+        mut receiver: Receiver<MessageBatch<Relay, Target>>,
     ) where
         Relay::Error: BatchError,
         Relay: RelayContext,
@@ -150,8 +151,11 @@ impl<Sender> BatchedMessageSender<Sender> {
                 Ok(batch) => {
                     pending_batches.push_back(batch);
                     let current_batch_size = pending_batches.len();
+                    let now = Instant::now();
+
                     pending_batches = Self::process_message_batches(
                         context,
+                        now,
                         max_message_count,
                         max_tx_size,
                         max_delay,
@@ -176,12 +180,13 @@ impl<Sender> BatchedMessageSender<Sender> {
 
     async fn process_message_batches<Relay, Target>(
         context: &Relay,
+        now: Instant,
         max_message_count: usize,
         max_tx_size: usize,
         max_delay: Duration,
         last_sent_time: &mut Instant,
-        pending_batches: VecDeque<MessageBatch<Target::TargetChain, Target::CounterpartyChain>>,
-    ) -> VecDeque<MessageBatch<Target::TargetChain, Target::CounterpartyChain>>
+        pending_batches: VecDeque<MessageBatch<Relay, Target>>,
+    ) -> VecDeque<MessageBatch<Relay, Target>>
     where
         Relay::Error: BatchError,
         Relay: RelayContext,
@@ -190,8 +195,6 @@ impl<Sender> BatchedMessageSender<Sender> {
     {
         let batch_result =
             partition_message_batches(max_message_count, max_tx_size, pending_batches);
-
-        let now = Instant::now();
 
         if batch_result.ready_batches.is_empty() {
             // If there is nothing to send, return the remaining batches which should also be empty
@@ -213,7 +216,7 @@ impl<Sender> BatchedMessageSender<Sender> {
 
     async fn send_ready_batches<Relay, Target, Message, Event, Error>(
         context: &Relay,
-        ready_batches: VecDeque<MessageBatch<Target::TargetChain, Target::CounterpartyChain>>,
+        ready_batches: VecDeque<MessageBatch<Relay, Target>>,
     ) where
         Relay: RelayContext<Error = Error>,
         Target: ChainTarget<Relay>,
@@ -277,23 +280,23 @@ fn batch_size<Message: ChainMessage>(messages: &[Message]) -> usize {
         .sum()
 }
 
-struct BatchResult<Chain, Counterparty>
+struct BatchResult<Relay, Target>
 where
-    Chain: IbcChainContext<Counterparty>,
-    Counterparty: ChainContext,
+    Relay: RelayContext,
+    Target: ChainTarget<Relay>,
 {
-    ready_batches: VecDeque<MessageBatch<Chain, Counterparty>>,
-    remaining_batches: VecDeque<MessageBatch<Chain, Counterparty>>,
+    ready_batches: VecDeque<MessageBatch<Relay, Target>>,
+    remaining_batches: VecDeque<MessageBatch<Relay, Target>>,
 }
 
-fn partition_message_batches<Chain, Counterparty>(
+fn partition_message_batches<Relay, Target>(
     max_message_count: usize,
     max_tx_size: usize,
-    batches: VecDeque<MessageBatch<Chain, Counterparty>>,
-) -> BatchResult<Chain, Counterparty>
+    batches: VecDeque<MessageBatch<Relay, Target>>,
+) -> BatchResult<Relay, Target>
 where
-    Chain: IbcChainContext<Counterparty>,
-    Counterparty: ChainContext,
+    Relay: RelayContext,
+    Target: ChainTarget<Relay>,
 {
     let mut total_message_count: usize = 0;
     let mut total_batch_size: usize = 0;

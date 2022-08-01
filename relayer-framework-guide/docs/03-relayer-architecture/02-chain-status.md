@@ -81,13 +81,13 @@ impl<Chain: Async> ChainStatusContext for CosmosChainContext<Chain> {
 ## Cosmos Chain Status Querier
 
 ```rust
-use async_trait::async_trait;
-use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::endpoint::ChainStatus as CosmosChainStatus;
-use ibc_relayer_framework::traits::queries::status::ChainStatusQuerier;
-use ibc_relayer_cosmos::cosmos::context::chain::CosmosChainContext;
-use ibc_relayer_cosmos::cosmos::error::Error;
-
+# use async_trait::async_trait;
+# use ibc_relayer::chain::handle::ChainHandle;
+# use ibc_relayer::chain::endpoint::ChainStatus as CosmosChainStatus;
+# use ibc_relayer_framework::traits::queries::status::ChainStatusQuerier;
+# use ibc_relayer_cosmos::cosmos::context::chain::CosmosChainContext;
+# use ibc_relayer_cosmos::cosmos::error::Error;
+#
 struct CosmosChainStatusQuerier;
 
 #[async_trait]
