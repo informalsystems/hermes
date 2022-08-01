@@ -2,12 +2,14 @@ use async_trait::async_trait;
 
 use crate::std_prelude::*;
 use crate::traits::core::Async;
-
-use super::error::OfaError;
+use crate::traits::one_for_all::error::OfaError;
+use crate::traits::one_for_all::runtime::OfaRuntime;
 
 #[async_trait]
-pub trait OfaChainContext {
+pub trait OfaChain: Async {
     type Error: OfaError;
+
+    type Runtime: OfaRuntime<Error = Self::Error>;
 
     type Height: Async;
 
@@ -49,6 +51,8 @@ pub trait OfaChainContext {
     fn chain_status_height(status: &Self::ChainStatus) -> &Self::Height;
 
     fn chain_status_timestamp(status: &Self::ChainStatus) -> &Self::Timestamp;
+
+    fn runtime(&self) -> &Self::Runtime;
 
     async fn send_messages(
         &self,
