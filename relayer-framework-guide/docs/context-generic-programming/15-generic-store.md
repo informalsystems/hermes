@@ -2,12 +2,11 @@
 
 We managed to get `KvStorePersonQuerier` we defined earlier to not only
 work with a generic context containing an `FsKvStore`, but also work
-with any `PersonId` and `Person` types that satisfy some constraints.
+with any `PersonId` and `Person` types that satisfy certain constraints.
 
 We can further generalize the implementation of `KvStorePersonQuerier`
-to work with _any_ key-value store implementation. With that, we will
-for example be able to swap our store implementation from file-based
-to in-memory easily.
+to work with _any_ key-value store implementation. With that, we can easily
+swap our store implementation from file-based to memory-based.
 
 ```rust
 # use std::fmt::Display;
@@ -79,5 +78,5 @@ which is required to implement the `KvStore` trait. We then make the
 Inside the `PersonQuerier` implementation for `KvStorePersonQuerier`, we
 introduce two new explicit type bindings: `Store` for `Context::Store`,
 and `StoreError` for `Store::Error`. We also require the main
-`Error` type to implement `From<StoreError>`, so that any error from
+`Error` type to implement `From<StoreError>` so that any error from
 the store can be propagated.
