@@ -96,16 +96,22 @@ mod tests {
         };
         let mut abci_events = vec![];
         let create_client = CreateClient::from(attributes.clone());
-        abci_events.push(AbciEvent::from(create_client.clone()));
+        abci_events.push(AbciEvent::from(create_client));
         let client_misbehaviour = ClientMisbehaviour::from(attributes.clone());
-        abci_events.push(AbciEvent::from(client_misbehaviour.clone()));
+        abci_events.push(AbciEvent::from(client_misbehaviour));
         let upgrade_client = UpgradeClient::from(attributes.clone());
-        abci_events.push(AbciEvent::from(upgrade_client.clone()));
+        abci_events.push(AbciEvent::from(upgrade_client));
+        let mut update_client = UpdateClient::from(attributes.clone());
+        let header = MockHeader::new(height).wrap_any();
+        update_client.header = Some(header);
+        abci_events.push(AbciEvent::from(update_client));
+
+        let create_client = CreateClient::from(attributes.clone());
+        let client_misbehaviour = ClientMisbehaviour::from(attributes.clone());
+        let upgrade_client = UpgradeClient::from(attributes.clone());
         let mut update_client = UpdateClient::from(attributes);
         let header = MockHeader::new(height).wrap_any();
         update_client.header = Some(header);
-        abci_events.push(AbciEvent::from(update_client.clone()));
-
         for event in abci_events {
             match try_from_tx(&event) {
                 Some(e) => match e {

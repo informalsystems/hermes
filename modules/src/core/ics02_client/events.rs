@@ -111,7 +111,7 @@ impl core::fmt::Display for Attributes {
 }
 
 /// CreateClient event signals the creation of a new on-chain client (IBC client).
-#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, PartialEq, Eq)]
 pub struct CreateClient(pub Attributes);
 
 impl CreateClient {
