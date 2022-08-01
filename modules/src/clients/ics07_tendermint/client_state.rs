@@ -3,9 +3,9 @@ use crate::prelude::*;
 use core::convert::{TryFrom, TryInto};
 use core::time::Duration;
 
+use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 use tendermint_light_client_verifier::options::Options;
-use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;

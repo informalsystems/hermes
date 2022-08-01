@@ -3,9 +3,9 @@ use core::ops::Deref;
 use dyn_clone::DynClone;
 use erased_serde::Serialize as ErasedSerialize;
 use ibc_proto::google::protobuf::Any;
+use ibc_proto::protobuf::Protobuf;
 use serde_derive::{Deserialize, Serialize};
 use subtle_encoding::hex;
-use tendermint_proto::Protobuf;
 
 use crate::clients::ics07_tendermint::header::{decode_header, Header as TendermintHeader};
 use crate::core::ics02_client::client_type::ClientType;

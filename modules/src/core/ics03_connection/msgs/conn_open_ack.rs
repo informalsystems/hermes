@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
-use tendermint_proto::Protobuf;
+use ibc_proto::protobuf::Protobuf;
 
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics03_connection::error::Error;

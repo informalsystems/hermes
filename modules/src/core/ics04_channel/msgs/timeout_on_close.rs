@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 use ibc_proto::ibc::core::channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose;
-use tendermint_proto::Protobuf;
+use ibc_proto::protobuf::Protobuf;
 
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::{Packet, Sequence};

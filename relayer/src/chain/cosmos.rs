@@ -10,13 +10,13 @@ use num_bigint::BigInt;
 use std::thread;
 
 use bitcoin::hashes::hex::ToHex;
+use ibc_proto::protobuf::Protobuf;
 use tendermint::block::Height as TmHeight;
 use tendermint::{
     abci::{Event, Path as TendermintABCIPath},
     node::info::TxIndexStatus,
 };
 use tendermint_light_client_verifier::types::LightBlock as TmLightBlock;
-use tendermint_proto::Protobuf;
 use tendermint_rpc::{
     endpoint::broadcast::tx_sync::Response, endpoint::status, Client, HttpClient, Order,
 };

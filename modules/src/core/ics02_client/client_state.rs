@@ -2,8 +2,8 @@ use core::marker::{Send, Sync};
 use core::time::Duration;
 
 use ibc_proto::google::protobuf::Any;
+use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
-use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
 
