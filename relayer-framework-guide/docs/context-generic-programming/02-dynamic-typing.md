@@ -6,8 +6,8 @@ language. If we were to re-implement the `greet` function in a dynamically-
 typed language like JavaScript, many of these problems go away:
 
 ```javascript
-function greet(db, person_id) {
-  let person = db.query_person(person_id)
+function greet(db, personId) {
+  const person = db.queryPerson(personId)
   console.log(`Hello, ${person.name}!`)
 }
 ```
@@ -42,9 +42,10 @@ as a `context` value, which may contain other environment parameters such as
 what kind of greeting is used.
 
 ```javascript
-function greet(context, person_id) {
-  let person = context.query_person(person_id)
-  console.log(`Hello, ${person.name}!`)
+function greet(context, personId) {
+  const person = context.queryPerson(personId)
+  const greeting = context.getGreeting()
+  console.log(`${greeting}, ${person.name}!`)
 }
 ```
 

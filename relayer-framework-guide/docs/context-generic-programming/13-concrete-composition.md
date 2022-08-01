@@ -1,7 +1,7 @@
 # Concrete Composition
 
 Now that we have both `SimpleGreeter` and `DaytimeGreeter` implemented, we
-can look at how we can define a fully application context that satisfies the
+can look at how we can define a full application context that satisfies the
 constraints of both greeters. To better structure our application, we also
 separate out different parts of the code into separate modules.
 
@@ -38,11 +38,11 @@ mod app {
 }
 ```
 
-This module do not contain any concrete type definition, and thus can have
-minimal dependency to external crates.
+This module does not contain any concrete type definitions, and thus has minimal
+dependencies on external crates.
 
-In practice, the trait definitions can be placed in different sub-modules, so
-that we can have more fine grained control of which traits a component depends
+In practice, the trait definitions can be placed in different sub-modules so
+that we can have more fine grained control over which traits a component depends
 on.
 
 Next, we define `SimpleGreeter` and `DaytimeGreeter` in separate modules.
@@ -145,7 +145,7 @@ mod app {
 ```
 
 The two greeter components do not depend on each other, but they all depend
-on the `traits` crate to make use the abstract definitions. Since these
+on the `traits` crate to make use of the abstract definitions. Since these
 components do not depend on other crates, they are also _abstract_ components
 that can be instantiated with _any_ context types that satisfy the trait
 bounds.
@@ -282,18 +282,18 @@ Compared to before, we define a `DummyTime` struct that
 mocks the current time with either day time or night time. We then
 implement `TimeContext` for `AppContext`, with `DummyTime` being the
 `Time` type. We also add `ShopClosedError<DummyTime>` as a variant to
-`AppError`, and define a `From` instance for it.
+`AppError` and define a `From` instance for it.
 
 As we can see in this exercise, by having all types used by the greeter
 components as abstract types, it becomes very easy to mock up dependencies
-like time without having to commit to a specific time library. The explicit
-dependencies also help us better understand what features are really needed
-from the concrete types. If we know that our application only need the
-`SimpleTime` trait, then there are more options out there that we can
-try out and switch easily.
+such as time functionality without having to commit to a specific time library.
+The explicit dependencies also help us better understand what features are
+really needed from the concrete types. If we know that our application only needs
+the `SimpleTime` trait, then there are more options out there that we can
+try out and we can easily swap between them.
 
 It is also worth noting that it doesn't matter whether the concrete types
-`AppContext` and `BasicPerson` can have private fields or public fields.
+`AppContext` and `BasicPerson` have private or public fields.
 Since the components do not have access to the concrete types, all concrete
 fields are essentially private and can only be exposed via trait methods.
 
@@ -494,39 +494,40 @@ which witnesses that `DaytimeGreeter<SimpleGreeter>` _also_ implements
 
 Notice that in the `app_greeter` body, we construct the greeter with
 `DaytimeGreeter(base_greeter())` instead of `DaytimeGreeter(SimpleGreeter)`.
-In theory, both expressions are valid and have the same effect. But by calling
-`base_greeter` inside `app_greeter`, we are stating that `app_greeter` do
-_not_ actually care which concrete type of the base greeter has, aside from
-it implementing `Greeter<AppContext>`.
+In theory, both expressions are valid and have the same effect, but calling
+`base_greeter` inside `app_greeter` implies that `app_greeter` does not care
+what the concrete type of `base_greeter` is; all that matters is that it
+implements `Greeter<AppContext>`.
 
-Having separate witness functions can also help us debug any error in
-dependencies much more easily. Let's say if we forgot to implement
-`QueryPersonContext` for `AppContext`, the dependency for `SimpleGreeter`
-would not be satisfied, and we would get a type error in `base_greeter`.
-On the other hand, the body of `app_greeter` would not get any error,
-because it is not aware of the base greeter being `SimpleGreeter`.
+Having separate witness functions can also help us debug any errors that arise
+in dependencies much more easily. Let's say that we forgot to implement
+`QueryPersonContext` for `AppContext` such that the dependency for
+`SimpleGreeter` would not be satisfied; we would get a type error in
+`base_greeter`. However, no errors would crop up in `app_greeter`,
+because it doesn't care that base greeter implements `SimpleGreeter`.
 
 If we were to write the complex expression in one go, like
 `DaytimeGreeter(SimpleGreeter)`, it would be less clear which part of the
-expression caused the type error. Things would get worse if we have more
-complex component composition. Therefore it is always a good practice to
-define the component instantiation in multiple smaller functions, so that
+expression caused the type error. Things would get worse if we introduced more
+complex component composition. Therefore, it is always a good practice to
+define the component instantiation in multiple smaller functions so that
 it is clear to the reader whether the dependencies are being resolved
 correctly.
 
 ## Reader Monad
 
-Readers from functional programming background such as Haskellers may notice
-that the context pattern look similar to the reader monad pattern. This is
-correct, as we are defining a global `Context` type and pass it as a function
-argument to all code that requires the context. Additionally, we make use
-of the trait (typeclass) system in Rust for compile-time dependency injection,
-and the same pattern can be applied for the context type used in reader monads.
+Readers coming from a functional programming background might notice
+that the context pattern looks similar to the reader monad pattern. This is
+correct, as we are defining a global `Context` type and passing it around as a
+function argument to all code that requires the context. Additionally, we make
+use of the trait (typeclass) system in Rust for compile-time dependency
+injection, and the same pattern can be applied for the context type used in
+reader monads.
 
 For Rust readers, the main difference of the pattern described here with the
-reader monad is that we are passing the context value as explicit argument
-without using any monadic construct. This is slightly more verbose, but
-the benefit is we still get to enjoy much of the benefits of reader monad
-without requiring Rust programmers to learn what a monad really is.
-(hint: if you know how to use `Result` and `Option`, you might already
-understand monad without realizing it).
+reader monad is that we are passing the context value as an explicit argument
+without making use of any monadic constructs. Doing it this way is slightly more
+verbose, but the upside is that we still get to enjoy much of the benefits of
+the reader monad pattern without requiring Rust programmers to learn what a
+monad really is (though if you're comfortable with using `Result` and `Option`,
+you've already been making use of monads).
