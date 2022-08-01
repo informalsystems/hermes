@@ -34,7 +34,7 @@ pub trait Header: DynClone + ErasedSerialize + core::fmt::Debug + Send + Sync {
 // Implements `Clone` for `Box<dyn Header>`
 dyn_clone::clone_trait_object!(Header);
 
-// Implements `serde::Serialize` for Header
+// Implements `serde::Serialize` for all types that have Header as supertrait
 erased_serde::serialize_trait_object!(Header);
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
