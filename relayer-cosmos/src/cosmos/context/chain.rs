@@ -3,10 +3,12 @@ use core::time::Duration;
 use ibc::core::ics04_channel::events::WriteAcknowledgement;
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use ibc::events::IbcEventType;
 use ibc::signer::Signer;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
+use ibc_relayer::chain::cosmos::types::events::channel::extract_packet_and_write_ack_from_tx;
 use ibc_relayer::keyring::KeyEntry;
 use ibc_relayer_framework::traits::chain_context::{ChainContext, IbcChainContext};
 use ibc_relayer_framework::traits::core::Async;
@@ -14,6 +16,7 @@ use ibc_relayer_framework::traits::core::ErrorContext;
 use ibc_relayer_framework::traits::ibc_event_context::IbcEventContext;
 use ibc_relayer_framework::traits::sleep::SleepContext;
 use tendermint::abci::responses::Event;
+use tendermint::abci::Event as AbciEvent;
 use tokio::time::sleep;
 
 use crate::cosmos::error::Error;
@@ -26,6 +29,8 @@ pub struct CosmosChainContext<Handle> {
     pub tx_config: TxConfig,
     pub key_entry: KeyEntry,
 }
+
+pub struct WriteAcknowledgementEvent(pub WriteAcknowledgement);
 
 impl<Handle: Async> ErrorContext for CosmosChainContext<Handle> {
     type Error = Error;
@@ -62,18 +67,39 @@ where
     type IbcEvent = Event;
 }
 
+impl TryFrom<AbciEvent> for WriteAcknowledgementEvent {
+    type Error = ();
+
+    fn try_from(event: AbciEvent) -> Result<Self, ()> {
+        if let Ok(IbcEventType::WriteAck) = event.type_str.parse() {
+            let (packet, write_ack) =
+                extract_packet_and_write_ack_from_tx(&event).map_err(|_| ())?;
+
+            let ack = WriteAcknowledgement {
+                height: Height::new(0, 1).unwrap(),
+                packet,
+                ack: write_ack,
+            };
+
+            Ok(WriteAcknowledgementEvent(ack))
+        } else {
+            Err(())
+        }
+    }
+}
+
 impl<Chain, Counterparty> IbcEventContext<CosmosChainContext<Counterparty>>
     for CosmosChainContext<Chain>
 where
     Chain: Async,
     Counterparty: Async,
 {
-    type WriteAcknowledgementEvent = WriteAcknowledgement;
+    type WriteAcknowledgementEvent = WriteAcknowledgementEvent;
 }
 
 #[async_trait]
-impl<Chain> SleepContext for CosmosChainContext<Chain> {
-    async fn sleep(duration: Duration) {
+impl<Chain: Async> SleepContext for CosmosChainContext<Chain> {
+    async fn sleep(&self, duration: Duration) {
         sleep(duration).await;
     }
 }

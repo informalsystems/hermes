@@ -5,5 +5,5 @@ use crate::std_prelude::*;
 
 #[async_trait]
 pub trait SleepContext {
-    async fn sleep(duration: Duration);
+    async fn sleep(&self, duration: Duration);
 }

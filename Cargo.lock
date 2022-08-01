@@ -1603,6 +1603,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "ibc-relayer-framework-guide"
+version = "0.17.0"
+dependencies = [
+ "async-trait",
+ "eyre",
+ "flex-error",
+ "ibc",
+ "ibc-proto",
+ "ibc-relayer",
+ "ibc-relayer-cosmos",
+ "ibc-relayer-framework",
+ "itertools",
+ "prost",
+ "serde",
+ "serde_derive",
+ "tendermint",
+ "tendermint-light-client",
+ "tendermint-light-client-verifier",
+ "tendermint-proto",
+ "tendermint-rpc",
+ "tokio",
+]
+
+[[package]]
 name = "ibc-relayer-rest"
 version = "0.17.0"
 dependencies = [

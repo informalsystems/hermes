@@ -1,5 +1,95 @@
 # Querier Consumer
 
+
+```rust
+# use std::fmt::Display;
+# use std::convert::{TryFrom, TryInto};
+#
+# trait NamedPerson {
+#   fn name(&self) -> &str;
+# }
+#
+# trait ErrorContext {
+#   type Error;
+# }
+#
+# trait PersonContext {
+#   type PersonId;
+#   type Person: NamedPerson;
+# }
+#
+# trait Greeter<Context>
+# where
+#   Context: PersonContext + ErrorContext,
+# {
+#   fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#     -> Result<(), Context::Error>;
+# }
+#
+# trait KvStore: ErrorContext {
+#   fn get(&self, key: &str) -> Result<Vec<u8>, Self::Error>;
+# }
+#
+# trait KvStoreContext {
+#   type Store: KvStore;
+#
+#   fn store(&self) -> &Self::Store;
+# }
+#
+# struct KvStorePersonQuerier;
+#
+# impl<Context, Store, PersonId, Person, Error, ParseError, StoreError>
+#   PersonQuerier<Context> for KvStorePersonQuerier
+# where
+#   Context: KvStoreContext<Store=Store>,
+#   Context: PersonContext<Person=Person, PersonId=PersonId>,
+#   Context: ErrorContext<Error=Error>,
+#   Store: KvStore<Error=StoreError>,
+#   PersonId: Display,
+#   Person: TryFrom<Vec<u8>, Error=ParseError>,
+#   Error: From<StoreError>,
+#   Error: From<ParseError>,
+# {
+#   fn query_person(context: &Context, person_id: &PersonId)
+#     -> Result<Person, Error>
+#   {
+#     let key = format!("persons/{}", person_id);
+#
+#     let bytes = context.store().get(&key)?;
+#
+#     let person = bytes.try_into()?;
+#
+#     Ok(person)
+#   }
+# }
+#
+# trait PersonQuerier<Context>
+# where
+#   Context: PersonContext + ErrorContext,
+# {
+#    fn query_person(context: &Context, person_id: &Context::PersonId)
+#      -> Result<Context::Person, Context::Error>;
+# }
+#
+struct SimpleGreeter;
+
+impl<Context> Greeter<Context> for SimpleGreeter
+where
+  Context: PersonContext + ErrorContext,
+  KvStorePersonQuerier: PersonQuerier<Context>,
+{
+  fn greet(&self, context: &Context, person_id: &Context::PersonId)
+    -> Result<(), Context::Error>
+  {
+    let person = KvStorePersonQuerier::query_person(context, person_id)?;
+    println!("Hello, {}", person.name());
+    Ok(())
+  }
+}
+```
+
+## Generic Querier Consumer
+
 Now that we have a context-generic implementation of `KvStorePersonQuerier`,
 we can try to use it from `SimpleGreeter`. To do that, `SimpleGreeter` has
 to somehow get `KvStorePersonQuerier` from `Context`, and use it as a

@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use ibc::core::ics04_channel::events::WriteAcknowledgement;
 use ibc::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics04_channel::packet::PacketMsgType;
@@ -8,6 +7,7 @@ use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_framework::traits::messages::ack_packet::AckPacketMessageBuilder;
 
+use crate::cosmos::context::chain::WriteAcknowledgementEvent;
 use crate::cosmos::context::relay::CosmosRelayContext;
 use crate::cosmos::error::Error;
 use crate::cosmos::message::CosmosIbcMessage;
@@ -23,9 +23,9 @@ where
         &self,
         destination_height: &Height,
         packet: &Packet,
-        event: &WriteAcknowledgement,
+        event: &WriteAcknowledgementEvent,
     ) -> Result<CosmosIbcMessage, Error> {
-        let height = event.height;
+        let height = event.0.height;
 
         let proofs = self
             .dst_handle
@@ -40,7 +40,7 @@ where
             .map_err(Error::relayer)?;
 
         let packet = packet.clone();
-        let ack = event.ack.clone();
+        let ack = event.0.ack.clone();
 
         let message = CosmosIbcMessage::new(Some(height), move |signer| {
             Ok(MsgAcknowledgement::new(

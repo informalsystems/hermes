@@ -1,6 +1,5 @@
 use core::time::Duration;
 use ibc::core::ics24_host::identifier::ChainId;
-use ibc::events::from_tx_response_event;
 use ibc::events::IbcEvent;
 use ibc::Height;
 use itertools::Itertools;
@@ -13,6 +12,7 @@ use tokio::time::sleep;
 use tracing::{info, trace};
 
 use crate::chain::cosmos::query::tx::query_tx_response;
+use crate::chain::cosmos::types::events::from_tx_response_event;
 use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use crate::error::Error;
 

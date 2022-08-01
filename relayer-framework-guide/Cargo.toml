@@ -1,0 +1,54 @@
+[package]
+name         = "ibc-relayer-framework-guide"
+version      = "0.17.0"
+edition      = "2021"
+license      = "Apache-2.0"
+readme       = "README.md"
+keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
+repository   = "https://github.com/informalsystems/ibc-rs"
+authors      = ["Informal Systems <hello@informal.systems>"]
+rust-version = "1.60"
+description  = """
+    Implementation of an IBC Relayer in Rust, as a library
+"""
+
+[package.metadata.docs.rs]
+all-features = true
+
+[features]
+
+[dependencies]
+ibc             = { version = "0.17.0", path = "../modules" }
+ibc-proto       = { version = "0.19.0", path = "../proto" }
+ibc-relayer     = { version = "0.17.0", path = "../relayer" }
+ibc-relayer-cosmos      = { version = "0.17.0", path = "../relayer-cosmos" }
+ibc-relayer-framework   = { version = "0.17.0", path = "../relayer-framework" }
+
+serde = "1.0"
+serde_derive = "1.0"
+async-trait = "0.1.56"
+flex-error = { version = "0.4.4", default-features = false }
+prost = { version = "0.10" }
+eyre = "0.6.8"
+tokio = "1.19.2"
+itertools = "0.10.3"
+
+[dependencies.tendermint]
+version = "=0.23.8"
+features = ["secp256k1"]
+
+[dependencies.tendermint-rpc]
+version = "=0.23.8"
+features = ["http-client", "websocket-client"]
+
+[dependencies.tendermint-light-client]
+version = "=0.23.8"
+default-features = false
+features = ["rpc-client", "secp256k1", "unstable"]
+
+[dependencies.tendermint-light-client-verifier]
+version = "=0.23.8"
+default-features = false
+
+[dependencies.tendermint-proto]
+version = "=0.23.8"

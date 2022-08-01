@@ -37,10 +37,8 @@ where
     pub src_to_dst_client: ForeignClient<DstChain, SrcChain>,
     pub dst_to_src_client: ForeignClient<SrcChain, DstChain>,
     pub runtime: Arc<Runtime>,
-    pub src_message_sink:
-        Sender<MessageBatch<CosmosChainContext<SrcChain>, CosmosChainContext<DstChain>>>,
-    pub dst_message_sink:
-        Sender<MessageBatch<CosmosChainContext<DstChain>, CosmosChainContext<SrcChain>>>,
+    pub src_message_sink: Sender<MessageBatch<Self, SourceTarget>>,
+    pub dst_message_sink: Sender<MessageBatch<Self, DestinationTarget>>,
 }
 
 impl<SrcChain, DstChain> CosmosRelayContext<SrcChain, DstChain>
@@ -130,8 +128,8 @@ where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
 {
-    type IbcMessageSender =
-        BatchedMessageSender<SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>>;
+    type IbcMessageSender = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
+    // BatchedMessageSender<SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>>;
 }
 
 impl<SrcChain, DstChain> IbcMessageSenderContext<DestinationTarget>
@@ -140,8 +138,8 @@ where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
 {
-    type IbcMessageSender =
-        BatchedMessageSender<SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>>;
+    type IbcMessageSender = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
+    // BatchedMessageSender<SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>>;
 }
 
 #[async_trait]
@@ -150,7 +148,7 @@ where
     SrcChain: Async,
     DstChain: Async,
 {
-    async fn sleep(duration: Duration) {
+    async fn sleep(&self, duration: Duration) {
         sleep(duration).await;
     }
 }
@@ -161,9 +159,7 @@ where
     SrcChain: Async,
     DstChain: Async,
 {
-    fn message_sink(
-        &self,
-    ) -> &Sender<MessageBatch<CosmosChainContext<SrcChain>, CosmosChainContext<DstChain>>> {
+    fn message_sink(&self) -> &Sender<MessageBatch<Self, SourceTarget>> {
         &self.src_message_sink
     }
 }
@@ -174,9 +170,7 @@ where
     SrcChain: Async,
     DstChain: Async,
 {
-    fn message_sink(
-        &self,
-    ) -> &Sender<MessageBatch<CosmosChainContext<DstChain>, CosmosChainContext<SrcChain>>> {
+    fn message_sink(&self) -> &Sender<MessageBatch<Self, DestinationTarget>> {
         &self.dst_message_sink
     }
 }

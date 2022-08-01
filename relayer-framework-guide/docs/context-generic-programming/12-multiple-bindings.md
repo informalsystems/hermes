@@ -75,3 +75,93 @@ In our new `Greeter` implementation, we introduce the generic parameters
 types of the context traits, such as `ErrorContext<Error=Error>`. With the
 bindings in place we can have simpler trait bounds like `Time: SimpleTime`
 to be specified in place of the more verbose `Context::Time: SimpleTime`.
+
+## Dynamic-Typed Interpretation
+
+
+```javascript
+function daytime_greeter(in_greeter) {
+  return function(context, person_id) {
+    const now = context.now()
+    if now.is_daytime() {
+      return in_greeter.greet(context, person_id)
+    } else {
+      throw new ShopeClosedError({ time: now })
+    }
+  }
+}
+```
+
+```javascript
+function build_daytime_greeter_class(deps) {
+  return Class {
+    constructor(in_greeter) {
+      this.in_greeter = in_greeter
+    }
+
+    greet(context, person_id) {
+      const now = deps.TimeContext.prototype.now.call(context)
+      if deps.TimeContext.Time.prototype.is_daytime.call(now) {
+        return deps.InGreeter.prototype.greet.call(
+          this.in_greeter, context, person_id)
+      } else {
+        throw deps.ErrorContext.Error.from(
+          new ShopeClosedError({ time: now }))
+      }
+    }
+  }
+}
+```
+
+```javascript
+const DaytimeGreeter = build_daytime_greeter_class({
+  InGreeter: ...,
+  ErrorContext: {
+    Error: {
+      from: function(err) { ... }
+    },
+  },
+  PersonContext: {
+    PersonId: ...,
+    Person: ...,
+  },
+  TimeContext: {
+    Time: {
+      prototype: {
+        is_daytime: function() { ... }
+      }
+    }
+  },
+})
+```
+
+```javascript
+function build_daytime_greeter_class(deps) {
+  const {
+    TimeContext,
+    ErrorContext,
+    InGreeter,
+  } = deps
+
+  const { Time } = TimeContext
+  const { Error } = ErrorContext
+
+  return Class {
+    constructor(in_greeter) {
+      this.in_greeter = in_greeter
+    }
+
+    greet(context, person_id) {
+      const now = TimeContext.prototype.now.call(context)
+
+      if Time.prototype.is_daytime.call(now) {
+        return InGreeter.prototype.greet.call(
+          this.in_greeter, context, person_id)
+      } else {
+        throw Error.from(
+          new ShopeClosedError({ time: now }))
+      }
+    }
+  }
+}
+```
