@@ -21,7 +21,7 @@ ibc-proto       = { version = "=0.19.1",     path = "../../proto" }
 tendermint      = { version = "=0.23.8" }
 tendermint-rpc  = { version = "=0.23.8", features = ["http-client", "websocket-client"] }
 
-async-trait = "0.1.56"
+async-trait = "0.1.57"
 http = "0.2.8"
 tokio = { version = "1.0", features = ["full"] }
 tracing = "0.1.35"
