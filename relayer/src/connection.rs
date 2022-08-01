@@ -1,4 +1,5 @@
 use core::time::Duration;
+use std::thread;
 
 use ibc_proto::google::protobuf::Any;
 use serde::Serialize;
@@ -916,8 +917,35 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         }
     }
 
+    /// Wait for the application on destination chain to advance beyond `consensus_height`.
+    fn wait_for_dest_app_height_higher_than_consensus_proof_height(
+        &self,
+        consensus_height: Height,
+    ) -> Result<(), ConnectionError> {
+        let dst_application_latest_height = || {
+            self.dst_chain()
+                .query_latest_height()
+                .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))
+        };
+
+        while consensus_height >= dst_application_latest_height()? {
+            warn!(
+                "client consensus proof height too high, \
+                 waiting for destination chain to advance beyond {}",
+                consensus_height
+            );
+
+            thread::sleep(Duration::from_millis(500));
+        }
+
+        Ok(())
+    }
+
     /// Attempts to build a MsgConnOpenTry.
-    pub fn build_conn_try(&self) -> Result<Vec<Any>, ConnectionError> {
+    ///
+    /// Return the messages and the app height the destination chain must reach
+    /// before we send the messages.
+    pub fn build_conn_try(&self) -> Result<(Vec<Any>, Height), ConnectionError> {
         let src_connection_id = self
             .src_connection_id()
             .ok_or_else(ConnectionError::missing_local_connection_id)?;
@@ -1024,11 +1052,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         };
 
         msgs.push(new_msg.to_any());
-        Ok(msgs)
+
+        Ok((msgs, src_client_target_height))
     }
 
     pub fn build_conn_try_and_send(&self) -> Result<IbcEvent, ConnectionError> {
-        let dst_msgs = self.build_conn_try()?;
+        let (dst_msgs, src_client_target_height) = self.build_conn_try()?;
+
+        // Wait for the height of the application on the destination chain to be higher than
+        // the height of the consensus state included in the proofs.
+        self.wait_for_dest_app_height_higher_than_consensus_proof_height(src_client_target_height)?;
 
         let tm = TrackedMsgs::new_static(dst_msgs, "ConnectionOpenTry");
 
@@ -1057,7 +1090,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     }
 
     /// Attempts to build a MsgConnOpenAck.
-    pub fn build_conn_ack(&self) -> Result<Vec<Any>, ConnectionError> {
+    ///
+    /// Return the messages and the app height the destination chain must reach
+    /// before we send the messages.
+    pub fn build_conn_ack(&self) -> Result<(Vec<Any>, Height), ConnectionError> {
         let src_connection_id = self
             .src_connection_id()
             .ok_or_else(ConnectionError::missing_local_connection_id)?;
@@ -1087,6 +1123,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .dst_chain()
             .query_latest_height()
             .map_err(|e| ConnectionError::chain_query(self.dst_chain().id(), e))?;
+
         let client_msgs = self.build_update_client_on_src(src_client_target_height)?;
 
         let tm =
@@ -1130,11 +1167,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         };
 
         msgs.push(new_msg.to_any());
-        Ok(msgs)
+
+        Ok((msgs, src_client_target_height))
     }
 
     pub fn build_conn_ack_and_send(&self) -> Result<IbcEvent, ConnectionError> {
-        let dst_msgs = self.build_conn_ack()?;
+        let (dst_msgs, src_client_target_height) = self.build_conn_ack()?;
+
+        // Wait for the height of the application on the destination chain to be higher than
+        // the height of the consensus state included in the proofs.
+        self.wait_for_dest_app_height_higher_than_consensus_proof_height(src_client_target_height)?;
 
         let tm = TrackedMsgs::new_static(dst_msgs, "ConnectionOpenAck");
 
