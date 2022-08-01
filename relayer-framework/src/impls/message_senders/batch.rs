@@ -6,19 +6,21 @@ use core::time::Duration;
 
 use crate::std_prelude::*;
 use crate::traits::chain_context::IbcChainContext;
-use crate::traits::core::Async;
 use crate::traits::ibc_message_sender::IbcMessageSender;
 use crate::traits::message::Message as ChainMessage;
-use crate::traits::message_channel::{
-    HasChannelContext, OnceChannelContext, ReceiverOnceContext, SenderContext, SenderOnceContext,
-    TryReceiverContext,
-};
 use crate::traits::relay_context::RelayContext;
 use crate::traits::sleep::SleepContext;
 use crate::traits::spawn::SpawnContext;
 use crate::traits::target::ChainTarget;
 use crate::traits::time::{Time, TimeContext};
-use crate::types::aliases::{IbcEvent, IbcMessage};
+
+mod message_batch;
+mod message_batch_channel;
+mod message_result_channel;
+
+use self::message_batch::MessageBatch;
+use self::message_batch_channel::{MessageBatchReceiver, MessageBatchSender};
+use self::message_result_channel::{MessageResultReceiver, MessageResultSender};
 
 #[derive(Debug, Clone)]
 pub struct BatchConfig {
@@ -41,79 +43,8 @@ impl Default for BatchConfig {
     }
 }
 
-pub struct ChannelClosedError;
-
 pub trait BatchError {
     fn to_batch_error(&self) -> Self;
-}
-
-#[async_trait]
-pub trait MessageResultSender<Relay, Target>: Async
-where
-    Relay: RelayContext,
-    Target: ChainTarget<Relay>,
-{
-    async fn send_ok(
-        self,
-        result: Vec<Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>>,
-    );
-
-    async fn send_error(self, err: Relay::Error);
-}
-
-#[async_trait]
-pub trait MessageResultReceiver<Relay, Target>: Async
-where
-    Relay: RelayContext,
-    Target: ChainTarget<Relay>,
-{
-    async fn receive_result(
-        self,
-    ) -> Result<Vec<Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>>, Relay::Error>;
-}
-
-pub trait MessageBatch<Relay, Target>: Async
-where
-    Relay: RelayContext,
-    Target: ChainTarget<Relay>,
-{
-    type ResultSender: MessageResultSender<Relay, Target>;
-    type ResultReceiver: MessageResultReceiver<Relay, Target>;
-
-    fn new(
-        messages: Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
-    ) -> (Self, Self::ResultReceiver);
-
-    fn messages(&self) -> &Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>;
-
-    fn extract(
-        self,
-    ) -> (
-        Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
-        Self::ResultSender,
-    );
-}
-
-#[async_trait]
-pub trait MessageBatchSender<Relay, Target>: Async
-where
-    Relay: RelayContext,
-    Target: ChainTarget<Relay>,
-{
-    type MessageBatch: MessageBatch<Relay, Target>;
-
-    async fn send_message_batch(&self, batch: Self::MessageBatch);
-}
-
-#[async_trait]
-pub trait MessageBatchReceiver<Relay, Target>: Async
-where
-    Relay: RelayContext,
-    Target: ChainTarget<Relay>,
-{
-    type MessageBatch: MessageBatch<Relay, Target>;
-
-    async fn try_receive_message_batch(&self) -> Result<Option<Self::MessageBatch>, Relay::Error>;
 }
 
 pub struct BatchedMessageSender<InMessageSender>(PhantomData<InMessageSender>);
@@ -140,163 +71,6 @@ where
         let events = receiver.receive_result().await?;
 
         Ok(events)
-    }
-}
-
-#[async_trait]
-impl<Relay, Target, Channel, Sender> MessageResultSender<Relay, Target> for Sender
-where
-    Relay: RelayContext,
-    Target: ChainTarget<Relay>,
-    Sender: Async,
-    Relay: HasChannelContext<ChannelContext = Channel>,
-    Channel: SenderOnceContext<
-        Result<Vec<Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>>, Relay::Error>,
-        Sender = Sender,
-    >,
-{
-    async fn send_ok(
-        self,
-        result: Vec<Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>>,
-    ) {
-        let _ = Channel::send_once(self, Ok(result)).await;
-    }
-
-    async fn send_error(self, err: Relay::Error) {
-        let _ = Channel::send_once(self, Err(err)).await;
-    }
-}
-
-#[async_trait]
-impl<Relay, Target, Channel, Receiver> MessageResultReceiver<Relay, Target> for Receiver
-where
-    Relay: RelayContext,
-    Target: ChainTarget<Relay>,
-    Receiver: Async,
-    Relay: HasChannelContext<ChannelContext = Channel>,
-    Channel: ReceiverOnceContext<
-        Result<Vec<Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>>, Relay::Error>,
-        Receiver = Receiver,
-    >,
-    Relay::Error: From<ChannelClosedError>,
-{
-    async fn receive_result(
-        self,
-    ) -> Result<Vec<Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>>, Relay::Error>
-    {
-        Channel::receive_once(self)
-            .await
-            .map_err(|_| ChannelClosedError)?
-    }
-}
-
-impl<Relay, Target, Channel, Sender, Receiver> MessageBatch<Relay, Target>
-    for (
-        Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
-        Sender,
-    )
-where
-    Relay: RelayContext,
-    Target: ChainTarget<Relay>,
-    Sender: Async,
-    Receiver: Async,
-    Relay: HasChannelContext<ChannelContext = Channel>,
-    Channel: OnceChannelContext<
-        Result<Vec<Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>>, Relay::Error>,
-        Sender = Sender,
-        Receiver = Receiver,
-    >,
-    Relay::Error: From<ChannelClosedError>,
-{
-    type ResultSender = Sender;
-    type ResultReceiver = Receiver;
-
-    fn new(
-        messages: Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
-    ) -> (Self, Self::ResultReceiver) {
-        let (sender, receiver) = Channel::new_channel();
-        ((messages, sender), receiver)
-    }
-
-    fn messages(&self) -> &Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>> {
-        &self.0
-    }
-
-    fn extract(
-        self,
-    ) -> (
-        Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
-        Self::ResultSender,
-    ) {
-        (self.0, self.1)
-    }
-}
-
-#[async_trait]
-impl<Relay, Target, Channel, ResultSender, BatchSender> MessageBatchSender<Relay, Target>
-    for BatchSender
-where
-    Relay: RelayContext,
-    Target: ChainTarget<Relay>,
-    ResultSender: Async,
-    BatchSender: Async,
-    Relay: HasChannelContext<ChannelContext = Channel>,
-    Channel: OnceChannelContext<
-        Result<Vec<Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>>, Relay::Error>,
-        Sender = ResultSender,
-    >,
-    Relay::Error: From<ChannelClosedError>,
-    Channel: SenderContext<
-        (
-            Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
-            ResultSender,
-        ),
-        Sender = BatchSender,
-    >,
-{
-    type MessageBatch = (
-        Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
-        ResultSender,
-    );
-
-    async fn send_message_batch(&self, batch: Self::MessageBatch) {
-        let _ = Channel::send(self, batch).await;
-    }
-}
-
-#[async_trait]
-impl<Relay, Target, Channel, ResultSender, BatchReceiver> MessageBatchReceiver<Relay, Target>
-    for BatchReceiver
-where
-    Relay: RelayContext,
-    Target: ChainTarget<Relay>,
-    ResultSender: Async,
-    BatchReceiver: Async,
-    Relay: HasChannelContext<ChannelContext = Channel>,
-    Channel: OnceChannelContext<
-        Result<Vec<Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>>, Relay::Error>,
-        Sender = ResultSender,
-    >,
-    Relay::Error: From<ChannelClosedError>,
-    Channel: TryReceiverContext<
-        (
-            Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
-            ResultSender,
-        ),
-        Receiver = BatchReceiver,
-    >,
-{
-    type MessageBatch = (
-        Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
-        ResultSender,
-    );
-
-    async fn try_receive_message_batch(&self) -> Result<Option<Self::MessageBatch>, Relay::Error> {
-        let batch = Channel::try_receive(self)
-            .await
-            .map_err(|_| ChannelClosedError)?;
-
-        Ok(batch)
     }
 }
 
