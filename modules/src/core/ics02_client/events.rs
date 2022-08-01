@@ -5,6 +5,7 @@ use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
 use crate::core::ics02_client::client_type::ClientType;
+use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::events::{IbcEvent, IbcEventType};
@@ -159,7 +160,7 @@ impl core::fmt::Display for CreateClient {
 #[derive(Serialize, Clone)]
 pub struct UpdateClient {
     pub common: Attributes,
-    pub header: Option<Box<dyn Header>>,
+    pub header: Option<Box<dyn Header<Error = Error>>>,
 }
 
 impl UpdateClient {
@@ -205,8 +206,7 @@ impl From<UpdateClient> for AbciEvent {
         if let Some(h) = v.header {
             let header = Tag {
                 key: HEADER_ATTRIBUTE_KEY.parse().unwrap(),
-                // value: h.encode_to_string().parse().unwrap(),
-                value: "TODO: REMOVE, THIS IS TEMPORARY".parse().unwrap(),
+                value: h.encode_to_string().parse().unwrap(),
             };
             attributes.push(header);
         }

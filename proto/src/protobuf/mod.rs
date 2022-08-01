@@ -59,7 +59,7 @@ mod erased;
 mod error;
 
 use alloc::vec::Vec;
-use core::fmt::Display;
+// use core::fmt::Display;
 
 use bytes::Buf;
 use prost::encoding::encoded_len_varint;
@@ -71,7 +71,6 @@ pub use self::error::Error;
 pub trait Protobuf<Raw: Message + Default>
 where
     Self: erased::TryFrom<Raw> + erased::Into<Raw>,
-    <Self as erased::TryFrom<Raw>>::Error: Display,
 {
     /// Encode into a buffer in Protobuf format.
     ///

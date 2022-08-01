@@ -3,6 +3,7 @@ use core::ops::Deref;
 use dyn_clone::DynClone;
 use erased_serde::Serialize as ErasedSerialize;
 use ibc_proto::google::protobuf::Any;
+use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 use ibc_proto::protobuf::Protobuf;
 use serde_derive::{Deserialize, Serialize};
 use subtle_encoding::hex;
@@ -20,7 +21,9 @@ pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.He
 pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
 
 /// Abstract of consensus state update information
-pub trait Header: DynClone + ErasedSerialize + core::fmt::Debug + Send + Sync {
+pub trait Header:
+    DynClone + ErasedSerialize + Protobuf<RawHeader> + core::fmt::Debug + Send + Sync
+{
     /// The type of client (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 
@@ -32,10 +35,10 @@ pub trait Header: DynClone + ErasedSerialize + core::fmt::Debug + Send + Sync {
 }
 
 // Implements `Clone` for `Box<dyn Header>`
-dyn_clone::clone_trait_object!(Header);
+dyn_clone::clone_trait_object!(Header<Error = Error>);
 
 // Implements `serde::Serialize` for all types that have Header as supertrait
-erased_serde::serialize_trait_object!(Header);
+erased_serde::serialize_trait_object!(Header<Error = Error>);
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 #[allow(clippy::large_enum_variant)]
