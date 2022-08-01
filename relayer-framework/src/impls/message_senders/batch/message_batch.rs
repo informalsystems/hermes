@@ -1,23 +1,27 @@
+use core::marker::PhantomData;
+
 use crate::std_prelude::*;
 use crate::traits::core::Async;
-use crate::traits::message_channel::{HasChannelContext, OnceChannelContext};
+use crate::traits::message_channel::OnceChannelContext;
 use crate::traits::relay_context::RelayContext;
 use crate::traits::target::ChainTarget;
 use crate::types::aliases::{IbcEvent, IbcMessage};
 
-use super::message_result_channel::{MessageResultReceiver, MessageResultSender};
+use super::message_result_channel::MessageResultChannel;
 
 pub trait MessageBatch<Relay, Target>: Async
 where
     Relay: RelayContext,
     Target: ChainTarget<Relay>,
 {
-    type ResultSender: MessageResultSender<Relay, Target>;
-    type ResultReceiver: MessageResultReceiver<Relay, Target>;
+    type Channel: MessageResultChannel<Relay, Target>;
 
     fn new(
         messages: Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
-    ) -> (Self, Self::ResultReceiver);
+    ) -> (
+        Self,
+        <Self::Channel as MessageResultChannel<Relay, Target>>::Receiver,
+    );
 
     fn messages(&self) -> &Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>;
 
@@ -25,36 +29,31 @@ where
         self,
     ) -> (
         Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
-        Self::ResultSender,
+        <Self::Channel as MessageResultChannel<Relay, Target>>::Sender,
     );
 }
 
-impl<Relay, Target, Channel, Sender, Receiver> MessageBatch<Relay, Target>
+impl<Relay, Target, Channel> MessageBatch<Relay, Target>
     for (
         Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
-        Sender,
+        Channel::Sender,
+        PhantomData<Channel>,
     )
 where
     Relay: RelayContext,
     Target: ChainTarget<Relay>,
-    Sender: Async,
-    Receiver: Async,
-    Relay: HasChannelContext<ChannelContext = Channel>,
     Channel: OnceChannelContext<
         Result<Vec<Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>>, Relay::Error>,
-        Sender = Sender,
-        Receiver = Receiver,
     >,
     Relay::Error: From<Channel::Error>,
 {
-    type ResultSender = Sender;
-    type ResultReceiver = Receiver;
+    type Channel = Channel;
 
     fn new(
         messages: Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
-    ) -> (Self, Self::ResultReceiver) {
+    ) -> (Self, Channel::Receiver) {
         let (sender, receiver) = Channel::new_channel();
-        ((messages, sender), receiver)
+        ((messages, sender, PhantomData), receiver)
     }
 
     fn messages(&self) -> &Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>> {
@@ -65,7 +64,7 @@ where
         self,
     ) -> (
         Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
-        Self::ResultSender,
+        Channel::Sender,
     ) {
         (self.0, self.1)
     }

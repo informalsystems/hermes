@@ -19,8 +19,8 @@ mod message_batch_channel;
 mod message_result_channel;
 
 use self::message_batch::MessageBatch;
-use self::message_batch_channel::{MessageBatchReceiver, MessageBatchSender};
-use self::message_result_channel::{MessageResultReceiver, MessageResultSender};
+use self::message_batch_channel::MessageBatchChannel;
+use self::message_result_channel::MessageResultChannel;
 
 #[derive(Debug, Clone)]
 pub struct BatchConfig {
@@ -47,16 +47,28 @@ pub trait BatchError {
     fn to_batch_error(&self) -> Self;
 }
 
-pub struct BatchedMessageSender<InMessageSender>(PhantomData<InMessageSender>);
+pub trait BatchedMessageContext<Target>: RelayContext
+where
+    Target: ChainTarget<Self>,
+{
+    type MessageBatchChannel: MessageBatchChannel<Self, Target>;
+
+    fn message_batch_sender(
+        &self,
+    ) -> &<Self::MessageBatchChannel as MessageBatchChannel<Self, Target>>::Sender;
+}
+
+pub struct BatchedMessageSender<Channel, InMessageSender>(PhantomData<(Channel, InMessageSender)>);
 
 #[async_trait]
-impl<Relay, Target, TargetChain, Batch, InMessageSender> IbcMessageSender<Relay, Target>
-    for BatchedMessageSender<InMessageSender>
+impl<Relay, Target, TargetChain, Batch, InMessageSender, Channel> IbcMessageSender<Relay, Target>
+    for BatchedMessageSender<Channel, InMessageSender>
 where
     Relay: RelayContext,
+    Relay: BatchedMessageContext<Target, MessageBatchChannel = Channel>,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
     InMessageSender: IbcMessageSender<Relay, Target>,
-    Relay: MessageBatchSender<Relay, Target, MessageBatch = Batch>,
+    Channel: MessageBatchChannel<Relay, Target, MessageBatch = Batch>,
     TargetChain: IbcChainContext<Target::CounterpartyChain>,
     Batch: MessageBatch<Relay, Target>,
 {
@@ -66,19 +78,19 @@ where
     ) -> Result<Vec<Vec<TargetChain::IbcEvent>>, Relay::Error> {
         let (batch, receiver) = MessageBatch::new(messages);
 
-        context.send_message_batch(batch).await;
+        Channel::send_message_batch(context.message_batch_sender(), batch).await;
 
-        let events = receiver.receive_result().await?;
+        let events = Batch::Channel::receive_result(receiver).await?;
 
         Ok(events)
     }
 }
 
-impl<InMessageSender> BatchedMessageSender<InMessageSender> {
-    pub fn spawn_batch_message_handler<Relay, Target, Batch, BatchReceiver>(
+impl<Channel, InMessageSender> BatchedMessageSender<Channel, InMessageSender> {
+    pub fn spawn_batch_message_handler<Relay, Target, Batch>(
         context: Arc<Relay>,
         config: BatchConfig,
-        receiver: BatchReceiver,
+        receiver: Channel::Receiver,
     ) where
         Relay::Error: BatchError,
         Relay: TimeContext,
@@ -88,12 +100,13 @@ impl<InMessageSender> BatchedMessageSender<InMessageSender> {
         Target: ChainTarget<Relay>,
         InMessageSender: IbcMessageSender<Relay, Target>,
         Batch: MessageBatch<Relay, Target>,
-        BatchReceiver: MessageBatchReceiver<Relay, Target, MessageBatch = Batch>,
+        Channel: MessageBatchChannel<Relay, Target, MessageBatch = Batch>,
     {
         let in_context = context.clone();
         context.spawn(async move {
             run_loop(
                 in_context.as_ref(),
+                PhantomData::<Channel>,
                 PhantomData::<InMessageSender>,
                 config.max_message_count,
                 config.max_tx_size,
@@ -106,14 +119,15 @@ impl<InMessageSender> BatchedMessageSender<InMessageSender> {
     }
 }
 
-async fn run_loop<Relay, Target, Batch, BatchReceiver, InMessageSender>(
+async fn run_loop<Relay, Target, Batch, Channel, InMessageSender>(
     context: &Relay,
+    _channel: PhantomData<Channel>,
     in_sender: PhantomData<InMessageSender>,
     max_message_count: usize,
     max_tx_size: usize,
     max_delay: Duration,
     sleep_time: Duration,
-    receiver: BatchReceiver,
+    receiver: Channel::Receiver,
 ) where
     Relay::Error: BatchError,
     Relay: TimeContext,
@@ -122,13 +136,13 @@ async fn run_loop<Relay, Target, Batch, BatchReceiver, InMessageSender>(
     Target: ChainTarget<Relay>,
     InMessageSender: IbcMessageSender<Relay, Target>,
     Batch: MessageBatch<Relay, Target>,
-    BatchReceiver: MessageBatchReceiver<Relay, Target, MessageBatch = Batch>,
+    Channel: MessageBatchChannel<Relay, Target, MessageBatch = Batch>,
 {
     let mut last_sent_time = context.now();
     let mut pending_batches = VecDeque::new();
 
     loop {
-        match receiver.try_receive_message_batch().await {
+        match Channel::try_receive_message_batch(&receiver).await {
             Ok(Some(batch)) => {
                 pending_batches.push_back(batch);
                 let current_batch_size = pending_batches.len();
@@ -223,14 +237,14 @@ async fn send_ready_batches<Relay, Target, Batch, InMessageSender>(
     match send_result {
         Err(e) => {
             for (_, sender) in senders.into_iter() {
-                let _ = sender.send_error(e.to_batch_error());
+                let _ = Batch::Channel::send_error(sender, e.to_batch_error());
             }
         }
         Ok(all_events) => {
             let mut all_events = all_events.into_iter();
             for (message_count, sender) in senders.into_iter() {
                 let events = take(&mut all_events, message_count);
-                let _ = sender.send_ok(events);
+                let _ = Batch::Channel::send_ok(sender, events);
             }
         }
     }
