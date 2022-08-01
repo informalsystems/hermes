@@ -148,7 +148,7 @@ where
     SrcChain: Async,
     DstChain: Async,
 {
-    async fn sleep(duration: Duration) {
+    async fn sleep(&self, duration: Duration) {
         sleep(duration).await;
     }
 }

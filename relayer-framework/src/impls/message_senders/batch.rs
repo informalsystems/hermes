@@ -5,17 +5,19 @@ use core::marker::PhantomData;
 use core::time::Duration;
 
 use crate::std_prelude::*;
-use crate::traits::chain_context::{ChainContext, IbcChainContext};
+use crate::traits::chain_context::IbcChainContext;
 use crate::traits::core::Async;
 use crate::traits::ibc_message_sender::IbcMessageSender;
 use crate::traits::message::Message as ChainMessage;
 use crate::traits::message_channel::{
-    BaseChannelContext, HasChannelContext, OnceChannelContext, ReceiverOnceContext, SenderContext,
-    SenderOnceContext, TryReceiverContext,
+    HasChannelContext, OnceChannelContext, ReceiverOnceContext, SenderContext, SenderOnceContext,
+    TryReceiverContext,
 };
 use crate::traits::relay_context::RelayContext;
+use crate::traits::sleep::SleepContext;
+use crate::traits::spawn::SpawnContext;
 use crate::traits::target::ChainTarget;
-use crate::traits::time::{SleepContext, Time, TimeContext};
+use crate::traits::time::{Time, TimeContext};
 use crate::types::aliases::{IbcEvent, IbcMessage};
 
 #[derive(Debug, Clone)]
@@ -295,6 +297,38 @@ where
             .map_err(|_| ChannelClosedError)?;
 
         Ok(batch)
+    }
+}
+
+impl<InMessageSender> BatchedMessageSender<InMessageSender> {
+    pub fn spawn_batch_message_handler<Relay, Target, Batch, BatchReceiver>(
+        context: Arc<Relay>,
+        config: BatchConfig,
+        receiver: BatchReceiver,
+    ) where
+        Relay::Error: BatchError,
+        Relay: TimeContext,
+        Relay: RelayContext,
+        Relay: SleepContext,
+        Relay: SpawnContext,
+        Target: ChainTarget<Relay>,
+        InMessageSender: IbcMessageSender<Relay, Target>,
+        Batch: MessageBatch<Relay, Target>,
+        BatchReceiver: MessageBatchReceiver<Relay, Target, MessageBatch = Batch>,
+    {
+        let in_context = context.clone();
+        context.spawn(async move {
+            run_loop(
+                in_context.as_ref(),
+                PhantomData::<InMessageSender>,
+                config.max_message_count,
+                config.max_tx_size,
+                config.max_delay,
+                config.sleep_time,
+                receiver,
+            )
+            .await;
+        });
     }
 }
 

@@ -45,7 +45,7 @@ where
             if current_height > height {
                 return InUpdateClient::build_update_client_messages(context, height).await;
             } else {
-                CounterpartyChain::sleep(Duration::from_millis(100)).await;
+                chain.sleep(Duration::from_millis(100)).await;
             }
         }
     }

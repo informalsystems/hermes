@@ -98,8 +98,8 @@ where
 }
 
 #[async_trait]
-impl<Chain> SleepContext for CosmosChainContext<Chain> {
-    async fn sleep(duration: Duration) {
+impl<Chain: Async> SleepContext for CosmosChainContext<Chain> {
+    async fn sleep(&self, duration: Duration) {
         sleep(duration).await;
     }
 }
