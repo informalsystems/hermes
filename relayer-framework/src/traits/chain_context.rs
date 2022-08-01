@@ -1,12 +1,13 @@
-use crate::traits::core::{Async, ErrorContext};
+use crate::traits::core::Async;
 use crate::traits::message::{IbcMessage, Message};
+use crate::traits::runtime::context::RuntimeContext;
 
-pub trait ChainContext: ErrorContext {
+pub trait ChainContext: RuntimeContext {
     type Height: Async;
 
     type Timestamp: Async;
 
-    type Message: Async + Message;
+    type Message: Message;
 
     type Event: Async;
 }
@@ -25,7 +26,7 @@ where
 
     type Sequence: Async;
 
-    type IbcMessage: Async + IbcMessage<Counterparty>;
+    type IbcMessage: IbcMessage<Counterparty>;
 
     type IbcEvent: Async;
 }

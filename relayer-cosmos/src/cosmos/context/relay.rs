@@ -1,6 +1,4 @@
 use alloc::sync::Arc;
-use async_trait::async_trait;
-use core::time::Duration;
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics24_host::identifier::ClientId;
 use ibc_relayer::chain::handle::ChainHandle;
@@ -11,13 +9,13 @@ use ibc_relayer_framework::traits::core::Async;
 use ibc_relayer_framework::traits::core::ErrorContext;
 use ibc_relayer_framework::traits::ibc_message_sender::IbcMessageSenderContext;
 use ibc_relayer_framework::traits::relay_context::RelayContext;
-use ibc_relayer_framework::traits::sleep::SleepContext;
+use ibc_relayer_framework::traits::runtime::context::RuntimeContext;
 use ibc_relayer_framework::traits::target::{DestinationTarget, SourceTarget};
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{channel, Sender};
-use tokio::time::sleep;
 
 use crate::cosmos::context::chain::CosmosChainContext;
+use crate::cosmos::context::runtime::CosmosRuntimeContext;
 use crate::cosmos::error::Error;
 use crate::cosmos::message_senders::batch::{
     BatchConfig, BatchMessageContext, BatchedMessageSender, MessageBatch,
@@ -94,6 +92,18 @@ where
     type Error = Error;
 }
 
+impl<SrcChain, DstChain> RuntimeContext for CosmosRelayContext<SrcChain, DstChain>
+where
+    SrcChain: Async,
+    DstChain: Async,
+{
+    type Runtime = CosmosRuntimeContext;
+
+    fn runtime(&self) -> &CosmosRuntimeContext {
+        &CosmosRuntimeContext
+    }
+}
+
 impl<SrcChain, DstChain> RelayContext for CosmosRelayContext<SrcChain, DstChain>
 where
     SrcChain: Async,
@@ -140,17 +150,6 @@ where
 {
     type IbcMessageSender = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
     // BatchedMessageSender<SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>>;
-}
-
-#[async_trait]
-impl<SrcChain, DstChain> SleepContext for CosmosRelayContext<SrcChain, DstChain>
-where
-    SrcChain: Async,
-    DstChain: Async,
-{
-    async fn sleep(&self, duration: Duration) {
-        sleep(duration).await;
-    }
 }
 
 impl<SrcChain, DstChain> BatchMessageContext<SourceTarget>

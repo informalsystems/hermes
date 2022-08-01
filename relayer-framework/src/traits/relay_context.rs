@@ -1,12 +1,13 @@
 use crate::traits::chain_context::IbcChainContext;
-use crate::traits::core::{Async, ErrorContext};
+use crate::traits::core::Async;
 use crate::traits::packet::IbcPacket;
+use crate::traits::runtime::context::RuntimeContext;
 use crate::types::aliases::ClientId;
 
-pub trait RelayContext: ErrorContext {
-    type SrcChain: IbcChainContext<Self::DstChain, Error = Self::Error>;
+pub trait RelayContext: RuntimeContext {
+    type SrcChain: IbcChainContext<Self::DstChain, Error = Self::Error, Runtime = Self::Runtime>;
 
-    type DstChain: IbcChainContext<Self::SrcChain, Error = Self::Error>;
+    type DstChain: IbcChainContext<Self::SrcChain, Error = Self::Error, Runtime = Self::Runtime>;
 
     type Packet: IbcPacket<Self::SrcChain, Self::DstChain> + Async;
 

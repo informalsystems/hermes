@@ -1,5 +1,3 @@
-use async_trait::async_trait;
-use core::time::Duration;
 use ibc::core::ics04_channel::events::WriteAcknowledgement;
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
@@ -14,11 +12,11 @@ use ibc_relayer_framework::traits::chain_context::{ChainContext, IbcChainContext
 use ibc_relayer_framework::traits::core::Async;
 use ibc_relayer_framework::traits::core::ErrorContext;
 use ibc_relayer_framework::traits::ibc_event_context::IbcEventContext;
-use ibc_relayer_framework::traits::sleep::SleepContext;
+use ibc_relayer_framework::traits::runtime::context::RuntimeContext;
 use tendermint::abci::responses::Event;
 use tendermint::abci::Event as AbciEvent;
-use tokio::time::sleep;
 
+use crate::cosmos::context::runtime::CosmosRuntimeContext;
 use crate::cosmos::error::Error;
 use crate::cosmos::message::CosmosIbcMessage;
 
@@ -34,6 +32,14 @@ pub struct WriteAcknowledgementEvent(pub WriteAcknowledgement);
 
 impl<Handle: Async> ErrorContext for CosmosChainContext<Handle> {
     type Error = Error;
+}
+
+impl<Handle: Async> RuntimeContext for CosmosChainContext<Handle> {
+    type Runtime = CosmosRuntimeContext;
+
+    fn runtime(&self) -> &CosmosRuntimeContext {
+        &CosmosRuntimeContext
+    }
 }
 
 impl<Handle: Async> ChainContext for CosmosChainContext<Handle> {
@@ -95,11 +101,4 @@ where
     Counterparty: Async,
 {
     type WriteAcknowledgementEvent = WriteAcknowledgementEvent;
-}
-
-#[async_trait]
-impl<Chain: Async> SleepContext for CosmosChainContext<Chain> {
-    async fn sleep(&self, duration: Duration) {
-        sleep(duration).await;
-    }
 }

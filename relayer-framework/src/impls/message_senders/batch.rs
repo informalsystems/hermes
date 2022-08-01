@@ -9,10 +9,10 @@ use crate::traits::chain_context::IbcChainContext;
 use crate::traits::ibc_message_sender::IbcMessageSender;
 use crate::traits::message::Message as ChainMessage;
 use crate::traits::relay_context::RelayContext;
-use crate::traits::sleep::SleepContext;
-use crate::traits::spawn::SpawnContext;
+use crate::traits::runtime::sleep::SleepContext;
+use crate::traits::runtime::spawn::SpawnContext;
+use crate::traits::runtime::time::{Time, TimeContext};
 use crate::traits::target::ChainTarget;
-use crate::traits::time::{Time, TimeContext};
 
 mod message_batch;
 mod message_batch_channel;

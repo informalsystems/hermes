@@ -9,7 +9,7 @@ use crate::traits::core::Async;
 use crate::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::traits::queries::status::{ChainStatus, ChainStatusQuerierContext};
 use crate::traits::relay_context::RelayContext;
-use crate::traits::sleep::SleepContext;
+use crate::traits::runtime::sleep::SleepContext;
 use crate::traits::target::ChainTarget;
 use crate::types::aliases::IbcMessage;
 
@@ -20,16 +20,16 @@ use crate::types::aliases::IbcMessage;
 pub struct WaitUpdateClient<InUpdateClient>(PhantomData<InUpdateClient>);
 
 #[async_trait]
-impl<Relay, Target, InUpdateClient, TargetChain, CounterpartyChain, Height, Error>
+impl<Relay, Target, InUpdateClient, TargetChain, CounterpartyChain, Height, Error, Runtime>
     UpdateClientMessageBuilder<Relay, Target> for WaitUpdateClient<InUpdateClient>
 where
-    Relay: RelayContext<Error = Error>,
+    Relay: RelayContext<Error = Error, Runtime = Runtime>,
     Target: ChainTarget<Relay, TargetChain = TargetChain, CounterpartyChain = CounterpartyChain>,
     InUpdateClient: UpdateClientMessageBuilder<Relay, Target>,
     CounterpartyChain: IbcChainContext<TargetChain, Height = Height, Error = Error>,
     TargetChain: IbcChainContext<CounterpartyChain>,
     CounterpartyChain: ChainStatusQuerierContext,
-    CounterpartyChain: SleepContext,
+    Runtime: SleepContext,
     Height: Ord + Async,
 {
     async fn build_update_client_messages(
@@ -45,7 +45,7 @@ where
             if current_height > height {
                 return InUpdateClient::build_update_client_messages(context, height).await;
             } else {
-                chain.sleep(Duration::from_millis(100)).await;
+                context.runtime().sleep(Duration::from_millis(100)).await;
             }
         }
     }

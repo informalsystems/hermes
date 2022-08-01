@@ -1,7 +1,7 @@
 use crate::traits::chain_context::ChainContext;
-use crate::types::aliases::Height;
+use crate::traits::core::Async;
 
-pub trait Message {
+pub trait Message: Async {
     type Signer;
     type RawMessage;
     type EncodeError;
@@ -12,5 +12,5 @@ pub trait Message {
 }
 
 pub trait IbcMessage<Counterparty: ChainContext>: Message {
-    fn source_height(&self) -> Option<Height<Counterparty>>;
+    fn source_height(&self) -> Option<Counterparty::Height>;
 }
