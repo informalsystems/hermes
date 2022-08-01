@@ -9,7 +9,7 @@ use alloc::format;
 use alloc::string::ToString;
 use alloc::vec;
 use alloc::vec::Vec;
-use beefy_client::primitives::{
+use beefy_client_primitives::{
     BeefyNextAuthoritySet, Hash, MmrUpdateProof, PartialMmrLeaf, SignatureWithAuthorityIndex,
     SignedCommitment,
 };

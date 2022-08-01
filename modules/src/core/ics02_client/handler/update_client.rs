@@ -154,11 +154,8 @@ mod tests {
     use crate::test_utils::{get_dummy_account_id, Crypto};
     use crate::timestamp::Timestamp;
     use crate::Height;
-    use beefy_client::NodesUtils;
-    use beefy_client::{
-        runtime,
-        test_utils::{get_initial_client_state, get_mmr_update, get_parachain_headers},
-    };
+    use beefy_client_primitives::NodesUtils;
+    use beefy_queries::ClientWrapper;
     use codec::{Decode, Encode};
     use subxt::rpc::{rpc_params, JsonValue, Subscription, SubscriptionClientT};
 
@@ -604,13 +601,16 @@ mod tests {
             .build::<subxt::DefaultConfig>()
             .await
             .unwrap();
-        let api =
-        client.clone().to_runtime_api::<runtime::api::RuntimeApi<
-            subxt::DefaultConfig,
-            subxt::PolkadotExtrinsicParams<_>,
-        >>();
+        let client_wrapper = ClientWrapper {
+            relay_client: client.clone(),
+            para_client: para_client.clone(),
+            beefy_activation_block: 0,
+            para_id: 2000,
+        };
+
         let mut count = 0;
-        let client_state = get_initial_client_state(Some(&api)).await;
+        let client_state =
+            ClientWrapper::<subxt::DefaultConfig>::get_initial_client_state(Some(&client)).await;
         let beefy_client_state = BeefyClientState {
             chain_id: Default::default(),
             frozen_height: None,
@@ -674,15 +674,18 @@ mod tests {
             );
 
             let block_number = signed_commitment.commitment.block_number;
-            let (parachain_headers, batch_proof) = get_parachain_headers(
-                &client,
-                &para_client,
-                block_number,
-                client_state.latest_beefy_height,
-            )
-            .await;
+            let (parachain_headers, batch_proof) = client_wrapper
+                .fetch_finalized_parachain_headers_at(
+                    block_number,
+                    client_state.latest_beefy_height,
+                )
+                .await
+                .unwrap();
 
-            let mmr_update = get_mmr_update(&client, signed_commitment.clone()).await;
+            let mmr_update = client_wrapper
+                .fetch_mmr_update_proof_for(signed_commitment.clone())
+                .await
+                .unwrap();
 
             let mmr_size = NodesUtils::new(batch_proof.leaf_count).size();
 

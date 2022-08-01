@@ -61,7 +61,7 @@ pub struct HostFunctionsManager<T: HostFunctionsProvider>(PhantomData<T>);
 
 // implementation for beefy host functions
 #[cfg(any(test, feature = "mocks", feature = "ics11_beefy"))]
-impl<T> beefy_client::traits::HostFunctions for HostFunctionsManager<T>
+impl<T> beefy_client_primitives::HostFunctions for HostFunctionsManager<T>
 where
     T: HostFunctionsProvider,
 {

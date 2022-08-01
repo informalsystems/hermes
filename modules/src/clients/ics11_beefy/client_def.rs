@@ -1,6 +1,6 @@
-use beefy_client::primitives::{ParachainHeader, ParachainsUpdateProof};
-use beefy_client::traits::ClientState as LightClientState;
 use beefy_client::BeefyLightClient;
+use beefy_client_primitives::ClientState as LightClientState;
+use beefy_client_primitives::{ParachainHeader, ParachainsUpdateProof};
 use codec::{Decode, Encode};
 use core::fmt::Debug;
 use pallet_mmr_primitives::BatchProof;

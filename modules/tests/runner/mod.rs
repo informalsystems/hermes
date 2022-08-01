@@ -1,7 +1,6 @@
 pub mod step;
 
 use alloc::collections::btree_map::BTreeMap as HashMap;
-use ibc::test_utils::Crypto;
 
 use core::convert::TryInto;
 use core::fmt::Debug;

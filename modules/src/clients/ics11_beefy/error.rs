@@ -6,7 +6,6 @@ use crate::core::ics23_commitment::error::Error as Ics23Error;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::timestamp::{Timestamp, TimestampOverflowError};
-use beefy_client::error::BeefyClientError;
 use codec::Error as ScaleCodecError;
 
 use crate::Height;
@@ -175,7 +174,7 @@ define_error! {
 
 
         VerificationError
-            { reason: BeefyClientError }
+            { reason: String }
             | e | {
                 format_args!("verification failed: {:?}", e.reason)
             },
