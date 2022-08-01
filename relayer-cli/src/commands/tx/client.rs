@@ -538,13 +538,9 @@ impl OutputBuffer {
 
         // At this point, we know we won't error.
         let mut all_events = vec![];
-        for outer_result in self.0 {
-            if let Ok(inner_results) = outer_result {
-                for inner_result in inner_results {
-                    if let Ok(events) = inner_result {
-                        all_events.push(events)
-                    }
-                }
+        for outer in self.0.into_iter().flatten() {
+            for events in outer.into_iter().flatten() {
+                all_events.push(events)
             }
         }
 
