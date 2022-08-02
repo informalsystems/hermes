@@ -113,7 +113,7 @@ pub mod max_tx_size {
 
     impl MaxTxSize {
         const DEFAULT: usize = 2 * 1048576; // 2 MBytes
-        const MAX_BOUND: usize = 8 * 1048576; // 8 MBytes
+        pub const MAX_BOUND: usize = 8 * 1048576; // 8 MBytes
 
         pub fn new(value: usize) -> Result<Self, Error> {
             if value > Self::MAX_BOUND {
@@ -121,6 +121,10 @@ pub mod max_tx_size {
             }
 
             Ok(Self(value))
+        }
+
+        pub fn max() -> Self {
+            Self(Self::MAX_BOUND)
         }
 
         pub fn to_usize(self) -> usize {

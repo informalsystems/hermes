@@ -230,6 +230,104 @@ mod tests {
     }
 
     #[test]
+    fn test_batches_are_structured_appropriately_per_max_msg_num() {
+        // Ensure that when MaxMsgNum is 1, the resulting batch
+        // consists of 5 smaller batches, each with a single message
+        let messages = vec![
+            Any {
+                type_url: "/example.Foo".into(),
+                value: vec![0; 6],
+            },
+            Any {
+                type_url: "/example.Bar".into(),
+                value: vec![0; 4],
+            },
+            Any {
+                type_url: "/example.Baz".into(),
+                value: vec![0; 2],
+            },
+            Any {
+                type_url: "/example.Bux".into(),
+                value: vec![0; 3],
+            },
+            Any {
+                type_url: "/example.Qux".into(),
+                value: vec![0; 5],
+            },
+        ];
+
+        let batches = batch_messages(
+            MaxMsgNum::new(1).unwrap(),
+            MaxTxSize::default(),
+            messages.clone(),
+        )
+        .unwrap();
+
+        assert_eq!(batches.len(), 5);
+
+        for batch in batches {
+            assert_eq!(batch.len(), 1);
+        }
+
+        // Ensure that when MaxMsgNum > the number of messages, the resulting
+        // batch consists of a single smaller batch with all of the messages
+        let batches =
+            batch_messages(MaxMsgNum::new(100).unwrap(), MaxTxSize::default(), messages).unwrap();
+
+        assert_eq!(batches.len(), 1);
+        assert_eq!(batches[0].len(), 5);
+    }
+
+    #[test]
+    fn test_batches_are_structured_appropriately_per_max_tx_size() {
+        // Ensure that when MaxTxSize == the size of each message, the resulting batch
+        // consists of 5 smaller batches, each with a single message
+        let messages = vec![
+            Any {
+                type_url: "/example.Foo".into(),
+                value: vec![0; 10],
+            },
+            Any {
+                type_url: "/example.Bar".into(),
+                value: vec![0; 10],
+            },
+            Any {
+                type_url: "/example.Baz".into(),
+                value: vec![0; 10],
+            },
+            Any {
+                type_url: "/example.Bux".into(),
+                value: vec![0; 10],
+            },
+            Any {
+                type_url: "/example.Qux".into(),
+                value: vec![0; 10],
+            },
+        ];
+
+        let batches = batch_messages(
+            MaxMsgNum::default(),
+            MaxTxSize::new(26).unwrap(),
+            messages.clone(),
+        )
+        .unwrap();
+
+        assert_eq!(batches.len(), 5);
+
+        for batch in batches {
+            assert_eq!(batch.len(), 1);
+        }
+
+        // Ensure that when MaxTxSize > the size of all the messages, the
+        // resulting batch consists of a single smaller batch with all of
+        // messages inside
+        let batches = batch_messages(MaxMsgNum::default(), MaxTxSize::max(), messages).unwrap();
+
+        assert_eq!(batches.len(), 1);
+        assert_eq!(batches[0].len(), 5);
+    }
+
+    #[test]
     #[should_panic(expected = "called `Result::unwrap()` on an `Err` value")]
     fn test_max_msg_num_of_zero_panics() {
         let _batches = batch_messages(MaxMsgNum::new(0).unwrap(), MaxTxSize::default(), vec![]);
