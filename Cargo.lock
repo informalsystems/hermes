@@ -1474,6 +1474,7 @@ dependencies = [
  "prost-types",
  "schemars",
  "serde",
+ "subtle-encoding",
  "tendermint-proto",
  "tonic",
 ]

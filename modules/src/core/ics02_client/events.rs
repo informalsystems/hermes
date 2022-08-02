@@ -206,7 +206,7 @@ impl From<UpdateClient> for AbciEvent {
         if let Some(h) = v.header {
             let header = Tag {
                 key: HEADER_ATTRIBUTE_KEY.parse().unwrap(),
-                value: h.encode_to_string().parse().unwrap(),
+                value: h.encode_to_hex_string().parse().unwrap(),
             };
             attributes.push(header);
         }

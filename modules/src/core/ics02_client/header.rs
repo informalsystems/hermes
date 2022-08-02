@@ -81,18 +81,18 @@ impl Header for AnyHeader {
 
 impl AnyHeader {
     pub fn encode_to_string(&self) -> String {
-        let buf = Protobuf::encode_vec(self).expect("encoding shouldn't fail");
+        let buf = ErasedProtobuf::encode_vec(self).expect("encoding shouldn't fail");
         let encoded = hex::encode(buf);
         String::from_utf8(encoded).expect("hex-encoded string should always be valid UTF-8")
     }
 
     pub fn decode_from_string(s: &str) -> Result<Self, Error> {
         let header_bytes = hex::decode(s).unwrap();
-        Protobuf::decode(header_bytes.as_ref()).map_err(Error::invalid_raw_header)
+        ErasedProtobuf::decode(header_bytes.as_ref()).map_err(Error::invalid_raw_header)
     }
 }
 
-impl Protobuf<Any> for AnyHeader {}
+impl ErasedProtobuf<Any> for AnyHeader {}
 
 impl TryFrom<Any> for AnyHeader {
     type Error = Error;
@@ -107,7 +107,7 @@ impl TryFrom<Any> for AnyHeader {
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_HEADER_TYPE_URL => Ok(AnyHeader::Mock(
-                Protobuf::<RawMockHeader>::decode_vec(&raw.value)
+                ErasedProtobuf::<RawMockHeader>::decode_vec(&raw.value)
                     .map_err(Error::invalid_raw_header)?,
             )),
 
@@ -121,13 +121,13 @@ impl From<AnyHeader> for Any {
         match value {
             AnyHeader::Tendermint(header) => Any {
                 type_url: TENDERMINT_HEADER_TYPE_URL.to_string(),
-                value: Protobuf::<RawHeader>::encode_vec(&header)
+                value: ErasedProtobuf::<RawHeader>::encode_vec(&header)
                     .expect("encoding to `Any` from `AnyHeader::Tendermint`"),
             },
             #[cfg(any(test, feature = "mocks"))]
             AnyHeader::Mock(header) => Any {
                 type_url: MOCK_HEADER_TYPE_URL.to_string(),
-                value: Protobuf::<RawMockHeader>::encode_vec(&header)
+                value: ErasedProtobuf::<RawMockHeader>::encode_vec(&header)
                     .expect("encoding to `Any` from `AnyHeader::Mock`"),
             },
         }
