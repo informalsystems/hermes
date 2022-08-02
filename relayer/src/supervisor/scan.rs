@@ -352,8 +352,8 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
                         &chain.id(),
                         &client.client_id,
                         &counterparty_chain_id,
-                        &channel_id,
-                        &port_id,
+                        channel_id,
+                        port_id,
                     );
 
                     let client_scan = scan
@@ -395,10 +395,10 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
                         for channel in connection_scan.channels.values() {
                             init_telemetry(
                                 &chain.id(),
-                                &client_scan.id(),
+                                client_scan.id(),
                                 &client_scan.counterparty_chain_id(),
-                                &channel.id(),
-                                &channel.port(),
+                                channel.id(),
+                                channel.port(),
                             );
                         }
                     }
@@ -859,13 +859,13 @@ fn init_telemetry(
     channel_id: &ChannelId,
     port_id: &PortId,
 ) {
-    telemetry!(init_per_client, &chain_id, &client);
-    telemetry!(init_per_channel, &chain_id, &channel_id, &port_id);
+    telemetry!(init_per_client, chain_id, client);
+    telemetry!(init_per_channel, chain_id, channel_id, port_id);
     telemetry!(
         init_per_path,
         chain_id,
         counterparty_chain_id,
-        &channel_id,
-        &port_id
+        channel_id,
+        port_id
     )
 }

@@ -23,13 +23,13 @@ const EMPTY_BACKLOG_SYMBOL: u64 = 0;
 const BACKLOG_CAPACITY: usize = 1000;
 const BACKLOG_RESET_THRESHOLD: usize = 900;
 
-const QUERY_TYPES_CACHE: [&'static str; 4] = [
+const QUERY_TYPES_CACHE: [&str; 4] = [
     "query_latest_height",
     "query_client_state",
     "query_connection",
     "query_channel",
 ];
-const QUERY_TYPES: [&'static str; 24] = [
+const QUERY_TYPES: [&str; 24] = [
     "query_latest_height",
     "query_blocks",
     "query_txs",
