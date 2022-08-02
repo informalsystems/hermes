@@ -70,7 +70,7 @@ pub use self::error::Error;
 /// Object safe equivalent of `tendermint_proto::Protobuf`.
 pub trait Protobuf<Raw: Message + Default>
 where
-    Self: erased::TryFrom<Raw> + erased::Into<Raw>,
+    Self: erased::TryFrom<Raw> + erased::CloneInto<Raw>,
     <Self as erased::TryFrom<Raw>>::Error: Display,
 {
     /// Encode into a buffer in Protobuf format.
@@ -80,7 +80,7 @@ where
     ///
     /// [`prost::Message::encode`]: https://docs.rs/prost/*/prost/trait.Message.html#method.encode
     fn encode(&self, buf: &mut Vec<u8>) -> Result<(), Error> {
-        self.into().encode(buf).map_err(Error::encode_message)
+        self.clone_into().encode(buf).map_err(Error::encode_message)
     }
 
     /// Encode with a length-delimiter to a buffer in Protobuf format.
@@ -92,7 +92,7 @@ where
     ///
     /// [`prost::Message::encode_length_delimited`]: https://docs.rs/prost/*/prost/trait.Message.html#method.encode_length_delimited
     fn encode_length_delimited(&self, buf: &mut Vec<u8>) -> Result<(), Error> {
-        self.into()
+        self.clone_into()
             .encode_length_delimited(buf)
             .map_err(Error::encode_message)
     }
@@ -139,7 +139,7 @@ where
     ///
     /// [`prost::Message::encoded_len`]: https://docs.rs/prost/*/prost/trait.Message.html#method.encoded_len
     fn encoded_len(&self) -> usize {
-        self.into().encoded_len()
+        self.clone_into().encoded_len()
     }
 
     /// Encodes into a Protobuf-encoded `Vec<u8>`.

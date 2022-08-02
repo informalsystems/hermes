@@ -1,13 +1,12 @@
-use alloc::boxed::Box;
 use core::convert::{Into as CoreInto, TryFrom as CoreTryFrom};
 
-pub trait Into<T: ?Sized> {
-    fn into(&self) -> Box<T>;
+pub trait CloneInto<T> {
+    fn clone_into(&self) -> T;
 }
 
-impl<T, U: Clone + CoreInto<T>> Into<T> for U {
-    fn into(&self) -> Box<T> {
-        Box::new(self.clone().into())
+impl<T, U: Clone + CoreInto<T>> CloneInto<T> for U {
+    fn clone_into(&self) -> T {
+        self.clone().into()
     }
 }
 
