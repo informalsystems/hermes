@@ -228,4 +228,10 @@ mod tests {
         let res = batch_messages(MaxMsgNum::default(), MaxTxSize::new(21).unwrap(), messages);
         assert!(res.is_err());
     }
+
+    #[test]
+    #[should_panic(expected = "called `Result::unwrap()` on an `Err` value")]
+    fn test_max_msg_num_of_zero_panics() {
+        let _batches = batch_messages(MaxMsgNum::new(0).unwrap(), MaxTxSize::default(), vec![]);
+    }
 }
