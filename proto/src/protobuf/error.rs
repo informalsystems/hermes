@@ -1,6 +1,6 @@
-// use alloc::format;
+use alloc::format;
 use alloc::string::String;
-// use core::fmt::Display;
+use core::fmt::Display;
 use core::format_args;
 use core::num::TryFromIntError;
 
@@ -33,11 +33,11 @@ define_error! {
 }
 
 impl Error {
-    pub fn try_from<Raw, T, E>(_e: E) -> Error
+    pub fn try_from<Raw, T, E>(e: E) -> Error
     where
-        // E: Display,
+        E: Display,
         T: TryFrom<Raw, Error = E>,
     {
-        Error::try_from_protobuf("HACK".to_string())
+        Error::try_from_protobuf(format!("{}", e))
     }
 }

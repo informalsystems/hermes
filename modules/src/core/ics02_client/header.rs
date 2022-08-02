@@ -22,7 +22,7 @@ pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
 
 /// Abstract of consensus state update information
 pub trait Header:
-    DynClone + ErasedSerialize + Protobuf<RawHeader> + core::fmt::Debug + Send + Sync
+    DynClone + ErasedSerialize + Protobuf<RawHeader, Error = Error> + core::fmt::Debug + Send + Sync
 {
     /// The type of client (eg. Tendermint)
     fn client_type(&self) -> ClientType;
@@ -35,10 +35,10 @@ pub trait Header:
 }
 
 // Implements `Clone` for `Box<dyn Header>`
-dyn_clone::clone_trait_object!(Header<Error = Error>);
+dyn_clone::clone_trait_object!(Header);
 
 // Implements `serde::Serialize` for all types that have Header as supertrait
-erased_serde::serialize_trait_object!(Header<Error = Error>);
+erased_serde::serialize_trait_object!(Header);
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 #[allow(clippy::large_enum_variant)]
