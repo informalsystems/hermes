@@ -1,7 +1,8 @@
 use crate::traits::chain_context::IbcChainContext;
-use crate::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
+use crate::traits::core::Async;
+use crate::types::aliases::{ChannelId, PortId, Sequence};
 
-pub trait IbcPacket<SrcChain, DstChain>: Send
+pub trait IbcPacket<SrcChain, DstChain>: Async
 where
     SrcChain: IbcChainContext<DstChain>,
     DstChain: IbcChainContext<SrcChain>,
@@ -16,7 +17,7 @@ where
 
     fn sequence(&self) -> &Sequence<SrcChain, DstChain>;
 
-    fn timeout_height(&self) -> Option<Height<DstChain>>;
+    fn timeout_height(&self) -> Option<&DstChain::Height>;
 
-    fn timeout_timestamp(&self) -> &Timestamp<DstChain>;
+    fn timeout_timestamp(&self) -> &DstChain::Timestamp;
 }

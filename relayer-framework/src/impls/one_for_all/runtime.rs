@@ -1,11 +1,11 @@
-use crate::impls::one_for_all::error::OfaError;
+use crate::impls::one_for_all::error::OfaErrorContext;
 use crate::traits::core::ErrorContext;
-use crate::traits::one_for_all::chain::OfaChain;
+use crate::traits::one_for_all::runtime::OfaRuntime;
 
-pub struct OfaRuntimeContext<Chain: OfaChain> {
-    pub runtime: Chain::Runtime,
+pub struct OfaRuntimeContext<Runtime> {
+    pub runtime: Runtime,
 }
 
-impl<Chain: OfaChain> ErrorContext for OfaRuntimeContext<Chain> {
-    type Error = OfaError<Chain>;
+impl<Runtime: OfaRuntime> ErrorContext for OfaRuntimeContext<Runtime> {
+    type Error = OfaErrorContext<Runtime::Error>;
 }

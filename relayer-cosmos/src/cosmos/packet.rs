@@ -35,8 +35,8 @@ where
         &self.sequence
     }
 
-    fn timeout_height(&self) -> Option<Height> {
-        match self.timeout_height {
+    fn timeout_height(&self) -> Option<&Height> {
+        match &self.timeout_height {
             TimeoutHeight::Never => None,
             TimeoutHeight::At(h) => Some(h),
         }

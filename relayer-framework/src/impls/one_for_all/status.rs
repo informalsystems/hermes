@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::impls::one_for_all::chain::OfaChainContext;
-use crate::impls::one_for_all::error::OfaError;
+use crate::impls::one_for_all::error::OfaErrorContext;
 use crate::std_prelude::*;
 use crate::traits::one_for_all::chain::OfaChain;
 use crate::traits::queries::status::{ChainStatus, ChainStatusContext, ChainStatusQuerier};
@@ -30,12 +30,12 @@ impl<Chain: OfaChain> ChainStatusContext for OfaChainContext<Chain> {
 impl<Chain: OfaChain> ChainStatusQuerier<OfaChainContext<Chain>> for OfaChainStatusQuerier {
     async fn query_chain_status(
         context: &OfaChainContext<Chain>,
-    ) -> Result<OfaChainStatus<Chain>, OfaError<Chain>> {
+    ) -> Result<OfaChainStatus<Chain>, OfaErrorContext<Chain::Error>> {
         let status = context
             .chain
             .query_chain_status()
             .await
-            .map_err(OfaError::new)?;
+            .map_err(OfaErrorContext::new)?;
 
         Ok(OfaChainStatus { status })
     }

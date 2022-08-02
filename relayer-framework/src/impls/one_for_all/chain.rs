@@ -1,4 +1,4 @@
-use crate::impls::one_for_all::error::OfaError;
+use crate::impls::one_for_all::error::OfaErrorContext;
 use crate::impls::one_for_all::message::OfaMessage;
 use crate::impls::one_for_all::runtime::OfaRuntimeContext;
 use crate::traits::chain_context::{ChainContext, IbcChainContext};
@@ -8,15 +8,15 @@ use crate::traits::runtime::context::RuntimeContext;
 
 pub struct OfaChainContext<Chain: OfaChain> {
     pub chain: Chain,
-    pub runtime: OfaRuntimeContext<Chain>,
+    pub runtime: OfaRuntimeContext<Chain::Runtime>,
 }
 
 impl<Chain: OfaChain> ErrorContext for OfaChainContext<Chain> {
-    type Error = OfaError<Chain>;
+    type Error = OfaErrorContext<Chain::Error>;
 }
 
 impl<Chain: OfaChain> RuntimeContext for OfaChainContext<Chain> {
-    type Runtime = OfaRuntimeContext<Chain>;
+    type Runtime = OfaRuntimeContext<Chain::Runtime>;
 
     fn runtime(&self) -> &Self::Runtime {
         &self.runtime
