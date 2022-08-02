@@ -4,8 +4,8 @@
 
 use core::{convert::TryFrom, fmt};
 
+use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
-use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::Fraction;
 use tendermint::trust_threshold::TrustThresholdFraction;

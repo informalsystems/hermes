@@ -4,8 +4,8 @@ use alloc::collections::btree_map::BTreeMap as HashMap;
 
 use core::time::Duration;
 
+use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
-use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::mock::ClientState as RawMockClientState;
 use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;

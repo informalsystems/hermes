@@ -1458,6 +1458,7 @@ version = "0.19.1"
 dependencies = [
  "base64",
  "bytes",
+ "flex-error",
  "prost",
  "prost-types",
  "schemars",

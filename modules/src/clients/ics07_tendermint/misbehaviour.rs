@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use tendermint_proto::Protobuf;
+use ibc_proto::protobuf::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::Misbehaviour as RawMisbehaviour;
 

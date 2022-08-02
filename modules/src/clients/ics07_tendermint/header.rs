@@ -1,11 +1,11 @@
 use core::cmp::Ordering;
 
 use bytes::Buf;
+use ibc_proto::protobuf::Protobuf;
 use prost::Message;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
-use tendermint_proto::Protobuf;
 
 use crate::alloc::string::ToString;
 
