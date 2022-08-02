@@ -4,6 +4,8 @@ use dyn_clone::DynClone;
 use erased_serde::Serialize as ErasedSerialize;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
+#[cfg(any(test, feature = "mocks"))]
+use ibc_proto::ibc::mock::Header as RawMockHeader;
 use ibc_proto::protobuf::Protobuf;
 use serde_derive::{Deserialize, Serialize};
 use subtle_encoding::hex;
@@ -22,7 +24,7 @@ pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
 
 /// Abstract of consensus state update information
 pub trait Header:
-    DynClone + ErasedSerialize + Protobuf<RawHeader, Error = Error> + core::fmt::Debug + Send + Sync
+    DynClone + ErasedSerialize + Protobuf<Any, Error = Error> + core::fmt::Debug + Send + Sync
 {
     /// The type of client (eg. Tendermint)
     fn client_type(&self) -> ClientType;
@@ -105,7 +107,8 @@ impl TryFrom<Any> for AnyHeader {
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_HEADER_TYPE_URL => Ok(AnyHeader::Mock(
-                MockHeader::decode_vec(&raw.value).map_err(Error::invalid_raw_header)?,
+                Protobuf::<RawMockHeader>::decode_vec(&raw.value)
+                    .map_err(Error::invalid_raw_header)?,
             )),
 
             _ => Err(Error::unknown_header_type(raw.type_url)),
@@ -118,15 +121,13 @@ impl From<AnyHeader> for Any {
         match value {
             AnyHeader::Tendermint(header) => Any {
                 type_url: TENDERMINT_HEADER_TYPE_URL.to_string(),
-                value: header
-                    .encode_vec()
+                value: Protobuf::<RawHeader>::encode_vec(&header)
                     .expect("encoding to `Any` from `AnyHeader::Tendermint`"),
             },
             #[cfg(any(test, feature = "mocks"))]
             AnyHeader::Mock(header) => Any {
                 type_url: MOCK_HEADER_TYPE_URL.to_string(),
-                value: header
-                    .encode_vec()
+                value: Protobuf::<RawMockHeader>::encode_vec(&header)
                     .expect("encoding to `Any` from `AnyHeader::Mock`"),
             },
         }
