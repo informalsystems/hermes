@@ -2,15 +2,15 @@ use async_trait::async_trait;
 
 use crate::impls::message_senders::chain_sender::SendIbcMessagesToChain;
 use crate::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
-use crate::impls::one_for_all::chain::OfaChainContext;
-use crate::impls::one_for_all::error::OfaErrorContext;
-use crate::impls::one_for_all::message::OfaMessage;
-use crate::impls::one_for_all::relay::OfaRelayContext;
+use crate::one_for_all::impls::chain::OfaChainContext;
+use crate::one_for_all::impls::error::OfaErrorContext;
+use crate::one_for_all::impls::message::OfaMessage;
+use crate::one_for_all::impls::relay::OfaRelayContext;
+use crate::one_for_all::traits::chain::OfaChain;
+use crate::one_for_all::traits::relay::OfaRelay;
 use crate::std_prelude::*;
 use crate::traits::ibc_message_sender::IbcMessageSenderContext;
 use crate::traits::message_sender::{MessageSender, MessageSenderContext};
-use crate::traits::one_for_all::chain::OfaChain;
-use crate::traits::one_for_all::relay::OfaRelay;
 use crate::traits::target::{DestinationTarget, SourceTarget};
 
 pub struct OfaMessageSender;

@@ -1,6 +1,6 @@
 use crate::impls::packet_relayers::retry::{MaxRetryExceeded, RetryableError};
+use crate::one_for_all::traits::error::OfaError;
 use crate::traits::ibc_message_sender::MismatchIbcEventsCountError;
-use crate::traits::one_for_all::error::OfaError;
 
 pub struct OfaErrorContext<Error> {
     pub error: Error,

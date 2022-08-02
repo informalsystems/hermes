@@ -1,16 +1,16 @@
 use async_trait::async_trait;
 
-use crate::impls::one_for_all::chain::OfaChainContext;
-use crate::impls::one_for_all::error::OfaErrorContext;
-use crate::impls::one_for_all::message::OfaMessage;
-use crate::impls::one_for_all::runtime::OfaRuntimeContext;
+use crate::one_for_all::impls::chain::OfaChainContext;
+use crate::one_for_all::impls::error::OfaErrorContext;
+use crate::one_for_all::impls::message::OfaMessage;
+use crate::one_for_all::impls::runtime::OfaRuntimeContext;
+use crate::one_for_all::traits::chain::OfaChain;
+use crate::one_for_all::traits::relay::OfaRelay;
 use crate::std_prelude::*;
 use crate::traits::core::ErrorContext;
 use crate::traits::messages::ack_packet::AckPacketMessageBuilder;
 use crate::traits::messages::receive_packet::ReceivePacketMessageBuilder;
 use crate::traits::messages::update_client::{UpdateClientContext, UpdateClientMessageBuilder};
-use crate::traits::one_for_all::chain::OfaChain;
-use crate::traits::one_for_all::relay::OfaRelay;
 use crate::traits::packet::IbcPacket;
 use crate::traits::relay_context::RelayContext;
 use crate::traits::runtime::context::RuntimeContext;

@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
+use crate::one_for_all::traits::error::OfaError;
+use crate::one_for_all::traits::runtime::OfaRuntime;
 use crate::std_prelude::*;
 use crate::traits::core::Async;
-use crate::traits::one_for_all::error::OfaError;
-use crate::traits::one_for_all::runtime::OfaRuntime;
 
 #[async_trait]
 pub trait OfaChain: Async {
