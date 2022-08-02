@@ -1,6 +1,5 @@
 use crate::prelude::*;
 
-use core::any::Any as CoreAny;
 use core::marker::{Send, Sync};
 
 use ibc_proto::google::protobuf::Any as ProtoAny;
@@ -13,6 +12,7 @@ use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics23_commitment::commitment::CommitmentRoot;
+use crate::dynamic_typing::AsAny;
 use crate::timestamp::Timestamp;
 
 #[cfg(any(test, feature = "mocks"))]
@@ -31,16 +31,6 @@ pub trait ConsensusState: core::fmt::Debug + Send + Sync + AsAny {
     fn root(&self) -> &CommitmentRoot;
 
     fn encode_vec(&self) -> Result<Vec<u8>, Error>;
-}
-
-pub trait AsAny: CoreAny {
-    fn as_any(&self) -> &dyn CoreAny;
-}
-
-impl<M: CoreAny> AsAny for M {
-    fn as_any(&self) -> &dyn CoreAny {
-        self
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]

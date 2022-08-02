@@ -13,13 +13,12 @@ use subtle_encoding::hex;
 use crate::clients::ics07_tendermint::header::{decode_header, Header as TendermintHeader};
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
+use crate::dynamic_typing::AsAny;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::header::MockHeader;
 use crate::prelude::*;
 use crate::timestamp::Timestamp;
 use crate::Height;
-
-use super::client_consensus::AsAny;
 
 pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
 pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
