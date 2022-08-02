@@ -33,9 +33,13 @@ pub trait OfaChain: Async {
 
     type Sequence: Async;
 
+    type CounterpartySequence: Async;
+
     type ChainStatus: Async;
 
     type CounterpartyHeight: Async;
+
+    type ConsensusState: Async;
 
     type CounterpartyConsensusState: Async;
 
@@ -71,6 +75,6 @@ pub trait OfaChain: Async {
         &self,
         port_id: &Self::PortId,
         channel_id: &Self::ChannelId,
-        sequence: &Self::Sequence,
+        sequence: &Self::CounterpartySequence,
     ) -> Result<bool, Self::Error>;
 }

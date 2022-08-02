@@ -6,6 +6,8 @@ use crate::impls::one_for_all::message::OfaMessage;
 use crate::impls::one_for_all::runtime::OfaRuntimeContext;
 use crate::std_prelude::*;
 use crate::traits::core::ErrorContext;
+use crate::traits::messages::ack_packet::AckPacketMessageBuilder;
+use crate::traits::messages::receive_packet::ReceivePacketMessageBuilder;
 use crate::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::traits::one_for_all::chain::OfaChain;
 use crate::traits::one_for_all::relay::OfaRelay;
@@ -135,5 +137,40 @@ impl<Relay: OfaRelay> UpdateClientMessageBuilder<OfaRelayContext<Relay>, Destina
         let out_messages = messages.into_iter().map(OfaMessage::new).collect();
 
         Ok(out_messages)
+    }
+}
+
+#[async_trait]
+impl<Relay: OfaRelay> ReceivePacketMessageBuilder<OfaRelayContext<Relay>>
+    for OfaRelayContext<Relay>
+{
+    async fn build_receive_packet_message(
+        &self,
+        height: &<Relay::SrcChain as OfaChain>::Height,
+        packet: &OfaPacket<Relay>,
+    ) -> Result<OfaMessage<Relay::DstChain>, OfaErrorContext<Relay::Error>> {
+        let message = self
+            .relay
+            .build_receive_packet_message(height, &packet.packet)
+            .await?;
+
+        Ok(OfaMessage::new(message))
+    }
+}
+
+#[async_trait]
+impl<Relay: OfaRelay> AckPacketMessageBuilder<OfaRelayContext<Relay>> for OfaRelayContext<Relay> {
+    async fn build_ack_packet_message(
+        &self,
+        destination_height: &<Relay::DstChain as OfaChain>::Height,
+        packet: &OfaPacket<Relay>,
+        ack: &<Relay::DstChain as OfaChain>::WriteAcknowledgementEvent,
+    ) -> Result<OfaMessage<Relay::SrcChain>, OfaErrorContext<Relay::Error>> {
+        let message = self
+            .relay
+            .build_ack_packet_message(destination_height, &packet.packet, ack)
+            .await?;
+
+        Ok(OfaMessage::new(message))
     }
 }

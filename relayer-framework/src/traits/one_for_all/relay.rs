@@ -16,12 +16,16 @@ pub trait OfaRelay: Async {
         Error = Self::Error,
         Runtime = Self::Runtime,
         CounterpartyHeight = <Self::DstChain as OfaChain>::Height,
+        CounterpartySequence = <Self::DstChain as OfaChain>::Sequence,
+        CounterpartyConsensusState = <Self::DstChain as OfaChain>::ConsensusState,
     >;
 
     type DstChain: OfaChain<
         Error = Self::Error,
         Runtime = Self::Runtime,
         CounterpartyHeight = <Self::SrcChain as OfaChain>::Height,
+        CounterpartySequence = <Self::SrcChain as OfaChain>::Sequence,
+        CounterpartyConsensusState = <Self::SrcChain as OfaChain>::ConsensusState,
     >;
 
     type Packet: Async;
@@ -67,5 +71,5 @@ pub trait OfaRelay: Async {
         destination_height: &<Self::DstChain as OfaChain>::Height,
         packet: &Self::Packet,
         ack: &<Self::DstChain as OfaChain>::WriteAcknowledgementEvent,
-    ) -> Result<<Self::DstChain as OfaChain>::Message, Self::Error>;
+    ) -> Result<<Self::SrcChain as OfaChain>::Message, Self::Error>;
 }
