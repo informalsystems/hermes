@@ -148,7 +148,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
             let misbehaviour = TmMisbehaviour {
                 client_id: update.client_id().clone(),
-                header1: update_header,
+                header1: update_header.clone(),
                 header2: witness,
             }
             .into();
