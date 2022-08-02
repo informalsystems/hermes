@@ -28,6 +28,26 @@ pub struct OfaRelayContext<Relay: OfaRelay> {
     pub runtime: OfaRuntimeContext<Relay::Runtime>,
 }
 
+impl<Relay: OfaRelay> OfaRelayContext<Relay> {
+    pub fn new(
+        relay: Relay,
+        src_chain: Relay::SrcChain,
+        dst_chain: Relay::DstChain,
+        src_client_id: <Relay::SrcChain as OfaChain>::ClientId,
+        dst_client_id: <Relay::DstChain as OfaChain>::ClientId,
+        runtime: Relay::Runtime,
+    ) -> Self {
+        Self {
+            relay,
+            src_chain: OfaChainContext::new(src_chain, runtime.clone()),
+            dst_chain: OfaChainContext::new(dst_chain, runtime.clone()),
+            src_client_id,
+            dst_client_id,
+            runtime: OfaRuntimeContext::new(runtime),
+        }
+    }
+}
+
 pub struct OfaPacket<Relay: OfaRelay> {
     pub packet: Relay::Packet,
 }

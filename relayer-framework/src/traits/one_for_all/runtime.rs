@@ -6,7 +6,7 @@ use crate::traits::core::Async;
 use crate::traits::one_for_all::error::OfaError;
 
 #[async_trait]
-pub trait OfaRuntime: Async {
+pub trait OfaRuntime: Clone + Async {
     type Error: OfaError;
 
     async fn sleep(&self, duration: Duration);

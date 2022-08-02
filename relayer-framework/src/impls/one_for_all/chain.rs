@@ -17,6 +17,15 @@ pub struct OfaChainContext<Chain: OfaChain> {
     pub runtime: OfaRuntimeContext<Chain::Runtime>,
 }
 
+impl<Chain: OfaChain> OfaChainContext<Chain> {
+    pub fn new(chain: Chain, runtime: Chain::Runtime) -> Self {
+        Self {
+            chain,
+            runtime: OfaRuntimeContext::new(runtime),
+        }
+    }
+}
+
 impl<Chain: OfaChain> ErrorContext for OfaChainContext<Chain> {
     type Error = OfaErrorContext<Chain::Error>;
 }

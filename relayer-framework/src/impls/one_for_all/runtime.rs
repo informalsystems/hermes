@@ -6,6 +6,12 @@ pub struct OfaRuntimeContext<Runtime> {
     pub runtime: Runtime,
 }
 
+impl<Runtime> OfaRuntimeContext<Runtime> {
+    pub fn new(runtime: Runtime) -> Self {
+        Self { runtime }
+    }
+}
+
 impl<Runtime: OfaRuntime> ErrorContext for OfaRuntimeContext<Runtime> {
     type Error = OfaErrorContext<Runtime::Error>;
 }

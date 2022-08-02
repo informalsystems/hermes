@@ -9,6 +9,7 @@ extern crate alloc;
 pub mod docs;
 
 pub mod impls;
+pub mod instances;
 mod std_prelude;
 pub mod traits;
 pub mod types;
