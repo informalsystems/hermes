@@ -37,7 +37,7 @@ pub trait AsAny: CoreAny {
     fn as_any(&self) -> &dyn CoreAny;
 }
 
-impl<M: CoreAny + ConsensusState> AsAny for M {
+impl<M: CoreAny> AsAny for M {
     fn as_any(&self) -> &dyn CoreAny {
         self
     }

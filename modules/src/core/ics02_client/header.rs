@@ -19,12 +19,20 @@ use crate::prelude::*;
 use crate::timestamp::Timestamp;
 use crate::Height;
 
+use super::client_consensus::AsAny;
+
 pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
 pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
 
 /// Abstract of consensus state update information
 pub trait Header:
-    DynClone + ErasedSerialize + ErasedProtobuf<Any, Error = Error> + core::fmt::Debug + Send + Sync
+    AsAny
+    + DynClone
+    + ErasedSerialize
+    + ErasedProtobuf<Any, Error = Error>
+    + core::fmt::Debug
+    + Send
+    + Sync
 {
     /// The type of client (eg. Tendermint)
     fn client_type(&self) -> ClientType;
@@ -41,6 +49,10 @@ dyn_clone::clone_trait_object!(Header);
 
 // Implements `serde::Serialize` for all types that have Header as supertrait
 erased_serde::serialize_trait_object!(Header);
+
+pub fn downcast_header<H: Header>(h: &dyn Header) -> Option<&H> {
+    h.as_any().downcast_ref::<H>()
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 #[allow(clippy::large_enum_variant)]
