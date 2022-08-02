@@ -6,7 +6,7 @@ use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 #[cfg(any(test, feature = "mocks"))]
 use ibc_proto::ibc::mock::Header as RawMockHeader;
-use ibc_proto::protobuf::Protobuf;
+use ibc_proto::protobuf::Protobuf as ErasedProtobuf;
 use serde_derive::{Deserialize, Serialize};
 use subtle_encoding::hex;
 
@@ -24,7 +24,7 @@ pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
 
 /// Abstract of consensus state update information
 pub trait Header:
-    DynClone + ErasedSerialize + Protobuf<Any, Error = Error> + core::fmt::Debug + Send + Sync
+    DynClone + ErasedSerialize + ErasedProtobuf<Any, Error = Error> + core::fmt::Debug + Send + Sync
 {
     /// The type of client (eg. Tendermint)
     fn client_type(&self) -> ClientType;
