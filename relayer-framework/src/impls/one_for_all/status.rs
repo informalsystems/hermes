@@ -31,11 +31,7 @@ impl<Chain: OfaChain> ChainStatusQuerier<OfaChainContext<Chain>> for OfaChainSta
     async fn query_chain_status(
         context: &OfaChainContext<Chain>,
     ) -> Result<OfaChainStatus<Chain>, OfaErrorContext<Chain::Error>> {
-        let status = context
-            .chain
-            .query_chain_status()
-            .await
-            .map_err(OfaErrorContext::new)?;
+        let status = context.chain.query_chain_status().await?;
 
         Ok(OfaChainStatus { status })
     }

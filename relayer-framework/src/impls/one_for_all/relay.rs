@@ -1,16 +1,22 @@
+use async_trait::async_trait;
+
 use crate::impls::one_for_all::chain::OfaChainContext;
 use crate::impls::one_for_all::error::OfaErrorContext;
 use crate::impls::one_for_all::message::OfaMessage;
 use crate::impls::one_for_all::runtime::OfaRuntimeContext;
-use crate::traits::chain_context::{ChainContext, IbcChainContext};
+use crate::std_prelude::*;
 use crate::traits::core::ErrorContext;
+use crate::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::traits::one_for_all::chain::OfaChain;
 use crate::traits::one_for_all::relay::OfaRelay;
 use crate::traits::packet::IbcPacket;
 use crate::traits::relay_context::RelayContext;
 use crate::traits::runtime::context::RuntimeContext;
+use crate::traits::target::{DestinationTarget, SourceTarget};
 
 pub struct OfaRelayContext<Relay: OfaRelay> {
+    pub relay: Relay,
+
     pub src_chain: OfaChainContext<Relay::SrcChain>,
     pub dst_chain: OfaChainContext<Relay::DstChain>,
 
@@ -65,5 +71,69 @@ impl<Relay: OfaRelay> IbcPacket<OfaChainContext<Relay::SrcChain>, OfaChainContex
 
     fn timeout_timestamp(&self) -> &<Relay::DstChain as OfaChain>::Timestamp {
         Relay::packet_timeout_timestamp(&self.packet)
+    }
+}
+
+impl<Relay: OfaRelay> RelayContext for OfaRelayContext<Relay> {
+    type SrcChain = OfaChainContext<Relay::SrcChain>;
+
+    type DstChain = OfaChainContext<Relay::DstChain>;
+
+    type Packet = OfaPacket<Relay>;
+
+    fn source_chain(&self) -> &Self::SrcChain {
+        &self.src_chain
+    }
+
+    fn destination_chain(&self) -> &Self::DstChain {
+        &self.dst_chain
+    }
+
+    fn source_client_id(&self) -> &<Relay::SrcChain as OfaChain>::ClientId {
+        &self.src_client_id
+    }
+
+    fn destination_client_id(&self) -> &<Relay::DstChain as OfaChain>::ClientId {
+        &self.dst_client_id
+    }
+}
+
+pub struct OfaUpdateClientMessageBuilder;
+
+#[async_trait]
+impl<Relay: OfaRelay> UpdateClientMessageBuilder<OfaRelayContext<Relay>, SourceTarget>
+    for OfaUpdateClientMessageBuilder
+{
+    async fn build_update_client_messages(
+        context: &OfaRelayContext<Relay>,
+        height: &<Relay::DstChain as OfaChain>::Height,
+    ) -> Result<Vec<OfaMessage<Relay::SrcChain>>, OfaErrorContext<Relay::Error>> {
+        let messages = context
+            .relay
+            .build_src_update_client_messages(height)
+            .await?;
+
+        let out_messages = messages.into_iter().map(OfaMessage::new).collect();
+
+        Ok(out_messages)
+    }
+}
+
+#[async_trait]
+impl<Relay: OfaRelay> UpdateClientMessageBuilder<OfaRelayContext<Relay>, DestinationTarget>
+    for OfaUpdateClientMessageBuilder
+{
+    async fn build_update_client_messages(
+        context: &OfaRelayContext<Relay>,
+        height: &<Relay::SrcChain as OfaChain>::Height,
+    ) -> Result<Vec<OfaMessage<Relay::DstChain>>, OfaErrorContext<Relay::Error>> {
+        let messages = context
+            .relay
+            .build_dst_update_client_messages(height)
+            .await?;
+
+        let out_messages = messages.into_iter().map(OfaMessage::new).collect();
+
+        Ok(out_messages)
     }
 }

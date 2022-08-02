@@ -48,13 +48,13 @@ pub trait OfaRelay: Async {
 
     async fn build_src_update_client_messages(
         &self,
-        height: &<Self::SrcChain as OfaChain>::Height,
-    ) -> Result<Vec<<Self::DstChain as OfaChain>::Message>, Self::Error>;
+        height: &<Self::DstChain as OfaChain>::Height,
+    ) -> Result<Vec<<Self::SrcChain as OfaChain>::Message>, Self::Error>;
 
     async fn build_dst_update_client_messages(
         &self,
-        height: &<Self::DstChain as OfaChain>::Height,
-    ) -> Result<Vec<<Self::SrcChain as OfaChain>::Message>, Self::Error>;
+        height: &<Self::SrcChain as OfaChain>::Height,
+    ) -> Result<Vec<<Self::DstChain as OfaChain>::Message>, Self::Error>;
 
     async fn build_receive_packet_message(
         &self,

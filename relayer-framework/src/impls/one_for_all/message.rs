@@ -6,6 +6,12 @@ pub struct OfaMessage<Chain: OfaChain> {
     pub message: Chain::Message,
 }
 
+impl<Chain: OfaChain> OfaMessage<Chain> {
+    pub fn new(message: Chain::Message) -> Self {
+        Self { message }
+    }
+}
+
 impl<Chain: OfaChain> Message for OfaMessage<Chain> {
     type Signer = Chain::Signer;
     type RawMessage = Chain::RawMessage;
