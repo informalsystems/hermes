@@ -28,7 +28,7 @@ const QUERY_TYPES_CACHE: [&'static str; 4] = [
     "query_client_state",
     "query_connection",
     "query_channel",
-]; 
+];
 const QUERY_TYPES: [&'static str; 24] = [
     "query_latest_height",
     "query_blocks",
@@ -54,7 +54,7 @@ const QUERY_TYPES: [&'static str; 24] = [
     "query_commitment_prefix",
     "query_latest_height",
     "query_staking_params",
-]; 
+];
 
 #[derive(Copy, Clone, Debug, EnumIter)]
 pub enum WorkerType {
