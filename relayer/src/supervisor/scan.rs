@@ -219,6 +219,10 @@ impl ChannelScan {
         &self.channel.channel_id
     }
 
+    pub fn port(&self) -> &PortId {
+        &self.channel.port_id
+    }
+
     pub fn unreceived_packets_on_counterparty(
         &self,
         chain: &impl ChainHandle,
@@ -312,7 +316,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
                     "chain uses an allow list (without wildcards), skipping scan for fast startup"
                 );
                 info!("allowed ports/channels: {}", spec);
-
+                
                 self.query_allowed_channels(&chain, spec, &mut scan)?;
             }
             _ => {
@@ -348,7 +352,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
                         &chain.id(),
                         &client.client_id,
                         &counterparty_chain_id,
-                        &channel.channel_id,
+                        &channel_id,
                         &port_id,
                     );
 
@@ -381,16 +385,29 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
 
         let clients = query_all_clients(chain)?;
 
-        /*
-        TODO : query all clients and connections and channels
-        
-        if self.config.telemetry.enabled {
-            // query channels for all clients
-        }
-        */
 
         for client in clients {
             if let Some(client_scan) = self.scan_client(chain, client)? {
+
+                if self.config.telemetry.enabled {
+                    // discovery phase : query every chain, connections and channels
+                    let connection_scans = client_scan
+                        .connections
+                        .values();
+            
+                    for connection_scan in connection_scans {
+                        for channel in connection_scan.channels.values() {
+                            init_telemetry(
+                                &chain.id(),
+                                &client_scan.id(),
+                                &client_scan.counterparty_chain_id(),
+                                &channel.id(),
+                                &channel.port(),
+                            );
+                        }
+                    }
+                }
+
                 scan.clients.insert(client_scan.id().clone(), client_scan);
             }
         }
@@ -846,8 +863,17 @@ fn init_telemetry(
     channel_id: &ChannelId,
     port_id: &PortId,
 ) {
-    telemetry!(init_per_client, &chain_id, &client);
-    telemetry!(init_per_channel, &chain_id, &channel_id, &port_id);
+    telemetry!(
+        init_per_client, 
+        &chain_id, 
+        &client
+    );
+    telemetry!(
+        init_per_channel, 
+        &chain_id, 
+        &channel_id, 
+        &port_id
+    );
     telemetry!(
         init_per_path,
         chain_id,
