@@ -14,8 +14,17 @@ pub trait RetryableError {
 }
 
 pub struct RetryRelayer<InRelay> {
-    pub in_relayer: InRelay,
     pub max_retry: usize,
+    pub in_relayer: InRelay,
+}
+
+impl<InRelay> RetryRelayer<InRelay> {
+    pub fn new(max_retry: usize, in_relayer: InRelay) -> Self {
+        Self {
+            max_retry,
+            in_relayer,
+        }
+    }
 }
 
 #[async_trait]

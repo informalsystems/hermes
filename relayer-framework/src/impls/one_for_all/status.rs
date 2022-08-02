@@ -4,12 +4,22 @@ use crate::impls::one_for_all::chain::OfaChainContext;
 use crate::impls::one_for_all::error::OfaErrorContext;
 use crate::std_prelude::*;
 use crate::traits::one_for_all::chain::OfaChain;
-use crate::traits::queries::status::{ChainStatus, ChainStatusContext, ChainStatusQuerier};
+use crate::traits::queries::status::{
+    ChainStatus, ChainStatusContext, ChainStatusQuerier, ChainStatusQuerierContext,
+};
 
 pub struct OfaChainStatusQuerier;
 
 pub struct OfaChainStatus<Chain: OfaChain> {
     pub status: Chain::ChainStatus,
+}
+
+impl<Chain: OfaChain> ChainStatusContext for OfaChainContext<Chain> {
+    type ChainStatus = OfaChainStatus<Chain>;
+}
+
+impl<Chain: OfaChain> ChainStatusQuerierContext for OfaChainContext<Chain> {
+    type ChainStatusQuerier = OfaChainStatusQuerier;
 }
 
 impl<Chain: OfaChain> ChainStatus<OfaChainContext<Chain>> for OfaChainStatus<Chain> {
@@ -20,10 +30,6 @@ impl<Chain: OfaChain> ChainStatus<OfaChainContext<Chain>> for OfaChainStatus<Cha
     fn timestamp(&self) -> &Chain::Timestamp {
         Chain::chain_status_timestamp(&self.status)
     }
-}
-
-impl<Chain: OfaChain> ChainStatusContext for OfaChainContext<Chain> {
-    type ChainStatus = OfaChainStatus<Chain>;
 }
 
 #[async_trait]

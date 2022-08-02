@@ -22,10 +22,7 @@ where
         ack_relayer: ack_packet_relayer(),
     };
 
-    RetryRelayer {
-        max_retry,
-        in_relayer: relayer1,
-    }
+    RetryRelayer::new(max_retry, relayer1)
 }
 
 pub fn receive_packet_relayer<ChainA, ChainB>(
