@@ -11,7 +11,7 @@ pub trait OfaChain: Async {
 
     type Runtime: OfaRuntime<Error = Self::Error>;
 
-    type Height: Async;
+    type Height: Ord + Async;
 
     type Timestamp: Async;
 

@@ -8,7 +8,7 @@ use crate::std_prelude::*;
 use crate::traits::core::ErrorContext;
 use crate::traits::messages::ack_packet::AckPacketMessageBuilder;
 use crate::traits::messages::receive_packet::ReceivePacketMessageBuilder;
-use crate::traits::messages::update_client::UpdateClientMessageBuilder;
+use crate::traits::messages::update_client::{UpdateClientContext, UpdateClientMessageBuilder};
 use crate::traits::one_for_all::chain::OfaChain;
 use crate::traits::one_for_all::relay::OfaRelay;
 use crate::traits::packet::IbcPacket;
@@ -121,6 +121,14 @@ impl<Relay: OfaRelay> RelayContext for OfaRelayContext<Relay> {
 }
 
 pub struct OfaUpdateClientMessageBuilder;
+
+impl<Relay: OfaRelay> UpdateClientContext<SourceTarget> for OfaRelayContext<Relay> {
+    type UpdateClientMessageBuilder = OfaUpdateClientMessageBuilder;
+}
+
+impl<Relay: OfaRelay> UpdateClientContext<DestinationTarget> for OfaRelayContext<Relay> {
+    type UpdateClientMessageBuilder = OfaUpdateClientMessageBuilder;
+}
 
 #[async_trait]
 impl<Relay: OfaRelay> UpdateClientMessageBuilder<OfaRelayContext<Relay>, SourceTarget>
