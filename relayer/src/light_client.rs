@@ -4,11 +4,13 @@ use ibc::clients::ics07_tendermint::header::{decode_header, Header as Tendermint
 use ibc::core::ics02_client::client_state::AnyClientState;
 use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::error::Error;
-use ibc::core::ics02_client::header::{Header, TENDERMINT_HEADER_TYPE_URL};
+use ibc::core::ics02_client::header::{Header, MOCK_HEADER_TYPE_URL, TENDERMINT_HEADER_TYPE_URL};
+use ibc::mock::header::MockHeader;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
 use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
+use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawTmHeader;
+use ibc_proto::ibc::mock::Header as RawMockHeader;
 use ibc_proto::protobuf::Protobuf as ErasedProtobuf;
 use serde::{Deserialize, Serialize};
 
@@ -71,24 +73,28 @@ pub trait LightClient<C: ChainEndpoint>: Send + Sync {
 #[allow(clippy::large_enum_variant)]
 pub enum AnyHeader {
     Tendermint(TendermintHeader),
+    Mock(MockHeader),
 }
 
 impl Header for AnyHeader {
     fn client_type(&self) -> ClientType {
         match self {
             Self::Tendermint(header) => header.client_type(),
+            Self::Mock(header) => header.client_type(),
         }
     }
 
     fn height(&self) -> Height {
         match self {
             Self::Tendermint(header) => header.height(),
+            Self::Mock(header) => header.height(),
         }
     }
 
     fn timestamp(&self) -> Timestamp {
         match self {
             Self::Tendermint(header) => header.timestamp(),
+            Self::Mock(header) => header.timestamp(),
         }
     }
 }
@@ -118,6 +124,10 @@ impl TryFrom<Any> for AnyHeader {
 
                 Ok(AnyHeader::Tendermint(val))
             }
+            MOCK_HEADER_TYPE_URL => Ok(AnyHeader::Mock(
+                <MockHeader as ErasedProtobuf<RawMockHeader>>::decode_vec(&raw.value)
+                    .map_err(Error::invalid_raw_header)?,
+            )),
 
             _ => Err(Error::unknown_header_type(raw.type_url)),
         }
@@ -129,8 +139,13 @@ impl From<AnyHeader> for Any {
         match value {
             AnyHeader::Tendermint(header) => Any {
                 type_url: TENDERMINT_HEADER_TYPE_URL.to_string(),
-                value: ErasedProtobuf::<RawHeader>::encode_vec(&header)
+                value: ErasedProtobuf::<RawTmHeader>::encode_vec(&header)
                     .expect("encoding to `Any` from `AnyHeader::Tendermint`"),
+            },
+            AnyHeader::Mock(header) => Any {
+                type_url: MOCK_HEADER_TYPE_URL.to_string(),
+                value: ErasedProtobuf::<RawMockHeader>::encode_vec(&header)
+                    .expect("encoding to `Any` from `AnyHeader::Mock`"),
             },
         }
     }
@@ -139,5 +154,11 @@ impl From<AnyHeader> for Any {
 impl From<TendermintHeader> for AnyHeader {
     fn from(header: TendermintHeader) -> Self {
         Self::Tendermint(header)
+    }
+}
+
+impl From<MockHeader> for AnyHeader {
+    fn from(header: MockHeader) -> Self {
+        Self::Mock(header)
     }
 }

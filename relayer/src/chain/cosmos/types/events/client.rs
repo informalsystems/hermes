@@ -72,7 +72,9 @@ pub fn extract_header_from_tx(event: &AbciEvent) -> Result<Box<dyn Header>, Erro
         let key = tag.key.as_ref();
         let value = tag.value.as_ref();
         if key == HEADER_ATTRIBUTE_KEY {
-            return AnyHeader::decode_from_string(value).map(AnyHeader::into_box);
+            println!("Header value: {:?}", value);
+            println!("Decoded value: {:?}", AnyHeader::decode_from_string(value));
+            return AnyHeader::decode_from_string(value).map(|v| AnyHeader::into_box(v));
         }
     }
     Err(Error::missing_raw_header())
@@ -103,7 +105,7 @@ mod tests {
         let upgrade_client = UpgradeClient::from(attributes.clone());
         abci_events.push(AbciEvent::from(upgrade_client.clone()));
         let mut update_client = UpdateClient::from(attributes);
-        let header = MockHeader::new(height);
+        let header = AnyHeader::Mock(MockHeader::new(height));
         update_client.header = Some(header.into_box());
         abci_events.push(AbciEvent::from(update_client.clone()));
 
