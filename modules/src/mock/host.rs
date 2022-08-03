@@ -109,7 +109,7 @@ impl HostBlock {
         .generate()
         .unwrap();
         SyntheticTmBlock {
-            trusted_height: Height::new(chain_id.version(), height).unwrap(),
+            trusted_height: Height::new(chain_id.version(), 1).unwrap(),
             light_block,
         }
     }
