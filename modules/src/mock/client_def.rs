@@ -1,3 +1,4 @@
+use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use crate::core::ics02_client::client_consensus::ConsensusState;
@@ -26,7 +27,6 @@ use crate::Height;
 pub struct MockClient;
 
 impl ClientDef for MockClient {
-    type Header = MockHeader;
     type ClientState = MockClientState;
     type ConsensusState = MockConsensusState;
 
@@ -35,14 +35,17 @@ impl ClientDef for MockClient {
         _ctx: &dyn ClientReaderLightClient,
         _client_id: ClientId,
         client_state: Self::ClientState,
-        header: Self::Header,
+        header: Any,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
+        let header = MockHeader::try_from(header)?;
+
         if client_state.latest_height() >= header.height() {
             return Err(Error::low_header_height(
                 header.height(),
                 client_state.latest_height(),
             ));
         }
+
         Ok((
             MockClientState::new(header),
             MockConsensusState::new(header),

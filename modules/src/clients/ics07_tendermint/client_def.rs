@@ -1,5 +1,6 @@
 use core::convert::TryInto;
 
+use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 use ibc_proto::protobuf::Protobuf;
 use prost::Message;
@@ -9,7 +10,7 @@ use tendermint_light_client_verifier::{ProdVerifier, Verdict, Verifier};
 use crate::clients::ics07_tendermint::client_state::ClientState as TmClientState;
 use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
 use crate::clients::ics07_tendermint::error::Error;
-use crate::clients::ics07_tendermint::header::Header;
+use crate::clients::ics07_tendermint::header::Header as TmHeader;
 use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_def::ClientDef;
 use crate::core::ics02_client::client_state::ClientState;
@@ -41,7 +42,6 @@ pub struct TendermintClient {
 }
 
 impl ClientDef for TendermintClient {
-    type Header = Header;
     type ClientState = TmClientState;
     type ConsensusState = TmConsensusState;
 
@@ -50,7 +50,7 @@ impl ClientDef for TendermintClient {
         ctx: &dyn ClientReaderLightClient,
         client_id: ClientId,
         client_state: Self::ClientState,
-        header: Self::Header,
+        header: Any,
     ) -> Result<(Self::ClientState, Self::ConsensusState), Ics02Error> {
         fn maybe_consensus_state(
             ctx: &dyn ClientReaderLightClient,
@@ -65,6 +65,8 @@ impl ClientDef for TendermintClient {
                 },
             }
         }
+
+        let header = TmHeader::try_from(header)?;
 
         if header.height().revision_number() != client_state.chain_id.version() {
             return Err(Ics02Error::client_specific(
@@ -204,7 +206,7 @@ impl ClientDef for TendermintClient {
 
         Ok((
             client_state.with_header(header.clone())?,
-            TmConsensusState::from(header),
+            TmConsensusState::from(header.clone()),
         ))
     }
 
