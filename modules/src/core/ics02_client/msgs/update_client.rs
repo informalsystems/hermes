@@ -77,7 +77,7 @@ mod tests {
 
     use test_log::test;
 
-    use ibc_proto::ibc::core::client::v1::MsgUpdateClient;
+    use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 
     use crate::clients::ics07_tendermint::header::test_util::get_dummy_ics07_header;
     use crate::core::ics02_client::header::AnyHeader;
@@ -93,9 +93,9 @@ mod tests {
         let header = get_dummy_ics07_header();
 
         let msg = MsgUpdateAnyClient::new(client_id, AnyHeader::Tendermint(header).into(), signer);
-        let raw = MsgUpdateClient::from(msg.clone());
+        let raw = RawMsgUpdateClient::from(msg.clone());
         let msg_back = MsgUpdateAnyClient::try_from(raw.clone()).unwrap();
-        let raw_back = MsgUpdateClient::from(msg_back.clone());
+        let raw_back = RawMsgUpdateClient::from(msg_back.clone());
         assert_eq!(msg, msg_back);
         assert_eq!(raw, raw_back);
     }
