@@ -13,7 +13,7 @@ use ibc::core::ics02_client::context::ClientReader;
 use ibc::core::ics02_client::error as client_error;
 use ibc::core::ics02_client::header::AnyHeader;
 use ibc::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
-use ibc::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+use ibc::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use ibc::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
 use ibc::core::ics02_client::msgs::ClientMsg;
 use ibc::core::ics03_connection::connection::{Counterparty, State as ConnectionState};
@@ -325,7 +325,7 @@ impl IbcTestRunner {
                 let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
-                let msg = Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
+                let msg = Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateClient {
                     client_id: Self::client_id(client_id),
                     header: Self::header(header).into(),
                     signer: Self::signer(),

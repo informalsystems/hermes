@@ -22,7 +22,7 @@ use ibc::core::ics02_client::header::{AnyHeader, Header};
 use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::core::ics02_client::msgs::misbehavior::MsgSubmitAnyMisbehaviour;
-use ibc::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+use ibc::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use ibc::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
 use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
@@ -1058,7 +1058,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             );
 
             msgs.push(
-                MsgUpdateAnyClient {
+                MsgUpdateClient {
                     header: header.into(),
                     client_id: self.id.clone(),
                     signer: signer.clone(),
@@ -1075,7 +1075,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         );
 
         msgs.push(
-            MsgUpdateAnyClient {
+            MsgUpdateClient {
                 header: header.into(),
                 signer,
                 client_id: self.id.clone(),
@@ -1465,7 +1465,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         for header in evidence.supporting_headers {
             msgs.push(
-                MsgUpdateAnyClient {
+                MsgUpdateClient {
                     header: header.into(),
                     client_id: self.id.clone(),
                     signer: signer.clone(),

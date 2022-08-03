@@ -10,7 +10,7 @@ use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
 use crate::core::ics02_client::handler::ClientResult;
 use crate::core::ics02_client::height::Height;
-use crate::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+use crate::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
@@ -30,11 +30,11 @@ pub struct Result {
 
 pub fn process<Ctx: ClientReader>(
     ctx: &Ctx,
-    msg: MsgUpdateAnyClient,
+    msg: MsgUpdateClient,
 ) -> HandlerResult<ClientResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    let MsgUpdateAnyClient {
+    let MsgUpdateClient {
         client_id,
         header,
         signer: _,
@@ -112,7 +112,7 @@ mod tests {
     use crate::core::ics02_client::error::{Error, ErrorDetail};
     use crate::core::ics02_client::handler::dispatch;
     use crate::core::ics02_client::handler::ClientResult::Update;
-    use crate::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+    use crate::core::ics02_client::msgs::update_client::MsgUpdateClient;
     use crate::core::ics02_client::msgs::ClientMsg;
     use crate::core::ics24_host::identifier::{ChainId, ClientId};
     use crate::events::IbcEvent;
@@ -135,7 +135,7 @@ mod tests {
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42).unwrap());
         let height = Height::new(0, 46).unwrap();
-        let msg = MsgUpdateAnyClient {
+        let msg = MsgUpdateClient {
             client_id: client_id.clone(),
             header: MockHeader::new(height).with_timestamp(timestamp).into(),
             signer,
@@ -183,7 +183,7 @@ mod tests {
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42).unwrap());
 
-        let msg = MsgUpdateAnyClient {
+        let msg = MsgUpdateClient {
             client_id: ClientId::from_str("nonexistingclient").unwrap(),
             header: MockHeader::new(Height::new(0, 46).unwrap()).into(),
             signer,
@@ -219,7 +219,7 @@ mod tests {
         }
 
         for cid in &client_ids {
-            let msg = MsgUpdateAnyClient {
+            let msg = MsgUpdateClient {
                 client_id: cid.clone(),
                 header: MockHeader::new(update_height).into(),
                 signer: signer.clone(),
@@ -280,7 +280,7 @@ mod tests {
         block_ref.set_trusted_height(client_height);
 
         let latest_header_height = block_ref.height();
-        let msg = MsgUpdateAnyClient {
+        let msg = MsgUpdateClient {
             client_id: client_id.clone(),
             header: block_ref.into(),
             signer,
@@ -350,7 +350,7 @@ mod tests {
         block_ref.set_trusted_height(trusted_height);
 
         let latest_header_height = block_ref.height();
-        let msg = MsgUpdateAnyClient {
+        let msg = MsgUpdateClient {
             client_id: client_id.clone(),
             header: block_ref.into(),
             signer,
@@ -430,7 +430,7 @@ mod tests {
         };
 
         let latest_header_height = block_ref.height();
-        let msg = MsgUpdateAnyClient {
+        let msg = MsgUpdateClient {
             client_id: client_id.clone(),
             header: block_ref.into(),
             signer,
@@ -501,7 +501,7 @@ mod tests {
 
         let block_ref = ctx_b.host_block(client_update_height).unwrap();
 
-        let msg = MsgUpdateAnyClient {
+        let msg = MsgUpdateClient {
             client_id,
             header: block_ref.clone().into(),
             signer,

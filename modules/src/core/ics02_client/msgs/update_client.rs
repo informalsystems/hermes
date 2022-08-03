@@ -16,15 +16,15 @@ pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpdateClient";
 
 /// A type of message that triggers the update of an on-chain (IBC) client with new headers.
 #[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound when possible
-pub struct MsgUpdateAnyClient {
+pub struct MsgUpdateClient {
     pub client_id: ClientId,
     pub header: Any,
     pub signer: Signer,
 }
 
-impl MsgUpdateAnyClient {
+impl MsgUpdateClient {
     pub fn new(client_id: ClientId, header: Any, signer: Signer) -> Self {
-        MsgUpdateAnyClient {
+        MsgUpdateClient {
             client_id,
             header,
             signer,
@@ -32,7 +32,7 @@ impl MsgUpdateAnyClient {
     }
 }
 
-impl Msg for MsgUpdateAnyClient {
+impl Msg for MsgUpdateClient {
     type ValidationError = ValidationError;
     type Raw = RawMsgUpdateClient;
 
@@ -45,13 +45,13 @@ impl Msg for MsgUpdateAnyClient {
     }
 }
 
-impl Protobuf<RawMsgUpdateClient> for MsgUpdateAnyClient {}
+impl Protobuf<RawMsgUpdateClient> for MsgUpdateClient {}
 
-impl TryFrom<RawMsgUpdateClient> for MsgUpdateAnyClient {
+impl TryFrom<RawMsgUpdateClient> for MsgUpdateClient {
     type Error = Error;
 
     fn try_from(raw: RawMsgUpdateClient) -> Result<Self, Self::Error> {
-        Ok(MsgUpdateAnyClient {
+        Ok(MsgUpdateClient {
             client_id: raw
                 .client_id
                 .parse()
@@ -62,8 +62,8 @@ impl TryFrom<RawMsgUpdateClient> for MsgUpdateAnyClient {
     }
 }
 
-impl From<MsgUpdateAnyClient> for RawMsgUpdateClient {
-    fn from(ics_msg: MsgUpdateAnyClient) -> Self {
+impl From<MsgUpdateClient> for RawMsgUpdateClient {
+    fn from(ics_msg: MsgUpdateClient) -> Self {
         RawMsgUpdateClient {
             client_id: ics_msg.client_id.to_string(),
             header: Some(ics_msg.header),
@@ -81,7 +81,7 @@ mod tests {
 
     use crate::clients::ics07_tendermint::header::test_util::get_dummy_ics07_header;
     use crate::core::ics02_client::header::AnyHeader;
-    use crate::core::ics02_client::msgs::MsgUpdateAnyClient;
+    use crate::core::ics02_client::msgs::MsgUpdateClient;
     use crate::core::ics24_host::identifier::ClientId;
     use crate::test_utils::get_dummy_account_id;
 
@@ -92,9 +92,9 @@ mod tests {
 
         let header = get_dummy_ics07_header();
 
-        let msg = MsgUpdateAnyClient::new(client_id, AnyHeader::Tendermint(header).into(), signer);
+        let msg = MsgUpdateClient::new(client_id, AnyHeader::Tendermint(header).into(), signer);
         let raw = RawMsgUpdateClient::from(msg.clone());
-        let msg_back = MsgUpdateAnyClient::try_from(raw.clone()).unwrap();
+        let msg_back = MsgUpdateClient::try_from(raw.clone()).unwrap();
         let raw_back = RawMsgUpdateClient::from(msg_back.clone());
         assert_eq!(msg, msg_back);
         assert_eq!(raw, raw_back);

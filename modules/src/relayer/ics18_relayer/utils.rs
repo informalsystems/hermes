@@ -1,5 +1,5 @@
 use crate::core::ics02_client::header::Header;
-use crate::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+use crate::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use crate::core::ics02_client::msgs::ClientMsg;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::relayer::ics18_relayer::context::Ics18Context;
@@ -40,7 +40,7 @@ where
     };
 
     // Client on destination chain can be updated.
-    Ok(ClientMsg::UpdateClient(MsgUpdateAnyClient {
+    Ok(ClientMsg::UpdateClient(MsgUpdateClient {
         client_id: client_id.clone(),
         header: src_header.clone_into(),
         signer: dest.signer(),
