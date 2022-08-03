@@ -200,12 +200,14 @@ mod tests {
         ];
         let batches =
             batch_messages(MaxMsgNum::default(), MaxTxSize::new(42).unwrap(), messages).unwrap();
+
         assert_eq!(batches.len(), 2);
         assert_eq!(batches[0].len(), 2);
         assert_eq!(batches[0][0].type_url, "/example.Foo");
         assert_eq!(batches[0][0].value.len(), 6);
         assert_eq!(batches[0][1].type_url, "/example.Bar");
         assert_eq!(batches[0][1].value.len(), 4);
+
         assert_eq!(batches[1].len(), 1);
         assert_eq!(batches[1][0].type_url, "/example.Baz");
         assert_eq!(batches[1][0].value.len(), 2);
@@ -223,9 +225,12 @@ mod tests {
             messages.clone(),
         )
         .unwrap();
+
         assert_eq!(batches.len(), 1);
         assert_eq!(batches[0].len(), 1);
+
         let res = batch_messages(MaxMsgNum::default(), MaxTxSize::new(21).unwrap(), messages);
+
         assert!(res.is_err());
     }
 
@@ -328,7 +333,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "called `Result::unwrap()` on an `Err` value")]
+    #[should_panic(expected = "`max_msg_num` must be greater than or equal to 1, found 0")]
     fn test_max_msg_num_of_zero_panics() {
         let _batches = batch_messages(MaxMsgNum::new(0).unwrap(), MaxTxSize::default(), vec![]);
     }
