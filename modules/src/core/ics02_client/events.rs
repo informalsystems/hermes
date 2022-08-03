@@ -5,7 +5,6 @@ use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
 use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::events::{IbcEvent, IbcEventType};
@@ -160,7 +159,7 @@ impl core::fmt::Display for CreateClient {
 #[derive(Serialize, Clone, PartialEq)]
 pub struct UpdateClient {
     pub common: Attributes,
-    pub header: Option<Box<dyn Header<Error = Error>>>,
+    pub header: Option<Box<dyn Header>>,
 }
 
 impl UpdateClient {
