@@ -51,7 +51,7 @@ pub async fn send_tx_with_account_sequence_retry(
         .await
     {
         Ok(res) => {
-            telemetry!(msg_num, &config.chain_id, number_messages);
+            telemetry!(total_messages_submitted, &config.chain_id, number_messages);
             Ok(res)
         }
         Err(e) => Err(e),

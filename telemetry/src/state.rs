@@ -73,8 +73,8 @@ pub struct TelemetryState {
     /// How many IBC events did Hermes receive via the WebSocket subscription, per chain
     ws_events: Counter<u64>,
 
-    /// How many messages Hermes submitted to the chain, per chain
-    msg_num: Counter<u64>,
+    /// Number of messages submitted to a specific chain
+    total_messages_submitted: Counter<u64>,
 
     /// The balance of each wallet Hermes uses per chain
     wallet_balance: ValueRecorder<f64>,
@@ -259,10 +259,10 @@ impl TelemetryState {
     }
 
     /// How many messages Hermes submitted to the chain, per chain
-    pub fn msg_num(&self, chain_id: &ChainId, count: u64) {
+    pub fn total_messages_submitted(&self, chain_id: &ChainId, count: u64) {
         let labels = &[KeyValue::new("chain", chain_id.to_string())];
 
-        self.msg_num.add(count, labels);
+        self.total_messages_submitted.add(count, labels);
     }
 
     /// The balance in each wallet that Hermes is using, per account, denom and chain.
@@ -641,9 +641,9 @@ impl Default for TelemetryState {
                 .with_description("How many IBC events did Hermes receive via the WebSocket subscription, per chain")
                 .init(),
 
-            msg_num: meter
-                .u64_counter("msg_num")
-                .with_description("How many messages Hermes submitted to the chain, per chain")
+                total_messages_submitted: meter
+                .u64_counter("total_messages_submitted")
+                .with_description("Number of messages submitted to a specific chain")
                 .init(),
 
             wallet_balance: meter
