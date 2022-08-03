@@ -58,6 +58,14 @@ pub trait Header:
 
     /// The timestamp of the consensus state
     fn timestamp(&self) -> Timestamp;
+
+    /// The timestamp of the consensus state
+    fn into_box(self) -> Box<dyn Header>
+    where
+        Self: Sized,
+    {
+        Box::new(self)
+    }
 }
 
 // Implements `Clone` for `Box<dyn Header>`
