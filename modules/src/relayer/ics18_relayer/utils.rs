@@ -42,7 +42,7 @@ where
     // Client on destination chain can be updated.
     Ok(ClientMsg::UpdateClient(MsgUpdateAnyClient {
         client_id: client_id.clone(),
-        header: src_header,
+        header: src_header.into(),
         signer: dest.signer(),
     }))
 }

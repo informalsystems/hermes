@@ -134,11 +134,10 @@ mod tests {
         let timestamp = Timestamp::now();
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42).unwrap());
+        let height = Height::new(0, 46).unwrap();
         let msg = MsgUpdateAnyClient {
             client_id: client_id.clone(),
-            header: MockHeader::new(Height::new(0, 46).unwrap())
-                .with_timestamp(timestamp)
-                .into(),
+            header: MockHeader::new(height).with_timestamp(timestamp).into(),
             signer,
         };
 
@@ -164,7 +163,7 @@ mod tests {
                         assert_eq!(
                             upd_res.client_state,
                             AnyClientState::Mock(MockClientState::new(
-                                MockHeader::new(msg.header.height()).with_timestamp(timestamp)
+                                MockHeader::new(height).with_timestamp(timestamp)
                             ))
                         )
                     }
@@ -288,9 +287,10 @@ mod tests {
             AnyHeader::Mock(m) => AnyHeader::Mock(m),
         };
 
+        let latest_header_height = latest_header.height();
         let msg = MsgUpdateAnyClient {
             client_id: client_id.clone(),
-            header: latest_header,
+            header: latest_header.into(),
             signer,
         };
 
@@ -314,7 +314,7 @@ mod tests {
                     Update(upd_res) => {
                         assert_eq!(upd_res.client_id, client_id);
                         assert!(!upd_res.client_state.is_frozen());
-                        assert_eq!(upd_res.client_state.latest_height(), msg.header.height(),)
+                        assert_eq!(upd_res.client_state.latest_height(), latest_header_height,)
                     }
                     _ => panic!("update handler result has incorrect type"),
                 }
@@ -366,9 +366,10 @@ mod tests {
             AnyHeader::Mock(m) => AnyHeader::Mock(m),
         };
 
+        let latest_header_height = latest_header.height();
         let msg = MsgUpdateAnyClient {
             client_id: client_id.clone(),
-            header: latest_header,
+            header: latest_header.into(),
             signer,
         };
 
@@ -392,7 +393,7 @@ mod tests {
                     Update(upd_res) => {
                         assert_eq!(upd_res.client_id, client_id);
                         assert!(!upd_res.client_state.is_frozen());
-                        assert_eq!(upd_res.client_state.latest_height(), msg.header.height(),)
+                        assert_eq!(upd_res.client_state.latest_height(), latest_header_height,)
                     }
                     _ => panic!("update handler result has incorrect type"),
                 }
@@ -445,9 +446,10 @@ mod tests {
             AnyHeader::Mock(header) => AnyHeader::Mock(header),
         };
 
+        let latest_header_height = latest_header.height();
         let msg = MsgUpdateAnyClient {
             client_id: client_id.clone(),
-            header: latest_header,
+            header: latest_header.into(),
             signer,
         };
 
@@ -472,7 +474,7 @@ mod tests {
                         assert_eq!(upd_res.client_id, client_id);
                         assert!(!upd_res.client_state.is_frozen());
                         assert_eq!(upd_res.client_state, ctx.latest_client_states(&client_id));
-                        assert_eq!(upd_res.client_state.latest_height(), msg.header.height(),)
+                        assert_eq!(upd_res.client_state.latest_height(), latest_header_height,)
                     }
                     _ => panic!("update handler result has incorrect type"),
                 }
@@ -519,7 +521,7 @@ mod tests {
 
         let msg = MsgUpdateAnyClient {
             client_id,
-            header: latest_header,
+            header: latest_header.into(),
             signer,
         };
 

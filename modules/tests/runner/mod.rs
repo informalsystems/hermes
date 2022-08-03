@@ -327,7 +327,7 @@ impl IbcTestRunner {
                 // create ICS26 message and deliver it
                 let msg = Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
                     client_id: Self::client_id(client_id),
-                    header: Self::header(header),
+                    header: Self::header(header).into(),
                     signer: Self::signer(),
                 }));
                 ctx.deliver(msg)
