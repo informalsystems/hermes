@@ -206,7 +206,7 @@ impl ClientDef for TendermintClient {
 
         Ok((
             client_state.with_header(header.clone())?,
-            TmConsensusState::from(header.clone()),
+            TmConsensusState::from(header),
         ))
     }
 
