@@ -58,12 +58,14 @@
 mod erased;
 mod error;
 
+use alloc::string::String;
 use alloc::vec::Vec;
 use core::fmt::Display;
 
 use bytes::Buf;
 use prost::encoding::encoded_len_varint;
 use prost::Message;
+use subtle_encoding::hex;
 
 pub use self::error::Error;
 
@@ -172,6 +174,12 @@ where
         Self: Sized,
     {
         Self::decode_length_delimited(v)
+    }
+
+    fn encode_to_hex_string(&self) -> String {
+        let buf = self.encode_vec().expect("encoding shouldn't fail");
+        let encoded = hex::encode(buf);
+        String::from_utf8(encoded).expect("hex-encoded string should always be valid UTF-8")
     }
 }
 

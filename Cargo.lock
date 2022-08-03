@@ -913,6 +913,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "erased-serde"
+version = "0.3.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81d013529d5574a60caeda29e179e695125448e5de52e3874f7b4c1d7360e18e"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "error-chain"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1408,7 +1417,9 @@ version = "0.17.0"
 dependencies = [
  "bytes",
  "derive_more",
+ "dyn-clone",
  "env_logger",
+ "erased-serde",
  "flex-error",
  "ibc-proto",
  "ics23",
@@ -1463,6 +1474,7 @@ dependencies = [
  "prost-types",
  "schemars",
  "serde",
+ "subtle-encoding",
  "tendermint-proto",
  "tonic",
 ]

@@ -4,9 +4,11 @@ use ibc::core::ics02_client::events::{
     CLIENT_ID_ATTRIBUTE_KEY, CLIENT_TYPE_ATTRIBUTE_KEY, CONSENSUS_HEIGHT_ATTRIBUTE_KEY,
     HEADER_ATTRIBUTE_KEY, HEIGHT_ATTRIBUTE_KEY,
 };
-use ibc::core::ics02_client::header::AnyHeader;
+use ibc::core::ics02_client::header::Header;
 use ibc::events::{IbcEvent, IbcEventType};
 use tendermint::abci::Event as AbciEvent;
+
+use crate::light_client::AnyHeader;
 
 pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEvent> {
     match event.type_str.parse() {
@@ -65,12 +67,12 @@ fn extract_attributes_from_tx(event: &AbciEvent) -> Result<Attributes, Error> {
     Ok(attr)
 }
 
-pub fn extract_header_from_tx(event: &AbciEvent) -> Result<AnyHeader, Error> {
+pub fn extract_header_from_tx(event: &AbciEvent) -> Result<Box<dyn Header>, Error> {
     for tag in &event.attributes {
         let key = tag.key.as_ref();
         let value = tag.value.as_ref();
         if key == HEADER_ATTRIBUTE_KEY {
-            return AnyHeader::decode_from_string(value);
+            return AnyHeader::decode_from_string(value).map(AnyHeader::into_box);
         }
     }
     Err(Error::missing_raw_header())
@@ -101,8 +103,8 @@ mod tests {
         let upgrade_client = UpgradeClient::from(attributes.clone());
         abci_events.push(AbciEvent::from(upgrade_client.clone()));
         let mut update_client = UpdateClient::from(attributes);
-        let header = MockHeader::new(height);
-        update_client.header = Some(header.into());
+        let header = AnyHeader::Mock(MockHeader::new(height));
+        update_client.header = Some(header.into_box());
         abci_events.push(AbciEvent::from(update_client.clone()));
 
         for event in abci_events {

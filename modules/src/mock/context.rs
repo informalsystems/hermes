@@ -21,7 +21,7 @@ use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::core::ics02_client::error::Error as Ics02Error;
-use crate::core::ics02_client::header::AnyHeader;
+use crate::core::ics02_client::header::Header;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::core::ics03_connection::error::Error as Ics03Error;
@@ -209,7 +209,7 @@ impl MockContext {
 
                 let consensus_state = AnyConsensusState::from(light_block.clone());
                 let client_state =
-                    get_dummy_tendermint_client_state(light_block.signed_header.header).into();
+                    get_dummy_tendermint_client_state(light_block.header().clone()).into();
 
                 // Return the tuple.
                 (Some(client_state), consensus_state)
@@ -261,7 +261,7 @@ impl MockContext {
 
                 let consensus_state = AnyConsensusState::from(light_block.clone());
                 let client_state =
-                    get_dummy_tendermint_client_state(light_block.signed_header.header).into();
+                    get_dummy_tendermint_client_state(light_block.header().clone()).into();
 
                 // Return the tuple.
                 (Some(client_state), consensus_state)
@@ -1288,9 +1288,9 @@ impl Ics18Context for MockContext {
         ClientReader::client_state(self, client_id).ok()
     }
 
-    fn query_latest_header(&self) -> Option<AnyHeader> {
+    fn query_latest_header(&self) -> Option<Box<dyn Header>> {
         let block_ref = self.host_block(self.host_current_height());
-        block_ref.cloned().map(Into::into)
+        block_ref.cloned().map(Header::into_box)
     }
 
     fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Ics18Error> {

@@ -9,9 +9,8 @@ use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
 use crate::core::ics02_client::handler::ClientResult;
-use crate::core::ics02_client::header::Header;
 use crate::core::ics02_client::height::Height;
-use crate::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+use crate::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
@@ -31,11 +30,11 @@ pub struct Result {
 
 pub fn process<Ctx: ClientReader>(
     ctx: &Ctx,
-    msg: MsgUpdateAnyClient,
+    msg: MsgUpdateClient,
 ) -> HandlerResult<ClientResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    let MsgUpdateAnyClient {
+    let MsgUpdateClient {
         client_id,
         header,
         signer: _,
@@ -71,7 +70,7 @@ pub fn process<Ctx: ClientReader>(
     if client_state.expired(duration) {
         return Err(Error::header_not_within_trust_period(
             latest_consensus_state.timestamp(),
-            header.timestamp(),
+            now,
         ));
     }
 
@@ -102,18 +101,18 @@ pub fn process<Ctx: ClientReader>(
 
 #[cfg(test)]
 mod tests {
+    use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use core::str::FromStr;
     use test_log::test;
 
-    use crate::core::ics02_client::client_consensus::AnyConsensusState;
+    // use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
     use crate::core::ics02_client::client_type::ClientType;
     use crate::core::ics02_client::context::ClientReader;
     use crate::core::ics02_client::error::{Error, ErrorDetail};
     use crate::core::ics02_client::handler::dispatch;
     use crate::core::ics02_client::handler::ClientResult::Update;
-    use crate::core::ics02_client::header::{AnyHeader, Header};
-    use crate::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+    use crate::core::ics02_client::msgs::update_client::MsgUpdateClient;
     use crate::core::ics02_client::msgs::ClientMsg;
     use crate::core::ics24_host::identifier::{ChainId, ClientId};
     use crate::events::IbcEvent;
@@ -121,7 +120,7 @@ mod tests {
     use crate::mock::client_state::MockClientState;
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
-    use crate::mock::host::HostType;
+    use crate::mock::host::{HostBlock, HostType};
     use crate::prelude::*;
     use crate::test_utils::get_dummy_account_id;
     use crate::timestamp::Timestamp;
@@ -135,11 +134,10 @@ mod tests {
         let timestamp = Timestamp::now();
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42).unwrap());
-        let msg = MsgUpdateAnyClient {
+        let height = Height::new(0, 46).unwrap();
+        let msg = MsgUpdateClient {
             client_id: client_id.clone(),
-            header: MockHeader::new(Height::new(0, 46).unwrap())
-                .with_timestamp(timestamp)
-                .into(),
+            header: MockHeader::new(height).with_timestamp(timestamp).into(),
             signer,
         };
 
@@ -165,7 +163,7 @@ mod tests {
                         assert_eq!(
                             upd_res.client_state,
                             AnyClientState::Mock(MockClientState::new(
-                                MockHeader::new(msg.header.height()).with_timestamp(timestamp)
+                                MockHeader::new(height).with_timestamp(timestamp)
                             ))
                         )
                     }
@@ -185,7 +183,7 @@ mod tests {
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42).unwrap());
 
-        let msg = MsgUpdateAnyClient {
+        let msg = MsgUpdateClient {
             client_id: ClientId::from_str("nonexistingclient").unwrap(),
             header: MockHeader::new(Height::new(0, 46).unwrap()).into(),
             signer,
@@ -221,7 +219,7 @@ mod tests {
         }
 
         for cid in &client_ids {
-            let msg = MsgUpdateAnyClient {
+            let msg = MsgUpdateClient {
                 client_id: cid.clone(),
                 header: MockHeader::new(update_height).into(),
                 signer: signer.clone(),
@@ -278,20 +276,13 @@ mod tests {
 
         let signer = get_dummy_account_id();
 
-        let block_ref = ctx_b.host_block(update_height);
-        let mut latest_header: AnyHeader = block_ref.cloned().map(Into::into).unwrap();
+        let mut block = ctx_b.host_block(update_height).unwrap().clone();
+        block.set_trusted_height(client_height);
 
-        latest_header = match latest_header {
-            AnyHeader::Tendermint(mut theader) => {
-                theader.trusted_height = client_height;
-                AnyHeader::Tendermint(theader)
-            }
-            AnyHeader::Mock(m) => AnyHeader::Mock(m),
-        };
-
-        let msg = MsgUpdateAnyClient {
+        let latest_header_height = block.height();
+        let msg = MsgUpdateClient {
             client_id: client_id.clone(),
-            header: latest_header,
+            header: block.into(),
             signer,
         };
 
@@ -315,7 +306,7 @@ mod tests {
                     Update(upd_res) => {
                         assert_eq!(upd_res.client_id, client_id);
                         assert!(!upd_res.client_state.is_frozen());
-                        assert_eq!(upd_res.client_state.latest_height(), msg.header.height(),)
+                        assert_eq!(upd_res.client_state.latest_height(), latest_header_height,)
                     }
                     _ => panic!("update handler result has incorrect type"),
                 }
@@ -354,22 +345,14 @@ mod tests {
 
         let signer = get_dummy_account_id();
 
-        let block_ref = ctx_b.host_block(update_height);
-        let mut latest_header: AnyHeader = block_ref.cloned().map(Into::into).unwrap();
-
+        let mut block = ctx_b.host_block(update_height).unwrap().clone();
         let trusted_height = client_height.clone().sub(1).unwrap();
+        block.set_trusted_height(trusted_height);
 
-        latest_header = match latest_header {
-            AnyHeader::Tendermint(mut theader) => {
-                theader.trusted_height = trusted_height;
-                AnyHeader::Tendermint(theader)
-            }
-            AnyHeader::Mock(m) => AnyHeader::Mock(m),
-        };
-
-        let msg = MsgUpdateAnyClient {
+        let latest_header_height = block.height();
+        let msg = MsgUpdateClient {
             client_id: client_id.clone(),
-            header: latest_header,
+            header: block.into(),
             signer,
         };
 
@@ -393,7 +376,7 @@ mod tests {
                     Update(upd_res) => {
                         assert_eq!(upd_res.client_id, client_id);
                         assert!(!upd_res.client_state.is_frozen());
-                        assert_eq!(upd_res.client_state.latest_height(), msg.header.height(),)
+                        assert_eq!(upd_res.client_state.latest_height(), latest_header_height,)
                     }
                     _ => panic!("update handler result has incorrect type"),
                 }
@@ -433,22 +416,23 @@ mod tests {
 
         let signer = get_dummy_account_id();
 
-        let block_ref = ctx_b.host_block(client_height);
-        let latest_header: AnyHeader = match block_ref.cloned().map(Into::into).unwrap() {
-            AnyHeader::Tendermint(mut theader) => {
+        let block = ctx_b.host_block(client_height).unwrap().clone();
+        let block = match block {
+            HostBlock::SyntheticTendermint(mut theader) => {
                 let cons_state = ctx.latest_consensus_states(&client_id, &client_height);
                 if let AnyConsensusState::Tendermint(tcs) = cons_state {
-                    theader.signed_header.header.time = tcs.timestamp;
-                    theader.trusted_height = Height::new(1, 11).unwrap()
+                    theader.light_block.signed_header.header.time = tcs.timestamp;
+                    theader.trusted_height = Height::new(1, 11).unwrap();
                 }
-                AnyHeader::Tendermint(theader)
+                HostBlock::SyntheticTendermint(theader)
             }
-            AnyHeader::Mock(header) => AnyHeader::Mock(header),
+            _ => block,
         };
 
-        let msg = MsgUpdateAnyClient {
+        let latest_header_height = block.height();
+        let msg = MsgUpdateClient {
             client_id: client_id.clone(),
-            header: latest_header,
+            header: block.into(),
             signer,
         };
 
@@ -473,7 +457,7 @@ mod tests {
                         assert_eq!(upd_res.client_id, client_id);
                         assert!(!upd_res.client_state.is_frozen());
                         assert_eq!(upd_res.client_state, ctx.latest_client_states(&client_id));
-                        assert_eq!(upd_res.client_state.latest_height(), msg.header.height(),)
+                        assert_eq!(upd_res.client_state.latest_height(), latest_header_height,)
                     }
                     _ => panic!("update handler result has incorrect type"),
                 }
@@ -515,12 +499,11 @@ mod tests {
 
         let signer = get_dummy_account_id();
 
-        let block_ref = ctx_b.host_block(client_update_height);
-        let latest_header: AnyHeader = block_ref.cloned().map(Into::into).unwrap();
+        let block_ref = ctx_b.host_block(client_update_height).unwrap();
 
-        let msg = MsgUpdateAnyClient {
+        let msg = MsgUpdateClient {
             client_id,
-            header: latest_header,
+            header: block_ref.clone().into(),
             signer,
         };
 

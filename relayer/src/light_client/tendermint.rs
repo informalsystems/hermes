@@ -20,7 +20,7 @@ use ibc::{
     core::{
         ics02_client::{
             client_state::AnyClientState, client_type::ClientType, events::UpdateClient,
-            header::AnyHeader, misbehaviour::MisbehaviourEvidence,
+            header::downcast_header,
         },
         ics24_host::identifier::ChainId,
     },
@@ -28,7 +28,10 @@ use ibc::{
 };
 use tracing::trace;
 
-use crate::{chain::cosmos::CosmosSdkChain, config::ChainConfig, error::Error};
+use crate::{
+    chain::cosmos::CosmosSdkChain, config::ChainConfig, error::Error,
+    misbehaviour::MisbehaviourEvidence,
+};
 
 use super::Verified;
 
@@ -110,12 +113,13 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             ))
         })?;
 
-        let update_header = downcast!(update_header => AnyHeader::Tendermint).ok_or_else(|| {
-            Error::misbehaviour(format!(
-                "header type incompatible for chain {}",
-                self.chain_id
-            ))
-        })?;
+        let update_header: &TmHeader =
+            downcast_header(update_header.as_ref()).ok_or_else(|| {
+                Error::misbehaviour(format!(
+                    "header type incompatible for chain {}",
+                    self.chain_id
+                ))
+            })?;
 
         let latest_chain_block = self.fetch_light_block(AtHeight::Highest)?;
         let latest_chain_height =
@@ -147,7 +151,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
             let misbehaviour = TmMisbehaviour {
                 client_id: update.client_id().clone(),
-                header1: update_header,
+                header1: update_header.clone(),
                 header2: witness,
             }
             .into();

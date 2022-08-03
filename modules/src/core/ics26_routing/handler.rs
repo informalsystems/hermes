@@ -137,7 +137,7 @@ mod tests {
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::AnyClientState;
     use crate::core::ics02_client::msgs::{
-        create_client::MsgCreateAnyClient, update_client::MsgUpdateAnyClient,
+        create_client::MsgCreateAnyClient, update_client::MsgUpdateClient,
         upgrade_client::MsgUpgradeAnyClient, ClientMsg,
     };
     use crate::core::ics03_connection::msgs::{
@@ -351,7 +351,7 @@ mod tests {
             // Test some ICS2 client functionality.
             Test {
                 name: "Client update successful".to_string(),
-                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
+                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateClient {
                     client_id: client_id.clone(),
                     header: MockHeader::new(update_client_height)
                         .with_timestamp(Timestamp::now())
@@ -363,7 +363,7 @@ mod tests {
             },
             Test {
                 name: "Client update fails due to stale header".to_string(),
-                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
+                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateClient {
                     client_id: client_id.clone(),
                     header: MockHeader::new(update_client_height).into(),
                     signer: default_signer.clone(),
@@ -438,7 +438,7 @@ mod tests {
             // msg_recv_packet has the same height as the packet TO height (see get_dummy_raw_msg_recv_packet)
             Test {
                 name: "Client update successful #2".to_string(),
-                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
+                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateClient {
                     client_id: client_id.clone(),
                     header: MockHeader::new(update_client_height_after_send)
                         .with_timestamp(Timestamp::now())
@@ -466,7 +466,7 @@ mod tests {
             },
             Test {
                 name: "Client update successful".to_string(),
-                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
+                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateClient {
                     client_id: client_id.clone(),
                     header: MockHeader::new(update_client_height_after_second_send).into(),
                     signer: default_signer.clone(),

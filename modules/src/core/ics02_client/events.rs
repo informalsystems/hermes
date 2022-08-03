@@ -5,11 +5,12 @@ use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
 use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::header::AnyHeader;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::events::{IbcEvent, IbcEventType};
 use crate::prelude::*;
+
+use super::header::Header;
 
 /// The content of the `key` field for the attribute containing the height.
 pub const HEIGHT_ATTRIBUTE_KEY: &str = "height";
@@ -155,10 +156,10 @@ impl core::fmt::Display for CreateClient {
 }
 
 /// UpdateClient event signals a recent update of an on-chain client (IBC Client).
-#[derive(Serialize, Clone, PartialEq, Eq)]
+#[derive(Serialize, Clone, PartialEq)]
 pub struct UpdateClient {
     pub common: Attributes,
-    pub header: Option<AnyHeader>,
+    pub header: Option<Box<dyn Header>>,
 }
 
 impl UpdateClient {
@@ -204,7 +205,7 @@ impl From<UpdateClient> for AbciEvent {
         if let Some(h) = v.header {
             let header = Tag {
                 key: HEADER_ATTRIBUTE_KEY.parse().unwrap(),
-                value: h.encode_to_string().parse().unwrap(),
+                value: h.encode_to_hex_string().parse().unwrap(),
             };
             attributes.push(header);
         }
