@@ -36,24 +36,12 @@ pub struct SyntheticTmBlock {
     pub light_block: TmLightBlock,
 }
 
-impl SyntheticTmBlock {
-    pub fn set_trusted_height(&mut self, height: Height) {
-        self.trusted_height = height
-    }
-}
-
 // FIXME: this shouldn't be required
 impl Deref for SyntheticTmBlock {
     type Target = TmLightBlock;
 
     fn deref(&self) -> &Self::Target {
         &self.light_block
-    }
-}
-
-impl From<SyntheticTmBlock> for TmLightBlock {
-    fn from(value: SyntheticTmBlock) -> Self {
-        value.light_block
     }
 }
 

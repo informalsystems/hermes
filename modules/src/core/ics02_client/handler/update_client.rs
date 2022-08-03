@@ -276,13 +276,13 @@ mod tests {
 
         let signer = get_dummy_account_id();
 
-        let mut block_ref = ctx_b.host_block(update_height).unwrap().clone();
-        block_ref.set_trusted_height(client_height);
+        let mut block = ctx_b.host_block(update_height).unwrap().clone();
+        block.set_trusted_height(client_height);
 
-        let latest_header_height = block_ref.height();
+        let latest_header_height = block.height();
         let msg = MsgUpdateClient {
             client_id: client_id.clone(),
-            header: block_ref.into(),
+            header: block.into(),
             signer,
         };
 
@@ -345,14 +345,14 @@ mod tests {
 
         let signer = get_dummy_account_id();
 
-        let mut block_ref = ctx_b.host_block(update_height).unwrap().clone();
+        let mut block = ctx_b.host_block(update_height).unwrap().clone();
         let trusted_height = client_height.clone().sub(1).unwrap();
-        block_ref.set_trusted_height(trusted_height);
+        block.set_trusted_height(trusted_height);
 
-        let latest_header_height = block_ref.height();
+        let latest_header_height = block.height();
         let msg = MsgUpdateClient {
             client_id: client_id.clone(),
-            header: block_ref.into(),
+            header: block.into(),
             signer,
         };
 
@@ -416,23 +416,23 @@ mod tests {
 
         let signer = get_dummy_account_id();
 
-        let block_ref = ctx_b.host_block(client_height).unwrap().clone();
-        let block_ref = match block_ref {
+        let block = ctx_b.host_block(client_height).unwrap().clone();
+        let block = match block {
             HostBlock::SyntheticTendermint(mut theader) => {
                 let cons_state = ctx.latest_consensus_states(&client_id, &client_height);
                 if let AnyConsensusState::Tendermint(tcs) = cons_state {
                     theader.light_block.signed_header.header.time = tcs.timestamp;
-                    theader.set_trusted_height(Height::new(1, 11).unwrap());
+                    theader.trusted_height = Height::new(1, 11).unwrap();
                 }
                 HostBlock::SyntheticTendermint(theader)
             }
-            _ => block_ref,
+            _ => block,
         };
 
-        let latest_header_height = block_ref.height();
+        let latest_header_height = block.height();
         let msg = MsgUpdateClient {
             client_id: client_id.clone(),
-            header: block_ref.into(),
+            header: block.into(),
             signer,
         };
 
