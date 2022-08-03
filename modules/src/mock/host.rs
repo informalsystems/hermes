@@ -4,7 +4,7 @@ use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 use ibc_proto::protobuf::Protobuf as ErasedProtobuf;
 use serde::Serialize;
-use std::ops::Deref;
+use tendermint::block::Header as TmHeader;
 use tendermint_testgen::light_block::TmLightBlock;
 use tendermint_testgen::{Generator, LightBlock as TestgenLightBlock};
 
@@ -36,12 +36,9 @@ pub struct SyntheticTmBlock {
     pub light_block: TmLightBlock,
 }
 
-// FIXME: this shouldn't be required
-impl Deref for SyntheticTmBlock {
-    type Target = TmLightBlock;
-
-    fn deref(&self) -> &Self::Target {
-        &self.light_block
+impl SyntheticTmBlock {
+    pub fn header(&self) -> &TmHeader {
+        &self.light_block.signed_header.header
     }
 }
 
@@ -59,8 +56,8 @@ impl HostBlock {
         match self {
             HostBlock::Mock(header) => header.height(),
             HostBlock::SyntheticTendermint(light_block) => Height::new(
-                ChainId::chain_version(light_block.signed_header.header.chain_id.as_str()),
-                light_block.signed_header.header.height.value(),
+                ChainId::chain_version(light_block.header().chain_id.as_str()),
+                light_block.header().height.value(),
             )
             .unwrap(),
         }
@@ -77,9 +74,7 @@ impl HostBlock {
     pub fn timestamp(&self) -> Timestamp {
         match self {
             HostBlock::Mock(header) => header.timestamp,
-            HostBlock::SyntheticTendermint(light_block) => {
-                light_block.signed_header.header.time.into()
-            }
+            HostBlock::SyntheticTendermint(light_block) => light_block.header().time.into(),
         }
     }
 
@@ -122,7 +117,7 @@ impl HostBlock {
 
 impl From<SyntheticTmBlock> for AnyConsensusState {
     fn from(light_block: SyntheticTmBlock) -> Self {
-        let cs = TMConsensusState::from(light_block.signed_header.header.clone());
+        let cs = TMConsensusState::from(light_block.header().clone());
         AnyConsensusState::Tendermint(cs)
     }
 }
