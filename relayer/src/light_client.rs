@@ -125,7 +125,7 @@ impl TryFrom<Any> for AnyHeader {
                 Ok(AnyHeader::Tendermint(val))
             }
             MOCK_HEADER_TYPE_URL => Ok(AnyHeader::Mock(
-                <MockHeader as ErasedProtobuf<RawMockHeader>>::decode_vec(&raw.value)
+                ErasedProtobuf::<RawMockHeader>::decode_vec(&raw.value)
                     .map_err(Error::invalid_raw_header)?,
             )),
 

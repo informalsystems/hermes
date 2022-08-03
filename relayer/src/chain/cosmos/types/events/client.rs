@@ -72,9 +72,7 @@ pub fn extract_header_from_tx(event: &AbciEvent) -> Result<Box<dyn Header>, Erro
         let key = tag.key.as_ref();
         let value = tag.value.as_ref();
         if key == HEADER_ATTRIBUTE_KEY {
-            println!("Header value: {:?}", value);
-            println!("Decoded value: {:?}", AnyHeader::decode_from_string(value));
-            return AnyHeader::decode_from_string(value).map(|v| AnyHeader::into_box(v));
+            return AnyHeader::decode_from_string(value).map(AnyHeader::into_box);
         }
     }
     Err(Error::missing_raw_header())
