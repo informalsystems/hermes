@@ -29,7 +29,7 @@ mocks = ["tendermint-testgen", "clock", "std"]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
 ibc-proto = { version = "0.19.1", path = "../proto", default-features = false }
 ics23 = { version = "=0.8.0-alpha", default-features = false }
-time = { version = "0.3", default-features = false }
+time = { version = ">=0.3.0, <0.3.12", default-features = false }
 serde_derive = { version = "1.0.104", default-features = false }
 serde = { version = "1.0", default-features = false }
 serde_json = { version = "1", default-features = false }
