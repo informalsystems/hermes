@@ -26,11 +26,11 @@ telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server = ["ibc-relayer-rest"]
 
 [dependencies]
-ibc              = { version = "0.17.0", path = "../modules", features = ["std", "clock"] }
-ibc-relayer      = { version = "0.17.0", path = "../relayer" }
-ibc-proto        = { version = "0.19.1", path = "../proto" }
-ibc-telemetry    = { version = "0.17.0", path = "../telemetry", optional = true }
-ibc-relayer-rest = { version = "0.17.0", path = "../relayer-rest", optional = true }
+ibc              = { version = "0.18.0", path = "../modules", features = ["std", "clock"] }
+ibc-relayer      = { version = "0.18.0", path = "../relayer" }
+ibc-proto        = { version = "0.19.2", path = "../proto" }
+ibc-telemetry    = { version = "0.18.0", path = "../telemetry", optional = true }
+ibc-relayer-rest = { version = "0.18.0", path = "../relayer-rest", optional = true }
 
 clap = { version = "3.2", features = ["cargo"] }
 clap_complete = "3.2"
