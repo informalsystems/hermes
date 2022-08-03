@@ -119,12 +119,13 @@ impl From<MockHeader> for Any {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::ics02_client::header::AnyHeader;
+    use ibc_proto::ibc::mock::Header as RawMockHeader;
+    use ibc_proto::protobuf::Protobuf;
 
     #[test]
     fn encode_any() {
         let header = MockHeader::new(Height::new(1, 10).unwrap()).with_timestamp(Timestamp::none());
-        let bytes = AnyHeader::from(header).encode_vec().unwrap();
+        let bytes = <MockHeader as Protobuf<RawMockHeader>>::encode_vec(&header).unwrap();
 
         assert_eq!(
             &bytes,
