@@ -361,7 +361,7 @@ dependencies = [
 [[package]]
 name = "beefy-generic-client"
 version = "0.1.0"
-source = "git+https://github.com/ComposableFi/beefy-rs?branch=master#14eb83a953cbc55e15aaf0de35b3608a50050413"
+source = "git+https://github.com/ComposableFi/beefy-rs?branch=master#f7a4724053f8dc22c2f75ad47d3fdd345f4230ad"
 dependencies = [
  "beefy-primitives",
  "ckb-merkle-mountain-range",
@@ -378,7 +378,6 @@ dependencies = [
  "rs_merkle",
  "sp-core 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "sp-core-hashing 4.0.0 (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.24)",
- "sp-io 6.0.0 (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.24)",
  "sp-mmr-primitives",
  "sp-runtime 6.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "sp-std 4.0.0 (git+https://github.com/paritytech/substrate?branch=polkadot-v0.9.24)",
@@ -409,7 +408,7 @@ dependencies = [
 [[package]]
 name = "beefy-queries"
 version = "0.1.0"
-source = "git+https://github.com/ComposableFi/beefy-rs?branch=master#14eb83a953cbc55e15aaf0de35b3608a50050413"
+source = "git+https://github.com/ComposableFi/beefy-rs?branch=master#f7a4724053f8dc22c2f75ad47d3fdd345f4230ad"
 dependencies = [
  "beefy-primitives",
  "color-eyre",
@@ -3681,7 +3680,7 @@ dependencies = [
 [[package]]
 name = "primitives"
 version = "0.1.0"
-source = "git+https://github.com/ComposableFi/beefy-rs?branch=master#14eb83a953cbc55e15aaf0de35b3608a50050413"
+source = "git+https://github.com/ComposableFi/beefy-rs?branch=master#f7a4724053f8dc22c2f75ad47d3fdd345f4230ad"
 dependencies = [
  "beefy-primitives",
  "ckb-merkle-mountain-range",
