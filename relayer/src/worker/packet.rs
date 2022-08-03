@@ -209,9 +209,8 @@ fn handle_execute_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     if !summary.is_empty() {
         trace!("produced relay summary: {:?}", summary);
+        telemetry!(packet_metrics(_path, &summary));
     }
-
-    telemetry!(packet_metrics(_path, &summary));
 
     Ok(())
 }

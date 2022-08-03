@@ -151,9 +151,16 @@ impl TelemetryState {
     }
 
     /// Number of client misbehaviours per client
-    pub fn ibc_client_misbehaviour(&self, chain: &ChainId, client: &ClientId, count: u64) {
+    pub fn ibc_client_misbehaviour(
+        &self,
+        src_chain: &ChainId,
+        dst_chain: &ChainId,
+        client: &ClientId,
+        count: u64,
+    ) {
         let labels = &[
-            KeyValue::new("chain", chain.to_string()),
+            KeyValue::new("src_chain", src_chain.to_string()),
+            KeyValue::new("dst_chain", dst_chain.to_string()),
             KeyValue::new("client", client.to_string()),
         ];
 
