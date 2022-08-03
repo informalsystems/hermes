@@ -1,6 +1,72 @@
 # CHANGELOG
 
+## v1.0.0-rc.2
+
+*August 3rd, 2022*
+
+This is the third release candidate for Hermes v1.0.0 🎉
+
+### Hermes - [`ibc-relayer-cli`](relayer-cli) (v1.0.0-rc.2)
+
+- Release version 1.0.0-rc.2 of Hermes (`ibc-relayer-cli`)
+
+### IBC Proto - [`ibc-proto`](proto) (v0.19.1)
+
+- Release version 0.19.2 of `ibc-proto`
+
+### IBC Modules - [`ibc`](modules) (v0.18.0)
+
+- Release version 0.18.0 of `ibc`
+
+### Relayer Library - [`ibc-relayer`](relayer) (v0.18.0)
+
+- Release version 0.18.0 of `ibc-relayer`
+
+#### BUG FIXES
+
+- For the `ConnOpenTry` and `ConnOpenAck` steps, wait for the destination
+  app height to be higher than the consensus height, otherwise we fail to
+  complete the handshake when the block times of the two chains involved differ
+  significantly ([#2433](https://github.com/informalsystems/ibc-rs/issues/2433))
+- Fix code that could result in message batch size growing above the transaction size limit
+  ([#2477](https://github.com/informalsystems/ibc-rs/issues/2477)).
+
+### Telemetry & Metrics - [`ibc-telemetry`](telemetry) (v0.18.0)
+
+- Release version 0.18.0 of `ibc-telemetry`
+
+#### IMROVEMENTS
+
+- Improve the metrics
+  - Renamed `oldest_sequence` metric to `backlog_oldest_sequence`
+  - Renamed `oldest_timestamp` metric to `backlog_oldest_timestamp`
+  - Introduced `backlog_size` Prometheus metric to complement the other `backlog_*` data,
+    as a metric reporting how many packets are pending on a channel
+  - Ensures the `backlog_oldest_sequence` and `backlog_oldest_timestamp` are correctly
+    updated when a timeout occurs or when another relayer clears the channel
+    ([#2451](https://github.com/informalsystems/ibc-rs/issues/2451))
+  - Ensures `backlog_timestamp` is never updated by a packet with a higher `sequence` than the oldest pending packet
+    ([#2469](https://github.com/informalsystems/ibc-rs/issues/2469))
+
+#### BUG FIXES
+
+- Fixed a bug with updating of Prometheus metrics in the presence of concurrent relayers
+  ([#2467](https://github.com/informalsystems/ibc-rs/issues/2467))
+
+### REST API - [`ibc-relayer-rest`](relayer-rest) (v0.18.0)
+
+- Release version 0.18.0 of `ibc-relayer-rest`
+
+### [Guide](guide)
+
+#### IMPROVEMENTS
+
+- Document how to use HTTP basic authentication in the guide
+  ([#2459](https://github.com/informalsystems/ibc-rs/issues/2459))
+
 ## v1.0.0-rc.1
+
+*July 27th, 2022*
 
 This is the second release candidate for Hermes v1.0.0 🎉
 
