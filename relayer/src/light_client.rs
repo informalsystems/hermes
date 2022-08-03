@@ -1,8 +1,8 @@
 use ibc::core::ics02_client::client_state::AnyClientState;
-use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
 
 use crate::chain::endpoint::ChainEndpoint;
 use crate::error;
+use crate::misbehaviour::MisbehaviourEvidence;
 use ibc::core::ics02_client::events::UpdateClient;
 
 pub mod tendermint;

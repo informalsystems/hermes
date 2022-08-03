@@ -24,7 +24,6 @@ use crossbeam_channel as channel;
 use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::core::ics02_client::events::UpdateClient;
-use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
@@ -64,6 +63,7 @@ use ibc_relayer::connection::ConnectionMsgType;
 use ibc_relayer::denom::DenomTrace;
 use ibc_relayer::error::Error;
 use ibc_relayer::keyring::KeyEntry;
+use ibc_relayer::misbehaviour::MisbehaviourEvidence;
 
 use crate::types::tagged::*;
 

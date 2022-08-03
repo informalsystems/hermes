@@ -2,7 +2,6 @@ use crossbeam_channel as channel;
 use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::core::ics02_client::events::UpdateClient;
-use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
@@ -43,6 +42,7 @@ use crate::chain::tracking::TrackedMsgs;
 use crate::config::ChainConfig;
 use crate::denom::DenomTrace;
 use crate::error::Error;
+use crate::misbehaviour::MisbehaviourEvidence;
 use crate::util::lock::LockExt;
 use crate::{connection::ConnectionMsgType, keyring::KeyEntry};
 

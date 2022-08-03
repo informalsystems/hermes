@@ -12,7 +12,6 @@ use ibc::{
             client_state::{AnyClientState, IdentifiedAnyClientState},
             events::UpdateClient,
             header::AnyHeader,
-            misbehaviour::MisbehaviourEvidence,
         },
         ics03_connection::{
             connection::{ConnectionEnd, IdentifiedConnectionEnd},
@@ -43,6 +42,7 @@ use crate::{
     },
     keyring::KeyEntry,
     light_client::LightClient,
+    misbehaviour::MisbehaviourEvidence,
 };
 
 use super::{

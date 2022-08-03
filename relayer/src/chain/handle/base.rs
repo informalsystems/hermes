@@ -9,7 +9,6 @@ use ibc::{
         ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState},
         ics02_client::events::UpdateClient,
         ics02_client::header::AnyHeader,
-        ics02_client::misbehaviour::MisbehaviourEvidence,
         ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
         ics03_connection::version::Version,
         ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd},
@@ -48,6 +47,7 @@ use crate::{
     denom::DenomTrace,
     error::Error,
     keyring::KeyEntry,
+    misbehaviour::MisbehaviourEvidence,
 };
 
 use super::{reply_channel, ChainHandle, ChainRequest, HealthCheck, ReplyTo, Subscription};

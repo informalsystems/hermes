@@ -1,4 +1,3 @@
-use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
 use tendermint_testgen::light_block::TmLightBlock;
 
 use ibc::clients::ics07_tendermint::header::Header as TmHeader;
@@ -11,6 +10,7 @@ use ibc::Height;
 use crate::chain::endpoint::ChainEndpoint;
 use crate::chain::mock::MockChain;
 use crate::error::Error;
+use crate::misbehaviour::MisbehaviourEvidence;
 
 use super::Verified;
 use ibc::timestamp::Timestamp;

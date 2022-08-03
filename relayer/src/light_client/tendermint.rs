@@ -20,7 +20,7 @@ use ibc::{
     core::{
         ics02_client::{
             client_state::AnyClientState, client_type::ClientType, events::UpdateClient,
-            header::downcast_header, misbehaviour::MisbehaviourEvidence,
+            header::downcast_header,
         },
         ics24_host::identifier::ChainId,
     },
@@ -28,7 +28,10 @@ use ibc::{
 };
 use tracing::trace;
 
-use crate::{chain::cosmos::CosmosSdkChain, config::ChainConfig, error::Error};
+use crate::{
+    chain::cosmos::CosmosSdkChain, config::ChainConfig, error::Error,
+    misbehaviour::MisbehaviourEvidence,
+};
 
 use super::Verified;
 
