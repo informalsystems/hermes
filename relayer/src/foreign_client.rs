@@ -1088,6 +1088,13 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .to_any(),
         );
 
+        telemetry!(
+            client_updates_submitted,
+            &self.dst_chain.id(),
+            &self.id,
+            msgs.len() as u64
+        );
+
         Ok(msgs)
     }
 

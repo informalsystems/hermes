@@ -46,8 +46,8 @@ pub struct TelemetryState {
     /// Number of workers per object
     workers: UpDownCounter<i64>,
 
-    /// Number of client updates per client
-    ibc_client_updates: Counter<u64>,
+    /// Number of client update messages submitted per client
+    client_updates_submitted: Counter<u64>,
 
     /// Number of client misbehaviours per client
     ibc_client_misbehaviours: Counter<u64>,
@@ -141,13 +141,13 @@ impl TelemetryState {
     }
 
     /// Update the number of client updates per client
-    pub fn ibc_client_updates(&self, chain: &ChainId, client: &ClientId, count: u64) {
+    pub fn client_updates_submitted(&self, chain: &ChainId, client: &ClientId, count: u64) {
         let labels = &[
             KeyValue::new("chain", chain.to_string()),
             KeyValue::new("client", client.to_string()),
         ];
 
-        self.ibc_client_updates.add(count, labels);
+        self.client_updates_submitted.add(count, labels);
     }
 
     /// Number of client misbehaviours per client
@@ -594,9 +594,9 @@ impl Default for TelemetryState {
                 .with_description("Number of workers per object")
                 .init(),
 
-            ibc_client_updates: meter
-                .u64_counter("ibc_client_updates")
-                .with_description("Number of client updates performed per client")
+                client_updates_submitted: meter
+                .u64_counter("client_updates_submitted")
+                .with_description("Number of client update messages submitted per client")
                 .init(),
 
             ibc_client_misbehaviours: meter
