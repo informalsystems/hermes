@@ -2,12 +2,11 @@
 
 use crate::prelude::*;
 
+use ibc_proto::google::protobuf::Any;
+use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
 use ibc_proto::protobuf::Protobuf;
 
-use ibc_proto::ibc::core::client::v1::MsgUpdateClient as RawMsgUpdateClient;
-
 use crate::core::ics02_client::error::Error;
-use crate::core::ics02_client::header::AnyHeader;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::signer::Signer;
@@ -19,12 +18,12 @@ pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpdateClient";
 #[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound when possible
 pub struct MsgUpdateAnyClient {
     pub client_id: ClientId,
-    pub header: AnyHeader,
+    pub header: Any,
     pub signer: Signer,
 }
 
 impl MsgUpdateAnyClient {
-    pub fn new(client_id: ClientId, header: AnyHeader, signer: Signer) -> Self {
+    pub fn new(client_id: ClientId, header: Any, signer: Signer) -> Self {
         MsgUpdateAnyClient {
             client_id,
             header,
@@ -52,14 +51,12 @@ impl TryFrom<RawMsgUpdateClient> for MsgUpdateAnyClient {
     type Error = Error;
 
     fn try_from(raw: RawMsgUpdateClient) -> Result<Self, Self::Error> {
-        let raw_header = raw.header.ok_or_else(Error::missing_raw_header)?;
-
         Ok(MsgUpdateAnyClient {
             client_id: raw
                 .client_id
                 .parse()
                 .map_err(Error::invalid_msg_update_client_id)?,
-            header: AnyHeader::try_from(raw_header)?,
+            header: raw.header.ok_or_else(Error::missing_raw_header)?,
             signer: raw.signer.parse().map_err(Error::signer)?,
         })
     }
@@ -69,7 +66,7 @@ impl From<MsgUpdateAnyClient> for RawMsgUpdateClient {
     fn from(ics_msg: MsgUpdateAnyClient) -> Self {
         RawMsgUpdateClient {
             client_id: ics_msg.client_id.to_string(),
-            header: Some(ics_msg.header.into()),
+            header: Some(ics_msg.header),
             signer: ics_msg.signer.to_string(),
         }
     }
@@ -95,7 +92,7 @@ mod tests {
 
         let header = get_dummy_ics07_header();
 
-        let msg = MsgUpdateAnyClient::new(client_id, AnyHeader::Tendermint(header), signer);
+        let msg = MsgUpdateAnyClient::new(client_id, AnyHeader::Tendermint(header).into(), signer);
         let raw = MsgUpdateClient::from(msg.clone());
         let msg_back = MsgUpdateAnyClient::try_from(raw.clone()).unwrap();
         let raw_back = MsgUpdateClient::from(msg_back.clone());
