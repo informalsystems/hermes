@@ -4,9 +4,11 @@ use ibc::core::ics02_client::events::{
     CLIENT_ID_ATTRIBUTE_KEY, CLIENT_TYPE_ATTRIBUTE_KEY, CONSENSUS_HEIGHT_ATTRIBUTE_KEY,
     HEADER_ATTRIBUTE_KEY, HEIGHT_ATTRIBUTE_KEY,
 };
-use ibc::core::ics02_client::header::{AnyHeader, Header};
+use ibc::core::ics02_client::header::Header;
 use ibc::events::{IbcEvent, IbcEventType};
 use tendermint::abci::Event as AbciEvent;
+
+use crate::light_client::AnyHeader;
 
 pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEvent> {
     match event.type_str.parse() {

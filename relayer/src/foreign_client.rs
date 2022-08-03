@@ -18,7 +18,7 @@ use ibc::core::ics02_client::client_state::AnyClientState;
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics02_client::error::Error as ClientError;
 use ibc::core::ics02_client::events::UpdateClient;
-use ibc::core::ics02_client::header::{AnyHeader, Header};
+use ibc::core::ics02_client::header::Header;
 use ibc::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
 use ibc::core::ics02_client::msgs::misbehavior::MsgSubmitAnyMisbehaviour;
 use ibc::core::ics02_client::msgs::update_client::MsgUpdateClient;
@@ -40,6 +40,7 @@ use crate::chain::requests::{
 };
 use crate::chain::tracking::TrackedMsgs;
 use crate::error::Error as RelayerError;
+use crate::light_client::AnyHeader;
 use crate::misbehaviour::MisbehaviourEvidence;
 
 const MAX_MISBEHAVIOUR_CHECK_DURATION: Duration = Duration::from_secs(120);

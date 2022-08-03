@@ -11,7 +11,6 @@ use ibc::{
             client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
             client_state::{AnyClientState, IdentifiedAnyClientState},
             events::UpdateClient,
-            header::AnyHeader,
         },
         ics03_connection::{
             connection::{ConnectionEnd, IdentifiedConnectionEnd},
@@ -41,7 +40,7 @@ use crate::{
         monitor::{EventBatch, EventReceiver, MonitorCmd, Result as MonitorResult, TxMonitorCmd},
     },
     keyring::KeyEntry,
-    light_client::LightClient,
+    light_client::{AnyHeader, LightClient},
     misbehaviour::MisbehaviourEvidence,
 };
 

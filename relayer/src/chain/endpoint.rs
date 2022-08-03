@@ -10,7 +10,7 @@ use ibc::core::ics02_client::client_consensus::{
 use ibc::core::ics02_client::client_state::{
     AnyClientState, ClientState, IdentifiedAnyClientState,
 };
-use ibc::core::ics02_client::header::{AnyHeader, Header};
+use ibc::core::ics02_client::header::Header;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd, State};
 use ibc::core::ics03_connection::version::{get_compatible_versions, Version};
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
@@ -42,7 +42,7 @@ use crate::denom::DenomTrace;
 use crate::error::{Error, QUERY_PROOF_EXPECT_MSG};
 use crate::event::monitor::{EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
-use crate::light_client::LightClient;
+use crate::light_client::{AnyHeader, LightClient};
 
 use super::requests::{
     IncludeProof, QueryBlockRequest, QueryHeight, QueryPacketAcknowledgementRequest,
