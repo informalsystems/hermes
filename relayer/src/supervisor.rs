@@ -673,6 +673,14 @@ fn process_batch<Chain: ChainHandle>(
                                 &src.id(),
                             );
                         }
+                        IbcEvent::TimeoutPacket(_) => {
+                            ibc_telemetry::global().timeout_events(
+                                &dst.id(),
+                                &_path.src_channel_id,
+                                &_path.src_port_id,
+                                &src.id(),
+                            );
+                        }
                         _ => {}
                     }
                 }

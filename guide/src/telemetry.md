@@ -91,7 +91,6 @@ This table shows the metrics which serve the purpose of understanding the perfor
 | `tx_latency_submitted`     | Latency for all transactions submitted to a chain (i.e., difference between the moment when Hermes received an event until the corresponding transaction(s) were submitted) | `u64` ValueRecorder |
 | `cleared_send_packet_count`    | Number of SendPacket events received during the initial and periodic clearing                                | `u64` Counter      |
 | `cleared_acknowledgment_count` | Number of WriteAcknowledgement events received during the initial and periodic clearing                      | `u64` Counter      |
-| `cleared_timeout_events`       | Number of Timeout events received during the initial and periodic clearing                                   | `u64` Counter      |
 
 Remarks:
 

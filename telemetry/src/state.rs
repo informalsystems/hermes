@@ -99,6 +99,9 @@ pub struct TelemetryState {
     /// Counts the number of WriteAcknowledgement Hermes relays.
     acknowledgement_count: Counter<u64>,
 
+    /// Number of Timeout events received
+    timeout_events: Counter<u64>,
+
     /// Counts the number of SendPacket events Hermes processes from ClearPendingPackets.
     cleared_send_packet_count: Counter<u64>,
 
@@ -374,6 +377,23 @@ impl TelemetryState {
         ];
 
         self.acknowledgement_count.add(1, labels);
+    }
+
+    pub fn timeout_events(
+        &self,
+        chain_id: &ChainId,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_chain_id: &ChainId,
+    ) {
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("counterparty", counterparty_chain_id.to_string()),
+            KeyValue::new("channel", channel_id.to_string()),
+            KeyValue::new("port", port_id.to_string()),
+        ];
+
+        self.timeout_events.add(1, labels);
     }
 
     pub fn clear_send_packet_count(
@@ -659,6 +679,11 @@ impl Default for TelemetryState {
             acknowledgement_count: meter
                 .u64_counter("acknowledgement_count")
                 .with_description("Number of WriteAcknowledgement events processed")
+                .init(),
+
+            timeout_events: meter
+                .u64_counter("timeout_events")
+                .with_description("Number of Timeout events received")
                 .init(),
 
             cleared_send_packet_count: meter
