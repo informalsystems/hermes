@@ -9,7 +9,6 @@ use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
 use crate::core::ics02_client::handler::ClientResult;
-use crate::core::ics02_client::header::Header;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
 use crate::core::ics24_host::identifier::ClientId;
@@ -71,7 +70,7 @@ pub fn process<Ctx: ClientReader>(
     if client_state.expired(duration) {
         return Err(Error::header_not_within_trust_period(
             latest_consensus_state.timestamp(),
-            header.timestamp(),
+            now,
         ));
     }
 
