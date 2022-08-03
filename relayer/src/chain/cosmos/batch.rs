@@ -146,7 +146,7 @@ fn batch_messages(
     let mut current_size = 0;
     let mut current_batch = vec![];
 
-    for message in messages.into_iter() {
+    for message in messages {
         let message_len = message.encoded_len();
 
         if message_len > max_tx_size {
@@ -155,10 +155,12 @@ fn batch_messages(
 
         if current_count >= max_message_count || current_size + message_len > max_tx_size {
             let insert_batch = mem::take(&mut current_batch);
+
             assert!(
                 !insert_batch.is_empty(),
                 "max message count should not be 0"
             );
+
             batches.push(insert_batch);
             current_count = 0;
             current_size = 0;
@@ -219,6 +221,7 @@ mod tests {
             type_url: "/example.Foo".into(),
             value: vec![0; 6],
         }];
+
         let batches = batch_messages(
             MaxMsgNum::default(),
             MaxTxSize::new(22).unwrap(),
