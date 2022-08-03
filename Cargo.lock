@@ -361,7 +361,7 @@ dependencies = [
 [[package]]
 name = "beefy-generic-client"
 version = "0.1.0"
-source = "git+https://github.com/ComposableFi/beefy-rs?branch=master#f7a4724053f8dc22c2f75ad47d3fdd345f4230ad"
+source = "git+https://github.com/ComposableFi/beefy-rs?branch=master#2593be1c5bd28beed37be52a9b3b0b6c9cb386ea"
 dependencies = [
  "beefy-primitives",
  "ckb-merkle-mountain-range",
@@ -408,7 +408,7 @@ dependencies = [
 [[package]]
 name = "beefy-queries"
 version = "0.1.0"
-source = "git+https://github.com/ComposableFi/beefy-rs?branch=master#f7a4724053f8dc22c2f75ad47d3fdd345f4230ad"
+source = "git+https://github.com/ComposableFi/beefy-rs?branch=master#2593be1c5bd28beed37be52a9b3b0b6c9cb386ea"
 dependencies = [
  "beefy-primitives",
  "color-eyre",
@@ -3680,7 +3680,7 @@ dependencies = [
 [[package]]
 name = "primitives"
 version = "0.1.0"
-source = "git+https://github.com/ComposableFi/beefy-rs?branch=master#f7a4724053f8dc22c2f75ad47d3fdd345f4230ad"
+source = "git+https://github.com/ComposableFi/beefy-rs?branch=master#2593be1c5bd28beed37be52a9b3b0b6c9cb386ea"
 dependencies = [
  "beefy-primitives",
  "ckb-merkle-mountain-range",
