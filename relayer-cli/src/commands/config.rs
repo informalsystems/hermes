@@ -10,4 +10,8 @@ mod validate;
 pub enum ConfigCmd {
     /// Validate the relayer configuration
     Validate(validate::ValidateCmd),
+
+    /// Automatically generate a relayer configuration file
+    #[clap(subcommand)]
+    Automated(automated::AutomatedCmd),
 }
