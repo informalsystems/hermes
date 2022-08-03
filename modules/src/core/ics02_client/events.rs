@@ -157,7 +157,7 @@ impl core::fmt::Display for CreateClient {
 }
 
 /// UpdateClient event signals a recent update of an on-chain client (IBC Client).
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, PartialEq)]
 pub struct UpdateClient {
     pub common: Attributes,
     pub header: Option<Box<dyn Header<Error = Error>>>,

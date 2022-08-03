@@ -23,9 +23,26 @@ use crate::Height;
 pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
 pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
 
+pub trait EqualsHeader {
+    fn equals_header(&self, other: &dyn Header) -> bool;
+}
+
+impl<H> EqualsHeader for H
+where
+    H: Header + PartialEq,
+{
+    fn equals_header(&self, other: &dyn Header) -> bool {
+        other
+            .as_any()
+            .downcast_ref::<H>()
+            .map_or(false, |h| self == h)
+    }
+}
+
 /// Abstract of consensus state update information
 pub trait Header:
     AsAny
+    + EqualsHeader
     + DynClone
     + ErasedSerialize
     + ErasedProtobuf<Any, Error = Error>
@@ -51,6 +68,12 @@ erased_serde::serialize_trait_object!(Header);
 
 pub fn downcast_header<H: Header>(h: &dyn Header) -> Option<&H> {
     h.as_any().downcast_ref::<H>()
+}
+
+impl PartialEq for dyn Header {
+    fn eq(&self, other: &Self) -> bool {
+        self.equals_header(other)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
