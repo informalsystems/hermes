@@ -63,6 +63,9 @@ This is the third release candidate for Hermes v1.0.0 🎉
 
 - Document how to use HTTP basic authentication in the guide
   ([#2459](https://github.com/informalsystems/ibc-rs/issues/2459))
+- Remove tutorial featuring raw commands from the guide
+  ([#2466](https://github.com/informalsystems/ibc-rs/issues/2466))
+
 
 ## v1.0.0-rc.1
 
