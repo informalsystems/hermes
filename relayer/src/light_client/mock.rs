@@ -30,6 +30,7 @@ impl LightClient {
     /// Returns a LightBlock at the requested height `h`.
     fn light_block(&self, h: Height) -> TmLightBlock {
         HostBlock::generate_tm_block(self.chain_id.clone(), h.revision_height(), Timestamp::now())
+            .into()
     }
 }
 

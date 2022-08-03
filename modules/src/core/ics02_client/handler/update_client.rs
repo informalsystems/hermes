@@ -101,17 +101,17 @@ pub fn process<Ctx: ClientReader>(
 
 #[cfg(test)]
 mod tests {
+    use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use core::str::FromStr;
     use test_log::test;
 
-    use crate::core::ics02_client::client_consensus::AnyConsensusState;
+    // use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
     use crate::core::ics02_client::client_type::ClientType;
     use crate::core::ics02_client::context::ClientReader;
     use crate::core::ics02_client::error::{Error, ErrorDetail};
     use crate::core::ics02_client::handler::dispatch;
     use crate::core::ics02_client::handler::ClientResult::Update;
-    use crate::core::ics02_client::header::{AnyHeader, Header};
     use crate::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
     use crate::core::ics02_client::msgs::ClientMsg;
     use crate::core::ics24_host::identifier::{ChainId, ClientId};
@@ -120,7 +120,7 @@ mod tests {
     use crate::mock::client_state::MockClientState;
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
-    use crate::mock::host::HostType;
+    use crate::mock::host::{HostBlock, HostType};
     use crate::prelude::*;
     use crate::test_utils::get_dummy_account_id;
     use crate::timestamp::Timestamp;
@@ -276,21 +276,13 @@ mod tests {
 
         let signer = get_dummy_account_id();
 
-        let block_ref = ctx_b.host_block(update_height);
-        let mut latest_header: AnyHeader = block_ref.cloned().map(Into::into).unwrap();
+        let mut block_ref = ctx_b.host_block(update_height).unwrap().clone();
+        block_ref.set_trusted_height(client_height);
 
-        latest_header = match latest_header {
-            AnyHeader::Tendermint(mut theader) => {
-                theader.trusted_height = client_height;
-                AnyHeader::Tendermint(theader)
-            }
-            AnyHeader::Mock(m) => AnyHeader::Mock(m),
-        };
-
-        let latest_header_height = latest_header.height();
+        let latest_header_height = block_ref.height();
         let msg = MsgUpdateAnyClient {
             client_id: client_id.clone(),
-            header: latest_header.into(),
+            header: block_ref.into(),
             signer,
         };
 
@@ -353,23 +345,14 @@ mod tests {
 
         let signer = get_dummy_account_id();
 
-        let block_ref = ctx_b.host_block(update_height);
-        let mut latest_header: AnyHeader = block_ref.cloned().map(Into::into).unwrap();
-
+        let mut block_ref = ctx_b.host_block(update_height).unwrap().clone();
         let trusted_height = client_height.clone().sub(1).unwrap();
+        block_ref.set_trusted_height(trusted_height);
 
-        latest_header = match latest_header {
-            AnyHeader::Tendermint(mut theader) => {
-                theader.trusted_height = trusted_height;
-                AnyHeader::Tendermint(theader)
-            }
-            AnyHeader::Mock(m) => AnyHeader::Mock(m),
-        };
-
-        let latest_header_height = latest_header.height();
+        let latest_header_height = block_ref.height();
         let msg = MsgUpdateAnyClient {
             client_id: client_id.clone(),
-            header: latest_header.into(),
+            header: block_ref.into(),
             signer,
         };
 
@@ -433,23 +416,23 @@ mod tests {
 
         let signer = get_dummy_account_id();
 
-        let block_ref = ctx_b.host_block(client_height);
-        let latest_header: AnyHeader = match block_ref.cloned().map(Into::into).unwrap() {
-            AnyHeader::Tendermint(mut theader) => {
+        let block_ref = ctx_b.host_block(client_height).unwrap().clone();
+        let block_ref = match block_ref {
+            HostBlock::SyntheticTendermint(mut theader) => {
                 let cons_state = ctx.latest_consensus_states(&client_id, &client_height);
                 if let AnyConsensusState::Tendermint(tcs) = cons_state {
-                    theader.signed_header.header.time = tcs.timestamp;
-                    theader.trusted_height = Height::new(1, 11).unwrap()
+                    theader.light_block.signed_header.header.time = tcs.timestamp;
+                    theader.set_trusted_height(Height::new(1, 11).unwrap());
                 }
-                AnyHeader::Tendermint(theader)
+                HostBlock::SyntheticTendermint(theader)
             }
-            AnyHeader::Mock(header) => AnyHeader::Mock(header),
+            _ => block_ref,
         };
 
-        let latest_header_height = latest_header.height();
+        let latest_header_height = block_ref.height();
         let msg = MsgUpdateAnyClient {
             client_id: client_id.clone(),
-            header: latest_header.into(),
+            header: block_ref.into(),
             signer,
         };
 
@@ -516,12 +499,11 @@ mod tests {
 
         let signer = get_dummy_account_id();
 
-        let block_ref = ctx_b.host_block(client_update_height);
-        let latest_header: AnyHeader = block_ref.cloned().map(Into::into).unwrap();
+        let block_ref = ctx_b.host_block(client_update_height).unwrap();
 
         let msg = MsgUpdateAnyClient {
             client_id,
-            header: latest_header.into(),
+            header: block_ref.clone().into(),
             signer,
         };
 

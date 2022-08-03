@@ -2,7 +2,7 @@ use crate::prelude::*;
 use ibc_proto::google::protobuf::Any;
 
 use crate::core::ics02_client::client_state::AnyClientState;
-use crate::core::ics02_client::header::AnyHeader;
+use crate::core::ics02_client::header::Header;
 use crate::events::IbcEvent;
 
 use crate::core::ics24_host::identifier::ClientId;
@@ -23,7 +23,7 @@ pub trait Ics18Context {
     fn query_client_full_state(&self, client_id: &ClientId) -> Option<AnyClientState>;
 
     /// Returns the most advanced header of this chain.
-    fn query_latest_header(&self) -> Option<AnyHeader>;
+    fn query_latest_header(&self) -> Option<Box<dyn Header>>;
 
     /// Interface that the relayer uses to submit a datagram to this chain.
     /// One can think of this as wrapping around the `/broadcast_tx_commit` ABCI endpoint.

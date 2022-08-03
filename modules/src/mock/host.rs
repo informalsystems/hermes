@@ -1,12 +1,18 @@
 //! Host chain types and methods, used by context mock.
 
+use ibc_proto::google::protobuf::Any;
+use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
+use ibc_proto::protobuf::Protobuf as ErasedProtobuf;
+use serde::Serialize;
+use std::ops::Deref;
 use tendermint_testgen::light_block::TmLightBlock;
 use tendermint_testgen::{Generator, LightBlock as TestgenLightBlock};
 
 use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
-use crate::clients::ics07_tendermint::header::Header as TMHeader;
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
-use crate::core::ics02_client::header::AnyHeader;
+use crate::core::ics02_client::client_type::ClientType;
+use crate::core::ics02_client::error::Error;
+use crate::core::ics02_client::header::{Header, TENDERMINT_HEADER_TYPE_URL};
 use crate::core::ics24_host::identifier::ChainId;
 use crate::mock::header::MockHeader;
 use crate::prelude::*;
@@ -24,12 +30,39 @@ pub enum HostType {
     SyntheticTendermint,
 }
 
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct SyntheticTmBlock {
+    pub trusted_height: Height,
+    pub light_block: TmLightBlock,
+}
+
+impl SyntheticTmBlock {
+    pub fn set_trusted_height(&mut self, height: Height) {
+        self.trusted_height = height
+    }
+}
+
+// FIXME: this shouldn't be required
+impl Deref for SyntheticTmBlock {
+    type Target = TmLightBlock;
+
+    fn deref(&self) -> &Self::Target {
+        &self.light_block
+    }
+}
+
+impl From<SyntheticTmBlock> for TmLightBlock {
+    fn from(value: SyntheticTmBlock) -> Self {
+        value.light_block
+    }
+}
+
 /// Depending on `HostType` (the type of host chain underlying a context mock), this enum defines
 /// the type of blocks composing the history of the host chain.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum HostBlock {
     Mock(MockHeader),
-    SyntheticTendermint(Box<TmLightBlock>),
+    SyntheticTendermint(SyntheticTmBlock),
 }
 
 impl HostBlock {
@@ -42,6 +75,13 @@ impl HostBlock {
                 light_block.signed_header.header.height.value(),
             )
             .unwrap(),
+        }
+    }
+
+    pub fn set_trusted_height(&mut self, height: Height) {
+        match self {
+            HostBlock::Mock(_) => {}
+            HostBlock::SyntheticTendermint(light_block) => light_block.trusted_height = height,
         }
     }
 
@@ -67,26 +107,34 @@ impl HostBlock {
                 height: Height::new(chain_id.version(), height).unwrap(),
                 timestamp,
             }),
-            HostType::SyntheticTendermint => HostBlock::SyntheticTendermint(Box::new(
-                Self::generate_tm_block(chain_id, height, timestamp),
-            )),
+            HostType::SyntheticTendermint => {
+                HostBlock::SyntheticTendermint(Self::generate_tm_block(chain_id, height, timestamp))
+            }
         }
     }
 
-    pub fn generate_tm_block(chain_id: ChainId, height: u64, timestamp: Timestamp) -> TmLightBlock {
-        TestgenLightBlock::new_default_with_time_and_chain_id(
+    pub fn generate_tm_block(
+        chain_id: ChainId,
+        height: u64,
+        timestamp: Timestamp,
+    ) -> SyntheticTmBlock {
+        let light_block = TestgenLightBlock::new_default_with_time_and_chain_id(
             chain_id.to_string(),
             timestamp.into_tm_time().unwrap(),
             height,
         )
         .generate()
-        .unwrap()
+        .unwrap();
+        SyntheticTmBlock {
+            trusted_height: Height::new(chain_id.version(), height).unwrap(),
+            light_block,
+        }
     }
 }
 
-impl From<TmLightBlock> for AnyConsensusState {
-    fn from(light_block: TmLightBlock) -> Self {
-        let cs = TMConsensusState::from(light_block.signed_header.header);
+impl From<SyntheticTmBlock> for AnyConsensusState {
+    fn from(light_block: SyntheticTmBlock) -> Self {
+        let cs = TMConsensusState::from(light_block.signed_header.header.clone());
         AnyConsensusState::Tendermint(cs)
     }
 }
@@ -95,31 +143,63 @@ impl From<HostBlock> for AnyConsensusState {
     fn from(any_block: HostBlock) -> Self {
         match any_block {
             HostBlock::Mock(mock_header) => mock_header.into(),
-            HostBlock::SyntheticTendermint(light_block) => (*light_block).into(),
+            HostBlock::SyntheticTendermint(light_block) => light_block.into(),
         }
     }
 }
 
-impl From<HostBlock> for AnyHeader {
-    fn from(any_block: HostBlock) -> Self {
-        match any_block {
-            HostBlock::Mock(mock_header) => mock_header.into(),
-            HostBlock::SyntheticTendermint(light_block_box) => {
-                // Conversion from TMLightBlock to AnyHeader
-                AnyHeader::Tendermint((*light_block_box).into())
+impl ErasedProtobuf<Any> for HostBlock {}
+
+impl TryFrom<Any> for HostBlock {
+    type Error = Error;
+
+    fn try_from(_raw: Any) -> Result<Self, Error> {
+        todo!()
+    }
+}
+
+impl From<HostBlock> for Any {
+    fn from(value: HostBlock) -> Self {
+        fn encode_light_block(light_block: SyntheticTmBlock) -> Vec<u8> {
+            use prost::Message;
+
+            let SyntheticTmBlock {
+                trusted_height,
+                light_block,
+            } = light_block;
+
+            RawHeader {
+                signed_header: Some(light_block.signed_header.into()),
+                validator_set: Some(light_block.validators.into()),
+                trusted_height: Some(trusted_height.into()),
+                trusted_validators: Some(light_block.next_validators.into()),
             }
+            .encode_to_vec()
+        }
+
+        match value {
+            HostBlock::Mock(mock_header) => mock_header.into(),
+            HostBlock::SyntheticTendermint(light_block_box) => Self {
+                type_url: TENDERMINT_HEADER_TYPE_URL.to_string(),
+                value: encode_light_block(light_block_box),
+            },
         }
     }
 }
 
-impl From<TmLightBlock> for TMHeader {
-    fn from(light_block: TmLightBlock) -> Self {
-        // TODO: This conversion is incorrect for `trusted_height` and `trusted_validator_set`.
-        TMHeader {
-            signed_header: light_block.signed_header,
-            validator_set: light_block.validators,
-            trusted_height: Height::new(0, 1).unwrap(),
-            trusted_validator_set: light_block.next_validators,
+impl Header for HostBlock {
+    fn client_type(&self) -> ClientType {
+        match self {
+            HostBlock::Mock(_) => ClientType::Mock,
+            HostBlock::SyntheticTendermint(_) => ClientType::Tendermint,
         }
+    }
+
+    fn height(&self) -> Height {
+        HostBlock::height(self)
+    }
+
+    fn timestamp(&self) -> Timestamp {
+        HostBlock::timestamp(self)
     }
 }
