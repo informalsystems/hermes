@@ -14,26 +14,35 @@ use crate::Height;
 pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
 pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
 
-pub trait EqualsHeader {
-    fn equals_header(&self, other: &dyn Header) -> bool;
-}
+mod sealed {
+    use super::*;
 
-impl<H> EqualsHeader for H
-where
-    H: Header + PartialEq,
-{
-    fn equals_header(&self, other: &dyn Header) -> bool {
-        other
-            .as_any()
-            .downcast_ref::<H>()
-            .map_or(false, |h| self == h)
+    pub trait ErasedPartialEqHeader {
+        fn eq_header(&self, other: &dyn Header) -> bool;
+    }
+
+    impl<H> ErasedPartialEqHeader for H
+    where
+        H: Header + PartialEq,
+    {
+        fn eq_header(&self, other: &dyn Header) -> bool {
+            other
+                .as_any()
+                .downcast_ref::<H>()
+                .map_or(false, |h| self == h)
+        }
     }
 }
 
 /// Abstract of consensus state update information
+///
+/// Users are not expected to implement sealed::ErasedPartialEqHeader.
+/// Effectively, that trait bound mandates implementors to derive PartialEq,
+/// after which our blanket implementation will implement
+/// `ErasedPartialEqHeader` for their type.
 pub trait Header:
     AsAny
-    + EqualsHeader
+    + sealed::ErasedPartialEqHeader
     + DynClone
     + ErasedSerialize
     + ErasedProtobuf<Any, Error = Error>
@@ -71,6 +80,6 @@ pub fn downcast_header<H: Header>(h: &dyn Header) -> Option<&H> {
 
 impl PartialEq for dyn Header {
     fn eq(&self, other: &Self) -> bool {
-        self.equals_header(other)
+        self.eq_header(other)
     }
 }
