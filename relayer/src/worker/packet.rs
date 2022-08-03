@@ -236,7 +236,7 @@ fn receive_packet_metrics(path: &Packet, summary: &RelaySummary) {
         .count();
 
     telemetry!(
-        ibc_receive_packets,
+        receive_packets_confirmed,
         &path.src_chain_id,
         &path.src_channel_id,
         &path.src_port_id,
@@ -255,7 +255,7 @@ fn acknowledgment_metrics(path: &Packet, summary: &RelaySummary) {
         .count();
 
     telemetry!(
-        ibc_acknowledgment_packets,
+        acknowledgment_packets_confirmed,
         &path.src_chain_id,
         &path.src_channel_id,
         &path.src_port_id,
@@ -273,7 +273,7 @@ fn timeout_metrics(path: &Packet, summary: &RelaySummary) {
         .count();
 
     telemetry!(
-        ibc_timeout_packets,
+        timeout_packets_confirmed,
         &path.src_chain_id,
         &path.src_channel_id,
         &path.src_port_id,

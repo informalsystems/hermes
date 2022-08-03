@@ -1773,7 +1773,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     #[cfg(feature = "telemetry")]
     fn record_cleared_send_packet(&self, event: IbcEvent) {
         if let IbcEvent::SendPacket(send_packet_ev) = event {
-            ibc_telemetry::global().send_packet_count(
+            ibc_telemetry::global().send_packet_events(
                 send_packet_ev.packet.sequence.into(),
                 send_packet_ev.height().revision_height(),
                 &self.src_chain().id(),
@@ -1781,7 +1781,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 self.src_port_id(),
                 &self.dst_chain().id(),
             );
-            ibc_telemetry::global().clear_send_packet_count(
+            ibc_telemetry::global().cleared_send_packet_events(
                 send_packet_ev.packet.sequence.into(),
                 send_packet_ev.height().revision_height(),
                 &self.src_chain().id(),
@@ -1796,7 +1796,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn record_cleared_acknowledgments(&self, events: Vec<IbcEvent>) {
         for e in events {
             if let IbcEvent::WriteAcknowledgement(write_ack_ev) = e {
-                ibc_telemetry::global().clear_acknowledgment_packet_count(
+                ibc_telemetry::global().cleared_acknowledgment_events(
                     write_ack_ev.packet.sequence.into(),
                     write_ack_ev.height().revision_height(),
                     &self.dst_chain().id(),

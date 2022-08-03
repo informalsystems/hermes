@@ -1528,7 +1528,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 );
 
                 telemetry!(
-                    ibc_client_misbehaviour,
+                    client_misbehaviours_submitted,
                     &self.src_chain.id(),
                     &self.dst_chain.id(),
                     &self.id,
