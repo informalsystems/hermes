@@ -64,6 +64,9 @@ pub trait ConsensusState:
     /// Commitment root of the consensus state, which is used for key-value pair verification.
     fn root(&self) -> &CommitmentRoot;
 
+    /// The timestamp of the consensus state
+    fn timestamp(&self) -> Timestamp;
+
     /// Convert into a boxed trait object
     fn into_box(self) -> Box<dyn ConsensusState>
     where
@@ -230,5 +233,9 @@ impl ConsensusState for AnyConsensusState {
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(mock_state) => mock_state.root(),
         }
+    }
+
+    fn timestamp(&self) -> Timestamp {
+        AnyConsensusState::timestamp(self)
     }
 }
