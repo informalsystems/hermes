@@ -10,9 +10,7 @@ use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 
-use crate::core::ics02_client::client_consensus::{
-    AnyConsensusState, ConsensusState, MOCK_CONSENSUS_STATE_TYPE_URL,
-};
+use crate::core::ics02_client::client_consensus::{ConsensusState, MOCK_CONSENSUS_STATE_TYPE_URL};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
@@ -33,7 +31,7 @@ pub struct MockClientRecord {
     pub client_state: Option<AnyClientState>,
 
     /// Mapping of heights to consensus states for this client.
-    pub consensus_states: HashMap<Height, AnyConsensusState>,
+    pub consensus_states: HashMap<Height, Box<dyn ConsensusState>>,
 }
 
 /// A mock of a client state. For an example of a real structure that this mocks, you can see
@@ -207,5 +205,9 @@ impl ConsensusState for MockConsensusState {
 
     fn root(&self) -> &CommitmentRoot {
         &self.root
+    }
+
+    fn timestamp(&self) -> Timestamp {
+        self.header.timestamp
     }
 }
