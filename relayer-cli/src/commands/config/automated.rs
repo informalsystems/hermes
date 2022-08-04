@@ -5,17 +5,21 @@ use abscissa_core::{Command, Runnable};
 
 use crate::conclude::Output;
 use crate::config;
+
+use ibc::core::ics24_host::identifier::ChainId;
+
 use crate::prelude::*;
 
 /// In order to validate the configuration file the command will check that the file exists,
 /// that it is readable and not empty. It will then check the validity of the fields inside
 /// the file.
-#[derive(Command, Debug, Parser)]
+#[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct AutomatedCmd {
     #[clap(
-        long = "chain",
+        long = "chains",
         required = true,
-        value_name = "CHAIN_ID",
+        multiple = true,
+        value_name = "CHAIN_ID1 CHAIN_ID2...",
         help_heading = "REQUIRED",
         help = "Identifier of the chain to query"
     )]
@@ -27,9 +31,9 @@ impl Runnable for AutomatedCmd {
     fn run(&self) {
         let config = app_config();
         trace!("loaded configuration: {:#?}", *config);
-        
-        chain_ids.foreach(|chain_id| {
-            println!("{}\n", chain_id);
+
+        self.chain_ids.iter().for_each(|chain_id| {
+            println!("{}", chain_id);
         });
 
         // Verify that the configuration file has been found.

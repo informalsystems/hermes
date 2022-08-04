@@ -56,7 +56,6 @@ flex-error = { version = "0.4.4", default-features = false, features = ["std", "
 signal-hook = "0.3.14"
 dialoguer = "0.10.1"
 console = "0.15.0"
-ocular = {git = "https://github.com/PeggyJV/ocular/", rev = "a5f1956"}
 
 [dependencies.tendermint-proto]
 version = "=0.23.8"
