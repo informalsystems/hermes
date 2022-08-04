@@ -1,18 +1,28 @@
 [package]
-name = "chain-registry"
-version = "0.1.0"
-edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+name         = "chain-registry"
+version      = "0.1.0"
+edition      = "2022"
+license      = "Apache-2.0"
+readme       = "README.md"
+keywords     = ["cosmos", "ibc", "relayer", "telemetry", "registry", "hermes"]
+repository   = "https://github.com/informalsystems/ibc-rs"
+authors      = ["Informal Systems <hello@informal.systems>"]
+rust-version = "1.60"
+description  = """
+    Service to fetch data from the chain-registry
+"""
 
 [dependencies]
-serde = "1.0.133"
-serde_json = "1"
-futures = { version = "0.3.19", features = ["executor"] }
-http = "0.2"
-reqwest = { version = "0.11.8", features = ["json"] }
-flex-error = { version = "0.4.4", default-features = false }
-tendermint-rpc = { version = "0.23.8", features = ["websocket-client"] }
-url = "2.2.2"
-tokio = "1.17.0"
-toml = "0.5.8"
+ibc = { version = "0.17.0", path = "../modules" }
+
+[dependencies]
+flex-error               = { version = "0.4.4", default-features = false }
+futures                  = { version = "0.3.19", features = ["executor"] }
+http                     = "0.2"
+reqwest                  = { version = "0.11.8", features = ["json"] }
+serde                    = "1.0.133"
+serde_json               = "1"
+tendermint-rpc           = { version = "0.23.8", features = ["websocket-client"] }
+tokio                    = "1.17.0"
+toml                     = "0.5.8"
+url                      = "2.2.2"
