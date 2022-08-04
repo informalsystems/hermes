@@ -1,3 +1,4 @@
+use crate::dynamic_typing::AsAny;
 use crate::prelude::*;
 
 use ibc_proto::google::protobuf::Any;
@@ -17,7 +18,9 @@ pub const TENDERMINT_MISBEHAVIOR_TYPE_URL: &str = "/ibc.lightclients.tendermint.
 #[cfg(any(test, feature = "mocks"))]
 pub const MOCK_MISBEHAVIOUR_TYPE_URL: &str = "/ibc.mock.Misbehavior";
 
-pub trait Misbehaviour: core::fmt::Debug + Send + Sync {
+pub trait Misbehaviour:
+    AsAny + sealed::ErasedPartialEqMisbehaviour + core::fmt::Debug + Send + Sync
+{
     /// The type of client (eg. Tendermint)
     fn client_id(&self) -> &ClientId;
 
@@ -50,6 +53,31 @@ impl Misbehaviour for AnyMisbehaviour {
 
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(misbehaviour) => misbehaviour.height(),
+        }
+    }
+}
+
+impl PartialEq for dyn Misbehaviour {
+    fn eq(&self, other: &Self) -> bool {
+        self.eq_misbehaviour(other)
+    }
+}
+mod sealed {
+    use super::*;
+
+    pub trait ErasedPartialEqMisbehaviour {
+        fn eq_misbehaviour(&self, other: &dyn Misbehaviour) -> bool;
+    }
+
+    impl<H> ErasedPartialEqMisbehaviour for H
+    where
+        H: Misbehaviour + PartialEq,
+    {
+        fn eq_misbehaviour(&self, other: &dyn Misbehaviour) -> bool {
+            other
+                .as_any()
+                .downcast_ref::<H>()
+                .map_or(false, |h| self == h)
         }
     }
 }
