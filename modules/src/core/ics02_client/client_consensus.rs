@@ -2,9 +2,14 @@ use crate::prelude::*;
 
 use core::marker::{Send, Sync};
 
-use ibc_proto::google::protobuf::Any as ProtoAny;
+use dyn_clone::DynClone;
+use erased_serde::Serialize as ErasedSerialize;
+use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
+use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
+use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
 use ibc_proto::protobuf::Protobuf;
+use ibc_proto::protobuf::Protobuf as ErasedProtobuf;
 use serde::Serialize;
 
 use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
@@ -23,14 +28,72 @@ pub const TENDERMINT_CONSENSUS_STATE_TYPE_URL: &str =
 
 pub const MOCK_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.mock.ConsensusState";
 
-pub trait ConsensusState: core::fmt::Debug + Send + Sync + AsAny {
+mod sealed {
+    use super::*;
+
+    pub trait ErasedPartialEqConsensusState {
+        fn eq_consensus_state(&self, other: &dyn ConsensusState) -> bool;
+    }
+
+    impl<CS> ErasedPartialEqConsensusState for CS
+    where
+        CS: ConsensusState + PartialEq,
+    {
+        fn eq_consensus_state(&self, other: &dyn ConsensusState) -> bool {
+            other
+                .as_any()
+                .downcast_ref::<CS>()
+                .map_or(false, |h| self == h)
+        }
+    }
+}
+
+pub trait ConsensusState:
+    AsAny
+    + sealed::ErasedPartialEqConsensusState
+    + DynClone
+    + ErasedSerialize
+    + ErasedProtobuf<Any, Error = Error>
+    + core::fmt::Debug
+    + Send
+    + Sync
+{
     /// Type of client associated with this consensus state (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 
     /// Commitment root of the consensus state, which is used for key-value pair verification.
     fn root(&self) -> &CommitmentRoot;
 
-    fn encode_vec(&self) -> Result<Vec<u8>, Error>;
+    /// Convert into a boxed trait object
+    fn into_box(self) -> Box<dyn ConsensusState>
+    where
+        Self: Sized,
+    {
+        Box::new(self)
+    }
+}
+
+// Implements `Clone` for `Box<dyn ConsensusState>`
+dyn_clone::clone_trait_object!(ConsensusState);
+
+// Implements `serde::Serialize` for all types that have ConsensusState as supertrait
+erased_serde::serialize_trait_object!(ConsensusState);
+
+pub fn downcast_consensus_state<CS: ConsensusState>(h: &dyn ConsensusState) -> Option<&CS> {
+    h.as_any().downcast_ref::<CS>()
+}
+
+impl PartialEq for dyn ConsensusState {
+    fn eq(&self, other: &Self) -> bool {
+        self.eq_consensus_state(other)
+    }
+}
+
+// see https://github.com/rust-lang/rust/issues/31740
+impl PartialEq<&Self> for Box<dyn ConsensusState> {
+    fn eq(&self, other: &&Self) -> bool {
+        self.eq_consensus_state(other.as_ref())
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -60,34 +123,25 @@ impl AnyConsensusState {
             AnyConsensusState::Mock(_cs) => ClientType::Mock,
         }
     }
-
-    pub fn boxed_dyn(self) -> Box<dyn ConsensusState> {
-        match self {
-            AnyConsensusState::Tendermint(cs) => Box::new(cs),
-
-            #[cfg(any(test, feature = "mocks"))]
-            AnyConsensusState::Mock(cs) => Box::new(cs),
-        }
-    }
 }
 
-impl Protobuf<ProtoAny> for AnyConsensusState {}
+impl Protobuf<Any> for AnyConsensusState {}
 
-impl TryFrom<ProtoAny> for AnyConsensusState {
+impl TryFrom<Any> for AnyConsensusState {
     type Error = Error;
 
-    fn try_from(value: ProtoAny) -> Result<Self, Self::Error> {
+    fn try_from(value: Any) -> Result<Self, Self::Error> {
         match value.type_url.as_str() {
             "" => Err(Error::empty_consensus_state_response()),
 
             TENDERMINT_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Tendermint(
-                TmConsensusState::decode_vec(&value.value)
+                Protobuf::<RawConsensusState>::decode_vec(&value.value)
                     .map_err(Error::decode_raw_client_state)?,
             )),
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Mock(
-                MockConsensusState::decode_vec(&value.value)
+                Protobuf::<RawMockConsensusState>::decode_vec(&value.value)
                     .map_err(Error::decode_raw_client_state)?,
             )),
 
@@ -96,18 +150,18 @@ impl TryFrom<ProtoAny> for AnyConsensusState {
     }
 }
 
-impl From<AnyConsensusState> for ProtoAny {
+impl From<AnyConsensusState> for Any {
     fn from(value: AnyConsensusState) -> Self {
         match value {
-            AnyConsensusState::Tendermint(value) => ProtoAny {
+            AnyConsensusState::Tendermint(value) => Any {
                 type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: ConsensusState::encode_vec(&value)
+                value: Protobuf::<RawConsensusState>::encode_vec(&value)
                     .expect("encoding to `Any` from `AnyConsensusState::Tendermint`"),
             },
             #[cfg(any(test, feature = "mocks"))]
-            AnyConsensusState::Mock(value) => ProtoAny {
+            AnyConsensusState::Mock(value) => Any {
                 type_url: MOCK_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: ConsensusState::encode_vec(&value)
+                value: Protobuf::<RawMockConsensusState>::encode_vec(&value)
                     .expect("encoding to `Any` from `AnyConsensusState::Mock`"),
             },
         }
@@ -176,9 +230,5 @@ impl ConsensusState for AnyConsensusState {
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(mock_state) => mock_state.root(),
         }
-    }
-
-    fn encode_vec(&self) -> Result<Vec<u8>, Error> {
-        Protobuf::encode_vec(self).map_err(Error::invalid_any_consensus_state)
     }
 }
