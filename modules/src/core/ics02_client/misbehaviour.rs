@@ -1,6 +1,7 @@
 use crate::dynamic_typing::AsAny;
 use crate::prelude::*;
 
+use dyn_clone::DynClone;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::protobuf::Protobuf;
 
@@ -19,7 +20,7 @@ pub const TENDERMINT_MISBEHAVIOR_TYPE_URL: &str = "/ibc.lightclients.tendermint.
 pub const MOCK_MISBEHAVIOUR_TYPE_URL: &str = "/ibc.mock.Misbehavior";
 
 pub trait Misbehaviour:
-    AsAny + sealed::ErasedPartialEqMisbehaviour + core::fmt::Debug + Send + Sync
+    AsAny + sealed::ErasedPartialEqMisbehaviour + DynClone + core::fmt::Debug + Send + Sync
 {
     /// The type of client (eg. Tendermint)
     fn client_id(&self) -> &ClientId;
@@ -27,6 +28,9 @@ pub trait Misbehaviour:
     /// The height of the consensus state
     fn height(&self) -> Height;
 }
+
+// Implements `Clone` for `Box<dyn Misbehaviour>`
+dyn_clone::clone_trait_object!(Misbehaviour);
 
 #[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound once possible
 #[allow(clippy::large_enum_variant)]
