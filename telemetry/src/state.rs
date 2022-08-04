@@ -261,7 +261,7 @@ impl TelemetryState {
         self.ws_events.add(count, labels);
     }
 
-    /// How many messages Hermes submitted to the chain, per chain
+    /// How many messages Hermes submitted to the chain
     pub fn total_messages_submitted(&self, chain_id: &ChainId, count: u64) {
         let labels = &[KeyValue::new("chain", chain_id.to_string())];
 
@@ -611,54 +611,54 @@ impl Default for TelemetryState {
 
             workers: meter
                 .i64_up_down_counter("workers")
-                .with_description("Number of workers per type")
+                .with_description("Number of workers")
                 .init(),
 
             client_updates_submitted: meter
                 .u64_counter("client_updates_submitted")
-                .with_description("Number of client update messages submitted per client")
+                .with_description("Number of client update messages submitted")
                 .init(),
 
             client_misbehaviours_submitted: meter
                 .u64_counter("client_misbehaviours_submitted")
-                .with_description("Number of misbehaviours detected and submitted per client")
+                .with_description("Number of misbehaviours detected and submitted")
                 .init(),
 
             receive_packets_confirmed: meter
                 .u64_counter("receive_packets_confirmed")
-                .with_description("Number of confirmed receive packets per channel. Available if relayer runs with Tx confirmation enabled")
+                .with_description("Number of confirmed receive packets. Available if relayer runs with Tx confirmation enabled")
                 .init(),
 
             acknowledgment_packets_confirmed: meter
                 .u64_counter("acknowledgment_packets_confirmed")
-                .with_description("Number of confirmed acknowledgment packets per channel. Available if relayer runs with Tx confirmation enabled")
+                .with_description("Number of confirmed acknowledgment packets. Available if relayer runs with Tx confirmation enabled")
                 .init(),
 
             timeout_packets_confirmed: meter
                 .u64_counter("timeout_packets_confirmed")
-                .with_description("Number of confirmed timeout packets per channel. Available if relayer runs with Tx confirmation enabled")
+                .with_description("Number of confirmed timeout packets. Available if relayer runs with Tx confirmation enabled")
                 .init(),
 
             queries: meter
                 .u64_counter("queries")
                 .with_description(
-                    "Number of queries submitted by Hermes, per chain and query type",
+                    "Number of queries submitted by Hermes",
                 )
                 .init(),
 
             queries_cache_hits: meter
                 .u64_counter("queries_cache_hits")
-                .with_description("Number of cache hits for queries submitted by Hermes, per chain and query type")
+                .with_description("Number of cache hits for queries submitted by Hermes")
                 .init(),
 
             ws_reconnect: meter
                 .u64_counter("ws_reconnect")
-                .with_description("Number of times Hermes reconnected to the websocket endpoint, per chain")
+                .with_description("Number of times Hermes reconnected to the websocket endpoint")
                 .init(),
 
             ws_events: meter
                 .u64_counter("ws_events")
-                .with_description("How many IBC events did Hermes receive via the WebSocket subscription, per chain")
+                .with_description("How many IBC events did Hermes receive via the websocket subscription")
                 .init(),
 
             total_messages_submitted: meter
@@ -683,7 +683,7 @@ impl Default for TelemetryState {
 
             timeout_events: meter
                 .u64_counter("timeout_events")
-                .with_description("Number of Timeout events received")
+                .with_description("Number of TimeoutPacket events received")
                 .init(),
 
             cleared_send_packet_events: meter
@@ -721,18 +721,18 @@ impl Default for TelemetryState {
 
             backlog_oldest_sequence: meter
                 .u64_value_recorder("backlog_oldest_sequence")
-                .with_description("Sequence number of the oldest SendPacket event in the backlog, per channel")
+                .with_description("Sequence number of the oldest SendPacket event in the backlog")
                 .init(),
 
             backlog_oldest_timestamp: meter
                 .u64_value_recorder("backlog_oldest_timestamp")
                 .with_unit(Unit::new("seconds"))
-                .with_description("Local timestamp for the oldest SendPacket event in the backlog, per channel")
+                .with_description("Local timestamp for the oldest SendPacket event in the backlog")
                 .init(),
 
             backlog_size: meter
                 .u64_value_recorder("backlog_size")
-                .with_description("Total number of SendPacket events in the backlog, per channel")
+                .with_description("Total number of SendPacket events in the backlog")
                 .init(),
         }
     }

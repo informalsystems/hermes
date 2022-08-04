@@ -59,8 +59,8 @@ clear_on_start = true
 # (to any chain in this config file) have been successfully delivered.
 # If they have not been, and `clear_interval = 0`, then those packets are
 # queued up for re-submission.
-# Experimental feature. If set to `false`, the following telemetry metrics will be disabled:
-# `ibc_acknowledgment_packets`, `ibc_receive_packets` and `ibc_timeout_packets`.
+# If set to `false`, the following telemetry metrics will be disabled:
+# `acknowledgment_packets_confirmed`, `receive_packets_confirmed` and `timeout_packets_confirmed`.
 # [Default: false]
 tx_confirmation = false
 
