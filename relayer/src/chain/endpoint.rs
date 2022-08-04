@@ -1,5 +1,7 @@
 use alloc::sync::Arc;
 use core::convert::TryFrom;
+use ibc::core::ics02_client::events::UpdateClient;
+use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::core::ics23_commitment::merkle::MerkleProof;
 
 use tokio::runtime::Runtime as TokioRuntime;
@@ -42,7 +44,6 @@ use crate::denom::DenomTrace;
 use crate::error::{Error, QUERY_PROOF_EXPECT_MSG};
 use crate::event::monitor::{EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
-use crate::light_client::LightClient;
 
 use super::requests::{
     IncludeProof, QueryBlockRequest, QueryHeight, QueryPacketAcknowledgementRequest,
@@ -77,14 +78,16 @@ pub trait ChainEndpoint: Sized {
     /// Type of the client state for this chain
     type ClientState: ClientState;
 
-    type LightClient: LightClient<Self>;
+    /// Returns the chain's identifier
+    fn id(&self) -> &ChainId;
+
+    /// Returns the chain configuration
+    fn config(&self) -> ChainConfig;
+
+    // Life cycle
 
     /// Constructs the chain
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error>;
-
-    #[allow(clippy::type_complexity)]
-    /// Initializes and returns the light client (if any) associated with this chain.
-    fn init_light_client(&self) -> Result<Self::LightClient, Error>;
 
     /// Initializes and returns the event monitor (if any) associated with this chain.
     fn init_event_monitor(
@@ -92,20 +95,32 @@ pub trait ChainEndpoint: Sized {
         rt: Arc<TokioRuntime>,
     ) -> Result<(EventReceiver, TxMonitorCmd), Error>;
 
-    /// Returns the chain's identifier
-    fn id(&self) -> &ChainId;
-
     /// Shutdown the chain runtime
     fn shutdown(self) -> Result<(), Error>;
 
     /// Perform a health check
     fn health_check(&self) -> Result<HealthCheck, Error>;
 
+    // Keyring
+
     /// Returns the chain's keybase
     fn keybase(&self) -> &KeyRing;
 
     /// Returns the chain's keybase, mutably
     fn keybase_mut(&mut self) -> &mut KeyRing;
+
+    fn get_signer(&mut self) -> Result<Signer, Error>;
+
+    fn get_key(&mut self) -> Result<KeyEntry, Error>;
+
+    fn add_key(&mut self, key_name: &str, key: KeyEntry) -> Result<(), Error>;
+
+    // Versioning
+
+    /// Return the version of the IBC protocol that this chain is running, if known.
+    fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
+
+    // Send transactions
 
     /// Sends one or more transactions with `msgs` to chain and
     /// synchronously wait for it to be committed.
@@ -121,16 +136,23 @@ pub trait ChainEndpoint: Sized {
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<TxResponse>, Error>;
 
-    fn get_signer(&mut self) -> Result<Signer, Error>;
+    // Light client
 
-    fn config(&self) -> ChainConfig;
+    /// Fetch a header from the chain at the given height and verify it.
+    fn verify_header(
+        &mut self,
+        trusted: ICSHeight,
+        target: ICSHeight,
+        client_state: &AnyClientState,
+    ) -> Result<Self::LightBlock, Error>;
 
-    fn get_key(&mut self) -> Result<KeyEntry, Error>;
-
-    fn add_key(&mut self, key_name: &str, key: KeyEntry) -> Result<(), Error>;
-
-    /// Return the version of the IBC protocol that this chain is running, if known.
-    fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
+    /// Given a client update event that includes the header used in a client update,
+    /// look for misbehaviour by fetching a header at same or latest height.
+    fn check_misbehaviour(
+        &mut self,
+        update: &UpdateClient,
+        client_state: &AnyClientState,
+    ) -> Result<Option<MisbehaviourEvidence>, Error>;
 
     // Queries
 
@@ -342,11 +364,10 @@ pub trait ChainEndpoint: Sized {
     /// Returns all the supporting headers that were need to verify the target
     /// header, for use when building a `ClientUpdate` message.
     fn build_header(
-        &self,
+        &mut self,
         trusted_height: ICSHeight,
         target_height: ICSHeight,
         client_state: &AnyClientState,
-        light_client: &mut Self::LightClient,
     ) -> Result<(Self::Header, Vec<Self::Header>), Error>;
 
     /// Builds the required proofs and the client state for connection handshake messages.
