@@ -21,8 +21,10 @@ pub(crate) fn process<HostFunctions: HostFunctionsProvider>(
 ) -> HandlerResult<ConnectionResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    // Check that consensus height (for client proof) in message is not too advanced nor too old.
-    check_client_consensus_height(ctx, msg.consensus_height())?;
+    // Check that consensus height if provided (for client proof) in message is not too advanced nor too old.
+    if msg.proofs.consensus_proof().is_some() {
+        check_client_consensus_height(ctx, msg.consensus_height())?;
+    }
 
     // Unwrap the old connection end (if any) and its identifier.
     let (mut new_connection_end, conn_id) = match &msg.previous_connection_id {

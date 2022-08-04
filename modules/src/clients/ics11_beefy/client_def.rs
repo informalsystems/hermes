@@ -152,7 +152,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
             }
             parachain_cs_states.push((
                 height,
-                AnyConsensusState::Beefy(ConsensusState::from_header::<HostFunctions>(header)?),
+                AnyConsensusState::Beefy(ConsensusState::from_header(header)?),
             ))
         }
 

@@ -20,8 +20,10 @@ pub(crate) fn process<HostFunctions: HostFunctionsProvider>(
 ) -> HandlerResult<ConnectionResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    // Check the client's (consensus state) proof height.
-    check_client_consensus_height(ctx, msg.consensus_height())?;
+    // Check the client's (consensus state) proof height if it consensus proof is provided
+    if msg.proofs.consensus_proof().is_some() {
+        check_client_consensus_height(ctx, msg.consensus_height())?;
+    }
 
     // Validate the connection end.
     let mut conn_end = ctx.connection_end(&msg.connection_id)?;

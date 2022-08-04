@@ -17,8 +17,7 @@ pub trait HostFunctionsProvider: Clone + Send + Sync + Default {
     /// Recover the ED25519 pubkey that produced this signature, given a arbitrarily sized message
     fn ed25519_verify(signature: &[u8; 64], msg: &[u8], pubkey: &[u8]) -> bool;
 
-    /// This function should verify membership in a trie proof using parity's sp-trie package
-    /// with a BlakeTwo256 Hasher
+    /// This function should verify membership in a trie proof using sp_state_machine's read_child_proof_check
     fn verify_membership_trie_proof(
         root: &[u8; 32],
         proof: &[Vec<u8>],
@@ -26,12 +25,20 @@ pub trait HostFunctionsProvider: Clone + Send + Sync + Default {
         value: &[u8],
     ) -> Result<(), Error>;
 
-    /// This function should verify non membership in a trie proof using parity's sp-trie package
-    /// with a BlakeTwo256 Hasher
+    /// This function should verify non membership in a trie proof using sp_state_machine's read_child_proof_check
     fn verify_non_membership_trie_proof(
         root: &[u8; 32],
         proof: &[Vec<u8>],
         key: &[u8],
+    ) -> Result<(), Error>;
+
+    /// This function should verify membership in a trie proof using parity's sp-trie package
+    /// with a BlakeTwo256 Hasher
+    fn verify_timestamp_extrinsic(
+        root: &[u8; 32],
+        proof: &[Vec<u8>],
+        key: &[u8],
+        value: &[u8],
     ) -> Result<(), Error>;
 
     /// Conduct a 256-bit Sha2 hash
@@ -74,6 +81,16 @@ where
         value: &[u8; 32],
     ) -> Option<Vec<u8>> {
         T::secp256k1_ecdsa_recover_compressed(signature, value)
+    }
+
+    fn verify_timestamp_extrinsic(
+        root: sp_core::H256,
+        proof: &[Vec<u8>],
+        key: &[u8],
+        value: &[u8],
+    ) -> Result<(), beefy_client_primitives::error::BeefyClientError> {
+        T::verify_timestamp_extrinsic(root.as_fixed_bytes(), proof, key, value)
+            .map_err(|_| From::from("Timestamp verification failed".to_string()))
     }
 }
 

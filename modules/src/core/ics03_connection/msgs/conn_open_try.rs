@@ -73,18 +73,20 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
             .transpose()
             .map_err(Error::invalid_identifier)?;
 
-        let consensus_height = msg
-            .consensus_height
-            .ok_or_else(Error::missing_consensus_height)?
-            .into();
-
-        let consensus_proof_obj = ConsensusProof::new(
-            msg.proof_consensus
-                .try_into()
-                .map_err(Error::invalid_proof)?,
-            consensus_height,
-        )
-        .map_err(Error::invalid_proof)?;
+        let consensus_proof_obj = {
+            let proof_bytes: Option<CommitmentProofBytes> = msg.proof_consensus.try_into().ok();
+            let consensus_height = msg
+                .consensus_height
+                .map(|height| Height::new(height.revision_number, height.revision_height));
+            if proof_bytes.is_some() && consensus_height.is_some() {
+                Some(
+                    ConsensusProof::new(proof_bytes.unwrap(), consensus_height.unwrap())
+                        .map_err(Error::invalid_proof)?,
+                )
+            } else {
+                None
+            }
+        };
 
         let proof_height = msg
             .proof_height
@@ -120,7 +122,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
             proofs: Proofs::new(
                 msg.proof_init.try_into().map_err(Error::invalid_proof)?,
                 Some(client_proof),
-                Some(consensus_proof_obj),
+                consensus_proof_obj,
                 None,
                 proof_height,
             )

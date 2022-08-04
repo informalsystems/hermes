@@ -7,7 +7,6 @@ use tendermint::time::Time;
 use tendermint_proto::google::protobuf as tpb;
 use tendermint_proto::Protobuf;
 
-use crate::clients::host_functions::HostFunctionsProvider;
 use ibc_proto::ibc::lightclients::beefy::v1::ConsensusState as RawConsensusState;
 
 use crate::clients::ics11_beefy::error::Error;
@@ -16,8 +15,6 @@ use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics23_commitment::commitment::CommitmentRoot;
 
-// This is a constant that comes from pallet-ibc
-pub const IBC_CONSENSUS_ID: [u8; 4] = *b"/IBC";
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ConsensusState {
     pub timestamp: Time,
@@ -32,71 +29,27 @@ impl ConsensusState {
         }
     }
 
-    #[cfg(not(test))]
-    pub fn from_header<HostFunctions: HostFunctionsProvider>(
-        header: ParachainHeader,
-    ) -> Result<Self, Error> {
+    pub fn from_header(header: ParachainHeader) -> Result<Self, Error> {
         use crate::clients::ics11_beefy::header::decode_timestamp_extrinsic;
         use crate::timestamp::Timestamp;
         use sp_runtime::SaturatedConversion;
-        let root = {
-            header
-                .parachain_header
-                .digest
-                .logs
-                .iter()
-                .filter_map(|digest| digest.as_consensus())
-                .find(|(id, _value)| id == &IBC_CONSENSUS_ID)
-                .map(|(.., root)| root.to_vec())
-                .ok_or_else(|| {
-                    Error::invalid_header("cannot find ibc commitment root".to_string())
-                })?
-        };
+        let root = header.parachain_header.state_root.0.to_vec();
 
-        let timestamp = decode_timestamp_extrinsic::<HostFunctions>(&header)?;
+        let timestamp = decode_timestamp_extrinsic(&header)?;
         let duration = core::time::Duration::from_millis(timestamp);
         let timestamp = Timestamp::from_nanoseconds(duration.as_nanos().saturated_into::<u64>())
-            .unwrap_or_default()
+            .map_err(|e| {
+                Error::invalid_header(format!(
+                    "Failed to decode timestamp extrinsic, got {}",
+                    e.to_string()
+                ))
+            })?
             .into_tm_time()
             .ok_or_else(|| {
-                Error::invalid_header("cannot decode timestamp extrinsic".to_string())
+                Error::invalid_header(
+                    "Error decoding Timestamp, timestamp cannot be zero".to_string(),
+                )
             })?;
-
-        Ok(Self {
-            root: root.into(),
-            timestamp,
-        })
-    }
-
-    #[cfg(test)]
-    /// Leaving this here because there's no ibc commitment root in the runtime header that will be used in
-    /// testing
-    pub fn from_header<HostFunctions: HostFunctionsProvider>(
-        header: ParachainHeader,
-    ) -> Result<Self, Error> {
-        use crate::clients::ics11_beefy::header::decode_timestamp_extrinsic;
-        use crate::timestamp::Timestamp;
-        use sp_runtime::SaturatedConversion;
-        let root = {
-            header
-                .parachain_header
-                .digest
-                .logs
-                .iter()
-                .filter_map(|digest| digest.as_consensus())
-                .find(|(id, _value)| id == &IBC_CONSENSUS_ID)
-                .map(|(.., root)| root.to_vec())
-                .unwrap_or_default()
-        };
-
-        let timestamp = decode_timestamp_extrinsic::<HostFunctions>(&header)?;
-        let duration = core::time::Duration::from_millis(timestamp);
-        let timestamp = Timestamp::from_nanoseconds(duration.as_nanos().saturated_into::<u64>())
-            .unwrap_or_default()
-            .into_tm_time()
-            .ok_or(Error::invalid_header(
-                "cannot decode timestamp extrinsic".to_string(),
-            ))?;
 
         Ok(Self {
             root: root.into(),

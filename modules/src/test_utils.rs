@@ -191,6 +191,26 @@ impl HostFunctionsProvider for Crypto {
         res.copy_from_slice(&hash);
         res
     }
+
+    fn verify_timestamp_extrinsic(
+        root: &[u8; 32],
+        proof: &[Vec<u8>],
+        key: &[u8],
+        value: &[u8],
+    ) -> Result<(), Ics02Error> {
+        let root = sp_core::H256::from_slice(root);
+        sp_io::trie::blake2_256_verify_proof(
+            root,
+            proof,
+            key,
+            value,
+            sp_core::storage::StateVersion::V0,
+        )
+        .then(|| ())
+        .ok_or_else(|| {
+            Ics02Error::implementation_specific("timestamp verification failed".to_string())
+        })
+    }
 }
 
 impl Ics20Keeper for DummyTransferModule {
