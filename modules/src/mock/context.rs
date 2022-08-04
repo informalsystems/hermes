@@ -16,7 +16,9 @@ use sha2::Digest;
 use tracing::debug;
 
 use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
-use crate::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
+use crate::core::ics02_client::client_consensus::{
+    downcast_consensus_state, AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState,
+};
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::context::{ClientKeeper, ClientReader};
@@ -1225,7 +1227,7 @@ impl ClientKeeper for MockContext {
         &mut self,
         client_id: ClientId,
         height: Height,
-        consensus_state: AnyConsensusState,
+        consensus_state: Box<dyn ConsensusState>,
     ) -> Result<(), Ics02Error> {
         let mut ibc_store = self.ibc_store.lock().unwrap();
         let client_record = ibc_store
@@ -1237,9 +1239,11 @@ impl ClientKeeper for MockContext {
                 client_state: Default::default(),
             });
 
+        let consensus_state: &AnyConsensusState =
+            downcast_consensus_state(consensus_state.as_ref()).unwrap();
         client_record
             .consensus_states
-            .insert(height, consensus_state);
+            .insert(height, consensus_state.clone());
         Ok(())
     }
 

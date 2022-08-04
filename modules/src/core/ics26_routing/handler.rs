@@ -236,9 +236,7 @@ mod tests {
 
         let create_client_msg = MsgCreateAnyClient::new(
             AnyClientState::from(MockClientState::new(MockHeader::new(start_client_height))),
-            AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(
-                start_client_height,
-            ))),
+            MockConsensusState::new(MockHeader::new(start_client_height)).into(),
             default_signer.clone(),
         )
         .unwrap();

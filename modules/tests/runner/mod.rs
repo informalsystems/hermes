@@ -306,7 +306,7 @@ impl IbcTestRunner {
                 // create ICS26 message and deliver it
                 let msg = Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
                     client_state: Self::client_state(client_state),
-                    consensus_state: Self::consensus_state(consensus_state),
+                    consensus_state: Self::consensus_state(consensus_state).into(),
                     signer: Self::signer(),
                 }));
                 ctx.deliver(msg)
