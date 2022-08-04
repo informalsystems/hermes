@@ -8,7 +8,7 @@ the current state of the Hermes relayer and the networks it is connected to.
 - All Hermes metrics are tracked and updated from the moment the Hermes service (i.e., `start`) starts up.
 Metrics are automatically reset if the service is restarted.
 - For maximum reliability, it is advised to combine monitoring of your Hermes service with monitoring of your full nodes.
-- TODO: Grafana template here.
+- TODO: Grafana template reference here.
 
 ## Table of Contents
 
@@ -81,35 +81,44 @@ and then it takes some more time elapses until the network includes those transa
 
 These metrics are not specific to your Hermes instance. These are metrics that capture the activity of _all IBC relayers_.
 
-> Important:
-> You Hermes instance produces these metrics based on the *events* it receives via a websocket to the full nodes of each network.
+> ‼️ Important:
+> Your Hermes instance produces these metrics based on the *events* it receives via a websocket to the full nodes of each network.
 > If these events are not being updated, that is a good indication that either:
 >   - The network has no IBC activity, or
 >   - The websocket connection to that network is broken.
 
-| Name                       | Description                                                    | OpenTelemetry type  |
-| -------------------------- | -------------------------------------------------------------- | ------------------- |
+| Name                           | Description                                                                        | OpenTelemetry type |
+| ------------------------------ | ---------------------------------------------------------------------------------- | ------------------ |
 | `send_packet_events`       | Number of SendPacket events received                           | `u64` Counter       |
 | `acknowledgement_events`   | Number of WriteAcknowledgement events received                 | `u64` Counter       |
 | `timeout_events`           | Number of TimeoutPacket events received                        | `u64` Counter       |
+| `ws_events`                    | Number of events Hermes (including `send_packet`, `acknowledgment`, and `timeout`) received via the websocket subscription, per chain         | `u64` Counter      |
+| `ws_reconnect`                 | Number of times Hermes reconnected to the websocket endpoint, per chain            | `u64` Counter      |
+| `queries`                      | Number of queries submitted by Hermes, per chain and query type                    | `u64` Counter      |
+
+Notes:
+
+- Except for `ws_reconnect`, all these metrics should typically increase regularly in the common-case. That is an indication that the network is regularly producing new blocks and there is ongoing IBC activity, eg `send_packet`, `acknowledgment`, and `timeout`.
+- The metric `ws_reconnect` signals that the websocket connection was broken and Hermes had to re-establish that. It is usually an indication that your full node may be falling behind or is experiencing instability.
+
+Since Hermes v1, we also introduced 3 metrics that sketch the backlog status of IBC relaying.
+
+| Name                       | Description                                                    | OpenTelemetry type  |
+| -------------------------- | -------------------------------------------------------------- | ------------------- |
 | `backlog_oldest_sequence`  | Sequence number of the oldest SendPacket event in the backlog  | `u64` ValueRecorder |
 | `backlog_oldest_timestamp` | Local timestamp for the oldest SendPacket event in the backlog | `u64` ValueRecorder |
 | `backlog_size`             | Total number of SendPacket events in the backlog               | `u64` ValueRecorder |
 
 
-**A note on the backlog metrics.**
+Notes:
 
-This table shows the metrics which serve the purpose of understanding if Hermes is able to retrieve information from the chains:
+- The `backlog_size` defines how many IBC packets users sent and were not yet relayed (i.e., received on the destination network, or timed-out).
+If this metric is increasing, it signals that the packet queue is increasing and there may be some errors in the Hermes logs that need your attention.
+- If the `backlog_oldest_sequence` remains unchanged for more than a few minutes, that means that the packet with the respective sequence number is likely blocked
+and cannot be relayed. To understand for how long the packet is block, Hermes will populate `backlog_oldest_timestamp`  with the local time when it first observed
+the `backlog_oldest_sequence` that is blocked.
 
-| Name                           | Description                                                                        | OpenTelemetry type |
-| ------------------------------ | ---------------------------------------------------------------------------------- | ------------------ |
-| `ws_events`                    | Number of events Hermes received via the websocket subscription, per chain         | `u64` Counter      |
-| `ws_reconnect`                 | Number of times Hermes reconnected to the websocket endpoint, per chain            | `u64` Counter      |
-| `queries`                      | Number of queries submitted by Hermes, per chain and query type                    | `u64` Counter      |
-
-## Efficiency & security concerns
-
-This table shows the metrics which serve the purpose of understanding the efficiency of Hermes:
+## How efficient and how secure is the IBC status on each network?
 
 | Name                           | Description                                                                                                                                                                 | OpenTelemetry type  |
 | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
@@ -119,15 +128,15 @@ This table shows the metrics which serve the purpose of understanding the effici
 | `cleared_send_packet_count`    | Number of SendPacket events received during the initial and periodic clearing, per chain, counterparty chain, channel and port                                              | `u64` Counter       |
 | `cleared_acknowledgment_count` | Number of WriteAcknowledgement events received during the initial and periodic clearing, per chain, counterparty chain, channel and port                                    | `u64` Counter       |
 
+Notes:
+- The two metrics `cleared_send_packet_count` and `cleared_acknowledgment_count` are only populated if `tx_confirmation = true`.
+These two metrics usually correlate with `backlog_*` metrics. They are an indication that IBC packet relaying may be unsuccessful and that Hermes periodically
+finds packets to clear (i.e., unblock).
+- `queries` and `queries_cache_hits` values are complementary. For the total number of queries, the two metrics should be summed for a specific query type.
 
-
-This table shows the metrics which serve the purpose of understanding the security status:
+For security, we only expose one metric, described in the table below.
+Note that this metrics is disabled if `misbehaviour = false` in your Hermes config.toml.
 
 | Name                             | Description                                                                                   | OpenTelemetry type |
 | -------------------------------- | --------------------------------------------------------------------------------------------- | ------------------ |
 | `client_misbehaviours_submitted` | Number of misbehaviours detected and submitted, per sending chain, receiving chain and client | `u64` Counter      |
-
-
-Notes:
-* `queries` and `queries_cache_hits` values are complementary. For the total number of queries, the two metrics should be summed for a specific query type.
-* The metric `client_misbehaviours_submitted` is disabled if `misbehaviour = false` in your Hermes config.toml.
