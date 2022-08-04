@@ -18,7 +18,7 @@ enabled = true
 # Whether or not to enable periodic refresh of clients. [Default: true]
 # This feature only applies to clients that underlie an open channel.
 # For Tendermint clients, the frequency at which Hermes refreshes them is 2/3 of their
-# trusting period (e.g., refresh every ~9 days if the trusting period is 14 days).
+# trusting period (e.g., refresh every ~9 days if the trusting period is 6 days).
 # Note: Even if this is disabled, clients will be refreshed automatically if
 #      there is activity on a connection or channel they are involved with.
 refresh = true
@@ -194,7 +194,7 @@ max_block_time = '30s'
 # It should be significantly less than the unbonding period
 # (e.g. unbonding period = 3 weeks, trusting period = 2 weeks).
 # Default: 2/3 of the `unbonding period` for Cosmos SDK chains
-trusting_period = '14days'
+trusting_period = '6days'
 
 # Specify the trust threshold for the light client, ie. the maximum fraction of validators
 # which have changed between two blocks.
@@ -255,6 +255,6 @@ max_msg_num = 30
 max_tx_size = 2097152
 clock_drift = '5s'
 max_block_time = '30s'
-trusting_period = '14days'
+trusting_period = '6days'
 trust_threshold = { numerator = '1', denominator = '3' }
 address_type = { derivation = 'cosmos' }
