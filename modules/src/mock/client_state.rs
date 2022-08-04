@@ -195,7 +195,7 @@ impl From<MockConsensusState> for Any {
         Any {
             type_url: MOCK_CONSENSUS_STATE_TYPE_URL.to_string(),
             value: Protobuf::<RawMockConsensusState>::encode_vec(&consensus_state)
-                .expect("encoding to `Any` from `TmConsensusState`"),
+                .expect("encoding to `Any` from `MockConsensusState`"),
         }
     }
 }
