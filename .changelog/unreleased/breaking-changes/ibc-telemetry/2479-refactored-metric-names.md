@@ -21,5 +21,6 @@ Multiple fixes related to telemetry, detailed below ([#2479]).
   * `total_messages_submitted`: Now count only submitted messages
 
 - Changed telemetry `enabled` to `false` in the vanilla config.toml, to match the default value for this parameter.
+- Changed `misbehaviour` to `false` in the vanilla config.toml, to match the default value for this parameter.
 
   ([#2479](https://github.com/informalsystems/ibc-rs/issues/2479))

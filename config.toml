@@ -24,7 +24,7 @@ enabled = true
 refresh = true
 
 # Whether or not to enable misbehaviour detection for clients. [Default: false]
-misbehaviour = true
+misbehaviour = false
 
 # Specify the connections mode.
 [mode.connections]
