@@ -9,7 +9,7 @@ use serde_json;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
-pub struct ChainConfig {
+pub struct ChainData {
     pub chain_name: String,
     pub status: String,
     pub network_type: String,
@@ -93,14 +93,14 @@ pub struct Grpc {
     pub provider: Option<String>,
 }
 
-impl FileName for ChainConfig {
+impl FileName for ChainData {
     fn file_name() -> String {
         "chain.json".to_string()
     }
 }
 
-impl ChainConfig {
-    pub async fn fetch(chain_name: &str) -> Result<ChainConfig, RegistryError> {
+impl ChainData {
+    pub async fn fetch(chain_name: &str) -> Result<ChainData, RegistryError> {
         match fetch_data::<Self>(chain_name).await {
             Ok(body) => match serde_json::from_str(&body) {
                 Ok(config) => Ok(config),
@@ -117,7 +117,7 @@ mod tests {
     // Consider adding a tests for a list of chains
 
     async fn fetch_cosmoshub_chain() {
-        let _tmp = ChainConfig::fetch("cosmoshub").await.unwrap();
+        let _tmp = ChainData::fetch("cosmoshub").await.unwrap();
     }
 
     #[test]

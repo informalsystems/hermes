@@ -435,6 +435,7 @@ dependencies = [
  "flex-error",
  "futures",
  "http",
+ "ibc",
  "reqwest",
  "serde",
  "serde_json",

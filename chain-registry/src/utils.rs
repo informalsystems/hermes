@@ -33,12 +33,12 @@ pub async fn fetch_data<T: FileName>(chain_name: &str) -> Result<String, Registr
                     Err(e) => Err(RegistryError::request_error(url.to_string(), e)),
                 },
                 _ => Err(RegistryError::status_error(
-                    chain_name.to_string(),
+                    url.to_string(),
                     response.status().as_u16(),
                 )),
             },
             Err(e) => Err(RegistryError::request_error(url.to_string(), e)),
         },
-        Err(e) => Err(RegistryError::url_parse_error(chain_name.to_string(), e)),
+        Err(e) => Err(RegistryError::url_parse_error(url.to_string(), e)),
     }
 }
