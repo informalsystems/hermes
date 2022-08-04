@@ -31,6 +31,11 @@ This is the third release candidate for Hermes v1.0.0 🎉
 - Fix code that could result in message batch size growing above the transaction size limit
   ([#2477](https://github.com/informalsystems/ibc-rs/issues/2477)).
 
+#### FEATURES
+
+- Enable connecting to full nodes over IPv6
+  ([#2380](https://github.com/informalsystems/ibc-rs/issues/2380))
+
 ### Telemetry & Metrics - [`ibc-telemetry`](telemetry) (v0.18.0)
 
 - Release version 0.18.0 of `ibc-telemetry`
