@@ -1,18 +1,9 @@
 use crate::dynamic_typing::AsAny;
 use crate::prelude::*;
 
-use dyn_clone::DynClone;
-use ibc_proto::google::protobuf::Any;
-use ibc_proto::protobuf::Protobuf;
-
-use crate::clients::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
-use crate::core::ics02_client::error::Error;
-
-#[cfg(any(test, feature = "mocks"))]
-use crate::mock::misbehaviour::Misbehaviour as MockMisbehaviour;
-
 use crate::core::ics24_host::identifier::ClientId;
 use crate::Height;
+use dyn_clone::DynClone;
 
 pub const TENDERMINT_MISBEHAVIOR_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Misbehaviour";
 
@@ -31,35 +22,6 @@ pub trait Misbehaviour:
 
 // Implements `Clone` for `Box<dyn Misbehaviour>`
 dyn_clone::clone_trait_object!(Misbehaviour);
-
-#[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound once possible
-#[allow(clippy::large_enum_variant)]
-pub enum AnyMisbehaviour {
-    Tendermint(TmMisbehaviour),
-
-    #[cfg(any(test, feature = "mocks"))]
-    Mock(MockMisbehaviour),
-}
-
-impl Misbehaviour for AnyMisbehaviour {
-    fn client_id(&self) -> &ClientId {
-        match self {
-            Self::Tendermint(misbehaviour) => misbehaviour.client_id(),
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(misbehaviour) => misbehaviour.client_id(),
-        }
-    }
-
-    fn height(&self) -> Height {
-        match self {
-            Self::Tendermint(misbehaviour) => misbehaviour.height(),
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(misbehaviour) => misbehaviour.height(),
-        }
-    }
-}
 
 impl PartialEq for dyn Misbehaviour {
     fn eq(&self, other: &Self) -> bool {
@@ -83,70 +45,5 @@ mod sealed {
                 .downcast_ref::<H>()
                 .map_or(false, |h| self == h)
         }
-    }
-}
-
-impl Protobuf<Any> for AnyMisbehaviour {}
-
-impl TryFrom<Any> for AnyMisbehaviour {
-    type Error = Error;
-
-    fn try_from(raw: Any) -> Result<Self, Error> {
-        match raw.type_url.as_str() {
-            TENDERMINT_MISBEHAVIOR_TYPE_URL => Ok(AnyMisbehaviour::Tendermint(
-                TmMisbehaviour::decode_vec(&raw.value).map_err(Error::decode_raw_misbehaviour)?,
-            )),
-
-            #[cfg(any(test, feature = "mocks"))]
-            MOCK_MISBEHAVIOUR_TYPE_URL => Ok(AnyMisbehaviour::Mock(
-                MockMisbehaviour::decode_vec(&raw.value).map_err(Error::decode_raw_misbehaviour)?,
-            )),
-            _ => Err(Error::unknown_misbehaviour_type(raw.type_url)),
-        }
-    }
-}
-
-impl From<AnyMisbehaviour> for Any {
-    fn from(value: AnyMisbehaviour) -> Self {
-        match value {
-            AnyMisbehaviour::Tendermint(misbehaviour) => Any {
-                type_url: TENDERMINT_MISBEHAVIOR_TYPE_URL.to_string(),
-                value: misbehaviour
-                    .encode_vec()
-                    .expect("encoding to `Any` from `AnyMisbehavior::Tendermint`"),
-            },
-
-            #[cfg(any(test, feature = "mocks"))]
-            AnyMisbehaviour::Mock(misbehaviour) => Any {
-                type_url: MOCK_MISBEHAVIOUR_TYPE_URL.to_string(),
-                value: misbehaviour
-                    .encode_vec()
-                    .expect("encoding to `Any` from `AnyMisbehavior::Mock`"),
-            },
-        }
-    }
-}
-
-impl core::fmt::Display for AnyMisbehaviour {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        match self {
-            AnyMisbehaviour::Tendermint(tm) => write!(f, "{}", tm),
-
-            #[cfg(any(test, feature = "mocks"))]
-            AnyMisbehaviour::Mock(mock) => write!(f, "{:?}", mock),
-        }
-    }
-}
-
-#[cfg(any(test, feature = "mocks"))]
-impl From<MockMisbehaviour> for AnyMisbehaviour {
-    fn from(misbehaviour: MockMisbehaviour) -> Self {
-        Self::Mock(misbehaviour)
-    }
-}
-
-impl From<TmMisbehaviour> for AnyMisbehaviour {
-    fn from(misbehaviour: TmMisbehaviour) -> Self {
-        Self::Tendermint(misbehaviour)
     }
 }
