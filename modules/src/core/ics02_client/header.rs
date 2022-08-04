@@ -59,7 +59,7 @@ pub trait Header:
     /// The timestamp of the consensus state
     fn timestamp(&self) -> Timestamp;
 
-    /// The timestamp of the consensus state
+    /// Convert into a boxed trait object
     fn into_box(self) -> Box<dyn Header>
     where
         Self: Sized,
