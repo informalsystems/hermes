@@ -101,11 +101,9 @@ pub fn process<Ctx: ClientReader>(
 
 #[cfg(test)]
 mod tests {
-    use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use core::str::FromStr;
     use test_log::test;
 
-    // use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
     use crate::core::ics02_client::client_type::ClientType;
     use crate::core::ics02_client::context::ClientReader;
@@ -250,7 +248,7 @@ mod tests {
 
     #[test]
     fn test_update_synthetic_tendermint_client_adjacent_ok() {
-        let client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
+        let client_id = ClientId::new(ClientType::Mock, 0).unwrap();
         let client_height = Height::new(1, 20).unwrap();
         let update_height = Height::new(1, 21).unwrap();
 
@@ -263,13 +261,13 @@ mod tests {
         .with_client_parametrized(
             &client_id,
             client_height,
-            Some(ClientType::Tendermint), // The target host chain (B) is synthetic TM.
+            Some(ClientType::Mock), // The target host chain (B) is synthetic TM.
             Some(client_height),
         );
 
         let ctx_b = MockContext::new(
             ChainId::new("mockgaiaB".to_string(), 1),
-            HostType::SyntheticTendermint,
+            HostType::Mock,
             5,
             update_height,
         );
@@ -319,7 +317,7 @@ mod tests {
 
     #[test]
     fn test_update_synthetic_tendermint_client_non_adjacent_ok() {
-        let client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
+        let client_id = ClientId::new(ClientType::Mock, 0).unwrap();
         let client_height = Height::new(1, 20).unwrap();
         let update_height = Height::new(1, 21).unwrap();
 
@@ -332,13 +330,13 @@ mod tests {
         .with_client_parametrized_history(
             &client_id,
             client_height,
-            Some(ClientType::Tendermint), // The target host chain (B) is synthetic TM.
+            Some(ClientType::Mock), // The target host chain (B) is synthetic TM.
             Some(client_height),
         );
 
         let ctx_b = MockContext::new(
             ChainId::new("mockgaiaB".to_string(), 1),
-            HostType::SyntheticTendermint,
+            HostType::Mock,
             5,
             update_height,
         );
@@ -389,7 +387,7 @@ mod tests {
 
     #[test]
     fn test_update_synthetic_tendermint_client_duplicate_ok() {
-        let client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
+        let client_id = ClientId::new(ClientType::Mock, 0).unwrap();
         let client_height = Height::new(1, 20).unwrap();
 
         let chain_start_height = Height::new(1, 11).unwrap();
@@ -403,13 +401,13 @@ mod tests {
         .with_client_parametrized(
             &client_id,
             client_height,
-            Some(ClientType::Tendermint), // The target host chain (B) is synthetic TM.
+            Some(ClientType::Mock), // The target host chain (B) is synthetic TM.
             Some(client_height),
         );
 
         let ctx_b = MockContext::new(
             ChainId::new("mockgaiaB".to_string(), 1),
-            HostType::SyntheticTendermint,
+            HostType::Mock,
             5,
             client_height,
         );
@@ -418,12 +416,13 @@ mod tests {
 
         let block = ctx_b.host_block(client_height).unwrap().clone();
         let block = match block {
-            HostBlock::SyntheticTendermint(mut theader) => {
-                let cons_state = ctx.latest_consensus_states(&client_id, &client_height);
-                if let AnyConsensusState::Tendermint(tcs) = cons_state {
-                    theader.light_block.signed_header.header.time = tcs.timestamp;
-                    theader.trusted_height = Height::new(1, 11).unwrap();
-                }
+            HostBlock::SyntheticTendermint(theader) => {
+                // FIXME(ADR011)
+                // let cons_state = ctx.latest_consensus_states(&client_id, &client_height);
+                // if let AnyConsensusState::Tendermint(tcs) = cons_state {
+                //     theader.light_block.signed_header.header.time = tcs.timestamp;
+                //     theader.trusted_height = Height::new(1, 11).unwrap();
+                // }
                 HostBlock::SyntheticTendermint(theader)
             }
             _ => block,
@@ -470,7 +469,7 @@ mod tests {
 
     #[test]
     fn test_update_synthetic_tendermint_client_lower_height() {
-        let client_id = ClientId::new(ClientType::Tendermint, 0).unwrap();
+        let client_id = ClientId::new(ClientType::Mock, 0).unwrap();
         let client_height = Height::new(1, 20).unwrap();
 
         let client_update_height = Height::new(1, 19).unwrap();
@@ -486,13 +485,13 @@ mod tests {
         .with_client_parametrized(
             &client_id,
             client_height,
-            Some(ClientType::Tendermint), // The target host chain (B) is synthetic TM.
+            Some(ClientType::Mock), // The target host chain (B) is synthetic TM.
             Some(client_height),
         );
 
         let ctx_b = MockContext::new(
             ChainId::new("mockgaiaB".to_string(), 1),
-            HostType::SyntheticTendermint,
+            HostType::Mock,
             5,
             client_height,
         );
