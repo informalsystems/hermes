@@ -1,9 +1,8 @@
 /// Contains models for serializing and deserializing `chain.json` for a given chain
 // Taken from https://github.com/PeggyJV/ocular/blob/main/ocular/src/registry/chain.rs
-
 use crate::{
-    error::RegistryError, 
-    utils::{FileName, fetch_data}
+    error::RegistryError,
+    utils::{fetch_data, FileName},
 };
 use serde::{Deserialize, Serialize};
 use serde_json;
@@ -103,29 +102,22 @@ impl FileName for ChainConfig {
 impl ChainConfig {
     pub async fn fetch(chain_name: &str) -> Result<ChainConfig, RegistryError> {
         match fetch_data::<Self>(chain_name).await {
-            Ok(body) => {
-                match serde_json::from_str(&body) {
-                    Ok(config) => Ok(config),
-                    Err(e) => {
-                        Err(RegistryError::json_parse_error(chain_name.to_string(), e))
-                    }
-                }
+            Ok(body) => match serde_json::from_str(&body) {
+                Ok(config) => Ok(config),
+                Err(e) => Err(RegistryError::json_parse_error(chain_name.to_string(), e)),
             },
             Err(e) => Err(e),
         }
     }
 }
 
-
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    // Consider adding a tests for a list of chains 
+    // Consider adding a tests for a list of chains
 
-    async fn fetch_cosmoshub_chain() -> (){
-        let tmp = ChainConfig::fetch("cosmoshub").await.unwrap();
+    async fn fetch_cosmoshub_chain() {
+        let _tmp = ChainConfig::fetch("cosmoshub").await.unwrap();
     }
 
     #[test]
@@ -135,4 +127,3 @@ mod tests {
         rt.block_on(fetch_cosmoshub_chain());
     }
 }
-
