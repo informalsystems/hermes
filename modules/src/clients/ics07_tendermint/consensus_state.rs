@@ -1,5 +1,6 @@
 use crate::prelude::*;
 
+use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
 use ibc_proto::protobuf::Protobuf;
 use serde::Serialize;
@@ -8,6 +9,7 @@ use tendermint_proto::google::protobuf as tpb;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
+use crate::core::ics02_client::client_consensus::TENDERMINT_CONSENSUS_STATE_TYPE_URL;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics23_commitment::commitment::CommitmentRoot;
@@ -36,10 +38,6 @@ impl crate::core::ics02_client::client_consensus::ConsensusState for ConsensusSt
 
     fn root(&self) -> &CommitmentRoot {
         &self.root
-    }
-
-    fn encode_vec(&self) -> Result<Vec<u8>, Ics02Error> {
-        Protobuf::encode_vec(self).map_err(Ics02Error::invalid_any_consensus_state)
     }
 }
 
@@ -87,6 +85,41 @@ impl From<ConsensusState> for RawConsensusState {
                 hash: value.root.into_vec(),
             }),
             next_validators_hash: value.next_validators_hash.as_bytes().to_vec(),
+        }
+    }
+}
+
+impl Protobuf<Any> for ConsensusState {}
+
+impl TryFrom<Any> for ConsensusState {
+    type Error = Ics02Error;
+
+    fn try_from(raw: Any) -> Result<Self, Self::Error> {
+        use bytes::Buf;
+        use core::ops::Deref;
+        use prost::Message;
+
+        fn decode_consensus_state<B: Buf>(buf: B) -> Result<ConsensusState, Error> {
+            RawConsensusState::decode(buf)
+                .map_err(Error::decode)?
+                .try_into()
+        }
+
+        match raw.type_url.as_str() {
+            TENDERMINT_CONSENSUS_STATE_TYPE_URL => {
+                decode_consensus_state(raw.value.deref()).map_err(Into::into)
+            }
+            _ => Err(Ics02Error::unknown_consensus_state_type(raw.type_url)),
+        }
+    }
+}
+
+impl From<ConsensusState> for Any {
+    fn from(consensus_state: ConsensusState) -> Self {
+        Any {
+            type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
+            value: Protobuf::<RawConsensusState>::encode_vec(&consensus_state)
+                .expect("encoding to `Any` from `TmConsensusState`"),
         }
     }
 }

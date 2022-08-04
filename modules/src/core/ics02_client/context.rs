@@ -100,7 +100,7 @@ impl<T: ClientReader> ClientReaderLightClient for T {
         client_id: &ClientId,
         height: Height,
     ) -> Result<Box<dyn ConsensusState>, Error> {
-        ClientReader::consensus_state(self, client_id, height).map(|cs| cs.boxed_dyn())
+        ClientReader::consensus_state(self, client_id, height).map(|cs| cs.into_box())
     }
 
     fn next_consensus_state(
@@ -109,7 +109,7 @@ impl<T: ClientReader> ClientReaderLightClient for T {
         height: Height,
     ) -> Result<Option<Box<dyn ConsensusState>>, Error> {
         ClientReader::next_consensus_state(self, client_id, height)
-            .map(|cs| cs.map(AnyConsensusState::boxed_dyn))
+            .map(|cs| cs.map(AnyConsensusState::into_box))
     }
 
     fn prev_consensus_state(
@@ -118,7 +118,7 @@ impl<T: ClientReader> ClientReaderLightClient for T {
         height: Height,
     ) -> Result<Option<Box<dyn ConsensusState>>, Error> {
         ClientReader::prev_consensus_state(self, client_id, height)
-            .map(|cs| cs.map(AnyConsensusState::boxed_dyn))
+            .map(|cs| cs.map(AnyConsensusState::into_box))
     }
 
     fn host_timestamp(&self) -> Timestamp {
@@ -203,7 +203,7 @@ pub trait ClientKeeper {
         &mut self,
         client_id: ClientId,
         height: Height,
-        consensus_state: AnyConsensusState,
+        consensus_state: Box<dyn ConsensusState>,
     ) -> Result<(), Error>;
 
     /// Called upon client creation.

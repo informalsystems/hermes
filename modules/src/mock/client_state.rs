@@ -4,13 +4,15 @@ use alloc::collections::btree_map::BTreeMap as HashMap;
 
 use core::time::Duration;
 
+use ibc_proto::google::protobuf::Any;
+use ibc_proto::ibc::mock::ClientState as RawMockClientState;
+use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 
-use ibc_proto::ibc::mock::ClientState as RawMockClientState;
-use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
-
-use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
+use crate::core::ics02_client::client_consensus::{
+    AnyConsensusState, ConsensusState, MOCK_CONSENSUS_STATE_TYPE_URL,
+};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
@@ -163,6 +165,41 @@ impl From<MockConsensusState> for RawMockConsensusState {
     }
 }
 
+impl Protobuf<Any> for MockConsensusState {}
+
+impl TryFrom<Any> for MockConsensusState {
+    type Error = Error;
+
+    fn try_from(raw: Any) -> Result<Self, Error> {
+        use bytes::Buf;
+        use core::ops::Deref;
+        use prost::Message;
+
+        fn decode_consensus_state<B: Buf>(buf: B) -> Result<MockConsensusState, Error> {
+            RawMockConsensusState::decode(buf)
+                .map_err(Error::decode)?
+                .try_into()
+        }
+
+        match raw.type_url.as_str() {
+            MOCK_CONSENSUS_STATE_TYPE_URL => {
+                decode_consensus_state(raw.value.deref()).map_err(Into::into)
+            }
+            _ => Err(Error::unknown_consensus_state_type(raw.type_url)),
+        }
+    }
+}
+
+impl From<MockConsensusState> for Any {
+    fn from(consensus_state: MockConsensusState) -> Self {
+        Any {
+            type_url: MOCK_CONSENSUS_STATE_TYPE_URL.to_string(),
+            value: Protobuf::<RawMockConsensusState>::encode_vec(&consensus_state)
+                .expect("encoding to `Any` from `TmConsensusState`"),
+        }
+    }
+}
+
 impl ConsensusState for MockConsensusState {
     fn client_type(&self) -> ClientType {
         ClientType::Mock
@@ -170,9 +207,5 @@ impl ConsensusState for MockConsensusState {
 
     fn root(&self) -> &CommitmentRoot {
         &self.root
-    }
-
-    fn encode_vec(&self) -> Result<Vec<u8>, Error> {
-        Protobuf::encode_vec(self).map_err(Error::invalid_any_consensus_state)
     }
 }
