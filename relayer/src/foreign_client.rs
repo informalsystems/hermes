@@ -20,7 +20,7 @@ use ibc::core::ics02_client::error::Error as ClientError;
 use ibc::core::ics02_client::events::UpdateClient;
 use ibc::core::ics02_client::header::Header;
 use ibc::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
-use ibc::core::ics02_client::msgs::misbehavior::MsgSubmitMisbehaviour;
+use ibc::core::ics02_client::msgs::misbehaviour::MsgSubmitMisbehaviour;
 use ibc::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use ibc::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
 use ibc::core::ics02_client::trust_threshold::TrustThreshold;
