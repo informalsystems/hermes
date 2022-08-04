@@ -2,11 +2,10 @@
 
 use crate::prelude::*;
 
+use ibc_proto::google::protobuf::Any;
+use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 use ibc_proto::protobuf::Protobuf;
 
-use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
-
-use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::error::Error;
 use crate::signer::Signer;
@@ -15,17 +14,17 @@ use crate::tx_msg::Msg;
 pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
 
 /// A type of message that triggers the creation of a new on-chain (IBC) client.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MsgCreateAnyClient {
     pub client_state: AnyClientState,
-    pub consensus_state: AnyConsensusState,
+    pub consensus_state: Any,
     pub signer: Signer,
 }
 
 impl MsgCreateAnyClient {
     pub fn new(
         client_state: AnyClientState,
-        consensus_state: AnyConsensusState,
+        consensus_state: Any,
         signer: Signer,
     ) -> Result<Self, Error> {
         Ok(MsgCreateAnyClient {
@@ -65,7 +64,7 @@ impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
 
         MsgCreateAnyClient::new(
             AnyClientState::try_from(raw_client_state)?,
-            AnyConsensusState::try_from(raw_consensus_state)?,
+            raw_consensus_state,
             raw.signer.parse().map_err(Error::signer)?,
         )
     }
@@ -75,7 +74,7 @@ impl From<MsgCreateAnyClient> for RawMsgCreateClient {
     fn from(ics_msg: MsgCreateAnyClient) -> Self {
         RawMsgCreateClient {
             client_state: Some(ics_msg.client_state.into()),
-            consensus_state: Some(ics_msg.consensus_state.into()),
+            consensus_state: Some(ics_msg.consensus_state),
             signer: ics_msg.signer.to_string(),
         }
     }
@@ -89,8 +88,8 @@ mod tests {
     use ibc_proto::ibc::core::client::v1::MsgCreateClient;
 
     use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
+    use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
     use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
-    use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::msgs::MsgCreateAnyClient;
     use crate::test_utils::get_dummy_account_id;
 
@@ -103,7 +102,7 @@ mod tests {
 
         let msg = MsgCreateAnyClient::new(
             tm_client_state,
-            AnyConsensusState::Tendermint(tm_header.try_into().unwrap()),
+            TmConsensusState::try_from(tm_header).unwrap().into(),
             signer,
         )
         .unwrap();
