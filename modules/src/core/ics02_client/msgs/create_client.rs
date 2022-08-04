@@ -28,12 +28,6 @@ impl MsgCreateAnyClient {
         consensus_state: AnyConsensusState,
         signer: Signer,
     ) -> Result<Self, Error> {
-        if client_state.client_type() != consensus_state.client_type() {
-            return Err(Error::raw_client_and_consensus_state_types_mismatch(
-                client_state.client_type(),
-                consensus_state.client_type(),
-            ));
-        }
         Ok(MsgCreateAnyClient {
             client_state,
             consensus_state,
