@@ -43,7 +43,13 @@ pub struct TendermintClient {
 
 impl ClientDef for TendermintClient {
     type ClientState = TmClientState;
-    type ConsensusState = TmConsensusState;
+
+    fn validate_consensus_state(
+        &self,
+        consensus_state: Any,
+    ) -> Result<Box<dyn ConsensusState>, Ics02Error> {
+        TmConsensusState::try_from(consensus_state).map(TmConsensusState::into_box)
+    }
 
     fn check_header_and_update_state(
         &self,
@@ -51,7 +57,7 @@ impl ClientDef for TendermintClient {
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Any,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Ics02Error> {
+    ) -> Result<(Self::ClientState, Box<dyn ConsensusState>), Ics02Error> {
         fn maybe_consensus_state(
             ctx: &dyn ClientReaderLightClient,
             client_id: &ClientId,
@@ -90,7 +96,7 @@ impl ClientDef for TendermintClient {
                     if cs == header_consensus_state {
                         // Header is already installed and matches the incoming
                         // header (already verified)
-                        return Ok((client_state, cs));
+                        return Ok((client_state, cs.into_box()));
                     }
                     Some(cs)
                 }
@@ -143,7 +149,7 @@ impl ClientDef for TendermintClient {
                     "voting power tally: {}",
                     voting_power_tally
                 ))
-                .into())
+                .into());
             }
             Verdict::Invalid(detail) => return Err(Error::verification_error(detail).into()),
         }
@@ -153,7 +159,10 @@ impl ClientDef for TendermintClient {
         // client and return the installed consensus state.
         if let Some(cs) = existing_consensus_state {
             if cs != header_consensus_state {
-                return Ok((client_state.with_frozen_height(header.height())?, cs));
+                return Ok((
+                    client_state.with_frozen_height(header.height())?,
+                    cs.into_box(),
+                ));
             }
         }
 
@@ -206,7 +215,7 @@ impl ClientDef for TendermintClient {
 
         Ok((
             client_state.with_header(header.clone())?,
-            TmConsensusState::from(header),
+            TmConsensusState::from(header).into_box(),
         ))
     }
 
@@ -228,7 +237,9 @@ impl ClientDef for TendermintClient {
             epoch: consensus_height.revision_number(),
             height: consensus_height.revision_height(),
         };
-        let value = expected_consensus_state.encode_vec()?;
+        let value = expected_consensus_state
+            .encode_vec()
+            .map_err(Ics02Error::invalid_any_consensus_state)?;
         verify_membership(client_state, prefix, proof, root, path, value)
     }
 
@@ -414,10 +425,10 @@ impl ClientDef for TendermintClient {
     fn verify_upgrade_and_update_state(
         &self,
         _client_state: &Self::ClientState,
-        _consensus_state: &Self::ConsensusState,
+        _consensus_state: &dyn ConsensusState,
         _proof_upgrade_client: RawMerkleProof,
         _proof_upgrade_consensus_state: RawMerkleProof,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Ics02Error> {
+    ) -> Result<(Self::ClientState, Box<dyn ConsensusState>), Ics02Error> {
         todo!()
     }
 }

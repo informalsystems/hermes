@@ -1,3 +1,4 @@
+use dyn_clone::clone_box;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
@@ -28,7 +29,13 @@ pub struct MockClient;
 
 impl ClientDef for MockClient {
     type ClientState = MockClientState;
-    type ConsensusState = MockConsensusState;
+
+    fn validate_consensus_state(
+        &self,
+        consensus_state: Any,
+    ) -> Result<Box<dyn ConsensusState>, Error> {
+        MockConsensusState::try_from(consensus_state).map(MockConsensusState::into_box)
+    }
 
     fn check_header_and_update_state(
         &self,
@@ -36,7 +43,7 @@ impl ClientDef for MockClient {
         _client_id: ClientId,
         client_state: Self::ClientState,
         header: Any,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
+    ) -> Result<(Self::ClientState, Box<dyn ConsensusState>), Error> {
         let header = MockHeader::try_from(header)?;
 
         if client_state.latest_height() >= header.height() {
@@ -48,7 +55,7 @@ impl ClientDef for MockClient {
 
         Ok((
             MockClientState::new(header),
-            MockConsensusState::new(header),
+            MockConsensusState::new(header).into_box(),
         ))
     }
 
@@ -180,10 +187,10 @@ impl ClientDef for MockClient {
     fn verify_upgrade_and_update_state(
         &self,
         client_state: &Self::ClientState,
-        consensus_state: &Self::ConsensusState,
+        consensus_state: &dyn ConsensusState,
         _proof_upgrade_client: MerkleProof,
         _proof_upgrade_consensus_state: MerkleProof,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
-        Ok((*client_state, consensus_state.clone()))
+    ) -> Result<(Self::ClientState, Box<dyn ConsensusState>), Error> {
+        Ok((*client_state, clone_box(consensus_state)))
     }
 }
