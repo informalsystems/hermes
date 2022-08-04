@@ -251,6 +251,9 @@ pub struct TelemetryConfig {
     pub port: u16,
 }
 
+/// Default values for the telemetry configuration.
+///
+/// Remember to update the Hermes guide & the default config.toml whenever these values change.
 impl Default for TelemetryConfig {
     fn default() -> Self {
         Self {

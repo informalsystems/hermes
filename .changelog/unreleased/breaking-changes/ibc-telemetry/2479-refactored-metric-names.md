@@ -1,3 +1,5 @@
+Multiple fixes related to telemetry, detailed below ([#2479]).
+
 - Renamed the following metrics:
   * `ibc_client_updates` to `client_updates_submitted`
   * `ibc_client_misbehaviours ` to `client_misbehaviours_submitted`
@@ -11,11 +13,13 @@
   * `cleared_send_packet_count` to `cleared_send_packet_events`
   * `cleared_acknowledgment_count` to `cleared_acknowledgment_events`
 
-  Added the following metric:
+- Added the following metric:
   * `timeout_events`
 
-  Fixed the following metrics:
+- Fixed the following metrics:
   * `client_updates_submitted`: Now correctly count all ClientUpdate messages
   * `total_messages_submitted`: Now count only submitted messages
-  
+
+- Changed telemetry `enabled` to `false` in the vanilla config.toml, to match the default value for this parameter.
+
   ([#2479](https://github.com/informalsystems/ibc-rs/issues/2479))
