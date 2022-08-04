@@ -2,15 +2,19 @@ use ibc::clients::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour
 use ibc::core::{
     ics02_client::{
         error::Error,
-        misbehaviour::{Misbehaviour, MOCK_MISBEHAVIOUR_TYPE_URL, TENDERMINT_MISBEHAVIOR_TYPE_URL},
+        misbehaviour::{Misbehaviour, TENDERMINT_MISBEHAVIOR_TYPE_URL},
     },
     ics24_host::identifier::ClientId,
 };
-use ibc::mock::misbehaviour::Misbehaviour as MockMisbehaviour;
 use ibc::Height;
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 
 use crate::light_client::AnyHeader;
+
+#[cfg(test)]
+use ibc::core::ics02_client::misbehaviour::MOCK_MISBEHAVIOUR_TYPE_URL;
+#[cfg(test)]
+use ibc::mock::misbehaviour::Misbehaviour as MockMisbehaviour;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct MisbehaviourEvidence {
@@ -23,6 +27,7 @@ pub struct MisbehaviourEvidence {
 pub enum AnyMisbehaviour {
     Tendermint(TmMisbehaviour),
 
+    #[cfg(test)]
     Mock(MockMisbehaviour),
 }
 
@@ -31,6 +36,7 @@ impl Misbehaviour for AnyMisbehaviour {
         match self {
             Self::Tendermint(misbehaviour) => misbehaviour.client_id(),
 
+            #[cfg(test)]
             Self::Mock(misbehaviour) => misbehaviour.client_id(),
         }
     }
@@ -39,6 +45,7 @@ impl Misbehaviour for AnyMisbehaviour {
         match self {
             Self::Tendermint(misbehaviour) => misbehaviour.height(),
 
+            #[cfg(test)]
             Self::Mock(misbehaviour) => misbehaviour.height(),
         }
     }
@@ -55,9 +62,11 @@ impl TryFrom<Any> for AnyMisbehaviour {
                 TmMisbehaviour::decode_vec(&raw.value).map_err(Error::decode_raw_misbehaviour)?,
             )),
 
+            #[cfg(test)]
             MOCK_MISBEHAVIOUR_TYPE_URL => Ok(AnyMisbehaviour::Mock(
                 MockMisbehaviour::decode_vec(&raw.value).map_err(Error::decode_raw_misbehaviour)?,
             )),
+
             _ => Err(Error::unknown_misbehaviour_type(raw.type_url)),
         }
     }
@@ -73,6 +82,7 @@ impl From<AnyMisbehaviour> for Any {
                     .expect("encoding to `Any` from `AnyMisbehavior::Tendermint`"),
             },
 
+            #[cfg(test)]
             AnyMisbehaviour::Mock(misbehaviour) => Any {
                 type_url: MOCK_MISBEHAVIOUR_TYPE_URL.to_string(),
                 value: misbehaviour
@@ -88,19 +98,21 @@ impl core::fmt::Display for AnyMisbehaviour {
         match self {
             AnyMisbehaviour::Tendermint(tm) => write!(f, "{}", tm),
 
+            #[cfg(test)]
             AnyMisbehaviour::Mock(mock) => write!(f, "{:?}", mock),
         }
-    }
-}
-
-impl From<MockMisbehaviour> for AnyMisbehaviour {
-    fn from(misbehaviour: MockMisbehaviour) -> Self {
-        Self::Mock(misbehaviour)
     }
 }
 
 impl From<TmMisbehaviour> for AnyMisbehaviour {
     fn from(misbehaviour: TmMisbehaviour) -> Self {
         Self::Tendermint(misbehaviour)
+    }
+}
+
+#[cfg(test)]
+impl From<MockMisbehaviour> for AnyMisbehaviour {
+    fn from(misbehaviour: MockMisbehaviour) -> Self {
+        Self::Mock(misbehaviour)
     }
 }
