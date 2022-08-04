@@ -506,11 +506,17 @@ define_error! {
             },
 
         EmptyDenomTrace
-        { hash: String }
-        |e| {
-            format_args!(
-                "Query/DenomTrace RPC returned an empty denom trace for trace hash: {}", e.hash)
-        },
+            { hash: String }
+            |e| {
+                format_args!(
+                    "Query/DenomTrace RPC returned an empty denom trace for trace hash: {}", e.hash)
+            },
+
+        MessageExceedsMaxTxSize
+            { len: usize }
+            |e| {
+                format_args!("message length {} exceeds maximum transaction size", e.len)
+            }
     }
 }
 

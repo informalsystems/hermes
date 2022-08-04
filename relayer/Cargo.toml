@@ -29,12 +29,12 @@ subtle-encoding = "0.5"
 humantime-serde = "1.1.1"
 serde = "1.0"
 serde_derive = "1.0"
-thiserror = "1.0.30"
+thiserror = "1.0.32"
 toml = "0.5"
-tracing = "0.1.35"
+tracing = "0.1.36"
 tokio = { version = "1.0", features = ["rt-multi-thread", "time", "sync"] }
 serde_json = { version = "1" }
-bytes = "1.1.0"
+bytes = "1.2.1"
 prost = { version = "0.10" }
 prost-types = { version = "0.10" }
 tonic = { version = "0.7.2", features = ["tls", "tls-roots"] }
