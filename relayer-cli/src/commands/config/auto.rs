@@ -49,13 +49,11 @@ async fn get_chain_configs(
     chain_names: &[String],
     key_names: &[String],
 ) -> Vec<Result<ChainConfig, RegistryError>> {
-    let futures = FuturesUnordered::new();
-    chain_names
+    let futures: FuturesUnordered<_> = chain_names
         .iter()
         .zip(key_names.iter())
-        .for_each(|(chain_name, key_name)| {
-            futures.push(hermes_config(chain_name.as_str(), key_name.as_str()));
-        });
+        .map(|(chain_name, key_name)| hermes_config(chain_name.as_str(), key_name.as_str()))
+        .collect();
 
     futures
         .collect::<Vec<Result<ChainConfig, RegistryError>>>()
