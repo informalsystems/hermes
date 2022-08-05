@@ -705,10 +705,10 @@ dependencies = [
  "derive_more",
  "flex-error",
  "ibc-proto",
- "ics23",
+ "informalsystems-ics23",
  "num-traits",
  "primitive-types 0.11.1",
- "prost 0.11.0",
+ "prost",
  "prost-types",
  "safe-regex",
  "serde",
@@ -730,26 +730,10 @@ version = "0.19.2"
 dependencies = [
  "base64",
  "bytes",
- "prost 0.11.0",
+ "prost",
  "prost-types",
  "serde",
  "tendermint-proto",
-]
-
-[[package]]
-name = "ics23"
-version = "0.8.0-alpha"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18a435f2471c1b2ce14771da465d47321c5905fac866d0effa9e0a3eb5d94fcf"
-dependencies = [
- "anyhow",
- "bytes",
- "hex",
- "prost 0.10.4",
- "ripemd160",
- "sha2 0.9.9",
- "sha3",
- "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -779,6 +763,22 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "informalsystems-ics23"
+version = "0.9.0-alpha"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fac51b0de4dbf9f68ce59f6b01e957668989f51aab18f3b19fdc7fae173f10f0"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "hex",
+ "prost",
+ "ripemd160",
+ "sha2 0.9.9",
+ "sha3",
+ "sp-std 3.0.0",
 ]
 
 [[package]]
@@ -1268,35 +1268,12 @@ dependencies = [
 
 [[package]]
 name = "prost"
-version = "0.10.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71adf41db68aa0daaefc69bb30bcd68ded9b9abaad5d1fbb6304c4fb390e083e"
-dependencies = [
- "bytes",
- "prost-derive 0.10.1",
-]
-
-[[package]]
-name = "prost"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "399c3c31cdec40583bb68f0b18403400d01ec4289c383aa047560439952c4dd7"
 dependencies = [
  "bytes",
- "prost-derive 0.11.0",
-]
-
-[[package]]
-name = "prost-derive"
-version = "0.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b670f45da57fb8542ebdbb6105a925fe571b67f9e7ed9f47a06a84e72b4e7cc"
-dependencies = [
- "anyhow",
- "itertools",
- "proc-macro2",
- "quote",
- "syn",
+ "prost-derive",
 ]
 
 [[package]]
@@ -1319,7 +1296,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4dfaa718ad76a44b3415e6c4d53b17c8f99160dcb3a99b10470fce8ad43f6e3e"
 dependencies = [
  "bytes",
- "prost 0.11.0",
+ "prost",
 ]
 
 [[package]]
@@ -2149,7 +2126,7 @@ dependencies = [
  "futures",
  "num-traits",
  "once_cell",
- "prost 0.11.0",
+ "prost",
  "prost-types",
  "serde",
  "serde_bytes",
@@ -2187,7 +2164,7 @@ dependencies = [
  "flex-error",
  "num-derive",
  "num-traits",
- "prost 0.11.0",
+ "prost",
  "prost-types",
  "serde",
  "serde_bytes",
