@@ -100,7 +100,7 @@ impl FileName for ChainData {
 }
 
 impl ChainData {
-    pub async fn fetch(chain_name: &str) -> Result<ChainData, RegistryError> {
+    pub async fn fetch(chain_name: String) -> Result<ChainData, RegistryError> {
         match fetch_data::<Self>(chain_name).await {
             Ok(body) => match serde_json::from_str(&body) {
                 Ok(config) => Ok(config),

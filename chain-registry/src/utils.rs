@@ -10,7 +10,7 @@ pub trait FileName {
     fn file_name() -> String;
 }
 
-pub async fn fetch_data<T: FileName>(chain_name: &str) -> Result<String, RegistryError> {
+pub async fn fetch_data<T: FileName>(chain_name: String) -> Result<String, RegistryError> {
     match Builder::new()
         .scheme(PROTOCOL)
         .authority(HOST)

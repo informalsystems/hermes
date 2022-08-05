@@ -48,7 +48,7 @@ impl FileName for AssetList {
 }
 
 impl AssetList {
-    pub async fn fetch(chain_name: &str) -> Result<AssetList, RegistryError> {
+    pub async fn fetch(chain_name: String) -> Result<AssetList, RegistryError> {
         match fetch_data::<Self>(chain_name).await {
             Ok(body) => match serde_json::from_str(&body) {
                 Ok(config) => Ok(config),

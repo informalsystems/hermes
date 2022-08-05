@@ -149,12 +149,11 @@ fn parse_or_build_grpc_endpoint(input: &str) -> Result<Uri, RegistryError> {
 /// Generates a ChainConfig for a given chain by fetching data from
 /// https://github.com/cosmos/chain-registry.
 /// Gas settings are set to default values.
-pub async fn hermes_config(
-    chain_name: &'static str,
-    key_name: String,
-) -> Result<ChainConfig, RegistryError> {
-    let chain_data_handle = tokio::spawn(async { ChainData::fetch(chain_name).await });
-    let assets_handle = tokio::spawn(async { AssetList::fetch(chain_name).await });
+pub async fn hermes_config(chain_name: &str, key_name: &str) -> Result<ChainConfig, RegistryError> {
+    let name_string = chain_name.to_string();
+    let chain_data_handle = tokio::spawn(async move { ChainData::fetch(name_string).await });
+    let name_string = chain_name.to_string();
+    let assets_handle = tokio::spawn(async move { AssetList::fetch(name_string).await });
 
     let chain_data = chain_data_handle.await.unwrap()?;
 
@@ -192,7 +191,7 @@ pub async fn hermes_config(
         grpc_addr: grpc_address,
         rpc_timeout: default::rpc_timeout(),
         account_prefix: chain_data.bech32_prefix,
-        key_name,
+        key_name: key_name.to_string(),
         key_store_type: Store::default(),
         store_prefix: "ibc".to_string(),
         default_gas: Some(100000),

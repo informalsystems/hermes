@@ -155,7 +155,7 @@ impl Default for ModeConfig {
                 enabled: true,
                 clear_interval: default::clear_packets_interval(),
                 clear_on_start: true,
-                tx_confirmation: false,
+                tx_confirmation: default::tx_confirmation(),
             },
         }
     }

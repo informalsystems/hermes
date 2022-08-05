@@ -26,6 +26,7 @@ telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server = ["ibc-relayer-rest"]
 
 [dependencies]
+chain-registry   = { version = "0.1.0" , path = "../chain-registry"}
 ibc              = { version = "0.17.0", path = "../modules", features = ["std", "clock"] }
 ibc-relayer      = { version = "0.17.0", path = "../relayer" }
 ibc-proto        = { version = "0.19.1", path = "../proto" }
