@@ -17,7 +17,7 @@ description = """
 ibc             = { version = "=0.18.0",     path = "../../modules" }
 ibc-relayer     = { version = "=0.18.0",     path = "../../relayer" }
 ibc-relayer-cli = { version = "=1.0.0-rc.2", path = "../../relayer-cli" }
-ibc-proto       = { version = "=0.19.2",     path = "../../proto" }
+ibc-proto       = { version = "=0.20.0",     path = "../../proto" }
 tendermint      = { version = "=0.23.9" }
 tendermint-rpc  = { version = "=0.23.9", features = ["http-client", "websocket-client"] }
 
