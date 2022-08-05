@@ -120,7 +120,7 @@ async fn select_healthy_grpc(grpcs: &[String]) -> Result<tendermint_rpc::Url, Re
     Err(RegistryError::no_healthy_grpc())
 }
 
-/// Parses or build a valid uri from a grpc address
+/// Parses or builds a valid uri from a grpc address
 fn parse_or_build_grpc_endpoint(input: &str) -> Result<Uri, RegistryError> {
     let uri = input
         .parse::<Uri>()
