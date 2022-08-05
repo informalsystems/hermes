@@ -32,7 +32,7 @@ pub fn spawn_refresh_client<ChainA: ChainHandle, ChainB: ChainHandle>(
                 src_chain = %client.src_chain.id(),
                 dst_chain = %client.dst_chain.id(),
             ),
-            Some(Duration::from_secs(1)),
+            Some(Duration::from_secs(5)),
             move || {
                 let res = client.refresh().map_err(|e| {
                     if e.is_expired_or_frozen_error() {

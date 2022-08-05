@@ -65,7 +65,9 @@ use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query,
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::events::channel as channel_events;
-use crate::chain::cosmos::types::gas::{default_gas_from_config, max_gas_from_config};
+use crate::chain::cosmos::types::gas::{
+    default_gas_from_config, gas_multiplier_from_config, max_gas_from_config,
+};
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
 use crate::chain::tracking::TrackedMsgs;
 use crate::config::ChainConfig;
@@ -218,6 +220,15 @@ impl CosmosSdkChain {
                     result.consensus_params.block.max_gas,
                 ));
             }
+        }
+
+        let gas_multiplier = gas_multiplier_from_config(&self.config);
+
+        if gas_multiplier < 1.1 {
+            return Err(Error::config_validation_gas_multiplier_low(
+                self.id().clone(),
+                gas_multiplier,
+            ));
         }
 
         Ok(())

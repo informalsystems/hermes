@@ -48,7 +48,7 @@ pub fn max_gas_from_config(config: &ChainConfig) -> u64 {
 }
 
 /// The gas multiplier
-fn gas_multiplier_from_config(config: &ChainConfig) -> f64 {
+pub fn gas_multiplier_from_config(config: &ChainConfig) -> f64 {
     config.gas_multiplier.unwrap_or(DEFAULT_GAS_MULTIPLIER)
 }
 
