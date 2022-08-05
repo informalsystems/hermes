@@ -107,10 +107,8 @@ async fn health_check_grpc(grpc_address: &str) -> Result<tendermint_rpc::Url, Re
 
 /// Select a healthy grpc address from a list of grpc addresses
 async fn select_healthy_grpc(grpcs: &[String]) -> Result<tendermint_rpc::Url, RegistryError> {
-    let mut futures = FuturesUnordered::new();
-    grpcs.iter().for_each(|grpc| {
-        futures.push(health_check_grpc(grpc));
-    });
+    let mut futures: FuturesUnordered<_> = 
+        grpcs.iter().map(|grpc| health_check_grpc(grpc)).collect();
 
     while let Some(result) = futures.next().await {
         if result.is_ok() {
