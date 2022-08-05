@@ -61,10 +61,10 @@ impl AssetList {
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::TEST_CHAINS;
     use super::*;
+    use crate::utils::TEST_CHAINS;
 
-    async fn fetch_chain_assets(chain : String) {
+    async fn fetch_chain_assets(chain: String) {
         AssetList::fetch(chain).await.unwrap();
     }
 
@@ -81,6 +81,5 @@ mod tests {
         for handle in handles {
             rt.block_on(handle);
         }
-
     }
 }

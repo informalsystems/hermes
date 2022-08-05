@@ -215,13 +215,11 @@ pub async fn hermes_config(chain_name: &str, key_name: &str) -> Result<ChainConf
 
 #[cfg(test)]
 mod tests {
-    use crate::utils::TEST_CHAINS;
     use super::*;
-        
-    async fn fetch_chain(chain : &str) {
-        hermes_config(chain, "testkey")
-            .await
-            .unwrap();
+    use crate::utils::TEST_CHAINS;
+
+    async fn fetch_chain(chain: &str) {
+        hermes_config(chain, "testkey").await.unwrap();
     }
 
     #[test]
@@ -237,7 +235,5 @@ mod tests {
         for handle in handles {
             rt.block_on(handle);
         }
-
     }
-
 }
