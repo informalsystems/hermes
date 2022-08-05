@@ -13,7 +13,7 @@ pub trait FileName {
 }
 
 pub async fn fetch_data<T: FileName>(chain_name: String) -> Result<String, RegistryError> {
-    match Builder::new()
+    let url = Builder::new()
         .scheme(PROTOCOL)
         .authority(HOST)
         .path_and_query(
@@ -27,20 +27,21 @@ pub async fn fetch_data<T: FileName>(chain_name: String) -> Result<String, Regis
             .as_str(),
         )
         .build()
-    {
-        Ok(url) => match reqwest::get(url.to_string()).await {
-            Ok(response) => match response.status().is_success() {
-                true => match response.text().await {
-                    Ok(body) => Ok(body),
-                    Err(e) => Err(RegistryError::request_error(url.to_string(), e)),
-                },
-                _ => Err(RegistryError::status_error(
-                    url.to_string(),
-                    response.status().as_u16(),
-                )),
-            },
+        .map_err(|e| RegistryError::url_parse_error(chain_name.to_string(), e))?;
+
+    let response = reqwest::get(url.to_string())
+        .await
+        .map_err(|e| RegistryError::request_error(url.to_string(), e))?;
+
+    if response.status().is_success() {
+        match response.text().await {
+            Ok(body) => Ok(body),
             Err(e) => Err(RegistryError::request_error(url.to_string(), e)),
-        },
-        Err(e) => Err(RegistryError::url_parse_error(chain_name.to_string(), e)), // Should be URL build error ?
+        }
+    } else {
+        Err(RegistryError::status_error(
+            url.to_string(),
+            response.status().as_u16(),
+        ))
     }
 }
