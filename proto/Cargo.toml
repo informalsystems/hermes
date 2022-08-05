@@ -32,7 +32,7 @@ schemars    = { version = "0.8", optional = true }
 base64      = { version = "0.13", default-features = false, features = ["alloc"] }
 
 [dependencies.tendermint-proto]
-version          = "=0.23.8"
+version          = "=0.23.9"
 default-features = false
 
 [features]
