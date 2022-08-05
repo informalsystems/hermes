@@ -59,23 +59,23 @@ pub fn send_packet(ctx: &dyn ReaderContext, packet: Packet) -> HandlerResult<Pac
         return Err(Error::frozen_client(connection_end.client_id().clone()));
     }
 
-    let latest_height = client_state.latest_height();
+    // let latest_height = client_state.latest_height();
 
-    if !packet.timeout_height.is_zero() && packet.timeout_height <= latest_height {
-        return Err(Error::low_packet_height(
-            latest_height,
-            packet.timeout_height,
-        ));
-    }
+    // if !packet.timeout_height.is_zero() && packet.timeout_height <= latest_height {
+    //     return Err(Error::low_packet_height(
+    //         latest_height,
+    //         packet.timeout_height,
+    //     ));
+    // }
 
-    let consensus_state = ctx
-        .consensus_state(&client_id, latest_height)
-        .map_err(|_| Error::error_invalid_consensus_state())?;
-    let latest_timestamp = consensus_state.timestamp();
-    let packet_timestamp = packet.timeout_timestamp;
-    if let Expiry::Expired = latest_timestamp.check_expiry(&packet_timestamp) {
-        return Err(Error::low_packet_timestamp());
-    }
+    // let consensus_state = ctx
+    //     .consensus_state(&client_id, latest_height)
+    //     .map_err(|_| Error::error_invalid_consensus_state())?;
+    // let latest_timestamp = consensus_state.timestamp();
+    // let packet_timestamp = packet.timeout_timestamp;
+    // if let Expiry::Expired = latest_timestamp.check_expiry(&packet_timestamp) {
+    //     return Err(Error::low_packet_timestamp());
+    // }
 
     let next_seq_send =
         ctx.get_next_sequence_send(&(packet.source_port.clone(), packet.source_channel))?;
