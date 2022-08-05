@@ -46,12 +46,10 @@ async fn query_rpc(rpc: &str) -> Result<RpcMandatoryData, RegistryError> {
             rpc_address: rpc.to_string(),
             max_block_size: response.consensus_params.block.max_bytes,
         }),
-        Err(e) => {
-            Err(RegistryError::rpc_consensus_params_error(
-                rpc.to_string(),
-                e,
-            ))
-        }
+        Err(e) => Err(RegistryError::rpc_consensus_params_error(
+            rpc.to_string(),
+            e,
+        )),
     }
 }
 
@@ -76,25 +74,22 @@ async fn select_healthy_rpc(rpcs: &[String]) -> Result<RpcMandatoryData, Registr
 
 /// Generates a websocket address from a rpc address.
 fn websocket_from_rpc(rpc_endpoint: &str) -> Result<tendermint_rpc::Url, RegistryError> {
-    match rpc_endpoint.parse::<Uri>() {
-        Ok(uri) => {
-            let builder = Uri::builder();
-            match builder
-                .scheme("ws")
-                .authority(uri.authority().unwrap().clone())
-                .path_and_query("/websocket")
-                .build()
-            {
-                Ok(uri) => Ok(tendermint_rpc::Url::from_str(uri.to_string().as_str()).unwrap()),
-                Err(e) => Err(RegistryError::unable_to_build_websocket_endpoint(
-                    rpc_endpoint.to_string(),
-                    e,
-                )),
-            }
-        }
-        Err(e) => {
-            Err(RegistryError::uri_parse_error(rpc_endpoint.to_string(), e))
-        }
+    let uri = rpc_endpoint
+        .parse::<Uri>()
+        .map_err(|e| RegistryError::uri_parse_error(rpc_endpoint.to_string(), e))?;
+
+    let builder = Uri::builder();
+    match builder
+        .scheme("ws")
+        .authority(uri.authority().unwrap().clone())
+        .path_and_query("/websocket")
+        .build()
+    {
+        Ok(uri) => Ok(tendermint_rpc::Url::from_str(uri.to_string().as_str()).unwrap()),
+        Err(e) => Err(RegistryError::unable_to_build_websocket_endpoint(
+            rpc_endpoint.to_string(),
+            e,
+        )),
     }
 }
 
