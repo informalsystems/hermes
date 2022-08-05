@@ -13,14 +13,25 @@ description  = """
 """
 
 [dependencies]
+ibc                      = { version = "0.17.0", path = "../modules" }
+ibc-proto                = { version = "0.19.1", path = "../proto" }
+ibc-relayer              = { version = "0.17.0", path = "../relayer" }
+
 flex-error               = { version = "0.4.4", default-features = false }
 futures                  = { version = "0.3.19", features = ["executor"] }
 http                     = "0.2"
-ibc                      = { version = "0.17.0", path = "../modules" }
 reqwest                  = { version = "0.11.8", features = ["json"] }
 serde                    = "1.0.133"
 serde_json               = "1"
-tendermint-rpc           = { version = "0.23.8", features = ["websocket-client"] }
 tokio                    = "1.17.0"
 toml                     = "0.5.8"
 url                      = "2.2.2"
+
+
+[dependencies.tendermint-rpc]
+version = "=0.23.8"
+features = ["http-client"]
+
+[dependencies.tendermint-light-client-verifier]
+version = "=0.23.8"
+default-features = false

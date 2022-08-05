@@ -39,6 +39,6 @@ pub async fn fetch_data<T: FileName>(chain_name: &str) -> Result<String, Registr
             },
             Err(e) => Err(RegistryError::request_error(url.to_string(), e)),
         },
-        Err(e) => Err(RegistryError::url_parse_error(url.to_string(), e)),
+        Err(e) => Err(RegistryError::url_parse_error(chain_name.to_string(), e)), // Should be URL build error ?
     }
 }

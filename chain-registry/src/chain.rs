@@ -104,7 +104,7 @@ impl ChainData {
         match fetch_data::<Self>(chain_name).await {
             Ok(body) => match serde_json::from_str(&body) {
                 Ok(config) => Ok(config),
-                Err(e) => Err(RegistryError::json_parse_error(chain_name.to_string(), e)),
+                Err(e) => Err(RegistryError::json_parse_error(e)),
             },
             Err(e) => Err(e),
         }
@@ -117,7 +117,7 @@ mod tests {
     // Consider adding a tests for a list of chains
 
     async fn fetch_cosmoshub_chain() {
-        let _tmp = ChainData::fetch("cosmoshub").await.unwrap();
+        ChainData::fetch("cosmoshub").await.unwrap();
     }
 
     #[test]
