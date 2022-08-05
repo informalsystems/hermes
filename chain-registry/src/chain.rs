@@ -1,5 +1,5 @@
-/// Contains models for serializing and deserializing `chain.json` for a given chain
-// Taken from https://github.com/PeggyJV/ocular/blob/main/ocular/src/registry/chain.rs
+//! Contains models for serializing and deserializing `chain.json` for a given chain
+//! Taken from https://github.com/PeggyJV/ocular/blob/main/ocular/src/registry/chain.rs
 use crate::{
     error::RegistryError,
     utils::{fetch_data, FileName},

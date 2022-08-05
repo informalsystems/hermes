@@ -25,7 +25,7 @@ pub struct RpcMandatoryData {
     // however it looks like it is not in the genesis file anymore
 }
 
-/// Retrieves the RPC mandatory data from the RPC
+/// Retrieves the mandatory data from the RPC endpoint
 async fn query_rpc(rpc: &str) -> Result<RpcMandatoryData, RegistryError> {
     let client =
         HttpClient::new(rpc).map_err(|e| RegistryError::rpc_connect_error(rpc.to_string(), e))?;
@@ -56,10 +56,10 @@ async fn query_rpc(rpc: &str) -> Result<RpcMandatoryData, RegistryError> {
 /// Selects a healthy RPC from a list of RPCs
 /// An RPC is healthy if it can provide the RpcMandatoryData
 async fn select_healthy_rpc(rpcs: &[String]) -> Result<RpcMandatoryData, RegistryError> {
-    let mut futures = FuturesUnordered::new();
-    rpcs.iter().for_each(|rpc| {
-        futures.push(query_rpc(rpc));
-    });
+    let mut futures = rpcs
+        .iter()
+        .map(|rpc| query_rpc(rpc))
+        .collect::<FuturesUnordered<_>>();
 
     while let Some(result) = futures.next().await {
         if result.is_ok() {
