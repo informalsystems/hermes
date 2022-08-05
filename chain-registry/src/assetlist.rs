@@ -61,17 +61,26 @@ impl AssetList {
 
 #[cfg(test)]
 mod tests {
+    use crate::utils::TEST_CHAINS;
     use super::*;
-    // Consider adding a tests for a list of chains
 
-    async fn fetch_cosmoshub_assets() {
-        AssetList::fetch("cosmoshub").await.unwrap();
+    async fn fetch_chain_assets(chain : String) {
+        AssetList::fetch(chain).await.unwrap();
     }
 
     #[test]
-    fn test_fetch_cosmoshub_assets() {
+    fn test_fetch_chain_assets() {
         use tokio::runtime::Runtime;
         let rt = Runtime::new().unwrap();
-        rt.block_on(fetch_cosmoshub_assets());
+
+        let mut handles = Vec::with_capacity(TEST_CHAINS.len());
+        for chain in TEST_CHAINS {
+            handles.push(fetch_chain_assets(chain.to_string()));
+        }
+
+        for handle in handles {
+            rt.block_on(handle);
+        }
+
     }
 }

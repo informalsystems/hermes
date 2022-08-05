@@ -113,17 +113,26 @@ impl ChainData {
 
 #[cfg(test)]
 mod tests {
+    use crate::utils::TEST_CHAINS;
     use super::*;
-    // Consider adding a tests for a list of chains
 
-    async fn fetch_cosmoshub_chain() {
-        ChainData::fetch("cosmoshub").await.unwrap();
+    async fn fetch_chain_data(chain : String) {
+        ChainData::fetch(chain).await.unwrap();
     }
 
     #[test]
-    fn test_fetch_cosmoshub_chain() {
+    fn test_fetch_chain_data() {
         use tokio::runtime::Runtime;
         let rt = Runtime::new().unwrap();
-        rt.block_on(fetch_cosmoshub_chain());
+
+        let mut handles = Vec::with_capacity(TEST_CHAINS.len());
+        for chain in TEST_CHAINS {
+            handles.push(fetch_chain_data(chain.to_string()));
+        }
+
+        for handle in handles {
+            rt.block_on(handle);
+        }
+
     }
 }

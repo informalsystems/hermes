@@ -6,6 +6,8 @@ pub const HOST: &str = "raw.githubusercontent.com";
 pub const REGISTRY_PATH: &str = "/cosmos/chain-registry";
 pub const REF: &str = "ffdfbff3a21c7d2dbaac6f1e4730f47063f4bd72";
 
+pub const TEST_CHAINS : &[&str]= &["cosmoshub", "juno", "evmos", "osmosis", "regen"];
+
 pub trait FileName {
     fn file_name() -> String;
 }

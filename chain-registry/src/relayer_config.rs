@@ -127,10 +127,7 @@ fn parse_or_build_grpc_endpoint(input: &str) -> Result<Uri, RegistryError> {
         .map_err(|e| RegistryError::uri_parse_error(input.to_string(), e))?;
 
     if uri.port().is_none() {
-        let builder = Uri::builder();
-        return builder
-            .build()
-            .map_err(|e| RegistryError::grpc_endpoint_parse_error(input.to_string(), e));
+        return Err(RegistryError::grpc_without_port(input.to_string()));
     }
 
     if uri.scheme().is_none() {
@@ -218,19 +215,29 @@ pub async fn hermes_config(chain_name: &str, key_name: &str) -> Result<ChainConf
 
 #[cfg(test)]
 mod tests {
+    use crate::utils::TEST_CHAINS;
     use super::*;
-    // Consider adding a tests for a list of chains
-
-    async fn fetch_cosmoshub_chain() {
-        hermes_config("cosmoshub", "testkey".to_string())
+        
+    async fn fetch_chain(chain : &str) {
+        hermes_config(chain, "testkey")
             .await
             .unwrap();
     }
 
     #[test]
-    fn test_fetch_cosmoshub_chain() {
+    fn test_fetch_chain_config() {
         use tokio::runtime::Runtime;
         let rt = Runtime::new().unwrap();
-        rt.block_on(fetch_cosmoshub_chain());
+
+        let mut handles = Vec::with_capacity(TEST_CHAINS.len());
+        for chain in TEST_CHAINS {
+            handles.push(fetch_chain(chain));
+        }
+
+        for handle in handles {
+            rt.block_on(handle);
+        }
+
     }
+
 }
