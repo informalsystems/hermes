@@ -117,6 +117,7 @@ async fn select_healthy_grpc(grpcs: &[String]) -> Result<tendermint_rpc::Url, Re
             return result;
         }
     }
+    
     Err(RegistryError::no_healthy_grpc())
 }
 
