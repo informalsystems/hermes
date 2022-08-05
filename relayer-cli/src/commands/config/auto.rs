@@ -28,31 +28,31 @@ pub struct AutoCmd {
         long = "chains",
         required = true,
         multiple = true,
-        value_name = "CHAIN_NAME1 CHAIN_NAME2...",
+        value_name = "CHAIN_1 CHAIN_2...",
         help_heading = "REQUIRED",
         help = "Identifier of the chains to include in the config"
     )]
     chain_ids: Vec<String>,
 
     #[clap(
-        long = "key-names",
+        long = "keys",
         required = true,
         multiple = true,
-        value_name = "KEY_NAME_CHAIN1 KEY_NAME_CHAIN2...",
+        value_name = "KEY_CHAIN_1 KEY_CHAIN_2...",
         help_heading = "REQUIRED",
         help = "key names to include in the config"
     )]
-    key_names: Vec<String>,
+    keys: Vec<String>,
 }
 
 async fn get_chain_configs(
     chain_names: &[String],
-    key_names: &[String],
+    keys: &[String],
 ) -> Vec<Result<ChainConfig, RegistryError>> {
     let futures: FuturesUnordered<_> = chain_names
         .iter()
-        .zip(key_names.iter())
-        .map(|(chain_name, key_name)| hermes_config(chain_name.as_str(), key_name.as_str()))
+        .zip(keys.iter())
+        .map(|(chain_name, key)| hermes_config(chain_name.as_str(), key.as_str()))
         .collect();
 
     futures
@@ -63,7 +63,7 @@ async fn get_chain_configs(
 impl Runnable for AutoCmd {
     fn run(&self) {
         // Assert that for every chain, a key name is provided
-        if self.chain_ids.len() != self.key_names.len() {
+        if self.chain_ids.len() != self.keys.len() {
             Output::error("Must provide a key name for every chain").exit();
         }
         let runtime = Builder::new_multi_thread()
@@ -73,7 +73,7 @@ impl Runnable for AutoCmd {
             .unwrap();
 
         let chain_configs: Vec<ChainConfig> = runtime
-            .block_on(get_chain_configs(&self.chain_ids, &self.key_names))
+            .block_on(get_chain_configs(&self.chain_ids, &self.keys))
             .into_iter()
             .map(|result| match result {
                 Ok(chain_config) => chain_config,
