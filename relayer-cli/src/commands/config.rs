@@ -3,6 +3,7 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
+mod auto;
 mod validate;
 
 /// `config` subcommand
@@ -10,4 +11,7 @@ mod validate;
 pub enum ConfigCmd {
     /// Validate the relayer configuration
     Validate(validate::ValidateCmd),
+
+    /// Automatically generate a relayer configuration file
+    Auto(auto::AutoCmd),
 }
