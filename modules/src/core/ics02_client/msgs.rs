@@ -5,12 +5,12 @@
 //! <https://github.com/cosmos/ibc/tree/master/spec/core/ics-002-client-semantics#create>.
 
 use crate::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
-use crate::core::ics02_client::msgs::misbehavior::MsgSubmitAnyMisbehaviour;
+use crate::core::ics02_client::msgs::misbehaviour::MsgSubmitMisbehaviour;
 use crate::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use crate::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
 
 pub mod create_client;
-pub mod misbehavior;
+pub mod misbehaviour;
 pub mod update_client;
 pub mod upgrade_client;
 
@@ -19,6 +19,6 @@ pub mod upgrade_client;
 pub enum ClientMsg {
     CreateClient(MsgCreateAnyClient),
     UpdateClient(MsgUpdateClient),
-    Misbehaviour(MsgSubmitAnyMisbehaviour),
+    Misbehaviour(MsgSubmitMisbehaviour),
     UpgradeClient(MsgUpgradeAnyClient),
 }

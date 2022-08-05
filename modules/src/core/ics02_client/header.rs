@@ -14,26 +14,6 @@ use crate::Height;
 pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
 pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
 
-mod sealed {
-    use super::*;
-
-    pub trait ErasedPartialEqHeader {
-        fn eq_header(&self, other: &dyn Header) -> bool;
-    }
-
-    impl<H> ErasedPartialEqHeader for H
-    where
-        H: Header + PartialEq,
-    {
-        fn eq_header(&self, other: &dyn Header) -> bool {
-            other
-                .as_any()
-                .downcast_ref::<H>()
-                .map_or(false, |h| self == h)
-        }
-    }
-}
-
 /// Abstract of consensus state update information
 ///
 /// Users are not expected to implement sealed::ErasedPartialEqHeader.
@@ -81,5 +61,25 @@ pub fn downcast_header<H: Header>(h: &dyn Header) -> Option<&H> {
 impl PartialEq for dyn Header {
     fn eq(&self, other: &Self) -> bool {
         self.eq_header(other)
+    }
+}
+
+mod sealed {
+    use super::*;
+
+    pub trait ErasedPartialEqHeader {
+        fn eq_header(&self, other: &dyn Header) -> bool;
+    }
+
+    impl<H> ErasedPartialEqHeader for H
+    where
+        H: Header + PartialEq,
+    {
+        fn eq_header(&self, other: &dyn Header) -> bool {
+            other
+                .as_any()
+                .downcast_ref::<H>()
+                .map_or(false, |h| self == h)
+        }
     }
 }
