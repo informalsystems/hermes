@@ -30,7 +30,7 @@ pub struct AutoCmd {
         multiple = true,
         value_name = "CHAIN_NAME1 CHAIN_NAME2...",
         help_heading = "REQUIRED",
-        help = "Identifier of the chain to include in the config"
+        help = "Identifier of the chains to include in the config"
     )]
     chain_ids: Vec<String>,
 
