@@ -47,10 +47,10 @@ async fn query_rpc(rpc: &str) -> Result<RpcMandatoryData, RegistryError> {
             max_block_size: response.consensus_params.block.max_bytes,
         }),
         Err(e) => {
-            return Err(RegistryError::rpc_consensus_params_error(
+            Err(RegistryError::rpc_consensus_params_error(
                 rpc.to_string(),
                 e,
-            ));
+            ))
         }
     }
 }
@@ -93,7 +93,7 @@ fn websocket_from_rpc(rpc_endpoint: &str) -> Result<tendermint_rpc::Url, Registr
             }
         }
         Err(e) => {
-            return Err(RegistryError::uri_parse_error(rpc_endpoint.to_string(), e));
+            Err(RegistryError::uri_parse_error(rpc_endpoint.to_string(), e))
         }
     }
 }
@@ -133,19 +133,19 @@ fn parse_or_build_grpc_endpoint(input: &str) -> Result<Uri, RegistryError> {
 
     if uri.port().is_none() {
         let builder = Uri::builder();
-        return Ok(builder
+        return builder
             .build()
-            .map_err(|e| RegistryError::grpc_endpoint_parse_error(input.to_string(), e))?);
+            .map_err(|e| RegistryError::grpc_endpoint_parse_error(input.to_string(), e));
     }
 
     if uri.scheme().is_none() {
         let builder = Uri::builder();
-        return Ok(builder
+        return builder
             .scheme("https")
             .authority(input)
             .path_and_query("/")
             .build()
-            .map_err(|e| RegistryError::grpc_endpoint_parse_error(input.to_string(), e))?);
+            .map_err(|e| RegistryError::grpc_endpoint_parse_error(input.to_string(), e));
     }
 
     Ok(uri)
@@ -197,7 +197,7 @@ pub async fn hermes_config(
         grpc_addr: grpc_address,
         rpc_timeout: default::rpc_timeout(),
         account_prefix: chain_data.bech32_prefix,
-        key_name: key_name,
+        key_name,
         key_store_type: Store::default(),
         store_prefix: "ibc".to_string(),
         default_gas: Some(100000),

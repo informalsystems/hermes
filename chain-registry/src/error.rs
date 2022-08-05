@@ -27,13 +27,13 @@ define_error! {
 
         JsonParseError
             [TraceError <serde_json::Error>]
-            |_| {format!("Error when parsing json")},
+            |_| {"Error when parsing json".to_string()},
 
         NoHealthyRpc
-            |_| {format!("No healthy RPC found")},
+            |_| {"No healthy RPC found".to_string()},
 
         NoHealthyGrpc
-            |_| {format!("No healthy GRPC found")},
+            |_| {"No healthy GRPC found".to_string()},
 
         RpcConnectError
             {rpc : String}
@@ -69,6 +69,6 @@ define_error! {
             |e| {format!("Rpc node out of sync :  {}", e.rpc)},
 
         UnableToConnectWithGrpc
-            |_| {format!("Unable to connect with grpc")},
+            |_| {"Unable to connect with grpc".to_string()},
         }
 }

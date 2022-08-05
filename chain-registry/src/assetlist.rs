@@ -64,7 +64,7 @@ mod tests {
     use super::*;
     // Consider adding a tests for a list of chains
 
-    async fn fetch_cosmoshub_assets() -> () {
+    async fn fetch_cosmoshub_assets() {
         AssetList::fetch("cosmoshub").await.unwrap();
     }
 
