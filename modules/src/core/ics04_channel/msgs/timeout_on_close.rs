@@ -64,7 +64,12 @@ impl TryFrom<RawMsgTimeoutOnClose> for MsgTimeoutOnClose {
                 .map_err(Error::invalid_proof)?,
             None,
             None,
-            None,
+            Some(
+                raw_msg
+                    .proof_close
+                    .try_into()
+                    .map_err(Error::invalid_proof)?,
+            ),
             raw_msg
                 .proof_height
                 .and_then(|raw_height| raw_height.try_into().ok())
