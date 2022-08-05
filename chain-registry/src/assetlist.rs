@@ -1,5 +1,5 @@
-/// Contains models for serializing and deserializing `assets.json` for a given chain
-// originally from https://github.com/PeggyJV/ocular/blob/main/ocular/src/registry/assets.rs
+//! Contains models for serializing and deserializing `assets.json` for a given chain
+//! originally from https://github.com/PeggyJV/ocular/blob/main/ocular/src/registry/assets.rs
 use crate::{
     error::RegistryError,
     utils::{fetch_data, FileName},
