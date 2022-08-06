@@ -101,11 +101,7 @@ where
     FUNC: Fn(&'a str) -> FUTURE + Send + Sync + 'static,
     FUTURE: Future<Output = Result<RES, RegistryError>> + Send,
 {
-    let mut futures = FuturesUnordered::new();
-
-    urls.iter().for_each(|url| {
-        futures.push(func(url));
-    });
+    let mut futures: FuturesUnordered<_> = urls.iter().map(|url| func(url)).collect();
 
     while let Some(result) = futures.next().await {
         if result.is_ok() {
