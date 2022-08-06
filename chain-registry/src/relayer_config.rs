@@ -181,7 +181,7 @@ pub async fn hermes_config(chain_name: &str, key_name: &str) -> Result<ChainConf
     let grpc_address = grpc_handle.await.unwrap()?;
 
     Ok(ChainConfig {
-        id: ChainId::from_string(&chain_data.chain_name),
+        id: ChainId::from_string(&chain_data.chain_id),
         r#type: default::chain_type(),
         rpc_addr: tendermint_rpc::Url::from_str(rpc_mandatory_data.rpc_address.as_str()).unwrap(),
         websocket_addr: websocket_from_rpc(&rpc_mandatory_data.rpc_address)?,
