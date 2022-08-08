@@ -1,6 +1,6 @@
 //! Contains models for serializing and deserializing `chain.json` for a given chain
 //! Taken from https://github.com/PeggyJV/ocular/blob/main/ocular/src/registry/chain.rs
-use crate::utils::{Fetch, FileName};
+use crate::utils::Fetchable;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -89,35 +89,26 @@ pub struct Grpc {
     pub provider: Option<String>,
 }
 
-impl FileName for ChainData {
+impl Fetchable for ChainData {
     fn file_name() -> String {
         "chain.json".to_string()
     }
 }
-
-impl Fetch<ChainData> for ChainData {}
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::utils::TEST_CHAINS;
 
-    async fn fetch_chain_data(chain: String) {
-        ChainData::fetch(chain).await.unwrap();
-    }
-
-    #[test]
-    fn test_fetch_chain_data() {
-        use tokio::runtime::Runtime;
-        let rt = Runtime::new().unwrap();
-
+    #[tokio::test]
+    async fn fetch_chain_data() {
         let mut handles = Vec::with_capacity(TEST_CHAINS.len());
         for chain in TEST_CHAINS {
-            handles.push(fetch_chain_data(chain.to_string()));
+            handles.push(tokio::spawn(ChainData::fetch(chain.to_string())));
         }
 
         for handle in handles {
-            rt.block_on(handle);
+            handle.await.unwrap().unwrap();
         }
     }
 }

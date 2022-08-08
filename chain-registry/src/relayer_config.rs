@@ -1,5 +1,5 @@
 //! Contains methods to generate a relayer config for a given chain
-use crate::{asset_list::AssetList, chain::ChainData, error::RegistryError, utils::Fetch};
+use crate::{asset_list::AssetList, chain::ChainData, error::RegistryError, utils::Fetchable};
 
 use futures::{stream::FuturesUnordered, Future, StreamExt};
 
@@ -235,22 +235,15 @@ mod tests {
     use super::*;
     use crate::utils::TEST_CHAINS;
 
-    async fn fetch_chain(chain: &str) {
-        hermes_config(chain, "testkey").await.unwrap();
-    }
-
-    #[test]
-    fn test_fetch_chain_config() {
-        use tokio::runtime::Runtime;
-        let rt = Runtime::new().unwrap();
-
+    #[tokio::test]
+    async fn fetch_chain_config() {
         let mut handles = Vec::with_capacity(TEST_CHAINS.len());
         for chain in TEST_CHAINS {
-            handles.push(fetch_chain(chain));
+            handles.push(tokio::spawn(hermes_config(chain, "testkey")));
         }
 
         for handle in handles {
-            rt.block_on(handle);
+            handle.await.unwrap().unwrap();
         }
     }
 }

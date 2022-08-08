@@ -1,6 +1,6 @@
 //! Contains models for serializing and deserializing `assets.json` for a given chain
 //! originally from https://github.com/PeggyJV/ocular/blob/main/ocular/src/registry/assets.rs
-use crate::utils::{Fetch, FileName};
+use crate::utils::Fetchable;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -37,35 +37,27 @@ pub struct LogoURIs {
     pub png: String,
     pub svg: String,
 }
-impl FileName for AssetList {
+
+impl Fetchable for AssetList {
     fn file_name() -> String {
         "assetlist.json".to_string()
     }
 }
-
-impl Fetch<AssetList> for AssetList {}
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::utils::TEST_CHAINS;
 
-    async fn fetch_chain_assets(chain: String) {
-        AssetList::fetch(chain).await.unwrap();
-    }
-
-    #[test]
-    fn test_fetch_chain_assets() {
-        use tokio::runtime::Runtime;
-        let rt = Runtime::new().unwrap();
-
+    #[tokio::test]
+    async fn test_fetch_chain_assets() {
         let mut handles = Vec::with_capacity(TEST_CHAINS.len());
         for chain in TEST_CHAINS {
-            handles.push(fetch_chain_assets(chain.to_string()));
+            handles.push(tokio::spawn(AssetList::fetch(chain.to_string())));
         }
 
         for handle in handles {
-            rt.block_on(handle);
+            handle.await.unwrap().unwrap();
         }
     }
 }
