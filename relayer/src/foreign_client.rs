@@ -29,7 +29,7 @@ use ibc::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
 use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::downcast;
-use ibc::events::{IbcEvent, WithBlockDataType};
+use ibc::events::{IbcEvent, IbcEventType, WithBlockDataType};
 use ibc::timestamp::{Timestamp, TimestampOverflowError};
 use ibc::tx_msg::Msg;
 use ibc::Height;
@@ -778,6 +778,25 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     }
 
     pub fn refresh(&mut self) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
+        match self.try_refresh() {
+            Ok(res) => {
+                if let Some(ibc_events) = res.clone() {
+                    match ibc_events.clone()
+                        .into_iter()
+                        .find(|e| e.event_type() == IbcEventType::ChainError) {
+                            Some(ev) => {
+                                return Err(ForeignClientError::chain_error_event(self.dst_chain().id(), ev));
+                            },
+                            None => {}
+                    }
+                }
+                Ok(res)
+            }
+            Err(e) => Err(e),
+        }
+    }
+
+    fn try_refresh(&mut self) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
         let (client_state, elapsed) = self.validated_client_state()?;
 
         // The refresh_window is the maximum duration
