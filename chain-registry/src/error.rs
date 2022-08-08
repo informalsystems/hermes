@@ -83,10 +83,16 @@ define_error! {
         UnableToConnectWithGrpc
             |_| {"Unable to connect with grpc".to_string()},
 
-        WebsocketConnectError
+        WebsocketTimeOutError
             {url : String}
             [TraceError<Elapsed>]
             |e| {format!("Unable to connect to websocket : {}", e.url)},
+
+        WebsocketConnectError
+            {url : String}
+            [TraceError<tendermint_rpc::Error>]
+            |e| {format!("Unable to connect to websocket : {}", e.url)},
+
 
         WebsocketConnCloseError
             {url : String}

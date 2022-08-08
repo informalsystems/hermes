@@ -34,13 +34,14 @@ pub struct RpcMandatoryData {
 /// Retrieves the mandatory data from the RPC endpoint
 async fn query_rpc(rpc: &str) -> Result<RpcMandatoryData, RegistryError> {
     let websocket_addr = websocket_from_rpc(rpc)?;
+
     let (client, driver) = timeout(
         Duration::from_secs(5),
         WebSocketClient::new(websocket_addr.clone()),
     )
     .await
-    .map_err(|e| RegistryError::websocket_connect_error(websocket_addr.to_string(), e))?
-    .unwrap();
+    .map_err(|e| RegistryError::websocket_time_out_error(websocket_addr.to_string(), e))?
+    .map_err(|e| RegistryError::websocket_connect_error(websocket_addr.to_string(), e))?;
 
     let driver_handle = tokio::spawn(async move { driver.run().await });
 
