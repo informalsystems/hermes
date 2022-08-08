@@ -83,33 +83,33 @@ pub struct Vote {
 /// DepositParams defines the params for deposits on governance proposals.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DepositParams {
-    ///  Minimum deposit for a proposal to enter voting period.
+    ///   Minimum deposit for a proposal to enter voting period.
     #[prost(message, repeated, tag="1")]
     pub min_deposit: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
-    ///  Maximum period for Atom holders to deposit on a proposal. Initial value: 2
-    ///  months.
+    ///   Maximum period for Atom holders to deposit on a proposal. Initial value: 2
+    ///   months.
     #[prost(message, optional, tag="2")]
     pub max_deposit_period: ::core::option::Option<super::super::super::google::protobuf::Duration>,
 }
 /// VotingParams defines the params for voting on governance proposals.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct VotingParams {
-    ///  Length of the voting period.
+    ///   Length of the voting period.
     #[prost(message, optional, tag="1")]
     pub voting_period: ::core::option::Option<super::super::super::google::protobuf::Duration>,
 }
 /// TallyParams defines the params for tallying votes on governance proposals.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TallyParams {
-    ///  Minimum percentage of total stake needed to vote for a result to be
-    ///  considered valid.
+    ///   Minimum percentage of total stake needed to vote for a result to be
+    ///   considered valid.
     #[prost(bytes="vec", tag="1")]
     pub quorum: ::prost::alloc::vec::Vec<u8>,
-    ///  Minimum proportion of Yes votes for proposal to pass. Default value: 0.5.
+    ///   Minimum proportion of Yes votes for proposal to pass. Default value: 0.5.
     #[prost(bytes="vec", tag="2")]
     pub threshold: ::prost::alloc::vec::Vec<u8>,
-    ///  Minimum value of Veto votes to Total votes ratio for proposal to be
-    ///  vetoed. Default value: 1/3.
+    ///   Minimum value of Veto votes to Total votes ratio for proposal to be
+    ///   vetoed. Default value: 1/3.
     #[prost(bytes="vec", tag="3")]
     pub veto_threshold: ::prost::alloc::vec::Vec<u8>,
 }
@@ -127,6 +127,21 @@ pub enum VoteOption {
     No = 3,
     /// VOTE_OPTION_NO_WITH_VETO defines a no with veto vote option.
     NoWithVeto = 4,
+}
+impl VoteOption {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            VoteOption::Unspecified => "VOTE_OPTION_UNSPECIFIED",
+            VoteOption::Yes => "VOTE_OPTION_YES",
+            VoteOption::Abstain => "VOTE_OPTION_ABSTAIN",
+            VoteOption::No => "VOTE_OPTION_NO",
+            VoteOption::NoWithVeto => "VOTE_OPTION_NO_WITH_VETO",
+        }
+    }
 }
 /// ProposalStatus enumerates the valid statuses of a proposal.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
@@ -149,6 +164,22 @@ pub enum ProposalStatus {
     /// PROPOSAL_STATUS_FAILED defines a proposal status of a proposal that has
     /// failed.
     Failed = 5,
+}
+impl ProposalStatus {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            ProposalStatus::Unspecified => "PROPOSAL_STATUS_UNSPECIFIED",
+            ProposalStatus::DepositPeriod => "PROPOSAL_STATUS_DEPOSIT_PERIOD",
+            ProposalStatus::VotingPeriod => "PROPOSAL_STATUS_VOTING_PERIOD",
+            ProposalStatus::Passed => "PROPOSAL_STATUS_PASSED",
+            ProposalStatus::Rejected => "PROPOSAL_STATUS_REJECTED",
+            ProposalStatus::Failed => "PROPOSAL_STATUS_FAILED",
+        }
+    }
 }
 /// MsgSubmitProposal defines an sdk.Msg type that supports submitting arbitrary
 /// proposal Content.
@@ -218,6 +249,7 @@ pub struct MsgDepositResponse {
 pub mod msg_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
+    use tonic::codegen::http::Uri;
     /// Msg defines the bank Msg service.
     #[derive(Debug, Clone)]
     pub struct MsgClient<T> {
@@ -245,6 +277,10 @@ pub mod msg_client {
             let inner = tonic::client::Grpc::new(inner);
             Self { inner }
         }
+        pub fn with_origin(inner: T, origin: Uri) -> Self {
+            let inner = tonic::client::Grpc::with_origin(inner, origin);
+            Self { inner }
+        }
         pub fn with_interceptor<F>(
             inner: T,
             interceptor: F,
@@ -264,19 +300,19 @@ pub mod msg_client {
         {
             MsgClient::new(InterceptedService::new(inner, interceptor))
         }
-        /// Compress requests with `gzip`.
+        /// Compress requests with the given encoding.
         ///
         /// This requires the server to support it otherwise it might respond with an
         /// error.
         #[must_use]
-        pub fn send_gzip(mut self) -> Self {
-            self.inner = self.inner.send_gzip();
+        pub fn send_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.inner = self.inner.send_compressed(encoding);
             self
         }
-        /// Enable decompressing responses with `gzip`.
+        /// Enable decompressing responses.
         #[must_use]
-        pub fn accept_gzip(mut self) -> Self {
-            self.inner = self.inner.accept_gzip();
+        pub fn accept_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.inner = self.inner.accept_compressed(encoding);
             self
         }
         /// SubmitProposal defines a method to create new proposal given a content.
@@ -398,8 +434,8 @@ pub mod msg_server {
     #[derive(Debug)]
     pub struct MsgServer<T: Msg> {
         inner: _Inner<T>,
-        accept_compression_encodings: (),
-        send_compression_encodings: (),
+        accept_compression_encodings: EnabledCompressionEncodings,
+        send_compression_encodings: EnabledCompressionEncodings,
     }
     struct _Inner<T>(Arc<T>);
     impl<T: Msg> MsgServer<T> {
@@ -422,6 +458,18 @@ pub mod msg_server {
             F: tonic::service::Interceptor,
         {
             InterceptedService::new(Self::new(inner), interceptor)
+        }
+        /// Enable decompressing requests with the given encoding.
+        #[must_use]
+        pub fn accept_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.accept_compression_encodings.enable(encoding);
+            self
+        }
+        /// Compress responses with the given encoding, if the client supports it.
+        #[must_use]
+        pub fn send_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.send_compression_encodings.enable(encoding);
+            self
         }
     }
     impl<T, B> tonic::codegen::Service<http::Request<B>> for MsgServer<T>
@@ -625,7 +673,7 @@ pub mod msg_server {
             write!(f, "{:?}", self.0)
         }
     }
-    impl<T: Msg> tonic::transport::NamedService for MsgServer<T> {
+    impl<T: Msg> tonic::server::NamedService for MsgServer<T> {
         const NAME: &'static str = "cosmos.gov.v1beta1.Msg";
     }
 }
@@ -781,6 +829,7 @@ pub struct QueryTallyResultResponse {
 pub mod query_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
+    use tonic::codegen::http::Uri;
     /// Query defines the gRPC querier service for gov module
     #[derive(Debug, Clone)]
     pub struct QueryClient<T> {
@@ -808,6 +857,10 @@ pub mod query_client {
             let inner = tonic::client::Grpc::new(inner);
             Self { inner }
         }
+        pub fn with_origin(inner: T, origin: Uri) -> Self {
+            let inner = tonic::client::Grpc::with_origin(inner, origin);
+            Self { inner }
+        }
         pub fn with_interceptor<F>(
             inner: T,
             interceptor: F,
@@ -827,19 +880,19 @@ pub mod query_client {
         {
             QueryClient::new(InterceptedService::new(inner, interceptor))
         }
-        /// Compress requests with `gzip`.
+        /// Compress requests with the given encoding.
         ///
         /// This requires the server to support it otherwise it might respond with an
         /// error.
         #[must_use]
-        pub fn send_gzip(mut self) -> Self {
-            self.inner = self.inner.send_gzip();
+        pub fn send_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.inner = self.inner.send_compressed(encoding);
             self
         }
-        /// Enable decompressing responses with `gzip`.
+        /// Enable decompressing responses.
         #[must_use]
-        pub fn accept_gzip(mut self) -> Self {
-            self.inner = self.inner.accept_gzip();
+        pub fn accept_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.inner = self.inner.accept_compressed(encoding);
             self
         }
         /// Proposal queries proposal details based on ProposalID.
@@ -1057,8 +1110,8 @@ pub mod query_server {
     #[derive(Debug)]
     pub struct QueryServer<T: Query> {
         inner: _Inner<T>,
-        accept_compression_encodings: (),
-        send_compression_encodings: (),
+        accept_compression_encodings: EnabledCompressionEncodings,
+        send_compression_encodings: EnabledCompressionEncodings,
     }
     struct _Inner<T>(Arc<T>);
     impl<T: Query> QueryServer<T> {
@@ -1081,6 +1134,18 @@ pub mod query_server {
             F: tonic::service::Interceptor,
         {
             InterceptedService::new(Self::new(inner), interceptor)
+        }
+        /// Enable decompressing requests with the given encoding.
+        #[must_use]
+        pub fn accept_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.accept_compression_encodings.enable(encoding);
+            self
+        }
+        /// Compress responses with the given encoding, if the client supports it.
+        #[must_use]
+        pub fn send_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.send_compression_encodings.enable(encoding);
+            self
         }
     }
     impl<T, B> tonic::codegen::Service<http::Request<B>> for QueryServer<T>
@@ -1436,7 +1501,7 @@ pub mod query_server {
             write!(f, "{:?}", self.0)
         }
     }
-    impl<T: Query> tonic::transport::NamedService for QueryServer<T> {
+    impl<T: Query> tonic::server::NamedService for QueryServer<T> {
         const NAME: &'static str = "cosmos.gov.v1beta1.Query";
     }
 }
