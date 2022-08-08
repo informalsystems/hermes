@@ -2,7 +2,8 @@
 
 ## v1.0.0-rc.2
 
-This release is backward compatible with Hermes v1.0.0-rc.2 🎉
+This release is backward compatible with Hermes v1.0.0-rc.1 🎉
+
 
 ## v1.0.0-rc.1
 
@@ -10,7 +11,6 @@ This release is backward compatible with Hermes v1.0.0-rc.2 🎉
 > If you are running an older version, please refer the corresponding
 > in reverse chronological order to update to v1.0.0-rc.0 first and then
 > follow these instructions.
-
 
 ### Default value of `tx_confirmation` setting has changed
 
