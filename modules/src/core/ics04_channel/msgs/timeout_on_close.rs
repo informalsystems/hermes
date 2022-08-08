@@ -119,6 +119,17 @@ mod tests {
 
     #[test]
     fn msg_timeout_on_close_try_from_raw() {
+        let height = 50;
+        let timeout_timestamp = 5;
+        let raw = get_dummy_raw_msg_timeout_on_close(height, timeout_timestamp);
+
+        let msg = MsgTimeoutOnClose::try_from(raw.clone()).unwrap();
+        let raw_back = RawMsgTimeoutOnClose::from(msg.clone());
+        assert_eq!(raw, raw_back);
+    }
+
+    #[test]
+    fn parse_timeout_on_close_msg() {
         struct Test {
             name: String,
             raw: RawMsgTimeoutOnClose,
@@ -144,7 +155,7 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Missing unreceived proof".to_string(),
+                name: "Missing jnreceived proof".to_string(),
                 raw: RawMsgTimeoutOnClose {
                     proof_unreceived: Vec::new(),
                     ..default_raw_msg.clone()
