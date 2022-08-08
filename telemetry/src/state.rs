@@ -204,6 +204,7 @@ impl TelemetryState {
         counterparty: &ChainId,
         channel: &ChannelId,
         port: &PortId,
+        clear_packets: bool,
     ) {
         let labels = &[
             KeyValue::new("chain", chain.to_string()),
@@ -214,20 +215,24 @@ impl TelemetryState {
 
         self.send_packet_count.add(0, labels);
         self.acknowledgement_count.add(0, labels);
-        self.cleared_send_packet_count.add(0, labels);
-        self.cleared_acknowledgment_count.add(0, labels);
+        if clear_packets {
+            self.cleared_send_packet_count.add(0, labels);
+            self.cleared_acknowledgment_count.add(0, labels);
+        }
         self.backlog_oldest_sequence.record(0, labels);
         self.backlog_oldest_timestamp.record(0, labels);
         self.backlog_size.record(0, labels);
     }
 
-    pub fn init_per_client(&self, chain_id: &ChainId, client: &ClientId) {
+    pub fn init_per_client(&self, chain_id: &ChainId, client: &ClientId, misbehaviour: bool) {
         let labels = &[
             KeyValue::new("chain", chain_id.to_string()),
             KeyValue::new("client", client.to_string()),
         ];
         self.ibc_client_updates.add(0, labels);
-        self.ibc_client_misbehaviours.add(0, labels);
+        if misbehaviour {
+            self.ibc_client_misbehaviours.add(0, labels);
+        }
     }
 
     fn init_queries(&self, chain_id: &ChainId) {

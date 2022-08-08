@@ -354,7 +354,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
                         &counterparty_chain_id,
                         channel_id,
                         port_id,
-                        self.config.mode.packets.tx_confirmation,
+                        self.config,
                     );
 
                     let client_scan = scan
@@ -400,7 +400,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
                                 &client_scan.counterparty_chain_id(),
                                 channel.id(),
                                 channel.port(),
-                                self.config.mode.packets.tx_confirmation,
+                                self.config,
                             );
                         }
                     }
@@ -860,18 +860,31 @@ fn init_telemetry(
     counterparty_chain_id: &ChainId,
     channel_id: &ChannelId,
     port_id: &PortId,
-    tx_confirmation: bool,
+    config: &Config,
 ) {
-    telemetry!(init_per_client, chain_id, client);
-    if tx_confirmation {
-        // metrics which should be initialized when tx_confirmation is true
+    // metrics which should be initialized when tx worker is enabled
+    if config.mode.clients.enabled {
+        telemetry!(
+            init_per_client,
+            chain_id,
+            client,
+            config.mode.clients.misbehaviour
+        );
+    }
+    // metrics which should be initialized when tx_confirmation is true
+    if config.mode.packets.tx_confirmation {
         telemetry!(init_per_channel, chain_id, channel_id, port_id);
     }
+
+    let clear_packets = config.mode.packets.enabled
+        && (config.mode.packets.clear_on_start || config.mode.packets.clear_interval > 0);
+
     telemetry!(
         init_per_path,
         chain_id,
         counterparty_chain_id,
         channel_id,
-        port_id
+        port_id,
+        clear_packets
     )
 }
