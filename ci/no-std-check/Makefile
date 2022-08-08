@@ -5,7 +5,6 @@ NIGHTLY_VERSION=nightly
 .PHONY: all setup build-substrate check-panic-conflict check-cargo-build-std check-wasm check-substrate help
 
 all: ## Run the setup and all checks
-	$(MAKE) setup
 	$(MAKE) build-substrate
 	$(MAKE) check-panic-conflict
 	$(MAKE) check-cargo-build-std
@@ -15,6 +14,7 @@ all: ## Run the setup and all checks
 setup: ## Setup the required nightly toolchain and the wasm32 target
 	rustup install $(NIGHTLY_VERSION)
 	rustup target add wasm32-unknown-unknown --toolchain $(NIGHTLY_VERSION)
+	rustup component add rust-src --toolchain $(NIGHTLY_VERSION)
 
 build-substrate: ## Build with Substrate support
 	cargo build \
