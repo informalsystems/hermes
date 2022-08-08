@@ -32,7 +32,7 @@ pub fn spawn_refresh_client<ChainA: ChainHandle, ChainB: ChainHandle>(
         let refresh_interval = match client.validated_client_state() {
             Ok((state, _)) => {
                 if let Some(refresh_period) = state.refresh_period() {
-                    refresh_period/TRUSTING_PERIOD_DIVIDER
+                    refresh_period / TRUSTING_PERIOD_DIVIDER
                 } else {
                     Duration::from_secs(DEFAULT_REFRESH_INTERVAL)
                 }
