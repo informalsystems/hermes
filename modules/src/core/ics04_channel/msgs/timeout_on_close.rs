@@ -155,7 +155,7 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Missing jnreceived proof".to_string(),
+                name: "Missing proof of unreceived packet".to_string(),
                 raw: RawMsgTimeoutOnClose {
                     proof_unreceived: Vec::new(),
                     ..default_raw_msg.clone()
@@ -163,7 +163,7 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Missing channel proof".to_string(),
+                name: "Missing proof of channel".to_string(),
                 raw: RawMsgTimeoutOnClose {
                     proof_close: Vec::new(),
                     ..default_raw_msg.clone()
