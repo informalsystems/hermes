@@ -40,3 +40,8 @@ updates:
     directory: "relayer-cli"
     schedule:
       interval: "weekly"
+
+  - package-ecosystem: "cargo"
+    directory: "ci/no-std-check"
+    schedule:
+      interval: "weekly"
