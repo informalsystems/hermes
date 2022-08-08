@@ -104,7 +104,10 @@ pub struct Packet {
     pub source_channel: ChannelId,
     pub destination_port: PortId,
     pub destination_channel: ChannelId,
-    #[serde(serialize_with = "crate::serializers::ser_hex_upper")]
+    #[serde(
+        serialize_with = "crate::serializers::ser_hex_upper",
+        deserialize_with = "crate::serializers::deser_hex_upper"
+    )]
     pub data: Vec<u8>,
     pub timeout_height: Height,
     pub timeout_timestamp: Timestamp,
@@ -465,5 +468,16 @@ mod tests {
         let msg_back = Packet::try_from(raw_back.clone()).unwrap();
         assert_eq!(raw, raw_back);
         assert_eq!(msg, msg_back);
+    }
+
+    #[test]
+    fn serialize_and_deserialize_packet() {
+        let packet = Packet {
+            data: vec![5; 32],
+            ..Default::default()
+        };
+        let json = serde_json::to_string(&packet).unwrap();
+        let deserialized_packet: Packet = serde_json::from_str(&json).unwrap();
+        assert_eq!(packet, deserialized_packet);
     }
 }

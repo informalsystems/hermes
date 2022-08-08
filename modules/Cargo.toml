@@ -120,6 +120,14 @@ beefy-client = { package = "beefy-generic-client",  git = "https://github.com/Co
 beefy-queries = { git = "https://github.com/ComposableFi/beefy-rs", rev = "6b99ac5459caaa1baf94cafa208fffe8e9dd0b54" }
 sha3 = { version = "0.10.1" }
 ripemd = { version = "0.1.1" }
+beefy-client-primitives = { package = "primitives", git = "https://github.com/ComposableFi/beefy-rs", rev = "6b99ac5459caaa1baf94cafa208fffe8e9dd0b54" }
+beefy-primitives = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
+pallet-mmr-primitives = { package = "sp-mmr-primitives", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
+codec = { package = "parity-scale-codec", version = "3.0.0"}
+sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
+sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
+sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
+sp-trie = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
 
 [[test]]
 name = "mbt"
