@@ -178,7 +178,6 @@ impl TelemetryState {
         self.ws_events.add(0, labels);
         self.msg_num.add(0, labels);
 
-        // TODO : tx_latency
         self.init_queries(chain_id);
     }
 
