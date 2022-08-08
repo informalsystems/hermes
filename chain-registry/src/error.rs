@@ -3,6 +3,8 @@ use http;
 use reqwest;
 use serde_json;
 use tendermint_rpc;
+use tokio::task::JoinError;
+use tokio::time::error::Elapsed;
 
 define_error! {
     RegistryError {
@@ -30,10 +32,12 @@ define_error! {
             |_| {"Error when parsing json".to_string()},
 
         NoHealthyRpc
-            |_| {"No healthy RPC found".to_string()},
+            {chain : String}
+            |e| {format!("No healthy RPC found for chain : {}", e.chain)},
 
         NoHealthyGrpc
-            |_| {"No healthy GRPC found".to_string()},
+            {chain : String}
+            |e| {format!("No healthy gRPC found for chain : {}", e.chain)},
 
         RpcConnectError
             {rpc : String}
@@ -58,6 +62,10 @@ define_error! {
             {grpc : String}
             |e| {format!("Provided gRPC endpoint without port : {}", e.grpc)},
 
+        JoinError
+            {task : String}
+            [TraceError<JoinError>]
+            |e| {format!("Error when joining task : {}", e.task)},
         RpcConsensusParamsError
             {rpc : String}
             [TraceError<tendermint_rpc::Error>]
@@ -74,5 +82,16 @@ define_error! {
 
         UnableToConnectWithGrpc
             |_| {"Unable to connect with grpc".to_string()},
-        }
+
+        WebsocketConnectError
+            {url : String}
+            [TraceError<Elapsed>]
+            |e| {format!("Unable to connect to websocket : {}", e.url)},
+
+        WebsocketConnCloseError
+            {url : String}
+            [TraceError<tendermint_rpc::Error>]
+            |e| {format!("Unable to close websocket connection : {}", e.url)},
+
+    }
 }

@@ -12,9 +12,12 @@ use ibc_relayer::config::{default, filter::PacketFilter, AddressType, ChainConfi
 use ibc_relayer::keyring::Store;
 use std::str::FromStr;
 
+use std::time::Duration;
+
 use tendermint_light_client_verifier::types::TrustThreshold;
-use tendermint_rpc::{Client, HttpClient};
+use tendermint_rpc::{Client, SubscriptionClient, WebSocketClient};
 use tokio;
+use tokio::time::timeout;
 
 // ----------------- RPC ------------------
 
@@ -23,36 +26,42 @@ use tokio;
 pub struct RpcMandatoryData {
     pub rpc_address: String,
     pub max_block_size: u64,
+    pub websocket: tendermint_rpc::Url,
     // max_block_time should also be retrieved from the RPC
     // however it looks like it is not in the genesis file anymore
 }
 
 /// Retrieves the mandatory data from the RPC endpoint
 async fn query_rpc(rpc: &str) -> Result<RpcMandatoryData, RegistryError> {
-    let client =
-        HttpClient::new(rpc).map_err(|e| RegistryError::rpc_connect_error(rpc.to_string(), e))?;
+    let websocket_addr = websocket_from_rpc(rpc)?;
+    let (client, driver) = timeout(
+        Duration::from_secs(5),
+        WebSocketClient::new(websocket_addr.clone()),
+    )
+    .await
+    .map_err(|e| RegistryError::websocket_connect_error(websocket_addr.to_string(), e))?
+    .unwrap();
 
-    let status = client
-        .status()
-        .await
-        .map_err(|e| RegistryError::rpc_status_error(rpc.to_string(), e))?;
+    let driver_handle = tokio::spawn(async move { driver.run().await });
 
-    if status.sync_info.catching_up {
-        return Err(RegistryError::rpc_syncing_error(rpc.to_string()));
-    }
+    let latest_consensus_params = match client.latest_consensus_params().await {
+        Ok(response) => response.consensus_params.block.max_bytes,
+        Err(e) => {
+            return Err(RegistryError::rpc_consensus_params_error(
+                rpc.to_string(),
+                e,
+            ))
+        }
+    };
 
-    let height = status.sync_info.latest_block_height;
+    client.close().unwrap();
+    let _ = driver_handle.await.unwrap();
 
-    match client.consensus_params(height).await {
-        Ok(response) => Ok(RpcMandatoryData {
-            rpc_address: rpc.to_string(),
-            max_block_size: response.consensus_params.block.max_bytes,
-        }),
-        Err(e) => Err(RegistryError::rpc_consensus_params_error(
-            rpc.to_string(),
-            e,
-        )),
-    }
+    Ok(RpcMandatoryData {
+        rpc_address: rpc.to_string(),
+        max_block_size: latest_consensus_params,
+        websocket: websocket_addr,
+    })
 }
 
 // ----------------- websocket ------------------
@@ -158,15 +167,22 @@ pub async fn hermes_config(chain_name: &str, key_name: &str) -> Result<ChainConf
         .map(|rpc| rpc.address.to_owned())
         .collect();
 
+    let clone_name = chain_name.to_string();
     let rpc_handle = tokio::spawn(async move {
-        select_healthy(&rpc_endpoints, query_rpc, RegistryError::no_healthy_rpc()).await
+        select_healthy(
+            &rpc_endpoints,
+            query_rpc,
+            RegistryError::no_healthy_rpc(clone_name),
+        )
+        .await
     });
 
+    let clone_name = chain_name.to_string();
     let grpc_handle = tokio::spawn(async move {
         select_healthy(
             &grpc_endpoints,
             health_check_grpc,
-            RegistryError::no_healthy_grpc(),
+            RegistryError::no_healthy_grpc(clone_name),
         )
         .await
     });
@@ -184,7 +200,7 @@ pub async fn hermes_config(chain_name: &str, key_name: &str) -> Result<ChainConf
         id: ChainId::from_string(&chain_data.chain_id),
         r#type: default::chain_type(),
         rpc_addr: tendermint_rpc::Url::from_str(rpc_mandatory_data.rpc_address.as_str()).unwrap(),
-        websocket_addr: websocket_from_rpc(&rpc_mandatory_data.rpc_address)?,
+        websocket_addr: rpc_mandatory_data.websocket,
         grpc_addr: grpc_address,
         rpc_timeout: default::rpc_timeout(),
         account_prefix: chain_data.bech32_prefix,
