@@ -781,13 +781,17 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         match self.try_refresh() {
             Ok(res) => {
                 if let Some(ibc_events) = res.clone() {
-                    match ibc_events.clone()
+                    match ibc_events
                         .into_iter()
-                        .find(|e| e.event_type() == IbcEventType::ChainError) {
-                            Some(ev) => {
-                                return Err(ForeignClientError::chain_error_event(self.dst_chain().id(), ev));
-                            },
-                            None => {}
+                        .find(|e| e.event_type() == IbcEventType::ChainError)
+                    {
+                        Some(ev) => {
+                            return Err(ForeignClientError::chain_error_event(
+                                self.dst_chain().id(),
+                                ev,
+                            ));
+                        }
+                        None => {}
                     }
                 }
                 Ok(res)
