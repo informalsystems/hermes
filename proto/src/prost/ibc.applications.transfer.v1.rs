@@ -361,7 +361,7 @@ pub struct QueryParamsResponse {
 #[derive(::serde::Serialize, ::serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryDenomHashRequest {
-    /// The denomination trace (\[port_id]/[channel_id])+/[denom\]
+    /// The denomination trace `(\[port_id]/[channel_id])+/[denom\]`
     #[prost(string, tag="1")]
     pub trace: ::prost::alloc::string::String,
 }
