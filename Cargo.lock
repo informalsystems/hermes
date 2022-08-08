@@ -299,7 +299,6 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4152116fd6e9dadb291ae18fc1ec3575ed6d84c29642d97890f4b4a3417297e4"
 dependencies = [
- "block-padding",
  "generic-array",
 ]
 
@@ -311,12 +310,6 @@ checksum = "0bf7fe51849ea569fd452f37822f606a5cabb684dc918707a0193fd4664ff324"
 dependencies = [
  "generic-array",
 ]
-
-[[package]]
-name = "block-padding"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
 
 [[package]]
 name = "brotli"
@@ -1410,7 +1403,7 @@ dependencies = [
  "env_logger",
  "flex-error",
  "ibc-proto",
- "informalsystems-ics23",
+ "ics23",
  "modelator",
  "num-traits",
  "primitive-types",
@@ -1497,7 +1490,7 @@ dependencies = [
  "prost-types",
  "regex",
  "retry",
- "ripemd160",
+ "ripemd",
  "semver",
  "serde",
  "serde_derive",
@@ -1632,6 +1625,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "ics23"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7189c05f5416c17fa98e5946fa32e2caf48d5230c579476b4579a9c5e47753f5"
+dependencies = [
+ "anyhow",
+ "bytes",
+ "hex",
+ "prost",
+ "ripemd",
+ "sha2 0.10.2",
+ "sha3",
+]
+
+[[package]]
 name = "ident_case"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1671,22 +1679,6 @@ checksum = "10a35a97730320ffe8e2d410b5d3b69279b98d2c14bdb8b70ea89ecf7888d41e"
 dependencies = [
  "autocfg",
  "hashbrown",
-]
-
-[[package]]
-name = "informalsystems-ics23"
-version = "0.9.0-alpha"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fac51b0de4dbf9f68ce59f6b01e957668989f51aab18f3b19fdc7fae173f10f0"
-dependencies = [
- "anyhow",
- "bytes",
- "hex",
- "prost",
- "ripemd160",
- "sha2 0.9.9",
- "sha3",
- "sp-std",
 ]
 
 [[package]]
@@ -2519,6 +2511,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ripemd"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1facec54cb5e0dc08553501fa740091086d0259ad0067e0d4103448e4cb22ed3"
+dependencies = [
+ "digest 0.10.3",
+]
+
+[[package]]
 name = "ripemd160"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3005,14 +3006,12 @@ dependencies = [
 
 [[package]]
 name = "sha3"
-version = "0.9.1"
+version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f81199417d4e5de3f04b1e871023acea7389672c4135918f05aa9cbf2f2fa809"
+checksum = "0a31480366ec990f395a61b7c08122d99bd40544fdb5abcfc1b06bb29994312c"
 dependencies = [
- "block-buffer 0.9.0",
- "digest 0.9.0",
+ "digest 0.10.3",
  "keccak",
- "opaque-debug",
 ]
 
 [[package]]
@@ -3098,12 +3097,6 @@ dependencies = [
  "libc",
  "winapi",
 ]
-
-[[package]]
-name = "sp-std"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35391ea974fa5ee869cb094d5b437688fbf3d8127d64d1b9fed5822a1ed39b12"
 
 [[package]]
 name = "spin"

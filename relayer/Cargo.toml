@@ -47,7 +47,7 @@ tiny-bip39 = "1.0.0"
 hdpath = { version = "0.6.1" }
 sha2 = "0.10.2"
 tiny-keccak = { version = "2.0.2", features = ["keccak"], default-features = false }
-ripemd160 = "0.9.1"
+ripemd = "0.1.1"
 bech32 = "0.9.0"
 itertools = "0.10.3"
 dirs-next = "2.0.0"

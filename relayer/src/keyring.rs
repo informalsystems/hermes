@@ -14,7 +14,7 @@ use bitcoin::{
 use hdpath::StandardHDPath;
 use ibc::core::ics24_host::identifier::ChainId;
 use k256::ecdsa::{signature::Signer, Signature, SigningKey};
-use ripemd160::Ripemd160;
+use ripemd::Ripemd160;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tiny_keccak::{Hasher, Keccak};
@@ -444,7 +444,6 @@ fn get_address(pk: ExtendedPubKey, at: &AddressType) -> Vec<u8> {
             let pk_hash = hasher.finalize();
 
             // Plug the hash result into the next crypto hash function.
-            use ripemd160::Digest;
             let mut rip_hasher = Ripemd160::new();
             rip_hasher.update(pk_hash);
             let rip_result = rip_hasher.finalize();
