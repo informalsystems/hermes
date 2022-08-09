@@ -124,7 +124,7 @@ mod tests {
         let raw = get_dummy_raw_msg_timeout_on_close(height, timeout_timestamp);
 
         let msg = MsgTimeoutOnClose::try_from(raw.clone()).unwrap();
-        let raw_back = RawMsgTimeoutOnClose::from(msg.clone());
+        let raw_back = RawMsgTimeoutOnClose::from(msg);
         assert_eq!(raw, raw_back);
     }
 
@@ -174,7 +174,7 @@ mod tests {
                 name: "Missing proof height".to_string(),
                 raw: RawMsgTimeoutOnClose {
                     proof_height: None,
-                    ..default_raw_msg.clone()
+                    ..default_raw_msg
                 },
                 want_pass: false,
             },
