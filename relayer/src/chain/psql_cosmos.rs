@@ -37,8 +37,9 @@ use ibc::{
 use crate::chain::cosmos::CosmosSdkChain;
 use crate::chain::psql_cosmos::batch::send_batched_messages_and_wait_commit;
 use crate::chain::psql_cosmos::query::{
-    query_application_status, query_blocks, query_channel, query_channels, query_connection,
-    query_connections, query_ibc_data, query_txs_from_ibc_snapshots, query_txs_from_tendermint,
+    query_application_status, query_blocks, query_channel, query_channels,
+    query_client_connections, query_connection, query_connections, query_ibc_data,
+    query_txs_from_ibc_snapshots, query_txs_from_tendermint,
 };
 use crate::chain::psql_cosmos::update::{update_snapshot, PacketId};
 use crate::chain::psql_cosmos::update::{IbcData, IbcSnapshot};
@@ -845,6 +846,7 @@ impl ChainEndpoint for PsqlChain {
                 "chain psql dbs not synchronized on {}, falling back to gRPC query_connections",
                 self.id()
             );
+
             self.chain.query_connections(request)
         }
     }
@@ -853,7 +855,23 @@ impl ChainEndpoint for PsqlChain {
         &self,
         request: QueryClientConnectionsRequest,
     ) -> Result<Vec<ConnectionId>, Error> {
-        self.chain.query_client_connections(request)
+        if self.is_synced() {
+            crate::time!("query_client_connections_psql");
+            crate::telemetry!(query, self.id(), "query_client_connections_psql");
+
+            self.block_on(query_client_connections(
+                &self.pool,
+                &QueryHeight::Latest,
+                &request.client_id,
+            ))
+        } else {
+            warn!(
+                "chain psql dbs not synchronized on {}, falling back to gRPC query_client_connections",
+                self.id()
+            );
+
+            self.chain.query_client_connections(request)
+        }
     }
 
     fn query_connection(

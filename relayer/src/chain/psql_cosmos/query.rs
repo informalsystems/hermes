@@ -16,7 +16,7 @@ use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics04_channel::packet::{parse_timeout_height, Packet};
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId};
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId};
 use ibc::events::{self, from_tx_response_event, IbcEvent, WithBlockDataType};
 use ibc::Height as ICSHeight;
 
@@ -754,6 +754,30 @@ pub async fn query_connections(
 ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
     let result = query_ibc_data(pool, query_height).await?;
     Ok(result.data.connections.values().cloned().collect())
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn query_client_connections(
+    pool: &PgPool,
+    query_height: &QueryHeight,
+    client_id: &ClientId,
+) -> Result<Vec<ConnectionId>, Error> {
+    let result = query_ibc_data(pool, query_height).await?;
+
+    let connections = result
+        .data
+        .connections
+        .values()
+        .filter_map(|connection| {
+            if connection.connection_end.client_id_matches(client_id) {
+                Some(connection.connection_id.clone())
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    Ok(connections)
 }
 
 #[tracing::instrument(skip(pool))]
