@@ -191,7 +191,7 @@ impl PsqlChain {
 
         for c in connections.iter() {
             snapshot
-                .json_data
+                .data
                 .connections
                 .entry(c.connection_id.clone())
                 .or_insert_with(|| c.clone());
@@ -249,7 +249,7 @@ impl PsqlChain {
 
         for c in channels.iter() {
             snapshot
-                .json_data
+                .data
                 .channels
                 .entry(c.channel_id.clone())
                 .or_insert_with(|| c.clone());
@@ -341,7 +341,7 @@ impl PsqlChain {
             };
 
             snapshot
-                .json_data
+                .data
                 .pending_sent_packets
                 .entry(PacketId {
                     channel_id: c.channel_id.clone(),
@@ -354,10 +354,11 @@ impl PsqlChain {
         Ok(())
     }
 
+    #[tracing::instrument(skip_all)]
     fn ibc_snapshot(&self, query_height: &Height) -> Result<IbcSnapshot, Error> {
         let mut result = IbcSnapshot {
             height: query_height.revision_height(),
-            json_data: IbcData {
+            data: IbcData {
                 app_status: self.chain_status_on_start(query_height).unwrap(),
                 connections: HashMap::new(),
                 channels: HashMap::new(),
@@ -440,7 +441,7 @@ impl PsqlChain {
             None => {
                 let new_partial_connection = events::connection_from_event(event).unwrap();
                 if let Some(ch) = result
-                    .json_data
+                    .data
                     .connections
                     .get_mut(&new_partial_connection.connection_id)
                 {
@@ -475,7 +476,7 @@ impl PsqlChain {
                     event
                 );
                 result
-                    .json_data
+                    .data
                     .connections
                     .insert(connection.connection_id.clone(), connection);
             }
@@ -523,7 +524,7 @@ impl PsqlChain {
             None => {
                 let new_partial_channel = events::channel_from_event(event).unwrap();
                 if let Some(ch) = result
-                    .json_data
+                    .data
                     .channels
                     .get_mut(&new_partial_channel.channel_id)
                 {
@@ -548,7 +549,7 @@ impl PsqlChain {
                     event
                 );
                 result
-                    .json_data
+                    .data
                     .channels
                     .insert(channel.channel_id.clone(), channel);
             }
@@ -564,7 +565,7 @@ impl PsqlChain {
                     sequence: sp.packet.sequence,
                 };
                 snapshot
-                    .json_data
+                    .data
                     .pending_sent_packets
                     .entry(key)
                     .and_modify(|e| *e = sp.packet.clone())
@@ -576,7 +577,7 @@ impl PsqlChain {
                     channel_id: ap.src_channel_id().clone(),
                     sequence: ap.packet.sequence,
                 };
-                let removed = snapshot.json_data.pending_sent_packets.remove(&key);
+                let removed = snapshot.data.pending_sent_packets.remove(&key);
                 match removed {
                     Some(p) => trace!("removed pending packet {:?}", key),
                     None => debug!("no pending send packet found by ack event for {:?}", key),
@@ -631,7 +632,7 @@ impl PsqlChain {
         // and do an explicit block query.
         if let IbcEvent::NewBlock(b) = event {
             if let Some(status) = self.chain_status_from_block_event(b) {
-                snapshot.json_data.app_status = status
+                snapshot.data.app_status = status
             }
         }
 

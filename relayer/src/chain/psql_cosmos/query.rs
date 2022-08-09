@@ -722,10 +722,11 @@ pub async fn block_search_response_from_packet_query(
 // impl FromRow for IbcSnapshot
 #[derive(Debug, sqlx::FromRow)]
 pub struct IbcSnapshotJson {
-    pub height: f64,
-    pub json_data: Json<IbcData>,
+    pub height: BigDecimal,
+    pub data: Json<IbcData>,
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn query_ibc_data_json(
     pool: &PgPool,
     query_height: &QueryHeight,
@@ -757,56 +758,62 @@ pub async fn query_ibc_data(
     let result = query_ibc_data_json(pool, query_height).await?;
 
     let response = IbcSnapshot {
-        height: result.height as u64,
-        json_data: IbcData {
-            app_status: result.json_data.app_status.clone(),
-            connections: result.json_data.connections.clone(),
-            channels: result.json_data.channels.clone(),
-            pending_sent_packets: result.json_data.pending_sent_packets.clone(),
+        height: bigdecimal_to_u64(result.height),
+        data: IbcData {
+            app_status: result.data.app_status.clone(),
+            connections: result.data.connections.clone(),
+            channels: result.data.channels.clone(),
+            pending_sent_packets: result.data.pending_sent_packets.clone(),
         },
     };
     Ok(response)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn query_application_status(pool: &PgPool) -> Result<ChainStatus, Error> {
     let result = query_ibc_data(pool, &QueryHeight::Latest).await?;
-    Ok(result.json_data.app_status)
+    Ok(result.data.app_status)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn query_connections(
     pool: &PgPool,
     query_height: &QueryHeight,
 ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
     let result = query_ibc_data(pool, query_height).await?;
-    Ok(result.json_data.connections.values().cloned().collect())
+    Ok(result.data.connections.values().cloned().collect())
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn query_connection(
     pool: &PgPool,
     query_height: &QueryHeight,
     id: &ConnectionId,
 ) -> Result<Option<IdentifiedConnectionEnd>, Error> {
     let result = query_ibc_data(pool, query_height).await?;
-    Ok(result.json_data.connections.get(id).cloned())
+    Ok(result.data.connections.get(id).cloned())
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn query_channels(
     pool: &PgPool,
     query_height: &QueryHeight,
 ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
     let result = query_ibc_data(pool, query_height).await?;
-    Ok(result.json_data.channels.values().cloned().collect())
+    Ok(result.data.channels.values().cloned().collect())
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn query_channel(
     pool: &PgPool,
     query_height: &QueryHeight,
     id: &ChannelId,
 ) -> Result<Option<IdentifiedChannelEnd>, Error> {
     let result = query_ibc_data(pool, query_height).await?;
-    Ok(result.json_data.channels.get(id).cloned())
+    Ok(result.data.channels.get(id).cloned())
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn query_sent_packets(
     pool: &PgPool,
     query_height: &QueryHeight,
@@ -814,22 +821,18 @@ pub async fn query_sent_packets(
     let result = query_ibc_data(pool, query_height).await?;
 
     Ok((
-        result.json_data.app_status.height,
-        result
-            .json_data
-            .pending_sent_packets
-            .values()
-            .cloned()
-            .collect(),
+        result.data.app_status.height,
+        result.data.pending_sent_packets.values().cloned().collect(),
     ))
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn query_sent_packet(
     pool: &PgPool,
     query_height: &QueryHeight,
     id: &PacketId,
 ) -> Result<Option<Packet>, Error> {
     let result = query_ibc_data(pool, query_height).await?;
-    let p = result.json_data.pending_sent_packets.get(id).cloned();
+    let p = result.data.pending_sent_packets.get(id).cloned();
     Ok(p)
 }

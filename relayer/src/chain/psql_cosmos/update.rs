@@ -71,7 +71,7 @@ pub struct IbcData {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct IbcSnapshot {
     pub height: u64,
-    pub json_data: IbcData,
+    pub data: IbcData,
 }
 
 /// Create the `ibc_json` table if it does not exists yet
@@ -80,8 +80,8 @@ pub async fn create_table(pool: &PgPool) -> Result<(), Error> {
 
     sqlx::query(
         "CREATE TABLE IF NOT EXISTS ibc_json ( \
-            height BIGINT PRIMARY KEY, \
-            json_data JSONB \
+            height NUMERIC PRIMARY KEY, \
+            data JSONB \
         );",
     )
     .execute(pool)
@@ -101,8 +101,8 @@ pub async fn update_snapshot(pool: &PgPool, snapshot: &IbcSnapshot) -> Result<()
     let data = Json(&snapshot.data);
 
     // insert the json blob, update if already there
-    let query = "INSERT INTO ibc_json (height, json_data) VALUES ($1, $2) \
-                 ON CONFLICT (height) DO UPDATE SET json_data = EXCLUDED.json_data";
+    let query = "INSERT INTO ibc_json (height, data) VALUES ($1, $2) \
+                 ON CONFLICT (height) DO UPDATE SET data = EXCLUDED.data";
 
     sqlx::query(query)
         .bind(height)
