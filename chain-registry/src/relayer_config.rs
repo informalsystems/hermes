@@ -75,7 +75,7 @@ fn websocket_from_rpc(rpc_endpoint: &str) -> Result<tendermint_rpc::Url, Registr
 
     let builder = Uri::builder();
     match builder
-        .scheme("ws")
+        .scheme("wss")
         .authority(uri.authority().unwrap().clone())
         .path_and_query("/websocket")
         .build()
