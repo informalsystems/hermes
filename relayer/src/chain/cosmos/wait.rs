@@ -92,7 +92,11 @@ async fn update_tx_sync_result(
                     .tx_result
                     .events
                     .iter()
-                    .flat_map(|event| from_tx_response_event(height, event).into_iter())
+                    .flat_map(|event| {
+                        from_tx_response_event(height, event)
+                            .into_iter()
+                            .map(|ev_with_height| ev_with_height.event().clone())
+                    })
                     .collect::<Vec<_>>();
             }
         }

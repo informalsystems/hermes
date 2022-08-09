@@ -276,6 +276,7 @@ fn all_ibc_events_from_tx_search_response(
             .events
             .iter()
             .flat_map(|event| events::from_tx_response_event(height, event).into_iter())
+            .map(|ev_with_height| ev_with_height.event().clone())
             .collect::<Vec<_>>();
 
         result

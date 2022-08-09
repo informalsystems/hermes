@@ -319,7 +319,6 @@ mod tests {
 
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::TimeoutPacket(_)));
-                        assert_eq!(e.height(), test.ctx.host_height());
                     }
                 }
                 Err(e) => {

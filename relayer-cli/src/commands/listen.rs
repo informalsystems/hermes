@@ -117,7 +117,7 @@ pub fn listen(
                 let matching_events = batch
                     .events
                     .into_iter()
-                    .filter(|e| event_match(e, filters))
+                    .filter(|e| event_match(e.event(), filters))
                     .collect_vec();
 
                 if matching_events.is_empty() {

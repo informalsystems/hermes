@@ -130,7 +130,6 @@ mod tests {
     use test_log::test;
 
     use crate::core::ics03_connection::connection::State;
-    use crate::core::ics03_connection::context::ConnectionReader;
     use crate::core::ics03_connection::handler::{dispatch, ConnectionResult};
     use crate::core::ics03_connection::msgs::conn_open_try::test_util::get_dummy_raw_msg_conn_open_try;
     use crate::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
@@ -253,7 +252,6 @@ mod tests {
 
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::OpenTryConnection(_)));
-                        assert_eq!(e.height(), test.ctx.host_current_height());
                     }
                 }
                 Err(e) => {

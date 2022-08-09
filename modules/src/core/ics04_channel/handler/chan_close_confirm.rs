@@ -174,7 +174,6 @@ mod tests {
 
         for event in handler_output.events.iter() {
             assert!(matches!(event, &IbcEvent::CloseConfirmChannel(_)));
-            assert_eq!(event.height(), context.host_height());
         }
     }
 }

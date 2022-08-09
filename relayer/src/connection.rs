@@ -182,7 +182,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     pub fn restore_from_event(
         chain: ChainA,
         counterparty_chain: ChainB,
-        connection_open_event: IbcEvent,
+        connection_open_event: &IbcEvent,
     ) -> Result<Connection<ChainA, ChainB>, ConnectionError> {
         let connection_event_attributes = connection_open_event
             .connection_attributes()
@@ -749,7 +749,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         }
     }
 
-    pub fn step_event(&mut self, event: IbcEvent, index: u64) -> RetryResult<Next, u64> {
+    pub fn step_event(&mut self, event: &IbcEvent, index: u64) -> RetryResult<Next, u64> {
         let state = match event {
             IbcEvent::OpenInitConnection(_) => State::Init,
             IbcEvent::OpenTryConnection(_) => State::TryOpen,

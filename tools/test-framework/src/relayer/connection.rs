@@ -79,7 +79,7 @@ pub fn init_connection<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     let connection_id = extract_connection_id(&event)?.clone();
 
-    let connection2 = Connection::restore_from_event(handle_b.clone(), handle_a.clone(), event)?;
+    let connection2 = Connection::restore_from_event(handle_b.clone(), handle_a.clone(), &event)?;
 
     Ok((DualTagged::new(connection_id), connection2))
 }

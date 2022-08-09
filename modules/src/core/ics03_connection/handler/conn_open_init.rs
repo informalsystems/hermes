@@ -159,7 +159,6 @@ mod tests {
 
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::OpenInitConnection(_)));
-                        assert_eq!(e.height(), test.ctx.host_current_height());
                     }
 
                     assert_eq!(res.connection_end.versions(), test.expected_versions);

@@ -26,6 +26,7 @@ use crate::chain::tracking::TrackingId;
 use crate::channel::error::ChannelError;
 use crate::channel::Channel;
 use crate::event::monitor::EventBatch;
+use crate::event::IbcEventWithHeight;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::link::error::{self, LinkError};
 use crate::link::operational_data::{
@@ -331,11 +332,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .map_err(LinkError::client)
     }
 
-    fn build_chan_close_confirm_from_event(&self, event: &IbcEvent) -> Result<Any, LinkError> {
+    fn build_chan_close_confirm_from_event(
+        &self,
+        event: &IbcEventWithHeight,
+    ) -> Result<Any, LinkError> {
         let src_channel_id = self.src_channel_id();
         let proofs = self
             .src_chain()
-            .build_channel_proofs(self.src_port_id(), src_channel_id, event.height())
+            .build_channel_proofs(self.src_port_id(), src_channel_id, event.height)
             .map_err(|e| LinkError::channel(ChannelError::channel_proof(e)))?;
 
         // Build the domain type message
@@ -353,41 +357,41 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Only events for a port/channel matching one of the channel ends should be processed.
     fn filter_relaying_events(
         &self,
-        events: Vec<IbcEvent>,
+        events: Vec<IbcEventWithHeight>,
         tracking_id: TrackingId,
     ) -> TrackedEvents {
         let src_channel_id = self.src_channel_id();
 
         let mut result = vec![];
 
-        for event in events.into_iter() {
-            match &event {
+        for event_with_height in events.into_iter() {
+            match &event_with_height.event {
                 IbcEvent::SendPacket(send_packet_ev) => {
                     if src_channel_id == send_packet_ev.src_channel_id()
                         && self.src_port_id() == send_packet_ev.src_port_id()
                     {
-                        result.push(event);
+                        result.push(event_with_height);
                     }
                 }
                 IbcEvent::WriteAcknowledgement(write_ack_ev) => {
                     if src_channel_id == write_ack_ev.dst_channel_id()
                         && self.src_port_id() == write_ack_ev.dst_port_id()
                     {
-                        result.push(event);
+                        result.push(event_with_height);
                     }
                 }
                 IbcEvent::CloseInitChannel(chan_close_ev) => {
                     if src_channel_id == chan_close_ev.channel_id()
                         && self.src_port_id() == chan_close_ev.port_id()
                     {
-                        result.push(event);
+                        result.push(event_with_height);
                     }
                 }
                 IbcEvent::TimeoutPacket(timeout_ev) => {
                     if src_channel_id == timeout_ev.src_channel_id()
                         && self.channel.src_port_id() == timeout_ev.src_port_id()
                     {
-                        result.push(event);
+                        result.push(event_with_height);
                     }
                 }
                 _ => {}
@@ -442,8 +446,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         // Update telemetry info
         telemetry!({
-            for e in events.events() {
-                self.backlog_update(e);
+            for event_with_height in events.events() {
+                self.backlog_update(event_with_height.event());
             }
         });
 
@@ -488,7 +492,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let input = events.events();
         let src_height = match input.get(0) {
             None => return Ok((None, None)),
-            Some(ev) => ev.height(),
+            Some(ev) => ev.height,
         };
 
         let dst_latest_info = self
@@ -514,12 +518,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             self.channel.connection_delay,
         );
 
-        for event in input {
-            trace!("processing event: {}", event);
-            let (dst_msg, src_msg) = match event {
-                IbcEvent::CloseInitChannel(_) => {
-                    (Some(self.build_chan_close_confirm_from_event(event)?), None)
-                }
+        for event_with_height in input {
+            trace!("processing event: {}", event_with_height);
+            let (dst_msg, src_msg) = match event_with_height.event() {
+                IbcEvent::CloseInitChannel(_) => (
+                    Some(self.build_chan_close_confirm_from_event(event_with_height)?),
+                    None,
+                ),
                 IbcEvent::TimeoutPacket(ref timeout_ev) => {
                     // When a timeout packet for an ordered channel is processed on-chain (src here)
                     // the chain closes the channel but no close init event is emitted, instead
@@ -531,7 +536,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                             .src_channel(QueryHeight::Specific(timeout_ev.height))?
                             .state_matches(&ChannelState::Closed)
                     {
-                        (Some(self.build_chan_close_confirm_from_event(event)?), None)
+                        (
+                            Some(self.build_chan_close_confirm_from_event(event_with_height)?),
+                            None,
+                        )
                     } else {
                         (None, None)
                     }
@@ -565,9 +573,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
             // Collect messages to be sent to the destination chain (e.g., RecvPacket)
             if let Some(msg) = dst_msg {
-                debug!("{} from {}", msg.type_url, event);
+                debug!("{} from {}", msg.type_url, event_with_height);
                 dst_od.batch.push(TransitMessage {
-                    event: event.clone(),
+                    event_with_height: event_with_height.clone(),
                     msg,
                 });
             }
@@ -577,9 +585,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 // For Ordered channels a single timeout event should be sent as this closes the channel.
                 // Otherwise a multi message transaction will fail.
                 if self.unordered_channel() || src_od.batch.is_empty() {
-                    debug!("{} from {}", msg.type_url, event);
+                    debug!("{} from {}", msg.type_url, event_with_height);
                     src_od.batch.push(TransitMessage {
-                        event: event.clone(),
+                        event_with_height: event_with_height.clone(),
                         msg,
                     });
                 }
@@ -1090,8 +1098,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         ) {
             // Update telemetry info
             telemetry!({
-                for e in events_chunk.clone() {
-                    self.record_cleared_send_packet(e);
+                for event_with_height in events_chunk.iter() {
+                    self.record_cleared_send_packet(event_with_height.event());
                 }
             });
             self.events_to_operational_data(TrackedEvents::new(events_chunk, tracking_id))?;
@@ -1138,7 +1146,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             &self.path_id,
             query_write_ack_events,
         ) {
-            telemetry!(self.record_cleared_acknowledgments(events_chunk.clone()));
+            telemetry!(
+                self.record_cleared_acknowledgments(events_chunk.iter().map(|ev| ev.event()))
+            );
             self.events_to_operational_data(TrackedEvents::new(events_chunk, tracking_id))?;
         }
 
@@ -1524,9 +1534,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             let mut retain_batch = vec![];
 
             for gm in odata.batch.iter() {
-                let TransitMessage { event, .. } = gm;
+                let TransitMessage {
+                    event_with_height, ..
+                } = gm;
 
-                match event {
+                match event_with_height.event() {
                     IbcEvent::SendPacket(e) => {
                         // Catch any SendPacket event that timed-out
                         if self.send_packet_event_handled(e)? {
@@ -1546,7 +1558,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                                     )
                                 })
                                 .push(TransitMessage {
-                                    event: event.clone(),
+                                    event_with_height: event_with_height.clone(),
                                     msg: new_msg,
                                 });
                         } else {
@@ -1771,7 +1783,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     #[cfg(feature = "telemetry")]
-    fn record_cleared_send_packet(&self, event: IbcEvent) {
+    fn record_cleared_send_packet(&self, event: &IbcEvent) {
         if let IbcEvent::SendPacket(send_packet_ev) = event {
             ibc_telemetry::global().send_packet_count(
                 send_packet_ev.packet.sequence.into(),
@@ -1793,7 +1805,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     #[cfg(feature = "telemetry")]
-    fn record_cleared_acknowledgments(&self, events: Vec<IbcEvent>) {
+    fn record_cleared_acknowledgments<'a>(&self, events: impl Iterator<Item = &'a IbcEvent>) {
         for e in events {
             if let IbcEvent::WriteAcknowledgement(write_ack_ev) = e {
                 ibc_telemetry::global().clear_acknowledgment_packet_count(

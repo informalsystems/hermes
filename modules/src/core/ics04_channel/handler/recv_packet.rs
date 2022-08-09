@@ -149,7 +149,6 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
 
 #[cfg(test)]
 mod tests {
-    use crate::core::ics04_channel::context::ChannelReader;
     use crate::prelude::*;
 
     use test_log::test;
@@ -292,7 +291,6 @@ mod tests {
 
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::ReceivePacket(_)));
-                        assert_eq!(e.height(), test.ctx.host_height());
                     }
                 }
                 Err(e) => {
