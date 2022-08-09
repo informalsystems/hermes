@@ -732,7 +732,7 @@ pub async fn query_ibc_data_json(
     let sql_select_string = match query_height {
         QueryHeight::Latest => "SELECT * FROM ibc_json ORDER BY height DESC LIMIT 1".to_string(),
         QueryHeight::Specific(h) => format!(
-            "SELECT * FROM ibc_json WHERE height={}",
+            "SELECT * FROM ibc_json WHERE height = {} LIMIT 1",
             h.revision_height()
         ),
     };
