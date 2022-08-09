@@ -41,8 +41,8 @@ pub struct LogoURIs {
 }
 
 impl Fetchable for AssetList {
-    fn file_name() -> PathBuf {
-        PathBuf::from("assetlist.json")
+    fn path(resource: &str) -> PathBuf {
+        [resource, "assetlist.json"].iter().collect()
     }
 }
 
