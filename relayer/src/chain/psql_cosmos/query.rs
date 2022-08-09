@@ -338,6 +338,7 @@ fn packet_events_from_tx_search_response(
     events
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn query_txs_from_tendermint(
     pool: &PgPool,
     chain_id: &ChainId,
@@ -391,6 +392,7 @@ pub async fn query_txs_from_tendermint(
     }
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn query_txs_from_ibc_snapshots(
     pool: &PgPool,
     chain_id: &ChainId,
@@ -519,6 +521,7 @@ fn all_ibc_events_from_tx_result_batch(
     events
 }
 
+#[tracing::instrument(skip(pool, tx_sync_results))]
 pub async fn query_hashes_and_update_tx_sync_events(
     pool: &PgPool,
     chain_id: &ChainId,
@@ -576,6 +579,7 @@ pub async fn query_hashes_and_update_tx_sync_events(
     Ok(())
 }
 
+#[tracing::instrument(skip(pool, tx_sync_results))]
 pub async fn query_hashes_and_update_tx_sync_results(
     pool: &PgPool,
     chain_id: &ChainId,
@@ -640,6 +644,7 @@ async fn block_results_by_packet_fields(
     Ok(results)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn query_blocks(
     pool: &PgPool,
     chain_id: &ChainId,
@@ -751,6 +756,7 @@ pub fn bigdecimal_to_u64(b: BigDecimal) -> u64 {
     digits[0]
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn query_ibc_data(
     pool: &PgPool,
     query_height: &QueryHeight,

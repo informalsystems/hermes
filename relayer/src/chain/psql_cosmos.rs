@@ -142,6 +142,7 @@ impl PsqlChain {
         .await
     }
 
+    #[tracing::instrument(skip_all)]
     fn populate_connections(
         &self,
         query_height: &QueryHeight,
@@ -200,6 +201,7 @@ impl PsqlChain {
         Ok(())
     }
 
+    #[tracing::instrument(skip_all)]
     fn populate_channels_and_pending_packets(
         &self,
         query_height: &QueryHeight,
@@ -259,6 +261,7 @@ impl PsqlChain {
         Ok(())
     }
 
+    #[tracing::instrument(skip_all)]
     fn populate_packets(
         &self,
         query_height: &QueryHeight,
@@ -381,9 +384,13 @@ impl PsqlChain {
         Ok(result)
     }
 
+    #[tracing::instrument(skip_all)]
     fn update_with_events(&mut self, batch: EventBatch) -> Result<(), Error> {
         let previous_height = batch.height.decrement().unwrap();
+
         if !self.is_synced() {
+            warn!("database is not synced, updating snapshot");
+
             let snapshot = self.ibc_snapshot(&previous_height)?;
             self.block_on(update_snapshot(&self.pool.clone(), &snapshot))?;
             self.sync_state = PsqlSyncStatus::Synced;
@@ -393,6 +400,7 @@ impl PsqlChain {
             &self.pool,
             &QueryHeight::Specific(previous_height),
         ))?;
+
         work_copy.height = batch.height.revision_height();
 
         for event in batch.events.iter() {
