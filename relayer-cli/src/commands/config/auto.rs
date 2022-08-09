@@ -12,6 +12,8 @@ use ibc_relayer::config::{store, ChainConfig, Config};
 
 use tokio::runtime::Builder;
 
+/// Encapsulates the `hermes config auto` subcommand for generating
+/// a default Hermes configuration.
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct AutoCmd {
     #[clap(
