@@ -879,12 +879,14 @@ fn init_telemetry(
     let clear_packets = config.mode.packets.enabled
         && (config.mode.packets.clear_on_start || config.mode.packets.clear_interval > 0);
 
-    telemetry!(
-        init_per_path,
-        chain_id,
-        counterparty_chain_id,
-        channel_id,
-        port_id,
-        clear_packets
-    )
+    if config.mode.packets.enabled {
+        telemetry!(
+            init_per_path,
+            chain_id,
+            counterparty_chain_id,
+            channel_id,
+            port_id,
+            clear_packets
+        )
+    }
 }
