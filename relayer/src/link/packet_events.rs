@@ -72,9 +72,12 @@ pub fn query_send_packet_events<ChainA: ChainHandle>(
         height: QueryHeight::Specific(src_query_height),
     };
 
-    let tx_events = src_chain
+    let tx_events: Vec<IbcEvent> = src_chain
         .query_txs(QueryTxRequest::Packet(query.clone()))
-        .map_err(LinkError::relayer)?;
+        .map_err(LinkError::relayer)?
+        .into_iter()
+        .map(|ev_with_height| ev_with_height.event)
+        .collect();
 
     let recvd_sequences: Vec<Sequence> = tx_events
         .iter()

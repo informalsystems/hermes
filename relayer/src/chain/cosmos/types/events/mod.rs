@@ -10,10 +10,10 @@ pub mod connection;
 pub fn from_tx_response_event(height: Height, event: &AbciEvent) -> Option<IbcEventWithHeight> {
     // Return the first hit we find
     if let Some(client_res) = client::try_from_tx(event) {
-        Some(IbcEventWithHeight::new(client_res, height))
+        Some(IbcEventWithHeight::new(client_res.event, height))
     } else if let Some(conn_res) = connection::try_from_tx(event) {
-        Some(IbcEventWithHeight::new(conn_res, height))
+        Some(IbcEventWithHeight::new(conn_res.event, height))
     } else {
-        channel::try_from_tx(event).map(|chan_res| IbcEventWithHeight::new(chan_res, height))
+        channel::try_from_tx(event).map(|chan_res| IbcEventWithHeight::new(chan_res.event, height))
     }
 }

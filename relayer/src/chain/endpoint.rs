@@ -41,6 +41,7 @@ use crate::connection::ConnectionMsgType;
 use crate::denom::DenomTrace;
 use crate::error::{Error, QUERY_PROOF_EXPECT_MSG};
 use crate::event::monitor::{EventReceiver, TxMonitorCmd};
+use crate::event::IbcEventWithHeight;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::LightClient;
 
@@ -313,7 +314,7 @@ pub trait ChainEndpoint: Sized {
         include_proof: IncludeProof,
     ) -> Result<(Sequence, Option<MerkleProof>), Error>;
 
-    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error>;
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error>;
 
     fn query_blocks(
         &self,

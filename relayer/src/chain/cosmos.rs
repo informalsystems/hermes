@@ -49,7 +49,6 @@ use ibc::{
 };
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 
-use crate::account::Balance;
 use crate::chain::client::ClientSettings;
 use crate::chain::cosmos::batch::{
     send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
@@ -75,6 +74,7 @@ use crate::event::monitor::{EventMonitor, EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
+use crate::{account::Balance, event::IbcEventWithHeight};
 
 use super::requests::{
     IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
@@ -1438,7 +1438,7 @@ impl ChainEndpoint for CosmosSdkChain {
     ///    Therefore, for packets we perform one tx_search for each sequence.
     ///    Alternatively, a single query for all packets could be performed but it would return all
     ///    packets ever sent.
-    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error> {
         crate::time!("query_txs");
         crate::telemetry!(query, self.id(), "query_txs");
 
@@ -1616,15 +1616,15 @@ fn filter_matching_event(
         return None;
     }
 
-    let ibc_event = channel_events::try_from_tx(&event)?;
-    match ibc_event {
+    let event_with_height = channel_events::try_from_tx(&event)?;
+    match event_with_height.event() {
         IbcEvent::SendPacket(ref send_ev) if matches_packet(request, seq, &send_ev.packet) => {
-            Some(ibc_event)
+            Some(event_with_height)
         }
         IbcEvent::WriteAcknowledgement(ref ack_ev)
             if matches_packet(request, seq, &ack_ev.packet) =>
         {
-            Some(ibc_event)
+            Some(event_with_height)
         }
         _ => None,
     }

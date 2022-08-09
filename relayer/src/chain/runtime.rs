@@ -40,6 +40,7 @@ use crate::{
     event::{
         bus::EventBus,
         monitor::{EventBatch, EventReceiver, MonitorCmd, Result as MonitorResult, TxMonitorCmd},
+        IbcEventWithHeight,
     },
     keyring::KeyEntry,
     light_client::LightClient,
@@ -871,7 +872,7 @@ where
     fn query_txs(
         &self,
         request: QueryTxRequest,
-        reply_to: ReplyTo<Vec<IbcEvent>>,
+        reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_txs(request);
         reply_to.send(result).map_err(Error::send)

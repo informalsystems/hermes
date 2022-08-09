@@ -36,7 +36,10 @@ use crate::{
     connection::ConnectionMsgType,
     denom::DenomTrace,
     error::Error,
-    event::monitor::{EventBatch, Result as MonitorResult},
+    event::{
+        monitor::{EventBatch, Result as MonitorResult},
+        IbcEventWithHeight,
+    },
     keyring::KeyEntry,
 };
 
@@ -338,7 +341,7 @@ pub enum ChainRequest {
 
     QueryPacketEventDataFromTxs {
         request: QueryTxRequest,
-        reply_to: ReplyTo<Vec<IbcEvent>>,
+        reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     },
 
     QueryPacketEventDataFromBlocks {
@@ -626,7 +629,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<Sequence>, Error>;
 
-    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error>;
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error>;
 
     fn query_blocks(
         &self,

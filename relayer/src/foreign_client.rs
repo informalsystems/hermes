@@ -1153,7 +1153,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         &self,
         consensus_height: Height,
     ) -> Result<Option<UpdateClient>, ForeignClientError> {
-        let mut events = vec![];
+        let mut events_with_heights = vec![];
         for i in 0..MAX_RETRIES {
             thread::sleep(Duration::from_millis(100));
             let result = self
@@ -1184,14 +1184,14 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                     continue;
                 }
                 Ok(result) => {
-                    events = result;
+                    events_with_heights = result;
                     // Should break to prevent retrying uselessly.
                     break;
                 }
             }
         }
 
-        if events.is_empty() {
+        if events_with_heights.is_empty() {
             return Ok(None);
         }
 
@@ -1199,7 +1199,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // same consensus height. This could happen when multiple client updates with same header
         // were submitted to chain. However this is not what it's observed during testing.
         // Regardless, just take the event from the first update.
-        let event = events[0].clone();
+        let event = events_with_heights[0].event;
         let update = downcast!(event.clone() => IbcEvent::UpdateClient).ok_or_else(|| {
             ForeignClientError::unexpected_event(
                 self.id().clone(),

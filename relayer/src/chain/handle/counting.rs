@@ -43,6 +43,7 @@ use crate::chain::tracking::TrackedMsgs;
 use crate::config::ChainConfig;
 use crate::denom::DenomTrace;
 use crate::error::Error;
+use crate::event::IbcEventWithHeight;
 use crate::util::lock::LockExt;
 use crate::{connection::ConnectionMsgType, keyring::KeyEntry};
 
@@ -450,7 +451,7 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inner().query_unreceived_acknowledgements(request)
     }
 
-    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error> {
         self.inc_metric("query_txs");
         self.inner().query_txs(request)
     }

@@ -38,6 +38,7 @@ use crate::config::ChainConfig;
 use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
+use crate::event::IbcEventWithHeight;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
@@ -324,7 +325,7 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn query_txs(&self, _request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
+    fn query_txs(&self, _request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error> {
         unimplemented!()
     }
 

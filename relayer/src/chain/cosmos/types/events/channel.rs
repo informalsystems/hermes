@@ -18,7 +18,9 @@ use ibc::events::{Error as EventError, IbcEvent, IbcEventType};
 use ibc::Height;
 use tendermint::abci::Event as AbciEvent;
 
-pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEvent> {
+use crate::event::IbcEventWithHeight;
+
+pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEventWithHeight> {
     match event.type_str.parse() {
         Ok(IbcEventType::OpenInitChannel) => extract_attributes_from_tx(event)
             .map(OpenInit::try_from)
@@ -400,7 +402,7 @@ mod tests {
 
         for event in abci_events {
             match try_from_tx(&event) {
-                Some(e) => match e {
+                Some(e) => match e.event().clone() {
                     IbcEvent::OpenInitChannel(e) => {
                         assert_eq!(Attributes::from(e), open_init.clone().into())
                     }
@@ -463,7 +465,7 @@ mod tests {
 
         for event in abci_events {
             match try_from_tx(&event) {
-                Some(e) => match e {
+                Some(e) => match e.event().clone() {
                     IbcEvent::SendPacket(e) => assert_eq!(e.packet, send_packet.packet),
                     IbcEvent::WriteAcknowledgement(e) => {
                         assert_eq!(e.packet, write_ack.packet);
