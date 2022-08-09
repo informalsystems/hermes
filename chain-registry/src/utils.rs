@@ -2,6 +2,7 @@ use crate::error::RegistryError;
 use async_trait::async_trait;
 use http::uri::Builder;
 use serde::de::DeserializeOwned;
+use std::path::PathBuf;
 
 pub const PROTOCOL: &str = "https";
 pub const HOST: &str = "raw.githubusercontent.com";
@@ -23,7 +24,7 @@ where
     /// Fetches the fetchable resource.
     // The default implementation fetches config data from a chain registry. This
     // should be overridden if you're looking to fetch any other type of resource.
-    async fn fetch(chain_name: &str) -> Result<Self, RegistryError> {
+    async fn fetch(chain_name: String) -> Result<Self, RegistryError> {
         let url = Builder::new()
             .scheme(PROTOCOL)
             .authority(HOST)
@@ -34,6 +35,8 @@ where
                     REF,
                     chain_name,
                     Self::file_name()
+                        .to_str()
+                        .ok_or_else(|| RegistryError::path_error(Self::file_name()))?,
                 )
                 .as_str(),
             )

@@ -55,8 +55,14 @@ async fn query_rpc(rpc: &str) -> Result<RpcMandatoryData, RegistryError> {
         }
     };
 
-    client.close().unwrap();
-    let _ = driver_handle.await.unwrap();
+    client
+        .close()
+        .map_err(|e| RegistryError::websocket_conn_close_error(websocket_addr.to_string(), e))?;
+
+    driver_handle
+        .await
+        .map_err(|e| RegistryError::join_error("chain_data_join".to_string(), e))?
+        .map_err(|e| RegistryError::websocket_driver_error(websocket_addr.to_string(), e))?;
 
     Ok(RpcMandatoryData {
         rpc_address: rpc.to_string(),
@@ -75,12 +81,17 @@ fn websocket_from_rpc(rpc_endpoint: &str) -> Result<tendermint_rpc::Url, Registr
 
     let uri = Uri::builder()
         .scheme("wss")
-        .authority(uri.authority().unwrap().clone())
+        .authority(
+            uri.authority()
+                .ok_or_else(|| RegistryError::rpc_url_without_authority(rpc_endpoint.to_string()))?
+                .clone(),
+        )
         .path_and_query("/websocket")
         .build();
 
     match uri {
-        Ok(uri) => Ok(tendermint_rpc::Url::from_str(uri.to_string().as_str()).unwrap()),
+        Ok(uri) => Ok(tendermint_rpc::Url::from_str(uri.to_string().as_str())
+            .map_err(|e| RegistryError::tendermint_url_parse_error(rpc_endpoint.to_string(), e))?),
         Err(e) => Err(RegistryError::unable_to_build_websocket_endpoint(
             rpc_endpoint.to_string(),
             e,
@@ -93,7 +104,10 @@ fn websocket_from_rpc(rpc_endpoint: &str) -> Result<tendermint_rpc::Url, Registr
 /// Returns a tendermint url if the client can connect to the gRPC server
 async fn health_check_grpc(grpc_address: &str) -> Result<tendermint_rpc::Url, RegistryError> {
     let uri = parse_or_build_grpc_endpoint(grpc_address)?;
-    let tendermint_url = uri.to_string().parse().unwrap();
+    let tendermint_url = uri
+        .to_string()
+        .parse()
+        .map_err(|e| RegistryError::tendermint_url_parse_error(grpc_address.to_string(), e))?;
     QueryClient::connect(uri)
         .await
         .map_err(|_| RegistryError::unable_to_connect_with_grpc())?;
@@ -103,13 +117,13 @@ async fn health_check_grpc(grpc_address: &str) -> Result<tendermint_rpc::Url, Re
 /// Select a healthy rpc/grpc address from a list of urls
 async fn select_healthy<'a, Res, Func, Fut>(
     urls: &'a [String],
-    func: FUNC,
+    func: Func,
     error: RegistryError,
-) -> Result<RES, RegistryError>
+) -> Result<Res, RegistryError>
 where
-    RES: Send,
-    FUNC: Fn(&'a str) -> FUTURE + Send + Sync + 'static,
-    FUTURE: Future<Output = Result<RES, RegistryError>> + Send,
+    Res: Send,
+    Func: Fn(&'a str) -> Fut + Send + Sync + 'static,
+    Fut: Future<Output = Result<Res, RegistryError>> + Send,
 {
     let mut futures: FuturesUnordered<_> = urls.iter().map(|url| func(url)).collect();
 
@@ -148,12 +162,14 @@ fn parse_or_build_grpc_endpoint(input: &str) -> Result<Uri, RegistryError> {
 /// https://github.com/cosmos/chain-registry.
 /// Gas settings are set to default values.
 pub async fn hermes_config(chain_name: &str, key_name: &str) -> Result<ChainConfig, RegistryError> {
-    let name_string = chain_name.to_string();
-    let chain_data_handle = tokio::spawn(async move { ChainData::fetch(name_string).await });
-    let name_string = chain_name.to_string();
-    let assets_handle = tokio::spawn(async move { AssetList::fetch(name_string).await });
+    let string_name = chain_name.to_string();
+    let chain_data_handle = tokio::spawn(async move { ChainData::fetch(string_name).await });
+    let string_name = chain_name.to_string();
+    let assets_handle = tokio::spawn(async move { AssetList::fetch(string_name).await });
 
-    let chain_data = chain_data_handle.await.unwrap()?;
+    let chain_data = chain_data_handle
+        .await
+        .map_err(|e| RegistryError::join_error("chain_data_join".to_string(), e))??;
 
     let grpc_endpoints: Vec<String> = chain_data
         .apis
@@ -188,19 +204,30 @@ pub async fn hermes_config(chain_name: &str, key_name: &str) -> Result<ChainConf
         .await
     });
 
-    let base = if let Some(asset) = assets_handle.await.unwrap()?.assets.first() {
+    let base = if let Some(asset) = assets_handle
+        .await
+        .map_err(|e| RegistryError::join_error("asset_handle_join".to_string(), e))??
+        .assets
+        .first()
+    {
         asset.base.clone()
     } else {
         return Err(RegistryError::no_asset_found(chain_name.to_string()));
     };
 
-    let rpc_mandatory_data = rpc_handle.await.unwrap()?;
-    let grpc_address = grpc_handle.await.unwrap()?;
+    let rpc_mandatory_data = rpc_handle
+        .await
+        .map_err(|e| RegistryError::join_error("rpc_mandatory_data_join".to_string(), e))??;
+    let grpc_address = grpc_handle
+        .await
+        .map_err(|e| RegistryError::join_error("grpc_handle_join".to_string(), e))??;
 
     Ok(ChainConfig {
         id: ChainId::from_string(&chain_data.chain_id),
         r#type: default::chain_type(),
-        rpc_addr: tendermint_rpc::Url::from_str(rpc_mandatory_data.rpc_address.as_str()).unwrap(),
+        rpc_addr: tendermint_rpc::Url::from_str(rpc_mandatory_data.rpc_address.as_str()).map_err(
+            |e| RegistryError::tendermint_url_parse_error(rpc_mandatory_data.rpc_address, e),
+        )?,
         websocket_addr: rpc_mandatory_data.websocket,
         grpc_addr: grpc_address,
         rpc_timeout: default::rpc_timeout(),
@@ -243,7 +270,7 @@ mod tests {
         }
 
         for handle in handles {
-            handle.await.unwrap().unwrap();
+            handle.await??;
         }
     }
 }

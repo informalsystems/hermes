@@ -67,10 +67,7 @@ impl Runnable for AutoCmd {
         if self.chain_ids.len() != self.keys.len() {
             Output::error("Must provide a key name for every chain").exit();
         }
-        let runtime = Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
+        let runtime = Builder::new_current_thread().enable_all().build().unwrap();
 
         let chain_configs: Vec<ChainConfig> = runtime
             .block_on(get_chain_configs(&self.chain_ids, &self.keys))

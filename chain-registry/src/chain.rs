@@ -2,6 +2,7 @@
 //! Taken from https://github.com/PeggyJV/ocular/blob/main/ocular/src/registry/chain.rs
 use crate::utils::Fetchable;
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
@@ -90,8 +91,8 @@ pub struct Grpc {
 }
 
 impl Fetchable for ChainData {
-    fn file_name() -> String {
-        "chain.json".to_string()
+    fn file_name() -> PathBuf {
+        PathBuf::from("chain.json")
     }
 }
 

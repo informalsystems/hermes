@@ -2,6 +2,7 @@ use flex_error::{define_error, TraceError};
 use http;
 use reqwest;
 use serde_json;
+use std::path::PathBuf;
 use tendermint_rpc;
 use tokio::task::JoinError;
 use tokio::time::error::Elapsed;
@@ -12,16 +13,16 @@ define_error! {
         GrpcEndpointParseError
             {grpc : String}
             [TraceError<http::Error>]
-            |e| {format!("Unable to parse grpc endpoint for : {}", e.grpc)},
+            |e| {format!("Unable to parse grpc endpoint for: {}", e.grpc)},
 
         GrpcWithoutPort
             {grpc : String}
-            |e| {format!("Provided gRPC endpoint without port : {}", e.grpc)},
+            |e| {format!("Provided gRPC endpoint without port: {}", e.grpc)},
 
         JoinError
             {task : String}
             [TraceError<JoinError>]
-            |e| {format!("Error when joining task : {}", e.task)},
+            |e| {format!("Error when joining task: {}", e.task)},
 
         JsonParseError
             [TraceError <serde_json::Error>]
@@ -29,39 +30,47 @@ define_error! {
 
         NoAssetFound
             {chain_name : String}
-            |e| {format!("No asset found for chain : {}", e.chain_name)},
+            |e| {format!("No asset found for chain: {}", e.chain_name)},
 
         NoHealthyGrpc
             {chain : String}
-            |e| {format!("No healthy gRPC found for chain : {}", e.chain)},
+            |e| {format!("No healthy gRPC found for chain: {}", e.chain)},
 
         NoHealthyRpc
             {chain : String}
-            |e| {format!("No healthy RPC found for chain : {}", e.chain)},
+            |e| {format!("No healthy RPC found for chain: {}", e.chain)},
+
+        PathError
+            {path : PathBuf}
+            |e| {format!("Error when parsing path: {:?}", e.path)},
 
         RequestError
             {url : String}
             [TraceError<reqwest::Error>]
-            |e| {format!("Error when requesting : {}", e.url)},
+            |e| {format!("Error when requesting: {}", e.url)},
 
         RpcConnectError
             {rpc : String}
             [TraceError<tendermint_rpc::Error>]
-            |e| {format!("Error when connecting to RPC : {}", e.rpc)},
+            |e| {format!("Error when connecting to RPC: {}", e.rpc)},
 
         RpcConsensusParamsError
             {rpc : String}
             [TraceError<tendermint_rpc::Error>]
-            |e| {format!("Unable to fetch consensus params for rpc : {}", e.rpc)},
+            |e| {format!("Unable to fetch consensus params for rpc: {}", e.rpc)},
 
         RpcStatusError
             {rpc : String}
             [TraceError<tendermint_rpc::Error>]
-            |e| {format!("Unable to fetch status for rpc : {}", e.rpc)},
+            |e| {format!("Unable to fetch status for rpc: {}", e.rpc)},
+
+        RpcUrlWithoutAuthority
+            {rpc : String}
+            |e| {format!("Provided rpc url without authority: {}", e.rpc)},
 
         RpcSyncingError
             {rpc: String}
-            |e| {format!("Rpc node out of sync :  {}", e.rpc)},
+            |e| {format!("Rpc node out of sync: {}", e.rpc)},
 
         UriParseError
             {uri : String}
@@ -71,16 +80,21 @@ define_error! {
         UrlParseError
             {url : String}
             [TraceError<http::Error>]
-            |e| {format!("Error when parsing URL : {}", e.url)},
+            |e| {format!("Error when parsing URL: {}", e.url)},
+
+        TendermintUrlParseError
+            {url : String}
+            [TraceError<tendermint_rpc::Error>]
+            |e| {format!("Error when parsing URL: {}", e.url)},
 
         StatusError
             {url : String, status : u16}
-            |e| {format!("Incorrect HTTP response status ({}) for url : {}", e.status, e.url)},
+            |e| {format!("Incorrect HTTP response status ({}) for url: {}", e.status, e.url)},
 
         UnableToBuildWebsocketEndpoint
             {rpc : String}
             [TraceError<http::Error>]
-            |e| {format!("Unable to build websocket endpoint for rpc : {}", e.rpc)},
+            |e| {format!("Unable to build websocket endpoint for rpc: {}", e.rpc)},
 
         UnableToConnectWithGrpc
             |_| {"Unable to connect with grpc".to_string()},
@@ -88,16 +102,21 @@ define_error! {
         WebsocketConnectError
             {url : String}
             [TraceError<tendermint_rpc::Error>]
-            |e| {format!("Unable to connect to websocket : {}", e.url)},
+            |e| {format!("Unable to connect to websocket: {}", e.url)},
 
         WebsocketConnCloseError
             {url : String}
             [TraceError<tendermint_rpc::Error>]
-            |e| {format!("Unable to close websocket connection : {}", e.url)},
+            |e| {format!("Unable to close websocket connection: {}", e.url)},
 
         WebsocketTimeOutError
             {url : String}
             [TraceError<Elapsed>]
-            |e| {format!("Unable to connect to websocket : {}", e.url)},
+            |e| {format!("Unable to connect to websocket: {}", e.url)},
+
+        WebsocketDriverError
+            {url : String}
+            [TraceError<tendermint_rpc::Error>]
+            |e| {format!("Unable to close websocket driver: {}", e.url)},
     }
 }

@@ -2,6 +2,7 @@
 //! originally from https://github.com/PeggyJV/ocular/blob/main/ocular/src/registry/assets.rs
 use crate::utils::Fetchable;
 use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
@@ -39,8 +40,8 @@ pub struct LogoURIs {
 }
 
 impl Fetchable for AssetList {
-    fn file_name() -> String {
-        "assetlist.json".to_string()
+    fn file_name() -> PathBuf {
+        PathBuf::from("assetlist.json")
     }
 }
 
