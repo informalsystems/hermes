@@ -556,7 +556,7 @@ impl AggregatorSelector for CustomAggregatorSelector {
             "backlog_oldest_timestamp" => Some(Arc::new(last_value())),
             "backlog_size" => Some(Arc::new(last_value())),
             // Prometheus' supports only collector for histogram, sum, and last value aggregators.
-            // https://docs.rs/opentelemetry-prometheus/0.10.0/src/opentelemetry_prometheus/lib.rs.html#411-418
+            // https://docs.rs/opentelemetry-prometheus/0.11.0/src/opentelemetry_prometheus/lib.rs.html#411-418
             // TODO: Once quantile sketches are supported, replace histograms with that.
             "tx_latency_submitted" => Some(Arc::new(histogram(
                 descriptor,
