@@ -20,7 +20,10 @@ where
     /// The file name of the fetchable resource.
     fn file_name() -> String;
 
-    async fn fetch_data(chain_name: String) -> Result<String, RegistryError> {
+    /// Fetches the fetchable resource.
+    // The default implementation fetches config data from a chain registry. This
+    // should be overridden if you're looking to fetch any other type of resource.
+    async fn fetch(chain_name: String) -> Result<Self, RegistryError> {
         let url = Builder::new()
             .scheme(PROTOCOL)
             .authority(HOST)
@@ -43,7 +46,10 @@ where
 
         if response.status().is_success() {
             match response.text().await {
-                Ok(body) => Ok(body),
+                Ok(body) => match serde_json::from_str(&body) {
+                    Ok(parsed) => Ok(parsed),
+                    Err(e) => Err(RegistryError::json_parse_error(e)),
+                },
                 Err(e) => Err(RegistryError::request_error(url.to_string(), e)),
             }
         } else {
@@ -51,19 +57,6 @@ where
                 url.to_string(),
                 response.status().as_u16(),
             ))
-        }
-    }
-
-    /// Fetches the fetchable resource.
-    // The default implementation fetches config data from a chain registry. This
-    // should be overridden if you're looking to fetch any other type of resource.
-    async fn fetch(chain_name: String) -> Result<Self, RegistryError> {
-        match Self::fetch_data(chain_name).await {
-            Ok(body) => match serde_json::from_str(&body) {
-                Ok(parsed) => Ok(parsed),
-                Err(e) => Err(RegistryError::json_parse_error(e)),
-            },
-            Err(e) => Err(e),
         }
     }
 }
