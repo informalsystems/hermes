@@ -1,6 +1,7 @@
 //! Contains models for serializing and deserializing `chain.json` for a given chain
 //! Taken from https://github.com/PeggyJV/ocular/blob/main/ocular/src/registry/chain.rs
 use crate::utils::Fetchable;
+use ibc::core::ics24_host::identifier::ChainId;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -11,7 +12,7 @@ pub struct ChainData {
     pub status: String,
     pub network_type: String,
     pub pretty_name: String,
-    pub chain_id: String,
+    pub chain_id: ChainId,
     pub bech32_prefix: String,
     pub daemon_name: String,
     pub node_home: String,

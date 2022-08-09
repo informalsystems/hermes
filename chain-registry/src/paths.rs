@@ -1,5 +1,6 @@
 /// Models for serializing and deserializing IBC path JSON data found in the `_IBC/` directory of the registry repository
 use crate::utils::Fetchable;
+use ibc::core::ics24_host::identifier::{ChannelId, PortId, ClientId, ConnectionId};
 use serde::Deserialize;
 use serde::Serialize;
 use std::path::PathBuf;
@@ -22,9 +23,9 @@ pub struct Chain1 {
     #[serde(rename = "chain-name")]
     pub chain_name: String,
     #[serde(rename = "client-id")]
-    pub client_id: String,
+    pub client_id: ClientId,
     #[serde(rename = "connection-id")]
-    pub connection_id: String,
+    pub connection_id: ConnectionId,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -33,9 +34,9 @@ pub struct Chain2 {
     #[serde(rename = "chain-name")]
     pub chain_name: String,
     #[serde(rename = "client-id")]
-    pub client_id: String,
+    pub client_id: ClientId,
     #[serde(rename = "connection-id")]
-    pub connection_id: String,
+    pub connection_id: ConnectionId,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -54,18 +55,18 @@ pub struct Channel {
 #[serde(default, rename_all = "camelCase")]
 pub struct ChannelChain1 {
     #[serde(rename = "channel-id")]
-    pub channel_id: String,
+    pub channel_id: ChannelId,
     #[serde(rename = "port-id")]
-    pub port_id: String,
+    pub port_id: PortId,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ChannelChain2 {
     #[serde(rename = "channel-id")]
-    pub channel_id: String,
+    pub channel_id: ChannelId,
     #[serde(rename = "port-id")]
-    pub port_id: String,
+    pub port_id: PortId,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -104,7 +105,6 @@ mod tests {
         "osmosis-regen.json",
     ];
 
-    // TEST_CHAINS should be sorted in alphabetical order
     #[tokio::test]
     async fn fetch_paths() -> Result<(), RegistryError> {
         let mut handles = Vec::with_capacity(TEST_IBC_PATHS.len());

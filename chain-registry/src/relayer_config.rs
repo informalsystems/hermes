@@ -5,7 +5,6 @@ use futures::{stream::FuturesUnordered, Future, StreamExt};
 
 use http::Uri;
 
-use ibc::core::ics24_host::identifier::ChainId;
 use ibc_proto::cosmos::bank::v1beta1::query_client::QueryClient;
 use ibc_relayer::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use ibc_relayer::config::{default, filter::PacketFilter, AddressType, ChainConfig, GasPrice};
@@ -158,6 +157,9 @@ fn parse_or_build_grpc_endpoint(input: &str) -> Result<Uri, RegistryError> {
     Ok(uri)
 }
 
+// ----------------- Packet filters ------------------
+// TODO : modify the interface to allow for an array of chains to be passed in as arguments
+
 /// Generates a ChainConfig for a given chain by fetching data from
 /// https://github.com/cosmos/chain-registry.
 /// Gas settings are set to default values.
@@ -223,7 +225,7 @@ pub async fn hermes_config(chain_name: &str, key_name: &str) -> Result<ChainConf
         .map_err(|e| RegistryError::join_error("grpc_handle_join".to_string(), e))??;
 
     Ok(ChainConfig {
-        id: ChainId::from_string(&chain_data.chain_id),
+        id: chain_data.chain_id,
         r#type: default::chain_type(),
         rpc_addr: tendermint_rpc::Url::from_str(rpc_mandatory_data.rpc_address.as_str()).map_err(
             |e| RegistryError::tendermint_url_parse_error(rpc_mandatory_data.rpc_address, e),
