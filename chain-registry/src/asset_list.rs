@@ -1,6 +1,7 @@
 //! Contains models for serializing and deserializing `assets.json` for a given chain
 //! originally from https://github.com/PeggyJV/ocular/blob/main/ocular/src/registry/assets.rs
 use crate::utils::Fetchable;
+
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -48,17 +49,19 @@ impl Fetchable for AssetList {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::RegistryError;
     use crate::utils::TEST_CHAINS;
 
     #[tokio::test]
-    async fn test_fetch_chain_assets() {
+    async fn test_fetch_chain_assets() -> Result<(), RegistryError> {
         let mut handles = Vec::with_capacity(TEST_CHAINS.len());
         for chain in TEST_CHAINS {
             handles.push(tokio::spawn(AssetList::fetch(chain.to_string())));
         }
 
         for handle in handles {
-            handle.await.unwrap().unwrap();
+            handle.await.unwrap()?;
         }
+        Ok(())
     }
 }

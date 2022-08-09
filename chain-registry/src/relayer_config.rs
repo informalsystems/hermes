@@ -263,14 +263,15 @@ mod tests {
     use crate::utils::TEST_CHAINS;
 
     #[tokio::test]
-    async fn fetch_chain_config() {
+    async fn fetch_chain_config() -> Result<(), RegistryError> {
         let mut handles = Vec::with_capacity(TEST_CHAINS.len());
         for chain in TEST_CHAINS {
             handles.push(tokio::spawn(hermes_config(chain, "testkey")));
         }
 
         for handle in handles {
-            handle.await??;
+            handle.await.unwrap()?;
         }
+        Ok(())
     }
 }

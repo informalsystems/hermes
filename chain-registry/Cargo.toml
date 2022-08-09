@@ -13,9 +13,10 @@ description  = """
 """
 
 [dependencies]
-ibc                      = { version = "0.17.0", path = "../modules" }
-ibc-proto                = { version = "0.19.1", path = "../proto" }
-ibc-relayer              = { version = "0.17.0", path = "../relayer" }
+
+ibc              = { version = "0.18.0", path = "../modules", features = ["std", "clock"] }
+ibc-proto        = { version = "0.20.0", path = "../proto" }
+ibc-relayer      = { version = "0.18.0", path = "../relayer" }
 
 async-trait              = { version = "0.1.57"}
 flex-error               = { version = "0.4.4", default-features = false }
@@ -30,9 +31,9 @@ url                      = "2.2.2"
 
 
 [dependencies.tendermint-rpc]
-version = "=0.23.8"
+version = "=0.23.9"
 features = ["http-client"]
 
 [dependencies.tendermint-light-client-verifier]
-version = "=0.23.8"
+version = "=0.23.9"
 default-features = false
