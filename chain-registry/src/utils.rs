@@ -18,12 +18,12 @@ where
     Self: DeserializeOwned,
 {
     /// The file name of the fetchable resource.
-    fn file_name() -> String;
+    fn file_name() -> PathBuf;
 
     /// Fetches the fetchable resource.
     // The default implementation fetches config data from a chain registry. This
     // should be overridden if you're looking to fetch any other type of resource.
-    async fn fetch(chain_name: String) -> Result<Self, RegistryError> {
+    async fn fetch(chain_name: &str) -> Result<Self, RegistryError> {
         let url = Builder::new()
             .scheme(PROTOCOL)
             .authority(HOST)

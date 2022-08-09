@@ -73,13 +73,13 @@ fn websocket_from_rpc(rpc_endpoint: &str) -> Result<tendermint_rpc::Url, Registr
         .parse::<Uri>()
         .map_err(|e| RegistryError::uri_parse_error(rpc_endpoint.to_string(), e))?;
 
-    let builder = Uri::builder();
-    match builder
+    let uri = Uri::builder()
         .scheme("wss")
         .authority(uri.authority().unwrap().clone())
         .path_and_query("/websocket")
-        .build()
-    {
+        .build();
+
+    match uri {
         Ok(uri) => Ok(tendermint_rpc::Url::from_str(uri.to_string().as_str()).unwrap()),
         Err(e) => Err(RegistryError::unable_to_build_websocket_endpoint(
             rpc_endpoint.to_string(),
@@ -101,7 +101,7 @@ async fn health_check_grpc(grpc_address: &str) -> Result<tendermint_rpc::Url, Re
 }
 
 /// Select a healthy rpc/grpc address from a list of urls
-async fn select_healthy<'a, RES, FUNC, FUTURE>(
+async fn select_healthy<'a, Res, Func, Fut>(
     urls: &'a [String],
     func: FUNC,
     error: RegistryError,

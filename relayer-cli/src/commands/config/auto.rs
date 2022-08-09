@@ -16,7 +16,6 @@ use tokio::runtime::Builder;
 pub struct AutoCmd {
     #[clap(
         long = "path",
-        short = 'p',
         required = true,
         value_name = "PATH",
         help_heading = "REQUIRED",
@@ -49,6 +48,8 @@ async fn get_chain_configs(
     chain_names: &[String],
     keys: &[String],
 ) -> Vec<Result<ChainConfig, RegistryError>> {
+    assert_eq!(chain_names.len(), keys.len());
+
     let futures: FuturesUnordered<_> = chain_names
         .iter()
         .zip(keys.iter())
@@ -66,8 +67,7 @@ impl Runnable for AutoCmd {
         if self.chain_ids.len() != self.keys.len() {
             Output::error("Must provide a key name for every chain").exit();
         }
-        let runtime = Builder::new_multi_thread()
-            .worker_threads(1)
+        let runtime = Builder::new_current_thread()
             .enable_all()
             .build()
             .unwrap();
