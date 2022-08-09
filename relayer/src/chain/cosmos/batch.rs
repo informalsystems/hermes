@@ -1,5 +1,6 @@
 use core::mem;
 
+use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::IbcEvent;
 use ibc_proto::google::protobuf::Any;
 use prost::Message;
@@ -44,6 +45,38 @@ pub async fn send_batched_messages_and_wait_commit(
         &config.rpc_address,
         &config.rpc_timeout,
         &mut tx_sync_results,
+    )
+    .await?;
+
+    let events = tx_sync_results
+        .into_iter()
+        .flat_map(|el| el.events)
+        .collect();
+
+    Ok(events)
+}
+
+pub async fn sequential_send_batched_messages_and_wait_commit(
+    config: &TxConfig,
+    max_msg_num: MaxMsgNum,
+    max_tx_size: MaxTxSize,
+    key_entry: &KeyEntry,
+    account: &mut Account,
+    tx_memo: &Memo,
+    messages: Vec<Any>,
+) -> Result<Vec<IbcEvent>, Error> {
+    if messages.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let tx_sync_results = sequential_send_messages_as_batches(
+        config,
+        max_msg_num,
+        max_tx_size,
+        key_entry,
+        account,
+        tx_memo,
+        messages,
     )
     .await?;
 
@@ -105,31 +138,77 @@ async fn send_messages_as_batches(
         let response =
             send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, batch).await?;
 
-        if response.code.is_err() {
-            let events_per_tx = vec![IbcEvent::ChainError(format!(
-                "check_tx (broadcast_tx_sync) on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
-                config.chain_id, response.hash, response.code, response.log
-            )); message_count];
+        let tx_sync_result = response_to_tx_sync_result(&config.chain_id, message_count, response);
 
-            let tx_sync_result = TxSyncResult {
-                response,
-                events: events_per_tx,
-                status: TxStatus::ReceivedResponse,
-            };
-
-            tx_sync_results.push(tx_sync_result);
-        } else {
-            let tx_sync_result = TxSyncResult {
-                response,
-                events: Vec::new(),
-                status: TxStatus::Pending { message_count },
-            };
-
-            tx_sync_results.push(tx_sync_result);
-        }
+        tx_sync_results.push(tx_sync_result);
     }
 
     Ok(tx_sync_results)
+}
+
+async fn sequential_send_messages_as_batches(
+    config: &TxConfig,
+    max_msg_num: MaxMsgNum,
+    max_tx_size: MaxTxSize,
+    key_entry: &KeyEntry,
+    account: &mut Account,
+    tx_memo: &Memo,
+    messages: Vec<Any>,
+) -> Result<Vec<TxSyncResult>, Error> {
+    if messages.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let batches = batch_messages(max_msg_num, max_tx_size, messages)?;
+
+    let mut tx_sync_results = Vec::new();
+
+    for batch in batches {
+        let message_count = batch.len();
+
+        let response =
+            send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, batch).await?;
+
+        let tx_sync_result = response_to_tx_sync_result(&config.chain_id, message_count, response);
+
+        tx_sync_results.push(tx_sync_result);
+
+        wait_for_block_commits(
+            &config.chain_id,
+            &config.rpc_client,
+            &config.rpc_address,
+            &config.rpc_timeout,
+            &mut tx_sync_results,
+        )
+        .await?;
+    }
+
+    Ok(tx_sync_results)
+}
+
+fn response_to_tx_sync_result(
+    chain_id: &ChainId,
+    message_count: usize,
+    response: Response,
+) -> TxSyncResult {
+    if response.code.is_err() {
+        let events_per_tx = vec![IbcEvent::ChainError(format!(
+            "check_tx (broadcast_tx_sync) on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
+            chain_id, response.hash, response.code, response.log
+        )); message_count];
+
+        TxSyncResult {
+            response,
+            events: events_per_tx,
+            status: TxStatus::ReceivedResponse,
+        }
+    } else {
+        TxSyncResult {
+            response,
+            events: Vec::new(),
+            status: TxStatus::Pending { message_count },
+        }
+    }
 }
 
 fn batch_messages(

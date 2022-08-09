@@ -25,6 +25,10 @@ pub async fn wait_for_block_commits(
     rpc_timeout: &Duration,
     tx_sync_results: &mut [TxSyncResult],
 ) -> Result<(), Error> {
+    if all_tx_results_found(tx_sync_results) {
+        return Ok(());
+    }
+
     let start_time = Instant::now();
 
     let hashes = tx_sync_results
