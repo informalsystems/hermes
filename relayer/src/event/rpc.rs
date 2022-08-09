@@ -11,6 +11,8 @@ use ibc::events::IbcEvent;
 use crate::chain::cosmos::types::events::{self, channel::RawObject};
 use crate::event::monitor::queries;
 
+use super::IbcEventWithHeight;
+
 /// Extract IBC events from Tendermint RPC events
 ///
 /// Events originate from the following ABCI methods ->
@@ -114,8 +116,8 @@ use crate::event::monitor::queries;
 pub fn get_all_events(
     chain_id: &ChainId,
     result: RpcEvent,
-) -> Result<Vec<(Height, IbcEvent)>, String> {
-    let mut vals: Vec<(Height, IbcEvent)> = vec![];
+) -> Result<Vec<IbcEventWithHeight>, String> {
+    let mut events_with_height: Vec<IbcEventWithHeight> = vec![];
     let RpcEvent {
         data,
         events,
@@ -131,8 +133,11 @@ pub fn get_all_events(
             )
             .map_err(|_| String::from("tx.height: invalid header height of 0"))?;
 
-            vals.push((height, ClientEvents::NewBlock::new(height).into()));
-            vals.append(&mut extract_block_events(height, &events));
+            events_with_height.push(IbcEventWithHeight::new(
+                ClientEvents::NewBlock::new(height).into(),
+                height,
+            ));
+            events_with_height.append(&mut extract_block_events(height, &events));
         }
         RpcEventData::Tx { tx_result } => {
             let height = Height::new(
@@ -146,14 +151,14 @@ pub fn get_all_events(
                     if let Some(mut client_event) = events::client::try_from_tx(abci_event) {
                         client_event.set_height(height);
                         tracing::trace!("extracted ibc_client event {}", client_event);
-                        vals.push((height, client_event));
+                        events_with_height.push(IbcEventWithHeight::new(client_event, height));
                     }
                 }
                 if query == queries::ibc_connection().to_string() {
                     if let Some(mut conn_event) = events::connection::try_from_tx(abci_event) {
                         conn_event.set_height(height);
                         tracing::trace!("extracted ibc_connection event {}", conn_event);
-                        vals.push((height, conn_event));
+                        events_with_height.push(IbcEventWithHeight::new(conn_event, height));
                     }
                 }
                 if query == queries::ibc_channel().to_string() {
@@ -169,7 +174,7 @@ pub fn get_all_events(
                                 tracing::trace!(event = "SendPacket", "tx hash: {}", hash);
                             }
                         }
-                        vals.push((height, chan_event));
+                        events_with_height.push(IbcEventWithHeight::new(chan_event, height));
                     }
                 }
             }
@@ -177,13 +182,13 @@ pub fn get_all_events(
         _ => {}
     }
 
-    Ok(vals)
+    Ok(events_with_height)
 }
 
 fn extract_block_events(
     height: Height,
     block_events: &HashMap<String, Vec<String>>,
-) -> Vec<(Height, IbcEvent)> {
+) -> Vec<IbcEventWithHeight> {
     #[inline]
     fn extract_events<'a, T: TryFrom<RawObject<'a>>>(
         height: Height,
@@ -205,19 +210,19 @@ fn extract_block_events(
 
     #[inline]
     fn append_events<T: Into<IbcEvent>>(
-        events: &mut Vec<(Height, IbcEvent)>,
+        events: &mut Vec<IbcEventWithHeight>,
         chan_events: Vec<T>,
         height: Height,
     ) {
         events.append(
             &mut chan_events
                 .into_iter()
-                .map(|ev| (height, ev.into()))
+                .map(|ev| IbcEventWithHeight::new(ev.into(), height))
                 .collect(),
         );
     }
 
-    let mut events: Vec<(Height, IbcEvent)> = vec![];
+    let mut events: Vec<IbcEventWithHeight> = vec![];
     append_events::<ChannelEvents::OpenInit>(
         &mut events,
         extract_events(height, block_events, "channel_open_init", "channel_id"),

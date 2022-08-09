@@ -32,6 +32,8 @@ use crate::{
 mod error;
 pub use error::*;
 
+use super::IbcEventWithHeight;
+
 pub type Result<T> = core::result::Result<T, Error>;
 
 mod retry_strategy {
@@ -420,7 +422,7 @@ impl EventMonitor {
 fn collect_events(
     chain_id: &ChainId,
     event: RpcEvent,
-) -> impl Stream<Item = Result<(Height, IbcEvent)>> {
+) -> impl Stream<Item = Result<IbcEventWithHeight>> {
     let events = crate::event::rpc::get_all_events(chain_id, event).unwrap_or_default();
     stream::iter(events).map(Ok)
 }
@@ -439,17 +441,17 @@ fn stream_batches(
         .try_flatten();
 
     // Group events by height
-    let grouped = try_group_while(events, |(h0, _), (h1, _)| h0 == h1);
+    let grouped = try_group_while(events, |ev0, ev1| ev0.height() == ev1.height());
 
     // Convert each group to a batch
     grouped.map_ok(move |events| {
         let height = events
             .first()
-            .map(|(h, _)| h)
+            .map(|ev_with_height| ev_with_height.height())
             .copied()
             .expect("internal error: found empty group"); // SAFETY: upheld by `group_while`
 
-        let mut events = events.into_iter().map(|(_, e)| e).collect::<Vec<_>>();
+        let mut events = events.into_iter().map(|ev| ev.event).collect::<Vec<_>>();
         sort_events(&mut events);
 
         EventBatch {
