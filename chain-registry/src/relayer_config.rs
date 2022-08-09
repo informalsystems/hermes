@@ -21,7 +21,7 @@ use tokio::time::timeout;
 
 // ----------------- RPC ------------------
 
-/// Data retrievable from RPC endpoints
+/// Data retrievable from RPC endpoints.
 #[derive(Clone, Debug)]
 pub struct RpcMandatoryData {
     pub rpc_address: String,
@@ -31,7 +31,7 @@ pub struct RpcMandatoryData {
     // however it looks like it is not in the genesis file anymore
 }
 
-/// Retrieves the mandatory data from the RPC endpoint
+/// Retrieves the mandatory data from the RPC endpoint.
 async fn query_rpc(rpc: &str) -> Result<RpcMandatoryData, RegistryError> {
     let websocket_addr = websocket_from_rpc(rpc)?;
 
@@ -73,7 +73,7 @@ async fn query_rpc(rpc: &str) -> Result<RpcMandatoryData, RegistryError> {
 
 // ----------------- websocket ------------------
 
-/// Generates a websocket address from a rpc address.
+/// Generates a websocket address from an RPC address.
 fn websocket_from_rpc(rpc_endpoint: &str) -> Result<tendermint_rpc::Url, RegistryError> {
     let uri = rpc_endpoint
         .parse::<Uri>()
@@ -101,20 +101,24 @@ fn websocket_from_rpc(rpc_endpoint: &str) -> Result<tendermint_rpc::Url, Registr
 
 // ----------------- GRPC ------------------
 
-/// Returns a tendermint url if the client can connect to the gRPC server
+/// Returns a tendermint URL if the client can connect to the gRPC server, indicating
+/// that the gRPC server is healthy.
 async fn health_check_grpc(grpc_address: &str) -> Result<tendermint_rpc::Url, RegistryError> {
     let uri = parse_or_build_grpc_endpoint(grpc_address)?;
+
     let tendermint_url = uri
         .to_string()
         .parse()
         .map_err(|e| RegistryError::tendermint_url_parse_error(grpc_address.to_string(), e))?;
+
     QueryClient::connect(uri)
         .await
         .map_err(|_| RegistryError::unable_to_connect_with_grpc())?;
+
     Ok(tendermint_url)
 }
 
-/// Select a healthy rpc/grpc address from a list of urls
+/// Select a healthy RPC/gRPC address from a list of urls.
 async fn select_healthy<'a, Res, Func, Fut>(
     urls: &'a [String],
     func: Func,
@@ -132,10 +136,13 @@ where
             return result;
         }
     }
+
     Err(error)
 }
 
-/// Parses or builds a valid uri from a grpc address
+/// Attempts to parse the given input as a complete URI. If the parsed URI
+/// is not complete, this method attempts to fill in the necessary missing
+/// pieces.
 fn parse_or_build_grpc_endpoint(input: &str) -> Result<Uri, RegistryError> {
     let uri = input
         .parse::<Uri>()
@@ -265,6 +272,7 @@ mod tests {
     #[tokio::test]
     async fn fetch_chain_config() -> Result<(), RegistryError> {
         let mut handles = Vec::with_capacity(TEST_CHAINS.len());
+
         for chain in TEST_CHAINS {
             handles.push(tokio::spawn(hermes_config(chain, "testkey")));
         }
@@ -272,6 +280,7 @@ mod tests {
         for handle in handles {
             handle.await.unwrap()?;
         }
+
         Ok(())
     }
 }
