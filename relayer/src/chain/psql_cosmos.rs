@@ -40,7 +40,7 @@ use crate::chain::psql_cosmos::query::{
     query_application_status, query_blocks, query_channel, query_channels, query_connection,
     query_connections, query_ibc_data, query_txs_from_ibc_snapshots, query_txs_from_tendermint,
 };
-use crate::chain::psql_cosmos::update::{update_dbs, PacketId};
+use crate::chain::psql_cosmos::update::{update_snapshot, PacketId};
 use crate::chain::psql_cosmos::update::{IbcData, IbcSnapshot};
 use crate::denom::DenomTrace;
 use crate::event::monitor::EventBatch;
@@ -384,7 +384,7 @@ impl PsqlChain {
         let previous_height = batch.height.decrement().unwrap();
         if !self.is_synced() {
             let snapshot = self.ibc_snapshot(&previous_height)?;
-            self.block_on(update_dbs(&self.pool.clone(), &snapshot))?;
+            self.block_on(update_snapshot(&self.pool.clone(), &snapshot))?;
             self.sync_state = PsqlSyncStatus::Synced;
         }
 
@@ -399,7 +399,7 @@ impl PsqlChain {
             self.update_with_event(event, &mut work_copy);
         }
 
-        self.block_on(update_dbs(&self.pool, &work_copy))
+        self.block_on(update_snapshot(&self.pool, &work_copy))
     }
 
     fn maybe_chain_connection(
@@ -829,11 +829,12 @@ impl ChainEndpoint for PsqlChain {
         if self.is_synced() {
             crate::time!("query_connections_psql");
             crate::telemetry!(query, self.id(), "query_connections_psql");
+
             self.block_on(query_connections(&self.pool, &QueryHeight::Latest))
         } else {
             warn!(
                 "chain psql dbs not synchronized on {}, falling back to gRPC query_connections",
-                self.chain.id()
+                self.id()
             );
             self.chain.query_connections(request)
         }

@@ -13,7 +13,7 @@ use ibc::core::ics04_channel::packet::{Packet, Sequence};
 
 use crate::error::Error;
 
-const NUMBER_OF_SNAPSHOTS: u64 = 8;
+const KEEP_SNAPSHOTS: u64 = 8;
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd)]
 pub struct PacketId {
@@ -74,44 +74,60 @@ pub struct IbcSnapshot {
     pub json_data: IbcData,
 }
 
-pub async fn update_dbs(pool: &PgPool, snapshot: &IbcSnapshot) -> Result<(), Error> {
-    // create the ibc table if it does not exist
-    crate::time!("update_dbs");
+/// Create the `ibc_json` table if it does not exists yet
+pub async fn create_table(pool: &PgPool) -> Result<(), Error> {
+    crate::time!("create_table");
 
     sqlx::query(
-        r#"
-        CREATE TABLE IF NOT EXISTS ibc_json (
-            height DOUBLE PRECISION PRIMARY KEY,
-            json_data JSONB
-        );"#,
+        "CREATE TABLE IF NOT EXISTS ibc_json ( \
+            height BIGINT PRIMARY KEY, \
+            json_data JSONB \
+        );",
     )
     .execute(pool)
     .await
     .map_err(Error::sqlx)?;
 
+    Ok(())
+}
+
+pub async fn update_snapshot(pool: &PgPool, snapshot: &IbcSnapshot) -> Result<(), Error> {
+    crate::time!("update_snapshot");
+
+    // create the ibc table if it does not exist
+    create_table(pool).await?;
+
     // insert the json blob, update if already there
     let json_blob = serde_json::to_string(&snapshot).unwrap();
-    let sql_insert_cmd = format!(
-        "INSERT INTO ibc_json SELECT height, json_data \
-        FROM json_populate_record(NULL::ibc_json, '{}') \
-        ON CONFLICT (height) DO UPDATE SET json_data=EXCLUDED.json_data",
-        json_blob
-    );
-    sqlx::query(sql_insert_cmd.as_str())
+
+    let query = "INSERT INTO ibc_json SELECT height, json_data \
+        FROM json_populate_record(NULL::ibc_json, $1) \
+        ON CONFLICT (height) DO UPDATE SET json_data = EXCLUDED.json_data";
+
+    sqlx::query(query)
+        .bind(json_blob)
         .execute(pool)
         .await
         .map_err(Error::sqlx)?;
 
     // delete oldest snapshots
-    if snapshot.height > NUMBER_OF_SNAPSHOTS {
-        let sql_delete_oldest_cmd = format!(
-            "DELETE FROM ibc_json WHERE height<={}",
-            snapshot.height - NUMBER_OF_SNAPSHOTS
-        );
-        sqlx::query(sql_delete_oldest_cmd.as_str())
-            .execute(pool)
-            .await
-            .map_err(Error::sqlx)?;
+    if snapshot.height > KEEP_SNAPSHOTS {
+        let at_or_below = snapshot.height - KEEP_SNAPSHOTS;
+        vacuum_snapshots(pool, at_or_below).await?;
     }
+
+    Ok(())
+}
+
+async fn vacuum_snapshots(pool: &PgPool, at_or_below: u64) -> Result<(), Error> {
+    // we need to format! here because sqlx does not support u64 bindings, only i64
+    sqlx::query(&format!(
+        "DELETE FROM ibc_json WHERE height <= {}",
+        at_or_below
+    ))
+    .execute(pool)
+    .await
+    .map_err(Error::sqlx)?;
+
     Ok(())
 }
