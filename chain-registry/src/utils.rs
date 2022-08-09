@@ -10,11 +10,14 @@ pub const REF: &str = "ffdfbff3a21c7d2dbaac6f1e4730f47063f4bd72";
 
 pub const TEST_CHAINS: &[&str] = &["cosmoshub", "juno", "evmos", "osmosis", "regen"];
 
+/// `Fetchable` represents the basic expectations for external data or resources that
+/// can be fetched.
 #[async_trait]
 pub trait Fetchable
 where
     Self: DeserializeOwned,
 {
+    /// The file name of the fetchable resource.
     fn file_name() -> String;
 
     async fn fetch_data(chain_name: String) -> Result<String, RegistryError> {
@@ -51,10 +54,13 @@ where
         }
     }
 
+    /// Fetches the fetchable resource.
+    // The default implementation fetches config data from a chain registry. This
+    // should be overridden if you're looking to fetch any other type of resource.
     async fn fetch(chain_name: String) -> Result<Self, RegistryError> {
         match Self::fetch_data(chain_name).await {
             Ok(body) => match serde_json::from_str(&body) {
-                Ok(config) => Ok(config),
+                Ok(parsed) => Ok(parsed),
                 Err(e) => Err(RegistryError::json_parse_error(e)),
             },
             Err(e) => Err(e),

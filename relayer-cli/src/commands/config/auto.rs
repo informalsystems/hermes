@@ -40,7 +40,7 @@ pub struct AutoCmd {
         multiple = true,
         value_name = "KEY_CHAIN_1 KEY_CHAIN_2...",
         help_heading = "REQUIRED",
-        help = "key names to include in the config"
+        help = "Key names to include in the config"
     )]
     keys: Vec<String>,
 }
