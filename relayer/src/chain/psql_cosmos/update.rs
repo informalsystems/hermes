@@ -97,15 +97,16 @@ pub async fn update_snapshot(pool: &PgPool, snapshot: &IbcSnapshot) -> Result<()
     // create the ibc table if it does not exist
     create_table(pool).await?;
 
-    // insert the json blob, update if already there
-    let json_blob = serde_json::to_string(&snapshot).unwrap();
+    let height = BigDecimal::from(snapshot.height);
+    let data = Json(&snapshot.data);
 
-    let query = "INSERT INTO ibc_json SELECT height, json_data \
-        FROM json_populate_record(NULL::ibc_json, $1) \
-        ON CONFLICT (height) DO UPDATE SET json_data = EXCLUDED.json_data";
+    // insert the json blob, update if already there
+    let query = "INSERT INTO ibc_json (height, json_data) VALUES ($1, $2) \
+                 ON CONFLICT (height) DO UPDATE SET json_data = EXCLUDED.json_data";
 
     sqlx::query(query)
-        .bind(json_blob)
+        .bind(height)
+        .bind(data)
         .execute(pool)
         .await
         .map_err(Error::sqlx)?;
@@ -121,13 +122,11 @@ pub async fn update_snapshot(pool: &PgPool, snapshot: &IbcSnapshot) -> Result<()
 
 async fn vacuum_snapshots(pool: &PgPool, at_or_below: u64) -> Result<(), Error> {
     // we need to format! here because sqlx does not support u64 bindings, only i64
-    sqlx::query(&format!(
-        "DELETE FROM ibc_json WHERE height <= {}",
-        at_or_below
-    ))
-    .execute(pool)
-    .await
-    .map_err(Error::sqlx)?;
+    sqlx::query("DELETE FROM ibc_json WHERE height <= $1")
+        .bind(BigDecimal::from(at_or_below))
+        .execute(pool)
+        .await
+        .map_err(Error::sqlx)?;
 
     Ok(())
 }

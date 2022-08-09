@@ -1,3 +1,4 @@
+use bigdecimal::BigDecimal;
 use eyre::WrapErr;
 use prost::Message;
 use sqlx::{types::Json, PgPool};
@@ -729,18 +730,24 @@ pub async fn query_ibc_data_json(
     pool: &PgPool,
     query_height: &QueryHeight,
 ) -> Result<IbcSnapshotJson, Error> {
-    let sql_select_string = match query_height {
-        QueryHeight::Latest => "SELECT * FROM ibc_json ORDER BY height DESC LIMIT 1".to_string(),
-        QueryHeight::Specific(h) => format!(
-            "SELECT * FROM ibc_json WHERE height = {} LIMIT 1",
-            h.revision_height()
+    let query = match query_height {
+        QueryHeight::Latest => sqlx::query_as::<_, IbcSnapshotJson>(
+            "SELECT * FROM ibc_json ORDER BY height DESC LIMIT 1",
         ),
+        QueryHeight::Specific(h) => {
+            sqlx::query_as::<_, IbcSnapshotJson>("SELECT * FROM ibc_json WHERE height = $1 LIMIT 1")
+                .bind(BigDecimal::from(h.revision_height()))
+        }
     };
 
-    sqlx::query_as::<_, IbcSnapshotJson>(sql_select_string.as_str())
-        .fetch_one(pool)
-        .await
-        .map_err(Error::sqlx)
+    query.fetch_one(pool).await.map_err(Error::sqlx)
+}
+
+pub fn bigdecimal_to_u64(b: BigDecimal) -> u64 {
+    let (bigint, _) = b.as_bigint_and_exponent();
+    let (sign, digits) = bigint.to_u64_digits();
+    assert!(digits.len() == 1);
+    digits[0]
 }
 
 pub async fn query_ibc_data(

@@ -65,7 +65,8 @@ regex = "1.5.5"
 moka = "0.9.1"
 uuid = { version = "1.1.2", features = ["v4"] }
 delegate = "0.6.2"
-sqlx = { version = "0.5.13", features = ["runtime-tokio-rustls", "postgres", "time"] }
+sqlx = { version = "0.6.1", features = ["runtime-tokio-rustls", "postgres", "time", "bigdecimal"] }
+bigdecimal = "0.3.0"
 
 [dependencies.num-bigint]
 version = "0.4"

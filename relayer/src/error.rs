@@ -515,11 +515,15 @@ define_error! {
 
         Psql
             [ TraceError<PsqlError> ]
-            |_| { "Psql" },
+            |_| { "error in the CosmosPsql runtime" },
 
         Sqlx
             [ TraceError<sqlx::Error> ]
-            |_| { "sqlx" }
+            |_| { "error when interacting with the database" },
+
+        JsonEncode
+            [ TraceError<serde_json::Error> ]
+            |_| { "failed to encode to JSON" }
     }
 }
 
