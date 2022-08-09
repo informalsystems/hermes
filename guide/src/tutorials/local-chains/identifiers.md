@@ -122,9 +122,6 @@ Before going over the next sections, please ensure the commands above are execut
 
 ### Next Steps
 
-The following sections describe the commands to connect and relay packets between two chains. You can:
-
-1. use a [simplified approach](./relay-paths/index.md) for managing relaying paths, or
-2. use [individual (raw) transactions](./raw/index.md) to create
-   all the necessary chain objects (clients, connections, channels) and relay packets.
+The following sections describe the commands to connect and relay packets between two chains.
+You can also use a [simplified approach](./relay-paths/index.md) for managing relaying paths.
 

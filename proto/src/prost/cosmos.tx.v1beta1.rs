@@ -317,6 +317,19 @@ pub enum OrderBy {
     /// ORDER_BY_DESC defines descending order
     Desc = 2,
 }
+impl OrderBy {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            OrderBy::Unspecified => "ORDER_BY_UNSPECIFIED",
+            OrderBy::Asc => "ORDER_BY_ASC",
+            OrderBy::Desc => "ORDER_BY_DESC",
+        }
+    }
+}
 /// BroadcastMode specifies the broadcast mode for the TxService.Broadcast RPC method.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
@@ -333,11 +346,26 @@ pub enum BroadcastMode {
     /// immediately.
     Async = 3,
 }
+impl BroadcastMode {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            BroadcastMode::Unspecified => "BROADCAST_MODE_UNSPECIFIED",
+            BroadcastMode::Block => "BROADCAST_MODE_BLOCK",
+            BroadcastMode::Sync => "BROADCAST_MODE_SYNC",
+            BroadcastMode::Async => "BROADCAST_MODE_ASYNC",
+        }
+    }
+}
 /// Generated client implementations.
 #[cfg(feature = "client")]
 pub mod service_client {
     #![allow(unused_variables, dead_code, missing_docs, clippy::let_unit_value)]
     use tonic::codegen::*;
+    use tonic::codegen::http::Uri;
     /// Service defines a gRPC service for interacting with transactions.
     #[derive(Debug, Clone)]
     pub struct ServiceClient<T> {
@@ -365,6 +393,10 @@ pub mod service_client {
             let inner = tonic::client::Grpc::new(inner);
             Self { inner }
         }
+        pub fn with_origin(inner: T, origin: Uri) -> Self {
+            let inner = tonic::client::Grpc::with_origin(inner, origin);
+            Self { inner }
+        }
         pub fn with_interceptor<F>(
             inner: T,
             interceptor: F,
@@ -384,19 +416,19 @@ pub mod service_client {
         {
             ServiceClient::new(InterceptedService::new(inner, interceptor))
         }
-        /// Compress requests with `gzip`.
+        /// Compress requests with the given encoding.
         ///
         /// This requires the server to support it otherwise it might respond with an
         /// error.
         #[must_use]
-        pub fn send_gzip(mut self) -> Self {
-            self.inner = self.inner.send_gzip();
+        pub fn send_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.inner = self.inner.send_compressed(encoding);
             self
         }
-        /// Enable decompressing responses with `gzip`.
+        /// Enable decompressing responses.
         #[must_use]
-        pub fn accept_gzip(mut self) -> Self {
-            self.inner = self.inner.accept_gzip();
+        pub fn accept_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.inner = self.inner.accept_compressed(encoding);
             self
         }
         /// Simulate simulates executing a transaction for estimating gas usage.
@@ -543,8 +575,8 @@ pub mod service_server {
     #[derive(Debug)]
     pub struct ServiceServer<T: Service> {
         inner: _Inner<T>,
-        accept_compression_encodings: (),
-        send_compression_encodings: (),
+        accept_compression_encodings: EnabledCompressionEncodings,
+        send_compression_encodings: EnabledCompressionEncodings,
     }
     struct _Inner<T>(Arc<T>);
     impl<T: Service> ServiceServer<T> {
@@ -567,6 +599,18 @@ pub mod service_server {
             F: tonic::service::Interceptor,
         {
             InterceptedService::new(Self::new(inner), interceptor)
+        }
+        /// Enable decompressing requests with the given encoding.
+        #[must_use]
+        pub fn accept_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.accept_compression_encodings.enable(encoding);
+            self
+        }
+        /// Compress responses with the given encoding, if the client supports it.
+        #[must_use]
+        pub fn send_compressed(mut self, encoding: CompressionEncoding) -> Self {
+            self.send_compression_encodings.enable(encoding);
+            self
         }
     }
     impl<T, B> tonic::codegen::Service<http::Request<B>> for ServiceServer<T>
@@ -814,7 +858,7 @@ pub mod service_server {
             write!(f, "{:?}", self.0)
         }
     }
-    impl<T: Service> tonic::transport::NamedService for ServiceServer<T> {
+    impl<T: Service> tonic::server::NamedService for ServiceServer<T> {
         const NAME: &'static str = "cosmos.tx.v1beta1.Service";
     }
 }
