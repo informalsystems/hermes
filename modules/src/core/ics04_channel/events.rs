@@ -887,7 +887,10 @@ impl core::fmt::Display for ReceivePacket {
 pub struct WriteAcknowledgement {
     pub height: Height,
     pub packet: Packet,
-    #[serde(serialize_with = "crate::serializers::ser_hex_upper")]
+    #[serde(
+        serialize_with = "crate::serializers::ser_hex_upper",
+        deserialize_with = "crate::serializers::deser_hex_upper"
+    )]
     pub ack: Vec<u8>,
 }
 
