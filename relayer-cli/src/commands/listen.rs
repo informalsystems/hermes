@@ -6,7 +6,7 @@ use abscissa_core::clap::Parser;
 use abscissa_core::{application::fatal_error, Runnable};
 use itertools::Itertools;
 use tokio::runtime::Runtime as TokioRuntime;
-use tracing::{error, info};
+use tracing::{error, info, instrument};
 
 use ibc::{core::ics24_host::identifier::ChainId, events::IbcEvent};
 
@@ -96,6 +96,7 @@ impl Runnable for ListenCmd {
 }
 
 /// Listen to events
+#[instrument(skip_all, fields(chain = %config.id))]
 pub fn listen(
     config: &ChainConfig,
     filters: &[EventFilter],
@@ -104,8 +105,7 @@ pub fn listen(
     let (event_monitor, rx) = subscribe(config, rt)?;
 
     info!(
-        "[{}] listening for queries {}",
-        config.id,
+        "listening for queries: {}",
         event_monitor.queries().iter().format(", "),
     );
 

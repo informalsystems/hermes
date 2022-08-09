@@ -7,7 +7,7 @@ use std::sync::RwLock;
 
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use itertools::Itertools;
-use tracing::{debug, error, error_span, info, trace, warn};
+use tracing::{debug, error, error_span, info, instrument, trace, warn};
 
 use ibc::{
     core::ics24_host::identifier::{ChainId, ChannelId, PortId},
@@ -487,17 +487,18 @@ fn health_check<Chain: ChainHandle>(config: &Config, registry: &mut Registry<Cha
 
     for config in chains {
         let id = &config.id;
+        let _span = tracing::error_span!("health_check", chain = %id).entered();
+
         let chain = registry.get_or_spawn(id);
 
         match chain {
             Ok(chain) => match chain.health_check() {
-                Ok(Healthy) => info!(chain = %id, "chain is healthy"),
-                Ok(Unhealthy(e)) => warn!(chain = %id, "chain is unhealthy: {}", e),
-                Err(e) => error!(chain = %id, "failed to perform health check: {}", e),
+                Ok(Healthy) => info!("chain is healthy"),
+                Ok(Unhealthy(e)) => warn!("chain is not healthy: {}", e),
+                Err(e) => error!("failed to perform health check: {}", e),
             },
             Err(e) => {
                 error!(
-                    chain = %id,
                     "skipping health check, reason: failed to spawn chain runtime with error: {}",
                     e
                 );
@@ -507,6 +508,7 @@ fn health_check<Chain: ChainHandle>(config: &Config, registry: &mut Registry<Cha
 }
 
 /// Subscribe to the events emitted by the chains the supervisor is connected to.
+#[instrument(skip_all)]
 fn init_subscriptions<Chain: ChainHandle>(
     config: &Config,
     registry: &mut Registry<Chain>,
@@ -575,6 +577,7 @@ fn handle_rest_requests<Chain: ChainHandle>(
     }
 }
 
+#[instrument(skip_all)]
 fn handle_rest_cmd<Chain: ChainHandle>(
     registry: &Registry<Chain>,
     workers: &WorkerMap,
@@ -590,6 +593,7 @@ fn handle_rest_cmd<Chain: ChainHandle>(
     }
 }
 
+#[instrument(skip_all, fields(chain = %chain_id))]
 fn clear_pending_packets(workers: &mut WorkerMap, chain_id: &ChainId) -> Result<(), Error> {
     for worker in workers.workers_for_chain(chain_id) {
         worker.clear_pending_packets();
@@ -599,6 +603,7 @@ fn clear_pending_packets(workers: &mut WorkerMap, chain_id: &ChainId) -> Result<
 }
 
 /// Process a batch of events received from a chain.
+#[instrument(skip_all, fields(chain = %src_chain.id()))]
 fn process_batch<Chain: ChainHandle>(
     config: &Config,
     registry: &mut Registry<Chain>,
@@ -694,6 +699,7 @@ fn process_batch<Chain: ChainHandle>(
 
 /// Process the given batch if it does not contain any errors,
 /// output the errors on the console otherwise.
+#[instrument(skip_all, fields(chain = %chain.id()))]
 fn handle_batch<Chain: ChainHandle>(
     config: &Config,
     registry: &mut Registry<Chain>,
@@ -709,21 +715,17 @@ fn handle_batch<Chain: ChainHandle>(
             if let Err(e) =
                 process_batch(config, registry, client_state_filter, workers, chain, batch)
             {
-                error!("[{}] error during batch processing: {}", chain_id, e);
+                error!("error during batch processing: {}", e);
             }
         }
         Err(EventError(EventErrorDetail::SubscriptionCancelled(_), _)) => {
-            warn!(chain.id = %chain_id, "event subscription was cancelled, clearing pending packets");
+            warn!("event subscription was cancelled, clearing pending packets");
 
-            let _ = clear_pending_packets(workers, &chain_id).map_err(|e| {
-                error!(
-                    "[{}] error during clearing pending packets: {}",
-                    chain_id, e
-                )
-            });
+            let _ = clear_pending_packets(workers, &chain_id)
+                .map_err(|e| error!("error during clearing pending packets: {}", e));
         }
         Err(e) => {
-            error!("[{}] error in receiving event batch: {}", chain_id, e)
+            error!("error when receiving event batch: {}", e)
         }
     }
 }

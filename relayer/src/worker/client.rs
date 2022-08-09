@@ -27,7 +27,7 @@ pub fn spawn_refresh_client<ChainA: ChainHandle, ChainB: ChainHandle>(
         Some(spawn_background_task(
             span!(
                 tracing::Level::ERROR,
-                "refresh",
+                "refresh_client",
                 client = %client.id,
                 src_chain = %client.src_chain.id(),
                 dst_chain = %client.dst_chain.id(),
@@ -69,7 +69,7 @@ pub fn detect_misbehavior_task<ChainA: ChainHandle, ChainB: ChainHandle>(
     let handle = spawn_background_task(
         span!(
             tracing::Level::ERROR,
-            "DetectMisbehaviorWorker",
+            "detect_misbehaviour_task",
             client = %client.id,
             src_chain = %client.src_chain.id(),
             dst_chain = %client.dst_chain.id(),
@@ -78,14 +78,6 @@ pub fn detect_misbehavior_task<ChainA: ChainHandle, ChainB: ChainHandle>(
         move || -> Result<Next, TaskError<Infallible>> {
             if !first_check_done {
                 first_check_done = true;
-                let _span = span!(
-                    tracing::Level::DEBUG,
-                    "DetectMisbehaviorFirstCheck",
-                    client = %client.id,
-                    src_chain = %client.src_chain.id(),
-                    dst_chain = %client.dst_chain.id(),
-                )
-                .entered();
                 debug!("doing first check");
                 let misbehavior_result = client.detect_misbehaviour_and_submit_evidence(None);
                 trace!("detect misbehavior result: {:?}", misbehavior_result);

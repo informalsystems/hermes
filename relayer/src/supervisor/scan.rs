@@ -2,7 +2,7 @@ use core::fmt;
 use std::collections::BTreeMap;
 
 use itertools::Itertools;
-use tracing::{debug, error, info, info_span, warn};
+use tracing::{debug, error, error_span, info, warn};
 
 use ibc::core::{
     ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
@@ -283,7 +283,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
     }
 
     pub fn scan_chain(&mut self, chain_config: &ChainConfig) -> Result<ChainScan, Error> {
-        let span = info_span!("scan.chain", chain = %chain_config.id);
+        let span = error_span!("scan.chain", chain = %chain_config.id);
         let _guard = span.enter();
 
         info!("scanning chain...");
@@ -382,7 +382,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         chain: &Chain,
         client: IdentifiedAnyClientState,
     ) -> Result<Option<ClientScan>, Error> {
-        let span = info_span!("scan.client", client = %client.client_id);
+        let span = error_span!("scan.client", client = %client.client_id);
         let _guard = span.enter();
 
         info!("scanning client...");
@@ -431,7 +431,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         client: &IdentifiedAnyClientState,
         connection: IdentifiedConnectionEnd,
     ) -> Result<Option<ConnectionScan>, Error> {
-        let span = info_span!("scan.connection", connection = %connection.connection_id);
+        let span = error_span!("scan.connection", connection = %connection.connection_id);
         let _guard = span.enter();
 
         info!("scanning connection...");
@@ -615,7 +615,7 @@ fn scan_allowed_channel<Chain: ChainHandle>(
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<ScannedChannel, Error> {
-    let span = info_span!("scan.channel", port = %port_id, channel = %channel_id);
+    let span = error_span!("scan.channel", port = %port_id, channel = %channel_id);
     let _guard = span.enter();
 
     info!("querying channel...");
