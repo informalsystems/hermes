@@ -100,6 +100,7 @@ fn bigdecimal_to_u64(b: BigDecimal) -> u64 {
 }
 
 /// Create the `ibc_json` table if it does not exists yet
+#[tracing::instrument(skip(pool))]
 pub async fn create_table(pool: &PgPool) -> Result<(), Error> {
     crate::time!("create_table");
 
@@ -116,6 +117,7 @@ pub async fn create_table(pool: &PgPool) -> Result<(), Error> {
     Ok(())
 }
 
+#[tracing::instrument(skip(pool, snapshot))]
 pub async fn update_snapshot(pool: &PgPool, snapshot: &IbcSnapshot) -> Result<(), Error> {
     crate::time!("update_snapshot");
 
@@ -145,8 +147,8 @@ pub async fn update_snapshot(pool: &PgPool, snapshot: &IbcSnapshot) -> Result<()
     Ok(())
 }
 
+#[tracing::instrument(skip(pool))]
 async fn vacuum_snapshots(pool: &PgPool, at_or_below: u64) -> Result<(), Error> {
-    // we need to format! here because sqlx does not support u64 bindings, only i64
     sqlx::query("DELETE FROM ibc_json WHERE height <= $1")
         .bind(BigDecimal::from(at_or_below))
         .execute(pool)
