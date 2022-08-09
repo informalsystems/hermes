@@ -1,7 +1,7 @@
 use bigdecimal::BigDecimal;
 use eyre::WrapErr;
 use prost::Message;
-use sqlx::{types::Json, PgPool};
+use sqlx::PgPool;
 
 use tendermint::abci::transaction::Hash;
 use tendermint::abci::{self, responses::Codespace, tag::Tag, Event, Gas, Info, Log};
@@ -22,7 +22,7 @@ use ibc::Height as ICSHeight;
 
 use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use crate::chain::endpoint::ChainStatus;
-use crate::chain::psql_cosmos::update::{IbcData, IbcSnapshot, PacketId};
+use crate::chain::psql_cosmos::update::{IbcSnapshot, PacketId};
 use crate::chain::requests::{
     QueryBlockRequest, QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest,
     QueryTxRequest,
@@ -723,56 +723,22 @@ pub async fn block_search_response_from_packet_query(
     Ok(events)
 }
 
-// TODO to get rid of this struct??
-// impl FromRow for IbcSnapshot
-#[derive(Debug, sqlx::FromRow)]
-pub struct IbcSnapshotJson {
-    pub height: BigDecimal,
-    pub data: Json<IbcData>,
-}
-
-#[tracing::instrument(skip(pool))]
-pub async fn query_ibc_data_json(
-    pool: &PgPool,
-    query_height: &QueryHeight,
-) -> Result<IbcSnapshotJson, Error> {
-    let query = match query_height {
-        QueryHeight::Latest => sqlx::query_as::<_, IbcSnapshotJson>(
-            "SELECT * FROM ibc_json ORDER BY height DESC LIMIT 1",
-        ),
-        QueryHeight::Specific(h) => {
-            sqlx::query_as::<_, IbcSnapshotJson>("SELECT * FROM ibc_json WHERE height = $1 LIMIT 1")
-                .bind(BigDecimal::from(h.revision_height()))
-        }
-    };
-
-    query.fetch_one(pool).await.map_err(Error::sqlx)
-}
-
-pub fn bigdecimal_to_u64(b: BigDecimal) -> u64 {
-    let (bigint, _) = b.as_bigint_and_exponent();
-    let (sign, digits) = bigint.to_u64_digits();
-    assert!(digits.len() == 1);
-    digits[0]
-}
-
 #[tracing::instrument(skip(pool))]
 pub async fn query_ibc_data(
     pool: &PgPool,
     query_height: &QueryHeight,
 ) -> Result<IbcSnapshot, Error> {
-    let result = query_ibc_data_json(pool, query_height).await?;
-
-    let response = IbcSnapshot {
-        height: bigdecimal_to_u64(result.height),
-        data: IbcData {
-            app_status: result.data.app_status.clone(),
-            connections: result.data.connections.clone(),
-            channels: result.data.channels.clone(),
-            pending_sent_packets: result.data.pending_sent_packets.clone(),
-        },
+    let query = match query_height {
+        QueryHeight::Latest => {
+            sqlx::query_as::<_, IbcSnapshot>("SELECT * FROM ibc_json ORDER BY height DESC LIMIT 1")
+        }
+        QueryHeight::Specific(h) => {
+            sqlx::query_as::<_, IbcSnapshot>("SELECT * FROM ibc_json WHERE height = $1 LIMIT 1")
+                .bind(BigDecimal::from(h.revision_height()))
+        }
     };
-    Ok(response)
+
+    query.fetch_one(pool).await.map_err(Error::sqlx)
 }
 
 #[tracing::instrument(skip(pool))]

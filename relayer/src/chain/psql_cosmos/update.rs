@@ -9,6 +9,7 @@ use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::packet::{Packet, Sequence};
 use ibc::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use sqlx::postgres::PgRow;
 use sqlx::types::Json;
 
 use crate::chain::endpoint::ChainStatus;
@@ -73,6 +74,29 @@ pub struct IbcData {
 pub struct IbcSnapshot {
     pub height: u64,
     pub data: IbcData,
+}
+
+impl<'r> sqlx::FromRow<'r, PgRow> for IbcSnapshot {
+    fn from_row(row: &'r PgRow) -> Result<Self, sqlx::Error> {
+        use sqlx::Row;
+
+        let height: BigDecimal = row.try_get("height")?;
+        let data: Json<IbcData> = row.try_get("data")?;
+
+        Ok(IbcSnapshot {
+            height: bigdecimal_to_u64(height),
+            data: data.0,
+        })
+    }
+}
+
+fn bigdecimal_to_u64(b: BigDecimal) -> u64 {
+    assert!(b.is_integer());
+    let (bigint, _) = b.as_bigint_and_exponent();
+    let (sign, digits) = bigint.to_u64_digits();
+    assert!(sign == bigdecimal::num_bigint::Sign::Plus);
+    assert!(digits.len() == 1);
+    digits[0]
 }
 
 /// Create the `ibc_json` table if it does not exists yet
