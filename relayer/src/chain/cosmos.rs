@@ -53,6 +53,7 @@ use crate::account::Balance;
 use crate::chain::client::ClientSettings;
 use crate::chain::cosmos::batch::{
     send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
+    sequential_send_batched_messages_and_wait_commit,
 };
 use crate::chain::cosmos::encode::encode_to_bech32;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
@@ -417,16 +418,29 @@ impl CosmosSdkChain {
         let account =
             get_or_fetch_account(&self.grpc_addr, &key_entry.account, &mut self.account).await?;
 
-        send_batched_messages_and_wait_commit(
-            &self.tx_config,
-            self.config.max_msg_num,
-            self.config.max_tx_size,
-            &key_entry,
-            account,
-            &self.config.memo_prefix,
-            proto_msgs,
-        )
-        .await
+        if self.config.sequential_batch_tx {
+            sequential_send_batched_messages_and_wait_commit(
+                &self.tx_config,
+                self.config.max_msg_num,
+                self.config.max_tx_size,
+                &key_entry,
+                account,
+                &self.config.memo_prefix,
+                proto_msgs,
+            )
+            .await
+        } else {
+            send_batched_messages_and_wait_commit(
+                &self.tx_config,
+                self.config.max_msg_num,
+                self.config.max_tx_size,
+                &key_entry,
+                account,
+                &self.config.memo_prefix,
+                proto_msgs,
+            )
+            .await
+        }
     }
 
     async fn do_send_messages_and_wait_check_tx(

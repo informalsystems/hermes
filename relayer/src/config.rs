@@ -361,6 +361,14 @@ pub struct ChainConfig {
     #[serde(default, with = "self::proof_specs")]
     pub proof_specs: ProofSpecs,
 
+    // This is an undocumented and hidden config to make the relayer wait for
+    // DeliverTX before sending the next transaction when sending messages in
+    // multiple batches. We will instruct relayer operators to turn this on
+    // in case relaying failed in a chain with priority mempool enabled.
+    // Warning: turning this on may cause degradation in performance.
+    #[serde(default)]
+    pub sequential_batch_tx: bool,
+
     // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     /// The trust threshold defines what fraction of the total voting power of a known
     /// and trusted validator set is sufficient for a commit to be accepted going forward.
