@@ -5,6 +5,7 @@ use ibc::events::IbcEvent;
 use ibc_proto::google::protobuf::Any;
 use prost::Message;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
+use tracing::info;
 
 use crate::chain::cosmos::retry::send_tx_with_account_sequence_retry;
 use crate::chain::cosmos::types::account::Account;
@@ -130,6 +131,8 @@ async fn send_messages_as_batches(
 
     let batches = batch_messages(max_msg_num, max_tx_size, messages)?;
 
+    info!("sending {} batches of messages in parallel", batches.len());
+
     let mut tx_sync_results = Vec::new();
 
     for batch in batches {
@@ -160,6 +163,8 @@ async fn sequential_send_messages_as_batches(
     }
 
     let batches = batch_messages(max_msg_num, max_tx_size, messages)?;
+
+    info!("sending {} batches of messages in serial", batches.len());
 
     let mut tx_sync_results = Vec::new();
 
