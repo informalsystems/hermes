@@ -73,6 +73,20 @@ pub fn set_p2p_port(config: &mut Value, port: u16) -> Result<(), Error> {
     Ok(())
 }
 
+pub fn set_mempool_version(config: &mut Value, version: &str) -> Result<(), Error> {
+    config
+        .get_mut("mempool")
+        .ok_or_else(|| eyre!("expect mempool section"))?
+        .as_table_mut()
+        .ok_or_else(|| eyre!("expect object"))?
+        .insert(
+            "mempool_version".to_string(),
+            version.into(),
+        );
+
+    Ok(())
+}
+
 /// Set the `consensus.timeout_commit` field in the full node config.
 pub fn set_timeout_commit(config: &mut Value, duration: Duration) -> Result<(), Error> {
     config

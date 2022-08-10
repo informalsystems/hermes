@@ -17,6 +17,8 @@ impl TestOverrides for SequentialCommitTest {
     fn modify_node_config(&self, config: &mut toml::Value) -> Result<(), Error> {
         config::set_timeout_commit(config, Duration::from_millis(500))?;
         config::set_timeout_propose(config, Duration::from_millis(500))?;
+        config::set_mempool_version(config, "v1")?;
+
         Ok(())
     }
 
