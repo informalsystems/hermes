@@ -372,11 +372,19 @@ pub async fn get_configs(
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn fetch_chain_config_with_packet_filters() -> Result<(), RegistryError> {
-        let test_chains: &[String]= &["cosmoshub".to_string(), "juno".to_string(), "osmosis".to_string()]; // Must be sorted
-        let test_keys: &[String] = &["testkey".to_string(), "testkey".to_string(), "testkey".to_string()];
+        let test_chains: &[String] = &[
+            "cosmoshub".to_string(),
+            "juno".to_string(),
+            "osmosis".to_string(),
+        ]; // Must be sorted
+        let test_keys: &[String] = &[
+            "testkey".to_string(),
+            "testkey".to_string(),
+            "testkey".to_string(),
+        ];
         let configs = get_configs(test_chains, test_keys).await?;
 
         for config in configs {
@@ -404,6 +412,4 @@ mod tests {
 
         Ok(())
     }
-
-    
 }
