@@ -221,6 +221,14 @@ impl From<OpenInit> for Attributes {
     }
 }
 
+impl TryFrom<&AbciEvent> for OpenInit {
+    type Error = Error;
+
+    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+
 impl From<OpenInit> for IbcEvent {
     fn from(v: OpenInit) -> Self {
         IbcEvent::OpenInitChannel(v)
@@ -267,6 +275,14 @@ impl OpenTry {
     }
     pub fn set_height(&mut self, height: Height) {
         self.height = height;
+    }
+}
+
+impl TryFrom<&AbciEvent> for OpenTry {
+    type Error = Error;
+
+    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
+        todo!()
     }
 }
 
@@ -324,6 +340,14 @@ impl OpenAck {
     }
 }
 
+impl TryFrom<&AbciEvent> for OpenAck {
+    type Error = Error;
+
+    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+
 impl From<OpenAck> for IbcEvent {
     fn from(v: OpenAck) -> Self {
         IbcEvent::OpenAckChannel(v)
@@ -356,6 +380,14 @@ impl From<OpenConfirm> for Attributes {
             counterparty_port_id: ev.counterparty_port_id,
             counterparty_channel_id: ev.counterparty_channel_id,
         }
+    }
+}
+
+impl TryFrom<&AbciEvent> for OpenConfirm {
+    type Error = Error;
+
+    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
+        todo!()
     }
 }
 
@@ -453,6 +485,14 @@ impl TryFrom<Attributes> for CloseInit {
     }
 }
 
+impl TryFrom<&AbciEvent> for CloseInit {
+    type Error = Error;
+
+    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+
 impl From<CloseInit> for IbcEvent {
     fn from(v: CloseInit) -> Self {
         IbcEvent::CloseInitChannel(v)
@@ -497,6 +537,14 @@ impl From<CloseConfirm> for Attributes {
             counterparty_port_id: ev.counterparty_port_id,
             counterparty_channel_id: ev.counterparty_channel_id,
         }
+    }
+}
+
+impl TryFrom<&AbciEvent> for CloseConfirm {
+    type Error = Error;
+
+    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
+        todo!()
     }
 }
 
@@ -593,6 +641,14 @@ impl SendPacket {
     }
     pub fn dst_channel_id(&self) -> &ChannelId {
         &self.packet.destination_channel
+    }
+}
+
+impl TryFrom<&AbciEvent> for SendPacket {
+    type Error = Error;
+
+    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
+        todo!()
     }
 }
 
@@ -706,6 +762,14 @@ impl WriteAcknowledgement {
     }
 }
 
+impl TryFrom<&AbciEvent> for WriteAcknowledgement {
+    type Error = Error;
+
+    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+
 impl From<WriteAcknowledgement> for IbcEvent {
     fn from(v: WriteAcknowledgement) -> Self {
         IbcEvent::WriteAcknowledgement(v)
@@ -773,6 +837,14 @@ impl AcknowledgePacket {
     }
 }
 
+impl TryFrom<&AbciEvent> for AcknowledgePacket {
+    type Error = Error;
+
+    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+
 impl From<AcknowledgePacket> for IbcEvent {
     fn from(v: AcknowledgePacket) -> Self {
         IbcEvent::AcknowledgePacket(v)
@@ -827,6 +899,14 @@ impl TimeoutPacket {
     }
     pub fn dst_channel_id(&self) -> &ChannelId {
         &self.packet.destination_channel
+    }
+}
+
+impl TryFrom<&AbciEvent> for TimeoutPacket {
+    type Error = Error;
+
+    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
+        todo!()
     }
 }
 

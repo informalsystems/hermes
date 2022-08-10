@@ -70,6 +70,10 @@ define_error! {
         MalformedModuleEvent
             { event: ModuleEvent }
             | e | { format_args!("module event cannot use core event types: {:?}", e.event) },
+
+        UnsupportedAbciEvent
+            {event_type: String}
+            |e| { format_args!("Unable to parse abci event type '{}' into IbcEvent", e.event_type)}
     }
 }
 
@@ -335,7 +339,6 @@ impl TryFrom<IbcEvent> for AbciEvent {
 impl TryFrom<&AbciEvent> for IbcEvent {
     type Error = Error;
 
-    /// Provides conversion from AbciEvent for core IBC events
     fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
         match abci_event.type_str.parse() {
             Ok(IbcEventType::CreateClient) => Ok(IbcEvent::CreateClient(
@@ -362,7 +365,37 @@ impl TryFrom<&AbciEvent> for IbcEvent {
             Ok(IbcEventType::OpenConfirmConnection) => Ok(IbcEvent::OpenConfirmConnection(
                 ConnectionEvents::OpenConfirm::try_from(abci_event).map_err(Error::connection)?,
             )),
-            _ => unimplemented!(),
+            Ok(IbcEventType::OpenInitChannel) => Ok(IbcEvent::OpenInitChannel(
+                ChannelEvents::OpenInit::try_from(abci_event).map_err(Error::channel)?,
+            )),
+            Ok(IbcEventType::OpenTryChannel) => Ok(IbcEvent::OpenTryChannel(
+                ChannelEvents::OpenTry::try_from(abci_event).map_err(Error::channel)?,
+            )),
+            Ok(IbcEventType::OpenConfirmChannel) => Ok(IbcEvent::OpenConfirmChannel(
+                ChannelEvents::OpenConfirm::try_from(abci_event).map_err(Error::channel)?,
+            )),
+            Ok(IbcEventType::CloseInitChannel) => Ok(IbcEvent::CloseInitChannel(
+                ChannelEvents::CloseInit::try_from(abci_event).map_err(Error::channel)?,
+            )),
+            Ok(IbcEventType::CloseConfirmChannel) => Ok(IbcEvent::CloseConfirmChannel(
+                ChannelEvents::CloseConfirm::try_from(abci_event).map_err(Error::channel)?,
+            )),
+            Ok(IbcEventType::SendPacket) => Ok(IbcEvent::SendPacket(
+                ChannelEvents::SendPacket::try_from(abci_event).map_err(Error::channel)?,
+            )),
+            Ok(IbcEventType::WriteAck) => Ok(IbcEvent::WriteAcknowledgement(
+                ChannelEvents::WriteAcknowledgement::try_from(abci_event)
+                    .map_err(Error::channel)?,
+            )),
+            Ok(IbcEventType::AckPacket) => Ok(IbcEvent::AcknowledgePacket(
+                ChannelEvents::AcknowledgePacket::try_from(abci_event).map_err(Error::channel)?,
+            )),
+            Ok(IbcEventType::Timeout) => Ok(IbcEvent::TimeoutPacket(
+                ChannelEvents::TimeoutPacket::try_from(abci_event).map_err(Error::channel)?,
+            )),
+            _ => Err(Error::unsupported_abci_event(
+                abci_event.type_str.to_owned(),
+            )),
         }
     }
 }
