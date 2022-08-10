@@ -79,10 +79,7 @@ pub fn set_mempool_version(config: &mut Value, version: &str) -> Result<(), Erro
         .ok_or_else(|| eyre!("expect mempool section"))?
         .as_table_mut()
         .ok_or_else(|| eyre!("expect object"))?
-        .insert(
-            "mempool_version".to_string(),
-            version.into(),
-        );
+        .insert("mempool_version".to_string(), version.into());
 
     Ok(())
 }
