@@ -1,4 +1,3 @@
-use crate::core::ics02_client::height::HeightErrorDetail;
 use crate::prelude::*;
 
 use core::str::FromStr;
@@ -7,22 +6,15 @@ use serde_derive::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 
-use crate::core::ics04_channel::error::Error;
-use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::events::{extract_attribute, Error as EventError, RawObject};
-use crate::timestamp::{Expiry::Expired, Timestamp};
-use crate::Height;
-
-use super::events::{
-    PKT_DST_CHANNEL_ATTRIBUTE_KEY, PKT_DST_PORT_ATTRIBUTE_KEY, PKT_SEQ_ATTRIBUTE_KEY,
-    PKT_SRC_CHANNEL_ATTRIBUTE_KEY, PKT_SRC_PORT_ATTRIBUTE_KEY, PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY,
-    PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY,
-};
 use super::handler::{
     acknowledgement::AckPacketResult, recv_packet::RecvPacketResult, send_packet::SendPacketResult,
     timeout::TimeoutPacketResult, write_acknowledgement::WriteAckPacketResult,
 };
 use super::timeout::TimeoutHeight;
+use crate::core::ics04_channel::error::Error;
+use crate::core::ics24_host::identifier::{ChannelId, PortId};
+use crate::timestamp::{Expiry::Expired, Timestamp};
+use crate::Height;
 
 /// Enumeration of proof carrying ICS4 message, helper for relayer.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -198,20 +190,6 @@ impl core::fmt::Display for Packet {
     }
 }
 
-/// Parse a string into a timeout height expected to be stored in
-/// `Packet.timeout_height`. We need to parse the timeout height differently
-/// because of a quirk introduced in ibc-go. See comment in
-/// `TryFrom<RawPacket> for Packet`.
-pub fn parse_timeout_height(s: &str) -> Result<TimeoutHeight, Error> {
-    match s.parse::<Height>() {
-        Ok(height) => Ok(TimeoutHeight::from(height)),
-        Err(e) => match e.into_detail() {
-            HeightErrorDetail::ZeroHeight(_) => Ok(TimeoutHeight::no_timeout()),
-            _ => Err(Error::invalid_timeout_height()),
-        },
-    }
-}
-
 impl TryFrom<RawPacket> for Packet {
     type Error = Error;
 
@@ -255,58 +233,6 @@ impl TryFrom<RawPacket> for Packet {
             data: raw_pkt.data,
             timeout_height: packet_timeout_height,
             timeout_timestamp,
-        })
-    }
-}
-
-impl TryFrom<RawObject<'_>> for Packet {
-    type Error = EventError;
-    fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
-        Ok(Packet {
-            sequence: extract_attribute(
-                &obj,
-                &format!("{}.{}", obj.action, PKT_SEQ_ATTRIBUTE_KEY),
-            )?
-            .parse()
-            .map_err(EventError::channel)?,
-            source_port: extract_attribute(
-                &obj,
-                &format!("{}.{}", obj.action, PKT_SRC_PORT_ATTRIBUTE_KEY),
-            )?
-            .parse()
-            .map_err(EventError::parse)?,
-            source_channel: extract_attribute(
-                &obj,
-                &format!("{}.{}", obj.action, PKT_SRC_CHANNEL_ATTRIBUTE_KEY),
-            )?
-            .parse()
-            .map_err(EventError::parse)?,
-            destination_port: extract_attribute(
-                &obj,
-                &format!("{}.{}", obj.action, PKT_DST_PORT_ATTRIBUTE_KEY),
-            )?
-            .parse()
-            .map_err(EventError::parse)?,
-            destination_channel: extract_attribute(
-                &obj,
-                &format!("{}.{}", obj.action, PKT_DST_CHANNEL_ATTRIBUTE_KEY),
-            )?
-            .parse()
-            .map_err(EventError::parse)?,
-            data: vec![],
-            timeout_height: {
-                let timeout_height_str = extract_attribute(
-                    &obj,
-                    &format!("{}.{}", obj.action, PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY),
-                )?;
-                parse_timeout_height(&timeout_height_str).map_err(|_| EventError::height())?
-            },
-            timeout_timestamp: extract_attribute(
-                &obj,
-                &format!("{}.{}", obj.action, PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY),
-            )?
-            .parse()
-            .map_err(EventError::timestamp)?,
         })
     }
 }

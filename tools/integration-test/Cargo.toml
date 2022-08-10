@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-integration-test"
-version    = "0.17.0"
+version    = "0.18.0"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -19,12 +19,12 @@ ibc-relayer     = { path = "../../relayer" }
 ibc-relayer-cli = { path = "../../relayer-cli" }
 ibc-proto       = { path = "../../proto" }
 ibc-test-framework = { path = "../test-framework" }
-tendermint      = { version = "=0.23.8" }
-tendermint-rpc  = { version = "=0.23.8", features = ["http-client", "websocket-client"] }
+tendermint      = { version = "=0.23.9" }
+tendermint-rpc  = { version = "=0.23.9", features = ["http-client", "websocket-client"] }
 
 serde_json = "1"
 time = "0.3"
-serde = "1.0.139"
+serde = "1.0.141"
 
 [features]
 default = []

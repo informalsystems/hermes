@@ -8,7 +8,7 @@ use super::error::Error;
 use crate::applications::transfer::coin::RawCoin;
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::events::{IbcEvent, IbcEventType};
+use crate::events::IbcEventType;
 use crate::prelude::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
@@ -19,21 +19,6 @@ pub struct IncentivizedPacket {
     pub total_recv_fee: Vec<RawCoin>,
     pub total_ack_fee: Vec<RawCoin>,
     pub total_timeout_fee: Vec<RawCoin>,
-}
-
-pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEvent> {
-    event
-        .type_str
-        .parse::<IbcEventType>()
-        .ok()
-        .and_then(|event_type| {
-            if let IbcEventType::IncentivizedPacket = event_type {
-                let event = IncentivizedPacket::try_from(&event.attributes).ok()?;
-                Some(IbcEvent::IncentivizedPacket(event))
-            } else {
-                None
-            }
-        })
 }
 
 fn find_value(key: &str, entries: &[Tag]) -> Result<String, Error> {
