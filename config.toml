@@ -3,7 +3,7 @@
 
 # Specify the verbosity for the relayer logging output. Default: 'info'
 # Valid options are 'error', 'warn', 'info', 'debug', 'trace'.
-log_level = 'info'
+log_level = 'debug'
 
 
 # Specify the mode to be used by the relayer. [Required]
@@ -13,7 +13,7 @@ log_level = 'info'
 [mode.clients]
 
 # Whether or not to enable the client workers. [Required]
-enabled = true
+enabled = false
 
 # Whether or not to enable periodic refresh of clients. [Default: true]
 # This feature only applies to clients that underlie an open channel.
@@ -250,7 +250,8 @@ memo_prefix = ''
 
 [[chains]]
 id = 'ibc-1'
-type = 'CosmosSdk'
+type = 'CosmosPsql'
+psql_conn = 'postgres://tendermint:tendermint@localhost/ibc1'
 rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
 websocket_addr = 'ws://127.0.0.1:26557/websocket'
