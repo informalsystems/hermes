@@ -140,7 +140,7 @@ async fn do_send_tx_with_account_sequence_retry(
 }
 
 /// Determine whether the given error yielded by `tx_simulate`
-/// indicates hat the current sequence number cached in Hermes
+/// indicates that the current sequence number cached in Hermes
 /// is smaller than the full node's version of the s.n. and therefore
 /// account needs to be refreshed.
 fn mismatch_account_sequence_number_error_requires_refresh(e: &Error) -> bool {

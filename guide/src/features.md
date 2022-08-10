@@ -38,9 +38,9 @@ A feature matrix and comparison between the Rust and Go relayer implementations 
     > misbehaviour submission to full node not yet supported
 - Individual commands that build and send transactions for:
     - creating and updating IBC Tendermint light clients
-    - sending connection open handshake datagrams
-    - sending channel open handshake datagrams
-    - sending channel closing handshake datagrams
+    - sending connection open handshake messages
+    - sending channel open handshake messages
+    - sending channel closing handshake messages
     - initiating a cross chain transfer (mainly for testing)
     - relaying sent packets, acknowledgments and timeouts
     - client upgrade
