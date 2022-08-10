@@ -19,10 +19,10 @@ pub fn sign_and_encode_tx(
     key_entry: &KeyEntry,
     account: &Account,
     tx_memo: &Memo,
-    messages: Vec<Any>,
+    messages: &[Any],
     fee: &Fee,
 ) -> Result<Vec<u8>, Error> {
-    let signed_tx = sign_tx(config, key_entry, account, tx_memo, &messages, fee)?;
+    let signed_tx = sign_tx(config, key_entry, account, tx_memo, messages, fee)?;
 
     let tx_raw = TxRaw {
         body_bytes: signed_tx.body_bytes,
