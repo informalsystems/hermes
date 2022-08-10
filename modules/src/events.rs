@@ -10,8 +10,8 @@ use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
 use crate::core::ics02_client::error as client_error;
-use crate::core::ics02_client::events as ClientEvents;
 use crate::core::ics02_client::events::NewBlock;
+use crate::core::ics02_client::events::{self as ClientEvents};
 use crate::core::ics03_connection::events as ConnectionEvents;
 use crate::core::ics03_connection::events::Attributes as ConnectionAttributes;
 use crate::core::ics04_channel::error as channel_error;
@@ -330,10 +330,22 @@ impl TryFrom<IbcEvent> for AbciEvent {
 impl TryFrom<&AbciEvent> for IbcEvent {
     type Error = Error;
 
-    fn try_from(_abci_event: &AbciEvent) -> Result<Self, Self::Error> {
-        // TODO: parse abci_event.type_str into IbcEventType, and delegate to variant structs
-        // IMPORTANT: Do client, then connection, then channel (i.e. preserve order of from_tx_response_event)
-        todo!()
+    fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
+        match abci_event.type_str.parse() {
+            Ok(IbcEventType::CreateClient) => Ok(IbcEvent::CreateClient(
+                ClientEvents::CreateClient::try_from(abci_event).map_err(Error::client)?,
+            )),
+            Ok(IbcEventType::UpdateClient) => Ok(IbcEvent::UpdateClient(
+                ClientEvents::UpdateClient::try_from(abci_event).map_err(Error::client)?,
+            )),
+            Ok(IbcEventType::UpgradeClient) => Ok(IbcEvent::UpgradeClient(
+                ClientEvents::UpgradeClient::try_from(abci_event).map_err(Error::client)?,
+            )),
+            Ok(IbcEventType::ClientMisbehaviour) => Ok(IbcEvent::ClientMisbehaviour(
+                ClientEvents::ClientMisbehaviour::try_from(abci_event).map_err(Error::client)?,
+            )),
+            _ => unimplemented!(),
+        }
     }
 }
 

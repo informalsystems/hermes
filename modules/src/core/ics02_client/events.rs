@@ -5,6 +5,7 @@ use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
 use crate::core::ics02_client::client_type::ClientType;
+use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::header::AnyHeader;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics24_host::identifier::ClientId;
@@ -132,6 +133,14 @@ impl From<Attributes> for CreateClient {
     }
 }
 
+impl TryFrom<&AbciEvent> for CreateClient {
+    type Error = Error;
+
+    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+
 impl From<CreateClient> for IbcEvent {
     fn from(v: CreateClient) -> Self {
         IbcEvent::CreateClient(v)
@@ -189,6 +198,14 @@ impl From<Attributes> for UpdateClient {
             common: attrs,
             header: None,
         }
+    }
+}
+
+impl TryFrom<&AbciEvent> for UpdateClient {
+    type Error = Error;
+
+    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
+        todo!()
     }
 }
 
@@ -250,6 +267,14 @@ impl From<Attributes> for ClientMisbehaviour {
     }
 }
 
+impl TryFrom<&AbciEvent> for ClientMisbehaviour {
+    type Error = Error;
+
+    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+
 impl From<ClientMisbehaviour> for IbcEvent {
     fn from(v: ClientMisbehaviour) -> Self {
         IbcEvent::ClientMisbehaviour(v)
@@ -285,6 +310,14 @@ impl UpgradeClient {
 impl From<Attributes> for UpgradeClient {
     fn from(attrs: Attributes) -> Self {
         UpgradeClient(attrs)
+    }
+}
+
+impl TryFrom<&AbciEvent> for UpgradeClient {
+    type Error = Error;
+
+    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
+        todo!()
     }
 }
 
