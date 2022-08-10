@@ -52,9 +52,17 @@ pub async fn send_tx_with_account_sequence_retry(
     messages: Vec<Any>,
 ) -> Result<Response, Error> {
     time!("send_tx_with_account_sequence_retry");
-    telemetry!(msg_num, &config.chain_id, messages.len() as u64);
 
-    do_send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, messages).await
+    let message_count = messages.len() as u64;
+
+    let response =
+        do_send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, messages).await;
+
+    if response.is_ok() {
+        telemetry!(total_messages_submitted, &config.chain_id, message_count);
+    }
+
+    response
 }
 
 async fn do_send_tx_with_account_sequence_retry(
@@ -158,7 +166,7 @@ async fn refresh_account_and_retry_send_tx_with_account_sequence(
 }
 
 /// Determine whether the given error yielded by `tx_simulate`
-/// indicates hat the current sequence number cached in Hermes
+/// indicates that the current sequence number cached in Hermes
 /// is smaller than the full node's version of the s.n. and therefore
 /// account needs to be refreshed.
 fn mismatch_account_sequence_number_error_requires_refresh(e: &Error) -> bool {
