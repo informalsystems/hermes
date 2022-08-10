@@ -1,3 +1,5 @@
+use core::mem;
+
 use ibc::events::IbcEvent;
 use ibc_proto::google::protobuf::Any;
 use prost::Message;
@@ -144,17 +146,29 @@ fn batch_messages(
     let mut current_size = 0;
     let mut current_batch = vec![];
 
-    for message in messages.into_iter() {
-        current_count += 1;
-        current_size += message.encoded_len();
-        current_batch.push(message);
+    for message in messages {
+        let message_len = message.encoded_len();
 
-        if current_count >= max_message_count || current_size >= max_tx_size {
-            let insert_batch = current_batch.drain(..).collect();
+        if message_len > max_tx_size {
+            return Err(Error::message_exceeds_max_tx_size(message_len));
+        }
+
+        if current_count >= max_message_count || current_size + message_len > max_tx_size {
+            let insert_batch = mem::take(&mut current_batch);
+
+            assert!(
+                !insert_batch.is_empty(),
+                "max message count should not be 0"
+            );
+
             batches.push(insert_batch);
             current_count = 0;
             current_size = 0;
         }
+
+        current_count += 1;
+        current_size += message_len;
+        current_batch.push(message);
     }
 
     if !current_batch.is_empty() {
@@ -162,4 +176,168 @@ fn batch_messages(
     }
 
     Ok(batches)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::batch_messages;
+    use crate::config::types::{MaxMsgNum, MaxTxSize};
+    use ibc_proto::google::protobuf::Any;
+
+    #[test]
+    fn batch_does_not_exceed_max_tx_size() {
+        let messages = vec![
+            Any {
+                type_url: "/example.Foo".into(),
+                value: vec![0; 6],
+            },
+            Any {
+                type_url: "/example.Bar".into(),
+                value: vec![0; 4],
+            },
+            Any {
+                type_url: "/example.Baz".into(),
+                value: vec![0; 2],
+            },
+        ];
+        let batches =
+            batch_messages(MaxMsgNum::default(), MaxTxSize::new(42).unwrap(), messages).unwrap();
+
+        assert_eq!(batches.len(), 2);
+        assert_eq!(batches[0].len(), 2);
+        assert_eq!(batches[0][0].type_url, "/example.Foo");
+        assert_eq!(batches[0][0].value.len(), 6);
+        assert_eq!(batches[0][1].type_url, "/example.Bar");
+        assert_eq!(batches[0][1].value.len(), 4);
+
+        assert_eq!(batches[1].len(), 1);
+        assert_eq!(batches[1][0].type_url, "/example.Baz");
+        assert_eq!(batches[1][0].value.len(), 2);
+    }
+
+    #[test]
+    fn batch_error_on_oversized_message() {
+        let messages = vec![Any {
+            type_url: "/example.Foo".into(),
+            value: vec![0; 6],
+        }];
+
+        let batches = batch_messages(
+            MaxMsgNum::default(),
+            MaxTxSize::new(22).unwrap(),
+            messages.clone(),
+        )
+        .unwrap();
+
+        assert_eq!(batches.len(), 1);
+        assert_eq!(batches[0].len(), 1);
+
+        let res = batch_messages(MaxMsgNum::default(), MaxTxSize::new(21).unwrap(), messages);
+
+        assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_batches_are_structured_appropriately_per_max_msg_num() {
+        // Ensure that when MaxMsgNum is 1, the resulting batch
+        // consists of 5 smaller batches, each with a single message
+        let messages = vec![
+            Any {
+                type_url: "/example.Foo".into(),
+                value: vec![0; 6],
+            },
+            Any {
+                type_url: "/example.Bar".into(),
+                value: vec![0; 4],
+            },
+            Any {
+                type_url: "/example.Baz".into(),
+                value: vec![0; 2],
+            },
+            Any {
+                type_url: "/example.Bux".into(),
+                value: vec![0; 3],
+            },
+            Any {
+                type_url: "/example.Qux".into(),
+                value: vec![0; 5],
+            },
+        ];
+
+        let batches = batch_messages(
+            MaxMsgNum::new(1).unwrap(),
+            MaxTxSize::default(),
+            messages.clone(),
+        )
+        .unwrap();
+
+        assert_eq!(batches.len(), 5);
+
+        for batch in batches {
+            assert_eq!(batch.len(), 1);
+        }
+
+        // Ensure that when MaxMsgNum > the number of messages, the resulting
+        // batch consists of a single smaller batch with all of the messages
+        let batches =
+            batch_messages(MaxMsgNum::new(100).unwrap(), MaxTxSize::default(), messages).unwrap();
+
+        assert_eq!(batches.len(), 1);
+        assert_eq!(batches[0].len(), 5);
+    }
+
+    #[test]
+    fn test_batches_are_structured_appropriately_per_max_tx_size() {
+        // Ensure that when MaxTxSize == the size of each message, the resulting batch
+        // consists of 5 smaller batches, each with a single message
+        let messages = vec![
+            Any {
+                type_url: "/example.Foo".into(),
+                value: vec![0; 10],
+            },
+            Any {
+                type_url: "/example.Bar".into(),
+                value: vec![0; 10],
+            },
+            Any {
+                type_url: "/example.Baz".into(),
+                value: vec![0; 10],
+            },
+            Any {
+                type_url: "/example.Bux".into(),
+                value: vec![0; 10],
+            },
+            Any {
+                type_url: "/example.Qux".into(),
+                value: vec![0; 10],
+            },
+        ];
+
+        let batches = batch_messages(
+            MaxMsgNum::default(),
+            MaxTxSize::new(26).unwrap(),
+            messages.clone(),
+        )
+        .unwrap();
+
+        assert_eq!(batches.len(), 5);
+
+        for batch in batches {
+            assert_eq!(batch.len(), 1);
+        }
+
+        // Ensure that when MaxTxSize > the size of all the messages, the
+        // resulting batch consists of a single smaller batch with all of
+        // messages inside
+        let batches = batch_messages(MaxMsgNum::default(), MaxTxSize::max(), messages).unwrap();
+
+        assert_eq!(batches.len(), 1);
+        assert_eq!(batches[0].len(), 5);
+    }
+
+    #[test]
+    #[should_panic(expected = "`max_msg_num` must be greater than or equal to 1, found 0")]
+    fn test_max_msg_num_of_zero_panics() {
+        let _batches = batch_messages(MaxMsgNum::new(0).unwrap(), MaxTxSize::default(), vec![]);
+    }
 }

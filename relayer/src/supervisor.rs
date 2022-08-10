@@ -661,7 +661,7 @@ fn process_batch<Chain: ChainHandle>(
                 for e in events.clone() {
                     match e {
                         IbcEvent::SendPacket(send_packet_ev) => {
-                            ibc_telemetry::global().send_packet_count(
+                            ibc_telemetry::global().send_packet_events(
                                 send_packet_ev.packet.sequence.into(),
                                 send_packet_ev.height().revision_height(),
                                 &src.id(),
@@ -671,9 +671,17 @@ fn process_batch<Chain: ChainHandle>(
                             );
                         }
                         IbcEvent::WriteAcknowledgement(write_ack_ev) => {
-                            ibc_telemetry::global().acknowledgement_count(
+                            ibc_telemetry::global().acknowledgement_events(
                                 write_ack_ev.packet.sequence.into(),
                                 write_ack_ev.height().revision_height(),
+                                &dst.id(),
+                                &_path.src_channel_id,
+                                &_path.src_port_id,
+                                &src.id(),
+                            );
+                        }
+                        IbcEvent::TimeoutPacket(_) => {
+                            ibc_telemetry::global().timeout_events(
                                 &dst.id(),
                                 &_path.src_channel_id,
                                 &_path.src_port_id,

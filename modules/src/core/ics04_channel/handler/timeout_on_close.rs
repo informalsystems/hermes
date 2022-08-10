@@ -13,6 +13,7 @@ use crate::core::ics04_channel::{
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
+use crate::proofs::{ProofError, Proofs};
 
 pub fn process(
     ctx: &dyn ChannelReader,
@@ -75,13 +76,20 @@ pub fn process(
         source_channel_end.version().clone(),
     );
 
+    // The message's proofs have the channel proof as `other_proof`
+    let proof_close = match msg.proofs.other_proof() {
+        Some(p) => p.clone(),
+        None => return Err(Error::invalid_proof(ProofError::empty_proof())),
+    };
+    let proofs = Proofs::new(proof_close, None, None, None, msg.proofs.height())
+        .map_err(Error::invalid_proof)?;
     verify_channel_proofs(
         ctx,
         msg.proofs.height(),
         &source_channel_end,
         &connection_end,
         &expected_channel_end,
-        &msg.proofs,
+        &proofs,
     )?;
 
     let result = if source_channel_end.order_matches(&Order::Ordered) {

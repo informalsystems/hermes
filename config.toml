@@ -24,7 +24,7 @@ enabled = false
 refresh = true
 
 # Whether or not to enable misbehaviour detection for clients. [Default: false]
-misbehaviour = true
+misbehaviour = false
 
 # Specify the connections mode.
 [mode.connections]
@@ -59,8 +59,8 @@ clear_on_start = true
 # (to any chain in this config file) have been successfully delivered.
 # If they have not been, and `clear_interval = 0`, then those packets are
 # queued up for re-submission.
-# Experimental feature. If set to `false`, the following telemetry metrics will be disabled:
-# `ibc_acknowledgment_packets`, `ibc_receive_packets` and `ibc_timeout_packets`.
+# If set to `false`, the following telemetry metrics will be disabled:
+# `acknowledgment_packets_confirmed`, `receive_packets_confirmed` and `timeout_packets_confirmed`.
 # [Default: false]
 tx_confirmation = false
 
@@ -85,7 +85,7 @@ port = 3000
 [telemetry]
 
 # Whether or not to enable the telemetry service. Default: false
-enabled = true
+enabled = false
 
 # Specify the IPv4/6 host over which the built-in HTTP server will serve the metrics
 # gathered by the telemetry service. Default: 127.0.0.1

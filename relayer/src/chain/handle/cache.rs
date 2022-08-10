@@ -152,7 +152,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
             .get_or_try_update_latest_height_with(|| handle.query_latest_height())?;
 
         if in_cache == CacheStatus::Hit {
-            telemetry!(query_cache_hit, &self.id(), "query_latest_height");
+            telemetry!(queries_cache_hits, &self.id(), "query_latest_height");
         }
 
         Ok(result)
@@ -190,7 +190,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
                     )?;
 
                     if in_cache == CacheStatus::Hit {
-                        telemetry!(query_cache_hit, &self.id(), "query_client_state");
+                        telemetry!(queries_cache_hits, &self.id(), "query_client_state");
                     }
 
                     Ok((result, None))
@@ -265,7 +265,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
                     )?;
 
                     if in_cache == CacheStatus::Hit {
-                        telemetry!(query_cache_hit, &self.id(), "query_connection");
+                        telemetry!(queries_cache_hits, &self.id(), "query_connection");
                     }
 
                     Ok((result, None))
@@ -326,7 +326,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
                     )?;
 
                     if in_cache == CacheStatus::Hit {
-                        telemetry!(query_cache_hit, &self.id(), "query_channel");
+                        telemetry!(queries_cache_hits, &self.id(), "query_channel");
                     }
 
                     Ok((result, None))

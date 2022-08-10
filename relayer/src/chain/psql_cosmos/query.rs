@@ -1,5 +1,5 @@
 use bigdecimal::BigDecimal;
-use eyre::WrapErr;
+use color_eyre::eyre::Context;
 use prost::Message;
 use sqlx::PgPool;
 
@@ -10,23 +10,22 @@ use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::endpoint::tx_search::Response as TxSearchResponse;
 use tracing::{info, trace};
 
-use ibc::core::ics02_client::events as ClientEvents;
 use ibc::core::ics02_client::height::Height;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc::core::ics04_channel::events as ChannelEvents;
-use ibc::core::ics04_channel::packet::{parse_timeout_height, Packet};
+use ibc::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
+use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId};
-use ibc::events::{self, from_tx_response_event, IbcEvent, WithBlockDataType};
+use ibc::events::{self, IbcEvent, WithBlockDataType};
 use ibc::Height as ICSHeight;
 
+use crate::chain::cosmos::types::events::channel::{self as ChannelEvents, parse_timeout_height};
+use crate::chain::cosmos::types::events::client as ClientEvents;
+use crate::chain::cosmos::types::events::from_tx_response_event;
 use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use crate::chain::endpoint::ChainStatus;
 use crate::chain::psql_cosmos::update::{IbcSnapshot, PacketId};
-use crate::chain::requests::{
-    QueryBlockRequest, QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest,
-    QueryTxRequest,
-};
+use crate::chain::requests::*;
 use crate::error::Error;
 
 /// This function queries transactions for events matching certain criteria.
@@ -411,10 +410,7 @@ pub async fn query_txs_from_ibc_snapshots(
                                 && packet.source_channel == request.source_channel_id
                                 && request.sequences.contains(&packet.sequence)
                             {
-                                Some(IbcEvent::SendPacket(ChannelEvents::SendPacket {
-                                    height,
-                                    packet,
-                                }))
+                                Some(IbcEvent::SendPacket(SendPacket { height, packet }))
                             } else {
                                 None
                             }
@@ -678,7 +674,7 @@ fn ibc_packet_event_from_sql_block_query(
 
     match event.r#type.as_str() {
         events::SEND_PACKET_EVENT => {
-            Some(IbcEvent::SendPacket(ChannelEvents::SendPacket {
+            Some(IbcEvent::SendPacket(SendPacket {
                 height: ICSHeight::new(
                     ChainId::chain_version(chain_id.to_string().as_str()),
                     event.block_id as u64, // TODO - get the height for the block with block_id
@@ -688,17 +684,15 @@ fn ibc_packet_event_from_sql_block_query(
             }))
         }
         events::WRITE_ACK_EVENT => {
-            Some(IbcEvent::WriteAcknowledgement(
-                ChannelEvents::WriteAcknowledgement {
-                    height: ICSHeight::new(
-                        ChainId::chain_version(chain_id.to_string().as_str()),
-                        event.block_id as u64, // TODO - get the height for the block with block_id
-                    )
-                    .unwrap(),
-                    packet: ibc_packet_from_sql_block_by_packet_query(event),
-                    ack: Vec::from(event.packet_ack.as_bytes()),
-                },
-            ))
+            Some(IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
+                height: ICSHeight::new(
+                    ChainId::chain_version(chain_id.to_string().as_str()),
+                    event.block_id as u64, // TODO - get the height for the block with block_id
+                )
+                .unwrap(),
+                packet: ibc_packet_from_sql_block_by_packet_query(event),
+                ack: Vec::from(event.packet_ack.as_bytes()),
+            }))
         }
         _ => None,
     }
