@@ -32,6 +32,7 @@ A feature matrix and comparison between the Rust and Go relayer implementations 
 - Packet delay:
     - establish path over non-zero delay connection
     - relay all packets with the specified delay
+- Interchain Accounts & Interchain Security
 - Monitor and submit misbehaviour for clients
     - monitor client updates for misbehaviour (fork and BFT time violation)
     - submit misbehaviour evidence to the on-chain IBC client.
@@ -51,13 +52,7 @@ A feature matrix and comparison between the Rust and Go relayer implementations 
 ## Upcoming / Unsupported Features
 
 Planned features:
-- Full Passive mode: relay from all IBC events
-    - Connection handshake for existing connection that is not in `Open` state
-- Relayer support for management application (add RPC server)
-- Dynamic configuration management
-
-Not planned:
-- Relayer management application
-- Create clients with user chosen parameters (such as UpgradePath)
-- Use IBC light clients other than Tendermint such as Solo Machine
-- Support non cosmos-SDK chains
+- Interchain Queries
+- Non-SDK support
+- Relay from all IBC events, including governance upgrade proposal
+- Dynamic & automatic configuration management
