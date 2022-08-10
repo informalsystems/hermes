@@ -1,16 +1,16 @@
-use std::path::PathBuf;
-
-use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
-use chain_registry::{error::RegistryError, relayer_config::hermes_config};
+use abscissa_core::{
+    clap::Parser,
+    {Command, Runnable},
+};
+use chain_registry::relayer_config::get_configs;
 
 use crate::conclude::Output;
 
-use futures::{stream::FuturesUnordered, StreamExt};
+use ibc_relayer::config::{store, Config};
 
-use ibc_relayer::config::{store, ChainConfig, Config};
-
+use std::path::PathBuf;
 use tokio::runtime::Builder;
+use tracing::warn;
 
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct AutoCmd {
@@ -27,11 +27,11 @@ pub struct AutoCmd {
         long = "chains",
         required = true,
         multiple = true,
-        value_name = "CHAIN_1 CHAIN_2...",
+        value_name = "CHAIN_NAME_1 CHAIN_NAME_2...",
         help_heading = "REQUIRED",
-        help = "Identifier of the chains to include in the config"
+        help = "Names of the chains to include in the config. Every chain must be in the chain registry."
     )]
-    chain_ids: Vec<String>,
+    chain_names: Vec<String>,
 
     #[clap(
         long = "keys",
@@ -39,52 +39,53 @@ pub struct AutoCmd {
         multiple = true,
         value_name = "KEY_CHAIN_1 KEY_CHAIN_2...",
         help_heading = "REQUIRED",
-        help = "Key names to include in the config"
+        help = "Key names to include in the config. Must provide keys for every chain."
     )]
     keys: Vec<String>,
-}
-
-async fn get_chain_configs(
-    chain_names: &[String],
-    keys: &[String],
-) -> Vec<Result<ChainConfig, RegistryError>> {
-    assert_eq!(chain_names.len(), keys.len());
-
-    let futures: FuturesUnordered<_> = chain_names
-        .iter()
-        .zip(keys.iter())
-        .map(|(chain_name, key)| hermes_config(chain_name.as_str(), key.as_str()))
-        .collect();
-
-    futures
-        .collect::<Vec<Result<ChainConfig, RegistryError>>>()
-        .await
 }
 
 impl Runnable for AutoCmd {
     fn run(&self) {
         // Assert that for every chain, a key name is provided
-        if self.chain_ids.len() != self.keys.len() {
+        if self.chain_names.len() != self.keys.len() {
             Output::error("Must provide a key name for every chain").exit();
         }
         let runtime = Builder::new_current_thread().enable_all().build().unwrap();
 
-        let chain_configs: Vec<ChainConfig> = runtime
-            .block_on(get_chain_configs(&self.chain_ids, &self.keys))
-            .into_iter()
-            .map(|result| match result {
-                Ok(chain_config) => chain_config,
-                Err(e) => Output::error(e.to_string()).exit(),
-            })
+        // Sort chains and keys together
+        let mut chain_key_tuples: Vec<(String, String)> = self
+            .chain_names
+            .iter()
+            .cloned()
+            .zip(self.keys.iter().cloned())
             .collect();
 
-        let config: Config = Config {
-            chains: chain_configs,
-            ..Config::default()
-        };
+        chain_key_tuples.sort_by(|a, b| (a.0.cmp(&b.0)));
+        let (sorted_chains, sorted_keys): (Vec<String>, Vec<String>) =
+            chain_key_tuples.into_iter().unzip();
 
-        if let Err(e) = store(&config, &self.path) {
-            Output::error(e.to_string()).exit();
+        // Fetch chain configs
+        match runtime.block_on(get_configs(&sorted_chains, &sorted_keys)) {
+            Ok(chain_configs) => {
+                let config: Config = Config {
+                    chains: chain_configs,
+                    ..Config::default()
+                };
+                match store(&config, &self.path) {
+                    Ok(_) => {
+                        warn!("Gas parameters are set to default values.");
+                        Output::success(format!(
+                        "Config file written successfully : {}.",
+                        self.path.to_str().unwrap()
+                        ))
+                        .exit()
+                    },
+                    Err(e) => Output::error(e.to_string()).exit(),
+                }
+            }
+            Err(e) => {
+                Output::error(e.to_string()).exit();
+            }
         }
     }
 }

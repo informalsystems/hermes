@@ -1,17 +1,24 @@
 //! Contains methods to generate a relayer config for a given chain
-use crate::{asset_list::AssetList, chain::ChainData, error::RegistryError, utils::Fetchable};
+use crate::{
+    asset_list::AssetList, chain::ChainData, error::RegistryError, paths::IBCPath, utils::Fetchable,
+};
 
 use futures::{stream::FuturesUnordered, Future, StreamExt};
 
 use http::Uri;
 
 use ibc_proto::cosmos::bank::v1beta1::query_client::QueryClient;
-use ibc_relayer::config::types::{MaxMsgNum, MaxTxSize, Memo};
-use ibc_relayer::config::{default, filter::PacketFilter, AddressType, ChainConfig, GasPrice};
-use ibc_relayer::keyring::Store;
-use std::str::FromStr;
 
-use std::time::Duration;
+use ibc_relayer::{
+    config::{
+        filter::{ChannelFilters, FilterPattern, PacketFilter},
+        types::{MaxMsgNum, MaxTxSize, Memo},
+        {default, AddressType, ChainConfig, GasPrice},
+    },
+    keyring::Store,
+};
+
+use std::{collections::HashMap, str::FromStr, time::Duration};
 
 use tendermint_light_client_verifier::types::TrustThreshold;
 use tendermint_rpc::{Client, SubscriptionClient, WebSocketClient};
@@ -165,20 +172,42 @@ fn parse_or_build_grpc_endpoint(input: &str) -> Result<Uri, RegistryError> {
 }
 
 // ----------------- Packet filters ------------------
-// TODO : modify the interface to allow for an array of chains to be passed in as arguments
+/// Generate packet filters from Vec<IBCPath>.
+fn construct_packet_filters(ibc_paths: Vec<IBCPath>) -> HashMap<String, PacketFilter> {
+    let mut packet_filters = HashMap::new();
 
-/// Generates a ChainConfig for a given chain by fetching data from
-/// https://github.com/cosmos/chain-registry.
-/// Gas settings are set to default values.
-pub async fn hermes_config(chain_name: &str, key_name: &str) -> Result<ChainConfig, RegistryError> {
-    let string_name = chain_name.to_string();
-    let chain_data_handle = tokio::spawn(async move { ChainData::fetch(string_name).await });
-    let string_name = chain_name.to_string();
-    let assets_handle = tokio::spawn(async move { AssetList::fetch(string_name).await });
+    for path in ibc_paths {
+        for channel in path.channels {
+            let chain_1 = path.chain_1.chain_name.to_owned();
+            let chain_2 = path.chain_2.chain_name.to_owned();
 
-    let chain_data = chain_data_handle
-        .await
-        .map_err(|e| RegistryError::join_error("chain_data_join".to_string(), e))??;
+            let filters_1 = packet_filters.entry(chain_1).or_insert(Vec::new());
+            filters_1.push((
+                FilterPattern::Exact(channel.chain_1.port_id.clone()),
+                FilterPattern::Exact(channel.chain_1.channel_id.clone()),
+            ));
+            let filters_2 = packet_filters.entry(chain_2).or_insert(Vec::new());
+            filters_2.push((
+                FilterPattern::Exact(channel.chain_2.port_id.clone()),
+                FilterPattern::Exact(channel.chain_2.channel_id.clone()),
+            ));
+        }
+    }
+
+    packet_filters
+        .into_iter()
+        .map(|(k, v)| (k, PacketFilter::Allow(ChannelFilters::new(v))))
+        .collect()
+}
+
+/// Generates a ChainConfig for a given chain from ChainData, AssetList and an optional PacketFilter.
+async fn hermes_config(
+    chain_data: ChainData,
+    assets: AssetList,
+    packet_filter: Option<PacketFilter>,
+    key_name: String,
+) -> Result<ChainConfig, RegistryError> {
+    let chain_name = chain_data.chain_name;
 
     let grpc_endpoints: Vec<String> = chain_data
         .apis
@@ -213,12 +242,7 @@ pub async fn hermes_config(chain_name: &str, key_name: &str) -> Result<ChainConf
         .await
     });
 
-    let base = if let Some(asset) = assets_handle
-        .await
-        .map_err(|e| RegistryError::join_error("asset_handle_join".to_string(), e))??
-        .assets
-        .first()
-    {
+    let base = if let Some(asset) = assets.assets.first() {
         asset.base.clone()
     } else {
         return Err(RegistryError::no_asset_found(chain_name.to_string()));
@@ -230,6 +254,11 @@ pub async fn hermes_config(chain_name: &str, key_name: &str) -> Result<ChainConf
     let grpc_address = grpc_handle
         .await
         .map_err(|e| RegistryError::join_error("grpc_handle_join".to_string(), e))??;
+
+    let packet_filter = match packet_filter {
+        Some(pf) => pf,
+        None => PacketFilter::default(),
+    };
 
     Ok(ChainConfig {
         id: chain_data.chain_id,
@@ -261,9 +290,83 @@ pub async fn hermes_config(chain_name: &str, key_name: &str) -> Result<ChainConf
             price: 0.1,
             denom: base,
         },
-        packet_filter: PacketFilter::default(),
+        packet_filter,
         address_type: AddressType::default(),
     })
+}
+
+/// Generates a Vec<ChainConfig> for an array of chains by fetching data from
+/// https://github.com/cosmos/chain-registry.
+/// Gas settings are set to default values.
+pub async fn get_configs(
+    chains: &[String],
+    keys: &[String],
+) -> Result<Vec<ChainConfig>, RegistryError> {
+    let n = chains.len();
+    let mut chain_data_handle = Vec::with_capacity(n);
+    let mut asset_lists_handle = Vec::with_capacity(n);
+    let mut path_handles = Vec::with_capacity(n * (n - 1) / 2);
+
+    for i in 0..n {
+        let chain = chains[i].to_string();
+        chain_data_handle.push(tokio::spawn(async move { ChainData::fetch(chain).await }));
+
+        let chain = chains[i].to_string();
+        asset_lists_handle.push(tokio::spawn(async move { AssetList::fetch(chain).await }));
+
+        for chain_j in &chains[i + 1..] {
+            let chain_i = &chains[i];
+            let chain_j = chain_j;
+            let resource = format!("{}-{}.json", chain_i, chain_j).to_string();
+            path_handles.push(tokio::spawn(async move { IBCPath::fetch(resource).await }));
+        }
+    }
+    // Extract packet filters from IBC paths
+    let mut path_data: Vec<IBCPath> = Vec::new();
+
+    for handle in path_handles {
+        if let Ok(path) = handle
+            .await
+            .map_err(|e| RegistryError::join_error("path_handle_join".to_string(), e))?
+        {
+            path_data.push(path);
+        }
+    }
+    let mut packet_filters = construct_packet_filters(path_data);
+
+    // Construct ChainConfig
+    let mut configs_handle = Vec::with_capacity(n);
+
+    for (i, (chain_handle, asset_handle)) in chain_data_handle
+        .into_iter()
+        .zip(asset_lists_handle.into_iter())
+        .enumerate()
+    {
+        let chain_data = chain_handle
+            .await
+            .map_err(|e| RegistryError::join_error("chain_data_join".to_string(), e))??;
+        let assets = asset_handle
+            .await
+            .map_err(|e| RegistryError::join_error("asset_handle_join".to_string(), e))??;
+
+        let packet_filter = packet_filters.remove(&chains[i]);
+        let key = keys[i].to_string();
+
+        configs_handle.push(tokio::spawn(async move {
+            hermes_config(chain_data, assets, packet_filter, key).await
+        }));
+    }
+
+    let mut configs = Vec::with_capacity(n);
+    for handle in configs_handle {
+        let config = handle
+            .await
+            .map_err(|e| RegistryError::join_error("config_handle_join".to_string(), e))??;
+
+        configs.push(config);
+    }
+
+    Ok(configs)
 }
 
 #[cfg(test)]
@@ -271,16 +374,17 @@ mod tests {
     use super::*;
     use crate::utils::TEST_CHAINS;
 
+    const TEST_KEYS: &[&str] = &["testkey"; TEST_CHAINS.len()];
+
     #[tokio::test]
     async fn fetch_chain_config() -> Result<(), RegistryError> {
-        let mut handles = Vec::with_capacity(TEST_CHAINS.len());
+        let configs = get_configs(TEST_CHAINS, TEST_KEYS).await?;
 
-        for chain in TEST_CHAINS {
-            handles.push(tokio::spawn(hermes_config(chain, "testkey")));
-        }
-
-        for handle in handles {
-            handle.await.unwrap()?;
+        for config in configs {
+            match config.packet_filter {
+                PacketFilter::Allow(_) => {}
+                _ => panic!("PacketFilter not allowed"),
+            }
         }
 
         Ok(())

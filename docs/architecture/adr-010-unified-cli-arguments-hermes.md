@@ -169,6 +169,11 @@ __Tx__
 
 * `config validate`
 
+### Automatically generate a configuration file
+* `config auto --path <PATH> --chains <CHAIN_NAME_1 CHAIN_NAME2...> --keys <KEY_CHAIN_1 KEY_CHAIN_2...>`
+    
+    * Constraint : `chains` and `keys` have the same number of arguments.
+
 ### Health check
 
 * `health-check`
