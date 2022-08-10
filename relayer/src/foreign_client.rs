@@ -1042,6 +1042,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 )
             })?;
 
+        warn!(trusted = %trusted_height, target = %target_height, header = ?header, support_count = %support.len(), "finished building header + support");
+
         let signer = self.dst_chain().get_signer().map_err(|e| {
             ForeignClientError::client_update(
                 self.dst_chain.id(),
@@ -1094,6 +1096,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         self.build_update_client_and_send(QueryHeight::Latest, None)
     }
 
+    // TODO(ADI): Remove this allow pragmas.
+    #[allow(unreachable_code, unused_variables)]
     pub fn build_update_client_and_send(
         &self,
         target_query_height: QueryHeight,
@@ -1121,6 +1125,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         }
 
         let tm = TrackedMsgs::new_static(new_msgs, "update client");
+        panic!("dryrun: not sending anything");
 
         let events = self
             .dst_chain()

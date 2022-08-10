@@ -59,7 +59,13 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         target: ibc::Height,
         client_state: &AnyClientState,
     ) -> Result<Verified<LightBlock>, Error> {
-        trace!(%trusted, %target, "light client verification");
+        let _span = tracing::span!(
+            tracing::Level::DEBUG,
+            "light client verification",
+            trusted = %trusted, target = %target,
+            chain = %self.chain_id
+        )
+        .entered();
 
         let target_height =
             TMHeight::try_from(target.revision_height()).map_err(Error::invalid_height)?;
@@ -218,12 +224,49 @@ impl LightClient {
 
         let mut store = MemoryStore::new();
         store.insert(trusted_block, Status::Trusted);
+        tracing::warn!(trusted_height = %trusted, "finished fetching light block & inserted in block store");
 
         Ok(LightClientState::new(store))
     }
 
     fn fetch_light_block(&self, height: AtHeight) -> Result<LightBlock, Error> {
+        use core::time::Duration;
         use tendermint_light_client::components::io::Io;
+        use tracing::warn;
+
+        let _juno_client_latest_trusted_height = TMHeight::from(4136530_u32);
+        match height {
+            AtHeight::At(_juno_client_latest_trusted_height) => {
+                if self.chain_id == ChainId::new("juno".to_owned(), 1) {
+                    // Create an alternative io for the archive node, to bypass the default full node.
+                    warn!("matched on juno-1 and expected halt height");
+                    let archive_rpc_client =
+                        rpc::HttpClient::new("https://rpc-v3-archive.junonetwork.io:443")
+                            .expect("could not initialize the rpc client to bypass juno full node");
+                    // let peer_id_string = String::from("4b0f1f25d5bff62d6cd674ddbe56df14d58979f3").as_bytes();
+                    let dummy_peer_id_u8: [u8; 20] = [0; 20];
+                    let peer_id = PeerId::new(dummy_peer_id_u8);
+                    // Instantiate a different io targeting the archive node
+                    let archive_io = components::io::ProdIo::new(
+                        peer_id,
+                        archive_rpc_client,
+                        Some(Duration::from_secs(20)),
+                    );
+
+                    // Fetch the light block from the archive node.
+                    return archive_io
+                        .fetch_light_block(height)
+                        .map_err(|e| Error::light_client_io(self.chain_id.to_string(), e));
+                } else {
+                    warn!(chain_id = %self.chain_id, "not on juno-1 chain; using the default io");
+                }
+            }
+            AtHeight::Highest => {
+                warn!(
+                    "highest height, no need to bypass the default full node; using the default io"
+                );
+            }
+        };
 
         self.io
             .fetch_light_block(height)
