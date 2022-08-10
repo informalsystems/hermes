@@ -50,12 +50,12 @@ impl Fetchable for AssetList {
 mod tests {
     use super::*;
     use crate::error::RegistryError;
-    use crate::utils::TEST_CHAINS;
+    use crate::utils::ALL_CHAINS;
 
     #[tokio::test]
     async fn test_fetch_chain_assets() -> Result<(), RegistryError> {
-        let mut handles = Vec::with_capacity(TEST_CHAINS.len());
-        for chain in TEST_CHAINS {
+        let mut handles = Vec::with_capacity(ALL_CHAINS.len());
+        for chain in ALL_CHAINS {
             handles.push(tokio::spawn(AssetList::fetch(chain.to_string())));
         }
 

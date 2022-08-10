@@ -101,12 +101,12 @@ impl Fetchable for ChainData {
 mod tests {
     use super::*;
     use crate::error::RegistryError;
-    use crate::utils::TEST_CHAINS;
+    use crate::utils::ALL_CHAINS;
 
     #[tokio::test]
     async fn fetch_chain_data() -> Result<(), RegistryError> {
-        let mut handles = Vec::with_capacity(TEST_CHAINS.len());
-        for chain in TEST_CHAINS {
+        let mut handles = Vec::with_capacity(ALL_CHAINS.len());
+        for chain in ALL_CHAINS {
             handles.push(tokio::spawn(ChainData::fetch(chain.to_string())));
         }
 

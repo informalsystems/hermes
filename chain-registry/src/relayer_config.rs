@@ -372,13 +372,12 @@ pub async fn get_configs(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::utils::TEST_CHAINS;
-
-    const TEST_KEYS: &[&str] = &["testkey"; TEST_CHAINS.len()];
-
+    
     #[tokio::test]
-    async fn fetch_chain_config() -> Result<(), RegistryError> {
-        let configs = get_configs(TEST_CHAINS, TEST_KEYS).await?;
+    async fn fetch_chain_config_with_packet_filters() -> Result<(), RegistryError> {
+        let test_chains: &[String]= &["cosmoshub".to_string(), "juno".to_string(), "osmosis".to_string()]; // Must be sorted
+        let test_keys: &[String] = &["testkey".to_string(), "testkey".to_string(), "testkey".to_string()];
+        let configs = get_configs(test_chains, test_keys).await?;
 
         for config in configs {
             match config.packet_filter {
@@ -389,4 +388,22 @@ mod tests {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn fetch_chain_config_without_packet_filters() -> Result<(), RegistryError> {
+        let test_chains: &[String] = &["cosmoshub".to_string(), "evmos".to_string()]; // Must be sorted
+        let test_keys: &[String] = &["testkey".to_string(), "testkey".to_string()];
+        let configs = get_configs(test_chains, test_keys).await?;
+
+        for config in configs {
+            match config.packet_filter {
+                PacketFilter::AllowAll => {}
+                _ => panic!("PacketFilter not allowed"),
+            }
+        }
+
+        Ok(())
+    }
+
+    
 }
