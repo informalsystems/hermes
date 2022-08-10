@@ -209,9 +209,8 @@ fn handle_execute_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     if !summary.is_empty() {
         trace!("produced relay summary: {:?}", summary);
+        telemetry!(packet_metrics(_path, &summary));
     }
-
-    telemetry!(packet_metrics(_path, &summary));
 
     Ok(())
 }
@@ -237,7 +236,7 @@ fn receive_packet_metrics(path: &Packet, summary: &RelaySummary) {
         .count();
 
     telemetry!(
-        ibc_receive_packets,
+        receive_packets_confirmed,
         &path.src_chain_id,
         &path.src_channel_id,
         &path.src_port_id,
@@ -256,7 +255,7 @@ fn acknowledgment_metrics(path: &Packet, summary: &RelaySummary) {
         .count();
 
     telemetry!(
-        ibc_acknowledgment_packets,
+        acknowledgment_packets_confirmed,
         &path.src_chain_id,
         &path.src_channel_id,
         &path.src_port_id,
@@ -274,7 +273,7 @@ fn timeout_metrics(path: &Packet, summary: &RelaySummary) {
         .count();
 
     telemetry!(
-        ibc_timeout_packets,
+        timeout_packets_confirmed,
         &path.src_chain_id,
         &path.src_channel_id,
         &path.src_port_id,

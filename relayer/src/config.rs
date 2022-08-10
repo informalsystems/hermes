@@ -141,13 +141,14 @@ impl ModeConfig {
     }
 }
 
+/// # IMPORTANT: Keep the values here in sync with the values in the default config.toml.
 impl Default for ModeConfig {
     fn default() -> Self {
         Self {
             clients: Clients {
                 enabled: true,
                 refresh: true,
-                misbehaviour: true,
+                misbehaviour: false,
             },
             connections: Connections { enabled: false },
             channels: Channels { enabled: false },
@@ -251,6 +252,9 @@ pub struct TelemetryConfig {
     pub port: u16,
 }
 
+/// Default values for the telemetry configuration.
+///
+/// # IMPORTANT: Remember to update the Hermes guide & the default config.toml whenever these values change.
 impl Default for TelemetryConfig {
     fn default() -> Self {
         Self {
