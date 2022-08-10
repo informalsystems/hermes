@@ -136,8 +136,8 @@ impl From<Attributes> for CreateClient {
 impl TryFrom<&AbciEvent> for CreateClient {
     type Error = Error;
 
-    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
-        todo!()
+    fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
+        extract_attributes_from_tx(abci_event).map(CreateClient)
     }
 }
 
@@ -204,8 +204,11 @@ impl From<Attributes> for UpdateClient {
 impl TryFrom<&AbciEvent> for UpdateClient {
     type Error = Error;
 
-    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
-        todo!()
+    fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
+        extract_attributes_from_tx(abci_event).map(|attributes| UpdateClient {
+            common: attributes,
+            header: extract_header_from_tx(abci_event).ok(),
+        })
     }
 }
 
@@ -270,8 +273,8 @@ impl From<Attributes> for ClientMisbehaviour {
 impl TryFrom<&AbciEvent> for ClientMisbehaviour {
     type Error = Error;
 
-    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
-        todo!()
+    fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
+        extract_attributes_from_tx(abci_event).map(ClientMisbehaviour)
     }
 }
 
@@ -316,8 +319,8 @@ impl From<Attributes> for UpgradeClient {
 impl TryFrom<&AbciEvent> for UpgradeClient {
     type Error = Error;
 
-    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
-        todo!()
+    fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
+        extract_attributes_from_tx(abci_event).map(UpgradeClient)
     }
 }
 
@@ -329,4 +332,47 @@ impl From<UpgradeClient> for AbciEvent {
             attributes,
         }
     }
+}
+
+fn extract_attributes_from_tx(event: &AbciEvent) -> Result<Attributes, Error> {
+    let mut attr = Attributes::default();
+
+    for tag in &event.attributes {
+        let key = tag.key.as_ref();
+        let value = tag.value.as_ref();
+        match key {
+            HEIGHT_ATTRIBUTE_KEY => {
+                attr.height = value
+                    .parse()
+                    .map_err(|e| Error::invalid_string_as_height(value.to_string(), e))?
+            }
+            CLIENT_ID_ATTRIBUTE_KEY => {
+                attr.client_id = value.parse().map_err(Error::invalid_client_identifier)?
+            }
+            CLIENT_TYPE_ATTRIBUTE_KEY => {
+                attr.client_type = value
+                    .parse()
+                    .map_err(|_| Error::unknown_client_type(value.to_string()))?
+            }
+            CONSENSUS_HEIGHT_ATTRIBUTE_KEY => {
+                attr.consensus_height = value
+                    .parse()
+                    .map_err(|e| Error::invalid_string_as_height(value.to_string(), e))?
+            }
+            _ => {}
+        }
+    }
+
+    Ok(attr)
+}
+
+pub fn extract_header_from_tx(event: &AbciEvent) -> Result<AnyHeader, Error> {
+    for tag in &event.attributes {
+        let key = tag.key.as_ref();
+        let value = tag.value.as_ref();
+        if key == HEADER_ATTRIBUTE_KEY {
+            return AnyHeader::decode_from_string(value);
+        }
+    }
+    Err(Error::missing_raw_header())
 }
