@@ -1,6 +1,6 @@
 # Summary
 
-# Hermes (v1.0.0-rc.1)
+# Hermes (v1.0.0-rc.2)
 
 ---
 - [Introduction](./index.md)
@@ -25,11 +25,6 @@
      - [Connect the chains using relay paths](./tutorials/local-chains/relay-paths/index.md)
        - [Create a new path](./tutorials/local-chains/relay-paths/create-new-path.md)
        - [Relay packets on multiple paths](./tutorials/local-chains/relay-paths/multiple-paths.md)
-     - [Connect the chains using transactions](./tutorials/local-chains/raw/index.md)
-       - [Configure clients](./tutorials/local-chains/raw/client.md)
-       - [Connection handshake](./tutorials/local-chains/raw/connection.md)
-       - [Channel handshake](./tutorials/local-chains/raw/channel.md)
-       - [Relay packets](./tutorials/local-chains/raw/packet.md)
 - [Commands Reference](./commands/index.md)
    - [Global options and JSON output](./commands/global.md)
    - [Keys](./commands/keys/index.md)
