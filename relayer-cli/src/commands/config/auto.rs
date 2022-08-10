@@ -77,11 +77,11 @@ impl Runnable for AutoCmd {
                     Ok(_) => {
                         warn!("Gas parameters are set to default values.");
                         Output::success(format!(
-                        "Config file written successfully : {}.",
-                        self.path.to_str().unwrap()
+                            "Config file written successfully : {}.",
+                            self.path.to_str().unwrap()
                         ))
                         .exit()
-                    },
+                    }
                     Err(e) => Output::error(e.to_string()).exit(),
                 }
             }
