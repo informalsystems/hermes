@@ -18,7 +18,7 @@ pub async fn estimate_fee_and_send_tx(
     tx_memo: &Memo,
     messages: Vec<Any>,
 ) -> Result<Response, Error> {
-    let fee = estimate_tx_fees(config, key_entry, account, tx_memo, messages.clone()).await?;
+    let fee = estimate_tx_fees(config, key_entry, account, tx_memo, &messages).await?;
 
     send_tx_with_fee(config, key_entry, account, tx_memo, messages, &fee).await
 }

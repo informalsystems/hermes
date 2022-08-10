@@ -22,7 +22,7 @@ pub fn sign_and_encode_tx(
     messages: Vec<Any>,
     fee: &Fee,
 ) -> Result<Vec<u8>, Error> {
-    let signed_tx = sign_tx(config, key_entry, account, tx_memo, messages, fee)?;
+    let signed_tx = sign_tx(config, key_entry, account, tx_memo, &messages, fee)?;
 
     let tx_raw = TxRaw {
         body_bytes: signed_tx.body_bytes,
@@ -38,7 +38,7 @@ pub fn sign_tx(
     key_entry: &KeyEntry,
     account: &Account,
     tx_memo: &Memo,
-    messages: Vec<Any>,
+    messages: &[Any],
     fee: &Fee,
 ) -> Result<SignedTx, Error> {
     let key_bytes = encode_key_bytes(key_entry)?;
@@ -159,7 +159,7 @@ fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, V
     Ok((auth_info, auth_buf))
 }
 
-fn tx_body_and_bytes(proto_msgs: Vec<Any>, memo: &Memo) -> Result<(TxBody, Vec<u8>), Error> {
+fn tx_body_and_bytes(proto_msgs: &[Any], memo: &Memo) -> Result<(TxBody, Vec<u8>), Error> {
     // Create TxBody
     let body = TxBody {
         messages: proto_msgs.to_vec(),
