@@ -56,7 +56,6 @@ pub fn process(
 
     let event_attributes = Attributes {
         client_id,
-        height: ctx.host_height(),
         ..Default::default()
     };
     output.emit(IbcEvent::CreateClient(event_attributes.into()));

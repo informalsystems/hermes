@@ -851,7 +851,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         client_id: ClientId,
         consensus_height: Height,
     ) -> Result<Height, LinkError> {
-        let events = chain
+        let events_with_heights = chain
             .query_txs(QueryTxRequest::Client(QueryClientEventRequest {
                 query_height: QueryHeight::Latest,
                 event_id: WithBlockDataType::UpdateClient,
@@ -864,9 +864,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // but the `processed_height` is the height at which the first `UpdateClient` event for this
         // consensus state/height was emitted. We expect that these events are received in the exact
         // same order in which they were emitted.
-        match events.first().map(|ev_with_height| ev_with_height.event()) {
-            Some(IbcEvent::UpdateClient(event)) => Ok(event.height()),
-            Some(event) => Err(LinkError::unexpected_event(event.clone())),
+        match events_with_heights.first() {
+            Some(event_with_height) => {
+                if matches!(event_with_height.event(), IbcEvent::UpdateClient(_)) {
+                    Ok(event_with_height.height)
+                } else {
+                    Err(LinkError::unexpected_event(
+                        event_with_height.event().clone(),
+                    ))
+                }
+            }
             None => Err(LinkError::update_client_event_not_found()),
         }
     }

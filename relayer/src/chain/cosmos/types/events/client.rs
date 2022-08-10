@@ -2,7 +2,7 @@ use ibc::core::ics02_client::error::Error;
 use ibc::core::ics02_client::events::{
     Attributes, ClientMisbehaviour, CreateClient, UpdateClient, UpgradeClient,
     CLIENT_ID_ATTRIBUTE_KEY, CLIENT_TYPE_ATTRIBUTE_KEY, CONSENSUS_HEIGHT_ATTRIBUTE_KEY,
-    HEADER_ATTRIBUTE_KEY, HEIGHT_ATTRIBUTE_KEY,
+    HEADER_ATTRIBUTE_KEY,
 };
 use ibc::core::ics02_client::header::AnyHeader;
 use ibc::events::{IbcEvent, IbcEventType};
@@ -40,11 +40,6 @@ fn extract_attributes_from_tx(event: &AbciEvent) -> Result<Attributes, Error> {
         let key = tag.key.as_ref();
         let value = tag.value.as_ref();
         match key {
-            HEIGHT_ATTRIBUTE_KEY => {
-                attr.height = value
-                    .parse()
-                    .map_err(|e| Error::invalid_string_as_height(value.to_string(), e))?
-            }
             CLIENT_ID_ATTRIBUTE_KEY => {
                 attr.client_id = value.parse().map_err(Error::invalid_client_identifier)?
             }
@@ -87,12 +82,11 @@ mod tests {
 
     #[test]
     fn client_event_to_abci_event() {
-        let height = Height::new(1, 1).unwrap();
+        let consensus_height = Height::new(1, 1).unwrap();
         let attributes = Attributes {
-            height,
             client_id: "test_client".parse().unwrap(),
             client_type: ClientType::Tendermint,
-            consensus_height: height,
+            consensus_height,
         };
         let mut abci_events = vec![];
         let create_client = CreateClient::from(attributes.clone());
@@ -102,7 +96,7 @@ mod tests {
         let upgrade_client = UpgradeClient::from(attributes.clone());
         abci_events.push(AbciEvent::from(upgrade_client.clone()));
         let mut update_client = UpdateClient::from(attributes);
-        let header = MockHeader::new(height).wrap_any();
+        let header = MockHeader::new(consensus_height).wrap_any();
         update_client.header = Some(header);
         abci_events.push(AbciEvent::from(update_client.clone()));
 

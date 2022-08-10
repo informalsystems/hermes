@@ -66,7 +66,6 @@ pub fn process(
     });
     let event_attributes = Attributes {
         client_id,
-        height: ctx.host_height(),
         ..Default::default()
     };
 

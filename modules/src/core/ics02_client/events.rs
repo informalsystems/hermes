@@ -54,7 +54,6 @@ impl From<NewBlock> for IbcEvent {
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Attributes {
-    pub height: Height,
     pub client_id: ClientId,
     pub client_type: ClientType,
     pub consensus_height: Height,
@@ -63,7 +62,6 @@ pub struct Attributes {
 impl Default for Attributes {
     fn default() -> Self {
         Attributes {
-            height: Height::new(0, 1).unwrap(),
             client_id: Default::default(),
             client_type: ClientType::Tendermint,
             consensus_height: Height::new(0, 1).unwrap(),
@@ -80,34 +78,26 @@ impl Default for Attributes {
 /// Once tendermint-rs improves the API of the `Key` and `Value` types,
 /// we will be able to remove the `.parse().unwrap()` calls.
 impl From<Attributes> for Vec<Tag> {
-    fn from(a: Attributes) -> Self {
-        let height = Tag {
-            key: HEIGHT_ATTRIBUTE_KEY.parse().unwrap(),
-            value: a.height.to_string().parse().unwrap(),
-        };
+    fn from(attrs: Attributes) -> Self {
         let client_id = Tag {
             key: CLIENT_ID_ATTRIBUTE_KEY.parse().unwrap(),
-            value: a.client_id.to_string().parse().unwrap(),
+            value: attrs.client_id.to_string().parse().unwrap(),
         };
         let client_type = Tag {
             key: CLIENT_TYPE_ATTRIBUTE_KEY.parse().unwrap(),
-            value: a.client_type.as_str().parse().unwrap(),
+            value: attrs.client_type.as_str().parse().unwrap(),
         };
         let consensus_height = Tag {
             key: CONSENSUS_HEIGHT_ATTRIBUTE_KEY.parse().unwrap(),
-            value: a.height.to_string().parse().unwrap(),
+            value: attrs.consensus_height.to_string().parse().unwrap(),
         };
-        vec![height, client_id, client_type, consensus_height]
+        vec![client_id, client_type, consensus_height]
     }
 }
 
 impl core::fmt::Display for Attributes {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(
-            f,
-            "h: {}, cs_h: {}({})",
-            self.height, self.client_id, self.consensus_height
-        )
+        write!(f, "cs_h: {}({})", self.client_id, self.consensus_height)
     }
 }
 
@@ -118,12 +108,6 @@ pub struct CreateClient(pub Attributes);
 impl CreateClient {
     pub fn client_id(&self) -> &ClientId {
         &self.0.client_id
-    }
-    pub fn height(&self) -> Height {
-        self.0.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.0.height = height;
     }
 }
 
@@ -177,14 +161,6 @@ impl UpdateClient {
 
     pub fn client_type(&self) -> ClientType {
         self.common.client_type
-    }
-
-    pub fn height(&self) -> Height {
-        self.common.height
-    }
-
-    pub fn set_height(&mut self, height: Height) {
-        self.common.height = height;
     }
 
     pub fn consensus_height(&self) -> Height {
@@ -256,12 +232,6 @@ impl ClientMisbehaviour {
     pub fn client_id(&self) -> &ClientId {
         &self.0.client_id
     }
-    pub fn height(&self) -> Height {
-        self.0.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.0.height = height;
-    }
 }
 
 impl From<Attributes> for ClientMisbehaviour {
@@ -299,12 +269,6 @@ impl From<ClientMisbehaviour> for AbciEvent {
 pub struct UpgradeClient(pub Attributes);
 
 impl UpgradeClient {
-    pub fn set_height(&mut self, height: Height) {
-        self.0.height = height;
-    }
-    pub fn height(&self) -> Height {
-        self.0.height
-    }
     pub fn client_id(&self) -> &ClientId {
         &self.0.client_id
     }
@@ -341,11 +305,6 @@ fn extract_attributes_from_tx(event: &AbciEvent) -> Result<Attributes, Error> {
         let key = tag.key.as_ref();
         let value = tag.value.as_ref();
         match key {
-            HEIGHT_ATTRIBUTE_KEY => {
-                attr.height = value
-                    .parse()
-                    .map_err(|e| Error::invalid_string_as_height(value.to_string(), e))?
-            }
             CLIENT_ID_ATTRIBUTE_KEY => {
                 attr.client_id = value.parse().map_err(Error::invalid_client_identifier)?
             }
