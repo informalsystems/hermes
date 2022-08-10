@@ -9,6 +9,8 @@ use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::events::{IbcEvent, IbcEventType};
 use crate::prelude::*;
 
+use super::error::Error;
+
 /// The content of the `key` field for the attribute containing the connection identifier.
 pub const HEIGHT_ATTRIBUTE_KEY: &str = "height";
 pub const CONN_ID_ATTRIBUTE_KEY: &str = "connection_id";
@@ -105,6 +107,14 @@ impl From<Attributes> for OpenInit {
     }
 }
 
+impl TryFrom<&AbciEvent> for OpenInit {
+    type Error = Error;
+
+    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+
 impl From<OpenInit> for IbcEvent {
     fn from(v: OpenInit) -> Self {
         IbcEvent::OpenInitConnection(v)
@@ -142,6 +152,14 @@ impl OpenTry {
 impl From<Attributes> for OpenTry {
     fn from(attrs: Attributes) -> Self {
         OpenTry(attrs)
+    }
+}
+
+impl TryFrom<&AbciEvent> for OpenTry {
+    type Error = Error;
+
+    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
+        todo!()
     }
 }
 
@@ -185,6 +203,14 @@ impl From<Attributes> for OpenAck {
     }
 }
 
+impl TryFrom<&AbciEvent> for OpenAck {
+    type Error = Error;
+
+    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}
+
 impl From<OpenAck> for IbcEvent {
     fn from(v: OpenAck) -> Self {
         IbcEvent::OpenAckConnection(v)
@@ -222,6 +248,14 @@ impl OpenConfirm {
 impl From<Attributes> for OpenConfirm {
     fn from(attrs: Attributes) -> Self {
         OpenConfirm(attrs)
+    }
+}
+
+impl TryFrom<&AbciEvent> for OpenConfirm {
+    type Error = Error;
+
+    fn try_from(_value: &AbciEvent) -> Result<Self, Self::Error> {
+        todo!()
     }
 }
 

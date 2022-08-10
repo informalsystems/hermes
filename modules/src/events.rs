@@ -12,6 +12,7 @@ use tendermint::abci::Event as AbciEvent;
 use crate::core::ics02_client::error as client_error;
 use crate::core::ics02_client::events::NewBlock;
 use crate::core::ics02_client::events::{self as ClientEvents};
+use crate::core::ics03_connection::error as connection_error;
 use crate::core::ics03_connection::events as ConnectionEvents;
 use crate::core::ics03_connection::events::Attributes as ConnectionAttributes;
 use crate::core::ics04_channel::error as channel_error;
@@ -34,6 +35,10 @@ define_error! {
         Client
             [ client_error::Error ]
             | _ | { "ICS02 client error" },
+
+        Connection
+            [ connection_error::Error ]
+            | _ | { "connection error" },
 
         Channel
             [ channel_error::Error ]
@@ -330,6 +335,7 @@ impl TryFrom<IbcEvent> for AbciEvent {
 impl TryFrom<&AbciEvent> for IbcEvent {
     type Error = Error;
 
+    /// Provides conversion from AbciEvent for core IBC events
     fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
         match abci_event.type_str.parse() {
             Ok(IbcEventType::CreateClient) => Ok(IbcEvent::CreateClient(
@@ -343,6 +349,18 @@ impl TryFrom<&AbciEvent> for IbcEvent {
             )),
             Ok(IbcEventType::ClientMisbehaviour) => Ok(IbcEvent::ClientMisbehaviour(
                 ClientEvents::ClientMisbehaviour::try_from(abci_event).map_err(Error::client)?,
+            )),
+            Ok(IbcEventType::OpenInitConnection) => Ok(IbcEvent::OpenInitConnection(
+                ConnectionEvents::OpenInit::try_from(abci_event).map_err(Error::connection)?,
+            )),
+            Ok(IbcEventType::OpenTryConnection) => Ok(IbcEvent::OpenTryConnection(
+                ConnectionEvents::OpenTry::try_from(abci_event).map_err(Error::connection)?,
+            )),
+            Ok(IbcEventType::OpenAckConnection) => Ok(IbcEvent::OpenAckConnection(
+                ConnectionEvents::OpenAck::try_from(abci_event).map_err(Error::connection)?,
+            )),
+            Ok(IbcEventType::OpenConfirmConnection) => Ok(IbcEvent::OpenConfirmConnection(
+                ConnectionEvents::OpenConfirm::try_from(abci_event).map_err(Error::connection)?,
             )),
             _ => unimplemented!(),
         }
