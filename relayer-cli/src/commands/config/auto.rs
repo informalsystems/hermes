@@ -12,6 +12,8 @@ use std::path::PathBuf;
 use tokio::runtime::Builder;
 use tracing::warn;
 
+/// Encapsulates the `hermes config auto` subcommand for generating
+/// a default Hermes configuration.
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 pub struct AutoCmd {
     #[clap(
