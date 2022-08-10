@@ -8,7 +8,6 @@ the current state of the Hermes relayer and the networks it is connected to.
 - All Hermes metrics are tracked and updated from the moment the Hermes service (i.e., `start`) starts up.
 Metrics are automatically reset if the service is restarted.
 - For maximum reliability, it is advised to combine monitoring of your Hermes service with monitoring of your full nodes.
-- TODO: Grafana template reference here.
 
 ## Table of Contents
 
