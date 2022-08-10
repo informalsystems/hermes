@@ -132,5 +132,5 @@ pub fn query_write_ack_events<ChainA: ChainHandle>(
         }))
         .map_err(|e| LinkError::query(src_chain.id(), e))?;
 
-    Ok(events_result)
+    Ok(events_result.into_iter().map(|ev| ev.event).collect())
 }

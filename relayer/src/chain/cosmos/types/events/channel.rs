@@ -18,9 +18,7 @@ use ibc::events::{Error as EventError, IbcEvent, IbcEventType};
 use ibc::Height;
 use tendermint::abci::Event as AbciEvent;
 
-use crate::event::IbcEventWithHeight;
-
-pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEventWithHeight> {
+pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEvent> {
     match event.type_str.parse() {
         Ok(IbcEventType::OpenInitChannel) => extract_attributes_from_tx(event)
             .map(OpenInit::try_from)
@@ -400,9 +398,9 @@ mod tests {
         let close_confirm = CloseConfirm::try_from(attributes).unwrap();
         abci_events.push(AbciEvent::from(close_confirm.clone()));
 
-        for event in abci_events {
-            match try_from_tx(&event) {
-                Some(e) => match e.event().clone() {
+        for abci_event in abci_events {
+            match IbcEvent::try_from(&abci_event).ok() {
+                Some(ibc_event) => match ibc_event {
                     IbcEvent::OpenInitChannel(e) => {
                         assert_eq!(Attributes::from(e), open_init.clone().into())
                     }
@@ -463,9 +461,9 @@ mod tests {
         };
         abci_events.push(AbciEvent::try_from(timeout_packet.clone()).unwrap());
 
-        for event in abci_events {
-            match try_from_tx(&event) {
-                Some(e) => match e.event().clone() {
+        for abci_event in abci_events {
+            match IbcEvent::try_from(&abci_event).ok() {
+                Some(ibc_event) => match ibc_event {
                     IbcEvent::SendPacket(e) => assert_eq!(e.packet, send_packet.packet),
                     IbcEvent::WriteAcknowledgement(e) => {
                         assert_eq!(e.packet, write_ack.packet);

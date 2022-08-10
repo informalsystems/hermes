@@ -63,7 +63,6 @@ use crate::chain::cosmos::query::tx::query_txs;
 use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query, QueryResponse};
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
-use crate::chain::cosmos::types::events::channel as channel_events;
 use crate::chain::cosmos::types::gas::{default_gas_from_config, max_gas_from_config};
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
 use crate::chain::tracking::TrackedMsgs;
@@ -1616,15 +1615,15 @@ fn filter_matching_event(
         return None;
     }
 
-    let event_with_height = channel_events::try_from_tx(&event)?;
-    match event_with_height.event() {
+    let ibc_event = IbcEvent::try_from(&event).ok()?;
+    match ibc_event {
         IbcEvent::SendPacket(ref send_ev) if matches_packet(request, seq, &send_ev.packet) => {
-            Some(event_with_height)
+            Some(ibc_event)
         }
         IbcEvent::WriteAcknowledgement(ref ack_ev)
             if matches_packet(request, seq, &ack_ev.packet) =>
         {
-            Some(event_with_height)
+            Some(ibc_event)
         }
         _ => None,
     }

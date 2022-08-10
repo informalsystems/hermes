@@ -8,9 +8,7 @@ use ibc::core::ics03_connection::events::{
 use ibc::events::{IbcEvent, IbcEventType};
 use tendermint::abci::Event as AbciEvent;
 
-use crate::event::IbcEventWithHeight;
-
-pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEventWithHeight> {
+pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEvent> {
     match event.type_str.parse() {
         Ok(IbcEventType::OpenInitConnection) => extract_attributes_from_tx(event)
             .map(OpenInit::from)
@@ -90,9 +88,9 @@ mod test {
         let open_confirm = OpenConfirm::from(attributes);
         abci_events.push(AbciEvent::from(open_confirm.clone()));
 
-        for event in abci_events {
-            match try_from_tx(&event) {
-                Some(e) => match e.event {
+        for abci_event in abci_events {
+            match IbcEvent::try_from(&abci_event).ok() {
+                Some(ibc_event) => match ibc_event {
                     IbcEvent::OpenInitConnection(e) => assert_eq!(e, open_init),
                     IbcEvent::OpenTryConnection(e) => assert_eq!(e, open_try),
                     IbcEvent::OpenAckConnection(e) => assert_eq!(e, open_ack),

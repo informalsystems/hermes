@@ -327,6 +327,16 @@ impl TryFrom<IbcEvent> for AbciEvent {
     }
 }
 
+impl TryFrom<&AbciEvent> for IbcEvent {
+    type Error = Error;
+
+    fn try_from(_abci_event: &AbciEvent) -> Result<Self, Self::Error> {
+        // TODO: parse abci_event.type_str into IbcEventType, and delegate to variant structs
+        // IMPORTANT: Do client, then connection, then channel (i.e. preserve order of from_tx_response_event)
+        todo!()
+    }
+}
+
 impl IbcEvent {
     pub fn to_json(&self) -> String {
         match serde_json::to_string(self) {

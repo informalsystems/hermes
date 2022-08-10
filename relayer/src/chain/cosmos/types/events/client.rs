@@ -8,9 +8,7 @@ use ibc::core::ics02_client::header::AnyHeader;
 use ibc::events::{IbcEvent, IbcEventType};
 use tendermint::abci::Event as AbciEvent;
 
-use crate::event::IbcEventWithHeight;
-
-pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEventWithHeight> {
+pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEvent> {
     match event.type_str.parse() {
         Ok(IbcEventType::CreateClient) => extract_attributes_from_tx(event)
             .map(CreateClient)
@@ -108,9 +106,9 @@ mod tests {
         update_client.header = Some(header);
         abci_events.push(AbciEvent::from(update_client.clone()));
 
-        for event in abci_events {
-            match try_from_tx(&event) {
-                Some(e) => match e.event() {
+        for abci_event in abci_events {
+            match IbcEvent::try_from(&abci_event).ok() {
+                Some(ibc_event) => match ibc_event {
                     IbcEvent::CreateClient(e) => assert_eq!(e.0, create_client.0),
                     IbcEvent::ClientMisbehaviour(e) => assert_eq!(e.0, client_misbehaviour.0),
                     IbcEvent::UpgradeClient(e) => assert_eq!(e.0, upgrade_client.0),

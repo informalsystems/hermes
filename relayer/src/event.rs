@@ -1,11 +1,12 @@
 use core::fmt::Display;
 use ibc::{events::IbcEvent, Height};
+use serde::Serialize;
 
 pub mod bus;
 pub mod monitor;
 pub mod rpc;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct IbcEventWithHeight {
     pub event: IbcEvent,
     pub height: Height,

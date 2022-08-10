@@ -8,7 +8,7 @@ use ibc::core::ics04_channel::events as ChannelEvents;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::IbcEvent;
 
-use crate::chain::cosmos::types::events::{self, channel::RawObject};
+use crate::chain::cosmos::types::events::channel::RawObject;
 use crate::event::monitor::queries;
 
 use super::IbcEventWithHeight;
@@ -147,24 +147,11 @@ pub fn get_all_events(
             .map_err(|_| String::from("tx_result.height: invalid header height of 0"))?;
 
             for abci_event in &tx_result.result.events {
-                if query == queries::ibc_client().to_string() {
-                    if let Some(client_event) = events::client::try_from_tx(abci_event) {
-                        tracing::trace!("extracted ibc_client event {}", client_event);
-                        events_with_height
-                            .push(IbcEventWithHeight::new(client_event.event, height));
-                    }
-                }
-                if query == queries::ibc_connection().to_string() {
-                    if let Some(conn_event) = events::connection::try_from_tx(abci_event) {
-                        tracing::trace!("extracted ibc_connection event {}", conn_event);
-                        events_with_height.push(IbcEventWithHeight::new(conn_event.event, height));
-                    }
-                }
-                if query == queries::ibc_channel().to_string() {
-                    if let Some(chan_event) = events::channel::try_from_tx(abci_event) {
+                if let Ok(ibc_event) = IbcEvent::try_from(abci_event) {
+                    if query == queries::ibc_channel().to_string() {
                         let _span = tracing::trace_span!("ibc_channel event").entered();
-                        tracing::trace!("extracted {}", chan_event);
-                        if matches!(chan_event.event(), IbcEvent::SendPacket(_)) {
+                        tracing::trace!("extracted {}", ibc_event);
+                        if matches!(ibc_event, IbcEvent::SendPacket(_)) {
                             // Should be the same as the hash of tx_result.tx?
                             if let Some(hash) =
                                 events.get("tx.hash").and_then(|values| values.get(0))
@@ -172,8 +159,11 @@ pub fn get_all_events(
                                 tracing::trace!(event = "SendPacket", "tx hash: {}", hash);
                             }
                         }
-                        events_with_height.push(IbcEventWithHeight::new(chan_event.event, height));
+                    } else {
+                        tracing::trace!("extracted ibc event {}", ibc_event);
                     }
+
+                    events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
                 }
             }
         }

@@ -1199,7 +1199,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // same consensus height. This could happen when multiple client updates with same header
         // were submitted to chain. However this is not what it's observed during testing.
         // Regardless, just take the event from the first update.
-        let event = events_with_heights[0].event;
+        let event = events_with_heights[0].event();
         let update = downcast!(event.clone() => IbcEvent::UpdateClient).ok_or_else(|| {
             ForeignClientError::unexpected_event(
                 self.id().clone(),

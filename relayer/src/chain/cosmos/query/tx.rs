@@ -160,8 +160,8 @@ fn update_client_from_tx_search_response(
         .events
         .into_iter()
         .filter(|event| event.type_str == request.event_id.as_str())
-        .flat_map(|event| events::client::try_from_tx(&event))
-        .flat_map(|event| match event.event() {
+        .flat_map(|event| IbcEvent::try_from(&event).ok())
+        .flat_map(|event| match event {
             IbcEvent::UpdateClient(mut update) => {
                 update.common.height = height;
                 Some(update)
@@ -201,14 +201,15 @@ fn packet_from_tx_search_response(
         .tx_result
         .events
         .into_iter()
-        .find_map(|ev| filter_matching_event(ev, request, seq)))
+        .find_map(|ev| filter_matching_event(ev, request, seq))
+        .map(|ibc_event| IbcEventWithHeight::new(ibc_event, height)))
 }
 
 fn filter_matching_event(
     event: Event,
     request: &QueryPacketEventDataRequest,
     seq: Sequence,
-) -> Option<IbcEventWithHeight> {
+) -> Option<IbcEvent> {
     fn matches_packet(
         request: &QueryPacketEventDataRequest,
         seq: Sequence,
@@ -225,15 +226,15 @@ fn filter_matching_event(
         return None;
     }
 
-    let event_with_height = events::channel::try_from_tx(&event)?;
-    match event_with_height.event() {
+    let ibc_event = IbcEvent::try_from(&event).ok()?;
+    match ibc_event {
         IbcEvent::SendPacket(ref send_ev) if matches_packet(request, seq, &send_ev.packet) => {
-            Some(event_with_height)
+            Some(ibc_event)
         }
         IbcEvent::WriteAcknowledgement(ref ack_ev)
             if matches_packet(request, seq, &ack_ev.packet) =>
         {
-            Some(event_with_height)
+            Some(ibc_event)
         }
         _ => None,
     }

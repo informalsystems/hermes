@@ -864,7 +864,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // but the `processed_height` is the height at which the first `UpdateClient` event for this
         // consensus state/height was emitted. We expect that these events are received in the exact
         // same order in which they were emitted.
-        match events.first().map(|ev_with_height| ev_with_height.event) {
+        match events.first().map(|ev_with_height| ev_with_height.event()) {
             Some(IbcEvent::UpdateClient(event)) => Ok(event.height()),
             Some(event) => Err(LinkError::unexpected_event(event.clone())),
             None => Err(LinkError::update_client_event_not_found()),
