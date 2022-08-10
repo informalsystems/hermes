@@ -136,7 +136,12 @@ pub mod queries {
 
 impl EventMonitor {
     /// Create an event monitor, and connect to a node
-    #[instrument(name = "event_monitor.create", skip_all, fields(chain = %chain_id, addr = %node_addr))]
+    #[instrument(
+        name = "event_monitor.create",
+        level = "error",
+        skip_all,
+        fields(chain = %chain_id, addr = %node_addr)
+    )]
     pub fn new(
         chain_id: ChainId,
         node_addr: Url,
@@ -201,7 +206,12 @@ impl EventMonitor {
         Ok(())
     }
 
-    #[instrument(name = "event_monitor.try_reconnect", skip_all, fields(chain = %self.chain_id))]
+    #[instrument(
+        name = "event_monitor.try_reconnect",
+        level = "error",
+        skip_all,
+        fields(chain = %self.chain_id)
+    )]
     fn try_reconnect(&mut self) -> Result<()> {
         trace!(
             "trying to reconnect to WebSocket endpoint {}",
@@ -240,7 +250,12 @@ impl EventMonitor {
     }
 
     /// Try to resubscribe to events
-    #[instrument(name = "event_monitor.try_resubscribe", skip_all, fields(chain = %self.chain_id))]
+    #[instrument(
+        name = "event_monitor.try_resubscribe",
+        level = "error",
+        skip_all,
+        fields(chain = %self.chain_id)
+    )]
     fn try_resubscribe(&mut self) -> Result<()> {
         trace!("trying to resubscribe to events");
         self.subscribe()
@@ -250,7 +265,12 @@ impl EventMonitor {
     ///
     /// See the [`retry`](https://docs.rs/retry) crate and the
     /// [`crate::util::retry`] module for more information.
-    #[instrument(name = "event_monitor.reconnect", skip_all, fields(chain = %self.chain_id))]
+    #[instrument(
+        name = "event_monitor.reconnect",
+        level = "error",
+        skip_all,
+        fields(chain = %self.chain_id)
+    )]
     fn reconnect(&mut self) {
         let result = retry_with_index(retry_strategy::default(), |_| {
             // Try to reconnect
@@ -283,7 +303,12 @@ impl EventMonitor {
 
     /// Event monitor loop
     #[allow(clippy::while_let_loop)]
-    #[instrument(name = "event_monitor.run", skip_all, fields(chain = %self.chain_id))]
+    #[instrument(
+        name = "event_monitor.run",
+        level = "error",
+        skip_all,
+        fields(chain = %self.chain_id)
+    )]
     pub fn run(mut self) {
         debug!("starting event monitor");
 

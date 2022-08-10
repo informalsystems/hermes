@@ -96,7 +96,7 @@ impl Runnable for ListenCmd {
 }
 
 /// Listen to events
-#[instrument(skip_all, fields(chain = %config.id))]
+#[instrument(skip_all, level = "error", fields(chain = %config.id))]
 pub fn listen(
     config: &ChainConfig,
     filters: &[EventFilter],

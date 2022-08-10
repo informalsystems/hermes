@@ -508,7 +508,7 @@ fn health_check<Chain: ChainHandle>(config: &Config, registry: &mut Registry<Cha
 }
 
 /// Subscribe to the events emitted by the chains the supervisor is connected to.
-#[instrument(skip_all)]
+#[instrument(name = "supervisor.init_subscriptions", level = "error", skip_all)]
 fn init_subscriptions<Chain: ChainHandle>(
     config: &Config,
     registry: &mut Registry<Chain>,
@@ -577,7 +577,7 @@ fn handle_rest_requests<Chain: ChainHandle>(
     }
 }
 
-#[instrument(skip_all)]
+#[instrument(name = "supervisor.handle_rest_cmd", level = "error", skip_all)]
 fn handle_rest_cmd<Chain: ChainHandle>(
     registry: &Registry<Chain>,
     workers: &WorkerMap,
@@ -593,7 +593,12 @@ fn handle_rest_cmd<Chain: ChainHandle>(
     }
 }
 
-#[instrument(skip_all, fields(chain = %chain_id))]
+#[instrument(
+    name = "supervisor.clear_pending_packets",
+    level = "error",
+    skip_all,
+    fields(chain = %chain_id)
+)]
 fn clear_pending_packets(workers: &mut WorkerMap, chain_id: &ChainId) -> Result<(), Error> {
     for worker in workers.workers_for_chain(chain_id) {
         worker.clear_pending_packets();
@@ -603,7 +608,12 @@ fn clear_pending_packets(workers: &mut WorkerMap, chain_id: &ChainId) -> Result<
 }
 
 /// Process a batch of events received from a chain.
-#[instrument(skip_all, fields(chain = %src_chain.id()))]
+#[instrument(
+    name = "supervisor.process_batch",
+    level = "error",
+    skip_all,
+    fields(chain = %src_chain.id()))
+]
 fn process_batch<Chain: ChainHandle>(
     config: &Config,
     registry: &mut Registry<Chain>,
@@ -699,7 +709,12 @@ fn process_batch<Chain: ChainHandle>(
 
 /// Process the given batch if it does not contain any errors,
 /// output the errors on the console otherwise.
-#[instrument(skip_all, fields(chain = %chain.id()))]
+#[instrument(
+    name = "supervisor.handle_batch",
+    level = "error",
+    skip_all,
+    fields(chain = %chain.id())
+)]
 fn handle_batch<Chain: ChainHandle>(
     config: &Config,
     registry: &mut Registry<Chain>,
