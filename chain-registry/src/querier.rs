@@ -1,12 +1,11 @@
 /// Contains functions to query RPC and GRPC endpoints for a given chain
-
 use crate::error::RegistryError;
 use crate::formatter::{UriFormatter, WebSocketFormatter};
 use async_trait::async_trait;
 use futures::{stream::FuturesUnordered, StreamExt};
 use http::Uri;
 use ibc_proto::cosmos::bank::v1beta1::query_client::QueryClient;
-use tendermint_rpc::{Url, Client, SubscriptionClient, WebSocketClient};
+use tendermint_rpc::{Client, SubscriptionClient, Url, WebSocketClient};
 use tokio::time::timeout;
 use tokio::time::Duration;
 
@@ -19,7 +18,6 @@ pub trait QueryInputOutput {
 #[async_trait]
 /// QueryContext is a trait that provides the ability to query a chain from a list of endpoints
 pub trait QueryContext: QueryInputOutput {
-
     /// Returns an error specific to the query
     fn query_error(chain_name: String) -> RegistryError;
 
@@ -65,7 +63,6 @@ impl QueryInputOutput for RPCQuerier {
 
 #[async_trait]
 impl QueryContext for RPCQuerier {
-
     fn query_error(chain_name: String) -> RegistryError {
         RegistryError::no_healthy_rpc(chain_name)
     }

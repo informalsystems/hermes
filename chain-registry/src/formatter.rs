@@ -54,12 +54,6 @@ impl UriFormatter for GRPCFormatter {
         let uri = input
             .parse::<Uri>()
             .map_err(|e| RegistryError::uri_parse_error(input.to_string(), e))?;
-        /*
-        TODO : check if a valid grpc must provide a port
-        if uri.port().is_none() {
-            return Err(RegistryError::grpc_without_port(input.to_string()));
-        }
-        */
 
         if uri.scheme().is_none() {
             let builder = Uri::builder();
