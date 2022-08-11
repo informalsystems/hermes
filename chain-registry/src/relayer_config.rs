@@ -65,11 +65,8 @@ async fn hermes_config<GrpcQuerier, RpcQuerier, GrpcFormatter>(
 where
     GrpcQuerier:
         QueryContext<QueryInput = Uri, QueryOutput = Url, QueryError = RegistryError> + Send,
-    RpcQuerier: QueryContext<
-            QueryInput = String,
-            QueryOutput = RpcMandatoryData,
-            QueryError = RegistryError,
-        > + Send,
+    RpcQuerier:
+        QueryContext<QueryInput = String, QueryOutput = RpcData, QueryError = RegistryError> + Send,
     GrpcFormatter: UriFormatter<OutputFormat = Uri>,
 {
     let chain_name = chain_data.chain_name;
@@ -103,9 +100,9 @@ where
         return Err(RegistryError::no_asset_found(chain_name.to_string()));
     };
 
-    let rpc_mandatory_data = rpc_handle
+    let rpc_data = rpc_handle
         .await
-        .map_err(|e| RegistryError::join_error("rpc_mandatory_data_join".to_string(), e))??;
+        .map_err(|e| RegistryError::join_error("rpc_data_join".to_string(), e))??;
     let grpc_address = grpc_handle
         .await
         .map_err(|e| RegistryError::join_error("grpc_handle_join".to_string(), e))??;
@@ -118,8 +115,8 @@ where
     Ok(ChainConfig {
         id: chain_data.chain_id,
         r#type: default::chain_type(),
-        rpc_addr: rpc_mandatory_data.rpc_address,
-        websocket_addr: rpc_mandatory_data.websocket,
+        rpc_addr: rpc_data.rpc_address,
+        websocket_addr: rpc_data.websocket,
         grpc_addr: grpc_address,
         rpc_timeout: default::rpc_timeout(),
         account_prefix: chain_data.bech32_prefix,
@@ -156,6 +153,11 @@ pub async fn get_configs(
     keys: &[String],
 ) -> Result<Vec<ChainConfig>, RegistryError> {
     let n = chains.len();
+
+    if n == 0 {
+        return Ok(Vec::new());
+    }
+
     let mut chain_data_handle = Vec::with_capacity(n);
     let mut asset_lists_handle = Vec::with_capacity(n);
     let mut path_handles = Vec::with_capacity(n * (n - 1) / 2);
@@ -231,6 +233,25 @@ pub async fn get_configs(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ibc::core::ics24_host::identifier::{ChannelId, PortId};
+    use std::str::FromStr;
+
+    async fn fetch_configs(test_chains : &[String]) -> Result<Vec<ChainConfig>, RegistryError> {
+        let test_keys: &[String] = &vec!["testkey".to_string(); test_chains.len()];
+        Ok(get_configs(test_chains, test_keys).await?)
+    }
+
+    // Helper function
+    async fn should_have_no_filter(test_chains : &[String]) -> Result<(), RegistryError>{
+        let configs = fetch_configs(test_chains).await?;
+        for config in configs {
+            match config.packet_filter {
+                PacketFilter::AllowAll => {}
+                _ => panic!("PacketFilter not allowed"),
+            }
+        }
+        Ok(())
+    }
 
     #[tokio::test]
     async fn fetch_chain_config_with_packet_filters() -> Result<(), RegistryError> {
@@ -239,12 +260,62 @@ mod tests {
             "juno".to_string(),
             "osmosis".to_string(),
         ]; // Must be sorted
-        let test_keys: &[String] = &vec!["testkey".to_string(); test_chains.len()];
-        let configs = get_configs(test_chains, test_keys).await?;
+    
+        let configs = fetch_configs(test_chains).await?;
 
         for config in configs {
             match config.packet_filter {
-                PacketFilter::Allow(_) => {}
+                PacketFilter::Allow(channel_filter) => {
+                    if config.id.as_str().contains("cosmoshub") {
+                        assert!(channel_filter.is_exact());
+                        let cosmoshub_juno = (
+                            &PortId::from_str("transfer").unwrap(),
+                            &ChannelId::from_str("channel-207").unwrap(),
+                        );
+                        let cosmoshub_osmosis = (
+                            &PortId::from_str("transfer").unwrap(),
+                            &ChannelId::from_str("channel-141").unwrap(),
+                        );
+                        assert!(channel_filter.matches(cosmoshub_juno));
+                        assert!(channel_filter.matches(cosmoshub_osmosis));
+                    } else if config.id.as_str().contains("juno") {
+                        assert!(channel_filter.is_exact());
+                        let juno_cosmoshub = (
+                            &PortId::from_str("transfer").unwrap(),
+                            &ChannelId::from_str("channel-1").unwrap(),
+                        );
+                        let juno_osmosis_1 = (
+                            &PortId::from_str("transfer").unwrap(),
+                            &ChannelId::from_str("channel-0").unwrap(),
+                        );
+                        let juno_osmosis_2 = (
+                            &PortId::from_str("wasm.juno1v4887y83d6g28puzvt8cl0f3cdhd3y6y9mpysnsp3k8krdm7l6jqgm0rkn").unwrap(), 
+                            &ChannelId::from_str("channel-47").unwrap()
+                        );
+                        assert!(channel_filter.matches(juno_cosmoshub));
+                        assert!(channel_filter.matches(juno_osmosis_1));
+                        assert!(channel_filter.matches(juno_osmosis_2));
+                    } else if config.id.as_str().contains("osmosis") {
+                        assert!(channel_filter.is_exact());
+                        let osmosis_cosmoshub = (
+                            &PortId::from_str("transfer").unwrap(),
+                            &ChannelId::from_str("channel-0").unwrap(),
+                        );
+                        let osmosis_juno_1 = (
+                            &PortId::from_str("transfer").unwrap(),
+                            &ChannelId::from_str("channel-42").unwrap(),
+                        );
+                        let osmosis_juno_2 = (
+                            &PortId::from_str("transfer").unwrap(),
+                            &ChannelId::from_str("channel-169").unwrap(),
+                        );
+                        assert!(channel_filter.matches(osmosis_cosmoshub));
+                        assert!(channel_filter.matches(osmosis_juno_1));
+                        assert!(channel_filter.matches(osmosis_juno_2));
+                    } else {
+                        panic!("Unknown chain");
+                    }
+                }
                 _ => panic!("PacketFilter not allowed"),
             }
         }
@@ -255,16 +326,20 @@ mod tests {
     #[tokio::test]
     async fn fetch_chain_config_without_packet_filters() -> Result<(), RegistryError> {
         let test_chains: &[String] = &["cosmoshub".to_string(), "evmos".to_string()]; // Must be sorted
-        let test_keys: &[String] = &vec!["testkey".to_string(); test_chains.len()];
-        let configs = get_configs(test_chains, test_keys).await?;
+        should_have_no_filter(test_chains).await
+    }
 
-        for config in configs {
-            match config.packet_filter {
-                PacketFilter::AllowAll => {}
-                _ => panic!("PacketFilter not allowed"),
-            }
-        }
+    #[tokio::test]
+    async fn fetch_one_chain() -> Result<(), RegistryError> {
+        let test_chains: &[String] = &["cosmoshub".to_string()]; // Must be sorted
+        should_have_no_filter(test_chains).await
+    }
 
+    #[tokio::test]
+    async fn fetch_no_chain() -> Result<(), RegistryError> {
+        let test_chains: &[String] = &[]; // Must be sorted
+        let configs = fetch_configs(test_chains).await?;
+        assert_eq!(configs.len(), 0);
         Ok(())
     }
 }

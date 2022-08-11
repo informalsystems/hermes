@@ -47,7 +47,7 @@ pub trait QueryContext: QueryTypes {
 
 /// Data which must be retrieved from RPC endpoints.
 #[derive(Clone, Debug)]
-pub struct RpcMandatoryData {
+pub struct RpcData {
     pub rpc_address: Url,
     pub max_block_size: u64,
     pub websocket: Url,
@@ -60,7 +60,7 @@ pub struct SimpleRpcQuerier;
 /// Expected Input and Output to query an RPC endpoint
 impl QueryTypes for SimpleRpcQuerier {
     type QueryInput = String;
-    type QueryOutput = RpcMandatoryData;
+    type QueryOutput = RpcData;
     type QueryError = RegistryError;
 }
 
@@ -70,7 +70,7 @@ impl QueryContext for SimpleRpcQuerier {
         RegistryError::no_healthy_rpc(chain_name)
     }
 
-    /// Convert the RPC url to a WebSocket url, query the endpoint, return the mandatory data from the RPC.
+    /// Convert the RPC url to a WebSocket url, query the endpoint, return the data from the RPC.
     async fn query(rpc: Self::QueryInput) -> Result<Self::QueryOutput, Self::QueryError> {
         let websocket_addr = SimpleWebSocketFormatter::parse_or_build_address(rpc.as_str())?;
 
@@ -103,7 +103,7 @@ impl QueryContext for SimpleRpcQuerier {
             .map_err(|e| RegistryError::join_error("chain_data_join".to_string(), e))?
             .map_err(|e| RegistryError::websocket_driver_error(websocket_addr.to_string(), e))?;
 
-        Ok(RpcMandatoryData {
+        Ok(RpcData {
             rpc_address: Url::from_str(&rpc)
                 .map_err(|e| RegistryError::tendermint_url_parse_error(rpc, e))?,
             max_block_size: latest_consensus_params,
