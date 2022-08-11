@@ -97,23 +97,18 @@ mod tests {
     use super::*;
     use crate::error::RegistryError;
 
-    pub const TEST_IBC_PATHS: &[&str] = &[
-        "cosmoshub-osmosis.json",
-        "cosmoshub-juno.json",
-        "evmos-osmosis.json",
-        "juno-osmosis.json",
-        "osmosis-regen.json",
-    ];
+    use crate::utils::ALL_PATHS;
 
     #[tokio::test]
     async fn fetch_paths() -> Result<(), RegistryError> {
-        let mut handles = Vec::with_capacity(TEST_IBC_PATHS.len());
-        for resource in TEST_IBC_PATHS {
+        let mut handles = Vec::with_capacity(ALL_PATHS.len());
+        for resource in ALL_PATHS {
             handles.push(tokio::spawn(IBCPath::fetch(resource.to_string())));
         }
 
         for handle in handles {
-            handle.await.unwrap()?;
+            let path: IBCPath = handle.await.unwrap()?;
+            assert!(path.channels.len() > 0);
         }
         Ok(())
     }

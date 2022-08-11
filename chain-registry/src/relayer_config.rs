@@ -3,11 +3,13 @@ use crate::{
     asset_list::AssetList,
     chain::ChainData,
     error::RegistryError,
-    formatter::{GRPCFormatter, UriFormatter},
+    formatter::{SimpleGrpcFormatter, UriFormatter},
     paths::IBCPath,
     querier::*,
     utils::Fetchable,
 };
+
+use http::Uri;
 
 use ibc_relayer::{
     config::{
@@ -18,9 +20,10 @@ use ibc_relayer::{
     keyring::Store,
 };
 
-use std::{collections::HashMap, str::FromStr};
+use std::{collections::HashMap, marker::Send};
 
 use tendermint_light_client_verifier::types::TrustThreshold;
+use tendermint_rpc::Url;
 use tokio;
 
 // ----------------- Packet filters ------------------
@@ -53,18 +56,28 @@ fn construct_packet_filters(ibc_paths: Vec<IBCPath>) -> HashMap<String, PacketFi
 }
 
 /// Generates a ChainConfig for a given chain from ChainData, AssetList and an optional PacketFilter.
-async fn hermes_config(
+async fn hermes_config<GrpcQuerier, RpcQuerier, GrpcFormatter>(
     chain_data: ChainData,
     assets: AssetList,
     packet_filter: Option<PacketFilter>,
     key_name: String,
-) -> Result<ChainConfig, RegistryError> {
+) -> Result<ChainConfig, RegistryError>
+where
+    GrpcQuerier:
+        QueryContext<QueryInput = Uri, QueryOutput = Url, QueryError = RegistryError> + Send,
+    RpcQuerier: QueryContext<
+            QueryInput = String,
+            QueryOutput = RpcMandatoryData,
+            QueryError = RegistryError,
+        > + Send,
+    GrpcFormatter: UriFormatter<OutputFormat = Uri>,
+{
     let chain_name = chain_data.chain_name;
 
     let mut grpc_endpoints = Vec::new();
 
     for grpc in chain_data.apis.grpc.iter() {
-        grpc_endpoints.push(GRPCFormatter::parse_or_build_address(
+        grpc_endpoints.push(GrpcFormatter::parse_or_build_address(
             grpc.address.as_str(),
         )?)
     }
@@ -78,11 +91,11 @@ async fn hermes_config(
 
     let clone_name = chain_name.to_string();
     let rpc_handle =
-        tokio::spawn(async move { RPCQuerier::query_healthy(clone_name, rpc_endpoints).await });
+        tokio::spawn(async move { RpcQuerier::query_healthy(clone_name, rpc_endpoints).await });
 
     let clone_name = chain_name.to_string();
     let grpc_handle =
-        tokio::spawn(async move { GRPCQuerier::query_healthy(clone_name, grpc_endpoints).await });
+        tokio::spawn(async move { GrpcQuerier::query_healthy(clone_name, grpc_endpoints).await });
 
     let base = if let Some(asset) = assets.assets.first() {
         asset.base.clone()
@@ -105,9 +118,7 @@ async fn hermes_config(
     Ok(ChainConfig {
         id: chain_data.chain_id,
         r#type: default::chain_type(),
-        rpc_addr: tendermint_rpc::Url::from_str(rpc_mandatory_data.rpc_address.as_str()).map_err(
-            |e| RegistryError::tendermint_url_parse_error(rpc_mandatory_data.rpc_address, e),
-        )?,
+        rpc_addr: rpc_mandatory_data.rpc_address,
         websocket_addr: rpc_mandatory_data.websocket,
         grpc_addr: grpc_address,
         rpc_timeout: default::rpc_timeout(),
@@ -195,7 +206,13 @@ pub async fn get_configs(
         let key = keys[i].to_string();
 
         configs_handle.push(tokio::spawn(async move {
-            hermes_config(chain_data, assets, packet_filter, key).await
+            hermes_config::<SimpleGrpcQuerier, SimpleRpcQuerier, SimpleGrpcFormatter>(
+                chain_data,
+                assets,
+                packet_filter,
+                key,
+            )
+            .await
         }));
     }
 
