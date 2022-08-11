@@ -1,9 +1,8 @@
-use ibc::core::ics02_client::error::Error as Ics02Error;
 use ibc::core::ics03_connection::error::Error;
 use ibc::core::ics03_connection::events::{
     Attributes, OpenAck, OpenConfirm, OpenInit, OpenTry, CLIENT_ID_ATTRIBUTE_KEY,
     CONN_ID_ATTRIBUTE_KEY, COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY,
-    COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY, HEIGHT_ATTRIBUTE_KEY,
+    COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY,
 };
 use ibc::events::{IbcEvent, IbcEventType};
 use tendermint::abci::Event as AbciEvent;
@@ -37,11 +36,6 @@ fn extract_attributes_from_tx(event: &AbciEvent) -> Result<Attributes, Error> {
         let key = tag.key.as_ref();
         let value = tag.value.as_ref();
         match key {
-            HEIGHT_ATTRIBUTE_KEY => {
-                attr.height = value.parse().map_err(|e| {
-                    Error::ics02_client(Ics02Error::invalid_string_as_height(value.to_string(), e))
-                })?;
-            }
             CONN_ID_ATTRIBUTE_KEY => {
                 attr.connection_id = value.parse().ok();
             }
@@ -64,15 +58,12 @@ fn extract_attributes_from_tx(event: &AbciEvent) -> Result<Attributes, Error> {
 #[cfg(test)]
 mod test {
     use ibc::core::ics03_connection::events::Attributes;
-    use ibc::Height;
 
     use super::*;
 
     #[test]
     fn connection_event_to_abci_event() {
-        let height = Height::new(1, 1).unwrap();
         let attributes = Attributes {
-            height,
             connection_id: Some("test_connection".parse().unwrap()),
             client_id: "test_client".parse().unwrap(),
             counterparty_connection_id: Some("counterparty_test_conn".parse().unwrap()),

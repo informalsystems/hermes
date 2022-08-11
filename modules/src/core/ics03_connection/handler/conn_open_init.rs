@@ -56,7 +56,6 @@ pub(crate) fn process(
 
     let event_attributes = Attributes {
         connection_id: Some(conn_id),
-        height: ctx.host_current_height(),
         ..Default::default()
     };
     output.emit(IbcEvent::OpenInitConnection(event_attributes.into()));

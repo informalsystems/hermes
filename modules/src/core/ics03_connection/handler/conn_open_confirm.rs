@@ -62,7 +62,6 @@ pub(crate) fn process(
 
     let event_attributes = Attributes {
         connection_id: Some(result.connection_id.clone()),
-        height: ctx.host_current_height(),
         ..Default::default()
     };
     output.emit(IbcEvent::OpenConfirmConnection(event_attributes.into()));

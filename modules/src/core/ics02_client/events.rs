@@ -12,9 +12,6 @@ use crate::core::ics24_host::identifier::ClientId;
 use crate::events::{IbcEvent, IbcEventType};
 use crate::prelude::*;
 
-/// The content of the `key` field for the attribute containing the height.
-pub const HEIGHT_ATTRIBUTE_KEY: &str = "height";
-
 /// The content of the `key` field for the attribute containing the client identifier.
 pub const CLIENT_ID_ATTRIBUTE_KEY: &str = "client_id";
 
