@@ -15,10 +15,6 @@ define_error! {
             [TraceError<http::Error>]
             |e| {format!("Unable to parse grpc endpoint for: {}", e.grpc)},
 
-        GrpcWithoutPort
-            {grpc : String}
-            |e| {format!("Provided gRPC endpoint without port: {}", e.grpc)},
-
         JoinError
             {task : String}
             [TraceError<JoinError>]
