@@ -146,8 +146,8 @@ where
 }
 
 /// Generates a Vec<ChainConfig> for an array of chains by fetching data from
-/// https://github.com/cosmos/chain-registry.
-/// Gas settings are set to default values.
+/// https://github.com/cosmos/chain-registry. Gas settings are set to default values.
+/// This function expects that chains is sorted and keys has the same length as chains.
 pub async fn get_configs(
     chains: &[String],
     keys: &[String],
@@ -236,13 +236,13 @@ mod tests {
     use ibc::core::ics24_host::identifier::{ChannelId, PortId};
     use std::str::FromStr;
 
-    async fn fetch_configs(test_chains : &[String]) -> Result<Vec<ChainConfig>, RegistryError> {
+    async fn fetch_configs(test_chains: &[String]) -> Result<Vec<ChainConfig>, RegistryError> {
         let test_keys: &[String] = &vec!["testkey".to_string(); test_chains.len()];
         Ok(get_configs(test_chains, test_keys).await?)
     }
 
     // Helper function
-    async fn should_have_no_filter(test_chains : &[String]) -> Result<(), RegistryError>{
+    async fn should_have_no_filter(test_chains: &[String]) -> Result<(), RegistryError> {
         let configs = fetch_configs(test_chains).await?;
         for config in configs {
             match config.packet_filter {
@@ -260,7 +260,7 @@ mod tests {
             "juno".to_string(),
             "osmosis".to_string(),
         ]; // Must be sorted
-    
+
         let configs = fetch_configs(test_chains).await?;
 
         for config in configs {
