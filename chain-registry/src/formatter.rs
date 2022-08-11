@@ -57,15 +57,15 @@ impl UriFormatter for SimpleGrpcFormatter {
     type OutputFormat = Uri;
     fn parse_or_build_address(input: &str) -> Result<Self::OutputFormat, RegistryError> {
         // Remove the last character if it is a '/'
-        let input = match input.ends_with("/") {
+        let input = match input.ends_with('/') {
             false => input,
-            true =>{
+            true => {
                 let mut chars = input.chars();
                 chars.next_back();
                 chars.as_str()
             }
         };
-        
+
         let uri = input
             .parse::<Uri>()
             .map_err(|e| RegistryError::uri_parse_error(input.to_string(), e))?;
@@ -155,9 +155,9 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn all_chain_registry_grpc_address() -> Result<(), RegistryError> {
-        use crate::utils::ALL_CHAINS;
         use crate::chain::ChainData;
         use crate::utils::Fetchable;
+        use crate::utils::ALL_CHAINS;
         let mut handles = Vec::with_capacity(ALL_CHAINS.len());
         for chain in ALL_CHAINS {
             handles.push(tokio::spawn(ChainData::fetch(chain.to_string())));
@@ -175,9 +175,9 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn all_chain_registry_rpc_address() -> Result<(), RegistryError> {
-        use crate::utils::ALL_CHAINS;
         use crate::chain::ChainData;
         use crate::utils::Fetchable;
+        use crate::utils::ALL_CHAINS;
         let mut handles = Vec::with_capacity(ALL_CHAINS.len());
         for chain in ALL_CHAINS {
             handles.push(tokio::spawn(ChainData::fetch(chain.to_string())));
