@@ -26,6 +26,7 @@ const QUERY_TYPES_CACHE: [&str; 4] = [
     "query_connection",
     "query_channel",
 ];
+
 const QUERY_TYPES: [&str; 24] = [
     "query_latest_height",
     "query_blocks",
@@ -220,10 +221,12 @@ impl TelemetryState {
         self.send_packet_events.add(0, labels);
         self.acknowledgement_events.add(0, labels);
         self.timeout_events.add(0, labels);
+
         if clear_packets {
             self.cleared_send_packet_events.add(0, labels);
             self.cleared_acknowledgment_events.add(0, labels);
         }
+
         self.backlog_oldest_sequence.record(0, labels);
         self.backlog_oldest_timestamp.record(0, labels);
         self.backlog_size.record(0, labels);
@@ -241,7 +244,9 @@ impl TelemetryState {
             KeyValue::new("dst_chain", dst_chain.to_string()),
             KeyValue::new("client", client.to_string()),
         ];
+
         self.client_updates_submitted.add(0, labels);
+
         if misbehaviour {
             self.client_misbehaviours_submitted.add(0, labels);
         }
@@ -256,11 +261,13 @@ impl TelemetryState {
 
             self.queries.add(0, labels);
         }
+
         for query_type in QUERY_TYPES_CACHE {
             let labels = &[
                 KeyValue::new("chain", chain_id.to_string()),
                 KeyValue::new("query_type", query_type),
             ];
+
             self.queries_cache_hits.add(0, labels);
         }
     }
@@ -357,6 +364,7 @@ impl TelemetryState {
                 KeyValue::new("src_channel", src_channel.to_string()),
                 KeyValue::new("src_port", src_port.to_string()),
             ];
+
             self.timeout_packets_confirmed.add(count, labels);
         }
     }
