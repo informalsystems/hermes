@@ -30,7 +30,7 @@ pub const PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY: &str = "packet_timeout_height";
 pub const PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY: &str = "packet_timeout_timestamp";
 pub const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
 pub struct Attributes {
     pub height: Height,
     pub port_id: PortId,
@@ -183,7 +183,7 @@ pub trait EventType {
     fn event_type() -> IbcEventType;
 }
 
-#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct OpenInit {
     pub height: Height,
     pub port_id: PortId,
@@ -233,7 +233,7 @@ impl EventType for OpenInit {
     }
 }
 
-#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct OpenTry {
     pub height: Height,
     pub port_id: PortId,
@@ -282,7 +282,7 @@ impl EventType for OpenTry {
     }
 }
 
-#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct OpenAck {
     pub height: Height,
     pub port_id: PortId,
@@ -336,7 +336,7 @@ impl EventType for OpenAck {
     }
 }
 
-#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct OpenConfirm {
     pub height: Height,
     pub port_id: PortId,
@@ -386,7 +386,7 @@ impl EventType for OpenConfirm {
     }
 }
 
-#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct CloseInit {
     pub height: Height,
     pub port_id: PortId,
@@ -459,25 +459,13 @@ impl From<CloseInit> for IbcEvent {
     }
 }
 
-impl core::fmt::Display for CloseInit {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(
-            f,
-            "{} {} {:?}",
-            self.height(),
-            IbcEventType::CloseInitChannel.as_str(),
-            Attributes::from(self.clone())
-        )
-    }
-}
-
 impl EventType for CloseInit {
     fn event_type() -> IbcEventType {
         IbcEventType::CloseInitChannel
     }
 }
 
-#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct CloseConfirm {
     pub height: Height,
     pub channel_id: Option<ChannelId>,
@@ -569,7 +557,7 @@ impl_from_ibc_to_abci_event!(
     CloseConfirm
 );
 
-#[derive(Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct SendPacket {
     pub height: Height,
     pub packet: Packet,
@@ -614,19 +602,7 @@ impl TryFrom<SendPacket> for AbciEvent {
     }
 }
 
-impl core::fmt::Display for SendPacket {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "SendPacket - h:{}, {}", self.height, self.packet)
-    }
-}
-
-impl core::fmt::Debug for SendPacket {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "SendPacket - h:{}, {}", self.height, self.packet)
-    }
-}
-
-#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct ReceivePacket {
     pub height: Height,
     pub packet: Packet,
@@ -671,13 +647,7 @@ impl TryFrom<ReceivePacket> for AbciEvent {
     }
 }
 
-impl core::fmt::Display for ReceivePacket {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "ReceivePacket - h:{}, {}", self.height, self.packet)
-    }
-}
-
-#[derive(Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct WriteAcknowledgement {
     pub height: Height,
     pub packet: Packet,
@@ -732,27 +702,7 @@ impl TryFrom<WriteAcknowledgement> for AbciEvent {
     }
 }
 
-impl core::fmt::Display for WriteAcknowledgement {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(
-            f,
-            "WriteAcknowledgement - h:{}, {}",
-            self.height, self.packet
-        )
-    }
-}
-
-impl core::fmt::Debug for WriteAcknowledgement {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "WriteAcknowledgement - h:{}, {}",
-            self.height, self.packet
-        )
-    }
-}
-
-#[derive(Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct AcknowledgePacket {
     pub height: Height,
     pub packet: Packet,
@@ -791,19 +741,7 @@ impl TryFrom<AcknowledgePacket> for AbciEvent {
     }
 }
 
-impl core::fmt::Display for AcknowledgePacket {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "h:{}, {}", self.height, self.packet)
-    }
-}
-
-impl core::fmt::Debug for AcknowledgePacket {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "AcknowledgePacket - h:{}, {}", self.height, self.packet)
-    }
-}
-
-#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct TimeoutPacket {
     pub height: Height,
     pub packet: Packet,
@@ -848,13 +786,7 @@ impl TryFrom<TimeoutPacket> for AbciEvent {
     }
 }
 
-impl core::fmt::Display for TimeoutPacket {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "TimeoutPacket - h:{}, {}", self.height, self.packet)
-    }
-}
-
-#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct TimeoutOnClosePacket {
     pub height: Height,
     pub packet: Packet,
@@ -896,15 +828,5 @@ impl TryFrom<TimeoutOnClosePacket> for AbciEvent {
             type_str: IbcEventType::TimeoutOnClose.as_str().to_string(),
             attributes,
         })
-    }
-}
-
-impl core::fmt::Display for TimeoutOnClosePacket {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(
-            f,
-            "TimeoutOnClosePacket - h:{}, {}",
-            self.height, self.packet
-        )
     }
 }

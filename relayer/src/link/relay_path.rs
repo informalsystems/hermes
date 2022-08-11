@@ -536,28 +536,30 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                         (None, None)
                     }
                 }
-                IbcEvent::SendPacket(ref send_packet_ev) => {
-                    if self.send_packet_event_handled(send_packet_ev)? {
-                        debug!("{} already handled", send_packet_ev);
+                IbcEvent::SendPacket(ref event) => {
+                    if self.send_packet_event_handled(event)? {
+                        debug!(?event, "SendPacket event has already been handled");
+
                         (None, None)
                     } else {
-                        self.build_recv_or_timeout_from_send_packet_event(
-                            send_packet_ev,
-                            &dst_latest_info,
-                        )?
+                        self.build_recv_or_timeout_from_send_packet_event(event, &dst_latest_info)?
                     }
                 }
-                IbcEvent::WriteAcknowledgement(ref write_ack_ev) => {
+                IbcEvent::WriteAcknowledgement(ref event) => {
                     if self
                         .dst_channel(QueryHeight::Latest)?
                         .state_matches(&ChannelState::Closed)
                     {
                         (None, None)
-                    } else if self.write_ack_event_handled(write_ack_ev)? {
-                        debug!("{} already handled", write_ack_ev);
+                    } else if self.write_ack_event_handled(event)? {
+                        debug!(
+                            ?event,
+                            "WriteAcknowledgement event has already been handled"
+                        );
+
                         (None, None)
                     } else {
-                        (self.build_ack_from_recv_event(write_ack_ev)?, None)
+                        (self.build_ack_from_recv_event(event)?, None)
                     }
                 }
                 _ => (None, None),
@@ -1527,14 +1529,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 let TransitMessage { event, .. } = gm;
 
                 match event {
-                    IbcEvent::SendPacket(e) => {
+                    IbcEvent::SendPacket(event) => {
                         // Catch any SendPacket event that timed-out
-                        if self.send_packet_event_handled(e)? {
-                            debug!("already handled send packet {}", e);
+                        if self.send_packet_event_handled(event)? {
+                            debug!(?event, "SendPacket event has already been handled");
                         } else if let Some(new_msg) =
-                            self.build_timeout_from_send_packet_event(e, &dst_status)?
+                            self.build_timeout_from_send_packet_event(event, &dst_status)?
                         {
-                            debug!("found a timed-out msg in the op data {}", odata.info(),);
+                            debug!(
+                                "found a timed-out message in the operational data: {}",
+                                odata.info(),
+                            );
+
                             timed_out
                                 .entry(odata_pos)
                                 .or_insert_with(|| {
@@ -1546,7 +1552,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                                     )
                                 })
                                 .push(TransitMessage {
-                                    event: event.clone(),
+                                    event: IbcEvent::from(event.clone()),
                                     msg: new_msg,
                                 });
                         } else {
@@ -1554,9 +1560,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                             retain_batch.push(gm.clone());
                         }
                     }
-                    IbcEvent::WriteAcknowledgement(e) => {
-                        if self.write_ack_event_handled(e)? {
-                            debug!("already handled {} write ack ", e);
+                    IbcEvent::WriteAcknowledgement(event) => {
+                        if self.write_ack_event_handled(event)? {
+                            debug!(?event, "WriteAcknowledgement has already been handled");
                         } else {
                             retain_batch.push(gm.clone());
                         }

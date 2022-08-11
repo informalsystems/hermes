@@ -16,7 +16,7 @@ pub const CLIENT_ID_ATTRIBUTE_KEY: &str = "client_id";
 pub const COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY: &str = "counterparty_connection_id";
 pub const COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY: &str = "counterparty_client_id";
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
 pub struct Attributes {
     pub height: Height,
     pub connection_id: Option<ConnectionId>,
@@ -81,7 +81,7 @@ impl From<Attributes> for Vec<Tag> {
     }
 }
 
-#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct OpenInit(Attributes);
 
 impl OpenInit {
@@ -121,7 +121,7 @@ impl From<OpenInit> for AbciEvent {
     }
 }
 
-#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct OpenTry(Attributes);
 
 impl OpenTry {
@@ -161,7 +161,7 @@ impl From<OpenTry> for AbciEvent {
     }
 }
 
-#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct OpenAck(Attributes);
 
 impl OpenAck {
@@ -201,7 +201,7 @@ impl From<OpenAck> for AbciEvent {
     }
 }
 
-#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct OpenConfirm(Attributes);
 
 impl OpenConfirm {

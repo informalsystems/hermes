@@ -699,7 +699,7 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_commitment_prefix");
 
         // TODO - do a real chain query
-        CommitmentPrefix::try_from(self.config().store_prefix.as_bytes().to_vec())
+        CommitmentPrefix::try_from(self.config.store_prefix.as_bytes().to_vec())
             .map_err(|_| Error::ics02(ClientError::empty_prefix()))
     }
 

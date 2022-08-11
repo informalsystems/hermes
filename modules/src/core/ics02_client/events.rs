@@ -100,16 +100,6 @@ impl From<Attributes> for Vec<Tag> {
     }
 }
 
-impl core::fmt::Display for Attributes {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(
-            f,
-            "h: {}, cs_h: {}({})",
-            self.height, self.client_id, self.consensus_height
-        )
-    }
-}
-
 /// CreateClient event signals the creation of a new on-chain client (IBC client).
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct CreateClient(pub Attributes);
@@ -148,14 +138,8 @@ impl From<CreateClient> for AbciEvent {
     }
 }
 
-impl core::fmt::Display for CreateClient {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "{}", self.0)
-    }
-}
-
 /// UpdateClient event signals a recent update of an on-chain client (IBC Client).
-#[derive(Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct UpdateClient {
     pub common: Attributes,
     pub header: Option<AnyHeader>,
@@ -212,18 +196,6 @@ impl From<UpdateClient> for AbciEvent {
             type_str: IbcEventType::UpdateClient.as_str().to_string(),
             attributes,
         }
-    }
-}
-
-impl core::fmt::Display for UpdateClient {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "{}", self.common)
-    }
-}
-
-impl core::fmt::Debug for UpdateClient {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", self.common)
     }
 }
 
