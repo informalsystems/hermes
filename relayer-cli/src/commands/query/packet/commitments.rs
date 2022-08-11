@@ -53,8 +53,6 @@ impl QueryPacketCommitmentsCmd {
     fn execute(&self) -> Result<PacketSeqs, Error> {
         let config = app_config();
 
-        debug!("Options: {:?}", self);
-
         let chain = spawn_chain_runtime(&config, &self.chain_id)?;
 
         commitments_on_chain(&chain, &self.port_id, &self.channel_id)

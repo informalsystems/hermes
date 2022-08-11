@@ -54,8 +54,6 @@ impl QueryPacketAcknowledgementsCmd {
     fn execute(&self) -> Result<PacketSeqs, Error> {
         let config = app_config();
 
-        debug!("Options: {:?}", self);
-
         let (chains, chan_conn_cli) = spawn_chain_counterparty::<BaseChainHandle>(
             &config,
             &self.chain_id,

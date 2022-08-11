@@ -49,7 +49,6 @@ pub struct QueryPendingAcksCmd {
 impl QueryPendingAcksCmd {
     fn execute(&self) -> Result<Vec<Sequence>, Error> {
         let config = app_config();
-        debug!("Options: {:?}", self);
 
         let (chains, chan_conn_cli) = spawn_chain_counterparty::<BaseChainHandle>(
             &config,

@@ -87,8 +87,6 @@ pub struct ChannelEndsSummary {
 }
 
 fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn std::error::Error>> {
-    debug!("Options: {:?}", cmd);
-
     let config = app_config();
 
     let QueryChannelEndsCmd {

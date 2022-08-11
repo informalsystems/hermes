@@ -53,8 +53,6 @@ impl Runnable for QueryChannelEndCmd {
     fn run(&self) {
         let config = app_config();
 
-        debug!("Options: {:?}", self);
-
         let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
