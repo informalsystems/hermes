@@ -4,6 +4,7 @@ use ibc::core::ics24_host::identifier::ChainId;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
 use ibc_proto::google::protobuf::Any;
+use prost::Message;
 use tendermint::account::Id as AccountId;
 
 use crate::chain::cosmos::types::account::{Account, AccountNumber, AccountSequence};
@@ -31,6 +32,27 @@ pub fn sign_and_encode_tx(
     };
 
     encode_tx_raw(tx_raw)
+}
+
+pub fn encoded_tx_len(
+    config: &TxConfig,
+    key_entry: &KeyEntry,
+    account: &Account,
+    tx_memo: &Memo,
+    messages: &[Any],
+    fee: &Fee,
+) -> Result<usize, Error> {
+    let signed_tx = sign_tx(config, key_entry, account, tx_memo, messages, fee)?;
+
+    let tx_raw = TxRaw {
+        body_bytes: signed_tx.body_bytes,
+        auth_info_bytes: signed_tx.auth_info_bytes,
+        signatures: signed_tx.signatures,
+    };
+
+    let len = tx_raw.encoded_len();
+
+    Ok(len)
 }
 
 pub fn sign_tx(
