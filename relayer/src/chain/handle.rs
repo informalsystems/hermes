@@ -2,6 +2,7 @@ use alloc::sync::Arc;
 use core::fmt::{self, Debug};
 
 use crossbeam_channel as channel;
+use tracing::Span;
 
 use ibc::{
     core::{
@@ -342,7 +343,7 @@ pub enum ChainRequest {
 }
 
 pub trait ChainHandle: Clone + Send + Sync + Debug + 'static {
-    fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self;
+    fn new(chain_id: ChainId, sender: channel::Sender<(Span, ChainRequest)>) -> Self;
 
     /// Get the [`ChainId`] of this chain.
     fn id(&self) -> ChainId;

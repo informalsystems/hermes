@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock, RwLockReadGuard};
 
 use crossbeam_channel as channel;
-use tracing::debug;
+use tracing::{debug, Span};
 
 use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
@@ -70,7 +70,7 @@ impl<Handle> CountingChainHandle<Handle> {
 }
 
 impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
-    fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self {
+    fn new(chain_id: ChainId, sender: channel::Sender<(Span, ChainRequest)>) -> Self {
         Self::new(Handle::new(chain_id, sender))
     }
 

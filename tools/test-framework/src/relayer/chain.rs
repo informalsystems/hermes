@@ -21,6 +21,8 @@
 */
 
 use crossbeam_channel as channel;
+use tracing::Span;
+
 use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::core::ics02_client::events::UpdateClient;
@@ -77,7 +79,7 @@ where
     Tag: Send + Sync + 'static,
     Handle: ChainHandle,
 {
-    fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self {
+    fn new(chain_id: ChainId, sender: channel::Sender<(Span, ChainRequest)>) -> Self {
         Self::new(Handle::new(chain_id, sender))
     }
 
