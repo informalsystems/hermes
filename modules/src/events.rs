@@ -371,6 +371,9 @@ impl TryFrom<&AbciEvent> for IbcEvent {
             Ok(IbcEventType::OpenTryChannel) => Ok(IbcEvent::OpenTryChannel(
                 ChannelEvents::OpenTry::try_from(abci_event).map_err(Error::channel)?,
             )),
+            Ok(IbcEventType::OpenAckChannel) => Ok(IbcEvent::OpenAckChannel(
+                ChannelEvents::OpenAck::try_from(abci_event).map_err(Error::channel)?,
+            )),
             Ok(IbcEventType::OpenConfirmChannel) => Ok(IbcEvent::OpenConfirmChannel(
                 ChannelEvents::OpenConfirm::try_from(abci_event).map_err(Error::channel)?,
             )),
