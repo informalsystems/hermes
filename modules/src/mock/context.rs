@@ -15,6 +15,7 @@ use ibc_proto::google::protobuf::Any;
 use sha2::Digest;
 use tracing::debug;
 
+use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
 use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
@@ -198,7 +199,20 @@ impl MockContext {
                 Some(MockClientState::new(MockHeader::new(client_state_height)).into()),
                 MockConsensusState::new(MockHeader::new(cs_height)).into_box(),
             ),
-            _ => panic!("unsupported client type"),
+            // If it's a Tendermint client, we need TM states.
+            ClientType::Tendermint => {
+                let light_block = HostBlock::generate_tm_block(
+                    self.host_chain_id.clone(),
+                    cs_height.revision_height(),
+                    Timestamp::now(),
+                );
+
+                let client_state =
+                    get_dummy_tendermint_client_state(light_block.header().clone()).into();
+
+                // Return the tuple.
+                (Some(client_state), light_block.into())
+            }
         };
         let consensus_states = vec![(cs_height, consensus_state)].into_iter().collect();
 
@@ -228,6 +242,7 @@ impl MockContext {
         let prev_cs_height = cs_height.clone().sub(1).unwrap_or(client_state_height);
 
         let client_type = client_type.unwrap_or(ClientType::Mock);
+        let now = Timestamp::now();
 
         let (client_state, consensus_state) = match client_type {
             // If it's a mock client, create the corresponding mock states.
@@ -236,14 +251,33 @@ impl MockContext {
                 MockConsensusState::new(MockHeader::new(cs_height)).into_box(),
             ),
             // If it's a Tendermint client, we need TM states.
-            ClientType::Tendermint => panic!("unsupported client type"),
+            ClientType::Tendermint => {
+                let light_block = HostBlock::generate_tm_block(
+                    self.host_chain_id.clone(),
+                    cs_height.revision_height(),
+                    now,
+                );
+
+                let client_state =
+                    get_dummy_tendermint_client_state(light_block.header().clone()).into();
+
+                // Return the tuple.
+                (Some(client_state), light_block.into())
+            }
         };
 
         let prev_consensus_state = match client_type {
             // If it's a mock client, create the corresponding mock states.
             ClientType::Mock => MockConsensusState::new(MockHeader::new(prev_cs_height)).into_box(),
             // If it's a Tendermint client, we need TM states.
-            ClientType::Tendermint => panic!("unsupported client type"),
+            ClientType::Tendermint => {
+                let light_block = HostBlock::generate_tm_block(
+                    self.host_chain_id.clone(),
+                    prev_cs_height.revision_height(),
+                    now.sub(self.block_time).unwrap(),
+                );
+                light_block.into()
+            }
         };
 
         let consensus_states = vec![
