@@ -134,7 +134,6 @@ mod tests {
 
     use crate::applications::transfer::context::test::deliver as ics20_deliver;
     use crate::applications::transfer::PrefixedCoin;
-    use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::AnyClientState;
     use crate::core::ics02_client::msgs::{
         create_client::MsgCreateAnyClient, update_client::MsgUpdateClient,
@@ -165,7 +164,6 @@ mod tests {
         applications::transfer::msgs::transfer::MsgTransfer,
         applications::transfer::packet::PacketData, applications::transfer::MODULE_ID_STR,
     };
-
     use crate::core::ics24_host::identifier::ConnectionId;
     use crate::core::ics26_routing::context::{Ics26Context, ModuleId, Router, RouterBuilder};
     use crate::core::ics26_routing::error::Error;
@@ -513,9 +511,9 @@ mod tests {
                     AnyClientState::Mock(MockClientState::new(MockHeader::new(
                         upgrade_client_height,
                     ))),
-                    AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(
+                    MockConsensusState::new(MockHeader::new(
                         upgrade_client_height,
-                    ))),
+                    )).into(),
                     get_dummy_merkle_proof(),
                     get_dummy_merkle_proof(),
                     default_signer.clone(),
@@ -530,9 +528,9 @@ mod tests {
                     AnyClientState::Mock(MockClientState::new(MockHeader::new(
                         upgrade_client_height_second,
                     ))),
-                    AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(
+                    MockConsensusState::new(MockHeader::new(
                         upgrade_client_height_second,
-                    ))),
+                    )).into(),
                     get_dummy_merkle_proof(),
                     get_dummy_merkle_proof(),
                     default_signer,
