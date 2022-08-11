@@ -42,7 +42,7 @@ impl AccountAddress {
 
 impl fmt::Display for AccountAddress {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{}", self.0)
     }
 }
 
@@ -62,7 +62,7 @@ impl AccountNumber {
 
 impl fmt::Display for AccountNumber {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{}", self.0)
     }
 }
 
@@ -90,6 +90,6 @@ impl AccountSequence {
 
 impl fmt::Display for AccountSequence {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{}", self.0)
     }
 }
