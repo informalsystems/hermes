@@ -662,7 +662,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
         let version_specs = self.block_on(fetch_version_specs(self.id(), &self.grpc_addr))?;
-        Ok(version_specs.ibc_go_version)
+        Ok(version_specs.ibc_go)
     }
 
     fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {

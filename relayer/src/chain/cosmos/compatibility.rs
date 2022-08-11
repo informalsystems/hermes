@@ -45,19 +45,21 @@ pub enum Diagnostic {
 /// [`SDK_MODULE_VERSION_REQ`] and [`IBC_GO_MODULE_VERSION_REQ`]
 /// for establishing compatibility requirements.
 pub(crate) fn run_diagnostic(v: &version::Specs) -> Result<(), Diagnostic> {
-    debug!("running diagnostic on version info {:?}", v);
-    sdk_diagnostic(v.sdk_version.clone())?;
-    ibc_go_diagnostic(v.ibc_go_version.clone())?;
+    debug!("running diagnostic on version info {}", v);
+
+    sdk_diagnostic(&v.cosmos_sdk)?;
+    ibc_go_diagnostic(v.ibc_go.as_ref())?;
+
     Ok(())
 }
 
-fn sdk_diagnostic(version: semver::Version) -> Result<(), Diagnostic> {
+fn sdk_diagnostic(version: &semver::Version) -> Result<(), Diagnostic> {
     // Parse the SDK requirements into a semver
     let sdk_reqs = semver::VersionReq::parse(SDK_MODULE_VERSION_REQ)
         .expect("parsing the SDK module requirements into semver");
 
     // Finally, check the version requirements
-    match sdk_reqs.matches(&version) {
+    match sdk_reqs.matches(version) {
         true => Ok(()),
         false => Err(Diagnostic::MismatchingSdkModuleVersion {
             requirements: SDK_MODULE_VERSION_REQ.to_string(),
@@ -66,7 +68,7 @@ fn sdk_diagnostic(version: semver::Version) -> Result<(), Diagnostic> {
     }
 }
 
-fn ibc_go_diagnostic(version_info: Option<semver::Version>) -> Result<(), Diagnostic> {
+fn ibc_go_diagnostic(version_info: Option<&semver::Version>) -> Result<(), Diagnostic> {
     // Parse the IBC-go module requirements into a semver
     let ibc_reqs = semver::VersionReq::parse(IBC_GO_MODULE_VERSION_REQ)
         .expect("parsing the IBC-Go module requirements into semver");
