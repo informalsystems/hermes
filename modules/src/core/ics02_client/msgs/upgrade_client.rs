@@ -5,9 +5,9 @@ use crate::prelude::*;
 use core::str::FromStr;
 
 use ibc_proto::google::protobuf::Any;
-use ibc_proto::protobuf::Protobuf;
 use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
+use ibc_proto::protobuf::Protobuf;
 
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::error::Error;
@@ -121,9 +121,7 @@ pub mod test_util {
 
     use crate::{
         core::{
-            ics02_client::{
-                client_consensus::AnyConsensusState, client_state::AnyClientState, height::Height,
-            },
+            ics02_client::{client_state::AnyClientState, height::Height},
             ics24_host::identifier::ClientId,
         },
         mock::{
@@ -150,9 +148,7 @@ pub mod test_util {
             client_state: Some(
                 AnyClientState::Mock(MockClientState::new(MockHeader::new(height))).into(),
             ),
-            consensus_state: Some(
-                AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(height))).into(),
-            ),
+            consensus_state: Some(MockConsensusState::new(MockHeader::new(height)).into()),
             proof_upgrade_client: get_dummy_proof(),
             proof_upgrade_consensus_state: get_dummy_proof(),
             signer: get_dummy_bech32_account(),
@@ -189,8 +185,7 @@ mod tests {
         let height = Height::new(1, 1).unwrap();
 
         let client_state = AnyClientState::Mock(MockClientState::new(MockHeader::new(height)));
-        let consensus_state =
-            MockConsensusState::new(MockHeader::new(height));
+        let consensus_state = MockConsensusState::new(MockHeader::new(height));
 
         let proof = get_dummy_merkle_proof();
 
