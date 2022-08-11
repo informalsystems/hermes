@@ -304,7 +304,7 @@ impl EventMonitor {
     /// Event monitor loop
     #[allow(clippy::while_let_loop)]
     #[instrument(
-        name = "event_monitor.run",
+        name = "event_monitor",
         level = "error",
         skip_all,
         fields(chain = %self.chain_id)

@@ -344,7 +344,7 @@ pub struct ForeignClient<DstChain: ChainHandle, SrcChain: ChainHandle> {
 /// Used in Output messages.
 /// Provides a concise description of a [`ForeignClient`],
 /// using the format:
-///     {CHAIN-ID} -> {CHAIN-ID}:{CLIENT}
+///     {CHAIN-ID}->{CHAIN-ID}:{CLIENT}
 /// where the first chain identifier is for the source
 /// chain, and the second chain identifier is the
 /// destination (which hosts the client) chain.
@@ -354,7 +354,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> fmt::Display
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} -> {}:{}",
+            "{}->{}:{}",
             self.src_chain.id(),
             self.dst_chain.id(),
             self.id

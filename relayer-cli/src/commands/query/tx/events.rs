@@ -2,7 +2,6 @@ use core::str::FromStr;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use tracing::debug;
 
 use tendermint::abci::transaction::Hash;
 
