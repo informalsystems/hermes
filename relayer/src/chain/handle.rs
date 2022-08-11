@@ -43,17 +43,7 @@ use crate::{
 use super::{
     client::ClientSettings,
     endpoint::{ChainStatus, HealthCheck},
-    requests::{
-        IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
-        QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
-        QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
-        QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
-        QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
-        QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
-        QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
-        QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-        QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
-    },
+    requests::*,
     tracking::TrackedMsgs,
 };
 
