@@ -868,6 +868,6 @@ impl Default for TelemetryState {
                 .u64_value_recorder("backlog_size")
                 .with_description("Total number of SendPacket events in the backlog")
                 .init(),
-        };
+        }
     }
 }

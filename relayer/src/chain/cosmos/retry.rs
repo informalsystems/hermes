@@ -45,13 +45,13 @@ pub async fn send_tx_with_account_sequence_retry(
     let _span =
         span!(Level::ERROR, "send_tx_with_account_sequence_retry", id = %config.chain_id).entered();
 
-    let _number_messages = messages.len() as u64;
+    let number_messages = messages.len() as u64;
 
     match do_send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, messages)
         .await
     {
         Ok(res) => {
-            telemetry!(total_messages_submitted, &config.chain_id, _number_messages);
+            telemetry!(total_messages_submitted, &config.chain_id, number_messages);
             Ok(res)
         }
         Err(e) => Err(e),
