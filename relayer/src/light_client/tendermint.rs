@@ -234,10 +234,12 @@ impl LightClient {
         use tendermint_light_client::components::io::Io;
         use tracing::warn;
 
-        let _juno_client_latest_trusted_height = TMHeight::from(4136530_u32);
         match height {
-            AtHeight::At(_juno_client_latest_trusted_height) => {
-                if self.chain_id == ChainId::new("juno".to_owned(), 1) {
+            AtHeight::At(fetch_height) => {
+                // The height at which Juno-1 halted.
+                let juno_client_latest_trusted_height = TMHeight::from(4136530_u32);
+
+                if (fetch_height == juno_client_latest_trusted_height) && (self.chain_id == ChainId::new("juno".to_owned(), 1)) {
                     // Create an alternative io for the archive node, to bypass the default full node.
                     warn!("matched on juno-1 and expected halt height");
                     let archive_rpc_client =
@@ -257,13 +259,14 @@ impl LightClient {
                     return archive_io
                         .fetch_light_block(height)
                         .map_err(|e| Error::light_client_io(self.chain_id.to_string(), e));
+
                 } else {
-                    warn!(chain_id = %self.chain_id, "not on juno-1 chain; using the default io");
+                    warn!(height = %fetch_height, chain_id = %self.chain_id, "not on juno-1 chain or fetching a different height; using the default io");
                 }
             }
             AtHeight::Highest => {
                 warn!(
-                    "highest height, no need to bypass the default full node; using the default io"
+                    "fetching highest height, no need to bypass the default full node; using the default io"
                 );
             }
         };
