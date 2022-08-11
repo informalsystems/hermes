@@ -93,7 +93,6 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
 
         if packet.sequence < next_seq_recv {
             output.emit(IbcEvent::ReceivePacket(ReceivePacket {
-                height: ctx.host_height(),
                 packet: msg.packet.clone(),
             }));
             return Ok(output.with_result(PacketResult::Recv(RecvPacketResult::NoOp)));
@@ -119,7 +118,6 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
         match packet_rec {
             Ok(_receipt) => {
                 output.emit(IbcEvent::ReceivePacket(ReceivePacket {
-                    height: ctx.host_height(),
                     packet: msg.packet.clone(),
                 }));
                 return Ok(output.with_result(PacketResult::Recv(RecvPacketResult::NoOp)));
@@ -140,7 +138,6 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
     output.log("success: packet receive");
 
     output.emit(IbcEvent::ReceivePacket(ReceivePacket {
-        height: ctx.host_height(),
         packet: msg.packet.clone(),
     }));
 

@@ -66,7 +66,6 @@ pub fn process(
     output.log("success: packet write acknowledgement");
 
     output.emit(IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
-        height: ctx.host_height(),
         packet,
         ack: ack.into(),
     }));

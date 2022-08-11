@@ -16,23 +16,12 @@ pub const CLIENT_ID_ATTRIBUTE_KEY: &str = "client_id";
 pub const COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY: &str = "counterparty_connection_id";
 pub const COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY: &str = "counterparty_client_id";
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Attributes {
     pub connection_id: Option<ConnectionId>,
     pub client_id: ClientId,
     pub counterparty_connection_id: Option<ConnectionId>,
     pub counterparty_client_id: ClientId,
-}
-
-impl Default for Attributes {
-    fn default() -> Self {
-        Self {
-            connection_id: Default::default(),
-            client_id: Default::default(),
-            counterparty_connection_id: Default::default(),
-            counterparty_client_id: Default::default(),
-        }
-    }
 }
 
 /// Convert attributes to Tendermint ABCI tags

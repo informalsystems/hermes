@@ -65,7 +65,6 @@ pub(crate) fn process(
 
     let event_attributes = Attributes {
         channel_id: Some(chan_id),
-        height: ctx.host_height(),
         ..Default::default()
     };
     output.emit(IbcEvent::OpenInitChannel(

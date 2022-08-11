@@ -135,7 +135,6 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgTimeout) -> HandlerResult<Packe
     output.log("success: packet timeout ");
 
     output.emit(IbcEvent::TimeoutPacket(TimeoutPacket {
-        height: ctx.host_height(),
         packet: packet.clone(),
     }));
 

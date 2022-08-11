@@ -702,7 +702,7 @@ fn process_batch<Chain: ChainHandle>(
                         IbcEvent::SendPacket(send_packet_ev) => {
                             ibc_telemetry::global().send_packet_count(
                                 send_packet_ev.packet.sequence.into(),
-                                send_packet_ev.height().revision_height(),
+                                event_with_height.height().revision_height(),
                                 &src.id(),
                                 &_path.src_channel_id,
                                 &_path.src_port_id,
@@ -712,7 +712,7 @@ fn process_batch<Chain: ChainHandle>(
                         IbcEvent::WriteAcknowledgement(write_ack_ev) => {
                             ibc_telemetry::global().acknowledgement_count(
                                 write_ack_ev.packet.sequence.into(),
-                                write_ack_ev.height().revision_height(),
+                                event_with_height.height().revision_height(),
                                 &dst.id(),
                                 &_path.src_channel_id,
                                 &_path.src_port_id,

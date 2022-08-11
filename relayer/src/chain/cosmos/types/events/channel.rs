@@ -55,17 +55,13 @@ pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEvent> {
                 .map(|(packet, write_ack)| {
                     // This event should not have a write ack.
                     debug_assert_eq!(write_ack.len(), 0);
-                    IbcEvent::SendPacket(SendPacket {
-                        height: Height::new(0, 1).unwrap(),
-                        packet,
-                    })
+                    IbcEvent::SendPacket(SendPacket { packet })
                 })
                 .ok()
         }
         Ok(IbcEventType::WriteAck) => extract_packet_and_write_ack_from_tx(event)
             .map(|(packet, write_ack)| {
                 IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
-                    height: Height::new(0, 1).unwrap(),
                     packet,
                     ack: write_ack,
                 })
@@ -76,10 +72,7 @@ pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEvent> {
                 .map(|(packet, write_ack)| {
                     // This event should not have a write ack.
                     debug_assert_eq!(write_ack.len(), 0);
-                    IbcEvent::AcknowledgePacket(AcknowledgePacket {
-                        height: Height::new(0, 1).unwrap(),
-                        packet,
-                    })
+                    IbcEvent::AcknowledgePacket(AcknowledgePacket { packet })
                 })
                 .ok()
         }
@@ -88,10 +81,7 @@ pub fn try_from_tx(event: &AbciEvent) -> Option<IbcEvent> {
                 .map(|(packet, write_ack)| {
                     // This event should not have a write ack.
                     debug_assert_eq!(write_ack.len(), 0);
-                    IbcEvent::TimeoutPacket(TimeoutPacket {
-                        height: Height::new(0, 1).unwrap(),
-                        packet,
-                    })
+                    IbcEvent::TimeoutPacket(TimeoutPacket { packet })
                 })
                 .ok()
         }
@@ -172,7 +162,6 @@ fn extract_packet_and_write_ack_from_tx(event: &AbciEvent) -> Result<(Packet, Ve
 
 fn extract_attributes(object: &RawObject<'_>, namespace: &str) -> Result<Attributes, EventError> {
     Ok(Attributes {
-        height: object.height,
         port_id: extract_attribute(object, &format!("{}.port_id", namespace))?
             .parse()
             .map_err(EventError::parse)?,
@@ -222,13 +211,12 @@ macro_rules! impl_try_from_raw_obj_for_packet {
             type Error = EventError;
 
             fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
-                let height = obj.height;
                 let data_str: String = extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_DATA_ATTRIBUTE_KEY))?;
 
                 let mut packet = Packet::try_from(obj)?;
                 packet.data = Vec::from(data_str.as_str().as_bytes());
 
-                Ok(Self { height, packet })
+                Ok(Self { packet })
             }
         })+
     };
@@ -246,7 +234,6 @@ impl TryFrom<RawObject<'_>> for WriteAcknowledgement {
     type Error = EventError;
 
     fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
-        let height = obj.height;
         let data_str: String =
             extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_DATA_ATTRIBUTE_KEY))?;
         let ack = extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_ACK_ATTRIBUTE_KEY))?
@@ -255,11 +242,7 @@ impl TryFrom<RawObject<'_>> for WriteAcknowledgement {
         let mut packet = Packet::try_from(obj)?;
         packet.data = Vec::from(data_str.as_str().as_bytes());
 
-        Ok(Self {
-            height,
-            packet,
-            ack,
-        })
+        Ok(Self { packet, ack })
     }
 }
 
@@ -377,7 +360,6 @@ mod tests {
     #[test]
     fn channel_event_to_abci_event() {
         let attributes = Attributes {
-            height: Height::new(0, 1).unwrap(),
             port_id: "test_port".parse().unwrap(),
             channel_id: Some("channel-0".parse().unwrap()),
             connection_id: "test_connection".parse().unwrap(),
@@ -440,25 +422,19 @@ mod tests {
         };
         let mut abci_events = vec![];
         let send_packet = SendPacket {
-            height: Height::new(0, 1).unwrap(),
             packet: packet.clone(),
         };
         abci_events.push(AbciEvent::try_from(send_packet.clone()).unwrap());
         let write_ack = WriteAcknowledgement {
-            height: Height::new(0, 1).unwrap(),
             packet: packet.clone(),
             ack: "test_ack".as_bytes().to_vec(),
         };
         abci_events.push(AbciEvent::try_from(write_ack.clone()).unwrap());
         let ack_packet = AcknowledgePacket {
-            height: Height::new(0, 1).unwrap(),
             packet: packet.clone(),
         };
         abci_events.push(AbciEvent::try_from(ack_packet.clone()).unwrap());
-        let timeout_packet = TimeoutPacket {
-            height: Height::new(0, 1).unwrap(),
-            packet,
-        };
+        let timeout_packet = TimeoutPacket { packet };
         abci_events.push(AbciEvent::try_from(timeout_packet.clone()).unwrap());
 
         for abci_event in abci_events {

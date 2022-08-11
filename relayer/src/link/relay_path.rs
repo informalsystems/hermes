@@ -522,7 +522,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     Some(self.build_chan_close_confirm_from_event(event_with_height)?),
                     None,
                 ),
-                IbcEvent::TimeoutPacket(ref timeout_ev) => {
+                IbcEvent::TimeoutPacket(_) => {
                     // When a timeout packet for an ordered channel is processed on-chain (src here)
                     // the chain closes the channel but no close init event is emitted, instead
                     // we get a timeout packet event (this happens for both unordered and ordered channels)
@@ -530,7 +530,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     // to the counterparty.
                     if self.ordered_channel()
                         && self
-                            .src_channel(QueryHeight::Specific(timeout_ev.height))?
+                            .src_channel(QueryHeight::Specific(event_with_height.height))?
                             .state_matches(&ChannelState::Closed)
                     {
                         (
@@ -549,6 +549,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                         self.build_recv_or_timeout_from_send_packet_event(
                             send_packet_ev,
                             &dst_latest_info,
+                            event_with_height.height,
                         )?
                     }
                 }
@@ -562,7 +563,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                         debug!("{} already handled", write_ack_ev);
                         (None, None)
                     } else {
-                        (self.build_ack_from_recv_event(write_ack_ev)?, None)
+                        (
+                            self.build_ack_from_recv_event(write_ack_ev, event_with_height.height)?,
+                            None,
+                        )
                     }
                 }
                 _ => (None, None),
@@ -1121,7 +1125,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             // Update telemetry info
             telemetry!({
                 for event_with_height in events_chunk.iter() {
-                    self.record_cleared_send_packet(event_with_height.event());
+                    self.record_cleared_send_packet(event_with_height);
                 }
             });
             self.events_to_operational_data(TrackedEvents::new(events_chunk, tracking_id))?;
@@ -1168,9 +1172,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             &self.path_id,
             query_write_ack_events,
         ) {
-            telemetry!(
-                self.record_cleared_acknowledgments(events_chunk.iter().map(|ev| ev.event()))
-            );
+            telemetry!(self.record_cleared_acknowledgments(events_chunk.iter()));
             self.events_to_operational_data(TrackedEvents::new(events_chunk, tracking_id))?;
         }
 
@@ -1203,6 +1205,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn build_ack_from_recv_event(
         &self,
         event: &WriteAcknowledgement,
+        height: Height,
     ) -> Result<Option<Any>, LinkError> {
         let packet = event.packet.clone();
 
@@ -1213,7 +1216,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 &packet.destination_port,
                 &packet.destination_channel,
                 packet.sequence,
-                event.height,
+                height,
             )
             .map_err(|e| LinkError::packet_proofs_constructor(self.src_chain().id(), e))?;
 
@@ -1340,12 +1343,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         &self,
         event: &SendPacket,
         dst_info: &ChainStatus,
+        height: Height,
     ) -> Result<(Option<Any>, Option<Any>), LinkError> {
         let timeout = self.build_timeout_from_send_packet_event(event, dst_info)?;
         if timeout.is_some() {
             Ok((None, timeout))
         } else {
-            Ok((self.build_recv_packet(&event.packet, event.height)?, None))
+            Ok((self.build_recv_packet(&event.packet, height)?, None))
         }
     }
 
@@ -1805,11 +1809,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     #[cfg(feature = "telemetry")]
-    fn record_cleared_send_packet(&self, event: &IbcEvent) {
-        if let IbcEvent::SendPacket(send_packet_ev) = event {
+    fn record_cleared_send_packet(&self, event_with_height: &IbcEventWithHeight) {
+        if let IbcEvent::SendPacket(send_packet_ev) = event_with_height.event() {
             ibc_telemetry::global().send_packet_count(
                 send_packet_ev.packet.sequence.into(),
-                send_packet_ev.height().revision_height(),
+                event_with_height.height().revision_height(),
                 &self.src_chain().id(),
                 self.src_channel_id(),
                 self.src_port_id(),
@@ -1817,7 +1821,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             );
             ibc_telemetry::global().clear_send_packet_count(
                 send_packet_ev.packet.sequence.into(),
-                send_packet_ev.height().revision_height(),
+                event_with_height.height().revision_height(),
                 &self.src_chain().id(),
                 self.src_channel_id(),
                 self.src_port_id(),
@@ -1827,12 +1831,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     #[cfg(feature = "telemetry")]
-    fn record_cleared_acknowledgments<'a>(&self, events: impl Iterator<Item = &'a IbcEvent>) {
-        for e in events {
-            if let IbcEvent::WriteAcknowledgement(write_ack_ev) = e {
+    fn record_cleared_acknowledgments<'a>(
+        &self,
+        events_with_heights: impl Iterator<Item = &'a IbcEventWithHeight>,
+    ) {
+        for event_with_height in events_with_heights {
+            if let IbcEvent::WriteAcknowledgement(write_ack_ev) = event_with_height.event() {
                 ibc_telemetry::global().clear_acknowledgment_packet_count(
                     write_ack_ev.packet.sequence.into(),
-                    write_ack_ev.height().revision_height(),
+                    event_with_height.height().revision_height(),
                     &self.dst_chain().id(),
                     self.src_channel_id(),
                     self.src_port_id(),

@@ -110,7 +110,6 @@ pub fn process(
     output.log("success: packet ack");
 
     output.emit(IbcEvent::AcknowledgePacket(AcknowledgePacket {
-        height: ctx.host_height(),
         packet: packet.clone(),
     }));
 

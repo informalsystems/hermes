@@ -89,7 +89,6 @@ pub(crate) fn process(
 
     let event_attributes = Attributes {
         channel_id: Some(msg.channel_id.clone()),
-        height: ctx.host_height(),
         ..Default::default()
     };
     output.emit(IbcEvent::OpenConfirmChannel(

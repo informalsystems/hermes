@@ -126,7 +126,6 @@ pub fn process(
     output.log("success: packet timeout ");
 
     output.emit(IbcEvent::TimeoutOnClosePacket(TimeoutOnClosePacket {
-        height: ctx.host_height(),
         packet: packet.clone(),
     }));
 
