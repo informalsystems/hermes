@@ -147,23 +147,23 @@ pub fn get_all_events(
             .map_err(|_| String::from("tx_result.height: invalid header height of 0"))?;
 
             for abci_event in &tx_result.result.events {
-                if query == queries::ibc_client().to_string() {
-                    if let Ok(client_event) = ibc_event_try_from_abci_event(abci_event) {
-                        tracing::trace!("extracted ibc_client event {}", client_event);
-                        events_with_height.push(IbcEventWithHeight::new(client_event, height));
-                    }
-                }
-                if query == queries::ibc_connection().to_string() {
-                    if let Ok(conn_event) = ibc_event_try_from_abci_event(abci_event) {
-                        tracing::trace!("extracted ibc_connection event {}", conn_event);
-                        events_with_height.push(IbcEventWithHeight::new(conn_event, height));
-                    }
-                }
-                if query == queries::ibc_channel().to_string() {
-                    if let Ok(chan_event) = ibc_event_try_from_abci_event(abci_event) {
+                if let Ok(ibc_event) = ibc_event_try_from_abci_event(abci_event) {
+                    if query == queries::ibc_client().to_string()
+                        && event_is_type_client(&ibc_event)
+                    {
+                        tracing::trace!("extracted ibc_client event {}", ibc_event);
+                        events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
+                    } else if query == queries::ibc_connection().to_string()
+                        && event_is_type_connection(&ibc_event)
+                    {
+                        tracing::trace!("extracted ibc_connection event {}", ibc_event);
+                        events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
+                    } else if query == queries::ibc_channel().to_string()
+                        && event_is_type_channel(&ibc_event)
+                    {
                         let _span = tracing::trace_span!("ibc_channel event").entered();
-                        tracing::trace!("extracted {}", chan_event);
-                        if matches!(chan_event, IbcEvent::SendPacket(_)) {
+                        tracing::trace!("extracted {}", ibc_event);
+                        if matches!(ibc_event, IbcEvent::SendPacket(_)) {
                             // Should be the same as the hash of tx_result.tx?
                             if let Some(hash) =
                                 events.get("tx.hash").and_then(|values| values.get(0))
@@ -172,7 +172,7 @@ pub fn get_all_events(
                             }
                         }
 
-                        events_with_height.push(IbcEventWithHeight::new(chan_event, height));
+                        events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
                     }
                 }
             }
@@ -181,6 +181,44 @@ pub fn get_all_events(
     }
 
     Ok(events_with_height)
+}
+
+fn event_is_type_client(ev: &IbcEvent) -> bool {
+    matches!(
+        ev,
+        IbcEvent::CreateClient(_)
+            | IbcEvent::UpdateClient(_)
+            | IbcEvent::UpgradeClient(_)
+            | IbcEvent::ClientMisbehaviour(_)
+    )
+}
+
+fn event_is_type_connection(ev: &IbcEvent) -> bool {
+    matches!(
+        ev,
+        IbcEvent::OpenInitConnection(_)
+            | IbcEvent::OpenTryConnection(_)
+            | IbcEvent::OpenAckConnection(_)
+            | IbcEvent::OpenConfirmConnection(_)
+    )
+}
+
+fn event_is_type_channel(ev: &IbcEvent) -> bool {
+    matches!(
+        ev,
+        IbcEvent::OpenInitChannel(_)
+            | IbcEvent::OpenTryChannel(_)
+            | IbcEvent::OpenAckChannel(_)
+            | IbcEvent::OpenConfirmChannel(_)
+            | IbcEvent::CloseInitChannel(_)
+            | IbcEvent::CloseConfirmChannel(_)
+            | IbcEvent::SendPacket(_)
+            | IbcEvent::ReceivePacket(_)
+            | IbcEvent::WriteAcknowledgement(_)
+            | IbcEvent::AcknowledgePacket(_)
+            | IbcEvent::TimeoutPacket(_)
+            | IbcEvent::TimeoutOnClosePacket(_)
+    )
 }
 
 fn extract_block_events(
