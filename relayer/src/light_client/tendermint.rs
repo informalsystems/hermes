@@ -48,6 +48,13 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         target: ibc::Height,
         client_state: &AnyClientState,
     ) -> Result<Verified<TmHeader>, Error> {
+        let _span = tracing::span!(
+            tracing::Level::DEBUG,
+            "header and minimal set",
+            trusted = %trusted, target = %target,
+            chain = %self.chain_id
+        )
+        .entered();
         let Verified { target, supporting } = self.verify(trusted, target, client_state)?;
         let (target, supporting) = self.adjust_headers(trusted, target, supporting)?;
         Ok(Verified { target, supporting })
@@ -239,9 +246,9 @@ impl LightClient {
                 // The height at which Juno-1 halted.
                 let juno_client_latest_trusted_height = TMHeight::from(4136530_u32);
 
-                if (fetch_height == juno_client_latest_trusted_height) && (self.chain_id == ChainId::new("juno".to_owned(), 1)) {
+                if (fetch_height <= juno_client_latest_trusted_height) && (self.chain_id == ChainId::new("juno".to_owned(), 1)) {
                     // Create an alternative io for the archive node, to bypass the default full node.
-                    warn!("matched on juno-1 and expected halt height");
+                    warn!("matched on juno-1, below the halt height");
                     let archive_rpc_client =
                         rpc::HttpClient::new("https://rpc-v3-archive.junonetwork.io:443")
                             .expect("could not initialize the rpc client to bypass juno full node");
@@ -293,6 +300,10 @@ impl LightClient {
         //
         // NOTE: This is needed to get the next validator set. While there is a next validator set
         //       in the light block at trusted height, the proposer is not known/set in this set.
+        trace!(
+            height = %trusted_height.increment(),
+            "creating trusted validator set"
+        );
         let trusted_validator_set = self.fetch(trusted_height.increment())?.validators;
 
         let mut supporting_headers = Vec::with_capacity(supporting.len());
@@ -311,6 +322,10 @@ impl LightClient {
             // This header is now considered to be the currently trusted header
             current_trusted_height = header.height();
 
+            trace!(
+                header = %header.height().increment(),
+                "creating supporting headers"
+            );
             // Therefore we can now trust the next validator set, see NOTE above.
             current_trusted_validators = self.fetch(header.height().increment())?.validators;
 
