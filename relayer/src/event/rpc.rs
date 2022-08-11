@@ -140,35 +140,39 @@ pub fn get_all_events(
             events_with_height.append(&mut extract_block_events(height, &events));
         }
         RpcEventData::Tx { tx_result } => {
-            let client_query = queries::ibc_client().to_string();
-            let connection_query = queries::ibc_connection().to_string();
-            let channel_query = queries::ibc_channel().to_string();
+            let height = Height::new(
+                ChainId::chain_version(chain_id.to_string().as_str()),
+                tx_result.height as u64,
+            )
+            .map_err(|_| String::from("tx_result.height: invalid header height of 0"))?;
 
-            if query == client_query || query == connection_query || query == channel_query {
-                let height = Height::new(
-                    ChainId::chain_version(chain_id.to_string().as_str()),
-                    tx_result.height as u64,
-                )
-                .map_err(|_| String::from("tx_result.height: invalid header height of 0"))?;
-
-                for abci_event in &tx_result.result.events {
-                    if let Ok(ibc_event) = IbcEvent::try_from(abci_event) {
-                        if query == channel_query {
-                            let _span = tracing::trace_span!("ibc_channel event").entered();
-                            tracing::trace!("extracted {}", ibc_event);
-                            if matches!(ibc_event, IbcEvent::SendPacket(_)) {
-                                // Should be the same as the hash of tx_result.tx?
-                                if let Some(hash) =
-                                    events.get("tx.hash").and_then(|values| values.get(0))
-                                {
-                                    tracing::trace!(event = "SendPacket", "tx hash: {}", hash);
-                                }
+            for abci_event in &tx_result.result.events {
+                if query == queries::ibc_client().to_string() {
+                    if let Ok(client_event) = IbcEvent::try_from(abci_event) {
+                        tracing::trace!("extracted ibc_client event {}", client_event);
+                        events_with_height.push(IbcEventWithHeight::new(client_event, height));
+                    }
+                }
+                if query == queries::ibc_connection().to_string() {
+                    if let Ok(conn_event) = IbcEvent::try_from(abci_event) {
+                        tracing::trace!("extracted ibc_connection event {}", conn_event);
+                        events_with_height.push(IbcEventWithHeight::new(conn_event, height));
+                    }
+                }
+                if query == queries::ibc_channel().to_string() {
+                    if let Ok(chan_event) = IbcEvent::try_from(abci_event) {
+                        let _span = tracing::trace_span!("ibc_channel event").entered();
+                        tracing::trace!("extracted {}", chan_event);
+                        if matches!(chan_event, IbcEvent::SendPacket(_)) {
+                            // Should be the same as the hash of tx_result.tx?
+                            if let Some(hash) =
+                                events.get("tx.hash").and_then(|values| values.get(0))
+                            {
+                                tracing::trace!(event = "SendPacket", "tx hash: {}", hash);
                             }
-                        } else {
-                            tracing::trace!("extracted ibc event {}", ibc_event);
                         }
 
-                        events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
+                        events_with_height.push(IbcEventWithHeight::new(chan_event, height));
                     }
                 }
             }
