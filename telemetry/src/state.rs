@@ -12,9 +12,6 @@ use prometheus::proto::MetricFamily;
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
 
-use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
-
 use tendermint::Time;
 
 use crate::path_identifier::PathIdentifier;
@@ -56,7 +53,7 @@ const QUERY_TYPES: [&str; 24] = [
     "query_staking_params",
 ];
 
-#[derive(Copy, Clone, Debug, EnumIter)]
+#[derive(Copy, Clone, Debug)]
 pub enum WorkerType {
     Client,
     Connection,
@@ -174,6 +171,10 @@ impl TelemetryState {
         self.exporter.registry().gather()
     }
 
+    pub fn init_worker_by_type(&self, worker_type: WorkerType) {
+        self.worker(worker_type, 0);
+    }
+
     pub fn init_per_chain(&self, chain_id: &ChainId) {
         let labels = &[KeyValue::new("chain", chain_id.to_string())];
 
@@ -218,6 +219,7 @@ impl TelemetryState {
 
         self.send_packet_events.add(0, labels);
         self.acknowledgement_events.add(0, labels);
+        self.timeout_events.add(0, labels);
         if clear_packets {
             self.cleared_send_packet_events.add(0, labels);
             self.cleared_acknowledgment_events.add(0, labels);
@@ -227,15 +229,22 @@ impl TelemetryState {
         self.backlog_size.record(0, labels);
     }
 
-    pub fn init_per_client(&self, chain_id: &ChainId, client: &ClientId, misbehaviour: bool) {
+    pub fn init_per_client(
+        &self,
+        src_chain: &ChainId,
+        dst_chain: &ChainId,
+        client: &ClientId,
+        misbehaviour: bool,
+    ) {
         let labels = &[
-            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("src_chain", src_chain.to_string()),
+            KeyValue::new("dst_chain", dst_chain.to_string()),
             KeyValue::new("client", client.to_string()),
         ];
         self.client_updates_submitted.add(0, labels);
-        //if misbehaviour {
-        //    self.client_misbehaviours_submitted.add(0, labels);
-        //}
+        if misbehaviour {
+            self.client_misbehaviours_submitted.add(0, labels);
+        }
     }
 
     fn init_queries(&self, chain_id: &ChainId) {
@@ -263,9 +272,16 @@ impl TelemetryState {
     }
 
     /// Update the number of client updates per client
-    pub fn client_updates_submitted(&self, chain: &ChainId, client: &ClientId, count: u64) {
+    pub fn client_updates_submitted(
+        &self,
+        src_chain: &ChainId,
+        dst_chain: &ChainId,
+        client: &ClientId,
+        count: u64,
+    ) {
         let labels = &[
-            KeyValue::new("chain", chain.to_string()),
+            KeyValue::new("src_chain", src_chain.to_string()),
+            KeyValue::new("dst_chain", dst_chain.to_string()),
             KeyValue::new("client", client.to_string()),
         ];
 
@@ -724,7 +740,7 @@ impl Default for TelemetryState {
 
         let meter = global::meter("hermes");
 
-        let state = Self {
+        Self {
             exporter,
 
             workers: meter
@@ -853,11 +869,5 @@ impl Default for TelemetryState {
                 .with_description("Total number of SendPacket events in the backlog")
                 .init(),
         };
-
-        for worker_type in WorkerType::iter() {
-            state.worker(worker_type, 0);
-        }
-
-        state
     }
 }

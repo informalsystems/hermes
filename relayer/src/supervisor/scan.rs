@@ -13,6 +13,7 @@ use ibc::core::{
     },
     ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
 };
+use ibc_telemetry::state::WorkerType;
 
 use crate::{
     chain::{
@@ -854,6 +855,10 @@ fn query_connection_channels<Chain: ChainHandle>(
         .map_err(Error::query)
 }
 
+/// Telemetry discovery is only done for metrics which will be recorded.
+/// For example if the client workers or client misbehaviour detection have
+/// been disabled in the configuration, the `client_misbehaviours_submitted`
+/// will never record any value as no misbehaviour will be submitted.
 fn init_telemetry(
     chain_id: &ChainId,
     client: &ClientId,
@@ -863,17 +868,18 @@ fn init_telemetry(
     config: &Config,
 ) {
     // metrics which should be initialized when tx worker is enabled
-    if config.mode.clients.enabled {
+    if config.mode.clients.enabled
+        || config.mode.channels.enabled
+        || config.mode.connections.enabled
+        || config.mode.packets.enabled
+    {
         telemetry!(
             init_per_client,
             chain_id,
+            counterparty_chain_id,
             client,
-            config.mode.clients.misbehaviour
+            config.mode.clients.misbehaviour && config.mode.clients.enabled
         );
-    }
-    // metrics which should be initialized when tx_confirmation is true
-    if config.mode.packets.tx_confirmation {
-        telemetry!(init_per_channel, chain_id, channel_id, port_id);
     }
 
     let clear_packets = config.mode.packets.enabled
@@ -887,6 +893,28 @@ fn init_telemetry(
             channel_id,
             port_id,
             clear_packets
-        )
+        );
+
+        telemetry!(init_worker_by_type, WorkerType::Packet);
+
+        // metrics which should be initialized when tx_confirmation is true
+        if config.mode.packets.tx_confirmation {
+            telemetry!(init_per_channel, chain_id, channel_id, port_id);
+        }
     }
+
+    // Initialise remaining workers if required.
+    if config.mode.clients.enabled {
+        telemetry!(init_worker_by_type, WorkerType::Client);
+    }
+
+    if config.mode.connections.enabled {
+        telemetry!(init_worker_by_type, WorkerType::Connection);
+    }
+
+    if config.mode.channels.enabled {
+        telemetry!(init_worker_by_type, WorkerType::Channel);
+    }
+
+    telemetry!(init_worker_by_type, WorkerType::Wallet);
 }
