@@ -3,12 +3,13 @@
 This section includes a summary of the supported and planned features.
 A feature matrix and comparison between the Rust and Go relayer implementations can be found in the [Feature Matrix](./features/matrix.md)
 
-> **Cosmos SDK compatibility:**
-> Hermes supports Cosmos SDK chains implementing the [IBC v1.1][ibcv1] protocol specification.
-> Cosmos SDK versions `0.41.3` to `0.44.x` are officially supported.
-> In case Hermes finds an incompatible SDK version, it will output a log warning.
+> **Cosmos SDK & IBC compatibility:**
+> Hermes supports Cosmos SDK chains implementing the [IBC protocol v1][ibcv1-proto] protocol specification.
+> Cosmos SDK versions `0.41.3` through `0.45.x` are officially supported.
+> IBC-go versions `1.1.*` thorough `3.*` are officially supported.
+> In case Hermes finds an incompatible SDK or IBC-go version, it will output a log warning upon initialization as part of the `start` command or upon `health-check` command.
 
-[ibcv1]: https://github.com/cosmos/ibc-go
+[ibcv1-proto]: https://github.com/cosmos/ibc
 
 ## Supported Features
 
@@ -31,15 +32,16 @@ A feature matrix and comparison between the Rust and Go relayer implementations 
 - Packet delay:
     - establish path over non-zero delay connection
     - relay all packets with the specified delay
+- Interchain Accounts & Interchain Security
 - Monitor and submit misbehaviour for clients
     - monitor client updates for misbehaviour (fork and BFT time violation)
     - submit misbehaviour evidence to the on-chain IBC client.
     > misbehaviour submission to full node not yet supported
 - Individual commands that build and send transactions for:
     - creating and updating IBC Tendermint light clients
-    - sending connection open handshake datagrams
-    - sending channel open handshake datagrams
-    - sending channel closing handshake datagrams
+    - sending connection open handshake messages
+    - sending channel open handshake messages
+    - sending channel closing handshake messages
     - initiating a cross chain transfer (mainly for testing)
     - relaying sent packets, acknowledgments and timeouts
     - client upgrade
@@ -50,13 +52,7 @@ A feature matrix and comparison between the Rust and Go relayer implementations 
 ## Upcoming / Unsupported Features
 
 Planned features:
-- Full Passive mode: relay from all IBC events
-    - Connection handshake for existing connection that is not in `Open` state
-- Relayer support for management application (add RPC server)
-- Dynamic configuration management
-
-Not planned:
-- Relayer management application
-- Create clients with user chosen parameters (such as UpgradePath)
-- Use IBC light clients other than Tendermint such as Solo Machine
-- Support non cosmos-SDK chains
+- Interchain Queries
+- Non-SDK support
+- Relay from all IBC events, including governance upgrade proposal
+- Dynamic & automatic configuration management

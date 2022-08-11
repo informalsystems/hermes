@@ -123,6 +123,10 @@ pub mod max_tx_size {
             Ok(Self(value))
         }
 
+        pub fn max() -> Self {
+            Self(Self::MAX_BOUND)
+        }
+
         pub fn to_usize(self) -> usize {
             self.0
         }
