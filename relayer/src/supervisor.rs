@@ -187,7 +187,7 @@ fn spawn_batch_workers<Chain: ChainHandle>(
         let workers = workers.clone();
 
         let handle = spawn_background_task(
-            tracing::Span::none(),
+            error_span!("worker.batch", chain = %chain.id()),
             Some(Duration::from_millis(5)),
             move || -> Result<Next, TaskError<Infallible>> {
                 if let Ok(batch) = subscription.try_recv() {
@@ -217,7 +217,7 @@ pub fn spawn_cmd_worker<Chain: ChainHandle>(
     cmd_rx: Receiver<SupervisorCmd>,
 ) -> TaskHandle {
     spawn_background_task(
-        error_span!("cmd"),
+        error_span!("worker.cmd"),
         Some(Duration::from_millis(500)),
         move || -> Result<Next, TaskError<Infallible>> {
             if let Ok(cmd) = cmd_rx.try_recv() {
@@ -487,7 +487,7 @@ fn health_check<Chain: ChainHandle>(config: &Config, registry: &mut Registry<Cha
 
     for config in chains {
         let id = &config.id;
-        let _span = tracing::error_span!("health_check", chain = %id).entered();
+        let _span = error_span!("health_check", chain = %id).entered();
 
         let chain = registry.get_or_spawn(id);
 
