@@ -227,7 +227,7 @@ Our release process is as follows:
       in this release.
    3. Committing the updated `CHANGELOG.md` file and `.changelog` directory to the repo.
 2. Push this to a branch `release/vX.Y.Z` according to the version number of
-   the anticipated release (e.g. `release/v0.17.0`) and open a **draft PR**.
+   the anticipated release (e.g. `release/v0.18.0`) and open a **draft PR**.
 3. Bump all relevant versions in the codebase to the new version and push these
    changes to the release PR. This includes:
    1. All `Cargo.toml` files (making sure dependencies' versions are updated
