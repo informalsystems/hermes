@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock, RwLockReadGuard};
 
 use crossbeam_channel as channel;
-use serde::{Serialize, Serializer};
 use tracing::debug;
 
 use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
@@ -67,15 +66,6 @@ impl<Handle> CountingChainHandle<Handle> {
         } else {
             metrics.insert(key.to_string(), 1);
         }
-    }
-}
-
-impl<Handle: Serialize> Serialize for CountingChainHandle<Handle> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        self.inner.serialize(serializer)
     }
 }
 

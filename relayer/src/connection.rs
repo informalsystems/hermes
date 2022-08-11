@@ -83,8 +83,10 @@ mod handshake_retry {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
+#[serde(bound(serialize = "(): Serialize"))]
 pub struct ConnectionSide<Chain: ChainHandle> {
+    #[serde(skip)]
     pub(crate) chain: Chain,
     client_id: ClientId,
     connection_id: Option<ConnectionId>,
@@ -112,26 +114,6 @@ impl<Chain: ChainHandle> ConnectionSide<Chain> {
             client_id: self.client_id,
             connection_id: self.connection_id,
         }
-    }
-}
-
-impl<Chain: ChainHandle> Serialize for ConnectionSide<Chain> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        #[derive(Debug, Serialize)]
-        struct ConnectionSide<'a> {
-            client_id: &'a ClientId,
-            connection_id: &'a Option<ConnectionId>,
-        }
-
-        let value = ConnectionSide {
-            client_id: &self.client_id,
-            connection_id: &self.connection_id,
-        };
-
-        value.serialize(serializer)
     }
 }
 

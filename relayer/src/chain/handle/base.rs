@@ -1,7 +1,6 @@
 use core::fmt::Debug;
 
 use crossbeam_channel as channel;
-use serde::{Serialize, Serializer};
 
 use ibc::{
     core::{
@@ -24,7 +23,6 @@ use ibc::{
     signer::Signer,
     Height,
 };
-use tracing::Span;
 
 use crate::{
     account::Balance,
@@ -461,14 +459,5 @@ impl ChainHandle for BaseChainHandle {
         request: QueryHostConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error> {
         self.send(|reply_to| ChainRequest::QueryHostConsensusState { request, reply_to })
-    }
-}
-
-impl Serialize for BaseChainHandle {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        self.id().serialize(serializer)
     }
 }

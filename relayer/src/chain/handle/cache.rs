@@ -1,4 +1,5 @@
 use crossbeam_channel as channel;
+
 use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::core::ics02_client::events::UpdateClient;
@@ -21,8 +22,6 @@ use ibc::{
     signer::Signer,
     Height,
 };
-use serde::{Serialize, Serializer};
-use tracing::Span;
 
 use crate::account::Balance;
 use crate::cache::{Cache, CacheStatus};
@@ -56,15 +55,6 @@ impl<Handle> CachingChainHandle<Handle> {
 
     fn inner(&self) -> &Handle {
         &self.inner
-    }
-}
-
-impl<Handle: Serialize> Serialize for CachingChainHandle<Handle> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        self.inner.serialize(serializer)
     }
 }
 
