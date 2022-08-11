@@ -991,3 +991,107 @@ pub fn parse_timeout_height(s: &str) -> Result<TimeoutHeight, Error> {
         },
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{core::ics04_channel::packet::Sequence, timestamp::Timestamp};
+
+    use super::*;
+
+    #[test]
+    fn channel_event_to_abci_event() {
+        let attributes = Attributes {
+            port_id: "test_port".parse().unwrap(),
+            channel_id: Some("channel-0".parse().unwrap()),
+            connection_id: "test_connection".parse().unwrap(),
+            counterparty_port_id: "counterparty_test_port".parse().unwrap(),
+            counterparty_channel_id: Some("channel-1".parse().unwrap()),
+        };
+        let mut abci_events = vec![];
+        let open_init = OpenInit::try_from(attributes.clone()).unwrap();
+        abci_events.push(AbciEvent::from(open_init.clone()));
+        let open_try = OpenTry::try_from(attributes.clone()).unwrap();
+        abci_events.push(AbciEvent::from(open_try.clone()));
+        let open_ack = OpenAck::try_from(attributes.clone()).unwrap();
+        abci_events.push(AbciEvent::from(open_ack.clone()));
+        let open_confirm = OpenConfirm::try_from(attributes.clone()).unwrap();
+        abci_events.push(AbciEvent::from(open_confirm.clone()));
+        let close_init = CloseInit::try_from(attributes.clone()).unwrap();
+        abci_events.push(AbciEvent::from(close_init.clone()));
+        let close_confirm = CloseConfirm::try_from(attributes).unwrap();
+        abci_events.push(AbciEvent::from(close_confirm.clone()));
+
+        for abci_event in abci_events {
+            match IbcEvent::try_from(&abci_event).ok() {
+                Some(ibc_event) => match ibc_event {
+                    IbcEvent::OpenInitChannel(e) => {
+                        assert_eq!(Attributes::from(e), open_init.clone().into())
+                    }
+                    IbcEvent::OpenTryChannel(e) => {
+                        assert_eq!(Attributes::from(e), open_try.clone().into())
+                    }
+                    IbcEvent::OpenAckChannel(e) => {
+                        assert_eq!(Attributes::from(e), open_ack.clone().into())
+                    }
+                    IbcEvent::OpenConfirmChannel(e) => {
+                        assert_eq!(Attributes::from(e), open_confirm.clone().into())
+                    }
+                    IbcEvent::CloseInitChannel(e) => {
+                        assert_eq!(Attributes::from(e), close_init.clone().into())
+                    }
+                    IbcEvent::CloseConfirmChannel(e) => {
+                        assert_eq!(Attributes::from(e), close_confirm.clone().into())
+                    }
+                    _ => panic!("unexpected event type"),
+                },
+                None => panic!("converted event was wrong"),
+            }
+        }
+    }
+
+    #[test]
+    fn packet_event_to_abci_event() {
+        let packet = Packet {
+            sequence: Sequence::from(10),
+            source_port: "a_test_port".parse().unwrap(),
+            source_channel: "channel-0".parse().unwrap(),
+            destination_port: "b_test_port".parse().unwrap(),
+            destination_channel: "channel-1".parse().unwrap(),
+            data: "test_data".as_bytes().to_vec(),
+            timeout_height: Height::new(1, 10).unwrap().into(),
+            timeout_timestamp: Timestamp::now(),
+        };
+        let mut abci_events = vec![];
+        let send_packet = SendPacket {
+            packet: packet.clone(),
+        };
+        abci_events.push(AbciEvent::try_from(send_packet.clone()).unwrap());
+        let write_ack = WriteAcknowledgement {
+            packet: packet.clone(),
+            ack: "test_ack".as_bytes().to_vec(),
+        };
+        abci_events.push(AbciEvent::try_from(write_ack.clone()).unwrap());
+        let ack_packet = AcknowledgePacket {
+            packet: packet.clone(),
+        };
+        abci_events.push(AbciEvent::try_from(ack_packet.clone()).unwrap());
+        let timeout_packet = TimeoutPacket { packet };
+        abci_events.push(AbciEvent::try_from(timeout_packet.clone()).unwrap());
+
+        for abci_event in abci_events {
+            match IbcEvent::try_from(&abci_event).ok() {
+                Some(ibc_event) => match ibc_event {
+                    IbcEvent::SendPacket(e) => assert_eq!(e.packet, send_packet.packet),
+                    IbcEvent::WriteAcknowledgement(e) => {
+                        assert_eq!(e.packet, write_ack.packet);
+                        assert_eq!(e.ack, write_ack.ack);
+                    }
+                    IbcEvent::AcknowledgePacket(e) => assert_eq!(e.packet, ack_packet.packet),
+                    IbcEvent::TimeoutPacket(e) => assert_eq!(e.packet, timeout_packet.packet),
+                    _ => panic!("unexpected event type"),
+                },
+                None => panic!("converted event was wrong"),
+            }
+        }
+    }
+}
