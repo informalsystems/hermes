@@ -5,11 +5,9 @@ use ibc_proto::ibc::mock::Header as RawMockHeader;
 use ibc_proto::protobuf::Protobuf;
 use serde_derive::{Deserialize, Serialize};
 
-use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::header::{Header, MOCK_HEADER_TYPE_URL};
-use crate::mock::client_state::MockConsensusState;
 use crate::timestamp::Timestamp;
 use crate::Height;
 
@@ -83,12 +81,6 @@ impl Header for MockHeader {
 
     fn timestamp(&self) -> Timestamp {
         self.timestamp
-    }
-}
-
-impl From<MockHeader> for AnyConsensusState {
-    fn from(h: MockHeader) -> Self {
-        AnyConsensusState::Mock(MockConsensusState::new(h))
     }
 }
 
