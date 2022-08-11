@@ -4,7 +4,6 @@ use tendermint::abci::Event as AbciEvent;
 use crate::event::IbcEventWithHeight;
 
 pub mod channel;
-pub mod client;
 pub mod connection;
 
 pub fn from_tx_response_event(height: Height, event: &AbciEvent) -> Option<IbcEventWithHeight> {

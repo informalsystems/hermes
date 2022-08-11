@@ -332,3 +332,48 @@ pub fn extract_header_from_tx(event: &AbciEvent) -> Result<AnyHeader, Error> {
     }
     Err(Error::missing_raw_header())
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::core::ics02_client::header::Header;
+    use crate::mock::header::MockHeader;
+
+    use super::*;
+
+    #[test]
+    fn client_event_to_abci_event() {
+        let consensus_height = Height::new(1, 1).unwrap();
+        let attributes = Attributes {
+            client_id: "test_client".parse().unwrap(),
+            client_type: ClientType::Tendermint,
+            consensus_height,
+        };
+        let mut abci_events = vec![];
+        let create_client = CreateClient::from(attributes.clone());
+        abci_events.push(AbciEvent::from(create_client.clone()));
+        let client_misbehaviour = ClientMisbehaviour::from(attributes.clone());
+        abci_events.push(AbciEvent::from(client_misbehaviour.clone()));
+        let upgrade_client = UpgradeClient::from(attributes.clone());
+        abci_events.push(AbciEvent::from(upgrade_client.clone()));
+        let mut update_client = UpdateClient::from(attributes);
+        let header = MockHeader::new(consensus_height).wrap_any();
+        update_client.header = Some(header);
+        abci_events.push(AbciEvent::from(update_client.clone()));
+
+        for abci_event in abci_events {
+            match IbcEvent::try_from(&abci_event).ok() {
+                Some(ibc_event) => match ibc_event {
+                    IbcEvent::CreateClient(e) => assert_eq!(e.0, create_client.0),
+                    IbcEvent::ClientMisbehaviour(e) => assert_eq!(e.0, client_misbehaviour.0),
+                    IbcEvent::UpgradeClient(e) => assert_eq!(e.0, upgrade_client.0),
+                    IbcEvent::UpdateClient(e) => {
+                        assert_eq!(e.common, update_client.common);
+                        assert_eq!(e.header, update_client.header);
+                    }
+                    _ => panic!("unexpected event type"),
+                },
+                None => panic!("converted event was wrong"),
+            }
+        }
+    }
+}
