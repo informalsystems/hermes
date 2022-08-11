@@ -1,9 +1,11 @@
 //! Contains methods to generate a relayer config for a given chain
+use async_trait::async_trait;
+
 use crate::{
     asset_list::AssetList, chain::ChainData, error::RegistryError, paths::IBCPath, utils::Fetchable,
 };
 
-use futures::{stream::FuturesUnordered, Future, StreamExt};
+use futures::{stream::FuturesUnordered, StreamExt};
 
 use http::Uri;
 
@@ -37,45 +39,118 @@ pub struct RpcMandatoryData {
     // however it looks like it is not in the genesis file anymore
 }
 
-/// Retrieves the mandatory data from the RPC endpoint.
-async fn query_rpc(rpc: &str) -> Result<RpcMandatoryData, RegistryError> {
-    let websocket_addr = websocket_from_rpc(rpc)?;
-
-    let (client, driver) = timeout(
-        Duration::from_secs(5),
-        WebSocketClient::new(websocket_addr.clone()),
-    )
-    .await
-    .map_err(|e| RegistryError::websocket_time_out_error(websocket_addr.to_string(), e))?
-    .map_err(|e| RegistryError::websocket_connect_error(websocket_addr.to_string(), e))?;
-
-    let driver_handle = tokio::spawn(async move { driver.run().await });
-
-    let latest_consensus_params = match client.latest_consensus_params().await {
-        Ok(response) => response.consensus_params.block.max_bytes,
-        Err(e) => {
-            return Err(RegistryError::rpc_consensus_params_error(
-                rpc.to_string(),
-                e,
-            ))
-        }
-    };
-
-    client
-        .close()
-        .map_err(|e| RegistryError::websocket_conn_close_error(websocket_addr.to_string(), e))?;
-
-    driver_handle
-        .await
-        .map_err(|e| RegistryError::join_error("chain_data_join".to_string(), e))?
-        .map_err(|e| RegistryError::websocket_driver_error(websocket_addr.to_string(), e))?;
-
-    Ok(RpcMandatoryData {
-        rpc_address: rpc.to_string(),
-        max_block_size: latest_consensus_params,
-        websocket: websocket_addr,
-    })
+trait QueryInputOutput {
+    type QueryInput : Send;
+    type QueryOutput;
 }
+
+#[async_trait]
+trait QueryContext : QueryInputOutput {
+    fn query_error(chain_name : String) -> RegistryError;
+    async fn query(query: Self::QueryInput) -> Result<Self::QueryOutput, RegistryError>;
+
+    /// Select a healthy RPC/gRPC address from a list of urls.
+    async fn select_healthy(
+        chain_name : String,
+        urls: Vec<Self::QueryInput>,
+    ) -> Result<Self::QueryOutput, RegistryError>
+    {
+        let mut futures: FuturesUnordered<_> = urls.into_iter().map(|url| Self::query(url)).collect();
+
+        while let Some(result) = futures.next().await {
+            if result.is_ok() {
+                return result;
+            }
+        }
+        Err(Self::query_error(chain_name))
+    }
+}
+
+struct RPCQuerier;
+
+impl QueryInputOutput for RPCQuerier {
+    type QueryInput = String;
+    type QueryOutput = RpcMandatoryData;
+}
+
+impl QueryInputOutput for GRPCQuerier {
+    type QueryInput = String;
+    type QueryOutput = tendermint_rpc::Url;
+}
+
+
+#[async_trait]
+impl QueryContext for RPCQuerier {
+    fn query_error(chain_name : String) -> RegistryError{
+        RegistryError::no_healthy_rpc(chain_name)
+    }
+
+    async fn query(rpc: Self::QueryInput) -> Result<Self::QueryOutput, RegistryError> {
+        let websocket_addr = websocket_from_rpc(&rpc)?;
+
+        let (client, driver) = timeout(
+            Duration::from_secs(5),
+            WebSocketClient::new(websocket_addr.clone()),
+        )
+        .await
+        .map_err(|e| RegistryError::websocket_time_out_error(websocket_addr.to_string(), e))?
+        .map_err(|e| RegistryError::websocket_connect_error(websocket_addr.to_string(), e))?;
+
+        let driver_handle = tokio::spawn(async move { driver.run().await });
+
+        let latest_consensus_params = match client.latest_consensus_params().await {
+            Ok(response) => response.consensus_params.block.max_bytes,
+            Err(e) => {
+                return Err(RegistryError::rpc_consensus_params_error(
+                    rpc.to_string(),
+                    e,
+                ))
+            }
+        };
+
+        client
+            .close()
+            .map_err(|e| RegistryError::websocket_conn_close_error(websocket_addr.to_string(), e))?;
+
+        driver_handle
+            .await
+            .map_err(|e| RegistryError::join_error("chain_data_join".to_string(), e))?
+            .map_err(|e| RegistryError::websocket_driver_error(websocket_addr.to_string(), e))?;
+
+        Ok(RpcMandatoryData {
+            rpc_address: rpc.to_string(),
+            max_block_size: latest_consensus_params,
+            websocket: websocket_addr,
+        })
+    }
+}
+
+struct GRPCQuerier;
+
+#[async_trait]
+impl QueryContext for GRPCQuerier {
+    fn query_error(chain_name : String) -> RegistryError{
+        RegistryError::no_healthy_grpc(chain_name)
+    }
+
+    async fn query(grpc: Self::QueryInput) -> Result<Self::QueryOutput, RegistryError> {
+        let uri = parse_or_build_grpc_endpoint(&grpc)?;
+
+        let tendermint_url = uri
+            .to_string()
+            .parse()
+            .map_err(|e| RegistryError::tendermint_url_parse_error(grpc.to_string(), e))?;
+
+        QueryClient::connect(uri)
+            .await
+            .map_err(|_| RegistryError::unable_to_connect_with_grpc())?;
+
+        Ok(tendermint_url)
+    }
+}
+
+
+
 
 // ----------------- websocket ------------------
 
@@ -103,47 +178,6 @@ fn websocket_from_rpc(rpc_endpoint: &str) -> Result<tendermint_rpc::Url, Registr
             e,
         )),
     }
-}
-
-// ----------------- GRPC ------------------
-
-/// Returns a tendermint URL if the client can connect to the gRPC server, indicating
-/// that the gRPC server is healthy.
-async fn health_check_grpc(grpc_address: &str) -> Result<tendermint_rpc::Url, RegistryError> {
-    let uri = parse_or_build_grpc_endpoint(grpc_address)?;
-
-    let tendermint_url = uri
-        .to_string()
-        .parse()
-        .map_err(|e| RegistryError::tendermint_url_parse_error(grpc_address.to_string(), e))?;
-
-    QueryClient::connect(uri)
-        .await
-        .map_err(|_| RegistryError::unable_to_connect_with_grpc())?;
-
-    Ok(tendermint_url)
-}
-
-/// Select a healthy RPC/gRPC address from a list of urls.
-async fn select_healthy<'a, Res, Func, Fut>(
-    urls: &'a [String],
-    func: Func,
-    error: RegistryError,
-) -> Result<Res, RegistryError>
-where
-    Res: Send,
-    Func: Fn(&'a str) -> Fut + Send + Sync + 'static,
-    Fut: Future<Output = Result<Res, RegistryError>> + Send,
-{
-    let mut futures: FuturesUnordered<_> = urls.iter().map(|url| func(url)).collect();
-
-    while let Some(result) = futures.next().await {
-        if result.is_ok() {
-            return result;
-        }
-    }
-
-    Err(error)
 }
 
 /// Attempts to parse the given input as a complete URI. If the parsed URI
@@ -224,20 +258,19 @@ async fn hermes_config(
 
     let clone_name = chain_name.to_string();
     let rpc_handle = tokio::spawn(async move {
-        select_healthy(
-            &rpc_endpoints,
-            query_rpc,
-            RegistryError::no_healthy_rpc(clone_name),
+        RPCQuerier::select_healthy(
+            clone_name,
+            rpc_endpoints,
         )
         .await
     });
 
+
     let clone_name = chain_name.to_string();
     let grpc_handle = tokio::spawn(async move {
-        select_healthy(
-            &grpc_endpoints,
-            health_check_grpc,
-            RegistryError::no_healthy_grpc(clone_name),
+        GRPCQuerier::select_healthy(
+            clone_name,
+            grpc_endpoints,
         )
         .await
     });
