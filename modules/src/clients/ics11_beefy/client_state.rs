@@ -1,9 +1,10 @@
 use crate::prelude::*;
-
 use beefy_primitives::known_payload_ids::MMR_ROOT_ID;
 use beefy_primitives::mmr::BeefyNextAuthoritySet;
 use codec::{Decode, Encode};
 use core::convert::TryFrom;
+use core::fmt;
+use core::str::FromStr;
 use core::time::Duration;
 use serde::{Deserialize, Serialize};
 use sp_core::H256;
@@ -24,6 +25,8 @@ use crate::Height;
 pub struct ClientState {
     /// The chain id
     pub chain_id: ChainId,
+    /// Relay chain
+    pub relay_chain: RelayChain,
     /// Latest mmr root hash
     pub mmr_root_hash: H256,
     /// block number for the latest mmr_root_hash
@@ -33,6 +36,10 @@ pub struct ClientState {
     /// Block number that the beefy protocol was activated on the relay chain.
     /// This should be the first block in the merkle-mountain-range tree.
     pub beefy_activation_block: u32,
+    /// latest parachain height
+    pub latest_para_height: u32,
+    /// ParaId of associated parachain
+    pub para_id: u32,
     /// authorities for the current round
     pub authority: BeefyNextAuthoritySet<H256>,
     /// authorities for the next round
@@ -44,19 +51,15 @@ impl Protobuf<RawClientState> for ClientState {}
 impl ClientState {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
-        chain_id: ChainId,
+        relay_chain: RelayChain,
+        para_id: u32,
+        latest_para_height: u32,
         mmr_root_hash: H256,
         beefy_activation_block: u32,
         latest_beefy_height: u32,
         authority_set: BeefyNextAuthoritySet<H256>,
         next_authority_set: BeefyNextAuthoritySet<H256>,
     ) -> Result<ClientState, Error> {
-        if chain_id.version() == 0 {
-            return Err(Error::validation(
-                "ClientState Chain id cannot be equal to zero ".to_string(),
-            ));
-        }
-
         if beefy_activation_block > latest_beefy_height {
             return Err(Error::validation(
                 "ClientState beefy activation block cannot be greater than latest_beefy_height"
@@ -70,6 +73,7 @@ impl ClientState {
                     .to_string(),
             ));
         }
+        let chain_id = ChainId::new(relay_chain.to_string(), para_id.into());
 
         Ok(Self {
             chain_id,
@@ -79,6 +83,9 @@ impl ClientState {
             beefy_activation_block,
             authority: authority_set,
             next_authority_set,
+            relay_chain,
+            latest_para_height,
+            para_id,
         })
     }
 
@@ -168,11 +175,9 @@ impl ClientState {
 
     /// Verify that the client is at a sufficient height and unfrozen at the given height
     pub fn verify_height(&self, height: Height) -> Result<(), Error> {
-        if (self.latest_beefy_height as u64) < height.revision_height {
-            return Err(Error::insufficient_height(
-                Height::new(0, self.latest_beefy_height.into()),
-                height,
-            ));
+        let latest_para_height = Height::new(self.para_id.into(), self.latest_para_height.into());
+        if latest_para_height < height {
+            return Err(Error::insufficient_height(latest_para_height, height));
         }
 
         match self.frozen_height {
@@ -181,6 +186,12 @@ impl ClientState {
             }
             _ => Ok(()),
         }
+    }
+
+    /// Check if the state is expired when `elapsed` time has passed since the latest consensus
+    /// state timestamp
+    pub fn expired(&self, elapsed: Duration) -> bool {
+        elapsed > self.relay_chain.trusting_period()
     }
 }
 
@@ -199,7 +210,7 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
     }
 
     fn latest_height(&self) -> Height {
-        Height::new(0, self.latest_beefy_height.into())
+        Height::new(self.para_id.into(), self.latest_para_height.into())
     }
 
     fn frozen_height(&self) -> Option<Height> {
@@ -260,15 +271,20 @@ impl TryFrom<RawClientState> for ClientState {
             .ok_or_else(Error::missing_beefy_authority_set)?;
 
         let mmr_root_hash = H256::decode(&mut &*raw.mmr_root_hash).map_err(Error::scale_decode)?;
+        let relay_chain = RelayChain::from_i32(raw.relay_chain)?;
+        let chain_id = ChainId::new(relay_chain.to_string(), raw.para_id.into());
 
         Ok(Self {
-            chain_id: ChainId::default(),
+            chain_id,
             mmr_root_hash,
             latest_beefy_height: raw.latest_beefy_height,
             frozen_height,
             beefy_activation_block: raw.beefy_activation_block,
             authority: authority_set,
             next_authority_set,
+            relay_chain,
+            latest_para_height: raw.latest_para_height,
+            para_id: raw.para_id,
         })
     }
 }
@@ -293,6 +309,85 @@ impl From<ClientState> for RawClientState {
                 len: client_state.next_authority_set.len,
                 authority_root: client_state.next_authority_set.root.encode(),
             }),
+            relay_chain: client_state.relay_chain as i32,
+            para_id: client_state.para_id,
+            latest_para_height: client_state.latest_para_height,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize)]
+pub enum RelayChain {
+    Polkadot = 0,
+    Kusama = 1,
+    Rococo = 2,
+}
+
+impl Default for RelayChain {
+    fn default() -> Self {
+        RelayChain::Rococo
+    }
+}
+
+impl fmt::Display for RelayChain {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+// Unbonding period for relay chains in days
+const POLKADOT_UNBONDING_PERIOD: u64 = 28;
+const KUSAMA_UNBONDING_PERIOD: u64 = 7;
+
+impl RelayChain {
+    /// Yields the Order as a string
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Polkadot => "Polkadot",
+            Self::Kusama => "Kusama",
+            Self::Rococo => "Rococo",
+        }
+    }
+
+    // Parses the Order out from a i32.
+    pub fn from_i32(nr: i32) -> Result<Self, Error> {
+        match nr {
+            0 => Ok(Self::Polkadot),
+            1 => Ok(Self::Kusama),
+            2 => Ok(Self::Rococo),
+            id => Err(Error::unknown_relay_chain(id.to_string())),
+        }
+    }
+
+    pub fn unbonding_period(&self) -> Duration {
+        match self {
+            Self::Polkadot => {
+                let secs = POLKADOT_UNBONDING_PERIOD * 24 * 60 * 60;
+                Duration::from_secs(secs)
+            }
+            Self::Kusama | Self::Rococo => {
+                let secs = KUSAMA_UNBONDING_PERIOD * 24 * 60 * 60;
+                Duration::from_secs(secs)
+            }
+        }
+    }
+
+    pub fn trusting_period(&self) -> Duration {
+        let unbonding_period = self.unbonding_period();
+        // Trusting period is 1/3 of unbonding period
+        unbonding_period.checked_div(3).unwrap()
+    }
+}
+
+impl FromStr for RelayChain {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().trim_start_matches("order_") {
+            "polkadot" => Ok(Self::Polkadot),
+            "kusama" => Ok(Self::Kusama),
+            "rococo" => Ok(Self::Rococo),
+            _ => Err(Error::unknown_relay_chain(s.to_string())),
         }
     }
 }
@@ -305,7 +400,9 @@ pub mod test_util {
     pub fn get_dummy_beefy_state() -> AnyClientState {
         AnyClientState::Beefy(
             ClientState::new(
-                ChainId::new("polkadot".to_string(), 1),
+                RelayChain::Rococo,
+                2000,
+                0,
                 Default::default(),
                 0,
                 0,

@@ -11,15 +11,24 @@ pub struct ClientState {
     /// Block height when the client was frozen due to a misbehaviour
     #[prost(uint64, tag="3")]
     pub frozen_height: u64,
+    //// Known relay chains 
+    #[prost(enumeration="RelayChain", tag="4")]
+    pub relay_chain: i32,
+    //// ParaId of associated parachain
+    #[prost(uint32, tag="5")]
+    pub para_id: u32,
+    //// latest parachain height
+    #[prost(uint32, tag="6")]
+    pub latest_para_height: u32,
     /// block number that the beefy protocol was activated on the relay chain.
     /// This should be the first block in the merkle-mountain-range tree.
-    #[prost(uint32, tag="4")]
+    #[prost(uint32, tag="7")]
     pub beefy_activation_block: u32,
     /// authorities for the current round
-    #[prost(message, optional, tag="5")]
+    #[prost(message, optional, tag="8")]
     pub authority: ::core::option::Option<BeefyAuthoritySet>,
     /// authorities for the next round
-    #[prost(message, optional, tag="6")]
+    #[prost(message, optional, tag="9")]
     pub next_authority_set: ::core::option::Option<BeefyAuthoritySet>,
 }
 /// Actual payload items
@@ -126,26 +135,23 @@ pub struct ParachainHeader {
     /// scale-encoded parachain header bytes
     #[prost(bytes="vec", tag="1")]
     pub parachain_header: ::prost::alloc::vec::Vec<u8>,
-    /// reconstructed MmrLeaf, see beefy-go spec
+    /// see beefy-go spec
     #[prost(message, optional, tag="2")]
     pub mmr_leaf_partial: ::core::option::Option<BeefyMmrLeafPartial>,
-    /// para_id of the header.
-    #[prost(uint32, tag="3")]
-    pub para_id: u32,
     /// proofs for our header in the parachain heads root
-    #[prost(bytes="vec", repeated, tag="4")]
+    #[prost(bytes="vec", repeated, tag="3")]
     pub parachain_heads_proof: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
     /// leaf index for parachain heads proof
-    #[prost(uint32, tag="5")]
+    #[prost(uint32, tag="4")]
     pub heads_leaf_index: u32,
     /// total number of para heads in parachain_heads_root
-    #[prost(uint32, tag="6")]
+    #[prost(uint32, tag="5")]
     pub heads_total_count: u32,
     /// trie merkle proof of inclusion in header.extrinsic_root
-    #[prost(bytes="vec", repeated, tag="7")]
+    #[prost(bytes="vec", repeated, tag="6")]
     pub extrinsic_proof: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
     /// the actual timestamp extrinsic
-    #[prost(bytes="vec", tag="8")]
+    #[prost(bytes="vec", tag="7")]
     pub timestamp_extrinsic: ::prost::alloc::vec::Vec<u8>,
 }
 /// Partial data for MmrLeaf
@@ -195,4 +201,11 @@ pub struct BeefyMmrLeaf {
     /// merkle root hash of parachain heads included in the leaf.
     #[prost(bytes="vec", tag="5")]
     pub parachain_heads: ::prost::alloc::vec::Vec<u8>,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum RelayChain {
+    Polkadot = 0,
+    Kusama = 1,
+    Rococo = 2,
 }

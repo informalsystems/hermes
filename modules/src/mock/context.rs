@@ -1123,12 +1123,16 @@ impl ClientReader for MockContext {
     }
 
     fn host_timestamp(&self) -> Timestamp {
-        self.history
-            .last()
-            .expect("history cannot be empty")
-            .timestamp()
-            .add(self.block_time)
-            .unwrap()
+        if self.host_chain_type == HostType::Beefy {
+            (Timestamp::now() + Duration::from_secs(86400)).unwrap()
+        } else {
+            self.history
+                .last()
+                .expect("history cannot be empty")
+                .timestamp()
+                .add(self.block_time)
+                .unwrap()
+        }
     }
 
     fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics02Error> {

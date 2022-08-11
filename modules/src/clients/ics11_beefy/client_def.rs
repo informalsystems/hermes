@@ -92,7 +92,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
                 ParachainHeader {
                     parachain_header: header.parachain_header.encode(),
                     partial_mmr_leaf: header.partial_mmr_leaf,
-                    para_id: header.para_id,
+                    para_id: client_state.para_id,
                     parachain_heads_proof: header.parachain_heads_proof,
                     heads_leaf_index: header.heads_leaf_index,
                     heads_total_count: header.heads_total_count,
@@ -137,15 +137,22 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
     ) -> Result<(Self::ClientState, ConsensusUpdateResult), Error> {
         let mut parachain_cs_states = vec![];
         // Extract the new client state from the verified header
-        let client_state = client_state
+        let mut client_state = client_state
             .from_header(header.clone())
             .map_err(Error::beefy)?;
+        let mut latest_para_height = client_state.latest_para_height;
         for header in header.parachain_headers {
             // Skip genesis block of parachains since it has no timestamp or ibc root
             if header.parachain_header.number == 0 {
                 continue;
             }
-            let height = Height::new(header.para_id as u64, header.parachain_header.number as u64);
+            if latest_para_height < header.parachain_header.number {
+                latest_para_height = header.parachain_header.number;
+            }
+            let height = Height::new(
+                client_state.para_id as u64,
+                header.parachain_header.number as u64,
+            );
             // Skip duplicate consensus states
             if ctx.consensus_state(&client_id, height).is_ok() {
                 continue;
@@ -155,6 +162,8 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
                 AnyConsensusState::Beefy(ConsensusState::from_header(header)?),
             ))
         }
+
+        client_state.latest_para_height = latest_para_height;
 
         Ok((
             client_state,
@@ -167,16 +176,19 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         client_state: Self::ClientState,
         header: Self::Header,
     ) -> Result<Self::ClientState, Error> {
-        let height = if let Some(mmr_update) = header.mmr_update_proof {
-            Height::new(
-                0,
-                mmr_update.signed_commitment.commitment.block_number as u64,
-            )
-        } else {
-            Height::new(0, client_state.latest_beefy_height as u64)
-        };
+        let latest_para_height = header
+            .parachain_headers
+            .into_iter()
+            .map(|header| header.parachain_header.number)
+            .max();
+        let frozen_height = latest_para_height
+            .map(|height| Height::new(client_state.para_id.into(), height.into()))
+            .unwrap_or(Height::new(
+                client_state.para_id.into(),
+                client_state.latest_para_height.into(),
+            ));
         client_state
-            .with_frozen_height(height)
+            .with_frozen_height(frozen_height)
             .map_err(|e| Error::beefy(BeefyError::implementation_specific(e.to_string())))
     }
 
@@ -206,8 +218,8 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
     fn verify_client_consensus_state(
         &self,
         _ctx: &dyn ReaderContext,
-        _client_state: &Self::ClientState,
-        _height: Height,
+        client_state: &Self::ClientState,
+        height: Height,
         prefix: &CommitmentPrefix,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
@@ -215,6 +227,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         consensus_height: Height,
         expected_consensus_state: &AnyConsensusState,
     ) -> Result<(), Error> {
+        client_state.verify_height(height)?;
         let path = ClientConsensusStatePath {
             client_id: client_id.clone(),
             epoch: consensus_height.revision_number,
@@ -229,14 +242,15 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         &self,
         _ctx: &dyn ReaderContext,
         _client_id: &ClientId,
-        _client_state: &Self::ClientState,
-        _height: Height,
+        client_state: &Self::ClientState,
+        height: Height,
         prefix: &CommitmentPrefix,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         connection_id: &ConnectionId,
         expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Error> {
+        client_state.verify_height(height)?;
         let path = ConnectionsPath(connection_id.clone());
         let value = expected_connection_end.encode_vec();
         verify_membership::<HostFunctions, _>(prefix, proof, root, path, value)
@@ -246,8 +260,8 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         &self,
         _ctx: &dyn ReaderContext,
         _client_id: &ClientId,
-        _client_state: &Self::ClientState,
-        _height: Height,
+        client_state: &Self::ClientState,
+        height: Height,
         prefix: &CommitmentPrefix,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
@@ -255,6 +269,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         channel_id: &ChannelId,
         expected_channel_end: &ChannelEnd,
     ) -> Result<(), Error> {
+        client_state.verify_height(height)?;
         let path = ChannelEndsPath(port_id.clone(), *channel_id);
         let value = expected_channel_end.encode_vec();
         verify_membership::<HostFunctions, _>(prefix, proof, root, path, value)
@@ -263,14 +278,15 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
     fn verify_client_full_state(
         &self,
         _ctx: &dyn ReaderContext,
-        _client_state: &Self::ClientState,
-        _height: Height,
+        client_state: &Self::ClientState,
+        height: Height,
         prefix: &CommitmentPrefix,
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         client_id: &ClientId,
         expected_client_state: &AnyClientState,
     ) -> Result<(), Error> {
+        client_state.verify_height(height)?;
         let path = ClientStatePath(client_id.clone());
         let value = expected_client_state.encode_vec();
         verify_membership::<HostFunctions, _>(prefix, proof, root, path, value)
@@ -280,7 +296,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         &self,
         ctx: &dyn ReaderContext,
         _client_id: &ClientId,
-        _client_state: &Self::ClientState,
+        client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
@@ -290,6 +306,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         sequence: Sequence,
         commitment: PacketCommitment,
     ) -> Result<(), Error> {
+        client_state.verify_height(height)?;
         verify_delay_passed(ctx, height, connection_end)?;
 
         let commitment_path = CommitmentsPath {
@@ -311,7 +328,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         &self,
         ctx: &dyn ReaderContext,
         _client_id: &ClientId,
-        _client_state: &Self::ClientState,
+        client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
@@ -321,6 +338,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         sequence: Sequence,
         ack: AcknowledgementCommitment,
     ) -> Result<(), Error> {
+        client_state.verify_height(height)?;
         verify_delay_passed(ctx, height, connection_end)?;
 
         let ack_path = AcksPath {
@@ -341,7 +359,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         &self,
         ctx: &dyn ReaderContext,
         _client_id: &ClientId,
-        _client_state: &Self::ClientState,
+        client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
@@ -350,6 +368,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         channel_id: &ChannelId,
         sequence: Sequence,
     ) -> Result<(), Error> {
+        client_state.verify_height(height)?;
         verify_delay_passed(ctx, height, connection_end)?;
 
         let seq_bytes = codec::Encode::encode(&u64::from(sequence));
@@ -368,7 +387,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         &self,
         ctx: &dyn ReaderContext,
         _client_id: &ClientId,
-        _client_state: &Self::ClientState,
+        client_state: &Self::ClientState,
         height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
@@ -377,6 +396,7 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         channel_id: &ChannelId,
         sequence: Sequence,
     ) -> Result<(), Error> {
+        client_state.verify_height(height)?;
         verify_delay_passed(ctx, height, connection_end)?;
 
         let receipt_path = ReceiptsPath {

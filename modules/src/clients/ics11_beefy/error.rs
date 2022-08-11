@@ -200,5 +200,8 @@ define_error! {
             | e | {
                 format_args!("the client is frozen: frozen_height={0} target_height={1}", e.frozen_height, e.target_height)
             },
+        UnknownRelayChain
+            { type_id: String }
+            | e | { format_args!("Relaychain type not known: {}", e.type_id) },
     }
 }

@@ -4,7 +4,6 @@ use core::fmt::Debug;
 use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics02_client::client_def::{AnyClient, ClientDef, ConsensusUpdateResult};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
-use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
 use crate::core::ics02_client::handler::ClientResult;
@@ -52,29 +51,27 @@ pub fn process<HostFunctions: HostFunctionsProvider>(
         return Err(Error::client_frozen(client_id));
     }
 
-    if client_type == ClientType::Tendermint {
-        // Read consensus state from the host chain store.
-        let latest_consensus_state = ctx
-            .consensus_state(&client_id, client_state.latest_height())
-            .map_err(|_| {
-                Error::consensus_state_not_found(client_id.clone(), client_state.latest_height())
-            })?;
+    // Read consensus state from the host chain store.
+    let latest_consensus_state = ctx
+        .consensus_state(&client_id, client_state.latest_height())
+        .map_err(|_| {
+            Error::consensus_state_not_found(client_id.clone(), client_state.latest_height())
+        })?;
 
-        tracing::debug!("latest consensus state: {:?}", latest_consensus_state);
+    tracing::debug!("latest consensus state: {:?}", latest_consensus_state);
 
-        let now = ctx.host_timestamp();
-        let duration = now
-            .duration_since(&latest_consensus_state.timestamp())
-            .ok_or_else(|| {
-                Error::invalid_consensus_state_timestamp(latest_consensus_state.timestamp(), now)
-            })?;
+    let now = ctx.host_timestamp();
+    let duration = now
+        .duration_since(&latest_consensus_state.timestamp())
+        .ok_or_else(|| {
+            Error::invalid_consensus_state_timestamp(latest_consensus_state.timestamp(), now)
+        })?;
 
-        if client_state.expired(duration) {
-            return Err(Error::header_not_within_trust_period(
-                latest_consensus_state.timestamp(),
-                header.timestamp(),
-            ));
-        }
+    if client_state.expired(duration) {
+        return Err(Error::header_not_within_trust_period(
+            latest_consensus_state.timestamp(),
+            now,
+        ));
     }
 
     client_def
@@ -129,10 +126,7 @@ mod tests {
     use core::str::FromStr;
     use test_log::test;
 
-    use crate::clients::ics11_beefy::client_state::ClientState as BeefyClientState;
-    use crate::clients::ics11_beefy::header::BeefyHeader;
-    use crate::clients::ics11_beefy::header::ParachainHeader as BeefyParachainHeader;
-    use crate::core::ics02_client::client_consensus::AnyConsensusState;
+    use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
     use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
     use crate::core::ics02_client::client_type::ClientType;
     use crate::core::ics02_client::context::{ClientKeeper, ClientReader};
@@ -154,10 +148,6 @@ mod tests {
     use crate::test_utils::{get_dummy_account_id, Crypto};
     use crate::timestamp::Timestamp;
     use crate::Height;
-    use beefy_client_primitives::NodesUtils;
-    use beefy_queries::ClientWrapper;
-    use codec::{Decode, Encode};
-    use subxt::rpc::{rpc_params, JsonValue, Subscription, SubscriptionClientT};
 
     #[test]
     fn test_update_client_ok() {
@@ -575,13 +565,28 @@ mod tests {
     #[cfg(feature = "ics11_beefy")]
     #[tokio::test]
     async fn test_continuous_update_of_beefy_client() {
+        use crate::clients::ics11_beefy::client_state::ClientState as BeefyClientState;
+        use crate::clients::ics11_beefy::client_state::RelayChain;
+        use crate::clients::ics11_beefy::consensus_state::ConsensusState;
+        use crate::clients::ics11_beefy::header::BeefyHeader;
+        use crate::clients::ics11_beefy::header::ParachainHeader as BeefyParachainHeader;
+        use beefy_client_primitives::NodesUtils;
+        use beefy_client_primitives::PartialMmrLeaf;
+        use beefy_queries::runtime;
+        use beefy_queries::{
+            helpers::{fetch_timestamp_extrinsic_with_proof, TimeStampExtWithProof},
+            ClientWrapper,
+        };
+        use codec::{Decode, Encode};
+        use subxt::rpc::{rpc_params, JsonValue, Subscription, SubscriptionClientT};
+
         let client_id = ClientId::new(ClientType::Beefy, 0).unwrap();
 
         let chain_start_height = Height::new(1, 11);
 
         let mut ctx = MockContext::new(
             ChainId::new("mockgaiaA".to_string(), 1),
-            HostType::Mock,
+            HostType::Beefy,
             5,
             chain_start_height,
         );
@@ -605,25 +610,90 @@ mod tests {
             relay_client: client.clone(),
             para_client: para_client.clone(),
             beefy_activation_block: 0,
-            para_id: 2000,
+            para_id: 2001,
         };
 
         let mut count = 0;
-        let client_state =
-            ClientWrapper::<subxt::DefaultConfig>::get_initial_client_state(Some(&client)).await;
-        let beefy_client_state = BeefyClientState {
-            chain_id: Default::default(),
-            frozen_height: None,
-            latest_beefy_height: 0,
-            mmr_root_hash: Default::default(),
-            authority: client_state.current_authorities,
-            next_authority_set: client_state.next_authorities,
-            beefy_activation_block: 0,
+        let client_state = client_wrapper
+            .construct_beefy_client_state(0)
+            .await
+            .unwrap();
+        let beefy_client_state = BeefyClientState::new(
+            RelayChain::Rococo,
+            client_wrapper.para_id,
+            0,
+            client_state.mmr_root_hash,
+            client_state.beefy_activation_block,
+            client_state.latest_beefy_height,
+            client_state.current_authorities,
+            client_state.next_authorities,
+        )
+        .unwrap();
+
+        let api = client_wrapper
+            .relay_client
+            .clone()
+            .to_runtime_api::<runtime::api::RuntimeApi<subxt::DefaultConfig, subxt::PolkadotExtrinsicParams<_>>>();
+        let subxt_block_number: subxt::BlockNumber = beefy_client_state.latest_beefy_height.into();
+        let block_hash = client_wrapper
+            .relay_client
+            .rpc()
+            .block_hash(Some(subxt_block_number))
+            .await
+            .unwrap();
+        let head_data = api
+            .storage()
+            .paras()
+            .heads(
+                &runtime::api::runtime_types::polkadot_parachain::primitives::Id(
+                    client_wrapper.para_id,
+                ),
+                block_hash,
+            )
+            .await
+            .unwrap()
+            .unwrap();
+        let decoded_para_head =
+            sp_runtime::generic::Header::<u32, sp_runtime::traits::BlakeTwo256>::decode(
+                &mut &*head_data.0,
+            )
+            .unwrap();
+        let block_number = decoded_para_head.number;
+        let subxt_block_number: subxt::BlockNumber = block_number.into();
+        let block_hash = client_wrapper
+            .para_client
+            .rpc()
+            .block_hash(Some(subxt_block_number))
+            .await
+            .unwrap();
+
+        let TimeStampExtWithProof {
+            ext: timestamp_extrinsic,
+            proof: extrinsic_proof,
+        } = fetch_timestamp_extrinsic_with_proof(&client_wrapper.para_client, block_hash)
+            .await
+            .unwrap();
+        let parachain_header = BeefyParachainHeader {
+            parachain_header: decoded_para_head,
+            partial_mmr_leaf: PartialMmrLeaf {
+                version: Default::default(),
+                parent_number_and_hash: Default::default(),
+                beefy_next_authority_set: Default::default(),
+            },
+            parachain_heads_proof: vec![],
+            heads_leaf_index: 0,
+            heads_total_count: 0,
+            extrinsic_proof,
+            timestamp_extrinsic,
         };
+
+        let consensus_state = ConsensusState::from_header(parachain_header)
+            .unwrap()
+            .wrap_any();
 
         let create_client = MsgCreateAnyClient {
             client_state: AnyClientState::Beefy(beefy_client_state),
-            consensus_state: None,
+            consensus_state,
             signer: signer.clone(),
         };
 
@@ -696,7 +766,6 @@ mod tests {
                         parachain_header: Decode::decode(&mut &*header.parachain_header.as_slice())
                             .unwrap(),
                         partial_mmr_leaf: header.partial_mmr_leaf,
-                        para_id: header.para_id,
                         parachain_heads_proof: header.parachain_heads_proof,
                         heads_leaf_index: header.heads_leaf_index,
                         heads_total_count: header.heads_total_count,
@@ -743,10 +812,6 @@ mod tests {
                                 upd_res.client_state,
                                 ctx.latest_client_states(&client_id).clone()
                             );
-                            assert_eq!(
-                                upd_res.client_state.latest_height(),
-                                Height::new(0, signed_commitment.commitment.block_number as u64),
-                            )
                         }
                         _ => panic!("update handler result has incorrect type"),
                     }

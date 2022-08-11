@@ -192,7 +192,7 @@ impl AnyClientState {
         match self {
             AnyClientState::Tendermint(tm_state) => tm_state.expired(elapsed_since_latest),
             #[cfg(any(test, feature = "ics11_beefy"))]
-            AnyClientState::Beefy(_) => false,
+            AnyClientState::Beefy(bf_state) => bf_state.expired(elapsed_since_latest),
             #[cfg(any(test, feature = "ics11_beefy"))]
             Self::Near(_) => false,
             #[cfg(any(test, feature = "mocks"))]

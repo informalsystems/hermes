@@ -51,8 +51,6 @@ pub struct ParachainHeader {
     pub parachain_header: SubstrateHeader<u32, BlakeTwo256>,
     /// Reconstructed mmr leaf
     pub partial_mmr_leaf: PartialMmrLeaf,
-    /// parachain id
-    pub para_id: u32,
     /// Proof for our parachain header inclusion in the parachain headers root
     pub parachain_heads_proof: Vec<Hash>,
     /// leaf index for parachain heads proof
@@ -111,7 +109,6 @@ impl TryFrom<RawBeefyHeader> for BeefyHeader {
                         parent_number_and_hash: (mmr_partial_leaf.parent_number, parent_hash),
                         beefy_next_authority_set,
                     },
-                    para_id: raw_para_header.para_id,
                     parachain_heads_proof: raw_para_header
                         .parachain_heads_proof
                         .into_iter()
@@ -294,7 +291,6 @@ impl From<BeefyHeader> for RawBeefyHeader {
                                     .encode(),
                             }),
                         }),
-                        para_id: para_header.para_id,
                         parachain_heads_proof: para_header
                             .parachain_heads_proof
                             .into_iter()

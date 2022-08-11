@@ -24,7 +24,7 @@ pub struct Result {
     pub client_id: ClientId,
     pub client_type: ClientType,
     pub client_state: AnyClientState,
-    pub consensus_state: Option<AnyConsensusState>,
+    pub consensus_state: AnyConsensusState,
     pub processed_time: Timestamp,
     pub processed_height: Height,
 }
@@ -103,7 +103,7 @@ mod tests {
 
         let msg = MsgCreateAnyClient::new(
             MockClientState::new(MockHeader::new(height)).into(),
-            Some(MockConsensusState::new(MockHeader::new(height)).into()),
+            MockConsensusState::new(MockHeader::new(height)).into(),
             signer,
         )
         .unwrap();
@@ -154,13 +154,11 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                Some(
-                    MockConsensusState::new(MockHeader::new(Height {
-                        revision_height: 42,
-                        ..height
-                    }))
-                    .into(),
-                ),
+                MockConsensusState::new(MockHeader::new(Height {
+                    revision_height: 42,
+                    ..height
+                }))
+                .into(),
                 signer.clone(),
             )
             .unwrap(),
@@ -170,13 +168,11 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                Some(
-                    MockConsensusState::new(MockHeader::new(Height {
-                        revision_height: 42,
-                        ..height
-                    }))
-                    .into(),
-                ),
+                MockConsensusState::new(MockHeader::new(Height {
+                    revision_height: 42,
+                    ..height
+                }))
+                .into(),
                 signer.clone(),
             )
             .unwrap(),
@@ -186,13 +182,11 @@ mod tests {
                     ..height
                 }))
                 .into(),
-                Some(
-                    MockConsensusState::new(MockHeader::new(Height {
-                        revision_height: 50,
-                        ..height
-                    }))
-                    .into(),
-                ),
+                MockConsensusState::new(MockHeader::new(Height {
+                    revision_height: 50,
+                    ..height
+                }))
+                .into(),
                 signer,
             )
             .unwrap(),
@@ -264,7 +258,7 @@ mod tests {
 
         let msg = MsgCreateAnyClient::new(
             tm_client_state,
-            Some(AnyConsensusState::Tendermint(tm_header.try_into().unwrap())),
+            AnyConsensusState::Tendermint(tm_header.try_into().unwrap()),
             signer,
         )
         .unwrap();

@@ -1822,6 +1822,7 @@ dependencies = [
  "derive_more",
  "env_logger",
  "flex-error",
+ "frame-support",
  "ibc-proto",
  "ics23",
  "modelator",
