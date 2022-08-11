@@ -26,7 +26,7 @@ pub fn spawn_refresh_client<ChainA: ChainHandle, ChainB: ChainHandle>(
         Some(spawn_background_task(
             span!(
                 tracing::Level::ERROR,
-                "refresh_client",
+                "worker.client.refresh",
                 client = %client.id,
                 src_chain = %client.src_chain.id(),
                 dst_chain = %client.dst_chain.id(),
@@ -64,7 +64,7 @@ pub fn detect_misbehavior_task<ChainA: ChainHandle, ChainB: ChainHandle>(
     let handle = spawn_background_task(
         span!(
             tracing::Level::ERROR,
-            "detect_misbehaviour_task",
+            "worker.client.misbehaviour",
             client = %client.id,
             src_chain = %client.src_chain.id(),
             dst_chain = %client.dst_chain.id(),

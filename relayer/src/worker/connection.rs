@@ -20,7 +20,7 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     cmd_rx: Receiver<WorkerCmd>,
 ) -> TaskHandle {
     spawn_background_task(
-        error_span!("connection", connection = %connection.short_name()),
+        error_span!("worker.connection", connection = %connection.short_name()),
         Some(Duration::from_millis(200)),
         move || {
             if let Ok(cmd) = cmd_rx.try_recv() {
