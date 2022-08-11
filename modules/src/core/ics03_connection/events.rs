@@ -256,3 +256,40 @@ fn extract_attributes_from_tx(event: &AbciEvent) -> Result<Attributes, Error> {
 
     Ok(attr)
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn connection_event_to_abci_event() {
+        let attributes = Attributes {
+            connection_id: Some("test_connection".parse().unwrap()),
+            client_id: "test_client".parse().unwrap(),
+            counterparty_connection_id: Some("counterparty_test_conn".parse().unwrap()),
+            counterparty_client_id: "counterparty_test_client".parse().unwrap(),
+        };
+        let mut abci_events = vec![];
+        let open_init = OpenInit::from(attributes.clone());
+        abci_events.push(AbciEvent::from(open_init.clone()));
+        let open_try = OpenTry::from(attributes.clone());
+        abci_events.push(AbciEvent::from(open_try.clone()));
+        let open_ack = OpenAck::from(attributes.clone());
+        abci_events.push(AbciEvent::from(open_ack.clone()));
+        let open_confirm = OpenConfirm::from(attributes);
+        abci_events.push(AbciEvent::from(open_confirm.clone()));
+
+        for abci_event in abci_events {
+            match IbcEvent::try_from(&abci_event).ok() {
+                Some(ibc_event) => match ibc_event {
+                    IbcEvent::OpenInitConnection(e) => assert_eq!(e, open_init),
+                    IbcEvent::OpenTryConnection(e) => assert_eq!(e, open_try),
+                    IbcEvent::OpenAckConnection(e) => assert_eq!(e, open_ack),
+                    IbcEvent::OpenConfirmConnection(e) => assert_eq!(e, open_confirm),
+                    _ => panic!("unexpected event type"),
+                },
+                None => panic!("converted event was wrong"),
+            }
+        }
+    }
+}
