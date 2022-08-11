@@ -136,6 +136,7 @@ impl<Chain: ChainHandle> Serialize for ConnectionSide<Chain> {
 }
 
 #[derive(Clone, Debug, Serialize)]
+#[serde(bound(serialize = "(): Serialize"))]
 pub struct Connection<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub delay_period: Duration,
     pub a_side: ConnectionSide<ChainA>,

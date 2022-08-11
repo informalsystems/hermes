@@ -2,7 +2,6 @@ use alloc::sync::Arc;
 use core::fmt::{self, Debug};
 
 use crossbeam_channel as channel;
-use serde::Serialize;
 
 use ibc::{
     core::{
@@ -342,7 +341,7 @@ pub enum ChainRequest {
     },
 }
 
-pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
+pub trait ChainHandle: Clone + Send + Sync + Debug + 'static {
     fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self;
 
     /// Get the [`ChainId`] of this chain.

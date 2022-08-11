@@ -84,7 +84,9 @@ mod handshake_retry {
 }
 
 #[derive(Clone, Debug, Serialize)]
+#[serde(bound(serialize = "(): Serialize"))]
 pub struct ChannelSide<Chain: ChainHandle> {
+    #[serde(skip)]
     pub chain: Chain,
     client_id: ClientId,
     connection_id: ConnectionId,
@@ -152,6 +154,7 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
 }
 
 #[derive(Clone, Debug, Serialize)]
+#[serde(bound(serialize = "(): Serialize"))]
 pub struct Channel<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub ordering: Order,
     pub a_side: ChannelSide<ChainA>,
