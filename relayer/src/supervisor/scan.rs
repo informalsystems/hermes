@@ -25,6 +25,7 @@ use crate::{
         },
     },
     config::{filter::ChannelFilters, ChainConfig, Config, PacketFilter},
+    path::PathIdentifiers,
     registry::Registry,
     supervisor::client_state_filter::{FilterPolicy, Permission},
 };
@@ -222,11 +223,14 @@ impl ChannelScan {
         chain: &impl ChainHandle,
         counterparty_chain: &impl ChainHandle,
     ) -> Option<Vec<Sequence>> {
-        self.counterparty.as_ref().map(|counterparty| {
-            unreceived_packets(counterparty_chain, chain, &counterparty.into())
-                .map(|(seq, _)| seq)
-                .unwrap_or_default()
-        })
+        self.counterparty
+            .as_ref()
+            .and_then(|c| PathIdentifiers::from_channel_end(c.clone()))
+            .map(|ids| {
+                unreceived_packets(counterparty_chain, chain, &ids)
+                    .map(|(seq, _)| seq)
+                    .unwrap_or_default()
+            })
     }
 
     pub fn unreceived_acknowledgements_on_counterparty(
@@ -234,11 +238,14 @@ impl ChannelScan {
         chain: &impl ChainHandle,
         counterparty_chain: &impl ChainHandle,
     ) -> Option<Vec<Sequence>> {
-        self.counterparty.as_ref().map(|counterparty| {
-            unreceived_acknowledgements(counterparty_chain, chain, &counterparty.into())
-                .map(|(sns, _)| sns)
-                .unwrap_or_default()
-        })
+        self.counterparty
+            .as_ref()
+            .and_then(|c| PathIdentifiers::from_channel_end(c.clone()))
+            .map(|ids| {
+                unreceived_acknowledgements(counterparty_chain, chain, &ids)
+                    .map(|(sns, _)| sns)
+                    .unwrap_or_default()
+            })
     }
 }
 
