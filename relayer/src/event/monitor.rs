@@ -441,14 +441,13 @@ fn stream_batches(
         .try_flatten();
 
     // Group events by height
-    let grouped = try_group_while(events, |ev0, ev1| ev0.height() == ev1.height());
+    let grouped = try_group_while(events, |ev0, ev1| ev0.height == ev1.height);
 
     // Convert each group to a batch
     grouped.map_ok(move |mut events_with_heights| {
         let height = events_with_heights
             .first()
-            .map(|ev_with_height| ev_with_height.height())
-            .copied()
+            .map(|ev_with_height| ev_with_height.height)
             .expect("internal error: found empty group"); // SAFETY: upheld by `group_while`
 
         sort_events(&mut events_with_heights);

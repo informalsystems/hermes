@@ -16,10 +16,6 @@ impl IbcEventWithHeight {
     pub fn new(event: IbcEvent, height: Height) -> Self {
         Self { event, height }
     }
-
-    pub fn height(&self) -> &Height {
-        &self.height
-    }
 }
 
 impl Display for IbcEventWithHeight {
