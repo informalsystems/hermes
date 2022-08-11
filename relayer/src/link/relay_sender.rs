@@ -3,10 +3,11 @@ use core::fmt;
 use tendermint_rpc::endpoint::broadcast::tx_sync;
 use tracing::info;
 
-use ibc::events::{IbcEvent, PrettyEvents};
+use ibc::events::IbcEvent;
 
 use crate::chain::handle::ChainHandle;
 use crate::chain::tracking::TrackedMsgs;
+use crate::event::PrettyEvents;
 use crate::link::error::LinkError;
 use crate::link::RelaySummary;
 
@@ -52,13 +53,7 @@ impl Submit for SyncSender {
         info!(
             "[Sync->{}] result {}\n",
             target.id(),
-            PrettyEvents(
-                tx_events
-                    .iter()
-                    .map(|ev| ev.event.clone())
-                    .collect::<Vec<_>>()
-                    .as_ref()
-            )
+            PrettyEvents(tx_events.as_slice())
         );
 
         let ev = tx_events

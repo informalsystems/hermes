@@ -27,6 +27,7 @@ use crate::channel::error::ChannelError;
 use crate::channel::Channel;
 use crate::event::monitor::EventBatch;
 use crate::event::IbcEventWithHeight;
+use crate::event::PrettyEvents;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::link::error::{self, LinkError};
 use crate::link::operational_data::{
@@ -57,7 +58,7 @@ use ibc::{
         },
         ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     },
-    events::{IbcEvent, PrettyEvents, WithBlockDataType},
+    events::{IbcEvent, WithBlockDataType},
     signer::Signer,
     timestamp::Timestamp,
     tx_msg::Msg,
@@ -955,16 +956,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .send_messages_and_wait_commit(tm)
             .map_err(LinkError::relayer)?;
 
-        info!(
-            "result: {}",
-            PrettyEvents(
-                dst_tx_events
-                    .iter()
-                    .map(|ev| ev.event.clone())
-                    .collect::<Vec<_>>()
-                    .as_ref()
-            )
-        );
+        info!("result: {}", PrettyEvents(dst_tx_events.as_slice()));
 
         let (error, update, misbehaviour) = Self::event_per_type(dst_tx_events);
         match (error, update, misbehaviour) {
@@ -1031,16 +1023,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .send_messages_and_wait_commit(tm)
             .map_err(LinkError::relayer)?;
 
-        info!(
-            "result: {}",
-            PrettyEvents(
-                src_tx_events
-                    .iter()
-                    .map(|ev| ev.event.clone())
-                    .collect::<Vec<_>>()
-                    .as_ref()
-            )
-        );
+        info!("result: {}", PrettyEvents(src_tx_events.as_slice()));
 
         let (error, update, misbehaviour) = Self::event_per_type(src_tx_events);
         match (error, update, misbehaviour) {

@@ -255,18 +255,6 @@ pub enum IbcEvent {
     ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
 }
 
-/// For use in debug messages
-pub struct PrettyEvents<'a>(pub &'a [IbcEvent]);
-impl<'a> fmt::Display for PrettyEvents<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "events:")?;
-        for v in self.0 {
-            writeln!(f, "\t{}", v)?;
-        }
-        Ok(())
-    }
-}
-
 impl fmt::Display for IbcEvent {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
