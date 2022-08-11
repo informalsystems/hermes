@@ -229,7 +229,7 @@ impl OperationalData {
     fn has_packet_msgs(&self) -> bool {
         self.batch
             .iter()
-            .any(|msg| msg.event_with_height.event().packet().is_some())
+            .any(|msg| msg.event_with_height.event.packet().is_some())
     }
 
     /// Returns the `connection_delay` iff the connection delay for this relaying path is non-zero

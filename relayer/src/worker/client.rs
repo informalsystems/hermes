@@ -92,7 +92,7 @@ pub fn detect_misbehavior_task<ChainA: ChainHandle, ChainB: ChainHandle>(
                         trace!("received batch: {:?}", batch);
 
                         for event_with_height in batch.events {
-                            if let IbcEvent::UpdateClient(update) = event_with_height.event() {
+                            if let IbcEvent::UpdateClient(ref update) = event_with_height.event {
                                 debug!("checking misbehavior for updated client");
                                 let misbehavior_result =
                                     client.detect_misbehaviour_and_submit_evidence(Some(update));

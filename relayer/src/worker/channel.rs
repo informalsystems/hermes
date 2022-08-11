@@ -35,12 +35,12 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                             let mut handshake_channel = RelayChannel::restore_from_event(
                                 chains.a.clone(),
                                 chains.b.clone(),
-                                event_with_height.event().clone(),
+                                event_with_height.event.clone(),
                             )
                             .map_err(|e| TaskError::Fatal(RunError::channel(e)))?;
 
                             retry_with_index(retry_strategy::worker_default_strategy(), |index| {
-                                handshake_channel.step_event(event_with_height.event(), index)
+                                handshake_channel.step_event(&event_with_height.event, index)
                             })
                             .map_err(|e| TaskError::Fatal(RunError::retry(e)))
                         } else {

@@ -844,14 +844,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let result = events
             .into_iter()
             .find(|event_with_height| {
-                matches!(event_with_height.event(), IbcEvent::OpenInitChannel(_))
-                    || matches!(event_with_height.event(), IbcEvent::ChainError(_))
+                matches!(event_with_height.event, IbcEvent::OpenInitChannel(_))
+                    || matches!(event_with_height.event, IbcEvent::ChainError(_))
             })
             .ok_or_else(|| {
                 ChannelError::missing_event("no chan init event was in the response".to_string())
             })?;
 
-        match result.event() {
+        match &result.event {
             IbcEvent::OpenInitChannel(_) => {
                 info!("🎊  {} => {:#?}\n", self.dst_chain().id(), result);
                 Ok(result.event)
@@ -1030,14 +1030,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let result = events
             .into_iter()
             .find(|events_with_height| {
-                matches!(events_with_height.event(), IbcEvent::OpenTryChannel(_))
-                    || matches!(events_with_height.event(), IbcEvent::ChainError(_))
+                matches!(events_with_height.event, IbcEvent::OpenTryChannel(_))
+                    || matches!(events_with_height.event, IbcEvent::ChainError(_))
             })
             .ok_or_else(|| {
                 ChannelError::missing_event("no chan try event was in the response".to_string())
             })?;
 
-        match result.event() {
+        match &result.event {
             IbcEvent::OpenTryChannel(_) => {
                 info!("🎊  {} => {:#?}\n", self.dst_chain().id(), result);
                 Ok(result.event)
@@ -1133,14 +1133,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             let result = events
                 .into_iter()
                 .find(|event_with_height| {
-                    matches!(event_with_height.event(), IbcEvent::OpenAckChannel(_))
-                        || matches!(event_with_height.event(), IbcEvent::ChainError(_))
+                    matches!(event_with_height.event, IbcEvent::OpenAckChannel(_))
+                        || matches!(event_with_height.event, IbcEvent::ChainError(_))
                 })
                 .ok_or_else(|| {
                     ChannelError::missing_event("no chan ack event was in the response".to_string())
                 })?;
 
-            match result.event() {
+            match &result.event {
                 IbcEvent::OpenAckChannel(_) => {
                     info!("🎊  {} => {:#?}\n", channel.dst_chain().id(), result);
                     Ok(result.event)
@@ -1238,8 +1238,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             let result = events
                 .into_iter()
                 .find(|event_with_height| {
-                    matches!(event_with_height.event(), IbcEvent::OpenConfirmChannel(_))
-                        || matches!(event_with_height.event(), IbcEvent::ChainError(_))
+                    matches!(event_with_height.event, IbcEvent::OpenConfirmChannel(_))
+                        || matches!(event_with_height.event, IbcEvent::ChainError(_))
                 })
                 .ok_or_else(|| {
                     ChannelError::missing_event(
@@ -1247,7 +1247,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     )
                 })?;
 
-            match result.event() {
+            match &result.event {
                 IbcEvent::OpenConfirmChannel(_) => {
                     info!("🎊  {} => {:#?}\n", channel.dst_chain().id(), result);
                     Ok(result.event)
@@ -1310,14 +1310,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let result = events
             .into_iter()
             .find(|event_with_height| {
-                matches!(event_with_height.event(), IbcEvent::CloseInitChannel(_))
-                    || matches!(event_with_height.event(), IbcEvent::ChainError(_))
+                matches!(event_with_height.event, IbcEvent::CloseInitChannel(_))
+                    || matches!(event_with_height.event, IbcEvent::ChainError(_))
             })
             .ok_or_else(|| {
                 ChannelError::missing_event("no chan init event was in the response".to_string())
             })?;
 
-        match result.event() {
+        match &result.event {
             IbcEvent::CloseInitChannel(_) => {
                 info!("👋 {} => {:#?}\n", self.dst_chain().id(), result);
                 Ok(result.event)
@@ -1407,14 +1407,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let result = events
             .into_iter()
             .find(|event_with_height| {
-                matches!(event_with_height.event(), IbcEvent::CloseConfirmChannel(_))
-                    || matches!(event_with_height.event(), IbcEvent::ChainError(_))
+                matches!(event_with_height.event, IbcEvent::CloseConfirmChannel(_))
+                    || matches!(event_with_height.event, IbcEvent::ChainError(_))
             })
             .ok_or_else(|| {
                 ChannelError::missing_event("no chan confirm event was in the response".to_string())
             })?;
 
-        match result.event() {
+        match &result.event {
             IbcEvent::CloseConfirmChannel(_) => {
                 info!("👋 {} => {:#?}\n", self.dst_chain().id(), result);
                 Ok(result.event)

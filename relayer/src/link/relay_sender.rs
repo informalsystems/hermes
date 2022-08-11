@@ -64,7 +64,7 @@ impl Submit for SyncSender {
         let ev = tx_events
             .clone()
             .into_iter()
-            .find(|event_with_height| matches!(event_with_height.event(), IbcEvent::ChainError(_)));
+            .find(|event_with_height| matches!(event_with_height.event, IbcEvent::ChainError(_)));
 
         match ev {
             Some(ev) => Err(LinkError::send(ev.event)),

@@ -65,7 +65,7 @@ pub fn monitor_misbehaviour(
         match event_batch.deref() {
             Ok(event_batch) => {
                 for event_with_height in &event_batch.events {
-                    match event_with_height.event() {
+                    match &event_with_height.event {
                         IbcEvent::UpdateClient(update) => {
                             debug!("{:?}", update);
                             misbehaviour_handling(
@@ -82,7 +82,7 @@ pub fn monitor_misbehaviour(
 
                         IbcEvent::ClientMisbehaviour(ref _misbehaviour) => {
                             // TODO - submit misbehaviour to the witnesses (our full node)
-                            return Ok(Some(event_with_height.event().clone()));
+                            return Ok(Some(event_with_height.event.clone()));
                         }
 
                         _ => {}

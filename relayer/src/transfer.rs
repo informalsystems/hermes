@@ -197,12 +197,12 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
     // Check if the chain rejected the transaction
     let result = events_with_heights
         .iter()
-        .find(|event| matches!(event.event(), IbcEvent::ChainError(_)));
+        .find(|event| matches!(event.event, IbcEvent::ChainError(_)));
 
     match result {
         None => Ok(events_with_heights.into_iter().map(|ev| ev.event).collect()),
         Some(err) => {
-            if let IbcEvent::ChainError(err) = err.event() {
+            if let IbcEvent::ChainError(ref err) = err.event {
                 Err(TransferError::tx_response(err.clone()))
             } else {
                 panic!(

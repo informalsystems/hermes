@@ -36,12 +36,12 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                             let mut handshake_connection = RelayConnection::restore_from_event(
                                 chains.a.clone(),
                                 chains.b.clone(),
-                                event_with_height.event(),
+                                &event_with_height.event,
                             )
                             .map_err(|e| TaskError::Fatal(RunError::connection(e)))?;
 
                             retry_with_index(retry_strategy::worker_default_strategy(), |index| {
-                                handshake_connection.step_event(event_with_height.event(), index)
+                                handshake_connection.step_event(&event_with_height.event, index)
                             })
                             .map_err(|e| TaskError::Fatal(RunError::retry(e)))
                         } else {

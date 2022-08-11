@@ -665,7 +665,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 e
             })?;
 
-        self.id = extract_client_id(event_with_height.event())?.clone();
+        self.id = extract_client_id(&event_with_height.event)?.clone();
         info!("🍭 [{}]  => {:#?}\n", self, event_with_height);
 
         Ok(())
@@ -1211,7 +1211,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // same consensus height. This could happen when multiple client updates with same header
         // were submitted to chain. However this is not what it's observed during testing.
         // Regardless, just take the event from the first update.
-        let event = events_with_heights[0].event();
+        let event = &events_with_heights[0].event;
         let update = downcast!(event.clone() => IbcEvent::UpdateClient).ok_or_else(|| {
             ForeignClientError::unexpected_event(
                 self.id().clone(),
@@ -1666,7 +1666,7 @@ mod test {
             "build_create_client_and_send failed (chain a) with error {:?}",
             res
         );
-        assert!(matches!(res.unwrap().event(), IbcEvent::CreateClient(_)));
+        assert!(matches!(res.unwrap().event, IbcEvent::CreateClient(_)));
 
         // Create the client on chain b
         let res = b_client.build_create_client_and_send(Default::default());
@@ -1675,7 +1675,7 @@ mod test {
             "build_create_client_and_send failed (chain b) with error {:?}",
             res
         );
-        assert!(matches!(res.unwrap().event(), IbcEvent::CreateClient(_)));
+        assert!(matches!(res.unwrap().event, IbcEvent::CreateClient(_)));
     }
 
     /// Basic test for the `build_update_client_and_send` & `build_create_client_and_send` methods.

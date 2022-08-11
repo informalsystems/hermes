@@ -465,7 +465,7 @@ fn stream_batches(
 /// Sort the given events by putting the NewBlock event first,
 /// and leaving the other events as is.
 fn sort_events(events: &mut [IbcEventWithHeight]) {
-    events.sort_by(|a, b| match (a.event(), b.event()) {
+    events.sort_by(|a, b| match (&a.event, &b.event) {
         (IbcEvent::NewBlock(_), _) => Ordering::Less,
         _ => Ordering::Equal,
     })

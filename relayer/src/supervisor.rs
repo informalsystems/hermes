@@ -388,11 +388,11 @@ pub fn collect_events(
     let mode = config.mode;
 
     for event_with_height in &batch.events {
-        match event_with_height.event() {
+        match &event_with_height.event {
             IbcEvent::NewBlock(_) => {
-                collected.new_block = Some(event_with_height.event().clone());
+                collected.new_block = Some(event_with_height.event.clone());
             }
-            IbcEvent::UpdateClient(ref update) => {
+            IbcEvent::UpdateClient(update) => {
                 collect_event(
                     &mut collected,
                     event_with_height.clone(),
@@ -416,7 +416,7 @@ pub fn collect_events(
                     mode.connections.enabled,
                     || {
                         event_with_height
-                            .event()
+                            .event
                             .connection_attributes()
                             .and_then(|attr| {
                                 Object::connection_from_conn_open_events(attr, src_chain).ok()
@@ -431,7 +431,7 @@ pub fn collect_events(
                     mode.channels.enabled,
                     || {
                         event_with_height
-                            .event()
+                            .event
                             .clone()
                             .channel_attributes()
                             .and_then(|attr| {
@@ -698,7 +698,7 @@ fn process_batch<Chain: ChainHandle>(
             // Update telemetry info
             telemetry!({
                 for event_with_height in events_with_heights.iter() {
-                    match event_with_height.event() {
+                    match &event_with_height.event {
                         IbcEvent::SendPacket(send_packet_ev) => {
                             ibc_telemetry::global().send_packet_events(
                                 send_packet_ev.packet.sequence.into(),

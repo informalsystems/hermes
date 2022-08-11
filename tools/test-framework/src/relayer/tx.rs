@@ -118,7 +118,7 @@ pub async fn simple_send_tx(
 
     for result in tx_sync_results.iter() {
         for event in result.events.iter() {
-            if let IbcEvent::ChainError(e) = event.event() {
+            if let IbcEvent::ChainError(ref e) = event.event {
                 return Err(Error::generic(eyre!("send_tx result in error: {}", e)));
             }
         }

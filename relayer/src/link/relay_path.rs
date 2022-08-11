@@ -444,7 +444,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // Update telemetry info
         telemetry!({
             for event_with_height in events.events() {
-                self.backlog_update(event_with_height.event());
+                self.backlog_update(&event_with_height.event);
             }
         });
 
@@ -517,7 +517,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         for event_with_height in input {
             trace!("processing event: {}", event_with_height);
-            let (dst_msg, src_msg) = match event_with_height.event() {
+            let (dst_msg, src_msg) = match &event_with_height.event {
                 IbcEvent::CloseInitChannel(_) => (
                     Some(self.build_chan_close_confirm_from_event(event_with_height)?),
                     None,
@@ -867,12 +867,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // same order in which they were emitted.
         match events_with_heights.first() {
             Some(event_with_height) => {
-                if matches!(event_with_height.event(), IbcEvent::UpdateClient(_)) {
+                if matches!(&event_with_height.event, IbcEvent::UpdateClient(_)) {
                     Ok(event_with_height.height)
                 } else {
-                    Err(LinkError::unexpected_event(
-                        event_with_height.event().clone(),
-                    ))
+                    Err(LinkError::unexpected_event(event_with_height.event.clone()))
                 }
             }
             None => Err(LinkError::update_client_event_not_found()),
@@ -1564,7 +1562,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     event_with_height, ..
                 } = gm;
 
-                match event_with_height.event() {
+                match &event_with_height.event {
                     IbcEvent::SendPacket(e) => {
                         // Catch any SendPacket event that timed-out
                         if self.send_packet_event_handled(e)? {
@@ -1810,7 +1808,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
     #[cfg(feature = "telemetry")]
     fn record_cleared_send_packet(&self, event_with_height: &IbcEventWithHeight) {
-        if let IbcEvent::SendPacket(send_packet_ev) = event_with_height.event() {
+        if let IbcEvent::SendPacket(send_packet_ev) = &event_with_height.event {
             ibc_telemetry::global().send_packet_events(
                 send_packet_ev.packet.sequence.into(),
                 event_with_height.height().revision_height(),
@@ -1836,7 +1834,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         events_with_heights: impl Iterator<Item = &'a IbcEventWithHeight>,
     ) {
         for event_with_height in events_with_heights {
-            if let IbcEvent::WriteAcknowledgement(write_ack_ev) = event_with_height.event() {
+            if let IbcEvent::WriteAcknowledgement(write_ack_ev) = &event_with_height.event {
                 ibc_telemetry::global().cleared_acknowledgment_events(
                     write_ack_ev.packet.sequence.into(),
                     event_with_height.height().revision_height(),
