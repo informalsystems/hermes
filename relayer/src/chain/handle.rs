@@ -124,7 +124,7 @@ pub enum ChainRequest {
 
     SendMessagesAndWaitCommit {
         tracked_msgs: TrackedMsgs,
-        reply_to: ReplyTo<Vec<IbcEvent>>,
+        reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     },
 
     SendMessagesAndWaitCheckTx {
@@ -375,7 +375,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
     fn send_messages_and_wait_commit(
         &self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<IbcEvent>, Error>;
+    ) -> Result<Vec<IbcEventWithHeight>, Error>;
 
     /// Submit messages asynchronously.
     /// Does not block waiting on the chain to produce the

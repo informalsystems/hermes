@@ -900,20 +900,20 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         // Find the relevant event for connection init
         let result = events
             .into_iter()
-            .find(|event| {
-                matches!(event, IbcEvent::OpenInitConnection(_))
-                    || matches!(event, IbcEvent::ChainError(_))
+            .find(|event_with_height| {
+                matches!(event_with_height.event(), IbcEvent::OpenInitConnection(_))
+                    || matches!(event_with_height.event(), IbcEvent::ChainError(_))
             })
             .ok_or_else(ConnectionError::missing_connection_init_event)?;
 
         // TODO - make chainError an actual error
-        match result {
+        match result.event() {
             IbcEvent::OpenInitConnection(_) => {
                 info!("🥂 {} => {:#?}\n", self.dst_chain().id(), result);
-                Ok(result)
+                Ok(result.event)
             }
-            IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
-            _ => Err(ConnectionError::invalid_event(result)),
+            IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e.clone())),
+            _ => Err(ConnectionError::invalid_event(result.event)),
         }
     }
 
@@ -1073,19 +1073,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         // Find the relevant event for connection try transaction
         let result = events
             .into_iter()
-            .find(|event| {
-                matches!(event, IbcEvent::OpenTryConnection(_))
-                    || matches!(event, IbcEvent::ChainError(_))
+            .find(|event_with_height| {
+                matches!(event_with_height.event(), IbcEvent::OpenTryConnection(_))
+                    || matches!(event_with_height.event(), IbcEvent::ChainError(_))
             })
             .ok_or_else(ConnectionError::missing_connection_try_event)?;
 
-        match result {
+        match result.event() {
             IbcEvent::OpenTryConnection(_) => {
                 info!("🥂 {} => {:#?}\n", self.dst_chain().id(), result);
-                Ok(result)
+                Ok(result.event)
             }
-            IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
-            _ => Err(ConnectionError::invalid_event(result)),
+            IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e.clone())),
+            _ => Err(ConnectionError::invalid_event(result.event)),
         }
     }
 
@@ -1188,19 +1188,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         // Find the relevant event for connection ack
         let result = events
             .into_iter()
-            .find(|event| {
-                matches!(event, IbcEvent::OpenAckConnection(_))
-                    || matches!(event, IbcEvent::ChainError(_))
+            .find(|event_with_height| {
+                matches!(event_with_height.event(), IbcEvent::OpenAckConnection(_))
+                    || matches!(event_with_height.event(), IbcEvent::ChainError(_))
             })
             .ok_or_else(ConnectionError::missing_connection_ack_event)?;
 
-        match result {
+        match result.event() {
             IbcEvent::OpenAckConnection(_) => {
                 info!("🥂 {} => {:#?}\n", self.dst_chain().id(), result);
-                Ok(result)
+                Ok(result.event)
             }
-            IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
-            _ => Err(ConnectionError::invalid_event(result)),
+            IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e.clone())),
+            _ => Err(ConnectionError::invalid_event(result.event)),
         }
     }
 
@@ -1276,19 +1276,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         // Find the relevant event for connection confirm
         let result = events
             .into_iter()
-            .find(|event| {
-                matches!(event, IbcEvent::OpenConfirmConnection(_))
-                    || matches!(event, IbcEvent::ChainError(_))
+            .find(|event_with_height| {
+                matches!(
+                    event_with_height.event(),
+                    IbcEvent::OpenConfirmConnection(_)
+                ) || matches!(event_with_height.event(), IbcEvent::ChainError(_))
             })
             .ok_or_else(ConnectionError::missing_connection_confirm_event)?;
 
-        match result {
+        match result.event() {
             IbcEvent::OpenConfirmConnection(_) => {
                 info!("🥂 {} => {:#?}\n", self.dst_chain().id(), result);
-                Ok(result)
+                Ok(result.event)
             }
-            IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
-            _ => Err(ConnectionError::invalid_event(result)),
+            IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e.clone())),
+            _ => Err(ConnectionError::invalid_event(result.event)),
         }
     }
 

@@ -403,7 +403,7 @@ impl CosmosSdkChain {
     async fn do_send_messages_and_wait_commit(
         &mut self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<IbcEvent>, Error> {
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         crate::time!("send_messages_and_wait_commit");
 
         let _span =
@@ -586,7 +586,7 @@ impl ChainEndpoint for CosmosSdkChain {
     fn send_messages_and_wait_commit(
         &mut self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<IbcEvent>, Error> {
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         let runtime = self.rt.clone();
 
         runtime.block_on(self.do_send_messages_and_wait_commit(tracked_msgs))

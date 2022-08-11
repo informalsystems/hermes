@@ -459,7 +459,7 @@ where
     fn send_messages_and_wait_commit(
         &mut self,
         tracked_msgs: TrackedMsgs,
-        reply_to: ReplyTo<Vec<IbcEvent>>,
+        reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     ) -> Result<(), Error> {
         let result = self.chain.send_messages_and_wait_commit(tracked_msgs);
         reply_to.send(result).map_err(Error::send)

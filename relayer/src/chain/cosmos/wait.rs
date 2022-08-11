@@ -12,6 +12,7 @@ use crate::chain::cosmos::query::tx::query_tx_response;
 use crate::chain::cosmos::types::events::from_tx_response_event;
 use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use crate::error::Error;
+use crate::event::IbcEventWithHeight;
 
 const WAIT_BACKOFF: Duration = Duration::from_millis(300);
 
@@ -77,26 +78,24 @@ async fn update_tx_sync_result(
         if let Some(response) = response {
             tx_sync_result.status = TxStatus::ReceivedResponse;
 
+            let height = Height::new(chain_id.version(), u64::from(response.height)).unwrap();
             if response.tx_result.code.is_err() {
                 tx_sync_result.events = vec![
-                    IbcEvent::ChainError(format!(
-                        "deliver_tx for {} reports error: code={:?}, log={:?}",
-                        response.hash, response.tx_result.code, response.tx_result.log
-                    ));
+                    IbcEventWithHeight::new(
+                        IbcEvent::ChainError(format!(
+                            "deliver_tx for {} reports error: code={:?}, log={:?}",
+                            response.hash, response.tx_result.code, response.tx_result.log
+                        )),
+                        height
+                    );
                     message_count
                 ];
             } else {
-                let height = Height::new(chain_id.version(), u64::from(response.height)).unwrap();
-
                 tx_sync_result.events = response
                     .tx_result
                     .events
                     .iter()
-                    .flat_map(|event| {
-                        from_tx_response_event(height, event)
-                            .into_iter()
-                            .map(|ev_with_height| ev_with_height.event().clone())
-                    })
+                    .flat_map(|event| from_tx_response_event(height, event))
                     .collect::<Vec<_>>();
             }
         }

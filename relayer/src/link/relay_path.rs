@@ -44,10 +44,7 @@ use crate::telemetry;
 use crate::util::queue::Queue;
 use ibc::{
     core::{
-        ics02_client::{
-            events::ClientMisbehaviour as ClientMisbehaviourEvent,
-            events::UpdateClient as UpdateClientEvent,
-        },
+        ics02_client::events::ClientMisbehaviour as ClientMisbehaviourEvent,
         ics04_channel::{
             channel::{ChannelEnd, Order, State as ChannelState},
             events::{SendPacket, WriteAcknowledgement},
@@ -884,20 +881,20 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// multiple variants with a single pass.
     #[inline]
     fn event_per_type(
-        mut tx_events: Vec<IbcEvent>,
+        mut tx_events: Vec<IbcEventWithHeight>,
     ) -> (
         Option<IbcEvent>,
-        Option<UpdateClientEvent>,
+        Option<Height>,
         Option<ClientMisbehaviourEvent>,
     ) {
         let mut error = None;
         let mut update = None;
         let mut misbehaviour = None;
 
-        while let Some(event) = tx_events.pop() {
-            match event {
-                IbcEvent::ChainError(_) => error = Some(event),
-                IbcEvent::UpdateClient(event) => update = Some(event),
+        while let Some(event_with_height) = tx_events.pop() {
+            match event_with_height.event {
+                IbcEvent::ChainError(_) => error = Some(event_with_height.event),
+                IbcEvent::UpdateClient(_) => update = Some(event_with_height.height),
                 IbcEvent::ClientMisbehaviour(event) => misbehaviour = Some(event),
                 _ => {}
             }
@@ -956,12 +953,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .send_messages_and_wait_commit(tm)
             .map_err(LinkError::relayer)?;
 
-        info!("result: {}", PrettyEvents(&dst_tx_events));
+        info!(
+            "result: {}",
+            PrettyEvents(
+                dst_tx_events
+                    .iter()
+                    .map(|ev| ev.event.clone())
+                    .collect::<Vec<_>>()
+                    .as_ref()
+            )
+        );
 
         let (error, update, misbehaviour) = Self::event_per_type(dst_tx_events);
         match (error, update, misbehaviour) {
             // All updates were successful, no errors and no misbehaviour.
-            (None, Some(update_event), None) => Ok(update_event.height()),
+            (None, Some(update_event_height), None) => Ok(update_event_height),
             (Some(chain_error), _, _) => {
                 // Atleast one chain-error so retry if possible.
                 if retries_left == 0 {
@@ -1023,12 +1029,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .send_messages_and_wait_commit(tm)
             .map_err(LinkError::relayer)?;
 
-        info!("result: {}", PrettyEvents(&src_tx_events));
+        info!(
+            "result: {}",
+            PrettyEvents(
+                src_tx_events
+                    .iter()
+                    .map(|ev| ev.event.clone())
+                    .collect::<Vec<_>>()
+                    .as_ref()
+            )
+        );
 
         let (error, update, misbehaviour) = Self::event_per_type(src_tx_events);
         match (error, update, misbehaviour) {
             // All updates were successful, no errors and no misbehaviour.
-            (None, Some(update_event), None) => Ok(update_event.height()),
+            (None, Some(update_event_height), None) => Ok(update_event_height),
             (Some(chain_error), _, _) => {
                 // Atleast one chain-error so retry if possible.
                 if retries_left == 0 {

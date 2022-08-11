@@ -43,6 +43,7 @@ use crate::chain::requests::{
 };
 use crate::chain::tracking::TrackedMsgs;
 use crate::error::Error as RelayerError;
+use crate::event::IbcEventWithHeight;
 
 const MAX_MISBEHAVIOUR_CHECK_DURATION: Duration = Duration::from_secs(120);
 
@@ -530,7 +531,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 )
             })?;
 
-        Ok(res)
+        Ok(res
+            .into_iter()
+            .map(|ev_with_height| ev_with_height.event)
+            .collect())
     }
 
     /// Returns a handle to the chain hosting this client.
@@ -630,7 +634,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     pub fn build_create_client_and_send(
         &self,
         options: CreateOptions,
-    ) -> Result<IbcEvent, ForeignClientError> {
+    ) -> Result<IbcEventWithHeight, ForeignClientError> {
         let new_msg = self.build_create_client(options)?;
 
         let res = self
@@ -653,15 +657,15 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
     /// Sends the client creation transaction & subsequently sets the id of this ForeignClient
     fn create(&mut self) -> Result<(), ForeignClientError> {
-        let event = self
+        let event_with_height = self
             .build_create_client_and_send(CreateOptions::default())
             .map_err(|e| {
                 error!("[{}]  failed CreateClient: {}", self, e);
                 e
             })?;
 
-        self.id = extract_client_id(&event)?.clone();
-        info!("🍭 [{}]  => {:#?}\n", self, event);
+        self.id = extract_client_id(event_with_height.event())?.clone();
+        info!("🍭 [{}]  => {:#?}\n", self, event_with_height);
 
         Ok(())
     }
@@ -1133,7 +1137,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 )
             })?;
 
-        Ok(events)
+        Ok(events.into_iter().map(|ev| ev.event).collect())
     }
 
     /// Attempts to update a client using header from the latest height of its source chain.
@@ -1502,7 +1506,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 )
             })?;
 
-        Ok(events)
+        Ok(events.into_iter().map(|ev| ev.event).collect())
     }
 
     pub fn detect_misbehaviour_and_submit_evidence(
@@ -1646,7 +1650,7 @@ mod test {
             "build_create_client_and_send failed (chain a) with error {:?}",
             res
         );
-        assert!(matches!(res.unwrap(), IbcEvent::CreateClient(_)));
+        assert!(matches!(res.unwrap().event(), IbcEvent::CreateClient(_)));
 
         // Create the client on chain b
         let res = b_client.build_create_client_and_send(Default::default());
@@ -1655,7 +1659,7 @@ mod test {
             "build_create_client_and_send failed (chain b) with error {:?}",
             res
         );
-        assert!(matches!(res.unwrap(), IbcEvent::CreateClient(_)));
+        assert!(matches!(res.unwrap().event(), IbcEvent::CreateClient(_)));
     }
 
     /// Basic test for the `build_update_client_and_send` & `build_create_client_and_send` methods.

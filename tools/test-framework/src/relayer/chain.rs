@@ -101,7 +101,7 @@ where
     fn send_messages_and_wait_commit(
         &self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<IbcEvent>, Error> {
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         self.value().send_messages_and_wait_commit(tracked_msgs)
     }
 

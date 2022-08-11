@@ -52,17 +52,28 @@ impl Submit for SyncSender {
         info!(
             "[Sync->{}] result {}\n",
             target.id(),
-            PrettyEvents(&tx_events)
+            PrettyEvents(
+                tx_events
+                    .iter()
+                    .map(|ev| ev.event.clone())
+                    .collect::<Vec<_>>()
+                    .as_ref()
+            )
         );
 
         let ev = tx_events
             .clone()
             .into_iter()
-            .find(|event| matches!(event, IbcEvent::ChainError(_)));
+            .find(|event_with_height| matches!(event_with_height.event(), IbcEvent::ChainError(_)));
 
         match ev {
-            Some(ev) => Err(LinkError::send(ev)),
-            None => Ok(RelaySummary::from_events(tx_events)),
+            Some(ev) => Err(LinkError::send(ev.event)),
+            None => Ok(RelaySummary::from_events(
+                tx_events
+                    .into_iter()
+                    .map(|event_with_height| event_with_height.event)
+                    .collect(),
+            )),
         }
     }
 }

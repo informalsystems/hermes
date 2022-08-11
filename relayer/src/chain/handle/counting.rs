@@ -120,7 +120,7 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     fn send_messages_and_wait_commit(
         &self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<IbcEvent>, Error> {
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         self.inc_metric("send_messages_and_wait_commit");
         self.inner().send_messages_and_wait_commit(tracked_msgs)
     }

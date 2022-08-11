@@ -133,11 +133,14 @@ impl ChainEndpoint for MockChain {
     fn send_messages_and_wait_commit(
         &mut self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<IbcEvent>, Error> {
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         // Use the ICS18Context interface to submit the set of messages.
         let events = self.context.send(tracked_msgs.msgs).map_err(Error::ics18)?;
 
-        Ok(events)
+        Ok(events
+            .into_iter()
+            .map(|ev| IbcEventWithHeight::new(ev, Height::new(0, 1).unwrap()))
+            .collect())
     }
 
     fn send_messages_and_wait_check_tx(

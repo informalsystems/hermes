@@ -113,7 +113,7 @@ pub trait ChainEndpoint: Sized {
     fn send_messages_and_wait_commit(
         &mut self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<IbcEvent>, Error>;
+    ) -> Result<Vec<IbcEventWithHeight>, Error>;
 
     /// Sends one or more transactions with `msgs` to chain.
     /// Non-blocking alternative to `send_messages_and_wait_commit` interface.
