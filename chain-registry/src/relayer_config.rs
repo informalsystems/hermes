@@ -278,6 +278,7 @@ mod tests {
                         );
                         assert!(channel_filter.matches(cosmoshub_juno));
                         assert!(channel_filter.matches(cosmoshub_osmosis));
+                        assert!(channel_filter.len() == 2);
                     } else if config.id.as_str().contains("juno") {
                         assert!(channel_filter.is_exact());
                         let juno_cosmoshub = (
@@ -295,6 +296,7 @@ mod tests {
                         assert!(channel_filter.matches(juno_cosmoshub));
                         assert!(channel_filter.matches(juno_osmosis_1));
                         assert!(channel_filter.matches(juno_osmosis_2));
+                        assert!(channel_filter.len() == 3);
                     } else if config.id.as_str().contains("osmosis") {
                         assert!(channel_filter.is_exact());
                         let osmosis_cosmoshub = (
@@ -312,6 +314,7 @@ mod tests {
                         assert!(channel_filter.matches(osmosis_cosmoshub));
                         assert!(channel_filter.matches(osmosis_juno_1));
                         assert!(channel_filter.matches(osmosis_juno_2));
+                        assert!(channel_filter.len() == 3);
                     } else {
                         panic!("Unknown chain");
                     }
