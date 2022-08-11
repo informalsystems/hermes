@@ -68,7 +68,7 @@ pub trait ClientReader {
 /// A blanket implementation of this trait is provided for all types that implement `ClientReader`.
 ///
 /// Note: This trait is not a supertrait of `ClientReader` because it uses trait objects and cannot
-/// depend on `AnyClientState` and `AnyConsensusState` due to a circular dependency problem.
+/// depend on `AnyClientState` due to a circular dependency problem.
 pub trait ClientReaderLightClient {
     fn consensus_state(
         &self,

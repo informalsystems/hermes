@@ -42,7 +42,7 @@ pub trait ClientDef {
     fn verify_upgrade_and_update_state(
         &self,
         client_state: &Self::ClientState,
-        consensus_state: &dyn ConsensusState,
+        consensus_state: Any,
         proof_upgrade_client: MerkleProof,
         proof_upgrade_consensus_state: MerkleProof,
     ) -> Result<(Self::ClientState, Box<dyn ConsensusState>), Error>;
@@ -649,7 +649,7 @@ impl ClientDef for AnyClient {
     fn verify_upgrade_and_update_state(
         &self,
         client_state: &Self::ClientState,
-        consensus_state: &dyn ConsensusState,
+        consensus_state: Any,
         proof_upgrade_client: MerkleProof,
         proof_upgrade_consensus_state: MerkleProof,
     ) -> Result<(Self::ClientState, Box<dyn ConsensusState>), Error> {

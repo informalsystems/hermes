@@ -425,7 +425,7 @@ impl ClientDef for TendermintClient {
     fn verify_upgrade_and_update_state(
         &self,
         _client_state: &Self::ClientState,
-        _consensus_state: &dyn ConsensusState,
+        _consensus_state: Any,
         _proof_upgrade_client: RawMerkleProof,
         _proof_upgrade_consensus_state: RawMerkleProof,
     ) -> Result<(Self::ClientState, Box<dyn ConsensusState>), Ics02Error> {

@@ -1,4 +1,3 @@
-use dyn_clone::clone_box;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
@@ -187,10 +186,11 @@ impl ClientDef for MockClient {
     fn verify_upgrade_and_update_state(
         &self,
         client_state: &Self::ClientState,
-        consensus_state: &dyn ConsensusState,
+        consensus_state: Any,
         _proof_upgrade_client: MerkleProof,
         _proof_upgrade_consensus_state: MerkleProof,
     ) -> Result<(Self::ClientState, Box<dyn ConsensusState>), Error> {
-        Ok((*client_state, clone_box(consensus_state)))
+        let consensus_state = self.validate_consensus_state(consensus_state)?;
+        Ok((*client_state, consensus_state))
     }
 }
