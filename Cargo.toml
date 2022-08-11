@@ -4,24 +4,6 @@ resolver = "2"
 
 members = [
     "modules",
-    "relayer",
-    "relayer-cli",
-    "relayer-rest",
-    "telemetry",
     "proto",
-    "tools/integration-test",
-    "tools/test-framework",
-]
-
-exclude = [
-    "ci/no-std-check",
     "proto-compiler"
 ]
-
-# [patch.crates-io]
-# tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
