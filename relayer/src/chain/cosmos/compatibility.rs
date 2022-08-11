@@ -78,11 +78,11 @@ fn ibc_go_diagnostic(version_info: Option<&semver::Version>) -> Result<(), Diagn
         // If binary lacks the ibc-go dependency it is _not_ an error,
         // we support chains without the standalone ibc-go module.
         None => Ok(()),
-        Some(v) => match ibc_reqs.matches(&v) {
+        Some(version) => match ibc_reqs.matches(version) {
             true => Ok(()),
             false => Err(Diagnostic::MismatchingIbcGoModuleVersion {
                 requirements: IBC_GO_MODULE_VERSION_REQ.to_string(),
-                found: v.to_string(),
+                found: version.to_string(),
             }),
         },
     }
