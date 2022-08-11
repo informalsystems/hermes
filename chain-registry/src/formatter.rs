@@ -13,19 +13,20 @@ pub trait UriFormatter {
 pub struct WebSocketFormatter;
 pub struct GRPCFormatter;
 
+/// Format a websocket address from a rpc address and return a tendermint_rpc::Url.
 impl UriFormatter for WebSocketFormatter {
     type OutputFormat = tendermint_rpc::Url;
-    fn parse_or_build_address(rpc_endpoint: &str) -> Result<Self::OutputFormat, RegistryError> {
-        let uri = rpc_endpoint
+    fn parse_or_build_address(rpc_address: &str) -> Result<Self::OutputFormat, RegistryError> {
+        let uri = rpc_address
             .parse::<Uri>()
-            .map_err(|e| RegistryError::uri_parse_error(rpc_endpoint.to_string(), e))?;
+            .map_err(|e| RegistryError::uri_parse_error(rpc_address.to_string(), e))?;
 
         let uri = Uri::builder()
             .scheme("wss")
             .authority(
                 uri.authority()
                     .ok_or_else(|| {
-                        RegistryError::rpc_url_without_authority(rpc_endpoint.to_string())
+                        RegistryError::rpc_url_without_authority(rpc_address.to_string())
                     })?
                     .clone(),
             )
@@ -35,17 +36,18 @@ impl UriFormatter for WebSocketFormatter {
         match uri {
             Ok(uri) => Ok(
                 tendermint_rpc::Url::from_str(uri.to_string().as_str()).map_err(|e| {
-                    RegistryError::tendermint_url_parse_error(rpc_endpoint.to_string(), e)
+                    RegistryError::tendermint_url_parse_error(rpc_address.to_string(), e)
                 })?,
             ),
             Err(e) => Err(RegistryError::unable_to_build_websocket_endpoint(
-                rpc_endpoint.to_string(),
+                rpc_address.to_string(),
                 e,
             )),
         }
     }
 }
 
+/// Builds a valid http::Uri from a gRPC address.
 impl UriFormatter for GRPCFormatter {
     type OutputFormat = Uri;
     fn parse_or_build_address(input: &str) -> Result<Self::OutputFormat, RegistryError> {

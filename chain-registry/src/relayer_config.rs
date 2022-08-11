@@ -78,11 +78,11 @@ async fn hermes_config(
 
     let clone_name = chain_name.to_string();
     let rpc_handle =
-        tokio::spawn(async move { RPCQuerier::select_healthy(clone_name, rpc_endpoints).await });
+        tokio::spawn(async move { RPCQuerier::query_healthy(clone_name, rpc_endpoints).await });
 
     let clone_name = chain_name.to_string();
     let grpc_handle =
-        tokio::spawn(async move { GRPCQuerier::select_healthy(clone_name, grpc_endpoints).await });
+        tokio::spawn(async move { GRPCQuerier::query_healthy(clone_name, grpc_endpoints).await });
 
     let base = if let Some(asset) = assets.assets.first() {
         asset.base.clone()

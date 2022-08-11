@@ -1,3 +1,5 @@
+/// Contains functions to query RPC and GRPC endpoints for a given chain
+
 use crate::error::RegistryError;
 use crate::formatter::{UriFormatter, WebSocketFormatter};
 use async_trait::async_trait;
@@ -8,18 +10,24 @@ use tendermint_rpc::{Url, Client, SubscriptionClient, WebSocketClient};
 use tokio::time::timeout;
 use tokio::time::Duration;
 
+/// Input and output types for a query
 pub trait QueryInputOutput {
     type QueryInput: Send;
     type QueryOutput;
 }
 
 #[async_trait]
+/// QueryContext is a trait that provides the ability to query a chain from a list of endpoints
 pub trait QueryContext: QueryInputOutput {
+
+    /// Returns an error specific to the query
     fn query_error(chain_name: String) -> RegistryError;
+
+    /// Queries an endpoint and return the result
     async fn query(query: Self::QueryInput) -> Result<Self::QueryOutput, RegistryError>;
 
-    /// Select a healthy RPC/gRPC address from a list of urls.
-    async fn select_healthy(
+    /// Queries all healthy endpoints from a list of urls and return the output of the first one to answer.
+    async fn query_healthy(
         chain_name: String,
         urls: Vec<Self::QueryInput>,
     ) -> Result<Self::QueryOutput, RegistryError> {
@@ -37,7 +45,7 @@ pub trait QueryContext: QueryInputOutput {
 
 // ----------------- RPC ------------------
 
-/// Data retrievable from RPC endpoints.
+/// Data which must be retrieved from RPC endpoints.
 #[derive(Clone, Debug)]
 pub struct RpcMandatoryData {
     pub rpc_address: String,
@@ -49,6 +57,7 @@ pub struct RpcMandatoryData {
 
 pub struct RPCQuerier;
 
+/// Expected Input and Output to query an RPC endpoint
 impl QueryInputOutput for RPCQuerier {
     type QueryInput = String;
     type QueryOutput = RpcMandatoryData;
@@ -56,10 +65,12 @@ impl QueryInputOutput for RPCQuerier {
 
 #[async_trait]
 impl QueryContext for RPCQuerier {
+
     fn query_error(chain_name: String) -> RegistryError {
         RegistryError::no_healthy_rpc(chain_name)
     }
 
+    /// Convert the RPC url to a WebSocket url, query the endpoint, return the mandatory data from the RPC.
     async fn query(rpc: Self::QueryInput) -> Result<Self::QueryOutput, RegistryError> {
         let websocket_addr = WebSocketFormatter::parse_or_build_address(rpc.as_str())?;
 
@@ -104,6 +115,7 @@ impl QueryContext for RPCQuerier {
 
 pub struct GRPCQuerier;
 
+/// Expected Input and Output to query a GRPC endpoint
 impl QueryInputOutput for GRPCQuerier {
     type QueryInput = Uri;
     type QueryOutput = Url;
@@ -114,7 +126,7 @@ impl QueryContext for GRPCQuerier {
     fn query_error(chain_name: String) -> RegistryError {
         RegistryError::no_healthy_grpc(chain_name)
     }
-
+    /// Query the endpoint and return the GRPC url
     async fn query(uri: Self::QueryInput) -> Result<Self::QueryOutput, RegistryError> {
         let tendermint_url = uri
             .to_string()
