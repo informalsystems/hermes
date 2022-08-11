@@ -867,25 +867,15 @@ fn init_telemetry(
     port_id: &PortId,
     config: &Config,
 ) {
-    // metrics which should be initialized when tx worker is enabled
-    if config.mode.clients.enabled
-        || config.mode.channels.enabled
-        || config.mode.connections.enabled
-        || config.mode.packets.enabled
-    {
-        telemetry!(
-            init_per_client,
-            chain_id,
-            counterparty_chain_id,
-            client,
-            config.mode.clients.misbehaviour && config.mode.clients.enabled
-        );
-    }
+    // Boolean flag that is toggled if any of the tx workers are enabled
+    let mut tx_worker_enabled = false;
 
     let clear_packets = config.mode.packets.enabled
         && (config.mode.packets.clear_on_start || config.mode.packets.clear_interval > 0);
 
     if config.mode.packets.enabled {
+        tx_worker_enabled = true;
+
         telemetry!(
             init_per_path,
             chain_id,
@@ -897,23 +887,35 @@ fn init_telemetry(
 
         telemetry!(init_worker_by_type, WorkerType::Packet);
 
-        // metrics which should be initialized when tx_confirmation is true
         if config.mode.packets.tx_confirmation {
             telemetry!(init_per_channel, chain_id, channel_id, port_id);
         }
     }
 
-    // Initialise remaining workers if required.
     if config.mode.clients.enabled {
+        tx_worker_enabled = true;
         telemetry!(init_worker_by_type, WorkerType::Client);
     }
 
     if config.mode.connections.enabled {
+        tx_worker_enabled = true;
         telemetry!(init_worker_by_type, WorkerType::Connection);
     }
 
     if config.mode.channels.enabled {
+        tx_worker_enabled = true;
         telemetry!(init_worker_by_type, WorkerType::Channel);
+    }
+
+    // Now we can just check this boolean
+    if tx_worker_enabled {
+        telemetry!(
+            init_per_client,
+            chain_id,
+            counterparty_chain_id,
+            client,
+            config.mode.clients.misbehaviour && config.mode.clients.enabled
+        );
     }
 
     telemetry!(init_worker_by_type, WorkerType::Wallet);
