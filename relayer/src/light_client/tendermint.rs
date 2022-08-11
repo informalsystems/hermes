@@ -249,6 +249,7 @@ impl LightClient {
                 if (fetch_height <= juno_client_latest_trusted_height) && (self.chain_id == ChainId::new("juno".to_owned(), 1)) {
                     // Create an alternative io for the archive node, to bypass the default full node.
                     warn!("matched on juno-1, below the halt height");
+
                     let archive_rpc_client =
                         rpc::HttpClient::new("https://rpc-v3-archive.junonetwork.io:443")
                             .expect("could not initialize the rpc client to bypass juno full node");

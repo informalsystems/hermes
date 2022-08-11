@@ -3194,8 +3194,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.23.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "467f82178deeebcd357e1273a0c0b77b9a8a0313ef7c07074baebe99d87851f4"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=adi/bypass_juno#27df26c98e16003ccb71899e90942211a520cfb1"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3225,8 +3224,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.23.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d42ee0abc27ef5fc34080cce8d43c189950d331631546e7dfb983b6274fa327"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=adi/bypass_juno#27df26c98e16003ccb71899e90942211a520cfb1"
 dependencies = [
  "flex-error",
  "serde",
@@ -3239,8 +3237,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.23.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4544911bcd1a062f4cf6233dca85993d074fd69954230aaa8d21385f38d87d6"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=adi/bypass_juno#27df26c98e16003ccb71899e90942211a520cfb1"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -3254,6 +3251,7 @@ dependencies = [
  "tendermint",
  "tendermint-light-client-verifier",
  "tendermint-rpc",
+ "tendermint-testgen",
  "time",
  "tokio",
 ]
@@ -3261,8 +3259,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-verifier"
 version = "0.23.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1a1ecb58905bc27f977d28d281594c71a8905da1d8cd88f1db31703f1e9e5ad"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=adi/bypass_juno#27df26c98e16003ccb71899e90942211a520cfb1"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -3274,8 +3271,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.23.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68ce80bf536476db81ecc9ebab834dc329c9c1509a694f211a73858814bfe023"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=adi/bypass_juno#27df26c98e16003ccb71899e90942211a520cfb1"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3292,8 +3288,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.23.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f14aafe3528a0f75e9f3f410b525617b2de16c4b7830a21f717eee62882ec60"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=adi/bypass_juno#27df26c98e16003ccb71899e90942211a520cfb1"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3326,8 +3321,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.23.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5966190343ff29a6529052b2b841448d90b60831aaaf529a6153b608a2d1370b"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=adi/bypass_juno#27df26c98e16003ccb71899e90942211a520cfb1"
 dependencies = [
  "ed25519-dalek",
  "gumdrop",

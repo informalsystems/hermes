@@ -18,10 +18,10 @@ exclude = [
     "proto-compiler"
 ]
 
-# [patch.crates-io]
-# tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
-# tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
+[patch.crates-io]
+tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "adi/bypass_juno" }
+tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "adi/bypass_juno" }
+tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "adi/bypass_juno" }
+tendermint-light-client = { git = "https://github.com/informalsystems/tendermint-rs", branch = "adi/bypass_juno" }
+tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", branch = "adi/bypass_juno" }
+tendermint-testgen      = { git = "https://github.com/informalsystems/tendermint-rs", branch = "adi/bypass_juno" }
