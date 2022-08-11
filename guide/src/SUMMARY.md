@@ -1,6 +1,6 @@
 # Summary
 
-# Hermes (v1.0.0-rc.1)
+# Hermes (v1.0.0-rc.2)
 
 ---
 - [Introduction](./index.md)
@@ -13,9 +13,11 @@
    - [Configuration](./config.md)
      - [Example Configuration](./example-config.md)
 - [Telemetry](./telemetry.md)
+    - [Operators guide](./telemetry/operators.md)
+    - [Integration](./telemetry/integration.md)
 - [REST API](./rest-api.md)
 - [Tutorials](./tutorials/index.md)
-   - [Local chains](./tutorials/local-chains/index.md)     
+   - [Local chains](./tutorials/local-chains/index.md)
      - [Install Gaia](./tutorials/local-chains/gaia.md)
      - [Install Gaiad Manager](./tutorials/local-chains/gaiad-manager.md)
      - [Start the local chains](./tutorials/local-chains/start.md)
@@ -23,11 +25,6 @@
      - [Connect the chains using relay paths](./tutorials/local-chains/relay-paths/index.md)
        - [Create a new path](./tutorials/local-chains/relay-paths/create-new-path.md)
        - [Relay packets on multiple paths](./tutorials/local-chains/relay-paths/multiple-paths.md)
-     - [Connect the chains using transactions](./tutorials/local-chains/raw/index.md)
-       - [Configure clients](./tutorials/local-chains/raw/client.md)
-       - [Connection handshake](./tutorials/local-chains/raw/connection.md)
-       - [Channel handshake](./tutorials/local-chains/raw/channel.md)
-       - [Relay packets](./tutorials/local-chains/raw/packet.md)
 - [Commands Reference](./commands/index.md)
    - [Global options and JSON output](./commands/global.md)
    - [Keys](./commands/keys/index.md)

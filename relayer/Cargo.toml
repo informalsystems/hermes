@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-relayer"
-version      = "0.17.0"
+version      = "0.18.0"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
@@ -21,9 +21,9 @@ profiling = []
 telemetry = ["ibc-telemetry"]
 
 [dependencies]
-ibc           = { version = "0.17.0", path = "../modules" }
-ibc-proto     = { version = "0.19.1", path = "../proto" }
-ibc-telemetry = { version = "0.17.0", path = "../telemetry", optional = true }
+ibc           = { version = "0.18.0", path = "../modules" }
+ibc-proto     = { version = "0.20.0", path = "../proto" }
+ibc-telemetry = { version = "0.18.0", path = "../telemetry", optional = true }
 
 subtle-encoding = "0.5"
 humantime-serde = "1.1.1"
@@ -35,9 +35,9 @@ tracing = "0.1.36"
 tokio = { version = "1.0", features = ["rt-multi-thread", "time", "sync"] }
 serde_json = { version = "1" }
 bytes = "1.2.1"
-prost = { version = "0.10" }
-prost-types = { version = "0.10" }
-tonic = { version = "0.7.2", features = ["tls", "tls-roots"] }
+prost = { version = "0.11" }
+prost-types = { version = "0.11" }
+tonic = { version = "0.8", features = ["tls", "tls-roots"] }
 futures = "0.3.21"
 crossbeam-channel = "0.5.5"
 k256 = { version = "0.11.3", features = ["ecdsa-core", "ecdsa", "sha256"]}
@@ -47,7 +47,7 @@ tiny-bip39 = "1.0.0"
 hdpath = { version = "0.6.1" }
 sha2 = "0.10.2"
 tiny-keccak = { version = "2.0.2", features = ["keccak"], default-features = false }
-ripemd160 = "0.9.1"
+ripemd = "0.1.1"
 bech32 = "0.9.0"
 itertools = "0.10.3"
 dirs-next = "2.0.0"
@@ -74,31 +74,31 @@ version = "0.4.1"
 features = ["num-bigint", "serde"]
 
 [dependencies.tendermint]
-version = "=0.23.8"
+version = "=0.23.9"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.23.8"
+version = "=0.23.9"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.23.8"
+version = "=0.23.9"
 default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-light-client-verifier]
-version = "=0.23.8"
+version = "=0.23.9"
 default-features = false
 
 [dependencies.tendermint-proto]
-version = "=0.23.8"
+version = "=0.23.9"
 
 [dev-dependencies]
-ibc = { version = "0.17.0", path = "../modules", features = ["mocks"] }
+ibc = { version = "0.18.0", path = "../modules", features = ["mocks"] }
 serial_test = "0.8.0"
 env_logger = "0.9.0"
 tracing-subscriber = { version = "0.3.14", features = ["fmt", "env-filter", "json"] }
 test-log = { version = "0.2.10", features = ["trace"] }
 
 # Needed for generating (synthetic) light blocks.
-tendermint-testgen = { version = "=0.23.8" }
+tendermint-testgen = { version = "=0.23.9" }
