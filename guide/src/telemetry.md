@@ -30,30 +30,29 @@ Please see the [relevant section in the *Configuration* page](./config.md#teleme
 
 The following table describes the metrics currently tracked by the telemetry service:
 
-| Name                         | Description                                          | OpenTelemetry type  |
-| ---------------------------- | ---------------------------------------------------- | ------------------- |
-| `workers`                    | Number of workers per object                         | `i64` UpDownCounter |
-| `ibc_client_updates`         | Number of client updates performed per client        | `u64` Counter       |
-| `ibc_client_misbehaviours`   | Number of misbehaviours detected per client          | `u64` Counter       |
-| `ibc_receive_packets`        | Number of confirmed receive packets relayed per channel. Available if relayer runs with Tx confirmation enabled        | `u64` Counter       |
-| `ibc_acknowledgment_packets` | Number of confirmed acknowledgment packets relayed per channel. Available if relayer runs with Tx confirmation enabled | `u64` Counter       |
-| `ibc_timeout_packets`        | Number of confirmed timeout packets relayed per channel. Available if relayer runs with Tx confirmation enabled        | `u64` Counter       |
-| `wallet_balance`             | The balance of each wallet Hermes uses per chain. Please note that when converting the balance to f64 a loss in
-                precision might be introduced in the displayed value     | `f64` ValueRecorder |
-| `ws_events`                  | How many IBC events did Hermes receive via the websocket subscription, in total since starting up, per chain. | Counter       |
-| `ws_reconnect`               | Number of times Hermes had to reconnect to the WebSocket endpoint                                                             | Counter       |
-| `tx_latency_submitted`       | Latency for all transactions submitted to a chain (i.e., difference between the moment when Hermes received an event until the corresponding transaction(s) were submitted). | `u64` ValueRecorder       |
-| `tx_latency_confirmed`       | Latency for all transactions confirmed by a chain (i.e., difference between the moment when Hermes received an event until the corresponding transaction(s) were confirmed). Requires `tx_confirmation = true`. | `u64` ValueRecorder       |
-| `msg_num`                    | How many messages Hermes submitted to a specific chain. | `u64` Counter     |
-| `queries`                    | Number of queries emitted by the relayer, per chain and query type | `u64` Counter |
-| `query_cache_hits`           | Number of cache hits for queries emitted by the relayer, per chain and query type | `u64` Counter |
-| `send_packet_count`          | Number of SendPacket events processed | `u64` Counter |
-| `acknowledgement_count`      | Number of WriteAcknowledgement events processed      | `u64` Counter       |
-| `cleared_send_packet_count`    | Number of SendPacket events processed during the initial and periodic clearing | `u64` Counter   |
-| `cleared_acknowledgment_count` | Number of WriteAcknowledgement events processed during the initial and periodic clearing | `u64` Counter   |
-| `backlog_oldest_sequence`      | Sequence number of the oldest pending packet in the backlog, per channel | `u64` ValueRecorder |
-| `backlog_oldest_timestamp`     | Local timestamp for the oldest pending packet in the backlog, per channel | `u64` ValueRecorder |
-| `backlog_size`                 | Total number of pending packets, per channel | `u64` ValueRecorder |
+| Name                         | Description                                          | OpenTelemetry type  | Configuration dependencies |
+| ---------------------------- | ---------------------------------------------------- | ------------------- | -------------------------- |
+| `workers`                    | Number of workers per object                         | `i64` UpDownCounter | Corresponding workers enabled |
+| `ibc_client_updates`         | Number of client updates performed per client        | `u64` Counter       | Client workers enabled |
+| `ibc_client_misbehaviours`   | Number of misbehaviours detected per client          | `u64` Counter       | Client workers enabled and Clients misbehaviour detection enabled |
+| `ibc_receive_packets`        | Number of confirmed receive packets relayed per channel        | `u64` Counter       | Packet workers enabled and Transaction confirmation enabled |
+| `ibc_acknowledgment_packets` | Number of confirmed acknowledgment packets relayed per channel | `u64` Counter       | Packet workers enabled and Transaction confirmation enabled |
+| `ibc_timeout_packets`        | Number of confirmed timeout packets relayed per channel        | `u64` Counter       | Packet workers enabled and Transaction confirmation enabled |
+| `wallet_balance`             | The balance of each wallet Hermes uses per chain. Please note that when converting the balance to f64 a loss in precision might be introduced in the displayed value     | `f64` ValueRecorder | None                       |
+| `ws_events`                  | How many IBC events did Hermes receive via the websocket subscription, in total since starting up, per chain. | Counter       | None                       |
+| `ws_reconnect`               | Number of times Hermes had to reconnect to the WebSocket endpoint                                                             | Counter       | None                       |
+| `tx_latency_submitted`       | Latency for all transactions submitted to a chain (i.e., difference between the moment when Hermes received an event until the corresponding transaction(s) were submitted). | `u64` ValueRecorder       | None                       |
+| `tx_latency_confirmed`       | Latency for all transactions confirmed by a chain (i.e., difference between the moment when Hermes received an event until the corresponding transaction(s) were confirmed). Requires `tx_confirmation = true`. | `u64` ValueRecorder       | Transaction confirmation enabled |
+| `msg_num`                    | How many messages Hermes submitted to a specific chain. | `u64` Counter     | None                       |
+| `queries`                    | Number of queries emitted by the relayer, per chain and query type | `u64` Counter | None                       |
+| `query_cache_hits`           | Number of cache hits for queries emitted by the relayer, per chain and query type | `u64` Counter | None                       |
+| `send_packet_count`          | Number of SendPacket events processed | `u64` Counter                      | Packet workers enabled     |
+| `acknowledgement_count`      | Number of WriteAcknowledgement events processed      | `u64` Counter       | Packet workers enabled     |
+| `cleared_send_packet_count`    | Number of SendPacket events processed during the initial and periodic clearing | `u64` Counter   | Packet workers enabled, and periodic packet clearing or clear on start enabled |
+| `cleared_acknowledgment_count` | Number of WriteAcknowledgement events processed during the initial and periodic clearing | `u64` Counter   | Packet workers enabled, and periodic packet clearing or clear on start enabled |
+| `backlog_oldest_sequence`      | Sequence number of the oldest pending packet in the backlog, per channel | `u64` ValueRecorder | Packet workers enabled     |
+| `backlog_oldest_timestamp`     | Local timestamp for the oldest pending packet in the backlog, per channel | `u64` ValueRecorder | Packet workers enabled     |
+| `backlog_size`                 | Total number of pending packets, per channel | `u64` ValueRecorder | Packet workers enabled     |
 
 ## Integration with Prometheus
 
