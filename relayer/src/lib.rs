@@ -24,6 +24,7 @@ pub mod account;
 pub mod cache;
 pub mod chain;
 pub mod channel;
+pub mod client_consensus;
 pub mod config;
 pub mod connection;
 pub mod denom;

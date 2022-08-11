@@ -26,7 +26,6 @@ use tracing::{error, span, warn, Level};
 
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::clients::ics07_tendermint::header::Header as TmHeader;
-use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::error::Error as ClientError;
@@ -68,6 +67,7 @@ use crate::chain::cosmos::types::events::channel as channel_events;
 use crate::chain::cosmos::types::gas::{default_gas_from_config, max_gas_from_config};
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
 use crate::chain::tracking::TrackedMsgs;
+use crate::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::config::ChainConfig;
 use crate::denom::DenomTrace;
 use crate::error::Error;

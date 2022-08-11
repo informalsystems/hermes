@@ -1,5 +1,4 @@
 use crossbeam_channel as channel;
-use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::core::ics02_client::events::UpdateClient;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
@@ -38,6 +37,7 @@ use crate::chain::requests::{
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
+use crate::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
 use crate::denom::DenomTrace;

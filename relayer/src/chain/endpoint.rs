@@ -4,9 +4,7 @@ use ibc::core::ics23_commitment::merkle::MerkleProof;
 
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::core::ics02_client::client_consensus::{
-    AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState,
-};
+use ibc::core::ics02_client::client_consensus::ConsensusState;
 use ibc::core::ics02_client::client_state::{
     AnyClientState, ClientState, IdentifiedAnyClientState,
 };
@@ -36,6 +34,7 @@ use crate::chain::requests::{
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
+use crate::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
 use crate::denom::DenomTrace;

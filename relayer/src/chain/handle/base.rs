@@ -5,7 +5,6 @@ use serde::{Serialize, Serializer};
 
 use ibc::{
     core::{
-        ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
         ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState},
         ics02_client::events::UpdateClient,
         ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
@@ -41,6 +40,7 @@ use crate::{
         },
         tracking::TrackedMsgs,
     },
+    client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
     config::ChainConfig,
     connection::ConnectionMsgType,
     denom::DenomTrace,
