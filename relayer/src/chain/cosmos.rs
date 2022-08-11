@@ -49,7 +49,6 @@ use ibc::{
 };
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 
-use crate::chain::client::ClientSettings;
 use crate::chain::cosmos::batch::{
     send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
 };
@@ -74,6 +73,7 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::{account::Balance, event::IbcEventWithHeight};
+use crate::{chain::client::ClientSettings, event::ibc_event_try_from_abci_event};
 
 use super::requests::{
     IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
@@ -1615,7 +1615,7 @@ fn filter_matching_event(
         return None;
     }
 
-    let ibc_event = IbcEvent::try_from(&event).ok()?;
+    let ibc_event = ibc_event_try_from_abci_event(&event).ok()?;
     match ibc_event {
         IbcEvent::SendPacket(ref send_ev) if matches_packet(request, seq, &send_ev.packet) => {
             Some(ibc_event)

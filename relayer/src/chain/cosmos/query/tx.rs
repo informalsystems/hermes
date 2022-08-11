@@ -13,7 +13,7 @@ use crate::chain::requests::{
     QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest, QueryTxHash, QueryTxRequest,
 };
 use crate::error::Error;
-use crate::event::IbcEventWithHeight;
+use crate::event::{ibc_event_try_from_abci_event, IbcEventWithHeight};
 
 /// This function queries transactions for events matching certain criteria.
 /// 1. Client Update request - returns a vector with at most one update client event
@@ -160,7 +160,7 @@ fn update_client_from_tx_search_response(
         .events
         .into_iter()
         .filter(|event| event.type_str == request.event_id.as_str())
-        .flat_map(|event| IbcEvent::try_from(&event).ok())
+        .flat_map(|event| ibc_event_try_from_abci_event(&event).ok())
         .flat_map(|event| match event {
             IbcEvent::UpdateClient(update) => Some(update),
             _ => None,
@@ -223,7 +223,7 @@ fn filter_matching_event(
         return None;
     }
 
-    let ibc_event = IbcEvent::try_from(&event).ok()?;
+    let ibc_event = ibc_event_try_from_abci_event(&event).ok()?;
     match ibc_event {
         IbcEvent::SendPacket(ref send_ev) if matches_packet(request, seq, &send_ev.packet) => {
             Some(ibc_event)

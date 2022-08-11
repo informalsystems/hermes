@@ -8,8 +8,6 @@ use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::events::{IbcEvent, IbcEventType};
 use crate::prelude::*;
 
-use super::error::Error;
-
 /// The content of the `key` field for the attribute containing the connection identifier.
 pub const CONN_ID_ATTRIBUTE_KEY: &str = "connection_id";
 pub const CLIENT_ID_ATTRIBUTE_KEY: &str = "client_id";
@@ -81,14 +79,6 @@ impl From<Attributes> for OpenInit {
     }
 }
 
-impl TryFrom<&AbciEvent> for OpenInit {
-    type Error = Error;
-
-    fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
-        extract_attributes_from_tx(abci_event).map(OpenInit)
-    }
-}
-
 impl From<OpenInit> for IbcEvent {
     fn from(v: OpenInit) -> Self {
         IbcEvent::OpenInitConnection(v)
@@ -120,14 +110,6 @@ impl OpenTry {
 impl From<Attributes> for OpenTry {
     fn from(attrs: Attributes) -> Self {
         OpenTry(attrs)
-    }
-}
-
-impl TryFrom<&AbciEvent> for OpenTry {
-    type Error = Error;
-
-    fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
-        extract_attributes_from_tx(abci_event).map(OpenTry)
     }
 }
 
@@ -165,14 +147,6 @@ impl From<Attributes> for OpenAck {
     }
 }
 
-impl TryFrom<&AbciEvent> for OpenAck {
-    type Error = Error;
-
-    fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
-        extract_attributes_from_tx(abci_event).map(OpenAck)
-    }
-}
-
 impl From<OpenAck> for IbcEvent {
     fn from(v: OpenAck) -> Self {
         IbcEvent::OpenAckConnection(v)
@@ -207,14 +181,6 @@ impl From<Attributes> for OpenConfirm {
     }
 }
 
-impl TryFrom<&AbciEvent> for OpenConfirm {
-    type Error = Error;
-
-    fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
-        extract_attributes_from_tx(abci_event).map(OpenConfirm)
-    }
-}
-
 impl From<OpenConfirm> for IbcEvent {
     fn from(v: OpenConfirm) -> Self {
         IbcEvent::OpenConfirmConnection(v)
@@ -227,69 +193,6 @@ impl From<OpenConfirm> for AbciEvent {
         AbciEvent {
             type_str: IbcEventType::OpenConfirmConnection.as_str().to_string(),
             attributes,
-        }
-    }
-}
-
-fn extract_attributes_from_tx(event: &AbciEvent) -> Result<Attributes, Error> {
-    let mut attr = Attributes::default();
-
-    for tag in &event.attributes {
-        let key = tag.key.as_ref();
-        let value = tag.value.as_ref();
-        match key {
-            CONN_ID_ATTRIBUTE_KEY => {
-                attr.connection_id = value.parse().ok();
-            }
-            CLIENT_ID_ATTRIBUTE_KEY => {
-                attr.client_id = value.parse().map_err(Error::invalid_identifier)?;
-            }
-            COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY => {
-                attr.counterparty_connection_id = value.parse().ok();
-            }
-            COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY => {
-                attr.counterparty_client_id = value.parse().map_err(Error::invalid_identifier)?;
-            }
-            _ => {}
-        }
-    }
-
-    Ok(attr)
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn connection_event_to_abci_event() {
-        let attributes = Attributes {
-            connection_id: Some("test_connection".parse().unwrap()),
-            client_id: "test_client".parse().unwrap(),
-            counterparty_connection_id: Some("counterparty_test_conn".parse().unwrap()),
-            counterparty_client_id: "counterparty_test_client".parse().unwrap(),
-        };
-        let mut abci_events = vec![];
-        let open_init = OpenInit::from(attributes.clone());
-        abci_events.push(AbciEvent::from(open_init.clone()));
-        let open_try = OpenTry::from(attributes.clone());
-        abci_events.push(AbciEvent::from(open_try.clone()));
-        let open_ack = OpenAck::from(attributes.clone());
-        abci_events.push(AbciEvent::from(open_ack.clone()));
-        let open_confirm = OpenConfirm::from(attributes);
-        abci_events.push(AbciEvent::from(open_confirm.clone()));
-
-        for abci_event in abci_events {
-            match IbcEvent::try_from(&abci_event).ok() {
-                Some(ibc_event) => match ibc_event {
-                    IbcEvent::OpenInitConnection(e) => assert_eq!(e, open_init),
-                    IbcEvent::OpenTryConnection(e) => assert_eq!(e, open_try),
-                    IbcEvent::OpenAckConnection(e) => assert_eq!(e, open_ack),
-                    IbcEvent::OpenConfirmConnection(e) => assert_eq!(e, open_confirm),
-                    _ => panic!("unexpected event type"),
-                },
-                None => panic!("converted event was wrong"),
-            }
         }
     }
 }

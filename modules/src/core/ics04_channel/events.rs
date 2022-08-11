@@ -4,14 +4,11 @@ use serde_derive::{Deserialize, Serialize};
 use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
-use crate::core::ics02_client::height::{Height, HeightErrorDetail};
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::events::{Error as EventError, IbcEvent, IbcEventType};
 use crate::prelude::*;
-
-use super::timeout::TimeoutHeight;
 
 /// Channel event attribute keys
 pub const CONNECTION_ID_ATTRIBUTE_KEY: &str = "connection_id";
@@ -195,17 +192,6 @@ impl From<OpenInit> for Attributes {
     }
 }
 
-impl TryFrom<&AbciEvent> for OpenInit {
-    type Error = Error;
-
-    fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
-        match extract_attributes_from_tx(abci_event) {
-            Ok(attrs) => OpenInit::try_from(attrs).map_err(|_| Error::implementation_specific()),
-            Err(e) => Err(e),
-        }
-    }
-}
-
 impl From<OpenInit> for IbcEvent {
     fn from(v: OpenInit) -> Self {
         IbcEvent::OpenInitChannel(v)
@@ -244,17 +230,6 @@ impl OpenTry {
     }
     pub fn port_id(&self) -> &PortId {
         &self.port_id
-    }
-}
-
-impl TryFrom<&AbciEvent> for OpenTry {
-    type Error = Error;
-
-    fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
-        match extract_attributes_from_tx(abci_event) {
-            Ok(attrs) => OpenTry::try_from(attrs).map_err(|_| Error::implementation_specific()),
-            Err(e) => Err(e),
-        }
     }
 }
 
@@ -304,17 +279,6 @@ impl OpenAck {
     }
 }
 
-impl TryFrom<&AbciEvent> for OpenAck {
-    type Error = Error;
-
-    fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
-        match extract_attributes_from_tx(abci_event) {
-            Ok(attrs) => OpenAck::try_from(attrs).map_err(|_| Error::implementation_specific()),
-            Err(e) => Err(e),
-        }
-    }
-}
-
 impl From<OpenAck> for IbcEvent {
     fn from(v: OpenAck) -> Self {
         IbcEvent::OpenAckChannel(v)
@@ -344,17 +308,6 @@ impl From<OpenConfirm> for Attributes {
             connection_id: ev.connection_id,
             counterparty_port_id: ev.counterparty_port_id,
             counterparty_channel_id: ev.counterparty_channel_id,
-        }
-    }
-}
-
-impl TryFrom<&AbciEvent> for OpenConfirm {
-    type Error = Error;
-
-    fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
-        match extract_attributes_from_tx(abci_event) {
-            Ok(attrs) => OpenConfirm::try_from(attrs).map_err(|_| Error::implementation_specific()),
-            Err(e) => Err(e),
         }
     }
 }
@@ -436,17 +389,6 @@ impl TryFrom<Attributes> for CloseInit {
     }
 }
 
-impl TryFrom<&AbciEvent> for CloseInit {
-    type Error = Error;
-
-    fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
-        match extract_attributes_from_tx(abci_event) {
-            Ok(attrs) => CloseInit::try_from(attrs).map_err(|_| Error::implementation_specific()),
-            Err(e) => Err(e),
-        }
-    }
-}
-
 impl From<CloseInit> for IbcEvent {
     fn from(v: CloseInit) -> Self {
         IbcEvent::CloseInitChannel(v)
@@ -487,19 +429,6 @@ impl From<CloseConfirm> for Attributes {
             connection_id: ev.connection_id,
             counterparty_port_id: ev.counterparty_port_id,
             counterparty_channel_id: ev.counterparty_channel_id,
-        }
-    }
-}
-
-impl TryFrom<&AbciEvent> for CloseConfirm {
-    type Error = Error;
-
-    fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
-        match extract_attributes_from_tx(abci_event) {
-            Ok(attrs) => {
-                CloseConfirm::try_from(attrs).map_err(|_| Error::implementation_specific())
-            }
-            Err(e) => Err(e),
         }
     }
 }
@@ -583,20 +512,6 @@ impl SendPacket {
     }
     pub fn dst_channel_id(&self) -> &ChannelId {
         &self.packet.destination_channel
-    }
-}
-
-impl TryFrom<&AbciEvent> for SendPacket {
-    type Error = Error;
-
-    fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
-        extract_packet_and_write_ack_from_tx(abci_event)
-            .map(|(packet, write_ack)| {
-                // This event should not have a write ack.
-                debug_assert_eq!(write_ack.len(), 0);
-                SendPacket { packet }
-            })
-            .map_err(|_| Error::abci_conversion_failed(abci_event.type_str.to_owned()))
     }
 }
 
@@ -696,19 +611,6 @@ impl WriteAcknowledgement {
     }
 }
 
-impl TryFrom<&AbciEvent> for WriteAcknowledgement {
-    type Error = Error;
-
-    fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
-        extract_packet_and_write_ack_from_tx(abci_event)
-            .map(|(packet, write_ack)| WriteAcknowledgement {
-                packet,
-                ack: write_ack,
-            })
-            .map_err(|_| Error::abci_conversion_failed(abci_event.type_str.to_owned()))
-    }
-}
-
 impl From<WriteAcknowledgement> for IbcEvent {
     fn from(v: WriteAcknowledgement) -> Self {
         IbcEvent::WriteAcknowledgement(v)
@@ -761,20 +663,6 @@ impl AcknowledgePacket {
     }
 }
 
-impl TryFrom<&AbciEvent> for AcknowledgePacket {
-    type Error = Error;
-
-    fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
-        extract_packet_and_write_ack_from_tx(abci_event)
-            .map(|(packet, write_ack)| {
-                // This event should not have a write ack.
-                debug_assert_eq!(write_ack.len(), 0);
-                AcknowledgePacket { packet }
-            })
-            .map_err(|_| Error::abci_conversion_failed(abci_event.type_str.to_owned()))
-    }
-}
-
 impl From<AcknowledgePacket> for IbcEvent {
     fn from(v: AcknowledgePacket) -> Self {
         IbcEvent::AcknowledgePacket(v)
@@ -822,20 +710,6 @@ impl TimeoutPacket {
     }
     pub fn dst_channel_id(&self) -> &ChannelId {
         &self.packet.destination_channel
-    }
-}
-
-impl TryFrom<&AbciEvent> for TimeoutPacket {
-    type Error = Error;
-
-    fn try_from(abci_event: &AbciEvent) -> Result<Self, Self::Error> {
-        extract_packet_and_write_ack_from_tx(abci_event)
-            .map(|(packet, write_ack)| {
-                // This event should not have a write ack.
-                debug_assert_eq!(write_ack.len(), 0);
-                TimeoutPacket { packet }
-            })
-            .map_err(|_| Error::abci_conversion_failed(abci_event.type_str.to_owned()))
     }
 }
 
@@ -904,194 +778,5 @@ impl TryFrom<TimeoutOnClosePacket> for AbciEvent {
 impl core::fmt::Display for TimeoutOnClosePacket {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(f, "TimeoutOnClosePacket - {}", self.packet)
-    }
-}
-
-fn extract_attributes_from_tx(event: &AbciEvent) -> Result<Attributes, Error> {
-    let mut attr = Attributes::default();
-
-    for tag in &event.attributes {
-        let key = tag.key.as_ref();
-        let value = tag.value.as_ref();
-        match key {
-            PORT_ID_ATTRIBUTE_KEY => attr.port_id = value.parse().map_err(Error::identifier)?,
-            CHANNEL_ID_ATTRIBUTE_KEY => {
-                attr.channel_id = value.parse().ok();
-            }
-            CONNECTION_ID_ATTRIBUTE_KEY => {
-                attr.connection_id = value.parse().map_err(Error::identifier)?;
-            }
-            COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY => {
-                attr.counterparty_port_id = value.parse().map_err(Error::identifier)?;
-            }
-            COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY => {
-                attr.counterparty_channel_id = value.parse().ok();
-            }
-            _ => {}
-        }
-    }
-
-    Ok(attr)
-}
-
-fn extract_packet_and_write_ack_from_tx(event: &AbciEvent) -> Result<(Packet, Vec<u8>), Error> {
-    let mut packet = Packet::default();
-    let mut write_ack: Vec<u8> = Vec::new();
-    for tag in &event.attributes {
-        let key = tag.key.as_ref();
-        let value = tag.value.as_ref();
-        match key {
-            PKT_SRC_PORT_ATTRIBUTE_KEY => {
-                packet.source_port = value.parse().map_err(Error::identifier)?;
-            }
-            PKT_SRC_CHANNEL_ATTRIBUTE_KEY => {
-                packet.source_channel = value.parse().map_err(Error::identifier)?;
-            }
-            PKT_DST_PORT_ATTRIBUTE_KEY => {
-                packet.destination_port = value.parse().map_err(Error::identifier)?;
-            }
-            PKT_DST_CHANNEL_ATTRIBUTE_KEY => {
-                packet.destination_channel = value.parse().map_err(Error::identifier)?;
-            }
-            PKT_SEQ_ATTRIBUTE_KEY => {
-                packet.sequence = value
-                    .parse::<u64>()
-                    .map_err(|e| Error::invalid_string_as_sequence(value.to_string(), e))?
-                    .into()
-            }
-            PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY => {
-                packet.timeout_height = parse_timeout_height(value)?;
-            }
-            PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY => {
-                packet.timeout_timestamp = value.parse().unwrap();
-            }
-            PKT_DATA_ATTRIBUTE_KEY => {
-                packet.data = Vec::from(value.as_bytes());
-            }
-            PKT_ACK_ATTRIBUTE_KEY => {
-                write_ack = Vec::from(value.as_bytes());
-            }
-            _ => {}
-        }
-    }
-
-    Ok((packet, write_ack))
-}
-
-/// Parse a string into a timeout height expected to be stored in
-/// `Packet.timeout_height`. We need to parse the timeout height differently
-/// because of a quirk introduced in ibc-go. See comment in
-/// `TryFrom<RawPacket> for Packet`.
-pub fn parse_timeout_height(s: &str) -> Result<TimeoutHeight, Error> {
-    match s.parse::<Height>() {
-        Ok(height) => Ok(TimeoutHeight::from(height)),
-        Err(e) => match e.into_detail() {
-            HeightErrorDetail::ZeroHeight(_) => Ok(TimeoutHeight::no_timeout()),
-            _ => Err(Error::invalid_timeout_height()),
-        },
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::{core::ics04_channel::packet::Sequence, timestamp::Timestamp};
-
-    use super::*;
-
-    #[test]
-    fn channel_event_to_abci_event() {
-        let attributes = Attributes {
-            port_id: "test_port".parse().unwrap(),
-            channel_id: Some("channel-0".parse().unwrap()),
-            connection_id: "test_connection".parse().unwrap(),
-            counterparty_port_id: "counterparty_test_port".parse().unwrap(),
-            counterparty_channel_id: Some("channel-1".parse().unwrap()),
-        };
-        let mut abci_events = vec![];
-        let open_init = OpenInit::try_from(attributes.clone()).unwrap();
-        abci_events.push(AbciEvent::from(open_init.clone()));
-        let open_try = OpenTry::try_from(attributes.clone()).unwrap();
-        abci_events.push(AbciEvent::from(open_try.clone()));
-        let open_ack = OpenAck::try_from(attributes.clone()).unwrap();
-        abci_events.push(AbciEvent::from(open_ack.clone()));
-        let open_confirm = OpenConfirm::try_from(attributes.clone()).unwrap();
-        abci_events.push(AbciEvent::from(open_confirm.clone()));
-        let close_init = CloseInit::try_from(attributes.clone()).unwrap();
-        abci_events.push(AbciEvent::from(close_init.clone()));
-        let close_confirm = CloseConfirm::try_from(attributes).unwrap();
-        abci_events.push(AbciEvent::from(close_confirm.clone()));
-
-        for abci_event in abci_events {
-            match IbcEvent::try_from(&abci_event).ok() {
-                Some(ibc_event) => match ibc_event {
-                    IbcEvent::OpenInitChannel(e) => {
-                        assert_eq!(Attributes::from(e), open_init.clone().into())
-                    }
-                    IbcEvent::OpenTryChannel(e) => {
-                        assert_eq!(Attributes::from(e), open_try.clone().into())
-                    }
-                    IbcEvent::OpenAckChannel(e) => {
-                        assert_eq!(Attributes::from(e), open_ack.clone().into())
-                    }
-                    IbcEvent::OpenConfirmChannel(e) => {
-                        assert_eq!(Attributes::from(e), open_confirm.clone().into())
-                    }
-                    IbcEvent::CloseInitChannel(e) => {
-                        assert_eq!(Attributes::from(e), close_init.clone().into())
-                    }
-                    IbcEvent::CloseConfirmChannel(e) => {
-                        assert_eq!(Attributes::from(e), close_confirm.clone().into())
-                    }
-                    _ => panic!("unexpected event type"),
-                },
-                None => panic!("converted event was wrong"),
-            }
-        }
-    }
-
-    #[test]
-    fn packet_event_to_abci_event() {
-        let packet = Packet {
-            sequence: Sequence::from(10),
-            source_port: "a_test_port".parse().unwrap(),
-            source_channel: "channel-0".parse().unwrap(),
-            destination_port: "b_test_port".parse().unwrap(),
-            destination_channel: "channel-1".parse().unwrap(),
-            data: "test_data".as_bytes().to_vec(),
-            timeout_height: Height::new(1, 10).unwrap().into(),
-            timeout_timestamp: Timestamp::now(),
-        };
-        let mut abci_events = vec![];
-        let send_packet = SendPacket {
-            packet: packet.clone(),
-        };
-        abci_events.push(AbciEvent::try_from(send_packet.clone()).unwrap());
-        let write_ack = WriteAcknowledgement {
-            packet: packet.clone(),
-            ack: "test_ack".as_bytes().to_vec(),
-        };
-        abci_events.push(AbciEvent::try_from(write_ack.clone()).unwrap());
-        let ack_packet = AcknowledgePacket {
-            packet: packet.clone(),
-        };
-        abci_events.push(AbciEvent::try_from(ack_packet.clone()).unwrap());
-        let timeout_packet = TimeoutPacket { packet };
-        abci_events.push(AbciEvent::try_from(timeout_packet.clone()).unwrap());
-
-        for abci_event in abci_events {
-            match IbcEvent::try_from(&abci_event).ok() {
-                Some(ibc_event) => match ibc_event {
-                    IbcEvent::SendPacket(e) => assert_eq!(e.packet, send_packet.packet),
-                    IbcEvent::WriteAcknowledgement(e) => {
-                        assert_eq!(e.packet, write_ack.packet);
-                        assert_eq!(e.ack, write_ack.ack);
-                    }
-                    IbcEvent::AcknowledgePacket(e) => assert_eq!(e.packet, ack_packet.packet),
-                    IbcEvent::TimeoutPacket(e) => assert_eq!(e.packet, timeout_packet.packet),
-                    _ => panic!("unexpected event type"),
-                },
-                None => panic!("converted event was wrong"),
-            }
-        }
     }
 }

@@ -11,7 +11,7 @@ use ibc::events::IbcEvent;
 use crate::chain::cosmos::types::events::channel::RawObject;
 use crate::event::monitor::queries;
 
-use super::IbcEventWithHeight;
+use super::{ibc_event_try_from_abci_event, IbcEventWithHeight};
 
 /// Extract IBC events from Tendermint RPC events
 ///
@@ -148,19 +148,19 @@ pub fn get_all_events(
 
             for abci_event in &tx_result.result.events {
                 if query == queries::ibc_client().to_string() {
-                    if let Ok(client_event) = IbcEvent::try_from(abci_event) {
+                    if let Ok(client_event) = ibc_event_try_from_abci_event(abci_event) {
                         tracing::trace!("extracted ibc_client event {}", client_event);
                         events_with_height.push(IbcEventWithHeight::new(client_event, height));
                     }
                 }
                 if query == queries::ibc_connection().to_string() {
-                    if let Ok(conn_event) = IbcEvent::try_from(abci_event) {
+                    if let Ok(conn_event) = ibc_event_try_from_abci_event(abci_event) {
                         tracing::trace!("extracted ibc_connection event {}", conn_event);
                         events_with_height.push(IbcEventWithHeight::new(conn_event, height));
                     }
                 }
                 if query == queries::ibc_channel().to_string() {
-                    if let Ok(chan_event) = IbcEvent::try_from(abci_event) {
+                    if let Ok(chan_event) = ibc_event_try_from_abci_event(abci_event) {
                         let _span = tracing::trace_span!("ibc_channel event").entered();
                         tracing::trace!("extracted {}", chan_event);
                         if matches!(chan_event, IbcEvent::SendPacket(_)) {
