@@ -107,9 +107,17 @@ impl MerkleProof {
         {
             match &proof.proof {
                 Some(Proof::Exist(existence_proof)) => {
-                    subroot = calculate_existence_root(existence_proof)
-                        .map_err(|_| Error::invalid_merkle_proof())?;
-                    if !verify_membership(proof, spec, &subroot, key.as_bytes(), &value) {
+                    subroot =
+                        calculate_existence_root::<ics23::HostFunctionsManager>(existence_proof)
+                            .map_err(|_| Error::invalid_merkle_proof())?;
+
+                    if !verify_membership::<ics23::HostFunctionsManager>(
+                        proof,
+                        spec,
+                        &subroot,
+                        key.as_bytes(),
+                        &value,
+                    ) {
                         return Err(Error::verification_failure());
                     }
                     value = subroot.clone();
@@ -158,9 +166,16 @@ impl MerkleProof {
         match &proof.proof {
             Some(Proof::Nonexist(non_existence_proof)) => {
                 let subroot = calculate_non_existence_root(non_existence_proof)?;
-                if !verify_non_membership(proof, spec, &subroot, key.as_bytes()) {
+
+                if !verify_non_membership::<ics23::HostFunctionsManager>(
+                    proof,
+                    spec,
+                    &subroot,
+                    key.as_bytes(),
+                ) {
                     return Err(Error::verification_failure());
                 }
+
                 // verify membership proofs starting from index 1 with value = subroot
                 self.verify_membership(specs, root, keys, subroot, 1)
             }
@@ -172,9 +187,11 @@ impl MerkleProof {
 // TODO move to ics23
 fn calculate_non_existence_root(proof: &NonExistenceProof) -> Result<Vec<u8>, Error> {
     if let Some(left) = &proof.left {
-        calculate_existence_root(left).map_err(|_| Error::invalid_merkle_proof())
+        calculate_existence_root::<ics23::HostFunctionsManager>(left)
+            .map_err(|_| Error::invalid_merkle_proof())
     } else if let Some(right) = &proof.right {
-        calculate_existence_root(right).map_err(|_| Error::invalid_merkle_proof())
+        calculate_existence_root::<ics23::HostFunctionsManager>(right)
+            .map_err(|_| Error::invalid_merkle_proof())
     } else {
         Err(Error::invalid_merkle_proof())
     }
