@@ -199,6 +199,7 @@ impl ClientDef for AnyClient {
     ) -> Result<Box<dyn ConsensusState>, Error> {
         match self {
             AnyClient::Tendermint(client) => client.validate_consensus_state(consensus_state),
+            #[cfg(any(test, feature = "mocks"))]
             AnyClient::Mock(client) => client.validate_consensus_state(consensus_state),
         }
     }

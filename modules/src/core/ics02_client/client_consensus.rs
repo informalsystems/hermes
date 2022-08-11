@@ -7,6 +7,7 @@ use erased_serde::Serialize as ErasedSerialize;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
 use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
+#[cfg(any(test, feature = "mocks"))]
 use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
 use ibc_proto::protobuf::Protobuf;
 use ibc_proto::protobuf::Protobuf as ErasedProtobuf;
