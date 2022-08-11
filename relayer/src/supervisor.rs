@@ -19,7 +19,7 @@ use crate::{
     chain::{endpoint::HealthCheck, handle::ChainHandle, tracking::TrackingId},
     config::Config,
     event::monitor::{self, Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
-    object::Object,
+    object::{Object, Packet},
     registry::{Registry, SharedRegistry},
     rest,
     supervisor::scan::ScanMode,
@@ -663,43 +663,9 @@ fn process_batch<Chain: ChainHandle>(
             .get_or_spawn(object.dst_chain_id())
             .map_err(Error::spawn)?;
 
-        if let Object::Packet(_path) = object.clone() {
+        if let Object::Packet(ref _path) = object {
             // Update telemetry info
-            telemetry!({
-                for e in events.clone() {
-                    match e {
-                        IbcEvent::SendPacket(send_packet_ev) => {
-                            ibc_telemetry::global().send_packet_events(
-                                send_packet_ev.packet.sequence.into(),
-                                send_packet_ev.height().revision_height(),
-                                &src.id(),
-                                &_path.src_channel_id,
-                                &_path.src_port_id,
-                                &dst.id(),
-                            );
-                        }
-                        IbcEvent::WriteAcknowledgement(write_ack_ev) => {
-                            ibc_telemetry::global().acknowledgement_events(
-                                write_ack_ev.packet.sequence.into(),
-                                write_ack_ev.height().revision_height(),
-                                &dst.id(),
-                                &_path.src_channel_id,
-                                &_path.src_port_id,
-                                &src.id(),
-                            );
-                        }
-                        IbcEvent::TimeoutPacket(_) => {
-                            ibc_telemetry::global().timeout_events(
-                                &dst.id(),
-                                &_path.src_channel_id,
-                                &_path.src_port_id,
-                                &src.id(),
-                            );
-                        }
-                        _ => {}
-                    }
-                }
-            });
+            telemetry!(send_telemetry(&src, &dst, &events, _path));
         }
 
         let worker = workers.get_or_spawn(object, src, dst, config);
@@ -713,6 +679,46 @@ fn process_batch<Chain: ChainHandle>(
     }
 
     Ok(())
+}
+
+fn send_telemetry<Src, Dst>(src: &Src, dst: &Dst, events: &[IbcEvent], path: &Packet)
+where
+    Src: ChainHandle,
+    Dst: ChainHandle,
+{
+    for e in events {
+        match e {
+            IbcEvent::SendPacket(send_packet_ev) => {
+                ibc_telemetry::global().send_packet_events(
+                    send_packet_ev.packet.sequence.into(),
+                    send_packet_ev.height().revision_height(),
+                    &src.id(),
+                    &path.src_channel_id,
+                    &path.src_port_id,
+                    &dst.id(),
+                );
+            }
+            IbcEvent::WriteAcknowledgement(write_ack_ev) => {
+                ibc_telemetry::global().acknowledgement_events(
+                    write_ack_ev.packet.sequence.into(),
+                    write_ack_ev.height().revision_height(),
+                    &dst.id(),
+                    &path.src_channel_id,
+                    &path.src_port_id,
+                    &src.id(),
+                );
+            }
+            IbcEvent::TimeoutPacket(_) => {
+                ibc_telemetry::global().timeout_events(
+                    &dst.id(),
+                    &path.src_channel_id,
+                    &path.src_port_id,
+                    &src.id(),
+                );
+            }
+            _ => {}
+        }
+    }
 }
 
 /// Process the given batch if it does not contain any errors,
