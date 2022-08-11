@@ -37,7 +37,7 @@ impl fmt::Display for OperationalDataTarget {
     }
 }
 
-/// A set of [`IbcEvent`]s that have an associated
+/// A set of [`IbcEventWithHeight`]s that have an associated
 /// tracking number to ensure better observability.
 pub struct TrackedEvents {
     events: Vec<IbcEventWithHeight>,
