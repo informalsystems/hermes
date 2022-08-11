@@ -1811,7 +1811,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     #[cfg(feature = "telemetry")]
     fn record_cleared_send_packet(&self, event_with_height: &IbcEventWithHeight) {
         if let IbcEvent::SendPacket(send_packet_ev) = event_with_height.event() {
-            ibc_telemetry::global().send_packet_count(
+            ibc_telemetry::global().send_packet_events(
                 send_packet_ev.packet.sequence.into(),
                 event_with_height.height().revision_height(),
                 &self.src_chain().id(),
@@ -1819,7 +1819,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 self.src_port_id(),
                 &self.dst_chain().id(),
             );
-            ibc_telemetry::global().clear_send_packet_count(
+            ibc_telemetry::global().cleared_send_packet_events(
                 send_packet_ev.packet.sequence.into(),
                 event_with_height.height().revision_height(),
                 &self.src_chain().id(),
@@ -1837,7 +1837,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     ) {
         for event_with_height in events_with_heights {
             if let IbcEvent::WriteAcknowledgement(write_ack_ev) = event_with_height.event() {
-                ibc_telemetry::global().clear_acknowledgment_packet_count(
+                ibc_telemetry::global().cleared_acknowledgment_events(
                     write_ack_ev.packet.sequence.into(),
                     event_with_height.height().revision_height(),
                     &self.dst_chain().id(),

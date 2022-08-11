@@ -44,6 +44,7 @@ use crate::chain::requests::{
 use crate::chain::tracking::TrackedMsgs;
 use crate::error::Error as RelayerError;
 use crate::event::IbcEventWithHeight;
+use crate::telemetry;
 
 const MAX_MISBEHAVIOUR_CHECK_DURATION: Duration = Duration::from_secs(120);
 
@@ -1091,6 +1092,13 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .to_any(),
         );
 
+        telemetry!(
+            client_updates_submitted,
+            &self.dst_chain.id(),
+            &self.id,
+            msgs.len() as u64
+        );
+
         Ok(msgs)
     }
 
@@ -1521,6 +1529,14 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 error!(
                     "[{}] MISBEHAVIOUR DETECTED {}, sending evidence",
                     self, detected.misbehaviour
+                );
+
+                telemetry!(
+                    client_misbehaviours_submitted,
+                    &self.src_chain.id(),
+                    &self.dst_chain.id(),
+                    &self.id,
+                    1
                 );
 
                 self.submit_evidence(detected)
