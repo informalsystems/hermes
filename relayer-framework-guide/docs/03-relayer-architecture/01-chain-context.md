@@ -92,15 +92,29 @@ use tendermint::abci::responses::Event;
 # use ibc_relayer_framework::traits::core::Async;
 # use ibc_relayer_framework::traits::core::ErrorContext;
 # use ibc_relayer_framework::traits::chain_context::ChainContext;
+# use ibc_relayer_framework::traits::runtime::context::RuntimeContext;
 
 struct Error { /* ... */ }
+struct CosmosRuntimeContext;
 
 struct CosmosChainContext<Handle> {
     handle: Handle,
 }
 
+impl ErrorContext for CosmosRuntimeContext {
+    type Error = Error;
+}
+
 impl<Handle: Async> ErrorContext for CosmosChainContext<Handle> {
     type Error = Error;
+}
+
+impl<Handle: Async> RuntimeContext for CosmosChainContext<Handle> {
+    type Runtime = CosmosRuntimeContext;
+
+    fn runtime(&self) -> &CosmosRuntimeContext {
+        &CosmosRuntimeContext
+    }
 }
 
 impl<Handle: Async> ChainContext for CosmosChainContext<Handle> {
