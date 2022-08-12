@@ -9,7 +9,9 @@ use crate::traits::contexts::chain::{ChainContext, IbcChainContext};
 use crate::traits::contexts::error::HasError;
 use crate::traits::contexts::ibc_event::HasIbcEvents;
 use crate::traits::contexts::runtime::HasRuntime;
-use crate::traits::queries::consensus_state::{ConsensusStateQuerier, HasConsensusState};
+use crate::traits::queries::consensus_state::{
+    CanQueryConsensusState, ConsensusStateQuerier, HasConsensusState,
+};
 use crate::traits::queries::received_packet::ReceivedPacketQuerier;
 
 pub struct OfaChainContext<Chain: OfaChain> {
@@ -84,22 +86,40 @@ where
     type ConsensusState = Chain::ConsensusState;
 }
 
+pub struct OfaConsensusStateQuerier;
+
 #[async_trait]
-impl<Chain, Counterparty> ConsensusStateQuerier<Counterparty> for OfaChainContext<Chain>
+impl<Chain, Counterparty> ConsensusStateQuerier<OfaChainContext<Chain>, Counterparty>
+    for OfaConsensusStateQuerier
 where
     Chain: OfaChain,
     Counterparty: ChainContext<Height = Chain::CounterpartyHeight>,
-    Counterparty: HasConsensusState<Self, ConsensusState = Chain::CounterpartyConsensusState>,
+    Counterparty: HasConsensusState<
+        OfaChainContext<Chain>,
+        ConsensusState = Chain::CounterpartyConsensusState,
+    >,
 {
     async fn query_consensus_state(
-        &self,
+        chain: &OfaChainContext<Chain>,
         client_id: &Chain::ClientId,
         height: &Chain::CounterpartyHeight,
-    ) -> Result<Chain::CounterpartyConsensusState, Self::Error> {
-        let consensus_state = self.chain.query_consensus_state(client_id, height).await?;
+    ) -> Result<Chain::CounterpartyConsensusState, OfaHasError<Chain::Error>> {
+        let consensus_state = chain.chain.query_consensus_state(client_id, height).await?;
 
         Ok(consensus_state)
     }
+}
+
+impl<Chain, Counterparty> CanQueryConsensusState<Counterparty> for OfaChainContext<Chain>
+where
+    Chain: OfaChain,
+    Counterparty: ChainContext<Height = Chain::CounterpartyHeight>,
+    Counterparty: HasConsensusState<
+        OfaChainContext<Chain>,
+        ConsensusState = Chain::CounterpartyConsensusState,
+    >,
+{
+    type ConsensusStateQuerier = OfaConsensusStateQuerier;
 }
 
 #[async_trait]
