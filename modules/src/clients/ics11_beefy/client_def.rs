@@ -1,4 +1,3 @@
-use beefy_client::BeefyLightClient;
 use beefy_client_primitives::ClientState as LightClientState;
 use beefy_client_primitives::{ParachainHeader, ParachainsUpdateProof};
 use codec::{Decode, Encode};
@@ -68,13 +67,14 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
             next_authorities: client_state.next_authority_set.clone(),
             beefy_activation_block: client_state.beefy_activation_block,
         };
-        let mut light_client = BeefyLightClient::<HostFunctionsManager<HostFunctions>>::new();
         // If mmr update exists verify it and return the new light client state
         // or else return existing light client state
         let light_client_state = if let Some(mmr_update) = header.mmr_update_proof {
-            light_client
-                .verify_mmr_root_with_proof(light_client_state, mmr_update)
-                .map_err(|e| Error::beefy(BeefyError::invalid_mmr_update(format!("{:?}", e))))?
+            beefy_client::verify_mmr_root_with_proof::<HostFunctionsManager<HostFunctions>>(
+                light_client_state,
+                mmr_update,
+            )
+            .map_err(|e| Error::beefy(BeefyError::invalid_mmr_update(format!("{:?}", e))))?
         } else {
             light_client_state
         };
@@ -123,9 +123,11 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         };
 
         // Perform the parachain header verification
-        light_client
-            .verify_parachain_headers(light_client_state, parachain_update_proof)
-            .map_err(|e| Error::beefy(BeefyError::invalid_mmr_update(format!("{:?}", e))))
+        beefy_client::verify_parachain_headers::<HostFunctionsManager<HostFunctions>>(
+            light_client_state,
+            parachain_update_proof,
+        )
+        .map_err(|e| Error::beefy(BeefyError::invalid_mmr_update(format!("{:?}", e))))
     }
 
     fn update_state(

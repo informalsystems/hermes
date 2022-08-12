@@ -37,7 +37,6 @@ pub trait HostFunctionsProvider: Clone + Send + Sync + Default {
     fn verify_timestamp_extrinsic(
         root: &[u8; 32],
         proof: &[Vec<u8>],
-        key: &[u8],
         value: &[u8],
     ) -> Result<(), Error>;
 
@@ -86,10 +85,9 @@ where
     fn verify_timestamp_extrinsic(
         root: sp_core::H256,
         proof: &[Vec<u8>],
-        key: &[u8],
         value: &[u8],
     ) -> Result<(), beefy_client_primitives::error::BeefyClientError> {
-        T::verify_timestamp_extrinsic(root.as_fixed_bytes(), proof, key, value)
+        T::verify_timestamp_extrinsic(root.as_fixed_bytes(), proof, value)
             .map_err(|_| From::from("Timestamp verification failed".to_string()))
     }
 }

@@ -1,5 +1,6 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use codec::Encode;
 
 use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics02_client::context::ClientReader;
@@ -195,14 +196,14 @@ impl HostFunctionsProvider for Crypto {
     fn verify_timestamp_extrinsic(
         root: &[u8; 32],
         proof: &[Vec<u8>],
-        key: &[u8],
         value: &[u8],
     ) -> Result<(), Ics02Error> {
         let root = sp_core::H256::from_slice(root);
+        let key = codec::Compact(0u32).encode();
         sp_io::trie::blake2_256_verify_proof(
             root,
             proof,
-            key,
+            &key,
             value,
             sp_core::storage::StateVersion::V0,
         )
