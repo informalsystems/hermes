@@ -7,9 +7,11 @@ use serde_derive::{Deserialize, Serialize};
 
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
-use crate::core::ics02_client::header::{Header, MOCK_HEADER_TYPE_URL};
+use crate::core::ics02_client::header::Header;
 use crate::timestamp::Timestamp;
 use crate::Height;
+
+pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
 
 #[derive(Copy, Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct MockHeader {

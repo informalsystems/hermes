@@ -11,9 +11,6 @@ use crate::dynamic_typing::AsAny;
 use crate::timestamp::Timestamp;
 use crate::Height;
 
-pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
-pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
-
 /// Abstract of consensus state update information
 ///
 /// Users are not expected to implement sealed::ErasedPartialEqHeader.
