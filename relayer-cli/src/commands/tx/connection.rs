@@ -34,7 +34,7 @@ macro_rules! conn_open_cmd {
     };
 }
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct TxConnInitCmd {
     #[clap(
         long = "dst-chain",
@@ -90,7 +90,7 @@ impl Runnable for TxConnInitCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct TxConnTryCmd {
     #[clap(
         long = "dst-chain",
@@ -172,7 +172,7 @@ impl Runnable for TxConnTryCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct TxConnAckCmd {
     #[clap(
         long = "dst-chain",
@@ -256,7 +256,7 @@ impl Runnable for TxConnAckCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct TxConnConfirmCmd {
     #[clap(
         long = "dst-chain",

@@ -1,5 +1,3 @@
-#![allow(clippy::derive_partial_eq_without_eq)]
-
 extern crate alloc;
 
 mod runner;

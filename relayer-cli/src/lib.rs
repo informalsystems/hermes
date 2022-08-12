@@ -20,7 +20,6 @@
     unused_qualifications
 )]
 #![allow(deprecated)]
-#![allow(clippy::derive_partial_eq_without_eq)]
 
 extern crate alloc;
 
