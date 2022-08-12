@@ -1,14 +1,14 @@
-use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
-#[cfg(test)]
-use ibc::core::ics02_client::client_consensus::MOCK_CONSENSUS_STATE_TYPE_URL;
-use ibc::core::ics02_client::client_consensus::{
-    ConsensusState, TENDERMINT_CONSENSUS_STATE_TYPE_URL,
+use ibc::clients::ics07_tendermint::consensus_state::{
+    ConsensusState as TmConsensusState, TENDERMINT_CONSENSUS_STATE_TYPE_URL,
 };
+use ibc::core::ics02_client::client_consensus::ConsensusState;
 use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::error::Error;
 use ibc::core::ics23_commitment::commitment::CommitmentRoot;
 #[cfg(test)]
 use ibc::mock::client_state::MockConsensusState;
+#[cfg(test)]
+use ibc::mock::client_state::MOCK_CONSENSUS_STATE_TYPE_URL;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
 use ibc_proto::google::protobuf::Any;

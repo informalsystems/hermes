@@ -10,7 +10,7 @@ use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 
-use crate::core::ics02_client::client_consensus::{ConsensusState, MOCK_CONSENSUS_STATE_TYPE_URL};
+use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
@@ -19,6 +19,8 @@ use crate::core::ics24_host::identifier::ChainId;
 use crate::mock::header::MockHeader;
 use crate::timestamp::Timestamp;
 use crate::Height;
+
+pub const MOCK_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.mock.ConsensusState";
 
 /// A mock of an IBC client record as it is stored in a mock context.
 /// For testing ICS02 handlers mostly, cf. `MockClientContext`.

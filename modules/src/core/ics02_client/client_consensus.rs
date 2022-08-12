@@ -13,11 +13,6 @@ use crate::core::ics23_commitment::commitment::CommitmentRoot;
 use crate::dynamic_typing::AsAny;
 use crate::timestamp::Timestamp;
 
-pub const TENDERMINT_CONSENSUS_STATE_TYPE_URL: &str =
-    "/ibc.lightclients.tendermint.v1.ConsensusState";
-
-pub const MOCK_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.mock.ConsensusState";
-
 mod sealed {
     use super::*;
 
