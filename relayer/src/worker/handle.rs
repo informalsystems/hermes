@@ -8,11 +8,11 @@ use tracing::{debug, trace};
 
 use ibc::{
     core::{ics02_client::events::NewBlock, ics24_host::identifier::ChainId},
-    events::IbcEvent,
     Height,
 };
 
 use crate::chain::tracking::TrackingId;
+use crate::event::IbcEventWithHeight;
 use crate::util::lock::{LockExt, RwArc};
 use crate::util::task::TaskHandle;
 use crate::{event::monitor::EventBatch, object::Object};
@@ -67,7 +67,7 @@ impl WorkerHandle {
     pub fn send_events(
         &self,
         height: Height,
-        events: Vec<IbcEvent>,
+        events: Vec<IbcEventWithHeight>,
         chain_id: ChainId,
         tracking_id: TrackingId,
     ) {

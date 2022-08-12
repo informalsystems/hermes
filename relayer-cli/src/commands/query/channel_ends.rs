@@ -17,7 +17,7 @@ use ibc_relayer::registry::Registry;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryChannelEndsCmd {
     #[clap(
         long = "chain",

@@ -69,7 +69,6 @@ pub fn process(
 
     let event_attributes = Attributes {
         client_id,
-        height: ctx.host_height(),
         ..Default::default()
     };
     output.emit(IbcEvent::CreateClient(event_attributes.into()));
@@ -90,7 +89,6 @@ mod tests {
     use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
     use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
     use crate::core::ics02_client::client_type::ClientType;
-    use crate::core::ics02_client::context::ClientReader;
     use crate::core::ics02_client::handler::{dispatch, ClientResult};
     use crate::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
     use crate::core::ics02_client::msgs::ClientMsg;
@@ -131,7 +129,6 @@ mod tests {
                 assert!(
                     matches!(event, IbcEvent::CreateClient(ref e) if e.client_id() == &expected_client_id)
                 );
-                assert_eq!(event.height(), ctx.host_height());
                 match result {
                     ClientResult::Create(create_result) => {
                         assert_eq!(create_result.client_type, ClientType::Mock);
@@ -203,7 +200,6 @@ mod tests {
                     assert!(
                         matches!(event, IbcEvent::CreateClient(ref e) if e.client_id() == &expected_client_id)
                     );
-                    assert_eq!(event.height(), ctx.host_height());
                     match result {
                         ClientResult::Create(create_res) => {
                             assert_eq!(create_res.client_type, msg.client_state.client_type());
@@ -270,7 +266,6 @@ mod tests {
                 assert!(
                     matches!(event, IbcEvent::CreateClient(ref e) if e.client_id() == &expected_client_id)
                 );
-                assert_eq!(event.height(), ctx.host_height());
                 match result {
                     ClientResult::Create(create_res) => {
                         assert_eq!(create_res.client_type, ClientType::Tendermint);

@@ -9,7 +9,7 @@ use crate::clients::ics07_tendermint::header::Header;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::Height;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Misbehaviour {
     pub client_id: ClientId,
     pub header1: Header,

@@ -67,7 +67,6 @@ pub fn process<Ctx: ChannelReader + ChannelReaderLightClient>(
     output.log("success: packet write acknowledgement");
 
     output.emit(IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
-        height: ChannelReader::host_height(ctx),
         packet,
         ack: ack.into(),
     }));
@@ -77,7 +76,6 @@ pub fn process<Ctx: ChannelReader + ChannelReaderLightClient>(
 
 #[cfg(test)]
 mod tests {
-    use crate::core::ics04_channel::context::ChannelReader;
     use crate::prelude::*;
 
     use test_log::test;
@@ -194,7 +192,6 @@ mod tests {
 
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::WriteAcknowledgement(_)));
-                        assert_eq!(e.height(), test.ctx.host_height());
                     }
                 }
                 Err(e) => {

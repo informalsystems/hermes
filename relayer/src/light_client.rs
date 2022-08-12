@@ -64,7 +64,7 @@ pub trait LightClient<C: ChainEndpoint>: Send + Sync {
     /// look for misbehaviour by fetching a header at same or latest height.
     fn check_misbehaviour(
         &mut self,
-        update: UpdateClient,
+        update: &UpdateClient,
         client_state: &AnyClientState,
     ) -> Result<Option<MisbehaviourEvidence>, error::Error>;
 

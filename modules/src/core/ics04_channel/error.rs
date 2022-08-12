@@ -345,6 +345,10 @@ define_error! {
                     "application module error: {0}",
                     e.description)
             },
+
+        AbciConversionFailed
+            { abci_event: String }
+            | e | { format_args!("Failed to convert abci event to IbcEvent: {}", e.abci_event)}
     }
 }
 

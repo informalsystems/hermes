@@ -85,7 +85,6 @@ pub(crate) fn process<Ctx: ChannelReader + ChannelReaderLightClient>(
 
     let event_attributes = Attributes {
         channel_id: Some(msg.channel_id.clone()),
-        height: ChannelReader::host_height(ctx),
         ..Default::default()
     };
     output.emit(IbcEvent::CloseConfirmChannel(
@@ -174,7 +173,6 @@ mod tests {
 
         for event in handler_output.events.iter() {
             assert!(matches!(event, &IbcEvent::CloseConfirmChannel(_)));
-            assert_eq!(event.height(), context.host_height());
         }
     }
 }

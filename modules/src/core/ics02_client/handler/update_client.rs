@@ -91,7 +91,6 @@ pub fn process<Ctx: ClientReader>(
 
     let event_attributes = Attributes {
         client_id,
-        height: ctx.host_height(),
         ..Default::default()
     };
     output.emit(IbcEvent::UpdateClient(event_attributes.into()));
@@ -108,7 +107,6 @@ mod tests {
     use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
     use crate::core::ics02_client::client_type::ClientType;
     use crate::core::ics02_client::consensus_state::downcast_consensus_state;
-    use crate::core::ics02_client::context::ClientReader;
     use crate::core::ics02_client::error::{Error, ErrorDetail};
     use crate::core::ics02_client::handler::dispatch;
     use crate::core::ics02_client::handler::ClientResult::Update;
@@ -154,7 +152,6 @@ mod tests {
                 assert!(
                     matches!(event, IbcEvent::UpdateClient(ref e) if e.client_id() == &msg.client_id)
                 );
-                assert_eq!(event.height(), ctx.host_height());
                 assert!(log.is_empty());
                 // Check the result
                 match result {
@@ -238,7 +235,6 @@ mod tests {
                     assert!(
                         matches!(event, IbcEvent::UpdateClient(ref e) if e.client_id() == &msg.client_id)
                     );
-                    assert_eq!(event.height(), ctx.host_height());
                     assert!(log.is_empty());
                 }
                 Err(err) => {
@@ -299,7 +295,6 @@ mod tests {
                 assert!(
                     matches!(event, IbcEvent::UpdateClient(ref e) if e.client_id() == &msg.client_id)
                 );
-                assert_eq!(event.height(), ctx.host_height());
                 assert!(log.is_empty());
                 // Check the result
                 match result {
@@ -369,7 +364,6 @@ mod tests {
                 assert!(
                     matches!(event, IbcEvent::UpdateClient(ref e) if e.client_id() == &msg.client_id)
                 );
-                assert_eq!(event.height(), ctx.host_height());
                 assert!(log.is_empty());
                 // Check the result
                 match result {
@@ -450,7 +444,6 @@ mod tests {
                 assert!(
                     matches!(event, IbcEvent::UpdateClient(ref e) if e.client_id() == &msg.client_id)
                 );
-                assert_eq!(event.height(), ctx.host_height());
                 assert!(log.is_empty());
                 // Check the result
                 match result {

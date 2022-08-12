@@ -15,7 +15,7 @@ pub struct Step {
     pub chains: HashMap<String, Chain>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(tag = "type")]
 pub enum Action {
     None,
@@ -117,7 +117,7 @@ pub enum Action {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub enum ActionOutcome {
     None,
     Ics02CreateOk,
@@ -140,7 +140,7 @@ pub enum ActionOutcome {
     Ics03ConnectionOpenConfirmOk,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Chain {
     pub height: Height,
 
@@ -149,12 +149,12 @@ pub struct Chain {
     pub connections: HashMap<u64, Connection>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Client {
     pub heights: Vec<Height>,
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Connection {
     #[serde(alias = "clientId")]
     #[serde(default, deserialize_with = "deserialize_id")]
