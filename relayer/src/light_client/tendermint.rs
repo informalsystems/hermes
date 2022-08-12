@@ -55,8 +55,11 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             chain = %self.chain_id
         )
         .entered();
+
         let Verified { target, supporting } = self.verify(trusted, target, client_state)?;
-        let (target, supporting) = self.adjust_headers(trusted, target, supporting)?;
+
+        // let (target, supporting) = self.adjust_headers(trusted, target, supporting)?;
+
         Ok(Verified { target, supporting })
     }
 
@@ -246,7 +249,9 @@ impl LightClient {
                 // The height at which Juno-1 halted.
                 let juno_client_latest_trusted_height = TMHeight::from(4136530_u32);
 
-                if (fetch_height <= juno_client_latest_trusted_height) && (self.chain_id == ChainId::new("juno".to_owned(), 1)) {
+                if (fetch_height <= juno_client_latest_trusted_height)
+                    && (self.chain_id == ChainId::new("juno".to_owned(), 1))
+                {
                     // Create an alternative io for the archive node, to bypass the default full node.
                     warn!("matched on juno-1, below the halt height");
 
@@ -267,7 +272,6 @@ impl LightClient {
                     return archive_io
                         .fetch_light_block(height)
                         .map_err(|e| Error::light_client_io(self.chain_id.to_string(), e));
-
                 } else {
                     warn!(height = %fetch_height, chain_id = %self.chain_id, "not on juno-1 chain or fetching a different height; using the default io");
                 }
