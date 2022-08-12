@@ -61,8 +61,8 @@ flex-error = { version = "0.4.4", default-features = false }
 num-traits = { version = "0.2.15", default-features = false }
 derive_more = { version = "0.99.17", default-features = false, features = ["from", "into", "display"] }
 uint = { version = "0.9", default-features = false }
-beefy-client = { package = "beefy-generic-client",  git = "https://github.com/ComposableFi/beefy-rs", rev = "6b99ac5459caaa1baf94cafa208fffe8e9dd0b54", default-features = false, optional = true }
-beefy-client-primitives = { package = "primitives", git = "https://github.com/ComposableFi/beefy-rs", rev = "6b99ac5459caaa1baf94cafa208fffe8e9dd0b54", default-features = false, optional = true }
+beefy-client = { package = "beefy-light-client",  git = "https://github.com/ComposableFi/beefy-rs", rev = "50d53a6e85b0d7e2c1203ae3711f2abd04addd18", default-features = false, optional = true }
+beefy-client-primitives = { package = "primitives", git = "https://github.com/ComposableFi/beefy-rs", rev = "50d53a6e85b0d7e2c1203ae3711f2abd04addd18", default-features = false, optional = true }
 pallet-mmr-primitives = { package = "sp-mmr-primitives", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24", default-features = false, optional = true }
 beefy-primitives = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24", default-features = false, optional = true }
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false }
@@ -116,11 +116,11 @@ sp-io = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0
 subxt = "0.22.0"
 tokio = { version = "1.17.0", features = ["full"] }
 serde_json = "1.0.74"
-beefy-client = { package = "beefy-generic-client",  git = "https://github.com/ComposableFi/beefy-rs", rev = "6b99ac5459caaa1baf94cafa208fffe8e9dd0b54" }
-beefy-queries = { git = "https://github.com/ComposableFi/beefy-rs", rev = "6b99ac5459caaa1baf94cafa208fffe8e9dd0b54" }
+beefy-client = { package = "beefy-light-client",  git = "https://github.com/ComposableFi/beefy-rs", rev = "50d53a6e85b0d7e2c1203ae3711f2abd04addd18" }
+beefy-queries = { package = "beefy-prover", git = "https://github.com/ComposableFi/beefy-rs", rev = "50d53a6e85b0d7e2c1203ae3711f2abd04addd18" }
 sha3 = { version = "0.10.1" }
 ripemd = { version = "0.1.1" }
-beefy-client-primitives = { package = "primitives", git = "https://github.com/ComposableFi/beefy-rs", rev = "6b99ac5459caaa1baf94cafa208fffe8e9dd0b54" }
+beefy-client-primitives = { package = "primitives", git = "https://github.com/ComposableFi/beefy-rs", rev = "50d53a6e85b0d7e2c1203ae3711f2abd04addd18" }
 beefy-primitives = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
 pallet-mmr-primitives = { package = "sp-mmr-primitives", git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
 codec = { package = "parity-scale-codec", version = "3.0.0"}
@@ -128,7 +128,6 @@ sp-runtime = { git = "https://github.com/paritytech/substrate", branch = "polkad
 sp-core = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
 sp-std = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
 sp-trie = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
-frame-support = { git = "https://github.com/paritytech/substrate", branch = "polkadot-v0.9.24" }
 
 [[test]]
 name = "mbt"
