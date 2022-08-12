@@ -45,7 +45,7 @@ impl From<Vec<u8>> for CommitmentRoot {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CommitmentPath;
 
 #[derive(Clone, PartialEq, Eq, Serialize)]

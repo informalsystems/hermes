@@ -53,7 +53,7 @@ impl FromStr for EventFilter {
     }
 }
 
-#[derive(Debug, Parser, PartialEq)]
+#[derive(Debug, Parser, PartialEq, Eq)]
 pub struct ListenCmd {
     /// Identifier of the chain to listen for events from
     #[clap(

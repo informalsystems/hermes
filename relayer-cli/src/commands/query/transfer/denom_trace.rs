@@ -15,7 +15,7 @@ use crate::conclude::{exit_with_unrecoverable_error, json, Output};
 /// `query transfer denom-trace --chain <CHAIN_ID> --hash <HASH>`
 ///
 /// If successful the the base denomination and the path will be displayed.
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct DenomTraceCmd {
     #[clap(
         long = "chain",

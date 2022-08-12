@@ -12,7 +12,7 @@ use crate::tx_msg::Msg;
 pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgSubmitMisbehaviour";
 
 /// A type of message that submits client misbehaviour proof.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgSubmitAnyMisbehaviour {
     /// client unique identifier
     pub client_id: ClientId,
