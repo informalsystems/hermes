@@ -7,17 +7,15 @@ use crate::traits::core::Async;
 use crate::types::aliases::{Height, WriteAcknowledgementEvent};
 
 #[async_trait]
-pub trait ReceivePacketRelayer<Context: RelayContext>: Async
+pub trait ReceivePacketRelayer<Relay>: Async
 where
-    Context::DstChain: HasIbcEvents<Context::SrcChain>,
+    Relay: RelayContext,
+    Relay::DstChain: HasIbcEvents<Relay::SrcChain>,
 {
     async fn relay_receive_packet(
         &self,
-        context: &Context,
-        source_height: &Height<Context::SrcChain>,
-        packet: &Context::Packet,
-    ) -> Result<
-        Option<WriteAcknowledgementEvent<Context::DstChain, Context::SrcChain>>,
-        Context::Error,
-    >;
+        context: &Relay,
+        source_height: &Height<Relay::SrcChain>,
+        packet: &Relay::Packet,
+    ) -> Result<Option<WriteAcknowledgementEvent<Relay::DstChain, Relay::SrcChain>>, Relay::Error>;
 }
