@@ -20,7 +20,7 @@ use crate::link::error::LinkError;
 use crate::link::RelayPath;
 
 /// The chain that the events associated with a piece of [`OperationalData`] are bound for.
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum OperationalDataTarget {
     /// The chain which generated the events associated with the `OperationalData`.
     Source,

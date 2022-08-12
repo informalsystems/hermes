@@ -14,7 +14,7 @@ use crate::conclude::Output;
 use crate::prelude::*;
 use ibc::core::ics02_client::client_state::ClientState;
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct MisbehaviourCmd {
     #[clap(
         long = "chain",

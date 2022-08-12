@@ -11,7 +11,7 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 use ibc::core::ics04_channel::channel::State;
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryChannelEndCmd {
     #[clap(
         long = "chain",
