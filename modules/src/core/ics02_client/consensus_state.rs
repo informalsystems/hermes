@@ -13,26 +13,13 @@ use crate::core::ics23_commitment::commitment::CommitmentRoot;
 use crate::dynamic_typing::AsAny;
 use crate::timestamp::Timestamp;
 
-mod sealed {
-    use super::*;
-
-    pub trait ErasedPartialEqConsensusState {
-        fn eq_consensus_state(&self, other: &dyn ConsensusState) -> bool;
-    }
-
-    impl<CS> ErasedPartialEqConsensusState for CS
-    where
-        CS: ConsensusState + PartialEq,
-    {
-        fn eq_consensus_state(&self, other: &dyn ConsensusState) -> bool {
-            other
-                .as_any()
-                .downcast_ref::<CS>()
-                .map_or(false, |h| self == h)
-        }
-    }
-}
-
+/// Abstract of consensus state information used by the validity predicate
+/// to verify new commits & state roots.
+///
+/// Users are not expected to implement sealed::ErasedPartialEqConsensusState.
+/// Effectively, that trait bound mandates implementors to derive PartialEq,
+/// after which our blanket implementation will implement
+/// `ErasedPartialEqConsensusState` for their type.
 pub trait ConsensusState:
     AsAny
     + sealed::ErasedPartialEqConsensusState
@@ -81,5 +68,25 @@ impl PartialEq for dyn ConsensusState {
 impl PartialEq<&Self> for Box<dyn ConsensusState> {
     fn eq(&self, other: &&Self) -> bool {
         self.eq_consensus_state(other.as_ref())
+    }
+}
+
+mod sealed {
+    use super::*;
+
+    pub trait ErasedPartialEqConsensusState {
+        fn eq_consensus_state(&self, other: &dyn ConsensusState) -> bool;
+    }
+
+    impl<CS> ErasedPartialEqConsensusState for CS
+    where
+        CS: ConsensusState + PartialEq,
+    {
+        fn eq_consensus_state(&self, other: &dyn ConsensusState) -> bool {
+            other
+                .as_any()
+                .downcast_ref::<CS>()
+                .map_or(false, |h| self == h)
+        }
     }
 }
