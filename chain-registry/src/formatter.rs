@@ -1,6 +1,6 @@
 //! Contains traits to format the URL of API endpoints from a `&str` to any type.
-//! Contains struct to build a `tendermint_rpc::Url` representing a 
-//! WebSocket URL from a RPC URL and to parse or build a valid `http::Uri` 
+//! Contains struct to build a `tendermint_rpc::Url` representing a
+//! WebSocket URL from a RPC URL and to parse or build a valid `http::Uri`
 //! from an (in)complete GRPC URL
 use crate::error::RegistryError;
 use http::uri::Scheme;
@@ -11,7 +11,6 @@ use tendermint_rpc::Url;
 
 /// `UriFormatter` contains the basic expectations to parse a valid URL from a `&str`
 pub trait UriFormatter {
-
     /// Expected output format of the formatter
     type OutputFormat;
 
@@ -174,19 +173,15 @@ mod tests {
 
     #[test]
     fn invalid_grpc_formatter_test() {
-        let valid_uri: &[FormatterTest<Uri>] = &[
-            FormatterTest {
-                input: "",
-                expected: None,
-            },
-        ];
+        let valid_uri: &[FormatterTest<Uri>] = &[FormatterTest {
+            input: "",
+            expected: None,
+        }];
 
         for test in valid_uri {
             test.run::<SimpleGrpcFormatter>();
         }
     }
-
-
 
     #[tokio::test]
     #[ignore]

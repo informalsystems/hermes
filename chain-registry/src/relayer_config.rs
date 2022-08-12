@@ -64,8 +64,11 @@ async fn hermes_config<GrpcQuerier, RpcQuerier, GrpcFormatter>(
 where
     GrpcQuerier:
         QueryContext<QueryInput = Uri, QueryOutput = Url, QueryError = RegistryError> + Send,
-    RpcQuerier:
-        QueryContext<QueryInput = String, QueryOutput = HermesConfigData, QueryError = RegistryError> + Send,
+    RpcQuerier: QueryContext<
+            QueryInput = String,
+            QueryOutput = HermesConfigData,
+            QueryError = RegistryError,
+        > + Send,
     GrpcFormatter: UriFormatter<OutputFormat = Uri>,
 {
     let chain_name = chain_data.chain_name;
@@ -151,7 +154,7 @@ where
 ///
 /// * `chains` - A slice of strings that holds the name of the chains for which a `ChainConfig` will be generated. It must be sorted.
 /// * `keys` - A slice of keys that holds the name of the keys which will be used for each chain. It must have the same length as `chains`.
-/// 
+///
 /// # Example
 ///
 /// ```

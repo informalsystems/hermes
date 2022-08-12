@@ -1,5 +1,5 @@
 //! Contains traits to query nodes of a given chain from their APIs.
-//! Contains struct to perform a health check on a gRPC/WebSocket endpoint and 
+//! Contains struct to perform a health check on a gRPC/WebSocket endpoint and
 //! to retrieve the `max_block_size` from a RPC endpoint.
 use crate::error::RegistryError;
 use crate::formatter::{SimpleWebSocketFormatter, UriFormatter};
@@ -32,7 +32,6 @@ pub trait QueryContext: QueryTypes {
     ///
     /// * `chain_name` - A string slice that holds the name of a chain
     fn query_error(chain_name: String) -> Self::QueryError;
-
 
     /// Query an endpoint and return the result
     ///
@@ -88,8 +87,7 @@ impl QueryTypes for SimpleHermesRpcQuerier {
 
 #[async_trait]
 impl QueryContext for SimpleHermesRpcQuerier {
-    
-    /// Return an error `NoHealthyRpc` when `query_healthy` fails 
+    /// Return an error `NoHealthyRpc` when `query_healthy` fails
     fn query_error(chain_name: String) -> RegistryError {
         RegistryError::no_healthy_rpc(chain_name)
     }
@@ -138,7 +136,7 @@ impl QueryContext for SimpleHermesRpcQuerier {
 
 // ----------------- GRPC ------------------
 
-/// `GrpcHealthCheckQuerier` connects to a list of gRPC endpoints 
+/// `GrpcHealthCheckQuerier` connects to a list of gRPC endpoints
 /// and returns the URL of the first one to answer.
 pub struct GrpcHealthCheckQuerier;
 

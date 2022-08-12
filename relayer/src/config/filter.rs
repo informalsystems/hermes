@@ -59,6 +59,11 @@ impl ChannelFilters {
         self.0.len()
     }
 
+    /// Returns true if there are no filters, false otherwise.
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
     /// Indicates whether a match for the given [`PortId`]-[`ChannelId`] pair
     /// exists in the filter policy.
     pub fn matches(&self, channel_port: (&PortId, &ChannelId)) -> bool {
