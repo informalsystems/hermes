@@ -70,6 +70,7 @@ impl UriFormatter for SimpleWebSocketFormatter {
 /// Builds a valid `http::Uri` from a gRPC address.
 impl UriFormatter for SimpleGrpcFormatter {
     type OutputFormat = Uri;
+
     fn parse_or_build_address(input: &str) -> Result<Self::OutputFormat, RegistryError> {
         // Remove the last character if it is a '/'
         let input = match input.ends_with('/') {
@@ -87,6 +88,7 @@ impl UriFormatter for SimpleGrpcFormatter {
 
         if uri.scheme().is_none() {
             let builder = Uri::builder();
+
             return builder
                 .scheme("https")
                 .authority(input)
