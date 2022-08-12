@@ -8,7 +8,7 @@
 #![allow(clippy::large_enum_variant)]
 #![allow(rustdoc::bare_urls)]
 #![forbid(unsafe_code)]
-#![doc(html_root_url = "https://docs.rs/ibc-proto/0.19.1")]
+#![doc(html_root_url = "https://docs.rs/ibc-proto/0.20.0")]
 
 pub mod google;
 

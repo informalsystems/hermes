@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-relayer-cli"
-version    = "1.0.0-rc.1"
+version    = "1.0.0-rc.2"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -26,11 +26,11 @@ telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server = ["ibc-relayer-rest"]
 
 [dependencies]
-ibc              = { version = "0.17.0", path = "../modules", features = ["std", "clock"] }
-ibc-relayer      = { version = "0.17.0", path = "../relayer" }
-ibc-proto        = { version = "0.19.1", path = "../proto" }
-ibc-telemetry    = { version = "0.17.0", path = "../telemetry", optional = true }
-ibc-relayer-rest = { version = "0.17.0", path = "../relayer-rest", optional = true }
+ibc              = { version = "0.18.0", path = "../modules", features = ["std", "clock"] }
+ibc-relayer      = { version = "0.18.0", path = "../relayer" }
+ibc-proto        = { version = "0.20.0", path = "../proto" }
+ibc-telemetry    = { version = "0.18.0", path = "../telemetry", optional = true }
+ibc-relayer-rest = { version = "0.18.0", path = "../relayer-rest", optional = true }
 
 clap = { version = "3.2", features = ["cargo"] }
 clap_complete = "3.2"
@@ -58,22 +58,22 @@ dialoguer = "0.10.2"
 console = "0.15.1"
 
 [dependencies.tendermint-proto]
-version = "=0.23.8"
+version = "=0.23.9"
 
 [dependencies.tendermint]
-version = "=0.23.8"
+version = "=0.23.9"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.23.8"
+version = "=0.23.9"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.23.8"
+version = "=0.23.9"
 features = ["unstable"]
 
 [dependencies.tendermint-light-client-verifier]
-version = "=0.23.8"
+version = "=0.23.9"
 
 [dependencies.abscissa_core]
 version = "=0.6.0"
