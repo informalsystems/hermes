@@ -16,6 +16,13 @@ use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error;
 use crate::keyring::KeyEntry;
 
+/**
+   Broadcast messages as multiple batched transactions to the chain all at once,
+   and then wait for all transactions to be committed.
+   This may improve performance in case when multiple transactions are
+   committed into the same block. However this approach may not work if
+   priority mempool is enabled.
+*/
 pub async fn send_batched_messages_and_wait_commit(
     config: &TxConfig,
     max_msg_num: MaxMsgNum,
@@ -57,6 +64,11 @@ pub async fn send_batched_messages_and_wait_commit(
     Ok(events)
 }
 
+/**
+   Send batched messages one after another, only after the previous one
+   has been committed. This is only used in case if parallel transactions
+   are committed in the wrong order due to interference from priority mempool.
+*/
 pub async fn sequential_send_batched_messages_and_wait_commit(
     config: &TxConfig,
     max_msg_num: MaxMsgNum,
