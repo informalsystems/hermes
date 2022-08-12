@@ -7,7 +7,7 @@ use crate::traits::core::Async;
 use crate::traits::ibc_message_sender::{
     HasIbcMessageSender, IbcMessageSenderExt, MismatchIbcEventsCountError,
 };
-use crate::traits::messages::receive_packet::ReceivePacketMessageBuilder;
+use crate::traits::messages::receive_packet::CanBuildReceivePacketMessage;
 use crate::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
 use crate::traits::target::DestinationTarget;
 use crate::types::aliases::{Height, Packet, WriteAcknowledgementEvent};
@@ -18,7 +18,7 @@ pub struct BaseReceivePacketRelayer;
 impl<Context, Message, Event, AckEvent, DstChain> ReceivePacketRelayer<Context>
     for BaseReceivePacketRelayer
 where
-    Context: ReceivePacketMessageBuilder<Context>,
+    Context: CanBuildReceivePacketMessage,
     Context: HasIbcMessageSender<DestinationTarget>,
     Context: RelayContext<DstChain = DstChain>,
     DstChain: HasIbcEvents<

@@ -3,7 +3,7 @@ use crate::all_for_one::traits::error::AfoError;
 use crate::traits::contexts::relay::RelayContext;
 use crate::traits::ibc_message_sender::HasIbcMessageSender;
 use crate::traits::messages::ack_packet::AckPacketMessageBuilder;
-use crate::traits::messages::receive_packet::ReceivePacketMessageBuilder;
+use crate::traits::messages::receive_packet::CanBuildReceivePacketMessage;
 use crate::traits::messages::update_client::CanUpdateClient;
 use crate::traits::target::{DestinationTarget, SourceTarget};
 
@@ -13,7 +13,7 @@ pub trait AfoRelayContext:
     + CanUpdateClient<DestinationTarget>
     + HasIbcMessageSender<SourceTarget>
     + HasIbcMessageSender<DestinationTarget>
-    + ReceivePacketMessageBuilder<Self>
+    + CanBuildReceivePacketMessage
     + AckPacketMessageBuilder<Self>
 {
     type AfoError: AfoError;
@@ -33,7 +33,7 @@ where
         + CanUpdateClient<DestinationTarget>
         + HasIbcMessageSender<SourceTarget>
         + HasIbcMessageSender<DestinationTarget>
-        + ReceivePacketMessageBuilder<Relay>
+        + CanBuildReceivePacketMessage
         + AckPacketMessageBuilder<Relay>,
 {
     type AfoError = Error;

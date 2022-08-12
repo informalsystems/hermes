@@ -11,7 +11,9 @@ use crate::traits::contexts::error::HasError;
 use crate::traits::contexts::relay::RelayContext;
 use crate::traits::contexts::runtime::HasRuntime;
 use crate::traits::messages::ack_packet::AckPacketMessageBuilder;
-use crate::traits::messages::receive_packet::ReceivePacketMessageBuilder;
+use crate::traits::messages::receive_packet::{
+    CanBuildReceivePacketMessage, ReceivePacketMessageBuilder,
+};
 use crate::traits::messages::update_client::{CanUpdateClient, UpdateClientMessageBuilder};
 use crate::traits::packet::IbcPacket;
 use crate::traits::target::{DestinationTarget, SourceTarget};
@@ -168,22 +170,28 @@ impl<Relay: OfaRelay> UpdateClientMessageBuilder<OfaRelayContext<Relay>, Destina
     }
 }
 
+pub struct OfaReceivePacketMessageBuilder;
+
 #[async_trait]
 impl<Relay: OfaRelay> ReceivePacketMessageBuilder<OfaRelayContext<Relay>>
-    for OfaRelayContext<Relay>
+    for OfaReceivePacketMessageBuilder
 {
     async fn build_receive_packet_message(
-        &self,
+        relay: &OfaRelayContext<Relay>,
         height: &<Relay::SrcChain as OfaChain>::Height,
         packet: &OfaPacket<Relay>,
     ) -> Result<OfaMessage<Relay::DstChain>, OfaErrorContext<Relay::Error>> {
-        let message = self
+        let message = relay
             .relay
             .build_receive_packet_message(height, &packet.packet)
             .await?;
 
         Ok(OfaMessage::new(message))
     }
+}
+
+impl<Relay: OfaRelay> CanBuildReceivePacketMessage for OfaRelayContext<Relay> {
+    type ReceivePacketMessageBuilder = OfaReceivePacketMessageBuilder;
 }
 
 #[async_trait]
