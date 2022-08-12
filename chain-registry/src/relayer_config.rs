@@ -20,7 +20,7 @@ use ibc_relayer::{
     keyring::Store,
 };
 
-use std::{cmp::min, collections::HashMap, marker::Send};
+use std::{collections::HashMap, marker::Send};
 
 use tendermint_light_client_verifier::types::TrustThreshold;
 use tendermint_rpc::Url;
@@ -62,7 +62,6 @@ async fn hermes_config<GrpcQuerier, RpcQuerier, GrpcFormatter>(
     chain_data: ChainData,
     assets: AssetList,
     packet_filter: Option<PacketFilter>,
-    key_name: String,
 ) -> Result<ChainConfig, RegistryError>
 where
     GrpcQuerier:
@@ -125,7 +124,7 @@ where
         grpc_addr: grpc_address,
         rpc_timeout: default::rpc_timeout(),
         account_prefix: chain_data.bech32_prefix,
-        key_name,
+        key_name: String::new(),
         key_store_type: Store::default(),
         store_prefix: "ibc".to_string(),
         default_gas: Some(100000),
@@ -156,24 +155,15 @@ where
 /// # Arguments
 ///
 /// * `chains` - A slice of strings that holds the name of the chains for which a `ChainConfig` will be generated. It must be sorted.
-/// * `keys` - A slice of keys that holds the name of the keys which will be used for each chain. It must have the same length as `chains`.
 ///
 /// # Example
 ///
 /// ```
 /// use chain_registry::relayer_config::get_configs;
 /// let chains = &vec!["cosmoshub".to_string(), "osmosis".to_string()];
-/// let keys = Some(vec!["key_cosmoshub".to_string(), "key_osmosis".to_string()]);
-/// let configs = get_configs(chains, keys);
+/// let configs = get_configs(chains);
 /// ```
-pub async fn get_configs(
-    chains: &[String],
-    keys: Option<Vec<String>>,
-) -> Result<Vec<ChainConfig>, RegistryError> {
-    let keys = match keys {
-        Some(k) => k,
-        None => vec![String::new()],
-    };
+pub async fn get_configs(chains: &[String]) -> Result<Vec<ChainConfig>, RegistryError> {
     let n = chains.len();
     if n == 0 {
         return Ok(Vec::new());
@@ -227,14 +217,12 @@ pub async fn get_configs(
             .map_err(|e| RegistryError::join_error("asset_handle_join".to_string(), e))??;
 
         let packet_filter = packet_filters.remove(&chains[i]);
-        let key = keys[min(i, keys.len() - 1)].clone();
 
         configs_handle.push(tokio::spawn(async move {
             hermes_config::<GrpcHealthCheckQuerier, SimpleHermesRpcQuerier, SimpleGrpcFormatter>(
                 chain_data,
                 assets,
                 packet_filter,
-                key,
             )
             .await
         }));
@@ -259,14 +247,9 @@ mod tests {
     use ibc::core::ics24_host::identifier::{ChannelId, PortId};
     use std::str::FromStr;
 
-    async fn fetch_configs(test_chains: &[String]) -> Result<Vec<ChainConfig>, RegistryError> {
-        let test_keys = vec!["testkey".to_string(); test_chains.len()];
-        Ok(get_configs(test_chains, Some(test_keys)).await?)
-    }
-
     // Helper function for configs without filter
     async fn should_have_no_filter(test_chains: &[String]) -> Result<(), RegistryError> {
-        let configs = fetch_configs(test_chains).await?;
+        let configs = get_configs(test_chains).await?;
         for config in configs {
             match config.packet_filter {
                 PacketFilter::AllowAll => {}
@@ -285,7 +268,7 @@ mod tests {
             "osmosis".to_string(),
         ]; // Must be sorted
 
-        let configs = fetch_configs(test_chains).await?;
+        let configs = get_configs(test_chains).await?;
 
         for config in configs {
             match config.packet_filter {
@@ -376,7 +359,7 @@ mod tests {
     #[tokio::test]
     async fn fetch_no_chain() -> Result<(), RegistryError> {
         let test_chains: &[String] = &[];
-        let configs = fetch_configs(test_chains).await?;
+        let configs = get_configs(test_chains).await?;
 
         assert_eq!(configs.len(), 0);
 

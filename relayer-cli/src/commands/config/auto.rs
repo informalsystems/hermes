@@ -7,17 +7,29 @@ use chain_registry::relayer_config::get_configs;
 use crate::conclude::Output;
 
 use ibc_relayer::{
-    config::{store, Config},
-    keyring::{KEYSTORE_DEFAULT_FOLDER, KEYSTORE_FILE_EXTENSION},
+    config::{store, ChainConfig, Config},
+    keyring::{KeyRing, Store::Test},
 };
 
-use std::{
-    ffi::OsStr,
-    fs::{self},
-    path::PathBuf,
-};
+use std::path::PathBuf;
 use tokio::runtime::Builder;
 use tracing::warn;
+
+fn find_key(chainconfig: &ChainConfig) -> Option<String> {
+    if let Ok(keyring) = KeyRing::new(Test, &chainconfig.account_prefix, &chainconfig.id) {
+        if let Ok(keys) = keyring.keys() {
+            if let Some((name, _)) = keys.first() {
+                Some(name.to_string())
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
 
 /// The data structure that represents the arguments when invoking the `config auto` CLI command.
 ///
@@ -31,36 +43,10 @@ use tracing::warn;
 ///
 /// If no keys are specified, the first key stored in the KEYSTORE_DEFAULT_FOLDER will be used.
 /// If keys are specified then there must be a key for every chain and the command will not verify that those keys exist.
-fn find_key(chain_name: &str) -> Option<String> {
-    println!("Finding key for chain {}", chain_name);
-    let home_dir = match std::env::home_dir() {
-        Some(home_dir) => home_dir.to_str().unwrap().to_string(),
-        None => {
-            Output::error("Could not find home directory").exit();
-        }
-    };
-    let dir_path: PathBuf = [home_dir.as_str(), KEYSTORE_DEFAULT_FOLDER, chain_name]
-        .iter()
-        .collect();
-    println!("dir_path {:?}", dir_path);
-    if let Ok(dir) = fs::read_dir(dir_path) {
-        println!("dir {:?}", dir);
-        let ext = OsStr::new(KEYSTORE_FILE_EXTENSION);
-        dir.into_iter()
-            .flatten()
-            .map(|entry| entry.path())
-            .filter(|path| path.extension() == Some(ext))
-            .filter_map(|path| path.file_stem().map(OsStr::to_owned))
-            .filter_map(|stem| stem.to_str().map(ToString::to_string))
-            .next()
-    } else {
-        None
-    }
-}
-
-/// Encapsulates the `hermes config auto` subcommand for generating
-/// a default Hermes configuration.
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[clap(
+    override_usage = "hermes config auto [OPTIONS] --chains <CHAIN_NAME_1 CHAIN_NAME_2> [--keys <CHAIN_NAME_1 CHAIN_NAME_2...>]"
+)]
 pub struct AutoCmd {
     #[clap(
         long = "path",
@@ -85,8 +71,7 @@ pub struct AutoCmd {
         long = "keys",
         multiple = true,
         value_name = "KEY_CHAIN_1 KEY_CHAIN_2...",
-        help_heading = "REQUIRED",
-        help = "Key names to include in the config. Must provide keys for every chain."
+        help = "Key names to include in the config. A key must be provided from every chain."
     )]
     keys: Option<Vec<String>>,
 }
@@ -120,13 +105,19 @@ impl Runnable for AutoCmd {
         };
 
         // Fetch chain configs
-        match runtime.block_on(get_configs(&sorted_chains, sorted_keys)) {
+        match runtime.block_on(get_configs(&sorted_chains)) {
             Ok(mut chain_configs) => {
-                if self.keys.is_none() {
+                if let Some(keys) = sorted_keys {
+                    for (mut chain_config, key_name) in
+                        chain_configs.iter_mut().zip(keys.into_iter())
+                    {
+                        chain_config.key_name = key_name;
+                    }
+                } else {
                     let mut not_found = Vec::with_capacity(chain_configs.len());
                     for mut chain_config in chain_configs.iter_mut() {
                         let chain_id = &chain_config.id;
-                        let key = find_key(chain_id.as_str());
+                        let key = find_key(chain_config);
                         if let Some(key) = key {
                             chain_config.key_name = key;
                         } else {
@@ -137,6 +128,7 @@ impl Runnable for AutoCmd {
                         Output::error(format!("No key found for chains {:?}", not_found)).exit();
                     }
                 }
+
                 let config = Config {
                     chains: chain_configs,
                     ..Config::default()
@@ -158,5 +150,53 @@ impl Runnable for AutoCmd {
                 Output::error(e.to_string()).exit();
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::AutoCmd;
+    use abscissa_core::clap::Parser;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_auto_config_with_keys() {
+        assert_eq!(
+            AutoCmd {
+                path: PathBuf::from("./example.toml"),
+                chain_names: vec!["chain1".to_string(), "chain2".to_string()],
+                keys: Some(vec!["key1".to_string(), "key2".to_string()]),
+            },
+            AutoCmd::parse_from(&[
+                "test",
+                "--path",
+                "./example.toml",
+                "--chains",
+                "chain1",
+                "chain2",
+                "--keys",
+                "key1",
+                "key2"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_auto_config_without_keys() {
+        assert_eq!(
+            AutoCmd {
+                path: PathBuf::from("./example.toml"),
+                chain_names: vec!["chain1".to_string(), "chain2".to_string()],
+                keys: None,
+            },
+            AutoCmd::parse_from(&[
+                "test",
+                "--path",
+                "./example.toml",
+                "--chains",
+                "chain1",
+                "chain2"
+            ])
+        )
     }
 }

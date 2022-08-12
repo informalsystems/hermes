@@ -30,17 +30,18 @@ Use `config auto` to automatically generate a configuration file from the [chain
 
 ```
 USAGE:
-    hermes config auto --path <PATH> --chains <CHAIN_NAME_1 CHAIN_NAME_2...>... --keys <KEY_CHAIN_1 KEY_CHAIN_2...>...
+    hermes config auto [OPTIONS] --chains <CHAIN_NAME_1 CHAIN_NAME_2> [--keys <CHAIN_NAME_1 CHAIN_NAME_2...>]
 
 OPTIONS:
-    -h, --help    Print help information
+    -h, --help
+            Print help information
+
+        --keys <KEY_CHAIN_1 KEY_CHAIN_2...>...
+            Key names to include in the config. A key must be provided from every chain.
 
 REQUIRED:
         --chains <CHAIN_NAME_1 CHAIN_NAME_2...>...
             Names of the chains to include in the config. Every chain must be in the chain registry.
-
-        --keys <KEY_CHAIN_1 KEY_CHAIN_2...>...
-            Key names to include in the config. Must provide keys for every chain.
 
         --path <PATH>
             Path to the configuration file
@@ -50,13 +51,24 @@ DESCRIPTION:
 
 __Example__
 
-Use `config auto` to generate a configuration file able to relay between `cosmoshub` and `osmosis`.
+Use `config auto` to generate a configuration file able to relay between `cosmoshub` and `osmosis`. This command assumes the existence of a key file for `cosmoshub-4` and `osmosis-1` in `$HOME/.hermes/keys`.
+```
+    hermes config auto --path $HOME/example_config.toml --chains cosmoshub osmosis
+
+    2022-08-12T16:20:07.885159Z  INFO ThreadId(01) using default configuration from '$HOME/.hermes/config.toml'
+2022-08-12T16:20:08.708701Z  WARN ThreadId(01) Gas parameters are set to default values.
+SUCCESS "Config file written successfully : $HOME/example_config.toml."
+```
+
+It is also possible to manually specify a key name for each chain.
 ```
     hermes config auto --path $HOME/example_config.toml --chains cosmoshub osmosis --keys key_cosmoshub key_osmosis
 
-    2022-08-10T16:03:05.282779Z  INFO ThreadId(01) using default configuration from '$HOME/.hermes/config.toml'
-SUCCESS "Config file written successfully :$HOME/example_config.toml."
+2022-08-12T16:21:45.788141Z  INFO ThreadId(01) using default configuration from '$HOME/.hermes/config.toml'
+2022-08-12T16:21:46.438416Z  WARN ThreadId(01) Gas parameters are set to default values.
+SUCCESS "Config file written successfully : $HOME/example_config.toml."
 ```
+
 __WARNING__ : Do not forget to modify the gas settings before relaying !
 
 ### Validate configuration
