@@ -4,6 +4,7 @@
 
 #![no_std]
 #![allow(clippy::large_enum_variant)]
+#![allow(clippy::derive_partial_eq_without_eq)]
 #![deny(
     warnings,
     trivial_casts,
