@@ -9,7 +9,7 @@ use super::error::Error;
 use super::{Amount, PrefixedCoin, PrefixedDenom};
 use crate::signer::Signer;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "RawPacketData", into = "RawPacketData")]
 pub struct PacketData {
     pub token: PrefixedCoin,

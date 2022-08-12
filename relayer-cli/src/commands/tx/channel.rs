@@ -49,7 +49,7 @@ macro_rules! tx_chan_cmd {
     };
 }
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct TxChanOpenInitCmd {
     #[clap(
         long = "dst-chain",
@@ -161,7 +161,7 @@ impl Runnable for TxChanOpenInitCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct TxChanOpenTryCmd {
     #[clap(
         long = "dst-chain",
@@ -260,7 +260,7 @@ impl Runnable for TxChanOpenTryCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct TxChanOpenAckCmd {
     #[clap(
         long = "dst-chain",
@@ -361,7 +361,7 @@ impl Runnable for TxChanOpenAckCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct TxChanOpenConfirmCmd {
     #[clap(
         long = "dst-chain",
@@ -462,7 +462,7 @@ impl Runnable for TxChanOpenConfirmCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct TxChanCloseInitCmd {
     #[clap(
         long = "dst-chain",
@@ -563,7 +563,7 @@ impl Runnable for TxChanCloseInitCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct TxChanCloseConfirmCmd {
     #[clap(
         long = "dst-chain",
