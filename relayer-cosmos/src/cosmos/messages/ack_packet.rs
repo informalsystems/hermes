@@ -5,27 +5,31 @@ use ibc::core::ics04_channel::packet::PacketMsgType;
 use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer_framework::traits::messages::ack_packet::AckPacketMessageBuilder;
+use ibc_relayer_framework::traits::messages::ack_packet::{
+    AckPacketMessageBuilder, CanBuildAckPacketMessage,
+};
 
 use crate::cosmos::context::chain::WriteAcknowledgementEvent;
 use crate::cosmos::context::relay::CosmosRelayContext;
 use crate::cosmos::error::Error;
 use crate::cosmos::message::CosmosIbcMessage;
 
+pub struct CosmosAckPacketMessageBuilder;
+
 #[async_trait]
 impl<SrcChain, DstChain> AckPacketMessageBuilder<CosmosRelayContext<SrcChain, DstChain>>
-    for CosmosRelayContext<SrcChain, DstChain>
+    for CosmosAckPacketMessageBuilder
 where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
 {
     async fn build_ack_packet_message(
-        &self,
+        relay: &CosmosRelayContext<SrcChain, DstChain>,
         destination_height: &Height,
         packet: &Packet,
         event: &WriteAcknowledgementEvent,
     ) -> Result<CosmosIbcMessage, Error> {
-        let proofs = self
+        let proofs = relay
             .dst_handle
             .handle
             .build_packet_proofs(
@@ -52,4 +56,12 @@ where
 
         Ok(message)
     }
+}
+
+impl<SrcChain, DstChain> CanBuildAckPacketMessage for CosmosRelayContext<SrcChain, DstChain>
+where
+    SrcChain: ChainHandle,
+    DstChain: ChainHandle,
+{
+    type AckPacketMessageBuilder = CosmosAckPacketMessageBuilder;
 }

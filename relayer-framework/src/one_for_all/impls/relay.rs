@@ -10,7 +10,7 @@ use crate::std_prelude::*;
 use crate::traits::contexts::error::HasError;
 use crate::traits::contexts::relay::RelayContext;
 use crate::traits::contexts::runtime::HasRuntime;
-use crate::traits::messages::ack_packet::AckPacketMessageBuilder;
+use crate::traits::messages::ack_packet::{AckPacketMessageBuilder, CanBuildAckPacketMessage};
 use crate::traits::messages::receive_packet::{
     CanBuildReceivePacketMessage, ReceivePacketMessageBuilder,
 };
@@ -194,19 +194,27 @@ impl<Relay: OfaRelay> CanBuildReceivePacketMessage for OfaRelayContext<Relay> {
     type ReceivePacketMessageBuilder = OfaReceivePacketMessageBuilder;
 }
 
+pub struct OfaAckPacketMessageBuilder;
+
 #[async_trait]
-impl<Relay: OfaRelay> AckPacketMessageBuilder<OfaRelayContext<Relay>> for OfaRelayContext<Relay> {
+impl<Relay: OfaRelay> AckPacketMessageBuilder<OfaRelayContext<Relay>>
+    for OfaAckPacketMessageBuilder
+{
     async fn build_ack_packet_message(
-        &self,
+        relay: &OfaRelayContext<Relay>,
         destination_height: &<Relay::DstChain as OfaChain>::Height,
         packet: &OfaPacket<Relay>,
         ack: &<Relay::DstChain as OfaChain>::WriteAcknowledgementEvent,
     ) -> Result<OfaMessage<Relay::SrcChain>, OfaErrorContext<Relay::Error>> {
-        let message = self
+        let message = relay
             .relay
             .build_ack_packet_message(destination_height, &packet.packet, ack)
             .await?;
 
         Ok(OfaMessage::new(message))
     }
+}
+
+impl<Relay: OfaRelay> CanBuildAckPacketMessage for OfaRelayContext<Relay> {
+    type AckPacketMessageBuilder = OfaAckPacketMessageBuilder;
 }
