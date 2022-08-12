@@ -14,7 +14,7 @@ use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::header::{Header, TENDERMINT_HEADER_TYPE_URL};
 use crate::core::ics24_host::identifier::ChainId;
-use crate::mock::client_state::MockConsensusState;
+use crate::mock::consensus_state::MockConsensusState;
 use crate::mock::header::MockHeader;
 use crate::prelude::*;
 use crate::timestamp::Timestamp;

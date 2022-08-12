@@ -21,7 +21,7 @@ use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
 use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::events::IbcEvent;
-use ibc::mock::client_state::MockConsensusState;
+use ibc::mock::consensus_state::MockConsensusState;
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
 use ibc::relayer::ics18_relayer::context::Ics18Context;

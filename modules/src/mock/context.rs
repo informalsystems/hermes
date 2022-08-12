@@ -39,7 +39,8 @@ use crate::core::ics26_routing::context::{Ics26Context, Module, ModuleId, Router
 use crate::core::ics26_routing::handler::{deliver, dispatch, MsgReceipt};
 use crate::core::ics26_routing::msgs::Ics26Envelope;
 use crate::events::IbcEvent;
-use crate::mock::client_state::{MockClientRecord, MockClientState, MockConsensusState};
+use crate::mock::client_state::{MockClientRecord, MockClientState};
+use crate::mock::consensus_state::MockConsensusState;
 use crate::mock::header::MockHeader;
 use crate::mock::host::{HostBlock, HostType};
 use crate::relayer::ics18_relayer::context::Ics18Context;

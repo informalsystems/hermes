@@ -6,9 +6,9 @@ use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::error::Error;
 use ibc::core::ics23_commitment::commitment::CommitmentRoot;
 #[cfg(test)]
-use ibc::mock::client_state::MockConsensusState;
+use ibc::mock::consensus_state::MockConsensusState;
 #[cfg(test)]
-use ibc::mock::client_state::MOCK_CONSENSUS_STATE_TYPE_URL;
+use ibc::mock::consensus_state::MOCK_CONSENSUS_STATE_TYPE_URL;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
 use ibc_proto::google::protobuf::Any;

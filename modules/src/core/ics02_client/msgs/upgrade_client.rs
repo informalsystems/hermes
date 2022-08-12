@@ -125,8 +125,7 @@ pub mod test_util {
             ics24_host::identifier::ClientId,
         },
         mock::{
-            client_state::{MockClientState, MockConsensusState},
-            header::MockHeader,
+            client_state::MockClientState, consensus_state::MockConsensusState, header::MockHeader,
         },
         test_utils::{get_dummy_bech32_account, get_dummy_proof},
     };
@@ -171,8 +170,7 @@ mod tests {
             ics24_host::identifier::ClientId,
         },
         mock::{
-            client_state::{MockClientState, MockConsensusState},
-            header::MockHeader,
+            client_state::MockClientState, consensus_state::MockConsensusState, header::MockHeader,
         },
         test_utils::get_dummy_account_id,
     };

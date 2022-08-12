@@ -99,7 +99,8 @@ mod tests {
     use crate::core::ics24_host::identifier::ClientId;
     use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
-    use crate::mock::client_state::{MockClientState, MockConsensusState};
+    use crate::mock::client_state::MockClientState;
+    use crate::mock::consensus_state::MockConsensusState;
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
     use crate::test_utils::get_dummy_account_id;

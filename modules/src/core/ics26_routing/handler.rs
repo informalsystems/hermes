@@ -167,7 +167,8 @@ mod tests {
     use crate::core::ics26_routing::msgs::Ics26Envelope;
     use crate::events::IbcEvent;
     use crate::handler::HandlerOutputBuilder;
-    use crate::mock::client_state::{MockClientState, MockConsensusState};
+    use crate::mock::client_state::MockClientState;
+    use crate::mock::consensus_state::MockConsensusState;
     use crate::mock::context::{MockContext, MockRouterBuilder};
     use crate::mock::header::MockHeader;
     use crate::test_utils::{get_dummy_account_id, DummyTransferModule};
