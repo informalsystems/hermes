@@ -30,9 +30,9 @@ use ibc::{
 
 use crate::{
     account::Balance,
-    client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
     config::ChainConfig,
     connection::ConnectionMsgType,
+    consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight},
     denom::DenomTrace,
     error::Error,
     event::{

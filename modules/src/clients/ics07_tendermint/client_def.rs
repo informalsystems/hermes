@@ -11,10 +11,10 @@ use crate::clients::ics07_tendermint::client_state::ClientState as TmClientState
 use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header as TmHeader;
-use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_def::ClientDef;
 use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::client_type::ClientType;
+use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::context::ClientReaderLightClient;
 use crate::core::ics02_client::error::{Error as Ics02Error, ErrorDetail as Ics02ErrorDetail};
 use crate::core::ics03_connection::connection::ConnectionEnd;

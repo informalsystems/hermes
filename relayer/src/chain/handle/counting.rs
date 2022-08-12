@@ -37,8 +37,8 @@ use crate::chain::requests::{
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
-use crate::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::config::ChainConfig;
+use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::light_client::AnyHeader;

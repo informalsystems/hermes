@@ -2,9 +2,9 @@
 
 use tracing::debug;
 
-use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_def::{AnyClient, ClientDef};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
+use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
@@ -105,9 +105,9 @@ mod tests {
     use test_log::test;
 
     use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
-    use crate::core::ics02_client::client_consensus::downcast_consensus_state;
     use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
     use crate::core::ics02_client::client_type::ClientType;
+    use crate::core::ics02_client::consensus_state::downcast_consensus_state;
     use crate::core::ics02_client::context::ClientReader;
     use crate::core::ics02_client::error::{Error, ErrorDetail};
     use crate::core::ics02_client::handler::dispatch;

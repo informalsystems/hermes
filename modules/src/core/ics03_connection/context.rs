@@ -2,8 +2,8 @@
 //! the interface that any host chain must implement to be able to process any `ConnectionMsg`.
 //! See "ADR 003: IBC protocol implementation" for more details.
 
-use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
+use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics03_connection::error::Error;
 use crate::core::ics03_connection::handler::{ConnectionIdState, ConnectionResult};

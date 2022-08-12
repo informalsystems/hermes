@@ -4,10 +4,10 @@ use ibc::core::ics23_commitment::merkle::MerkleProof;
 
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::core::ics02_client::client_consensus::ConsensusState;
 use ibc::core::ics02_client::client_state::{
     AnyClientState, ClientState, IdentifiedAnyClientState,
 };
+use ibc::core::ics02_client::consensus_state::ConsensusState;
 use ibc::core::ics02_client::header::Header;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd, State};
 use ibc::core::ics03_connection::version::{get_compatible_versions, Version};
@@ -34,9 +34,9 @@ use crate::chain::requests::{
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
-use crate::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
+use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::denom::DenomTrace;
 use crate::error::{Error, QUERY_PROOF_EXPECT_MSG};
 use crate::event::monitor::{EventReceiver, TxMonitorCmd};

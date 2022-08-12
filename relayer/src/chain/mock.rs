@@ -12,8 +12,8 @@ use ibc::clients::ics07_tendermint::client_state::{
 };
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc::clients::ics07_tendermint::header::Header as TendermintHeader;
-use ibc::core::ics02_client::client_consensus::downcast_consensus_state;
 use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
+use ibc::core::ics02_client::consensus_state::downcast_consensus_state;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::core::ics04_channel::context::ChannelReader;
@@ -35,8 +35,8 @@ use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
 use crate::chain::requests::{
     QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStatesRequest,
 };
-use crate::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::config::ChainConfig;
+use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};

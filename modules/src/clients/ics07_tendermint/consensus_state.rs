@@ -34,7 +34,7 @@ impl ConsensusState {
     }
 }
 
-impl crate::core::ics02_client::client_consensus::ConsensusState for ConsensusState {
+impl crate::core::ics02_client::consensus_state::ConsensusState for ConsensusState {
     fn client_type(&self) -> ClientType {
         ClientType::Tendermint
     }

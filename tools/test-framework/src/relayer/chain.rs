@@ -56,9 +56,9 @@ use ibc_relayer::chain::requests::{
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use ibc_relayer::chain::tracking::TrackedMsgs;
-use ibc_relayer::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc_relayer::config::ChainConfig;
 use ibc_relayer::connection::ConnectionMsgType;
+use ibc_relayer::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc_relayer::denom::DenomTrace;
 use ibc_relayer::error::Error;
 use ibc_relayer::keyring::KeyEntry;

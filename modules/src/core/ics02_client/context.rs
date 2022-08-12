@@ -4,9 +4,9 @@
 
 use alloc::boxed::Box;
 
-use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
+use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::handler::ClientResult::{self, Create, Update, Upgrade};
 use crate::core::ics24_host::identifier::ClientId;

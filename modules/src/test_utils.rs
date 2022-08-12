@@ -8,8 +8,8 @@ use crate::applications::transfer::context::{
     cosmos_adr028_escrow_address, BankKeeper, Ics20Context, Ics20Keeper, Ics20Reader,
 };
 use crate::applications::transfer::{error::Error as Ics20Error, PrefixedCoin};
-use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
+use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics03_connection::error::Error as Ics03Error;

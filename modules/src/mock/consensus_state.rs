@@ -5,8 +5,8 @@ use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
 use ibc_proto::protobuf::Protobuf;
 use serde::Serialize;
 
-use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_type::ClientType;
+use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics23_commitment::commitment::CommitmentRoot;
 use crate::mock::header::MockHeader;
