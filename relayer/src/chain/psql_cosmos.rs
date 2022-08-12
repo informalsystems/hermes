@@ -6,19 +6,18 @@ use std::collections::HashMap;
 
 use semver::Version;
 use sqlx::postgres::{PgPool, PgPoolOptions};
-use tendermint::block;
-use tendermint_rpc::endpoint::broadcast::tx_sync;
-use tendermint_rpc::Client;
 use tonic::metadata::AsciiMetadataValue;
 use tracing::{debug, info, span, trace, warn, Level};
 
-use ibc::core::ics02_client::events::NewBlock;
+use tendermint::block;
+use tendermint_rpc::{endpoint::broadcast::tx_sync, Client};
+
 use ibc::{
     core::{
         ics02_client::{
             client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
             client_state::{AnyClientState, IdentifiedAnyClientState},
-            events::UpdateClient,
+            events::{NewBlock, UpdateClient},
             misbehaviour::MisbehaviourEvidence,
         },
         ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
@@ -34,34 +33,27 @@ use ibc::{
     Height,
 };
 
-use crate::chain::cosmos::CosmosSdkChain;
-use crate::chain::psql_cosmos::batch::send_batched_messages_and_wait_commit;
-use crate::chain::psql_cosmos::query::{
-    query_application_status, query_blocks, query_channel, query_channels,
-    query_client_connections, query_connection, query_connections, query_ibc_data,
-    query_txs_from_ibc_snapshots, query_txs_from_tendermint,
-};
-use crate::chain::psql_cosmos::update::{update_snapshot, PacketId};
-use crate::chain::psql_cosmos::update::{IbcData, IbcSnapshot};
-use crate::denom::DenomTrace;
-use crate::event::monitor::EventBatch;
 use crate::{
     account::Balance,
     chain::{
         client::ClientSettings,
+        cosmos::{query::account::get_or_fetch_account, CosmosSdkChain},
         endpoint::{ChainEndpoint, ChainStatus, HealthCheck},
+        psql_cosmos::{
+            batch::send_batched_messages_and_wait_commit,
+            query::*,
+            update::{update_snapshot, IbcData, IbcSnapshot, PacketId},
+        },
         requests::*,
         tracking::TrackedMsgs,
     },
     config::ChainConfig,
+    denom::DenomTrace,
     error::Error,
-    event::monitor::{EventReceiver, TxMonitorCmd},
+    event::monitor::{EventBatch, EventReceiver, TxMonitorCmd},
     keyring::{KeyEntry, KeyRing},
     light_client::{tendermint::LightClient as TmLightClient, LightClient, Verified},
 };
-
-use super::cosmos::query::account::get_or_fetch_account;
-use super::requests::{QueryBlockRequest, QueryTxRequest};
 
 pub mod batch;
 mod events;
