@@ -1,4 +1,4 @@
-# Error Context
+# Context with Error
 
 One thing to note however is that the `Error` type in `QueryPersonContext`
 is concrete. With that, it would be problematic if we want to define new contexts

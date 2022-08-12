@@ -30,7 +30,7 @@ where
      -> Result<Context::Person, Context::Error>;
 }
 
-trait PersonQuerierContext:
+trait CanQueryPerson:
   PersonContext + HasError + Sized
 {
   type PersonQuerier: PersonQuerier<Self>;
@@ -42,7 +42,7 @@ struct SimpleGreeter;
 
 impl<Context> Greeter<Context> for SimpleGreeter
 where
-  Context: PersonQuerierContext,
+  Context: CanQueryPerson,
 {
   fn greet(&self, context: &Context, person_id: &Context::PersonId)
     -> Result<(), Context::Error>

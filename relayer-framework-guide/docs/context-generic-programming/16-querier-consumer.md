@@ -100,7 +100,7 @@ implement `PersonQuerier<Context>` in order to query a context), and therefore
 it does not implement other context traits like `PersonContext`. What we
 need instead is for concrete contexts like `AppContext` to specify that
 their implementation of `PersonQuerier` is `KvStorePersonQuerier`.
-We can do that by defining a `PersonQuerierContext` trait as follows:
+We can do that by defining a `CanQueryPerson` trait as follows:
 
 ```rust
 # trait NamedPerson {
@@ -132,22 +132,28 @@ where
      -> Result<Context::Person, Context::Error>;
 }
 
-trait PersonQuerierContext:
+trait CanQueryPerson:
   PersonContext + HasError + Sized
 {
   type PersonQuerier: PersonQuerier<Self>;
+
+  fn query_person(&self, person_id: &Self::PersonId)
+    -> Result<Self::Person, Self::Error>
+  {
+    Self::PersonQuerier::query_person(self, person_id)
+  }
 }
 
 struct SimpleGreeter;
 
 impl<Context> Greeter<Context> for SimpleGreeter
 where
-  Context: PersonQuerierContext,
+  Context: CanQueryPerson,
 {
   fn greet(&self, context: &Context, person_id: &Context::PersonId)
     -> Result<(), Context::Error>
   {
-    let person = Context::PersonQuerier::query_person(context, person_id)?;
+    let person = context.query_person(person_id)?;
     println!("Hello, {}", person.name());
     Ok(())
   }
@@ -155,19 +161,19 @@ where
 ```
 
 While the `PersonQuerier` trait is implemented by component types like
-`KvStorePersonQuerier`, the `PersonQuerierContext` trait is implemented by
+`KvStorePersonQuerier`, the `CanQueryPerson` trait is implemented by
 context types like `AppContext`. Compared to the earlier design of
 `QueryPersonContext`, the context is now offering a _component_ for
 querying for a person that will work in the _current context_.
 
-We can see that the `PersonQuerierContext` trait has `PersonContext`
+We can see that the `CanQueryPerson` trait has `PersonContext`
 and `HasError` as its supertraits, indicating that the concrete context
 also needs to implement these two traits first. Due to quirks in Rust,
 the trait also requires the `Sized` supertrait, which is already implemented
 by most types other than `dyn Trait` types, so that we can use `Self` inside
 other generic parameters.
 
-In the body of `PersonQuerierContext`, we define a `PersonQuerier` associated
+In the body of `CanQueryPerson`, we define a `PersonQuerier` associated
 type, which implements the trait `PersonQuerier<Self>`. This looks a little
 self-referential, as the context is providing a type that is referencing back
 to itself. But with the dependency injection mechanism of the traits system,
@@ -175,7 +181,7 @@ this in fact works most of the time as long as there are no actual cyclic
 dependencies.
 
 Now inside the `Greet` implementation for `SimpleGreeter`, we require the
-generic `Context` to implement `PersonQuerierContext`. Inside the `greet`
+generic `Context` to implement `CanQueryPerson`. Inside the `greet`
 method, we then call `Context::PersonQuerier::query_person` and pass in
 the `context` as the first argument to query for the person details.
 

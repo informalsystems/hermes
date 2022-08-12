@@ -7,7 +7,7 @@
   - [Simple Greeter](./context-generic-programming/01-simple-greeter.md)
   - [Comparison with Dynamic Typing](./context-generic-programming/02-dynamic-typing.md)
   - [Generic Context](./context-generic-programming/03-generic-context.md)
-  - [Error Context](./context-generic-programming/04-error-context.md)
+  - [Context with Error](./context-generic-programming/04-error-context.md)
   - [Explicit Associated Type Binding](./context-generic-programming/05-explicit-binding.md)
   - [Generic Person](./context-generic-programming/06-generic-person.md)
   - [Programs as Types](./context-generic-programming/07-programs-as-types.md)

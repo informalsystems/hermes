@@ -70,22 +70,28 @@
 #   }
 # }
 #
-# trait PersonQuerierContext:
+# trait CanQueryPerson:
 #   PersonContext + HasError + Sized
 # {
 #   type PersonQuerier: PersonQuerier<Self>;
+#
+#   fn query_person(&self, person_id: &Self::PersonId)
+#     -> Result<Self::Person, Self::Error>
+#   {
+#     Self::PersonQuerier::query_person(self, person_id)
+#   }
 # }
 #
 # struct SimpleGreeter;
 #
 # impl<Context> Greeter<Context> for SimpleGreeter
 # where
-#   Context: PersonQuerierContext,
+#   Context: CanQueryPerson,
 # {
 #   fn greet(&self, context: &Context, person_id: &Context::PersonId)
 #     -> Result<(), Context::Error>
 #   {
-#     let person = Context::PersonQuerier::query_person(context, person_id)?;
+#     let person = context.query_person(person_id)?;
 #     println!("Hello, {}", person.name());
 #     Ok(())
 #   }
@@ -191,11 +197,11 @@ impl KvStoreContext for BarContext {
   }
 }
 
-impl PersonQuerierContext for FooContext {
+impl CanQueryPerson for FooContext {
   type PersonQuerier = KvStorePersonQuerier;
 }
 
-impl PersonQuerierContext for BarContext {
+impl CanQueryPerson for BarContext {
   type PersonQuerier = KvStorePersonQuerier;
 }
 
