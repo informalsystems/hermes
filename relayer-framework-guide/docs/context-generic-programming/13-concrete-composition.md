@@ -18,7 +18,7 @@ mod app {
       fn is_daytime(&self) -> bool;
     }
 
-    pub trait ErrorContext {
+    pub trait HasError {
       type Error;
     }
 
@@ -27,7 +27,7 @@ mod app {
       type Person: NamedPerson;
     }
 
-    pub trait TimeContext {
+    pub trait HasTime {
       type Time;
 
       fn now(&self) -> Self::Time;
@@ -59,7 +59,7 @@ mod app {
 #      fn is_daytime(&self) -> bool;
 #    }
 #
-#    pub trait ErrorContext {
+#    pub trait HasError {
 #      type Error;
 #    }
 #
@@ -68,20 +68,20 @@ mod app {
 #      type Person: NamedPerson;
 #    }
 #
-#    pub trait TimeContext {
+#    pub trait HasTime {
 #      type Time;
 #
 #      fn now(&self) -> Self::Time;
 #    }
 #
-#    pub trait QueryPersonContext: PersonContext + ErrorContext {
+#    pub trait QueryPersonContext: PersonContext + HasError {
 #      fn query_person(&self, person_id: &Self::PersonId)
 #        -> Result<Self::Person, Self::Error>;
 #    }
 #
 #    pub trait Greeter<Context>
 #    where
-#      Context: PersonContext + ErrorContext,
+#      Context: PersonContext + HasError,
 #    {
 #      fn greet(&self, context: &Context, person_id: &Context::PersonId)
 #        -> Result<(), Context::Error>;
@@ -109,8 +109,8 @@ mod app {
 
   mod daytime_greeter {
     use super::traits::{
-      Greeter, ErrorContext, PersonContext,
-      TimeContext, SimpleTime,
+      Greeter, HasError, PersonContext,
+      HasTime, SimpleTime,
     };
 
     pub struct DaytimeGreeter<InGreeter>(pub InGreeter);
@@ -121,9 +121,9 @@ mod app {
       Greeter<Context> for DaytimeGreeter<InGreeter>
     where
       InGreeter: Greeter<Context>,
-      Context: ErrorContext<Error=Error>,
+      Context: HasError<Error=Error>,
       Context: PersonContext<PersonId=PersonId>,
-      Context: TimeContext<Time=Time>,
+      Context: HasTime<Time=Time>,
       Time: SimpleTime,
       Error: From<ShopClosedError<Time>>,
     {
@@ -165,7 +165,7 @@ mod app {
 #      fn is_daytime(&self) -> bool;
 #    }
 #
-#    pub trait ErrorContext {
+#    pub trait HasError {
 #      type Error;
 #    }
 #
@@ -174,20 +174,20 @@ mod app {
 #      type Person: NamedPerson;
 #    }
 #
-#    pub trait TimeContext {
+#    pub trait HasTime {
 #      type Time;
 #
 #      fn now(&self) -> Self::Time;
 #    }
 #
-#    pub trait QueryPersonContext: PersonContext + ErrorContext {
+#    pub trait QueryPersonContext: PersonContext + HasError {
 #      fn query_person(&self, person_id: &Self::PersonId)
 #        -> Result<Self::Person, Self::Error>;
 #    }
 #
 #    pub trait Greeter<Context>
 #    where
-#      Context: PersonContext + ErrorContext,
+#      Context: PersonContext + HasError,
 #    {
 #      fn greet(&self, context: &Context, person_id: &Context::PersonId)
 #        -> Result<(), Context::Error>;
@@ -232,7 +232,7 @@ mod app {
       // ...
     }
 
-    impl ErrorContext for AppContext {
+    impl HasError for AppContext {
       type Error = AppError;
     }
 
@@ -241,7 +241,7 @@ mod app {
       type Person = BasicPerson;
     }
 
-    impl TimeContext for AppContext {
+    impl HasTime for AppContext {
       type Time = DummyTime;
 
       fn now(&self) -> DummyTime {
@@ -280,7 +280,7 @@ mod app {
 
 Compared to before, we define a `DummyTime` struct that
 mocks the current time with either day time or night time. We then
-implement `TimeContext` for `AppContext`, with `DummyTime` being the
+implement `HasTime` for `AppContext`, with `DummyTime` being the
 `Time` type. We also add `ShopClosedError<DummyTime>` as a variant to
 `AppError` and define a `From` instance for it.
 
@@ -313,7 +313,7 @@ mod app {
 #      fn is_daytime(&self) -> bool;
 #    }
 #
-#    pub trait ErrorContext {
+#    pub trait HasError {
 #      type Error;
 #    }
 #
@@ -322,20 +322,20 @@ mod app {
 #      type Person: NamedPerson;
 #    }
 #
-#    pub trait TimeContext {
+#    pub trait HasTime {
 #      type Time;
 #
 #      fn now(&self) -> Self::Time;
 #    }
 #
-#    pub trait QueryPersonContext: PersonContext + ErrorContext {
+#    pub trait QueryPersonContext: PersonContext + HasError {
 #      fn query_person(&self, person_id: &Self::PersonId)
 #        -> Result<Self::Person, Self::Error>;
 #    }
 #
 #    pub trait Greeter<Context>
 #    where
-#      Context: PersonContext + ErrorContext,
+#      Context: PersonContext + HasError,
 #    {
 #      fn greet(&self, context: &Context, person_id: &Context::PersonId)
 #        -> Result<(), Context::Error>;
@@ -365,8 +365,8 @@ mod app {
   mod daytime_greeter {
     // ...
 #    use super::traits::{
-#      Greeter, ErrorContext, PersonContext,
-#      TimeContext, SimpleTime,
+#      Greeter, HasError, PersonContext,
+#      HasTime, SimpleTime,
 #    };
 #
 #    pub struct DaytimeGreeter<InGreeter>(pub InGreeter);
@@ -377,9 +377,9 @@ mod app {
 #      Greeter<Context> for DaytimeGreeter<InGreeter>
 #    where
 #      InGreeter: Greeter<Context>,
-#      Context: ErrorContext<Error=Error>,
+#      Context: HasError<Error=Error>,
 #      Context: PersonContext<PersonId=PersonId>,
-#      Context: TimeContext<Time=Time>,
+#      Context: HasTime<Time=Time>,
 #      Time: SimpleTime,
 #      Error: From<ShopClosedError<Time>>,
 #    {
@@ -426,7 +426,7 @@ mod app {
 #      // ...
 #    }
 #
-#    impl ErrorContext for AppContext {
+#    impl HasError for AppContext {
 #      type Error = AppError;
 #    }
 #
@@ -435,7 +435,7 @@ mod app {
 #      type Person = BasicPerson;
 #    }
 #
-#    impl TimeContext for AppContext {
+#    impl HasTime for AppContext {
 #      type Time = DummyTime;
 #
 #      fn now(&self) -> DummyTime {

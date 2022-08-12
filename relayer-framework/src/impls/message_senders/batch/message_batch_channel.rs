@@ -82,7 +82,7 @@ where
 //     Target: ChainTarget<Relay>,
 //     ResultSender: Async,
 //     BatchReceiver: Async,
-//     Relay: HasChannelContext<ChannelContext = Channel>,
+//     Relay: HasChannel<ChannelContext = Channel>,
 //     Channel: OnceChannelContext<
 //         Result<Vec<Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>>, Relay::Error>,
 //         Sender = ResultSender,

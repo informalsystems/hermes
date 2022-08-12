@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
 use crate::std_prelude::*;
-use crate::traits::contexts::ibc_event::IbcEventContext;
+use crate::traits::contexts::ibc_event::HasIbcEvents;
 use crate::traits::contexts::relay::RelayContext;
-use crate::traits::ibc_message_sender::{IbcMessageSenderContext, IbcMessageSenderExt};
+use crate::traits::ibc_message_sender::{HasIbcMessageSender, IbcMessageSenderExt};
 use crate::traits::messages::ack_packet::AckPacketMessageBuilder;
 use crate::traits::packet_relayers::ack_packet::AckPacketRelayer;
 use crate::traits::target::SourceTarget;
@@ -14,10 +14,10 @@ pub struct BaseAckPacketRelayer;
 #[async_trait]
 impl<Context, Error> AckPacketRelayer<Context> for BaseAckPacketRelayer
 where
-    Context::DstChain: IbcEventContext<Context::SrcChain>,
+    Context::DstChain: HasIbcEvents<Context::SrcChain>,
     Context: RelayContext<Error = Error>,
     Context: AckPacketMessageBuilder<Context>,
-    Context: IbcMessageSenderContext<SourceTarget>,
+    Context: HasIbcMessageSender<SourceTarget>,
 {
     async fn relay_ack_packet(
         &self,

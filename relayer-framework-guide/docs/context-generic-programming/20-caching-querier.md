@@ -4,7 +4,7 @@
 # use std::hash::Hash;
 # use std::collections::HashMap;
 #
-# trait ErrorContext {
+# trait HasError {
 #   type Error;
 # }
 #
@@ -15,7 +15,7 @@
 #
 trait PersonQuerier<Context>
 where
-  Context: PersonContext + ErrorContext,
+  Context: PersonContext + HasError,
 {
    fn query_person(context: &Context, person_id: &Context::PersonId)
      -> Result<Context::Person, Context::Error>;
@@ -32,7 +32,7 @@ impl<Context, InQuerier> PersonQuerier<Context>
 where
   InQuerier: PersonQuerier<Context>,
   Context: PersonCacheContext,
-  Context: ErrorContext,
+  Context: HasError,
   Context::PersonId: Hash + Eq,
   Context::Person: Clone,
 {

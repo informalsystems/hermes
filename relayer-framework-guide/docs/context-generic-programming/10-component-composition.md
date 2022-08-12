@@ -10,7 +10,7 @@ component that _wraps_ around the original `SimpleGreeter`.
 This new `DaytimeGreeter` component would need to know how to
 get the current time of the system, as well as how to tell whether
 a given time value is at daytime. Following the context pattern we
-learned, we will also define a `TimeContext` trait for getting the time.
+learned, we will also define a `HasTime` trait for getting the time.
 
 The full implementation is as follows:
 
@@ -21,7 +21,7 @@ The full implementation is as follows:
 #   fn name(&self) -> &str;
 # }
 #
-# trait ErrorContext {
+# trait HasError {
 #   type Error;
 # }
 #
@@ -34,7 +34,7 @@ trait SimpleTime {
   fn is_daytime(&self) -> bool;
 }
 
-trait TimeContext {
+trait HasTime {
   type Time;
 
   fn now(&self) -> Self::Time;
@@ -42,7 +42,7 @@ trait TimeContext {
 
 trait Greeter<Context>
 where
-  Context: PersonContext + ErrorContext,
+  Context: PersonContext + HasError,
 {
   fn greet(&self, context: &Context, person_id: &Context::PersonId)
     -> Result<(), Context::Error>;
@@ -53,7 +53,7 @@ struct DaytimeGreeter<InGreeter>(InGreeter);
 impl<Context, InGreeter> Greeter<Context> for DaytimeGreeter<InGreeter>
 where
   InGreeter: Greeter<Context>,
-  Context: TimeContext + PersonContext + ErrorContext,
+  Context: HasTime + PersonContext + HasError,
   Context::Time: SimpleTime,
 {
   fn greet(&self, context: &Context, person_id: &Context::PersonId)
@@ -72,7 +72,7 @@ where
 
 For demonstration purposes, we first define a `SimpleTime` trait that provides an
 `is_daytime` method to tell whether the current time value is considered daytime.
-Following that, we define a `TimeContext` trait that provides a `now` method
+Following that, we define a `HasTime` trait that provides a `now` method
 to fetch the current time from the context. Notice that the associated type
 `Time` does _not_ implement `SimpleTime`. This is so that we can learn how
 to inject the `SimpleTime` constraint as an _indirect dependency_ using the
@@ -84,14 +84,14 @@ implementation of `Greeter<Context>` for `DaytimeGreeter<InGreeter>`.
 In the trait bounds, we require the inner greeter `InGreeter` to also
 implement `Greeter<Context>`, since the core logic is implemented over there.
 
-Aside from `PersonContext` and `ErrorContext`, we also require `Context`
-to implement `TimeContext` for `DaytimeGreeter` to fetch the current time.
+Aside from `PersonContext` and `HasError`, we also require `Context`
+to implement `HasTime` for `DaytimeGreeter` to fetch the current time.
 Other than that, we also explicitly require that the associated type
 `Context::Time` implements `SimpleTime`.
 
 By specifying `SimpleTime` as an explicit dependency, we relax the requirement
-of how the `TimeContext` trait can be used by other components. So if
+of how the `HasTime` trait can be used by other components. So if
 `SimpleTime` is only ever used by `DaytimeGreeter`, and if an application
 does not need `DaytimeGreeter`, then a concrete context can skip implementing
-`SimpleTime` for its time type, even if the trait `TimeContext` is used by
+`SimpleTime` for its time type, even if the trait `HasTime` is used by
 other components.

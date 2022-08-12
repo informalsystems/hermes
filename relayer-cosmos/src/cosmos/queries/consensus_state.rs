@@ -7,13 +7,13 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryConsensusStateRequest, QueryHeight};
 use ibc_relayer_framework::traits::core::Async;
 use ibc_relayer_framework::traits::queries::consensus_state::{
-    ConsensusStateContext, ConsensusStateQuerier,
+    ConsensusStateQuerier, HasConsensusState,
 };
 
 use crate::cosmos::context::chain::CosmosChainContext;
 use crate::cosmos::error::Error;
 
-impl<Chain, Counterparty> ConsensusStateContext<CosmosChainContext<Counterparty>>
+impl<Chain, Counterparty> HasConsensusState<CosmosChainContext<Counterparty>>
     for CosmosChainContext<Chain>
 where
     Chain: Async,

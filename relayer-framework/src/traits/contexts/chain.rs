@@ -1,8 +1,8 @@
-use crate::traits::contexts::runtime::RuntimeContext;
+use crate::traits::contexts::runtime::HasRuntime;
 use crate::traits::core::Async;
 use crate::traits::message::{IbcMessage, Message};
 
-pub trait ChainContext: RuntimeContext {
+pub trait ChainContext: HasRuntime {
     type Height: Async;
 
     type Timestamp: Async;

@@ -1,7 +1,7 @@
-use crate::traits::contexts::error::ErrorContext;
+use crate::traits::contexts::error::HasError;
 
-pub trait RuntimeContext: ErrorContext {
-    type Runtime: ErrorContext<Error = Self::Error>;
+pub trait HasRuntime: HasError {
+    type Runtime: HasError<Error = Self::Error>;
 
     fn runtime(&self) -> &Self::Runtime;
 }

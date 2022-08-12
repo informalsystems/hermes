@@ -9,7 +9,7 @@
 #   fn name(&self) -> &str;
 # }
 #
-# trait ErrorContext {
+# trait HasError {
 #   type Error;
 # }
 #
@@ -20,13 +20,13 @@
 #
 # trait Greeter<Context>
 # where
-#   Context: PersonContext + ErrorContext,
+#   Context: PersonContext + HasError,
 # {
 #   fn greet(&self, context: &Context, person_id: &Context::PersonId)
 #     -> Result<(), Context::Error>;
 # }
 #
-# trait KvStore: ErrorContext {
+# trait KvStore: HasError {
 #   fn get(&self, key: &str) -> Result<Vec<u8>, Self::Error>;
 # }
 #
@@ -43,7 +43,7 @@
 # where
 #   Context: KvStoreContext<Store=Store>,
 #   Context: PersonContext<Person=Person, PersonId=PersonId>,
-#   Context: ErrorContext<Error=Error>,
+#   Context: HasError<Error=Error>,
 #   Store: KvStore<Error=StoreError>,
 #   PersonId: Display,
 #   Person: TryFrom<Vec<u8>, Error=ParseError>,
@@ -65,7 +65,7 @@
 #
 # trait PersonQuerier<Context>
 # where
-#   Context: PersonContext + ErrorContext,
+#   Context: PersonContext + HasError,
 # {
 #    fn query_person(context: &Context, person_id: &Context::PersonId)
 #      -> Result<Context::Person, Context::Error>;
@@ -75,7 +75,7 @@ struct SimpleGreeter;
 
 impl<Context> Greeter<Context> for SimpleGreeter
 where
-  Context: PersonContext + ErrorContext,
+  Context: PersonContext + HasError,
   KvStorePersonQuerier: PersonQuerier<Context>,
 {
   fn greet(&self, context: &Context, person_id: &Context::PersonId)
@@ -107,7 +107,7 @@ We can do that by defining a `PersonQuerierContext` trait as follows:
 #   fn name(&self) -> &str;
 # }
 #
-# trait ErrorContext {
+# trait HasError {
 #   type Error;
 # }
 #
@@ -118,7 +118,7 @@ We can do that by defining a `PersonQuerierContext` trait as follows:
 #
 # trait Greeter<Context>
 # where
-#   Context: PersonContext + ErrorContext,
+#   Context: PersonContext + HasError,
 # {
 #   fn greet(&self, context: &Context, person_id: &Context::PersonId)
 #     -> Result<(), Context::Error>;
@@ -126,14 +126,14 @@ We can do that by defining a `PersonQuerierContext` trait as follows:
 #
 trait PersonQuerier<Context>
 where
-  Context: PersonContext + ErrorContext,
+  Context: PersonContext + HasError,
 {
    fn query_person(context: &Context, person_id: &Context::PersonId)
      -> Result<Context::Person, Context::Error>;
 }
 
 trait PersonQuerierContext:
-  PersonContext + ErrorContext + Sized
+  PersonContext + HasError + Sized
 {
   type PersonQuerier: PersonQuerier<Self>;
 }
@@ -161,7 +161,7 @@ context types like `AppContext`. Compared to the earlier design of
 querying for a person that will work in the _current context_.
 
 We can see that the `PersonQuerierContext` trait has `PersonContext`
-and `ErrorContext` as its supertraits, indicating that the concrete context
+and `HasError` as its supertraits, indicating that the concrete context
 also needs to implement these two traits first. Due to quirks in Rust,
 the trait also requires the `Sized` supertrait, which is already implemented
 by most types other than `dyn Trait` types, so that we can use `Self` inside

@@ -8,8 +8,8 @@ use crate::traits::contexts::chain::IbcChainContext;
 use crate::traits::contexts::relay::RelayContext;
 use crate::traits::core::Async;
 use crate::traits::messages::update_client::UpdateClientMessageBuilder;
-use crate::traits::queries::status::{ChainStatus, ChainStatusQuerierContext};
-use crate::traits::runtime::sleep::SleepContext;
+use crate::traits::queries::status::{CanQueryChainStatus, ChainStatus};
+use crate::traits::runtime::sleep::CanSleep;
 use crate::traits::target::ChainTarget;
 use crate::types::aliases::IbcMessage;
 
@@ -28,8 +28,8 @@ where
     InUpdateClient: UpdateClientMessageBuilder<Relay, Target>,
     CounterpartyChain: IbcChainContext<TargetChain, Height = Height, Error = Error>,
     TargetChain: IbcChainContext<CounterpartyChain>,
-    CounterpartyChain: ChainStatusQuerierContext,
-    Runtime: SleepContext,
+    CounterpartyChain: CanQueryChainStatus,
+    Runtime: CanSleep,
     Height: Ord + Async,
 {
     async fn build_update_client_messages(

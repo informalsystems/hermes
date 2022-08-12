@@ -8,7 +8,7 @@ concrete context that satisfies the traits:
 #   fn name(&self) -> &str;
 # }
 #
-# trait ErrorContext {
+# trait HasError {
 #   type Error;
 # }
 #
@@ -17,14 +17,14 @@ concrete context that satisfies the traits:
 #   type Person: NamedPerson;
 # }
 #
-# trait QueryPersonContext: PersonContext + ErrorContext {
+# trait QueryPersonContext: PersonContext + HasError {
 #   fn query_person(&self, person_id: &Self::PersonId)
 #     -> Result<Self::Person, Self::Error>;
 # }
 #
 # trait Greeter<Context>
 # where
-#   Context: PersonContext + ErrorContext,
+#   Context: PersonContext + HasError,
 # {
 #   fn greet(&self, context: &Context, person_id: &Context::PersonId)
 #     -> Result<(), Context::Error>;
@@ -67,7 +67,7 @@ enum AppError {
   // ...
 }
 
-impl ErrorContext for AppContext {
+impl HasError for AppContext {
   type Error = AppError;
 }
 
@@ -100,7 +100,7 @@ type to represent database errors. We also define an `AppError`
 enum to represent all application errors, with one of them being
 `DbError`.
 
-We implement `ErrorContext` for `AppContext`, with `AppError` as
+We implement `HasError` for `AppContext`, with `AppError` as
 the `Error` type. We also implement `PersonContext` for `AppContext`,
 with the `PersonId` associated type being `String` and the `Person`
 associated type being `BasicPerson`. We also implement `QueryPersonContext`

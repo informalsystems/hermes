@@ -4,7 +4,7 @@ use crate::std_prelude::*;
 use crate::traits::contexts::chain::{ChainContext, IbcChainContext};
 use crate::traits::core::Async;
 
-pub trait ConsensusStateContext<Counterparty>: IbcChainContext<Counterparty>
+pub trait HasConsensusState<Counterparty>: IbcChainContext<Counterparty>
 where
     Counterparty: ChainContext,
 {
@@ -14,7 +14,7 @@ where
 #[async_trait]
 pub trait ConsensusStateQuerier<Counterparty>: IbcChainContext<Counterparty>
 where
-    Counterparty: ConsensusStateContext<Self>,
+    Counterparty: HasConsensusState<Self>,
 {
     async fn query_consensus_state(
         &self,

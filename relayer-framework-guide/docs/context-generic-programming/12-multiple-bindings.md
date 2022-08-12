@@ -14,7 +14,7 @@ can use the explicit associated type bindings we learned about earlier:
 #   fn name(&self) -> &str;
 # }
 #
-# trait ErrorContext {
+# trait HasError {
 #   type Error;
 # }
 #
@@ -29,7 +29,7 @@ can use the explicit associated type bindings we learned about earlier:
 #   fn duration_since(&self, other: &Self) -> Duration;
 # }
 #
-# trait TimeContext {
+# trait HasTime {
 #   type Time;
 #
 #   fn now(&self) -> Self::Time;
@@ -37,7 +37,7 @@ can use the explicit associated type bindings we learned about earlier:
 #
 # trait Greeter<Context>
 # where
-#   Context: PersonContext + ErrorContext,
+#   Context: PersonContext + HasError,
 # {
 #   fn greet(&self, context: &Context, person_id: &Context::PersonId)
 #     -> Result<(), Context::Error>;
@@ -51,9 +51,9 @@ impl<Context, InGreeter, Time, Error, PersonId>
   Greeter<Context> for DaytimeGreeter<InGreeter>
 where
   InGreeter: Greeter<Context>,
-  Context: ErrorContext<Error=Error>,
+  Context: HasError<Error=Error>,
   Context: PersonContext<PersonId=PersonId>,
-  Context: TimeContext<Time=Time>,
+  Context: HasTime<Time=Time>,
   Time: SimpleTime,
   Error: From<ShopClosedError<Time>>,
 {
@@ -72,7 +72,7 @@ where
 
 In our new `Greeter` implementation, we introduce the generic parameters
 `Time`, `Error`, and `PersonId`. We then bind the types to the associated
-types of the context traits, such as `ErrorContext<Error=Error>`. With the
+types of the context traits, such as `HasError<Error=Error>`. With the
 bindings in place we can have simpler trait bounds like `Time: SimpleTime`
 to be specified in place of the more verbose `Context::Time: SimpleTime`.
 
@@ -100,12 +100,12 @@ function build_daytime_greeter_class(deps) {
     }
 
     greet(context, person_id) {
-      const now = deps.TimeContext.prototype.now.call(context)
-      if deps.TimeContext.Time.prototype.is_daytime.call(now) {
+      const now = deps.HasTime.prototype.now.call(context)
+      if deps.HasTime.Time.prototype.is_daytime.call(now) {
         return deps.InGreeter.prototype.greet.call(
           this.in_greeter, context, person_id)
       } else {
-        throw deps.ErrorContext.Error.from(
+        throw deps.HasError.Error.from(
           new ShopeClosedError({ time: now }))
       }
     }
@@ -116,7 +116,7 @@ function build_daytime_greeter_class(deps) {
 ```javascript
 const DaytimeGreeter = build_daytime_greeter_class({
   InGreeter: ...,
-  ErrorContext: {
+  HasError: {
     Error: {
       from: function(err) { ... }
     },
@@ -125,7 +125,7 @@ const DaytimeGreeter = build_daytime_greeter_class({
     PersonId: ...,
     Person: ...,
   },
-  TimeContext: {
+  HasTime: {
     Time: {
       prototype: {
         is_daytime: function() { ... }
@@ -138,13 +138,13 @@ const DaytimeGreeter = build_daytime_greeter_class({
 ```javascript
 function build_daytime_greeter_class(deps) {
   const {
-    TimeContext,
-    ErrorContext,
+    HasTime,
+    HasError,
     InGreeter,
   } = deps
 
-  const { Time } = TimeContext
-  const { Error } = ErrorContext
+  const { Time } = HasTime
+  const { Error } = HasError
 
   return Class {
     constructor(in_greeter) {
@@ -152,7 +152,7 @@ function build_daytime_greeter_class(deps) {
     }
 
     greet(context, person_id) {
-      const now = TimeContext.prototype.now.call(context)
+      const now = HasTime.prototype.now.call(context)
 
       if Time.prototype.is_daytime.call(now) {
         return InGreeter.prototype.greet.call(

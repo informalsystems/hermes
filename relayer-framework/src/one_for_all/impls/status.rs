@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 
 use crate::one_for_all::impls::chain::OfaChainContext;
-use crate::one_for_all::impls::error::OfaErrorContext;
+use crate::one_for_all::impls::error::OfaHasError;
 use crate::one_for_all::traits::chain::OfaChain;
 use crate::std_prelude::*;
 use crate::traits::queries::status::{
-    ChainStatus, ChainStatusContext, ChainStatusQuerier, ChainStatusQuerierContext,
+    CanQueryChainStatus, ChainStatus, ChainStatusContext, ChainStatusQuerier,
 };
 
 pub struct OfaChainStatusQuerier;
@@ -18,7 +18,7 @@ impl<Chain: OfaChain> ChainStatusContext for OfaChainContext<Chain> {
     type ChainStatus = OfaChainStatus<Chain>;
 }
 
-impl<Chain: OfaChain> ChainStatusQuerierContext for OfaChainContext<Chain> {
+impl<Chain: OfaChain> CanQueryChainStatus for OfaChainContext<Chain> {
     type ChainStatusQuerier = OfaChainStatusQuerier;
 }
 
@@ -36,7 +36,7 @@ impl<Chain: OfaChain> ChainStatus<OfaChainContext<Chain>> for OfaChainStatus<Cha
 impl<Chain: OfaChain> ChainStatusQuerier<OfaChainContext<Chain>> for OfaChainStatusQuerier {
     async fn query_chain_status(
         context: &OfaChainContext<Chain>,
-    ) -> Result<OfaChainStatus<Chain>, OfaErrorContext<Chain::Error>> {
+    ) -> Result<OfaChainStatus<Chain>, OfaHasError<Chain::Error>> {
         let status = context.chain.query_chain_status().await?;
 
         Ok(OfaChainStatus { status })

@@ -3,7 +3,7 @@
 In our earlier implementation of `DaytimeGreeter`, the greeter simply prints
 out that the shop has closed, and then returns successfully without calling
 the inner greeter. But what if we want `DaytimeGreeter` to return an error
-during night time? Since the associated type `Error` in `ErrorContext`
+during night time? Since the associated type `Error` in `HasError`
 is abstract, there is no obvious way we can construct an error value of
 type `Error`.
 
@@ -21,7 +21,7 @@ We can do this by defining a custom `ShopClosedError` struct and require that
 #   fn name(&self) -> &str;
 # }
 #
-# trait ErrorContext {
+# trait HasError {
 #   type Error;
 # }
 #
@@ -36,7 +36,7 @@ We can do this by defining a custom `ShopClosedError` struct and require that
 #   fn duration_since(&self, other: &Self) -> Duration;
 # }
 #
-# trait TimeContext {
+# trait HasTime {
 #   type Time;
 #
 #   fn now(&self) -> Self::Time;
@@ -44,7 +44,7 @@ We can do this by defining a custom `ShopClosedError` struct and require that
 #
 # trait Greeter<Context>
 # where
-#   Context: PersonContext + ErrorContext,
+#   Context: PersonContext + HasError,
 # {
 #   fn greet(&self, context: &Context, person_id: &Context::PersonId)
 #     -> Result<(), Context::Error>;
@@ -57,7 +57,7 @@ struct DaytimeGreeter<InGreeter>(InGreeter);
 impl<Context, InGreeter> Greeter<Context> for DaytimeGreeter<InGreeter>
 where
   InGreeter: Greeter<Context>,
-  Context: TimeContext + PersonContext + ErrorContext,
+  Context: HasTime + PersonContext + HasError,
   Context::Time: SimpleTime,
   Context::Error: From<ShopClosedError<Context::Time>>,
 {

@@ -1,20 +1,20 @@
 use async_trait::async_trait;
 use core::time::Duration;
-use ibc_relayer_framework::traits::contexts::error::ErrorContext;
-use ibc_relayer_framework::traits::runtime::sleep::SleepContext;
+use ibc_relayer_framework::traits::contexts::error::HasError;
+use ibc_relayer_framework::traits::runtime::sleep::CanSleep;
 use tokio::time::sleep;
 
 use crate::cosmos::error::Error;
 
-pub struct CosmosRuntimeContext;
+pub struct CosmosRuntime;
 
 #[async_trait]
-impl SleepContext for CosmosRuntimeContext {
+impl CanSleep for CosmosRuntime {
     async fn sleep(&self, duration: Duration) {
         sleep(duration).await;
     }
 }
 
-impl ErrorContext for CosmosRuntimeContext {
+impl HasError for CosmosRuntime {
     type Error = Error;
 }

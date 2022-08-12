@@ -3,7 +3,7 @@
 The `app_greeter` function demonstrates a form of _dependency injection_
 done at compile time. This is because for any code to use a type implementing
 `Greeter<Context>`, they only need to know that `Context` implements
-`ErrorContext` and `PersonContext`. But to make `SimpleGreeter` implement
+`HasError` and `PersonContext`. But to make `SimpleGreeter` implement
 `Greeter<Context>`, it also needs `Context` to implement `QueryPersonContext`.
 
 When we return `SimpleGreeter` inside `app_greeter`, the Rust compiler

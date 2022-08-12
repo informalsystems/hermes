@@ -1,4 +1,4 @@
-use crate::all_for_one::traits::relay_context::AfoRelayContext;
+use crate::all_for_one::traits::relay::AfoRelayContext;
 
 use crate::impls::packet_relayers::base_ack_packet::BaseAckPacketRelayer;
 use crate::impls::packet_relayers::base_receive_packet::BaseReceivePacketRelayer;

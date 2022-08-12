@@ -8,7 +8,7 @@
 #   fn name(&self) -> &str;
 # }
 #
-# trait ErrorContext {
+# trait HasError {
 #   type Error;
 # }
 #
@@ -19,7 +19,7 @@
 #
 # trait Greeter<Context>
 # where
-#   Context: PersonContext + ErrorContext,
+#   Context: PersonContext + HasError,
 # {
 #   fn greet(&self, context: &Context, person_id: &Context::PersonId)
 #     -> Result<(), Context::Error>;
@@ -27,13 +27,13 @@
 #
 # trait PersonQuerier<Context>
 # where
-#   Context: PersonContext + ErrorContext,
+#   Context: PersonContext + HasError,
 # {
 #    fn query_person(context: &Context, person_id: &Context::PersonId)
 #      -> Result<Context::Person, Context::Error>;
 # }
 #
-# trait KvStore: ErrorContext {
+# trait KvStore: HasError {
 #   fn get(&self, key: &str) -> Result<Vec<u8>, Self::Error>;
 # }
 #
@@ -50,7 +50,7 @@
 # where
 #   Context: KvStoreContext<Store=Store>,
 #   Context: PersonContext<Person=Person, PersonId=PersonId>,
-#   Context: ErrorContext<Error=Error>,
+#   Context: HasError<Error=Error>,
 #   Store: KvStore<Error=StoreError>,
 #   PersonId: Display,
 #   Person: TryFrom<Vec<u8>, Error=ParseError>,
@@ -71,7 +71,7 @@
 # }
 #
 # trait PersonQuerierContext:
-#   PersonContext + ErrorContext + Sized
+#   PersonContext + HasError + Sized
 # {
 #   type PersonQuerier: PersonQuerier<Self>;
 # }
@@ -106,7 +106,7 @@
 #
 # struct ParseError { /* ... */ }
 #
-# impl ErrorContext for FsKvStore {
+# impl HasError for FsKvStore {
 #   type Error = KvStoreError;
 # }
 #
@@ -157,11 +157,11 @@ struct BarContext {
   // ...
 }
 
-impl ErrorContext for FooContext {
+impl HasError for FooContext {
   type Error = AppError;
 }
 
-impl ErrorContext for BarContext {
+impl HasError for BarContext {
   type Error = AppError;
 }
 

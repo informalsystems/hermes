@@ -5,7 +5,7 @@ use crate::traits::contexts::chain::IbcChainContext;
 use crate::traits::contexts::relay::RelayContext;
 use crate::traits::core::Async;
 use crate::traits::ibc_message_sender::IbcMessageSender;
-use crate::traits::message_sender::{MessageSender, MessageSenderContext};
+use crate::traits::message_sender::{HasMessageSender, MessageSender};
 use crate::traits::target::ChainTarget;
 
 pub struct SendIbcMessagesToChain;
@@ -18,7 +18,7 @@ where
     Event: Async,
     Context: RelayContext<Error = Error>,
     Target: ChainTarget<Context, TargetChain = TargetChain>,
-    TargetChain: MessageSenderContext,
+    TargetChain: HasMessageSender,
     TargetChain: IbcChainContext<
         Target::CounterpartyChain,
         Message = Message,

@@ -9,9 +9,9 @@ use crate::traits::contexts::chain::IbcChainContext;
 use crate::traits::contexts::relay::RelayContext;
 use crate::traits::ibc_message_sender::IbcMessageSender;
 use crate::traits::message::Message as ChainMessage;
-use crate::traits::runtime::sleep::SleepContext;
-use crate::traits::runtime::spawn::SpawnContext;
-use crate::traits::runtime::time::{Time, TimeContext};
+use crate::traits::runtime::sleep::CanSleep;
+use crate::traits::runtime::spawn::CanSpawn;
+use crate::traits::runtime::time::{HasTime, Time};
 use crate::traits::target::ChainTarget;
 
 mod message_batch;
@@ -93,10 +93,10 @@ impl<Channel, InMessageSender> BatchedMessageSender<Channel, InMessageSender> {
         receiver: Channel::Receiver,
     ) where
         Relay::Error: BatchError,
-        Relay: TimeContext,
+        Relay: HasTime,
         Relay: RelayContext,
-        Relay: SleepContext,
-        Relay: SpawnContext,
+        Relay: CanSleep,
+        Relay: CanSpawn,
         Target: ChainTarget<Relay>,
         InMessageSender: IbcMessageSender<Relay, Target>,
         Batch: MessageBatch<Relay, Target>,
@@ -130,9 +130,9 @@ async fn run_loop<Relay, Target, Batch, Channel, InMessageSender>(
     receiver: Channel::Receiver,
 ) where
     Relay::Error: BatchError,
-    Relay: TimeContext,
+    Relay: HasTime,
     Relay: RelayContext,
-    Relay: SleepContext,
+    Relay: CanSleep,
     Target: ChainTarget<Relay>,
     InMessageSender: IbcMessageSender<Relay, Target>,
     Batch: MessageBatch<Relay, Target>,
@@ -184,7 +184,7 @@ async fn process_message_batches<Relay, Target, Batch, InMessageSender>(
 ) -> VecDeque<Batch>
 where
     Relay::Error: BatchError,
-    Relay: TimeContext,
+    Relay: HasTime,
     Relay: RelayContext,
     Target: ChainTarget<Relay>,
     InMessageSender: IbcMessageSender<Relay, Target>,

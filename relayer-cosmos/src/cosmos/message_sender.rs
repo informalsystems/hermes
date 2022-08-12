@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_framework::traits::message::Message;
-use ibc_relayer_framework::traits::message_sender::{MessageSender, MessageSenderContext};
+use ibc_relayer_framework::traits::message_sender::{HasMessageSender, MessageSender};
 use tendermint::abci::responses::Event;
 
 use crate::cosmos::context::chain::CosmosChainContext;
@@ -11,7 +11,7 @@ use crate::cosmos::message::CosmosIbcMessage;
 
 pub struct CosmosBaseMessageSender;
 
-impl<Chain> MessageSenderContext for CosmosChainContext<Chain>
+impl<Chain> HasMessageSender for CosmosChainContext<Chain>
 where
     Chain: ChainHandle,
 {

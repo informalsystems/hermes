@@ -8,7 +8,7 @@ use crate::traits::target::ChainTarget;
 use crate::types::aliases::{IbcEvent, IbcMessage};
 
 #[async_trait]
-pub trait IbcMessageSenderContext<Target>: RelayContext
+pub trait HasIbcMessageSender<Target>: RelayContext
 where
     Target: ChainTarget<Self>,
 {
@@ -62,7 +62,7 @@ where
 #[async_trait]
 impl<Context, Target, TargetChain, Event, Message> IbcMessageSenderExt<Context, Target> for Context
 where
-    Context: IbcMessageSenderContext<Target>,
+    Context: HasIbcMessageSender<Target>,
     Target: ChainTarget<Context, TargetChain = TargetChain>,
     TargetChain: IbcChainContext<Target::CounterpartyChain, IbcEvent = Event, IbcMessage = Message>,
     Message: Async,

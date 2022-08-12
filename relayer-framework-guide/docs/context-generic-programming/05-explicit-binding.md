@@ -14,11 +14,11 @@ type parameter and bind to the `Error` associated type as follows:
 #   name: String,
 # }
 #
-# trait ErrorContext {
+# trait HasError {
 #   type Error;
 # }
 #
-# trait QueryPersonContext: ErrorContext {
+# trait QueryPersonContext: HasError {
 #   fn query_person(&self, person_id: &PersonId) ->  Result<Person, Self::Error>;
 # }
 #
@@ -42,7 +42,7 @@ binding, we are able to have `greet` return `Result<(), Error>` instead of
 There are sometimes benefits when we bind the associated types to an explicit
 generic type parameter. For one, the inferred type shown in IDEs like
 Rust Analyzer would be simpler, as they are shown as `Error` instead of
-the fully qualified syntax `<Context as ErrorContext>::Error`.
+the fully qualified syntax `<Context as HasError>::Error`.
 As we will see later, explicit type parameters also help us by providing a
 way to specify the additional trait bounds of the associated types.
 

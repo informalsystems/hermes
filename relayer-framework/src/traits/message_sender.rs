@@ -5,7 +5,7 @@ use crate::traits::contexts::chain::ChainContext;
 use crate::traits::core::Async;
 use crate::types::aliases::{Event, Message};
 
-pub trait MessageSenderContext: ChainContext {
+pub trait HasMessageSender: ChainContext {
     type MessageSender: MessageSender<Self>;
 }
 

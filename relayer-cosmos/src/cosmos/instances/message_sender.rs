@@ -1,9 +1,7 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_framework::impls::message_senders::chain_sender::SendIbcMessagesToChain;
 use ibc_relayer_framework::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
-use ibc_relayer_framework::traits::ibc_message_sender::{
-    IbcMessageSender, IbcMessageSenderContext,
-};
+use ibc_relayer_framework::traits::ibc_message_sender::{HasIbcMessageSender, IbcMessageSender};
 use ibc_relayer_framework::traits::message_sender::MessageSender;
 use ibc_relayer_framework::traits::target::{DestinationTarget, SourceTarget};
 
@@ -56,7 +54,7 @@ where
 
 pub fn source_message_sender_context<SrcChain, DstChain>(
     handler: &CosmosRelayContext<SrcChain, DstChain>,
-) -> &impl IbcMessageSenderContext<SourceTarget>
+) -> &impl HasIbcMessageSender<SourceTarget>
 where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
@@ -66,7 +64,7 @@ where
 
 pub fn destination_message_sender_context<SrcChain, DstChain>(
     handler: &CosmosRelayContext<SrcChain, DstChain>,
-) -> &impl IbcMessageSenderContext<DestinationTarget>
+) -> &impl HasIbcMessageSender<DestinationTarget>
 where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,

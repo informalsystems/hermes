@@ -9,14 +9,14 @@ use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::cosmos::types::events::channel::extract_packet_and_write_ack_from_tx;
 use ibc_relayer::keyring::KeyEntry;
 use ibc_relayer_framework::traits::contexts::chain::{ChainContext, IbcChainContext};
-use ibc_relayer_framework::traits::contexts::error::ErrorContext;
-use ibc_relayer_framework::traits::contexts::ibc_event::IbcEventContext;
-use ibc_relayer_framework::traits::contexts::runtime::RuntimeContext;
+use ibc_relayer_framework::traits::contexts::error::HasError;
+use ibc_relayer_framework::traits::contexts::ibc_event::HasIbcEvents;
+use ibc_relayer_framework::traits::contexts::runtime::HasRuntime;
 use ibc_relayer_framework::traits::core::Async;
 use tendermint::abci::responses::Event;
 use tendermint::abci::Event as AbciEvent;
 
-use crate::cosmos::context::runtime::CosmosRuntimeContext;
+use crate::cosmos::context::runtime::CosmosRuntime;
 use crate::cosmos::error::Error;
 use crate::cosmos::message::CosmosIbcMessage;
 
@@ -30,15 +30,15 @@ pub struct CosmosChainContext<Handle> {
 
 pub struct WriteAcknowledgementEvent(pub WriteAcknowledgement);
 
-impl<Handle: Async> ErrorContext for CosmosChainContext<Handle> {
+impl<Handle: Async> HasError for CosmosChainContext<Handle> {
     type Error = Error;
 }
 
-impl<Handle: Async> RuntimeContext for CosmosChainContext<Handle> {
-    type Runtime = CosmosRuntimeContext;
+impl<Handle: Async> HasRuntime for CosmosChainContext<Handle> {
+    type Runtime = CosmosRuntime;
 
-    fn runtime(&self) -> &CosmosRuntimeContext {
-        &CosmosRuntimeContext
+    fn runtime(&self) -> &CosmosRuntime {
+        &CosmosRuntime
     }
 }
 
@@ -94,7 +94,7 @@ impl TryFrom<AbciEvent> for WriteAcknowledgementEvent {
     }
 }
 
-impl<Chain, Counterparty> IbcEventContext<CosmosChainContext<Counterparty>>
+impl<Chain, Counterparty> HasIbcEvents<CosmosChainContext<Counterparty>>
     for CosmosChainContext<Chain>
 where
     Chain: Async,

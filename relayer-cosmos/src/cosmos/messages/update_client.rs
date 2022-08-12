@@ -5,7 +5,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_framework::impls::messages::skip_update_client::SkipUpdateClient;
 use ibc_relayer_framework::impls::messages::wait_update_client::WaitUpdateClient;
 use ibc_relayer_framework::traits::messages::update_client::{
-    UpdateClientContext, UpdateClientMessageBuilder,
+    CanUpdateClient, UpdateClientMessageBuilder,
 };
 
 use crate::cosmos::context::relay::CosmosRelayContext;
@@ -15,8 +15,7 @@ use crate::cosmos::target::CosmosChainTarget;
 
 pub struct CosmosUpdateClient;
 
-impl<SrcChain, DstChain, Target> UpdateClientContext<Target>
-    for CosmosRelayContext<SrcChain, DstChain>
+impl<SrcChain, DstChain, Target> CanUpdateClient<Target> for CosmosRelayContext<SrcChain, DstChain>
 where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,

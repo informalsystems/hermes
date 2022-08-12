@@ -7,7 +7,7 @@ use crate::traits::contexts::relay::RelayContext;
 use crate::traits::core::Async;
 use crate::traits::ibc_message_sender::IbcMessageSender;
 use crate::traits::message::IbcMessage;
-use crate::traits::messages::update_client::{UpdateClientContext, UpdateClientMessageBuilder};
+use crate::traits::messages::update_client::CanUpdateClient;
 use crate::traits::target::ChainTarget;
 
 pub struct SendIbcMessagesWithUpdateClient<Sender>(pub Sender);
@@ -21,7 +21,7 @@ where
     Sender: IbcMessageSender<Context, Target>,
     TargetChain: IbcChainContext<CounterpartyChain, IbcMessage = Message, IbcEvent = Event>,
     CounterpartyChain: IbcChainContext<TargetChain, Height = Height>,
-    Context: UpdateClientContext<Target>,
+    Context: CanUpdateClient<Target>,
     Message: IbcMessage<CounterpartyChain> + Async,
     Height: Ord + Async,
 {
@@ -37,9 +37,7 @@ where
         let mut in_messages = Vec::new();
 
         for height in source_heights {
-            let messages =
-                Context::UpdateClientMessageBuilder::build_update_client_messages(context, &height)
-                    .await?;
+            let messages = context.build_update_client_messages(&height).await?;
             in_messages.extend(messages);
         }
 

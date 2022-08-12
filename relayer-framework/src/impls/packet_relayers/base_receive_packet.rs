@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 
 use crate::std_prelude::*;
-use crate::traits::contexts::ibc_event::IbcEventContext;
+use crate::traits::contexts::ibc_event::HasIbcEvents;
 use crate::traits::contexts::relay::RelayContext;
 use crate::traits::core::Async;
 use crate::traits::ibc_message_sender::{
-    IbcMessageSenderContext, IbcMessageSenderExt, MismatchIbcEventsCountError,
+    HasIbcMessageSender, IbcMessageSenderExt, MismatchIbcEventsCountError,
 };
 use crate::traits::messages::receive_packet::ReceivePacketMessageBuilder;
 use crate::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
@@ -19,9 +19,9 @@ impl<Context, Message, Event, AckEvent, DstChain> ReceivePacketRelayer<Context>
     for BaseReceivePacketRelayer
 where
     Context: ReceivePacketMessageBuilder<Context>,
-    Context: IbcMessageSenderContext<DestinationTarget>,
+    Context: HasIbcMessageSender<DestinationTarget>,
     Context: RelayContext<DstChain = DstChain>,
-    DstChain: IbcEventContext<
+    DstChain: HasIbcEvents<
         Context::SrcChain,
         WriteAcknowledgementEvent = AckEvent,
         IbcMessage = Message,

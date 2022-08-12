@@ -20,7 +20,7 @@ trait NamedPerson {
   fn name(&self) -> &str;
 }
 
-trait ErrorContext {
+trait HasError {
   type Error;
 }
 
@@ -29,7 +29,7 @@ trait PersonContext {
   type Person: NamedPerson;
 }
 
-trait QueryPersonContext: PersonContext + ErrorContext {
+trait QueryPersonContext: PersonContext + HasError {
   fn query_person(&self, person_id: &Self::PersonId)
     -> Result<Self::Person, Self::Error>;
 }

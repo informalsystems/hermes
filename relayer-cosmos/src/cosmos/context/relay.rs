@@ -5,17 +5,17 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer_framework::impls::message_senders::chain_sender::SendIbcMessagesToChain;
 use ibc_relayer_framework::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
-use ibc_relayer_framework::traits::contexts::error::ErrorContext;
+use ibc_relayer_framework::traits::contexts::error::HasError;
 use ibc_relayer_framework::traits::contexts::relay::RelayContext;
-use ibc_relayer_framework::traits::contexts::runtime::RuntimeContext;
+use ibc_relayer_framework::traits::contexts::runtime::HasRuntime;
 use ibc_relayer_framework::traits::core::Async;
-use ibc_relayer_framework::traits::ibc_message_sender::IbcMessageSenderContext;
+use ibc_relayer_framework::traits::ibc_message_sender::HasIbcMessageSender;
 use ibc_relayer_framework::traits::target::{DestinationTarget, SourceTarget};
 use tokio::runtime::Runtime;
 use tokio::sync::mpsc::{channel, Sender};
 
 use crate::cosmos::context::chain::CosmosChainContext;
-use crate::cosmos::context::runtime::CosmosRuntimeContext;
+use crate::cosmos::context::runtime::CosmosRuntime;
 use crate::cosmos::error::Error;
 use crate::cosmos::message_senders::batch::{
     BatchConfig, BatchMessageContext, BatchedMessageSender, MessageBatch,
@@ -84,7 +84,7 @@ where
     }
 }
 
-impl<SrcChain, DstChain> ErrorContext for CosmosRelayContext<SrcChain, DstChain>
+impl<SrcChain, DstChain> HasError for CosmosRelayContext<SrcChain, DstChain>
 where
     SrcChain: Async,
     DstChain: Async,
@@ -92,15 +92,15 @@ where
     type Error = Error;
 }
 
-impl<SrcChain, DstChain> RuntimeContext for CosmosRelayContext<SrcChain, DstChain>
+impl<SrcChain, DstChain> HasRuntime for CosmosRelayContext<SrcChain, DstChain>
 where
     SrcChain: Async,
     DstChain: Async,
 {
-    type Runtime = CosmosRuntimeContext;
+    type Runtime = CosmosRuntime;
 
-    fn runtime(&self) -> &CosmosRuntimeContext {
-        &CosmosRuntimeContext
+    fn runtime(&self) -> &CosmosRuntime {
+        &CosmosRuntime
     }
 }
 
@@ -132,7 +132,7 @@ where
     }
 }
 
-impl<SrcChain, DstChain> IbcMessageSenderContext<SourceTarget>
+impl<SrcChain, DstChain> HasIbcMessageSender<SourceTarget>
     for CosmosRelayContext<SrcChain, DstChain>
 where
     SrcChain: ChainHandle,
@@ -142,7 +142,7 @@ where
     // BatchedMessageSender<SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>>;
 }
 
-impl<SrcChain, DstChain> IbcMessageSenderContext<DestinationTarget>
+impl<SrcChain, DstChain> HasIbcMessageSender<DestinationTarget>
     for CosmosRelayContext<SrcChain, DstChain>
 where
     SrcChain: ChainHandle,

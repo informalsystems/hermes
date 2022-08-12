@@ -5,7 +5,7 @@ use ibc_relayer::chain::endpoint::ChainStatus as CosmosChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_framework::traits::core::Async;
 use ibc_relayer_framework::traits::queries::status::{
-    ChainStatus, ChainStatusContext, ChainStatusQuerier, ChainStatusQuerierContext,
+    CanQueryChainStatus, ChainStatus, ChainStatusContext, ChainStatusQuerier,
 };
 
 use crate::cosmos::context::chain::CosmosChainContext;
@@ -30,7 +30,7 @@ impl<Chain: Async> ChainStatusContext for CosmosChainContext<Chain> {
     type ChainStatus = CosmosChainStatus;
 }
 
-impl<Chain: ChainHandle> ChainStatusQuerierContext for CosmosChainContext<Chain> {
+impl<Chain: ChainHandle> CanQueryChainStatus for CosmosChainContext<Chain> {
     type ChainStatusQuerier = CosmosChainStatusQuerier;
 }
 

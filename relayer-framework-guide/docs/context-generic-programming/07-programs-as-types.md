@@ -15,7 +15,7 @@ follows:
 #   fn name(&self) -> &str;
 # }
 #
-# trait ErrorContext {
+# trait HasError {
 #   type Error;
 # }
 #
@@ -24,14 +24,14 @@ follows:
 #   type Person: NamedPerson;
 # }
 #
-# trait QueryPersonContext: PersonContext + ErrorContext {
+# trait QueryPersonContext: PersonContext + HasError {
 #   fn query_person(&self, person_id: &Self::PersonId)
 #     -> Result<Self::Person, Self::Error>;
 # }
 #
 trait Greeter<Context>
 where
-  Context: PersonContext + ErrorContext,
+  Context: PersonContext + HasError,
 {
   fn greet(&self, context: &Context, person_id: &Context::PersonId)
     -> Result<(), Context::Error>;
@@ -54,7 +54,7 @@ where
 ```
 
 The `Greeter` trait is defined to be parameterized by a generic `Context` type,
-which is required to implement both `PersonContext` and `ErrorContext`.
+which is required to implement both `PersonContext` and `HasError`.
 The `greet` method is then defined without generic parameters, as these have been
 captured in the trait definition. We then define an empty struct `SimpleGreeter`,
 which is there only to implement the `Greeter` trait for any `Context` type
@@ -62,7 +62,7 @@ that implements `QueryPersonContext`.
 
 It is worth noticing here that in the main `Greeter` trait definition,
 the `Context` type, is only required to implement `PersonContext` and
-`ErrorContext`, but there is no mention of the `QueryPersonContext`
+`HasError`, but there is no mention of the `QueryPersonContext`
 trait bound. On the other hand, the concrete `Greeter` implementation
 for `SimpleGreeter` can require the additional trait bound
 `Context: QueryPersonContext` in its `impl` definition.

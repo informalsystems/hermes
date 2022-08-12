@@ -12,7 +12,7 @@ swap our store implementation from file-based to memory-based.
 # use std::fmt::Display;
 # use std::convert::{TryFrom, TryInto};
 #
-# trait ErrorContext {
+# trait HasError {
 #   type Error;
 # }
 #
@@ -23,13 +23,13 @@ swap our store implementation from file-based to memory-based.
 #
 # trait PersonQuerier<Context>
 # where
-#   Context: PersonContext + ErrorContext,
+#   Context: PersonContext + HasError,
 # {
 #    fn query_person(context: &Context, person_id: &Context::PersonId)
 #      -> Result<Context::Person, Context::Error>;
 # }
 #
-trait KvStore: ErrorContext {
+trait KvStore: HasError {
   fn get(&self, key: &str) -> Result<Vec<u8>, Self::Error>;
 }
 
@@ -46,7 +46,7 @@ impl<Context, Store, PersonId, Person, Error, ParseError, StoreError>
 where
   Context: KvStoreContext<Store=Store>,
   Context: PersonContext<Person=Person, PersonId=PersonId>,
-  Context: ErrorContext<Error=Error>,
+  Context: HasError<Error=Error>,
   Store: KvStore<Error=StoreError>,
   PersonId: Display,
   Person: TryFrom<Vec<u8>, Error=ParseError>,
@@ -68,7 +68,7 @@ where
 ```
 
 We first define a `KvStore` trait that provides a `get` method for reading
-values from the store. It also has `ErrorContext` as its supertrait, so
+values from the store. It also has `HasError` as its supertrait, so
 that we can reuse the `Error` associated type.
 
 We then redefine the `KvStoreContext` to contain an associated type `Store`,

@@ -1,37 +1,37 @@
 use async_trait::async_trait;
 
-use crate::one_for_all::impls::error::OfaErrorContext;
+use crate::one_for_all::impls::error::OfaHasError;
 use crate::one_for_all::impls::message::OfaMessage;
-use crate::one_for_all::impls::runtime::OfaRuntimeContext;
+use crate::one_for_all::impls::runtime::OfaHasRuntime;
 use crate::one_for_all::traits::chain::OfaChain;
 use crate::std_prelude::*;
 use crate::traits::contexts::chain::{ChainContext, IbcChainContext};
-use crate::traits::contexts::error::ErrorContext;
-use crate::traits::contexts::ibc_event::IbcEventContext;
-use crate::traits::contexts::runtime::RuntimeContext;
-use crate::traits::queries::consensus_state::{ConsensusStateContext, ConsensusStateQuerier};
+use crate::traits::contexts::error::HasError;
+use crate::traits::contexts::ibc_event::HasIbcEvents;
+use crate::traits::contexts::runtime::HasRuntime;
+use crate::traits::queries::consensus_state::{ConsensusStateQuerier, HasConsensusState};
 use crate::traits::queries::received_packet::ReceivedPacketQuerier;
 
 pub struct OfaChainContext<Chain: OfaChain> {
     pub chain: Chain,
-    pub runtime: OfaRuntimeContext<Chain::Runtime>,
+    pub runtime: OfaHasRuntime<Chain::Runtime>,
 }
 
 impl<Chain: OfaChain> OfaChainContext<Chain> {
     pub fn new(chain: Chain, runtime: Chain::Runtime) -> Self {
         Self {
             chain,
-            runtime: OfaRuntimeContext::new(runtime),
+            runtime: OfaHasRuntime::new(runtime),
         }
     }
 }
 
-impl<Chain: OfaChain> ErrorContext for OfaChainContext<Chain> {
-    type Error = OfaErrorContext<Chain::Error>;
+impl<Chain: OfaChain> HasError for OfaChainContext<Chain> {
+    type Error = OfaHasError<Chain::Error>;
 }
 
-impl<Chain: OfaChain> RuntimeContext for OfaChainContext<Chain> {
-    type Runtime = OfaRuntimeContext<Chain::Runtime>;
+impl<Chain: OfaChain> HasRuntime for OfaChainContext<Chain> {
+    type Runtime = OfaHasRuntime<Chain::Runtime>;
 
     fn runtime(&self) -> &Self::Runtime {
         &self.runtime
@@ -68,7 +68,7 @@ where
     type IbcEvent = Chain::Event;
 }
 
-impl<Chain, Counterparty> IbcEventContext<Counterparty> for OfaChainContext<Chain>
+impl<Chain, Counterparty> HasIbcEvents<Counterparty> for OfaChainContext<Chain>
 where
     Chain: OfaChain,
     Counterparty: ChainContext<Height = Chain::CounterpartyHeight>,
@@ -76,7 +76,7 @@ where
     type WriteAcknowledgementEvent = Chain::WriteAcknowledgementEvent;
 }
 
-impl<Chain, Counterparty> ConsensusStateContext<Counterparty> for OfaChainContext<Chain>
+impl<Chain, Counterparty> HasConsensusState<Counterparty> for OfaChainContext<Chain>
 where
     Chain: OfaChain,
     Counterparty: ChainContext<Height = Chain::CounterpartyHeight>,
@@ -89,7 +89,7 @@ impl<Chain, Counterparty> ConsensusStateQuerier<Counterparty> for OfaChainContex
 where
     Chain: OfaChain,
     Counterparty: ChainContext<Height = Chain::CounterpartyHeight>,
-    Counterparty: ConsensusStateContext<Self, ConsensusState = Chain::CounterpartyConsensusState>,
+    Counterparty: HasConsensusState<Self, ConsensusState = Chain::CounterpartyConsensusState>,
 {
     async fn query_consensus_state(
         &self,

@@ -11,7 +11,7 @@ trait Async: Sized + Send + Sync + 'static {}
 ```rust
 # use ibc_relayer_framework::traits::core::Async;
 #
-trait ErrorContext: Async {
+trait HasError: Async {
     type Error: Async;
 }
 ```
@@ -36,9 +36,9 @@ trait Message {
 ```rust
 # use ibc_relayer_framework::traits::message::Message;
 # use ibc_relayer_framework::traits::core::Async;
-# use ibc_relayer_framework::traits::contexts::error::ErrorContext;
+# use ibc_relayer_framework::traits::contexts::error::HasError;
 #
-trait ChainContext: ErrorContext {
+trait ChainContext: HasError {
     type Height: Async;
 
     type Timestamp: Async;
@@ -90,30 +90,30 @@ use tendermint::abci::responses::Event;
 #
 # use ibc_relayer_cosmos::cosmos::message::CosmosIbcMessage;
 # use ibc_relayer_framework::traits::core::Async;
-# use ibc_relayer_framework::traits::contexts::error::ErrorContext;
+# use ibc_relayer_framework::traits::contexts::error::HasError;
 # use ibc_relayer_framework::traits::contexts::chain::ChainContext;
-# use ibc_relayer_framework::traits::contexts::runtime::RuntimeContext;
+# use ibc_relayer_framework::traits::contexts::runtime::HasRuntime;
 
 struct Error { /* ... */ }
-struct CosmosRuntimeContext;
+struct CosmosRuntime;
 
 struct CosmosChainContext<Handle> {
     handle: Handle,
 }
 
-impl ErrorContext for CosmosRuntimeContext {
+impl HasError for CosmosRuntime {
     type Error = Error;
 }
 
-impl<Handle: Async> ErrorContext for CosmosChainContext<Handle> {
+impl<Handle: Async> HasError for CosmosChainContext<Handle> {
     type Error = Error;
 }
 
-impl<Handle: Async> RuntimeContext for CosmosChainContext<Handle> {
-    type Runtime = CosmosRuntimeContext;
+impl<Handle: Async> HasRuntime for CosmosChainContext<Handle> {
+    type Runtime = CosmosRuntime;
 
-    fn runtime(&self) -> &CosmosRuntimeContext {
-        &CosmosRuntimeContext
+    fn runtime(&self) -> &CosmosRuntime {
+        &CosmosRuntime
     }
 }
 

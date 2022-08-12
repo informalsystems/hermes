@@ -18,11 +18,11 @@ the generic type `Context`:
 #   name: String,
 # }
 #
-trait ErrorContext {
+trait HasError {
   type Error;
 }
 
-trait QueryPersonContext: ErrorContext {
+trait QueryPersonContext: HasError {
   fn query_person(&self, person_id: &PersonId) ->  Result<Person, Self::Error>;
 }
 
@@ -37,18 +37,18 @@ where
 }
 ```
 
-We define a new `ErrorContext` trait with only one thing, which is the `Error`
+We define a new `HasError` trait with only one thing, which is the `Error`
 associated type. Aside from that, there is nothing known about the `Error`
 type, but that is ok as we will see later on. The trait `QueryPersonContext`
-then has `ErrorContext` as its supertrait, esentially allowing it to access
+then has `HasError` as its supertrait, esentially allowing it to access
 the associated type as `Self::Error` in the return type of `query_person`.
 
-We define the `Error` associated type in a separate `ErrorContext` trait,
+We define the `Error` associated type in a separate `HasError` trait,
 instead of directly in the `QueryPersonContext` trait. As we will see later,
 this is essential to allow multiple context traits to access the same
 `Error` type.
 
 In the `greet` function, we require the generic `Context` type to
-implement `QueryPersonContext`. But since `ErrorContext` is a supertrait of
+implement `QueryPersonContext`. But since `HasError` is a supertrait of
 `QueryPersonContext`, we would also able to access the error type as
 `Context::Error`.

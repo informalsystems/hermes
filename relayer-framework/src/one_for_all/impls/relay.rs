@@ -1,18 +1,18 @@
 use async_trait::async_trait;
 
 use crate::one_for_all::impls::chain::OfaChainContext;
-use crate::one_for_all::impls::error::OfaErrorContext;
+use crate::one_for_all::impls::error::OfaHasError;
 use crate::one_for_all::impls::message::OfaMessage;
-use crate::one_for_all::impls::runtime::OfaRuntimeContext;
+use crate::one_for_all::impls::runtime::OfaHasRuntime;
 use crate::one_for_all::traits::chain::OfaChain;
 use crate::one_for_all::traits::relay::OfaRelay;
 use crate::std_prelude::*;
-use crate::traits::contexts::error::ErrorContext;
+use crate::traits::contexts::error::HasError;
 use crate::traits::contexts::relay::RelayContext;
-use crate::traits::contexts::runtime::RuntimeContext;
+use crate::traits::contexts::runtime::HasRuntime;
 use crate::traits::messages::ack_packet::AckPacketMessageBuilder;
 use crate::traits::messages::receive_packet::ReceivePacketMessageBuilder;
-use crate::traits::messages::update_client::{UpdateClientContext, UpdateClientMessageBuilder};
+use crate::traits::messages::update_client::{CanUpdateClient, UpdateClientMessageBuilder};
 use crate::traits::packet::IbcPacket;
 use crate::traits::target::{DestinationTarget, SourceTarget};
 
@@ -25,7 +25,7 @@ pub struct OfaRelayContext<Relay: OfaRelay> {
     pub src_client_id: <Relay::SrcChain as OfaChain>::ClientId,
     pub dst_client_id: <Relay::DstChain as OfaChain>::ClientId,
 
-    pub runtime: OfaRuntimeContext<Relay::Runtime>,
+    pub runtime: OfaHasRuntime<Relay::Runtime>,
 }
 
 impl<Relay: OfaRelay> OfaRelayContext<Relay> {
@@ -43,7 +43,7 @@ impl<Relay: OfaRelay> OfaRelayContext<Relay> {
             dst_chain: OfaChainContext::new(dst_chain, runtime.clone()),
             src_client_id,
             dst_client_id,
-            runtime: OfaRuntimeContext::new(runtime),
+            runtime: OfaHasRuntime::new(runtime),
         }
     }
 }
@@ -52,12 +52,12 @@ pub struct OfaPacket<Relay: OfaRelay> {
     pub packet: Relay::Packet,
 }
 
-impl<Relay: OfaRelay> ErrorContext for OfaRelayContext<Relay> {
-    type Error = OfaErrorContext<Relay::Error>;
+impl<Relay: OfaRelay> HasError for OfaRelayContext<Relay> {
+    type Error = OfaHasError<Relay::Error>;
 }
 
-impl<Relay: OfaRelay> RuntimeContext for OfaRelayContext<Relay> {
-    type Runtime = OfaRuntimeContext<Relay::Runtime>;
+impl<Relay: OfaRelay> HasRuntime for OfaRelayContext<Relay> {
+    type Runtime = OfaHasRuntime<Relay::Runtime>;
 
     fn runtime(&self) -> &Self::Runtime {
         &self.runtime
@@ -122,11 +122,11 @@ impl<Relay: OfaRelay> RelayContext for OfaRelayContext<Relay> {
 
 pub struct OfaUpdateClientMessageBuilder;
 
-impl<Relay: OfaRelay> UpdateClientContext<SourceTarget> for OfaRelayContext<Relay> {
+impl<Relay: OfaRelay> CanUpdateClient<SourceTarget> for OfaRelayContext<Relay> {
     type UpdateClientMessageBuilder = OfaUpdateClientMessageBuilder;
 }
 
-impl<Relay: OfaRelay> UpdateClientContext<DestinationTarget> for OfaRelayContext<Relay> {
+impl<Relay: OfaRelay> CanUpdateClient<DestinationTarget> for OfaRelayContext<Relay> {
     type UpdateClientMessageBuilder = OfaUpdateClientMessageBuilder;
 }
 
@@ -137,7 +137,7 @@ impl<Relay: OfaRelay> UpdateClientMessageBuilder<OfaRelayContext<Relay>, SourceT
     async fn build_update_client_messages(
         context: &OfaRelayContext<Relay>,
         height: &<Relay::DstChain as OfaChain>::Height,
-    ) -> Result<Vec<OfaMessage<Relay::SrcChain>>, OfaErrorContext<Relay::Error>> {
+    ) -> Result<Vec<OfaMessage<Relay::SrcChain>>, OfaHasError<Relay::Error>> {
         let messages = context
             .relay
             .build_src_update_client_messages(height)
@@ -156,7 +156,7 @@ impl<Relay: OfaRelay> UpdateClientMessageBuilder<OfaRelayContext<Relay>, Destina
     async fn build_update_client_messages(
         context: &OfaRelayContext<Relay>,
         height: &<Relay::SrcChain as OfaChain>::Height,
-    ) -> Result<Vec<OfaMessage<Relay::DstChain>>, OfaErrorContext<Relay::Error>> {
+    ) -> Result<Vec<OfaMessage<Relay::DstChain>>, OfaHasError<Relay::Error>> {
         let messages = context
             .relay
             .build_dst_update_client_messages(height)
@@ -176,7 +176,7 @@ impl<Relay: OfaRelay> ReceivePacketMessageBuilder<OfaRelayContext<Relay>>
         &self,
         height: &<Relay::SrcChain as OfaChain>::Height,
         packet: &OfaPacket<Relay>,
-    ) -> Result<OfaMessage<Relay::DstChain>, OfaErrorContext<Relay::Error>> {
+    ) -> Result<OfaMessage<Relay::DstChain>, OfaHasError<Relay::Error>> {
         let message = self
             .relay
             .build_receive_packet_message(height, &packet.packet)
@@ -193,7 +193,7 @@ impl<Relay: OfaRelay> AckPacketMessageBuilder<OfaRelayContext<Relay>> for OfaRel
         destination_height: &<Relay::DstChain as OfaChain>::Height,
         packet: &OfaPacket<Relay>,
         ack: &<Relay::DstChain as OfaChain>::WriteAcknowledgementEvent,
-    ) -> Result<OfaMessage<Relay::SrcChain>, OfaErrorContext<Relay::Error>> {
+    ) -> Result<OfaMessage<Relay::SrcChain>, OfaHasError<Relay::Error>> {
         let message = self
             .relay
             .build_ack_packet_message(destination_height, &packet.packet, ack)

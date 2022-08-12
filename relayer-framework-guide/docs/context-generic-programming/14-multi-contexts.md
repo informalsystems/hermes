@@ -36,7 +36,7 @@ contains `FsKvStore` in its field:
 #   // ...
 # }
 #
-# trait ErrorContext {
+# trait HasError {
 #   type Error;
 # }
 #
@@ -45,7 +45,7 @@ contains `FsKvStore` in its field:
 #   type Person;
 # }
 #
-# trait QueryPersonContext: PersonContext + ErrorContext {
+# trait QueryPersonContext: PersonContext + HasError {
 #   fn query_person(&self, person_id: &Self::PersonId)
 #     -> Result<Self::Person, Self::Error>;
 # }
@@ -75,7 +75,7 @@ enum AppError {
   // ...
 }
 
-impl ErrorContext for AppContext {
+impl HasError for AppContext {
   type Error = AppError;
 }
 
@@ -124,7 +124,7 @@ In fact, with a little re-arrangement, we can redefine
 `QueryPersonContext` as `PersonQuerier` as follows:
 
 ```rust
-# trait ErrorContext {
+# trait HasError {
 #   type Error;
 # }
 #
@@ -135,7 +135,7 @@ In fact, with a little re-arrangement, we can redefine
 #
 trait PersonQuerier<Context>
 where
-  Context: PersonContext + ErrorContext,
+  Context: PersonContext + HasError,
 {
    fn query_person(context: &Context, person_id: &Context::PersonId)
      -> Result<Context::Person, Context::Error>;
@@ -161,7 +161,7 @@ With this, we can now define a context-generic implementation of
 #   // ...
 # }
 #
-# trait ErrorContext {
+# trait HasError {
 #   type Error;
 # }
 #
@@ -172,7 +172,7 @@ With this, we can now define a context-generic implementation of
 #
 # trait PersonQuerier<Context>
 # where
-#   Context: PersonContext + ErrorContext,
+#   Context: PersonContext + HasError,
 # {
 #    fn query_person(context: &Context, person_id: &Context::PersonId)
 #      -> Result<Context::Person, Context::Error>;
@@ -189,7 +189,7 @@ impl<Context, PersonId, Person, Error, ParseError>
 where
   Context: KvStoreContext,
   Context: PersonContext<Person=Person, PersonId=PersonId>,
-  Context: ErrorContext<Error=Error>,
+  Context: HasError<Error=Error>,
   PersonId: Display,
   Person: TryFrom<Vec<u8>, Error=ParseError>,
   Error: From<KvStoreError>,

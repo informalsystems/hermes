@@ -1,5 +1,5 @@
 use crate::traits::core::Async;
 
-pub trait ErrorContext: Async {
+pub trait HasError: Async {
     type Error: Async;
 }
