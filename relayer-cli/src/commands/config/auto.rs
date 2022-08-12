@@ -113,7 +113,7 @@ impl Runnable for AutoCmd {
                 (sorted_chains, Some(sorted_keys))
             }
             None => {
-                let mut sorted_chains: Vec<String> = self.chain_names.iter().cloned().collect();
+                let mut sorted_chains: Vec<String> = self.chain_names.to_vec();
                 sorted_chains.sort();
                 (sorted_chains, None)
             }
@@ -127,10 +127,10 @@ impl Runnable for AutoCmd {
                     for mut chain_config in chain_configs.iter_mut() {
                         let chain_id = &chain_config.id;
                         let key = find_key(chain_id.as_str());
-                        if key.is_none() {
-                            not_found.push(chain_id.as_str());
+                        if let Some(key) = key {
+                            chain_config.key_name = key;
                         } else {
-                            chain_config.key_name = key.unwrap();
+                            not_found.push(chain_id.as_str());
                         }
                     }
                     if !not_found.is_empty() {

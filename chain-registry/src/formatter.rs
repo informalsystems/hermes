@@ -39,19 +39,20 @@ impl UriFormatter for SimpleWebSocketFormatter {
             .parse::<Uri>()
             .map_err(|e| RegistryError::uri_parse_error(rpc_address.to_string(), e))?;
 
+        let uri_scheme = if uri.scheme().unwrap_or(&Scheme::HTTP) == &Scheme::HTTPS {
+            "wss"
+        } else {
+            "ws"
+        };
+
+        let uri_authority = uri
+            .authority()
+            .ok_or_else(|| RegistryError::rpc_url_without_authority(rpc_address.to_string()))?
+            .clone();
+
         let uri_websocket = Uri::builder()
-            .scheme(if uri.scheme().unwrap_or(&Scheme::HTTP) == &Scheme::HTTPS {
-                "wss"
-            } else {
-                "ws"
-            })
-            .authority(
-                uri.authority()
-                    .ok_or_else(|| {
-                        RegistryError::rpc_url_without_authority(rpc_address.to_string())
-                    })?
-                    .clone(),
-            )
+            .scheme(uri_scheme)
+            .authority(uri_authority)
             .path_and_query("/websocket")
             .build();
 
@@ -73,13 +74,12 @@ impl UriFormatter for SimpleGrpcFormatter {
 
     fn parse_or_build_address(input: &str) -> Result<Self::OutputFormat, RegistryError> {
         // Remove the last character if it is a '/'
-        let input = match input.ends_with('/') {
-            false => input,
-            true => {
-                let mut chars = input.chars();
-                chars.next_back();
-                chars.as_str()
-            }
+        let input = if input.ends_with('/') {
+            let mut chars = input.chars();
+            chars.next_back();
+            chars.as_str()
+        } else {
+            input
         };
 
         let uri = input
@@ -189,8 +189,8 @@ mod tests {
     #[ignore]
     async fn all_chain_registry_grpc_address() -> Result<(), RegistryError> {
         use crate::chain::ChainData;
-        use crate::utils::Fetchable;
-        use crate::utils::ALL_CHAINS;
+        use crate::constants::ALL_CHAINS;
+        use crate::fetchable::Fetchable;
 
         let mut handles = Vec::with_capacity(ALL_CHAINS.len());
 
@@ -212,8 +212,8 @@ mod tests {
     #[ignore]
     async fn all_chain_registry_rpc_address() -> Result<(), RegistryError> {
         use crate::chain::ChainData;
-        use crate::utils::Fetchable;
-        use crate::utils::ALL_CHAINS;
+        use crate::constants::ALL_CHAINS;
+        use crate::fetchable::Fetchable;
 
         let mut handles = Vec::with_capacity(ALL_CHAINS.len());
 

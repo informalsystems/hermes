@@ -1,6 +1,6 @@
 //! Contains models for serializing and deserializing `chain.json` for a given chain
 //! Taken from https://github.com/PeggyJV/ocular/blob/main/ocular/src/registry/chain.rs
-use crate::utils::Fetchable;
+use crate::fetchable::Fetchable;
 use ibc::core::ics24_host::identifier::ChainId;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -100,8 +100,8 @@ impl Fetchable for ChainData {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::constants::ALL_CHAINS;
     use crate::error::RegistryError;
-    use crate::utils::ALL_CHAINS;
 
     #[tokio::test]
     async fn fetch_chain_data() -> Result<(), RegistryError> {

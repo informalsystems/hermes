@@ -3,10 +3,10 @@ use crate::{
     asset_list::AssetList,
     chain::ChainData,
     error::RegistryError,
+    fetchable::Fetchable,
     formatter::{SimpleGrpcFormatter, UriFormatter},
     paths::IBCPath,
     querier::*,
-    utils::Fetchable,
 };
 
 use http::Uri;
@@ -122,7 +122,7 @@ where
         grpc_addr: grpc_address,
         rpc_timeout: default::rpc_timeout(),
         account_prefix: chain_data.bech32_prefix,
-        key_name: key_name,
+        key_name,
         key_store_type: Store::default(),
         store_prefix: "ibc".to_string(),
         default_gas: Some(100000),
@@ -160,7 +160,7 @@ where
 /// ```
 /// use chain_registry::relayer_config::get_configs;
 /// let chains = &vec!["cosmoshub".to_string(), "osmosis".to_string()];
-/// let keys = &vec!["key_cosmoshub".to_string(), "key_osmosis".to_string()];
+/// let keys = Some(vec!["key_cosmoshub".to_string(), "key_osmosis".to_string()]);
 /// let configs = get_configs(chains, keys);
 /// ```
 pub async fn get_configs(
@@ -255,7 +255,7 @@ mod tests {
     use std::str::FromStr;
 
     async fn fetch_configs(test_chains: &[String]) -> Result<Vec<ChainConfig>, RegistryError> {
-        let test_keys: &[String] = &vec!["testkey".to_string(); test_chains.len()];
+        let test_keys = vec!["testkey".to_string(); test_chains.len()];
         Ok(get_configs(test_chains, Some(test_keys)).await?)
     }
 
