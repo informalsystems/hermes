@@ -52,8 +52,6 @@ use ibc::{
 };
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 
-use crate::account::Balance;
-use crate::chain::client::ClientSettings;
 use crate::chain::cosmos::batch::{
     send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
 };
@@ -67,7 +65,6 @@ use crate::chain::cosmos::query::tx::query_txs;
 use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query, QueryResponse};
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
-use crate::chain::cosmos::types::events::channel as channel_events;
 use crate::chain::cosmos::types::gas::{default_gas_from_config, max_gas_from_config};
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
 use crate::chain::tracking::TrackedMsgs;
@@ -78,6 +75,8 @@ use crate::event::monitor::{EventMonitor, EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
+use crate::{account::Balance, event::IbcEventWithHeight};
+use crate::{chain::client::ClientSettings, event::ibc_event_try_from_abci_event};
 
 use super::requests::{
     IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
@@ -408,7 +407,7 @@ impl CosmosSdkChain {
     async fn do_send_messages_and_wait_commit(
         &mut self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<IbcEvent>, Error> {
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         crate::time!("send_messages_and_wait_commit");
 
         let _span =
@@ -601,7 +600,7 @@ impl ChainEndpoint for CosmosSdkChain {
     fn send_messages_and_wait_commit(
         &mut self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<IbcEvent>, Error> {
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         let runtime = self.rt.clone();
 
         runtime.block_on(self.do_send_messages_and_wait_commit(tracked_msgs))
@@ -1452,7 +1451,7 @@ impl ChainEndpoint for CosmosSdkChain {
     ///    Therefore, for packets we perform one tx_search for each sequence.
     ///    Alternatively, a single query for all packets could be performed but it would return all
     ///    packets ever sent.
-    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error> {
         crate::time!("query_txs");
         crate::telemetry!(query, self.id(), "query_txs");
 
@@ -1653,7 +1652,7 @@ fn filter_matching_event(
         return None;
     }
 
-    let ibc_event = channel_events::try_from_tx(&event)?;
+    let ibc_event = ibc_event_try_from_abci_event(&event).ok()?;
     match ibc_event {
         IbcEvent::SendPacket(ref send_ev) if matches_packet(request, seq, &send_ev.packet) => {
             Some(ibc_event)

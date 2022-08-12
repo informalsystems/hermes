@@ -26,6 +26,8 @@ use crate::chain::tracking::TrackingId;
 use crate::channel::error::ChannelError;
 use crate::channel::Channel;
 use crate::event::monitor::EventBatch;
+use crate::event::IbcEventWithHeight;
+use crate::event::PrettyEvents;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::link::error::{self, LinkError};
 use crate::link::operational_data::{
@@ -43,10 +45,7 @@ use crate::telemetry;
 use crate::util::queue::Queue;
 use ibc::{
     core::{
-        ics02_client::{
-            events::ClientMisbehaviour as ClientMisbehaviourEvent,
-            events::UpdateClient as UpdateClientEvent,
-        },
+        ics02_client::events::ClientMisbehaviour as ClientMisbehaviourEvent,
         ics04_channel::{
             channel::{ChannelEnd, Order, State as ChannelState},
             events::{SendPacket, WriteAcknowledgement},
@@ -59,7 +58,7 @@ use ibc::{
         },
         ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     },
-    events::{IbcEvent, PrettyEvents, WithBlockDataType},
+    events::{IbcEvent, WithBlockDataType},
     signer::Signer,
     timestamp::Timestamp,
     tx_msg::Msg,
@@ -331,11 +330,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .map_err(LinkError::client)
     }
 
-    fn build_chan_close_confirm_from_event(&self, event: &IbcEvent) -> Result<Any, LinkError> {
+    fn build_chan_close_confirm_from_event(
+        &self,
+        event: &IbcEventWithHeight,
+    ) -> Result<Any, LinkError> {
         let src_channel_id = self.src_channel_id();
         let proofs = self
             .src_chain()
-            .build_channel_proofs(self.src_port_id(), src_channel_id, event.height())
+            .build_channel_proofs(self.src_port_id(), src_channel_id, event.height)
             .map_err(|e| LinkError::channel(ChannelError::channel_proof(e)))?;
 
         // Build the domain type message
@@ -353,41 +355,41 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Only events for a port/channel matching one of the channel ends should be processed.
     fn filter_relaying_events(
         &self,
-        events: Vec<IbcEvent>,
+        events: Vec<IbcEventWithHeight>,
         tracking_id: TrackingId,
     ) -> TrackedEvents {
         let src_channel_id = self.src_channel_id();
 
         let mut result = vec![];
 
-        for event in events.into_iter() {
-            match &event {
+        for event_with_height in events.into_iter() {
+            match &event_with_height.event {
                 IbcEvent::SendPacket(send_packet_ev) => {
                     if src_channel_id == send_packet_ev.src_channel_id()
                         && self.src_port_id() == send_packet_ev.src_port_id()
                     {
-                        result.push(event);
+                        result.push(event_with_height);
                     }
                 }
                 IbcEvent::WriteAcknowledgement(write_ack_ev) => {
                     if src_channel_id == write_ack_ev.dst_channel_id()
                         && self.src_port_id() == write_ack_ev.dst_port_id()
                     {
-                        result.push(event);
+                        result.push(event_with_height);
                     }
                 }
                 IbcEvent::CloseInitChannel(chan_close_ev) => {
                     if src_channel_id == chan_close_ev.channel_id()
                         && self.src_port_id() == chan_close_ev.port_id()
                     {
-                        result.push(event);
+                        result.push(event_with_height);
                     }
                 }
                 IbcEvent::TimeoutPacket(timeout_ev) => {
                     if src_channel_id == timeout_ev.src_channel_id()
                         && self.channel.src_port_id() == timeout_ev.src_port_id()
                     {
-                        result.push(event);
+                        result.push(event_with_height);
                     }
                 }
                 _ => {}
@@ -442,8 +444,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         // Update telemetry info
         telemetry!({
-            for e in events.events() {
-                self.backlog_update(e);
+            for event_with_height in events.events() {
+                self.backlog_update(&event_with_height.event);
             }
         });
 
@@ -488,7 +490,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let input = events.events();
         let src_height = match input.get(0) {
             None => return Ok((None, None)),
-            Some(ev) => ev.height(),
+            Some(ev) => ev.height,
         };
 
         let dst_latest_info = self
@@ -514,13 +516,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             self.channel.connection_delay,
         );
 
-        for event in input {
-            trace!("processing event: {}", event);
-            let (dst_msg, src_msg) = match event {
-                IbcEvent::CloseInitChannel(_) => {
-                    (Some(self.build_chan_close_confirm_from_event(event)?), None)
-                }
-                IbcEvent::TimeoutPacket(ref timeout_ev) => {
+        for event_with_height in input {
+            trace!("processing event: {}", event_with_height);
+            let (dst_msg, src_msg) = match &event_with_height.event {
+                IbcEvent::CloseInitChannel(_) => (
+                    Some(self.build_chan_close_confirm_from_event(event_with_height)?),
+                    None,
+                ),
+                IbcEvent::TimeoutPacket(_) => {
                     // When a timeout packet for an ordered channel is processed on-chain (src here)
                     // the chain closes the channel but no close init event is emitted, instead
                     // we get a timeout packet event (this happens for both unordered and ordered channels)
@@ -528,10 +531,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     // to the counterparty.
                     if self.ordered_channel()
                         && self
-                            .src_channel(QueryHeight::Specific(timeout_ev.height))?
+                            .src_channel(QueryHeight::Specific(event_with_height.height))?
                             .state_matches(&ChannelState::Closed)
                     {
-                        (Some(self.build_chan_close_confirm_from_event(event)?), None)
+                        (
+                            Some(self.build_chan_close_confirm_from_event(event_with_height)?),
+                            None,
+                        )
                     } else {
                         (None, None)
                     }
@@ -544,6 +550,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                         self.build_recv_or_timeout_from_send_packet_event(
                             send_packet_ev,
                             &dst_latest_info,
+                            event_with_height.height,
                         )?
                     }
                 }
@@ -557,7 +564,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                         debug!("{} already handled", write_ack_ev);
                         (None, None)
                     } else {
-                        (self.build_ack_from_recv_event(write_ack_ev)?, None)
+                        (
+                            self.build_ack_from_recv_event(write_ack_ev, event_with_height.height)?,
+                            None,
+                        )
                     }
                 }
                 _ => (None, None),
@@ -565,9 +575,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
             // Collect messages to be sent to the destination chain (e.g., RecvPacket)
             if let Some(msg) = dst_msg {
-                debug!("{} from {}", msg.type_url, event);
+                debug!("{} from {}", msg.type_url, event_with_height);
                 dst_od.batch.push(TransitMessage {
-                    event: event.clone(),
+                    event_with_height: event_with_height.clone(),
                     msg,
                 });
             }
@@ -577,9 +587,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 // For Ordered channels a single timeout event should be sent as this closes the channel.
                 // Otherwise a multi message transaction will fail.
                 if self.unordered_channel() || src_od.batch.is_empty() {
-                    debug!("{} from {}", msg.type_url, event);
+                    debug!("{} from {}", msg.type_url, event_with_height);
                     src_od.batch.push(TransitMessage {
-                        event: event.clone(),
+                        event_with_height: event_with_height.clone(),
                         msg,
                     });
                 }
@@ -843,7 +853,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         client_id: ClientId,
         consensus_height: Height,
     ) -> Result<Height, LinkError> {
-        let events = chain
+        let events_with_heights = chain
             .query_txs(QueryTxRequest::Client(QueryClientEventRequest {
                 query_height: QueryHeight::Latest,
                 event_id: WithBlockDataType::UpdateClient,
@@ -856,9 +866,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // but the `processed_height` is the height at which the first `UpdateClient` event for this
         // consensus state/height was emitted. We expect that these events are received in the exact
         // same order in which they were emitted.
-        match events.first() {
-            Some(IbcEvent::UpdateClient(event)) => Ok(event.height()),
-            Some(event) => Err(LinkError::unexpected_event(event.clone())),
+        match events_with_heights.first() {
+            Some(event_with_height) => {
+                if matches!(&event_with_height.event, IbcEvent::UpdateClient(_)) {
+                    Ok(event_with_height.height)
+                } else {
+                    Err(LinkError::unexpected_event(event_with_height.event.clone()))
+                }
+            }
             None => Err(LinkError::update_client_event_not_found()),
         }
     }
@@ -869,20 +884,20 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// multiple variants with a single pass.
     #[inline]
     fn event_per_type(
-        mut tx_events: Vec<IbcEvent>,
+        mut tx_events: Vec<IbcEventWithHeight>,
     ) -> (
         Option<IbcEvent>,
-        Option<UpdateClientEvent>,
+        Option<Height>,
         Option<ClientMisbehaviourEvent>,
     ) {
         let mut error = None;
         let mut update = None;
         let mut misbehaviour = None;
 
-        while let Some(event) = tx_events.pop() {
-            match event {
-                IbcEvent::ChainError(_) => error = Some(event),
-                IbcEvent::UpdateClient(event) => update = Some(event),
+        while let Some(event_with_height) = tx_events.pop() {
+            match event_with_height.event {
+                IbcEvent::ChainError(_) => error = Some(event_with_height.event),
+                IbcEvent::UpdateClient(_) => update = Some(event_with_height.height),
                 IbcEvent::ClientMisbehaviour(event) => misbehaviour = Some(event),
                 _ => {}
             }
@@ -941,12 +956,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .send_messages_and_wait_commit(tm)
             .map_err(LinkError::relayer)?;
 
-        info!("result: {}", PrettyEvents(&dst_tx_events));
+        info!("result: {}", PrettyEvents(dst_tx_events.as_slice()));
 
         let (error, update, misbehaviour) = Self::event_per_type(dst_tx_events);
         match (error, update, misbehaviour) {
             // All updates were successful, no errors and no misbehaviour.
-            (None, Some(update_event), None) => Ok(update_event.height()),
+            (None, Some(update_event_height), None) => Ok(update_event_height),
             (Some(chain_error), _, _) => {
                 // Atleast one chain-error so retry if possible.
                 if retries_left == 0 {
@@ -1008,12 +1023,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .send_messages_and_wait_commit(tm)
             .map_err(LinkError::relayer)?;
 
-        info!("result: {}", PrettyEvents(&src_tx_events));
+        info!("result: {}", PrettyEvents(src_tx_events.as_slice()));
 
         let (error, update, misbehaviour) = Self::event_per_type(src_tx_events);
         match (error, update, misbehaviour) {
             // All updates were successful, no errors and no misbehaviour.
-            (None, Some(update_event), None) => Ok(update_event.height()),
+            (None, Some(update_event_height), None) => Ok(update_event_height),
             (Some(chain_error), _, _) => {
                 // Atleast one chain-error so retry if possible.
                 if retries_left == 0 {
@@ -1090,8 +1105,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         ) {
             // Update telemetry info
             telemetry!({
-                for e in events_chunk.clone() {
-                    self.record_cleared_send_packet(e);
+                for event_with_height in events_chunk.iter() {
+                    self.record_cleared_send_packet(event_with_height);
                 }
             });
             self.events_to_operational_data(TrackedEvents::new(events_chunk, tracking_id))?;
@@ -1138,7 +1153,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             &self.path_id,
             query_write_ack_events,
         ) {
-            telemetry!(self.record_cleared_acknowledgments(events_chunk.clone()));
+            telemetry!(self.record_cleared_acknowledgments(events_chunk.iter()));
             self.events_to_operational_data(TrackedEvents::new(events_chunk, tracking_id))?;
         }
 
@@ -1171,6 +1186,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     fn build_ack_from_recv_event(
         &self,
         event: &WriteAcknowledgement,
+        height: Height,
     ) -> Result<Option<Any>, LinkError> {
         let packet = event.packet.clone();
 
@@ -1181,7 +1197,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 &packet.destination_port,
                 &packet.destination_channel,
                 packet.sequence,
-                event.height,
+                height,
             )
             .map_err(|e| LinkError::packet_proofs_constructor(self.src_chain().id(), e))?;
 
@@ -1308,12 +1324,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         &self,
         event: &SendPacket,
         dst_info: &ChainStatus,
+        height: Height,
     ) -> Result<(Option<Any>, Option<Any>), LinkError> {
         let timeout = self.build_timeout_from_send_packet_event(event, dst_info)?;
         if timeout.is_some() {
             Ok((None, timeout))
         } else {
-            Ok((self.build_recv_packet(&event.packet, event.height)?, None))
+            Ok((self.build_recv_packet(&event.packet, height)?, None))
         }
     }
 
@@ -1524,9 +1541,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             let mut retain_batch = vec![];
 
             for gm in odata.batch.iter() {
-                let TransitMessage { event, .. } = gm;
+                let TransitMessage {
+                    event_with_height, ..
+                } = gm;
 
-                match event {
+                match &event_with_height.event {
                     IbcEvent::SendPacket(e) => {
                         // Catch any SendPacket event that timed-out
                         if self.send_packet_event_handled(e)? {
@@ -1546,7 +1565,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                                     )
                                 })
                                 .push(TransitMessage {
-                                    event: event.clone(),
+                                    event_with_height: event_with_height.clone(),
                                     msg: new_msg,
                                 });
                         } else {
@@ -1771,11 +1790,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     #[cfg(feature = "telemetry")]
-    fn record_cleared_send_packet(&self, event: IbcEvent) {
-        if let IbcEvent::SendPacket(send_packet_ev) = event {
+    fn record_cleared_send_packet(&self, event_with_height: &IbcEventWithHeight) {
+        if let IbcEvent::SendPacket(send_packet_ev) = &event_with_height.event {
             ibc_telemetry::global().send_packet_events(
                 send_packet_ev.packet.sequence.into(),
-                send_packet_ev.height().revision_height(),
+                event_with_height.height.revision_height(),
                 &self.src_chain().id(),
                 self.src_channel_id(),
                 self.src_port_id(),
@@ -1783,7 +1802,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             );
             ibc_telemetry::global().cleared_send_packet_events(
                 send_packet_ev.packet.sequence.into(),
-                send_packet_ev.height().revision_height(),
+                event_with_height.height.revision_height(),
                 &self.src_chain().id(),
                 self.src_channel_id(),
                 self.src_port_id(),
@@ -1793,12 +1812,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 
     #[cfg(feature = "telemetry")]
-    fn record_cleared_acknowledgments(&self, events: Vec<IbcEvent>) {
-        for e in events {
-            if let IbcEvent::WriteAcknowledgement(write_ack_ev) = e {
+    fn record_cleared_acknowledgments<'a>(
+        &self,
+        events_with_heights: impl Iterator<Item = &'a IbcEventWithHeight>,
+    ) {
+        for event_with_height in events_with_heights {
+            if let IbcEvent::WriteAcknowledgement(write_ack_ev) = &event_with_height.event {
                 ibc_telemetry::global().cleared_acknowledgment_events(
                     write_ack_ev.packet.sequence.into(),
-                    write_ack_ev.height().revision_height(),
+                    event_with_height.height.revision_height(),
                     &self.dst_chain().id(),
                     self.src_channel_id(),
                     self.src_port_id(),

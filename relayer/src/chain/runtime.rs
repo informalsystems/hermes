@@ -40,6 +40,7 @@ use crate::{
     event::{
         bus::EventBus,
         monitor::{EventBatch, EventReceiver, MonitorCmd, Result as MonitorResult, TxMonitorCmd},
+        IbcEventWithHeight,
     },
     keyring::KeyEntry,
 };
@@ -449,7 +450,7 @@ where
     fn send_messages_and_wait_commit(
         &mut self,
         tracked_msgs: TrackedMsgs,
-        reply_to: ReplyTo<Vec<IbcEvent>>,
+        reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     ) -> Result<(), Error> {
         let result = self.chain.send_messages_and_wait_commit(tracked_msgs);
         reply_to.send(result).map_err(Error::send)
@@ -855,7 +856,7 @@ where
     fn query_txs(
         &self,
         request: QueryTxRequest,
-        reply_to: ReplyTo<Vec<IbcEvent>>,
+        reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_txs(request);
         reply_to.send(result).map_err(Error::send)
