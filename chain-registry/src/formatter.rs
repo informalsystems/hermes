@@ -1,3 +1,7 @@
+//! Contains traits to format the URL of API endpoints from a `&str` to any type.
+//! Contains struct to build a `tendermint_rpc::Url` representing a 
+//! WebSocket URL from a RPC URL and to parse or build a valid `http::Uri` 
+//! from an (in)complete GRPC URL
 use crate::error::RegistryError;
 use http::uri::Scheme;
 use http::Uri;
@@ -5,20 +9,31 @@ use std::str::FromStr;
 
 use tendermint_rpc::Url;
 
+/// `UriFormatter` contains the basic expectations to parse a valid URL from a `&str`
 pub trait UriFormatter {
-    /// Attempts to parse the given input as a OutputFormat. If the parsed URI
+
+    /// Expected output format of the formatter
+    type OutputFormat;
+
+    /// Attempts to parse the given input as a OutputFormat. If the parsed URL
     /// is not complete, this method attempts to fill in the necessary missing
     /// pieces or return a RegistryError.
-    type OutputFormat;
-    fn parse_or_build_address(grpc: &str) -> Result<Self::OutputFormat, RegistryError>;
+    ///
+    /// # Arguments
+    ///
+    /// * `url` - A string slice that holds the url which should be formatted
+    fn parse_or_build_address(url: &str) -> Result<Self::OutputFormat, RegistryError>;
 }
 
+/// `SimpleWebSocketFormatter` contains methods to parse a valid WebSocket URL from a RPC URL
 pub struct SimpleWebSocketFormatter;
+
+/// `SimpleGrpcFormatter` contains methods to parse or build a valid `http::Uri` from an (in)complete GRPC URL
 pub struct SimpleGrpcFormatter;
 
-/// Format a websocket address from a rpc address and return a tendermint_rpc::Url.
 impl UriFormatter for SimpleWebSocketFormatter {
     type OutputFormat = Url;
+    /// Format a WebSocket URL from a RPC URL and return a `tendermint_rpc::Url`.
     fn parse_or_build_address(rpc_address: &str) -> Result<Self::OutputFormat, RegistryError> {
         let uri = rpc_address
             .parse::<Uri>()
@@ -93,6 +108,7 @@ mod tests {
 
     struct FormatterTest<T> {
         input: &'static str,
+        // expected is None if the formatter should return an error
         expected: Option<T>,
     }
     impl<T: PartialEq + Debug> FormatterTest<T> {
@@ -145,12 +161,32 @@ mod tests {
                 input: "test.com/",
                 expected: Some(Uri::from_str("https://test.com/").unwrap()),
             },
+            FormatterTest {
+                input: "test",
+                expected: Some(Uri::from_str("https://test/").unwrap()), // Not sure about this test case
+            },
         ];
 
         for test in valid_uri {
             test.run::<SimpleGrpcFormatter>();
         }
     }
+
+    #[test]
+    fn invalid_grpc_formatter_test() {
+        let valid_uri: &[FormatterTest<Uri>] = &[
+            FormatterTest {
+                input: "",
+                expected: None,
+            },
+        ];
+
+        for test in valid_uri {
+            test.run::<SimpleGrpcFormatter>();
+        }
+    }
+
+
 
     #[tokio::test]
     #[ignore]

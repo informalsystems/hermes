@@ -1,4 +1,6 @@
-/// Contains functions to query RPC and GRPC endpoints for a given chain
+//! Contains traits to query nodes of a given chain from their APIs.
+//! Contains struct to perform a health check on a gRPC/WebSocket endpoint and 
+//! to retrieve the `max_block_size` from a RPC endpoint.
 use crate::error::RegistryError;
 use crate::formatter::{SimpleWebSocketFormatter, UriFormatter};
 use async_trait::async_trait;
@@ -10,23 +12,41 @@ use tendermint_rpc::{Client, SubscriptionClient, Url, WebSocketClient};
 use tokio::time::timeout;
 use tokio::time::Duration;
 
-/// Input, output and error types for a query
+/// `QueryTypes` represents the basic types required to query a node
 pub trait QueryTypes {
+    /// `QueryInput` represents the data needed to query a node. It is typically a URL
     type QueryInput: Send;
+    /// `QueryOutput` represents the data returned by your query
     type QueryOutput;
+    /// `QueryOutput` represents the error returned when a query fails
     type QueryError;
 }
 
 #[async_trait]
-/// QueryContext is a trait that provides the ability to query a chain from a list of endpoints
+
+/// `QueryContext` represents the basic expectations for a query
 pub trait QueryContext: QueryTypes {
-    /// Returns an error specific to the query
+    /// Return an error specific to the query which is retured when `query_healthy` fails
+    ///
+    /// # Arguments
+    ///
+    /// * `chain_name` - A string slice that holds the name of a chain
     fn query_error(chain_name: String) -> Self::QueryError;
 
-    /// Queries an endpoint and return the result
-    async fn query(query: Self::QueryInput) -> Result<Self::QueryOutput, Self::QueryError>;
 
-    /// Queries all healthy endpoints from a list of urls and return the output of the first one to answer.
+    /// Query an endpoint and return the result
+    ///
+    /// # Arguments
+    ///
+    /// * `url` - A `QueryInput` object that holds the data needed to query a node
+    async fn query(url: Self::QueryInput) -> Result<Self::QueryOutput, Self::QueryError>;
+
+    /// Query every endpoints from a list of urls and return the output of the first one to answer.
+    ///
+    /// # Arguments
+    ///
+    /// * `chain_name` - A string that holds the name of a chain
+    /// * `urls` - A vector of urls to query
     async fn query_healthy(
         chain_name: String,
         urls: Vec<Self::QueryInput>,
@@ -45,9 +65,13 @@ pub trait QueryContext: QueryTypes {
 
 // ----------------- RPC ------------------
 
-/// Data which must be retrieved from RPC endpoints.
+/// `SimpleHermesRpcQuerier` retrieves `HermesConfigData` by querying a list of RPC endpoints through their WebSocket API
+/// and returns the result of the first endpoint to answer.
+pub struct SimpleHermesRpcQuerier;
+
+/// Data which must be retrieved from RPC endpoints for Hermes
 #[derive(Clone, Debug)]
-pub struct RpcData {
+pub struct HermesConfigData {
     pub rpc_address: Url,
     pub max_block_size: u64,
     pub websocket: Url,
@@ -55,17 +79,17 @@ pub struct RpcData {
     // however it looks like it is not in the genesis file anymore
 }
 
-pub struct SimpleRpcQuerier;
-
-/// Expected Input and Output to query an RPC endpoint
-impl QueryTypes for SimpleRpcQuerier {
+/// Expected Input, Output and Error to query an RPC endpoint
+impl QueryTypes for SimpleHermesRpcQuerier {
     type QueryInput = String;
-    type QueryOutput = RpcData;
+    type QueryOutput = HermesConfigData;
     type QueryError = RegistryError;
 }
 
 #[async_trait]
-impl QueryContext for SimpleRpcQuerier {
+impl QueryContext for SimpleHermesRpcQuerier {
+    
+    /// Return an error `NoHealthyRpc` when `query_healthy` fails 
     fn query_error(chain_name: String) -> RegistryError {
         RegistryError::no_healthy_rpc(chain_name)
     }
@@ -103,7 +127,7 @@ impl QueryContext for SimpleRpcQuerier {
             .map_err(|e| RegistryError::join_error("chain_data_join".to_string(), e))?
             .map_err(|e| RegistryError::websocket_driver_error(websocket_addr.to_string(), e))?;
 
-        Ok(RpcData {
+        Ok(HermesConfigData {
             rpc_address: Url::from_str(&rpc)
                 .map_err(|e| RegistryError::tendermint_url_parse_error(rpc, e))?,
             max_block_size: latest_consensus_params,
@@ -114,17 +138,20 @@ impl QueryContext for SimpleRpcQuerier {
 
 // ----------------- GRPC ------------------
 
-pub struct SimpleGrpcQuerier;
+/// `GrpcHealthCheckQuerier` connects to a list of gRPC endpoints 
+/// and returns the URL of the first one to answer.
+pub struct GrpcHealthCheckQuerier;
 
 /// Expected Input and Output to query a GRPC endpoint
-impl QueryTypes for SimpleGrpcQuerier {
+impl QueryTypes for GrpcHealthCheckQuerier {
     type QueryInput = Uri;
     type QueryOutput = Url;
     type QueryError = RegistryError;
 }
 
 #[async_trait]
-impl QueryContext for SimpleGrpcQuerier {
+impl QueryContext for GrpcHealthCheckQuerier {
+    /// Return an error `NoHealthyGrpc` when `query_healthy` fails
     fn query_error(chain_name: String) -> Self::QueryError {
         RegistryError::no_healthy_grpc(chain_name)
     }

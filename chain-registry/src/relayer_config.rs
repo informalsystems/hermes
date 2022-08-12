@@ -1,4 +1,4 @@
-//! Contains methods to generate a relayer config for a given chain
+//! Contains functions to generate a relayer config for a given chain
 use crate::{
     asset_list::AssetList,
     chain::ChainData,
@@ -26,8 +26,7 @@ use tendermint_light_client_verifier::types::TrustThreshold;
 use tendermint_rpc::Url;
 use tokio;
 
-// ----------------- Packet filters ------------------
-/// Generate packet filters from Vec<IBCPath>.
+/// Generate packet filters from Vec<IBCPath> and load them in a Map(chain_name -> filter).
 fn construct_packet_filters(ibc_paths: Vec<IBCPath>) -> HashMap<String, PacketFilter> {
     let mut packet_filters = HashMap::new();
 
@@ -66,7 +65,7 @@ where
     GrpcQuerier:
         QueryContext<QueryInput = Uri, QueryOutput = Url, QueryError = RegistryError> + Send,
     RpcQuerier:
-        QueryContext<QueryInput = String, QueryOutput = RpcData, QueryError = RegistryError> + Send,
+        QueryContext<QueryInput = String, QueryOutput = HermesConfigData, QueryError = RegistryError> + Send,
     GrpcFormatter: UriFormatter<OutputFormat = Uri>,
 {
     let chain_name = chain_data.chain_name;
@@ -145,9 +144,22 @@ where
     })
 }
 
-/// Generates a Vec<ChainConfig> for an array of chains by fetching data from
+/// Generates a Vec<ChainConfig> for a slice of chains names by fetching data from
 /// https://github.com/cosmos/chain-registry. Gas settings are set to default values.
-/// This function expects that chains is sorted and keys has the same length as chains.
+///
+/// # Arguments
+///
+/// * `chains` - A slice of strings that holds the name of the chains for which a `ChainConfig` will be generated. It must be sorted.
+/// * `keys` - A slice of keys that holds the name of the keys which will be used for each chain. It must have the same length as `chains`.
+/// 
+/// # Example
+///
+/// ```
+/// use chain_registry::relayer_config::get_configs;
+/// let chains = &vec!["cosmoshub".to_string(), "osmosis".to_string()];
+/// let keys = &vec!["key_cosmoshub".to_string(), "key_osmosis".to_string()];
+/// let configs = get_configs(chains, keys);
+/// ```
 pub async fn get_configs(
     chains: &[String],
     keys: &[String],
@@ -208,7 +220,7 @@ pub async fn get_configs(
         let key = keys[i].to_string();
 
         configs_handle.push(tokio::spawn(async move {
-            hermes_config::<SimpleGrpcQuerier, SimpleRpcQuerier, SimpleGrpcFormatter>(
+            hermes_config::<GrpcHealthCheckQuerier, SimpleHermesRpcQuerier, SimpleGrpcFormatter>(
                 chain_data,
                 assets,
                 packet_filter,
@@ -241,7 +253,7 @@ mod tests {
         Ok(get_configs(test_chains, test_keys).await?)
     }
 
-    // Helper function
+    // Helper function for configs without filter
     async fn should_have_no_filter(test_chains: &[String]) -> Result<(), RegistryError> {
         let configs = fetch_configs(test_chains).await?;
         for config in configs {
@@ -340,7 +352,7 @@ mod tests {
 
     #[tokio::test]
     async fn fetch_no_chain() -> Result<(), RegistryError> {
-        let test_chains: &[String] = &[]; // Must be sorted
+        let test_chains: &[String] = &[];
         let configs = fetch_configs(test_chains).await?;
         assert_eq!(configs.len(), 0);
         Ok(())
