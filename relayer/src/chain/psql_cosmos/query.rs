@@ -24,7 +24,7 @@ use crate::chain::cosmos::types::events::client as ClientEvents;
 use crate::chain::cosmos::types::events::from_tx_response_event;
 use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use crate::chain::endpoint::ChainStatus;
-use crate::chain::psql_cosmos::update::{IbcSnapshot, PacketId};
+use crate::chain::psql_cosmos::snapshot::{IbcSnapshot, PacketId};
 use crate::chain::requests::*;
 use crate::error::Error;
 

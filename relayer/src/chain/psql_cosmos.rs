@@ -40,9 +40,8 @@ use crate::{
         cosmos::{query::account::get_or_fetch_account, CosmosSdkChain},
         endpoint::{ChainEndpoint, ChainStatus, HealthCheck},
         psql_cosmos::{
-            batch::send_batched_messages_and_wait_commit,
-            query::*,
-            update::{update_snapshot, IbcData, IbcSnapshot, PacketId},
+            batch::send_batched_messages_and_wait_commit, query::*,
+            snapshot::psql::update_snapshot, snapshot::PacketId,
         },
         requests::*,
         tracking::TrackedMsgs,
@@ -55,10 +54,12 @@ use crate::{
     light_client::{tendermint::LightClient as TmLightClient, LightClient, Verified},
 };
 
+use self::snapshot::{IbcData, IbcSnapshot};
+
 pub mod batch;
-mod events;
+pub mod events;
 pub mod query;
-pub mod update;
+pub mod snapshot;
 pub mod wait;
 
 flex_error::define_error! {
@@ -350,7 +351,7 @@ impl PsqlChain {
         Ok(())
     }
 
-    #[tracing::instrument(skip_all)]
+    #[tracing::instrument(skip(self))]
     fn ibc_snapshot(&self, query_height: &Height) -> Result<IbcSnapshot, Error> {
         let mut result = IbcSnapshot {
             height: query_height.revision_height(),
@@ -698,8 +699,6 @@ impl ChainEndpoint for PsqlChain {
     }
 
     fn id(&self) -> &ChainId {
-        // let _ = &self.pool;
-        // let _ = &self.rt;
         self.chain.id()
     }
 
