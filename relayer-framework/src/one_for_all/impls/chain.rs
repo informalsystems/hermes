@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::one_for_all::impls::error::OfaHasError;
+use crate::one_for_all::impls::error::OfaErrorContext;
 use crate::one_for_all::impls::message::OfaMessage;
 use crate::one_for_all::impls::runtime::OfaHasRuntime;
 use crate::one_for_all::traits::chain::OfaChain;
@@ -12,7 +12,7 @@ use crate::traits::contexts::runtime::HasRuntime;
 use crate::traits::queries::consensus_state::{
     CanQueryConsensusState, ConsensusStateQuerier, HasConsensusState,
 };
-use crate::traits::queries::received_packet::ReceivedPacketQuerier;
+use crate::traits::queries::received_packet::{CanQueryReceivedPacket, ReceivedPacketQuerier};
 
 pub struct OfaChainContext<Chain: OfaChain> {
     pub chain: Chain,
@@ -29,7 +29,7 @@ impl<Chain: OfaChain> OfaChainContext<Chain> {
 }
 
 impl<Chain: OfaChain> HasError for OfaChainContext<Chain> {
-    type Error = OfaHasError<Chain::Error>;
+    type Error = OfaErrorContext<Chain::Error>;
 }
 
 impl<Chain: OfaChain> HasRuntime for OfaChainContext<Chain> {
@@ -103,7 +103,7 @@ where
         chain: &OfaChainContext<Chain>,
         client_id: &Chain::ClientId,
         height: &Chain::CounterpartyHeight,
-    ) -> Result<Chain::CounterpartyConsensusState, OfaHasError<Chain::Error>> {
+    ) -> Result<Chain::CounterpartyConsensusState, OfaErrorContext<Chain::Error>> {
         let consensus_state = chain.chain.query_consensus_state(client_id, height).await?;
 
         Ok(consensus_state)
@@ -122,8 +122,36 @@ where
     type ConsensusStateQuerier = OfaConsensusStateQuerier;
 }
 
+pub struct OfaReceivedPacketQuerier;
+
 #[async_trait]
-impl<Chain, Counterparty> ReceivedPacketQuerier<Counterparty> for OfaChainContext<Chain>
+impl<Chain, Counterparty> ReceivedPacketQuerier<OfaChainContext<Chain>, Counterparty>
+    for OfaReceivedPacketQuerier
+where
+    Chain: OfaChain,
+    Counterparty: IbcChainContext<
+        OfaChainContext<Chain>,
+        Height = Chain::CounterpartyHeight,
+        Sequence = Chain::CounterpartySequence,
+    >,
+{
+    async fn is_packet_received(
+        chain: &OfaChainContext<Chain>,
+        port_id: &Chain::PortId,
+        channel_id: &Chain::ChannelId,
+        sequence: &Counterparty::Sequence,
+    ) -> Result<bool, OfaErrorContext<Chain::Error>> {
+        let is_received = chain
+            .chain
+            .is_packet_received(port_id, channel_id, sequence)
+            .await?;
+
+        Ok(is_received)
+    }
+}
+
+#[async_trait]
+impl<Chain, Counterparty> CanQueryReceivedPacket<Counterparty> for OfaChainContext<Chain>
 where
     Chain: OfaChain,
     Counterparty: IbcChainContext<
@@ -132,17 +160,5 @@ where
         Sequence = Chain::CounterpartySequence,
     >,
 {
-    async fn is_packet_received(
-        &self,
-        port_id: &Chain::PortId,
-        channel_id: &Chain::ChannelId,
-        sequence: &Counterparty::Sequence,
-    ) -> Result<bool, Self::Error> {
-        let is_received = self
-            .chain
-            .is_packet_received(port_id, channel_id, sequence)
-            .await?;
-
-        Ok(is_received)
-    }
+    type ReceivedPacketQuerier = OfaReceivedPacketQuerier;
 }

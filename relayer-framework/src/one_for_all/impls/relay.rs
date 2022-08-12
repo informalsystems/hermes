@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::one_for_all::impls::chain::OfaChainContext;
-use crate::one_for_all::impls::error::OfaHasError;
+use crate::one_for_all::impls::error::OfaErrorContext;
 use crate::one_for_all::impls::message::OfaMessage;
 use crate::one_for_all::impls::runtime::OfaHasRuntime;
 use crate::one_for_all::traits::chain::OfaChain;
@@ -53,7 +53,7 @@ pub struct OfaPacket<Relay: OfaRelay> {
 }
 
 impl<Relay: OfaRelay> HasError for OfaRelayContext<Relay> {
-    type Error = OfaHasError<Relay::Error>;
+    type Error = OfaErrorContext<Relay::Error>;
 }
 
 impl<Relay: OfaRelay> HasRuntime for OfaRelayContext<Relay> {
@@ -137,7 +137,7 @@ impl<Relay: OfaRelay> UpdateClientMessageBuilder<OfaRelayContext<Relay>, SourceT
     async fn build_update_client_messages(
         context: &OfaRelayContext<Relay>,
         height: &<Relay::DstChain as OfaChain>::Height,
-    ) -> Result<Vec<OfaMessage<Relay::SrcChain>>, OfaHasError<Relay::Error>> {
+    ) -> Result<Vec<OfaMessage<Relay::SrcChain>>, OfaErrorContext<Relay::Error>> {
         let messages = context
             .relay
             .build_src_update_client_messages(height)
@@ -156,7 +156,7 @@ impl<Relay: OfaRelay> UpdateClientMessageBuilder<OfaRelayContext<Relay>, Destina
     async fn build_update_client_messages(
         context: &OfaRelayContext<Relay>,
         height: &<Relay::SrcChain as OfaChain>::Height,
-    ) -> Result<Vec<OfaMessage<Relay::DstChain>>, OfaHasError<Relay::Error>> {
+    ) -> Result<Vec<OfaMessage<Relay::DstChain>>, OfaErrorContext<Relay::Error>> {
         let messages = context
             .relay
             .build_dst_update_client_messages(height)
@@ -176,7 +176,7 @@ impl<Relay: OfaRelay> ReceivePacketMessageBuilder<OfaRelayContext<Relay>>
         &self,
         height: &<Relay::SrcChain as OfaChain>::Height,
         packet: &OfaPacket<Relay>,
-    ) -> Result<OfaMessage<Relay::DstChain>, OfaHasError<Relay::Error>> {
+    ) -> Result<OfaMessage<Relay::DstChain>, OfaErrorContext<Relay::Error>> {
         let message = self
             .relay
             .build_receive_packet_message(height, &packet.packet)
@@ -193,7 +193,7 @@ impl<Relay: OfaRelay> AckPacketMessageBuilder<OfaRelayContext<Relay>> for OfaRel
         destination_height: &<Relay::DstChain as OfaChain>::Height,
         packet: &OfaPacket<Relay>,
         ack: &<Relay::DstChain as OfaChain>::WriteAcknowledgementEvent,
-    ) -> Result<OfaMessage<Relay::SrcChain>, OfaHasError<Relay::Error>> {
+    ) -> Result<OfaMessage<Relay::SrcChain>, OfaErrorContext<Relay::Error>> {
         let message = self
             .relay
             .build_ack_packet_message(destination_height, &packet.packet, ack)

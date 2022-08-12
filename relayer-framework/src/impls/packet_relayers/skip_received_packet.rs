@@ -5,7 +5,7 @@ use crate::traits::contexts::ibc_event::HasIbcEvents;
 use crate::traits::contexts::relay::RelayContext;
 use crate::traits::packet::IbcPacket;
 use crate::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
-use crate::traits::queries::received_packet::ReceivedPacketQuerier;
+use crate::traits::queries::received_packet::CanQueryReceivedPacket;
 use crate::types::aliases::{Height, Packet, WriteAcknowledgementEvent};
 
 pub struct SkipReceivedPacketRelayer<Relayer> {
@@ -24,7 +24,7 @@ where
     Context: RelayContext,
     Relayer: ReceivePacketRelayer<Context>,
     Context::DstChain: HasIbcEvents<Context::SrcChain>,
-    Context::DstChain: ReceivedPacketQuerier<Context::SrcChain>,
+    Context::DstChain: CanQueryReceivedPacket<Context::SrcChain>,
 {
     async fn relay_receive_packet(
         &self,

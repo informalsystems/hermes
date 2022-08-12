@@ -1,4 +1,4 @@
-use crate::one_for_all::impls::error::OfaHasError;
+use crate::one_for_all::impls::error::OfaErrorContext;
 use crate::one_for_all::traits::runtime::OfaRuntime;
 use crate::traits::contexts::error::HasError;
 
@@ -13,5 +13,5 @@ impl<Runtime> OfaHasRuntime<Runtime> {
 }
 
 impl<Runtime: OfaRuntime> HasError for OfaHasRuntime<Runtime> {
-    type Error = OfaHasError<Runtime::Error>;
+    type Error = OfaErrorContext<Runtime::Error>;
 }

@@ -2,7 +2,7 @@ use crate::all_for_one::traits::chain::{AfoChainContext, AfoCounterpartyContext}
 use crate::all_for_one::traits::error::AfoError;
 use crate::all_for_one::traits::relay::AfoRelayContext;
 use crate::one_for_all::impls::chain::OfaChainContext;
-use crate::one_for_all::impls::error::OfaHasError;
+use crate::one_for_all::impls::error::OfaErrorContext;
 use crate::one_for_all::impls::relay::OfaRelayContext;
 use crate::one_for_all::traits::chain::OfaChain;
 use crate::one_for_all::traits::error::OfaError;
@@ -30,7 +30,7 @@ where
     chain
 }
 
-pub fn afo_error<Error>(error: OfaHasError<Error>) -> impl AfoError
+pub fn afo_error<Error>(error: OfaErrorContext<Error>) -> impl AfoError
 where
     Error: OfaError,
 {
