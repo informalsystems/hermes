@@ -211,7 +211,7 @@ other than `ShopClosedError`.
 
 ## Multiple Type Bindings
 
-When specifying the constraints for indirect depedencies, we have to keep using
+When specifying the constraints for indirect dependencies, we have to keep using
 the `Context::` prefix to access associated types like `Context::Error`. Worse,
 once we start using nested associated types, we have to resort to using fully
 qualified syntax like `<Context::Foo as Foo>::Bar`; `Context::Foo::Bar` doesn't work.

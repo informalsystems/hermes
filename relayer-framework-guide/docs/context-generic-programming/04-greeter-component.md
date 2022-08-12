@@ -236,7 +236,7 @@ type that implements `Greeter<AppContext>`. As a result,
 we can treat the type returned from `app_greeter` as an abstract type,
 and "forget" the fact that `AppContext` implements `PersonQuerier`.
 
-This pattern of making use of Rust's trait system for depedency injection
+This pattern of making use of Rust's trait system for dependency injection
 efficiently solves the
 [context and capabilities problem](https://tmandry.gitlab.io/blog/posts/2021-12-21-context-capabilities/)
 in Rust. Without it, we would have to rely on more exotic language features
