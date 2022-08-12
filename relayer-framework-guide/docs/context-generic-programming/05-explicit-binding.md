@@ -10,30 +10,30 @@ type parameter and bind to the `Error` associated type as follows:
 ```rust
 # struct PersonId(String);
 # struct Person {
-#   id: PersonId,
-#   name: String,
+#      id: PersonId,
+#      name: String,
 # }
 #
 # trait HasError {
-#   type Error;
+#      type Error;
 # }
 #
-# trait QueryPersonContext: HasError {
-#   fn query_person(&self, person_id: &PersonId) ->  Result<Person, Self::Error>;
+# trait PersonQuerier: HasError {
+#      fn query_person(&self, person_id: &PersonId) ->    Result<Person, Self::Error>;
 # }
 #
 fn greet<Context, Error>(context: &Context, person_id: &PersonId)
-  -> Result<(), Error>
+    -> Result<(), Error>
 where
-  Context: QueryPersonContext<Error=Error>,
+    Context: PersonQuerier<Error=Error>,
 {
-  let person = context.query_person(person_id)?;
-  println!("Hello, {}", person.name);
-  Ok(())
+    let person = context.query_person(person_id)?;
+    println!("Hello, {}", person.name);
+    Ok(())
 }
 ```
 
-By specifying the trait bound `Context: QueryPersonContext<Error=Error>`,
+By specifying the trait bound `Context: PersonQuerier<Error=Error>`,
 we state that the `greet` function works with any generic type `Error`,
 provided that `Context::Error` is the same as `Error`. With the explicit
 binding, we are able to have `greet` return `Result<(), Error>` instead of

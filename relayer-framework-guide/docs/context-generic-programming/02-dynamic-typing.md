@@ -7,8 +7,8 @@ typed language like JavaScript, many of these problems go away:
 
 ```javascript
 function greet(db, personId) {
-  const person = db.queryPerson(personId)
-  console.log(`Hello, ${person.name}!`)
+    const person = db.queryPerson(personId)
+    console.log(`Hello, ${person.name}!`)
 }
 ```
 
@@ -16,9 +16,9 @@ Thanks to dynamic typing, the JavaScript `greet` function above is general
 in several ways:
 
 - The function can work with any `db` value, as long as it provides a valid
-  `query_person` method.
+    `query_person` method.
 - The function can work with any `person` value returned from `db.query_person`,
-  as long as it contains a `name` field that can be converted into a string.
+    as long as it contains a `name` field that can be converted into a string.
 - The error can be thrown implicitly by `db.query_person` as an exception.
 
 On the upside, the dynamic nature of the `greet` function means that it can
@@ -43,9 +43,9 @@ what kind of greeting is used.
 
 ```javascript
 function greet(context, personId) {
-  const person = context.queryPerson(personId)
-  const greeting = context.getGreeting()
-  console.log(`${greeting}, ${person.name}!`)
+    const person = context.queryPerson(personId)
+    const greeting = context.getGreeting()
+    console.log(`${greeting}, ${person.name}!`)
 }
 ```
 

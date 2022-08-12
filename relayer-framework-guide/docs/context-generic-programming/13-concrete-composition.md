@@ -9,32 +9,32 @@ First, we put all the abstract traits into a `traits` module:
 
 ```rust
 mod app {
-  mod traits {
-    pub trait NamedPerson {
-      fn name(&self) -> &str;
+    mod traits {
+        pub trait NamedPerson {
+            fn name(&self) -> &str;
+        }
+
+        pub trait SimpleTime {
+            fn is_daytime(&self) -> bool;
+        }
+
+        pub trait HasError {
+            type Error;
+        }
+
+        pub trait PersonContext {
+            type PersonId;
+            type Person: NamedPerson;
+        }
+
+        pub trait HasTime {
+            type Time;
+
+            fn now(&self) -> Self::Time;
+        }
     }
 
-    pub trait SimpleTime {
-      fn is_daytime(&self) -> bool;
-    }
-
-    pub trait HasError {
-      type Error;
-    }
-
-    pub trait PersonContext {
-      type PersonId;
-      type Person: NamedPerson;
-    }
-
-    pub trait HasTime {
-      type Time;
-
-      fn now(&self) -> Self::Time;
-    }
-  }
-
-  // ...
+    // ...
 }
 ```
 
@@ -49,98 +49,98 @@ Next, we define `SimpleGreeter` and `DaytimeGreeter` in separate modules.
 
 ```rust
 mod app {
-  mod traits {
-    // ...
-#    pub trait NamedPerson {
-#      fn name(&self) -> &str;
-#    }
+    mod traits {
+        // ...
+#         pub trait NamedPerson {
+#             fn name(&self) -> &str;
+#         }
 #
-#    pub trait SimpleTime {
-#      fn is_daytime(&self) -> bool;
-#    }
+#         pub trait SimpleTime {
+#             fn is_daytime(&self) -> bool;
+#         }
 #
-#    pub trait HasError {
-#      type Error;
-#    }
+#         pub trait HasError {
+#             type Error;
+#         }
 #
-#    pub trait PersonContext {
-#      type PersonId;
-#      type Person: NamedPerson;
-#    }
+#         pub trait PersonContext {
+#             type PersonId;
+#             type Person: NamedPerson;
+#         }
 #
-#    pub trait HasTime {
-#      type Time;
+#         pub trait HasTime {
+#             type Time;
 #
-#      fn now(&self) -> Self::Time;
-#    }
+#             fn now(&self) -> Self::Time;
+#         }
 #
-#    pub trait QueryPersonContext: PersonContext + HasError {
-#      fn query_person(&self, person_id: &Self::PersonId)
-#        -> Result<Self::Person, Self::Error>;
-#    }
+#         pub trait PersonQuerier: PersonContext + HasError {
+#             fn query_person(&self, person_id: &Self::PersonId)
+#                 -> Result<Self::Person, Self::Error>;
+#         }
 #
-#    pub trait Greeter<Context>
-#    where
-#      Context: PersonContext + HasError,
-#    {
-#      fn greet(&self, context: &Context, person_id: &Context::PersonId)
-#        -> Result<(), Context::Error>;
-#    }
-  }
-
-  mod simple_greeter {
-    use super::traits::{Greeter, NamedPerson, QueryPersonContext};
-
-    pub struct SimpleGreeter;
-
-    impl<Context> Greeter<Context> for SimpleGreeter
-    where
-      Context: QueryPersonContext,
-    {
-      fn greet(&self, context: &Context, person_id: &Context::PersonId)
-        -> Result<(), Context::Error>
-      {
-        let person = context.query_person(person_id)?;
-        println!("Hello, {}", person.name());
-        Ok(())
-      }
+#         pub trait Greeter<Context>
+#         where
+#             Context: PersonContext + HasError,
+#         {
+#             fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#                 -> Result<(), Context::Error>;
+#         }
     }
-  }
 
-  mod daytime_greeter {
-    use super::traits::{
-      Greeter, HasError, PersonContext,
-      HasTime, SimpleTime,
-    };
+    mod simple_greeter {
+        use super::traits::{Greeter, NamedPerson, PersonQuerier};
 
-    pub struct DaytimeGreeter<InGreeter>(pub InGreeter);
+        pub struct SimpleGreeter;
 
-    pub struct ShopClosedError<Time> { time: Time }
-
-    impl<Context, InGreeter, Time, Error, PersonId>
-      Greeter<Context> for DaytimeGreeter<InGreeter>
-    where
-      InGreeter: Greeter<Context>,
-      Context: HasError<Error=Error>,
-      Context: PersonContext<PersonId=PersonId>,
-      Context: HasTime<Time=Time>,
-      Time: SimpleTime,
-      Error: From<ShopClosedError<Time>>,
-    {
-      fn greet(&self, context: &Context, person_id: &PersonId)
-        -> Result<(), Error>
-      {
-        let now = context.now();
-        if now.is_daytime() {
-          self.0.greet(context, person_id)
-        } else {
-          Err(ShopClosedError { time: now }.into())
+        impl<Context> Greeter<Context> for SimpleGreeter
+        where
+            Context: PersonQuerier,
+        {
+            fn greet(&self, context: &Context, person_id: &Context::PersonId)
+                -> Result<(), Context::Error>
+            {
+                let person = context.query_person(person_id)?;
+                println!("Hello, {}", person.name());
+                Ok(())
+            }
         }
-      }
     }
-  }
 
-  // ...
+    mod daytime_greeter {
+        use super::traits::{
+            Greeter, HasError, PersonContext,
+            HasTime, SimpleTime,
+        };
+
+        pub struct DaytimeGreeter<InGreeter>(pub InGreeter);
+
+        pub struct ShopClosedError<Time> { time: Time }
+
+        impl<Context, InGreeter, Time, Error, PersonId>
+            Greeter<Context> for DaytimeGreeter<InGreeter>
+        where
+            InGreeter: Greeter<Context>,
+            Context: HasError<Error=Error>,
+            Context: PersonContext<PersonId=PersonId>,
+            Context: HasTime<Time=Time>,
+            Time: SimpleTime,
+            Error: From<ShopClosedError<Time>>,
+        {
+            fn greet(&self, context: &Context, person_id: &PersonId)
+                -> Result<(), Error>
+            {
+                let now = context.now();
+                if now.is_daytime() {
+                    self.0.greet(context, person_id)
+                } else {
+                    Err(ShopClosedError { time: now }.into())
+                }
+            }
+        }
+    }
+
+    // ...
 }
 ```
 
@@ -155,126 +155,126 @@ context traits:
 
 ```rust
 mod app {
-  mod traits {
-    // ...
-#    pub trait NamedPerson {
-#      fn name(&self) -> &str;
-#    }
+    mod traits {
+        // ...
+#         pub trait NamedPerson {
+#             fn name(&self) -> &str;
+#         }
 #
-#    pub trait SimpleTime {
-#      fn is_daytime(&self) -> bool;
-#    }
+#         pub trait SimpleTime {
+#             fn is_daytime(&self) -> bool;
+#         }
 #
-#    pub trait HasError {
-#      type Error;
-#    }
+#         pub trait HasError {
+#             type Error;
+#         }
 #
-#    pub trait PersonContext {
-#      type PersonId;
-#      type Person: NamedPerson;
-#    }
+#         pub trait PersonContext {
+#             type PersonId;
+#             type Person: NamedPerson;
+#         }
 #
-#    pub trait HasTime {
-#      type Time;
+#         pub trait HasTime {
+#             type Time;
 #
-#      fn now(&self) -> Self::Time;
-#    }
+#             fn now(&self) -> Self::Time;
+#         }
 #
-#    pub trait QueryPersonContext: PersonContext + HasError {
-#      fn query_person(&self, person_id: &Self::PersonId)
-#        -> Result<Self::Person, Self::Error>;
-#    }
+#         pub trait PersonQuerier: PersonContext + HasError {
+#             fn query_person(&self, person_id: &Self::PersonId)
+#                 -> Result<Self::Person, Self::Error>;
+#         }
 #
-#    pub trait Greeter<Context>
-#    where
-#      Context: PersonContext + HasError,
-#    {
-#      fn greet(&self, context: &Context, person_id: &Context::PersonId)
-#        -> Result<(), Context::Error>;
-#    }
-  }
-
-  mod simple_greeter {
-    // ...
-  }
-
-  mod daytime_greeter {
-    pub struct ShopClosedError<Time> { time: Time }
-    // ...
-  }
-
-  mod context {
-    use super::traits::*;
-    use super::daytime_greeter::ShopClosedError;
-
-    #[derive(Copy, Clone, PartialEq, Eq)]
-    pub enum DummyTime {
-      DayTime,
-      NightTime,
+#         pub trait Greeter<Context>
+#         where
+#             Context: PersonContext + HasError,
+#         {
+#             fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#                 -> Result<(), Context::Error>;
+#         }
     }
 
-    pub struct BasicPerson {
-      name: String,
+    mod simple_greeter {
+        // ...
     }
 
-    pub struct AppContext {
-      database: Database,
-      time: DummyTime,
+    mod daytime_greeter {
+        pub struct ShopClosedError<Time> { time: Time }
+        // ...
     }
 
-    // Database stubs
-    struct Database;
-    struct DbError;
+    mod context {
+        use super::traits::*;
+        use super::daytime_greeter::ShopClosedError;
 
-    pub enum AppError {
-      Database(DbError),
-      ShopClosed(ShopClosedError<DummyTime>),
-      // ...
+        #[derive(Copy, Clone, PartialEq, Eq)]
+        pub enum DummyTime {
+            DayTime,
+            NightTime,
+        }
+
+        pub struct BasicPerson {
+            name: String,
+        }
+
+        pub struct AppContext {
+            database: Database,
+            time: DummyTime,
+        }
+
+        // Database stubs
+        struct Database;
+        struct DbError;
+
+        pub enum AppError {
+            Database(DbError),
+            ShopClosed(ShopClosedError<DummyTime>),
+            // ...
+        }
+
+        impl HasError for AppContext {
+            type Error = AppError;
+        }
+
+        impl PersonContext for AppContext {
+            type PersonId = String;
+            type Person = BasicPerson;
+        }
+
+        impl HasTime for AppContext {
+            type Time = DummyTime;
+
+            fn now(&self) -> DummyTime {
+                self.time
+            }
+        }
+
+        impl PersonQuerier for AppContext {
+            fn query_person(&self, person_id: &Self::PersonId)
+                -> Result<Self::Person, Self::Error>
+            {
+                unimplemented!() // database stub
+            }
+        }
+
+        impl NamedPerson for BasicPerson {
+            fn name(&self) -> &str {
+                &self.name
+            }
+        }
+
+        impl SimpleTime for DummyTime {
+            fn is_daytime(&self) -> bool {
+                self == &DummyTime::DayTime
+            }
+        }
+
+        impl From<ShopClosedError<DummyTime>> for AppError {
+            fn from(err: ShopClosedError<DummyTime>) -> Self {
+                Self::ShopClosed(err)
+            }
+        }
     }
-
-    impl HasError for AppContext {
-      type Error = AppError;
-    }
-
-    impl PersonContext for AppContext {
-      type PersonId = String;
-      type Person = BasicPerson;
-    }
-
-    impl HasTime for AppContext {
-      type Time = DummyTime;
-
-      fn now(&self) -> DummyTime {
-        self.time
-      }
-    }
-
-    impl QueryPersonContext for AppContext {
-      fn query_person(&self, person_id: &Self::PersonId)
-        -> Result<Self::Person, Self::Error>
-      {
-        unimplemented!() // database stub
-      }
-    }
-
-    impl NamedPerson for BasicPerson {
-      fn name(&self) -> &str {
-        &self.name
-      }
-    }
-
-    impl SimpleTime for DummyTime {
-      fn is_daytime(&self) -> bool {
-        self == &DummyTime::DayTime
-      }
-    }
-
-    impl From<ShopClosedError<DummyTime>> for AppError {
-      fn from(err: ShopClosedError<DummyTime>) -> Self {
-        Self::ShopClosed(err)
-      }
-    }
-  }
 }
 ```
 
@@ -303,187 +303,187 @@ the `Greeter` components:
 
 ```rust
 mod app {
-  mod traits {
-    // ...
-#    pub trait NamedPerson {
-#      fn name(&self) -> &str;
-#    }
+    mod traits {
+        // ...
+#         pub trait NamedPerson {
+#             fn name(&self) -> &str;
+#         }
 #
-#    pub trait SimpleTime {
-#      fn is_daytime(&self) -> bool;
-#    }
+#         pub trait SimpleTime {
+#             fn is_daytime(&self) -> bool;
+#         }
 #
-#    pub trait HasError {
-#      type Error;
-#    }
+#         pub trait HasError {
+#             type Error;
+#         }
 #
-#    pub trait PersonContext {
-#      type PersonId;
-#      type Person: NamedPerson;
-#    }
+#         pub trait PersonContext {
+#             type PersonId;
+#             type Person: NamedPerson;
+#         }
 #
-#    pub trait HasTime {
-#      type Time;
+#         pub trait HasTime {
+#             type Time;
 #
-#      fn now(&self) -> Self::Time;
-#    }
+#             fn now(&self) -> Self::Time;
+#         }
 #
-#    pub trait QueryPersonContext: PersonContext + HasError {
-#      fn query_person(&self, person_id: &Self::PersonId)
-#        -> Result<Self::Person, Self::Error>;
-#    }
+#         pub trait PersonQuerier: PersonContext + HasError {
+#             fn query_person(&self, person_id: &Self::PersonId)
+#                 -> Result<Self::Person, Self::Error>;
+#         }
 #
-#    pub trait Greeter<Context>
-#    where
-#      Context: PersonContext + HasError,
-#    {
-#      fn greet(&self, context: &Context, person_id: &Context::PersonId)
-#        -> Result<(), Context::Error>;
-#    }
-  }
-
-  mod simple_greeter {
-    // ...
-#    use super::traits::{Greeter, NamedPerson, QueryPersonContext};
-#
-#    pub struct SimpleGreeter;
-#
-#    impl<Context> Greeter<Context> for SimpleGreeter
-#    where
-#      Context: QueryPersonContext,
-#    {
-#      fn greet(&self, context: &Context, person_id: &Context::PersonId)
-#        -> Result<(), Context::Error>
-#      {
-#        let person = context.query_person(person_id)?;
-#        println!("Hello, {}", person.name());
-#        Ok(())
-#      }
-#    }
-  }
-
-  mod daytime_greeter {
-    // ...
-#    use super::traits::{
-#      Greeter, HasError, PersonContext,
-#      HasTime, SimpleTime,
-#    };
-#
-#    pub struct DaytimeGreeter<InGreeter>(pub InGreeter);
-#
-#    pub struct ShopClosedError<Time> { time: Time }
-#
-#    impl<Context, InGreeter, Time, Error, PersonId>
-#      Greeter<Context> for DaytimeGreeter<InGreeter>
-#    where
-#      InGreeter: Greeter<Context>,
-#      Context: HasError<Error=Error>,
-#      Context: PersonContext<PersonId=PersonId>,
-#      Context: HasTime<Time=Time>,
-#      Time: SimpleTime,
-#      Error: From<ShopClosedError<Time>>,
-#    {
-#      fn greet(&self, context: &Context, person_id: &PersonId)
-#        -> Result<(), Error>
-#      {
-#        let now = context.now();
-#        if now.is_daytime() {
-#          self.0.greet(context, person_id)
-#        } else {
-#          Err(ShopClosedError { time: now }.into())
-#        }
-#      }
-#    }
-  }
-
-  mod context {
-    // ...
-#    use super::traits::*;
-#    use super::daytime_greeter::ShopClosedError;
-#
-#    #[derive(Copy, Clone, PartialEq, Eq)]
-#    pub enum DummyTime {
-#      DayTime,
-#      NightTime,
-#    }
-#
-#    pub struct BasicPerson {
-#      name: String,
-#    }
-#
-#    pub struct AppContext {
-#      database: Database,
-#      time: DummyTime,
-#    }
-#
-#    // Database stubs
-#    struct Database;
-#    struct DbError;
-#
-#    pub enum AppError {
-#      Database(DbError),
-#      ShopClosed(ShopClosedError<DummyTime>),
-#      // ...
-#    }
-#
-#    impl HasError for AppContext {
-#      type Error = AppError;
-#    }
-#
-#    impl PersonContext for AppContext {
-#      type PersonId = String;
-#      type Person = BasicPerson;
-#    }
-#
-#    impl HasTime for AppContext {
-#      type Time = DummyTime;
-#
-#      fn now(&self) -> DummyTime {
-#        self.time
-#      }
-#    }
-#
-#    impl QueryPersonContext for AppContext {
-#      fn query_person(&self, person_id: &Self::PersonId)
-#        -> Result<Self::Person, Self::Error>
-#      {
-#        unimplemented!() // database stub
-#      }
-#    }
-#
-#    impl NamedPerson for BasicPerson {
-#      fn name(&self) -> &str {
-#        &self.name
-#      }
-#    }
-#
-#    impl SimpleTime for DummyTime {
-#      fn is_daytime(&self) -> bool {
-#        self == &DummyTime::DayTime
-#      }
-#    }
-#
-#    impl From<ShopClosedError<DummyTime>> for AppError {
-#      fn from(err: ShopClosedError<DummyTime>) -> Self {
-#        Self::ShopClosed(err)
-#      }
-#    }
-  }
-
-  mod instances {
-    use super::traits::Greeter;
-    use super::context::AppContext;
-    use super::simple_greeter::SimpleGreeter;
-    use super::daytime_greeter::DaytimeGreeter;
-
-    pub fn base_greeter() -> impl Greeter<AppContext> {
-      SimpleGreeter
+#         pub trait Greeter<Context>
+#         where
+#             Context: PersonContext + HasError,
+#         {
+#             fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#                 -> Result<(), Context::Error>;
+#         }
     }
 
-    pub fn app_greeter() -> impl Greeter<AppContext> {
-      DaytimeGreeter(base_greeter())
+    mod simple_greeter {
+        // ...
+#         use super::traits::{Greeter, NamedPerson, PersonQuerier};
+#
+#         pub struct SimpleGreeter;
+#
+#         impl<Context> Greeter<Context> for SimpleGreeter
+#         where
+#             Context: PersonQuerier,
+#         {
+#             fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#                 -> Result<(), Context::Error>
+#             {
+#                 let person = context.query_person(person_id)?;
+#                 println!("Hello, {}", person.name());
+#                 Ok(())
+#             }
+#         }
     }
-  }
+
+    mod daytime_greeter {
+        // ...
+#         use super::traits::{
+#             Greeter, HasError, PersonContext,
+#             HasTime, SimpleTime,
+#         };
+#
+#         pub struct DaytimeGreeter<InGreeter>(pub InGreeter);
+#
+#         pub struct ShopClosedError<Time> { time: Time }
+#
+#         impl<Context, InGreeter, Time, Error, PersonId>
+#             Greeter<Context> for DaytimeGreeter<InGreeter>
+#         where
+#             InGreeter: Greeter<Context>,
+#             Context: HasError<Error=Error>,
+#             Context: PersonContext<PersonId=PersonId>,
+#             Context: HasTime<Time=Time>,
+#             Time: SimpleTime,
+#             Error: From<ShopClosedError<Time>>,
+#         {
+#             fn greet(&self, context: &Context, person_id: &PersonId)
+#                 -> Result<(), Error>
+#             {
+#                 let now = context.now();
+#                 if now.is_daytime() {
+#                     self.0.greet(context, person_id)
+#                 } else {
+#                     Err(ShopClosedError { time: now }.into())
+#                 }
+#             }
+#         }
+    }
+
+    mod context {
+        // ...
+#         use super::traits::*;
+#         use super::daytime_greeter::ShopClosedError;
+#
+#         #[derive(Copy, Clone, PartialEq, Eq)]
+#         pub enum DummyTime {
+#             DayTime,
+#             NightTime,
+#         }
+#
+#         pub struct BasicPerson {
+#             name: String,
+#         }
+#
+#         pub struct AppContext {
+#             database: Database,
+#             time: DummyTime,
+#         }
+#
+#         // Database stubs
+#         struct Database;
+#         struct DbError;
+#
+#         pub enum AppError {
+#             Database(DbError),
+#             ShopClosed(ShopClosedError<DummyTime>),
+#             // ...
+#         }
+#
+#         impl HasError for AppContext {
+#             type Error = AppError;
+#         }
+#
+#         impl PersonContext for AppContext {
+#             type PersonId = String;
+#             type Person = BasicPerson;
+#         }
+#
+#         impl HasTime for AppContext {
+#             type Time = DummyTime;
+#
+#             fn now(&self) -> DummyTime {
+#                 self.time
+#             }
+#         }
+#
+#         impl PersonQuerier for AppContext {
+#             fn query_person(&self, person_id: &Self::PersonId)
+#                 -> Result<Self::Person, Self::Error>
+#             {
+#                 unimplemented!() // database stub
+#             }
+#         }
+#
+#         impl NamedPerson for BasicPerson {
+#             fn name(&self) -> &str {
+#                 &self.name
+#             }
+#         }
+#
+#         impl SimpleTime for DummyTime {
+#             fn is_daytime(&self) -> bool {
+#                 self == &DummyTime::DayTime
+#             }
+#         }
+#
+#         impl From<ShopClosedError<DummyTime>> for AppError {
+#             fn from(err: ShopClosedError<DummyTime>) -> Self {
+#                 Self::ShopClosed(err)
+#             }
+#         }
+    }
+
+    mod instances {
+        use super::traits::Greeter;
+        use super::context::AppContext;
+        use super::simple_greeter::SimpleGreeter;
+        use super::daytime_greeter::DaytimeGreeter;
+
+        pub fn base_greeter() -> impl Greeter<AppContext> {
+            SimpleGreeter
+        }
+
+        pub fn app_greeter() -> impl Greeter<AppContext> {
+            DaytimeGreeter(base_greeter())
+        }
+    }
 }
 ```
 
@@ -501,7 +501,7 @@ implements `Greeter<AppContext>`.
 
 Having separate witness functions can also help us debug any errors that arise
 in dependencies much more easily. Let's say that we forgot to implement
-`QueryPersonContext` for `AppContext` such that the dependency for
+`PersonQuerier` for `AppContext` such that the dependency for
 `SimpleGreeter` would not be satisfied; we would get a type error in
 `base_greeter`. However, no errors would crop up in `app_greeter`,
 because it doesn't care that base greeter implements `SimpleGreeter`.

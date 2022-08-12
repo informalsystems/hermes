@@ -6,27 +6,27 @@ to use a concrete `Context` type:
 ```rust
 # struct PersonId(String);
 # struct Person {
-#   id: PersonId,
-#   name: String,
+#      id: PersonId,
+#      name: String,
 # }
 #
 # struct Database { /* ... */}
 # struct DbError { /* ... */}
 # impl Database {
-#   fn query_person(&self, person_id: &PersonId) -> Result<Person, DbError> {
-#     unimplemented!() // stub
-#   }
+#      fn query_person(&self, person_id: &PersonId) -> Result<Person, DbError> {
+#          unimplemented!() // stub
+#      }
 # }
 #
 struct Context {
-  database: Database,
-  // ...
+    database: Database,
+    // ...
 }
 
 fn greet(context: &Context, person_id: &PersonId) -> Result<(), DbError> {
-  let person = context.database.query_person(person_id)?;
-  println!("Hello, {}", person.name);
-  Ok(())
+    let person = context.database.query_person(person_id)?;
+    println!("Hello, {}", person.name);
+    Ok(())
 }
 ```
 
@@ -39,31 +39,31 @@ in a different context. So let's make the `Context` generic instead:
 # struct PersonId(String);
 
 # struct Person {
-#   id: PersonId,
-#   name: String,
+#      id: PersonId,
+#      name: String,
 # }
 #
 # struct Database { /* ... */}
 # struct DbError { /* ... */}
 
 # impl Database {
-#   fn query_person(&self, person_id: &PersonId) -> Result<Person, DbError> {
-#     unimplemented!() // stub
-#   }
+#      fn query_person(&self, person_id: &PersonId) -> Result<Person, DbError> {
+#          unimplemented!() // stub
+#      }
 # }
 #
 trait ContextWithDatabase {
-  fn database(&self) -> &Database;
+    fn database(&self) -> &Database;
 }
 
 fn greet<Context>(context: &Context, person_id: &PersonId)
-  -> Result<(), DbError>
+    -> Result<(), DbError>
 where
-  Context: ContextWithDatabase,
+    Context: ContextWithDatabase,
 {
-  let person = context.database().query_person(person_id)?;
-  println!("Hello, {}", person.name);
-  Ok(())
+    let person = context.database().query_person(person_id)?;
+    println!("Hello, {}", person.name);
+    Ok(())
 }
 ```
 
@@ -80,17 +80,17 @@ long as it contains a field for `Database`. For example:
 # struct Database { /* ... */}
 #
 # trait ContextWithDatabase {
-#   fn database(&self) -> &Database;
+#      fn database(&self) -> &Database;
 # }
 #
 struct AppContext {
-  database: Database
+    database: Database
 }
 
 impl ContextWithDatabase for AppContext {
-  fn database(&self) -> &Database {
-    &self.database
-  }
+    fn database(&self) -> &Database {
+        &self.database
+    }
 }
 ```
 
@@ -104,28 +104,28 @@ directly from the context:
 ```rust
 # struct PersonId(String);
 # struct Person {
-#   id: PersonId,
-#   name: String,
+#      id: PersonId,
+#      name: String,
 # }
 #
 struct Error { /* ... */}
 
-trait QueryPersonContext {
-  fn query_person(&self, person_id: &PersonId) ->  Result<Person, Error>;
+trait PersonQuerier {
+    fn query_person(&self, person_id: &PersonId) ->    Result<Person, Error>;
 }
 
 fn greet<Context>(context: &Context, person_id: &PersonId)
-  -> Result<(), Error>
+    -> Result<(), Error>
 where
-  Context: QueryPersonContext,
+    Context: PersonQuerier,
 {
-  let person = context.query_person(person_id)?;
-  println!("Hello, {}", person.name);
-  Ok(())
+    let person = context.query_person(person_id)?;
+    println!("Hello, {}", person.name);
+    Ok(())
 }
 ```
 
-We define a `QueryPersonContext` trait that exposes a method for querying for a
+We define a `PersonQuerier` trait that exposes a method for querying for a
 person's details directly from the context. With that, we can have our `greet`
 function work with any context type that knows how to query for person details,
 regardless of whether it is implemented as a database query.

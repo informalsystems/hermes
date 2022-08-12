@@ -12,44 +12,44 @@ follows:
 
 ```rust
 # trait NamedPerson {
-#   fn name(&self) -> &str;
+#      fn name(&self) -> &str;
 # }
 #
 # trait HasError {
-#   type Error;
+#      type Error;
 # }
 #
 # trait PersonContext {
-#   type PersonId;
-#   type Person: NamedPerson;
+#      type PersonId;
+#      type Person: NamedPerson;
 # }
 #
-# trait QueryPersonContext: PersonContext + HasError {
-#   fn query_person(&self, person_id: &Self::PersonId)
-#     -> Result<Self::Person, Self::Error>;
+# trait PersonQuerier: PersonContext + HasError {
+#      fn query_person(&self, person_id: &Self::PersonId)
+#          -> Result<Self::Person, Self::Error>;
 # }
 #
 trait Greeter<Context>
 where
-  Context: PersonContext + HasError,
+    Context: PersonContext + HasError,
 {
-  fn greet(&self, context: &Context, person_id: &Context::PersonId)
-    -> Result<(), Context::Error>;
+    fn greet(&self, context: &Context, person_id: &Context::PersonId)
+        -> Result<(), Context::Error>;
 }
 
 struct SimpleGreeter;
 
 impl<Context> Greeter<Context> for SimpleGreeter
 where
-  Context: QueryPersonContext,
+    Context: PersonQuerier,
 {
-  fn greet(&self, context: &Context, person_id: &Context::PersonId)
-    -> Result<(), Context::Error>
-  {
-    let person = context.query_person(person_id)?;
-    println!("Hello, {}", person.name());
-    Ok(())
-  }
+    fn greet(&self, context: &Context, person_id: &Context::PersonId)
+        -> Result<(), Context::Error>
+    {
+        let person = context.query_person(person_id)?;
+        println!("Hello, {}", person.name());
+        Ok(())
+    }
 }
 ```
 
@@ -58,19 +58,19 @@ which is required to implement both `PersonContext` and `HasError`.
 The `greet` method is then defined without generic parameters, as these have been
 captured in the trait definition. We then define an empty struct `SimpleGreeter`,
 which is there only to implement the `Greeter` trait for any `Context` type
-that implements `QueryPersonContext`.
+that implements `PersonQuerier`.
 
 It is worth noticing here that in the main `Greeter` trait definition,
 the `Context` type, is only required to implement `PersonContext` and
-`HasError`, but there is no mention of the `QueryPersonContext`
+`HasError`, but there is no mention of the `PersonQuerier`
 trait bound. On the other hand, the concrete `Greeter` implementation
 for `SimpleGreeter` can require the additional trait bound
-`Context: QueryPersonContext` in its `impl` definition.
+`Context: PersonQuerier` in its `impl` definition.
 
-This demonstrates the benefits of separating the `QueryPersonContext`
+This demonstrates the benefits of separating the `PersonQuerier`
 from the `PersonContext` trait: From the perspective of a consumer
 that uses the `Greeter` component, it does not need to know whether
-the generic context type implements `QueryPersonContext`. This means
+the generic context type implements `PersonQuerier`. This means
 that from the trait bounds alone, we can tell whether a piece of code
 can call `query_person` directly, or whether it can only call the
 `greet` method to greet a person without knowing how the greeter determined

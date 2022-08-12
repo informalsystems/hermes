@@ -5,46 +5,46 @@
 # use std::collections::HashMap;
 #
 # trait HasError {
-#   type Error;
+#      type Error;
 # }
 #
 # trait PersonContext {
-#   type PersonId;
-#   type Person;
+#      type PersonId;
+#      type Person;
 # }
 #
 trait PersonQuerier<Context>
 where
-  Context: PersonContext + HasError,
+    Context: PersonContext + HasError,
 {
-   fn query_person(context: &Context, person_id: &Context::PersonId)
-     -> Result<Context::Person, Context::Error>;
+    fn query_person(context: &Context, person_id: &Context::PersonId)
+        -> Result<Context::Person, Context::Error>;
 }
 
 trait PersonCacheContext: PersonContext {
-  fn person_cache(&self) -> &HashMap<Self::PersonId, Self::Person>;
+    fn person_cache(&self) -> &HashMap<Self::PersonId, Self::Person>;
 }
 
 struct CachingPersonQuerier<InQuerier>(InQuerier);
 
 impl<Context, InQuerier> PersonQuerier<Context>
-  for CachingPersonQuerier<InQuerier>
+    for CachingPersonQuerier<InQuerier>
 where
-  InQuerier: PersonQuerier<Context>,
-  Context: PersonCacheContext,
-  Context: HasError,
-  Context::PersonId: Hash + Eq,
-  Context::Person: Clone,
+    InQuerier: PersonQuerier<Context>,
+    Context: PersonCacheContext,
+    Context: HasError,
+    Context::PersonId: Hash + Eq,
+    Context::Person: Clone,
 {
-  fn query_person(context: &Context, person_id: &Context::PersonId)
-    -> Result<Context::Person, Context::Error>
-  {
-    let entry = context.person_cache().get(person_id);
+    fn query_person(context: &Context, person_id: &Context::PersonId)
+        -> Result<Context::Person, Context::Error>
+    {
+        let entry = context.person_cache().get(person_id);
 
-    match entry {
-      Some(person) => Ok(person.clone()),
-      None => InQuerier::query_person(context, person_id),
+        match entry {
+            Some(person) => Ok(person.clone()),
+            None => InQuerier::query_person(context, person_id),
+        }
     }
-  }
 }
 ```

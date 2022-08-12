@@ -4,17 +4,17 @@ The `app_greeter` function demonstrates a form of _dependency injection_
 done at compile time. This is because for any code to use a type implementing
 `Greeter<Context>`, they only need to know that `Context` implements
 `HasError` and `PersonContext`. But to make `SimpleGreeter` implement
-`Greeter<Context>`, it also needs `Context` to implement `QueryPersonContext`.
+`Greeter<Context>`, it also needs `Context` to implement `PersonQuerier`.
 
 When we return `SimpleGreeter` inside `app_greeter`, the Rust compiler
 figures out that `SimpleGreeter` requires `AppContext` to implement
-`QueryPersonContext`. It would then try to automatically _resolve_ the
-dependency by searching for an implementation of `QueryPersonContext`
+`PersonQuerier`. It would then try to automatically _resolve_ the
+dependency by searching for an implementation of `PersonQuerier`
 for `AppContext`. Upon finding the implementation, Rust "binds" that
 implementation with `SimpleGreeter` and returns it as an existential
 type that implements `Greeter<AppContext>`. As a result,
 we can treat the type returned from `app_greeter` as an abstract type,
-and "forget" the fact that `AppContext` implements `QueryPersonContext`.
+and "forget" the fact that `AppContext` implements `PersonQuerier`.
 
 This pattern of making use of Rust's trait system for depedency injection
 efficiently solves the
@@ -28,20 +28,20 @@ to `SimpleGreeter` as a purely generic function as follows:
 
 ```rust
 # trait NamedPerson {
-#   fn name(&self) -> &str;
+#      fn name(&self) -> &str;
 # }
 #
 fn make_simpler_greeter<Context, PersonId, Person, Error>(
-  query_person: impl Fn(&Context, &PersonId) -> Result<Person, Error>,
+    query_person: impl Fn(&Context, &PersonId) -> Result<Person, Error>,
 ) -> impl Fn(&Context, &PersonId) -> Result<(), Error>
 where
-  Person: NamedPerson,
+    Person: NamedPerson,
 {
-  move | context, person_id | {
-    let person = query_person(context, person_id)?;
-    println!("Hello, {}", person.name());
-    Ok(())
-  }
+    move | context, person_id | {
+        let person = query_person(context, person_id)?;
+        println!("Hello, {}", person.name());
+        Ok(())
+    }
 }
 ```
 

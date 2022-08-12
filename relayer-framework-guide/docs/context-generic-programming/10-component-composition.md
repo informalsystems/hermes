@@ -18,55 +18,55 @@ The full implementation is as follows:
 # use std::time::Duration;
 #
 # trait NamedPerson {
-#   fn name(&self) -> &str;
+#      fn name(&self) -> &str;
 # }
 #
 # trait HasError {
-#   type Error;
+#      type Error;
 # }
 #
 # trait PersonContext {
-#   type PersonId;
-#   type Person: NamedPerson;
+#      type PersonId;
+#      type Person: NamedPerson;
 # }
 #
 trait SimpleTime {
-  fn is_daytime(&self) -> bool;
+    fn is_daytime(&self) -> bool;
 }
 
 trait HasTime {
-  type Time;
+    type Time;
 
-  fn now(&self) -> Self::Time;
+    fn now(&self) -> Self::Time;
 }
 
 trait Greeter<Context>
 where
-  Context: PersonContext + HasError,
+    Context: PersonContext + HasError,
 {
-  fn greet(&self, context: &Context, person_id: &Context::PersonId)
-    -> Result<(), Context::Error>;
+    fn greet(&self, context: &Context, person_id: &Context::PersonId)
+        -> Result<(), Context::Error>;
 }
 
 struct DaytimeGreeter<InGreeter>(InGreeter);
 
 impl<Context, InGreeter> Greeter<Context> for DaytimeGreeter<InGreeter>
 where
-  InGreeter: Greeter<Context>,
-  Context: HasTime + PersonContext + HasError,
-  Context::Time: SimpleTime,
+    InGreeter: Greeter<Context>,
+    Context: HasTime + PersonContext + HasError,
+    Context::Time: SimpleTime,
 {
-  fn greet(&self, context: &Context, person_id: &Context::PersonId)
-    -> Result<(), Context::Error>
-  {
-    let now = context.now();
-    if now.is_daytime() {
-      self.0.greet(context, person_id)?;
-    } else {
-      println!("Sorry, the shop has closed now!");
+    fn greet(&self, context: &Context, person_id: &Context::PersonId)
+        -> Result<(), Context::Error>
+    {
+        let now = context.now();
+        if now.is_daytime() {
+            self.0.greet(context, person_id)?;
+        } else {
+            println!("Sorry, the shop has closed now!");
+        }
+        Ok(())
     }
-    Ok(())
-  }
 }
 ```
 

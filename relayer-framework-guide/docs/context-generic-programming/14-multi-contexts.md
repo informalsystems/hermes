@@ -2,7 +2,7 @@
 
 We now look at the problem of having multiple context implementations,
 as well as how to deduplicate them. For this we will focus on just the
-implementation for `QueryPersonContext` that is being used by `SimpleGreeter`.
+implementation for `PersonQuerier` that is being used by `SimpleGreeter`.
 
 The requirement for querying a person details can be implemented in many
 ways, such as using a key-value store (KV store) or an SQL database.
@@ -13,14 +13,14 @@ struct FsKvStore { /* ... */ }
 struct KvStoreError { /* ... */ }
 
 impl FsKvStore {
-  fn get(&self, key: &str) -> Result<Vec<u8>, KvStoreError> {
-    unimplemented!() // stub
-  }
-  // ...
+    fn get(&self, key: &str) -> Result<Vec<u8>, KvStoreError> {
+        unimplemented!() // stub
+    }
+    // ...
 }
 ```
 
-We could implement `QueryPersonContext` for any context type that
+We could implement `PersonQuerier` for any context type that
 contains `FsKvStore` in its field:
 
 ```rust
@@ -30,73 +30,73 @@ contains `FsKvStore` in its field:
 # struct KvStoreError { /* ... */ }
 #
 # impl FsKvStore {
-#   fn get(&self, key: &str) -> Result<Vec<u8>, KvStoreError> {
-#     unimplemented!() // stub
-#   }
-#   // ...
+#      fn get(&self, key: &str) -> Result<Vec<u8>, KvStoreError> {
+#          unimplemented!() // stub
+#      }
+#      // ...
 # }
 #
 # trait HasError {
-#   type Error;
+#      type Error;
 # }
 #
 # trait PersonContext {
-#   type PersonId;
-#   type Person;
+#      type PersonId;
+#      type Person;
 # }
 #
-# trait QueryPersonContext: PersonContext + HasError {
-#   fn query_person(&self, person_id: &Self::PersonId)
-#     -> Result<Self::Person, Self::Error>;
+# trait PersonQuerier: PersonContext + HasError {
+#      fn query_person(&self, person_id: &Self::PersonId)
+#          -> Result<Self::Person, Self::Error>;
 # }
 #
 struct BasicPerson {
-  name: String,
+    name: String,
 }
 
 struct ParseError { /* ... */ }
 
 impl TryFrom<Vec<u8>> for BasicPerson {
-  type Error = ParseError;
+    type Error = ParseError;
 
-  fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-    unimplemented!() // stub
-  }
+    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+        unimplemented!() // stub
+    }
 }
 
 struct AppContext {
-  kv_store: FsKvStore,
-  // ...
+    kv_store: FsKvStore,
+    // ...
 }
 
 enum AppError {
-  KvStore(KvStoreError),
-  Parse(ParseError),
-  // ...
+    KvStore(KvStoreError),
+    Parse(ParseError),
+    // ...
 }
 
 impl HasError for AppContext {
-  type Error = AppError;
+    type Error = AppError;
 }
 
 impl PersonContext for AppContext {
-  type PersonId = String;
-  type Person = BasicPerson;
+    type PersonId = String;
+    type Person = BasicPerson;
 }
 
-impl QueryPersonContext for AppContext {
-  fn query_person(&self, person_id: &Self::PersonId)
-    -> Result<Self::Person, Self::Error>
-  {
-    let key = format!("persons/{}", person_id);
-    let bytes = self.kv_store.get(&key)
-      .map_err(AppError::KvStore)?;
+impl PersonQuerier for AppContext {
+    fn query_person(&self, person_id: &Self::PersonId)
+        -> Result<Self::Person, Self::Error>
+    {
+        let key = format!("persons/{}", person_id);
+        let bytes = self.kv_store.get(&key)
+            .map_err(AppError::KvStore)?;
 
-    let person = bytes.try_into()
-      .map_err(AppError::Parse)?;
+        let person = bytes.try_into()
+            .map_err(AppError::Parse)?;
 
-    Ok(person)
-  }
+        Ok(person)
+    }
 }
 ```
 
@@ -107,38 +107,38 @@ of mapping the namespaced key from the person ID, as well as mapping
 the errors in each operation into `AppError`s.
 
 Fortunately, with the context traits design pattern, components like
-`SimpleGreeter` do not need to be aware of how `QueryPersonContext` is
+`SimpleGreeter` do not need to be aware of how `PersonQuerier` is
 implemented, or the existence of the key-value store in the context.
 However, it would still be problematic if we need to re-implement
-`QueryPersonContext` for every new context type that we implement.
+`PersonQuerier` for every new context type that we implement.
 
 To avoid copying the body of `query_person` for all context types,
-we want to have a _generic_ implementation of `QueryPersonContext`
+we want to have a _generic_ implementation of `PersonQuerier`
 for _any_ context that has `FsKvStore` in one of its fields.
 But if we recall from earlier sections, we already came up with
 the design pattern for implementing context-generic components
-like `Greeter`. So why not just turn `QueryPersonContext` itself
+like `Greeter`. So why not just turn `PersonQuerier` itself
 into a context-generic component?
 
 In fact, with a little re-arrangement, we can redefine
-`QueryPersonContext` as `PersonQuerier` as follows:
+`PersonQuerier` as `PersonQuerier` as follows:
 
 ```rust
 # trait HasError {
-#   type Error;
+#      type Error;
 # }
 #
 # trait PersonContext {
-#   type PersonId;
-#   type Person;
+#      type PersonId;
+#      type Person;
 # }
 #
 trait PersonQuerier<Context>
 where
-  Context: PersonContext + HasError,
+    Context: PersonContext + HasError,
 {
-   fn query_person(context: &Context, person_id: &Context::PersonId)
-     -> Result<Context::Person, Context::Error>;
+     fn query_person(context: &Context, person_id: &Context::PersonId)
+         -> Result<Context::Person, Context::Error>;
 }
 ```
 
@@ -155,57 +155,57 @@ With this, we can now define a context-generic implementation of
 # struct KvStoreError { /* ... */ }
 #
 # impl FsKvStore {
-#   fn get(&self, key: &str) -> Result<Vec<u8>, KvStoreError> {
-#     unimplemented!() // stub
-#   }
-#   // ...
+#      fn get(&self, key: &str) -> Result<Vec<u8>, KvStoreError> {
+#          unimplemented!() // stub
+#      }
+#      // ...
 # }
 #
 # trait HasError {
-#   type Error;
+#      type Error;
 # }
 #
 # trait PersonContext {
-#   type PersonId;
-#   type Person;
+#      type PersonId;
+#      type Person;
 # }
 #
 # trait PersonQuerier<Context>
 # where
-#   Context: PersonContext + HasError,
+#      Context: PersonContext + HasError,
 # {
-#    fn query_person(context: &Context, person_id: &Context::PersonId)
-#      -> Result<Context::Person, Context::Error>;
+#         fn query_person(context: &Context, person_id: &Context::PersonId)
+#             -> Result<Context::Person, Context::Error>;
 # }
 #
 trait KvStoreContext {
-  fn kv_store(&self) -> &FsKvStore;
+    fn kv_store(&self) -> &FsKvStore;
 }
 
 struct KvStorePersonQuerier;
 
 impl<Context, PersonId, Person, Error, ParseError>
-  PersonQuerier<Context> for KvStorePersonQuerier
+    PersonQuerier<Context> for KvStorePersonQuerier
 where
-  Context: KvStoreContext,
-  Context: PersonContext<Person=Person, PersonId=PersonId>,
-  Context: HasError<Error=Error>,
-  PersonId: Display,
-  Person: TryFrom<Vec<u8>, Error=ParseError>,
-  Error: From<KvStoreError>,
-  Error: From<ParseError>,
+    Context: KvStoreContext,
+    Context: PersonContext<Person=Person, PersonId=PersonId>,
+    Context: HasError<Error=Error>,
+    PersonId: Display,
+    Person: TryFrom<Vec<u8>, Error=ParseError>,
+    Error: From<KvStoreError>,
+    Error: From<ParseError>,
 {
-  fn query_person(context: &Context, person_id: &PersonId)
-    -> Result<Person, Error>
-  {
-    let key = format!("persons/{}", person_id);
+    fn query_person(context: &Context, person_id: &PersonId)
+        -> Result<Person, Error>
+    {
+        let key = format!("persons/{}", person_id);
 
-    let bytes = context.kv_store().get(&key)?;
+        let bytes = context.kv_store().get(&key)?;
 
-    let person = bytes.try_into()?;
+        let person = bytes.try_into()?;
 
-    Ok(person)
-  }
+        Ok(person)
+    }
 }
 ```
 

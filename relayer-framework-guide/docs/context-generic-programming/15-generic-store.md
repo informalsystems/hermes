@@ -13,57 +13,57 @@ swap our store implementation from file-based to memory-based.
 # use std::convert::{TryFrom, TryInto};
 #
 # trait HasError {
-#   type Error;
+#      type Error;
 # }
 #
 # trait PersonContext {
-#   type PersonId;
-#   type Person;
+#      type PersonId;
+#      type Person;
 # }
 #
 # trait PersonQuerier<Context>
 # where
-#   Context: PersonContext + HasError,
+#      Context: PersonContext + HasError,
 # {
-#    fn query_person(context: &Context, person_id: &Context::PersonId)
-#      -> Result<Context::Person, Context::Error>;
+#         fn query_person(context: &Context, person_id: &Context::PersonId)
+#             -> Result<Context::Person, Context::Error>;
 # }
 #
 trait KvStore: HasError {
-  fn get(&self, key: &str) -> Result<Vec<u8>, Self::Error>;
+    fn get(&self, key: &str) -> Result<Vec<u8>, Self::Error>;
 }
 
 trait KvStoreContext {
-  type Store: KvStore;
+    type Store: KvStore;
 
-  fn store(&self) -> &Self::Store;
+    fn store(&self) -> &Self::Store;
 }
 
 struct KvStorePersonQuerier;
 
 impl<Context, Store, PersonId, Person, Error, ParseError, StoreError>
-  PersonQuerier<Context> for KvStorePersonQuerier
+    PersonQuerier<Context> for KvStorePersonQuerier
 where
-  Context: KvStoreContext<Store=Store>,
-  Context: PersonContext<Person=Person, PersonId=PersonId>,
-  Context: HasError<Error=Error>,
-  Store: KvStore<Error=StoreError>,
-  PersonId: Display,
-  Person: TryFrom<Vec<u8>, Error=ParseError>,
-  Error: From<StoreError>,
-  Error: From<ParseError>,
+    Context: KvStoreContext<Store=Store>,
+    Context: PersonContext<Person=Person, PersonId=PersonId>,
+    Context: HasError<Error=Error>,
+    Store: KvStore<Error=StoreError>,
+    PersonId: Display,
+    Person: TryFrom<Vec<u8>, Error=ParseError>,
+    Error: From<StoreError>,
+    Error: From<ParseError>,
 {
-  fn query_person(context: &Context, person_id: &PersonId)
-    -> Result<Person, Error>
-  {
-    let key = format!("persons/{}", person_id);
+    fn query_person(context: &Context, person_id: &PersonId)
+        -> Result<Person, Error>
+    {
+        let key = format!("persons/{}", person_id);
 
-    let bytes = context.store().get(&key)?;
+        let bytes = context.store().get(&key)?;
 
-    let person = bytes.try_into()?;
+        let person = bytes.try_into()?;
 
-    Ok(person)
-  }
+        Ok(person)
+    }
 }
 ```
 

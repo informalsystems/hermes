@@ -18,36 +18,36 @@ We can do this by defining a custom `ShopClosedError` struct and require that
 ```rust
 # use std::time::Duration;
 # trait NamedPerson {
-#   fn name(&self) -> &str;
+#      fn name(&self) -> &str;
 # }
 #
 # trait HasError {
-#   type Error;
+#      type Error;
 # }
 #
 # trait PersonContext {
-#   type PersonId;
-#   type Person: NamedPerson;
+#      type PersonId;
+#      type Person: NamedPerson;
 # }
 #
 # trait SimpleTime {
-#   fn is_daytime(&self) -> bool;
+#      fn is_daytime(&self) -> bool;
 #
-#   fn duration_since(&self, other: &Self) -> Duration;
+#      fn duration_since(&self, other: &Self) -> Duration;
 # }
 #
 # trait HasTime {
-#   type Time;
+#      type Time;
 #
-#   fn now(&self) -> Self::Time;
+#      fn now(&self) -> Self::Time;
 # }
 #
 # trait Greeter<Context>
 # where
-#   Context: PersonContext + HasError,
+#      Context: PersonContext + HasError,
 # {
-#   fn greet(&self, context: &Context, person_id: &Context::PersonId)
-#     -> Result<(), Context::Error>;
+#      fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#          -> Result<(), Context::Error>;
 # }
 #
 struct ShopClosedError<Time> { time: Time }
@@ -56,21 +56,21 @@ struct DaytimeGreeter<InGreeter>(InGreeter);
 
 impl<Context, InGreeter> Greeter<Context> for DaytimeGreeter<InGreeter>
 where
-  InGreeter: Greeter<Context>,
-  Context: HasTime + PersonContext + HasError,
-  Context::Time: SimpleTime,
-  Context::Error: From<ShopClosedError<Context::Time>>,
+    InGreeter: Greeter<Context>,
+    Context: HasTime + PersonContext + HasError,
+    Context::Time: SimpleTime,
+    Context::Error: From<ShopClosedError<Context::Time>>,
 {
-  fn greet(&self, context: &Context, person_id: &Context::PersonId)
-    -> Result<(), Context::Error>
-  {
-    let now = context.now();
-    if now.is_daytime() {
-      self.0.greet(context, person_id)
-    } else {
-      Err(ShopClosedError { time: now }.into())
+    fn greet(&self, context: &Context, person_id: &Context::PersonId)
+        -> Result<(), Context::Error>
+    {
+        let now = context.now();
+        if now.is_daytime() {
+            self.0.greet(context, person_id)
+        } else {
+            Err(ShopClosedError { time: now }.into())
+        }
     }
-  }
 }
 ```
 

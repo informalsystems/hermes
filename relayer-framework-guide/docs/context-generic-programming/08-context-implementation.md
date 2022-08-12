@@ -5,57 +5,57 @@ concrete context that satisfies the traits:
 
 ```rust
 # trait NamedPerson {
-#   fn name(&self) -> &str;
+#      fn name(&self) -> &str;
 # }
 #
 # trait HasError {
-#   type Error;
+#      type Error;
 # }
 #
 # trait PersonContext {
-#   type PersonId;
-#   type Person: NamedPerson;
+#      type PersonId;
+#      type Person: NamedPerson;
 # }
 #
-# trait QueryPersonContext: PersonContext + HasError {
-#   fn query_person(&self, person_id: &Self::PersonId)
-#     -> Result<Self::Person, Self::Error>;
+# trait PersonQuerier: PersonContext + HasError {
+#      fn query_person(&self, person_id: &Self::PersonId)
+#          -> Result<Self::Person, Self::Error>;
 # }
 #
 # trait Greeter<Context>
 # where
-#   Context: PersonContext + HasError,
+#      Context: PersonContext + HasError,
 # {
-#   fn greet(&self, context: &Context, person_id: &Context::PersonId)
-#     -> Result<(), Context::Error>;
+#      fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#          -> Result<(), Context::Error>;
 # }
 #
 # struct SimpleGreeter;
 #
 # impl<Context> Greeter<Context> for SimpleGreeter
 # where
-#   Context: QueryPersonContext,
+#      Context: PersonQuerier,
 # {
-#   fn greet(&self, context: &Context, person_id: &Context::PersonId)
-#     -> Result<(), Context::Error>
-#   {
-#     let person = context.query_person(person_id)?;
-#     println!("Hello, {}", person.name());
-#     Ok(())
-#   }
+#      fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#          -> Result<(), Context::Error>
+#      {
+#          let person = context.query_person(person_id)?;
+#          println!("Hello, {}", person.name());
+#          Ok(())
+#      }
 # }
 struct BasicPerson {
-  name: String,
+    name: String,
 }
 
 impl NamedPerson for BasicPerson {
-  fn name(&self) -> &str {
-    &self.name
-  }
+    fn name(&self) -> &str {
+        &self.name
+    }
 }
 
 struct AppContext {
-  database: Database,
+    database: Database,
 }
 
 // Database stubs
@@ -63,29 +63,29 @@ struct Database;
 struct DbError;
 
 enum AppError {
-  Database(DbError),
-  // ...
+    Database(DbError),
+    // ...
 }
 
 impl HasError for AppContext {
-  type Error = AppError;
+    type Error = AppError;
 }
 
 impl PersonContext for AppContext {
-  type PersonId = String;
-  type Person = BasicPerson;
+    type PersonId = String;
+    type Person = BasicPerson;
 }
 
-impl QueryPersonContext for AppContext {
-  fn query_person(&self, person_id: &Self::PersonId)
-    -> Result<Self::Person, Self::Error>
-  {
-    unimplemented!() // database stub
-  }
+impl PersonQuerier for AppContext {
+    fn query_person(&self, person_id: &Self::PersonId)
+        -> Result<Self::Person, Self::Error>
+    {
+        unimplemented!() // database stub
+    }
 }
 
 fn app_greeter() -> impl Greeter<AppContext> {
-  SimpleGreeter
+    SimpleGreeter
 }
 ```
 
@@ -103,7 +103,7 @@ enum to represent all application errors, with one of them being
 We implement `HasError` for `AppContext`, with `AppError` as
 the `Error` type. We also implement `PersonContext` for `AppContext`,
 with the `PersonId` associated type being `String` and the `Person`
-associated type being `BasicPerson`. We also implement `QueryPersonContext`
+associated type being `BasicPerson`. We also implement `PersonQuerier`
 but leave the `query_person` as a stub for performing database queries
 in an actual application.
 

@@ -17,31 +17,31 @@ So we can generalize the `Person` type as follows:
 
 ```rust
 trait NamedPerson {
-  fn name(&self) -> &str;
+    fn name(&self) -> &str;
 }
 
 trait HasError {
-  type Error;
+    type Error;
 }
 
 trait PersonContext {
-  type PersonId;
-  type Person: NamedPerson;
+    type PersonId;
+    type Person: NamedPerson;
 }
 
-trait QueryPersonContext: PersonContext + HasError {
-  fn query_person(&self, person_id: &Self::PersonId)
-    -> Result<Self::Person, Self::Error>;
+trait PersonQuerier: PersonContext + HasError {
+    fn query_person(&self, person_id: &Self::PersonId)
+        -> Result<Self::Person, Self::Error>;
 }
 
 fn greet<Context>(context: &Context, person_id: &Context::PersonId)
-  -> Result<(), Context::Error>
+    -> Result<(), Context::Error>
 where
-  Context: QueryPersonContext,
+    Context: PersonQuerier,
 {
-  let person = context.query_person(person_id)?;
-  println!("Hello, {}", person.name());
-  Ok(())
+    let person = context.query_person(person_id)?;
+    println!("Hello, {}", person.name());
+    Ok(())
 }
 ```
 
@@ -52,7 +52,7 @@ generic, as we don't care whether it is a string, an integer, or a UUID.
 The associated type `Person` is also generic, but we also add a trait bound
 that the type must implement `NamedPerson`.
 
-The `QueryPersonContext` is now defined with `PersonContext` as another of its
+The `PersonQuerier` is now defined with `PersonContext` as another of its
 supertraits. With that, the `query_person` method becomes completely abstract.
 A generic consumer would only know that, given an abstract type
 `Context::PersonId`, it can query the `Context` and either get back an abstract
