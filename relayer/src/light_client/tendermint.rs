@@ -67,7 +67,10 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
         let trusted_validator_set = self
             .io
-            .fetch_validator_set(AtHeight::At(next_trusted_height), None)
+            .fetch_validator_set(
+                AtHeight::At(next_trusted_height),
+                Some("B2F50E82D354517E17E37178A0D4A8A9644C4D4D".parse().unwrap()),
+            )
             .expect("failed to fetch validator set");
 
         dbg!(&trusted_validator_set);
