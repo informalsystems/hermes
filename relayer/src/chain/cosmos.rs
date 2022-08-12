@@ -122,25 +122,6 @@ pub struct CosmosSdkChain {
     account: Option<Account>,
 }
 
-async fn init_light_client(
-    rpc_client: &HttpClient,
-    config: &ChainConfig,
-) -> Result<TmLightClient, Error> {
-    use tendermint_light_client_verifier::types::PeerId;
-
-    crate::time!("init_light_client");
-
-    let peer_id: PeerId = rpc_client
-        .status()
-        .await
-        .map(|s| s.node_info.id)
-        .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
-
-    let light_client = TmLightClient::from_config(config, peer_id)?;
-
-    Ok(light_client)
-}
-
 impl CosmosSdkChain {
     /// Get a reference to the configuration for this chain.
     pub fn config(&self) -> &ChainConfig {
@@ -1628,6 +1609,27 @@ impl ChainEndpoint for CosmosSdkChain {
 
         Ok((target, supporting))
     }
+}
+
+/// Initialize the light client for the given chain using the given HTTP client
+/// to fetch the node identifier to be used as peer id in the light client.
+async fn init_light_client(
+    rpc_client: &HttpClient,
+    config: &ChainConfig,
+) -> Result<TmLightClient, Error> {
+    use tendermint_light_client_verifier::types::PeerId;
+
+    crate::time!("init_light_client");
+
+    let peer_id: PeerId = rpc_client
+        .status()
+        .await
+        .map(|s| s.node_info.id)
+        .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
+
+    let light_client = TmLightClient::from_config(config, peer_id)?;
+
+    Ok(light_client)
 }
 
 fn filter_matching_event(
