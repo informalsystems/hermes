@@ -96,7 +96,6 @@ pub fn process<Ctx: ChannelReader + ChannelReaderLightClient>(
 
         if packet.sequence < next_seq_recv {
             output.emit(IbcEvent::ReceivePacket(ReceivePacket {
-                height: ChannelReader::host_height(ctx),
                 packet: msg.packet.clone(),
             }));
             return Ok(output.with_result(PacketResult::Recv(RecvPacketResult::NoOp)));
@@ -122,7 +121,6 @@ pub fn process<Ctx: ChannelReader + ChannelReaderLightClient>(
         match packet_rec {
             Ok(_receipt) => {
                 output.emit(IbcEvent::ReceivePacket(ReceivePacket {
-                    height: ChannelReader::host_height(ctx),
                     packet: msg.packet.clone(),
                 }));
                 return Ok(output.with_result(PacketResult::Recv(RecvPacketResult::NoOp)));
@@ -143,7 +141,6 @@ pub fn process<Ctx: ChannelReader + ChannelReaderLightClient>(
     output.log("success: packet receive");
 
     output.emit(IbcEvent::ReceivePacket(ReceivePacket {
-        height: ChannelReader::host_height(ctx),
         packet: msg.packet.clone(),
     }));
 
@@ -152,7 +149,6 @@ pub fn process<Ctx: ChannelReader + ChannelReaderLightClient>(
 
 #[cfg(test)]
 mod tests {
-    use crate::core::ics04_channel::context::ChannelReader;
     use crate::prelude::*;
 
     use test_log::test;
@@ -295,7 +291,6 @@ mod tests {
 
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::ReceivePacket(_)));
-                        assert_eq!(e.height(), ChannelReader::host_height(&test.ctx));
                     }
                 }
                 Err(e) => {

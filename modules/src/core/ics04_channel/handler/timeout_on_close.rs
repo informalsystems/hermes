@@ -135,7 +135,6 @@ pub fn process<Ctx: ChannelReader + ChannelReaderLightClient>(
     output.log("success: packet timeout ");
 
     output.emit(IbcEvent::TimeoutOnClosePacket(TimeoutOnClosePacket {
-        height: ChannelReader::host_height(ctx),
         packet: packet.clone(),
     }));
 
@@ -274,7 +273,6 @@ mod tests {
                     assert!(!proto_output.events.is_empty()); // Some events must exist.
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::TimeoutOnClosePacket(_)));
-                        assert_eq!(e.height(), test.ctx.host_height());
                     }
                 }
                 Err(e) => {

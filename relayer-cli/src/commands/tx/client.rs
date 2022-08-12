@@ -13,6 +13,7 @@ use ibc_relayer::chain::requests::{
     IncludeProof, PageRequest, QueryClientStateRequest, QueryClientStatesRequest, QueryHeight,
 };
 use ibc_relayer::config::Config;
+use ibc_relayer::event::IbcEventWithHeight;
 use ibc_relayer::foreign_client::{CreateOptions, ForeignClient};
 use tendermint_light_client_verifier::types::TrustThreshold;
 use tracing::debug;
@@ -93,12 +94,12 @@ impl Runnable for TxCreateClientCmd {
         };
 
         // Trigger client creation via the "build" interface, so that we obtain the resulting event
-        let res: Result<IbcEvent, Error> = client
+        let res: Result<IbcEventWithHeight, Error> = client
             .build_create_client_and_send(options)
             .map_err(Error::foreign_client);
 
         match res {
-            Ok(receipt) => Output::success(receipt).exit(),
+            Ok(receipt) => Output::success(receipt.event).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }

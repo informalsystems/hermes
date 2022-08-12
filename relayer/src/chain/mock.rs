@@ -39,6 +39,7 @@ use crate::config::ChainConfig;
 use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
+use crate::event::IbcEventWithHeight;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
@@ -159,11 +160,14 @@ impl ChainEndpoint for MockChain {
     fn send_messages_and_wait_commit(
         &mut self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<IbcEvent>, Error> {
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         // Use the ICS18Context interface to submit the set of messages.
         let events = self.context.send(tracked_msgs.msgs).map_err(Error::ics18)?;
 
-        Ok(events)
+        Ok(events
+            .into_iter()
+            .map(|ev| IbcEventWithHeight::new(ev, Height::new(0, 1).unwrap()))
+            .collect())
     }
 
     fn send_messages_and_wait_check_tx(
@@ -351,7 +355,7 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn query_txs(&self, _request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
+    fn query_txs(&self, _request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error> {
         unimplemented!()
     }
 
