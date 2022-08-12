@@ -44,10 +44,7 @@ pub struct TendermintClient {
 impl ClientDef for TendermintClient {
     type ClientState = TmClientState;
 
-    fn validate_consensus_state(
-        &self,
-        consensus_state: Any,
-    ) -> Result<Box<dyn ConsensusState>, Ics02Error> {
+    fn initialise(&self, consensus_state: Any) -> Result<Box<dyn ConsensusState>, Ics02Error> {
         TmConsensusState::try_from(consensus_state).map(TmConsensusState::into_box)
     }
 

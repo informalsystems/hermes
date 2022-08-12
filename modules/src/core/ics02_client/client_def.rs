@@ -26,10 +26,7 @@ use crate::mock::client_def::MockClient;
 pub trait ClientDef {
     type ClientState: ClientState;
 
-    fn validate_consensus_state(
-        &self,
-        consensus_state: Any,
-    ) -> Result<Box<dyn ConsensusState>, Error>;
+    fn initialise(&self, consensus_state: Any) -> Result<Box<dyn ConsensusState>, Error>;
 
     fn check_header_and_update_state(
         &self,
@@ -193,14 +190,11 @@ impl AnyClient {
 impl ClientDef for AnyClient {
     type ClientState = AnyClientState;
 
-    fn validate_consensus_state(
-        &self,
-        consensus_state: Any,
-    ) -> Result<Box<dyn ConsensusState>, Error> {
+    fn initialise(&self, consensus_state: Any) -> Result<Box<dyn ConsensusState>, Error> {
         match self {
-            AnyClient::Tendermint(client) => client.validate_consensus_state(consensus_state),
+            AnyClient::Tendermint(client) => client.initialise(consensus_state),
             #[cfg(any(test, feature = "mocks"))]
-            AnyClient::Mock(client) => client.validate_consensus_state(consensus_state),
+            AnyClient::Mock(client) => client.initialise(consensus_state),
         }
     }
 

@@ -30,10 +30,7 @@ pub struct MockClient;
 impl ClientDef for MockClient {
     type ClientState = MockClientState;
 
-    fn validate_consensus_state(
-        &self,
-        consensus_state: Any,
-    ) -> Result<Box<dyn ConsensusState>, Error> {
+    fn initialise(&self, consensus_state: Any) -> Result<Box<dyn ConsensusState>, Error> {
         MockConsensusState::try_from(consensus_state).map(MockConsensusState::into_box)
     }
 
@@ -191,7 +188,7 @@ impl ClientDef for MockClient {
         _proof_upgrade_client: MerkleProof,
         _proof_upgrade_consensus_state: MerkleProof,
     ) -> Result<(Self::ClientState, Box<dyn ConsensusState>), Error> {
-        let consensus_state = self.validate_consensus_state(consensus_state)?;
+        let consensus_state = self.initialise(consensus_state)?;
         Ok((*client_state, consensus_state))
     }
 }

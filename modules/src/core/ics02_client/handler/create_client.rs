@@ -51,7 +51,7 @@ pub fn process(
 
     let client_def = AnyClient::from_client_type(client_type);
 
-    let consensus_state = client_def.validate_consensus_state(consensus_state)?;
+    let consensus_state = client_def.initialise(consensus_state)?;
 
     output.log(format!(
         "success: generated new client identifier: {}",
