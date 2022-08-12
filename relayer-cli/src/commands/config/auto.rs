@@ -13,7 +13,7 @@ use ibc_relayer::{
 
 use std::path::PathBuf;
 use tokio::runtime::Builder;
-use tracing::warn;
+use tracing::{info, warn};
 
 fn find_key(chainconfig: &ChainConfig) -> Option<String> {
     if let Ok(keyring) = KeyRing::new(Test, &chainconfig.account_prefix, &chainconfig.id) {
@@ -111,21 +111,19 @@ impl Runnable for AutoCmd {
                     for (mut chain_config, key_name) in
                         chain_configs.iter_mut().zip(keys.into_iter())
                     {
+                        info!("{}: uses key \"{}\"", &chain_config.id, &key_name);
                         chain_config.key_name = key_name;
                     }
                 } else {
-                    let mut not_found = Vec::with_capacity(chain_configs.len());
                     for mut chain_config in chain_configs.iter_mut() {
                         let chain_id = &chain_config.id;
                         let key = find_key(chain_config);
                         if let Some(key) = key {
+                            info!("{}: uses key \"{}\"", &chain_id, &key);
                             chain_config.key_name = key;
                         } else {
-                            not_found.push(chain_id.as_str());
+                            warn!("No key found for chain: {}", chain_id);
                         }
-                    }
-                    if !not_found.is_empty() {
-                        Output::error(format!("No key found for chains {:?}", not_found)).exit();
                     }
                 }
 

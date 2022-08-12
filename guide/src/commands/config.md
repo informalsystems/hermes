@@ -55,8 +55,10 @@ Use `config auto` to generate a configuration file able to relay between `cosmos
 ```
     hermes config auto --path $HOME/example_config.toml --chains cosmoshub osmosis
 
-    2022-08-12T16:20:07.885159Z  INFO ThreadId(01) using default configuration from '$HOME/.hermes/config.toml'
-2022-08-12T16:20:08.708701Z  WARN ThreadId(01) Gas parameters are set to default values.
+    2022-08-12T16:44:38.587179Z  INFO ThreadId(01) using default configuration from '$HOME/.hermes/config.toml'
+2022-08-12T16:44:39.426324Z  INFO ThreadId(01) cosmoshub-4: uses key "random_key_cosmoshub"
+2022-08-12T16:44:39.427257Z  INFO ThreadId(01) osmosis-1: uses key "random_key_osmosis"
+2022-08-12T16:44:39.427956Z  WARN ThreadId(01) Gas parameters are set to default values.
 SUCCESS "Config file written successfully : $HOME/example_config.toml."
 ```
 
@@ -64,8 +66,10 @@ It is also possible to manually specify a key name for each chain.
 ```
     hermes config auto --path $HOME/example_config.toml --chains cosmoshub osmosis --keys key_cosmoshub key_osmosis
 
-2022-08-12T16:21:45.788141Z  INFO ThreadId(01) using default configuration from '$HOME/.hermes/config.toml'
-2022-08-12T16:21:46.438416Z  WARN ThreadId(01) Gas parameters are set to default values.
+2022-08-12T16:48:38.821930Z  INFO ThreadId(01) using default configuration from '$HOME/.hermes/config.toml'
+2022-08-12T16:48:39.290167Z  INFO ThreadId(01) cosmoshub-4: uses key "key_cosmoshub"
+2022-08-12T16:48:39.290242Z  INFO ThreadId(01) osmosis-1: uses key "key_osmosis"
+2022-08-12T16:48:39.291050Z  WARN ThreadId(01) Gas parameters are set to default values.
 SUCCESS "Config file written successfully : $HOME/example_config.toml."
 ```
 
