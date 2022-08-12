@@ -1,9 +1,8 @@
-use ibc::clients::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
+use ibc::clients::ics07_tendermint::misbehaviour::{
+    Misbehaviour as TmMisbehaviour, TENDERMINT_MISBEHAVIOR_TYPE_URL,
+};
 use ibc::core::{
-    ics02_client::{
-        error::Error,
-        misbehaviour::{Misbehaviour, TENDERMINT_MISBEHAVIOR_TYPE_URL},
-    },
+    ics02_client::{error::Error, misbehaviour::Misbehaviour},
     ics24_host::identifier::ClientId,
 };
 use ibc::Height;
@@ -12,9 +11,9 @@ use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 use crate::light_client::AnyHeader;
 
 #[cfg(test)]
-use ibc::core::ics02_client::misbehaviour::MOCK_MISBEHAVIOUR_TYPE_URL;
-#[cfg(test)]
 use ibc::mock::misbehaviour::Misbehaviour as MockMisbehaviour;
+#[cfg(test)]
+use ibc::mock::misbehaviour::MOCK_MISBEHAVIOUR_TYPE_URL;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MisbehaviourEvidence {

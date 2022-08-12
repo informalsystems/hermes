@@ -1,13 +1,14 @@
 use crate::prelude::*;
 
-use ibc_proto::protobuf::Protobuf;
-
 use ibc_proto::ibc::lightclients::tendermint::v1::Misbehaviour as RawMisbehaviour;
+use ibc_proto::protobuf::Protobuf;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::Height;
+
+pub const TENDERMINT_MISBEHAVIOR_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Misbehaviour";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Misbehaviour {
