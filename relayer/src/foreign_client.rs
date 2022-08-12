@@ -1125,7 +1125,6 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         }
 
         let tm = TrackedMsgs::new_static(new_msgs, "update client");
-        panic!("dryrun: not sending anything");
 
         let events = self
             .dst_chain()
