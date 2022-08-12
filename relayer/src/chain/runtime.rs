@@ -8,7 +8,6 @@ use tracing::error;
 use ibc::{
     core::{
         ics02_client::{
-            client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
             client_state::{AnyClientState, IdentifiedAnyClientState},
             events::UpdateClient,
         },
@@ -33,6 +32,7 @@ use crate::{
     account::Balance,
     config::ChainConfig,
     connection::ConnectionMsgType,
+    consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight},
     denom::DenomTrace,
     error::Error,
     event::{

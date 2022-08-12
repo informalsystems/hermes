@@ -2,9 +2,9 @@ use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use crate::clients::ics07_tendermint::client_def::TendermintClient;
-use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::client_type::ClientType;
+use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::context::ClientReaderLightClient;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
@@ -25,7 +25,8 @@ use crate::mock::client_def::MockClient;
 
 pub trait ClientDef {
     type ClientState: ClientState;
-    type ConsensusState: ConsensusState;
+
+    fn initialise(&self, consensus_state: Any) -> Result<Box<dyn ConsensusState>, Error>;
 
     fn check_header_and_update_state(
         &self,
@@ -33,15 +34,15 @@ pub trait ClientDef {
         client_id: ClientId,
         client_state: Self::ClientState,
         header: Any,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Error>;
+    ) -> Result<(Self::ClientState, Box<dyn ConsensusState>), Error>;
 
     fn verify_upgrade_and_update_state(
         &self,
         client_state: &Self::ClientState,
-        consensus_state: &Self::ConsensusState,
+        consensus_state: Any,
         proof_upgrade_client: MerkleProof,
         proof_upgrade_consensus_state: MerkleProof,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Error>;
+    ) -> Result<(Self::ClientState, Box<dyn ConsensusState>), Error>;
 
     /// Verification functions as specified in:
     /// <https://github.com/cosmos/ibc/tree/master/spec/core/ics-002-client-semantics>
@@ -188,7 +189,14 @@ impl AnyClient {
 // ⚠️  Beware of the awful boilerplate below ⚠️
 impl ClientDef for AnyClient {
     type ClientState = AnyClientState;
-    type ConsensusState = AnyConsensusState;
+
+    fn initialise(&self, consensus_state: Any) -> Result<Box<dyn ConsensusState>, Error> {
+        match self {
+            AnyClient::Tendermint(client) => client.initialise(consensus_state),
+            #[cfg(any(test, feature = "mocks"))]
+            AnyClient::Mock(client) => client.initialise(consensus_state),
+        }
+    }
 
     /// Validates an incoming `header` against the latest consensus state of this client.
     fn check_header_and_update_state(
@@ -197,7 +205,7 @@ impl ClientDef for AnyClient {
         client_id: ClientId,
         client_state: AnyClientState,
         header: Any,
-    ) -> Result<(AnyClientState, AnyConsensusState), Error> {
+    ) -> Result<(AnyClientState, Box<dyn ConsensusState>), Error> {
         match self {
             Self::Tendermint(client) => {
                 let client_state = downcast!(client_state => AnyClientState::Tendermint)
@@ -206,10 +214,7 @@ impl ClientDef for AnyClient {
                 let (new_state, new_consensus) =
                     client.check_header_and_update_state(ctx, client_id, client_state, header)?;
 
-                Ok((
-                    AnyClientState::Tendermint(new_state),
-                    AnyConsensusState::Tendermint(new_consensus),
-                ))
+                Ok((AnyClientState::Tendermint(new_state), new_consensus))
             }
 
             #[cfg(any(test, feature = "mocks"))]
@@ -220,10 +225,7 @@ impl ClientDef for AnyClient {
                 let (new_state, new_consensus) =
                     client.check_header_and_update_state(ctx, client_id, client_state, header)?;
 
-                Ok((
-                    AnyClientState::Mock(new_state),
-                    AnyConsensusState::Mock(new_consensus),
-                ))
+                Ok((AnyClientState::Mock(new_state), new_consensus))
             }
         }
     }
@@ -641,15 +643,14 @@ impl ClientDef for AnyClient {
     fn verify_upgrade_and_update_state(
         &self,
         client_state: &Self::ClientState,
-        consensus_state: &Self::ConsensusState,
+        consensus_state: Any,
         proof_upgrade_client: MerkleProof,
         proof_upgrade_consensus_state: MerkleProof,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
+    ) -> Result<(Self::ClientState, Box<dyn ConsensusState>), Error> {
         match self {
             Self::Tendermint(client) => {
-                let (client_state, consensus_state) = downcast!(
-                    client_state => AnyClientState::Tendermint,
-                    consensus_state => AnyConsensusState::Tendermint,
+                let client_state = downcast!(
+                    client_state => AnyClientState::Tendermint
                 )
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Tendermint))?;
 
@@ -660,17 +661,13 @@ impl ClientDef for AnyClient {
                     proof_upgrade_consensus_state,
                 )?;
 
-                Ok((
-                    AnyClientState::Tendermint(new_state),
-                    AnyConsensusState::Tendermint(new_consensus),
-                ))
+                Ok((AnyClientState::Tendermint(new_state), new_consensus))
             }
 
             #[cfg(any(test, feature = "mocks"))]
             Self::Mock(client) => {
-                let (client_state, consensus_state) = downcast!(
-                    client_state => AnyClientState::Mock,
-                    consensus_state => AnyConsensusState::Mock,
+                let client_state = downcast!(
+                    client_state => AnyClientState::Mock
                 )
                 .ok_or_else(|| Error::client_args_type_mismatch(ClientType::Mock))?;
 
@@ -681,10 +678,7 @@ impl ClientDef for AnyClient {
                     proof_upgrade_consensus_state,
                 )?;
 
-                Ok((
-                    AnyClientState::Mock(new_state),
-                    AnyConsensusState::Mock(new_consensus),
-                ))
+                Ok((AnyClientState::Mock(new_state), new_consensus))
             }
         }
     }

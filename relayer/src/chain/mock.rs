@@ -11,8 +11,8 @@ use ibc::clients::ics07_tendermint::client_state::{
 };
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc::clients::ics07_tendermint::header::Header as TendermintHeader;
-use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
+use ibc::core::ics02_client::consensus_state::downcast_consensus_state;
 use ibc::core::ics02_client::events::UpdateClient;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
@@ -20,8 +20,9 @@ use ibc::core::ics04_channel::context::ChannelReader;
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics23_commitment::merkle::MerkleProof;
 use ibc::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
-use ibc::core::ics24_host::identifier::{ChainId, ConnectionId};
+use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::events::IbcEvent;
+use ibc::mock::consensus_state::MockConsensusState;
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
 use ibc::relayer::ics18_relayer::context::Ics18Context;
@@ -36,6 +37,7 @@ use crate::chain::requests::{
     QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStatesRequest,
 };
 use crate::config::ChainConfig;
+use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
@@ -445,7 +447,7 @@ impl ChainEndpoint for MockChain {
         &self,
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
-        Ok(self.context.consensus_states(&request.client_id))
+        Ok(consensus_states(&self.context, &request.client_id))
     }
 
     fn query_consensus_state(
@@ -456,7 +458,7 @@ impl ChainEndpoint for MockChain {
         // IncludeProof::Yes not implemented
         assert!(matches!(include_proof, IncludeProof::No));
 
-        let consensus_states = self.context.consensus_states(&request.client_id);
+        let consensus_states = consensus_states(&self.context, &request.client_id);
         let consensus_state = consensus_states
             .into_iter()
             .find(|s| s.height == request.consensus_height)
@@ -471,6 +473,32 @@ impl ChainEndpoint for MockChain {
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
         unimplemented!()
     }
+}
+
+pub fn consensus_states(
+    ctx: &MockContext,
+    client_id: &ClientId,
+) -> Vec<AnyConsensusStateWithHeight> {
+    ctx.ibc_store.lock().unwrap().clients[client_id]
+        .consensus_states
+        .iter()
+        .map(|(height, cs)| {
+            let consensus_state = if let Some(cs) =
+                downcast_consensus_state::<TendermintConsensusState>(cs.as_ref())
+            {
+                AnyConsensusState::from(cs.clone())
+            } else if let Some(cs) = downcast_consensus_state::<MockConsensusState>(cs.as_ref()) {
+                AnyConsensusState::from(cs.clone())
+            } else {
+                unreachable!()
+            };
+
+            AnyConsensusStateWithHeight {
+                height: *height,
+                consensus_state,
+            }
+        })
+        .collect()
 }
 
 // For integration tests with the modules

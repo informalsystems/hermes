@@ -26,6 +26,7 @@ pub mod chain;
 pub mod channel;
 pub mod config;
 pub mod connection;
+pub mod consensus_state;
 pub mod denom;
 pub mod error;
 pub mod event;

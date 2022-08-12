@@ -11,9 +11,6 @@ use crate::dynamic_typing::AsAny;
 use crate::timestamp::Timestamp;
 use crate::Height;
 
-pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
-pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
-
 /// Abstract of consensus state update information
 ///
 /// Users are not expected to implement sealed::ErasedPartialEqHeader.
@@ -39,7 +36,7 @@ pub trait Header:
     /// The timestamp of the consensus state
     fn timestamp(&self) -> Timestamp;
 
-    /// The timestamp of the consensus state
+    /// Convert into a boxed trait object
     fn into_box(self) -> Box<dyn Header>
     where
         Self: Sized,

@@ -1,14 +1,10 @@
+use dyn_clone::DynClone;
+
 use crate::dynamic_typing::AsAny;
 use crate::prelude::*;
 
 use crate::core::ics24_host::identifier::ClientId;
 use crate::Height;
-use dyn_clone::DynClone;
-
-pub const TENDERMINT_MISBEHAVIOR_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Misbehaviour";
-
-#[cfg(any(test, feature = "mocks"))]
-pub const MOCK_MISBEHAVIOUR_TYPE_URL: &str = "/ibc.mock.Misbehavior";
 
 pub trait Misbehaviour:
     AsAny + sealed::ErasedPartialEqMisbehaviour + DynClone + core::fmt::Debug + Send + Sync

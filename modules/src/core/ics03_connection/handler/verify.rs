@@ -1,6 +1,5 @@
 //! ICS3 verification functions, common across all four handlers of ICS3.
 
-use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::core::ics03_connection::connection::ConnectionEnd;
@@ -166,7 +165,7 @@ pub fn verify_consensus_proof(
             consensus_state.root(),
             connection_end.counterparty().client_id(),
             proof.height(),
-            &expected_consensus,
+            expected_consensus.as_ref(),
         )
         .map_err(|e| Error::consensus_state_verification_failure(proof.height(), e))
 }

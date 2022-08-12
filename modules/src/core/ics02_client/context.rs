@@ -4,9 +4,9 @@
 
 use alloc::boxed::Box;
 
-use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
+use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::handler::ClientResult::{self, Create, Update, Upgrade};
 use crate::core::ics24_host::identifier::ClientId;
@@ -26,21 +26,21 @@ pub trait ClientReader {
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<AnyConsensusState, Error>;
+    ) -> Result<Box<dyn ConsensusState>, Error>;
 
     /// Search for the lowest consensus state higher than `height`.
     fn next_consensus_state(
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<Option<AnyConsensusState>, Error>;
+    ) -> Result<Option<Box<dyn ConsensusState>>, Error>;
 
     /// Search for the highest consensus state lower than `height`.
     fn prev_consensus_state(
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<Option<AnyConsensusState>, Error>;
+    ) -> Result<Option<Box<dyn ConsensusState>>, Error>;
 
     /// Returns the current height of the local chain.
     fn host_height(&self) -> Height;
@@ -54,10 +54,10 @@ pub trait ClientReader {
     }
 
     /// Returns the `ConsensusState` of the host (local) chain at a specific height.
-    fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error>;
+    fn host_consensus_state(&self, height: Height) -> Result<Box<dyn ConsensusState>, Error>;
 
     /// Returns the pending `ConsensusState` of the host (local) chain.
-    fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Error>;
+    fn pending_host_consensus_state(&self) -> Result<Box<dyn ConsensusState>, Error>;
 
     /// Returns a natural number, counting how many clients have been created thus far.
     /// The value of this counter should increase only via method `ClientKeeper::increase_client_counter`.
@@ -68,7 +68,7 @@ pub trait ClientReader {
 /// A blanket implementation of this trait is provided for all types that implement `ClientReader`.
 ///
 /// Note: This trait is not a supertrait of `ClientReader` because it uses trait objects and cannot
-/// depend on `AnyClientState` and `AnyConsensusState` due to a circular dependency problem.
+/// depend on `AnyClientState` due to a circular dependency problem.
 pub trait ClientReaderLightClient {
     fn consensus_state(
         &self,
@@ -100,7 +100,7 @@ impl<T: ClientReader> ClientReaderLightClient for T {
         client_id: &ClientId,
         height: Height,
     ) -> Result<Box<dyn ConsensusState>, Error> {
-        ClientReader::consensus_state(self, client_id, height).map(|cs| cs.boxed_dyn())
+        ClientReader::consensus_state(self, client_id, height)
     }
 
     fn next_consensus_state(
@@ -109,7 +109,6 @@ impl<T: ClientReader> ClientReaderLightClient for T {
         height: Height,
     ) -> Result<Option<Box<dyn ConsensusState>>, Error> {
         ClientReader::next_consensus_state(self, client_id, height)
-            .map(|cs| cs.map(AnyConsensusState::boxed_dyn))
     }
 
     fn prev_consensus_state(
@@ -118,7 +117,6 @@ impl<T: ClientReader> ClientReaderLightClient for T {
         height: Height,
     ) -> Result<Option<Box<dyn ConsensusState>>, Error> {
         ClientReader::prev_consensus_state(self, client_id, height)
-            .map(|cs| cs.map(AnyConsensusState::boxed_dyn))
     }
 
     fn host_timestamp(&self) -> Timestamp {
@@ -203,7 +201,7 @@ pub trait ClientKeeper {
         &mut self,
         client_id: ClientId,
         height: Height,
-        consensus_state: AnyConsensusState,
+        consensus_state: Box<dyn ConsensusState>,
     ) -> Result<(), Error>;
 
     /// Called upon client creation.

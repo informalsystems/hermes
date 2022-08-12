@@ -4,8 +4,8 @@
 use core::time::Duration;
 use num_traits::float::FloatCore;
 
-use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
+use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
@@ -39,7 +39,7 @@ pub trait ChannelReader {
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<AnyConsensusState, Error>;
+    ) -> Result<Box<dyn ConsensusState>, Error>;
 
     fn get_next_sequence_send(
         &self,
@@ -112,10 +112,10 @@ pub trait ChannelReader {
     }
 
     /// Returns the `ConsensusState` of the host (local) chain at a specific height.
-    fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error>;
+    fn host_consensus_state(&self, height: Height) -> Result<Box<dyn ConsensusState>, Error>;
 
     /// Returns the pending `ConsensusState` of the host (local) chain.
-    fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Error>;
+    fn pending_host_consensus_state(&self) -> Result<Box<dyn ConsensusState>, Error>;
 
     /// Returns the time when the client state for the given [`ClientId`] was updated with a header for the given [`Height`]
     fn client_update_time(&self, client_id: &ClientId, height: Height) -> Result<Timestamp, Error>;

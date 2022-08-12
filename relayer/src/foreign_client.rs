@@ -13,7 +13,6 @@ use itertools::Itertools;
 use tracing::{debug, error, info, span, trace, warn, Level};
 
 use flex_error::define_error;
-use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::core::ics02_client::client_state::AnyClientState;
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics02_client::error::Error as ClientError;
@@ -39,6 +38,7 @@ use crate::chain::requests::{
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
+use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::error::Error as RelayerError;
 use crate::event::IbcEventWithHeight;
 use crate::light_client::AnyHeader;
@@ -508,7 +508,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         let msg_upgrade = MsgUpgradeAnyClient {
             client_id: self.id.clone(),
             client_state,
-            consensus_state,
+            consensus_state: consensus_state.into(),
             proof_upgrade_client: proof_upgrade_client.into(),
             proof_upgrade_consensus_state: proof_upgrade_consensus_state.into(),
             signer,
@@ -622,7 +622,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             })?;
 
         //TODO Get acct_prefix
-        let msg = MsgCreateAnyClient::new(client_state, consensus_state, signer)
+        let msg = MsgCreateAnyClient::new(client_state, consensus_state.into(), signer)
             .map_err(ForeignClientError::client)?;
 
         Ok(msg)

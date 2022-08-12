@@ -1,9 +1,9 @@
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
-use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_def::ClientDef;
 use crate::core::ics02_client::client_state::ClientState;
+use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::context::ClientReaderLightClient;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
@@ -18,7 +18,8 @@ use crate::core::ics23_commitment::merkle::apply_prefix;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use crate::core::ics24_host::path::ClientConsensusStatePath;
 use crate::core::ics24_host::Path;
-use crate::mock::client_state::{MockClientState, MockConsensusState};
+use crate::mock::client_state::MockClientState;
+use crate::mock::consensus_state::MockConsensusState;
 use crate::mock::header::MockHeader;
 use crate::prelude::*;
 use crate::Height;
@@ -28,7 +29,10 @@ pub struct MockClient;
 
 impl ClientDef for MockClient {
     type ClientState = MockClientState;
-    type ConsensusState = MockConsensusState;
+
+    fn initialise(&self, consensus_state: Any) -> Result<Box<dyn ConsensusState>, Error> {
+        MockConsensusState::try_from(consensus_state).map(MockConsensusState::into_box)
+    }
 
     fn check_header_and_update_state(
         &self,
@@ -36,7 +40,7 @@ impl ClientDef for MockClient {
         _client_id: ClientId,
         client_state: Self::ClientState,
         header: Any,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
+    ) -> Result<(Self::ClientState, Box<dyn ConsensusState>), Error> {
         let header = MockHeader::try_from(header)?;
 
         if client_state.latest_height() >= header.height() {
@@ -48,7 +52,7 @@ impl ClientDef for MockClient {
 
         Ok((
             MockClientState::new(header),
-            MockConsensusState::new(header),
+            MockConsensusState::new(header).into_box(),
         ))
     }
 
@@ -180,10 +184,11 @@ impl ClientDef for MockClient {
     fn verify_upgrade_and_update_state(
         &self,
         client_state: &Self::ClientState,
-        consensus_state: &Self::ConsensusState,
+        consensus_state: Any,
         _proof_upgrade_client: MerkleProof,
         _proof_upgrade_consensus_state: MerkleProof,
-    ) -> Result<(Self::ClientState, Self::ConsensusState), Error> {
-        Ok((*client_state, consensus_state.clone()))
+    ) -> Result<(Self::ClientState, Box<dyn ConsensusState>), Error> {
+        let consensus_state = self.initialise(consensus_state)?;
+        Ok((*client_state, consensus_state))
     }
 }

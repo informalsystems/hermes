@@ -1,44 +1,30 @@
-use crate::prelude::*;
-
-use core::marker::{Send, Sync};
-
-use ibc_proto::google::protobuf::Any as ProtoAny;
+use ibc::clients::ics07_tendermint::consensus_state::{
+    ConsensusState as TmConsensusState, TENDERMINT_CONSENSUS_STATE_TYPE_URL,
+};
+use ibc::core::ics02_client::client_type::ClientType;
+use ibc::core::ics02_client::consensus_state::ConsensusState;
+use ibc::core::ics02_client::error::Error;
+use ibc::core::ics23_commitment::commitment::CommitmentRoot;
+#[cfg(test)]
+use ibc::mock::consensus_state::MockConsensusState;
+#[cfg(test)]
+use ibc::mock::consensus_state::MOCK_CONSENSUS_STATE_TYPE_URL;
+use ibc::timestamp::Timestamp;
+use ibc::Height;
+use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
+use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
+#[cfg(test)]
+use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
 use ibc_proto::protobuf::Protobuf;
 use serde::Serialize;
-
-use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
-use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::error::Error;
-use crate::core::ics02_client::height::Height;
-use crate::core::ics23_commitment::commitment::CommitmentRoot;
-use crate::dynamic_typing::AsAny;
-use crate::timestamp::Timestamp;
-
-#[cfg(any(test, feature = "mocks"))]
-use crate::mock::client_state::MockConsensusState;
-
-pub const TENDERMINT_CONSENSUS_STATE_TYPE_URL: &str =
-    "/ibc.lightclients.tendermint.v1.ConsensusState";
-
-pub const MOCK_CONSENSUS_STATE_TYPE_URL: &str = "/ibc.mock.ConsensusState";
-
-pub trait ConsensusState: core::fmt::Debug + Send + Sync + AsAny {
-    /// Type of client associated with this consensus state (eg. Tendermint)
-    fn client_type(&self) -> ClientType;
-
-    /// Commitment root of the consensus state, which is used for key-value pair verification.
-    fn root(&self) -> &CommitmentRoot;
-
-    fn encode_vec(&self) -> Result<Vec<u8>, Error>;
-}
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(tag = "type")]
 pub enum AnyConsensusState {
     Tendermint(TmConsensusState),
 
-    #[cfg(any(test, feature = "mocks"))]
+    #[cfg(test)]
     Mock(MockConsensusState),
 }
 
@@ -47,7 +33,7 @@ impl AnyConsensusState {
         match self {
             Self::Tendermint(cs_state) => cs_state.timestamp.into(),
 
-            #[cfg(any(test, feature = "mocks"))]
+            #[cfg(test)]
             Self::Mock(mock_state) => mock_state.timestamp(),
         }
     }
@@ -56,38 +42,29 @@ impl AnyConsensusState {
         match self {
             AnyConsensusState::Tendermint(_cs) => ClientType::Tendermint,
 
-            #[cfg(any(test, feature = "mocks"))]
+            #[cfg(test)]
             AnyConsensusState::Mock(_cs) => ClientType::Mock,
-        }
-    }
-
-    pub fn boxed_dyn(self) -> Box<dyn ConsensusState> {
-        match self {
-            AnyConsensusState::Tendermint(cs) => Box::new(cs),
-
-            #[cfg(any(test, feature = "mocks"))]
-            AnyConsensusState::Mock(cs) => Box::new(cs),
         }
     }
 }
 
-impl Protobuf<ProtoAny> for AnyConsensusState {}
+impl Protobuf<Any> for AnyConsensusState {}
 
-impl TryFrom<ProtoAny> for AnyConsensusState {
+impl TryFrom<Any> for AnyConsensusState {
     type Error = Error;
 
-    fn try_from(value: ProtoAny) -> Result<Self, Self::Error> {
+    fn try_from(value: Any) -> Result<Self, Self::Error> {
         match value.type_url.as_str() {
             "" => Err(Error::empty_consensus_state_response()),
 
             TENDERMINT_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Tendermint(
-                TmConsensusState::decode_vec(&value.value)
+                Protobuf::<RawConsensusState>::decode_vec(&value.value)
                     .map_err(Error::decode_raw_client_state)?,
             )),
 
-            #[cfg(any(test, feature = "mocks"))]
+            #[cfg(test)]
             MOCK_CONSENSUS_STATE_TYPE_URL => Ok(AnyConsensusState::Mock(
-                MockConsensusState::decode_vec(&value.value)
+                Protobuf::<RawMockConsensusState>::decode_vec(&value.value)
                     .map_err(Error::decode_raw_client_state)?,
             )),
 
@@ -96,25 +73,25 @@ impl TryFrom<ProtoAny> for AnyConsensusState {
     }
 }
 
-impl From<AnyConsensusState> for ProtoAny {
+impl From<AnyConsensusState> for Any {
     fn from(value: AnyConsensusState) -> Self {
         match value {
-            AnyConsensusState::Tendermint(value) => ProtoAny {
+            AnyConsensusState::Tendermint(value) => Any {
                 type_url: TENDERMINT_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: ConsensusState::encode_vec(&value)
+                value: Protobuf::<RawConsensusState>::encode_vec(&value)
                     .expect("encoding to `Any` from `AnyConsensusState::Tendermint`"),
             },
-            #[cfg(any(test, feature = "mocks"))]
-            AnyConsensusState::Mock(value) => ProtoAny {
+            #[cfg(test)]
+            AnyConsensusState::Mock(value) => Any {
                 type_url: MOCK_CONSENSUS_STATE_TYPE_URL.to_string(),
-                value: ConsensusState::encode_vec(&value)
+                value: Protobuf::<RawMockConsensusState>::encode_vec(&value)
                     .expect("encoding to `Any` from `AnyConsensusState::Mock`"),
             },
         }
     }
 }
 
-#[cfg(any(test, feature = "mocks"))]
+#[cfg(test)]
 impl From<MockConsensusState> for AnyConsensusState {
     fn from(cs: MockConsensusState) -> Self {
         Self::Mock(cs)
@@ -173,12 +150,12 @@ impl ConsensusState for AnyConsensusState {
         match self {
             Self::Tendermint(cs_state) => cs_state.root(),
 
-            #[cfg(any(test, feature = "mocks"))]
+            #[cfg(test)]
             Self::Mock(mock_state) => mock_state.root(),
         }
     }
 
-    fn encode_vec(&self) -> Result<Vec<u8>, Error> {
-        Protobuf::encode_vec(self).map_err(Error::invalid_any_consensus_state)
+    fn timestamp(&self) -> Timestamp {
+        AnyConsensusState::timestamp(self)
     }
 }

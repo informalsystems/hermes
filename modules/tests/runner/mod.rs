@@ -6,7 +6,6 @@ use core::convert::TryInto;
 use core::fmt::Debug;
 use core::time::Duration;
 
-use ibc::core::ics02_client::client_consensus::AnyConsensusState;
 use ibc::core::ics02_client::client_state::AnyClientState;
 use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::context::ClientReader;
@@ -28,7 +27,8 @@ use ibc::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofB
 use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::core::ics26_routing::error as routing_error;
 use ibc::core::ics26_routing::msgs::Ics26Envelope;
-use ibc::mock::client_state::{MockClientState, MockConsensusState};
+use ibc::mock::client_state::MockClientState;
+use ibc::mock::consensus_state::MockConsensusState;
 use ibc::mock::context::MockContext;
 use ibc::mock::header::MockHeader;
 use ibc::mock::host::HostType;
@@ -151,10 +151,6 @@ impl IbcTestRunner {
 
     pub fn client_state(height: Height) -> AnyClientState {
         AnyClientState::Mock(MockClientState::new(Self::mock_header(height)))
-    }
-
-    pub fn consensus_state(height: Height) -> AnyConsensusState {
-        AnyConsensusState::Mock(MockConsensusState::new(Self::mock_header(height)))
     }
 
     fn signer() -> Signer {
@@ -306,7 +302,8 @@ impl IbcTestRunner {
                 // create ICS26 message and deliver it
                 let msg = Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
                     client_state: Self::client_state(client_state),
-                    consensus_state: Self::consensus_state(consensus_state),
+                    consensus_state: MockConsensusState::new(Self::mock_header(consensus_state))
+                        .into(),
                     signer: Self::signer(),
                 }));
                 ctx.deliver(msg)

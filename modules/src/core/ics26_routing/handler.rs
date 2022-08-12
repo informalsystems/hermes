@@ -132,9 +132,10 @@ mod tests {
 
     use test_log::test;
 
-    use crate::applications::transfer::context::test::deliver as ics20_deliver;
-    use crate::applications::transfer::PrefixedCoin;
-    use crate::core::ics02_client::client_consensus::AnyConsensusState;
+    use crate::applications::transfer::{
+        context::test::deliver as ics20_deliver, msgs::transfer::test_util::get_dummy_msg_transfer,
+        msgs::transfer::MsgTransfer, packet::PacketData, PrefixedCoin, MODULE_ID_STR,
+    };
     use crate::core::ics02_client::client_state::AnyClientState;
     use crate::core::ics02_client::msgs::{
         create_client::MsgCreateAnyClient, update_client::MsgUpdateClient,
@@ -159,20 +160,15 @@ mod tests {
         ChannelMsg, PacketMsg,
     };
     use crate::core::ics23_commitment::commitment::test_util::get_dummy_merkle_proof;
-    use crate::events::IbcEvent;
-    use crate::{
-        applications::transfer::msgs::transfer::test_util::get_dummy_msg_transfer,
-        applications::transfer::msgs::transfer::MsgTransfer,
-        applications::transfer::packet::PacketData, applications::transfer::MODULE_ID_STR,
-    };
-
     use crate::core::ics24_host::identifier::ConnectionId;
     use crate::core::ics26_routing::context::{Ics26Context, ModuleId, Router, RouterBuilder};
     use crate::core::ics26_routing::error::Error;
     use crate::core::ics26_routing::handler::dispatch;
     use crate::core::ics26_routing::msgs::Ics26Envelope;
+    use crate::events::IbcEvent;
     use crate::handler::HandlerOutputBuilder;
-    use crate::mock::client_state::{MockClientState, MockConsensusState};
+    use crate::mock::client_state::MockClientState;
+    use crate::mock::consensus_state::MockConsensusState;
     use crate::mock::context::{MockContext, MockRouterBuilder};
     use crate::mock::header::MockHeader;
     use crate::test_utils::{get_dummy_account_id, DummyTransferModule};
@@ -236,9 +232,7 @@ mod tests {
 
         let create_client_msg = MsgCreateAnyClient::new(
             AnyClientState::from(MockClientState::new(MockHeader::new(start_client_height))),
-            AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(
-                start_client_height,
-            ))),
+            MockConsensusState::new(MockHeader::new(start_client_height)).into(),
             default_signer.clone(),
         )
         .unwrap();
@@ -515,9 +509,7 @@ mod tests {
                     AnyClientState::Mock(MockClientState::new(MockHeader::new(
                         upgrade_client_height,
                     ))),
-                    AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(
-                        upgrade_client_height,
-                    ))),
+                    MockConsensusState::new(MockHeader::new(upgrade_client_height)).into(),
                     get_dummy_merkle_proof(),
                     get_dummy_merkle_proof(),
                     default_signer.clone(),
@@ -532,9 +524,7 @@ mod tests {
                     AnyClientState::Mock(MockClientState::new(MockHeader::new(
                         upgrade_client_height_second,
                     ))),
-                    AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(
-                        upgrade_client_height_second,
-                    ))),
+                    MockConsensusState::new(MockHeader::new(upgrade_client_height_second)).into(),
                     get_dummy_merkle_proof(),
                     get_dummy_merkle_proof(),
                     default_signer,

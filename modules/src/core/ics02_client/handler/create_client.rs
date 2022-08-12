@@ -2,9 +2,10 @@
 
 use crate::prelude::*;
 
-use crate::core::ics02_client::client_consensus::AnyConsensusState;
+use crate::core::ics02_client::client_def::{AnyClient, ClientDef};
 use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
+use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
@@ -18,12 +19,12 @@ use crate::timestamp::Timestamp;
 
 /// The result following the successful processing of a `MsgCreateAnyClient` message. Preferably
 /// this data type should be used with a qualified name `create_client::Result` to avoid ambiguity.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Result {
     pub client_id: ClientId,
     pub client_type: ClientType,
     pub client_state: AnyClientState,
-    pub consensus_state: AnyConsensusState,
+    pub consensus_state: Box<dyn ConsensusState>,
     pub processed_time: Timestamp,
     pub processed_height: Height,
 }
@@ -34,11 +35,23 @@ pub fn process(
 ) -> HandlerResult<ClientResult, Error> {
     let mut output = HandlerOutput::builder();
 
+    let MsgCreateAnyClient {
+        client_state,
+        consensus_state,
+        signer: _,
+    } = msg;
+
     // Construct this client's identifier
     let id_counter = ctx.client_counter()?;
-    let client_id = ClientId::new(msg.client_state.client_type(), id_counter).map_err(|e| {
-        Error::client_identifier_constructor(msg.client_state.client_type(), id_counter, e)
+    let client_type = client_state.client_type();
+
+    let client_id = ClientId::new(client_type, id_counter).map_err(|e| {
+        Error::client_identifier_constructor(client_state.client_type(), id_counter, e)
     })?;
+
+    let client_def = AnyClient::from_client_type(client_type);
+
+    let consensus_state = client_def.initialise(consensus_state)?;
 
     output.log(format!(
         "success: generated new client identifier: {}",
@@ -47,9 +60,9 @@ pub fn process(
 
     let result = ClientResult::Create(Result {
         client_id: client_id.clone(),
-        client_type: msg.client_state.client_type(),
-        client_state: msg.client_state.clone(),
-        consensus_state: msg.consensus_state,
+        client_type,
+        client_state,
+        consensus_state,
         processed_time: ctx.host_timestamp(),
         processed_height: ctx.host_height(),
     });
@@ -73,8 +86,8 @@ mod tests {
     use crate::clients::ics07_tendermint::client_state::{
         AllowUpdate, ClientState as TendermintClientState,
     };
+    use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
     use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
-    use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_type::ClientType;
     use crate::core::ics02_client::handler::{dispatch, ClientResult};
     use crate::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
@@ -84,7 +97,8 @@ mod tests {
     use crate::core::ics24_host::identifier::ClientId;
     use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
-    use crate::mock::client_state::{MockClientState, MockConsensusState};
+    use crate::mock::client_state::MockClientState;
+    use crate::mock::consensus_state::MockConsensusState;
     use crate::mock::context::MockContext;
     use crate::mock::header::MockHeader;
     use crate::test_utils::get_dummy_account_id;
@@ -120,7 +134,10 @@ mod tests {
                         assert_eq!(create_result.client_type, ClientType::Mock);
                         assert_eq!(create_result.client_id, expected_client_id);
                         assert_eq!(create_result.client_state, msg.client_state);
-                        assert_eq!(create_result.consensus_state, msg.consensus_state);
+                        assert_eq!(
+                            create_result.consensus_state.as_ref().clone_into(),
+                            msg.consensus_state
+                        );
                     }
                     _ => {
                         panic!("unexpected result type: expected ClientResult::CreateResult!");
@@ -188,7 +205,10 @@ mod tests {
                             assert_eq!(create_res.client_type, msg.client_state.client_type());
                             assert_eq!(create_res.client_id, expected_client_id);
                             assert_eq!(create_res.client_state, msg.client_state);
-                            assert_eq!(create_res.consensus_state, msg.consensus_state);
+                            assert_eq!(
+                                create_res.consensus_state.as_ref().clone_into(),
+                                msg.consensus_state
+                            );
                         }
                         _ => {
                             panic!("expected result of type ClientResult::CreateResult");
@@ -229,7 +249,7 @@ mod tests {
 
         let msg = MsgCreateAnyClient::new(
             tm_client_state,
-            AnyConsensusState::Tendermint(tm_header.try_into().unwrap()),
+            TmConsensusState::try_from(tm_header).unwrap().into(),
             signer,
         )
         .unwrap();
@@ -251,7 +271,10 @@ mod tests {
                         assert_eq!(create_res.client_type, ClientType::Tendermint);
                         assert_eq!(create_res.client_id, expected_client_id);
                         assert_eq!(create_res.client_state, msg.client_state);
-                        assert_eq!(create_res.consensus_state, msg.consensus_state);
+                        assert_eq!(
+                            create_res.consensus_state.as_ref().clone_into(),
+                            msg.consensus_state
+                        );
                     }
                     _ => {
                         panic!("expected result of type ClientResult::CreateResult");

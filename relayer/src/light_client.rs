@@ -4,15 +4,21 @@ pub mod tendermint;
 
 use core::ops::Deref;
 
-use ibc::clients::ics07_tendermint::header::{decode_header, Header as TendermintHeader};
+use ibc::clients::ics07_tendermint::header::{
+    decode_header, Header as TendermintHeader, TENDERMINT_HEADER_TYPE_URL,
+};
 use ibc::core::ics02_client::client_state::AnyClientState;
 use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::error::Error;
-use ibc::core::ics02_client::header::{Header, TENDERMINT_HEADER_TYPE_URL};
+use ibc::core::ics02_client::header::Header;
+#[cfg(test)]
+use ibc::mock::header::{MockHeader, MOCK_HEADER_TYPE_URL};
 use ibc::timestamp::Timestamp;
 use ibc::Height;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawTmHeader;
+#[cfg(test)]
+use ibc_proto::ibc::mock::Header as RawMockHeader;
 use ibc_proto::protobuf::Protobuf as ErasedProtobuf;
 use serde::{Deserialize, Serialize};
 
@@ -22,13 +28,6 @@ use crate::misbehaviour::MisbehaviourEvidence;
 use ibc::core::ics02_client::events::UpdateClient;
 
 use subtle_encoding::hex;
-
-#[cfg(test)]
-use ibc::core::ics02_client::header::MOCK_HEADER_TYPE_URL;
-#[cfg(test)]
-use ibc::mock::header::MockHeader;
-#[cfg(test)]
-use ibc_proto::ibc::mock::Header as RawMockHeader;
 
 /// Defines a light block from the point of view of the relayer.
 pub trait LightBlock<C: ChainEndpoint>: Send + Sync {

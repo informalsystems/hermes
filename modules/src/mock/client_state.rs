@@ -1,23 +1,19 @@
 use crate::prelude::*;
 
 use alloc::collections::btree_map::BTreeMap as HashMap;
-
 use core::time::Duration;
 
+use ibc_proto::ibc::mock::ClientState as RawMockClientState;
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 
-use ibc_proto::ibc::mock::ClientState as RawMockClientState;
-use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
-
-use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
 use crate::core::ics02_client::client_type::ClientType;
+use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::error::Error;
-use crate::core::ics23_commitment::commitment::CommitmentRoot;
 use crate::core::ics24_host::identifier::ChainId;
+use crate::mock::consensus_state::MockConsensusState;
 use crate::mock::header::MockHeader;
-use crate::timestamp::Timestamp;
 use crate::Height;
 
 /// A mock of an IBC client record as it is stored in a mock context.
@@ -31,7 +27,7 @@ pub struct MockClientRecord {
     pub client_state: Option<AnyClientState>,
 
     /// Mapping of heights to consensus states for this client.
-    pub consensus_states: HashMap<Height, AnyConsensusState>,
+    pub consensus_states: HashMap<Height, Box<dyn ConsensusState>>,
 }
 
 /// A mock of a client state. For an example of a real structure that this mocks, you can see
@@ -115,64 +111,5 @@ impl ClientState for MockClientState {
 impl From<MockConsensusState> for MockClientState {
     fn from(cs: MockConsensusState) -> Self {
         Self::new(cs.header)
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct MockConsensusState {
-    pub header: MockHeader,
-    pub root: CommitmentRoot,
-}
-
-impl MockConsensusState {
-    pub fn new(header: MockHeader) -> Self {
-        MockConsensusState {
-            header,
-            root: CommitmentRoot::from(vec![0]),
-        }
-    }
-
-    pub fn timestamp(&self) -> Timestamp {
-        self.header.timestamp
-    }
-}
-
-impl Protobuf<RawMockConsensusState> for MockConsensusState {}
-
-impl TryFrom<RawMockConsensusState> for MockConsensusState {
-    type Error = Error;
-
-    fn try_from(raw: RawMockConsensusState) -> Result<Self, Self::Error> {
-        let raw_header = raw.header.ok_or_else(Error::missing_raw_consensus_state)?;
-
-        Ok(Self {
-            header: MockHeader::try_from(raw_header)?,
-            root: CommitmentRoot::from(vec![0]),
-        })
-    }
-}
-
-impl From<MockConsensusState> for RawMockConsensusState {
-    fn from(value: MockConsensusState) -> Self {
-        RawMockConsensusState {
-            header: Some(ibc_proto::ibc::mock::Header {
-                height: Some(value.header.height().into()),
-                timestamp: value.header.timestamp.nanoseconds(),
-            }),
-        }
-    }
-}
-
-impl ConsensusState for MockConsensusState {
-    fn client_type(&self) -> ClientType {
-        ClientType::Mock
-    }
-
-    fn root(&self) -> &CommitmentRoot {
-        &self.root
-    }
-
-    fn encode_vec(&self) -> Result<Vec<u8>, Error> {
-        Protobuf::encode_vec(self).map_err(Error::invalid_any_consensus_state)
     }
 }

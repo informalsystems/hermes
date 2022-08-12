@@ -2,9 +2,9 @@
 
 use tracing::debug;
 
-use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_def::{AnyClient, ClientDef};
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
+use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
@@ -19,11 +19,11 @@ use crate::timestamp::Timestamp;
 
 /// The result following the successful processing of a `MsgUpdateAnyClient` message. Preferably
 /// this data type should be used with a qualified name `update_client::Result` to avoid ambiguity.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Result {
     pub client_id: ClientId,
     pub client_state: AnyClientState,
-    pub consensus_state: AnyConsensusState,
+    pub consensus_state: Box<dyn ConsensusState>,
     pub processed_time: Timestamp,
     pub processed_height: Height,
 }
@@ -100,13 +100,13 @@ pub fn process<Ctx: ClientReader>(
 
 #[cfg(test)]
 mod tests {
-    use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use core::str::FromStr;
     use test_log::test;
 
-    // use crate::core::ics02_client::client_consensus::AnyConsensusState;
+    use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
     use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
     use crate::core::ics02_client::client_type::ClientType;
+    use crate::core::ics02_client::consensus_state::downcast_consensus_state;
     use crate::core::ics02_client::error::{Error, ErrorDetail};
     use crate::core::ics02_client::handler::dispatch;
     use crate::core::ics02_client::handler::ClientResult::Update;
@@ -414,7 +414,8 @@ mod tests {
         let block = match block {
             HostBlock::SyntheticTendermint(mut theader) => {
                 let cons_state = ctx.latest_consensus_states(&client_id, &client_height);
-                if let AnyConsensusState::Tendermint(tcs) = cons_state {
+                if let Some(tcs) = downcast_consensus_state::<TmConsensusState>(cons_state.as_ref())
+                {
                     theader.light_block.signed_header.header.time = tcs.timestamp;
                     theader.trusted_height = Height::new(1, 11).unwrap();
                 }
