@@ -1,4 +1,4 @@
-# Concrete Composition
+# Component Composition
 
 Now that we have both `SimpleGreeter` and `DaytimeGreeter` implemented, we
 can look at how we can define a full application context that satisfies the
