@@ -44,7 +44,7 @@ static HINT: &str = "Consider using the default invocation\n\nhermes create chan
 /// Note that `Connection-ID`s have to be considered based off of the chain's perspective. Although
 /// chain A and chain B might refer to the connection with different names, they are actually referring
 /// to the same connection.
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 #[clap(
     override_usage = "hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --a-connection <A_CONNECTION_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>
 

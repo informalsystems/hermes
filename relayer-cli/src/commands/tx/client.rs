@@ -22,7 +22,7 @@ use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic, ChainHa
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct TxCreateClientCmd {
     #[clap(
         long = "host-chain",
@@ -104,7 +104,7 @@ impl Runnable for TxCreateClientCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct TxUpdateClientCmd {
     #[clap(
         long = "host-chain",
@@ -196,7 +196,7 @@ impl Runnable for TxUpdateClientCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct TxUpgradeClientCmd {
     #[clap(
         long = "host-chain",
@@ -314,7 +314,7 @@ impl Runnable for TxUpgradeClientCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct TxUpgradeClientsCmd {
     #[clap(
         long = "reference-chain",

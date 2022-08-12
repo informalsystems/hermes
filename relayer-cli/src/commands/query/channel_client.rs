@@ -14,7 +14,7 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 /// `query channel client --chain <chain_id> --port <port_id> --channel <channel_id>`
 ///
 /// If successful the channel's client state is displayed.
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryChannelClientCmd {
     #[clap(
         long = "chain",

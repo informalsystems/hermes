@@ -12,7 +12,7 @@ use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryConnectionsCmd {
     #[clap(
         long = "chain",
