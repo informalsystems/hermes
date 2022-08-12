@@ -1,2 +1,2 @@
-- Add `len()` method to `ChannelFilters` in order to fetch the number of filters. Useful for testing purposes.
+- Add `len()` and `is_mepty()` method to `ChannelFilters` in order to get the number of filters. Useful for testing purposes.
   ([#2187](https://github.com/informalsystems/ibc-rs/issues/2187))
