@@ -101,7 +101,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
     /// - [ ] Return intermediate headers as well
     fn check_misbehaviour(
         &mut self,
-        update: UpdateClient,
+        update: &UpdateClient,
         client_state: &AnyClientState,
     ) -> Result<Option<MisbehaviourEvidence>, Error> {
         crate::time!("light client check_misbehaviour");

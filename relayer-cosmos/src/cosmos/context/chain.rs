@@ -6,7 +6,7 @@ use ibc::signer::Signer;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
-use ibc_relayer::chain::cosmos::types::events::channel::extract_packet_and_write_ack_from_tx;
+use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
 use ibc_relayer::keyring::KeyEntry;
 use ibc_relayer_framework::traits::contexts::chain::{ChainContext, IbcChainContext};
 use ibc_relayer_framework::traits::contexts::error::HasError;
@@ -82,7 +82,6 @@ impl TryFrom<AbciEvent> for WriteAcknowledgementEvent {
                 extract_packet_and_write_ack_from_tx(&event).map_err(|_| ())?;
 
             let ack = WriteAcknowledgement {
-                height: Height::new(0, 1).unwrap(),
                 packet,
                 ack: write_ack,
             };

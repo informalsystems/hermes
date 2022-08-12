@@ -12,7 +12,6 @@ class TxChanOpenInitRes:
     connection_id: ConnectionId
     counterparty_channel_id: Optional[ChannelId]
     counterparty_port_id: PortId
-    height: BlockHeight
     port_id: PortId
 
 
@@ -49,7 +48,6 @@ class TxChanOpenTryRes:
     connection_id: ConnectionId
     counterparty_channel_id: ChannelId
     counterparty_port_id: ChannelId
-    height: BlockHeight
     port_id: PortId
 
 
@@ -88,7 +86,6 @@ class TxChanOpenAckRes:
     connection_id: ConnectionId
     counterparty_channel_id: ChannelId
     counterparty_port_id: ChannelId
-    height: BlockHeight
     port_id: PortId
 
 
@@ -125,7 +122,6 @@ class TxChanOpenConfirmRes:
     connection_id: ConnectionId
     counterparty_channel_id: ChannelId
     counterparty_port_id: ChannelId
-    height: BlockHeight
     port_id: PortId
 
 
@@ -161,7 +157,6 @@ class TxChanCloseInitRes:
     connection_id: ConnectionId
     counterparty_channel_id: ChannelId
     counterparty_port_id: ChannelId
-    height: BlockHeight
     port_id: PortId
 
 
@@ -198,7 +193,6 @@ class TxChanCloseConfirmRes:
     connection_id: ConnectionId
     counterparty_channel_id: ChannelId
     counterparty_port_id: ChannelId
-    height: BlockHeight
     port_id: PortId
 
 

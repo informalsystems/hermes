@@ -4,37 +4,22 @@ use serde_derive::{Deserialize, Serialize};
 use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
-use crate::core::ics02_client::height::Height;
 use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::events::{IbcEvent, IbcEventType};
 use crate::prelude::*;
 
 /// The content of the `key` field for the attribute containing the connection identifier.
-pub const HEIGHT_ATTRIBUTE_KEY: &str = "height";
 pub const CONN_ID_ATTRIBUTE_KEY: &str = "connection_id";
 pub const CLIENT_ID_ATTRIBUTE_KEY: &str = "client_id";
 pub const COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY: &str = "counterparty_connection_id";
 pub const COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY: &str = "counterparty_client_id";
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Attributes {
-    pub height: Height,
     pub connection_id: Option<ConnectionId>,
     pub client_id: ClientId,
     pub counterparty_connection_id: Option<ConnectionId>,
     pub counterparty_client_id: ClientId,
-}
-
-impl Default for Attributes {
-    fn default() -> Self {
-        Self {
-            height: Height::new(0, 1).unwrap(),
-            connection_id: Default::default(),
-            client_id: Default::default(),
-            counterparty_connection_id: Default::default(),
-            counterparty_client_id: Default::default(),
-        }
-    }
 }
 
 /// Convert attributes to Tendermint ABCI tags
@@ -48,11 +33,6 @@ impl Default for Attributes {
 impl From<Attributes> for Vec<Tag> {
     fn from(a: Attributes) -> Self {
         let mut attributes = vec![];
-        let height = Tag {
-            key: HEIGHT_ATTRIBUTE_KEY.parse().unwrap(),
-            value: a.height.to_string().parse().unwrap(),
-        };
-        attributes.push(height);
         if let Some(conn_id) = a.connection_id {
             let conn_id = Tag {
                 key: CONN_ID_ATTRIBUTE_KEY.parse().unwrap(),
@@ -82,7 +62,7 @@ impl From<Attributes> for Vec<Tag> {
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
-pub struct OpenInit(Attributes);
+pub struct OpenInit(pub Attributes);
 
 impl OpenInit {
     pub fn attributes(&self) -> &Attributes {
@@ -90,12 +70,6 @@ impl OpenInit {
     }
     pub fn connection_id(&self) -> Option<&ConnectionId> {
         self.0.connection_id.as_ref()
-    }
-    pub fn height(&self) -> Height {
-        self.0.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.0.height = height;
     }
 }
 
@@ -122,7 +96,7 @@ impl From<OpenInit> for AbciEvent {
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
-pub struct OpenTry(Attributes);
+pub struct OpenTry(pub Attributes);
 
 impl OpenTry {
     pub fn attributes(&self) -> &Attributes {
@@ -130,12 +104,6 @@ impl OpenTry {
     }
     pub fn connection_id(&self) -> Option<&ConnectionId> {
         self.0.connection_id.as_ref()
-    }
-    pub fn height(&self) -> Height {
-        self.0.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.0.height = height;
     }
 }
 
@@ -162,7 +130,7 @@ impl From<OpenTry> for AbciEvent {
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
-pub struct OpenAck(Attributes);
+pub struct OpenAck(pub Attributes);
 
 impl OpenAck {
     pub fn attributes(&self) -> &Attributes {
@@ -170,12 +138,6 @@ impl OpenAck {
     }
     pub fn connection_id(&self) -> Option<&ConnectionId> {
         self.0.connection_id.as_ref()
-    }
-    pub fn height(&self) -> Height {
-        self.0.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.0.height = height;
     }
 }
 
@@ -202,7 +164,7 @@ impl From<OpenAck> for AbciEvent {
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
-pub struct OpenConfirm(Attributes);
+pub struct OpenConfirm(pub Attributes);
 
 impl OpenConfirm {
     pub fn attributes(&self) -> &Attributes {
@@ -210,12 +172,6 @@ impl OpenConfirm {
     }
     pub fn connection_id(&self) -> Option<&ConnectionId> {
         self.0.connection_id.as_ref()
-    }
-    pub fn height(&self) -> Height {
-        self.0.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.0.height = height;
     }
 }
 

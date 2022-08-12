@@ -18,7 +18,6 @@ class Packet:
 
 @dataclass
 class TxPacketSendRes:
-    height: BlockHeight
     packet: Packet
 
 
@@ -61,7 +60,6 @@ class TxPacketSend(Cmd[TxPacketSendRes]):
 
 @dataclass
 class TxPacketRecvRes:
-    height: BlockHeight
     packet: Packet
     ack: Hex
 
@@ -86,7 +84,6 @@ class TxPacketRecv(Cmd[TxPacketRecvRes]):
 
 @dataclass
 class TxPacketTimeoutRes:
-    height: BlockHeight
     packet: Packet
 
 
@@ -111,7 +108,6 @@ class TxPacketTimeout(Cmd[TxPacketTimeoutRes]):
 
 @dataclass
 class TxPacketAckRes:
-    height: BlockHeight
     packet: Packet
 
 

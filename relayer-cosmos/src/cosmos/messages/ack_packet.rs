@@ -25,8 +25,6 @@ where
         packet: &Packet,
         event: &WriteAcknowledgementEvent,
     ) -> Result<CosmosIbcMessage, Error> {
-        let height = event.0.height;
-
         let proofs = self
             .dst_handle
             .handle
@@ -42,7 +40,7 @@ where
         let packet = packet.clone();
         let ack = event.0.ack.clone();
 
-        let message = CosmosIbcMessage::new(Some(height), move |signer| {
+        let message = CosmosIbcMessage::new(Some(destination_height.clone()), move |signer| {
             Ok(MsgAcknowledgement::new(
                 packet.clone(),
                 ack.clone().into(),
