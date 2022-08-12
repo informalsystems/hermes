@@ -16,7 +16,7 @@ where
         &self,
         height: &Height<Target::CounterpartyChain>,
     ) -> Result<Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>, Self::Error> {
-        Self::UpdateClientMessageBuilder::build_update_client_messages(&self, height).await
+        Self::UpdateClientMessageBuilder::build_update_client_messages(self, height).await
     }
 }
 
