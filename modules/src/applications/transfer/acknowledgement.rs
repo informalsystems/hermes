@@ -13,13 +13,13 @@ pub const ACK_ERR_STR: &str = "error handling packet on destination chain: see e
 /// A successful acknowledgement, equivalent to `base64::encode(0x01)`.
 pub const ACK_SUCCESS_B64: &str = "AQ==";
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ConstAckSuccess {
     #[serde(rename = "AQ==")]
     Success,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Acknowledgement {
     /// Successful Acknowledgement
     /// e.g. `{"result":"AQ=="}`
