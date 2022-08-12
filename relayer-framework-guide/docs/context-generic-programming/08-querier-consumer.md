@@ -143,21 +143,6 @@ trait CanQueryPerson:
         Self::PersonQuerier::query_person(self, person_id)
     }
 }
-
-struct SimpleGreeter;
-
-impl<Context> Greeter<Context> for SimpleGreeter
-where
-    Context: CanQueryPerson,
-{
-    fn greet(&self, context: &Context, person_id: &Context::PersonId)
-        -> Result<(), Context::Error>
-    {
-        let person = context.query_person(person_id)?;
-        println!("Hello, {}", person.name());
-        Ok(())
-    }
-}
 ```
 
 While the `PersonQuerier` trait is implemented by component types like
@@ -195,9 +180,75 @@ that is referencing back to itself. But with the dependency injection mechanism
 of the traits system, this in fact works most of the time as long as there are
 no actual cyclic dependencies.
 
-Now inside the `Greet` implementation for `SimpleGreeter`, we require the
-generic `Context` to implement `CanQueryPerson`. Inside the `greet`
-method, we then call `Context::PersonQuerier::query_person` and pass in
+Inside `CanQueryPerson`, we also implement a `query_person` method with a `&self`,
+which calls `Self::PersonQuerier::query_person` to do the actual query. This method
+is not meant to be overridden by implementations. Rather, it is a convenient method
+that allows us to query from the context directly using `context.query_person()`.
+
+Now inside the `Greet` implementation for `SimpleGreeter`, we can require the
+generic `Context` to implement `CanQueryPerson` as follows:
+
+
+```rust
+# trait NamedPerson {
+#      fn name(&self) -> &str;
+# }
+#
+# trait HasError {
+#      type Error;
+# }
+#
+# trait PersonContext {
+#      type PersonId;
+#      type Person: NamedPerson;
+# }
+#
+# trait Greeter<Context>
+# where
+#      Context: PersonContext + HasError,
+# {
+#      fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#          -> Result<(), Context::Error>;
+# }
+#
+# trait PersonQuerier<Context>
+# where
+#     Context: PersonContext + HasError,
+# {
+#      fn query_person(context: &Context, person_id: &Context::PersonId)
+#          -> Result<Context::Person, Context::Error>;
+# }
+#
+# trait CanQueryPerson:
+#     PersonContext + HasError + Sized
+# {
+#     type PersonQuerier: PersonQuerier<Self>;
+#
+#     fn query_person(&self, person_id: &Self::PersonId)
+#         -> Result<Self::Person, Self::Error>
+#     {
+#         Self::PersonQuerier::query_person(self, person_id)
+#     }
+# }
+#
+struct SimpleGreeter;
+
+impl<Context> Greeter<Context> for SimpleGreeter
+where
+    Context: CanQueryPerson,
+{
+    fn greet(&self, context: &Context, person_id: &Context::PersonId)
+        -> Result<(), Context::Error>
+    {
+        let person = context.query_person(person_id)?;
+        println!("Hello, {}", person.name());
+        Ok(())
+    }
+}
+```
+
+
+Inside the `greet` method, we can call `context.query_person()` and pass in
 the `context` as the first argument to query for the person details.
 
 In summary, what we achieved at this point is as follows:
