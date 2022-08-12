@@ -119,7 +119,7 @@ mod tests {
 
             match &self.expected {
                 Some(expected) => assert_eq!(&output.unwrap(), expected),
-                None => assert!(!output.is_ok()),
+                None => assert!(output.is_err()),
             }
         }
     }

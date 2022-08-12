@@ -20,7 +20,7 @@ use ibc_relayer::{
     keyring::Store,
 };
 
-use std::{collections::HashMap, marker::Send};
+use std::{cmp::min, collections::HashMap, marker::Send};
 
 use tendermint_light_client_verifier::types::TrustThreshold;
 use tendermint_rpc::Url;
@@ -125,7 +125,7 @@ where
         grpc_addr: grpc_address,
         rpc_timeout: default::rpc_timeout(),
         account_prefix: chain_data.bech32_prefix,
-        key_name: key_name.to_string(),
+        key_name: key_name,
         key_store_type: Store::default(),
         store_prefix: "ibc".to_string(),
         default_gas: Some(100000),
@@ -168,10 +168,13 @@ where
 /// ```
 pub async fn get_configs(
     chains: &[String],
-    keys: &[String],
+    keys: Option<Vec<String>>,
 ) -> Result<Vec<ChainConfig>, RegistryError> {
+    let keys = match keys {
+        Some(k) => k,
+        None => vec![String::new()],
+    };
     let n = chains.len();
-
     if n == 0 {
         return Ok(Vec::new());
     }
@@ -224,7 +227,7 @@ pub async fn get_configs(
             .map_err(|e| RegistryError::join_error("asset_handle_join".to_string(), e))??;
 
         let packet_filter = packet_filters.remove(&chains[i]);
-        let key = keys[i].to_string();
+        let key = keys[min(i, keys.len() - 1)].clone();
 
         configs_handle.push(tokio::spawn(async move {
             hermes_config::<GrpcHealthCheckQuerier, SimpleHermesRpcQuerier, SimpleGrpcFormatter>(
@@ -258,7 +261,7 @@ mod tests {
 
     async fn fetch_configs(test_chains: &[String]) -> Result<Vec<ChainConfig>, RegistryError> {
         let test_keys: &[String] = &vec!["testkey".to_string(); test_chains.len()];
-        Ok(get_configs(test_chains, test_keys).await?)
+        Ok(get_configs(test_chains, Some(test_keys)).await?)
     }
 
     // Helper function for configs without filter
