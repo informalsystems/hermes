@@ -3,29 +3,14 @@ pub mod c02_context_generic_programming {
     #[doc = include_str!("../docs/context-generic-programming/01-simple-greeter.md")]
     pub mod c01_simple_greeter {}
 
-    #[doc = include_str!("../docs/context-generic-programming/02-dynamic-typing.md")]
-    pub mod c02_dynamic_typing {}
+    #[doc = include_str!("../docs/context-generic-programming/02-generic-context.md")]
+    pub mod c02_generic_context {}
 
-    #[doc = include_str!("../docs/context-generic-programming/03-generic-context.md")]
-    pub mod c03_generic_context {}
+    #[doc = include_str!("../docs/context-generic-programming/03-context-implementation.md")]
+    pub mod c03_context_implementation {}
 
-    #[doc = include_str!("../docs/context-generic-programming/04-error-context.md")]
-    pub mod c04_error_context {}
-
-    #[doc = include_str!("../docs/context-generic-programming/05-explicit-binding.md")]
-    pub mod c05_explicit_binding {}
-
-    #[doc = include_str!("../docs/context-generic-programming/06-generic-person.md")]
-    pub mod c06_generic_person {}
-
-    #[doc = include_str!("../docs/context-generic-programming/07-programs-as-types.md")]
-    pub mod c07_programs_as_types {}
-
-    #[doc = include_str!("../docs/context-generic-programming/08-context-implementation.md")]
-    pub mod c08_context_implementation {}
-
-    #[doc = include_str!("../docs/context-generic-programming/09-dependency-injection.md")]
-    pub mod c09_dependency_injection {}
+    #[doc = include_str!("../docs/context-generic-programming/04-greeter-component.md")]
+    pub mod c04_greeter_component {}
 
     #[doc = include_str!("../docs/context-generic-programming/10-component-composition.md")]
     pub mod c10_component_composition {}
