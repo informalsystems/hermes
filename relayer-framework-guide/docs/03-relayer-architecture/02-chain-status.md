@@ -4,7 +4,7 @@
 
 ```rust
 # use ibc_relayer_framework::traits::core::Async;
-# use ibc_relayer_framework::traits::chain_context::ChainContext;
+# use ibc_relayer_framework::traits::contexts::chain::ChainContext;
 #
 trait ChainStatus<Context: ChainContext>: Async {
     fn height(&self) -> &Context::Height;
@@ -16,7 +16,7 @@ trait ChainStatus<Context: ChainContext>: Async {
 ## Chain Status Type in Chain Context
 
 ```rust
-# use ibc_relayer_framework::traits::chain_context::ChainContext;
+# use ibc_relayer_framework::traits::contexts::chain::ChainContext;
 # use ibc_relayer_framework::traits::queries::status::ChainStatus;
 #
 trait ChainStatusContext: ChainContext {
@@ -28,7 +28,7 @@ trait ChainStatusContext: ChainContext {
 
 ```rust
 # use async_trait::async_trait;
-# use ibc_relayer_framework::traits::chain_context::ChainContext;
+# use ibc_relayer_framework::traits::contexts::chain::ChainContext;
 # use ibc_relayer_framework::traits::queries::status::{ChainStatus, ChainStatusContext};
 #
 #[async_trait]
@@ -42,7 +42,7 @@ pub trait ChainStatusQuerier<Context: ChainStatusContext> {
 ```rust
 # use async_trait::async_trait;
 # use ibc_relayer_framework::traits::core::Async;
-# use ibc_relayer_framework::traits::chain_context::ChainContext;
+# use ibc_relayer_framework::traits::contexts::chain::ChainContext;
 # use ibc_relayer_cosmos::cosmos::context::chain::CosmosChainContext;
 #
 #

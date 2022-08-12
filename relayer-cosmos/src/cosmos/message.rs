@@ -1,7 +1,7 @@
 use ibc::signer::Signer;
 use ibc::Height;
 use ibc_proto::google::protobuf::Any;
-use ibc_relayer_framework::traits::chain_context::ChainContext;
+use ibc_relayer_framework::traits::contexts::chain::ChainContext;
 use ibc_relayer_framework::traits::message::{IbcMessage, Message};
 use prost::{EncodeError, Message as _};
 

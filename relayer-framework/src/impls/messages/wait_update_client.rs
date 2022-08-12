@@ -4,11 +4,11 @@ use core::marker::PhantomData;
 use core::time::Duration;
 
 use crate::std_prelude::*;
-use crate::traits::chain_context::IbcChainContext;
+use crate::traits::contexts::chain::IbcChainContext;
+use crate::traits::contexts::relay::RelayContext;
 use crate::traits::core::Async;
 use crate::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::traits::queries::status::{ChainStatus, ChainStatusQuerierContext};
-use crate::traits::relay_context::RelayContext;
 use crate::traits::runtime::sleep::SleepContext;
 use crate::traits::target::ChainTarget;
 use crate::types::aliases::IbcMessage;

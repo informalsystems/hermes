@@ -1,7 +1,7 @@
-use crate::traits::chain_context::IbcChainContext;
+use crate::traits::contexts::chain::IbcChainContext;
+use crate::traits::contexts::runtime::RuntimeContext;
 use crate::traits::core::Async;
 use crate::traits::packet::IbcPacket;
-use crate::traits::runtime::context::RuntimeContext;
 use crate::types::aliases::ClientId;
 
 pub trait RelayContext: RuntimeContext {

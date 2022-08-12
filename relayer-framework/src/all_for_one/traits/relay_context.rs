@@ -1,10 +1,10 @@
 use crate::all_for_one::traits::chain_context::AfoChainContext;
 use crate::all_for_one::traits::error::AfoError;
+use crate::traits::contexts::relay::RelayContext;
 use crate::traits::ibc_message_sender::IbcMessageSenderContext;
 use crate::traits::messages::ack_packet::AckPacketMessageBuilder;
 use crate::traits::messages::receive_packet::ReceivePacketMessageBuilder;
 use crate::traits::messages::update_client::UpdateClientContext;
-use crate::traits::relay_context::RelayContext;
 use crate::traits::target::{DestinationTarget, SourceTarget};
 
 pub trait AfoRelayContext:

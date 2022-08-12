@@ -1,12 +1,12 @@
 use async_trait::async_trait;
 
 use crate::std_prelude::*;
-use crate::traits::ibc_event_context::IbcEventContext;
+use crate::traits::contexts::ibc_event::IbcEventContext;
+use crate::traits::contexts::relay::RelayContext;
 use crate::traits::packet_relayer::PacketRelayer;
 use crate::traits::packet_relayers::ack_packet::AckPacketRelayer;
 use crate::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
 use crate::traits::queries::status::{ChainStatus, ChainStatusQuerierContext};
-use crate::traits::relay_context::RelayContext;
 use crate::types::aliases::Packet;
 
 pub struct FullRelayer<ReceiveRelay, AckRelay> {

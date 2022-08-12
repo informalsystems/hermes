@@ -1,6 +1,6 @@
-use crate::traits::chain_context::IbcChainContext;
+use crate::traits::contexts::chain::IbcChainContext;
+use crate::traits::contexts::relay::RelayContext;
 use crate::traits::core::Async;
-use crate::traits::relay_context::RelayContext;
 use crate::types::aliases::ClientId;
 
 pub struct SourceTarget;

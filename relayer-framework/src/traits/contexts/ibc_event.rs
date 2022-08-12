@@ -1,4 +1,4 @@
-use crate::traits::chain_context::{ChainContext, IbcChainContext};
+use crate::traits::contexts::chain::{ChainContext, IbcChainContext};
 use crate::traits::core::Async;
 
 pub trait IbcEventContext<Counterparty>: IbcChainContext<Counterparty>

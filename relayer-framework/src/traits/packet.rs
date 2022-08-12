@@ -1,4 +1,4 @@
-use crate::traits::chain_context::IbcChainContext;
+use crate::traits::contexts::chain::IbcChainContext;
 use crate::traits::core::Async;
 use crate::types::aliases::{ChannelId, PortId, Sequence};
 

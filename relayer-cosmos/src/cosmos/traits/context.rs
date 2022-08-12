@@ -4,8 +4,8 @@ use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortI
 use ibc::events::IbcEvent;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
-use ibc_relayer_framework::traits::chain_context::{ChainContext, IbcChainContext};
-use ibc_relayer_framework::traits::relay_context::RelayContext;
+use ibc_relayer_framework::traits::contexts::chain::{ChainContext, IbcChainContext};
+use ibc_relayer_framework::traits::contexts::relay::RelayContext;
 
 use crate::cosmos::message::CosmosIbcMessage;
 

@@ -8,11 +8,11 @@ use ibc::Height;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::cosmos::types::events::channel::extract_packet_and_write_ack_from_tx;
 use ibc_relayer::keyring::KeyEntry;
-use ibc_relayer_framework::traits::chain_context::{ChainContext, IbcChainContext};
+use ibc_relayer_framework::traits::contexts::chain::{ChainContext, IbcChainContext};
+use ibc_relayer_framework::traits::contexts::error::ErrorContext;
+use ibc_relayer_framework::traits::contexts::ibc_event::IbcEventContext;
+use ibc_relayer_framework::traits::contexts::runtime::RuntimeContext;
 use ibc_relayer_framework::traits::core::Async;
-use ibc_relayer_framework::traits::core::ErrorContext;
-use ibc_relayer_framework::traits::ibc_event_context::IbcEventContext;
-use ibc_relayer_framework::traits::runtime::context::RuntimeContext;
 use tendermint::abci::responses::Event;
 use tendermint::abci::Event as AbciEvent;
 

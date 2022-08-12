@@ -1,6 +1,6 @@
 use crate::one_for_all::impls::error::OfaErrorContext;
 use crate::one_for_all::traits::runtime::OfaRuntime;
-use crate::traits::core::ErrorContext;
+use crate::traits::contexts::error::ErrorContext;
 
 pub struct OfaRuntimeContext<Runtime> {
     pub runtime: Runtime,

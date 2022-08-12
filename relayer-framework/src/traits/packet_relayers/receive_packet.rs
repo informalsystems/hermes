@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
 use crate::std_prelude::*;
+use crate::traits::contexts::ibc_event::IbcEventContext;
+use crate::traits::contexts::relay::RelayContext;
 use crate::traits::core::Async;
-use crate::traits::ibc_event_context::IbcEventContext;
-use crate::traits::relay_context::RelayContext;
 use crate::types::aliases::{Height, WriteAcknowledgementEvent};
 
 #[async_trait]

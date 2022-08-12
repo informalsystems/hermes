@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::std_prelude::*;
-use crate::traits::chain_context::{ChainContext, IbcChainContext};
+use crate::traits::contexts::chain::{ChainContext, IbcChainContext};
 use crate::traits::core::Async;
 
 pub trait ConsensusStateContext<Counterparty>: IbcChainContext<Counterparty>

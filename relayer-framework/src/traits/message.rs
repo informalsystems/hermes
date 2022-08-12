@@ -1,4 +1,4 @@
-use crate::traits::chain_context::ChainContext;
+use crate::traits::contexts::chain::ChainContext;
 use crate::traits::core::Async;
 
 pub trait Message: Async {

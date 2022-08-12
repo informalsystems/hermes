@@ -5,12 +5,12 @@ use crate::one_for_all::impls::message::OfaMessage;
 use crate::one_for_all::impls::runtime::OfaRuntimeContext;
 use crate::one_for_all::traits::chain::OfaChain;
 use crate::std_prelude::*;
-use crate::traits::chain_context::{ChainContext, IbcChainContext};
-use crate::traits::core::ErrorContext;
-use crate::traits::ibc_event_context::IbcEventContext;
+use crate::traits::contexts::chain::{ChainContext, IbcChainContext};
+use crate::traits::contexts::error::ErrorContext;
+use crate::traits::contexts::ibc_event::IbcEventContext;
+use crate::traits::contexts::runtime::RuntimeContext;
 use crate::traits::queries::consensus_state::{ConsensusStateContext, ConsensusStateQuerier};
 use crate::traits::queries::received_packet::ReceivedPacketQuerier;
-use crate::traits::runtime::context::RuntimeContext;
 
 pub struct OfaChainContext<Chain: OfaChain> {
     pub chain: Chain,

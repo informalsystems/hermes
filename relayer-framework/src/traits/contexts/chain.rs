@@ -1,6 +1,6 @@
+use crate::traits::contexts::runtime::RuntimeContext;
 use crate::traits::core::Async;
 use crate::traits::message::{IbcMessage, Message};
-use crate::traits::runtime::context::RuntimeContext;
 
 pub trait ChainContext: RuntimeContext {
     type Height: Async;

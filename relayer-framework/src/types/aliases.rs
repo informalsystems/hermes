@@ -1,6 +1,6 @@
-use crate::traits::chain_context::{ChainContext, IbcChainContext};
-use crate::traits::ibc_event_context::IbcEventContext;
-use crate::traits::relay_context::RelayContext;
+use crate::traits::contexts::chain::{ChainContext, IbcChainContext};
+use crate::traits::contexts::ibc_event::IbcEventContext;
+use crate::traits::contexts::relay::RelayContext;
 
 pub type ClientId<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::ClientId;
 

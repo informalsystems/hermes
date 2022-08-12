@@ -36,7 +36,7 @@ trait Message {
 ```rust
 # use ibc_relayer_framework::traits::message::Message;
 # use ibc_relayer_framework::traits::core::Async;
-# use ibc_relayer_framework::traits::core::ErrorContext;
+# use ibc_relayer_framework::traits::contexts::error::ErrorContext;
 #
 trait ChainContext: ErrorContext {
     type Height: Async;
@@ -90,9 +90,9 @@ use tendermint::abci::responses::Event;
 #
 # use ibc_relayer_cosmos::cosmos::message::CosmosIbcMessage;
 # use ibc_relayer_framework::traits::core::Async;
-# use ibc_relayer_framework::traits::core::ErrorContext;
-# use ibc_relayer_framework::traits::chain_context::ChainContext;
-# use ibc_relayer_framework::traits::runtime::context::RuntimeContext;
+# use ibc_relayer_framework::traits::contexts::error::ErrorContext;
+# use ibc_relayer_framework::traits::contexts::chain::ChainContext;
+# use ibc_relayer_framework::traits::contexts::runtime::RuntimeContext;
 
 struct Error { /* ... */ }
 struct CosmosRuntimeContext;

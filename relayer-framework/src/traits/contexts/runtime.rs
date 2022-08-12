@@ -1,4 +1,4 @@
-use crate::traits::core::ErrorContext;
+use crate::traits::contexts::error::ErrorContext;
 
 pub trait RuntimeContext: ErrorContext {
     type Runtime: ErrorContext<Error = Self::Error>;

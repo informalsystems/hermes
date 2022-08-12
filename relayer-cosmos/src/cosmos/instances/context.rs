@@ -1,6 +1,6 @@
-use ibc_relayer_framework::traits::chain_context::{ChainContext, IbcChainContext};
+use ibc_relayer_framework::traits::contexts::chain::{ChainContext, IbcChainContext};
+use ibc_relayer_framework::traits::contexts::relay::RelayContext;
 use ibc_relayer_framework::traits::core::Async;
-use ibc_relayer_framework::traits::relay_context::RelayContext;
 
 use crate::cosmos::context::chain::CosmosChainContext;
 use crate::cosmos::context::relay::CosmosRelayContext;

@@ -5,10 +5,10 @@ use core::marker::PhantomData;
 use core::time::Duration;
 
 use crate::std_prelude::*;
-use crate::traits::chain_context::IbcChainContext;
+use crate::traits::contexts::chain::IbcChainContext;
+use crate::traits::contexts::relay::RelayContext;
 use crate::traits::ibc_message_sender::IbcMessageSender;
 use crate::traits::message::Message as ChainMessage;
-use crate::traits::relay_context::RelayContext;
 use crate::traits::runtime::sleep::SleepContext;
 use crate::traits::runtime::spawn::SpawnContext;
 use crate::traits::runtime::time::{Time, TimeContext};

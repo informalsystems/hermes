@@ -1,9 +1,9 @@
 use core::marker::PhantomData;
 
 use crate::std_prelude::*;
+use crate::traits::contexts::relay::RelayContext;
 use crate::traits::core::Async;
 use crate::traits::message_channel::OnceChannelContext;
-use crate::traits::relay_context::RelayContext;
 use crate::traits::target::ChainTarget;
 use crate::types::aliases::{IbcEvent, IbcMessage};
 

@@ -1,7 +1,8 @@
 use async_trait::async_trait;
 
 use crate::std_prelude::*;
-use crate::traits::core::{Async, ErrorContext};
+use crate::traits::contexts::error::ErrorContext;
+use crate::traits::core::Async;
 
 pub trait HasChannelContext: Async {
     type ChannelContext: Async;

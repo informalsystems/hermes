@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
 use crate::std_prelude::*;
-use crate::traits::chain_context::IbcChainContext;
+use crate::traits::contexts::chain::IbcChainContext;
+use crate::traits::contexts::relay::RelayContext;
 use crate::traits::core::Async;
-use crate::traits::relay_context::RelayContext;
 use crate::traits::target::ChainTarget;
 use crate::types::aliases::{IbcEvent, IbcMessage};
 

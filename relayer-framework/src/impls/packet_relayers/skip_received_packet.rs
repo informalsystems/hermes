@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 
 use crate::std_prelude::*;
-use crate::traits::ibc_event_context::IbcEventContext;
+use crate::traits::contexts::ibc_event::IbcEventContext;
+use crate::traits::contexts::relay::RelayContext;
 use crate::traits::packet::IbcPacket;
 use crate::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
 use crate::traits::queries::received_packet::ReceivedPacketQuerier;
-use crate::traits::relay_context::RelayContext;
 use crate::types::aliases::{Height, Packet, WriteAcknowledgementEvent};
 
 pub struct SkipReceivedPacketRelayer<Relayer> {

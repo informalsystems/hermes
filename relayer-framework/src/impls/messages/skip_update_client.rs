@@ -2,9 +2,9 @@ use async_trait::async_trait;
 use core::marker::PhantomData;
 
 use crate::std_prelude::*;
+use crate::traits::contexts::relay::RelayContext;
 use crate::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::traits::queries::consensus_state::{ConsensusStateContext, ConsensusStateQuerier};
-use crate::traits::relay_context::RelayContext;
 use crate::traits::target::ChainTarget;
 use crate::types::aliases::{Height, IbcMessage};
 

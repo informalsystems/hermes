@@ -1,14 +1,14 @@
 use async_trait::async_trait;
 
 use crate::std_prelude::*;
+use crate::traits::contexts::ibc_event::IbcEventContext;
+use crate::traits::contexts::relay::RelayContext;
 use crate::traits::core::Async;
-use crate::traits::ibc_event_context::IbcEventContext;
 use crate::traits::ibc_message_sender::{
     IbcMessageSenderContext, IbcMessageSenderExt, MismatchIbcEventsCountError,
 };
 use crate::traits::messages::receive_packet::ReceivePacketMessageBuilder;
 use crate::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
-use crate::traits::relay_context::RelayContext;
 use crate::traits::target::DestinationTarget;
 use crate::types::aliases::{Height, Packet, WriteAcknowledgementEvent};
 
