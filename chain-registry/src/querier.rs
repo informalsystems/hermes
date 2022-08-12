@@ -23,7 +23,6 @@ pub trait QueryTypes {
 }
 
 #[async_trait]
-
 /// `QueryContext` represents the basic expectations for a query
 pub trait QueryContext: QueryTypes {
     /// Return an error specific to the query which is retured when `query_healthy` fails
@@ -40,7 +39,7 @@ pub trait QueryContext: QueryTypes {
     /// * `url` - A `QueryInput` object that holds the data needed to query a node
     async fn query(url: Self::QueryInput) -> Result<Self::QueryOutput, Self::QueryError>;
 
-    /// Query every endpoints from a list of urls and return the output of the first one to answer.
+    /// Query every endpoint from a list of urls and return the output of the first one to answer.
     ///
     /// # Arguments
     ///
@@ -58,6 +57,7 @@ pub trait QueryContext: QueryTypes {
                 return result;
             }
         }
+
         Err(Self::query_error(chain_name))
     }
 }
@@ -153,6 +153,7 @@ impl QueryContext for GrpcHealthCheckQuerier {
     fn query_error(chain_name: String) -> Self::QueryError {
         RegistryError::no_healthy_grpc(chain_name)
     }
+
     /// Query the endpoint and return the GRPC url
     async fn query(uri: Self::QueryInput) -> Result<Self::QueryOutput, Self::QueryError> {
         let tendermint_url = uri

@@ -102,6 +102,7 @@ mod tests {
     #[tokio::test]
     async fn fetch_paths() -> Result<(), RegistryError> {
         let mut handles = Vec::with_capacity(ALL_PATHS.len());
+
         for resource in ALL_PATHS {
             handles.push(tokio::spawn(IBCPath::fetch(resource.to_string())));
         }
@@ -110,6 +111,7 @@ mod tests {
             let path: IBCPath = handle.await.unwrap()?;
             assert!(path.channels.len() > 0);
         }
+
         Ok(())
     }
 }
