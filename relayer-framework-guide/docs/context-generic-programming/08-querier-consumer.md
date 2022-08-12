@@ -174,11 +174,26 @@ by most types other than `dyn Trait` types, so that we can use `Self` inside
 other generic parameters.
 
 In the body of `CanQueryPerson`, we define a `PersonQuerier` associated
-type, which implements the trait `PersonQuerier<Self>`. This looks a little
-self-referential, as the context is providing a type that is referencing back
-to itself. But with the dependency injection mechanism of the traits system,
-this in fact works most of the time as long as there are no actual cyclic
-dependencies.
+type, which implements the trait `PersonQuerier<Self>`. This is because
+we want to have the following constraints satisfied:
+
+- `AppContext: CanQueryPerson` - `AppContext` implements the trait `CanQueryPerson`.
+- `AppContext::PersonQuerier: PersonQuerier<AppContext>` - The associated type
+  `AppContext::PersonQuerier` implements the trait `PersonQuerier<AppContext>`.
+- `KvStorePersonQuerier: PersonQuerier<AppContext>` - The type `KvStorePersonQuerier`,
+  which we defined earlier, should implement `PersonQuerier<AppContext>`.
+- `AppContext: CanQueryPerson<PersonQuerier=KvStorePersonQuerier>` - We want to
+  set the associated type `AppContext::PersonQuerier` to be `KvStorePersonQuerier`.
+
+In general, since we want any type `Ctx` that implements `CanQueryPerson` to
+have the associated type `Ctx::PersonQuerier` to implement `PersonQuerier<Ctx>`.
+Hence inside the trait definition, we define the associated type as
+`type PersonQuerier: PersonQuerier<Self>`, where `Self` refers to the `Ctx` type.
+
+This may look a little self-referential, as the context is providing a type
+that is referencing back to itself. But with the dependency injection mechanism
+of the traits system, this in fact works most of the time as long as there are
+no actual cyclic dependencies.
 
 Now inside the `Greet` implementation for `SimpleGreeter`, we require the
 generic `Context` to implement `CanQueryPerson`. Inside the `greet`

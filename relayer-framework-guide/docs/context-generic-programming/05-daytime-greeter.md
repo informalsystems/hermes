@@ -10,9 +10,29 @@ component that _wraps_ around the original `SimpleGreeter`.
 This new `DaytimeGreeter` component would need to know how to
 get the current time of the system, as well as how to tell whether
 a given time value is at daytime. Following the context pattern we
-learned, we will also define a `HasTime` trait for getting the time.
+learned, we will also define a `HasTime` trait for getting the time:
 
-The full implementation is as follows:
+```rust
+trait SimpleTime {
+    fn is_daytime(&self) -> bool;
+}
+
+trait HasTime {
+    type Time;
+
+    fn now(&self) -> Self::Time;
+}
+```
+
+For demonstration purposes, we first define a `SimpleTime` trait that provides an
+`is_daytime` method to tell whether the current time value is considered daytime.
+Following that, we define a `HasTime` trait that provides a `now` method
+to fetch the current time from the context. Notice that the associated type
+`Time` does _not_ implement `SimpleTime`. This is so that we can learn how
+to inject the `SimpleTime` constraint as an _indirect dependency_ using the
+same dependency injection technique.
+
+We then define the `DaytimeGreeter` component as follows:
 
 ```rust
 # use std::time::Duration;
@@ -30,24 +50,24 @@ The full implementation is as follows:
 #      type Person: NamedPerson;
 # }
 #
-trait SimpleTime {
-    fn is_daytime(&self) -> bool;
-}
-
-trait HasTime {
-    type Time;
-
-    fn now(&self) -> Self::Time;
-}
-
-trait Greeter<Context>
-where
-    Context: PersonContext + HasError,
-{
-    fn greet(&self, context: &Context, person_id: &Context::PersonId)
-        -> Result<(), Context::Error>;
-}
-
+# trait SimpleTime {
+#     fn is_daytime(&self) -> bool;
+# }
+#
+# trait HasTime {
+#     type Time;
+#
+#     fn now(&self) -> Self::Time;
+# }
+#
+# trait Greeter<Context>
+# where
+#     Context: PersonContext + HasError,
+# {
+#     fn greet(&self, context: &Context, person_id: &Context::PersonId)
+#         -> Result<(), Context::Error>;
+# }
+#
 struct DaytimeGreeter<InGreeter>(InGreeter);
 
 impl<Context, InGreeter> Greeter<Context> for DaytimeGreeter<InGreeter>
@@ -56,8 +76,11 @@ where
     Context: HasTime + PersonContext + HasError,
     Context::Time: SimpleTime,
 {
-    fn greet(&self, context: &Context, person_id: &Context::PersonId)
-        -> Result<(), Context::Error>
+    fn greet(
+        &self,
+        context: &Context,
+        person_id: &Context::PersonId,
+    ) -> Result<(), Context::Error>
     {
         let now = context.now();
         if now.is_daytime() {
@@ -70,15 +93,7 @@ where
 }
 ```
 
-For demonstration purposes, we first define a `SimpleTime` trait that provides an
-`is_daytime` method to tell whether the current time value is considered daytime.
-Following that, we define a `HasTime` trait that provides a `now` method
-to fetch the current time from the context. Notice that the associated type
-`Time` does _not_ implement `SimpleTime`. This is so that we can learn how
-to inject the `SimpleTime` constraint as an _indirect dependency_ using the
-same dependency injection technique.
-
-We then define the `DaytimeGreeter` with an `InGreeter` type parameter, which
+We define the `DaytimeGreeter` with an `InGreeter` type parameter, which
 would act as the inner `Greeter` component. We then define a generic
 implementation of `Greeter<Context>` for `DaytimeGreeter<InGreeter>`.
 In the trait bounds, we require the inner greeter `InGreeter` to also
@@ -159,8 +174,11 @@ where
     Context::Time: SimpleTime,
     Context::Error: From<ShopClosedError<Context::Time>>,
 {
-    fn greet(&self, context: &Context, person_id: &Context::PersonId)
-        -> Result<(), Context::Error>
+    fn greet(
+        &self,
+        context: &Context,
+        person_id: &Context::PersonId,
+    ) -> Result<(), Context::Error>
     {
         let now = context.now();
         if now.is_daytime() {
