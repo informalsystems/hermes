@@ -1,6 +1,6 @@
+use codec::Encode;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use codec::Encode;
 
 use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics02_client::context::ClientReader;

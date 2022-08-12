@@ -134,9 +134,9 @@ mod tests {
     use crate::core::ics02_client::handler::dispatch;
     use crate::core::ics02_client::handler::ClientResult::Update;
     use crate::core::ics02_client::header::AnyHeader;
+    use crate::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
     use crate::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
     use crate::core::ics02_client::msgs::ClientMsg;
-    use crate::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
     use crate::core::ics24_host::identifier::{ChainId, ClientId};
     use crate::events::IbcEvent;
     use crate::handler::HandlerOutput;
