@@ -56,11 +56,35 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         )
         .entered();
 
-        let Verified { target, supporting } = self.verify(trusted, target, client_state)?;
+        let Verified { target, .. } = self.verify(trusted, target, client_state)?;
 
-        // let (target, supporting) = self.adjust_headers(trusted, target, supporting)?;
+        let next_trusted_height = TMHeight::try_from(trusted.revision_height() + 1).unwrap();
 
-        Ok(Verified { target, supporting })
+        println!(
+            "fetching validator set at trusted height + 1 = {}",
+            next_trusted_height
+        );
+
+        let trusted_validator_set = self
+            .io
+            .fetch_validator_set(AtHeight::At(next_trusted_height), None)
+            .expect("failed to fetch validator set");
+
+        dbg!(&trusted_validator_set);
+
+        let tm_target = TmHeader {
+            signed_header: target.signed_header,
+            validator_set: target.validators,
+            trusted_height: trusted,
+            trusted_validator_set,
+        };
+
+        // let (target, supporting) = self.adjust_headers(trusted, target, vec![])?;
+
+        Ok(Verified {
+            target: tm_target,
+            supporting: vec![],
+        })
     }
 
     fn verify(
