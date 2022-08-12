@@ -5,7 +5,7 @@ use clap::IntoApp;
 use clap_complete::Shell;
 use std::io;
 
-#[derive(Debug, Parser, PartialEq)]
+#[derive(Debug, Parser, PartialEq, Eq)]
 pub struct CompletionsCmd {
     #[clap(
         long = "shell",

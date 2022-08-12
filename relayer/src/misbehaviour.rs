@@ -16,13 +16,13 @@ use ibc::core::ics02_client::misbehaviour::MOCK_MISBEHAVIOUR_TYPE_URL;
 #[cfg(test)]
 use ibc::mock::misbehaviour::Misbehaviour as MockMisbehaviour;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MisbehaviourEvidence {
     pub misbehaviour: AnyMisbehaviour,
     pub supporting_headers: Vec<AnyHeader>,
 }
 
-#[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound once possible
+#[derive(Clone, Debug, PartialEq, Eq)]
 #[allow(clippy::large_enum_variant)]
 pub enum AnyMisbehaviour {
     Tendermint(TmMisbehaviour),

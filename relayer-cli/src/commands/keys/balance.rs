@@ -17,7 +17,7 @@ use crate::conclude::{exit_with_unrecoverable_error, json, Output};
 /// If no key name is given, it will be taken from the configuration file.
 /// If successful the balance and denominator of the account, associated with the key name
 /// on the given chain, will be displayed.
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct KeyBalanceCmd {
     #[clap(
         long = "chain",

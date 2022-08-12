@@ -31,7 +31,7 @@ use crate::conclude::Output;
 ///
 /// The key-file and mnemonic-file flags can't be given at the same time, this will cause a terminating error.
 /// If successful the key will be created or restored, depending on which flag was given.
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 #[clap(
     override_usage = "hermes keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>
 

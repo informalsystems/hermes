@@ -7,7 +7,6 @@ use ibc::core::ics24_host::identifier::ChainId;
 use ibc::mock::host::HostBlock;
 use ibc::Height;
 
-use crate::chain::endpoint::ChainEndpoint;
 use crate::chain::mock::MockChain;
 use crate::error::Error;
 use crate::misbehaviour::MisbehaviourEvidence;
@@ -21,10 +20,8 @@ pub struct LightClient {
 }
 
 impl LightClient {
-    pub fn new(chain: &MockChain) -> LightClient {
-        LightClient {
-            chain_id: chain.id().clone(),
-        }
+    pub fn new(chain_id: ChainId) -> LightClient {
+        LightClient { chain_id }
     }
 
     /// Returns a LightBlock at the requested height `h`.
@@ -53,7 +50,7 @@ impl super::LightClient<MockChain> for LightClient {
 
     fn check_misbehaviour(
         &mut self,
-        _update: UpdateClient,
+        _update: &UpdateClient,
         _client_state: &AnyClientState,
     ) -> Result<Option<MisbehaviourEvidence>, Error> {
         unimplemented!()

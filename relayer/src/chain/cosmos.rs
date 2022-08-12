@@ -24,7 +24,6 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tonic::{codegen::http::Uri, metadata::AsciiMetadataValue};
 use tracing::{error, span, warn, Level};
 
-use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::clients::ics07_tendermint::header::Header as TmHeader;
 use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
@@ -46,6 +45,10 @@ use ibc::Height as ICSHeight;
 use ibc::{
     clients::ics07_tendermint::client_state::{AllowUpdate, ClientState},
     core::ics23_commitment::merkle::MerkleProof,
+};
+use ibc::{
+    clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState,
+    core::ics02_client::events::UpdateClient,
 };
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 
@@ -75,6 +78,7 @@ use crate::event::monitor::{EventMonitor, EventReceiver, TxMonitorCmd};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
+use crate::misbehaviour::MisbehaviourEvidence;
 
 use super::requests::{
     IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
@@ -112,6 +116,7 @@ pub struct CosmosSdkChain {
     tx_config: TxConfig,
     rpc_client: HttpClient,
     grpc_addr: Uri,
+    light_client: TmLightClient,
     rt: Arc<TokioRuntime>,
     keybase: KeyRing,
     /// A cached copy of the account information
@@ -463,11 +468,12 @@ impl ChainEndpoint for CosmosSdkChain {
     type Header = TmHeader;
     type ConsensusState = TMConsensusState;
     type ClientState = ClientState;
-    type LightClient = TmLightClient;
 
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
         let rpc_client = HttpClient::new(config.rpc_addr.clone())
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
+
+        let light_client = rt.block_on(init_light_client(&rpc_client, &config))?;
 
         // Initialize key store and load key
         let keybase = KeyRing::new(config.key_store_type, &config.account_prefix, &config.id)
@@ -484,6 +490,7 @@ impl ChainEndpoint for CosmosSdkChain {
             config,
             rpc_client,
             grpc_addr,
+            light_client,
             rt,
             keybase,
             account: None,
@@ -491,22 +498,6 @@ impl ChainEndpoint for CosmosSdkChain {
         };
 
         Ok(chain)
-    }
-
-    fn init_light_client(&self) -> Result<Self::LightClient, Error> {
-        use tendermint_light_client_verifier::types::PeerId;
-
-        crate::time!("init_light_client");
-
-        let peer_id: PeerId = self
-            .rt
-            .block_on(self.rpc_client.status())
-            .map(|s| s.node_info.id)
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
-
-        let light_client = TmLightClient::from_config(&self.config, peer_id)?;
-
-        Ok(light_client)
     }
 
     fn init_event_monitor(
@@ -575,6 +566,30 @@ impl ChainEndpoint for CosmosSdkChain {
 
         Ok(HealthCheck::Healthy)
     }
+
+    /// Fetch a header from the chain at the given height and verify it.
+    fn verify_header(
+        &mut self,
+        trusted: ICSHeight,
+        target: ICSHeight,
+        client_state: &AnyClientState,
+    ) -> Result<Self::LightBlock, Error> {
+        self.light_client
+            .verify(trusted, target, client_state)
+            .map(|v| v.target)
+    }
+
+    /// Given a client update event that includes the header used in a client update,
+    /// look for misbehaviour by fetching a header at same or latest height.
+    fn check_misbehaviour(
+        &mut self,
+        update: &UpdateClient,
+        client_state: &AnyClientState,
+    ) -> Result<Option<MisbehaviourEvidence>, Error> {
+        self.light_client.check_misbehaviour(update, client_state)
+    }
+
+    // Queries
 
     /// Send one or more transactions that include all the specified messages.
     /// The `proto_msgs` are split in transactions such they don't exceed the configured maximum
@@ -1579,20 +1594,43 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     fn build_header(
-        &self,
+        &mut self,
         trusted_height: ICSHeight,
         target_height: ICSHeight,
         client_state: &AnyClientState,
-        light_client: &mut Self::LightClient,
     ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
         crate::time!("build_header");
 
         // Get the light block at target_height from chain.
-        let Verified { target, supporting } =
-            light_client.header_and_minimal_set(trusted_height, target_height, client_state)?;
+        let Verified { target, supporting } = self.light_client.header_and_minimal_set(
+            trusted_height,
+            target_height,
+            client_state,
+        )?;
 
         Ok((target, supporting))
     }
+}
+
+/// Initialize the light client for the given chain using the given HTTP client
+/// to fetch the node identifier to be used as peer id in the light client.
+async fn init_light_client(
+    rpc_client: &HttpClient,
+    config: &ChainConfig,
+) -> Result<TmLightClient, Error> {
+    use tendermint_light_client_verifier::types::PeerId;
+
+    crate::time!("init_light_client");
+
+    let peer_id: PeerId = rpc_client
+        .status()
+        .await
+        .map(|s| s.node_info.id)
+        .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
+
+    let light_client = TmLightClient::from_config(config, peer_id)?;
+
+    Ok(light_client)
 }
 
 fn filter_matching_event(
