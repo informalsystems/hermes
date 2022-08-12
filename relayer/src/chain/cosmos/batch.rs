@@ -2,6 +2,7 @@ use core::mem;
 
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::IbcEvent;
+use ibc::Height;
 use ibc_proto::google::protobuf::Any;
 use prost::Message;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
@@ -14,6 +15,7 @@ use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use crate::chain::cosmos::wait::wait_for_block_commits;
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error;
+use crate::event::IbcEventWithHeight;
 use crate::keyring::KeyEntry;
 
 /**
@@ -31,7 +33,7 @@ pub async fn send_batched_messages_and_wait_commit(
     account: &mut Account,
     tx_memo: &Memo,
     messages: Vec<Any>,
-) -> Result<Vec<IbcEvent>, Error> {
+) -> Result<Vec<IbcEventWithHeight>, Error> {
     if messages.is_empty() {
         return Ok(Vec::new());
     }
@@ -77,7 +79,7 @@ pub async fn sequential_send_batched_messages_and_wait_commit(
     account: &mut Account,
     tx_memo: &Memo,
     messages: Vec<Any>,
-) -> Result<Vec<IbcEvent>, Error> {
+) -> Result<Vec<IbcEventWithHeight>, Error> {
     if messages.is_empty() {
         return Ok(Vec::new());
     }
@@ -223,10 +225,14 @@ fn response_to_tx_sync_result(
     response: Response,
 ) -> TxSyncResult {
     if response.code.is_err() {
-        let events_per_tx = vec![IbcEvent::ChainError(format!(
+        // Note: we don't have any height information in this case. This hack will fix itself
+        // once we remove the `ChainError` event (which is not actually an event)
+        let height = Height::new(chain_id.version(), 1).unwrap();
+
+        let events_per_tx = vec![IbcEventWithHeight::new(IbcEvent::ChainError(format!(
             "check_tx (broadcast_tx_sync) on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
             chain_id, response.hash, response.code, response.log
-        )); message_count];
+        )), height); message_count];
 
         TxSyncResult {
             response,

@@ -56,7 +56,6 @@ pub(crate) fn process(
 
     let event_attributes = Attributes {
         channel_id: Some(msg.channel_id.clone()),
-        height: ctx.host_height(),
         ..Default::default()
     };
     output.emit(IbcEvent::CloseInitChannel(
@@ -142,7 +141,6 @@ mod tests {
 
         for event in handler_output.events.iter() {
             assert!(matches!(event, &IbcEvent::CloseInitChannel(_)));
-            assert_eq!(event.height(), context.host_height());
         }
     }
 }
