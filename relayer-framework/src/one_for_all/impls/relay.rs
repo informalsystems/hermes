@@ -24,9 +24,6 @@ pub struct OfaRelayContext<Relay: OfaRelay> {
     pub src_chain: OfaChainContext<Relay::SrcChain>,
     pub dst_chain: OfaChainContext<Relay::DstChain>,
 
-    pub src_client_id: <Relay::SrcChain as OfaChain>::ClientId,
-    pub dst_client_id: <Relay::DstChain as OfaChain>::ClientId,
-
     pub runtime: OfaRuntimeContext<Relay::Runtime>,
 }
 
@@ -35,16 +32,12 @@ impl<Relay: OfaRelay> OfaRelayContext<Relay> {
         relay: Relay,
         src_chain: Relay::SrcChain,
         dst_chain: Relay::DstChain,
-        src_client_id: <Relay::SrcChain as OfaChain>::ClientId,
-        dst_client_id: <Relay::DstChain as OfaChain>::ClientId,
         runtime: Relay::Runtime,
     ) -> Self {
         Self {
             relay,
             src_chain: OfaChainContext::new(src_chain, runtime.clone()),
             dst_chain: OfaChainContext::new(dst_chain, runtime.clone()),
-            src_client_id,
-            dst_client_id,
             runtime: OfaRuntimeContext::new(runtime),
         }
     }
@@ -114,11 +107,11 @@ impl<Relay: OfaRelay> RelayContext for OfaRelayContext<Relay> {
     }
 
     fn source_client_id(&self) -> &<Relay::SrcChain as OfaChain>::ClientId {
-        &self.src_client_id
+        self.relay.src_client_id()
     }
 
     fn destination_client_id(&self) -> &<Relay::DstChain as OfaChain>::ClientId {
-        &self.dst_client_id
+        self.relay.dst_client_id()
     }
 }
 

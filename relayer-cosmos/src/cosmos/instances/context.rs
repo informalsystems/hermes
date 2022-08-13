@@ -1,21 +1,24 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_framework::one_for_all::impls::chain::OfaChainContext;
+use ibc_relayer_framework::one_for_all::impls::relay::OfaRelayContext;
 use ibc_relayer_framework::traits::contexts::chain::{ChainContext, IbcChainContext};
 use ibc_relayer_framework::traits::contexts::relay::RelayContext;
-use ibc_relayer_framework::traits::core::Async;
 
 use crate::cosmos::context::chain::CosmosChainContext;
 use crate::cosmos::context::relay::CosmosRelayContext;
 use crate::cosmos::context::runtime::CosmosRuntime;
 
 pub fn relay_context<SrcChain, DstChain>(
-    handler: &CosmosRelayContext<SrcChain, DstChain>,
-) -> &impl RelayContext
+    relay: CosmosRelayContext<SrcChain, DstChain>,
+) -> impl RelayContext
 where
-    SrcChain: Async,
-    DstChain: Async,
+    SrcChain: ChainHandle,
+    DstChain: ChainHandle,
 {
-    handler
+    let src_chain = relay.src_handle.clone();
+    let dst_chain = relay.dst_handle.clone();
+
+    OfaRelayContext::new(relay, src_chain, dst_chain, CosmosRuntime)
 }
 
 pub fn chain_context<Chain>(handler: CosmosChainContext<Chain>) -> impl ChainContext
@@ -26,11 +29,11 @@ where
 }
 
 pub fn ibc_chain_context<Chain, Counterparty>(
-    handler: &CosmosChainContext<Chain>,
-) -> &impl IbcChainContext<CosmosChainContext<Counterparty>>
+    handler: CosmosChainContext<Chain>,
+) -> impl IbcChainContext<OfaChainContext<CosmosChainContext<Counterparty>>>
 where
-    Chain: Async,
-    Counterparty: Async,
+    Chain: ChainHandle,
+    Counterparty: ChainHandle,
 {
-    handler
+    OfaChainContext::new(handler, CosmosRuntime)
 }

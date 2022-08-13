@@ -9,18 +9,9 @@ pub fn relay_context<Relay: OfaRelay>(
     relay: Relay,
     src_chain: Relay::SrcChain,
     dst_chain: Relay::DstChain,
-    src_client_id: <Relay::SrcChain as OfaChain>::ClientId,
-    dst_client_id: <Relay::DstChain as OfaChain>::ClientId,
     runtime: Relay::Runtime,
 ) -> impl RelayContext {
-    OfaRelayContext::new(
-        relay,
-        src_chain,
-        dst_chain,
-        src_client_id,
-        dst_client_id,
-        runtime,
-    )
+    OfaRelayContext::new(relay, src_chain, dst_chain, runtime)
 }
 
 pub fn chain_context<Chain: OfaChain>(chain: Chain, runtime: Chain::Runtime) -> impl ChainContext {
