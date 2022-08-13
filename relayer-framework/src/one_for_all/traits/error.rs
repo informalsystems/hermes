@@ -1,6 +1,7 @@
 use crate::traits::core::Async;
+use core::fmt::Debug;
 
-pub trait OfaError: Async {
+pub trait OfaError: Async + Debug {
     fn is_retryable(&self) -> bool;
 
     fn max_retry_exceeded(retries: usize) -> Self;

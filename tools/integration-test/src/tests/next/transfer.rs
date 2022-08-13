@@ -1,4 +1,5 @@
 use ibc_relayer_cosmos::cosmos::instances::packet_relayers::full_packet_relayer;
+use ibc_relayer_framework::one_for_all::impls::relay::OfaPacket;
 use ibc_relayer_framework::traits::packet_relayer::PacketRelayer;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
@@ -66,7 +67,7 @@ impl BinaryChannelTest for IbcTransferTest {
             .value()
             .chain_driver
             .runtime
-            .block_on(relayer.relay_packet(&relay_context, &packet))
+            .block_on(relayer.relay_packet(&relay_context, &OfaPacket::new(packet)))
             .unwrap();
 
         info!("finished running relayer");

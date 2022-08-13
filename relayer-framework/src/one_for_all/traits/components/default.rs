@@ -1,5 +1,7 @@
 use crate::impls::message_senders::chain_sender::SendIbcMessagesToChain;
 use crate::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
+use crate::impls::messages::skip_update_client::SkipUpdateClient;
+use crate::impls::messages::wait_update_client::WaitUpdateClient;
 use crate::impls::packet_relayers::top::TopRelayer;
 use crate::one_for_all::impls::relay::OfaUpdateClientMessageBuilder;
 use crate::one_for_all::impls::status::OfaChainStatusQuerier;
@@ -23,9 +25,11 @@ where
 {
     type PacketRelayer = TopRelayer;
 
-    type SrcUpdateClientMessageBuilder = OfaUpdateClientMessageBuilder;
+    type SrcUpdateClientMessageBuilder =
+        SkipUpdateClient<WaitUpdateClient<OfaUpdateClientMessageBuilder>>;
 
-    type DstUpdateClientMessageBuilder = OfaUpdateClientMessageBuilder;
+    type DstUpdateClientMessageBuilder =
+        SkipUpdateClient<WaitUpdateClient<OfaUpdateClientMessageBuilder>>;
 
     type SrcIbcMessageSender = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
 

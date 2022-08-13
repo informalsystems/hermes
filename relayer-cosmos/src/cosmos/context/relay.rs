@@ -12,17 +12,10 @@ use ibc_relayer_framework::traits::core::Async;
 use ibc_relayer_framework::traits::ibc_message_sender::HasIbcMessageSender;
 use ibc_relayer_framework::traits::target::{DestinationTarget, SourceTarget};
 use tokio::runtime::Runtime;
-use tokio::sync::mpsc::{channel, Sender};
 
 use crate::cosmos::context::chain::CosmosChainContext;
 use crate::cosmos::context::runtime::CosmosRuntime;
 use crate::cosmos::error::Error;
-use crate::cosmos::message_senders::batch::{
-    BatchConfig, BatchMessageContext, BatchedMessageSender, MessageBatch,
-};
-
-pub type CosmosMessageSender =
-    BatchedMessageSender<SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>>;
 
 #[derive(Clone)]
 pub struct CosmosRelayContext<SrcChain, DstChain>
@@ -35,8 +28,6 @@ where
     pub src_to_dst_client: ForeignClient<DstChain, SrcChain>,
     pub dst_to_src_client: ForeignClient<SrcChain, DstChain>,
     pub runtime: Arc<Runtime>,
-    pub src_message_sink: Sender<MessageBatch<Self, SourceTarget>>,
-    pub dst_message_sink: Sender<MessageBatch<Self, DestinationTarget>>,
 }
 
 impl<SrcChain, DstChain> CosmosRelayContext<SrcChain, DstChain>
@@ -49,36 +40,16 @@ where
         dst_handle: CosmosChainContext<DstChain>,
         src_to_dst_client: ForeignClient<DstChain, SrcChain>,
         dst_to_src_client: ForeignClient<SrcChain, DstChain>,
-        batch_config: BatchConfig,
-    ) -> Arc<Self> {
-        let (src_message_sink, src_message_receiver) = channel(batch_config.buffer_size);
-        let (dst_message_sink, dst_message_receiver) = channel(batch_config.buffer_size);
-
+    ) -> Self {
         let runtime = Arc::new(Runtime::new().unwrap());
 
-        let context = Arc::new(Self {
+        let context = Self {
             src_handle,
             dst_handle,
             src_to_dst_client,
             dst_to_src_client,
             runtime: runtime.clone(),
-            src_message_sink,
-            dst_message_sink,
-        });
-
-        CosmosMessageSender::spawn_batch_message_handler::<_, SourceTarget>(
-            context.clone(),
-            batch_config.clone(),
-            &runtime,
-            src_message_receiver,
-        );
-
-        CosmosMessageSender::spawn_batch_message_handler::<_, DestinationTarget>(
-            context.clone(),
-            batch_config,
-            &runtime,
-            dst_message_receiver,
-        );
+        };
 
         context
     }
@@ -139,7 +110,6 @@ where
     DstChain: ChainHandle,
 {
     type IbcMessageSender = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
-    // BatchedMessageSender<SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>>;
 }
 
 impl<SrcChain, DstChain> HasIbcMessageSender<DestinationTarget>
@@ -149,27 +119,4 @@ where
     DstChain: ChainHandle,
 {
     type IbcMessageSender = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
-    // BatchedMessageSender<SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>>;
-}
-
-impl<SrcChain, DstChain> BatchMessageContext<SourceTarget>
-    for CosmosRelayContext<SrcChain, DstChain>
-where
-    SrcChain: Async,
-    DstChain: Async,
-{
-    fn message_sink(&self) -> &Sender<MessageBatch<Self, SourceTarget>> {
-        &self.src_message_sink
-    }
-}
-
-impl<SrcChain, DstChain> BatchMessageContext<DestinationTarget>
-    for CosmosRelayContext<SrcChain, DstChain>
-where
-    SrcChain: Async,
-    DstChain: Async,
-{
-    fn message_sink(&self) -> &Sender<MessageBatch<Self, DestinationTarget>> {
-        &self.dst_message_sink
-    }
 }

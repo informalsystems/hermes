@@ -47,6 +47,12 @@ pub struct OfaPacket<Relay: OfaRelay> {
     pub packet: Relay::Packet,
 }
 
+impl<Relay: OfaRelay> OfaPacket<Relay> {
+    pub fn new(packet: Relay::Packet) -> Self {
+        Self { packet }
+    }
+}
+
 impl<Relay: OfaRelay> HasError for OfaRelayContext<Relay> {
     type Error = OfaErrorContext<Relay::Error>;
 }
