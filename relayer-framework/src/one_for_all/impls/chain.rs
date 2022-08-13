@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::one_for_all::impls::error::OfaErrorContext;
 use crate::one_for_all::impls::message::OfaMessage;
-use crate::one_for_all::impls::runtime::OfaHasRuntime;
+use crate::one_for_all::impls::runtime::OfaRuntimeContext;
 use crate::one_for_all::traits::chain::OfaChain;
 use crate::std_prelude::*;
 use crate::traits::contexts::chain::{ChainContext, IbcChainContext};
@@ -14,16 +14,19 @@ use crate::traits::queries::consensus_state::{
 };
 use crate::traits::queries::received_packet::{CanQueryReceivedPacket, ReceivedPacketQuerier};
 
-pub struct OfaChainContext<Chain: OfaChain> {
+pub struct OfaChainContext<Chain>
+where
+    Chain: OfaChain,
+{
     pub chain: Chain,
-    pub runtime: OfaHasRuntime<Chain::Runtime>,
+    pub runtime: OfaRuntimeContext<Chain::Runtime>,
 }
 
 impl<Chain: OfaChain> OfaChainContext<Chain> {
     pub fn new(chain: Chain, runtime: Chain::Runtime) -> Self {
         Self {
             chain,
-            runtime: OfaHasRuntime::new(runtime),
+            runtime: OfaRuntimeContext::new(runtime),
         }
     }
 }
@@ -33,7 +36,7 @@ impl<Chain: OfaChain> HasError for OfaChainContext<Chain> {
 }
 
 impl<Chain: OfaChain> HasRuntime for OfaChainContext<Chain> {
-    type Runtime = OfaHasRuntime<Chain::Runtime>;
+    type Runtime = OfaRuntimeContext<Chain::Runtime>;
 
     fn runtime(&self) -> &Self::Runtime {
         &self.runtime

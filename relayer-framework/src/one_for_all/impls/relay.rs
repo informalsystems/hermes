@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::one_for_all::impls::chain::OfaChainContext;
 use crate::one_for_all::impls::error::OfaErrorContext;
 use crate::one_for_all::impls::message::OfaMessage;
-use crate::one_for_all::impls::runtime::OfaHasRuntime;
+use crate::one_for_all::impls::runtime::OfaRuntimeContext;
 use crate::one_for_all::traits::chain::OfaChain;
 use crate::one_for_all::traits::relay::OfaRelay;
 use crate::std_prelude::*;
@@ -27,7 +27,7 @@ pub struct OfaRelayContext<Relay: OfaRelay> {
     pub src_client_id: <Relay::SrcChain as OfaChain>::ClientId,
     pub dst_client_id: <Relay::DstChain as OfaChain>::ClientId,
 
-    pub runtime: OfaHasRuntime<Relay::Runtime>,
+    pub runtime: OfaRuntimeContext<Relay::Runtime>,
 }
 
 impl<Relay: OfaRelay> OfaRelayContext<Relay> {
@@ -45,7 +45,7 @@ impl<Relay: OfaRelay> OfaRelayContext<Relay> {
             dst_chain: OfaChainContext::new(dst_chain, runtime.clone()),
             src_client_id,
             dst_client_id,
-            runtime: OfaHasRuntime::new(runtime),
+            runtime: OfaRuntimeContext::new(runtime),
         }
     }
 }
@@ -59,7 +59,7 @@ impl<Relay: OfaRelay> HasError for OfaRelayContext<Relay> {
 }
 
 impl<Relay: OfaRelay> HasRuntime for OfaRelayContext<Relay> {
-    type Runtime = OfaHasRuntime<Relay::Runtime>;
+    type Runtime = OfaRuntimeContext<Relay::Runtime>;
 
     fn runtime(&self) -> &Self::Runtime {
         &self.runtime

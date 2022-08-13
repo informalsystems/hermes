@@ -4,9 +4,7 @@ use crate::one_for_all::impls::chain::OfaChainContext;
 use crate::one_for_all::impls::error::OfaErrorContext;
 use crate::one_for_all::traits::chain::OfaChain;
 use crate::std_prelude::*;
-use crate::traits::queries::status::{
-    CanQueryChainStatus, ChainStatus, ChainStatusContext, ChainStatusQuerier,
-};
+use crate::traits::queries::status::{ChainStatus, ChainStatusContext, ChainStatusQuerier};
 
 pub struct OfaChainStatusQuerier;
 
@@ -16,10 +14,6 @@ pub struct OfaChainStatus<Chain: OfaChain> {
 
 impl<Chain: OfaChain> ChainStatusContext for OfaChainContext<Chain> {
     type ChainStatus = OfaChainStatus<Chain>;
-}
-
-impl<Chain: OfaChain> CanQueryChainStatus for OfaChainContext<Chain> {
-    type ChainStatusQuerier = OfaChainStatusQuerier;
 }
 
 impl<Chain: OfaChain> ChainStatus<OfaChainContext<Chain>> for OfaChainStatus<Chain> {
