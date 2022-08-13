@@ -35,17 +35,17 @@ pub trait OfaChain: Async {
 
     type Sequence: Async;
 
-    type CounterpartySequence: Async;
-
     type ChainStatus: Async;
+
+    type WriteAcknowledgementEvent: Async + TryFrom<Self::Event, Error = Self::Error>;
+
+    type CounterpartySequence: Async;
 
     type CounterpartyHeight: Async;
 
     type ConsensusState: Async;
 
     type CounterpartyConsensusState: Async;
-
-    type WriteAcknowledgementEvent: Async + TryFrom<Self::Event, Error = Self::Error>;
 
     fn encode_raw_message(
         message: &Self::Message,

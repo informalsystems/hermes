@@ -74,12 +74,12 @@ where
 }
 
 impl TryFrom<AbciEvent> for WriteAcknowledgementEvent {
-    type Error = ();
+    type Error = Error;
 
-    fn try_from(event: AbciEvent) -> Result<Self, ()> {
+    fn try_from(event: AbciEvent) -> Result<Self, Error> {
         if let Ok(IbcEventType::WriteAck) = event.type_str.parse() {
             let (packet, write_ack) =
-                extract_packet_and_write_ack_from_tx(&event).map_err(|_| ())?;
+                extract_packet_and_write_ack_from_tx(&event).map_err(Error::channel)?;
 
             let ack = WriteAcknowledgement {
                 packet,
@@ -88,7 +88,10 @@ impl TryFrom<AbciEvent> for WriteAcknowledgementEvent {
 
             Ok(WriteAcknowledgementEvent(ack))
         } else {
-            Err(())
+            Err(Error::mismatch_event_type(
+                "write_acknowledgement".to_string(),
+                event.type_str.to_string(),
+            ))
         }
     }
 }

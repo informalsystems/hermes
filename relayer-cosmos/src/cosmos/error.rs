@@ -1,5 +1,6 @@
 use eyre::Report;
 use flex_error::{define_error, TraceError};
+use ibc::core::ics04_channel::error::Error as ChannelError;
 use ibc_relayer::error::Error as RelayerError;
 use ibc_relayer::foreign_client::ForeignClientError;
 use ibc_relayer_framework::impls::packet_relayers::retry::{MaxRetryExceeded, RetryableError};
@@ -13,6 +14,10 @@ define_error! {
         Generic
             [ TraceError<Report> ]
             | _ | { "generic error" },
+
+        Channel
+            [ ChannelError ]
+            | _ | { "channel error" },
 
         Relayer
             [ RelayerError ]
@@ -45,7 +50,11 @@ define_error! {
 
         Batch
             { message: String }
-            | e | { format_args!("error when sending messages as batches: {}", e.message) }
+            | e | { format_args!("error when sending messages as batches: {}", e.message) },
+
+        MismatchEventType
+            { expected: String, actual: String }
+            | e | { format_args!("mismatch event type, expected: {}, actual: {}", e.expected, e.actual) },
     }
 }
 

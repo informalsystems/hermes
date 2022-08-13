@@ -5,6 +5,7 @@ pub mod message;
 pub mod message_sender;
 pub mod message_senders;
 pub mod messages;
+pub mod one_for_all;
 pub mod packet;
 pub mod queries;
 pub mod target;

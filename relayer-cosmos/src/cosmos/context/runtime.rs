@@ -6,6 +6,7 @@ use tokio::time::sleep;
 
 use crate::cosmos::error::Error;
 
+#[derive(Clone)]
 pub struct CosmosRuntime;
 
 #[async_trait]
