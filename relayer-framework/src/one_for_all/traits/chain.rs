@@ -1,14 +1,13 @@
 use async_trait::async_trait;
 
 use crate::one_for_all::traits::error::OfaError;
-use crate::one_for_all::traits::overrides::chain::OfaChainOverrides;
 use crate::one_for_all::traits::runtime::OfaRuntime;
 use crate::std_prelude::*;
 use crate::traits::core::Async;
 
 #[async_trait]
 pub trait OfaChain: Async {
-    type Overrides: OfaChainOverrides<Self>;
+    type Components;
 
     type Error: OfaError;
 

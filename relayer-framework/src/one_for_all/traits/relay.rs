@@ -8,6 +8,8 @@ use crate::traits::core::Async;
 
 #[async_trait]
 pub trait OfaRelay: Async {
+    type Components;
+
     type Error: OfaError;
 
     type Runtime: OfaRuntime<Error = Self::Error>;
@@ -15,6 +17,7 @@ pub trait OfaRelay: Async {
     type SrcChain: OfaChain<
         Error = Self::Error,
         Runtime = Self::Runtime,
+        Components = Self::Components,
         CounterpartyHeight = <Self::DstChain as OfaChain>::Height,
         CounterpartySequence = <Self::DstChain as OfaChain>::Sequence,
         CounterpartyConsensusState = <Self::DstChain as OfaChain>::ConsensusState,
@@ -23,6 +26,7 @@ pub trait OfaRelay: Async {
     type DstChain: OfaChain<
         Error = Self::Error,
         Runtime = Self::Runtime,
+        Components = Self::Components,
         CounterpartyHeight = <Self::SrcChain as OfaChain>::Height,
         CounterpartySequence = <Self::SrcChain as OfaChain>::Sequence,
         CounterpartyConsensusState = <Self::SrcChain as OfaChain>::ConsensusState,
