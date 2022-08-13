@@ -16,15 +16,3 @@ where
 {
     type ChainStatusQuerier = Components::ChainStatusQuerier;
 }
-
-pub trait OfaChainWithComponents: OfaChain<Components = Self::ComponentsInstance> {
-    type ComponentsInstance: OfaChainComponents<Self>;
-}
-
-impl<Chain> OfaChainWithComponents for Chain
-where
-    Chain: OfaChain,
-    Chain::Components: OfaChainComponents<Chain>,
-{
-    type ComponentsInstance = Chain::Components;
-}

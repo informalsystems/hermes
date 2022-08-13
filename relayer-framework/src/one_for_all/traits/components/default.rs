@@ -25,13 +25,8 @@ where
 {
     type PacketRelayer = TopRelayer;
 
-    type SrcUpdateClientMessageBuilder =
+    type UpdateClientMessageBuilder =
         SkipUpdateClient<WaitUpdateClient<OfaUpdateClientMessageBuilder>>;
 
-    type DstUpdateClientMessageBuilder =
-        SkipUpdateClient<WaitUpdateClient<OfaUpdateClientMessageBuilder>>;
-
-    type SrcIbcMessageSender = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
-
-    type DstIbcMessageSender = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
+    type IbcMessageSender = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
 }
