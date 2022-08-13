@@ -15,3 +15,7 @@ where
         packet: &Relay::Packet,
     ) -> Result<(), Relay::Error>;
 }
+
+pub trait HasPacketRelayer: RelayContext {
+    type PacketRelayer: PacketRelayer<Self>;
+}

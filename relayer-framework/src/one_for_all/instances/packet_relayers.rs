@@ -23,10 +23,15 @@ where
 }
 
 pub fn receive_packet_relayer<Relay: OfaRelay>() -> impl ReceivePacketRelayer<OfaRelayContext<Relay>>
+where
+    Relay: OfaRelayWithComponents,
 {
     SkipReceivedPacketRelayer::new(BaseReceivePacketRelayer)
 }
 
-pub fn ack_packet_relayer<Relay: OfaRelay>() -> impl AckPacketRelayer<OfaRelayContext<Relay>> {
+pub fn ack_packet_relayer<Relay>() -> impl AckPacketRelayer<OfaRelayContext<Relay>>
+where
+    Relay: OfaRelayWithComponents,
+{
     BaseAckPacketRelayer
 }

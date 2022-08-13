@@ -14,7 +14,7 @@ use crate::traits::messages::ack_packet::{AckPacketMessageBuilder, CanBuildAckPa
 use crate::traits::messages::receive_packet::{
     CanBuildReceivePacketMessage, ReceivePacketMessageBuilder,
 };
-use crate::traits::messages::update_client::{CanUpdateClient, UpdateClientMessageBuilder};
+use crate::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::traits::packet::IbcPacket;
 use crate::traits::target::{DestinationTarget, SourceTarget};
 
@@ -123,14 +123,6 @@ impl<Relay: OfaRelay> RelayContext for OfaRelayContext<Relay> {
 }
 
 pub struct OfaUpdateClientMessageBuilder;
-
-impl<Relay: OfaRelay> CanUpdateClient<SourceTarget> for OfaRelayContext<Relay> {
-    type UpdateClientMessageBuilder = OfaUpdateClientMessageBuilder;
-}
-
-impl<Relay: OfaRelay> CanUpdateClient<DestinationTarget> for OfaRelayContext<Relay> {
-    type UpdateClientMessageBuilder = OfaUpdateClientMessageBuilder;
-}
 
 #[async_trait]
 impl<Relay: OfaRelay> UpdateClientMessageBuilder<OfaRelayContext<Relay>, SourceTarget>
