@@ -13,8 +13,8 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     IncludeProof, QueryConsensusStateRequest, QueryHeight, QueryUnreceivedPacketsRequest,
 };
+use ibc_relayer_framework::one_for_all::impls::default::DefaultComponents;
 use ibc_relayer_framework::one_for_all::traits::chain::OfaChain;
-use ibc_relayer_framework::one_for_all::traits::components::default::DefaultComponents;
 use prost::Message as _;
 use tendermint::abci::responses::Event;
 

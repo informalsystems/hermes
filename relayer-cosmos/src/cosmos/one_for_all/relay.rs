@@ -8,8 +8,8 @@ use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer_framework::one_for_all::impls::default::DefaultComponents;
 use ibc_relayer_framework::one_for_all::traits::chain::OfaChain;
-use ibc_relayer_framework::one_for_all::traits::components::default::DefaultComponents;
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelay;
 
 use crate::cosmos::context::chain::CosmosChainContext;
