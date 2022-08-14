@@ -23,7 +23,9 @@ where
 }
 
 impl<Chain: OfaChain> OfaChainContext<Chain> {
-    pub fn new(chain: Chain, runtime: Chain::Runtime) -> Self {
+    pub fn new(chain: Chain) -> Self {
+        let runtime = chain.runtime().clone();
+
         Self {
             chain,
             runtime: OfaRuntimeContext::new(runtime),

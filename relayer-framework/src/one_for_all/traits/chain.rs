@@ -7,7 +7,7 @@ use crate::std_prelude::*;
 use crate::traits::core::Async;
 
 #[async_trait]
-pub trait OfaChain: Async {
+pub trait OfaChain: Async + Clone {
     type Components: OfaChainComponents<Self>;
 
     type Error: OfaError;
@@ -60,6 +60,8 @@ pub trait OfaChain: Async {
     fn chain_status_height(status: &Self::ChainStatus) -> &Self::Height;
 
     fn chain_status_timestamp(status: &Self::ChainStatus) -> &Self::Timestamp;
+
+    fn runtime(&self) -> &Self::Runtime;
 
     async fn send_messages(
         &self,

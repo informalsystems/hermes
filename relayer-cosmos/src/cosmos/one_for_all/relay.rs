@@ -69,12 +69,24 @@ where
         &packet.timeout_timestamp
     }
 
+    fn runtime(&self) -> &Self::Runtime {
+        &CosmosRuntime
+    }
+
     fn src_client_id(&self) -> &<Self::SrcChain as OfaChain>::ClientId {
         &self.dst_to_src_client.id
     }
 
     fn dst_client_id(&self) -> &<Self::DstChain as OfaChain>::ClientId {
         &self.src_to_dst_client.id
+    }
+
+    fn src_chain(&self) -> &Self::SrcChain {
+        &self.src_handle
+    }
+
+    fn dst_chain(&self) -> &Self::DstChain {
+        &self.dst_handle
     }
 
     async fn build_src_update_client_messages(

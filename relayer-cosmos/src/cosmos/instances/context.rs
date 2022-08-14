@@ -6,7 +6,6 @@ use ibc_relayer_framework::traits::contexts::relay::RelayContext;
 
 use crate::cosmos::context::chain::CosmosChainContext;
 use crate::cosmos::context::relay::CosmosRelayContext;
-use crate::cosmos::context::runtime::CosmosRuntime;
 
 pub fn relay_context<SrcChain, DstChain>(
     relay: CosmosRelayContext<SrcChain, DstChain>,
@@ -15,17 +14,14 @@ where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
 {
-    let src_chain = relay.src_handle.clone();
-    let dst_chain = relay.dst_handle.clone();
-
-    OfaRelayContext::new(relay, src_chain, dst_chain, CosmosRuntime)
+    OfaRelayContext::new(relay)
 }
 
 pub fn chain_context<Chain>(handler: CosmosChainContext<Chain>) -> impl ChainContext
 where
     Chain: ChainHandle,
 {
-    OfaChainContext::new(handler, CosmosRuntime)
+    OfaChainContext::new(handler)
 }
 
 pub fn ibc_chain_context<Chain, Counterparty>(
@@ -35,5 +31,5 @@ where
     Chain: ChainHandle,
     Counterparty: ChainHandle,
 {
-    OfaChainContext::new(handler, CosmosRuntime)
+    OfaChainContext::new(handler)
 }

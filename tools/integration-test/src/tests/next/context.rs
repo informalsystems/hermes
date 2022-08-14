@@ -1,7 +1,6 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_cosmos::cosmos::context::chain::CosmosChainContext;
 use ibc_relayer_cosmos::cosmos::context::relay::CosmosRelayContext;
-use ibc_relayer_cosmos::cosmos::context::runtime::CosmosRuntime;
 use ibc_relayer_framework::one_for_all::impls::relay::OfaRelayContext;
 use ibc_test_framework::types::binary::chains::ConnectedChains;
 
@@ -49,5 +48,5 @@ where
         chains.foreign_clients.client_b_to_a.clone(),
     );
 
-    OfaRelayContext::new(relay, handler_a, handler_b, CosmosRuntime)
+    OfaRelayContext::new(relay)
 }

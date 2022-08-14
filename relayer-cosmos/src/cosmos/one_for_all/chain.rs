@@ -93,6 +93,10 @@ where
         &status.timestamp
     }
 
+    fn runtime(&self) -> &Self::Runtime {
+        &CosmosRuntime
+    }
+
     async fn send_messages(
         &self,
         messages: Vec<Self::Message>,

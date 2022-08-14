@@ -9,7 +9,7 @@ use crate::std_prelude::*;
 use crate::traits::core::Async;
 
 #[async_trait]
-pub trait OfaRelay: Async {
+pub trait OfaRelay: Async + Clone {
     type Components: OfaRelayComponents<Self>
         + OfaChainComponents<Self::SrcChain>
         + OfaChainComponents<Self::DstChain>;
@@ -54,9 +54,15 @@ pub trait OfaRelay: Async {
 
     fn packet_timeout_timestamp(packet: &Self::Packet) -> &<Self::DstChain as OfaChain>::Timestamp;
 
+    fn runtime(&self) -> &Self::Runtime;
+
     fn src_client_id(&self) -> &<Self::SrcChain as OfaChain>::ClientId;
 
     fn dst_client_id(&self) -> &<Self::DstChain as OfaChain>::ClientId;
+
+    fn src_chain(&self) -> &Self::SrcChain;
+
+    fn dst_chain(&self) -> &Self::DstChain;
 
     async fn build_src_update_client_messages(
         &self,
