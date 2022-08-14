@@ -13,7 +13,6 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     IncludeProof, QueryConsensusStateRequest, QueryHeight, QueryUnreceivedPacketsRequest,
 };
-use ibc_relayer_framework::one_for_all::impls::default::DefaultComponents;
 use ibc_relayer_framework::one_for_all::traits::chain::OfaChain;
 use prost::Message as _;
 use tendermint::abci::responses::Event;
@@ -22,13 +21,14 @@ use crate::cosmos::context::chain::{CosmosChainContext, WriteAcknowledgementEven
 use crate::cosmos::context::runtime::CosmosRuntime;
 use crate::cosmos::error::Error;
 use crate::cosmos::message::CosmosIbcMessage;
+use crate::cosmos::one_for_all::components::CosmosComponents;
 
 #[async_trait]
 impl<Handle> OfaChain for CosmosChainContext<Handle>
 where
     Handle: ChainHandle,
 {
-    type Components = DefaultComponents;
+    type Components = CosmosComponents;
 
     type Error = Error;
 

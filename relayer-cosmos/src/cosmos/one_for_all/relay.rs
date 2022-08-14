@@ -8,7 +8,6 @@ use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
-use ibc_relayer_framework::one_for_all::impls::default::DefaultComponents;
 use ibc_relayer_framework::one_for_all::traits::chain::OfaChain;
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelay;
 
@@ -17,6 +16,7 @@ use crate::cosmos::context::relay::CosmosRelayContext;
 use crate::cosmos::context::runtime::CosmosRuntime;
 use crate::cosmos::error::Error;
 use crate::cosmos::message::CosmosIbcMessage;
+use crate::cosmos::one_for_all::components::CosmosComponents;
 
 #[async_trait]
 impl<SrcChain, DstChain> OfaRelay for CosmosRelayContext<SrcChain, DstChain>
@@ -24,7 +24,7 @@ where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
 {
-    type Components = DefaultComponents;
+    type Components = CosmosComponents;
 
     type Error = Error;
 

@@ -30,12 +30,3 @@ pub mod c02_context_generic_programming {
     #[doc = include_str!("../docs/context-generic-programming/10-caching-querier.md")]
     pub mod c10_caching_querier {}
 }
-
-#[doc = include_str!("../docs/03-relayer-architecture.md")]
-pub mod c03_relayer_architecture {
-    #[doc = include_str!("../docs/03-relayer-architecture/01-chain-context.md")]
-    pub mod c01_chain_context {}
-
-    #[doc = include_str!("../docs/03-relayer-architecture/02-chain-status.md")]
-    pub mod c02_chain_status {}
-}

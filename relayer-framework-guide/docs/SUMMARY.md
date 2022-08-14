@@ -14,7 +14,3 @@
   - [Querier Consumer](./context-generic-programming/08-querier-consumer.md)
   - [Store Implementation](./context-generic-programming/09-store-impl.md)
   - [Caching Querier](./context-generic-programming/10-caching-querier.md)
-
-- [Relayer Architecture](./03-relayer-architecture.md)
-  - [Chain Context](./03-relayer-architecture/01-chain-context.md)
-  - [Chain Status Component](./03-relayer-architecture/02-chain-status.md)
