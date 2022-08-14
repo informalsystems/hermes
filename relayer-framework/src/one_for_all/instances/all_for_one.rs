@@ -1,10 +1,11 @@
-use crate::all_for_one::traits::chain::{AfoChainContext, AfoCounterpartyContext};
+use crate::all_for_one::traits::chain::AfoChainContext;
 use crate::all_for_one::traits::error::AfoError;
 use crate::all_for_one::traits::relay::AfoRelayContext;
 use crate::one_for_all::impls::chain::OfaChainContext;
 use crate::one_for_all::impls::error::OfaErrorContext;
 use crate::one_for_all::impls::relay::OfaRelayContext;
-use crate::one_for_all::traits::chain::OfaChain;
+use crate::one_for_all::traits::chain::OfaIbcChain;
+use crate::one_for_all::traits::components::chain::OfaIbcChainComponents;
 use crate::one_for_all::traits::error::OfaError;
 use crate::one_for_all::traits::relay::OfaRelay;
 
@@ -15,17 +16,13 @@ where
     relay
 }
 
-pub fn afo_chain_context<Chain, Counterparty>(
+pub fn afo_chain_context<Chain, Counterparty, Components>(
     chain: OfaChainContext<Chain>,
-) -> impl AfoChainContext<Counterparty>
+) -> impl AfoChainContext<OfaChainContext<Counterparty>>
 where
-    Chain: OfaChain,
-    Counterparty: AfoCounterpartyContext<
-        OfaChainContext<Chain>,
-        Height = Chain::CounterpartyHeight,
-        Sequence = Chain::CounterpartySequence,
-        ConsensusState = Chain::CounterpartyConsensusState,
-    >,
+    Chain: OfaIbcChain<Counterparty, Components = Components>,
+    Counterparty: OfaIbcChain<Chain>,
+    Components: OfaIbcChainComponents<Chain, Counterparty>,
 {
     chain
 }

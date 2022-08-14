@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
-use crate::one_for_all::traits::chain::OfaChain;
-use crate::one_for_all::traits::components::chain::OfaChainComponents;
+use crate::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
+use crate::one_for_all::traits::components::chain::OfaIbcChainComponents;
 use crate::one_for_all::traits::components::relay::OfaRelayComponents;
 use crate::one_for_all::traits::error::OfaError;
 use crate::one_for_all::traits::runtime::OfaRuntime;
@@ -11,29 +11,25 @@ use crate::traits::core::Async;
 #[async_trait]
 pub trait OfaRelay: Async + Clone {
     type Components: OfaRelayComponents<Self>
-        + OfaChainComponents<Self::SrcChain>
-        + OfaChainComponents<Self::DstChain>;
+        + OfaIbcChainComponents<Self::SrcChain, Self::DstChain>
+        + OfaIbcChainComponents<Self::DstChain, Self::SrcChain>;
 
     type Error: OfaError;
 
     type Runtime: OfaRuntime<Error = Self::Error>;
 
-    type SrcChain: OfaChain<
+    type SrcChain: OfaIbcChain<
+        Self::DstChain,
         Error = Self::Error,
         Runtime = Self::Runtime,
         Components = Self::Components,
-        CounterpartyHeight = <Self::DstChain as OfaChain>::Height,
-        CounterpartySequence = <Self::DstChain as OfaChain>::Sequence,
-        CounterpartyConsensusState = <Self::DstChain as OfaChain>::ConsensusState,
     >;
 
-    type DstChain: OfaChain<
+    type DstChain: OfaIbcChain<
+        Self::SrcChain,
         Error = Self::Error,
         Runtime = Self::Runtime,
         Components = Self::Components,
-        CounterpartyHeight = <Self::SrcChain as OfaChain>::Height,
-        CounterpartySequence = <Self::SrcChain as OfaChain>::Sequence,
-        CounterpartyConsensusState = <Self::SrcChain as OfaChain>::ConsensusState,
     >;
 
     type Packet: Async;

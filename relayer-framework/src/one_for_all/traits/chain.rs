@@ -38,13 +38,13 @@ pub trait OfaChain: Async + Clone {
 
     type ChainStatus: Async;
 
+    type ConsensusState: Async;
+
     type WriteAcknowledgementEvent: Async + TryFrom<Self::Event, Error = Self::Error>;
 
+    type CounterpartyHeight: Ord + Async;
+
     type CounterpartySequence: Async;
-
-    type CounterpartyHeight: Async;
-
-    type ConsensusState: Async;
 
     type CounterpartyConsensusState: Async;
 
@@ -82,4 +82,26 @@ pub trait OfaChain: Async + Clone {
         channel_id: &Self::ChannelId,
         sequence: &Self::CounterpartySequence,
     ) -> Result<bool, Self::Error>;
+}
+
+pub trait OfaIbcChain<Counterparty>:
+    OfaChain<
+    Height = Counterparty::CounterpartyHeight,
+    Sequence = Counterparty::CounterpartySequence,
+    ConsensusState = Counterparty::CounterpartyConsensusState,
+>
+where
+    Counterparty: OfaChain,
+{
+}
+
+impl<Chain, Counterparty> OfaIbcChain<Counterparty> for Chain
+where
+    Chain: OfaChain<
+        Height = Counterparty::CounterpartyHeight,
+        Sequence = Counterparty::CounterpartySequence,
+        ConsensusState = Counterparty::CounterpartyConsensusState,
+    >,
+    Counterparty: OfaChain,
+{
 }
