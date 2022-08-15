@@ -95,77 +95,59 @@ pub fn bootstrap_chains_with_full_nodes(
     Ok((relayer, chains))
 }
 
-pub fn bootstrap_chains_with_full_nodes_and_existing_clients(
-    test_config: &TestConfig,
-    node_a: FullNode,
-    node_b: FullNode,
-    options: BootstrapClientOptions,
+pub fn override_connected_chains<ChainA, ChainB>(
+    chains: ConnectedChains<ChainA, ChainB>,
     config_modifier: impl FnOnce(&mut Config),
-    client_id_a: &ClientId,
-    client_id_b: &ClientId,
-) -> Result<
-    (
-        RelayerDriver,
-        ConnectedChains<impl ChainHandle, impl ChainHandle>,
-    ),
-    Error,
-> {
+) -> Result<ConnectedChains<impl ChainHandle, impl ChainHandle>, Error>
+where
+    ChainA: ChainHandle,
+    ChainB: ChainHandle,
+{
     let mut config = Config::default();
 
-    add_chain_config(&mut config, &node_a)?;
-    add_chain_config(&mut config, &node_b)?;
+    add_chain_config(&mut config, chains.node_a.value())?;
+    add_chain_config(&mut config, chains.node_b.value())?;
 
     config_modifier(&mut config);
-
-    let config_path = test_config.chain_store_dir.join("relayer-config.toml");
-
-    save_relayer_config(&config, &config_path)?;
 
     let registry = new_registry(config.clone());
 
     // Pass in unique closure expressions `||{}` as the first argument so that
     // the returned chains are considered different types by Rust.
     // See [`spawn_chain_handle`] for more details.
-    let handle_a = spawn_chain_handle(|| {}, &registry, &node_a)?;
-    let handle_b = spawn_chain_handle(|| {}, &registry, &node_b)?;
+    let handle_a = spawn_chain_handle(|| {}, &registry, chains.node_a.value())?;
+    let handle_b = spawn_chain_handle(|| {}, &registry, chains.node_b.value())?;
 
-    pad_client_ids(&handle_a, &handle_b, options.pad_client_id_a_to_b)?;
-    pad_client_ids(&handle_b, &handle_a, options.pad_client_id_b_to_a)?;
-
-    info!("Will get existing clients");
-    let foreign_clients = bootstrap_existing_foreign_client_pair(
-        handle_a.clone(),
-        handle_b.clone(),
-        client_id_a,
-        client_id_b,
+    let foreign_clients = create_foreign_client_pair(
+        &handle_a,
+        &handle_b,
+        chains.foreign_clients.client_id_a().value(),
+        chains.foreign_clients.client_id_b().value(),
     )?;
-
-    let relayer = RelayerDriver {
-        config_path,
-        config,
-        registry,
-        hang_on_fail: test_config.hang_on_fail,
-    };
 
     let chains = ConnectedChains::new(
         handle_a,
         handle_b,
-        MonoTagged::new(node_a),
-        MonoTagged::new(node_b),
+        chains.node_a.retag(),
+        chains.node_b.retag(),
         foreign_clients,
     );
 
-    Ok((relayer, chains))
+    Ok(chains)
 }
 
-pub fn bootstrap_existing_foreign_client_pair<ChainA: ChainHandle, ChainB: ChainHandle>(
-    chain_a: ChainA,
-    chain_b: ChainB,
+pub fn create_foreign_client_pair<ChainA: ChainHandle, ChainB: ChainHandle>(
+    chain_a: &ChainA,
+    chain_b: &ChainB,
     client_id_a: &ClientId,
     client_id_b: &ClientId,
 ) -> Result<ForeignClientPair<ChainA, ChainB>, Error> {
-    let client_a_to_b = ForeignClient::find(chain_a.clone(), chain_b.clone(), client_id_a)?;
-    let client_b_to_a = ForeignClient::find(chain_b, chain_a, client_id_b)?;
+    let client_a_to_b =
+        ForeignClient::restore(client_id_b.clone(), chain_b.clone(), chain_a.clone());
+
+    let client_b_to_a =
+        ForeignClient::restore(client_id_a.clone(), chain_a.clone(), chain_b.clone());
+
     Ok(ForeignClientPair::new(client_a_to_b, client_b_to_a))
 }
 
