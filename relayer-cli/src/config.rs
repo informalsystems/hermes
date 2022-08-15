@@ -169,12 +169,13 @@ fn validate_trust_threshold(
     Ok(())
 }
 
+// TODO: Check if still useful as GasMultiplier type checks gas_multiplier during deserialization.
 fn validate_gas_settings(id: &ChainId, config: &ChainConfig) -> Result<(), Diagnostic<Error>> {
     // Check that the gas_multiplier is greater than or equal to 1.0
     if let Some(gas_multiplier) = config.gas_multiplier {
-        if gas_multiplier < 1.0 {
+        if gas_multiplier.to_f64() < 1.0 {
             return Err(Diagnostic::Error(Error::invalid_gas_multiplier(
-                gas_multiplier,
+                gas_multiplier.to_f64(),
                 id.clone(),
             )));
         }
