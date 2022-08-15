@@ -514,6 +514,18 @@ define the component instantiation in multiple smaller functions so that
 it is clear to the reader whether the dependencies are being resolved
 correctly.
 
+## Component Graph Visualization
+
+<a href="../images/daytime-greeter-graph.svg" target="_blank">
+    <div style="pointer-events: none;">
+        <embed src="../images/daytime-greeter-graph.svg"
+            width="100%"
+        />
+    </div>
+</a>
+
+
+
 ## Reader Monad
 
 Readers coming from a functional programming background might notice
