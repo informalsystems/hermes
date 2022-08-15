@@ -52,6 +52,7 @@ mod tests {
     use crate::error::RegistryError;
 
     #[tokio::test]
+    #[ignore]
     async fn test_fetch_chain_assets() -> Result<(), RegistryError> {
         let mut handles = Vec::with_capacity(ALL_CHAINS.len());
         for chain in ALL_CHAINS {
@@ -62,5 +63,52 @@ mod tests {
             handle.await.unwrap()?;
         }
         Ok(())
+    }
+
+    #[test]
+    fn test_path_asset_list() {
+        let path = AssetList::path("test");
+        assert_eq!(path.to_str().unwrap(), "test/assetlist.json");
+    }
+
+    #[test]
+    fn test_deserialize_asset_list() {
+        let json = r#"{
+            "chain_name": "test",
+            "assets": [
+                {
+                    "description": "test",
+                    "denom_units": [
+                        {
+                            "denom": "test",
+                            "exponent": 1
+                        }
+                    ],
+                    "base": "test",
+                    "name": "test",
+                    "display": "test",
+                    "symbol": "test",
+                    "logo_URIs": {
+                        "png": "test",
+                        "svg": "test"
+                    },
+                    "coingecko_id": "test"
+                }
+            ]
+        }"#;
+        let asset_list: AssetList = serde_json::from_str(json).unwrap();
+        assert_eq!(asset_list.chain_name, "test");
+        assert_eq!(asset_list.assets.len(), 1);
+        assert_eq!(asset_list.assets[0].description, "test");
+        assert_eq!(asset_list.assets[0].denom_units.len(), 1);
+        assert_eq!(asset_list.assets[0].denom_units[0].denom, "test");
+        assert_eq!(asset_list.assets[0].denom_units[0].exponent, 1);
+        assert_eq!(asset_list.assets[0].base, "test");
+        assert_eq!(asset_list.assets[0].name, "test");
+        assert_eq!(asset_list.assets[0].display, "test");
+        assert_eq!(asset_list.assets[0].symbol, "test");
+        assert_eq!(asset_list.assets[0].logo_uris.png, "test");
+        assert_eq!(asset_list.assets[0].logo_uris.svg, "test");
+        assert_eq!(asset_list.assets[0].coingecko_id, "test");
     }
 }
