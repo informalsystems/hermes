@@ -1409,7 +1409,6 @@ dependencies = [
  "num-traits",
  "primitive-types",
  "prost",
- "prost-types",
  "safe-regex",
  "serde",
  "serde_derive",
@@ -1452,7 +1451,6 @@ dependencies = [
  "base64",
  "bytes",
  "prost",
- "prost-types",
  "schemars",
  "serde",
  "tendermint-proto",
@@ -1484,11 +1482,9 @@ dependencies = [
  "itertools",
  "k256",
  "moka",
- "nanoid",
  "num-bigint",
  "num-rational",
  "prost",
- "prost-types",
  "regex",
  "retry",
  "ripemd",
@@ -1600,7 +1596,6 @@ dependencies = [
  "async-trait",
  "color-eyre",
  "crossbeam-channel 0.5.6",
- "env_logger",
  "eyre",
  "flex-error",
  "hex",
@@ -1921,15 +1916,6 @@ dependencies = [
  "safemem",
  "tempfile",
  "twoway",
-]
-
-[[package]]
-name = "nanoid"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3ffa00dec017b5b1a8b7cf5e2c008bfda1aa7e0697ac1508b491fdf2622fb4d8"
-dependencies = [
- "rand",
 ]
 
 [[package]]
