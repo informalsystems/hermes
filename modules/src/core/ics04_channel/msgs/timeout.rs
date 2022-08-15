@@ -15,7 +15,7 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgTimeout";
 ///
 /// Message definition for packet timeout domain type.
 ///
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgTimeout {
     pub packet: Packet,
     pub next_sequence_recv: Sequence,

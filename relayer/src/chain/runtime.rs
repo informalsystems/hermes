@@ -40,9 +40,9 @@ use crate::{
     event::{
         bus::EventBus,
         monitor::{EventBatch, EventReceiver, MonitorCmd, Result as MonitorResult, TxMonitorCmd},
+        IbcEventWithHeight,
     },
     keyring::KeyEntry,
-    light_client::LightClient,
 };
 
 use super::{
@@ -144,9 +144,6 @@ pub struct ChainRuntime<Endpoint: ChainEndpoint> {
     /// Interface to the event monitor
     event_monitor_ctrl: EventMonitorCtrl,
 
-    /// A handle to the light client
-    light_client: Endpoint::LightClient,
-
     #[allow(dead_code)]
     rt: Arc<TokioRuntime>, // Making this future-proof, so we keep the runtime around.
 }
@@ -163,11 +160,8 @@ where
         // Similar to `from_config`.
         let chain = Endpoint::bootstrap(config, rt.clone())?;
 
-        // Start the light client
-        let light_client = chain.init_light_client()?;
-
         // Instantiate & spawn the runtime
-        let (handle, _) = Self::init(chain, light_client, rt);
+        let (handle, _) = Self::init(chain, rt);
 
         Ok(handle)
     }
@@ -175,10 +169,9 @@ where
     /// Initializes a runtime for a given chain, and spawns the associated thread
     fn init<Handle: ChainHandle>(
         chain: Endpoint,
-        light_client: Endpoint::LightClient,
         rt: Arc<TokioRuntime>,
     ) -> (Handle, thread::JoinHandle<()>) {
-        let chain_runtime = Self::new(chain, light_client, rt);
+        let chain_runtime = Self::new(chain, rt);
 
         // Get a handle to the runtime
         let handle: Handle = chain_runtime.handle();
@@ -195,7 +188,7 @@ where
     }
 
     /// Basic constructor
-    fn new(chain: Endpoint, light_client: Endpoint::LightClient, rt: Arc<TokioRuntime>) -> Self {
+    fn new(chain: Endpoint, rt: Arc<TokioRuntime>) -> Self {
         let (request_sender, request_receiver) = channel::unbounded::<ChainRequest>();
 
         Self {
@@ -205,7 +198,6 @@ where
             request_receiver,
             event_bus: EventBus::new(),
             event_monitor_ctrl: EventMonitorCtrl::none(),
-            light_client,
         }
     }
 
@@ -458,7 +450,7 @@ where
     fn send_messages_and_wait_commit(
         &mut self,
         tracked_msgs: TrackedMsgs,
-        reply_to: ReplyTo<Vec<IbcEvent>>,
+        reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     ) -> Result<(), Error> {
         let result = self.chain.send_messages_and_wait_commit(tracked_msgs);
         reply_to.send(result).map_err(Error::send)
@@ -531,12 +523,7 @@ where
     ) -> Result<(), Error> {
         let result = self
             .chain
-            .build_header(
-                trusted_height,
-                target_height,
-                &client_state,
-                &mut self.light_client,
-            )
+            .build_header(trusted_height, target_height, &client_state)
             .map(|(header, support)| {
                 let header = header.wrap_any();
                 let support = support.into_iter().map(|h| h.wrap_any()).collect();
@@ -569,11 +556,11 @@ where
         client_state: AnyClientState,
         reply_to: ReplyTo<AnyConsensusState>,
     ) -> Result<(), Error> {
-        let verified = self.light_client.verify(trusted, target, &client_state)?;
+        let verified = self.chain.verify_header(trusted, target, &client_state)?;
 
         let consensus_state = self
             .chain
-            .build_consensus_state(verified.target)
+            .build_consensus_state(verified)
             .map(|cs| cs.wrap_any());
 
         reply_to.send(consensus_state).map_err(Error::send)
@@ -586,9 +573,7 @@ where
         client_state: AnyClientState,
         reply_to: ReplyTo<Option<MisbehaviourEvidence>>,
     ) -> Result<(), Error> {
-        let misbehaviour = self
-            .light_client
-            .check_misbehaviour(update_event, &client_state);
+        let misbehaviour = self.chain.check_misbehaviour(&update_event, &client_state);
 
         reply_to.send(misbehaviour).map_err(Error::send)
     }
@@ -871,7 +856,7 @@ where
     fn query_txs(
         &self,
         request: QueryTxRequest,
-        reply_to: ReplyTo<Vec<IbcEvent>>,
+        reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     ) -> Result<(), Error> {
         let result = self.chain.query_txs(request);
         reply_to.send(result).map_err(Error::send)

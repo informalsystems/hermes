@@ -93,10 +93,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         ),
     });
 
-    output.emit(IbcEvent::SendPacket(SendPacket {
-        height: ctx.host_height(),
-        packet,
-    }));
+    output.emit(IbcEvent::SendPacket(SendPacket { packet }));
 
     Ok(output.with_result(result))
 }
@@ -114,7 +111,6 @@ mod tests {
     use crate::core::ics03_connection::connection::State as ConnectionState;
     use crate::core::ics03_connection::version::get_compatible_versions;
     use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
-    use crate::core::ics04_channel::context::ChannelReader;
     use crate::core::ics04_channel::handler::send_packet::send_packet;
     use crate::core::ics04_channel::packet::test_utils::get_dummy_raw_packet;
     use crate::core::ics04_channel::packet::Packet;
@@ -260,7 +256,6 @@ mod tests {
                     // TODO: The object in the output is a PacketResult what can we check on it?
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::SendPacket(_)));
-                        assert_eq!(e.height(), test.ctx.host_height());
                     }
                 }
                 Err(e) => {
