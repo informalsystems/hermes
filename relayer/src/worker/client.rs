@@ -15,7 +15,7 @@ use crate::{
 use super::WorkerCmd;
 
 const TRUSTING_PERIOD_DIVIDER: u32 = 100;
-const DEFAULT_REFRESH_INTERVAL: u64 = 5;
+const DEFAULT_REFRESH_INTERVAL_SECONDS: u64 = 5;
 
 pub fn spawn_refresh_client<ChainA: ChainHandle, ChainB: ChainHandle>(
     mut client: ForeignClient<ChainA, ChainB>,
@@ -29,7 +29,7 @@ pub fn spawn_refresh_client<ChainA: ChainHandle, ChainB: ChainHandle>(
     } else {
         // Compute the refresh interval as a fraction of the client's trusting period
         // If the trusting period or the client state is not retrieved, fallback to a default value.
-        let refresh_interval = match client.validated_client_state() {
+        let interval_pause = match client.validated_client_state() {
             Ok((state, _)) => {
                 if let Some(refresh_period) = state.refresh_period() {
                     refresh_period / TRUSTING_PERIOD_DIVIDER
