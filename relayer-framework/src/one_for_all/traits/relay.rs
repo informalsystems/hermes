@@ -1,12 +1,23 @@
 use async_trait::async_trait;
 
-use crate::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
+use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext, OfaIbcChain};
 use crate::one_for_all::traits::components::chain::OfaIbcChainComponents;
 use crate::one_for_all::traits::components::relay::OfaRelayComponents;
 use crate::one_for_all::traits::error::OfaError;
 use crate::one_for_all::traits::runtime::OfaRuntime;
+use crate::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::std_prelude::*;
 use crate::traits::core::Async;
+
+pub struct OfaRelayContext<Relay: OfaRelay> {
+    pub relay: Relay,
+}
+
+impl<Relay: OfaRelay> OfaRelayContext<Relay> {
+    pub fn new(relay: Relay) -> Self {
+        Self { relay }
+    }
+}
 
 #[async_trait]
 pub trait OfaRelay: Async + Clone {
@@ -50,15 +61,15 @@ pub trait OfaRelay: Async + Clone {
 
     fn packet_timeout_timestamp(packet: &Self::Packet) -> &<Self::DstChain as OfaChain>::Timestamp;
 
-    fn runtime(&self) -> &Self::Runtime;
+    fn runtime(&self) -> &OfaRuntimeContext<Self::Runtime>;
 
     fn src_client_id(&self) -> &<Self::SrcChain as OfaChain>::ClientId;
 
     fn dst_client_id(&self) -> &<Self::DstChain as OfaChain>::ClientId;
 
-    fn src_chain(&self) -> &Self::SrcChain;
+    fn src_chain(&self) -> &OfaChainContext<Self::SrcChain>;
 
-    fn dst_chain(&self) -> &Self::DstChain;
+    fn dst_chain(&self) -> &OfaChainContext<Self::DstChain>;
 
     async fn build_src_update_client_messages(
         &self,

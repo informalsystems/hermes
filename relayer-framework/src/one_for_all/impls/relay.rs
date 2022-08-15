@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 
-use crate::one_for_all::impls::chain::OfaChainContext;
-use crate::one_for_all::impls::error::OfaErrorContext;
 use crate::one_for_all::impls::message::OfaMessage;
-use crate::one_for_all::impls::runtime::OfaRuntimeContext;
-use crate::one_for_all::traits::chain::OfaChain;
+use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext};
+use crate::one_for_all::traits::error::OfaErrorContext;
 use crate::one_for_all::traits::relay::OfaRelay;
+use crate::one_for_all::traits::relay::OfaRelayContext;
+use crate::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::std_prelude::*;
 use crate::traits::contexts::error::HasError;
 use crate::traits::contexts::relay::RelayContext;
@@ -17,30 +17,6 @@ use crate::traits::messages::receive_packet::{
 use crate::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::traits::packet::IbcPacket;
 use crate::traits::target::{DestinationTarget, SourceTarget};
-
-pub struct OfaRelayContext<Relay: OfaRelay> {
-    pub relay: Relay,
-
-    pub src_chain: OfaChainContext<Relay::SrcChain>,
-    pub dst_chain: OfaChainContext<Relay::DstChain>,
-
-    pub runtime: OfaRuntimeContext<Relay::Runtime>,
-}
-
-impl<Relay: OfaRelay> OfaRelayContext<Relay> {
-    pub fn new(relay: Relay) -> Self {
-        let src_chain = relay.src_chain().clone();
-        let dst_chain = relay.dst_chain().clone();
-        let runtime = relay.runtime().clone();
-
-        Self {
-            relay,
-            src_chain: OfaChainContext::new(src_chain),
-            dst_chain: OfaChainContext::new(dst_chain),
-            runtime: OfaRuntimeContext::new(runtime),
-        }
-    }
-}
 
 pub struct OfaPacket<Relay: OfaRelay> {
     pub packet: Relay::Packet,
@@ -60,7 +36,7 @@ impl<Relay: OfaRelay> HasRuntime for OfaRelayContext<Relay> {
     type Runtime = OfaRuntimeContext<Relay::Runtime>;
 
     fn runtime(&self) -> &Self::Runtime {
-        &self.runtime
+        &self.relay.runtime()
     }
 }
 
@@ -104,11 +80,11 @@ impl<Relay: OfaRelay> RelayContext for OfaRelayContext<Relay> {
     type Packet = OfaPacket<Relay>;
 
     fn source_chain(&self) -> &Self::SrcChain {
-        &self.src_chain
+        &self.relay.src_chain()
     }
 
     fn destination_chain(&self) -> &Self::DstChain {
-        &self.dst_chain
+        &self.relay.dst_chain()
     }
 
     fn source_client_id(&self) -> &<Relay::SrcChain as OfaChain>::ClientId {

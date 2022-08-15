@@ -1,6 +1,6 @@
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer_framework::one_for_all::impls::chain::OfaChainContext;
-use ibc_relayer_framework::one_for_all::impls::relay::OfaRelayContext;
+use ibc_relayer_framework::one_for_all::traits::chain::OfaChainContext;
+use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
 use ibc_relayer_framework::traits::contexts::chain::{ChainContext, IbcChainContext};
 use ibc_relayer_framework::traits::contexts::relay::RelayContext;
 

@@ -1,5 +1,4 @@
-use crate::one_for_all::impls::relay::OfaRelayContext;
-use crate::one_for_all::traits::relay::OfaRelay;
+use crate::one_for_all::traits::relay::{OfaRelay, OfaRelayContext};
 use crate::traits::ibc_message_sender::{HasIbcMessageSender, IbcMessageSender};
 use crate::traits::messages::update_client::{CanUpdateClient, UpdateClientMessageBuilder};
 use crate::traits::packet_relayer::PacketRelayer;

@@ -1,6 +1,17 @@
 use crate::traits::core::Async;
 use core::fmt::Debug;
 
+#[derive(Debug)]
+pub struct OfaErrorContext<Error> {
+    pub error: Error,
+}
+
+impl<Error> OfaErrorContext<Error> {
+    pub fn new(error: Error) -> Self {
+        Self { error }
+    }
+}
+
 pub trait OfaError: Async + Debug {
     fn is_retryable(&self) -> bool;
 

@@ -2,9 +2,23 @@ use async_trait::async_trait;
 
 use crate::one_for_all::traits::components::chain::OfaChainComponents;
 use crate::one_for_all::traits::error::OfaError;
-use crate::one_for_all::traits::runtime::OfaRuntime;
+use crate::one_for_all::traits::runtime::{OfaRuntime, OfaRuntimeContext};
 use crate::std_prelude::*;
 use crate::traits::core::Async;
+
+#[derive(Clone)]
+pub struct OfaChainContext<Chain>
+where
+    Chain: OfaChain,
+{
+    pub chain: Chain,
+}
+
+impl<Chain: OfaChain> OfaChainContext<Chain> {
+    pub fn new(chain: Chain) -> Self {
+        Self { chain }
+    }
+}
 
 #[async_trait]
 pub trait OfaChain: Async + Clone {
@@ -53,7 +67,7 @@ pub trait OfaChain: Async + Clone {
 
     fn chain_status_timestamp(status: &Self::ChainStatus) -> &Self::Timestamp;
 
-    fn runtime(&self) -> &Self::Runtime;
+    fn runtime(&self) -> &OfaRuntimeContext<Self::Runtime>;
 
     async fn send_messages(
         &self,

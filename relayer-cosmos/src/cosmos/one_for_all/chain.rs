@@ -15,6 +15,7 @@ use ibc_relayer::chain::requests::{
 };
 use ibc_relayer_framework::one_for_all::impls::default::DefaultComponents;
 use ibc_relayer_framework::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
+use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
 use prost::Message as _;
 use tendermint::abci::responses::Event;
 
@@ -80,8 +81,8 @@ where
         &status.timestamp
     }
 
-    fn runtime(&self) -> &CosmosRuntime {
-        &CosmosRuntime
+    fn runtime(&self) -> &OfaRuntimeContext<CosmosRuntime> {
+        &self.runtime
     }
 
     async fn send_messages(

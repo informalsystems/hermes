@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
-use crate::one_for_all::impls::error::OfaErrorContext;
 use crate::one_for_all::impls::message::OfaMessage;
-use crate::one_for_all::impls::runtime::OfaRuntimeContext;
-use crate::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
+use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext, OfaIbcChain};
+use crate::one_for_all::traits::error::OfaErrorContext;
+use crate::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::std_prelude::*;
 use crate::traits::contexts::chain::{ChainContext, IbcChainContext};
 use crate::traits::contexts::error::HasError;
@@ -11,25 +11,6 @@ use crate::traits::contexts::ibc_event::HasIbcEvents;
 use crate::traits::contexts::runtime::HasRuntime;
 use crate::traits::queries::consensus_state::{ConsensusStateQuerier, HasConsensusState};
 use crate::traits::queries::received_packet::{CanQueryReceivedPacket, ReceivedPacketQuerier};
-
-pub struct OfaChainContext<Chain>
-where
-    Chain: OfaChain,
-{
-    pub chain: Chain,
-    pub runtime: OfaRuntimeContext<Chain::Runtime>,
-}
-
-impl<Chain: OfaChain> OfaChainContext<Chain> {
-    pub fn new(chain: Chain) -> Self {
-        let runtime = chain.runtime().clone();
-
-        Self {
-            chain,
-            runtime: OfaRuntimeContext::new(runtime),
-        }
-    }
-}
 
 impl<Chain: OfaChain> HasError for OfaChainContext<Chain> {
     type Error = OfaErrorContext<Chain::Error>;
@@ -39,7 +20,7 @@ impl<Chain: OfaChain> HasRuntime for OfaChainContext<Chain> {
     type Runtime = OfaRuntimeContext<Chain::Runtime>;
 
     fn runtime(&self) -> &Self::Runtime {
-        &self.runtime
+        &self.chain.runtime()
     }
 }
 

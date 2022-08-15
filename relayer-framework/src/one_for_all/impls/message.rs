@@ -1,5 +1,4 @@
-use crate::one_for_all::impls::chain::OfaChainContext;
-use crate::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
+use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext, OfaIbcChain};
 use crate::traits::message::{IbcMessage, Message};
 
 pub struct OfaMessage<Chain: OfaChain> {

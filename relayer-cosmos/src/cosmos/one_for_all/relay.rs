@@ -10,7 +10,9 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer_framework::one_for_all::impls::default::DefaultComponents;
 use ibc_relayer_framework::one_for_all::traits::chain::OfaChain;
+use ibc_relayer_framework::one_for_all::traits::chain::OfaChainContext;
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelay;
+use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
 
 use crate::cosmos::context::chain::CosmosChainContext;
 use crate::cosmos::context::relay::CosmosRelayContext;
@@ -69,8 +71,8 @@ where
         &packet.timeout_timestamp
     }
 
-    fn runtime(&self) -> &Self::Runtime {
-        &CosmosRuntime
+    fn runtime(&self) -> &OfaRuntimeContext<CosmosRuntime> {
+        &self.runtime
     }
 
     fn src_client_id(&self) -> &<Self::SrcChain as OfaChain>::ClientId {
@@ -81,11 +83,11 @@ where
         &self.src_to_dst_client.id
     }
 
-    fn src_chain(&self) -> &Self::SrcChain {
+    fn src_chain(&self) -> &OfaChainContext<Self::SrcChain> {
         &self.src_handle
     }
 
-    fn dst_chain(&self) -> &Self::DstChain {
+    fn dst_chain(&self) -> &OfaChainContext<Self::DstChain> {
         &self.dst_handle
     }
 
@@ -110,6 +112,7 @@ where
     ) -> Result<<Self::DstChain as OfaChain>::Message, Self::Error> {
         let proofs = self
             .src_handle
+            .chain
             .handle
             .build_packet_proofs(
                 PacketMsgType::Recv,
@@ -137,6 +140,7 @@ where
     ) -> Result<<Self::SrcChain as OfaChain>::Message, Self::Error> {
         let proofs = self
             .dst_handle
+            .chain
             .handle
             .build_packet_proofs(
                 PacketMsgType::Ack,

@@ -1,8 +1,7 @@
 use async_trait::async_trait;
 
-use crate::one_for_all::impls::chain::OfaChainContext;
-use crate::one_for_all::impls::error::OfaErrorContext;
-use crate::one_for_all::traits::chain::OfaChain;
+use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext};
+use crate::one_for_all::traits::error::OfaErrorContext;
 use crate::std_prelude::*;
 use crate::traits::queries::status::{ChainStatus, ChainStatusContext, ChainStatusQuerier};
 
