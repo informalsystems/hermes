@@ -56,6 +56,10 @@ pub trait ClientState:
     /// Frozen height of the client
     fn frozen_height(&self) -> Option<Height>;
 
+    /// Check if the state is expired when `elapsed` time has passed since the latest consensus
+    /// state timestamp
+    fn expired(&self, elapsed: Duration) -> bool;
+
     /// Helper function to verify the upgrade client procedure.
     /// Resets all fields except the blockchain-specific ones,
     /// and updates the given fields.
@@ -65,6 +69,14 @@ pub trait ClientState:
         upgrade_options: &dyn UpgradeOptions,
         chain_id: ChainId,
     );
+
+    /// Convert into a boxed trait object
+    fn into_box(self) -> Box<dyn ClientState>
+    where
+        Self: Sized,
+    {
+        Box::new(self)
+    }
 }
 
 // Implements `Clone` for `Box<dyn ClientState>`
@@ -72,6 +84,19 @@ dyn_clone::clone_trait_object!(ClientState);
 
 // Implements `serde::Serialize` for all types that have ClientState as supertrait
 erased_serde::serialize_trait_object!(ClientState);
+
+impl PartialEq for dyn ClientState {
+    fn eq(&self, other: &Self) -> bool {
+        self.eq_client_state(other)
+    }
+}
+
+// see https://github.com/rust-lang/rust/issues/31740
+impl PartialEq<&Self> for Box<dyn ClientState> {
+    fn eq(&self, other: &&Self) -> bool {
+        self.eq_client_state(other.as_ref())
+    }
+}
 
 pub fn downcast_client_state<CS: ClientState>(h: &dyn ClientState) -> Option<&CS> {
     h.as_any().downcast_ref::<CS>()
@@ -87,8 +112,8 @@ mod sealed {
     }
 
     impl<CS> ErasedPartialEqClientState for CS
-        where
-            CS: ClientState + PartialEq,
+    where
+        CS: ClientState + PartialEq,
     {
         fn eq_client_state(&self, other: &dyn ClientState) -> bool {
             other
@@ -171,15 +196,6 @@ impl AnyClientState {
 
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(mock_state) => mock_state.refresh_time(),
-        }
-    }
-
-    pub fn expired(&self, elapsed_since_latest: Duration) -> bool {
-        match self {
-            AnyClientState::Tendermint(tm_state) => tm_state.expired(elapsed_since_latest),
-
-            #[cfg(any(test, feature = "mocks"))]
-            AnyClientState::Mock(mock_state) => mock_state.expired(elapsed_since_latest),
         }
     }
 }
@@ -272,6 +288,15 @@ impl ClientState for AnyClientState {
             AnyClientState::Mock(mock_state) => {
                 mock_state.upgrade(upgrade_height, upgrade_options, chain_id)
             }
+        }
+    }
+
+    fn expired(&self, elapsed_since_latest: Duration) -> bool {
+        match self {
+            AnyClientState::Tendermint(tm_state) => tm_state.expired(elapsed_since_latest),
+
+            #[cfg(any(test, feature = "mocks"))]
+            AnyClientState::Mock(mock_state) => mock_state.expired(elapsed_since_latest),
         }
     }
 }

@@ -3,7 +3,7 @@
 use crate::prelude::*;
 
 use crate::core::ics02_client::client_def::{AnyClient, ClientDef};
-use crate::core::ics02_client::client_state::AnyClientState;
+use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::context::ClientReader;
@@ -23,7 +23,7 @@ use crate::timestamp::Timestamp;
 pub struct Result {
     pub client_id: ClientId,
     pub client_type: ClientType,
-    pub client_state: AnyClientState,
+    pub client_state: Box<dyn ClientState>,
     pub consensus_state: Box<dyn ConsensusState>,
     pub processed_time: Timestamp,
     pub processed_height: Height,
@@ -43,6 +43,9 @@ pub fn process(
 
     // Construct this client's identifier
     let id_counter = ctx.client_counter()?;
+
+    let client_state = ctx.decode_client_state(client_state)?;
+
     let client_type = client_state.client_type();
 
     let client_id = ClientId::new(client_type, id_counter).map_err(|e| {

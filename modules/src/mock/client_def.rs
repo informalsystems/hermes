@@ -1,7 +1,8 @@
+use dyn_clone::clone_box;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
-use crate::core::ics02_client::client_def::ClientDef;
+use crate::core::ics02_client::client_def::{ClientDef, UpdatedState};
 use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::context::ClientReaderLightClient;
@@ -28,8 +29,6 @@ use crate::Height;
 pub struct MockClient;
 
 impl ClientDef for MockClient {
-    type ClientState = MockClientState;
-
     fn initialise(&self, consensus_state: Any) -> Result<Box<dyn ConsensusState>, Error> {
         MockConsensusState::try_from(consensus_state).map(MockConsensusState::into_box)
     }
@@ -38,9 +37,9 @@ impl ClientDef for MockClient {
         &self,
         _ctx: &dyn ClientReaderLightClient,
         _client_id: ClientId,
-        client_state: Self::ClientState,
+        client_state: &dyn ClientState,
         header: Any,
-    ) -> Result<(Self::ClientState, Box<dyn ConsensusState>), Error> {
+    ) -> Result<UpdatedState, Error> {
         let header = MockHeader::try_from(header)?;
 
         if client_state.latest_height() >= header.height() {
@@ -50,15 +49,15 @@ impl ClientDef for MockClient {
             ));
         }
 
-        Ok((
-            MockClientState::new(header),
-            MockConsensusState::new(header).into_box(),
-        ))
+        Ok(UpdatedState {
+            client_state: MockClientState::new(header).into_box(),
+            consensus_state: MockConsensusState::new(header).into_box(),
+        })
     }
 
     fn verify_client_consensus_state(
         &self,
-        _client_state: &Self::ClientState,
+        _client_state: &dyn ClientState,
         _height: Height,
         prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
@@ -81,7 +80,7 @@ impl ClientDef for MockClient {
 
     fn verify_connection_state(
         &self,
-        _client_state: &Self::ClientState,
+        _client_state: &dyn ClientState,
         _height: Height,
         _prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
@@ -94,7 +93,7 @@ impl ClientDef for MockClient {
 
     fn verify_channel_state(
         &self,
-        _client_state: &Self::ClientState,
+        _client_state: &dyn ClientState,
         _height: Height,
         _prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
@@ -108,7 +107,7 @@ impl ClientDef for MockClient {
 
     fn verify_client_full_state(
         &self,
-        _client_state: &Self::ClientState,
+        _client_state: &dyn ClientState,
         _height: Height,
         _prefix: &CommitmentPrefix,
         _proof: &CommitmentProofBytes,
@@ -122,7 +121,7 @@ impl ClientDef for MockClient {
     fn verify_packet_data(
         &self,
         _ctx: &dyn ChannelReaderLightClient,
-        _client_state: &Self::ClientState,
+        _client_state: &dyn ClientState,
         _height: Height,
         _connection_end: &ConnectionEnd,
         _proof: &CommitmentProofBytes,
@@ -138,7 +137,7 @@ impl ClientDef for MockClient {
     fn verify_packet_acknowledgement(
         &self,
         _ctx: &dyn ChannelReaderLightClient,
-        _client_state: &Self::ClientState,
+        _client_state: &dyn ClientState,
         _height: Height,
         _connection_end: &ConnectionEnd,
         _proof: &CommitmentProofBytes,
@@ -154,7 +153,7 @@ impl ClientDef for MockClient {
     fn verify_next_sequence_recv(
         &self,
         _ctx: &dyn ChannelReaderLightClient,
-        _client_state: &Self::ClientState,
+        _client_state: &dyn ClientState,
         _height: Height,
         _connection_end: &ConnectionEnd,
         _proof: &CommitmentProofBytes,
@@ -169,7 +168,7 @@ impl ClientDef for MockClient {
     fn verify_packet_receipt_absence(
         &self,
         _ctx: &dyn ChannelReaderLightClient,
-        _client_state: &Self::ClientState,
+        _client_state: &dyn ClientState,
         _height: Height,
         _connection_end: &ConnectionEnd,
         _proof: &CommitmentProofBytes,
@@ -183,12 +182,15 @@ impl ClientDef for MockClient {
 
     fn verify_upgrade_and_update_state(
         &self,
-        client_state: &Self::ClientState,
+        client_state: &dyn ClientState,
         consensus_state: Any,
         _proof_upgrade_client: MerkleProof,
         _proof_upgrade_consensus_state: MerkleProof,
-    ) -> Result<(Self::ClientState, Box<dyn ConsensusState>), Error> {
-        let consensus_state = self.initialise(consensus_state)?;
-        Ok((*client_state, consensus_state))
+    ) -> Result<UpdatedState, Error> {
+        let consensus_state = MockConsensusState::try_from(consensus_state)?;
+        Ok(UpdatedState {
+            client_state: clone_box(client_state),
+            consensus_state: consensus_state.into_box(),
+        })
     }
 }

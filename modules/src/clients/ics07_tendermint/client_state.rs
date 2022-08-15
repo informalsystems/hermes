@@ -134,12 +134,6 @@ impl ClientState {
         Some(2 * self.trusting_period / 3)
     }
 
-    /// Check if the state is expired when `elapsed` time has passed since the latest consensus
-    /// state timestamp
-    pub fn expired(&self, elapsed: Duration) -> bool {
-        elapsed > self.trusting_period
-    }
-
     /// Helper method to produce a [`Options`] struct for use in
     /// Tendermint-specific light client verification.
     pub fn as_light_client_options(&self) -> Result<Options, Error> {
@@ -241,6 +235,10 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
         self.latest_height = upgrade_height;
         self.unbonding_period = upgrade_options.unbonding_period;
         self.chain_id = chain_id;
+    }
+
+    fn expired(&self, elapsed: Duration) -> bool {
+        elapsed > self.trusting_period
     }
 }
 

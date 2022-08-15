@@ -6,7 +6,6 @@ use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 use ibc_proto::protobuf::Protobuf;
 
-use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::error::Error;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
@@ -16,17 +15,13 @@ pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
 /// A type of message that triggers the creation of a new on-chain (IBC) client.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgCreateAnyClient {
-    pub client_state: AnyClientState,
+    pub client_state: Any,
     pub consensus_state: Any,
     pub signer: Signer,
 }
 
 impl MsgCreateAnyClient {
-    pub fn new(
-        client_state: AnyClientState,
-        consensus_state: Any,
-        signer: Signer,
-    ) -> Result<Self, Error> {
+    pub fn new(client_state: Any, consensus_state: Any, signer: Signer) -> Result<Self, Error> {
         Ok(MsgCreateAnyClient {
             client_state,
             consensus_state,
@@ -63,7 +58,7 @@ impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
             .ok_or_else(Error::missing_raw_client_state)?;
 
         MsgCreateAnyClient::new(
-            AnyClientState::try_from(raw_client_state)?,
+            raw_client_state,
             raw_consensus_state,
             raw.signer.parse().map_err(Error::signer)?,
         )
@@ -73,7 +68,7 @@ impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
 impl From<MsgCreateAnyClient> for RawMsgCreateClient {
     fn from(ics_msg: MsgCreateAnyClient) -> Self {
         RawMsgCreateClient {
-            client_state: Some(ics_msg.client_state.into()),
+            client_state: Some(ics_msg.client_state),
             consensus_state: Some(ics_msg.consensus_state),
             signer: ics_msg.signer.to_string(),
         }

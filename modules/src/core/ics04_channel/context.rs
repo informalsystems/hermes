@@ -1,10 +1,10 @@
 //! ICS4 (channel) context. The two traits `ChannelReader ` and `ChannelKeeper` define
 //! the interface that any host chain must implement to be able to process any `ChannelMsg`.
 //!
+use crate::core::ics02_client::client_state::ClientState;
 use core::time::Duration;
 use num_traits::float::FloatCore;
 
-use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
@@ -33,7 +33,7 @@ pub trait ChannelReader {
 
     /// Returns the ClientState for the given identifier `client_id`. Necessary dependency towards
     /// proof verification.
-    fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Error>;
+    fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Error>;
 
     fn client_consensus_state(
         &self,

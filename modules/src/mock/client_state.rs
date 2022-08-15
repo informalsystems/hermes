@@ -9,7 +9,7 @@ use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 
 use crate::core::ics02_client::client_state::{
-    AnyClientState, ClientState, UpgradeOptions, MOCK_CLIENT_STATE_TYPE_URL,
+    ClientState, UpgradeOptions, MOCK_CLIENT_STATE_TYPE_URL,
 };
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::consensus_state::ConsensusState;
@@ -27,7 +27,7 @@ pub struct MockClientRecord {
     pub client_type: ClientType,
 
     /// The client state (representing only the latest height at the moment).
-    pub client_state: Option<AnyClientState>,
+    pub client_state: Option<Box<dyn ClientState>>,
 
     /// Mapping of heights to consensus states for this client.
     pub consensus_states: HashMap<Height, Box<dyn ConsensusState>>,
@@ -55,10 +55,6 @@ impl MockClientState {
 
     pub fn refresh_time(&self) -> Option<Duration> {
         None
-    }
-
-    pub fn expired(&self, _elapsed: Duration) -> bool {
-        false
     }
 }
 
@@ -142,6 +138,10 @@ impl ClientState for MockClientState {
         _chain_id: ChainId,
     ) {
         todo!()
+    }
+
+    fn expired(&self, _elapsed: Duration) -> bool {
+        false
     }
 }
 

@@ -4,7 +4,9 @@
 
 use alloc::boxed::Box;
 
-use crate::core::ics02_client::client_state::AnyClientState;
+use ibc_proto::google::protobuf::Any;
+
+use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::error::Error;
@@ -16,7 +18,10 @@ use crate::Height;
 /// Defines the read-only part of ICS2 (client functions) context.
 pub trait ClientReader {
     fn client_type(&self, client_id: &ClientId) -> Result<ClientType, Error>;
-    fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Error>;
+
+    fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Error>;
+
+    fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, Error>;
 
     /// Retrieve the consensus state for the given client ID at the specified
     /// height.
@@ -129,12 +134,10 @@ pub trait ClientKeeper {
     fn store_client_result(&mut self, handler_res: ClientResult) -> Result<(), Error> {
         match handler_res {
             Create(res) => {
-                let client_id = res.client_id.clone();
-
-                self.store_client_type(client_id.clone(), res.client_type)?;
-                self.store_client_state(client_id.clone(), res.client_state.clone())?;
+                self.store_client_type(res.client_id.clone(), res.client_type)?;
+                self.store_client_state(res.client_id.clone(), res.client_state.clone())?;
                 self.store_consensus_state(
-                    client_id,
+                    res.client_id.clone(),
                     res.client_state.latest_height(),
                     res.consensus_state,
                 )?;
@@ -193,7 +196,7 @@ pub trait ClientKeeper {
     fn store_client_state(
         &mut self,
         client_id: ClientId,
-        client_state: AnyClientState,
+        client_state: Box<dyn ClientState>,
     ) -> Result<(), Error>;
 
     /// Called upon successful client creation and update

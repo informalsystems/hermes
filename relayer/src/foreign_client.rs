@@ -622,7 +622,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             })?;
 
         //TODO Get acct_prefix
-        let msg = MsgCreateAnyClient::new(client_state, consensus_state.into(), signer)
+        let msg = MsgCreateAnyClient::new(client_state.into(), consensus_state.into(), signer)
             .map_err(ForeignClientError::client)?;
 
         Ok(msg)

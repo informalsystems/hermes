@@ -2,7 +2,7 @@
 //! the interface that any host chain must implement to be able to process any `ConnectionMsg`.
 //! See "ADR 003: IBC protocol implementation" for more details.
 
-use crate::core::ics02_client::client_state::AnyClientState;
+use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics03_connection::error::Error;
@@ -19,7 +19,7 @@ pub trait ConnectionReader {
     fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, Error>;
 
     /// Returns the ClientState for the given identifier `client_id`.
-    fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Error>;
+    fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Error>;
 
     /// Returns the current height of the local chain.
     fn host_current_height(&self) -> Height;
