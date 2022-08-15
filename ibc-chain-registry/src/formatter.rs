@@ -74,13 +74,7 @@ impl UriFormatter for SimpleGrpcFormatter {
 
     fn parse_or_build_address(input: &str) -> Result<Self::OutputFormat, RegistryError> {
         // Remove the last character if it is a '/'
-        let input = if input.ends_with('/') {
-            let mut chars = input.chars();
-            chars.next_back();
-            chars.as_str()
-        } else {
-            input
-        };
+        let input = input.trim_end_matches('/');
 
         let uri = input
             .parse::<Uri>()
@@ -96,7 +90,6 @@ impl UriFormatter for SimpleGrpcFormatter {
                 .build()
                 .map_err(|e| RegistryError::grpc_endpoint_parse_error(input.to_string(), e));
         }
-
         Ok(uri)
     }
 }

@@ -6,4 +6,3 @@ pub mod fetchable;
 pub mod formatter;
 pub mod paths;
 pub mod querier;
-pub mod relayer_config;

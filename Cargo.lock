@@ -422,27 +422,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "chain-registry"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "flex-error",
- "futures",
- "http",
- "ibc",
- "ibc-proto",
- "ibc-relayer",
- "reqwest",
- "serde",
- "serde_json",
- "tendermint-light-client-verifier",
- "tendermint-rpc",
- "tokio",
- "toml",
- "url",
-]
-
-[[package]]
 name = "chrono"
 version = "0.4.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1487,6 +1466,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "ibc-chain-registry"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "flex-error",
+ "futures",
+ "http",
+ "ibc",
+ "ibc-proto",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tendermint-rpc",
+ "tokio",
+ "toml",
+ "url",
+]
+
+[[package]]
 name = "ibc-integration-test"
 version = "0.18.0"
 dependencies = [
@@ -1582,7 +1580,6 @@ version = "1.0.0-rc.2"
 dependencies = [
  "abscissa_core",
  "atty",
- "chain-registry",
  "clap",
  "clap_complete",
  "color-eyre",
@@ -1592,10 +1589,11 @@ dependencies = [
  "dirs-next",
  "eyre",
  "flex-error",
- "futures",
  "hex",
+ "http",
  "humantime",
  "ibc",
+ "ibc-chain-registry",
  "ibc-proto",
  "ibc-relayer",
  "ibc-relayer-rest",

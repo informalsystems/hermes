@@ -1,5 +1,5 @@
 //! Contains functions to generate a relayer config for a given chain
-use crate::{
+use ibc_chain_registry::{
     asset_list::AssetList,
     chain::ChainData,
     error::RegistryError,

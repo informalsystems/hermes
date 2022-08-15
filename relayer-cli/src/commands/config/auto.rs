@@ -1,8 +1,8 @@
+use crate::chain_registry::get_configs;
 use abscissa_core::{
     clap::Parser,
     {Command, Runnable},
 };
-use chain_registry::relayer_config::get_configs;
 
 use crate::conclude::Output;
 
