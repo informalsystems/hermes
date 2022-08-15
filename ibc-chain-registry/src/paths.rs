@@ -117,13 +117,13 @@ mod tests {
     }
 
     #[test]
-    fn test_paths_path() {
+    fn paths_path() {
         let path = IBCPath::path("test");
         assert_eq!(path, PathBuf::from("_IBC/test"));
     }
 
     #[test]
-    fn test_paths_deserialize() {
+    fn paths_deserialize() {
         use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
         use std::str::FromStr;
 

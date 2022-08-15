@@ -176,13 +176,13 @@ mod tests {
     }
 
     #[test]
-    fn test_chain_data_path() {
+    fn chain_data_path() {
         let path = ChainData::path("test");
         assert_eq!(path, PathBuf::from("test/chain.json"));
     }
 
     #[test]
-    fn test_chain_data_deserialize() {
+    fn chain_data_deserialize() {
         use ibc::core::ics24_host::identifier::ChainId;
         use std::str::FromStr;
         let json = r#"{

@@ -53,7 +53,7 @@ mod tests {
 
     #[tokio::test]
     #[ignore]
-    async fn test_fetch_chain_assets() -> Result<(), RegistryError> {
+    async fn fetch_chain_assets() -> Result<(), RegistryError> {
         let mut handles = Vec::with_capacity(ALL_CHAINS.len());
         for chain in ALL_CHAINS {
             handles.push(tokio::spawn(AssetList::fetch(chain.to_string())));
@@ -66,13 +66,13 @@ mod tests {
     }
 
     #[test]
-    fn test_asset_list_path() {
+    fn asset_list_path() {
         let path = AssetList::path("test");
         assert_eq!(path.to_str().unwrap(), "test/assetlist.json");
     }
 
     #[test]
-    fn test_asset_list_deserialize() {
+    fn asset_list_deserialize() {
         let json = r#"{
             "chain_name": "test",
             "assets": [

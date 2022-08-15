@@ -121,7 +121,7 @@ mod tests {
     // FormatterTest{input = "", expected = RegistryError::grpc_endpoint_parse_error("".to_string(), http::uri::InvalidUri{..})},
     #[test]
     // Verifies that the SimpleGrpcFormatter can parse a valid gRPC address.
-    fn valid_grpc_formatter_test() {
+    fn valid_grpc_formatter() {
         let valid_uri: &[FormatterTest<Uri>] = &[
             FormatterTest {
                 input: "test.com",
@@ -167,7 +167,7 @@ mod tests {
     }
 
     #[test]
-    fn invalid_grpc_formatter_test() {
+    fn invalid_grpc_formatter() {
         let valid_uri: &[FormatterTest<Uri>] = &[FormatterTest {
             input: "",
             expected: None,
