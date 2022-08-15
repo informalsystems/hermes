@@ -30,6 +30,7 @@ pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
 
 pub trait ClientState:
     AsAny
+    + sealed::ErasedPartialEqClientState
     + DynClone
     + ErasedSerialize
     + ErasedProtobuf<Any, Error = Error>
@@ -77,6 +78,26 @@ pub fn downcast_client_state<CS: ClientState>(h: &dyn ClientState) -> Option<&CS
 }
 
 pub trait UpgradeOptions: AsAny {}
+
+mod sealed {
+    use super::*;
+
+    pub trait ErasedPartialEqClientState {
+        fn eq_client_state(&self, other: &dyn ClientState) -> bool;
+    }
+
+    impl<CS> ErasedPartialEqClientState for CS
+        where
+            CS: ClientState + PartialEq,
+    {
+        fn eq_client_state(&self, other: &dyn ClientState) -> bool {
+            other
+                .as_any()
+                .downcast_ref::<CS>()
+                .map_or(false, |h| self == h)
+        }
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type")]
