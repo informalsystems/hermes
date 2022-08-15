@@ -17,7 +17,7 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
 
 use crate::chain::ChainType;
-use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
+use crate::config::types::{GasMultiplier, MaxMsgNum, MaxTxSize, Memo};
 use crate::keyring::Store;
 
 pub use error::Error;
@@ -335,7 +335,7 @@ pub struct ChainConfig {
 
     // This field is deprecated, use `gas_multiplier` instead
     pub gas_adjustment: Option<f64>,
-    pub gas_multiplier: Option<f64>,
+    pub gas_multiplier: Option<GasMultiplier>,
 
     pub fee_granter: Option<String>,
     #[serde(default)]

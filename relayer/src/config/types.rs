@@ -258,6 +258,79 @@ pub mod memo {
     }
 }
 
+pub use gas_multiplier::GasMultiplier;
+
+pub mod gas_multiplier {
+
+    flex_error::define_error! {
+        Error {
+            TooSmall
+                { value: f64 }
+                |e| {
+                    format_args!("`gas_multiplier` must be greater than or equal to {}, found {}",
+                        GasMultiplier::MIN_BOUND, e.value)
+                },
+        }
+    }
+
+    #[derive(Debug, Clone, Copy)]
+    pub struct GasMultiplier(f64);
+
+    impl GasMultiplier {
+        const DEFAULT: f64 = 1.1;
+        const MIN_BOUND: f64 = 1.0;
+
+        pub fn new(value: f64) -> Self {
+            Self(value)
+        }
+
+        pub fn to_f64(self) -> f64 {
+            self.0
+        }
+    }
+
+    impl Default for GasMultiplier {
+        fn default() -> Self {
+            Self(Self::DEFAULT)
+        }
+    }
+
+    use serde::de::Unexpected;
+    use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+
+    impl<'de> Deserialize<'de> for GasMultiplier {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let value = f64::deserialize(deserializer)?;
+
+            if value < 1.0 {
+                return Err(D::Error::invalid_value(
+                    Unexpected::Float(value),
+                    &format!("a f64 less than {}", Self::MIN_BOUND).as_str(),
+                ));
+            }
+            Ok(GasMultiplier::new(value))
+        }
+    }
+
+    impl Serialize for GasMultiplier {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            self.0.serialize(serializer)
+        }
+    }
+
+    impl From<GasMultiplier> for f64 {
+        fn from(m: GasMultiplier) -> Self {
+            m.0
+        }
+    }
+}
+
 #[cfg(test)]
 #[allow(dead_code)] // the fields of the structs defined below are never accessed
 mod tests {
@@ -322,5 +395,19 @@ mod tests {
         .to_string();
 
         assert!(err.contains("a string length of at most"));
+    }
+
+    #[test]
+    fn parse_invalid_gas_multiplier() {
+        #[derive(Debug, Deserialize)]
+        struct DummyConfig {
+            gas_multiplier: GasMultiplier,
+        }
+
+        let err = toml::from_str::<DummyConfig>("gas_multiplier = 0.9")
+            .unwrap_err()
+            .to_string();
+
+        assert!(err.contains("expected a f64 less than"));
     }
 }

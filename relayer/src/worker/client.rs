@@ -33,10 +33,10 @@ pub fn spawn_refresh_client<ChainA: ChainHandle, ChainB: ChainHandle>(
                 if let Some(refresh_period) = state.refresh_period() {
                     refresh_period / TRUSTING_PERIOD_DIVIDER
                 } else {
-                    Duration::from_secs(DEFAULT_REFRESH_INTERVAL)
+                    Duration::from_secs(DEFAULT_REFRESH_INTERVAL_SECONDS)
                 }
             }
-            Err(_) => Duration::from_secs(DEFAULT_REFRESH_INTERVAL),
+            Err(_) => Duration::from_secs(DEFAULT_REFRESH_INTERVAL_SECONDS),
         };
         Some(spawn_background_task(
             span!(
@@ -46,7 +46,7 @@ pub fn spawn_refresh_client<ChainA: ChainHandle, ChainB: ChainHandle>(
                 src_chain = %client.src_chain.id(),
                 dst_chain = %client.dst_chain.id(),
             ),
-            Some(refresh_interval),
+            Some(interval_pause),
             move || {
                 let _res = client.refresh().map_err(|e| {
                     if e.is_expired_or_frozen_error() {
