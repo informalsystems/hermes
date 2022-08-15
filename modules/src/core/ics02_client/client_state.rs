@@ -1,11 +1,16 @@
 use core::marker::{Send, Sync};
 use core::time::Duration;
 
+use dyn_clone::DynClone;
+use erased_serde::Serialize as ErasedSerialize;
 use ibc_proto::google::protobuf::Any;
-use ibc_proto::protobuf::Protobuf;
-use serde::{Deserialize, Serialize};
-
 use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
+use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
+#[cfg(any(test, feature = "mocks"))]
+use ibc_proto::ibc::mock::ClientState as RawMockClientState;
+use ibc_proto::protobuf::Protobuf;
+use ibc_proto::protobuf::Protobuf as ErasedProtobuf;
+use serde::{Deserialize, Serialize};
 
 use crate::clients::ics07_tendermint::client_state;
 use crate::clients::ics07_tendermint::client_state::ClientState as TmClientState;
@@ -23,7 +28,15 @@ use crate::Height;
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
 
-pub trait ClientState: core::fmt::Debug + Send + Sync {
+pub trait ClientState:
+    AsAny
+    + DynClone
+    + ErasedSerialize
+    + ErasedProtobuf<Any, Error = Error>
+    + core::fmt::Debug
+    + Send
+    + Sync
+{
     /// Return the chain identifier which this client is serving (i.e., the client is verifying
     /// consensus states from this chain).
     fn chain_id(&self) -> ChainId;
@@ -31,7 +44,7 @@ pub trait ClientState: core::fmt::Debug + Send + Sync {
     /// Type of client associated with this state (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 
-    /// Latest height of consensus state
+    /// Latest height of client state
     fn latest_height(&self) -> Height;
 
     /// Freeze status of the client
@@ -51,8 +64,16 @@ pub trait ClientState: core::fmt::Debug + Send + Sync {
         upgrade_options: &dyn UpgradeOptions,
         chain_id: ChainId,
     );
+}
 
-    fn encode_vec(&self) -> Result<Vec<u8>, Error>;
+// Implements `Clone` for `Box<dyn ClientState>`
+dyn_clone::clone_trait_object!(ClientState);
+
+// Implements `serde::Serialize` for all types that have ClientState as supertrait
+erased_serde::serialize_trait_object!(ClientState);
+
+pub fn downcast_client_state<CS: ClientState>(h: &dyn ClientState) -> Option<&CS> {
+    h.as_any().downcast_ref::<CS>()
 }
 
 pub trait UpgradeOptions: AsAny {}
@@ -152,13 +173,14 @@ impl TryFrom<Any> for AnyClientState {
             "" => Err(Error::empty_client_state_response()),
 
             TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
-                client_state::ClientState::decode_vec(&raw.value)
+                Protobuf::<RawClientState>::decode_vec(&raw.value)
                     .map_err(Error::decode_raw_client_state)?,
             )),
 
             #[cfg(any(test, feature = "mocks"))]
             MOCK_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Mock(
-                MockClientState::decode_vec(&raw.value).map_err(Error::decode_raw_client_state)?,
+                Protobuf::<RawMockClientState>::decode_vec(&raw.value)
+                    .map_err(Error::decode_raw_client_state)?,
             )),
 
             _ => Err(Error::unknown_client_state_type(raw.type_url)),
@@ -171,13 +193,13 @@ impl From<AnyClientState> for Any {
         match value {
             AnyClientState::Tendermint(value) => Any {
                 type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
-                value: ClientState::encode_vec(&value)
+                value: Protobuf::<RawClientState>::encode_vec(&value)
                     .expect("encoding to `Any` from `AnyClientState::Tendermint`"),
             },
             #[cfg(any(test, feature = "mocks"))]
             AnyClientState::Mock(value) => Any {
                 type_url: MOCK_CLIENT_STATE_TYPE_URL.to_string(),
-                value: ClientState::encode_vec(&value)
+                value: Protobuf::<RawMockClientState>::encode_vec(&value)
                     .expect("encoding to `Any` from `AnyClientState::Mock`"),
             },
         }
@@ -230,10 +252,6 @@ impl ClientState for AnyClientState {
                 mock_state.upgrade(upgrade_height, upgrade_options, chain_id)
             }
         }
-    }
-
-    fn encode_vec(&self) -> Result<Vec<u8>, Error> {
-        Protobuf::encode_vec(self).map_err(Error::invalid_any_client_state)
     }
 }
 

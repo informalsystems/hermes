@@ -3,11 +3,14 @@ use crate::prelude::*;
 use alloc::collections::btree_map::BTreeMap as HashMap;
 use core::time::Duration;
 
+use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::mock::ClientState as RawMockClientState;
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 
-use crate::core::ics02_client::client_state::{AnyClientState, ClientState, UpgradeOptions};
+use crate::core::ics02_client::client_state::{
+    AnyClientState, ClientState, UpgradeOptions, MOCK_CLIENT_STATE_TYPE_URL,
+};
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::error::Error;
@@ -38,8 +41,6 @@ pub struct MockClientState {
     pub frozen_height: Option<Height>,
 }
 
-impl Protobuf<RawMockClientState> for MockClientState {}
-
 impl MockClientState {
     pub fn new(header: MockHeader) -> Self {
         Self {
@@ -61,6 +62,8 @@ impl MockClientState {
     }
 }
 
+impl Protobuf<RawMockClientState> for MockClientState {}
+
 impl TryFrom<RawMockClientState> for MockClientState {
     type Error = Error;
 
@@ -76,6 +79,41 @@ impl From<MockClientState> for RawMockClientState {
                 height: Some(value.header.height().into()),
                 timestamp: value.header.timestamp.nanoseconds(),
             }),
+        }
+    }
+}
+
+impl Protobuf<Any> for MockClientState {}
+
+impl TryFrom<Any> for MockClientState {
+    type Error = Error;
+
+    fn try_from(raw: Any) -> Result<Self, Error> {
+        use bytes::Buf;
+        use core::ops::Deref;
+        use prost::Message;
+
+        fn decode_consensus_state<B: Buf>(buf: B) -> Result<MockClientState, Error> {
+            RawMockClientState::decode(buf)
+                .map_err(Error::decode)?
+                .try_into()
+        }
+
+        match raw.type_url.as_str() {
+            MOCK_CLIENT_STATE_TYPE_URL => {
+                decode_consensus_state(raw.value.deref()).map_err(Into::into)
+            }
+            _ => Err(Error::unknown_consensus_state_type(raw.type_url)),
+        }
+    }
+}
+
+impl From<MockClientState> for Any {
+    fn from(consensus_state: MockClientState) -> Self {
+        Any {
+            type_url: MOCK_CLIENT_STATE_TYPE_URL.to_string(),
+            value: Protobuf::<RawMockClientState>::encode_vec(&consensus_state)
+                .expect("encoding to `Any` from `MockClientState`"),
         }
     }
 }
@@ -104,10 +142,6 @@ impl ClientState for MockClientState {
         _chain_id: ChainId,
     ) {
         todo!()
-    }
-
-    fn encode_vec(&self) -> Result<Vec<u8>, Error> {
-        Protobuf::encode_vec(self).map_err(Error::invalid_any_client_state)
     }
 }
 

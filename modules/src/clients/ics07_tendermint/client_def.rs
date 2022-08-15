@@ -292,7 +292,8 @@ impl ClientDef for TendermintClient {
         client_state.verify_height(height)?;
 
         let path = ClientStatePath(client_id.clone());
-        let value = expected_client_state.encode_vec()?;
+        let value = Protobuf::<Any>::encode_vec(expected_client_state)
+            .map_err(Ics02Error::invalid_any_client_state)?;
         verify_membership(client_state, prefix, proof, root, path, value)
     }
 

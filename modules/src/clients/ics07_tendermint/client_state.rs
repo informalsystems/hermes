@@ -3,16 +3,18 @@ use crate::prelude::*;
 use core::convert::{TryFrom, TryInto};
 use core::time::Duration;
 
+use ibc_proto::google::protobuf::Any;
+use ibc_proto::ibc::core::client::v1::Height as RawHeight;
+use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 use tendermint_light_client_verifier::options::Options;
 
-use ibc_proto::ibc::core::client::v1::Height as RawHeight;
-use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
-
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
-use crate::core::ics02_client::client_state::UpgradeOptions as CoreUpgradeOptions;
+use crate::core::ics02_client::client_state::{
+    UpgradeOptions as CoreUpgradeOptions, TENDERMINT_CLIENT_STATE_TYPE_URL,
+};
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
@@ -40,8 +42,6 @@ pub struct AllowUpdate {
     pub after_expiry: bool,
     pub after_misbehaviour: bool,
 }
-
-impl Protobuf<RawClientState> for ClientState {}
 
 impl ClientState {
     #[allow(clippy::too_many_arguments)]
@@ -242,11 +242,9 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
         self.unbonding_period = upgrade_options.unbonding_period;
         self.chain_id = chain_id;
     }
-
-    fn encode_vec(&self) -> Result<Vec<u8>, Ics02Error> {
-        Protobuf::encode_vec(self).map_err(Ics02Error::invalid_any_client_state)
-    }
 }
+
+impl Protobuf<RawClientState> for ClientState {}
 
 impl TryFrom<RawClientState> for ClientState {
     type Error = Error;
@@ -321,6 +319,41 @@ impl From<ClientState> for RawClientState {
             upgrade_path: value.upgrade_path,
             allow_update_after_expiry: value.allow_update.after_expiry,
             allow_update_after_misbehaviour: value.allow_update.after_misbehaviour,
+        }
+    }
+}
+
+impl Protobuf<Any> for ClientState {}
+
+impl TryFrom<Any> for ClientState {
+    type Error = Ics02Error;
+
+    fn try_from(raw: Any) -> Result<Self, Self::Error> {
+        use bytes::Buf;
+        use core::ops::Deref;
+        use prost::Message;
+
+        fn decode_consensus_state<B: Buf>(buf: B) -> Result<ClientState, Error> {
+            RawClientState::decode(buf)
+                .map_err(Error::decode)?
+                .try_into()
+        }
+
+        match raw.type_url.as_str() {
+            TENDERMINT_CLIENT_STATE_TYPE_URL => {
+                decode_consensus_state(raw.value.deref()).map_err(Into::into)
+            }
+            _ => Err(Ics02Error::unknown_consensus_state_type(raw.type_url)),
+        }
+    }
+}
+
+impl From<ClientState> for Any {
+    fn from(consensus_state: ClientState) -> Self {
+        Any {
+            type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
+            value: Protobuf::<RawClientState>::encode_vec(&consensus_state)
+                .expect("encoding to `Any` from `TmClientState`"),
         }
     }
 }
