@@ -139,7 +139,7 @@ impl<Chain: ChainHandle> PendingTxs<Chain> {
                 all_events.append(&mut events)
             }
         }
-        Ok(Some(all_events))
+        Ok(Some(all_events.into_iter().map(|ev| ev.event).collect()))
     }
 
     /// Try and process one pending transaction within the given timeout duration if one

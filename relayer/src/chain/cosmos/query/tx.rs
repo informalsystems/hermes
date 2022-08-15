@@ -13,6 +13,7 @@ use crate::chain::requests::{
     QueryClientEventRequest, QueryHeight, QueryPacketEventDataRequest, QueryTxHash, QueryTxRequest,
 };
 use crate::error::Error;
+use crate::event::{ibc_event_try_from_abci_event, IbcEventWithHeight};
 
 /// This function queries transactions for events matching certain criteria.
 /// 1. Client Update request - returns a vector with at most one update client event
@@ -30,7 +31,7 @@ pub async fn query_txs(
     rpc_client: &HttpClient,
     rpc_address: &Url,
     request: QueryTxRequest,
-) -> Result<Vec<IbcEvent>, Error> {
+) -> Result<Vec<IbcEventWithHeight>, Error> {
     crate::time!("query_txs");
     crate::telemetry!(query, chain_id, "query_txs");
 
@@ -38,7 +39,7 @@ pub async fn query_txs(
         QueryTxRequest::Packet(request) => {
             crate::time!("query_txs: query packet events");
 
-            let mut result: Vec<IbcEvent> = vec![];
+            let mut result: Vec<IbcEventWithHeight> = vec![];
 
             for seq in &request.sequences {
                 // query first (and only) Tx that includes the event specified in the query request
@@ -144,7 +145,7 @@ fn update_client_from_tx_search_response(
     chain_id: &ChainId,
     request: &QueryClientEventRequest,
     response: TxResponse,
-) -> Result<Option<IbcEvent>, Error> {
+) -> Result<Option<IbcEventWithHeight>, Error> {
     let height = ICSHeight::new(chain_id.version(), u64::from(response.height))
         .map_err(|_| Error::invalid_height_no_source())?;
 
@@ -159,19 +160,16 @@ fn update_client_from_tx_search_response(
         .events
         .into_iter()
         .filter(|event| event.type_str == request.event_id.as_str())
-        .flat_map(|event| events::client::try_from_tx(&event))
+        .flat_map(|event| ibc_event_try_from_abci_event(&event).ok())
         .flat_map(|event| match event {
-            IbcEvent::UpdateClient(mut update) => {
-                update.common.height = height;
-                Some(update)
-            }
+            IbcEvent::UpdateClient(update) => Some(update),
             _ => None,
         })
         .find(|update| {
             update.common.client_id == request.client_id
                 && update.common.consensus_height == request.consensus_height
         })
-        .map(IbcEvent::UpdateClient))
+        .map(|update| IbcEventWithHeight::new(IbcEvent::UpdateClient(update), height)))
 }
 
 // Extract the packet events from the query_txs RPC response. For any given
@@ -186,7 +184,7 @@ fn packet_from_tx_search_response(
     request: &QueryPacketEventDataRequest,
     seq: Sequence,
     response: TxResponse,
-) -> Result<Option<IbcEvent>, Error> {
+) -> Result<Option<IbcEventWithHeight>, Error> {
     let height = ICSHeight::new(chain_id.version(), u64::from(response.height))
         .map_err(|_| Error::invalid_height_no_source())?;
 
@@ -200,7 +198,8 @@ fn packet_from_tx_search_response(
         .tx_result
         .events
         .into_iter()
-        .find_map(|ev| filter_matching_event(ev, request, seq)))
+        .find_map(|ev| filter_matching_event(ev, request, seq))
+        .map(|ibc_event| IbcEventWithHeight::new(ibc_event, height)))
 }
 
 fn filter_matching_event(
@@ -224,7 +223,7 @@ fn filter_matching_event(
         return None;
     }
 
-    let ibc_event = events::channel::try_from_tx(&event)?;
+    let ibc_event = ibc_event_try_from_abci_event(&event).ok()?;
     match ibc_event {
         IbcEvent::SendPacket(ref send_ev) if matches_packet(request, seq, &send_ev.packet) => {
             Some(ibc_event)
@@ -260,17 +259,20 @@ pub async fn query_tx_response(
 fn all_ibc_events_from_tx_search_response(
     chain_id: &ChainId,
     response: TxResponse,
-) -> Vec<IbcEvent> {
+) -> Vec<IbcEventWithHeight> {
     let height = ICSHeight::new(chain_id.version(), u64::from(response.height)).unwrap();
     let deliver_tx_result = response.tx_result;
 
     if deliver_tx_result.code.is_err() {
         // We can only return a single ChainError here because at this point
         // we have lost information about how many messages were in the transaction
-        vec![IbcEvent::ChainError(format!(
-            "deliver_tx for {} reports error: code={:?}, log={:?}",
-            response.hash, deliver_tx_result.code, deliver_tx_result.log
-        ))]
+        vec![IbcEventWithHeight::new(
+            IbcEvent::ChainError(format!(
+                "deliver_tx for {} reports error: code={:?}, log={:?}",
+                response.hash, deliver_tx_result.code, deliver_tx_result.log
+            )),
+            height,
+        )]
     } else {
         let result = deliver_tx_result
             .events
