@@ -465,7 +465,7 @@ define_error! {
                 gas_multiplier: f64,
             }
             |e| {
-                format!("semantic config validation failed for option `gas_mutliplier` on chain '{}', reason: gas multiplier ({}) is smaller than 1.1, this could trigger gas fee errors", e.chain_id, e.gas_multiplier)
+                format!("semantic config validation failed for option `gas_multiplier` of chain '{}', reason: gas multiplier ({}) is smaller than `1.1`, which could trigger gas fee errors in production", e.chain_id, e.gas_multiplier)
             },
 
         SdkModuleVersion
