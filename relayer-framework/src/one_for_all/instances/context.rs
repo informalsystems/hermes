@@ -1,6 +1,6 @@
 use crate::one_for_all::impls::chain::OfaChainContext;
 use crate::one_for_all::impls::relay::OfaRelayContext;
-use crate::one_for_all::traits::chain::OfaChain;
+use crate::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
 use crate::one_for_all::traits::relay::OfaRelay;
 use crate::traits::contexts::chain::{ChainContext, IbcChainContext};
 use crate::traits::contexts::relay::RelayContext;
@@ -13,10 +13,12 @@ pub fn chain_context<Chain: OfaChain>(chain: Chain) -> impl ChainContext {
     OfaChainContext::new(chain)
 }
 
-pub fn ibc_chain_context<Chain, Counterparty>(chain: Chain) -> impl IbcChainContext<Counterparty>
+pub fn ibc_chain_context<Chain, Counterparty>(
+    chain: Chain,
+) -> impl IbcChainContext<OfaChainContext<Counterparty>>
 where
-    Chain: OfaChain,
-    Counterparty: ChainContext<Height = Chain::CounterpartyHeight>,
+    Chain: OfaIbcChain<Counterparty>,
+    Counterparty: OfaChain,
 {
     OfaChainContext::new(chain)
 }

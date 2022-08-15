@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::one_for_all::impls::error::OfaErrorContext;
 use crate::one_for_all::impls::message::OfaMessage;
 use crate::one_for_all::impls::runtime::OfaRuntimeContext;
-use crate::one_for_all::traits::chain::OfaChain;
+use crate::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
 use crate::std_prelude::*;
 use crate::traits::contexts::chain::{ChainContext, IbcChainContext};
 use crate::traits::contexts::error::HasError;
@@ -53,10 +53,10 @@ impl<Chain: OfaChain> ChainContext for OfaChainContext<Chain> {
     type Event = Chain::Event;
 }
 
-impl<Chain, Counterparty> IbcChainContext<Counterparty> for OfaChainContext<Chain>
+impl<Chain, Counterparty> IbcChainContext<OfaChainContext<Counterparty>> for OfaChainContext<Chain>
 where
-    Chain: OfaChain,
-    Counterparty: ChainContext<Height = Chain::CounterpartyHeight>,
+    Chain: OfaIbcChain<Counterparty>,
+    Counterparty: OfaChain,
 {
     type ClientId = Chain::ClientId;
 
@@ -73,18 +73,19 @@ where
     type IbcEvent = Chain::Event;
 }
 
-impl<Chain, Counterparty> HasIbcEvents<Counterparty> for OfaChainContext<Chain>
+impl<Chain, Counterparty> HasIbcEvents<OfaChainContext<Counterparty>> for OfaChainContext<Chain>
 where
-    Chain: OfaChain,
-    Counterparty: ChainContext<Height = Chain::CounterpartyHeight>,
+    Chain: OfaIbcChain<Counterparty>,
+    Counterparty: OfaChain,
 {
     type WriteAcknowledgementEvent = Chain::WriteAcknowledgementEvent;
 }
 
-impl<Chain, Counterparty> HasConsensusState<Counterparty> for OfaChainContext<Chain>
+impl<Chain, Counterparty> HasConsensusState<OfaChainContext<Counterparty>>
+    for OfaChainContext<Chain>
 where
-    Chain: OfaChain,
-    Counterparty: ChainContext<Height = Chain::CounterpartyHeight>,
+    Chain: OfaIbcChain<Counterparty>,
+    Counterparty: OfaChain,
 {
     type ConsensusState = Chain::ConsensusState;
 }
@@ -92,21 +93,18 @@ where
 pub struct OfaConsensusStateQuerier;
 
 #[async_trait]
-impl<Chain, Counterparty> ConsensusStateQuerier<OfaChainContext<Chain>, Counterparty>
+impl<Chain, Counterparty>
+    ConsensusStateQuerier<OfaChainContext<Chain>, OfaChainContext<Counterparty>>
     for OfaConsensusStateQuerier
 where
-    Chain: OfaChain,
-    Counterparty: ChainContext<Height = Chain::CounterpartyHeight>,
-    Counterparty: HasConsensusState<
-        OfaChainContext<Chain>,
-        ConsensusState = Chain::CounterpartyConsensusState,
-    >,
+    Chain: OfaIbcChain<Counterparty>,
+    Counterparty: OfaIbcChain<Chain>,
 {
     async fn query_consensus_state(
         chain: &OfaChainContext<Chain>,
         client_id: &Chain::ClientId,
-        height: &Chain::CounterpartyHeight,
-    ) -> Result<Chain::CounterpartyConsensusState, OfaErrorContext<Chain::Error>> {
+        height: &Counterparty::Height,
+    ) -> Result<Counterparty::ConsensusState, OfaErrorContext<Chain::Error>> {
         let consensus_state = chain.chain.query_consensus_state(client_id, height).await?;
 
         Ok(consensus_state)
@@ -116,15 +114,12 @@ where
 pub struct OfaReceivedPacketQuerier;
 
 #[async_trait]
-impl<Chain, Counterparty> ReceivedPacketQuerier<OfaChainContext<Chain>, Counterparty>
+impl<Chain, Counterparty>
+    ReceivedPacketQuerier<OfaChainContext<Chain>, OfaChainContext<Counterparty>>
     for OfaReceivedPacketQuerier
 where
-    Chain: OfaChain,
-    Counterparty: IbcChainContext<
-        OfaChainContext<Chain>,
-        Height = Chain::CounterpartyHeight,
-        Sequence = Chain::CounterpartySequence,
-    >,
+    Chain: OfaIbcChain<Counterparty>,
+    Counterparty: OfaIbcChain<Chain>,
 {
     async fn is_packet_received(
         chain: &OfaChainContext<Chain>,
@@ -142,14 +137,11 @@ where
 }
 
 #[async_trait]
-impl<Chain, Counterparty> CanQueryReceivedPacket<Counterparty> for OfaChainContext<Chain>
+impl<Chain, Counterparty> CanQueryReceivedPacket<OfaChainContext<Counterparty>>
+    for OfaChainContext<Chain>
 where
-    Chain: OfaChain,
-    Counterparty: IbcChainContext<
-        Self,
-        Height = Chain::CounterpartyHeight,
-        Sequence = Chain::CounterpartySequence,
-    >,
+    Chain: OfaIbcChain<Counterparty>,
+    Counterparty: OfaIbcChain<Chain>,
 {
     type ReceivedPacketQuerier = OfaReceivedPacketQuerier;
 }

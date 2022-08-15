@@ -1,5 +1,5 @@
-use crate::one_for_all::traits::chain::OfaChain;
-use crate::traits::contexts::chain::ChainContext;
+use crate::one_for_all::impls::chain::OfaChainContext;
+use crate::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
 use crate::traits::message::{IbcMessage, Message};
 
 pub struct OfaMessage<Chain: OfaChain> {
@@ -26,10 +26,10 @@ impl<Chain: OfaChain> Message for OfaMessage<Chain> {
     }
 }
 
-impl<Chain, Counterparty> IbcMessage<Counterparty> for OfaMessage<Chain>
+impl<Chain, Counterparty> IbcMessage<OfaChainContext<Counterparty>> for OfaMessage<Chain>
 where
-    Chain: OfaChain,
-    Counterparty: ChainContext<Height = Chain::CounterpartyHeight>,
+    Chain: OfaIbcChain<Counterparty>,
+    Counterparty: OfaChain,
 {
     fn source_height(&self) -> Option<Counterparty::Height> {
         Chain::source_message_height(&self.message)

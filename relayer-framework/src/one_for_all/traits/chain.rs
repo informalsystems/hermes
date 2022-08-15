@@ -42,20 +42,12 @@ pub trait OfaChain: Async + Clone {
 
     type WriteAcknowledgementEvent: Async + TryFrom<Self::Event, Error = Self::Error>;
 
-    type CounterpartyHeight: Ord + Async;
-
-    type CounterpartySequence: Async;
-
-    type CounterpartyConsensusState: Async;
-
     fn encode_raw_message(
         message: &Self::Message,
         signer: &Self::Signer,
     ) -> Result<Self::RawMessage, Self::Error>;
 
     fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error>;
-
-    fn source_message_height(message: &Self::Message) -> Option<Self::CounterpartyHeight>;
 
     fn chain_status_height(status: &Self::ChainStatus) -> &Self::Height;
 
@@ -69,39 +61,25 @@ pub trait OfaChain: Async + Clone {
     ) -> Result<Vec<Vec<Self::Event>>, Self::Error>;
 
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error>;
+}
+
+#[async_trait]
+pub trait OfaIbcChain<Counterparty>: OfaChain
+where
+    Counterparty: OfaChain,
+{
+    fn source_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
 
     async fn query_consensus_state(
         &self,
         client_id: &Self::ClientId,
-        height: &Self::CounterpartyHeight,
-    ) -> Result<Self::CounterpartyConsensusState, Self::Error>;
+        height: &Counterparty::Height,
+    ) -> Result<Counterparty::ConsensusState, Self::Error>;
 
     async fn is_packet_received(
         &self,
         port_id: &Self::PortId,
         channel_id: &Self::ChannelId,
-        sequence: &Self::CounterpartySequence,
+        sequence: &Counterparty::Sequence,
     ) -> Result<bool, Self::Error>;
-}
-
-pub trait OfaIbcChain<Counterparty>:
-    OfaChain<
-    Height = Counterparty::CounterpartyHeight,
-    Sequence = Counterparty::CounterpartySequence,
-    ConsensusState = Counterparty::CounterpartyConsensusState,
->
-where
-    Counterparty: OfaChain,
-{
-}
-
-impl<Chain, Counterparty> OfaIbcChain<Counterparty> for Chain
-where
-    Chain: OfaChain<
-        Height = Counterparty::CounterpartyHeight,
-        Sequence = Counterparty::CounterpartySequence,
-        ConsensusState = Counterparty::CounterpartyConsensusState,
-    >,
-    Counterparty: OfaChain,
-{
 }

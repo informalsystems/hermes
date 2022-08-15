@@ -8,12 +8,12 @@ use ibc::timestamp::Timestamp;
 use ibc::Height;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::tx::simple_send_tx;
-use ibc_relayer::chain::endpoint::ChainStatus as CosmosChainStatus;
+use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     IncludeProof, QueryConsensusStateRequest, QueryHeight, QueryUnreceivedPacketsRequest,
 };
-use ibc_relayer_framework::one_for_all::traits::chain::OfaChain;
+use ibc_relayer_framework::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
 use prost::Message as _;
 use tendermint::abci::responses::Event;
 
@@ -60,47 +60,34 @@ where
 
     type ConsensusState = ConsensusState;
 
-    type ChainStatus = CosmosChainStatus;
+    type ChainStatus = ChainStatus;
 
-    type CounterpartySequence = Sequence;
-
-    type CounterpartyHeight = Height;
-
-    type CounterpartyConsensusState = ConsensusState;
-
-    fn encode_raw_message(
-        message: &Self::Message,
-        signer: &Self::Signer,
-    ) -> Result<Self::RawMessage, Self::Error> {
+    fn encode_raw_message(message: &CosmosIbcMessage, signer: &Signer) -> Result<Any, Error> {
         (message.to_protobuf_fn)(signer).map_err(Error::encode)
     }
 
-    fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error> {
+    fn estimate_message_len(message: &CosmosIbcMessage) -> Result<usize, Error> {
         let raw = (message.to_protobuf_fn)(&Signer::dummy()).map_err(Error::encode)?;
 
         Ok(raw.encoded_len())
     }
 
-    fn source_message_height(message: &Self::Message) -> Option<Self::CounterpartyHeight> {
-        message.source_height
-    }
-
-    fn chain_status_height(status: &Self::ChainStatus) -> &Self::Height {
+    fn chain_status_height(status: &ChainStatus) -> &Height {
         &status.height
     }
 
-    fn chain_status_timestamp(status: &Self::ChainStatus) -> &Self::Timestamp {
+    fn chain_status_timestamp(status: &ChainStatus) -> &Timestamp {
         &status.timestamp
     }
 
-    fn runtime(&self) -> &Self::Runtime {
+    fn runtime(&self) -> &CosmosRuntime {
         &CosmosRuntime
     }
 
     async fn send_messages(
         &self,
-        messages: Vec<Self::Message>,
-    ) -> Result<Vec<Vec<Self::Event>>, Self::Error> {
+        messages: Vec<CosmosIbcMessage>,
+    ) -> Result<Vec<Vec<Event>>, Error> {
         let signer = &self.signer;
 
         let raw_messages = messages
@@ -115,7 +102,7 @@ where
         Ok(events)
     }
 
-    async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error> {
+    async fn query_chain_status(&self) -> Result<ChainStatus, Self::Error> {
         let status = self
             .handle
             .query_application_status()
@@ -123,12 +110,24 @@ where
 
         Ok(status)
     }
+}
+
+#[async_trait]
+impl<Chain, Counterparty> OfaIbcChain<CosmosChainContext<Counterparty>>
+    for CosmosChainContext<Chain>
+where
+    Chain: ChainHandle,
+    Counterparty: ChainHandle,
+{
+    fn source_message_height(message: &CosmosIbcMessage) -> Option<Height> {
+        message.source_height
+    }
 
     async fn query_consensus_state(
         &self,
-        client_id: &Self::ClientId,
-        height: &Self::CounterpartyHeight,
-    ) -> Result<Self::CounterpartyConsensusState, Self::Error> {
+        client_id: &ClientId,
+        height: &Height,
+    ) -> Result<ConsensusState, Error> {
         let (any_consensus_state, _) = self
             .handle
             .query_consensus_state(
@@ -149,10 +148,10 @@ where
 
     async fn is_packet_received(
         &self,
-        port_id: &Self::PortId,
-        channel_id: &Self::ChannelId,
-        sequence: &Self::CounterpartySequence,
-    ) -> Result<bool, Self::Error> {
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: &Sequence,
+    ) -> Result<bool, Error> {
         let unreceived_packet = self
             .handle
             .query_unreceived_packets(QueryUnreceivedPacketsRequest {
