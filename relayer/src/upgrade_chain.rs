@@ -96,7 +96,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
 
     client_state.upgrade(
         upgrade_height.increment(),
-        upgrade_options,
+        &upgrade_options,
         opts.upgraded_chain_id.clone(),
     );
 

@@ -14,6 +14,7 @@ use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ChainId, ClientId};
+use crate::dynamic_typing::AsAny;
 #[cfg(any(test, feature = "mocks"))]
 use crate::mock::client_state::MockClientState;
 use crate::prelude::*;
@@ -23,9 +24,6 @@ pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint
 pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
 
 pub trait ClientState: core::fmt::Debug + Send + Sync {
-    /// Client-specific options for upgrading the client
-    type UpgradeOptions;
-
     /// Return the chain identifier which this client is serving (i.e., the client is verifying
     /// consensus states from this chain).
     fn chain_id(&self) -> ChainId;
@@ -50,12 +48,14 @@ pub trait ClientState: core::fmt::Debug + Send + Sync {
     fn upgrade(
         &mut self,
         upgrade_height: Height,
-        upgrade_options: Self::UpgradeOptions,
+        upgrade_options: &dyn UpgradeOptions,
         chain_id: ChainId,
     );
 
     fn encode_vec(&self) -> Result<Vec<u8>, Error>;
 }
+
+pub trait UpgradeOptions: AsAny {}
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -66,18 +66,7 @@ pub enum AnyUpgradeOptions {
     Mock(()),
 }
 
-impl AnyUpgradeOptions {
-    fn into_tendermint(self) -> client_state::UpgradeOptions {
-        match self {
-            Self::Tendermint(options) => options,
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(_) => {
-                panic!("cannot downcast AnyUpgradeOptions::Mock to Tendermint::UpgradeOptions")
-            }
-        }
-    }
-}
+impl UpgradeOptions for AnyUpgradeOptions {}
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -196,8 +185,6 @@ impl From<AnyClientState> for Any {
 }
 
 impl ClientState for AnyClientState {
-    type UpgradeOptions = AnyUpgradeOptions;
-
     fn chain_id(&self) -> ChainId {
         match self {
             AnyClientState::Tendermint(tm_state) => tm_state.chain_id(),
@@ -222,16 +209,26 @@ impl ClientState for AnyClientState {
     fn upgrade(
         &mut self,
         upgrade_height: Height,
-        upgrade_options: Self::UpgradeOptions,
+        upgrade_options: &dyn UpgradeOptions,
         chain_id: ChainId,
     ) {
+        let upgrade_options = upgrade_options
+            .as_any()
+            .downcast_ref::<AnyUpgradeOptions>()
+            .expect("UpgradeOptions not of type AnyUpgradeOptions");
         match self {
             AnyClientState::Tendermint(tm_state) => {
-                tm_state.upgrade(upgrade_height, upgrade_options.into_tendermint(), chain_id)
+                let tm_upgrade_opts = match upgrade_options {
+                    AnyUpgradeOptions::Tendermint(tm_upgrade_opts) => tm_upgrade_opts,
+                    _ => panic!("UpgradeOptions not of type AnyUpgradeOptions"),
+                };
+                tm_state.upgrade(upgrade_height, tm_upgrade_opts, chain_id)
             }
 
             #[cfg(any(test, feature = "mocks"))]
-            AnyClientState::Mock(mock_state) => mock_state.upgrade(upgrade_height, (), chain_id),
+            AnyClientState::Mock(mock_state) => {
+                mock_state.upgrade(upgrade_height, upgrade_options, chain_id)
+            }
         }
     }
 

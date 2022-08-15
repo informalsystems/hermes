@@ -279,7 +279,7 @@ impl ClientDef for TendermintClient {
         verify_membership(client_state, prefix, proof, root, path, value)
     }
 
-    fn verify_client_full_state<U>(
+    fn verify_client_full_state(
         &self,
         client_state: &Self::ClientState,
         height: Height,
@@ -287,7 +287,7 @@ impl ClientDef for TendermintClient {
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         client_id: &ClientId,
-        expected_client_state: &dyn ClientState<UpgradeOptions = U>,
+        expected_client_state: &dyn ClientState,
     ) -> Result<(), Ics02Error> {
         client_state.verify_height(height)?;
 

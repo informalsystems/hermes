@@ -7,7 +7,7 @@ use ibc_proto::ibc::mock::ClientState as RawMockClientState;
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 
-use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
+use crate::core::ics02_client::client_state::{AnyClientState, ClientState, UpgradeOptions};
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::error::Error;
@@ -81,8 +81,6 @@ impl From<MockClientState> for RawMockClientState {
 }
 
 impl ClientState for MockClientState {
-    type UpgradeOptions = ();
-
     fn chain_id(&self) -> ChainId {
         todo!()
     }
@@ -99,7 +97,12 @@ impl ClientState for MockClientState {
         self.frozen_height
     }
 
-    fn upgrade(&mut self, _upgrade_height: Height, _upgrade_options: (), _chain_id: ChainId) {
+    fn upgrade(
+        &mut self,
+        _upgrade_height: Height,
+        _upgrade_options: &dyn UpgradeOptions,
+        _chain_id: ChainId,
+    ) {
         todo!()
     }
 

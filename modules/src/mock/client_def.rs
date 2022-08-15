@@ -106,7 +106,7 @@ impl ClientDef for MockClient {
         Ok(())
     }
 
-    fn verify_client_full_state<U>(
+    fn verify_client_full_state(
         &self,
         _client_state: &Self::ClientState,
         _height: Height,
@@ -114,7 +114,7 @@ impl ClientDef for MockClient {
         _proof: &CommitmentProofBytes,
         _root: &CommitmentRoot,
         _client_id: &ClientId,
-        _expected_client_state: &dyn ClientState<UpgradeOptions = U>,
+        _expected_client_state: &dyn ClientState,
     ) -> Result<(), Error> {
         Ok(())
     }

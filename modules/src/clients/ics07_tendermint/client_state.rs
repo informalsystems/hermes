@@ -12,6 +12,7 @@ use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
+use crate::core::ics02_client::client_state::UpgradeOptions as CoreUpgradeOptions;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
@@ -198,9 +199,9 @@ pub struct UpgradeOptions {
     pub unbonding_period: Duration,
 }
 
-impl crate::core::ics02_client::client_state::ClientState for ClientState {
-    type UpgradeOptions = UpgradeOptions;
+impl CoreUpgradeOptions for UpgradeOptions {}
 
+impl crate::core::ics02_client::client_state::ClientState for ClientState {
     fn chain_id(&self) -> ChainId {
         self.chain_id.clone()
     }
@@ -220,9 +221,14 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
     fn upgrade(
         &mut self,
         upgrade_height: Height,
-        upgrade_options: UpgradeOptions,
+        upgrade_options: &dyn CoreUpgradeOptions,
         chain_id: ChainId,
     ) {
+        let upgrade_options = upgrade_options
+            .as_any()
+            .downcast_ref::<UpgradeOptions>()
+            .expect("UpgradeOptions not of type Tendermint");
+
         // Reset custom fields to zero values
         self.trusting_period = ZERO_DURATION;
         self.trust_level = TrustThreshold::ZERO;
