@@ -66,13 +66,13 @@ mod tests {
     }
 
     #[test]
-    fn test_path_asset_list() {
+    fn test_asset_list_path() {
         let path = AssetList::path("test");
         assert_eq!(path.to_str().unwrap(), "test/assetlist.json");
     }
 
     #[test]
-    fn test_deserialize_asset_list() {
+    fn test_asset_list_deserialize() {
         let json = r#"{
             "chain_name": "test",
             "assets": [

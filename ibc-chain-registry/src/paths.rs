@@ -100,6 +100,7 @@ mod tests {
     use crate::constants::ALL_PATHS;
 
     #[tokio::test]
+    #[ignore]
     async fn fetch_paths() -> Result<(), RegistryError> {
         let mut handles = Vec::with_capacity(ALL_PATHS.len());
 
@@ -113,5 +114,94 @@ mod tests {
         }
 
         Ok(())
+    }
+
+    #[test]
+    fn test_paths_path() {
+        let path = IBCPath::path("test");
+        assert_eq!(path, PathBuf::from("_IBC/test"));
+    }
+
+    #[test]
+    fn test_paths_deserialize() {
+        use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+        use std::str::FromStr;
+
+        let path = r#"{
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "chain-1": {
+                "chain-name": "chain-1",
+                "client-id": "tendermint-1",
+                "connection-id": "connection-1"
+            },
+            "chain-2": {
+                "chain-name": "chain-2",
+                "client-id": "tendermint-2",
+                "connection-id": "connection-2"
+            },
+            "channels": [
+                {
+                    "chain-1": {
+                        "channel-id": "channel-1",
+                        "port-id": "port-1"
+                    },
+                    "chain-2": {
+                        "channel-id": "channel-2",
+                        "port-id": "port-2"
+                    },
+                    "ordering": "ordering",
+                    "version": "version",
+                    "tags": {
+                        "dex": "dex",
+                        "preferred": true,
+                        "properties": "properties",
+                        "status": "status"
+                    }
+                }
+            ]
+        }"#;
+        let path: IBCPath = serde_json::from_str(path).unwrap();
+        assert_eq!(path.schema, "http://json-schema.org/draft-07/schema#");
+        assert_eq!(path.chain_1.chain_name, "chain-1");
+        assert_eq!(
+            path.chain_1.client_id,
+            ClientId::from_str("tendermint-1").unwrap()
+        );
+        assert_eq!(
+            path.chain_1.connection_id,
+            ConnectionId::from_str("connection-1").unwrap()
+        );
+        assert_eq!(path.chain_2.chain_name, "chain-2");
+        assert_eq!(
+            path.chain_2.client_id,
+            ClientId::from_str("tendermint-2").unwrap()
+        );
+        assert_eq!(
+            path.chain_2.connection_id,
+            ConnectionId::from_str("connection-2").unwrap()
+        );
+        assert_eq!(path.channels.len(), 1);
+        assert_eq!(
+            path.channels[0].chain_1.channel_id,
+            ChannelId::from_str("channel-1").unwrap()
+        );
+        assert_eq!(
+            path.channels[0].chain_1.port_id,
+            PortId::from_str("port-1").unwrap()
+        );
+        assert_eq!(
+            path.channels[0].chain_2.channel_id,
+            ChannelId::from_str("channel-2").unwrap()
+        );
+        assert_eq!(
+            path.channels[0].chain_2.port_id,
+            PortId::from_str("port-2").unwrap()
+        );
+        assert_eq!(path.channels[0].ordering, "ordering");
+        assert_eq!(path.channels[0].version, "version");
+        assert_eq!(path.channels[0].tags.dex, "dex");
+        assert_eq!(path.channels[0].tags.preferred, true);
+        assert_eq!(path.channels[0].tags.properties, "properties");
+        assert_eq!(path.channels[0].tags.status, "status");
     }
 }

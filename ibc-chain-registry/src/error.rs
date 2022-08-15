@@ -21,8 +21,9 @@ define_error! {
             |e| {format!("Error when joining task: {}", e.task)},
 
         JsonParseError
+            {chain_name : String}
             [TraceError <serde_json::Error>]
-            |_| {"Error when parsing json".to_string()},
+            |e| {format!("Error when parsing json for chain {}", e.chain_name)},
 
         NoAssetFound
             {chain_name : String}

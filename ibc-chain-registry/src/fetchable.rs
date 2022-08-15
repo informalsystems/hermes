@@ -48,7 +48,7 @@ where
             match response.text().await {
                 Ok(body) => match serde_json::from_str(&body) {
                     Ok(parsed) => Ok(parsed),
-                    Err(e) => Err(RegistryError::json_parse_error(e)),
+                    Err(e) => Err(RegistryError::json_parse_error(chain_name.to_string(), e)),
                 },
                 Err(e) => Err(RegistryError::request_error(url.to_string(), e)),
             }

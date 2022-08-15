@@ -24,7 +24,6 @@ pub struct ChainData {
     pub codebase: Codebase,
     pub peers: Peers,
     pub apis: Apis,
-    pub explorers: Vec<Explorer>,
     #[serde(rename = "logo_URIs")]
     pub logo_uris: LogoURIs,
     pub keywords: Vec<String>,
@@ -34,15 +33,6 @@ pub struct ChainData {
 pub struct LogoURIs {
     pub png: String,
     pub svg: String,
-}
-
-#[derive(Clone, Debug, Default, Deserialize, Serialize)]
-#[serde(default)]
-pub struct Explorer {
-    pub kind: String,
-    pub url: String,
-    pub tx_page: String,
-    pub account_page: String,
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -192,7 +182,7 @@ mod tests {
     }
 
     #[test]
-    fn test_deserialize_chain_data() {
+    fn test_chain_data_deserialize() {
         use ibc::core::ics24_host::identifier::ChainId;
         use std::str::FromStr;
         let json = r#"{
@@ -266,14 +256,6 @@ mod tests {
                     "provider": "test"
                 }]
             },
-            "explorers": [
-                {
-                    "kind": "test",
-                    "url": "test",
-                    "tx_page": "test",
-                    "account_page": "test"
-                }
-            ],
             "logo_URIs": {
                 "png": "test",
                 "svg": "test"
@@ -323,9 +305,5 @@ mod tests {
         assert_eq!(chain_data.apis.rest[0].provider, Some("test".to_string()));
         assert_eq!(chain_data.apis.grpc[0].address, "test");
         assert_eq!(chain_data.apis.grpc[0].provider, Some("test".to_string()));
-        assert_eq!(chain_data.explorers[0].kind, "test");
-        assert_eq!(chain_data.explorers[0].url, "test");
-        assert_eq!(chain_data.explorers[0].tx_page, "test");
-        assert_eq!(chain_data.explorers[0].account_page, "test");
     }
 }
