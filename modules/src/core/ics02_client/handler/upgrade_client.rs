@@ -36,7 +36,7 @@ pub fn process(
         return Err(Error::client_frozen(client_id));
     }
 
-    let upgrade_client_state = msg.client_state.clone();
+    let upgrade_client_state = ctx.decode_client_state(msg.client_state)?;
 
     if client_state.latest_height() >= upgrade_client_state.latest_height() {
         return Err(Error::low_upgrade_height(
@@ -53,7 +53,7 @@ pub fn process(
         client_state,
         consensus_state,
     } = client_def.verify_upgrade_and_update_state(
-        &upgrade_client_state,
+        upgrade_client_state.as_ref(),
         msg.consensus_state.clone(),
         msg.proof_upgrade_client.clone(),
         msg.proof_upgrade_consensus_state,
