@@ -11,7 +11,9 @@ use ibc::clients::ics07_tendermint::client_state::{
 };
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc::clients::ics07_tendermint::header::Header as TendermintHeader;
-use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
+use ibc::core::ics02_client::client_state::{
+    downcast_client_state, AnyClientState, IdentifiedAnyClientState,
+};
 use ibc::core::ics02_client::consensus_state::downcast_consensus_state;
 use ibc::core::ics02_client::events::UpdateClient;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
@@ -22,6 +24,7 @@ use ibc::core::ics23_commitment::merkle::MerkleProof;
 use ibc::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
 use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::events::IbcEvent;
+use ibc::mock::client_state::MockClientState;
 use ibc::mock::consensus_state::MockConsensusState;
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
@@ -235,6 +238,16 @@ impl ChainEndpoint for MockChain {
             .context
             .query_client_full_state(&request.client_id)
             .ok_or_else(Error::empty_response_value)?;
+
+        let client_state = if let Some(cs) =
+            downcast_client_state::<TendermintClientState>(client_state.as_ref())
+        {
+            AnyClientState::from(cs.clone())
+        } else if let Some(cs) = downcast_client_state::<MockClientState>(client_state.as_ref()) {
+            AnyClientState::from(*cs)
+        } else {
+            unreachable!()
+        };
 
         Ok((client_state, None))
     }

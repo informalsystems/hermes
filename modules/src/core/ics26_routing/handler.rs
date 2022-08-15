@@ -136,7 +136,6 @@ mod tests {
         context::test::deliver as ics20_deliver, msgs::transfer::test_util::get_dummy_msg_transfer,
         msgs::transfer::MsgTransfer, packet::PacketData, PrefixedCoin, MODULE_ID_STR,
     };
-    use crate::core::ics02_client::client_state::AnyClientState;
     use crate::core::ics02_client::msgs::{
         create_client::MsgCreateAnyClient, update_client::MsgUpdateClient,
         upgrade_client::MsgUpgradeAnyClient, ClientMsg,
@@ -231,7 +230,7 @@ mod tests {
         };
 
         let create_client_msg = MsgCreateAnyClient::new(
-            AnyClientState::from(MockClientState::new(MockHeader::new(start_client_height))),
+            MockClientState::new(MockHeader::new(start_client_height)).into(),
             MockConsensusState::new(MockHeader::new(start_client_height)).into(),
             default_signer.clone(),
         )
@@ -506,9 +505,7 @@ mod tests {
                 name: "Client upgrade successful".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeAnyClient::new(
                     client_id.clone(),
-                    AnyClientState::Mock(MockClientState::new(MockHeader::new(
-                        upgrade_client_height,
-                    ))),
+                    MockClientState::new(MockHeader::new(upgrade_client_height)).into(),
                     MockConsensusState::new(MockHeader::new(upgrade_client_height)).into(),
                     get_dummy_merkle_proof(),
                     get_dummy_merkle_proof(),
@@ -521,9 +518,7 @@ mod tests {
                 name: "Client upgrade un-successful".to_string(),
                 msg: Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeAnyClient::new(
                     client_id,
-                    AnyClientState::Mock(MockClientState::new(MockHeader::new(
-                        upgrade_client_height_second,
-                    ))),
+                    MockClientState::new(MockHeader::new(upgrade_client_height_second)).into(),
                     MockConsensusState::new(MockHeader::new(upgrade_client_height_second)).into(),
                     get_dummy_merkle_proof(),
                     get_dummy_merkle_proof(),

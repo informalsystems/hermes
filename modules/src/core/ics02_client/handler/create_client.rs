@@ -136,7 +136,10 @@ mod tests {
                     ClientResult::Create(create_result) => {
                         assert_eq!(create_result.client_type, ClientType::Mock);
                         assert_eq!(create_result.client_id, expected_client_id);
-                        assert_eq!(create_result.client_state, msg.client_state);
+                        assert_eq!(
+                            create_result.client_state.as_ref().clone_into(),
+                            msg.client_state
+                        );
                         assert_eq!(
                             create_result.consensus_state.as_ref().clone_into(),
                             msg.consensus_state
@@ -205,9 +208,15 @@ mod tests {
                     );
                     match result {
                         ClientResult::Create(create_res) => {
-                            assert_eq!(create_res.client_type, msg.client_state.client_type());
+                            assert_eq!(
+                                create_res.client_type,
+                                create_res.client_state.client_type()
+                            );
                             assert_eq!(create_res.client_id, expected_client_id);
-                            assert_eq!(create_res.client_state, msg.client_state);
+                            assert_eq!(
+                                create_res.client_state.as_ref().clone_into(),
+                                msg.client_state
+                            );
                             assert_eq!(
                                 create_res.consensus_state.as_ref().clone_into(),
                                 msg.consensus_state
@@ -273,7 +282,10 @@ mod tests {
                     ClientResult::Create(create_res) => {
                         assert_eq!(create_res.client_type, ClientType::Tendermint);
                         assert_eq!(create_res.client_id, expected_client_id);
-                        assert_eq!(create_res.client_state, msg.client_state);
+                        assert_eq!(
+                            create_res.client_state.as_ref().clone_into(),
+                            msg.client_state
+                        );
                         assert_eq!(
                             create_res.consensus_state.as_ref().clone_into(),
                             msg.consensus_state

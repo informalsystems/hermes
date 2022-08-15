@@ -132,7 +132,7 @@ mod tests {
                 match result {
                     Upgrade(upg_res) => {
                         assert_eq!(upg_res.client_id, client_id);
-                        assert_eq!(upg_res.client_state, msg.client_state)
+                        assert_eq!(upg_res.client_state.as_ref().clone_into(), msg.client_state)
                     }
                     _ => panic!("upgrade handler result has incorrect type"),
                 }
@@ -194,7 +194,12 @@ mod tests {
         match output {
             Err(Error(ErrorDetail::LowUpgradeHeight(e), _)) => {
                 assert_eq!(e.upgraded_height, Height::new(0, 42).unwrap());
-                assert_eq!(e.client_height, msg.client_state.latest_height());
+                assert_eq!(
+                    e.client_height,
+                    MockClientState::try_from(msg.client_state)
+                        .unwrap()
+                        .latest_height()
+                );
             }
             _ => {
                 panic!("expected LowUpgradeHeight error, instead got {:?}", output);
