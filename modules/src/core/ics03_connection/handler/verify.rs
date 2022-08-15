@@ -10,6 +10,7 @@ use crate::core::ics26_routing::context::ReaderContext;
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::Height;
 
+#[cfg(not(feature = "skip_host_consensus_verification"))]
 /// Entry point for verifying all proofs bundled in any ICS3 message.
 pub fn verify_proofs<HostFunctions: HostFunctionsProvider>(
     ctx: &dyn ReaderContext,
@@ -54,6 +55,43 @@ pub fn verify_proofs<HostFunctions: HostFunctionsProvider>(
     } else {
         Ok(())
     }
+}
+
+#[cfg(feature = "skip_host_consensus_verification")]
+/// Entry point for verifying all proofs bundled in any ICS3 message.
+pub fn verify_proofs<HostFunctions: HostFunctionsProvider>(
+    ctx: &dyn ReaderContext,
+    client_state: Option<AnyClientState>,
+    height: Height,
+    connection_end: &ConnectionEnd,
+    expected_conn: &ConnectionEnd,
+    proofs: &Proofs,
+) -> Result<(), Error> {
+    verify_connection_proof::<HostFunctions>(
+        ctx,
+        height,
+        connection_end,
+        expected_conn,
+        proofs.height(),
+        proofs.object_proof(),
+    )?;
+
+    // If the message includes a client state, then verify the proof for that state.
+    if let Some(expected_client_state) = client_state {
+        verify_client_proof::<HostFunctions>(
+            ctx,
+            height,
+            connection_end,
+            expected_client_state,
+            proofs.height(),
+            proofs
+                .client_proof()
+                .as_ref()
+                .ok_or_else(Error::null_client_proof)?,
+        )?;
+    }
+
+    Ok(())
 }
 
 /// Verifies the authenticity and semantic correctness of a commitment `proof`. The commitment

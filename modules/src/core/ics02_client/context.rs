@@ -109,6 +109,17 @@ pub trait ClientKeeper {
                                 res.client_state.latest_height(),
                                 cs_state,
                             )?;
+
+                            self.store_update_time(
+                                res.client_id.clone(),
+                                res.client_state.latest_height(),
+                                res.processed_time,
+                            )?;
+                            self.store_update_height(
+                                res.client_id,
+                                res.client_state.latest_height(),
+                                res.processed_height,
+                            )?;
                         }
                         ConsensusUpdateResult::Batch(cs_states) => {
                             for (height, cs_state) in cs_states {
@@ -117,21 +128,20 @@ pub trait ClientKeeper {
                                     height,
                                     cs_state,
                                 )?;
+                                self.store_update_time(
+                                    res.client_id.clone(),
+                                    height,
+                                    res.processed_time,
+                                )?;
+                                self.store_update_height(
+                                    res.client_id.clone(),
+                                    height,
+                                    res.processed_height,
+                                )?;
                             }
                         }
                     },
                 }
-
-                self.store_update_time(
-                    res.client_id.clone(),
-                    res.client_state.latest_height(),
-                    res.processed_time,
-                )?;
-                self.store_update_height(
-                    res.client_id,
-                    res.client_state.latest_height(),
-                    res.processed_height,
-                )?;
                 Ok(())
             }
             Upgrade(res) => {

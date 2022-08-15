@@ -39,7 +39,8 @@ clock = ["tendermint/clock", "time/std"]
 # This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
 # Depends on the `testgen` suite for generating Tendermint light blocks.
 mocks = ["tendermint-testgen", "clock", "std", "sha3", "ripemd", "ics11_beefy"]
-ics11_beefy = ["sp-io", "sp-core", "sp-std", "beefy-primitives", "sp-runtime", "sp-trie", "pallet-mmr-primitives", "beefy-client", "beefy-client-primitives"]
+ics11_beefy = ["sp-io", "sp-core", "sp-std", "beefy-primitives", "sp-runtime", "sp-trie", "pallet-mmr-primitives", "beefy-client", "beefy-client-primitives", "skip_host_consensus_verification"]
+skip_host_consensus_verification = []
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
