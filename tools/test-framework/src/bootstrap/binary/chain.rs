@@ -95,62 +95,6 @@ pub fn bootstrap_chains_with_full_nodes(
     Ok((relayer, chains))
 }
 
-pub fn override_connected_chains<ChainA, ChainB>(
-    chains: ConnectedChains<ChainA, ChainB>,
-    config_modifier: impl FnOnce(&mut Config),
-) -> Result<ConnectedChains<impl ChainHandle, impl ChainHandle>, Error>
-where
-    ChainA: ChainHandle,
-    ChainB: ChainHandle,
-{
-    let mut config = Config::default();
-
-    add_chain_config(&mut config, chains.node_a.value())?;
-    add_chain_config(&mut config, chains.node_b.value())?;
-
-    config_modifier(&mut config);
-
-    let registry = new_registry(config.clone());
-
-    // Pass in unique closure expressions `||{}` as the first argument so that
-    // the returned chains are considered different types by Rust.
-    // See [`spawn_chain_handle`] for more details.
-    let handle_a = spawn_chain_handle(|| {}, &registry, chains.node_a.value())?;
-    let handle_b = spawn_chain_handle(|| {}, &registry, chains.node_b.value())?;
-
-    let foreign_clients = create_foreign_client_pair(
-        &handle_a,
-        &handle_b,
-        chains.foreign_clients.client_id_a().value(),
-        chains.foreign_clients.client_id_b().value(),
-    )?;
-
-    let chains = ConnectedChains::new(
-        handle_a,
-        handle_b,
-        chains.node_a.retag(),
-        chains.node_b.retag(),
-        foreign_clients,
-    );
-
-    Ok(chains)
-}
-
-pub fn create_foreign_client_pair<ChainA: ChainHandle, ChainB: ChainHandle>(
-    chain_a: &ChainA,
-    chain_b: &ChainB,
-    client_id_a: &ClientId,
-    client_id_b: &ClientId,
-) -> Result<ForeignClientPair<ChainA, ChainB>, Error> {
-    let client_a_to_b =
-        ForeignClient::restore(client_id_b.clone(), chain_b.clone(), chain_a.clone());
-
-    let client_b_to_a =
-        ForeignClient::restore(client_id_a.clone(), chain_a.clone(), chain_b.clone());
-
-    Ok(ForeignClientPair::new(client_a_to_b, client_b_to_a))
-}
-
 /// Bootstraps two relayer chain handles with connected foreign clients.
 ///
 /// Returns a tuple consisting of the [`RelayerDriver`] and a
