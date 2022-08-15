@@ -7,6 +7,7 @@
 
 pub mod clear_packet;
 pub mod client_expiration;
+mod client_refresh;
 mod client_settings;
 pub mod connection_delay;
 pub mod denom_trace;

@@ -95,6 +95,80 @@ pub fn bootstrap_chains_with_full_nodes(
     Ok((relayer, chains))
 }
 
+pub fn bootstrap_chains_with_full_nodes_and_existing_clients(
+    test_config: &TestConfig,
+    node_a: FullNode,
+    node_b: FullNode,
+    options: BootstrapClientOptions,
+    config_modifier: impl FnOnce(&mut Config),
+    client_id_a: &ClientId,
+    client_id_b: &ClientId,
+) -> Result<
+    (
+        RelayerDriver,
+        ConnectedChains<impl ChainHandle, impl ChainHandle>,
+    ),
+    Error,
+> {
+    let mut config = Config::default();
+
+    add_chain_config(&mut config, &node_a)?;
+    add_chain_config(&mut config, &node_b)?;
+
+    config_modifier(&mut config);
+
+    let config_path = test_config.chain_store_dir.join("relayer-config.toml");
+
+    save_relayer_config(&config, &config_path)?;
+
+    let registry = new_registry(config.clone());
+
+    // Pass in unique closure expressions `||{}` as the first argument so that
+    // the returned chains are considered different types by Rust.
+    // See [`spawn_chain_handle`] for more details.
+    let handle_a = spawn_chain_handle(|| {}, &registry, &node_a)?;
+    let handle_b = spawn_chain_handle(|| {}, &registry, &node_b)?;
+
+    pad_client_ids(&handle_a, &handle_b, options.pad_client_id_a_to_b)?;
+    pad_client_ids(&handle_b, &handle_a, options.pad_client_id_b_to_a)?;
+
+    info!("Will get existing clients");
+    let foreign_clients = bootstrap_existing_foreign_client_pair(
+        handle_a.clone(),
+        handle_b.clone(),
+        client_id_a,
+        client_id_b,
+    )?;
+
+    let relayer = RelayerDriver {
+        config_path,
+        config,
+        registry,
+        hang_on_fail: test_config.hang_on_fail,
+    };
+
+    let chains = ConnectedChains::new(
+        handle_a,
+        handle_b,
+        MonoTagged::new(node_a),
+        MonoTagged::new(node_b),
+        foreign_clients,
+    );
+
+    Ok((relayer, chains))
+}
+
+pub fn bootstrap_existing_foreign_client_pair<ChainA: ChainHandle, ChainB: ChainHandle>(
+    chain_a: ChainA,
+    chain_b: ChainB,
+    client_id_a: &ClientId,
+    client_id_b: &ClientId,
+) -> Result<ForeignClientPair<ChainA, ChainB>, Error> {
+    let client_a_to_b = ForeignClient::find(chain_a.clone(), chain_b.clone(), client_id_a)?;
+    let client_b_to_a = ForeignClient::find(chain_b, chain_a, client_id_b)?;
+    Ok(ForeignClientPair::new(client_a_to_b, client_b_to_a))
+}
+
 /// Bootstraps two relayer chain handles with connected foreign clients.
 ///
 /// Returns a tuple consisting of the [`RelayerDriver`] and a
