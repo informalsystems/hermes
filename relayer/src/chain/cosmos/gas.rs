@@ -71,7 +71,6 @@ fn adjust_estimated_gas(
         gas_amount,
     }: AdjustGas,
 ) -> u64 {
-
     // No need to compute anything if the gas amount is zero
     if gas_amount == 0 {
         return 0;
