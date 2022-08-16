@@ -169,7 +169,6 @@ fn validate_trust_threshold(
     Ok(())
 }
 
-// TODO: Check if still useful as GasMultiplier type checks gas_multiplier during deserialization.
 fn validate_gas_settings(id: &ChainId, config: &ChainConfig) -> Result<(), Diagnostic<Error>> {
     // Check that the gas_adjustment option is not set
     if let Some(gas_adjustment) = config.gas_adjustment {
