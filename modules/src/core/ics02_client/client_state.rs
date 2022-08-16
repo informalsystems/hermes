@@ -30,7 +30,7 @@ pub trait ClientState:
     /// Type of client associated with this state (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 
-    /// Latest height of client state
+    /// Latest height the client was updated to
     fn latest_height(&self) -> Height;
 
     /// Freeze status of the client
