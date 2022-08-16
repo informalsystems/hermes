@@ -3,9 +3,7 @@ use core::convert::TryFrom;
 
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::core::ics02_client::client_state::{
-    AnyClientState, ClientState, IdentifiedAnyClientState,
-};
+use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics02_client::consensus_state::ConsensusState;
 use ibc::core::ics02_client::events::UpdateClient;
 use ibc::core::ics02_client::header::Header;
@@ -35,6 +33,7 @@ use crate::chain::requests::{
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
+use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
 use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};

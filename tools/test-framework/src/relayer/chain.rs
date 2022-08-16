@@ -21,7 +21,6 @@
 */
 
 use crossbeam_channel as channel;
-use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::core::ics02_client::events::UpdateClient;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
@@ -56,6 +55,7 @@ use ibc_relayer::chain::requests::{
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use ibc_relayer::chain::tracking::TrackedMsgs;
+use ibc_relayer::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc_relayer::config::ChainConfig;
 use ibc_relayer::connection::ConnectionMsgType;
 use ibc_relayer::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};

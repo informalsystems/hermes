@@ -7,9 +7,9 @@ use core::ops::Deref;
 use ibc::clients::ics07_tendermint::header::{
     decode_header, Header as TendermintHeader, TENDERMINT_HEADER_TYPE_URL,
 };
-use ibc::core::ics02_client::client_state::AnyClientState;
 use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::error::Error;
+use ibc::core::ics02_client::events::UpdateClient;
 use ibc::core::ics02_client::header::Header;
 #[cfg(test)]
 use ibc::mock::header::{MockHeader, MOCK_HEADER_TYPE_URL};
@@ -21,13 +21,12 @@ use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawTmHeader;
 use ibc_proto::ibc::mock::Header as RawMockHeader;
 use ibc_proto::protobuf::Protobuf as ErasedProtobuf;
 use serde::{Deserialize, Serialize};
+use subtle_encoding::hex;
 
 use crate::chain::endpoint::ChainEndpoint;
+use crate::client_state::AnyClientState;
 use crate::error;
 use crate::misbehaviour::MisbehaviourEvidence;
-use ibc::core::ics02_client::events::UpdateClient;
-
-use subtle_encoding::hex;
 
 /// Defines a light block from the point of view of the relayer.
 pub trait LightBlock<C: ChainEndpoint>: Send + Sync {

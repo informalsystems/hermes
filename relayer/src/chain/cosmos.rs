@@ -25,7 +25,6 @@ use tonic::{codegen::http::Uri, metadata::AsciiMetadataValue};
 use tracing::{error, span, warn, Level};
 
 use ibc::clients::ics07_tendermint::header::Header as TmHeader;
-use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::error::Error as ClientError;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
@@ -69,6 +68,7 @@ use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::gas::{default_gas_from_config, max_gas_from_config};
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
 use crate::chain::tracking::TrackedMsgs;
+use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;
 use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::denom::DenomTrace;
@@ -1732,16 +1732,13 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
 #[cfg(test)]
 mod tests {
     use ibc::{
-        core::{
-            ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState},
-            ics02_client::client_type::ClientType,
-            ics24_host::identifier::ClientId,
-        },
+        core::{ics02_client::client_type::ClientType, ics24_host::identifier::ClientId},
         mock::client_state::MockClientState,
         mock::header::MockHeader,
         Height,
     };
 
+    use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
     use crate::{chain::cosmos::client_id_suffix, config::GasPrice};
 
     use super::calculate_fee;

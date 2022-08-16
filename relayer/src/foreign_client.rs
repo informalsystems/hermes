@@ -13,7 +13,6 @@ use itertools::Itertools;
 use tracing::{debug, error, info, span, trace, warn, Level};
 
 use flex_error::define_error;
-use ibc::core::ics02_client::client_state::AnyClientState;
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics02_client::error::Error as ClientError;
 use ibc::core::ics02_client::events::UpdateClient;
@@ -38,6 +37,7 @@ use crate::chain::requests::{
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
+use crate::client_state::AnyClientState;
 use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::error::Error as RelayerError;
 use crate::event::IbcEventWithHeight;

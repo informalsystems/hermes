@@ -6,10 +6,7 @@ use serde::Serialize;
 
 use ibc::{
     core::{
-        ics02_client::{
-            client_state::{AnyClientState, IdentifiedAnyClientState},
-            events::UpdateClient,
-        },
+        ics02_client::events::UpdateClient,
         ics03_connection::{
             connection::{ConnectionEnd, IdentifiedConnectionEnd},
             version::Version,
@@ -29,6 +26,7 @@ use ibc::{
 
 use crate::{
     account::Balance,
+    client_state::{AnyClientState, IdentifiedAnyClientState},
     config::ChainConfig,
     connection::ConnectionMsgType,
     consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight},

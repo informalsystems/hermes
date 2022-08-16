@@ -1,14 +1,13 @@
 use tracing::{error, info};
 
 use ibc::core::{
-    ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
-    ics03_connection::connection::IdentifiedConnectionEnd,
-    ics04_channel::channel::State as ChannelState,
-    ics24_host::identifier::ChainId,
+    ics02_client::client_state::ClientState, ics03_connection::connection::IdentifiedConnectionEnd,
+    ics04_channel::channel::State as ChannelState, ics24_host::identifier::ChainId,
 };
 
 use crate::{
     chain::{counterparty::connection_state_on_destination, handle::ChainHandle},
+    client_state::IdentifiedAnyClientState,
     config::Config,
     object::{Channel, Client, Connection, Object, Packet, Wallet},
     registry::Registry,
