@@ -170,9 +170,8 @@ __Tx__
 * `config validate`
 
 ### Automatically generate a configuration file
-* `config auto --path <PATH> --chains <CHAIN_NAME_1 CHAIN_NAME2...>`
-    * Optional : `[--keys <KEY_CHAIN_1 KEY_CHAIN_2...>]` 
-    * Constraint : If `keys` is provided then `chains` and `keys` must have the same number of arguments.
+* `config auto [OPTIONS] --chains <CHAIN_NAME_1[:<KEY1>] CHAIN_NAME_2[:<KEY2>]>`
+    * Optional : `[--commit <COMMIT_HASH>]`
 
 ### Health check
 

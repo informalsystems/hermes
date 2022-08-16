@@ -1,7 +1,7 @@
 pub const PROTOCOL: &str = "https";
 pub const HOST: &str = "raw.githubusercontent.com";
 pub const REGISTRY_PATH: &str = "/cosmos/chain-registry";
-pub const REF: &str = "76e140f617bc4c13e29e21456f58fd347851bf72";
+pub const DEFAULT_REF: &str = "master";
 pub const ALL_CHAINS: &[&str] = &[
     "agoric",
     "aioz",

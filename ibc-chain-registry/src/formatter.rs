@@ -188,7 +188,7 @@ mod tests {
         let mut handles = Vec::with_capacity(ALL_CHAINS.len());
 
         for chain in ALL_CHAINS {
-            handles.push(tokio::spawn(ChainData::fetch(chain.to_string())));
+            handles.push(tokio::spawn(ChainData::fetch(chain.to_string(), None)));
         }
 
         for handle in handles {
@@ -211,7 +211,7 @@ mod tests {
         let mut handles = Vec::with_capacity(ALL_CHAINS.len());
 
         for chain in ALL_CHAINS {
-            handles.push(tokio::spawn(ChainData::fetch(chain.to_string())));
+            handles.push(tokio::spawn(ChainData::fetch(chain.to_string(), None)));
         }
 
         for handle in handles {

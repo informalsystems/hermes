@@ -155,15 +155,19 @@ where
 /// # Arguments
 ///
 /// * `chains` - A slice of strings that holds the name of the chains for which a `ChainConfig` will be generated. It must be sorted.
+/// * `commit` - An optional String representing the commit hash from which the chain configs will be generated. If it's None, the latest commit will be used.
 ///
 /// # Example
 ///
 /// ```
 /// use ibc_relayer_cli::chain_registry::get_configs;
 /// let chains = &vec!["cosmoshub".to_string(), "osmosis".to_string()];
-/// let configs = get_configs(chains);
+/// let configs = get_configs(chains, None);
 /// ```
-pub async fn get_configs(chains: &[String]) -> Result<Vec<ChainConfig>, RegistryError> {
+pub async fn get_configs(
+    chains: &[String],
+    commit: Option<String>,
+) -> Result<Vec<ChainConfig>, RegistryError> {
     let n = chains.len();
     if n == 0 {
         return Ok(Vec::new());
@@ -175,16 +179,25 @@ pub async fn get_configs(chains: &[String]) -> Result<Vec<ChainConfig>, Registry
 
     for i in 0..n {
         let chain = chains[i].to_string();
-        chain_data_handle.push(tokio::spawn(async move { ChainData::fetch(chain).await }));
+        let commit_clone = commit.clone();
+        chain_data_handle.push(tokio::spawn(async move {
+            ChainData::fetch(chain, commit_clone).await
+        }));
 
+        let commit_clone = commit.clone();
         let chain = chains[i].to_string();
-        asset_lists_handle.push(tokio::spawn(async move { AssetList::fetch(chain).await }));
+        asset_lists_handle.push(tokio::spawn(async move {
+            AssetList::fetch(chain, commit_clone).await
+        }));
 
         for chain_j in &chains[i + 1..] {
             let chain_i = &chains[i];
             let chain_j = chain_j;
             let resource = format!("{}-{}.json", chain_i, chain_j).to_string();
-            path_handles.push(tokio::spawn(async move { IBCPath::fetch(resource).await }));
+            let commit_clone = commit.clone();
+            path_handles.push(tokio::spawn(async move {
+                IBCPath::fetch(resource, commit_clone).await
+            }));
         }
     }
     // Extract packet filters from IBC paths
@@ -249,7 +262,7 @@ mod tests {
 
     // Helper function for configs without filter
     async fn should_have_no_filter(test_chains: &[String]) -> Result<(), RegistryError> {
-        let configs = get_configs(test_chains).await?;
+        let configs = get_configs(test_chains, None).await?;
         for config in configs {
             match config.packet_filter {
                 PacketFilter::AllowAll => {}
@@ -268,7 +281,7 @@ mod tests {
             "osmosis".to_string(),
         ]; // Must be sorted
 
-        let configs = get_configs(test_chains).await?;
+        let configs = get_configs(test_chains, None).await?;
 
         for config in configs {
             match config.packet_filter {
@@ -359,7 +372,7 @@ mod tests {
     #[tokio::test]
     async fn fetch_no_chain() -> Result<(), RegistryError> {
         let test_chains: &[String] = &[];
-        let configs = get_configs(test_chains).await?;
+        let configs = get_configs(test_chains, None).await?;
 
         assert_eq!(configs.len(), 0);
 

@@ -1,6 +1,6 @@
 //! Contains the trait required to fetch and deserialize data from the chain repository
 use crate::{
-    constants::{HOST, PROTOCOL, REF, REGISTRY_PATH},
+    constants::{DEFAULT_REF, HOST, PROTOCOL, REGISTRY_PATH},
     error::RegistryError,
 };
 use async_trait::async_trait;
@@ -21,7 +21,7 @@ where
     /// Fetches the fetchable resource.
     // The default implementation fetches config data from a chain registry. This
     // should be overridden if you're looking to fetch any other type of resource.
-    async fn fetch(chain_name: String) -> Result<Self, RegistryError> {
+    async fn fetch(chain_name: String, commit: Option<String>) -> Result<Self, RegistryError> {
         let path = Self::path(chain_name.as_str());
         let url = Builder::new()
             .scheme(PROTOCOL)
@@ -30,7 +30,7 @@ where
                 format!(
                     "{}/{}/{}",
                     REGISTRY_PATH,
-                    REF,
+                    commit.unwrap_or_else(|| DEFAULT_REF.to_string()),
                     path.clone()
                         .to_str()
                         .ok_or_else(|| RegistryError::path_error(path))?,

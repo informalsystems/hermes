@@ -105,7 +105,7 @@ mod tests {
         let mut handles = Vec::with_capacity(ALL_PATHS.len());
 
         for resource in ALL_PATHS {
-            handles.push(tokio::spawn(IBCPath::fetch(resource.to_string())));
+            handles.push(tokio::spawn(IBCPath::fetch(resource.to_string(), None)));
         }
 
         for handle in handles {
