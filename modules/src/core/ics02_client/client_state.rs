@@ -279,6 +279,7 @@ impl ClientState for AnyClientState {
             AnyClientState::Tendermint(tm_state) => {
                 let tm_upgrade_opts = match upgrade_options {
                     AnyUpgradeOptions::Tendermint(tm_upgrade_opts) => tm_upgrade_opts,
+                    #[cfg(any(test, feature = "mocks"))]
                     _ => panic!("UpgradeOptions not of type AnyUpgradeOptions"),
                 };
                 tm_state.upgrade(upgrade_height, tm_upgrade_opts, chain_id)
