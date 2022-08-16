@@ -516,7 +516,7 @@ correctly.
 
 ## Component Graph Visualization
 
-<a href="../images/daytime-greeter-graph.svg" target="_blank">
+<a href="https://app.excalidraw.com/l/4XqkU6POmGI/2PCintQJN3m" target="_blank">
     <div style="pointer-events: none;">
         <embed src="../images/daytime-greeter-graph.svg"
             width="100%"
