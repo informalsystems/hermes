@@ -23,7 +23,7 @@ pub enum ClearCmds {
     Packets(ClearPacketsCmd),
 }
 
-#[derive(Debug, Parser, Command, PartialEq)]
+#[derive(Debug, Parser, Command, PartialEq, Eq)]
 pub struct ClearPacketsCmd {
     #[clap(
         long = "chain",

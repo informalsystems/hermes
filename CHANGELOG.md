@@ -2,17 +2,28 @@
 
 ## v1.0.0-rc.2
 
-*August 3rd, 2022*
+*August 8th, 2022*
 
 This is the third release candidate for Hermes v1.0.0 🎉
+
+### General
+
+- Bumped crates to the following versions:
+  - `ibc-relayer-cli`: 1.0.0-rc.2
+  - `ibc-proto`: 0.20.0
+  - `ibc`: 0.18.0
+  - `ibc-relayer`: 0.18.0
+  - `ibc-telemetry`: 0.18.0
+  - `ibc-relayer-rest`: 0.18.0
+- Bump tendermint-rs dependencies to 0.23.9
 
 ### Hermes - [`ibc-relayer-cli`](relayer-cli) (v1.0.0-rc.2)
 
 - Release version 1.0.0-rc.2 of Hermes (`ibc-relayer-cli`)
 
-### IBC Proto - [`ibc-proto`](proto) (v0.19.1)
+### IBC Proto - [`ibc-proto`](proto) (v0.20.0)
 
-- Release version 0.19.2 of `ibc-proto`
+- Release version 0.20.0 of `ibc-proto`
 
 ### IBC Modules - [`ibc`](modules) (v0.18.0)
 
