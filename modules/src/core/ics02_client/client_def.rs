@@ -103,7 +103,7 @@ pub trait ClientDef {
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         client_id: &ClientId,
-        expected_client_state: &dyn ClientState,
+        expected_client_state: Any,
     ) -> Result<(), Error>;
 
     /// Verify a `proof` that a packet has been commited.
@@ -334,7 +334,7 @@ impl ClientDef for AnyClient {
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         client_id: &ClientId,
-        client_state_on_counterparty: &dyn ClientState,
+        client_state_on_counterparty: Any,
     ) -> Result<(), Error> {
         match self {
             Self::Tendermint(client) => client.verify_client_full_state(

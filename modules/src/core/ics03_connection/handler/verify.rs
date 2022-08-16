@@ -1,6 +1,7 @@
 //! ICS3 verification functions, common across all four handlers of ICS3.
 
-use crate::core::ics02_client::client_state::ClientState;
+use ibc_proto::google::protobuf::Any;
+
 use crate::core::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics03_connection::context::ConnectionReader;
@@ -12,7 +13,7 @@ use crate::Height;
 /// Entry point for verifying all proofs bundled in any ICS3 message.
 pub fn verify_proofs(
     ctx: &dyn ConnectionReader,
-    client_state: Option<&dyn ClientState>,
+    client_state: Option<Any>,
     height: Height,
     connection_end: &ConnectionEnd,
     expected_conn: &ConnectionEnd,
@@ -106,7 +107,7 @@ pub fn verify_client_proof(
     ctx: &dyn ConnectionReader,
     height: Height,
     connection_end: &ConnectionEnd,
-    expected_client_state: &dyn ClientState,
+    expected_client_state: Any,
     proof_height: Height,
     proof: &CommitmentProofBytes,
 ) -> Result<(), Error> {
