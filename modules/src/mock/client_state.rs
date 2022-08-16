@@ -89,7 +89,7 @@ impl TryFrom<Any> for MockClientState {
         use core::ops::Deref;
         use prost::Message;
 
-        fn decode_consensus_state<B: Buf>(buf: B) -> Result<MockClientState, Error> {
+        fn decode_client_state<B: Buf>(buf: B) -> Result<MockClientState, Error> {
             RawMockClientState::decode(buf)
                 .map_err(Error::decode)?
                 .try_into()
@@ -97,18 +97,18 @@ impl TryFrom<Any> for MockClientState {
 
         match raw.type_url.as_str() {
             MOCK_CLIENT_STATE_TYPE_URL => {
-                decode_consensus_state(raw.value.deref()).map_err(Into::into)
+                decode_client_state(raw.value.deref()).map_err(Into::into)
             }
-            _ => Err(Error::unknown_consensus_state_type(raw.type_url)),
+            _ => Err(Error::unknown_client_state_type(raw.type_url)),
         }
     }
 }
 
 impl From<MockClientState> for Any {
-    fn from(consensus_state: MockClientState) -> Self {
+    fn from(client_state: MockClientState) -> Self {
         Any {
             type_url: MOCK_CLIENT_STATE_TYPE_URL.to_string(),
-            value: Protobuf::<RawMockClientState>::encode_vec(&consensus_state)
+            value: Protobuf::<RawMockClientState>::encode_vec(&client_state)
                 .expect("encoding to `Any` from `MockClientState`"),
         }
     }

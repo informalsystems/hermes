@@ -331,7 +331,7 @@ impl TryFrom<Any> for ClientState {
         use core::ops::Deref;
         use prost::Message;
 
-        fn decode_consensus_state<B: Buf>(buf: B) -> Result<ClientState, Error> {
+        fn decode_client_state<B: Buf>(buf: B) -> Result<ClientState, Error> {
             RawClientState::decode(buf)
                 .map_err(Error::decode)?
                 .try_into()
@@ -339,18 +339,18 @@ impl TryFrom<Any> for ClientState {
 
         match raw.type_url.as_str() {
             TENDERMINT_CLIENT_STATE_TYPE_URL => {
-                decode_consensus_state(raw.value.deref()).map_err(Into::into)
+                decode_client_state(raw.value.deref()).map_err(Into::into)
             }
-            _ => Err(Ics02Error::unknown_consensus_state_type(raw.type_url)),
+            _ => Err(Ics02Error::unknown_client_state_type(raw.type_url)),
         }
     }
 }
 
 impl From<ClientState> for Any {
-    fn from(consensus_state: ClientState) -> Self {
+    fn from(client_state: ClientState) -> Self {
         Any {
             type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
-            value: Protobuf::<RawClientState>::encode_vec(&consensus_state)
+            value: Protobuf::<RawClientState>::encode_vec(&client_state)
                 .expect("encoding to `Any` from `TmClientState`"),
         }
     }
