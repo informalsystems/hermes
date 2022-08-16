@@ -711,7 +711,7 @@ fn process_batch<Chain: ChainHandle>(
 
         if let Object::Packet(ref _path) = object {
             // Update telemetry info
-            telemetry!(send_telemetry(&src, &dst, &events, _path));
+            telemetry!(send_telemetry(&src, &dst, &events_with_heights, _path));
         }
 
         let worker = workers.get_or_spawn(object, src, dst, config);
@@ -727,17 +727,17 @@ fn process_batch<Chain: ChainHandle>(
     Ok(())
 }
 
-fn send_telemetry<Src, Dst>(src: &Src, dst: &Dst, events: &[IbcEvent], path: &Packet)
+fn send_telemetry<Src, Dst>(src: &Src, dst: &Dst, events: &[IbcEventWithHeight], path: &Packet)
 where
     Src: ChainHandle,
     Dst: ChainHandle,
 {
     for e in events {
-        match e {
+        match e.event.clone() {
             IbcEvent::SendPacket(send_packet_ev) => {
                 ibc_telemetry::global().send_packet_events(
                     send_packet_ev.packet.sequence.into(),
-                    send_packet_ev.height().revision_height(),
+                    e.height.revision_height(),
                     &src.id(),
                     &path.src_channel_id,
                     &path.src_port_id,
@@ -747,7 +747,7 @@ where
             IbcEvent::WriteAcknowledgement(write_ack_ev) => {
                 ibc_telemetry::global().acknowledgement_events(
                     write_ack_ev.packet.sequence.into(),
-                    write_ack_ev.height().revision_height(),
+                    e.height.revision_height(),
                     &dst.id(),
                     &path.src_channel_id,
                     &path.src_port_id,

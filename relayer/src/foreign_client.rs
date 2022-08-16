@@ -675,7 +675,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         self.id = extract_client_id(&event_with_height.event)?.clone();
 
         info!(id = %self.id, "🍭 client was created successfully");
-        debug!(id = %self.id, ?event, "event emitted after creation");
+        debug!(id = %self.id, ?event_with_height.event, "event emitted after creation");
 
         Ok(())
     }

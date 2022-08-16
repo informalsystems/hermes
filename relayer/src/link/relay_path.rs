@@ -569,7 +569,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
                         (None, None)
                     } else {
-                        (self.build_ack_from_recv_event(event, event_with_height.height)?, None)
+                        (
+                            self.build_ack_from_recv_event(event, event_with_height.height)?,
+                            None,
+                        )
                     }
                 }
                 _ => (None, None),
@@ -1571,7 +1574,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                                     )
                                 })
                                 .push(TransitMessage {
-                                    event_with_height: IbcEvent::from(event_with_height.clone()),
+                                    event_with_height: event_with_height.clone(),
                                     msg: new_msg,
                                 });
                         } else {
