@@ -16,7 +16,8 @@ use sha2::Digest;
 use tracing::debug;
 
 use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
-use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
+use crate::clients::ics07_tendermint::client_state::ClientState as TmClientState;
+use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::context::{ClientKeeper, ClientReader};
@@ -1072,7 +1073,13 @@ impl ClientReader for MockContext {
     }
 
     fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, Ics02Error> {
-        AnyClientState::try_from(client_state).map(ClientState::into_box)
+        if let Ok(client_state) = TmClientState::try_from(client_state.clone()) {
+            Ok(client_state.into_box())
+        } else if let Ok(client_state) = MockClientState::try_from(client_state.clone()) {
+            Ok(client_state.into_box())
+        } else {
+            Err(Ics02Error::unknown_client_state_type(client_state.type_url))
+        }
     }
 
     fn consensus_state(
