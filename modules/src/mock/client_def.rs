@@ -113,7 +113,7 @@ impl ClientDef for MockClient {
         _proof: &CommitmentProofBytes,
         _root: &CommitmentRoot,
         _client_id: &ClientId,
-        _expected_client_state: &dyn ClientState,
+        _expected_client_state: Any,
     ) -> Result<(), Error> {
         Ok(())
     }

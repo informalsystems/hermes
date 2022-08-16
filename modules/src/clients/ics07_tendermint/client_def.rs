@@ -292,14 +292,13 @@ impl ClientDef for TendermintClient {
         proof: &CommitmentProofBytes,
         root: &CommitmentRoot,
         client_id: &ClientId,
-        expected_client_state: &dyn ClientState,
+        expected_client_state: Any,
     ) -> Result<(), Ics02Error> {
         let client_state = downcast_tm_client_state(client_state)?;
         client_state.verify_height(height)?;
 
         let path = ClientStatePath(client_id.clone());
-        let value = Protobuf::<Any>::encode_vec(expected_client_state)
-            .map_err(Ics02Error::invalid_any_client_state)?;
+        let value = expected_client_state.encode_to_vec();
         verify_membership(client_state, prefix, proof, root, path, value)
     }
 

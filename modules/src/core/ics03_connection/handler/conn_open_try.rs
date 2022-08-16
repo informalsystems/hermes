@@ -80,15 +80,10 @@ pub(crate) fn process(
         msg.delay_period,
     );
 
-    let client_state = msg
-        .client_state
-        .map(|cs| ctx.decode_client_state(cs))
-        .transpose()?;
-
     // 2. Pass the details to the verification function.
     verify_proofs(
         ctx,
-        client_state.as_deref(),
+        msg.client_state,
         msg.proofs.height(),
         &new_connection_end,
         &expected_conn,
