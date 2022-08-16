@@ -19,7 +19,7 @@ use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 
 /// Query client state command
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryClientStateCmd {
     #[clap(
         long = "chain",
@@ -75,7 +75,7 @@ impl Runnable for QueryClientStateCmd {
 }
 
 /// Query client consensus command
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryClientConsensusCmd {
     #[clap(
         long = "chain",
@@ -188,7 +188,7 @@ impl Runnable for QueryClientConsensusCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryClientHeaderCmd {
     #[clap(
         long = "chain",
@@ -276,7 +276,7 @@ impl Runnable for QueryClientHeaderCmd {
 }
 
 /// Query client connections command
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryClientConnectionsCmd {
     #[clap(
         long = "chain",

@@ -65,6 +65,7 @@ use ibc_relayer::config::ChainConfig;
 use ibc_relayer::connection::ConnectionMsgType;
 use ibc_relayer::denom::DenomTrace;
 use ibc_relayer::error::Error;
+use ibc_relayer::event::IbcEventWithHeight;
 use ibc_relayer::keyring::KeyEntry;
 
 use crate::types::tagged::*;
@@ -102,7 +103,7 @@ where
     fn send_messages_and_wait_commit(
         &self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<IbcEvent>, Error> {
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         self.value().send_messages_and_wait_commit(tracked_msgs)
     }
 
@@ -381,7 +382,7 @@ where
         self.value().query_unreceived_acknowledgements(request)
     }
 
-    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error> {
         self.value().query_txs(request)
     }
 

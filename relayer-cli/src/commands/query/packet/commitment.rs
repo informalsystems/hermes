@@ -20,7 +20,7 @@ struct PacketSeqs {
     seqs: Vec<u64>,
 }
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryPacketCommitmentCmd {
     #[clap(
         long = "chain",

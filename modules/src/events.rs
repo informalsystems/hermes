@@ -10,8 +10,9 @@ use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
 use crate::core::ics02_client::error as client_error;
-use crate::core::ics02_client::events as ClientEvents;
 use crate::core::ics02_client::events::NewBlock;
+use crate::core::ics02_client::events::{self as ClientEvents};
+use crate::core::ics03_connection::error as connection_error;
 use crate::core::ics03_connection::events as ConnectionEvents;
 use crate::core::ics03_connection::events::Attributes as ConnectionAttributes;
 use crate::core::ics04_channel::error as channel_error;
@@ -21,7 +22,6 @@ use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics26_routing::context::ModuleId;
 use crate::timestamp::ParseTimestampError;
-use crate::Height;
 
 define_error! {
     Error {
@@ -35,6 +35,10 @@ define_error! {
         Client
             [ client_error::Error ]
             | _ | { "ICS02 client error" },
+
+        Connection
+            [ connection_error::Error ]
+            | _ | { "connection error" },
 
         Channel
             [ channel_error::Error ]
@@ -66,6 +70,10 @@ define_error! {
         MalformedModuleEvent
             { event: ModuleEvent }
             | e | { format_args!("module event cannot use core event types: {:?}", e.event) },
+
+        UnsupportedAbciEvent
+            {event_type: String}
+            |e| { format_args!("Unable to parse abci event type '{}' into IbcEvent", e.event_type)}
     }
 }
 
@@ -247,18 +255,6 @@ pub enum IbcEvent {
     ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
 }
 
-/// For use in debug messages
-pub struct PrettyEvents<'a>(pub &'a [IbcEvent]);
-impl<'a> fmt::Display for PrettyEvents<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "events:")?;
-        for v in self.0 {
-            writeln!(f, "\t{}", v)?;
-        }
-        Ok(())
-    }
-}
-
 impl fmt::Display for IbcEvent {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
@@ -333,59 +329,6 @@ impl IbcEvent {
         match serde_json::to_string(self) {
             Ok(value) => value,
             Err(_) => format!("{:?}", self), // Fallback to debug printing
-        }
-    }
-
-    pub fn height(&self) -> Height {
-        match self {
-            IbcEvent::NewBlock(bl) => bl.height(),
-            IbcEvent::CreateClient(ev) => ev.height(),
-            IbcEvent::UpdateClient(ev) => ev.height(),
-            IbcEvent::UpgradeClient(ev) => ev.height(),
-            IbcEvent::ClientMisbehaviour(ev) => ev.height(),
-            IbcEvent::OpenInitConnection(ev) => ev.height(),
-            IbcEvent::OpenTryConnection(ev) => ev.height(),
-            IbcEvent::OpenAckConnection(ev) => ev.height(),
-            IbcEvent::OpenConfirmConnection(ev) => ev.height(),
-            IbcEvent::OpenInitChannel(ev) => ev.height(),
-            IbcEvent::OpenTryChannel(ev) => ev.height(),
-            IbcEvent::OpenAckChannel(ev) => ev.height(),
-            IbcEvent::OpenConfirmChannel(ev) => ev.height(),
-            IbcEvent::CloseInitChannel(ev) => ev.height(),
-            IbcEvent::CloseConfirmChannel(ev) => ev.height(),
-            IbcEvent::SendPacket(ev) => ev.height(),
-            IbcEvent::ReceivePacket(ev) => ev.height(),
-            IbcEvent::WriteAcknowledgement(ev) => ev.height(),
-            IbcEvent::AcknowledgePacket(ev) => ev.height(),
-            IbcEvent::TimeoutPacket(ev) => ev.height(),
-            IbcEvent::TimeoutOnClosePacket(ev) => ev.height(),
-            _ => unimplemented!(),
-        }
-    }
-
-    pub fn set_height(&mut self, height: Height) {
-        match self {
-            IbcEvent::NewBlock(ev) => ev.set_height(height),
-            IbcEvent::CreateClient(ev) => ev.set_height(height),
-            IbcEvent::UpdateClient(ev) => ev.set_height(height),
-            IbcEvent::UpgradeClient(ev) => ev.set_height(height),
-            IbcEvent::ClientMisbehaviour(ev) => ev.set_height(height),
-            IbcEvent::OpenInitConnection(ev) => ev.set_height(height),
-            IbcEvent::OpenTryConnection(ev) => ev.set_height(height),
-            IbcEvent::OpenAckConnection(ev) => ev.set_height(height),
-            IbcEvent::OpenConfirmConnection(ev) => ev.set_height(height),
-            IbcEvent::OpenInitChannel(ev) => ev.set_height(height),
-            IbcEvent::OpenTryChannel(ev) => ev.set_height(height),
-            IbcEvent::OpenAckChannel(ev) => ev.set_height(height),
-            IbcEvent::OpenConfirmChannel(ev) => ev.set_height(height),
-            IbcEvent::CloseInitChannel(ev) => ev.set_height(height),
-            IbcEvent::CloseConfirmChannel(ev) => ev.set_height(height),
-            IbcEvent::SendPacket(ev) => ev.set_height(height),
-            IbcEvent::ReceivePacket(ev) => ev.set_height(height),
-            IbcEvent::WriteAcknowledgement(ev) => ev.set_height(height),
-            IbcEvent::AcknowledgePacket(ev) => ev.set_height(height),
-            IbcEvent::TimeoutPacket(ev) => ev.set_height(height),
-            _ => unimplemented!(),
         }
     }
 

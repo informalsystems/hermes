@@ -43,6 +43,7 @@ use crate::chain::requests::{
 };
 use crate::chain::tracking::TrackedMsgs;
 use crate::error::Error as RelayerError;
+use crate::event::IbcEventWithHeight;
 use crate::telemetry;
 
 const MAX_MISBEHAVIOUR_CHECK_DURATION: Duration = Duration::from_secs(120);
@@ -532,7 +533,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 )
             })?;
 
-        Ok(res)
+        Ok(res
+            .into_iter()
+            .map(|ev_with_height| ev_with_height.event)
+            .collect())
     }
 
     /// Returns a handle to the chain hosting this client.
@@ -632,7 +636,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     pub fn build_create_client_and_send(
         &self,
         options: CreateOptions,
-    ) -> Result<IbcEvent, ForeignClientError> {
+    ) -> Result<IbcEventWithHeight, ForeignClientError> {
         let new_msg = self.build_create_client(options)?;
 
         let res = self
@@ -661,14 +665,14 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         fields(client = %self)
     )]
     fn create(&mut self) -> Result<(), ForeignClientError> {
-        let event = self
+        let event_with_height = self
             .build_create_client_and_send(CreateOptions::default())
             .map_err(|e| {
                 error!("failed to create client: {}", e);
                 e
             })?;
 
-        self.id = extract_client_id(&event)?.clone();
+        self.id = extract_client_id(&event_with_height.event)?.clone();
 
         info!(id = %self.id, "🍭 client was created successfully");
         debug!(id = %self.id, ?event, "event emitted after creation");
@@ -1210,7 +1214,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 )
             })?;
 
-        Ok(events)
+        Ok(events.into_iter().map(|ev| ev.event).collect())
     }
 
     /// Attempts to update a client using header from the latest height of its source chain.
@@ -1242,7 +1246,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         &self,
         consensus_height: Height,
     ) -> Result<Option<UpdateClient>, ForeignClientError> {
-        let mut events = vec![];
+        let mut events_with_heights = vec![];
         for i in 0..MAX_RETRIES {
             thread::sleep(Duration::from_millis(200));
 
@@ -1275,7 +1279,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                     continue;
                 }
                 Ok(result) => {
-                    events = result;
+                    events_with_heights = result;
 
                     // Should break to prevent retrying uselessly.
                     break;
@@ -1283,7 +1287,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             }
         }
 
-        if events.is_empty() {
+        if events_with_heights.is_empty() {
             return Ok(None);
         }
 
@@ -1291,11 +1295,12 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // same consensus height. This could happen when multiple client updates with same header
         // were submitted to chain. However this is not what it's observed during testing.
         // Regardless, just take the event from the first update.
-        let update = downcast!(events[0].clone() => IbcEvent::UpdateClient).ok_or_else(|| {
+        let event = &events_with_heights[0].event;
+        let update = downcast!(event.clone() => IbcEvent::UpdateClient).ok_or_else(|| {
             ForeignClientError::unexpected_event(
                 self.id().clone(),
                 self.dst_chain.id(),
-                events[0].to_json(),
+                event.to_json(),
             )
         })?;
 
@@ -1426,7 +1431,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     )]
     pub fn detect_misbehaviour(
         &self,
-        mut update: Option<UpdateClient>,
+        mut update: Option<&UpdateClient>,
     ) -> Result<Option<MisbehaviourEvidence>, ForeignClientError> {
         thread::sleep(Duration::from_millis(200));
 
@@ -1448,7 +1453,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 })?
         };
 
-        let consensus_state_heights = if let Some(ref event) = update {
+        let consensus_state_heights = if let Some(event) = update {
             vec![event.consensus_height()]
         } else {
             // Get the list of consensus state heights in descending order.
@@ -1468,7 +1473,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         let start_time = Instant::now();
         for target_height in consensus_state_heights {
             // Start with specified update event or the one for latest consensus height
-            let update_event = if let Some(ref event) = update {
+            let update_event = if let Some(event) = update {
                 // we are here only on the first iteration when called with `Some` update event
                 event.clone()
             } else if let Some(event) = self.fetch_update_client_event(target_height)? {
@@ -1629,7 +1634,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 )
             })?;
 
-        Ok(events)
+        Ok(events.into_iter().map(|ev| ev.event).collect())
     }
 
     #[instrument(
@@ -1640,10 +1645,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     )]
     pub fn detect_misbehaviour_and_submit_evidence(
         &self,
-        update_event: Option<UpdateClient>,
+        update_event: Option<&UpdateClient>,
     ) -> MisbehaviourResults {
         // check evidence of misbehaviour for all updates or one
-        let result = match self.detect_misbehaviour(update_event.clone()) {
+        let result = match self.detect_misbehaviour(update_event) {
             Err(e) => Err(e),
             Ok(None) => Ok(vec![]), // no evidence found
             Ok(Some(detected)) => {
@@ -1786,7 +1791,7 @@ mod test {
             "build_create_client_and_send failed (chain a) with error {:?}",
             res
         );
-        assert!(matches!(res.unwrap(), IbcEvent::CreateClient(_)));
+        assert!(matches!(res.unwrap().event, IbcEvent::CreateClient(_)));
 
         // Create the client on chain b
         let res = b_client.build_create_client_and_send(Default::default());
@@ -1795,7 +1800,7 @@ mod test {
             "build_create_client_and_send failed (chain b) with error {:?}",
             res
         );
-        assert!(matches!(res.unwrap(), IbcEvent::CreateClient(_)));
+        assert!(matches!(res.unwrap().event, IbcEvent::CreateClient(_)));
     }
 
     /// Basic test for the `build_update_client_and_send` & `build_create_client_and_send` methods.

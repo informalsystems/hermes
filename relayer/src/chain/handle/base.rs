@@ -32,6 +32,7 @@ use crate::{
     connection::ConnectionMsgType,
     denom::DenomTrace,
     error::Error,
+    event::IbcEventWithHeight,
     keyring::KeyEntry,
 };
 
@@ -98,7 +99,7 @@ impl ChainHandle for BaseChainHandle {
     fn send_messages_and_wait_commit(
         &self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<IbcEvent>, Error> {
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         self.send(|reply_to| ChainRequest::SendMessagesAndWaitCommit {
             tracked_msgs,
             reply_to,
@@ -448,7 +449,7 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryUnreceivedAcknowledgement { request, reply_to })
     }
 
-    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error> {
         self.send(|reply_to| ChainRequest::QueryPacketEventDataFromTxs { request, reply_to })
     }
 

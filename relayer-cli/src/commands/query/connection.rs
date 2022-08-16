@@ -16,7 +16,7 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryConnectionEndCmd {
     #[clap(
         long = "chain",
@@ -85,7 +85,7 @@ impl Runnable for QueryConnectionEndCmd {
 /// Command for querying the channel identifiers associated with a connection.
 /// Sample invocation:
 /// `cargo run --bin hermes -- query connection channels ibc-0 connection-0`
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryConnectionChannelsCmd {
     #[clap(
         long = "chain",

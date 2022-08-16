@@ -52,8 +52,8 @@ impl BinaryChannelTest for ErrorEventsTest {
 
         assert_eq!(events.len(), 4);
 
-        for event in events {
-            match event {
+        for event_with_height in events {
+            match event_with_height.event {
                 IbcEvent::ChainError(_) => {}
                 _ => {
                     panic!("expect all events to be error events");

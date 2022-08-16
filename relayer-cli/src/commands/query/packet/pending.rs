@@ -29,7 +29,7 @@ struct Summary {
 /// 2. queries both chains for all packet commitments/ sequences for the given port and channel
 ///    and its counterparty.
 /// 3. queries both chains for the unreceived sequences and acks out of the lists obtained in 2.
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryPendingPacketsCmd {
     #[clap(
         long = "chain",

@@ -16,7 +16,7 @@ use crate::error::Error;
 use crate::prelude::app_config;
 
 /// Query the events emitted by transaction
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryTxEventsCmd {
     #[clap(
         long = "chain",

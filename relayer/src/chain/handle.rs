@@ -36,7 +36,10 @@ use crate::{
     connection::ConnectionMsgType,
     denom::DenomTrace,
     error::Error,
-    event::monitor::{EventBatch, Result as MonitorResult},
+    event::{
+        monitor::{EventBatch, Result as MonitorResult},
+        IbcEventWithHeight,
+    },
     keyring::KeyEntry,
 };
 
@@ -111,7 +114,7 @@ pub enum ChainRequest {
 
     SendMessagesAndWaitCommit {
         tracked_msgs: TrackedMsgs,
-        reply_to: ReplyTo<Vec<IbcEvent>>,
+        reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     },
 
     SendMessagesAndWaitCheckTx {
@@ -328,7 +331,7 @@ pub enum ChainRequest {
 
     QueryPacketEventDataFromTxs {
         request: QueryTxRequest,
-        reply_to: ReplyTo<Vec<IbcEvent>>,
+        reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     },
 
     QueryPacketEventDataFromBlocks {
@@ -362,7 +365,7 @@ pub trait ChainHandle: Clone + Send + Sync + Debug + 'static {
     fn send_messages_and_wait_commit(
         &self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<IbcEvent>, Error>;
+    ) -> Result<Vec<IbcEventWithHeight>, Error>;
 
     /// Submit messages asynchronously.
     /// Does not block waiting on the chain to produce the
@@ -616,7 +619,7 @@ pub trait ChainHandle: Clone + Send + Sync + Debug + 'static {
         request: QueryUnreceivedAcksRequest,
     ) -> Result<Vec<Sequence>, Error>;
 
-    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error>;
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error>;
 
     fn query_blocks(
         &self,

@@ -13,7 +13,7 @@ use crate::error::Error;
 use crate::prelude::*;
 
 /// Query clients command
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryAllClientsCmd {
     #[clap(
         long = "host-chain",

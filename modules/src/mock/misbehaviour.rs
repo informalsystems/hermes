@@ -10,7 +10,7 @@ use crate::core::ics24_host::identifier::ClientId;
 use crate::mock::header::MockHeader;
 use crate::Height;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Misbehaviour {
     pub client_id: ClientId,
     pub header1: MockHeader,

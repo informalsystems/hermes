@@ -16,7 +16,7 @@ use crate::prelude::*;
 /// 1. queries the chain to get its counterparty, channel and port identifiers (needed in 2)
 /// 2. queries the chain for all packet commitments/ sequences for a given port and channel
 /// 3. queries the counterparty chain for the unacknowledged sequences out of the list obtained in 2.
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryPendingAcksCmd {
     #[clap(
         long = "chain",
