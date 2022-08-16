@@ -6,9 +6,7 @@ use crossbeam_channel as channel;
 use tendermint_testgen::light_block::TmLightBlock;
 use tokio::runtime::Runtime;
 
-use ibc::clients::ics07_tendermint::client_state::{
-    AllowUpdate, TmClientState as TendermintClientState,
-};
+use ibc::clients::ics07_tendermint::client_state::{AllowUpdate, TmClientState};
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc::clients::ics07_tendermint::header::Header as TendermintHeader;
 use ibc::core::ics02_client::client_state::downcast_client_state;

@@ -44,7 +44,7 @@ impl AnyUpgradeOptions {
 
 impl UpgradeOptions for AnyUpgradeOptions {}
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(tag = "type")]
 pub enum AnyClientState {
     Tendermint(TmClientState),
@@ -206,6 +206,139 @@ impl ClientState for AnyClientState {
             AnyClientState::Mock(mock_state) => mock_state.expired(elapsed_since_latest),
         }
     }
+
+    fn initialise(
+        &self,
+        _consensus_state: Any,
+    ) -> Result<Box<dyn ibc::core::ics02_client::consensus_state::ConsensusState>, Error> {
+        unimplemented!()
+    }
+
+    fn check_header_and_update_state(
+        &self,
+        _ctx: &dyn ibc::core::ics02_client::context::ClientReader,
+        _client_id: ClientId,
+        _header: Any,
+    ) -> Result<ibc::core::ics02_client::client_state::UpdatedState, Error> {
+        unimplemented!()
+    }
+
+    fn verify_upgrade_and_update_state(
+        &self,
+        _consensus_state: Any,
+        _proof_upgrade_client: ibc::core::ics23_commitment::merkle::MerkleProof,
+        _proof_upgrade_consensus_state: ibc::core::ics23_commitment::merkle::MerkleProof,
+    ) -> Result<ibc::core::ics02_client::client_state::UpdatedState, Error> {
+        unimplemented!()
+    }
+
+    fn verify_client_consensus_state(
+        &self,
+        _height: Height,
+        _prefix: &ibc::core::ics23_commitment::commitment::CommitmentPrefix,
+        _proof: &ibc::core::ics23_commitment::commitment::CommitmentProofBytes,
+        _root: &ibc::core::ics23_commitment::commitment::CommitmentRoot,
+        _client_id: &ClientId,
+        _consensus_height: Height,
+        _expected_consensus_state: &dyn ibc::core::ics02_client::consensus_state::ConsensusState,
+    ) -> Result<(), Error> {
+        unimplemented!()
+    }
+
+    fn verify_connection_state(
+        &self,
+        _height: Height,
+        _prefix: &ibc::core::ics23_commitment::commitment::CommitmentPrefix,
+        _proof: &ibc::core::ics23_commitment::commitment::CommitmentProofBytes,
+        _root: &ibc::core::ics23_commitment::commitment::CommitmentRoot,
+        _connection_id: &ibc::core::ics24_host::identifier::ConnectionId,
+        _expected_connection_end: &ibc::core::ics03_connection::connection::ConnectionEnd,
+    ) -> Result<(), Error> {
+        unimplemented!()
+    }
+
+    fn verify_channel_state(
+        &self,
+        _height: Height,
+        _prefix: &ibc::core::ics23_commitment::commitment::CommitmentPrefix,
+        _proof: &ibc::core::ics23_commitment::commitment::CommitmentProofBytes,
+        _root: &ibc::core::ics23_commitment::commitment::CommitmentRoot,
+        _port_id: &ibc::core::ics24_host::identifier::PortId,
+        _channel_id: &ibc::core::ics24_host::identifier::ChannelId,
+        _expected_channel_end: &ibc::core::ics04_channel::channel::ChannelEnd,
+    ) -> Result<(), Error> {
+        unimplemented!()
+    }
+
+    fn verify_client_full_state(
+        &self,
+        _height: Height,
+        _prefix: &ibc::core::ics23_commitment::commitment::CommitmentPrefix,
+        _proof: &ibc::core::ics23_commitment::commitment::CommitmentProofBytes,
+        _root: &ibc::core::ics23_commitment::commitment::CommitmentRoot,
+        _client_id: &ClientId,
+        _expected_client_state: Any,
+    ) -> Result<(), Error> {
+        unimplemented!()
+    }
+
+    fn verify_packet_data(
+        &self,
+        _ctx: &dyn ibc::core::ics04_channel::context::ChannelReaderLightClient,
+        _height: Height,
+        _connection_end: &ibc::core::ics03_connection::connection::ConnectionEnd,
+        _proof: &ibc::core::ics23_commitment::commitment::CommitmentProofBytes,
+        _root: &ibc::core::ics23_commitment::commitment::CommitmentRoot,
+        _port_id: &ibc::core::ics24_host::identifier::PortId,
+        _channel_id: &ibc::core::ics24_host::identifier::ChannelId,
+        _sequence: ibc::core::ics04_channel::packet::Sequence,
+        _commitment: ibc::core::ics04_channel::commitment::PacketCommitment,
+    ) -> Result<(), Error> {
+        unimplemented!()
+    }
+
+    fn verify_packet_acknowledgement(
+        &self,
+        _ctx: &dyn ibc::core::ics04_channel::context::ChannelReaderLightClient,
+        _height: Height,
+        _connection_end: &ibc::core::ics03_connection::connection::ConnectionEnd,
+        _proof: &ibc::core::ics23_commitment::commitment::CommitmentProofBytes,
+        _root: &ibc::core::ics23_commitment::commitment::CommitmentRoot,
+        _port_id: &ibc::core::ics24_host::identifier::PortId,
+        _channel_id: &ibc::core::ics24_host::identifier::ChannelId,
+        _sequence: ibc::core::ics04_channel::packet::Sequence,
+        _ack: ibc::core::ics04_channel::commitment::AcknowledgementCommitment,
+    ) -> Result<(), Error> {
+        unimplemented!()
+    }
+
+    fn verify_next_sequence_recv(
+        &self,
+        _ctx: &dyn ibc::core::ics04_channel::context::ChannelReaderLightClient,
+        _height: Height,
+        _connection_end: &ibc::core::ics03_connection::connection::ConnectionEnd,
+        _proof: &ibc::core::ics23_commitment::commitment::CommitmentProofBytes,
+        _root: &ibc::core::ics23_commitment::commitment::CommitmentRoot,
+        _port_id: &ibc::core::ics24_host::identifier::PortId,
+        _channel_id: &ibc::core::ics24_host::identifier::ChannelId,
+        _sequence: ibc::core::ics04_channel::packet::Sequence,
+    ) -> Result<(), Error> {
+        unimplemented!()
+    }
+
+    fn verify_packet_receipt_absence(
+        &self,
+        _ctx: &dyn ibc::core::ics04_channel::context::ChannelReaderLightClient,
+        _height: Height,
+        _connection_end: &ibc::core::ics03_connection::connection::ConnectionEnd,
+        _proof: &ibc::core::ics23_commitment::commitment::CommitmentProofBytes,
+        _root: &ibc::core::ics23_commitment::commitment::CommitmentRoot,
+        _port_id: &ibc::core::ics24_host::identifier::PortId,
+        _channel_id: &ibc::core::ics24_host::identifier::ChannelId,
+        _sequence: ibc::core::ics04_channel::packet::Sequence,
+    ) -> Result<(), Error> {
+        unimplemented!()
+    }
 }
 
 impl From<TmClientState> for AnyClientState {
@@ -221,7 +354,7 @@ impl From<MockClientState> for AnyClientState {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 #[serde(tag = "type")]
 pub struct IdentifiedAnyClientState {
     pub client_id: ClientId,
