@@ -12,7 +12,7 @@ use tendermint_light_client_verifier::options::Options;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
-use crate::core::ics02_client::client_state::UpgradeOptions as CoreUpgradeOptions;
+use crate::core::ics02_client::client_state::{self, UpgradeOptions as CoreUpgradeOptions};
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
@@ -195,7 +195,7 @@ pub struct UpgradeOptions {
 
 impl CoreUpgradeOptions for UpgradeOptions {}
 
-impl crate::core::ics02_client::client_state::ClientState for ClientState {
+impl client_state::ClientState for ClientState {
     fn chain_id(&self) -> ChainId {
         self.chain_id.clone()
     }
@@ -239,6 +239,140 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
 
     fn expired(&self, elapsed: Duration) -> bool {
         elapsed > self.trusting_period
+    }
+
+    fn initialise(
+        &self,
+        consensus_state: Any,
+    ) -> Result<Box<dyn crate::core::ics02_client::consensus_state::ConsensusState>, Ics02Error>
+    {
+        todo!()
+    }
+
+    fn check_header_and_update_state(
+        &self,
+        ctx: &dyn crate::core::ics02_client::context::ClientReader,
+        client_id: crate::core::ics24_host::identifier::ClientId,
+        header: Any,
+    ) -> Result<client_state::UpdatedState, Ics02Error> {
+        todo!()
+    }
+
+    fn verify_upgrade_and_update_state(
+        &self,
+        consensus_state: Any,
+        proof_upgrade_client: crate::core::ics23_commitment::merkle::MerkleProof,
+        proof_upgrade_consensus_state: crate::core::ics23_commitment::merkle::MerkleProof,
+    ) -> Result<client_state::UpdatedState, Ics02Error> {
+        todo!()
+    }
+
+    fn verify_client_consensus_state(
+        &self,
+        height: Height,
+        prefix: &crate::core::ics23_commitment::commitment::CommitmentPrefix,
+        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
+        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
+        client_id: &crate::core::ics24_host::identifier::ClientId,
+        consensus_height: Height,
+        expected_consensus_state: &dyn crate::core::ics02_client::consensus_state::ConsensusState,
+    ) -> Result<(), Ics02Error> {
+        todo!()
+    }
+
+    fn verify_connection_state(
+        &self,
+        height: Height,
+        prefix: &crate::core::ics23_commitment::commitment::CommitmentPrefix,
+        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
+        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
+        connection_id: &crate::core::ics24_host::identifier::ConnectionId,
+        expected_connection_end: &crate::core::ics03_connection::connection::ConnectionEnd,
+    ) -> Result<(), Ics02Error> {
+        todo!()
+    }
+
+    fn verify_channel_state(
+        &self,
+        height: Height,
+        prefix: &crate::core::ics23_commitment::commitment::CommitmentPrefix,
+        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
+        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
+        port_id: &crate::core::ics24_host::identifier::PortId,
+        channel_id: &crate::core::ics24_host::identifier::ChannelId,
+        expected_channel_end: &crate::core::ics04_channel::channel::ChannelEnd,
+    ) -> Result<(), Ics02Error> {
+        todo!()
+    }
+
+    fn verify_client_full_state(
+        &self,
+        height: Height,
+        prefix: &crate::core::ics23_commitment::commitment::CommitmentPrefix,
+        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
+        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
+        client_id: &crate::core::ics24_host::identifier::ClientId,
+        expected_client_state: Any,
+    ) -> Result<(), Ics02Error> {
+        todo!()
+    }
+
+    fn verify_packet_data(
+        &self,
+        ctx: &dyn crate::core::ics04_channel::context::ChannelReaderLightClient,
+        height: Height,
+        connection_end: &crate::core::ics03_connection::connection::ConnectionEnd,
+        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
+        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
+        port_id: &crate::core::ics24_host::identifier::PortId,
+        channel_id: &crate::core::ics24_host::identifier::ChannelId,
+        sequence: crate::core::ics04_channel::packet::Sequence,
+        commitment: crate::core::ics04_channel::commitment::PacketCommitment,
+    ) -> Result<(), Ics02Error> {
+        todo!()
+    }
+
+    fn verify_packet_acknowledgement(
+        &self,
+        ctx: &dyn crate::core::ics04_channel::context::ChannelReaderLightClient,
+        height: Height,
+        connection_end: &crate::core::ics03_connection::connection::ConnectionEnd,
+        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
+        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
+        port_id: &crate::core::ics24_host::identifier::PortId,
+        channel_id: &crate::core::ics24_host::identifier::ChannelId,
+        sequence: crate::core::ics04_channel::packet::Sequence,
+        ack: crate::core::ics04_channel::commitment::AcknowledgementCommitment,
+    ) -> Result<(), Ics02Error> {
+        todo!()
+    }
+
+    fn verify_next_sequence_recv(
+        &self,
+        ctx: &dyn crate::core::ics04_channel::context::ChannelReaderLightClient,
+        height: Height,
+        connection_end: &crate::core::ics03_connection::connection::ConnectionEnd,
+        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
+        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
+        port_id: &crate::core::ics24_host::identifier::PortId,
+        channel_id: &crate::core::ics24_host::identifier::ChannelId,
+        sequence: crate::core::ics04_channel::packet::Sequence,
+    ) -> Result<(), Ics02Error> {
+        todo!()
+    }
+
+    fn verify_packet_receipt_absence(
+        &self,
+        ctx: &dyn crate::core::ics04_channel::context::ChannelReaderLightClient,
+        height: Height,
+        connection_end: &crate::core::ics03_connection::connection::ConnectionEnd,
+        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
+        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
+        port_id: &crate::core::ics24_host::identifier::PortId,
+        channel_id: &crate::core::ics24_host::identifier::ChannelId,
+        sequence: crate::core::ics04_channel::packet::Sequence,
+    ) -> Result<(), Ics02Error> {
+        todo!()
     }
 }
 
