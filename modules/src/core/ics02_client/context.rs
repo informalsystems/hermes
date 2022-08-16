@@ -17,10 +17,13 @@ use crate::Height;
 
 /// Defines the read-only part of ICS2 (client functions) context.
 pub trait ClientReader {
+    /// Returns the ClientType for the given identifier `client_id`.
     fn client_type(&self, client_id: &ClientId) -> Result<ClientType, Error>;
 
+    /// Returns the ClientState for the given identifier `client_id`.
     fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Error>;
 
+    /// Tries to decode the given `client_state` into a concrete light client state.
     fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, Error>;
 
     /// Retrieve the consensus state for the given client ID at the specified

@@ -985,6 +985,10 @@ impl ConnectionReader for MockContext {
         ClientReader::client_state(self, client_id).map_err(Ics03Error::ics02_client)
     }
 
+    fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, Ics03Error> {
+        ClientReader::decode_client_state(self, client_state).map_err(Ics03Error::ics02_client)
+    }
+
     fn host_current_height(&self) -> Height {
         self.latest_height()
     }

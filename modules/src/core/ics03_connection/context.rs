@@ -12,6 +12,7 @@ use crate::core::ics23_commitment::commitment::CommitmentPrefix;
 use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::prelude::*;
 use crate::Height;
+use ibc_proto::google::protobuf::Any;
 
 /// A context supplying all the necessary read-only dependencies for processing any `ConnectionMsg`.
 pub trait ConnectionReader {
@@ -20,6 +21,9 @@ pub trait ConnectionReader {
 
     /// Returns the ClientState for the given identifier `client_id`.
     fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Error>;
+
+    /// Tries to decode the given `client_state` into a concrete light client state.
+    fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, Error>;
 
     /// Returns the current height of the local chain.
     fn host_current_height(&self) -> Height;
