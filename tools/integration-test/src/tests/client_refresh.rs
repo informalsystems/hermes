@@ -61,7 +61,7 @@ impl BinaryChainTest for ClientDefaultsTest {
                 "Client refresh failed: {:?}",
                 ibc_events
             ),
-            Err(_) => assert!(false, "Client refresh failed: {:?}", res),
+            Err(_) => panic!("Client refresh failed: {:?}", res),
         }
         let res = client_b_to_a.refresh();
         // Check that `refresh()` was successful but did not update the client, as elapsed < refresh_window.
@@ -71,7 +71,7 @@ impl BinaryChainTest for ClientDefaultsTest {
                 "Client refresh failed: {:?}",
                 ibc_events
             ),
-            Err(_) => assert!(false, "Client refresh failed: {:?}", res),
+            Err(_) => panic!("Client refresh failed: {:?}", res),
         }
 
         // Wait for elapsed > refresh_window
@@ -85,7 +85,7 @@ impl BinaryChainTest for ClientDefaultsTest {
                 "Client refresh failed: {:?}",
                 ibc_events
             ),
-            Err(_) => assert!(false, "Client refresh failed: {:?}", res),
+            Err(_) => panic!("Client refresh failed: {:?}", res),
         }
         let res = client_b_to_a.refresh();
         // Check that `refresh()` was successful and update client was successful, as elapsed > refresh_window.
@@ -95,7 +95,7 @@ impl BinaryChainTest for ClientDefaultsTest {
                 "Client refresh failed: {:?}",
                 ibc_events
             ),
-            Err(_) => assert!(false, "Client refresh failed: {:?}", res),
+            Err(_) => panic!("Client refresh failed: {:?}", res),
         }
         Ok(())
     }
@@ -128,7 +128,7 @@ impl BinaryChainTest for ClientFailsTest {
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
         // Override the configuration in order to use a small `gas_multiplier` which will cause the update client to fail.
-        let chains2 = override_connected_chains(chains.clone(), |config| {
+        let chains2 = override_connected_chains(chains, |config| {
             config.chains[0].gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
             config.chains[1].gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
         })?;
