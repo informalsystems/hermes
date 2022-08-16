@@ -129,8 +129,8 @@ impl BinaryChainTest for ClientFailsTest {
     ) -> Result<(), Error> {
         // Override the configuration in order to use a small `gas_multiplier` which will cause the update client to fail.
         let chains2 = override_connected_chains(chains.clone(), |config| {
-            config.chains[0].gas_multiplier = Some(GasMultiplier::new(0.8));
-            config.chains[1].gas_multiplier = Some(GasMultiplier::new(0.8));
+            config.chains[0].gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
+            config.chains[1].gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
         })?;
 
         // Use chains with misconfiguration in order to trigger a ChainError when submitting `MsgClientUpdate`

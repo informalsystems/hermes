@@ -280,7 +280,15 @@ pub mod gas_multiplier {
         const DEFAULT: f64 = 1.1;
         const MIN_BOUND: f64 = 1.0;
 
-        pub fn new(value: f64) -> Self {
+        pub fn new(value: f64) -> Result<Self, Error> {
+            if value < Self::MIN_BOUND {
+                return Err(Error::too_small(value));
+            }
+            Ok(Self(value))
+        }
+
+        // Unsafe GasMultiplier used for test cases only.
+        pub fn unsafe_new(value: f64) -> Self {
             Self(value)
         }
 
@@ -305,13 +313,12 @@ pub mod gas_multiplier {
         {
             let value = f64::deserialize(deserializer)?;
 
-            if value < 1.0 {
-                return Err(D::Error::invalid_value(
+            GasMultiplier::new(value).map_err(|e| match e.detail() {
+                ErrorDetail::TooSmall(_) => D::Error::invalid_value(
                     Unexpected::Float(value),
                     &format!("a f64 less than {}", Self::MIN_BOUND).as_str(),
-                ));
-            }
-            Ok(GasMultiplier::new(value))
+                ),
+            })
         }
     }
 
@@ -409,5 +416,21 @@ mod tests {
             .to_string();
 
         assert!(err.contains("expected a f64 less than"));
+    }
+
+    #[test]
+    fn safe_gas_multiplier() {
+        let gas_multiplier = GasMultiplier::new(0.6);
+        assert!(
+            gas_multiplier.is_err(),
+            "Gas multiplier should be an error if value is lower than 1.0: {:?}",
+            gas_multiplier
+        );
+    }
+
+    #[test]
+    fn unsafe_gas_multiplier() {
+        let gas_multiplier = GasMultiplier::unsafe_new(0.6);
+        assert_eq!(gas_multiplier.to_f64(), 0.6);
     }
 }
