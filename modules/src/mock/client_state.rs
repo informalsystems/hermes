@@ -7,7 +7,7 @@ use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
 };
-use crate::core::ics23_commitment::merkle::{apply_prefix, MerkleProof};
+use crate::core::ics23_commitment::merkle::apply_prefix;
 use crate::core::ics24_host::path::ClientConsensusStatePath;
 use crate::core::ics24_host::Path;
 use crate::prelude::*;
@@ -15,6 +15,7 @@ use crate::prelude::*;
 use alloc::collections::btree_map::BTreeMap as HashMap;
 use core::time::Duration;
 use dyn_clone::clone_box;
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::mock::ClientState as RawMockClientState;

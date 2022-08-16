@@ -2,8 +2,7 @@
 
 use tracing::debug;
 
-use crate::core::ics02_client::client_def::{AnyClient, ClientDef, UpdatedState};
-use crate::core::ics02_client::client_state::ClientState;
+use crate::core::ics02_client::client_state::{ClientState, UpdatedState};
 use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
@@ -41,10 +40,6 @@ pub fn process<Ctx: ClientReader>(
     } = msg;
 
     // Read client type from the host chain store. The client should already exist.
-    let client_type = ctx.client_type(&client_id)?;
-
-    let client_def = AnyClient::from_client_type(client_type);
-
     // Read client state from the host chain store.
     let client_state = ctx.client_state(&client_id)?;
 
@@ -80,8 +75,8 @@ pub fn process<Ctx: ClientReader>(
     let UpdatedState {
         client_state,
         consensus_state,
-    } = client_def
-        .check_header_and_update_state(ctx, client_id.clone(), client_state.as_ref(), header)
+    } = client_state
+        .check_header_and_update_state(ctx, client_id.clone(), header)
         .map_err(|e| Error::header_verification_failure(e.to_string()))?;
 
     let result = ClientResult::Update(Result {

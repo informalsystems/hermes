@@ -1,6 +1,7 @@
 use core::time::Duration;
 
 use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
 #[cfg(test)]
 use ibc_proto::ibc::mock::ClientState as RawMockClientState;
@@ -226,8 +227,8 @@ impl ClientState for AnyClientState {
     fn verify_upgrade_and_update_state(
         &self,
         _consensus_state: Any,
-        _proof_upgrade_client: ibc::core::ics23_commitment::merkle::MerkleProof,
-        _proof_upgrade_consensus_state: ibc::core::ics23_commitment::merkle::MerkleProof,
+        _proof_upgrade_client: MerkleProof,
+        _proof_upgrade_consensus_state: MerkleProof,
     ) -> Result<ibc::core::ics02_client::client_state::UpdatedState, Error> {
         unimplemented!()
     }

@@ -444,8 +444,8 @@ impl ClientState for TmClientState {
     fn verify_upgrade_and_update_state(
         &self,
         _consensus_state: Any,
-        _proof_upgrade_client: MerkleProof,
-        _proof_upgrade_consensus_state: MerkleProof,
+        _proof_upgrade_client: RawMerkleProof,
+        _proof_upgrade_consensus_state: RawMerkleProof,
     ) -> Result<UpdatedState, Ics02Error> {
         unimplemented!()
     }

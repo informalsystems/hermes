@@ -1,4 +1,3 @@
-use crate::core::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::context::{ChannelReader, ChannelReaderLightClient};
@@ -30,13 +29,10 @@ pub fn verify_channel_proofs<Ctx: ChannelReader + ChannelReaderLightClient>(
 
     let consensus_state = ctx.client_consensus_state(&client_id, proofs.height())?;
 
-    let client_def = AnyClient::from_client_type(client_state.client_type());
-
     // Verify the proof for the channel state against the expected channel end.
     // A counterparty channel id of None in not possible, and is checked by validate_basic in msg.
-    client_def
+    client_state
         .verify_channel_state(
-            client_state.as_ref(),
             height,
             connection_end.counterparty().prefix(),
             proofs.object_proof(),
@@ -66,8 +62,6 @@ pub fn verify_packet_recv_proofs<Ctx: ChannelReader + ChannelReaderLightClient>(
 
     let consensus_state = ctx.client_consensus_state(client_id, proofs.height())?;
 
-    let client_def = AnyClient::from_client_type(client_state.client_type());
-
     let commitment = ctx.packet_commitment(
         packet.data.clone(),
         packet.timeout_height,
@@ -75,10 +69,9 @@ pub fn verify_packet_recv_proofs<Ctx: ChannelReader + ChannelReaderLightClient>(
     );
 
     // Verify the proof for the packet against the chain store.
-    client_def
+    client_state
         .verify_packet_data(
             ctx,
-            client_state.as_ref(),
             height,
             connection_end,
             proofs.object_proof(),
@@ -114,13 +107,10 @@ pub fn verify_packet_acknowledgement_proofs<Ctx: ChannelReader + ChannelReaderLi
 
     let ack_commitment = ctx.ack_commitment(acknowledgement);
 
-    let client_def = AnyClient::from_client_type(client_state.client_type());
-
     // Verify the proof for the packet against the chain store.
-    client_def
+    client_state
         .verify_packet_acknowledgement(
             ctx,
-            client_state.as_ref(),
             height,
             connection_end,
             proofs.object_proof(),
@@ -154,13 +144,10 @@ pub fn verify_next_sequence_recv<Ctx: ChannelReader + ChannelReaderLightClient>(
 
     let consensus_state = ctx.client_consensus_state(client_id, proofs.height())?;
 
-    let client_def = AnyClient::from_client_type(client_state.client_type());
-
     // Verify the proof for the packet against the chain store.
-    client_def
+    client_state
         .verify_next_sequence_recv(
             ctx,
-            client_state.as_ref(),
             height,
             connection_end,
             proofs.object_proof(),
@@ -191,13 +178,10 @@ pub fn verify_packet_receipt_absence<Ctx: ChannelReader + ChannelReaderLightClie
 
     let consensus_state = ctx.client_consensus_state(client_id, proofs.height())?;
 
-    let client_def = AnyClient::from_client_type(client_state.client_type());
-
     // Verify the proof for the packet against the chain store.
-    client_def
+    client_state
         .verify_packet_receipt_absence(
             ctx,
-            client_state.as_ref(),
             height,
             connection_end,
             proofs.object_proof(),

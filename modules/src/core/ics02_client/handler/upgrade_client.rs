@@ -1,7 +1,6 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpgradeAnyClient`.
 //!
-use crate::core::ics02_client::client_def::{AnyClient, ClientDef, UpdatedState};
-use crate::core::ics02_client::client_state::ClientState;
+use crate::core::ics02_client::client_state::{ClientState, UpdatedState};
 use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
@@ -45,15 +44,10 @@ pub fn process(
         ));
     }
 
-    let client_type = ctx.client_type(&client_id)?;
-
-    let client_def = AnyClient::from_client_type(client_type);
-
     let UpdatedState {
         client_state,
         consensus_state,
-    } = client_def.verify_upgrade_and_update_state(
-        upgrade_client_state.as_ref(),
+    } = client_state.verify_upgrade_and_update_state(
         msg.consensus_state.clone(),
         msg.proof_upgrade_client.clone(),
         msg.proof_upgrade_consensus_state,

@@ -2,7 +2,6 @@
 
 use crate::prelude::*;
 
-use crate::core::ics02_client::client_def::{AnyClient, ClientDef};
 use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::consensus_state::ConsensusState;
@@ -52,9 +51,7 @@ pub fn process(
         Error::client_identifier_constructor(client_state.client_type(), id_counter, e)
     })?;
 
-    let client_def = AnyClient::from_client_type(client_type);
-
-    let consensus_state = client_def.initialise(consensus_state)?;
+    let consensus_state = client_state.initialise(consensus_state)?;
 
     output.log(format!(
         "success: generated new client identifier: {}",

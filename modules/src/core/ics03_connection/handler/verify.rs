@@ -2,7 +2,6 @@
 
 use ibc_proto::google::protobuf::Any;
 
-use crate::core::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics03_connection::context::ConnectionReader;
 use crate::core::ics03_connection::error::Error;
@@ -80,12 +79,9 @@ pub fn verify_connection_proof(
         .connection_id()
         .ok_or_else(Error::invalid_counterparty)?;
 
-    let client_def = AnyClient::from_client_type(client_state.client_type());
-
     // Verify the proof for the connection state against the expected connection end.
-    client_def
+    client_state
         .verify_connection_state(
-            client_state.as_ref(),
             height,
             connection_end.counterparty().prefix(),
             proof,
@@ -120,11 +116,8 @@ pub fn verify_client_proof(
 
     let consensus_state = ctx.client_consensus_state(connection_end.client_id(), proof_height)?;
 
-    let client_def = AnyClient::from_client_type(client_state.client_type());
-
-    client_def
+    client_state
         .verify_client_full_state(
-            client_state.as_ref(),
             height,
             connection_end.counterparty().prefix(),
             proof,
@@ -155,11 +148,8 @@ pub fn verify_consensus_proof(
 
     let consensus_state = ctx.client_consensus_state(connection_end.client_id(), height)?;
 
-    let client = AnyClient::from_client_type(client_state.client_type());
-
-    client
+    client_state
         .verify_client_consensus_state(
-            client_state.as_ref(),
             height,
             connection_end.counterparty().prefix(),
             proof.proof(),
