@@ -86,9 +86,7 @@ mod tests {
     use core::time::Duration;
     use test_log::test;
 
-    use crate::clients::ics07_tendermint::client_state::{
-        AllowUpdate, ClientState as TendermintClientState,
-    };
+    use crate::clients::ics07_tendermint::client_state::{AllowUpdate, TmClientState};
     use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
     use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
     use crate::core::ics02_client::client_type::ClientType;
@@ -242,7 +240,7 @@ mod tests {
 
         let tm_header = get_dummy_tendermint_header();
 
-        let tm_client_state = TendermintClientState::new(
+        let tm_client_state = TmClientState::new(
             tm_header.chain_id.clone().into(),
             TrustThreshold::ONE_THIRD,
             Duration::from_secs(64000),

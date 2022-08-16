@@ -7,7 +7,7 @@ use prost::Message;
 use tendermint_light_client_verifier::types::{TrustedBlockState, UntrustedBlockState};
 use tendermint_light_client_verifier::{ProdVerifier, Verdict, Verifier};
 
-use crate::clients::ics07_tendermint::client_state::ClientState as TmClientState;
+use crate::clients::ics07_tendermint::client_state::TmClientState;
 use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header as TmHeader;

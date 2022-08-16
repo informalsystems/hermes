@@ -8,8 +8,7 @@ use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 
 use ibc::clients::ics07_tendermint::client_state::{
-    ClientState as TmClientState, UpgradeOptions as TmUpgradeOptions,
-    TENDERMINT_CLIENT_STATE_TYPE_URL,
+    TmClientState, UpgradeOptions as TmUpgradeOptions, TENDERMINT_CLIENT_STATE_TYPE_URL,
 };
 use ibc::core::ics02_client::client_state::{ClientState, UpgradeOptions};
 use ibc::core::ics02_client::client_type::ClientType;

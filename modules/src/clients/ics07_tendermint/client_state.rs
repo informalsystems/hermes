@@ -1,3 +1,17 @@
+use crate::core::ics02_client::context::ClientReader;
+use crate::core::ics03_connection::connection::ConnectionEnd;
+use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
+use crate::core::ics04_channel::context::ChannelReaderLightClient;
+use crate::core::ics04_channel::packet::Sequence;
+use crate::core::ics23_commitment::commitment::{
+    CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
+};
+use crate::core::ics23_commitment::merkle::{apply_prefix, MerkleProof};
+use crate::core::ics24_host::path::{
+    AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
+    ConnectionsPath, ReceiptsPath, SeqRecvsPath,
+};
+use crate::core::ics24_host::Path;
 use crate::prelude::*;
 
 use core::convert::{TryFrom, TryInto};
@@ -5,26 +19,34 @@ use core::time::Duration;
 
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
-use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
+use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
+use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawTmClientState;
 use ibc_proto::protobuf::Protobuf;
+use prost::Message;
 use serde::{Deserialize, Serialize};
 use tendermint_light_client_verifier::options::Options;
+use tendermint_light_client_verifier::types::{TrustedBlockState, UntrustedBlockState};
+use tendermint_light_client_verifier::{ProdVerifier, Verdict, Verifier};
 
+use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
 use crate::clients::ics07_tendermint::error::Error;
-use crate::clients::ics07_tendermint::header::Header;
-use crate::core::ics02_client::client_state::{self, UpgradeOptions as CoreUpgradeOptions};
+use crate::clients::ics07_tendermint::header::Header as TmHeader;
+use crate::core::ics02_client::client_state::{
+    ClientState, UpdatedState, UpgradeOptions as CoreUpgradeOptions,
+};
 use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::error::Error as Ics02Error;
+use crate::core::ics02_client::consensus_state::ConsensusState;
+use crate::core::ics02_client::error::{Error as Ics02Error, ErrorDetail as Ics02ErrorDetail};
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
 use crate::core::ics23_commitment::specs::ProofSpecs;
-use crate::core::ics24_host::identifier::ChainId;
+use crate::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use crate::timestamp::{Timestamp, ZERO_DURATION};
 use crate::Height;
 
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ClientState {
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct TmClientState {
     pub chain_id: ChainId,
     pub trust_level: TrustThreshold,
     pub trusting_period: Duration,
@@ -35,6 +57,8 @@ pub struct ClientState {
     pub upgrade_path: Vec<String>,
     pub allow_update: AllowUpdate,
     pub frozen_height: Option<Height>,
+    #[serde(skip_serializing)]
+    pub verifier: ProdVerifier,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -43,7 +67,7 @@ pub struct AllowUpdate {
     pub after_misbehaviour: bool,
 }
 
-impl ClientState {
+impl TmClientState {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         chain_id: ChainId,
@@ -55,7 +79,7 @@ impl ClientState {
         proof_specs: ProofSpecs,
         upgrade_path: Vec<String>,
         allow_update: AllowUpdate,
-    ) -> Result<ClientState, Error> {
+    ) -> Result<TmClientState, Error> {
         // Basic validation of trusting period and unbonding period: each should be non-zero.
         if trusting_period <= Duration::new(0, 0) {
             return Err(Error::invalid_trusting_period(format!(
@@ -104,6 +128,7 @@ impl ClientState {
             upgrade_path,
             allow_update,
             frozen_height: None,
+            verifier: ProdVerifier::default(),
         })
     }
 
@@ -111,8 +136,8 @@ impl ClientState {
         self.latest_height
     }
 
-    pub fn with_header(self, h: Header) -> Result<Self, Error> {
-        Ok(ClientState {
+    pub fn with_header(self, h: TmHeader) -> Result<Self, Error> {
+        Ok(TmClientState {
             latest_height: Height::new(
                 self.latest_height.revision_number(),
                 h.signed_header.header.height.into(),
@@ -195,7 +220,7 @@ pub struct UpgradeOptions {
 
 impl CoreUpgradeOptions for UpgradeOptions {}
 
-impl client_state::ClientState for ClientState {
+impl ClientState for TmClientState {
     fn chain_id(&self) -> ChainId {
         self.chain_id.clone()
     }
@@ -241,147 +266,485 @@ impl client_state::ClientState for ClientState {
         elapsed > self.trusting_period
     }
 
-    fn initialise(
-        &self,
-        consensus_state: Any,
-    ) -> Result<Box<dyn crate::core::ics02_client::consensus_state::ConsensusState>, Ics02Error>
-    {
-        todo!()
+    fn initialise(&self, consensus_state: Any) -> Result<Box<dyn ConsensusState>, Ics02Error> {
+        TmConsensusState::try_from(consensus_state).map(TmConsensusState::into_box)
     }
 
     fn check_header_and_update_state(
         &self,
-        ctx: &dyn crate::core::ics02_client::context::ClientReader,
-        client_id: crate::core::ics24_host::identifier::ClientId,
+        ctx: &dyn ClientReader,
+        client_id: ClientId,
         header: Any,
-    ) -> Result<client_state::UpdatedState, Ics02Error> {
-        todo!()
+    ) -> Result<UpdatedState, Ics02Error> {
+        fn maybe_consensus_state(
+            ctx: &dyn ClientReader,
+            client_id: &ClientId,
+            height: Height,
+        ) -> Result<Option<Box<dyn ConsensusState>>, Ics02Error> {
+            match ctx.consensus_state(client_id, height) {
+                Ok(cs) => Ok(Some(cs)),
+                Err(e) => match e.detail() {
+                    Ics02ErrorDetail::ConsensusStateNotFound(_) => Ok(None),
+                    _ => Err(e),
+                },
+            }
+        }
+
+        let client_state = downcast_tm_client_state(self)?.clone();
+        let header = TmHeader::try_from(header)?;
+
+        if header.height().revision_number() != client_state.chain_id().version() {
+            return Err(Ics02Error::client_specific(
+                Error::mismatched_revisions(
+                    client_state.chain_id().version(),
+                    header.height().revision_number(),
+                )
+                .to_string(),
+            ));
+        }
+
+        // Check if a consensus state is already installed; if so it should
+        // match the untrusted header.
+        let header_consensus_state = TmConsensusState::from(header.clone());
+        let existing_consensus_state =
+            match maybe_consensus_state(ctx, &client_id, header.height())? {
+                Some(cs) => {
+                    let cs = downcast_tm_consensus_state(cs.as_ref())?;
+                    // If this consensus state matches, skip verification
+                    // (optimization)
+                    if cs == header_consensus_state {
+                        // Header is already installed and matches the incoming
+                        // header (already verified)
+                        return Ok(UpdatedState {
+                            client_state: client_state.into_box(),
+                            consensus_state: cs.into_box(),
+                        });
+                    }
+                    Some(cs)
+                }
+                None => None,
+            };
+
+        let trusted_consensus_state = downcast_tm_consensus_state(
+            ctx.consensus_state(&client_id, header.trusted_height)?
+                .as_ref(),
+        )?;
+
+        let trusted_state = TrustedBlockState {
+            header_time: trusted_consensus_state.timestamp,
+            height: header
+                .trusted_height
+                .revision_height()
+                .try_into()
+                .map_err(|_| {
+                    Ics02Error::client_specific(
+                        Error::invalid_header_height(header.trusted_height.revision_height())
+                            .to_string(),
+                    )
+                })?,
+            next_validators: &header.trusted_validator_set,
+            next_validators_hash: trusted_consensus_state.next_validators_hash,
+        };
+
+        let untrusted_state = UntrustedBlockState {
+            signed_header: &header.signed_header,
+            validators: &header.validator_set,
+            // NB: This will skip the
+            // VerificationPredicates::next_validators_match check for the
+            // untrusted state.
+            next_validators: None,
+        };
+
+        let options = client_state.as_light_client_options()?;
+
+        let verdict = self.verifier.verify(
+            untrusted_state,
+            trusted_state,
+            &options,
+            ctx.host_timestamp().into_tm_time().unwrap(),
+        );
+
+        match verdict {
+            Verdict::Success => {}
+            Verdict::NotEnoughTrust(voting_power_tally) => {
+                return Err(Error::not_enough_trusted_vals_signed(format!(
+                    "voting power tally: {}",
+                    voting_power_tally
+                ))
+                .into());
+            }
+            Verdict::Invalid(detail) => return Err(Error::verification_error(detail).into()),
+        }
+
+        // If the header has verified, but its corresponding consensus state
+        // differs from the existing consensus state for that height, freeze the
+        // client and return the installed consensus state.
+        if let Some(cs) = existing_consensus_state {
+            if cs != header_consensus_state {
+                return Ok(UpdatedState {
+                    client_state: client_state.with_frozen_height(header.height())?.into_box(),
+                    consensus_state: cs.into_box(),
+                });
+            }
+        }
+
+        // Monotonicity checks for timestamps for in-the-middle updates
+        // (cs-new, cs-next, cs-latest)
+        if header.height() < client_state.latest_height() {
+            let maybe_next_cs = ctx
+                .next_consensus_state(&client_id, header.height())?
+                .as_ref()
+                .map(|cs| downcast_tm_consensus_state(cs.as_ref()))
+                .transpose()?;
+
+            if let Some(next_cs) = maybe_next_cs {
+                // New (untrusted) header timestamp cannot occur after next
+                // consensus state's height
+                if header.signed_header.header().time > next_cs.timestamp {
+                    return Err(Ics02Error::client_specific(
+                        Error::header_timestamp_too_high(
+                            header.signed_header.header().time.to_string(),
+                            next_cs.timestamp.to_string(),
+                        )
+                        .to_string(),
+                    ));
+                }
+            }
+        }
+
+        // (cs-trusted, cs-prev, cs-new)
+        if header.trusted_height < header.height() {
+            let maybe_prev_cs = ctx
+                .prev_consensus_state(&client_id, header.height())?
+                .as_ref()
+                .map(|cs| downcast_tm_consensus_state(cs.as_ref()))
+                .transpose()?;
+
+            if let Some(prev_cs) = maybe_prev_cs {
+                // New (untrusted) header timestamp cannot occur before the
+                // previous consensus state's height
+                if header.signed_header.header().time < prev_cs.timestamp {
+                    return Err(Ics02Error::client_specific(
+                        Error::header_timestamp_too_low(
+                            header.signed_header.header().time.to_string(),
+                            prev_cs.timestamp.to_string(),
+                        )
+                        .to_string(),
+                    ));
+                }
+            }
+        }
+
+        Ok(UpdatedState {
+            client_state: client_state.with_header(header.clone())?.into_box(),
+            consensus_state: TmConsensusState::from(header).into_box(),
+        })
     }
 
     fn verify_upgrade_and_update_state(
         &self,
-        consensus_state: Any,
-        proof_upgrade_client: crate::core::ics23_commitment::merkle::MerkleProof,
-        proof_upgrade_consensus_state: crate::core::ics23_commitment::merkle::MerkleProof,
-    ) -> Result<client_state::UpdatedState, Ics02Error> {
-        todo!()
+        _consensus_state: Any,
+        _proof_upgrade_client: MerkleProof,
+        _proof_upgrade_consensus_state: MerkleProof,
+    ) -> Result<UpdatedState, Ics02Error> {
+        unimplemented!()
     }
 
     fn verify_client_consensus_state(
         &self,
         height: Height,
-        prefix: &crate::core::ics23_commitment::commitment::CommitmentPrefix,
-        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
-        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
-        client_id: &crate::core::ics24_host::identifier::ClientId,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        client_id: &ClientId,
         consensus_height: Height,
-        expected_consensus_state: &dyn crate::core::ics02_client::consensus_state::ConsensusState,
+        expected_consensus_state: &dyn ConsensusState,
     ) -> Result<(), Ics02Error> {
-        todo!()
+        let client_state = downcast_tm_client_state(self)?;
+        client_state.verify_height(height)?;
+
+        let path = ClientConsensusStatePath {
+            client_id: client_id.clone(),
+            epoch: consensus_height.revision_number(),
+            height: consensus_height.revision_height(),
+        };
+        let value = expected_consensus_state
+            .encode_vec()
+            .map_err(Ics02Error::invalid_any_consensus_state)?;
+
+        verify_membership(client_state, prefix, proof, root, path, value)
     }
 
     fn verify_connection_state(
         &self,
         height: Height,
-        prefix: &crate::core::ics23_commitment::commitment::CommitmentPrefix,
-        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
-        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
-        connection_id: &crate::core::ics24_host::identifier::ConnectionId,
-        expected_connection_end: &crate::core::ics03_connection::connection::ConnectionEnd,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        connection_id: &ConnectionId,
+        expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Ics02Error> {
-        todo!()
+        let client_state = downcast_tm_client_state(self)?;
+        client_state.verify_height(height)?;
+
+        let path = ConnectionsPath(connection_id.clone());
+        let value = expected_connection_end
+            .encode_vec()
+            .map_err(Ics02Error::invalid_connection_end)?;
+        verify_membership(client_state, prefix, proof, root, path, value)
     }
 
     fn verify_channel_state(
         &self,
         height: Height,
-        prefix: &crate::core::ics23_commitment::commitment::CommitmentPrefix,
-        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
-        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
-        port_id: &crate::core::ics24_host::identifier::PortId,
-        channel_id: &crate::core::ics24_host::identifier::ChannelId,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        port_id: &PortId,
+        channel_id: &ChannelId,
         expected_channel_end: &crate::core::ics04_channel::channel::ChannelEnd,
     ) -> Result<(), Ics02Error> {
-        todo!()
+        let client_state = downcast_tm_client_state(self)?;
+        client_state.verify_height(height)?;
+
+        let path = ChannelEndsPath(port_id.clone(), channel_id.clone());
+        let value = expected_channel_end
+            .encode_vec()
+            .map_err(Ics02Error::invalid_channel_end)?;
+        verify_membership(client_state, prefix, proof, root, path, value)
     }
 
     fn verify_client_full_state(
         &self,
         height: Height,
-        prefix: &crate::core::ics23_commitment::commitment::CommitmentPrefix,
-        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
-        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
-        client_id: &crate::core::ics24_host::identifier::ClientId,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        client_id: &ClientId,
         expected_client_state: Any,
     ) -> Result<(), Ics02Error> {
-        todo!()
+        let client_state = downcast_tm_client_state(self)?;
+        client_state.verify_height(height)?;
+
+        let path = ClientStatePath(client_id.clone());
+        let value = expected_client_state.encode_to_vec();
+        verify_membership(client_state, prefix, proof, root, path, value)
     }
 
     fn verify_packet_data(
         &self,
-        ctx: &dyn crate::core::ics04_channel::context::ChannelReaderLightClient,
+        ctx: &dyn ChannelReaderLightClient,
         height: Height,
-        connection_end: &crate::core::ics03_connection::connection::ConnectionEnd,
-        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
-        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
-        port_id: &crate::core::ics24_host::identifier::PortId,
-        channel_id: &crate::core::ics24_host::identifier::ChannelId,
-        sequence: crate::core::ics04_channel::packet::Sequence,
-        commitment: crate::core::ics04_channel::commitment::PacketCommitment,
+        connection_end: &ConnectionEnd,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
+        commitment: PacketCommitment,
     ) -> Result<(), Ics02Error> {
-        todo!()
+        let client_state = downcast_tm_client_state(self)?;
+        client_state.verify_height(height)?;
+        verify_delay_passed(ctx, height, connection_end)?;
+
+        let commitment_path = CommitmentsPath {
+            port_id: port_id.clone(),
+            channel_id: channel_id.clone(),
+            sequence,
+        };
+
+        verify_membership(
+            client_state,
+            connection_end.counterparty().prefix(),
+            proof,
+            root,
+            commitment_path,
+            commitment.into_vec(),
+        )
     }
 
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn crate::core::ics04_channel::context::ChannelReaderLightClient,
+        ctx: &dyn ChannelReaderLightClient,
         height: Height,
-        connection_end: &crate::core::ics03_connection::connection::ConnectionEnd,
-        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
-        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
-        port_id: &crate::core::ics24_host::identifier::PortId,
-        channel_id: &crate::core::ics24_host::identifier::ChannelId,
-        sequence: crate::core::ics04_channel::packet::Sequence,
-        ack: crate::core::ics04_channel::commitment::AcknowledgementCommitment,
+        connection_end: &ConnectionEnd,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
+        ack_commitment: AcknowledgementCommitment,
     ) -> Result<(), Ics02Error> {
-        todo!()
+        let client_state = downcast_tm_client_state(self)?;
+        client_state.verify_height(height)?;
+        verify_delay_passed(ctx, height, connection_end)?;
+
+        let ack_path = AcksPath {
+            port_id: port_id.clone(),
+            channel_id: channel_id.clone(),
+            sequence,
+        };
+        verify_membership(
+            client_state,
+            connection_end.counterparty().prefix(),
+            proof,
+            root,
+            ack_path,
+            ack_commitment.into_vec(),
+        )
     }
 
     fn verify_next_sequence_recv(
         &self,
-        ctx: &dyn crate::core::ics04_channel::context::ChannelReaderLightClient,
+        ctx: &dyn ChannelReaderLightClient,
         height: Height,
-        connection_end: &crate::core::ics03_connection::connection::ConnectionEnd,
-        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
-        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
-        port_id: &crate::core::ics24_host::identifier::PortId,
-        channel_id: &crate::core::ics24_host::identifier::ChannelId,
-        sequence: crate::core::ics04_channel::packet::Sequence,
+        connection_end: &ConnectionEnd,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
     ) -> Result<(), Ics02Error> {
-        todo!()
+        let client_state = downcast_tm_client_state(self)?;
+        client_state.verify_height(height)?;
+        verify_delay_passed(ctx, height, connection_end)?;
+
+        let mut seq_bytes = Vec::new();
+        u64::from(sequence)
+            .encode(&mut seq_bytes)
+            .expect("buffer size too small");
+
+        let seq_path = SeqRecvsPath(port_id.clone(), channel_id.clone());
+
+        verify_membership(
+            client_state,
+            connection_end.counterparty().prefix(),
+            proof,
+            root,
+            seq_path,
+            seq_bytes,
+        )
     }
 
     fn verify_packet_receipt_absence(
         &self,
-        ctx: &dyn crate::core::ics04_channel::context::ChannelReaderLightClient,
+        ctx: &dyn ChannelReaderLightClient,
         height: Height,
-        connection_end: &crate::core::ics03_connection::connection::ConnectionEnd,
-        proof: &crate::core::ics23_commitment::commitment::CommitmentProofBytes,
-        root: &crate::core::ics23_commitment::commitment::CommitmentRoot,
-        port_id: &crate::core::ics24_host::identifier::PortId,
-        channel_id: &crate::core::ics24_host::identifier::ChannelId,
-        sequence: crate::core::ics04_channel::packet::Sequence,
+        connection_end: &ConnectionEnd,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
     ) -> Result<(), Ics02Error> {
-        todo!()
+        let client_state = downcast_tm_client_state(self)?;
+        client_state.verify_height(height)?;
+        verify_delay_passed(ctx, height, connection_end)?;
+
+        let receipt_path = ReceiptsPath {
+            port_id: port_id.clone(),
+            channel_id: channel_id.clone(),
+            sequence,
+        };
+        verify_non_membership(
+            client_state,
+            connection_end.counterparty().prefix(),
+            proof,
+            root,
+            receipt_path,
+        )
     }
 }
 
-impl Protobuf<RawClientState> for ClientState {}
+fn verify_membership(
+    client_state: &TmClientState,
+    prefix: &CommitmentPrefix,
+    proof: &CommitmentProofBytes,
+    root: &CommitmentRoot,
+    path: impl Into<Path>,
+    value: Vec<u8>,
+) -> Result<(), Ics02Error> {
+    let merkle_path = apply_prefix(prefix, vec![path.into().to_string()]);
+    let merkle_proof: MerkleProof = RawMerkleProof::try_from(proof.clone())
+        .map_err(Ics02Error::invalid_commitment_proof)?
+        .into();
 
-impl TryFrom<RawClientState> for ClientState {
+    merkle_proof
+        .verify_membership(
+            &client_state.proof_specs,
+            root.clone().into(),
+            merkle_path,
+            value,
+            0,
+        )
+        .map_err(Ics02Error::ics23_verification)
+}
+
+fn verify_non_membership(
+    client_state: &TmClientState,
+    prefix: &CommitmentPrefix,
+    proof: &CommitmentProofBytes,
+    root: &CommitmentRoot,
+    path: impl Into<Path>,
+) -> Result<(), Ics02Error> {
+    let merkle_path = apply_prefix(prefix, vec![path.into().to_string()]);
+    let merkle_proof: MerkleProof = RawMerkleProof::try_from(proof.clone())
+        .map_err(Ics02Error::invalid_commitment_proof)?
+        .into();
+
+    merkle_proof
+        .verify_non_membership(&client_state.proof_specs, root.clone().into(), merkle_path)
+        .map_err(Ics02Error::ics23_verification)
+}
+
+fn verify_delay_passed(
+    ctx: &dyn ChannelReaderLightClient,
+    height: Height,
+    connection_end: &ConnectionEnd,
+) -> Result<(), Ics02Error> {
+    let current_timestamp = ctx.host_timestamp();
+    let current_height = ctx.host_height();
+
+    let client_id = connection_end.client_id();
+    let processed_time = ctx
+        .client_update_time(client_id, height)
+        .map_err(|_| Error::processed_time_not_found(client_id.clone(), height))?;
+    let processed_height = ctx
+        .client_update_height(client_id, height)
+        .map_err(|_| Error::processed_height_not_found(client_id.clone(), height))?;
+
+    let delay_period_time = connection_end.delay_period();
+    let delay_period_height = ctx.block_delay(delay_period_time);
+
+    TmClientState::verify_delay_passed(
+        current_timestamp,
+        current_height,
+        processed_time,
+        processed_height,
+        delay_period_time,
+        delay_period_height,
+    )
+    .map_err(|e| e.into())
+}
+fn downcast_tm_client_state(cs: &dyn ClientState) -> Result<&TmClientState, Ics02Error> {
+    cs.as_any()
+        .downcast_ref::<TmClientState>()
+        .ok_or_else(|| Ics02Error::client_args_type_mismatch(ClientType::Tendermint))
+}
+
+fn downcast_tm_consensus_state(cs: &dyn ConsensusState) -> Result<TmConsensusState, Ics02Error> {
+    cs.as_any()
+        .downcast_ref::<TmConsensusState>()
+        .ok_or_else(|| Ics02Error::client_args_type_mismatch(ClientType::Tendermint))
+        .map(Clone::clone)
+}
+
+impl Protobuf<RawTmClientState> for TmClientState {}
+
+impl TryFrom<RawTmClientState> for TmClientState {
     type Error = Error;
 
-    fn try_from(raw: RawClientState) -> Result<Self, Self::Error> {
+    fn try_from(raw: RawTmClientState) -> Result<Self, Self::Error> {
         let trust_level = raw
             .trust_level
             .clone()
@@ -427,14 +790,15 @@ impl TryFrom<RawClientState> for ClientState {
                 after_misbehaviour: raw.allow_update_after_misbehaviour,
             },
             proof_specs: raw.proof_specs.into(),
+            verifier: ProdVerifier::default(),
         })
     }
 }
 
-impl From<ClientState> for RawClientState {
-    fn from(value: ClientState) -> Self {
+impl From<TmClientState> for RawTmClientState {
+    fn from(value: TmClientState) -> Self {
         #[allow(deprecated)]
-        RawClientState {
+        Self {
             chain_id: value.chain_id.to_string(),
             trust_level: Some(value.trust_level.into()),
             trusting_period: Some(value.trusting_period.into()),
@@ -455,18 +819,17 @@ impl From<ClientState> for RawClientState {
     }
 }
 
-impl Protobuf<Any> for ClientState {}
+impl Protobuf<Any> for TmClientState {}
 
-impl TryFrom<Any> for ClientState {
+impl TryFrom<Any> for TmClientState {
     type Error = Ics02Error;
 
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         use bytes::Buf;
         use core::ops::Deref;
-        use prost::Message;
 
-        fn decode_client_state<B: Buf>(buf: B) -> Result<ClientState, Error> {
-            RawClientState::decode(buf)
+        fn decode_client_state<B: Buf>(buf: B) -> Result<TmClientState, Error> {
+            RawTmClientState::decode(buf)
                 .map_err(Error::decode)?
                 .try_into()
         }
@@ -480,11 +843,11 @@ impl TryFrom<Any> for ClientState {
     }
 }
 
-impl From<ClientState> for Any {
-    fn from(client_state: ClientState) -> Self {
+impl From<TmClientState> for Any {
+    fn from(client_state: TmClientState) -> Self {
         Any {
             type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
-            value: Protobuf::<RawClientState>::encode_vec(&client_state)
+            value: Protobuf::<RawTmClientState>::encode_vec(&client_state)
                 .expect("encoding to `Any` from `TmClientState`"),
         }
     }
@@ -500,7 +863,7 @@ mod tests {
     use ibc_proto::ics23::ProofSpec as Ics23ProofSpec;
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
-    use crate::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
+    use crate::clients::ics07_tendermint::client_state::{AllowUpdate, TmClientState};
     use crate::core::ics02_client::trust_threshold::TrustThreshold;
     use crate::core::ics23_commitment::specs::ProofSpecs;
     use crate::core::ics24_host::identifier::ChainId;
@@ -612,7 +975,7 @@ mod tests {
         for test in tests {
             let p = test.params.clone();
 
-            let cs_result = ClientState::new(
+            let cs_result = TmClientState::new(
                 p.id,
                 p.trust_level,
                 p.trusting_period,
@@ -693,7 +1056,7 @@ mod tests {
         ];
 
         for test in tests {
-            let res = ClientState::verify_delay_passed(
+            let res = TmClientState::verify_delay_passed(
                 test.params.current_time,
                 test.params.current_height,
                 test.params.processed_time,
@@ -734,7 +1097,7 @@ mod tests {
         struct Test {
             name: String,
             height: Height,
-            setup: Option<Box<dyn FnOnce(ClientState) -> ClientState>>,
+            setup: Option<Box<dyn FnOnce(TmClientState) -> TmClientState>>,
             want_pass: bool,
         }
 
@@ -765,7 +1128,7 @@ mod tests {
 
         for test in tests {
             let p = default_params.clone();
-            let client_state = ClientState::new(
+            let client_state = TmClientState::new(
                 p.id,
                 p.trust_level,
                 p.trusting_period,
@@ -802,12 +1165,12 @@ pub mod test_util {
 
     use tendermint::block::Header;
 
-    use crate::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
+    use crate::clients::ics07_tendermint::client_state::{AllowUpdate, TmClientState};
     use crate::core::ics02_client::height::Height;
     use crate::core::ics24_host::identifier::ChainId;
 
-    pub fn get_dummy_tendermint_client_state(tm_header: Header) -> ClientState {
-        ClientState::new(
+    pub fn get_dummy_tendermint_client_state(tm_header: Header) -> TmClientState {
+        TmClientState::new(
             ChainId::from(tm_header.chain_id.clone()),
             Default::default(),
             Duration::from_secs(64000),

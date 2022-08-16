@@ -7,7 +7,7 @@ use tendermint_testgen::light_block::TmLightBlock;
 use tokio::runtime::Runtime;
 
 use ibc::clients::ics07_tendermint::client_state::{
-    AllowUpdate, ClientState as TendermintClientState,
+    AllowUpdate, TmClientState as TendermintClientState,
 };
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
 use ibc::clients::ics07_tendermint::header::Header as TendermintHeader;
@@ -89,7 +89,7 @@ impl ChainEndpoint for MockChain {
     type LightBlock = TmLightBlock;
     type Header = TendermintHeader;
     type ConsensusState = TendermintConsensusState;
-    type ClientState = TendermintClientState;
+    type ClientState = TmClientState;
 
     fn bootstrap(config: ChainConfig, _rt: Arc<Runtime>) -> Result<Self, Error> {
         let (event_sender, event_receiver) = channel::unbounded();
@@ -239,7 +239,7 @@ impl ChainEndpoint for MockChain {
             .ok_or_else(Error::empty_response_value)?;
 
         let client_state = if let Some(cs) =
-            downcast_client_state::<TendermintClientState>(client_state.as_ref())
+            downcast_client_state::<TmClientState>(client_state.as_ref())
         {
             AnyClientState::from(cs.clone())
         } else if let Some(cs) = downcast_client_state::<MockClientState>(client_state.as_ref()) {
@@ -397,7 +397,7 @@ impl ChainEndpoint for MockChain {
             .trusting_period
             .unwrap_or_else(|| self.trusting_period());
 
-        let client_state = TendermintClientState::new(
+        let client_state = TmClientState::new(
             self.id().clone(),
             settings.trust_threshold,
             trusting_period,

@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 
-use ibc::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
+use ibc::clients::ics07_tendermint::client_state::TmClientState as TendermintClientState;
 use ibc_relayer::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer::foreign_client::CreateOptions;
@@ -104,7 +104,7 @@ impl BinaryChainTest for ClientOptionsTest {
 fn query_client_state<Chain: ChainHandle>(
     handle: Chain,
     id: &ClientId,
-) -> Result<TendermintClientState, Error> {
+) -> Result<TmClientState, Error> {
     let (state, _) = handle.query_client_state(
         QueryClientStateRequest {
             client_id: id.clone(),
