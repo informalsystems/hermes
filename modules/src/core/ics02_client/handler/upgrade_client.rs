@@ -29,17 +29,17 @@ pub fn process(
     let MsgUpgradeClient { client_id, .. } = msg;
 
     // Read client state from the host chain store.
-    let client_state = ctx.client_state(&client_id)?;
+    let old_client_state = ctx.client_state(&client_id)?;
 
-    if client_state.is_frozen() {
+    if old_client_state.is_frozen() {
         return Err(Error::client_frozen(client_id));
     }
 
     let upgrade_client_state = ctx.decode_client_state(msg.client_state)?;
 
-    if client_state.latest_height() >= upgrade_client_state.latest_height() {
+    if old_client_state.latest_height() >= upgrade_client_state.latest_height() {
         return Err(Error::low_upgrade_height(
-            client_state.latest_height(),
+            old_client_state.latest_height(),
             upgrade_client_state.latest_height(),
         ));
     }
@@ -47,7 +47,7 @@ pub fn process(
     let UpdatedState {
         client_state,
         consensus_state,
-    } = client_state.verify_upgrade_and_update_state(
+    } = upgrade_client_state.verify_upgrade_and_update_state(
         msg.consensus_state.clone(),
         msg.proof_upgrade_client.clone(),
         msg.proof_upgrade_consensus_state,
