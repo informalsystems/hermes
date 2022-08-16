@@ -5,7 +5,7 @@ use crate::clients::ics07_tendermint::client_def::TendermintClient;
 use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::consensus_state::ConsensusState;
-use crate::core::ics02_client::context::ClientReaderLightClient;
+use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
@@ -32,7 +32,7 @@ pub trait ClientDef {
 
     fn check_header_and_update_state(
         &self,
-        ctx: &dyn ClientReaderLightClient,
+        ctx: &dyn ClientReader,
         client_id: ClientId,
         client_state: &dyn ClientState,
         header: Any,
@@ -201,7 +201,7 @@ impl ClientDef for AnyClient {
     /// Validates an incoming `header` against the latest consensus state of this client.
     fn check_header_and_update_state(
         &self,
-        ctx: &dyn ClientReaderLightClient,
+        ctx: &dyn ClientReader,
         client_id: ClientId,
         client_state: &dyn ClientState,
         header: Any,

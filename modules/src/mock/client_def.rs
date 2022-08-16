@@ -5,7 +5,7 @@ use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use crate::core::ics02_client::client_def::{ClientDef, UpdatedState};
 use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::consensus_state::ConsensusState;
-use crate::core::ics02_client::context::ClientReaderLightClient;
+use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
@@ -35,7 +35,7 @@ impl ClientDef for MockClient {
 
     fn check_header_and_update_state(
         &self,
-        _ctx: &dyn ClientReaderLightClient,
+        _ctx: &dyn ClientReader,
         _client_id: ClientId,
         client_state: &dyn ClientState,
         header: Any,

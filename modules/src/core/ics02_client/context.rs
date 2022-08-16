@@ -72,66 +72,6 @@ pub trait ClientReader {
     fn client_counter(&self) -> Result<u64, Error>;
 }
 
-/// Defines a subset of the `ClientReader`'s methods that a light-client implementation can access.
-/// A blanket implementation of this trait is provided for all types that implement `ClientReader`.
-///
-/// Note: This trait is not a supertrait of `ClientReader` because it uses trait objects and cannot
-/// depend on `AnyClientState` due to a circular dependency problem.
-pub trait ClientReaderLightClient {
-    fn consensus_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<Box<dyn ConsensusState>, Error>;
-
-    /// Search for the lowest consensus state higher than `height`.
-    fn next_consensus_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<Option<Box<dyn ConsensusState>>, Error>;
-
-    /// Search for the highest consensus state lower than `height`.
-    fn prev_consensus_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<Option<Box<dyn ConsensusState>>, Error>;
-
-    /// Returns the current timestamp of the local chain.
-    fn host_timestamp(&self) -> Timestamp;
-}
-
-impl<T: ClientReader> ClientReaderLightClient for T {
-    fn consensus_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<Box<dyn ConsensusState>, Error> {
-        ClientReader::consensus_state(self, client_id, height)
-    }
-
-    fn next_consensus_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<Option<Box<dyn ConsensusState>>, Error> {
-        ClientReader::next_consensus_state(self, client_id, height)
-    }
-
-    fn prev_consensus_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<Option<Box<dyn ConsensusState>>, Error> {
-        ClientReader::prev_consensus_state(self, client_id, height)
-    }
-
-    fn host_timestamp(&self) -> Timestamp {
-        ClientReader::host_timestamp(self)
-    }
-}
-
 /// Defines the write-only part of ICS2 (client functions) context.
 pub trait ClientKeeper {
     fn store_client_result(&mut self, handler_res: ClientResult) -> Result<(), Error> {
