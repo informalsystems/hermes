@@ -18,10 +18,7 @@ use ibc::{
         misbehaviour::Misbehaviour as TmMisbehaviour,
     },
     core::{
-        ics02_client::{
-            client_state::AnyClientState, client_type::ClientType, events::UpdateClient,
-            header::downcast_header,
-        },
+        ics02_client::{client_type::ClientType, events::UpdateClient, header::downcast_header},
         ics24_host::identifier::ChainId,
     },
     downcast,
@@ -29,7 +26,7 @@ use ibc::{
 use tracing::trace;
 
 use crate::{
-    chain::cosmos::CosmosSdkChain, config::ChainConfig, error::Error,
+    chain::cosmos::CosmosSdkChain, client_state::AnyClientState, config::ChainConfig, error::Error,
     misbehaviour::MisbehaviourEvidence,
 };
 

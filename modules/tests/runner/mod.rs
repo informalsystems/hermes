@@ -1,12 +1,10 @@
 pub mod step;
 
 use alloc::collections::btree_map::BTreeMap as HashMap;
-
 use core::convert::TryInto;
 use core::fmt::Debug;
 use core::time::Duration;
 
-use ibc::core::ics02_client::client_state::AnyClientState;
 use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::context::ClientReader;
 use ibc::core::ics02_client::error as client_error;
@@ -149,8 +147,8 @@ impl IbcTestRunner {
         MockHeader::new(Self::height(height))
     }
 
-    pub fn client_state(height: Height) -> AnyClientState {
-        AnyClientState::Mock(MockClientState::new(Self::mock_header(height)))
+    pub fn client_state(height: Height) -> MockClientState {
+        MockClientState::new(Self::mock_header(height))
     }
 
     fn signer() -> Signer {
@@ -301,7 +299,7 @@ impl IbcTestRunner {
 
                 // create ICS26 message and deliver it
                 let msg = Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
-                    client_state: Self::client_state(client_state),
+                    client_state: Self::client_state(client_state).into(),
                     consensus_state: MockConsensusState::new(Self::mock_header(consensus_state))
                         .into(),
                     signer: Self::signer(),

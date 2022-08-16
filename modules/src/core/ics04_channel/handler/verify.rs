@@ -1,4 +1,3 @@
-use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
@@ -37,7 +36,7 @@ pub fn verify_channel_proofs<Ctx: ChannelReader + ChannelReaderLightClient>(
     // A counterparty channel id of None in not possible, and is checked by validate_basic in msg.
     client_def
         .verify_channel_state(
-            &client_state,
+            client_state.as_ref(),
             height,
             connection_end.counterparty().prefix(),
             proofs.object_proof(),
@@ -79,7 +78,7 @@ pub fn verify_packet_recv_proofs<Ctx: ChannelReader + ChannelReaderLightClient>(
     client_def
         .verify_packet_data(
             ctx,
-            &client_state,
+            client_state.as_ref(),
             height,
             connection_end,
             proofs.object_proof(),
@@ -121,7 +120,7 @@ pub fn verify_packet_acknowledgement_proofs<Ctx: ChannelReader + ChannelReaderLi
     client_def
         .verify_packet_acknowledgement(
             ctx,
-            &client_state,
+            client_state.as_ref(),
             height,
             connection_end,
             proofs.object_proof(),
@@ -161,7 +160,7 @@ pub fn verify_next_sequence_recv<Ctx: ChannelReader + ChannelReaderLightClient>(
     client_def
         .verify_next_sequence_recv(
             ctx,
-            &client_state,
+            client_state.as_ref(),
             height,
             connection_end,
             proofs.object_proof(),
@@ -198,7 +197,7 @@ pub fn verify_packet_receipt_absence<Ctx: ChannelReader + ChannelReaderLightClie
     client_def
         .verify_packet_receipt_absence(
             ctx,
-            &client_state,
+            client_state.as_ref(),
             height,
             connection_end,
             proofs.object_proof(),

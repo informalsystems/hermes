@@ -2,8 +2,8 @@
 
 use tracing::debug;
 
-use crate::core::ics02_client::client_def::{AnyClient, ClientDef};
-use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
+use crate::core::ics02_client::client_def::{AnyClient, ClientDef, UpdatedState};
+use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
@@ -22,7 +22,7 @@ use crate::timestamp::Timestamp;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Result {
     pub client_id: ClientId,
-    pub client_state: AnyClientState,
+    pub client_state: Box<dyn ClientState>,
     pub consensus_state: Box<dyn ConsensusState>,
     pub processed_time: Timestamp,
     pub processed_height: Height,
@@ -77,14 +77,17 @@ pub fn process<Ctx: ClientReader>(
     // Use client_state to validate the new header against the latest consensus_state.
     // This function will return the new client_state (its latest_height changed) and a
     // consensus_state obtained from header. These will be later persisted by the keeper.
-    let (new_client_state, new_consensus_state) = client_def
-        .check_header_and_update_state(ctx, client_id.clone(), client_state, header)
+    let UpdatedState {
+        client_state,
+        consensus_state,
+    } = client_def
+        .check_header_and_update_state(ctx, client_id.clone(), client_state.as_ref(), header)
         .map_err(|e| Error::header_verification_failure(e.to_string()))?;
 
     let result = ClientResult::Update(Result {
         client_id: client_id.clone(),
-        client_state: new_client_state,
-        consensus_state: new_consensus_state,
+        client_state,
+        consensus_state,
         processed_time: ClientReader::host_timestamp(ctx),
         processed_height: ctx.host_height(),
     });
@@ -104,7 +107,7 @@ mod tests {
     use test_log::test;
 
     use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
-    use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
+    use crate::core::ics02_client::client_state::ClientState;
     use crate::core::ics02_client::client_type::ClientType;
     use crate::core::ics02_client::consensus_state::downcast_consensus_state;
     use crate::core::ics02_client::error::{Error, ErrorDetail};
@@ -159,9 +162,8 @@ mod tests {
                         assert_eq!(upd_res.client_id, client_id);
                         assert_eq!(
                             upd_res.client_state,
-                            AnyClientState::Mock(MockClientState::new(
-                                MockHeader::new(height).with_timestamp(timestamp)
-                            ))
+                            MockClientState::new(MockHeader::new(height).with_timestamp(timestamp))
+                                .into_box()
                         )
                     }
                     _ => panic!("update handler result has incorrect type"),

@@ -1,7 +1,7 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpgradeAnyClient`.
 //!
-use crate::core::ics02_client::client_def::{AnyClient, ClientDef};
-use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
+use crate::core::ics02_client::client_def::{AnyClient, ClientDef, UpdatedState};
+use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
@@ -18,7 +18,7 @@ use crate::prelude::*;
 #[derive(Clone, Debug, PartialEq)]
 pub struct Result {
     pub client_id: ClientId,
-    pub client_state: AnyClientState,
+    pub client_state: Box<dyn ClientState>,
     pub consensus_state: Box<dyn ConsensusState>,
 }
 
@@ -36,7 +36,7 @@ pub fn process(
         return Err(Error::client_frozen(client_id));
     }
 
-    let upgrade_client_state = msg.client_state.clone();
+    let upgrade_client_state = ctx.decode_client_state(msg.client_state)?;
 
     if client_state.latest_height() >= upgrade_client_state.latest_height() {
         return Err(Error::low_upgrade_height(
@@ -49,8 +49,11 @@ pub fn process(
 
     let client_def = AnyClient::from_client_type(client_type);
 
-    let (new_client_state, new_consensus_state) = client_def.verify_upgrade_and_update_state(
-        &upgrade_client_state,
+    let UpdatedState {
+        client_state,
+        consensus_state,
+    } = client_def.verify_upgrade_and_update_state(
+        upgrade_client_state.as_ref(),
         msg.consensus_state.clone(),
         msg.proof_upgrade_client.clone(),
         msg.proof_upgrade_consensus_state,
@@ -61,8 +64,8 @@ pub fn process(
 
     let result = ClientResult::Upgrade(Result {
         client_id: client_id.clone(),
-        client_state: new_client_state,
-        consensus_state: new_consensus_state,
+        client_state,
+        consensus_state,
     });
     let event_attributes = Attributes {
         client_id,
@@ -129,7 +132,7 @@ mod tests {
                 match result {
                     Upgrade(upg_res) => {
                         assert_eq!(upg_res.client_id, client_id);
-                        assert_eq!(upg_res.client_state, msg.client_state)
+                        assert_eq!(upg_res.client_state.as_ref().clone_into(), msg.client_state)
                     }
                     _ => panic!("upgrade handler result has incorrect type"),
                 }
@@ -191,7 +194,12 @@ mod tests {
         match output {
             Err(Error(ErrorDetail::LowUpgradeHeight(e), _)) => {
                 assert_eq!(e.upgraded_height, Height::new(0, 42).unwrap());
-                assert_eq!(e.client_height, msg.client_state.latest_height());
+                assert_eq!(
+                    e.client_height,
+                    MockClientState::try_from(msg.client_state)
+                        .unwrap()
+                        .latest_height()
+                );
             }
             _ => {
                 panic!("expected LowUpgradeHeight error, instead got {:?}", output);

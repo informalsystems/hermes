@@ -3,15 +3,16 @@ use crate::prelude::*;
 use core::convert::{TryFrom, TryInto};
 use core::time::Duration;
 
+use ibc_proto::google::protobuf::Any;
+use ibc_proto::ibc::core::client::v1::Height as RawHeight;
+use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 use tendermint_light_client_verifier::options::Options;
 
-use ibc_proto::ibc::core::client::v1::Height as RawHeight;
-use ibc_proto::ibc::lightclients::tendermint::v1::ClientState as RawClientState;
-
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
+use crate::core::ics02_client::client_state::UpgradeOptions as CoreUpgradeOptions;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
@@ -19,6 +20,8 @@ use crate::core::ics23_commitment::specs::ProofSpecs;
 use crate::core::ics24_host::identifier::ChainId;
 use crate::timestamp::{Timestamp, ZERO_DURATION};
 use crate::Height;
+
+pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientState {
@@ -39,8 +42,6 @@ pub struct AllowUpdate {
     pub after_expiry: bool,
     pub after_misbehaviour: bool,
 }
-
-impl Protobuf<RawClientState> for ClientState {}
 
 impl ClientState {
     #[allow(clippy::too_many_arguments)]
@@ -133,12 +134,6 @@ impl ClientState {
         Some(2 * self.trusting_period / 3)
     }
 
-    /// Check if the state is expired when `elapsed` time has passed since the latest consensus
-    /// state timestamp
-    pub fn expired(&self, elapsed: Duration) -> bool {
-        elapsed > self.trusting_period
-    }
-
     /// Helper method to produce a [`Options`] struct for use in
     /// Tendermint-specific light client verification.
     pub fn as_light_client_options(&self) -> Result<Options, Error> {
@@ -198,9 +193,9 @@ pub struct UpgradeOptions {
     pub unbonding_period: Duration,
 }
 
-impl crate::core::ics02_client::client_state::ClientState for ClientState {
-    type UpgradeOptions = UpgradeOptions;
+impl CoreUpgradeOptions for UpgradeOptions {}
 
+impl crate::core::ics02_client::client_state::ClientState for ClientState {
     fn chain_id(&self) -> ChainId {
         self.chain_id.clone()
     }
@@ -220,9 +215,14 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
     fn upgrade(
         &mut self,
         upgrade_height: Height,
-        upgrade_options: UpgradeOptions,
+        upgrade_options: &dyn CoreUpgradeOptions,
         chain_id: ChainId,
     ) {
+        let upgrade_options = upgrade_options
+            .as_any()
+            .downcast_ref::<UpgradeOptions>()
+            .expect("UpgradeOptions not of type Tendermint");
+
         // Reset custom fields to zero values
         self.trusting_period = ZERO_DURATION;
         self.trust_level = TrustThreshold::ZERO;
@@ -237,10 +237,12 @@ impl crate::core::ics02_client::client_state::ClientState for ClientState {
         self.chain_id = chain_id;
     }
 
-    fn encode_vec(&self) -> Result<Vec<u8>, Ics02Error> {
-        Protobuf::encode_vec(self).map_err(Ics02Error::invalid_any_client_state)
+    fn expired(&self, elapsed: Duration) -> bool {
+        elapsed > self.trusting_period
     }
 }
+
+impl Protobuf<RawClientState> for ClientState {}
 
 impl TryFrom<RawClientState> for ClientState {
     type Error = Error;
@@ -315,6 +317,41 @@ impl From<ClientState> for RawClientState {
             upgrade_path: value.upgrade_path,
             allow_update_after_expiry: value.allow_update.after_expiry,
             allow_update_after_misbehaviour: value.allow_update.after_misbehaviour,
+        }
+    }
+}
+
+impl Protobuf<Any> for ClientState {}
+
+impl TryFrom<Any> for ClientState {
+    type Error = Ics02Error;
+
+    fn try_from(raw: Any) -> Result<Self, Self::Error> {
+        use bytes::Buf;
+        use core::ops::Deref;
+        use prost::Message;
+
+        fn decode_client_state<B: Buf>(buf: B) -> Result<ClientState, Error> {
+            RawClientState::decode(buf)
+                .map_err(Error::decode)?
+                .try_into()
+        }
+
+        match raw.type_url.as_str() {
+            TENDERMINT_CLIENT_STATE_TYPE_URL => {
+                decode_client_state(raw.value.deref()).map_err(Into::into)
+            }
+            _ => Err(Ics02Error::unknown_client_state_type(raw.type_url)),
+        }
+    }
+}
+
+impl From<ClientState> for Any {
+    fn from(client_state: ClientState) -> Self {
+        Any {
+            type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
+            value: Protobuf::<RawClientState>::encode_vec(&client_state)
+                .expect("encoding to `Any` from `TmClientState`"),
         }
     }
 }

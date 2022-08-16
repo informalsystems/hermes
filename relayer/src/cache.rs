@@ -8,11 +8,12 @@ use std::time::Duration;
 
 use moka::sync::Cache as MokaCache;
 
-use ibc::core::ics02_client::client_state::AnyClientState;
 use ibc::core::ics02_client::height::Height;
 use ibc::core::ics03_connection::connection::ConnectionEnd;
 use ibc::core::ics04_channel::channel::ChannelEnd;
 use ibc::core::ics24_host::identifier::{ClientId, ConnectionId, PortChannelId};
+
+use crate::client_state::AnyClientState;
 
 const CHANNEL_CACHE_TTL: Duration = Duration::from_secs(60);
 const CONNECTION_CACHE_TTL: Duration = Duration::from_secs(10 * 60);

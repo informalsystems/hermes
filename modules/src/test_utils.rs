@@ -8,7 +8,7 @@ use crate::applications::transfer::context::{
     cosmos_adr028_escrow_address, BankKeeper, Ics20Context, Ics20Keeper, Ics20Reader,
 };
 use crate::applications::transfer::{error::Error as Ics20Error, PrefixedCoin};
-use crate::core::ics02_client::client_state::AnyClientState;
+use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
@@ -268,7 +268,7 @@ impl ChannelReader for DummyTransferModule {
         unimplemented!()
     }
 
-    fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Error> {
+    fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Error> {
         match self.ibc_store.lock().unwrap().clients.get(client_id) {
             Some(client_record) => client_record
                 .client_state

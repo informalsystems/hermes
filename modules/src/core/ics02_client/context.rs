@@ -4,7 +4,9 @@
 
 use alloc::boxed::Box;
 
-use crate::core::ics02_client::client_state::AnyClientState;
+use ibc_proto::google::protobuf::Any;
+
+use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::error::Error;
@@ -15,8 +17,14 @@ use crate::Height;
 
 /// Defines the read-only part of ICS2 (client functions) context.
 pub trait ClientReader {
+    /// Returns the ClientType for the given identifier `client_id`.
     fn client_type(&self, client_id: &ClientId) -> Result<ClientType, Error>;
-    fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Error>;
+
+    /// Returns the ClientState for the given identifier `client_id`.
+    fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Error>;
+
+    /// Tries to decode the given `client_state` into a concrete light client state.
+    fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, Error>;
 
     /// Retrieve the consensus state for the given client ID at the specified
     /// height.
@@ -64,77 +72,15 @@ pub trait ClientReader {
     fn client_counter(&self) -> Result<u64, Error>;
 }
 
-/// Defines a subset of the `ClientReader`'s methods that a light-client implementation can access.
-/// A blanket implementation of this trait is provided for all types that implement `ClientReader`.
-///
-/// Note: This trait is not a supertrait of `ClientReader` because it uses trait objects and cannot
-/// depend on `AnyClientState` due to a circular dependency problem.
-pub trait ClientReaderLightClient {
-    fn consensus_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<Box<dyn ConsensusState>, Error>;
-
-    /// Search for the lowest consensus state higher than `height`.
-    fn next_consensus_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<Option<Box<dyn ConsensusState>>, Error>;
-
-    /// Search for the highest consensus state lower than `height`.
-    fn prev_consensus_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<Option<Box<dyn ConsensusState>>, Error>;
-
-    /// Returns the current timestamp of the local chain.
-    fn host_timestamp(&self) -> Timestamp;
-}
-
-impl<T: ClientReader> ClientReaderLightClient for T {
-    fn consensus_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<Box<dyn ConsensusState>, Error> {
-        ClientReader::consensus_state(self, client_id, height)
-    }
-
-    fn next_consensus_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<Option<Box<dyn ConsensusState>>, Error> {
-        ClientReader::next_consensus_state(self, client_id, height)
-    }
-
-    fn prev_consensus_state(
-        &self,
-        client_id: &ClientId,
-        height: Height,
-    ) -> Result<Option<Box<dyn ConsensusState>>, Error> {
-        ClientReader::prev_consensus_state(self, client_id, height)
-    }
-
-    fn host_timestamp(&self) -> Timestamp {
-        ClientReader::host_timestamp(self)
-    }
-}
-
 /// Defines the write-only part of ICS2 (client functions) context.
 pub trait ClientKeeper {
     fn store_client_result(&mut self, handler_res: ClientResult) -> Result<(), Error> {
         match handler_res {
             Create(res) => {
-                let client_id = res.client_id.clone();
-
-                self.store_client_type(client_id.clone(), res.client_type)?;
-                self.store_client_state(client_id.clone(), res.client_state.clone())?;
+                self.store_client_type(res.client_id.clone(), res.client_type)?;
+                self.store_client_state(res.client_id.clone(), res.client_state.clone())?;
                 self.store_consensus_state(
-                    client_id,
+                    res.client_id.clone(),
                     res.client_state.latest_height(),
                     res.consensus_state,
                 )?;
@@ -193,7 +139,7 @@ pub trait ClientKeeper {
     fn store_client_state(
         &mut self,
         client_id: ClientId,
-        client_state: AnyClientState,
+        client_state: Box<dyn ClientState>,
     ) -> Result<(), Error>;
 
     /// Called upon successful client creation and update
