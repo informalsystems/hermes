@@ -13,9 +13,6 @@ use crate::dynamic_typing::AsAny;
 use crate::prelude::*;
 use crate::Height;
 
-pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
-pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
-
 pub trait ClientState:
     AsAny
     + sealed::ErasedPartialEqClientState

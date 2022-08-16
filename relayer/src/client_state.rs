@@ -9,12 +9,9 @@ use serde::{Deserialize, Serialize};
 
 use ibc::clients::ics07_tendermint::client_state::{
     ClientState as TmClientState, UpgradeOptions as TmUpgradeOptions,
+    TENDERMINT_CLIENT_STATE_TYPE_URL,
 };
-#[cfg(test)]
-use ibc::core::ics02_client::client_state::MOCK_CLIENT_STATE_TYPE_URL;
-use ibc::core::ics02_client::client_state::{
-    ClientState, UpgradeOptions, TENDERMINT_CLIENT_STATE_TYPE_URL,
-};
+use ibc::core::ics02_client::client_state::{ClientState, UpgradeOptions};
 use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::error::Error;
 use ibc::core::ics02_client::trust_threshold::TrustThreshold;
@@ -22,6 +19,8 @@ use ibc::core::ics24_host::error::ValidationError;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 #[cfg(test)]
 use ibc::mock::client_state::MockClientState;
+#[cfg(test)]
+use ibc::mock::client_state::MOCK_CLIENT_STATE_TYPE_URL;
 use ibc::Height;
 use ibc_proto::google::protobuf::Any;
 

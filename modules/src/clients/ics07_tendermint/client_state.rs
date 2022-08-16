@@ -12,9 +12,7 @@ use tendermint_light_client_verifier::options::Options;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
-use crate::core::ics02_client::client_state::{
-    UpgradeOptions as CoreUpgradeOptions, TENDERMINT_CLIENT_STATE_TYPE_URL,
-};
+use crate::core::ics02_client::client_state::UpgradeOptions as CoreUpgradeOptions;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
@@ -22,6 +20,8 @@ use crate::core::ics23_commitment::specs::ProofSpecs;
 use crate::core::ics24_host::identifier::ChainId;
 use crate::timestamp::{Timestamp, ZERO_DURATION};
 use crate::Height;
+
+pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientState {

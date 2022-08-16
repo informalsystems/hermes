@@ -8,9 +8,7 @@ use ibc_proto::ibc::mock::ClientState as RawMockClientState;
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 
-use crate::core::ics02_client::client_state::{
-    ClientState, UpgradeOptions, MOCK_CLIENT_STATE_TYPE_URL,
-};
+use crate::core::ics02_client::client_state::{ClientState, UpgradeOptions};
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::error::Error;
@@ -18,6 +16,8 @@ use crate::core::ics24_host::identifier::ChainId;
 use crate::mock::consensus_state::MockConsensusState;
 use crate::mock::header::MockHeader;
 use crate::Height;
+
+pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
 
 /// A mock of an IBC client record as it is stored in a mock context.
 /// For testing ICS02 handlers mostly, cf. `MockClientContext`.
