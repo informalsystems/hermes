@@ -13,7 +13,7 @@ use ibc_relayer::{
 use crate::conclude::Output;
 use crate::{application::app_config, conclude::json};
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct KeysListCmd {
     #[clap(
         long = "chain",

@@ -31,7 +31,7 @@ pub mod timeout;
 pub mod timeout_on_close;
 
 /// Enumeration of all possible messages that the ICS4 protocol processes.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ChannelMsg {
     ChannelOpenInit(MsgChannelOpenInit),
     ChannelOpenTry(MsgChannelOpenTry),
@@ -67,7 +67,7 @@ impl ChannelMsg {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum PacketMsg {
     RecvPacket(MsgRecvPacket),
     AckPacket(MsgAcknowledgement),

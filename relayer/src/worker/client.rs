@@ -9,7 +9,6 @@ use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
 use crate::{
     chain::handle::ChainHandle,
     foreign_client::{ForeignClient, HasExpiredOrFrozenError, MisbehaviourResults},
-    telemetry,
 };
 
 use super::WorkerCmd;
@@ -34,17 +33,13 @@ pub fn spawn_refresh_client<ChainA: ChainHandle, ChainB: ChainHandle>(
             ),
             Some(Duration::from_secs(1)),
             move || {
-                let res = client.refresh().map_err(|e| {
+                let _res = client.refresh().map_err(|e| {
                     if e.is_expired_or_frozen_error() {
                         TaskError::Fatal(e)
                     } else {
                         TaskError::Ignore(e)
                     }
                 })?;
-
-                if res.is_some() {
-                    telemetry!(ibc_client_updates, &client.dst_chain.id(), &client.id, 1);
-                }
 
                 Ok(Next::Continue)
             },
@@ -96,8 +91,8 @@ pub fn detect_misbehavior_task<ChainA: ChainHandle, ChainB: ChainHandle>(
                     WorkerCmd::IbcEvents { batch } => {
                         trace!("received batch: {:?}", batch);
 
-                        for event in batch.events {
-                            if let IbcEvent::UpdateClient(update) = event {
+                        for event_with_height in batch.events {
+                            if let IbcEvent::UpdateClient(ref update) = event_with_height.event {
                                 debug!("checking misbehavior for updated client");
                                 let misbehavior_result =
                                     client.detect_misbehaviour_and_submit_evidence(Some(update));
