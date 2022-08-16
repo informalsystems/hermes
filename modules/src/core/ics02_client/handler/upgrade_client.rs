@@ -6,7 +6,7 @@ use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
 use crate::core::ics02_client::handler::ClientResult;
-use crate::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
+use crate::core::ics02_client::msgs::upgrade_client::MsgUpgradeClient;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
@@ -23,10 +23,10 @@ pub struct Result {
 
 pub fn process(
     ctx: &dyn ClientReader,
-    msg: MsgUpgradeAnyClient,
+    msg: MsgUpgradeClient,
 ) -> HandlerResult<ClientResult, Error> {
     let mut output = HandlerOutput::builder();
-    let MsgUpgradeAnyClient { client_id, .. } = msg;
+    let MsgUpgradeClient { client_id, .. } = msg;
 
     // Read client state from the host chain store.
     let client_state = ctx.client_state(&client_id)?;
@@ -79,7 +79,7 @@ mod tests {
     use crate::core::ics02_client::error::{Error, ErrorDetail};
     use crate::core::ics02_client::handler::dispatch;
     use crate::core::ics02_client::handler::ClientResult::Upgrade;
-    use crate::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
+    use crate::core::ics02_client::msgs::upgrade_client::MsgUpgradeClient;
     use crate::core::ics02_client::msgs::ClientMsg;
     use crate::core::ics24_host::identifier::ClientId;
     use crate::events::IbcEvent;
@@ -98,7 +98,7 @@ mod tests {
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42).unwrap());
 
-        let msg = MsgUpgradeAnyClient {
+        let msg = MsgUpgradeClient {
             client_id: client_id.clone(),
             client_state: MockClientState::new(MockHeader::new(Height::new(1, 26).unwrap())).into(),
             consensus_state: MockConsensusState::new(MockHeader::new(Height::new(1, 26).unwrap()))
@@ -144,7 +144,7 @@ mod tests {
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42).unwrap());
 
-        let msg = MsgUpgradeAnyClient {
+        let msg = MsgUpgradeClient {
             client_id: ClientId::from_str("nonexistingclient").unwrap(),
             client_state: MockClientState::new(MockHeader::new(Height::new(1, 26).unwrap())).into(),
             consensus_state: MockConsensusState::new(MockHeader::new(Height::new(1, 26).unwrap()))
@@ -173,7 +173,7 @@ mod tests {
 
         let ctx = MockContext::default().with_client(&client_id, Height::new(0, 42).unwrap());
 
-        let msg = MsgUpgradeAnyClient {
+        let msg = MsgUpgradeClient {
             client_id,
             client_state: MockClientState::new(MockHeader::new(Height::new(0, 26).unwrap())).into(),
             consensus_state: MockConsensusState::new(MockHeader::new(Height::new(0, 26).unwrap()))

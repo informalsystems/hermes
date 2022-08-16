@@ -40,7 +40,7 @@ impl TryFrom<Any> for Ics26Envelope {
                 Ok(Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(domain_msg)))
             }
             upgrade_client::TYPE_URL => {
-                let domain_msg = upgrade_client::MsgUpgradeAnyClient::decode_vec(&any_msg.value)
+                let domain_msg = upgrade_client::MsgUpgradeClient::decode_vec(&any_msg.value)
                     .map_err(Error::malformed_message_bytes)?;
                 Ok(Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(domain_msg)))
             }

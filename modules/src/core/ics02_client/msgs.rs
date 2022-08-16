@@ -7,7 +7,7 @@
 use crate::core::ics02_client::msgs::create_client::MsgCreateClient;
 use crate::core::ics02_client::msgs::misbehaviour::MsgSubmitMisbehaviour;
 use crate::core::ics02_client::msgs::update_client::MsgUpdateClient;
-use crate::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
+use crate::core::ics02_client::msgs::upgrade_client::MsgUpgradeClient;
 
 pub mod create_client;
 pub mod misbehaviour;
@@ -20,5 +20,5 @@ pub enum ClientMsg {
     CreateClient(MsgCreateClient),
     UpdateClient(MsgUpdateClient),
     Misbehaviour(MsgSubmitMisbehaviour),
-    UpgradeClient(MsgUpgradeAnyClient),
+    UpgradeClient(MsgUpgradeClient),
 }

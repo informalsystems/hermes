@@ -138,7 +138,7 @@ mod tests {
     };
     use crate::core::ics02_client::msgs::{
         create_client::MsgCreateClient, update_client::MsgUpdateClient,
-        upgrade_client::MsgUpgradeAnyClient, ClientMsg,
+        upgrade_client::MsgUpgradeClient, ClientMsg,
     };
     use crate::core::ics03_connection::msgs::{
         conn_open_ack::{test_util::get_dummy_raw_msg_conn_open_ack, MsgConnectionOpenAck},
@@ -503,7 +503,7 @@ mod tests {
             },
             Test {
                 name: "Client upgrade successful".to_string(),
-                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeAnyClient::new(
+                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeClient::new(
                     client_id.clone(),
                     MockClientState::new(MockHeader::new(upgrade_client_height)).into(),
                     MockConsensusState::new(MockHeader::new(upgrade_client_height)).into(),
@@ -516,7 +516,7 @@ mod tests {
             },
             Test {
                 name: "Client upgrade un-successful".to_string(),
-                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeAnyClient::new(
+                msg: Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeClient::new(
                     client_id,
                     MockClientState::new(MockHeader::new(upgrade_client_height_second)).into(),
                     MockConsensusState::new(MockHeader::new(upgrade_client_height_second)).into(),
