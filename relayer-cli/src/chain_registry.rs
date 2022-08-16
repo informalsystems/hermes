@@ -159,7 +159,7 @@ where
 /// # Example
 ///
 /// ```
-/// use ibc_relayer_cli::chain_registry::relayer_config::get_configs;
+/// use ibc_relayer_cli::chain_registry::get_configs;
 /// let chains = &vec!["cosmoshub".to_string(), "osmosis".to_string()];
 /// let configs = get_configs(chains);
 /// ```
