@@ -30,7 +30,7 @@ impl TryFrom<Any> for Ics26Envelope {
             // ICS2 messages
             create_client::TYPE_URL => {
                 // Pop out the message and then wrap it in the corresponding type.
-                let domain_msg = create_client::MsgCreateAnyClient::decode_vec(&any_msg.value)
+                let domain_msg = create_client::MsgCreateClient::decode_vec(&any_msg.value)
                     .map_err(Error::malformed_message_bytes)?;
                 Ok(Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(domain_msg)))
             }

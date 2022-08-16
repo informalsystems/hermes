@@ -137,7 +137,7 @@ mod tests {
         msgs::transfer::MsgTransfer, packet::PacketData, PrefixedCoin, MODULE_ID_STR,
     };
     use crate::core::ics02_client::msgs::{
-        create_client::MsgCreateAnyClient, update_client::MsgUpdateClient,
+        create_client::MsgCreateClient, update_client::MsgUpdateClient,
         upgrade_client::MsgUpgradeAnyClient, ClientMsg,
     };
     use crate::core::ics03_connection::msgs::{
@@ -229,7 +229,7 @@ mod tests {
             ctx.with_router(router)
         };
 
-        let create_client_msg = MsgCreateAnyClient::new(
+        let create_client_msg = MsgCreateClient::new(
             MockClientState::new(MockHeader::new(start_client_height)).into(),
             MockConsensusState::new(MockHeader::new(start_client_height)).into(),
             default_signer.clone(),

@@ -17,7 +17,7 @@ use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics02_client::error::Error as ClientError;
 use ibc::core::ics02_client::events::UpdateClient;
 use ibc::core::ics02_client::header::Header;
-use ibc::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
+use ibc::core::ics02_client::msgs::create_client::MsgCreateClient;
 use ibc::core::ics02_client::msgs::misbehaviour::MsgSubmitMisbehaviour;
 use ibc::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use ibc::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
@@ -555,7 +555,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     pub fn build_create_client(
         &self,
         options: CreateOptions,
-    ) -> Result<MsgCreateAnyClient, ForeignClientError> {
+    ) -> Result<MsgCreateClient, ForeignClientError> {
         // Get signer
         let signer = self.dst_chain.get_signer().map_err(|e| {
             ForeignClientError::client_create(
@@ -622,7 +622,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             })?;
 
         //TODO Get acct_prefix
-        let msg = MsgCreateAnyClient::new(client_state.into(), consensus_state.into(), signer)
+        let msg = MsgCreateClient::new(client_state.into(), consensus_state.into(), signer)
             .map_err(ForeignClientError::client)?;
 
         Ok(msg)
