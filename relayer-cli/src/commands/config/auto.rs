@@ -11,21 +11,13 @@ use ibc_relayer::{
     keyring::{KeyRing, Store::Test},
 };
 
-use regex::Regex;
-
 use std::path::PathBuf;
-use tokio::runtime::Builder;
 use tracing::{info, warn};
 
-fn find_key(chainconfig: &ChainConfig) -> Option<String> {
-    if let Ok(keyring) = KeyRing::new(Test, &chainconfig.account_prefix, &chainconfig.id) {
-        if let Ok(keys) = keyring.keys() {
-            if let Some((name, _)) = keys.first() {
-                return Some(name.to_string());
-            }
-        }
-    }
-    None
+fn find_key(chain_config: &ChainConfig) -> Option<String> {
+    let keyring = KeyRing::new(Test, &chain_config.account_prefix, &chain_config.id).ok()?;
+    let keys = keyring.keys().ok()?;
+    keys.first().map(|(name, _)| name.to_string())
 }
 
 /// The data structure that represents the arguments when invoking the `config auto` CLI command.
@@ -68,43 +60,46 @@ pub struct AutoCmd {
     commit: Option<String>,
 }
 
+fn extract_chains_and_keys(chain_names: &[String]) -> Vec<(String, Option<String>)> {
+    let mut captured_names = chain_names
+        .iter()
+        .map(|chain_key| {
+            chain_key
+                .split_once(':')
+                .map(|(name, key)| (name.to_string(), Some(key.to_string())))
+                .unwrap_or_else(|| (chain_key.to_string(), None))
+        })
+        .collect::<Vec<_>>();
+
+    captured_names.sort_by(|a, b| a.0.cmp(&b.0));
+    captured_names
+}
+
 impl Runnable for AutoCmd {
     fn run(&self) {
         // Assert that for every chain, a key name is provided
-        let runtime = Builder::new_current_thread().enable_all().build().unwrap();
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+
+        let names_and_keys = extract_chains_and_keys(&self.chain_names);
+        let sorted_names = names_and_keys
+            .iter()
+            .map(|n| &n.0)
+            .cloned()
+            .collect::<Vec<_>>();
+
+        let commit = self.commit.clone();
 
         // Extract keys and sort chains by name
-        let re = Regex::new(r"^(?P<chain>\w+)(:?:(?P<key>\w+))?$").unwrap();
-        let (sorted_chains, sorted_keys): (Vec<String>, Vec<Option<String>>) = {
-            let mut captured_names: Vec<(String, Option<String>)> = self
-                .chain_names
-                .iter()
-                .map(|chain_key| {
-                    if let Some(captures) = &re.captures(chain_key) {
-                        if let Some(name) = captures.name("chain") {
-                            let name = name.as_str().to_string();
-                            let key = captures.name("key").map(|key| key.as_str().to_string());
-                            return (name, key);
-                        }
-                    }
-                    Output::error(&format!(
-                        "Invalid chain name: {}. Must be in the form of <chain_name>[:<key_name>]",
-                        chain_key
-                    ))
-                    .exit();
-                })
-                .collect();
-            captured_names.sort_by(|a, b| (a.0.cmp(&b.0)));
-            captured_names.into_iter().unzip()
-        };
-
         // Fetch chain configs from the chain registry
-        let commit = self.commit.clone();
-        match runtime.block_on(get_configs(&sorted_chains, commit)) {
+        info!("Fetching configuration for chains: {sorted_names:?}");
+
+        match runtime.block_on(get_configs(&sorted_names, commit)) {
             Ok(mut chain_configs) => {
-                for (mut chain_config, key_option) in
-                    chain_configs.iter_mut().zip(sorted_keys.into_iter())
-                {
+                let configs_and_keys = chain_configs
+                    .iter_mut()
+                    .zip(names_and_keys.iter().map(|n| &n.1).cloned());
+
+                for (mut chain_config, key_option) in configs_and_keys {
                     // If a key is provided, use it
                     if let Some(key_name) = key_option {
                         info!("{}: uses key \"{}\"", &chain_config.id, &key_name);
