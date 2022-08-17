@@ -9,6 +9,7 @@ use alloc::collections::BTreeMap;
 use core::{fmt, time::Duration};
 use std::{fs, fs::File, io::Write, path::Path};
 
+use ibc_proto::google::protobuf::Any;
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client_verifier::types::TrustThreshold;
 
@@ -18,6 +19,8 @@ use ibc::timestamp::ZERO_DURATION;
 
 use crate::chain::ChainType;
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
+use crate::error::Error as RelayerError;
+use crate::extension_options::ExtensionOptionDynamicFeeTx;
 use crate::keyring::Store;
 
 pub use error::Error;
@@ -39,6 +42,33 @@ impl GasPrice {
 impl fmt::Display for GasPrice {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}{}", self.price, self.denom)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum ExtensionOption {
+    EthermintDynamicFee(ExtensionOptionDynamicFeeTx),
+}
+
+impl ExtensionOption {
+    pub fn to_any(&self) -> Result<Any, RelayerError> {
+        match self {
+            Self::EthermintDynamicFee(ext) => ext.to_any(),
+        }
+    }
+}
+
+impl fmt::Display for ExtensionOption {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EthermintDynamicFee(ext) => {
+                write!(
+                    f,
+                    "EthermintDynamicFee(max_priority_price: {})",
+                    ext.max_priority_price
+                )
+            }
+        }
     }
 }
 
@@ -375,6 +405,8 @@ pub struct ChainConfig {
     pub packet_filter: PacketFilter,
     #[serde(default)]
     pub address_type: AddressType,
+    #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
+    pub extension_options: Vec<ExtensionOption>,
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.
