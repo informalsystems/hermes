@@ -367,7 +367,7 @@ pub struct ChainConfig {
     //       That's because these are all tables and have to come last when serializing.
     #[serde(
         default,
-        skip_serializing_if = "Option::is_empty",
+        skip_serializing_if = "Option::is_none",
         with = "self::proof_specs"
     )]
     pub proof_specs: Option<ProofSpecs>,
