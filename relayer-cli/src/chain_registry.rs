@@ -173,80 +173,43 @@ pub async fn get_configs(
         return Ok(Vec::new());
     }
 
-    let mut chain_data_handle = Vec::with_capacity(n);
-    let mut asset_lists_handle = Vec::with_capacity(n);
-    let mut path_handles = Vec::with_capacity(n * (n - 1) / 2);
+    let mut chain_datas = Vec::with_capacity(n);
+    let mut asset_lists = Vec::with_capacity(n);
+    let mut paths = Vec::with_capacity(n * (n - 1) / 2);
 
     for i in 0..n {
         let chain = chains[i].to_string();
-        let commit_clone = commit.clone();
-        chain_data_handle.push(tokio::spawn(async move {
-            ChainData::fetch(chain, commit_clone).await
-        }));
+        let chain_data = ChainData::fetch(chain, commit.clone()).await?;
+        chain_datas.push(chain_data);
 
-        let commit_clone = commit.clone();
         let chain = chains[i].to_string();
-        asset_lists_handle.push(tokio::spawn(async move {
-            AssetList::fetch(chain, commit_clone).await
-        }));
+        let asset_list = AssetList::fetch(chain, commit.clone()).await?;
+        asset_lists.push(asset_list);
 
         for chain_j in &chains[i + 1..] {
             let chain_i = &chains[i];
-            let chain_j = chain_j;
             let resource = format!("{}-{}.json", chain_i, chain_j).to_string();
-            let commit_clone = commit.clone();
-            path_handles.push(tokio::spawn(async move {
-                IBCPath::fetch(resource, commit_clone).await
-            }));
-        }
-    }
-    // Extract packet filters from IBC paths
-    let mut path_data: Vec<IBCPath> = Vec::new();
-
-    for handle in path_handles {
-        if let Ok(path) = handle
-            .await
-            .map_err(|e| RegistryError::join_error("path_handle_join".to_string(), e))?
-        {
-            path_data.push(path);
+            let path = IBCPath::fetch(resource, commit.clone()).await?;
+            paths.push(path);
         }
     }
 
-    let mut packet_filters = construct_packet_filters(path_data);
+    let mut packet_filters = construct_packet_filters(paths);
 
     // Construct ChainConfig
-    let mut configs_handle = Vec::with_capacity(n);
-
-    for (i, (chain_handle, asset_handle)) in chain_data_handle
-        .into_iter()
-        .zip(asset_lists_handle.into_iter())
-        .enumerate()
-    {
-        let chain_data = chain_handle
-            .await
-            .map_err(|e| RegistryError::join_error("chain_data_join".to_string(), e))??;
-        let assets = asset_handle
-            .await
-            .map_err(|e| RegistryError::join_error("asset_handle_join".to_string(), e))??;
-
-        let packet_filter = packet_filters.remove(&chains[i]);
-
-        configs_handle.push(tokio::spawn(async move {
-            hermes_config::<GrpcHealthCheckQuerier, SimpleHermesRpcQuerier, SimpleGrpcFormatter>(
-                chain_data,
-                assets,
-                packet_filter,
-            )
-            .await
-        }));
-    }
-
     let mut configs = Vec::with_capacity(n);
 
-    for handle in configs_handle {
-        let config = handle
-            .await
-            .map_err(|e| RegistryError::join_error("config_handle_join".to_string(), e))??;
+    let chains_and_assets = chain_datas.into_iter().zip(asset_lists.into_iter());
+
+    for (i, (chain_data, asset_list)) in chains_and_assets.enumerate() {
+        let packet_filter = packet_filters.remove(&chains[i]);
+
+        let config = hermes_config::<
+            GrpcHealthCheckQuerier,
+            SimpleHermesRpcQuerier,
+            SimpleGrpcFormatter,
+        >(chain_data, asset_list, packet_filter)
+        .await?;
 
         configs.push(config);
     }

@@ -78,7 +78,7 @@ fn extract_chains_and_keys(chain_names: &[String]) -> Vec<(String, Option<String
 impl Runnable for AutoCmd {
     fn run(&self) {
         // Assert that for every chain, a key name is provided
-        let runtime = tokio::runtime::Runtime::new().unwrap();
+        let rt = tokio::runtime::Runtime::new().unwrap();
 
         let names_and_keys = extract_chains_and_keys(&self.chain_names);
         let sorted_names = names_and_keys
@@ -93,52 +93,46 @@ impl Runnable for AutoCmd {
         // Fetch chain configs from the chain registry
         info!("Fetching configuration for chains: {sorted_names:?}");
 
-        match runtime.block_on(get_configs(&sorted_names, commit)) {
-            Ok(mut chain_configs) => {
-                let configs_and_keys = chain_configs
-                    .iter_mut()
-                    .zip(names_and_keys.iter().map(|n| &n.1).cloned());
+        let mut chain_configs = rt
+            .block_on(get_configs(&sorted_names, commit))
+            .unwrap_or_else(|e| Output::error(e.to_string()).exit());
 
-                for (mut chain_config, key_option) in configs_and_keys {
-                    // If a key is provided, use it
-                    if let Some(key_name) = key_option {
-                        info!("{}: uses key \"{}\"", &chain_config.id, &key_name);
-                        chain_config.key_name = key_name;
-                    } else {
-                        // Otherwise, find the key in the keystore
-                        let chain_id = &chain_config.id;
-                        let key = find_key(chain_config);
-                        if let Some(key) = key {
-                            info!("{}: uses key \"{}\"", &chain_id, &key);
-                            chain_config.key_name = key;
-                        } else {
-                            // If no key is found, warn the user and continue
-                            warn!("No key found for chain: {}", chain_id);
-                        }
-                    }
+        let keys = names_and_keys.into_iter().map(|(_, key)| key);
+        let configs_and_keys = chain_configs.iter_mut().zip(keys);
+
+        for (mut chain_config, key_option) in configs_and_keys {
+            // If a key is provided, use it
+            if let Some(key) = key_option {
+                info!("{}: uses key \"{}\"", &chain_config.id, &key);
+                chain_config.key_name = key;
+            } else {
+                // Otherwise, find the key in the keystore
+                let chain_id = &chain_config.id;
+                let key = find_key(chain_config);
+                if let Some(key) = key {
+                    info!("{chain_id}: uses key \"{key}\"");
+                    chain_config.key_name = key;
+                } else {
+                    // If no key is found, warn the user and continue
+                    warn!("No key found for chain: {chain_id}");
                 }
-
-                let config = Config {
-                    chains: chain_configs,
-                    ..Config::default()
-                };
-
-                match store(&config, &self.path) {
-                    Ok(_) => {
-                        warn!("Gas parameters are set to default values.");
-                        Output::success(format!(
-                            "Config file written successfully : {}.",
-                            self.path.to_str().unwrap()
-                        ))
-                        .exit()
-                    }
-                    Err(e) => Output::error(e.to_string()).exit(),
-                }
-            }
-            Err(e) => {
-                Output::error(e.to_string()).exit();
             }
         }
+
+        let config = Config {
+            chains: chain_configs,
+            ..Config::default()
+        };
+
+        store(&config, &self.path).unwrap_or_else(|e| Output::error(e.to_string()).exit());
+
+        warn!("Gas parameters are set to default values");
+
+        Output::success(format!(
+            "Config file written successfully: {}",
+            self.path.to_str().unwrap()
+        ))
+        .exit()
     }
 }
 
