@@ -1,6 +1,5 @@
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order};
-use crate::core::ics04_channel::context::ChannelReaderLightClient;
 use crate::core::ics04_channel::events::TimeoutOnClosePacket;
 use crate::core::ics04_channel::handler::verify::verify_channel_proofs;
 use crate::core::ics04_channel::handler::verify::{
@@ -16,7 +15,7 @@ use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 use crate::proofs::{ProofError, Proofs};
 
-pub fn process<Ctx: ChannelReader + ChannelReaderLightClient>(
+pub fn process<Ctx: ChannelReader>(
     ctx: &Ctx,
     msg: &MsgTimeoutOnClose,
 ) -> HandlerResult<PacketResult, Error> {
