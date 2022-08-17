@@ -7,7 +7,6 @@ use tendermint::abci::transaction::Hash as TxHash;
 use tendermint::abci::Event;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tendermint_rpc::{Client, HttpClient, Order, Url};
-use tracing::warn;
 
 use crate::chain::cosmos::query::{header_query, packet_query, tx_hash_query};
 use crate::chain::cosmos::types::events;
@@ -70,10 +69,6 @@ pub async fn query_txs(
                     )
                 }
             }
-            warn!(
-                "FOUR PACKETS: found following results in block at height {}: {:?}",
-                request.height, result
-            );
 
             for seq in &request.sequences {
                 // query first (and only) Tx that includes the event specified in the query request

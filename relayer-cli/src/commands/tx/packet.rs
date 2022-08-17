@@ -53,8 +53,6 @@ pub struct TxPacketRecvCmd {
 
     #[clap(
         long = "packet-data-query-height",
-        required = false,
-        help_heading = "NOT REQUIRED",
         help = "Height at which the packet data is queried"
     )]
     packet_data_query_height: Option<u64>,
@@ -173,7 +171,7 @@ mod tests {
     use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
     #[test]
-    fn test_packet_recv() {
+    fn test_packet_recv_required_only() {
         assert_eq!(
             TxPacketRecvCmd {
                 dst_chain_id: ChainId::from_string("chain_receiver"),
@@ -216,6 +214,31 @@ mod tests {
                 "port_sender",
                 "--src-chan",
                 "channel_sender"
+            ])
+        )
+    }
+    #[test]
+    fn test_packet_recv_packet_data_query_height() {
+        assert_eq!(
+            TxPacketRecvCmd {
+                dst_chain_id: ChainId::from_string("chain_receiver"),
+                src_chain_id: ChainId::from_string("chain_sender"),
+                src_port_id: PortId::from_str("port_sender").unwrap(),
+                src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
+                packet_data_query_height: Some(5),
+            },
+            TxPacketRecvCmd::parse_from(&[
+                "test",
+                "--dst-chain",
+                "chain_receiver",
+                "--src-chain",
+                "chain_sender",
+                "--src-port",
+                "port_sender",
+                "--src-channel",
+                "channel_sender",
+                "--packet-data-query-height",
+                "5"
             ])
         )
     }
