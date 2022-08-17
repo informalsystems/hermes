@@ -15,6 +15,7 @@ members = [
 
 exclude = [
     "ci/no-std-check",
+    "ci/ext-light-client",
     "proto-compiler"
 ]
 
