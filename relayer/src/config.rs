@@ -362,17 +362,26 @@ pub struct ChainConfig {
 
     #[serde(default)]
     pub memo_prefix: Memo,
-    #[serde(default, with = "self::proof_specs")]
-    pub proof_specs: ProofSpecs,
 
-    // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
+    // Note: These last few need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML.
+    //       That's because these are all tables and have to come last when serializing.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_empty",
+        with = "self::proof_specs"
+    )]
+    pub proof_specs: Option<ProofSpecs>,
+
     /// The trust threshold defines what fraction of the total voting power of a known
     /// and trusted validator set is sufficient for a commit to be accepted going forward.
     #[serde(default)]
     pub trust_threshold: TrustThreshold,
+
     pub gas_price: GasPrice,
+
     #[serde(default)]
     pub packet_filter: PacketFilter,
+
     #[serde(default)]
     pub address_type: AddressType,
 }
