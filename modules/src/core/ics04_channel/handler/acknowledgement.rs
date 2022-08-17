@@ -1,7 +1,6 @@
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::channel::{Counterparty, Order};
-use crate::core::ics04_channel::context::ChannelReaderLightClient;
 use crate::core::ics04_channel::events::AcknowledgePacket;
 use crate::core::ics04_channel::handler::verify::verify_packet_acknowledgement_proofs;
 use crate::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
@@ -20,7 +19,7 @@ pub struct AckPacketResult {
     pub seq_number: Option<Sequence>,
 }
 
-pub fn process<Ctx: ChannelReader + ChannelReaderLightClient>(
+pub fn process<Ctx: ChannelReader>(
     ctx: &Ctx,
     msg: &MsgAcknowledgement,
 ) -> HandlerResult<PacketResult, Error> {

@@ -8,9 +8,9 @@ use core::time::Duration;
 use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::context::ClientReader;
 use ibc::core::ics02_client::error as client_error;
-use ibc::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
+use ibc::core::ics02_client::msgs::create_client::MsgCreateClient;
 use ibc::core::ics02_client::msgs::update_client::MsgUpdateClient;
-use ibc::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
+use ibc::core::ics02_client::msgs::upgrade_client::MsgUpgradeClient;
 use ibc::core::ics02_client::msgs::ClientMsg;
 use ibc::core::ics03_connection::connection::{Counterparty, State as ConnectionState};
 use ibc::core::ics03_connection::error as connection_error;
@@ -298,7 +298,7 @@ impl IbcTestRunner {
                 let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
-                let msg = Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
+                let msg = Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(MsgCreateClient {
                     client_state: Self::client_state(client_state).into(),
                     consensus_state: MockConsensusState::new(Self::mock_header(consensus_state))
                         .into(),
@@ -331,7 +331,7 @@ impl IbcTestRunner {
                 let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
-                let msg = Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeAnyClient {
+                let msg = Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeClient {
                     client_id: Self::client_id(client_id),
                     client_state: MockClientState::new(MockHeader::new(header)).into(),
                     consensus_state: MockConsensusState::new(MockHeader::new(header)).into(),

@@ -1,6 +1,5 @@
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order};
-use crate::core::ics04_channel::context::ChannelReaderLightClient;
 use crate::core::ics04_channel::events::TimeoutPacket;
 use crate::core::ics04_channel::handler::verify::{
     verify_next_sequence_recv, verify_packet_receipt_absence,
@@ -27,7 +26,7 @@ pub struct TimeoutPacketResult {
 /// counterparty chain without the packet being committed, to prove that the
 /// packet can no longer be executed and to allow the calling module to safely
 /// perform appropriate state transitions.
-pub fn process<Ctx: ChannelReader + ChannelReaderLightClient>(
+pub fn process<Ctx: ChannelReader>(
     ctx: &Ctx,
     msg: &MsgTimeout,
 ) -> HandlerResult<PacketResult, Error> {

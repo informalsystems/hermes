@@ -20,7 +20,7 @@ pub(crate) const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpgradeClient";
 
 /// A type of message that triggers the upgrade of an on-chain (IBC) client.
 #[derive(Clone, Debug, PartialEq)]
-pub struct MsgUpgradeAnyClient {
+pub struct MsgUpgradeClient {
     pub client_id: ClientId,
     pub client_state: Any,
     pub consensus_state: Any,
@@ -29,7 +29,7 @@ pub struct MsgUpgradeAnyClient {
     pub signer: Signer,
 }
 
-impl MsgUpgradeAnyClient {
+impl MsgUpgradeClient {
     pub fn new(
         client_id: ClientId,
         client_state: Any,
@@ -38,7 +38,7 @@ impl MsgUpgradeAnyClient {
         proof_upgrade_consensus_state: RawMerkleProof,
         signer: Signer,
     ) -> Self {
-        MsgUpgradeAnyClient {
+        MsgUpgradeClient {
             client_id,
             client_state,
             consensus_state,
@@ -49,7 +49,7 @@ impl MsgUpgradeAnyClient {
     }
 }
 
-impl Msg for MsgUpgradeAnyClient {
+impl Msg for MsgUpgradeClient {
     type ValidationError = crate::core::ics24_host::error::ValidationError;
     type Raw = RawMsgUpgradeClient;
 
@@ -62,10 +62,10 @@ impl Msg for MsgUpgradeAnyClient {
     }
 }
 
-impl Protobuf<RawMsgUpgradeClient> for MsgUpgradeAnyClient {}
+impl Protobuf<RawMsgUpgradeClient> for MsgUpgradeClient {}
 
-impl From<MsgUpgradeAnyClient> for RawMsgUpgradeClient {
-    fn from(dm_msg: MsgUpgradeAnyClient) -> RawMsgUpgradeClient {
+impl From<MsgUpgradeClient> for RawMsgUpgradeClient {
+    fn from(dm_msg: MsgUpgradeClient) -> RawMsgUpgradeClient {
         let c_bytes = CommitmentProofBytes::try_from(dm_msg.proof_upgrade_client)
             .map_or(vec![], |c| c.into());
         let cs_bytes = CommitmentProofBytes::try_from(dm_msg.proof_upgrade_consensus_state)
@@ -82,7 +82,7 @@ impl From<MsgUpgradeAnyClient> for RawMsgUpgradeClient {
     }
 }
 
-impl TryFrom<RawMsgUpgradeClient> for MsgUpgradeAnyClient {
+impl TryFrom<RawMsgUpgradeClient> for MsgUpgradeClient {
     type Error = Error;
 
     fn try_from(proto_msg: RawMsgUpgradeClient) -> Result<Self, Self::Error> {
@@ -101,7 +101,7 @@ impl TryFrom<RawMsgUpgradeClient> for MsgUpgradeAnyClient {
                 Error::invalid_upgrade_consensus_state_proof(Ics23Error::empty_merkle_proof())
             })?;
 
-        Ok(MsgUpgradeAnyClient {
+        Ok(MsgUpgradeClient {
             client_id: ClientId::from_str(&proto_msg.client_id)
                 .map_err(Error::invalid_client_identifier)?,
             client_state: raw_client_state,
@@ -127,13 +127,13 @@ pub mod test_util {
         test_utils::{get_dummy_bech32_account, get_dummy_proof},
     };
 
-    use super::MsgUpgradeAnyClient;
+    use super::MsgUpgradeClient;
 
     /// Extends the implementation with additional helper methods.
-    impl MsgUpgradeAnyClient {
+    impl MsgUpgradeClient {
         /// Setter for `client_id`. Amenable to chaining, since it consumes the input message.
         pub fn with_client_id(self, client_id: ClientId) -> Self {
-            MsgUpgradeAnyClient { client_id, ..self }
+            MsgUpgradeClient { client_id, ..self }
         }
     }
 
@@ -157,7 +157,7 @@ mod tests {
 
     use crate::{
         core::{
-            ics02_client::{height::Height, msgs::upgrade_client::MsgUpgradeAnyClient},
+            ics02_client::{height::Height, msgs::upgrade_client::MsgUpgradeClient},
             ics23_commitment::commitment::test_util::get_dummy_merkle_proof,
             ics24_host::identifier::ClientId,
         },
@@ -179,7 +179,7 @@ mod tests {
 
         let proof = get_dummy_merkle_proof();
 
-        let msg = MsgUpgradeAnyClient::new(
+        let msg = MsgUpgradeClient::new(
             client_id,
             client_state.into(),
             consensus_state.into(),
@@ -188,7 +188,7 @@ mod tests {
             signer,
         );
         let raw: RawMsgUpgradeClient = RawMsgUpgradeClient::from(msg.clone());
-        let msg_back = MsgUpgradeAnyClient::try_from(raw.clone()).unwrap();
+        let msg_back = MsgUpgradeClient::try_from(raw.clone()).unwrap();
         let raw_back: RawMsgUpgradeClient = RawMsgUpgradeClient::from(msg_back.clone());
         assert_eq!(msg, msg_back);
         assert_eq!(raw, raw_back);

@@ -4,14 +4,26 @@ use core::time::Duration;
 use dyn_clone::DynClone;
 use erased_serde::Serialize as ErasedSerialize;
 use ibc_proto::google::protobuf::Any;
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
 use ibc_proto::protobuf::Protobuf as ErasedProtobuf;
 
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
-use crate::core::ics24_host::identifier::ChainId;
+use crate::core::ics03_connection::connection::ConnectionEnd;
+use crate::core::ics04_channel::channel::ChannelEnd;
+use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
+use crate::core::ics04_channel::context::ChannelReader;
+use crate::core::ics04_channel::packet::Sequence;
+use crate::core::ics23_commitment::commitment::{
+    CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
+};
+use crate::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use crate::dynamic_typing::AsAny;
 use crate::prelude::*;
 use crate::Height;
+
+use super::consensus_state::ConsensusState;
+use super::context::ClientReader;
 
 pub trait ClientState:
     AsAny
@@ -62,6 +74,136 @@ pub trait ClientState:
     {
         Box::new(self)
     }
+
+    fn initialise(&self, consensus_state: Any) -> Result<Box<dyn ConsensusState>, Error>;
+
+    fn check_header_and_update_state(
+        &self,
+        ctx: &dyn ClientReader,
+        client_id: ClientId,
+        header: Any,
+    ) -> Result<UpdatedState, Error>;
+
+    fn verify_upgrade_and_update_state(
+        &self,
+        consensus_state: Any,
+        proof_upgrade_client: MerkleProof,
+        proof_upgrade_consensus_state: MerkleProof,
+    ) -> Result<UpdatedState, Error>;
+
+    /// Verification functions as specified in:
+    /// <https://github.com/cosmos/ibc/tree/master/spec/core/ics-002-client-semantics>
+    ///
+    /// Verify a `proof` that the consensus state of a given client (at height `consensus_height`)
+    /// matches the input `consensus_state`. The parameter `counterparty_height` represent the
+    /// height of the counterparty chain that this proof assumes (i.e., the height at which this
+    /// proof was computed).
+    #[allow(clippy::too_many_arguments)]
+    fn verify_client_consensus_state(
+        &self,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        client_id: &ClientId,
+        consensus_height: Height,
+        expected_consensus_state: &dyn ConsensusState,
+    ) -> Result<(), Error>;
+
+    /// Verify a `proof` that a connection state matches that of the input `connection_end`.
+    #[allow(clippy::too_many_arguments)]
+    fn verify_connection_state(
+        &self,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        connection_id: &ConnectionId,
+        expected_connection_end: &ConnectionEnd,
+    ) -> Result<(), Error>;
+
+    /// Verify a `proof` that a channel state matches that of the input `channel_end`.
+    #[allow(clippy::too_many_arguments)]
+    fn verify_channel_state(
+        &self,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        expected_channel_end: &ChannelEnd,
+    ) -> Result<(), Error>;
+
+    /// Verify the client state for this chain that it is stored on the counterparty chain.
+    #[allow(clippy::too_many_arguments)]
+    fn verify_client_full_state(
+        &self,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        client_id: &ClientId,
+        expected_client_state: Any,
+    ) -> Result<(), Error>;
+
+    /// Verify a `proof` that a packet has been commited.
+    #[allow(clippy::too_many_arguments)]
+    fn verify_packet_data(
+        &self,
+        ctx: &dyn ChannelReader,
+        height: Height,
+        connection_end: &ConnectionEnd,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
+        commitment: PacketCommitment,
+    ) -> Result<(), Error>;
+
+    /// Verify a `proof` that a packet has been commited.
+    #[allow(clippy::too_many_arguments)]
+    fn verify_packet_acknowledgement(
+        &self,
+        ctx: &dyn ChannelReader,
+        height: Height,
+        connection_end: &ConnectionEnd,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
+        ack: AcknowledgementCommitment,
+    ) -> Result<(), Error>;
+
+    /// Verify a `proof` that of the next_seq_received.
+    #[allow(clippy::too_many_arguments)]
+    fn verify_next_sequence_recv(
+        &self,
+        ctx: &dyn ChannelReader,
+        height: Height,
+        connection_end: &ConnectionEnd,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
+    ) -> Result<(), Error>;
+
+    /// Verify a `proof` that a packet has not been received.
+    #[allow(clippy::too_many_arguments)]
+    fn verify_packet_receipt_absence(
+        &self,
+        ctx: &dyn ChannelReader,
+        height: Height,
+        connection_end: &ConnectionEnd,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
+    ) -> Result<(), Error>;
 }
 
 // Implements `Clone` for `Box<dyn ClientState>`
@@ -88,6 +230,11 @@ pub fn downcast_client_state<CS: ClientState>(h: &dyn ClientState) -> Option<&CS
 }
 
 pub trait UpgradeOptions: AsAny {}
+
+pub struct UpdatedState {
+    pub client_state: Box<dyn ClientState>,
+    pub consensus_state: Box<dyn ConsensusState>,
+}
 
 mod sealed {
     use super::*;

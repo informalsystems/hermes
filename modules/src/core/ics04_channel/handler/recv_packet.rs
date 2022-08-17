@@ -1,6 +1,6 @@
 use crate::core::ics03_connection::connection::State as ConnectionState;
 use crate::core::ics04_channel::channel::{Counterparty, Order, State};
-use crate::core::ics04_channel::context::{ChannelReader, ChannelReaderLightClient};
+use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::events::ReceivePacket;
 use crate::core::ics04_channel::handler::verify::verify_packet_recv_proofs;
@@ -27,7 +27,7 @@ pub enum RecvPacketResult {
     },
 }
 
-pub fn process<Ctx: ChannelReader + ChannelReaderLightClient>(
+pub fn process<Ctx: ChannelReader>(
     ctx: &Ctx,
     msg: &MsgRecvPacket,
 ) -> HandlerResult<PacketResult, Error> {

@@ -41,7 +41,7 @@ use ibc::events::IbcEvent;
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 use ibc::{
-    clients::ics07_tendermint::client_state::{AllowUpdate, ClientState},
+    clients::ics07_tendermint::client_state::{AllowUpdate, ClientState as TmClientState},
     core::ics23_commitment::merkle::MerkleProof,
 };
 use ibc::{
@@ -467,7 +467,7 @@ impl ChainEndpoint for CosmosSdkChain {
     type LightBlock = TmLightBlock;
     type Header = TmHeader;
     type ConsensusState = TMConsensusState;
-    type ClientState = ClientState;
+    type ClientState = TmClientState;
 
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
         let rpc_client = HttpClient::new(config.rpc_addr.clone())
@@ -1567,7 +1567,7 @@ impl ChainEndpoint for CosmosSdkChain {
             .unwrap_or_else(|| self.trusting_period(unbonding_period));
 
         // Build the client state.
-        ClientState::new(
+        TmClientState::new(
             self.id().clone(),
             settings.trust_threshold,
             trusting_period,

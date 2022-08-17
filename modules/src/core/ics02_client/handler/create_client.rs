@@ -1,8 +1,7 @@
-//! Protocol logic specific to processing ICS2 messages of type `MsgCreateAnyClient`.
+//! Protocol logic specific to processing ICS2 messages of type `MsgCreateClient`.
 
 use crate::prelude::*;
 
-use crate::core::ics02_client::client_def::{AnyClient, ClientDef};
 use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::consensus_state::ConsensusState;
@@ -11,13 +10,13 @@ use crate::core::ics02_client::error::Error;
 use crate::core::ics02_client::events::Attributes;
 use crate::core::ics02_client::handler::ClientResult;
 use crate::core::ics02_client::height::Height;
-use crate::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
+use crate::core::ics02_client::msgs::create_client::MsgCreateClient;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::timestamp::Timestamp;
 
-/// The result following the successful processing of a `MsgCreateAnyClient` message. Preferably
+/// The result following the successful processing of a `MsgCreateClient` message. Preferably
 /// this data type should be used with a qualified name `create_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Result {
@@ -29,13 +28,10 @@ pub struct Result {
     pub processed_height: Height,
 }
 
-pub fn process(
-    ctx: &dyn ClientReader,
-    msg: MsgCreateAnyClient,
-) -> HandlerResult<ClientResult, Error> {
+pub fn process(ctx: &dyn ClientReader, msg: MsgCreateClient) -> HandlerResult<ClientResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    let MsgCreateAnyClient {
+    let MsgCreateClient {
         client_state,
         consensus_state,
         signer: _,
@@ -52,9 +48,7 @@ pub fn process(
         Error::client_identifier_constructor(client_state.client_type(), id_counter, e)
     })?;
 
-    let client_def = AnyClient::from_client_type(client_type);
-
-    let consensus_state = client_def.initialise(consensus_state)?;
+    let consensus_state = client_state.initialise(consensus_state)?;
 
     output.log(format!(
         "success: generated new client identifier: {}",
@@ -87,13 +81,13 @@ mod tests {
     use test_log::test;
 
     use crate::clients::ics07_tendermint::client_state::{
-        AllowUpdate, ClientState as TendermintClientState,
+        AllowUpdate, ClientState as TmClientState,
     };
     use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
     use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
     use crate::core::ics02_client::client_type::ClientType;
     use crate::core::ics02_client::handler::{dispatch, ClientResult};
-    use crate::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
+    use crate::core::ics02_client::msgs::create_client::MsgCreateClient;
     use crate::core::ics02_client::msgs::ClientMsg;
     use crate::core::ics02_client::trust_threshold::TrustThreshold;
     use crate::core::ics23_commitment::specs::ProofSpecs;
@@ -113,7 +107,7 @@ mod tests {
         let signer = get_dummy_account_id();
         let height = Height::new(0, 42).unwrap();
 
-        let msg = MsgCreateAnyClient::new(
+        let msg = MsgCreateClient::new(
             MockClientState::new(MockHeader::new(height)).into(),
             MockConsensusState::new(MockHeader::new(height)).into(),
             signer,
@@ -166,20 +160,20 @@ mod tests {
 
         let ctx = MockContext::default().with_client(&existing_client_id, height_1);
 
-        let create_client_msgs: Vec<MsgCreateAnyClient> = vec![
-            MsgCreateAnyClient::new(
+        let create_client_msgs: Vec<MsgCreateClient> = vec![
+            MsgCreateClient::new(
                 MockClientState::new(MockHeader::new(height_2)).into(),
                 MockConsensusState::new(MockHeader::new(height_2)).into(),
                 signer.clone(),
             )
             .unwrap(),
-            MsgCreateAnyClient::new(
+            MsgCreateClient::new(
                 MockClientState::new(MockHeader::new(height_2)).into(),
                 MockConsensusState::new(MockHeader::new(height_2)).into(),
                 signer.clone(),
             )
             .unwrap(),
-            MsgCreateAnyClient::new(
+            MsgCreateClient::new(
                 MockClientState::new(MockHeader::new(height_3)).into(),
                 MockConsensusState::new(MockHeader::new(height_3)).into(),
                 signer,
@@ -242,7 +236,7 @@ mod tests {
 
         let tm_header = get_dummy_tendermint_header();
 
-        let tm_client_state = TendermintClientState::new(
+        let tm_client_state = TmClientState::new(
             tm_header.chain_id.clone().into(),
             TrustThreshold::ONE_THIRD,
             Duration::from_secs(64000),
@@ -259,7 +253,7 @@ mod tests {
         .unwrap()
         .into();
 
-        let msg = MsgCreateAnyClient::new(
+        let msg = MsgCreateClient::new(
             tm_client_state,
             TmConsensusState::try_from(tm_header).unwrap().into(),
             signer,
