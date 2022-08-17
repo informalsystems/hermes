@@ -1,0 +1,34 @@
+name: External light client check
+on:
+  pull_request:
+    paths:
+      - .github/workflows/ext-light-client.yml
+      - Cargo.toml
+      - Cargo.lock
+      - ci/**
+      - proto/**
+      - modules/**
+  push:
+    branches: master
+    paths:
+      - .github/workflows/ext-light-client.yml
+      - Cargo.toml
+      - Cargo.lock
+      - ci/**
+      - proto/**
+      - modules/**
+
+jobs:
+  check-ext-light-client:
+    name: Check external light client support
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: wasm32-unknown-unknown
+          override: true
+      - run: |
+          cd ci/ext-light-client-check
+          cargo build --no-default-features
