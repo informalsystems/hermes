@@ -36,7 +36,7 @@ fn find_key(chainconfig: &ChainConfig) -> Option<String> {
 ///
 /// If no key is specified, the first key stored in the KEYSTORE_DEFAULT_FOLDER, if it exists, will be used otherwise the field `key_name` will be left empty.
 /// If a is specified then it will be used without verifying that it exists.
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 #[clap(
     override_usage = "hermes config auto [OPTIONS] --output <PATH> --chains <CHAIN_NAME_1[:<KEY1>] CHAIN_NAME_2[:<KEY2>]> [--commit <COMMIT_HASH>]"
 )]
