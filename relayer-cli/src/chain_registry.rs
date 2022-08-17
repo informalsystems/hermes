@@ -24,7 +24,6 @@ use std::{collections::HashMap, marker::Send};
 
 use tendermint_light_client_verifier::types::TrustThreshold;
 use tendermint_rpc::Url;
-use tokio;
 
 /// Generate packet filters from Vec<IBCPath> and load them in a Map(chain_name -> filter).
 fn construct_packet_filters(ibc_paths: Vec<IBCPath>) -> HashMap<String, PacketFilter> {
@@ -75,13 +74,17 @@ where
 {
     let chain_name = chain_data.chain_name;
 
-    let mut grpc_endpoints = Vec::new();
+    let asset = assets
+        .assets
+        .first()
+        .ok_or_else(|| RegistryError::no_asset_found(chain_name.to_string()))?;
 
-    for grpc in chain_data.apis.grpc.iter() {
-        grpc_endpoints.push(GrpcFormatter::parse_or_build_address(
-            grpc.address.as_str(),
-        )?)
-    }
+    let grpc_endpoints = chain_data
+        .apis
+        .grpc
+        .iter()
+        .map(|grpc| GrpcFormatter::parse_or_build_address(grpc.address.as_str()))
+        .collect::<Result<_, _>>()?;
 
     let rpc_endpoints: Vec<String> = chain_data
         .apis
@@ -90,31 +93,8 @@ where
         .map(|rpc| rpc.address.to_owned())
         .collect();
 
-    let clone_name = chain_name.to_string();
-    let rpc_handle =
-        tokio::spawn(async move { RpcQuerier::query_healthy(clone_name, rpc_endpoints).await });
-
-    let clone_name = chain_name.to_string();
-    let grpc_handle =
-        tokio::spawn(async move { GrpcQuerier::query_healthy(clone_name, grpc_endpoints).await });
-
-    let base = if let Some(asset) = assets.assets.first() {
-        asset.base.clone()
-    } else {
-        return Err(RegistryError::no_asset_found(chain_name.to_string()));
-    };
-
-    let rpc_data = rpc_handle
-        .await
-        .map_err(|e| RegistryError::join_error("rpc_data_join".to_string(), e))??;
-    let grpc_address = grpc_handle
-        .await
-        .map_err(|e| RegistryError::join_error("grpc_handle_join".to_string(), e))??;
-
-    let packet_filter = match packet_filter {
-        Some(pf) => pf,
-        None => PacketFilter::default(),
-    };
+    let rpc_data = RpcQuerier::query_healthy(chain_name.to_string(), rpc_endpoints).await?;
+    let grpc_address = GrpcQuerier::query_healthy(chain_name.to_string(), grpc_endpoints).await?;
 
     Ok(ChainConfig {
         id: chain_data.chain_id,
@@ -142,9 +122,9 @@ where
         trust_threshold: TrustThreshold::default(),
         gas_price: GasPrice {
             price: 0.1,
-            denom: base,
+            denom: asset.base.to_owned(),
         },
-        packet_filter,
+        packet_filter: packet_filter.unwrap_or_default(),
         address_type: AddressType::default(),
     })
 }
