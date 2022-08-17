@@ -170,7 +170,7 @@ __Tx__
 * `config validate`
 
 ### Automatically generate a configuration file
-* `config auto [OPTIONS] --chains <CHAIN_NAME_1[:<KEY1>] CHAIN_NAME_2[:<KEY2>]>`
+* `config auto [OPTIONS] --output <PATH> --chains <CHAIN_NAME_1[:<KEY1>] CHAIN_NAME_2[:<KEY2>]>`
     * Optional : `[--commit <COMMIT_HASH>]`
 
 ### Health check

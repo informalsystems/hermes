@@ -32,17 +32,17 @@ fn find_key(chainconfig: &ChainConfig) -> Option<String> {
 ///
 /// The command has two required arguments and an optional one which is used to manually specify commit hash of the chain-registry from which the chain configs will be generated:
 ///
-/// `config auto [OPTIONS] --path <PATH> --chains <CHAIN_NAME_1[:<KEY_1>] CHAIN_NAME_2[:<KEY_2>]...> [--commit <COMMIT_HASH>]`
+/// `config auto [OPTIONS] --output <PATH> --chains <CHAIN_NAME_1[:<KEY_1>] CHAIN_NAME_2[:<KEY_2>]...> [--commit <COMMIT_HASH>]`
 ///
 /// If no key is specified, the first key stored in the KEYSTORE_DEFAULT_FOLDER, if it exists, will be used otherwise the field `key_name` will be left empty.
 /// If a is specified then it will be used without verifying that it exists.
 #[derive(Clone, Command, Debug, Parser, PartialEq)]
 #[clap(
-    override_usage = "hermes config auto [OPTIONS] --chains <CHAIN_NAME_1[:<KEY1>] CHAIN_NAME_2[:<KEY2>]> [--commit <COMMIT_HASH>]"
+    override_usage = "hermes config auto [OPTIONS] --output <PATH> --chains <CHAIN_NAME_1[:<KEY1>] CHAIN_NAME_2[:<KEY2>]> [--commit <COMMIT_HASH>]"
 )]
 pub struct AutoCmd {
     #[clap(
-        long = "path",
+        long = "output",
         required = true,
         value_name = "PATH",
         help_heading = "REQUIRED",
@@ -163,7 +163,7 @@ mod tests {
             },
             AutoCmd::parse_from(&[
                 "test",
-                "--path",
+                "--output",
                 "./example.toml",
                 "--chains",
                 "chain1:key1",
@@ -182,7 +182,7 @@ mod tests {
             },
             AutoCmd::parse_from(&[
                 "test",
-                "--path",
+                "--output",
                 "./example.toml",
                 "--chains",
                 "chain1:key1",

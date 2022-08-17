@@ -30,7 +30,7 @@ Use `config auto` to automatically generate a configuration file from the [chain
 
 ```
 USAGE:
-    hermes config auto [OPTIONS] --chains <CHAIN_NAME_1[:<KEY1>] CHAIN_NAME_2[:<KEY2>]> [--commit <COMMIT_HASH>]
+    hermes config auto [OPTIONS] --output <PATH> --chains <CHAIN_NAME_1[:<KEY1>] CHAIN_NAME_2[:<KEY2>]> [--commit <COMMIT_HASH>]
 
 OPTIONS:
         --commit <COMMIT_HASH>    Commit hash from which the chain configs will be generated. If
@@ -52,7 +52,7 @@ __Example__
 
 Use `config auto` to generate a configuration file able to relay between `cosmoshub` and `osmosis`. This command assumes the existence of a key file for `cosmoshub-4` and `osmosis-1` in `$HOME/.hermes/keys`.
 ```
-    hermes config auto --path ~/example_config.toml --chains cosmoshub osmosis
+    hermes config auto --output ~/example_config.toml --chains cosmoshub osmosis
 
 2022-08-16T17:27:26.966233Z  INFO ThreadId(01) using default configuration from '~/.hermes/config.toml'
 2022-08-16T17:27:27.800213Z  INFO ThreadId(01) cosmoshub-4: uses key "key_cosmoshub"
@@ -63,7 +63,7 @@ SUCCESS "Config file written successfully : ~/example_config.toml."
 
 It is also possible to manually specify a key name for any chain.
 ```
-    hermes config auto --path $HOME/example_config.toml --chains cosmoshub:random_key osmosis 
+    hermes config auto --output $HOME/example_config.toml --chains cosmoshub:random_key osmosis 
 
 2022-08-16T17:29:56.902499Z  INFO ThreadId(01) using default configuration from '~/.hermes/config.toml'
 2022-08-16T17:29:57.288874Z  INFO ThreadId(01) cosmoshub-4: uses key "random_key"
