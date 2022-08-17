@@ -12,7 +12,7 @@ use crate::core::ics02_client::error::Error;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::channel::ChannelEnd;
 use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
-use crate::core::ics04_channel::context::ChannelReaderLightClient;
+use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
@@ -151,7 +151,7 @@ pub trait ClientState:
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_data(
         &self,
-        ctx: &dyn ChannelReaderLightClient,
+        ctx: &dyn ChannelReader,
         height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
@@ -166,7 +166,7 @@ pub trait ClientState:
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn ChannelReaderLightClient,
+        ctx: &dyn ChannelReader,
         height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
@@ -181,7 +181,7 @@ pub trait ClientState:
     #[allow(clippy::too_many_arguments)]
     fn verify_next_sequence_recv(
         &self,
-        ctx: &dyn ChannelReaderLightClient,
+        ctx: &dyn ChannelReader,
         height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
@@ -195,7 +195,7 @@ pub trait ClientState:
     #[allow(clippy::too_many_arguments)]
     fn verify_packet_receipt_absence(
         &self,
-        ctx: &dyn ChannelReaderLightClient,
+        ctx: &dyn ChannelReader,
         height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,

@@ -1,7 +1,7 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenInit`.
 
 use crate::core::ics04_channel::channel::{ChannelEnd, State};
-use crate::core::ics04_channel::context::{ChannelReader, ChannelReaderLightClient};
+use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::events::Attributes;
 use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
@@ -11,7 +11,7 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process<Ctx: ChannelReader + ChannelReaderLightClient>(
+pub(crate) fn process<Ctx: ChannelReader>(
     ctx: &Ctx,
     msg: &MsgChannelOpenInit,
 ) -> HandlerResult<ChannelResult, Error> {

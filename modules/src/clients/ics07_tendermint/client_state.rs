@@ -1,7 +1,6 @@
 use crate::core::ics02_client::context::ClientReader;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
-use crate::core::ics04_channel::context::ChannelReaderLightClient;
 use crate::core::ics04_channel::packet::Sequence;
 use crate::core::ics23_commitment::commitment::{
     CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
@@ -38,6 +37,7 @@ use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::error::{Error as Ics02Error, ErrorDetail as Ics02ErrorDetail};
 use crate::core::ics02_client::trust_threshold::TrustThreshold;
+use crate::core::ics04_channel::context::ChannelReader;
 use crate::core::ics23_commitment::specs::ProofSpecs;
 use crate::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use crate::timestamp::{Timestamp, ZERO_DURATION};
@@ -533,7 +533,7 @@ impl Ics2ClientState for ClientState {
 
     fn verify_packet_data(
         &self,
-        ctx: &dyn ChannelReaderLightClient,
+        ctx: &dyn ChannelReader,
         height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
@@ -565,7 +565,7 @@ impl Ics2ClientState for ClientState {
 
     fn verify_packet_acknowledgement(
         &self,
-        ctx: &dyn ChannelReaderLightClient,
+        ctx: &dyn ChannelReader,
         height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
@@ -596,7 +596,7 @@ impl Ics2ClientState for ClientState {
 
     fn verify_next_sequence_recv(
         &self,
-        ctx: &dyn ChannelReaderLightClient,
+        ctx: &dyn ChannelReader,
         height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
@@ -628,7 +628,7 @@ impl Ics2ClientState for ClientState {
 
     fn verify_packet_receipt_absence(
         &self,
-        ctx: &dyn ChannelReaderLightClient,
+        ctx: &dyn ChannelReader,
         height: Height,
         connection_end: &ConnectionEnd,
         proof: &CommitmentProofBytes,
@@ -698,7 +698,7 @@ fn verify_non_membership(
 }
 
 fn verify_delay_passed(
-    ctx: &dyn ChannelReaderLightClient,
+    ctx: &dyn ChannelReader,
     height: Height,
     connection_end: &ConnectionEnd,
 ) -> Result<(), Ics02Error> {
