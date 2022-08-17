@@ -11,12 +11,22 @@ use serde::{Deserialize, Serialize};
 use ibc::clients::ics07_tendermint::client_state::{
     TmClientState, UpgradeOptions as TmUpgradeOptions, TENDERMINT_CLIENT_STATE_TYPE_URL,
 };
-use ibc::core::ics02_client::client_state::{ClientState, UpgradeOptions};
+use ibc::core::ics02_client::client_state::{ClientState, UpdatedState, UpgradeOptions};
 use ibc::core::ics02_client::client_type::ClientType;
+use ibc::core::ics02_client::consensus_state::ConsensusState;
+use ibc::core::ics02_client::context::ClientReader;
 use ibc::core::ics02_client::error::Error;
 use ibc::core::ics02_client::trust_threshold::TrustThreshold;
+use ibc::core::ics03_connection::connection::ConnectionEnd;
+use ibc::core::ics04_channel::channel::ChannelEnd;
+use ibc::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
+use ibc::core::ics04_channel::context::ChannelReaderLightClient;
+use ibc::core::ics04_channel::packet::Sequence;
+use ibc::core::ics23_commitment::commitment::{
+    CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
+};
 use ibc::core::ics24_host::error::ValidationError;
-use ibc::core::ics24_host::identifier::{ChainId, ClientId};
+use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 #[cfg(test)]
 use ibc::mock::client_state::MockClientState;
 #[cfg(test)]
@@ -208,19 +218,16 @@ impl ClientState for AnyClientState {
         }
     }
 
-    fn initialise(
-        &self,
-        _consensus_state: Any,
-    ) -> Result<Box<dyn ibc::core::ics02_client::consensus_state::ConsensusState>, Error> {
+    fn initialise(&self, _consensus_state: Any) -> Result<Box<dyn ConsensusState>, Error> {
         unimplemented!()
     }
 
     fn check_header_and_update_state(
         &self,
-        _ctx: &dyn ibc::core::ics02_client::context::ClientReader,
+        _ctx: &dyn ClientReader,
         _client_id: ClientId,
         _header: Any,
-    ) -> Result<ibc::core::ics02_client::client_state::UpdatedState, Error> {
+    ) -> Result<UpdatedState, Error> {
         unimplemented!()
     }
 
@@ -229,19 +236,19 @@ impl ClientState for AnyClientState {
         _consensus_state: Any,
         _proof_upgrade_client: MerkleProof,
         _proof_upgrade_consensus_state: MerkleProof,
-    ) -> Result<ibc::core::ics02_client::client_state::UpdatedState, Error> {
+    ) -> Result<UpdatedState, Error> {
         unimplemented!()
     }
 
     fn verify_client_consensus_state(
         &self,
         _height: Height,
-        _prefix: &ibc::core::ics23_commitment::commitment::CommitmentPrefix,
-        _proof: &ibc::core::ics23_commitment::commitment::CommitmentProofBytes,
-        _root: &ibc::core::ics23_commitment::commitment::CommitmentRoot,
+        _prefix: &CommitmentPrefix,
+        _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
         _client_id: &ClientId,
         _consensus_height: Height,
-        _expected_consensus_state: &dyn ibc::core::ics02_client::consensus_state::ConsensusState,
+        _expected_consensus_state: &dyn ConsensusState,
     ) -> Result<(), Error> {
         unimplemented!()
     }
@@ -249,11 +256,11 @@ impl ClientState for AnyClientState {
     fn verify_connection_state(
         &self,
         _height: Height,
-        _prefix: &ibc::core::ics23_commitment::commitment::CommitmentPrefix,
-        _proof: &ibc::core::ics23_commitment::commitment::CommitmentProofBytes,
-        _root: &ibc::core::ics23_commitment::commitment::CommitmentRoot,
-        _connection_id: &ibc::core::ics24_host::identifier::ConnectionId,
-        _expected_connection_end: &ibc::core::ics03_connection::connection::ConnectionEnd,
+        _prefix: &CommitmentPrefix,
+        _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
+        _connection_id: &ConnectionId,
+        _expected_connection_end: &ConnectionEnd,
     ) -> Result<(), Error> {
         unimplemented!()
     }
@@ -261,12 +268,12 @@ impl ClientState for AnyClientState {
     fn verify_channel_state(
         &self,
         _height: Height,
-        _prefix: &ibc::core::ics23_commitment::commitment::CommitmentPrefix,
-        _proof: &ibc::core::ics23_commitment::commitment::CommitmentProofBytes,
-        _root: &ibc::core::ics23_commitment::commitment::CommitmentRoot,
-        _port_id: &ibc::core::ics24_host::identifier::PortId,
-        _channel_id: &ibc::core::ics24_host::identifier::ChannelId,
-        _expected_channel_end: &ibc::core::ics04_channel::channel::ChannelEnd,
+        _prefix: &CommitmentPrefix,
+        _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _expected_channel_end: &ChannelEnd,
     ) -> Result<(), Error> {
         unimplemented!()
     }
@@ -274,9 +281,9 @@ impl ClientState for AnyClientState {
     fn verify_client_full_state(
         &self,
         _height: Height,
-        _prefix: &ibc::core::ics23_commitment::commitment::CommitmentPrefix,
-        _proof: &ibc::core::ics23_commitment::commitment::CommitmentProofBytes,
-        _root: &ibc::core::ics23_commitment::commitment::CommitmentRoot,
+        _prefix: &CommitmentPrefix,
+        _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
         _client_id: &ClientId,
         _expected_client_state: Any,
     ) -> Result<(), Error> {
@@ -285,58 +292,58 @@ impl ClientState for AnyClientState {
 
     fn verify_packet_data(
         &self,
-        _ctx: &dyn ibc::core::ics04_channel::context::ChannelReaderLightClient,
+        _ctx: &dyn ChannelReaderLightClient,
         _height: Height,
-        _connection_end: &ibc::core::ics03_connection::connection::ConnectionEnd,
-        _proof: &ibc::core::ics23_commitment::commitment::CommitmentProofBytes,
-        _root: &ibc::core::ics23_commitment::commitment::CommitmentRoot,
-        _port_id: &ibc::core::ics24_host::identifier::PortId,
-        _channel_id: &ibc::core::ics24_host::identifier::ChannelId,
-        _sequence: ibc::core::ics04_channel::packet::Sequence,
-        _commitment: ibc::core::ics04_channel::commitment::PacketCommitment,
+        _connection_end: &ConnectionEnd,
+        _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _sequence: Sequence,
+        _commitment: PacketCommitment,
     ) -> Result<(), Error> {
         unimplemented!()
     }
 
     fn verify_packet_acknowledgement(
         &self,
-        _ctx: &dyn ibc::core::ics04_channel::context::ChannelReaderLightClient,
+        _ctx: &dyn ChannelReaderLightClient,
         _height: Height,
-        _connection_end: &ibc::core::ics03_connection::connection::ConnectionEnd,
-        _proof: &ibc::core::ics23_commitment::commitment::CommitmentProofBytes,
-        _root: &ibc::core::ics23_commitment::commitment::CommitmentRoot,
-        _port_id: &ibc::core::ics24_host::identifier::PortId,
-        _channel_id: &ibc::core::ics24_host::identifier::ChannelId,
-        _sequence: ibc::core::ics04_channel::packet::Sequence,
-        _ack: ibc::core::ics04_channel::commitment::AcknowledgementCommitment,
+        _connection_end: &ConnectionEnd,
+        _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _sequence: Sequence,
+        _ack: AcknowledgementCommitment,
     ) -> Result<(), Error> {
         unimplemented!()
     }
 
     fn verify_next_sequence_recv(
         &self,
-        _ctx: &dyn ibc::core::ics04_channel::context::ChannelReaderLightClient,
+        _ctx: &dyn ChannelReaderLightClient,
         _height: Height,
-        _connection_end: &ibc::core::ics03_connection::connection::ConnectionEnd,
-        _proof: &ibc::core::ics23_commitment::commitment::CommitmentProofBytes,
-        _root: &ibc::core::ics23_commitment::commitment::CommitmentRoot,
-        _port_id: &ibc::core::ics24_host::identifier::PortId,
-        _channel_id: &ibc::core::ics24_host::identifier::ChannelId,
-        _sequence: ibc::core::ics04_channel::packet::Sequence,
+        _connection_end: &ConnectionEnd,
+        _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _sequence: Sequence,
     ) -> Result<(), Error> {
         unimplemented!()
     }
 
     fn verify_packet_receipt_absence(
         &self,
-        _ctx: &dyn ibc::core::ics04_channel::context::ChannelReaderLightClient,
+        _ctx: &dyn ChannelReaderLightClient,
         _height: Height,
-        _connection_end: &ibc::core::ics03_connection::connection::ConnectionEnd,
-        _proof: &ibc::core::ics23_commitment::commitment::CommitmentProofBytes,
-        _root: &ibc::core::ics23_commitment::commitment::CommitmentRoot,
-        _port_id: &ibc::core::ics24_host::identifier::PortId,
-        _channel_id: &ibc::core::ics24_host::identifier::ChannelId,
-        _sequence: ibc::core::ics04_channel::packet::Sequence,
+        _connection_end: &ConnectionEnd,
+        _proof: &CommitmentProofBytes,
+        _root: &CommitmentRoot,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _sequence: Sequence,
     ) -> Result<(), Error> {
         unimplemented!()
     }
