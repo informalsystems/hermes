@@ -36,6 +36,11 @@ macro_rules! telemetry {
         {
             ::ibc_telemetry::global().$id($($args),*);
         }
+
+        #[cfg(not(feature = "telemetry"))]
+        {
+            let _ = ($($args),*);
+        }
     };
 
     ($e:expr) => {

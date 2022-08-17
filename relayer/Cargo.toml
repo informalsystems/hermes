@@ -39,7 +39,7 @@ prost = { version = "0.11" }
 tonic = { version = "0.8", features = ["tls", "tls-roots"] }
 futures = "0.3.23"
 crossbeam-channel = "0.5.5"
-k256 = { version = "0.11.3", features = ["ecdsa-core", "ecdsa", "sha256"]}
+k256 = { version = "0.11.4", features = ["ecdsa-core", "ecdsa", "sha256"]}
 hex = "0.4"
 bitcoin = { version = "=0.28", features = ["use-serde"] }
 tiny-bip39 = "1.0.0"
