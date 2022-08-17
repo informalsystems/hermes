@@ -4,7 +4,7 @@ use ibc_proto::cosmos::auth::v1beta1::BaseAccount;
 /// Wrapper for account number and sequence number.
 ///
 /// More fields may be added later.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Account {
     // pub address: String,
     // pub pub_key: Option<prost_types::Any>,

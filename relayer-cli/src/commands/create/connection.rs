@@ -14,7 +14,7 @@ use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 #[clap(override_usage("hermes create connection [OPTIONS] --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID>
 
     hermes create connection [OPTIONS] --a-chain <A_CHAIN_ID> --a-client <A_CLIENT_ID> --b-client <B_CLIENT_ID>"))]

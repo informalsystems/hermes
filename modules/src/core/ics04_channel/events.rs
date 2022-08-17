@@ -4,25 +4,18 @@ use serde_derive::{Deserialize, Serialize};
 use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
-use crate::core::ics02_client::height::Height;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
-use crate::events::{
-    extract_attribute, maybe_extract_attribute, Error as EventError, IbcEvent, IbcEventType,
-    RawObject,
-};
+use crate::events::{Error as EventError, IbcEvent, IbcEventType};
 use crate::prelude::*;
 
-use super::packet::parse_timeout_height;
-
 /// Channel event attribute keys
-const HEIGHT_ATTRIBUTE_KEY: &str = "height";
-const CONNECTION_ID_ATTRIBUTE_KEY: &str = "connection_id";
-const CHANNEL_ID_ATTRIBUTE_KEY: &str = "channel_id";
-const PORT_ID_ATTRIBUTE_KEY: &str = "port_id";
-const COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY: &str = "counterparty_channel_id";
-const COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY: &str = "counterparty_port_id";
+pub const CONNECTION_ID_ATTRIBUTE_KEY: &str = "connection_id";
+pub const CHANNEL_ID_ATTRIBUTE_KEY: &str = "channel_id";
+pub const PORT_ID_ATTRIBUTE_KEY: &str = "port_id";
+pub const COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY: &str = "counterparty_channel_id";
+pub const COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY: &str = "counterparty_port_id";
 
 /// Packet event attribute keys
 pub const PKT_SEQ_ATTRIBUTE_KEY: &str = "packet_sequence";
@@ -35,188 +28,8 @@ pub const PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY: &str = "packet_timeout_height";
 pub const PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY: &str = "packet_timeout_timestamp";
 pub const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
 
-pub fn try_from_tx(event: &tendermint::abci::Event) -> Option<IbcEvent> {
-    match event.type_str.parse() {
-        Ok(IbcEventType::OpenInitChannel) => extract_attributes_from_tx(event)
-            .map(OpenInit::try_from)
-            .map(|res| res.ok().map(IbcEvent::OpenInitChannel))
-            .ok()
-            .flatten(),
-        Ok(IbcEventType::OpenTryChannel) => extract_attributes_from_tx(event)
-            .map(OpenTry::try_from)
-            .map(|res| res.ok().map(IbcEvent::OpenTryChannel))
-            .ok()
-            .flatten(),
-        Ok(IbcEventType::OpenAckChannel) => extract_attributes_from_tx(event)
-            .map(OpenAck::try_from)
-            .map(|res| res.ok().map(IbcEvent::OpenAckChannel))
-            .ok()
-            .flatten(),
-        Ok(IbcEventType::OpenConfirmChannel) => extract_attributes_from_tx(event)
-            .map(OpenConfirm::try_from)
-            .map(|res| res.ok().map(IbcEvent::OpenConfirmChannel))
-            .ok()
-            .flatten(),
-        Ok(IbcEventType::CloseInitChannel) => extract_attributes_from_tx(event)
-            .map(CloseInit::try_from)
-            .map(|res| res.ok().map(IbcEvent::CloseInitChannel))
-            .ok()
-            .flatten(),
-        Ok(IbcEventType::CloseConfirmChannel) => extract_attributes_from_tx(event)
-            .map(CloseConfirm::try_from)
-            .map(|res| res.ok().map(IbcEvent::CloseConfirmChannel))
-            .ok()
-            .flatten(),
-        Ok(IbcEventType::SendPacket) => {
-            extract_packet_and_write_ack_from_tx(event)
-                .map(|(packet, write_ack)| {
-                    // This event should not have a write ack.
-                    debug_assert_eq!(write_ack.len(), 0);
-                    IbcEvent::SendPacket(SendPacket {
-                        height: Height::new(0, 1).unwrap(),
-                        packet,
-                    })
-                })
-                .ok()
-        }
-        Ok(IbcEventType::WriteAck) => extract_packet_and_write_ack_from_tx(event)
-            .map(|(packet, write_ack)| {
-                IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
-                    height: Height::new(0, 1).unwrap(),
-                    packet,
-                    ack: write_ack,
-                })
-            })
-            .ok(),
-        Ok(IbcEventType::AckPacket) => {
-            extract_packet_and_write_ack_from_tx(event)
-                .map(|(packet, write_ack)| {
-                    // This event should not have a write ack.
-                    debug_assert_eq!(write_ack.len(), 0);
-                    IbcEvent::AcknowledgePacket(AcknowledgePacket {
-                        height: Height::new(0, 1).unwrap(),
-                        packet,
-                    })
-                })
-                .ok()
-        }
-        Ok(IbcEventType::Timeout) => {
-            extract_packet_and_write_ack_from_tx(event)
-                .map(|(packet, write_ack)| {
-                    // This event should not have a write ack.
-                    debug_assert_eq!(write_ack.len(), 0);
-                    IbcEvent::TimeoutPacket(TimeoutPacket {
-                        height: Height::new(0, 1).unwrap(),
-                        packet,
-                    })
-                })
-                .ok()
-        }
-        _ => None,
-    }
-}
-
-fn extract_attributes_from_tx(event: &tendermint::abci::Event) -> Result<Attributes, Error> {
-    let mut attr = Attributes::default();
-
-    for tag in &event.attributes {
-        let key = tag.key.as_ref();
-        let value = tag.value.as_ref();
-        match key {
-            PORT_ID_ATTRIBUTE_KEY => attr.port_id = value.parse().map_err(Error::identifier)?,
-            CHANNEL_ID_ATTRIBUTE_KEY => {
-                attr.channel_id = value.parse().ok();
-            }
-            CONNECTION_ID_ATTRIBUTE_KEY => {
-                attr.connection_id = value.parse().map_err(Error::identifier)?;
-            }
-            COUNTERPARTY_PORT_ID_ATTRIBUTE_KEY => {
-                attr.counterparty_port_id = value.parse().map_err(Error::identifier)?;
-            }
-            COUNTERPARTY_CHANNEL_ID_ATTRIBUTE_KEY => {
-                attr.counterparty_channel_id = value.parse().ok();
-            }
-            _ => {}
-        }
-    }
-
-    Ok(attr)
-}
-
-fn extract_packet_and_write_ack_from_tx(
-    event: &tendermint::abci::Event,
-) -> Result<(Packet, Vec<u8>), Error> {
-    let mut packet = Packet::default();
-    let mut write_ack: Vec<u8> = Vec::new();
-    for tag in &event.attributes {
-        let key = tag.key.as_ref();
-        let value = tag.value.as_ref();
-        match key {
-            PKT_SRC_PORT_ATTRIBUTE_KEY => {
-                packet.source_port = value.parse().map_err(Error::identifier)?;
-            }
-            PKT_SRC_CHANNEL_ATTRIBUTE_KEY => {
-                packet.source_channel = value.parse().map_err(Error::identifier)?;
-            }
-            PKT_DST_PORT_ATTRIBUTE_KEY => {
-                packet.destination_port = value.parse().map_err(Error::identifier)?;
-            }
-            PKT_DST_CHANNEL_ATTRIBUTE_KEY => {
-                packet.destination_channel = value.parse().map_err(Error::identifier)?;
-            }
-            PKT_SEQ_ATTRIBUTE_KEY => {
-                packet.sequence = value
-                    .parse::<u64>()
-                    .map_err(|e| Error::invalid_string_as_sequence(value.to_string(), e))?
-                    .into()
-            }
-            PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY => {
-                packet.timeout_height = parse_timeout_height(value)?;
-            }
-            PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY => {
-                packet.timeout_timestamp = value.parse().unwrap();
-            }
-            PKT_DATA_ATTRIBUTE_KEY => {
-                packet.data = Vec::from(value.as_bytes());
-            }
-            PKT_ACK_ATTRIBUTE_KEY => {
-                write_ack = Vec::from(value.as_bytes());
-            }
-            _ => {}
-        }
-    }
-
-    Ok((packet, write_ack))
-}
-
-fn extract_attributes(object: &RawObject<'_>, namespace: &str) -> Result<Attributes, EventError> {
-    Ok(Attributes {
-        height: object.height,
-        port_id: extract_attribute(object, &format!("{}.port_id", namespace))?
-            .parse()
-            .map_err(EventError::parse)?,
-        channel_id: maybe_extract_attribute(object, &format!("{}.channel_id", namespace))
-            .and_then(|v| v.parse().ok()),
-        connection_id: extract_attribute(object, &format!("{}.connection_id", namespace))?
-            .parse()
-            .map_err(EventError::parse)?,
-        counterparty_port_id: extract_attribute(
-            object,
-            &format!("{}.counterparty_port_id", namespace),
-        )?
-        .parse()
-        .map_err(EventError::parse)?,
-        counterparty_channel_id: maybe_extract_attribute(
-            object,
-            &format!("{}.counterparty_channel_id", namespace),
-        )
-        .and_then(|v| v.parse().ok()),
-    })
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Attributes {
-    pub height: Height,
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
     pub connection_id: ConnectionId,
@@ -233,19 +46,6 @@ impl Attributes {
     }
 }
 
-impl Default for Attributes {
-    fn default() -> Self {
-        Self {
-            height: Height::new(0, 1).unwrap(),
-            port_id: Default::default(),
-            channel_id: Default::default(),
-            connection_id: Default::default(),
-            counterparty_port_id: Default::default(),
-            counterparty_channel_id: Default::default(),
-        }
-    }
-}
-
 /// Convert attributes to Tendermint ABCI tags
 ///
 /// # Note
@@ -257,11 +57,6 @@ impl Default for Attributes {
 impl From<Attributes> for Vec<Tag> {
     fn from(a: Attributes) -> Self {
         let mut attributes = vec![];
-        let height = Tag {
-            key: HEIGHT_ATTRIBUTE_KEY.parse().unwrap(),
-            value: a.height.to_string().parse().unwrap(),
-        };
-        attributes.push(height);
         let port_id = Tag {
             key: PORT_ID_ATTRIBUTE_KEY.parse().unwrap(),
             value: a.port_id.to_string().parse().unwrap(),
@@ -363,13 +158,12 @@ impl TryFrom<Packet> for Vec<Tag> {
     }
 }
 
-trait EventType {
+pub trait EventType {
     fn event_type() -> IbcEventType;
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct OpenInit {
-    pub height: Height,
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
     pub connection_id: ConnectionId,
@@ -384,18 +178,11 @@ impl OpenInit {
     pub fn port_id(&self) -> &PortId {
         &self.port_id
     }
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
-    }
 }
 
 impl From<OpenInit> for Attributes {
     fn from(ev: OpenInit) -> Self {
         Self {
-            height: ev.height,
             port_id: ev.port_id,
             channel_id: ev.channel_id,
             connection_id: ev.connection_id,
@@ -417,9 +204,8 @@ impl EventType for OpenInit {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct OpenTry {
-    pub height: Height,
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
     pub connection_id: ConnectionId,
@@ -430,7 +216,6 @@ pub struct OpenTry {
 impl From<OpenTry> for Attributes {
     fn from(ev: OpenTry) -> Self {
         Self {
-            height: ev.height,
             port_id: ev.port_id,
             channel_id: ev.channel_id,
             connection_id: ev.connection_id,
@@ -446,12 +231,6 @@ impl OpenTry {
     pub fn port_id(&self) -> &PortId {
         &self.port_id
     }
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
-    }
 }
 
 impl From<OpenTry> for IbcEvent {
@@ -466,9 +245,8 @@ impl EventType for OpenTry {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct OpenAck {
-    pub height: Height,
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
     pub counterparty_channel_id: Option<ChannelId>,
@@ -479,7 +257,6 @@ pub struct OpenAck {
 impl From<OpenAck> for Attributes {
     fn from(ev: OpenAck) -> Self {
         Self {
-            height: ev.height,
             port_id: ev.port_id,
             channel_id: ev.channel_id,
             connection_id: ev.connection_id,
@@ -495,12 +272,6 @@ impl OpenAck {
     }
     pub fn port_id(&self) -> &PortId {
         &self.port_id
-    }
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
     }
 
     pub fn counterparty_channel_id(&self) -> Option<&ChannelId> {
@@ -520,9 +291,8 @@ impl EventType for OpenAck {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct OpenConfirm {
-    pub height: Height,
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
     pub connection_id: ConnectionId,
@@ -533,7 +303,6 @@ pub struct OpenConfirm {
 impl From<OpenConfirm> for Attributes {
     fn from(ev: OpenConfirm) -> Self {
         Self {
-            height: ev.height,
             port_id: ev.port_id,
             channel_id: ev.channel_id,
             connection_id: ev.connection_id,
@@ -550,12 +319,6 @@ impl OpenConfirm {
     pub fn port_id(&self) -> &PortId {
         &self.port_id
     }
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
-    }
 }
 
 impl From<OpenConfirm> for IbcEvent {
@@ -570,9 +333,8 @@ impl EventType for OpenConfirm {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct CloseInit {
-    pub height: Height,
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub connection_id: ConnectionId,
@@ -583,7 +345,6 @@ pub struct CloseInit {
 impl From<CloseInit> for Attributes {
     fn from(ev: CloseInit) -> Self {
         Self {
-            height: ev.height,
             port_id: ev.port_id,
             channel_id: Some(ev.channel_id),
             connection_id: ev.connection_id,
@@ -609,14 +370,6 @@ impl CloseInit {
     pub fn counterparty_channel_id(&self) -> Option<&ChannelId> {
         self.counterparty_channel_id.as_ref()
     }
-
-    pub fn height(&self) -> Height {
-        self.height
-    }
-
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
-    }
 }
 
 impl TryFrom<Attributes> for CloseInit {
@@ -624,7 +377,6 @@ impl TryFrom<Attributes> for CloseInit {
     fn try_from(attrs: Attributes) -> Result<Self, Self::Error> {
         if let Some(channel_id) = attrs.channel_id() {
             Ok(CloseInit {
-                height: attrs.height,
                 port_id: attrs.port_id.clone(),
                 channel_id: channel_id.clone(),
                 connection_id: attrs.connection_id.clone(),
@@ -647,8 +399,7 @@ impl core::fmt::Display for CloseInit {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(
             f,
-            "{} {} {:?}",
-            self.height(),
+            "{} {:?}",
             IbcEventType::CloseInitChannel.as_str(),
             Attributes::from(self.clone())
         )
@@ -661,9 +412,8 @@ impl EventType for CloseInit {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct CloseConfirm {
-    pub height: Height,
     pub channel_id: Option<ChannelId>,
     pub port_id: PortId,
     pub connection_id: ConnectionId,
@@ -674,7 +424,6 @@ pub struct CloseConfirm {
 impl From<CloseConfirm> for Attributes {
     fn from(ev: CloseConfirm) -> Self {
         Self {
-            height: ev.height,
             port_id: ev.port_id,
             channel_id: ev.channel_id,
             connection_id: ev.connection_id,
@@ -687,12 +436,6 @@ impl From<CloseConfirm> for Attributes {
 impl CloseConfirm {
     pub fn channel_id(&self) -> Option<&ChannelId> {
         self.channel_id.as_ref()
-    }
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
     }
 }
 
@@ -715,7 +458,6 @@ macro_rules! impl_try_from_attribute_for_event {
 
             fn try_from(attrs: Attributes) -> Result<Self, Self::Error> {
                 Ok(Self {
-                    height: attrs.height,
                     port_id: attrs.port_id,
                     channel_id: attrs.channel_id,
                     connection_id: attrs.connection_id,
@@ -753,40 +495,12 @@ impl_from_ibc_to_abci_event!(
     CloseConfirm
 );
 
-macro_rules! impl_try_from_raw_obj_for_event {
-    ($($event:ty),+) => {
-        $(impl TryFrom<RawObject<'_>> for $event {
-            type Error = EventError;
-
-            fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
-                extract_attributes(&obj, Self::event_type().as_str())?.try_into()
-            }
-        })+
-    };
-}
-
-impl_try_from_raw_obj_for_event!(
-    OpenInit,
-    OpenTry,
-    OpenAck,
-    OpenConfirm,
-    CloseInit,
-    CloseConfirm
-);
-
-#[derive(Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Serialize, Clone, PartialEq, Eq)]
 pub struct SendPacket {
-    pub height: Height,
     pub packet: Packet,
 }
 
 impl SendPacket {
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
-    }
     pub fn src_port_id(&self) -> &PortId {
         &self.packet.source_port
     }
@@ -821,29 +535,22 @@ impl TryFrom<SendPacket> for AbciEvent {
 
 impl core::fmt::Display for SendPacket {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "SendPacket - h:{}, {}", self.height, self.packet)
+        write!(f, "SendPacket - {}", self.packet)
     }
 }
 
 impl core::fmt::Debug for SendPacket {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "SendPacket - h:{}, {}", self.height, self.packet)
+        write!(f, "SendPacket - {}", self.packet)
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct ReceivePacket {
-    pub height: Height,
     pub packet: Packet,
 }
 
 impl ReceivePacket {
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
-    }
     pub fn src_port_id(&self) -> &PortId {
         &self.packet.source_port
     }
@@ -878,25 +585,18 @@ impl TryFrom<ReceivePacket> for AbciEvent {
 
 impl core::fmt::Display for ReceivePacket {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "ReceivePacket - h:{}, {}", self.height, self.packet)
+        write!(f, "ReceivePacket - {}", self.packet)
     }
 }
 
-#[derive(Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Serialize, Clone, PartialEq, Eq)]
 pub struct WriteAcknowledgement {
-    pub height: Height,
     pub packet: Packet,
     #[serde(serialize_with = "crate::serializers::ser_hex_upper")]
     pub ack: Vec<u8>,
 }
 
 impl WriteAcknowledgement {
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
-    }
     pub fn src_port_id(&self) -> &PortId {
         &self.packet.source_port
     }
@@ -939,37 +639,22 @@ impl TryFrom<WriteAcknowledgement> for AbciEvent {
 
 impl core::fmt::Display for WriteAcknowledgement {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(
-            f,
-            "WriteAcknowledgement - h:{}, {}",
-            self.height, self.packet
-        )
+        write!(f, "WriteAcknowledgement - {}", self.packet)
     }
 }
 
 impl core::fmt::Debug for WriteAcknowledgement {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "WriteAcknowledgement - h:{}, {}",
-            self.height, self.packet
-        )
+        write!(f, "WriteAcknowledgement - {}", self.packet)
     }
 }
 
-#[derive(Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Serialize, Clone, PartialEq, Eq)]
 pub struct AcknowledgePacket {
-    pub height: Height,
     pub packet: Packet,
 }
 
 impl AcknowledgePacket {
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
-    }
     pub fn src_port_id(&self) -> &PortId {
         &self.packet.source_port
     }
@@ -998,29 +683,22 @@ impl TryFrom<AcknowledgePacket> for AbciEvent {
 
 impl core::fmt::Display for AcknowledgePacket {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "h:{}, {}", self.height, self.packet)
+        write!(f, "{}", self.packet)
     }
 }
 
 impl core::fmt::Debug for AcknowledgePacket {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "AcknowledgePacket - h:{}, {}", self.height, self.packet)
+        write!(f, "AcknowledgePacket - {}", self.packet)
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct TimeoutPacket {
-    pub height: Height,
     pub packet: Packet,
 }
 
 impl TimeoutPacket {
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
-    }
     pub fn src_port_id(&self) -> &PortId {
         &self.packet.source_port
     }
@@ -1055,23 +733,16 @@ impl TryFrom<TimeoutPacket> for AbciEvent {
 
 impl core::fmt::Display for TimeoutPacket {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "TimeoutPacket - h:{}, {}", self.height, self.packet)
+        write!(f, "TimeoutPacket - {}", self.packet)
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct TimeoutOnClosePacket {
-    pub height: Height,
     pub packet: Packet,
 }
 
 impl TimeoutOnClosePacket {
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
-    }
     pub fn src_port_id(&self) -> &PortId {
         &self.packet.source_port
     }
@@ -1106,168 +777,6 @@ impl TryFrom<TimeoutOnClosePacket> for AbciEvent {
 
 impl core::fmt::Display for TimeoutOnClosePacket {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(
-            f,
-            "TimeoutOnClosePacket - h:{}, {}",
-            self.height, self.packet
-        )
-    }
-}
-
-macro_rules! impl_try_from_raw_obj_for_packet {
-    ($($packet:ty),+) => {
-        $(impl TryFrom<RawObject<'_>> for $packet {
-            type Error = EventError;
-
-            fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
-                let height = obj.height;
-                let data_str: String = extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_DATA_ATTRIBUTE_KEY))?;
-
-                let mut packet = Packet::try_from(obj)?;
-                packet.data = Vec::from(data_str.as_str().as_bytes());
-
-                Ok(Self { height, packet })
-            }
-        })+
-    };
-}
-
-impl_try_from_raw_obj_for_packet!(
-    SendPacket,
-    ReceivePacket,
-    AcknowledgePacket,
-    TimeoutPacket,
-    TimeoutOnClosePacket
-);
-
-impl TryFrom<RawObject<'_>> for WriteAcknowledgement {
-    type Error = EventError;
-
-    fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
-        let height = obj.height;
-        let data_str: String =
-            extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_DATA_ATTRIBUTE_KEY))?;
-        let ack = extract_attribute(&obj, &format!("{}.{}", obj.action, PKT_ACK_ATTRIBUTE_KEY))?
-            .into_bytes();
-
-        let mut packet = Packet::try_from(obj)?;
-        packet.data = Vec::from(data_str.as_str().as_bytes());
-
-        Ok(Self {
-            height,
-            packet,
-            ack,
-        })
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::core::ics04_channel::packet::Sequence;
-    use crate::timestamp::Timestamp;
-
-    #[test]
-    fn channel_event_to_abci_event() {
-        let attributes = Attributes {
-            height: Height::new(0, 1).unwrap(),
-            port_id: "test_port".parse().unwrap(),
-            channel_id: Some("channel-0".parse().unwrap()),
-            connection_id: "test_connection".parse().unwrap(),
-            counterparty_port_id: "counterparty_test_port".parse().unwrap(),
-            counterparty_channel_id: Some("channel-1".parse().unwrap()),
-        };
-        let mut abci_events = vec![];
-        let open_init = OpenInit::try_from(attributes.clone()).unwrap();
-        abci_events.push(AbciEvent::from(open_init.clone()));
-        let open_try = OpenTry::try_from(attributes.clone()).unwrap();
-        abci_events.push(AbciEvent::from(open_try.clone()));
-        let open_ack = OpenAck::try_from(attributes.clone()).unwrap();
-        abci_events.push(AbciEvent::from(open_ack.clone()));
-        let open_confirm = OpenConfirm::try_from(attributes.clone()).unwrap();
-        abci_events.push(AbciEvent::from(open_confirm.clone()));
-        let close_init = CloseInit::try_from(attributes.clone()).unwrap();
-        abci_events.push(AbciEvent::from(close_init.clone()));
-        let close_confirm = CloseConfirm::try_from(attributes).unwrap();
-        abci_events.push(AbciEvent::from(close_confirm.clone()));
-
-        for event in abci_events {
-            match try_from_tx(&event) {
-                Some(e) => match e {
-                    IbcEvent::OpenInitChannel(e) => {
-                        assert_eq!(Attributes::from(e), open_init.clone().into())
-                    }
-                    IbcEvent::OpenTryChannel(e) => {
-                        assert_eq!(Attributes::from(e), open_try.clone().into())
-                    }
-                    IbcEvent::OpenAckChannel(e) => {
-                        assert_eq!(Attributes::from(e), open_ack.clone().into())
-                    }
-                    IbcEvent::OpenConfirmChannel(e) => {
-                        assert_eq!(Attributes::from(e), open_confirm.clone().into())
-                    }
-                    IbcEvent::CloseInitChannel(e) => {
-                        assert_eq!(Attributes::from(e), close_init.clone().into())
-                    }
-                    IbcEvent::CloseConfirmChannel(e) => {
-                        assert_eq!(Attributes::from(e), close_confirm.clone().into())
-                    }
-                    _ => panic!("unexpected event type"),
-                },
-                None => panic!("converted event was wrong"),
-            }
-        }
-    }
-
-    #[test]
-    fn packet_event_to_abci_event() {
-        let packet = Packet {
-            sequence: Sequence::from(10),
-            source_port: "a_test_port".parse().unwrap(),
-            source_channel: "channel-0".parse().unwrap(),
-            destination_port: "b_test_port".parse().unwrap(),
-            destination_channel: "channel-1".parse().unwrap(),
-            data: "test_data".as_bytes().to_vec(),
-            timeout_height: Height::new(1, 10).unwrap().into(),
-            timeout_timestamp: Timestamp::now(),
-        };
-        let mut abci_events = vec![];
-        let send_packet = SendPacket {
-            height: Height::new(0, 1).unwrap(),
-            packet: packet.clone(),
-        };
-        abci_events.push(AbciEvent::try_from(send_packet.clone()).unwrap());
-        let write_ack = WriteAcknowledgement {
-            height: Height::new(0, 1).unwrap(),
-            packet: packet.clone(),
-            ack: "test_ack".as_bytes().to_vec(),
-        };
-        abci_events.push(AbciEvent::try_from(write_ack.clone()).unwrap());
-        let ack_packet = AcknowledgePacket {
-            height: Height::new(0, 1).unwrap(),
-            packet: packet.clone(),
-        };
-        abci_events.push(AbciEvent::try_from(ack_packet.clone()).unwrap());
-        let timeout_packet = TimeoutPacket {
-            height: Height::new(0, 1).unwrap(),
-            packet,
-        };
-        abci_events.push(AbciEvent::try_from(timeout_packet.clone()).unwrap());
-
-        for event in abci_events {
-            match try_from_tx(&event) {
-                Some(e) => match e {
-                    IbcEvent::SendPacket(e) => assert_eq!(e.packet, send_packet.packet),
-                    IbcEvent::WriteAcknowledgement(e) => {
-                        assert_eq!(e.packet, write_ack.packet);
-                        assert_eq!(e.ack, write_ack.ack);
-                    }
-                    IbcEvent::AcknowledgePacket(e) => assert_eq!(e.packet, ack_packet.packet),
-                    IbcEvent::TimeoutPacket(e) => assert_eq!(e.packet, timeout_packet.packet),
-                    _ => panic!("unexpected event type"),
-                },
-                None => panic!("converted event was wrong"),
-            }
-        }
+        write!(f, "TimeoutOnClosePacket - {}", self.packet)
     }
 }

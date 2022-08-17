@@ -1,4 +1,5 @@
 use core::time::Duration;
+use std::thread;
 
 use ibc_proto::google::protobuf::Any;
 use serde::Serialize;
@@ -181,7 +182,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
     pub fn restore_from_event(
         chain: ChainA,
         counterparty_chain: ChainB,
-        connection_open_event: IbcEvent,
+        connection_open_event: &IbcEvent,
     ) -> Result<Connection<ChainA, ChainB>, ConnectionError> {
         let connection_event_attributes = connection_open_event
             .connection_attributes()
@@ -748,7 +749,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         }
     }
 
-    pub fn step_event(&mut self, event: IbcEvent, index: u64) -> RetryResult<Next, u64> {
+    pub fn step_event(&mut self, event: &IbcEvent, index: u64) -> RetryResult<Next, u64> {
         let state = match event {
             IbcEvent::OpenInitConnection(_) => State::Init,
             IbcEvent::OpenTryConnection(_) => State::TryOpen,
@@ -899,25 +900,52 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         // Find the relevant event for connection init
         let result = events
             .into_iter()
-            .find(|event| {
-                matches!(event, IbcEvent::OpenInitConnection(_))
-                    || matches!(event, IbcEvent::ChainError(_))
+            .find(|event_with_height| {
+                matches!(event_with_height.event, IbcEvent::OpenInitConnection(_))
+                    || matches!(event_with_height.event, IbcEvent::ChainError(_))
             })
             .ok_or_else(ConnectionError::missing_connection_init_event)?;
 
         // TODO - make chainError an actual error
-        match result {
+        match &result.event {
             IbcEvent::OpenInitConnection(_) => {
                 info!("🥂 {} => {:#?}\n", self.dst_chain().id(), result);
-                Ok(result)
+                Ok(result.event)
             }
-            IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
-            _ => Err(ConnectionError::invalid_event(result)),
+            IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e.clone())),
+            _ => Err(ConnectionError::invalid_event(result.event)),
         }
     }
 
+    /// Wait for the application on destination chain to advance beyond `consensus_height`.
+    fn wait_for_dest_app_height_higher_than_consensus_proof_height(
+        &self,
+        consensus_height: Height,
+    ) -> Result<(), ConnectionError> {
+        let dst_application_latest_height = || {
+            self.dst_chain()
+                .query_latest_height()
+                .map_err(|e| ConnectionError::chain_query(self.src_chain().id(), e))
+        };
+
+        while consensus_height >= dst_application_latest_height()? {
+            warn!(
+                "client consensus proof height too high, \
+                 waiting for destination chain to advance beyond {}",
+                consensus_height
+            );
+
+            thread::sleep(Duration::from_millis(500));
+        }
+
+        Ok(())
+    }
+
     /// Attempts to build a MsgConnOpenTry.
-    pub fn build_conn_try(&self) -> Result<Vec<Any>, ConnectionError> {
+    ///
+    /// Return the messages and the app height the destination chain must reach
+    /// before we send the messages.
+    pub fn build_conn_try(&self) -> Result<(Vec<Any>, Height), ConnectionError> {
         let src_connection_id = self
             .src_connection_id()
             .ok_or_else(ConnectionError::missing_local_connection_id)?;
@@ -1024,11 +1052,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         };
 
         msgs.push(new_msg.to_any());
-        Ok(msgs)
+
+        Ok((msgs, src_client_target_height))
     }
 
     pub fn build_conn_try_and_send(&self) -> Result<IbcEvent, ConnectionError> {
-        let dst_msgs = self.build_conn_try()?;
+        let (dst_msgs, src_client_target_height) = self.build_conn_try()?;
+
+        // Wait for the height of the application on the destination chain to be higher than
+        // the height of the consensus state included in the proofs.
+        self.wait_for_dest_app_height_higher_than_consensus_proof_height(src_client_target_height)?;
 
         let tm = TrackedMsgs::new_static(dst_msgs, "ConnectionOpenTry");
 
@@ -1040,24 +1073,27 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         // Find the relevant event for connection try transaction
         let result = events
             .into_iter()
-            .find(|event| {
-                matches!(event, IbcEvent::OpenTryConnection(_))
-                    || matches!(event, IbcEvent::ChainError(_))
+            .find(|event_with_height| {
+                matches!(event_with_height.event, IbcEvent::OpenTryConnection(_))
+                    || matches!(event_with_height.event, IbcEvent::ChainError(_))
             })
             .ok_or_else(ConnectionError::missing_connection_try_event)?;
 
-        match result {
+        match &result.event {
             IbcEvent::OpenTryConnection(_) => {
                 info!("🥂 {} => {:#?}\n", self.dst_chain().id(), result);
-                Ok(result)
+                Ok(result.event)
             }
-            IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
-            _ => Err(ConnectionError::invalid_event(result)),
+            IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e.clone())),
+            _ => Err(ConnectionError::invalid_event(result.event)),
         }
     }
 
     /// Attempts to build a MsgConnOpenAck.
-    pub fn build_conn_ack(&self) -> Result<Vec<Any>, ConnectionError> {
+    ///
+    /// Return the messages and the app height the destination chain must reach
+    /// before we send the messages.
+    pub fn build_conn_ack(&self) -> Result<(Vec<Any>, Height), ConnectionError> {
         let src_connection_id = self
             .src_connection_id()
             .ok_or_else(ConnectionError::missing_local_connection_id)?;
@@ -1087,6 +1123,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             .dst_chain()
             .query_latest_height()
             .map_err(|e| ConnectionError::chain_query(self.dst_chain().id(), e))?;
+
         let client_msgs = self.build_update_client_on_src(src_client_target_height)?;
 
         let tm =
@@ -1130,11 +1167,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         };
 
         msgs.push(new_msg.to_any());
-        Ok(msgs)
+
+        Ok((msgs, src_client_target_height))
     }
 
     pub fn build_conn_ack_and_send(&self) -> Result<IbcEvent, ConnectionError> {
-        let dst_msgs = self.build_conn_ack()?;
+        let (dst_msgs, src_client_target_height) = self.build_conn_ack()?;
+
+        // Wait for the height of the application on the destination chain to be higher than
+        // the height of the consensus state included in the proofs.
+        self.wait_for_dest_app_height_higher_than_consensus_proof_height(src_client_target_height)?;
 
         let tm = TrackedMsgs::new_static(dst_msgs, "ConnectionOpenAck");
 
@@ -1146,19 +1188,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         // Find the relevant event for connection ack
         let result = events
             .into_iter()
-            .find(|event| {
-                matches!(event, IbcEvent::OpenAckConnection(_))
-                    || matches!(event, IbcEvent::ChainError(_))
+            .find(|event_with_height| {
+                matches!(event_with_height.event, IbcEvent::OpenAckConnection(_))
+                    || matches!(event_with_height.event, IbcEvent::ChainError(_))
             })
             .ok_or_else(ConnectionError::missing_connection_ack_event)?;
 
-        match result {
+        match &result.event {
             IbcEvent::OpenAckConnection(_) => {
                 info!("🥂 {} => {:#?}\n", self.dst_chain().id(), result);
-                Ok(result)
+                Ok(result.event)
             }
-            IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
-            _ => Err(ConnectionError::invalid_event(result)),
+            IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e.clone())),
+            _ => Err(ConnectionError::invalid_event(result.event)),
         }
     }
 
@@ -1234,19 +1276,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         // Find the relevant event for connection confirm
         let result = events
             .into_iter()
-            .find(|event| {
-                matches!(event, IbcEvent::OpenConfirmConnection(_))
-                    || matches!(event, IbcEvent::ChainError(_))
+            .find(|event_with_height| {
+                matches!(event_with_height.event, IbcEvent::OpenConfirmConnection(_))
+                    || matches!(event_with_height.event, IbcEvent::ChainError(_))
             })
             .ok_or_else(ConnectionError::missing_connection_confirm_event)?;
 
-        match result {
+        match &result.event {
             IbcEvent::OpenConfirmConnection(_) => {
                 info!("🥂 {} => {:#?}\n", self.dst_chain().id(), result);
-                Ok(result)
+                Ok(result.event)
             }
-            IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e)),
-            _ => Err(ConnectionError::invalid_event(result)),
+            IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e.clone())),
+            _ => Err(ConnectionError::invalid_event(result.event)),
         }
     }
 

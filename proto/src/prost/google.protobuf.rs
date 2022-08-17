@@ -209,6 +209,34 @@ pub mod field_descriptor_proto {
         /// Uses ZigZag encoding.
         Sint64 = 18,
     }
+    impl Type {
+        /// String value of the enum field names used in the ProtoBuf definition.
+        ///
+        /// The values are not transformed in any way and thus are considered stable
+        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+        pub fn as_str_name(&self) -> &'static str {
+            match self {
+                Type::Double => "TYPE_DOUBLE",
+                Type::Float => "TYPE_FLOAT",
+                Type::Int64 => "TYPE_INT64",
+                Type::Uint64 => "TYPE_UINT64",
+                Type::Int32 => "TYPE_INT32",
+                Type::Fixed64 => "TYPE_FIXED64",
+                Type::Fixed32 => "TYPE_FIXED32",
+                Type::Bool => "TYPE_BOOL",
+                Type::String => "TYPE_STRING",
+                Type::Group => "TYPE_GROUP",
+                Type::Message => "TYPE_MESSAGE",
+                Type::Bytes => "TYPE_BYTES",
+                Type::Uint32 => "TYPE_UINT32",
+                Type::Enum => "TYPE_ENUM",
+                Type::Sfixed32 => "TYPE_SFIXED32",
+                Type::Sfixed64 => "TYPE_SFIXED64",
+                Type::Sint32 => "TYPE_SINT32",
+                Type::Sint64 => "TYPE_SINT64",
+            }
+        }
+    }
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
     pub enum Label {
@@ -216,6 +244,19 @@ pub mod field_descriptor_proto {
         Optional = 1,
         Required = 2,
         Repeated = 3,
+    }
+    impl Label {
+        /// String value of the enum field names used in the ProtoBuf definition.
+        ///
+        /// The values are not transformed in any way and thus are considered stable
+        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+        pub fn as_str_name(&self) -> &'static str {
+            match self {
+                Label::Optional => "LABEL_OPTIONAL",
+                Label::Required => "LABEL_REQUIRED",
+                Label::Repeated => "LABEL_REPEATED",
+            }
+        }
     }
 }
 /// Describes a oneof.
@@ -320,20 +361,20 @@ pub struct MethodDescriptorProto {
 //
 // Extension numbers for custom options may be chosen as follows:
 // * For options which will only be used within a single application or
-//   organization, or for experimental options, use field numbers 50000
-//   through 99999.  It is up to you to ensure that you do not use the
-//   same number for multiple options.
+//    organization, or for experimental options, use field numbers 50000
+//    through 99999.  It is up to you to ensure that you do not use the
+//    same number for multiple options.
 // * For options which will be published and used publicly by multiple
-//   independent entities, e-mail protobuf-global-extension-registry@google.com
-//   to reserve extension numbers. Simply provide your project name (e.g.
-//   Objective-C plugin) and your project website (if available) -- there's no
-//   need to explain how you intend to use them. Usually you only need one
-//   extension number. You can declare multiple options with only one extension
-//   number by putting them in a sub-message. See the Custom Options section of
-//   the docs for examples:
-//   <https://developers.google.com/protocol-buffers/docs/proto#options>
-//   If this turns out to be popular, a web service will be set up
-//   to automatically assign option numbers.
+//    independent entities, e-mail protobuf-global-extension-registry@google.com
+//    to reserve extension numbers. Simply provide your project name (e.g.
+//    Objective-C plugin) and your project website (if available) -- there's no
+//    need to explain how you intend to use them. Usually you only need one
+//    extension number. You can declare multiple options with only one extension
+//    number by putting them in a sub-message. See the Custom Options section of
+//    the docs for examples:
+//    <https://developers.google.com/protocol-buffers/docs/proto#options>
+//    If this turns out to be popular, a web service will be set up
+//    to automatically assign option numbers.
 
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FileOptions {
@@ -374,9 +415,9 @@ pub struct FileOptions {
     pub optimize_for: ::core::option::Option<i32>,
     /// Sets the Go package where structs generated from this .proto will be
     /// placed. If omitted, the Go package will be derived from the following:
-    ///   - The basename of the package import path, if provided.
-    ///   - Otherwise, the package statement in the .proto file, if present.
-    ///   - Otherwise, the basename of the .proto file, without extension.
+    ///    - The basename of the package import path, if provided.
+    ///    - Otherwise, the package statement in the .proto file, if present.
+    ///    - Otherwise, the basename of the .proto file, without extension.
     #[prost(string, optional, tag="11")]
     pub go_package: ::core::option::Option<::prost::alloc::string::String>,
     /// Should generic services be generated in each language?  "Generic" services
@@ -459,6 +500,19 @@ pub mod file_options {
         /// Generate code using MessageLite and the lite runtime.
         LiteRuntime = 3,
     }
+    impl OptimizeMode {
+        /// String value of the enum field names used in the ProtoBuf definition.
+        ///
+        /// The values are not transformed in any way and thus are considered stable
+        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+        pub fn as_str_name(&self) -> &'static str {
+            match self {
+                OptimizeMode::Speed => "SPEED",
+                OptimizeMode::CodeSize => "CODE_SIZE",
+                OptimizeMode::LiteRuntime => "LITE_RUNTIME",
+            }
+        }
+    }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MessageOptions {
@@ -468,10 +522,10 @@ pub struct MessageOptions {
     /// efficient, has fewer features, and is more complicated.
     ///
     /// The message must be defined exactly as follows:
-    ///   message Foo {
-    ///     option message_set_wire_format = true;
-    ///     extensions 4 to max;
-    ///   }
+    ///    message Foo {
+    ///      option message_set_wire_format = true;
+    ///      extensions 4 to max;
+    ///    }
     /// Note that the message cannot have any defined fields; MessageSets only
     /// have extensions.
     ///
@@ -497,14 +551,14 @@ pub struct MessageOptions {
     /// maps field.
     ///
     /// For maps fields:
-    ///     map<KeyType, ValueType> map_field = 1;
+    ///      map<KeyType, ValueType> map_field = 1;
     /// The parsed descriptor looks like:
-    ///     message MapFieldEntry {
-    ///         option map_entry = true;
-    ///         optional KeyType key = 1;
-    ///         optional ValueType value = 2;
-    ///     }
-    ///     repeated MapFieldEntry map_field = 1;
+    ///      message MapFieldEntry {
+    ///          option map_entry = true;
+    ///          optional KeyType key = 1;
+    ///          optional ValueType value = 2;
+    ///      }
+    ///      repeated MapFieldEntry map_field = 1;
     ///
     /// Implementations may choose not to generate the map_entry=true message, but
     /// use a native map in the target language to hold the keys and values.
@@ -601,6 +655,19 @@ pub mod field_options {
         Cord = 1,
         StringPiece = 2,
     }
+    impl CType {
+        /// String value of the enum field names used in the ProtoBuf definition.
+        ///
+        /// The values are not transformed in any way and thus are considered stable
+        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+        pub fn as_str_name(&self) -> &'static str {
+            match self {
+                CType::String => "STRING",
+                CType::Cord => "CORD",
+                CType::StringPiece => "STRING_PIECE",
+            }
+        }
+    }
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
     pub enum JsType {
@@ -610,6 +677,19 @@ pub mod field_options {
         JsString = 1,
         /// Use JavaScript numbers.
         JsNumber = 2,
+    }
+    impl JsType {
+        /// String value of the enum field names used in the ProtoBuf definition.
+        ///
+        /// The values are not transformed in any way and thus are considered stable
+        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+        pub fn as_str_name(&self) -> &'static str {
+            match self {
+                JsType::JsNormal => "JS_NORMAL",
+                JsType::JsString => "JS_STRING",
+                JsType::JsNumber => "JS_NUMBER",
+            }
+        }
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -649,9 +729,9 @@ pub struct EnumValueOptions {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ServiceOptions {
     // Note:  Field numbers 1 through 32 are reserved for Google's internal RPC
-    //   framework.  We apologize for hoarding these numbers to ourselves, but
-    //   we were already using them long before we decided to release Protocol
-    //   Buffers.
+    //    framework.  We apologize for hoarding these numbers to ourselves, but
+    //    we were already using them long before we decided to release Protocol
+    //    Buffers.
 
     /// Is this service deprecated?
     /// Depending on the target platform, this can emit Deprecated annotations
@@ -666,9 +746,9 @@ pub struct ServiceOptions {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MethodOptions {
     // Note:  Field numbers 1 through 32 are reserved for Google's internal RPC
-    //   framework.  We apologize for hoarding these numbers to ourselves, but
-    //   we were already using them long before we decided to release Protocol
-    //   Buffers.
+    //    framework.  We apologize for hoarding these numbers to ourselves, but
+    //    we were already using them long before we decided to release Protocol
+    //    Buffers.
 
     /// Is this method deprecated?
     /// Depending on the target platform, this can emit Deprecated annotations
@@ -695,6 +775,19 @@ pub mod method_options {
         NoSideEffects = 1,
         /// idempotent, but may have side effects
         Idempotent = 2,
+    }
+    impl IdempotencyLevel {
+        /// String value of the enum field names used in the ProtoBuf definition.
+        ///
+        /// The values are not transformed in any way and thus are considered stable
+        /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+        pub fn as_str_name(&self) -> &'static str {
+            match self {
+                IdempotencyLevel::IdempotencyUnknown => "IDEMPOTENCY_UNKNOWN",
+                IdempotencyLevel::NoSideEffects => "NO_SIDE_EFFECTS",
+                IdempotencyLevel::Idempotent => "IDEMPOTENT",
+            }
+        }
     }
 }
 /// A message representing a option the parser does not recognize. This only
@@ -750,43 +843,43 @@ pub struct SourceCodeInfo {
     /// tools.
     ///
     /// For example, say we have a file like:
-    ///   message Foo {
-    ///     optional string foo = 1;
-    ///   }
+    ///    message Foo {
+    ///      optional string foo = 1;
+    ///    }
     /// Let's look at just the field definition:
-    ///   optional string foo = 1;
-    ///   ^       ^^     ^^  ^  ^^^
-    ///   a       bc     de  f  ghi
+    ///    optional string foo = 1;
+    ///    ^       ^^     ^^  ^  ^^^
+    ///    a       bc     de  f  ghi
     /// We have the following locations:
-    ///   span   path               represents
-    ///   [a,i)  [ 4, 0, 2, 0 ]     The whole field definition.
-    ///   [a,b)  [ 4, 0, 2, 0, 4 ]  The label (optional).
-    ///   [c,d)  [ 4, 0, 2, 0, 5 ]  The type (string).
-    ///   [e,f)  [ 4, 0, 2, 0, 1 ]  The name (foo).
-    ///   [g,h)  [ 4, 0, 2, 0, 3 ]  The number (1).
+    ///    span   path               represents
+    ///    [a,i)  [ 4, 0, 2, 0 ]     The whole field definition.
+    ///    [a,b)  [ 4, 0, 2, 0, 4 ]  The label (optional).
+    ///    [c,d)  [ 4, 0, 2, 0, 5 ]  The type (string).
+    ///    [e,f)  [ 4, 0, 2, 0, 1 ]  The name (foo).
+    ///    [g,h)  [ 4, 0, 2, 0, 3 ]  The number (1).
     ///
     /// Notes:
     /// - A location may refer to a repeated field itself (i.e. not to any
-    ///   particular index within it).  This is used whenever a set of elements are
-    ///   logically enclosed in a single code segment.  For example, an entire
-    ///   extend block (possibly containing multiple extension definitions) will
-    ///   have an outer location whose path refers to the "extensions" repeated
-    ///   field without an index.
+    ///    particular index within it).  This is used whenever a set of elements are
+    ///    logically enclosed in a single code segment.  For example, an entire
+    ///    extend block (possibly containing multiple extension definitions) will
+    ///    have an outer location whose path refers to the "extensions" repeated
+    ///    field without an index.
     /// - Multiple locations may have the same path.  This happens when a single
-    ///   logical declaration is spread out across multiple places.  The most
-    ///   obvious example is the "extend" block again -- there may be multiple
-    ///   extend blocks in the same scope, each of which will have the same path.
+    ///    logical declaration is spread out across multiple places.  The most
+    ///    obvious example is the "extend" block again -- there may be multiple
+    ///    extend blocks in the same scope, each of which will have the same path.
     /// - A location's span is not always a subset of its parent's span.  For
-    ///   example, the "extendee" of an extension declaration appears at the
-    ///   beginning of the "extend" block and is shared by all extensions within
-    ///   the block.
+    ///    example, the "extendee" of an extension declaration appears at the
+    ///    beginning of the "extend" block and is shared by all extensions within
+    ///    the block.
     /// - Just because a location's span is a subset of some other location's span
-    ///   does not mean that it is a descendant.  For example, a "group" defines
-    ///   both a type and a field in a single declaration.  Thus, the locations
-    ///   corresponding to the type and field and their components will overlap.
+    ///    does not mean that it is a descendant.  For example, a "group" defines
+    ///    both a type and a field in a single declaration.  Thus, the locations
+    ///    corresponding to the type and field and their components will overlap.
     /// - Code which tries to interpret locations should probably be designed to
-    ///   ignore those that it doesn't understand, as more types of locations could
-    ///   be recorded in the future.
+    ///    ignore those that it doesn't understand, as more types of locations could
+    ///    be recorded in the future.
     #[prost(message, repeated, tag="1")]
     pub location: ::prost::alloc::vec::Vec<source_code_info::Location>,
 }
@@ -800,21 +893,21 @@ pub mod source_code_info {
         /// Each element is a field number or an index.  They form a path from
         /// the root FileDescriptorProto to the place where the definition.  For
         /// example, this path:
-        ///   [ 4, 3, 2, 7, 1 ]
+        ///    [ 4, 3, 2, 7, 1 ]
         /// refers to:
-        ///   file.message_type(3)  // 4, 3
-        ///       .field(7)         // 2, 7
-        ///       .name()           // 1
+        ///    file.message_type(3)  // 4, 3
+        ///        .field(7)         // 2, 7
+        ///        .name()           // 1
         /// This is because FileDescriptorProto.message_type has field number 4:
-        ///   repeated DescriptorProto message_type = 4;
+        ///    repeated DescriptorProto message_type = 4;
         /// and DescriptorProto.field has field number 2:
-        ///   repeated FieldDescriptorProto field = 2;
+        ///    repeated FieldDescriptorProto field = 2;
         /// and FieldDescriptorProto.name has field number 1:
-        ///   optional string name = 1;
+        ///    optional string name = 1;
         ///
         /// Thus, the above path gives the location of a field name.  If we removed
         /// the last element:
-        ///   [ 4, 3, 2, 7 ]
+        ///    [ 4, 3, 2, 7 ]
         /// this path refers to the whole field declaration (from the beginning
         /// of the label to the terminating semicolon).
         #[prost(int32, repeated, tag="1")]
@@ -845,34 +938,34 @@ pub mod source_code_info {
         ///
         /// Examples:
         ///
-        ///   optional int32 foo = 1;  // Comment attached to foo.
-        ///   // Comment attached to bar.
-        ///   optional int32 bar = 2;
+        ///    optional int32 foo = 1;  // Comment attached to foo.
+        ///    // Comment attached to bar.
+        ///    optional int32 bar = 2;
         ///
-        ///   optional string baz = 3;
-        ///   // Comment attached to baz.
-        ///   // Another line attached to baz.
+        ///    optional string baz = 3;
+        ///    // Comment attached to baz.
+        ///    // Another line attached to baz.
         ///
-        ///   // Comment attached to qux.
-        ///   //
-        ///   // Another line attached to qux.
-        ///   optional double qux = 4;
+        ///    // Comment attached to qux.
+        ///    //
+        ///    // Another line attached to qux.
+        ///    optional double qux = 4;
         ///
-        ///   // Detached comment for corge. This is not leading or trailing comments
-        ///   // to qux or corge because there are blank lines separating it from
-        ///   // both.
+        ///    // Detached comment for corge. This is not leading or trailing comments
+        ///    // to qux or corge because there are blank lines separating it from
+        ///    // both.
         ///
-        ///   // Detached comment for corge paragraph 2.
+        ///    // Detached comment for corge paragraph 2.
         ///
-        ///   optional string corge = 5;
-        ///   /* Block comment attached
-        ///    * to corge.  Leading asterisks
-        ///    * will be removed. */
-        ///   /* Block comment attached to
-        ///    * grault. */
-        ///   optional int32 grault = 6;
+        ///    optional string corge = 5;
+        ///    /* Block comment attached
+        ///     * to corge.  Leading asterisks
+        ///     * will be removed. */
+        ///    /* Block comment attached to
+        ///     * grault. */
+        ///    optional int32 grault = 6;
         ///
-        ///   // ignored detached comments.
+        ///    // ignored detached comments.
         #[prost(string, optional, tag="3")]
         pub leading_comments: ::core::option::Option<::prost::alloc::string::String>,
         #[prost(string, optional, tag="4")]
@@ -921,42 +1014,42 @@ pub mod generated_code_info {
 ///
 /// Example 1: Pack and unpack a message in C++.
 ///
-///     Foo foo = ...;
-///     Any any;
-///     any.PackFrom(foo);
-///     ...
-///     if (any.UnpackTo(&foo)) {
-///       ...
-///     }
+///      Foo foo = ...;
+///      Any any;
+///      any.PackFrom(foo);
+///      ...
+///      if (any.UnpackTo(&foo)) {
+///        ...
+///      }
 ///
 /// Example 2: Pack and unpack a message in Java.
 ///
-///     Foo foo = ...;
-///     Any any = Any.pack(foo);
-///     ...
-///     if (any.is(Foo.class)) {
-///       foo = any.unpack(Foo.class);
-///     }
-///
-///  Example 3: Pack and unpack a message in Python.
-///
-///     foo = Foo(...)
-///     any = Any()
-///     any.Pack(foo)
-///     ...
-///     if any.Is(Foo.DESCRIPTOR):
-///       any.Unpack(foo)
-///       ...
-///
-///  Example 4: Pack and unpack a message in Go
-///
-///      foo := &pb.Foo{...}
-///      any, err := ptypes.MarshalAny(foo)
+///      Foo foo = ...;
+///      Any any = Any.pack(foo);
 ///      ...
-///      foo := &pb.Foo{}
-///      if err := ptypes.UnmarshalAny(any, foo); err != nil {
-///        ...
+///      if (any.is(Foo.class)) {
+///        foo = any.unpack(Foo.class);
 ///      }
+///
+///   Example 3: Pack and unpack a message in Python.
+///
+///      foo = Foo(...)
+///      any = Any()
+///      any.Pack(foo)
+///      ...
+///      if any.Is(Foo.DESCRIPTOR):
+///        any.Unpack(foo)
+///        ...
+///
+///   Example 4: Pack and unpack a message in Go
+///
+///       foo := &pb.Foo{...}
+///       any, err := ptypes.MarshalAny(foo)
+///       ...
+///       foo := &pb.Foo{}
+///       if err := ptypes.UnmarshalAny(any, foo); err != nil {
+///         ...
+///       }
 ///
 /// The pack methods provided by protobuf library will by default use
 /// 'type.googleapis.com/full.type.name' as the type URL and the unpack
@@ -971,27 +1064,27 @@ pub mod generated_code_info {
 /// representation of the deserialized, embedded message, with an
 /// additional field `@type` which contains the type URL. Example:
 ///
-///     package google.profile;
-///     message Person {
-///       string first_name = 1;
-///       string last_name = 2;
-///     }
+///      package google.profile;
+///      message Person {
+///        string first_name = 1;
+///        string last_name = 2;
+///      }
 ///
-///     {
-///       "@type": "type.googleapis.com/google.profile.Person",
-///       "firstName": <string>,
-///       "lastName": <string>
-///     }
+///      {
+///        "@type": "type.googleapis.com/google.profile.Person",
+///        "firstName": <string>,
+///        "lastName": <string>
+///      }
 ///
 /// If the embedded message type is well-known and has a custom JSON
 /// representation, that representation will be embedded adding a field
 /// `value` which holds the custom JSON in addition to the `@type`
 /// field. Example (for message \[google.protobuf.Duration][\]):
 ///
-///     {
-///       "@type": "type.googleapis.com/google.protobuf.Duration",
-///       "value": "1.212s"
-///     }
+///      {
+///        "@type": "type.googleapis.com/google.protobuf.Duration",
+///        "value": "1.212s"
+///      }
 ///
 #[derive(::serde::Serialize, ::serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -1010,12 +1103,12 @@ pub struct Any {
     ///
     /// * If no scheme is provided, `https` is assumed.
     /// * An HTTP GET on the URL must yield a \[google.protobuf.Type][\]
-    ///   value in binary format, or produce an error.
+    ///    value in binary format, or produce an error.
     /// * Applications are allowed to cache lookup results based on the
-    ///   URL, or have them precompiled into a binary to avoid any
-    ///   lookup. Therefore, binary compatibility needs to be preserved
-    ///   on changes to types. (Use versioned type names to manage
-    ///   breaking changes.)
+    ///    URL, or have them precompiled into a binary to avoid any
+    ///    lookup. Therefore, binary compatibility needs to be preserved
+    ///    on changes to types. (Use versioned type names to manage
+    ///    breaking changes.)
     ///
     /// Note: this functionality is not currently available in the official
     /// protobuf release, and it is not used for type URLs beginning with
@@ -1048,52 +1141,52 @@ pub struct Any {
 ///
 /// Example 1: Compute Timestamp from POSIX `time()`.
 ///
-///     Timestamp timestamp;
-///     timestamp.set_seconds(time(NULL));
-///     timestamp.set_nanos(0);
+///      Timestamp timestamp;
+///      timestamp.set_seconds(time(NULL));
+///      timestamp.set_nanos(0);
 ///
 /// Example 2: Compute Timestamp from POSIX `gettimeofday()`.
 ///
-///     struct timeval tv;
-///     gettimeofday(&tv, NULL);
+///      struct timeval tv;
+///      gettimeofday(&tv, NULL);
 ///
-///     Timestamp timestamp;
-///     timestamp.set_seconds(tv.tv_sec);
-///     timestamp.set_nanos(tv.tv_usec * 1000);
+///      Timestamp timestamp;
+///      timestamp.set_seconds(tv.tv_sec);
+///      timestamp.set_nanos(tv.tv_usec * 1000);
 ///
 /// Example 3: Compute Timestamp from Win32 `GetSystemTimeAsFileTime()`.
 ///
-///     FILETIME ft;
-///     GetSystemTimeAsFileTime(&ft);
-///     UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
+///      FILETIME ft;
+///      GetSystemTimeAsFileTime(&ft);
+///      UINT64 ticks = (((UINT64)ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
 ///
-///     // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
-///     // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
-///     Timestamp timestamp;
-///     timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
-///     timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
+///      // A Windows tick is 100 nanoseconds. Windows epoch 1601-01-01T00:00:00Z
+///      // is 11644473600 seconds before Unix epoch 1970-01-01T00:00:00Z.
+///      Timestamp timestamp;
+///      timestamp.set_seconds((INT64) ((ticks / 10000000) - 11644473600LL));
+///      timestamp.set_nanos((INT32) ((ticks % 10000000) * 100));
 ///
 /// Example 4: Compute Timestamp from Java `System.currentTimeMillis()`.
 ///
-///     long millis = System.currentTimeMillis();
+///      long millis = System.currentTimeMillis();
 ///
-///     Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
-///         .setNanos((int) ((millis % 1000) * 1000000)).build();
+///      Timestamp timestamp = Timestamp.newBuilder().setSeconds(millis / 1000)
+///          .setNanos((int) ((millis % 1000) * 1000000)).build();
 ///
 ///
 /// Example 5: Compute Timestamp from Java `Instant.now()`.
 ///
-///     Instant now = Instant.now();
+///      Instant now = Instant.now();
 ///
-///     Timestamp timestamp =
-///         Timestamp.newBuilder().setSeconds(now.getEpochSecond())
-///             .setNanos(now.getNano()).build();
+///      Timestamp timestamp =
+///          Timestamp.newBuilder().setSeconds(now.getEpochSecond())
+///              .setNanos(now.getNano()).build();
 ///
 ///
 /// Example 6: Compute Timestamp from current time in Python.
 ///
-///     timestamp = Timestamp()
-///     timestamp.GetCurrentTime()
+///      timestamp = Timestamp()
+///      timestamp.GetCurrentTime()
 ///
 /// # JSON Mapping
 ///
@@ -1149,43 +1242,43 @@ pub struct Timestamp {
 ///
 /// Example 1: Compute Duration from two Timestamps in pseudo code.
 ///
-///     Timestamp start = ...;
-///     Timestamp end = ...;
-///     Duration duration = ...;
+///      Timestamp start = ...;
+///      Timestamp end = ...;
+///      Duration duration = ...;
 ///
-///     duration.seconds = end.seconds - start.seconds;
-///     duration.nanos = end.nanos - start.nanos;
+///      duration.seconds = end.seconds - start.seconds;
+///      duration.nanos = end.nanos - start.nanos;
 ///
-///     if (duration.seconds < 0 && duration.nanos > 0) {
-///       duration.seconds += 1;
-///       duration.nanos -= 1000000000;
-///     } else if (duration.seconds > 0 && duration.nanos < 0) {
-///       duration.seconds -= 1;
-///       duration.nanos += 1000000000;
-///     }
+///      if (duration.seconds < 0 && duration.nanos > 0) {
+///        duration.seconds += 1;
+///        duration.nanos -= 1000000000;
+///      } else if (duration.seconds > 0 && duration.nanos < 0) {
+///        duration.seconds -= 1;
+///        duration.nanos += 1000000000;
+///      }
 ///
 /// Example 2: Compute Timestamp from Timestamp + Duration in pseudo code.
 ///
-///     Timestamp start = ...;
-///     Duration duration = ...;
-///     Timestamp end = ...;
+///      Timestamp start = ...;
+///      Duration duration = ...;
+///      Timestamp end = ...;
 ///
-///     end.seconds = start.seconds + duration.seconds;
-///     end.nanos = start.nanos + duration.nanos;
+///      end.seconds = start.seconds + duration.seconds;
+///      end.nanos = start.nanos + duration.nanos;
 ///
-///     if (end.nanos < 0) {
-///       end.seconds -= 1;
-///       end.nanos += 1000000000;
-///     } else if (end.nanos >= 1000000000) {
-///       end.seconds += 1;
-///       end.nanos -= 1000000000;
-///     }
+///      if (end.nanos < 0) {
+///        end.seconds -= 1;
+///        end.nanos += 1000000000;
+///      } else if (end.nanos >= 1000000000) {
+///        end.seconds += 1;
+///        end.nanos -= 1000000000;
+///      }
 ///
 /// Example 3: Compute Duration from datetime.timedelta in Python.
 ///
-///     td = datetime.timedelta(days=3, minutes=10)
-///     duration = Duration()
-///     duration.FromTimedelta(td)
+///      td = datetime.timedelta(days=3, minutes=10)
+///      duration = Duration()
+///      duration.FromTimedelta(td)
 ///
 /// # JSON Mapping
 ///

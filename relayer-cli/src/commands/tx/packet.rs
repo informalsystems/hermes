@@ -12,7 +12,7 @@ use crate::conclude::Output;
 use crate::error::Error;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct TxPacketRecvCmd {
     #[clap(
         long = "dst-chain",
@@ -95,7 +95,7 @@ impl Runnable for TxPacketRecvCmd {
     }
 }
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct TxPacketAckCmd {
     #[clap(
         long = "dst-chain",

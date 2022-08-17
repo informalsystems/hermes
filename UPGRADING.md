@@ -1,12 +1,16 @@
 # Upgrading Hermes to a newer version
 
+## v1.0.0-rc.2
+
+This release is backward compatible with Hermes v1.0.0-rc.1 🎉
+
+
 ## v1.0.0-rc.1
 
 > These instructions assume that you are running Hermes v1.0.0-rc.0.
 > If you are running an older version, please refer the corresponding
 > in reverse chronological order to update to v1.0.0-rc.0 first and then
 > follow these instructions.
-
 
 ### Default value of `tx_confirmation` setting has changed
 
@@ -48,7 +52,7 @@ All commands under the `tx` namespace, with the exception of `tx upgrade-chain`,
 
 The `tx upgrade-chain` command now uses `--reference-` and `--host-` prefixes.
 
-Please check the commands help or [ADR 010](adr-010) for the full updated list of commands.
+Please check the commands help or [ADR 010][adr-010] for the full updated list of commands.
 
 ## v1.0.0-rc.0
 
