@@ -5,7 +5,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::path::PathBuf;
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct IBCPath {
     #[serde(rename = "$schema")]
@@ -17,7 +17,7 @@ pub struct IBCPath {
     pub channels: Vec<Channel>,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct Chain1 {
     #[serde(rename = "chain-name")]
@@ -28,7 +28,7 @@ pub struct Chain1 {
     pub connection_id: ConnectionId,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct Chain2 {
     #[serde(rename = "chain-name")]
@@ -39,7 +39,7 @@ pub struct Chain2 {
     pub connection_id: ConnectionId,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct Channel {
     #[serde(rename = "chain-1")]
@@ -51,7 +51,7 @@ pub struct Channel {
     pub tags: Tags,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ChannelChain1 {
     #[serde(rename = "channel-id")]
@@ -60,7 +60,7 @@ pub struct ChannelChain1 {
     pub port_id: PortId,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct ChannelChain2 {
     #[serde(rename = "channel-id")]
@@ -69,7 +69,7 @@ pub struct ChannelChain2 {
     pub port_id: PortId,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct Tags {
     pub dex: String,
@@ -92,6 +92,7 @@ impl Fetchable for IBCPath {
     }
 }
 
+#[allow(clippy::bool_assert_comparison)]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -110,7 +111,7 @@ mod tests {
 
         for handle in handles {
             let path: IBCPath = handle.await.unwrap()?;
-            assert!(path.channels.len() > 0);
+            assert!(!path.channels.is_empty());
         }
 
         Ok(())
