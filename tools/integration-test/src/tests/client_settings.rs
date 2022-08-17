@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 
-use ibc::clients::ics07_tendermint::client_state::TmClientState;
+use ibc::clients::ics07_tendermint::client_state::ClientState as TmClientState;
 use ibc_relayer::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer::foreign_client::CreateOptions;

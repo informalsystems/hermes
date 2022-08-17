@@ -32,7 +32,7 @@ use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConse
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header as TmHeader;
 use crate::core::ics02_client::client_state::{
-    ClientState, UpdatedState, UpgradeOptions as CoreUpgradeOptions,
+    ClientState as Ics2ClientState, UpdatedState, UpgradeOptions as CoreUpgradeOptions,
 };
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::consensus_state::ConsensusState;
@@ -46,7 +46,7 @@ use crate::Height;
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
-pub struct TmClientState {
+pub struct ClientState {
     pub chain_id: ChainId,
     pub trust_level: TrustThreshold,
     pub trusting_period: Duration,
@@ -67,7 +67,7 @@ pub struct AllowUpdate {
     pub after_misbehaviour: bool,
 }
 
-impl TmClientState {
+impl ClientState {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         chain_id: ChainId,
@@ -79,7 +79,7 @@ impl TmClientState {
         proof_specs: ProofSpecs,
         upgrade_path: Vec<String>,
         allow_update: AllowUpdate,
-    ) -> Result<TmClientState, Error> {
+    ) -> Result<ClientState, Error> {
         // Basic validation of trusting period and unbonding period: each should be non-zero.
         if trusting_period <= Duration::new(0, 0) {
             return Err(Error::invalid_trusting_period(format!(
@@ -137,7 +137,7 @@ impl TmClientState {
     }
 
     pub fn with_header(self, h: TmHeader) -> Result<Self, Error> {
-        Ok(TmClientState {
+        Ok(ClientState {
             latest_height: Height::new(
                 self.latest_height.revision_number(),
                 h.signed_header.header.height.into(),
@@ -220,7 +220,7 @@ pub struct UpgradeOptions {
 
 impl CoreUpgradeOptions for UpgradeOptions {}
 
-impl ClientState for TmClientState {
+impl Ics2ClientState for ClientState {
     fn chain_id(&self) -> ChainId {
         self.chain_id.clone()
     }
@@ -657,7 +657,7 @@ impl ClientState for TmClientState {
 }
 
 fn verify_membership(
-    client_state: &TmClientState,
+    client_state: &ClientState,
     prefix: &CommitmentPrefix,
     proof: &CommitmentProofBytes,
     root: &CommitmentRoot,
@@ -681,7 +681,7 @@ fn verify_membership(
 }
 
 fn verify_non_membership(
-    client_state: &TmClientState,
+    client_state: &ClientState,
     prefix: &CommitmentPrefix,
     proof: &CommitmentProofBytes,
     root: &CommitmentRoot,
@@ -716,7 +716,7 @@ fn verify_delay_passed(
     let delay_period_time = connection_end.delay_period();
     let delay_period_height = ctx.block_delay(delay_period_time);
 
-    TmClientState::verify_delay_passed(
+    ClientState::verify_delay_passed(
         current_timestamp,
         current_height,
         processed_time,
@@ -726,9 +726,9 @@ fn verify_delay_passed(
     )
     .map_err(|e| e.into())
 }
-fn downcast_tm_client_state(cs: &dyn ClientState) -> Result<&TmClientState, Ics02Error> {
+fn downcast_tm_client_state(cs: &dyn Ics2ClientState) -> Result<&ClientState, Ics02Error> {
     cs.as_any()
-        .downcast_ref::<TmClientState>()
+        .downcast_ref::<ClientState>()
         .ok_or_else(|| Ics02Error::client_args_type_mismatch(ClientType::Tendermint))
 }
 
@@ -739,9 +739,9 @@ fn downcast_tm_consensus_state(cs: &dyn ConsensusState) -> Result<TmConsensusSta
         .map(Clone::clone)
 }
 
-impl Protobuf<RawTmClientState> for TmClientState {}
+impl Protobuf<RawTmClientState> for ClientState {}
 
-impl TryFrom<RawTmClientState> for TmClientState {
+impl TryFrom<RawTmClientState> for ClientState {
     type Error = Error;
 
     fn try_from(raw: RawTmClientState) -> Result<Self, Self::Error> {
@@ -795,8 +795,8 @@ impl TryFrom<RawTmClientState> for TmClientState {
     }
 }
 
-impl From<TmClientState> for RawTmClientState {
-    fn from(value: TmClientState) -> Self {
+impl From<ClientState> for RawTmClientState {
+    fn from(value: ClientState) -> Self {
         #[allow(deprecated)]
         Self {
             chain_id: value.chain_id.to_string(),
@@ -819,16 +819,16 @@ impl From<TmClientState> for RawTmClientState {
     }
 }
 
-impl Protobuf<Any> for TmClientState {}
+impl Protobuf<Any> for ClientState {}
 
-impl TryFrom<Any> for TmClientState {
+impl TryFrom<Any> for ClientState {
     type Error = Ics02Error;
 
     fn try_from(raw: Any) -> Result<Self, Self::Error> {
         use bytes::Buf;
         use core::ops::Deref;
 
-        fn decode_client_state<B: Buf>(buf: B) -> Result<TmClientState, Error> {
+        fn decode_client_state<B: Buf>(buf: B) -> Result<ClientState, Error> {
             RawTmClientState::decode(buf)
                 .map_err(Error::decode)?
                 .try_into()
@@ -843,8 +843,8 @@ impl TryFrom<Any> for TmClientState {
     }
 }
 
-impl From<TmClientState> for Any {
-    fn from(client_state: TmClientState) -> Self {
+impl From<ClientState> for Any {
+    fn from(client_state: ClientState) -> Self {
         Any {
             type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
             value: Protobuf::<RawTmClientState>::encode_vec(&client_state)
@@ -863,7 +863,7 @@ mod tests {
     use ibc_proto::ics23::ProofSpec as Ics23ProofSpec;
     use tendermint_rpc::endpoint::abci_query::AbciQuery;
 
-    use crate::clients::ics07_tendermint::client_state::{AllowUpdate, TmClientState};
+    use crate::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
     use crate::core::ics02_client::trust_threshold::TrustThreshold;
     use crate::core::ics23_commitment::specs::ProofSpecs;
     use crate::core::ics24_host::identifier::ChainId;
@@ -975,7 +975,7 @@ mod tests {
         for test in tests {
             let p = test.params.clone();
 
-            let cs_result = TmClientState::new(
+            let cs_result = ClientState::new(
                 p.id,
                 p.trust_level,
                 p.trusting_period,
@@ -1056,7 +1056,7 @@ mod tests {
         ];
 
         for test in tests {
-            let res = TmClientState::verify_delay_passed(
+            let res = ClientState::verify_delay_passed(
                 test.params.current_time,
                 test.params.current_height,
                 test.params.processed_time,
@@ -1097,7 +1097,7 @@ mod tests {
         struct Test {
             name: String,
             height: Height,
-            setup: Option<Box<dyn FnOnce(TmClientState) -> TmClientState>>,
+            setup: Option<Box<dyn FnOnce(ClientState) -> ClientState>>,
             want_pass: bool,
         }
 
@@ -1128,7 +1128,7 @@ mod tests {
 
         for test in tests {
             let p = default_params.clone();
-            let client_state = TmClientState::new(
+            let client_state = ClientState::new(
                 p.id,
                 p.trust_level,
                 p.trusting_period,
@@ -1165,12 +1165,12 @@ pub mod test_util {
 
     use tendermint::block::Header;
 
-    use crate::clients::ics07_tendermint::client_state::{AllowUpdate, TmClientState};
+    use crate::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState};
     use crate::core::ics02_client::height::Height;
     use crate::core::ics24_host::identifier::ChainId;
 
-    pub fn get_dummy_tendermint_client_state(tm_header: Header) -> TmClientState {
-        TmClientState::new(
+    pub fn get_dummy_tendermint_client_state(tm_header: Header) -> ClientState {
+        ClientState::new(
             ChainId::from(tm_header.chain_id.clone()),
             Default::default(),
             Duration::from_secs(64000),

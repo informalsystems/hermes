@@ -41,7 +41,7 @@ use ibc::events::IbcEvent;
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 use ibc::{
-    clients::ics07_tendermint::client_state::{AllowUpdate, TmClientState},
+    clients::ics07_tendermint::client_state::{AllowUpdate, ClientState as TmClientState},
     core::ics23_commitment::merkle::MerkleProof,
 };
 use ibc::{

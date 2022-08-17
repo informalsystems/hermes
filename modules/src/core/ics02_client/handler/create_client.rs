@@ -80,7 +80,9 @@ mod tests {
     use core::time::Duration;
     use test_log::test;
 
-    use crate::clients::ics07_tendermint::client_state::{AllowUpdate, TmClientState};
+    use crate::clients::ics07_tendermint::client_state::{
+        AllowUpdate, ClientState as TmClientState,
+    };
     use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
     use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
     use crate::core::ics02_client::client_type::ClientType;
