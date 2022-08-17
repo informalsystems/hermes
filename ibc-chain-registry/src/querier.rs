@@ -1,21 +1,27 @@
 //! Contains traits to query nodes of a given chain from their APIs.
 //! Contains struct to perform a health check on a gRPC/WebSocket endpoint and
 //! to retrieve the `max_block_size` from a RPC endpoint.
-use crate::error::RegistryError;
-use crate::formatter::{SimpleWebSocketFormatter, UriFormatter};
+
+use std::fmt::Debug;
+use std::str::FromStr;
+
 use async_trait::async_trait;
 use futures::{stream::FuturesUnordered, StreamExt};
 use http::Uri;
-use ibc_proto::cosmos::bank::v1beta1::query_client::QueryClient;
-use std::str::FromStr;
-use tendermint_rpc::{Client, SubscriptionClient, Url, WebSocketClient};
 use tokio::time::timeout;
 use tokio::time::Duration;
+use tracing::{debug, info};
+
+use ibc_proto::cosmos::bank::v1beta1::query_client::QueryClient;
+use tendermint_rpc::{Client, SubscriptionClient, Url, WebSocketClient};
+
+use crate::error::RegistryError;
+use crate::formatter::{SimpleWebSocketFormatter, UriFormatter};
 
 /// `QueryTypes` represents the basic types required to query a node
 pub trait QueryTypes {
     /// `QueryInput` represents the data needed to query a node. It is typically a URL
-    type QueryInput: Send;
+    type QueryInput: Debug + Send;
     /// `QueryOutput` represents the data returned by your query
     type QueryOutput;
     /// `QueryOutput` represents the error returned when a query fails
@@ -49,6 +55,9 @@ pub trait QueryContext: QueryTypes {
         chain_name: String,
         urls: Vec<Self::QueryInput>,
     ) -> Result<Self::QueryOutput, Self::QueryError> {
+        info!("Trying to find a healthy RPC endpoint for chain {chain_name}");
+        debug!("Trying the following RPC endpoints: {urls:?}");
+
         let mut futures: FuturesUnordered<_> =
             urls.into_iter().map(|url| Self::query(url)).collect();
 
@@ -96,6 +105,8 @@ impl QueryContext for SimpleHermesRpcQuerier {
     async fn query(rpc: Self::QueryInput) -> Result<Self::QueryOutput, Self::QueryError> {
         let websocket_addr = SimpleWebSocketFormatter::parse_or_build_address(rpc.as_str())?;
 
+        info!("Querying WebSocket server at {websocket_addr}");
+
         let (client, driver) = timeout(
             Duration::from_secs(5),
             WebSocketClient::new(websocket_addr.clone()),
@@ -104,7 +115,7 @@ impl QueryContext for SimpleHermesRpcQuerier {
         .map_err(|e| RegistryError::websocket_time_out_error(websocket_addr.to_string(), e))?
         .map_err(|e| RegistryError::websocket_connect_error(websocket_addr.to_string(), e))?;
 
-        let driver_handle = tokio::spawn(async move { driver.run().await });
+        let driver_handle = tokio::spawn(driver.run());
 
         let latest_consensus_params = match client.latest_consensus_params().await {
             Ok(response) => response.consensus_params.block.max_bytes,
@@ -160,6 +171,8 @@ impl QueryContext for GrpcHealthCheckQuerier {
             .to_string()
             .parse()
             .map_err(|e| RegistryError::tendermint_url_parse_error(uri.to_string(), e))?;
+
+        info!("Querying gRPC server at {tendermint_url}");
 
         QueryClient::connect(uri)
             .await
