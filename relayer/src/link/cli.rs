@@ -11,6 +11,7 @@ use ibc::Height;
 use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
 use crate::chain::handle::ChainHandle;
 use crate::chain::tracking::TrackingId;
+use crate::event::IbcEventWithHeight;
 use crate::link::error::LinkError;
 use crate::link::operational_data::{OperationalData, TrackedEvents};
 use crate::link::packet_events::{
@@ -167,11 +168,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         ) {
             let updated_event_chunk = events_chunk
                 .iter()
-                .map(|e| {
-                    let mut ue = e.clone();
-                    ue.set_height(src_response_height);
-                    ue
-                })
+                .map(|e| IbcEventWithHeight::new(e.event.clone(), src_response_height))
                 .collect();
 
             let tracked_events = TrackedEvents::new(updated_event_chunk, tracking_id);

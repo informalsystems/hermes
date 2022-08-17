@@ -1,3 +1,4 @@
+use ibc::core::ics02_client::height::Height;
 use ibc::core::ics04_channel::packet::{Packet, Sequence};
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::IbcEvent;
@@ -48,6 +49,8 @@ pub async fn query_txs(
                     tendermint::block::Height::try_from(h.revision_height()).unwrap()
                 }
             };
+            let height = Height::new(chain_id.version(), u64::from(tm_height))
+                .map_err(|_| Error::invalid_height_no_source())?;
             let exact_block_results = rpc_client
                 .block_results(tm_height)
                 .await
@@ -62,6 +65,7 @@ pub async fn query_txs(
                             .events
                             .into_iter()
                             .filter_map(|e| filter_matching_event(e, &request, &request.sequences))
+                            .map(|e| IbcEventWithHeight::new(e, height))
                             .collect(),
                     )
                 }
