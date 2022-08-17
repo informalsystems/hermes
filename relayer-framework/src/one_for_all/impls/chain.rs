@@ -10,7 +10,7 @@ use crate::traits::contexts::error::HasError;
 use crate::traits::contexts::ibc_event::HasIbcEvents;
 use crate::traits::contexts::runtime::HasRuntime;
 use crate::traits::queries::consensus_state::{ConsensusStateQuerier, HasConsensusState};
-use crate::traits::queries::received_packet::{CanQueryReceivedPacket, ReceivedPacketQuerier};
+use crate::traits::queries::received_packet::{HasReceivedPacketQuerier, ReceivedPacketQuerier};
 
 impl<Chain: OfaChain> HasError for OfaChainContext<Chain> {
     type Error = OfaErrorContext<Chain::Error>;
@@ -118,7 +118,7 @@ where
 }
 
 #[async_trait]
-impl<Chain, Counterparty> CanQueryReceivedPacket<OfaChainContext<Counterparty>>
+impl<Chain, Counterparty> HasReceivedPacketQuerier<OfaChainContext<Counterparty>>
     for OfaChainContext<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,

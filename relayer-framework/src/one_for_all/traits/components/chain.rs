@@ -1,6 +1,6 @@
 use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext, OfaIbcChain};
-use crate::traits::queries::consensus_state::{CanQueryConsensusState, ConsensusStateQuerier};
-use crate::traits::queries::status::{CanQueryChainStatus, ChainStatusQuerier};
+use crate::traits::queries::consensus_state::{ConsensusStateQuerier, HasConsensusStateQuerier};
+use crate::traits::queries::status::{ChainStatusQuerier, HasChainStatusQuerier};
 
 pub trait OfaChainComponents<Chain>
 where
@@ -20,7 +20,7 @@ where
     >;
 }
 
-impl<Chain, Components> CanQueryChainStatus for OfaChainContext<Chain>
+impl<Chain, Components> HasChainStatusQuerier for OfaChainContext<Chain>
 where
     Chain: OfaChain<Components = Components>,
     Components: OfaChainComponents<Chain>,
@@ -28,7 +28,7 @@ where
     type ChainStatusQuerier = Components::ChainStatusQuerier;
 }
 
-impl<Chain, Counterparty, Components> CanQueryConsensusState<OfaChainContext<Counterparty>>
+impl<Chain, Counterparty, Components> HasConsensusStateQuerier<OfaChainContext<Counterparty>>
     for OfaChainContext<Chain>
 where
     Chain: OfaIbcChain<Counterparty, Components = Components>,

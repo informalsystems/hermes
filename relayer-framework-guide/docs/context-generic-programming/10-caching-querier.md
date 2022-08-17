@@ -123,7 +123,7 @@ where
 #      }
 # }
 #
-# trait CanQueryPerson:
+# trait HasPersonQuerier:
 #      PersonContext + HasError + Sized
 # {
 #      type PersonQuerier: PersonQuerier<Self>;
@@ -139,7 +139,7 @@ where
 #
 # impl<Context> Greeter<Context> for SimpleGreeter
 # where
-#      Context: CanQueryPerson,
+#      Context: HasPersonQuerier,
 # {
 #      fn greet(&self, context: &Context, person_id: &Context::PersonId)
 #          -> Result<(), Context::Error>
@@ -258,7 +258,7 @@ impl PersonCacheContext for AppContext {
     }
 }
 
-impl CanQueryPerson for AppContext {
+impl HasPersonQuerier for AppContext {
     type PersonQuerier = CachingPersonQuerier<KvStorePersonQuerier>;
 }
 

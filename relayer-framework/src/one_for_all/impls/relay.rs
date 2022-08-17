@@ -10,9 +10,9 @@ use crate::std_prelude::*;
 use crate::traits::contexts::error::HasError;
 use crate::traits::contexts::relay::RelayContext;
 use crate::traits::contexts::runtime::HasRuntime;
-use crate::traits::messages::ack_packet::{AckPacketMessageBuilder, CanBuildAckPacketMessage};
+use crate::traits::messages::ack_packet::{AckPacketMessageBuilder, HasAckPacketMessageBuilder};
 use crate::traits::messages::receive_packet::{
-    CanBuildReceivePacketMessage, ReceivePacketMessageBuilder,
+    HasReceivePacketMessageBuilder, ReceivePacketMessageBuilder,
 };
 use crate::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::traits::packet::IbcPacket;
@@ -156,7 +156,7 @@ impl<Relay: OfaRelay> ReceivePacketMessageBuilder<OfaRelayContext<Relay>>
     }
 }
 
-impl<Relay: OfaRelay> CanBuildReceivePacketMessage for OfaRelayContext<Relay> {
+impl<Relay: OfaRelay> HasReceivePacketMessageBuilder for OfaRelayContext<Relay> {
     type ReceivePacketMessageBuilder = OfaReceivePacketMessageBuilder;
 }
 
@@ -181,6 +181,6 @@ impl<Relay: OfaRelay> AckPacketMessageBuilder<OfaRelayContext<Relay>>
     }
 }
 
-impl<Relay: OfaRelay> CanBuildAckPacketMessage for OfaRelayContext<Relay> {
+impl<Relay: OfaRelay> HasAckPacketMessageBuilder for OfaRelayContext<Relay> {
     type AckPacketMessageBuilder = OfaAckPacketMessageBuilder;
 }

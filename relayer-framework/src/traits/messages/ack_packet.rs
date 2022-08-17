@@ -19,7 +19,7 @@ where
 }
 
 #[async_trait]
-pub trait CanBuildAckPacketMessage: RelayContext
+pub trait HasAckPacketMessageBuilder: RelayContext
 where
     Self::DstChain: HasIbcEvents<Self::SrcChain>,
 {

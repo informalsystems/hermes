@@ -100,7 +100,7 @@ implement `PersonQuerier<Context>` in order to query a context), and therefore
 it does not implement other context traits like `PersonContext`. What we
 need instead is for concrete contexts like `AppContext` to specify that
 their implementation of `PersonQuerier` is `KvStorePersonQuerier`.
-We can do that by defining a `CanQueryPerson` trait as follows:
+We can do that by defining a `HasPersonQuerier` trait as follows:
 
 ```rust
 # trait NamedPerson {
@@ -132,7 +132,7 @@ where
          -> Result<Context::Person, Context::Error>;
 }
 
-trait CanQueryPerson:
+trait HasPersonQuerier:
     PersonContext + HasError + Sized
 {
     type PersonQuerier: PersonQuerier<Self>;
@@ -146,31 +146,31 @@ trait CanQueryPerson:
 ```
 
 While the `PersonQuerier` trait is implemented by component types like
-`KvStorePersonQuerier`, the `CanQueryPerson` trait is implemented by
+`KvStorePersonQuerier`, the `HasPersonQuerier` trait is implemented by
 context types like `AppContext`. Compared to the earlier design of
 `PersonQuerier`, the context is now offering a _component_ for
 querying for a person that will work in the _current context_.
 
-We can see that the `CanQueryPerson` trait has `PersonContext`
+We can see that the `HasPersonQuerier` trait has `PersonContext`
 and `HasError` as its supertraits, indicating that the concrete context
 also needs to implement these two traits first. Due to quirks in Rust,
 the trait also requires the `Sized` supertrait, which is already implemented
 by most types other than `dyn Trait` types, so that we can use `Self` inside
 other generic parameters.
 
-In the body of `CanQueryPerson`, we define a `PersonQuerier` associated
+In the body of `HasPersonQuerier`, we define a `PersonQuerier` associated
 type, which implements the trait `PersonQuerier<Self>`. This is because
 we want to have the following constraints satisfied:
 
-- `AppContext: CanQueryPerson` - `AppContext` implements the trait `CanQueryPerson`.
+- `AppContext: HasPersonQuerier` - `AppContext` implements the trait `HasPersonQuerier`.
 - `AppContext::PersonQuerier: PersonQuerier<AppContext>` - The associated type
   `AppContext::PersonQuerier` implements the trait `PersonQuerier<AppContext>`.
 - `KvStorePersonQuerier: PersonQuerier<AppContext>` - The type `KvStorePersonQuerier`,
   which we defined earlier, should implement `PersonQuerier<AppContext>`.
-- `AppContext: CanQueryPerson<PersonQuerier=KvStorePersonQuerier>` - We want to
+- `AppContext: HasPersonQuerier<PersonQuerier=KvStorePersonQuerier>` - We want to
   set the associated type `AppContext::PersonQuerier` to be `KvStorePersonQuerier`.
 
-In general, since we want any type `Ctx` that implements `CanQueryPerson` to
+In general, since we want any type `Ctx` that implements `HasPersonQuerier` to
 have the associated type `Ctx::PersonQuerier` to implement `PersonQuerier<Ctx>`.
 Hence inside the trait definition, we define the associated type as
 `type PersonQuerier: PersonQuerier<Self>`, where `Self` refers to the `Ctx` type.
@@ -180,13 +180,13 @@ that is referencing back to itself. But with the dependency injection mechanism
 of the traits system, this in fact works most of the time as long as there are
 no actual cyclic dependencies.
 
-Inside `CanQueryPerson`, we also implement a `query_person` method with a `&self`,
+Inside `HasPersonQuerier`, we also implement a `query_person` method with a `&self`,
 which calls `Self::PersonQuerier::query_person` to do the actual query. This method
 is not meant to be overridden by implementations. Rather, it is a convenient method
 that allows us to query from the context directly using `context.query_person()`.
 
 Now inside the `Greet` implementation for `SimpleGreeter`, we can require the
-generic `Context` to implement `CanQueryPerson` as follows:
+generic `Context` to implement `HasPersonQuerier` as follows:
 
 
 ```rust
@@ -219,7 +219,7 @@ generic `Context` to implement `CanQueryPerson` as follows:
 #          -> Result<Context::Person, Context::Error>;
 # }
 #
-# trait CanQueryPerson:
+# trait HasPersonQuerier:
 #     PersonContext + HasError + Sized
 # {
 #     type PersonQuerier: PersonQuerier<Self>;
@@ -235,7 +235,7 @@ struct SimpleGreeter;
 
 impl<Context> Greeter<Context> for SimpleGreeter
 where
-    Context: CanQueryPerson,
+    Context: HasPersonQuerier,
 {
     fn greet(&self, context: &Context, person_id: &Context::PersonId)
         -> Result<(), Context::Error>
@@ -304,7 +304,7 @@ where
          -> Result<Context::Person, Context::Error>;
 }
 
-trait CanQueryPerson:
+trait HasPersonQuerier:
     PersonContext + HasError + Sized
 {
     type PersonQuerier: PersonQuerier<Self>;
@@ -316,7 +316,7 @@ struct SimpleGreeter;
 
 impl<Context> Greeter<Context> for SimpleGreeter
 where
-    Context: CanQueryPerson,
+    Context: HasPersonQuerier,
 {
     fn greet(&self, context: &Context, person_id: &Context::PersonId)
         -> Result<(), Context::Error>

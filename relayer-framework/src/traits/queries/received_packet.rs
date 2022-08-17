@@ -18,7 +18,7 @@ where
 }
 
 #[async_trait]
-pub trait CanQueryReceivedPacket<Counterparty>: IbcChainContext<Counterparty>
+pub trait HasReceivedPacketQuerier<Counterparty>: IbcChainContext<Counterparty>
 where
     Counterparty: IbcChainContext<Self>,
 {

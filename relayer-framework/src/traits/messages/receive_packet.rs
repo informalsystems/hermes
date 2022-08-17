@@ -14,7 +14,7 @@ pub trait ReceivePacketMessageBuilder<Relay: RelayContext> {
 }
 
 #[async_trait]
-pub trait CanBuildReceivePacketMessage: RelayContext {
+pub trait HasReceivePacketMessageBuilder: RelayContext {
     type ReceivePacketMessageBuilder: ReceivePacketMessageBuilder<Self>;
 
     async fn build_receive_packet_message(

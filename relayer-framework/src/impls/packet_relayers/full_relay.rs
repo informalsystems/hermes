@@ -6,7 +6,7 @@ use crate::traits::contexts::relay::RelayContext;
 use crate::traits::packet_relayer::PacketRelayer;
 use crate::traits::packet_relayers::ack_packet::AckPacketRelayer;
 use crate::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
-use crate::traits::queries::status::{CanQueryChainStatus, ChainStatus};
+use crate::traits::queries::status::{ChainStatus, HasChainStatusQuerier};
 use crate::types::aliases::Packet;
 
 pub struct FullRelayer<ReceiveRelay, AckRelay> {
@@ -21,8 +21,8 @@ where
     ReceiveRelay: ReceivePacketRelayer<Context>,
     AckRelay: AckPacketRelayer<Context>,
     Context::DstChain: HasIbcEvents<Context::SrcChain>,
-    Context::SrcChain: CanQueryChainStatus,
-    Context::DstChain: CanQueryChainStatus,
+    Context::SrcChain: HasChainStatusQuerier,
+    Context::DstChain: HasChainStatusQuerier,
 {
     async fn relay_packet(
         &self,

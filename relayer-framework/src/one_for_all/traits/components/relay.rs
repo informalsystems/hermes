@@ -1,6 +1,8 @@
 use crate::one_for_all::traits::relay::{OfaRelay, OfaRelayContext};
 use crate::traits::ibc_message_sender::{HasIbcMessageSender, IbcMessageSender};
-use crate::traits::messages::update_client::{CanUpdateClient, UpdateClientMessageBuilder};
+use crate::traits::messages::update_client::{
+    HasUpdateClientMessageBuilder, UpdateClientMessageBuilder,
+};
 use crate::traits::packet_relayer::PacketRelayer;
 use crate::traits::target::{DestinationTarget, SourceTarget};
 
@@ -17,7 +19,7 @@ where
         + IbcMessageSender<OfaRelayContext<Relay>, DestinationTarget>;
 }
 
-impl<Relay, Components> CanUpdateClient<SourceTarget> for OfaRelayContext<Relay>
+impl<Relay, Components> HasUpdateClientMessageBuilder<SourceTarget> for OfaRelayContext<Relay>
 where
     Relay: OfaRelay<Components = Components>,
     Components: OfaRelayComponents<Relay>,
@@ -25,7 +27,7 @@ where
     type UpdateClientMessageBuilder = Components::UpdateClientMessageBuilder;
 }
 
-impl<Relay, Components> CanUpdateClient<DestinationTarget> for OfaRelayContext<Relay>
+impl<Relay, Components> HasUpdateClientMessageBuilder<DestinationTarget> for OfaRelayContext<Relay>
 where
     Relay: OfaRelay<Components = Components>,
     Components: OfaRelayComponents<Relay>,

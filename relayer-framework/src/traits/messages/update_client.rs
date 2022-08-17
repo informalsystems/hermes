@@ -6,7 +6,7 @@ use crate::traits::target::ChainTarget;
 use crate::types::aliases::{Height, IbcMessage};
 
 #[async_trait]
-pub trait CanUpdateClient<Target>: RelayContext
+pub trait HasUpdateClientMessageBuilder<Target>: RelayContext
 where
     Target: ChainTarget<Self>,
 {
@@ -14,6 +14,7 @@ where
 
     async fn build_update_client_messages(
         &self,
+        _target: Target,
         height: &Height<Target::CounterpartyChain>,
     ) -> Result<Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>, Self::Error> {
         Self::UpdateClientMessageBuilder::build_update_client_messages(self, height).await

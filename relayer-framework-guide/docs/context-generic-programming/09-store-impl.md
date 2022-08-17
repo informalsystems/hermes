@@ -70,7 +70,7 @@
 #      }
 # }
 #
-# trait CanQueryPerson:
+# trait HasPersonQuerier:
 #      PersonContext + HasError + Sized
 # {
 #      type PersonQuerier: PersonQuerier<Self>;
@@ -86,7 +86,7 @@
 #
 # impl<Context> Greeter<Context> for SimpleGreeter
 # where
-#      Context: CanQueryPerson,
+#      Context: HasPersonQuerier,
 # {
 #      fn greet(&self, context: &Context, person_id: &Context::PersonId)
 #          -> Result<(), Context::Error>
@@ -170,7 +170,7 @@ impl KvStoreContext for AppContext {
     }
 }
 
-impl CanQueryPerson for AppContext {
+impl HasPersonQuerier for AppContext {
     type PersonQuerier = KvStorePersonQuerier;
 }
 
@@ -251,7 +251,7 @@ fn app_greeter() -> impl Greeter<AppContext> {
 #      }
 # }
 #
-# trait CanQueryPerson:
+# trait HasPersonQuerier:
 #      PersonContext + HasError + Sized
 # {
 #      type PersonQuerier: PersonQuerier<Self>;
@@ -267,7 +267,7 @@ fn app_greeter() -> impl Greeter<AppContext> {
 #
 # impl<Context> Greeter<Context> for SimpleGreeter
 # where
-#      Context: CanQueryPerson,
+#      Context: HasPersonQuerier,
 # {
 #      fn greet(&self, context: &Context, person_id: &Context::PersonId)
 #          -> Result<(), Context::Error>
@@ -378,11 +378,11 @@ impl KvStoreContext for BarContext {
     }
 }
 
-impl CanQueryPerson for FooContext {
+impl HasPersonQuerier for FooContext {
     type PersonQuerier = KvStorePersonQuerier;
 }
 
-impl CanQueryPerson for BarContext {
+impl HasPersonQuerier for BarContext {
     type PersonQuerier = KvStorePersonQuerier;
 }
 

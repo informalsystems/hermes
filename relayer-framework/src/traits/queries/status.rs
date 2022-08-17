@@ -20,7 +20,7 @@ pub trait ChainStatusQuerier<Context: ChainStatusContext> {
 }
 
 #[async_trait]
-pub trait CanQueryChainStatus: ChainStatusContext {
+pub trait HasChainStatusQuerier: ChainStatusContext {
     type ChainStatusQuerier: ChainStatusQuerier<Self>;
 
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error> {

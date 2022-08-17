@@ -3,11 +3,13 @@ use crate::traits::contexts::relay::RelayContext;
 use crate::traits::core::Async;
 use crate::types::aliases::ClientId;
 
+#[derive(Default)]
 pub struct SourceTarget;
 
+#[derive(Default)]
 pub struct DestinationTarget;
 
-pub trait ChainTarget<Relay: RelayContext>: Async + private::Sealed {
+pub trait ChainTarget<Relay: RelayContext>: Async + Default + private::Sealed {
     type TargetChain: IbcChainContext<Self::CounterpartyChain, Error = Relay::Error>;
 
     type CounterpartyChain: IbcChainContext<Self::TargetChain, Error = Relay::Error>;

@@ -524,8 +524,6 @@ correctly.
     </div>
 </a>
 
-
-
 ## Reader Monad
 
 Readers coming from a functional programming background might notice

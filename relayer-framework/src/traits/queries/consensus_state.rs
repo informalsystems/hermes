@@ -25,7 +25,7 @@ where
 }
 
 #[async_trait]
-pub trait CanQueryConsensusState<Counterparty>: IbcChainContext<Counterparty>
+pub trait HasConsensusStateQuerier<Counterparty>: IbcChainContext<Counterparty>
 where
     Counterparty: HasConsensusState<Self>,
 {

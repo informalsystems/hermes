@@ -1,16 +1,16 @@
 use crate::traits::contexts::chain::{ChainContext, IbcChainContext};
 use crate::traits::contexts::ibc_event::HasIbcEvents;
-use crate::traits::queries::consensus_state::{CanQueryConsensusState, HasConsensusState};
-use crate::traits::queries::received_packet::CanQueryReceivedPacket;
-use crate::traits::queries::status::CanQueryChainStatus;
+use crate::traits::queries::consensus_state::{HasConsensusState, HasConsensusStateQuerier};
+use crate::traits::queries::received_packet::HasReceivedPacketQuerier;
+use crate::traits::queries::status::HasChainStatusQuerier;
 
 pub trait AfoChainContext<Counterparty>:
     IbcChainContext<Counterparty>
     + HasIbcEvents<Counterparty>
     + HasConsensusState<Counterparty>
-    + CanQueryConsensusState<Counterparty>
-    + CanQueryReceivedPacket<Counterparty>
-    + CanQueryChainStatus
+    + HasConsensusStateQuerier<Counterparty>
+    + HasReceivedPacketQuerier<Counterparty>
+    + HasChainStatusQuerier
 where
     Counterparty: AfoCounterpartyContext<Self>,
 {
@@ -28,9 +28,9 @@ where
     Chain: IbcChainContext<Counterparty>
         + HasIbcEvents<Counterparty>
         + HasConsensusState<Counterparty>
-        + CanQueryConsensusState<Counterparty>
-        + CanQueryReceivedPacket<Counterparty>
-        + CanQueryChainStatus,
+        + HasConsensusStateQuerier<Counterparty>
+        + HasReceivedPacketQuerier<Counterparty>
+        + HasChainStatusQuerier,
 {
 }
 
