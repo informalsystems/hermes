@@ -46,14 +46,23 @@ impl fmt::Display for GasPrice {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(
+    rename_all = "snake_case",
+    tag = "type",
+    content = "value",
+    deny_unknown_fields
+)]
 pub enum ExtensionOption {
-    EthermintDynamicFee(ExtensionOptionDynamicFeeTx),
+    EthermintDynamicFee(String),
 }
 
 impl ExtensionOption {
     pub fn to_any(&self) -> Result<Any, RelayerError> {
         match self {
-            Self::EthermintDynamicFee(ext) => ext.to_any(),
+            Self::EthermintDynamicFee(max_priority_price) => ExtensionOptionDynamicFeeTx {
+                max_priority_price: max_priority_price.into(),
+            }
+            .to_any(),
         }
     }
 }
@@ -61,11 +70,11 @@ impl ExtensionOption {
 impl fmt::Display for ExtensionOption {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::EthermintDynamicFee(ext) => {
+            Self::EthermintDynamicFee(max_priority_price) => {
                 write!(
                     f,
                     "EthermintDynamicFee(max_priority_price: {})",
-                    ext.max_priority_price
+                    max_priority_price
                 )
             }
         }

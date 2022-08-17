@@ -7,7 +7,6 @@ use crate::error::Error;
 // ExtensionOptionDynamicFeeTx is an extension option used with ethermint dynamic fee tx.
 // protobuf message: https://github.com/evmos/ethermint/blob/main/proto/ethermint/types/v1/dynamic_fee.proto
 #[derive(Clone, PartialEq, Message, Serialize, Deserialize)]
-#[serde(transparent)]
 pub struct ExtensionOptionDynamicFeeTx {
     #[prost(string, tag = "1")]
     pub max_priority_price: ::prost::alloc::string::String,
