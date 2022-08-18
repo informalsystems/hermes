@@ -70,35 +70,39 @@ pub async fn query_txs(
                 }
             }
 
-            for seq in &request.sequences {
-                // query first (and only) Tx that includes the event specified in the query request
-                let response = rpc_client
-                    .tx_search(
-                        packet_query(&request, *seq),
-                        false,
-                        1,
-                        1, // get only the first Tx matching the query
-                        Order::Ascending,
-                    )
-                    .await
-                    .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
+            // Call to /block_results doesn't get SendPacket events, so an additional tx_search is required.
+            // Without this check, WriteAcknowledgment will be sent twice.
+            if result.is_empty() {
+                for seq in &request.sequences {
+                    // query first (and only) Tx that includes the event specified in the query request
+                    let response = rpc_client
+                        .tx_search(
+                            packet_query(&request, *seq),
+                            false,
+                            1,
+                            1, // get only the first Tx matching the query
+                            Order::Ascending,
+                        )
+                        .await
+                        .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
 
-                assert!(
-                    response.txs.len() <= 1,
-                    "packet_from_tx_search_response: unexpected number of txs"
-                );
+                    assert!(
+                        response.txs.len() <= 1,
+                        "packet_from_tx_search_response: unexpected number of txs"
+                    );
 
-                if response.txs.is_empty() {
-                    continue;
-                }
+                    if response.txs.is_empty() {
+                        continue;
+                    }
 
-                if let Some(event) = packet_from_tx_search_response(
-                    chain_id,
-                    &request,
-                    *seq,
-                    response.txs[0].clone(),
-                )? {
-                    result.push(event);
+                    if let Some(event) = packet_from_tx_search_response(
+                        chain_id,
+                        &request,
+                        *seq,
+                        response.txs[0].clone(),
+                    )? {
+                        result.push(event);
+                    }
                 }
             }
             Ok(result)
