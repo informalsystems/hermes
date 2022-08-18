@@ -45,7 +45,7 @@ impl From<IncentivizedPacket> for AbciEvent {
     fn from(event: IncentivizedPacket) -> AbciEvent {
         let attributes: Vec<Tag> = vec![
             new_tag("port_id", event.port_id.as_str()),
-            new_tag("channel_id", &event.channel_id.to_string()),
+            new_tag("channel_id", event.channel_id.as_ref()),
             new_tag("packet_sequence", &event.sequence.to_string()),
             new_tag("recv_fee", &event.total_recv_fee.iter().join(",")),
             new_tag("ack_fee", &event.total_ack_fee.iter().join(",")),
