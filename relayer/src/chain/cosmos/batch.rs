@@ -6,6 +6,8 @@ use ibc_proto::google::protobuf::Any;
 use prost::Message;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 
+use crate::chain::cosmos::encode::encoded_tx_len;
+use crate::chain::cosmos::gas::gas_amount_to_fee;
 use crate::chain::cosmos::retry::send_tx_with_account_sequence_retry;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
@@ -70,7 +72,15 @@ pub async fn send_batched_messages_and_wait_check_tx(
         return Ok(Vec::new());
     }
 
-    let batches = batch_messages(max_msg_num, max_tx_size, messages)?;
+    let batches = batch_messages(
+        config,
+        max_msg_num,
+        max_tx_size,
+        key_entry,
+        account,
+        tx_memo,
+        messages,
+    )?;
 
     let mut responses = Vec::new();
 
@@ -97,7 +107,15 @@ async fn send_messages_as_batches(
         return Ok(Vec::new());
     }
 
-    let batches = batch_messages(max_msg_num, max_tx_size, messages)?;
+    let batches = batch_messages(
+        config,
+        max_msg_num,
+        max_tx_size,
+        key_entry,
+        account,
+        tx_memo,
+        messages,
+    )?;
 
     let mut tx_sync_results = Vec::new();
 
@@ -139,8 +157,12 @@ async fn send_messages_as_batches(
 }
 
 fn batch_messages(
+    config: &TxConfig,
     max_msg_num: MaxMsgNum,
     max_tx_size: MaxTxSize,
+    key_entry: &KeyEntry,
+    account: &Account,
+    tx_memo: &Memo,
     messages: Vec<Any>,
 ) -> Result<Vec<Vec<Any>>, Error> {
     let max_message_count = max_msg_num.to_usize();
@@ -148,8 +170,14 @@ fn batch_messages(
 
     let mut batches = vec![];
 
+    // Estimate the overhead of the transaction envelope's encoding,
+    // by taking the encoded length of an empty tx with the same auth info and signatures.
+    // Use the maximum possible fee to get an upper bound for varint encoding.
+    let max_fee = gas_amount_to_fee(&config.gas_config, config.gas_config.max_gas);
+    let tx_envelope_len = encoded_tx_len(config, key_entry, account, tx_memo, &[], &max_fee)?;
+
     let mut current_count = 0;
-    let mut current_size = 0;
+    let mut current_size = tx_envelope_len;
     let mut current_batch = vec![];
 
     for message in messages {
@@ -191,11 +219,19 @@ fn batch_messages(
 #[cfg(test)]
 mod tests {
     use super::batch_messages;
-    use crate::config::types::{MaxMsgNum, MaxTxSize};
+    use crate::chain::cosmos::types::account::Account;
+    use crate::chain::cosmos::types::config::TxConfig;
+    use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
+    use crate::keyring::KeyEntry;
     use ibc_proto::google::protobuf::Any;
+
+    fn test_fixture() -> (TxConfig, KeyEntry, Account) {
+        todo!()
+    }
 
     #[test]
     fn batch_does_not_exceed_max_tx_size() {
+        let (config, key_entry, account) = test_fixture();
         let messages = vec![
             Any {
                 type_url: "/example.Foo".into(),
@@ -210,8 +246,16 @@ mod tests {
                 value: vec![0; 2],
             },
         ];
-        let batches =
-            batch_messages(MaxMsgNum::default(), MaxTxSize::new(42).unwrap(), messages).unwrap();
+        let batches = batch_messages(
+            &config,
+            MaxMsgNum::default(),
+            MaxTxSize::new(42).unwrap(),
+            &key_entry,
+            &account,
+            &Memo::new("").unwrap(),
+            messages,
+        )
+        .unwrap();
 
         assert_eq!(batches.len(), 2);
         assert_eq!(batches[0].len(), 2);
@@ -227,14 +271,19 @@ mod tests {
 
     #[test]
     fn batch_error_on_oversized_message() {
+        let (config, key_entry, account) = test_fixture();
         let messages = vec![Any {
             type_url: "/example.Foo".into(),
             value: vec![0; 6],
         }];
 
         let batches = batch_messages(
+            &config,
             MaxMsgNum::default(),
             MaxTxSize::new(22).unwrap(),
+            &key_entry,
+            &account,
+            &Memo::new("").unwrap(),
             messages.clone(),
         )
         .unwrap();
@@ -242,13 +291,22 @@ mod tests {
         assert_eq!(batches.len(), 1);
         assert_eq!(batches[0].len(), 1);
 
-        let res = batch_messages(MaxMsgNum::default(), MaxTxSize::new(21).unwrap(), messages);
+        let res = batch_messages(
+            &config,
+            MaxMsgNum::default(),
+            MaxTxSize::new(21).unwrap(),
+            &key_entry,
+            &account,
+            &Memo::new("").unwrap(),
+            messages,
+        );
 
         assert!(res.is_err());
     }
 
     #[test]
     fn test_batches_are_structured_appropriately_per_max_msg_num() {
+        let (config, key_entry, account) = test_fixture();
         // Ensure that when MaxMsgNum is 1, the resulting batch
         // consists of 5 smaller batches, each with a single message
         let messages = vec![
@@ -275,8 +333,12 @@ mod tests {
         ];
 
         let batches = batch_messages(
+            &config,
             MaxMsgNum::new(1).unwrap(),
             MaxTxSize::default(),
+            &key_entry,
+            &account,
+            &Memo::new("").unwrap(),
             messages.clone(),
         )
         .unwrap();
@@ -289,8 +351,16 @@ mod tests {
 
         // Ensure that when MaxMsgNum > the number of messages, the resulting
         // batch consists of a single smaller batch with all of the messages
-        let batches =
-            batch_messages(MaxMsgNum::new(100).unwrap(), MaxTxSize::default(), messages).unwrap();
+        let batches = batch_messages(
+            &config,
+            MaxMsgNum::new(100).unwrap(),
+            MaxTxSize::default(),
+            &key_entry,
+            &account,
+            &Memo::new("").unwrap(),
+            messages,
+        )
+        .unwrap();
 
         assert_eq!(batches.len(), 1);
         assert_eq!(batches[0].len(), 5);
@@ -298,6 +368,7 @@ mod tests {
 
     #[test]
     fn test_batches_are_structured_appropriately_per_max_tx_size() {
+        let (config, key_entry, account) = test_fixture();
         // Ensure that when MaxTxSize == the size of each message, the resulting batch
         // consists of 5 smaller batches, each with a single message
         let messages = vec![
@@ -324,8 +395,12 @@ mod tests {
         ];
 
         let batches = batch_messages(
+            &config,
             MaxMsgNum::default(),
             MaxTxSize::new(26).unwrap(),
+            &key_entry,
+            &account,
+            &Memo::new("").unwrap(),
             messages.clone(),
         )
         .unwrap();
@@ -339,7 +414,16 @@ mod tests {
         // Ensure that when MaxTxSize > the size of all the messages, the
         // resulting batch consists of a single smaller batch with all of
         // messages inside
-        let batches = batch_messages(MaxMsgNum::default(), MaxTxSize::max(), messages).unwrap();
+        let batches = batch_messages(
+            &config,
+            MaxMsgNum::default(),
+            MaxTxSize::max(),
+            &key_entry,
+            &account,
+            &Memo::new("").unwrap(),
+            messages,
+        )
+        .unwrap();
 
         assert_eq!(batches.len(), 1);
         assert_eq!(batches[0].len(), 5);
@@ -348,6 +432,15 @@ mod tests {
     #[test]
     #[should_panic(expected = "`max_msg_num` must be greater than or equal to 1, found 0")]
     fn test_max_msg_num_of_zero_panics() {
-        let _batches = batch_messages(MaxMsgNum::new(0).unwrap(), MaxTxSize::default(), vec![]);
+        let (config, key_entry, account) = test_fixture();
+        let _batches = batch_messages(
+            &config,
+            MaxMsgNum::new(0).unwrap(),
+            MaxTxSize::default(),
+            &key_entry,
+            &account,
+            &Memo::new("").unwrap(),
+            vec![],
+        );
     }
 }
