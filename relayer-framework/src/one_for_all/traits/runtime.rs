@@ -17,7 +17,7 @@ impl<Runtime> OfaRuntimeContext<Runtime> {
 }
 
 #[async_trait]
-pub trait OfaRuntime: Clone + Async {
+pub trait OfaRuntime: Async {
     type Error: OfaError;
 
     async fn sleep(&self, duration: Duration);

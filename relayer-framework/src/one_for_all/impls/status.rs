@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext};
 use crate::one_for_all::traits::error::OfaErrorContext;
 use crate::std_prelude::*;
-use crate::traits::queries::status::{ChainStatus, ChainStatusContext, ChainStatusQuerier};
+use crate::traits::queries::status::{ChainStatus, ChainStatusQuerier, HasChainStatus};
 
 pub struct OfaChainStatusQuerier;
 
@@ -11,7 +11,7 @@ pub struct OfaChainStatus<Chain: OfaChain> {
     pub status: Chain::ChainStatus,
 }
 
-impl<Chain: OfaChain> ChainStatusContext for OfaChainContext<Chain> {
+impl<Chain: OfaChain> HasChainStatus for OfaChainContext<Chain> {
     type ChainStatus = OfaChainStatus<Chain>;
 }
 

@@ -1,4 +1,5 @@
 use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext, OfaIbcChain};
+use crate::traits::contexts::error::HasError;
 use crate::traits::message::{IbcMessage, Message};
 
 pub struct OfaMessage<Chain: OfaChain> {
@@ -11,16 +12,19 @@ impl<Chain: OfaChain> OfaMessage<Chain> {
     }
 }
 
+impl<Chain: OfaChain> HasError for OfaMessage<Chain> {
+    type Error = Chain::Error;
+}
+
 impl<Chain: OfaChain> Message for OfaMessage<Chain> {
     type Signer = Chain::Signer;
     type RawMessage = Chain::RawMessage;
-    type EncodeError = Chain::Error;
 
-    fn encode_raw(&self, signer: &Self::Signer) -> Result<Self::RawMessage, Self::EncodeError> {
+    fn encode_raw(&self, signer: &Self::Signer) -> Result<Self::RawMessage, Self::Error> {
         Chain::encode_raw_message(&self.message, signer)
     }
 
-    fn estimate_len(&self) -> Result<usize, Self::EncodeError> {
+    fn estimate_len(&self) -> Result<usize, Self::Error> {
         Chain::estimate_message_len(&self.message)
     }
 }

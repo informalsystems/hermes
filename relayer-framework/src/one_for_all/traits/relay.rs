@@ -20,7 +20,7 @@ impl<Relay: OfaRelay> OfaRelayContext<Relay> {
 }
 
 #[async_trait]
-pub trait OfaRelay: Async + Clone {
+pub trait OfaRelay: Async {
     type Components: OfaRelayComponents<Self>
         + OfaIbcChainComponents<Self::SrcChain, Self::DstChain>
         + OfaIbcChainComponents<Self::DstChain, Self::SrcChain>;

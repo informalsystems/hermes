@@ -21,7 +21,7 @@ impl<Chain: OfaChain> OfaChainContext<Chain> {
 }
 
 #[async_trait]
-pub trait OfaChain: Async + Clone {
+pub trait OfaChain: Async {
     type Components: OfaChainComponents<Self>;
 
     type Error: OfaError;

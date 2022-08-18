@@ -1,14 +1,13 @@
 use crate::traits::contexts::chain::ChainContext;
-use crate::traits::core::Async;
+use crate::traits::contexts::error::HasError;
 
-pub trait Message: Async {
+pub trait Message: HasError {
     type Signer;
     type RawMessage;
-    type EncodeError;
 
-    fn encode_raw(&self, signer: &Self::Signer) -> Result<Self::RawMessage, Self::EncodeError>;
+    fn encode_raw(&self, signer: &Self::Signer) -> Result<Self::RawMessage, Self::Error>;
 
-    fn estimate_len(&self) -> Result<usize, Self::EncodeError>;
+    fn estimate_len(&self) -> Result<usize, Self::Error>;
 }
 
 pub trait IbcMessage<Counterparty: ChainContext>: Message {
