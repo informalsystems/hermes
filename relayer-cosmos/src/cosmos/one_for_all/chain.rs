@@ -1,8 +1,10 @@
 use async_trait::async_trait;
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState;
 use ibc::core::ics02_client::client_consensus::AnyConsensusState;
+use ibc::core::ics04_channel::events::WriteAcknowledgement;
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use ibc::events::IbcEventType;
 use ibc::signer::Signer;
 use ibc::timestamp::Timestamp;
 use ibc::Height;
@@ -13,13 +15,14 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     IncludeProof, QueryConsensusStateRequest, QueryHeight, QueryUnreceivedPacketsRequest,
 };
+use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
 use ibc_relayer_framework::one_for_all::impls::default::DefaultComponents;
 use ibc_relayer_framework::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
 use prost::Message as _;
 use tendermint::abci::responses::Event;
 
-use crate::cosmos::context::chain::{CosmosChainContext, WriteAcknowledgementEvent};
+use crate::cosmos::context::chain::CosmosChainContext;
 use crate::cosmos::context::runtime::CosmosRuntime;
 use crate::cosmos::error::Error;
 use crate::cosmos::message::CosmosIbcMessage;
@@ -57,7 +60,7 @@ where
 
     type Sequence = Sequence;
 
-    type WriteAcknowledgementEvent = WriteAcknowledgementEvent;
+    type WriteAcknowledgementEvent = WriteAcknowledgement;
 
     type ConsensusState = ConsensusState;
 
@@ -79,6 +82,23 @@ where
 
     fn chain_status_timestamp(status: &ChainStatus) -> &Timestamp {
         &status.timestamp
+    }
+
+    fn try_extract_write_acknowledgement_event(
+        event: Self::Event,
+    ) -> Option<Self::WriteAcknowledgementEvent> {
+        if let IbcEventType::WriteAck = event.type_str.parse().ok()? {
+            let (packet, write_ack) = extract_packet_and_write_ack_from_tx(&event).ok()?;
+
+            let ack = WriteAcknowledgement {
+                packet,
+                ack: write_ack,
+            };
+
+            Some(ack)
+        } else {
+            None
+        }
     }
 
     fn runtime(&self) -> &OfaRuntimeContext<CosmosRuntime> {

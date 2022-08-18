@@ -54,7 +54,7 @@ pub trait OfaChain: Async {
 
     type ConsensusState: Async;
 
-    type WriteAcknowledgementEvent: Async + TryFrom<Self::Event, Error = Self::Error>;
+    type WriteAcknowledgementEvent: Async;
 
     fn encode_raw_message(
         message: &Self::Message,
@@ -66,6 +66,10 @@ pub trait OfaChain: Async {
     fn chain_status_height(status: &Self::ChainStatus) -> &Self::Height;
 
     fn chain_status_timestamp(status: &Self::ChainStatus) -> &Self::Timestamp;
+
+    fn try_extract_write_acknowledgement_event(
+        event: Self::Event,
+    ) -> Option<Self::WriteAcknowledgementEvent>;
 
     fn runtime(&self) -> &OfaRuntimeContext<Self::Runtime>;
 

@@ -60,6 +60,12 @@ where
     Counterparty: OfaChain,
 {
     type WriteAcknowledgementEvent = Chain::WriteAcknowledgementEvent;
+
+    fn try_extract_write_acknowledgement_event(
+        event: Self::IbcEvent,
+    ) -> Option<Self::WriteAcknowledgementEvent> {
+        Chain::try_extract_write_acknowledgement_event(event)
+    }
 }
 
 impl<Chain, Counterparty> HasConsensusState<OfaChainContext<Counterparty>>

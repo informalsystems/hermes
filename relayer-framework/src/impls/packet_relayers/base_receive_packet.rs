@@ -29,7 +29,6 @@ where
     >,
     Context::Error: From<MismatchIbcEventsCountError>,
     Message: Async,
-    AckEvent: TryFrom<Event>,
 {
     async fn relay_receive_packet(
         &self,
@@ -44,7 +43,9 @@ where
 
         let events = context.send_message(message).await?;
 
-        let ack_event = events.into_iter().find_map(|ev| ev.try_into().ok());
+        let ack_event = events
+            .into_iter()
+            .find_map(DstChain::try_extract_write_acknowledgement_event);
 
         Ok(ack_event)
     }

@@ -5,5 +5,9 @@ pub trait HasIbcEvents<Counterparty>: IbcChainContext<Counterparty>
 where
     Counterparty: ChainContext,
 {
-    type WriteAcknowledgementEvent: Async + TryFrom<Self::IbcEvent>;
+    type WriteAcknowledgementEvent: Async;
+
+    fn try_extract_write_acknowledgement_event(
+        event: Self::IbcEvent,
+    ) -> Option<Self::WriteAcknowledgementEvent>;
 }
