@@ -48,7 +48,7 @@ pub mod transfer;
    test is taking much longer to reach eventual consistency, it might
    be indication of some underlying performance issues.
 */
-const WAIT_WALLET_AMOUNT_ATTEMPTS: u16 = 60;
+const WAIT_WALLET_AMOUNT_ATTEMPTS: u16 = 90;
 
 const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
 
