@@ -96,7 +96,7 @@ impl BinaryChannelTest for PayPacketFeeAsyncTest {
         let sequence = {
             let send_packet_event = events
                 .iter()
-                .find_map(|event| match event {
+                .find_map(|event| match &event.event {
                     IbcEvent::SendPacket(e) => Some(e),
                     _ => None,
                 })
@@ -109,7 +109,7 @@ impl BinaryChannelTest for PayPacketFeeAsyncTest {
             let event = events
                 .iter()
                 .find_map(|ev| {
-                    if let IbcEvent::IncentivizedPacket(ev) = ev {
+                    if let IbcEvent::IncentivizedPacket(ev) = &ev.event {
                         Some(ev)
                     } else {
                         None
@@ -196,7 +196,7 @@ impl BinaryChannelTest for PayPacketFeeAsyncTest {
             let event = events2
                 .iter()
                 .find_map(|ev| {
-                    if let IbcEvent::IncentivizedPacket(ev) = ev {
+                    if let IbcEvent::IncentivizedPacket(ev) = &ev.event {
                         Some(ev)
                     } else {
                         None

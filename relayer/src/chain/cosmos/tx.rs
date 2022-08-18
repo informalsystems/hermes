@@ -1,4 +1,3 @@
-use ibc::events::IbcEvent;
 use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_proto::google::protobuf::Any;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
@@ -13,6 +12,7 @@ use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::wait::wait_tx_succeed;
 use crate::config::types::Memo;
 use crate::error::Error;
+use crate::event::IbcEventWithHeight;
 use crate::keyring::KeyEntry;
 
 pub async fn estimate_fee_and_send_tx(
@@ -72,7 +72,7 @@ pub async fn simple_send_tx(
     config: &TxConfig,
     key_entry: &KeyEntry,
     messages: Vec<Any>,
-) -> Result<Vec<IbcEvent>, Error> {
+) -> Result<Vec<IbcEventWithHeight>, Error> {
     let account = query_account(&config.grpc_address, &key_entry.account)
         .await?
         .into();

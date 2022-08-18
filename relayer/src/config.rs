@@ -145,13 +145,14 @@ impl ModeConfig {
     }
 }
 
+/// # IMPORTANT: Keep the values here in sync with the values in the default config.toml.
 impl Default for ModeConfig {
     fn default() -> Self {
         Self {
             clients: Clients {
                 enabled: true,
                 refresh: true,
-                misbehaviour: true,
+                misbehaviour: false,
             },
             connections: Connections { enabled: false },
             channels: Channels { enabled: false },
@@ -217,7 +218,7 @@ impl Default for Packets {
 /// Log levels are wrappers over [`tracing_core::Level`].
 ///
 /// [`tracing_core::Level`]: https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html
-#[derive(Copy, Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {
     Trace,
@@ -259,6 +260,9 @@ pub struct TelemetryConfig {
     pub port: u16,
 }
 
+/// Default values for the telemetry configuration.
+///
+/// # IMPORTANT: Remember to update the Hermes guide & the default config.toml whenever these values change.
 impl Default for TelemetryConfig {
     fn default() -> Self {
         Self {
@@ -291,7 +295,7 @@ impl Default for RestConfig {
 /// TODO: Ethermint `pk_type` to be restricted
 /// after the Cosmos SDK release with ethsecp256k1
 /// <https://github.com/cosmos/cosmos-sdk/pull/9981>
-#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(
     rename_all = "lowercase",
     tag = "derivation",

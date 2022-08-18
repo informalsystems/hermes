@@ -56,7 +56,6 @@ pub(crate) fn process(
 
     let event_attributes = Attributes {
         connection_id: Some(conn_id),
-        height: ctx.host_current_height(),
         ..Default::default()
     };
     output.emit(IbcEvent::OpenInitConnection(event_attributes.into()));
@@ -159,7 +158,6 @@ mod tests {
 
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::OpenInitConnection(_)));
-                        assert_eq!(e.height(), test.ctx.host_current_height());
                     }
 
                     assert_eq!(res.connection_end.versions(), test.expected_versions);

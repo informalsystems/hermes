@@ -7,13 +7,13 @@ use ibc::applications::ics29_fee::msgs::register_payee::{
 };
 use ibc::applications::ics29_fee::packet_fee::IdentifiedPacketFees;
 use ibc::core::ics04_channel::packet::Sequence;
-use ibc::events::IbcEvent;
 use ibc_relayer::chain::cosmos::query::fee::{
     query_counterparty_payee as raw_query_counterparty_payee,
     query_incentivized_packets as raw_query_incentivized_packets,
 };
 use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
+use ibc_relayer::event::IbcEventWithHeight;
 
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::token::{TaggedTokenExt, TaggedTokenRef};
@@ -33,7 +33,7 @@ pub async fn ibc_token_transfer_with_fee<SrcChain, DstChain>(
     ack_fee: &TaggedTokenRef<'_, SrcChain>,
     timeout_fee: &TaggedTokenRef<'_, SrcChain>,
     timeout: Duration,
-) -> Result<Vec<IbcEvent>, Error> {
+) -> Result<Vec<IbcEventWithHeight>, Error> {
     let transfer_message =
         build_transfer_message(port_id, channel_id, sender, recipient, send_amount, timeout)?;
 
@@ -68,7 +68,7 @@ pub async fn pay_packet_fee<Chain, Counterparty>(
     receive_fee: &TaggedTokenRef<'_, Chain>,
     ack_fee: &TaggedTokenRef<'_, Chain>,
     timeout_fee: &TaggedTokenRef<'_, Chain>,
-) -> Result<Vec<IbcEvent>, Error> {
+) -> Result<Vec<IbcEventWithHeight>, Error> {
     let message = build_pay_packet_fee_async_message(
         port_id.value(),
         channel_id.value(),

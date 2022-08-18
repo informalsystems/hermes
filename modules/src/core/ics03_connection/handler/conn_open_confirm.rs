@@ -62,7 +62,6 @@ pub(crate) fn process(
 
     let event_attributes = Attributes {
         connection_id: Some(result.connection_id.clone()),
-        height: ctx.host_current_height(),
         ..Default::default()
     };
     output.emit(IbcEvent::OpenConfirmConnection(event_attributes.into()));
@@ -170,7 +169,6 @@ mod tests {
 
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::OpenConfirmConnection(_)));
-                        assert_eq!(e.height(), test.ctx.host_current_height());
                     }
                 }
                 Err(e) => {

@@ -9,7 +9,6 @@ class ClientCreated:
     client_id: ClientId
     client_type: ClientType
     consensus_height: Height
-    height: BlockHeight
 
 
 @dataclass
@@ -33,7 +32,6 @@ class ClientUpdated:
     client_id: ClientId
     client_type: ClientType
     consensus_height: Height
-    height: BlockHeight
 
 
 @dataclass

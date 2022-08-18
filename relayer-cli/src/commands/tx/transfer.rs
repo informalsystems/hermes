@@ -24,7 +24,7 @@ use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct TxIcs20MsgTransferCmd {
     #[clap(
         long = "dst-chain",

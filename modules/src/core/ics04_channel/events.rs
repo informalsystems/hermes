@@ -4,7 +4,6 @@ use serde_derive::{Deserialize, Serialize};
 use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
-use crate::core::ics02_client::height::Height;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
@@ -12,7 +11,6 @@ use crate::events::{Error as EventError, IbcEvent, IbcEventType};
 use crate::prelude::*;
 
 /// Channel event attribute keys
-pub const HEIGHT_ATTRIBUTE_KEY: &str = "height";
 pub const CONNECTION_ID_ATTRIBUTE_KEY: &str = "connection_id";
 pub const CHANNEL_ID_ATTRIBUTE_KEY: &str = "channel_id";
 pub const PORT_ID_ATTRIBUTE_KEY: &str = "port_id";
@@ -30,9 +28,8 @@ pub const PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY: &str = "packet_timeout_height";
 pub const PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY: &str = "packet_timeout_timestamp";
 pub const PKT_ACK_ATTRIBUTE_KEY: &str = "packet_ack";
 
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Attributes {
-    pub height: Height,
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
     pub connection_id: ConnectionId,
@@ -49,19 +46,6 @@ impl Attributes {
     }
 }
 
-impl Default for Attributes {
-    fn default() -> Self {
-        Self {
-            height: Height::new(0, 1).unwrap(),
-            port_id: Default::default(),
-            channel_id: Default::default(),
-            connection_id: Default::default(),
-            counterparty_port_id: Default::default(),
-            counterparty_channel_id: Default::default(),
-        }
-    }
-}
-
 /// Convert attributes to Tendermint ABCI tags
 ///
 /// # Note
@@ -73,11 +57,6 @@ impl Default for Attributes {
 impl From<Attributes> for Vec<Tag> {
     fn from(a: Attributes) -> Self {
         let mut attributes = vec![];
-        let height = Tag {
-            key: HEIGHT_ATTRIBUTE_KEY.parse().unwrap(),
-            value: a.height.to_string().parse().unwrap(),
-        };
-        attributes.push(height);
         let port_id = Tag {
             key: PORT_ID_ATTRIBUTE_KEY.parse().unwrap(),
             value: a.port_id.to_string().parse().unwrap(),
@@ -185,7 +164,6 @@ pub trait EventType {
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct OpenInit {
-    pub height: Height,
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
     pub connection_id: ConnectionId,
@@ -200,18 +178,11 @@ impl OpenInit {
     pub fn port_id(&self) -> &PortId {
         &self.port_id
     }
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
-    }
 }
 
 impl From<OpenInit> for Attributes {
     fn from(ev: OpenInit) -> Self {
         Self {
-            height: ev.height,
             port_id: ev.port_id,
             channel_id: ev.channel_id,
             connection_id: ev.connection_id,
@@ -235,7 +206,6 @@ impl EventType for OpenInit {
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct OpenTry {
-    pub height: Height,
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
     pub connection_id: ConnectionId,
@@ -246,7 +216,6 @@ pub struct OpenTry {
 impl From<OpenTry> for Attributes {
     fn from(ev: OpenTry) -> Self {
         Self {
-            height: ev.height,
             port_id: ev.port_id,
             channel_id: ev.channel_id,
             connection_id: ev.connection_id,
@@ -261,12 +230,6 @@ impl OpenTry {
     }
     pub fn port_id(&self) -> &PortId {
         &self.port_id
-    }
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
     }
 }
 
@@ -284,7 +247,6 @@ impl EventType for OpenTry {
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct OpenAck {
-    pub height: Height,
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
     pub counterparty_channel_id: Option<ChannelId>,
@@ -295,7 +257,6 @@ pub struct OpenAck {
 impl From<OpenAck> for Attributes {
     fn from(ev: OpenAck) -> Self {
         Self {
-            height: ev.height,
             port_id: ev.port_id,
             channel_id: ev.channel_id,
             connection_id: ev.connection_id,
@@ -311,12 +272,6 @@ impl OpenAck {
     }
     pub fn port_id(&self) -> &PortId {
         &self.port_id
-    }
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
     }
 
     pub fn counterparty_channel_id(&self) -> Option<&ChannelId> {
@@ -338,7 +293,6 @@ impl EventType for OpenAck {
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct OpenConfirm {
-    pub height: Height,
     pub port_id: PortId,
     pub channel_id: Option<ChannelId>,
     pub connection_id: ConnectionId,
@@ -349,7 +303,6 @@ pub struct OpenConfirm {
 impl From<OpenConfirm> for Attributes {
     fn from(ev: OpenConfirm) -> Self {
         Self {
-            height: ev.height,
             port_id: ev.port_id,
             channel_id: ev.channel_id,
             connection_id: ev.connection_id,
@@ -365,12 +318,6 @@ impl OpenConfirm {
     }
     pub fn port_id(&self) -> &PortId {
         &self.port_id
-    }
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
     }
 }
 
@@ -388,7 +335,6 @@ impl EventType for OpenConfirm {
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct CloseInit {
-    pub height: Height,
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub connection_id: ConnectionId,
@@ -399,7 +345,6 @@ pub struct CloseInit {
 impl From<CloseInit> for Attributes {
     fn from(ev: CloseInit) -> Self {
         Self {
-            height: ev.height,
             port_id: ev.port_id,
             channel_id: Some(ev.channel_id),
             connection_id: ev.connection_id,
@@ -425,14 +370,6 @@ impl CloseInit {
     pub fn counterparty_channel_id(&self) -> Option<&ChannelId> {
         self.counterparty_channel_id.as_ref()
     }
-
-    pub fn height(&self) -> Height {
-        self.height
-    }
-
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
-    }
 }
 
 impl TryFrom<Attributes> for CloseInit {
@@ -440,7 +377,6 @@ impl TryFrom<Attributes> for CloseInit {
     fn try_from(attrs: Attributes) -> Result<Self, Self::Error> {
         if let Some(channel_id) = attrs.channel_id() {
             Ok(CloseInit {
-                height: attrs.height,
                 port_id: attrs.port_id.clone(),
                 channel_id: channel_id.clone(),
                 connection_id: attrs.connection_id.clone(),
@@ -463,8 +399,7 @@ impl core::fmt::Display for CloseInit {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(
             f,
-            "{} {} {:?}",
-            self.height(),
+            "{} {:?}",
             IbcEventType::CloseInitChannel.as_str(),
             Attributes::from(self.clone())
         )
@@ -479,7 +414,6 @@ impl EventType for CloseInit {
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct CloseConfirm {
-    pub height: Height,
     pub channel_id: Option<ChannelId>,
     pub port_id: PortId,
     pub connection_id: ConnectionId,
@@ -490,7 +424,6 @@ pub struct CloseConfirm {
 impl From<CloseConfirm> for Attributes {
     fn from(ev: CloseConfirm) -> Self {
         Self {
-            height: ev.height,
             port_id: ev.port_id,
             channel_id: ev.channel_id,
             connection_id: ev.connection_id,
@@ -503,12 +436,6 @@ impl From<CloseConfirm> for Attributes {
 impl CloseConfirm {
     pub fn channel_id(&self) -> Option<&ChannelId> {
         self.channel_id.as_ref()
-    }
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
     }
 }
 
@@ -531,7 +458,6 @@ macro_rules! impl_try_from_attribute_for_event {
 
             fn try_from(attrs: Attributes) -> Result<Self, Self::Error> {
                 Ok(Self {
-                    height: attrs.height,
                     port_id: attrs.port_id,
                     channel_id: attrs.channel_id,
                     connection_id: attrs.connection_id,
@@ -571,17 +497,10 @@ impl_from_ibc_to_abci_event!(
 
 #[derive(Serialize, Clone, PartialEq, Eq)]
 pub struct SendPacket {
-    pub height: Height,
     pub packet: Packet,
 }
 
 impl SendPacket {
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
-    }
     pub fn src_port_id(&self) -> &PortId {
         &self.packet.source_port
     }
@@ -616,29 +535,22 @@ impl TryFrom<SendPacket> for AbciEvent {
 
 impl core::fmt::Display for SendPacket {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "SendPacket - h:{}, {}", self.height, self.packet)
+        write!(f, "SendPacket - {}", self.packet)
     }
 }
 
 impl core::fmt::Debug for SendPacket {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "SendPacket - h:{}, {}", self.height, self.packet)
+        write!(f, "SendPacket - {}", self.packet)
     }
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct ReceivePacket {
-    pub height: Height,
     pub packet: Packet,
 }
 
 impl ReceivePacket {
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
-    }
     pub fn src_port_id(&self) -> &PortId {
         &self.packet.source_port
     }
@@ -673,25 +585,18 @@ impl TryFrom<ReceivePacket> for AbciEvent {
 
 impl core::fmt::Display for ReceivePacket {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "ReceivePacket - h:{}, {}", self.height, self.packet)
+        write!(f, "ReceivePacket - {}", self.packet)
     }
 }
 
 #[derive(Serialize, Clone, PartialEq, Eq)]
 pub struct WriteAcknowledgement {
-    pub height: Height,
     pub packet: Packet,
     #[serde(serialize_with = "crate::serializers::ser_hex_upper")]
     pub ack: Vec<u8>,
 }
 
 impl WriteAcknowledgement {
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
-    }
     pub fn src_port_id(&self) -> &PortId {
         &self.packet.source_port
     }
@@ -734,37 +639,22 @@ impl TryFrom<WriteAcknowledgement> for AbciEvent {
 
 impl core::fmt::Display for WriteAcknowledgement {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(
-            f,
-            "WriteAcknowledgement - h:{}, {}",
-            self.height, self.packet
-        )
+        write!(f, "WriteAcknowledgement - {}", self.packet)
     }
 }
 
 impl core::fmt::Debug for WriteAcknowledgement {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(
-            f,
-            "WriteAcknowledgement - h:{}, {}",
-            self.height, self.packet
-        )
+        write!(f, "WriteAcknowledgement - {}", self.packet)
     }
 }
 
 #[derive(Serialize, Clone, PartialEq, Eq)]
 pub struct AcknowledgePacket {
-    pub height: Height,
     pub packet: Packet,
 }
 
 impl AcknowledgePacket {
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
-    }
     pub fn src_port_id(&self) -> &PortId {
         &self.packet.source_port
     }
@@ -793,29 +683,22 @@ impl TryFrom<AcknowledgePacket> for AbciEvent {
 
 impl core::fmt::Display for AcknowledgePacket {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "h:{}, {}", self.height, self.packet)
+        write!(f, "{}", self.packet)
     }
 }
 
 impl core::fmt::Debug for AcknowledgePacket {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "AcknowledgePacket - h:{}, {}", self.height, self.packet)
+        write!(f, "AcknowledgePacket - {}", self.packet)
     }
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct TimeoutPacket {
-    pub height: Height,
     pub packet: Packet,
 }
 
 impl TimeoutPacket {
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
-    }
     pub fn src_port_id(&self) -> &PortId {
         &self.packet.source_port
     }
@@ -850,23 +733,16 @@ impl TryFrom<TimeoutPacket> for AbciEvent {
 
 impl core::fmt::Display for TimeoutPacket {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "TimeoutPacket - h:{}, {}", self.height, self.packet)
+        write!(f, "TimeoutPacket - {}", self.packet)
     }
 }
 
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct TimeoutOnClosePacket {
-    pub height: Height,
     pub packet: Packet,
 }
 
 impl TimeoutOnClosePacket {
-    pub fn height(&self) -> Height {
-        self.height
-    }
-    pub fn set_height(&mut self, height: Height) {
-        self.height = height;
-    }
     pub fn src_port_id(&self) -> &PortId {
         &self.packet.source_port
     }
@@ -901,10 +777,6 @@ impl TryFrom<TimeoutOnClosePacket> for AbciEvent {
 
 impl core::fmt::Display for TimeoutOnClosePacket {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(
-            f,
-            "TimeoutOnClosePacket - h:{}, {}",
-            self.height, self.packet
-        )
+        write!(f, "TimeoutOnClosePacket - {}", self.packet)
     }
 }

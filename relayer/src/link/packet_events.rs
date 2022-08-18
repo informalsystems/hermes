@@ -10,6 +10,7 @@ use crate::chain::handle::ChainHandle;
 use crate::chain::requests::{
     QueryBlockRequest, QueryHeight, QueryPacketEventDataRequest, QueryTxRequest,
 };
+use crate::event::IbcEventWithHeight;
 use crate::link::error::LinkError;
 use crate::path::PathIdentifiers;
 
@@ -24,7 +25,7 @@ pub fn query_packet_events_with<'a, ChainA>(
     path: &'a PathIdentifiers,
     query_fn: impl Fn(&ChainA, &PathIdentifiers, Vec<Sequence>, Height) -> Result<Vec<IbcEvent>, LinkError>
         + 'a,
-) -> impl Iterator<Item = Vec<IbcEvent>> + 'a
+) -> impl Iterator<Item = Vec<IbcEventWithHeight>> + 'a
 where
     ChainA: ChainHandle,
 {
@@ -36,15 +37,11 @@ where
         .map_while(move |c| {
             let sequences_nrs_chunk = c.to_vec();
             match query_fn(src_chain, path, sequences_nrs_chunk, query_height) {
-                Ok(mut events) => {
+                Ok(events) => {
                     events_left_count -= c.len();
                     info!(events_total = %events_total_count, events_left = %events_left_count, "pulled packet data for {} events;", events.len());
 
-                    for event in events.iter_mut() {
-                        event.set_height(query_height);
-                    }
-
-                    Some(events)
+                    Some(events.into_iter().map(|ev| IbcEventWithHeight::new(ev, query_height)).collect())
                 },
                 Err(e) => {
                     warn!("encountered query failure while pulling packet data: {}", e);
@@ -75,9 +72,12 @@ pub fn query_send_packet_events<ChainA: ChainHandle>(
         height: QueryHeight::Specific(src_query_height),
     };
 
-    let tx_events = src_chain
+    let tx_events: Vec<IbcEvent> = src_chain
         .query_txs(QueryTxRequest::Packet(query.clone()))
-        .map_err(LinkError::relayer)?;
+        .map_err(LinkError::relayer)?
+        .into_iter()
+        .map(|ev_with_height| ev_with_height.event)
+        .collect();
 
     let recvd_sequences: Vec<Sequence> = tx_events
         .iter()
@@ -132,5 +132,5 @@ pub fn query_write_ack_events<ChainA: ChainHandle>(
         }))
         .map_err(|e| LinkError::query(src_chain.id(), e))?;
 
-    Ok(events_result)
+    Ok(events_result.into_iter().map(|ev| ev.event).collect())
 }
