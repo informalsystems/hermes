@@ -89,8 +89,8 @@ pub fn bootstrap_single_node(
         config::set_log_level(config, &log_level)?;
         config::set_rpc_port(config, chain_driver.rpc_port)?;
         config::set_p2p_port(config, chain_driver.p2p_port)?;
-        config::set_timeout_commit(config, Duration::from_millis(500))?;
-        config::set_timeout_propose(config, Duration::from_millis(500))?;
+        config::set_timeout_commit(config, Duration::from_secs(1))?;
+        config::set_timeout_propose(config, Duration::from_secs(1))?;
         config::set_mode(config, "validator")?;
 
         config_modifier(config)?;
