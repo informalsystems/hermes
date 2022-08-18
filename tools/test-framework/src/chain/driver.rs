@@ -12,6 +12,7 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::str;
+use std::thread::sleep;
 use tokio::runtime::Runtime;
 use toml;
 use tracing::debug;
@@ -439,7 +440,21 @@ impl ChainDriver {
         pipe_to_file(stdout, &format!("{}/stdout.log", self.home_path))?;
         pipe_to_file(stderr, &format!("{}/stderr.log", self.home_path))?;
 
-        Ok(ChildProcess::new(child))
+        // Wait for a while and check if the child process exited immediately.
+        // If so, return error since we expect the full node to be running in the background.
+
+        sleep(Duration::from_millis(500));
+
+        let status = child
+            .try_wait()
+            .map_err(|e| eyre!("error try waiting for child status: {}", e))?;
+
+        match status {
+            None => Ok(ChildProcess::new(child)),
+            Some(status) => Err(eyre!(
+                "expected full node process to be running, but it exited immediately with exit status {}", status
+            ).into())
+        }
     }
 
     /**
