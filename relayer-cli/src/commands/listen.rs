@@ -127,7 +127,7 @@ pub fn listen(
                 info!("- event batch at height {}", batch.height);
 
                 for event in matching_events {
-                    info!("+ {:#?}", event);
+                    info!("{:?}", event);
                 }
 
                 info!("");

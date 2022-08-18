@@ -30,7 +30,7 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                         // process the last event, the one with highest "rank".
                         let last_event_with_height = batch.events.last();
 
-                        debug!("starts processing {:#?}", last_event_with_height);
+                        debug!("starts processing {:?}", last_event_with_height);
 
                         if let Some(event_with_height) = last_event_with_height {
                             let mut handshake_connection = RelayConnection::restore_from_event(

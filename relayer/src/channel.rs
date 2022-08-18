@@ -659,7 +659,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             }
 
             (State::Open, State::Open) => {
-                info!("channel handshake already finished for {:#?}\n", self);
+                info!("channel handshake already finished for {:?}\n", self);
                 return Ok(());
             }
 
@@ -758,7 +758,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 }
             }
             Ok((Some(ev), handshake_completed)) => {
-                info!("channel handshake step completed with events: {:#?}\n", ev);
+                info!("channel handshake step completed with events: {:?}\n", ev);
                 RetryResult::Ok(handshake_completed)
             }
             Ok((None, handshake_completed)) => RetryResult::Ok(handshake_completed),
@@ -856,7 +856,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         match &result.event {
             IbcEvent::OpenInitChannel(_) => {
-                info!("🎊  {} => {:#?}\n", self.dst_chain().id(), result);
+                info!("🎊  {} => {:?}\n", self.dst_chain().id(), result);
                 Ok(result.event)
             }
             IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
@@ -1042,7 +1042,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         match &result.event {
             IbcEvent::OpenTryChannel(_) => {
-                info!("🎊  {} => {:#?}\n", self.dst_chain().id(), result);
+                info!("🎊  {} => {:?}\n", self.dst_chain().id(), result);
                 Ok(result.event)
             }
             IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
@@ -1145,7 +1145,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
             match &result.event {
                 IbcEvent::OpenAckChannel(_) => {
-                    info!("🎊  {} => {:#?}\n", channel.dst_chain().id(), result);
+                    info!("🎊  {} => {:?}\n", channel.dst_chain().id(), result);
                     Ok(result.event)
                 }
                 IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
@@ -1252,7 +1252,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
             match &result.event {
                 IbcEvent::OpenConfirmChannel(_) => {
-                    info!("🎊  {} => {:#?}\n", channel.dst_chain().id(), result);
+                    info!("🎊  {} => {:?}\n", channel.dst_chain().id(), result);
                     Ok(result.event)
                 }
                 IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
@@ -1322,7 +1322,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         match &result.event {
             IbcEvent::CloseInitChannel(_) => {
-                info!("👋 {} => {:#?}\n", self.dst_chain().id(), result);
+                info!("👋 {} => {:?}\n", self.dst_chain().id(), result);
                 Ok(result.event)
             }
             IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
@@ -1419,7 +1419,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         match &result.event {
             IbcEvent::CloseConfirmChannel(_) => {
-                info!("👋 {} => {:#?}\n", self.dst_chain().id(), result);
+                info!("👋 {} => {:?}\n", self.dst_chain().id(), result);
                 Ok(result.event)
             }
             IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),

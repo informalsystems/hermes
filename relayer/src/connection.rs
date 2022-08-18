@@ -612,7 +612,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             }
 
             (State::Open, State::Open) => {
-                info!("connection handshake already finished for {:#?}\n", self);
+                info!("connection handshake already finished for {:?}\n", self);
                 return Ok(());
             }
 
@@ -723,7 +723,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             }
             Ok((Some(ev), handshake_completed)) => {
                 info!(
-                    "connection handshake step completed with events: {:#?}\n",
+                    "connection handshake step completed with events: {:?}\n",
                     ev
                 );
                 RetryResult::Ok(handshake_completed)
@@ -892,7 +892,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         // TODO - make chainError an actual error
         match &result.event {
             IbcEvent::OpenInitConnection(_) => {
-                info!("🥂 {} => {:#?}\n", self.dst_chain().id(), result);
+                info!("🥂 {} => {:?}\n", self.dst_chain().id(), result);
                 Ok(result.event)
             }
             IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e.clone())),
@@ -1064,7 +1064,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         match &result.event {
             IbcEvent::OpenTryConnection(_) => {
-                info!("🥂 {} => {:#?}\n", self.dst_chain().id(), result);
+                info!("🥂 {} => {:?}\n", self.dst_chain().id(), result);
                 Ok(result.event)
             }
             IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e.clone())),
@@ -1179,7 +1179,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         match &result.event {
             IbcEvent::OpenAckConnection(_) => {
-                info!("🥂 {} => {:#?}\n", self.dst_chain().id(), result);
+                info!("🥂 {} => {:?}\n", self.dst_chain().id(), result);
                 Ok(result.event)
             }
             IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e.clone())),
@@ -1267,7 +1267,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         match &result.event {
             IbcEvent::OpenConfirmConnection(_) => {
-                info!("🥂 {} => {:#?}\n", self.dst_chain().id(), result);
+                info!("🥂 {} => {:?}\n", self.dst_chain().id(), result);
                 Ok(result.event)
             }
             IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e.clone())),
