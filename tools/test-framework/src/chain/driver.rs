@@ -437,13 +437,16 @@ impl ChainDriver {
             .take()
             .ok_or_else(|| eyre!("expected stderr to be present in child process"))?;
 
-        pipe_to_file(stdout, &format!("{}/stdout.log", self.home_path))?;
-        pipe_to_file(stderr, &format!("{}/stderr.log", self.home_path))?;
+        let stderr_path = format!("{}/stdout.log", self.home_path);
+        let stdout_path = format!("{}/stderr.log", self.home_path);
+
+        pipe_to_file(stdout, &stderr_path)?;
+        pipe_to_file(stderr, &stdout_path)?;
 
         // Wait for a while and check if the child process exited immediately.
         // If so, return error since we expect the full node to be running in the background.
 
-        sleep(Duration::from_millis(500));
+        sleep(Duration::from_millis(1000));
 
         let status = child
             .try_wait()
@@ -451,9 +454,14 @@ impl ChainDriver {
 
         match status {
             None => Ok(ChildProcess::new(child)),
-            Some(status) => Err(eyre!(
-                "expected full node process to be running, but it exited immediately with exit status {}", status
-            ).into())
+            Some(status) => {
+                let stderr_output = fs::read_to_string(stderr_path)?;
+                Err(eyre!(
+                    "expected full node process to be running, but it exited immediately with exit status {} and STDERR: {}",
+                    status,
+                    stderr_output,
+                ).into())
+            }
         }
     }
 
