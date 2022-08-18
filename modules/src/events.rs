@@ -9,6 +9,7 @@ use serde_derive::{Deserialize, Serialize};
 use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
+use crate::applications::ics29_fee::error::Error as FeeError;
 use crate::applications::ics29_fee::events::IncentivizedPacket;
 use crate::core::ics02_client::error as client_error;
 use crate::core::ics02_client::events::NewBlock;
@@ -44,6 +45,10 @@ define_error! {
         Channel
             [ channel_error::Error ]
             | _ | { "channel error" },
+
+        Fee
+            [ FeeError ]
+            | _ | { "fee error" },
 
         Timestamp
             [ ParseTimestampError ]

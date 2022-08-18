@@ -1,4 +1,5 @@
 use core::fmt::{self, Display, Formatter};
+use ibc::applications::ics29_fee::events::IncentivizedPacket;
 use ibc::{
     core::ics02_client::{
         error::Error as ClientError,
@@ -126,6 +127,9 @@ pub fn ibc_event_try_from_abci_event(abci_event: &AbciEvent) -> Result<IbcEvent,
         )),
         Ok(IbcEventType::Timeout) => Ok(IbcEvent::TimeoutPacket(
             timeout_packet_try_from_abci_event(abci_event).map_err(IbcEventError::channel)?,
+        )),
+        Ok(IbcEventType::IncentivizedPacket) => Ok(IbcEvent::IncentivizedPacket(
+            IncentivizedPacket::try_from(&abci_event.attributes).map_err(IbcEventError::fee)?,
         )),
         _ => Err(IbcEventError::unsupported_abci_event(
             abci_event.type_str.to_owned(),
