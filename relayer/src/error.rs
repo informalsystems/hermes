@@ -512,10 +512,10 @@ define_error! {
                     "Query/DenomTrace RPC returned an empty denom trace for trace hash: {}", e.hash)
             },
 
-        MessageExceedsMaxTxSize
+        MessageTooBigForTx
             { len: usize }
             |e| {
-                format_args!("message length {} exceeds maximum transaction size", e.len)
+                format_args!("message with length {} is too large for a transaction", e.len)
             }
     }
 }

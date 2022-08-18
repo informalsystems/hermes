@@ -155,11 +155,15 @@ fn batch_messages(
     for message in messages {
         let message_len = message.encoded_len();
 
-        if message_len > max_tx_size {
-            return Err(Error::message_exceeds_max_tx_size(message_len));
+        // The total length the message adds to the encoding includes the
+        // field tag (small varint) and the length delimiter.
+        let tagged_len = 1 + prost::length_delimiter_len(message_len) + message_len;
+
+        if tagged_len > max_tx_size {
+            return Err(Error::message_too_big_for_tx(message_len));
         }
 
-        if current_count >= max_message_count || current_size + message_len > max_tx_size {
+        if current_count >= max_message_count || current_size + tagged_len > max_tx_size {
             let insert_batch = mem::take(&mut current_batch);
 
             assert!(
@@ -173,7 +177,7 @@ fn batch_messages(
         }
 
         current_count += 1;
-        current_size += message_len;
+        current_size += tagged_len;
         current_batch.push(message);
     }
 
