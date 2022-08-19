@@ -2,6 +2,7 @@
 
 pub mod error;
 pub mod filter;
+pub mod gas_multiplier;
 pub mod proof_specs;
 pub mod types;
 
@@ -17,7 +18,8 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
 
 use crate::chain::ChainType;
-use crate::config::types::{GasMultiplier, MaxMsgNum, MaxTxSize, Memo};
+use crate::config::gas_multiplier::GasMultiplier;
+use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::keyring::Store;
 
 pub use error::Error;

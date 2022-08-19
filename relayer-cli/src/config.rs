@@ -60,19 +60,6 @@ define_error! {
                     e.threshold, e.chain_id, e.reason)
             },
 
-        InvalidGasMultiplier
-            {
-                gas_multiplier: f64,
-                chain_id: ChainId,
-            }
-            |e| {
-                format!(
-                    "config file specifies an invalid `gas_multiplier` ({0}) for the chain '{1}', \
-                    the value must be greater than or equal to 1.0",
-                    e.gas_multiplier, e.chain_id
-                )
-            },
-
         DeprecatedGasAdjustment
             {
                 gas_adjustment: f64,
