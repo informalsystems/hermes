@@ -9,6 +9,7 @@ use ibc_chain_registry::{
     querier::*,
 };
 
+use futures::future::join_all;
 use http::Uri;
 
 use ibc_relayer::{
@@ -24,6 +25,8 @@ use std::{collections::HashMap, marker::Send};
 
 use tendermint_light_client_verifier::types::TrustThreshold;
 use tendermint_rpc::Url;
+
+use tokio::task::{JoinError, JoinHandle};
 
 /// Generate packet filters from Vec<IBCPath> and load them in a Map(chain_name -> filter).
 fn construct_packet_filters(ibc_paths: Vec<IBCPath>) -> HashMap<String, PacketFilter> {
@@ -129,6 +132,33 @@ where
     })
 }
 
+async fn get_handles<T: Fetchable + Send + 'static>(
+    resources: &[String],
+    commit: &Option<String>,
+) -> Vec<JoinHandle<Result<T, RegistryError>>> {
+    let handles = resources
+        .iter()
+        .map(|resource| {
+            let resource = resource.to_string();
+            let commit = commit.clone();
+            tokio::spawn(async move { T::fetch(resource, commit).await })
+        })
+        .collect();
+    handles
+}
+
+async fn get_data_from_handles<T>(
+    handles: Vec<JoinHandle<Result<T, RegistryError>>>,
+    error_task: &str,
+) -> Result<Vec<T>, RegistryError> {
+    let data_array: Result<Vec<_>, JoinError> = join_all(handles).await.into_iter().collect();
+    let data_array: Result<Vec<T>, RegistryError> = data_array
+        .map_err(|e| RegistryError::join_error(error_task.to_string(), e))?
+        .into_iter()
+        .collect();
+    data_array
+}
+
 /// Generates a Vec<ChainConfig> for a slice of chains names by fetching data from
 /// https://github.com/cosmos/chain-registry. Gas settings are set to default values.
 ///
@@ -153,26 +183,14 @@ pub async fn get_configs(
         return Ok(Vec::new());
     }
 
-    let mut chain_data_handle = Vec::with_capacity(n);
-    let mut asset_lists_handle = Vec::with_capacity(n);
+    // Spawn tasks to fetch data from the chain-registry
+    let chain_data_handle = get_handles::<ChainData>(chains, &commit).await;
+    let asset_lists_handle = get_handles::<AssetList>(chains, &commit).await;
+
     let mut path_handles = Vec::with_capacity(n * (n - 1) / 2);
-
     for i in 0..n {
-        let chain = chains[i].to_string();
-        let commit_clone = commit.clone();
-        chain_data_handle.push(tokio::spawn(async move {
-            ChainData::fetch(chain, commit_clone).await
-        }));
-
-        let commit_clone = commit.clone();
-        let chain = chains[i].to_string();
-        asset_lists_handle.push(tokio::spawn(async move {
-            AssetList::fetch(chain, commit_clone).await
-        }));
-
         for chain_j in &chains[i + 1..] {
             let chain_i = &chains[i];
-            let chain_j = chain_j;
             let resource = format!("{}-{}.json", chain_i, chain_j).to_string();
             let commit_clone = commit.clone();
             path_handles.push(tokio::spawn(async move {
@@ -180,58 +198,40 @@ pub async fn get_configs(
             }));
         }
     }
-    // Extract packet filters from IBC paths
-    let mut path_data: Vec<IBCPath> = Vec::new();
+    // Collect data from the spawned tasks
 
-    for handle in path_handles {
-        if let Ok(path) = handle
-            .await
-            .map_err(|e| RegistryError::join_error("path_handle_join".to_string(), e))?
-        {
-            path_data.push(path);
-        }
-    }
+    let chain_data_array =
+        get_data_from_handles::<ChainData>(chain_data_handle, "chain_data_join").await?;
+    let asset_lists =
+        get_data_from_handles::<AssetList>(asset_lists_handle, "asset_handle_join").await?;
+
+    let path_data: Result<Vec<_>, JoinError> = join_all(path_handles).await.into_iter().collect();
+    let path_data: Vec<IBCPath> = path_data
+        .map_err(|e| RegistryError::join_error("path_handle_join".to_string(), e))?
+        .into_iter()
+        .filter_map(|path| path.ok())
+        .collect();
 
     let mut packet_filters = construct_packet_filters(path_data);
 
     // Construct ChainConfig
-    let mut configs_handle = Vec::with_capacity(n);
-
-    for (i, (chain_handle, asset_handle)) in chain_data_handle
+    let config_handles: Vec<JoinHandle<Result<ChainConfig, RegistryError>>> = chain_data_array
         .into_iter()
-        .zip(asset_lists_handle.into_iter())
-        .enumerate()
-    {
-        let chain_data = chain_handle
-            .await
-            .map_err(|e| RegistryError::join_error("chain_data_join".to_string(), e))??;
-        let assets = asset_handle
-            .await
-            .map_err(|e| RegistryError::join_error("asset_handle_join".to_string(), e))??;
-
-        let packet_filter = packet_filters.remove(&chains[i]);
-
-        configs_handle.push(tokio::spawn(async move {
-            hermes_config::<GrpcHealthCheckQuerier, SimpleHermesRpcQuerier, SimpleGrpcFormatter>(
-                chain_data,
-                assets,
-                packet_filter,
-            )
-            .await
-        }));
-    }
-
-    let mut configs = Vec::with_capacity(n);
-
-    for handle in configs_handle {
-        let config = handle
-            .await
-            .map_err(|e| RegistryError::join_error("config_handle_join".to_string(), e))??;
-
-        configs.push(config);
-    }
-
-    Ok(configs)
+        .zip(asset_lists.into_iter())
+        .zip(chains.iter())
+        .map(|((chain_data, assets), chain_name)| {
+            let packet_filter = packet_filters.remove(chain_name);
+            tokio::spawn(async move {
+                hermes_config::<
+                        GrpcHealthCheckQuerier,
+                        SimpleHermesRpcQuerier,
+                        SimpleGrpcFormatter,
+                    >(chain_data, assets, packet_filter)
+                    .await
+            })
+        })
+        .collect();
+    Ok(get_data_from_handles::<ChainConfig>(config_handles, "config_handle_join").await?)
 }
 
 #[cfg(test)]
