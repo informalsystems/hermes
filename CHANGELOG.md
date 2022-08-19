@@ -144,7 +144,7 @@ v1.0.0-rc.2, v1.0.0-rc.1 and v1.0.0-rc.0.
   both the current state of the Hermes relayer and the networks it is connected to
  ([#2479](https://github.com/informalsystems/ibc-rs/issues/2479))
 
-[telemetry-guide]: http://hermes.informal.systems/telemetry/operators.html
+[telemetry-guide]: https://hermes.informal.systems/telemetry/operators.html
 
 
 ## v1.0.0-rc.2

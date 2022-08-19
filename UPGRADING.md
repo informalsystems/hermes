@@ -1,5 +1,35 @@
 # Upgrading Hermes to a newer version
 
+## v1.0.0
+
+> These instructions assume that you are running Hermes v1.0.0-rc.2.
+> If you are running an older version, please refer the corresponding
+> in reverse chronological order to update to v1.0.0-rc.2 first and then
+> follow these instructions.
+
+This release includes multiple changes related to telemetry:
+- Renamed the following metrics:
+  * `ibc_client_updates` to `client_updates_submitted`
+  * `ibc_client_misbehaviours ` to `client_misbehaviours_submitted`
+  * `ibc_receive_packets` to `receive_packets_confirmed`
+  * `ibc_acknowledgment_packets ` to `acknowledgment_packets_confirmed`
+  * `ibc_timeout_packets ` to `timeout_packets_confirmed`
+  * `cache_hits` to `queries_cache_hits`
+  * `msg_num` to `total_messages_submitted`
+  * `send_packet_count` to `send_packet_events`
+  * `acknowledgement_count` to `acknowledgement_events`
+  * `cleared_send_packet_count` to `cleared_send_packet_events`
+  * `cleared_acknowledgment_count` to `cleared_acknowledgment_events`
+- Added the following metric:
+  * `timeout_events`
+
+For more details, please check out the [new section that was added to guide][telemetry-guide],
+which describes how the new metrics can be used to observe both the current state of
+the relayer and the networks it is connected to.
+
+[telemetry-guide]: https://hermes.informal.systems/telemetry/operators.html
+
+
 ## v1.0.0-rc.2
 
 This release is backward compatible with Hermes v1.0.0-rc.1 🎉
