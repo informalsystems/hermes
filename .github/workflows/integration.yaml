@@ -66,9 +66,6 @@ jobs:
           - package: ibc-go-v5-simapp
             command: simd
             account_prefix: cosmos
-          - package: osmosis
-            command: osmosisd
-            account_prefix: osmo
           - package: wasmd
             command: wasmd
             account_prefix: wasm
