@@ -23,7 +23,12 @@
 
 - [Advanced](./advanced/index.md)
     - [Features](./advanced/features.md)
-    - [Troubleshooting](./advanced/troubleshooting.md)
+    - [Troubleshooting](./advanced/troubleshooting/index.md)
+        - [Help Command](./advanced/troubleshooting/help-command.md)
+        - [Profiling](./advanced/troubleshooting/profiling.md)
+        - [Log level](./advanced/troubleshooting/log-level.md)
+        - [Patch Gaia](./advanced/troubleshooting/patch-gaia.md)
+        - [Inspecting the relayer state](./advanced/troubleshooting/inspect.md)
 - [Documentation](./documentation/index.md)
     - [Configuration](./documentation/config.md)
         - [Example Configuration](./documentation/example-config.md)

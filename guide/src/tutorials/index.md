@@ -2,7 +2,9 @@
 
 This section includes tutorials for some common relayer use cases and commands. You can also refer to the [Commands Reference](../commands/index.md) section to learn more about individual commands.
 
-## Basic tutorials
+---
+
+## Sections
 
 - **[Two Local Chains](./local-chains/index.md)**
     * Learn how to start two local [`Cosmos Gaia`](https://github.com/cosmos/gaia) chains that support the `IBC` protocol, relay packets between them and to monitor your relayer.

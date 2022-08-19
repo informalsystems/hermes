@@ -38,7 +38,7 @@ Hermes is actively developed and maintained by [Informal Systems](https://inform
 
 * Advanced
   - **[Features](./advanced/features.md)** : This section discusses what features to expect from Hermes, as well as a comparison between the Cosmos Go relayer and Hermes.
-  - **[Troubleshooting](./advanced/troubleshooting.md)**
+  - **[Troubleshooting](./advanced/troubleshooting/index.md)**
 
 * Documentation
   - **[Configuration](./documentation/config.md)**: How to configure Hermes.
@@ -52,6 +52,7 @@ Hermes is actively developed and maintained by [Informal Systems](https://inform
   - Video : [Connect IBC enabled chains with Hermes](https://www.youtube.com/watch?v=_xQDTj1PcEw&t=4289s): TODO 
 
 * Useful links
+  - [Hermes FAQ Page](https://github.com/informalsystems/ibc-rs/discussions/2472): The official FAQ of Hermes.
   - [Hermes Github repository](https://github.com/informalsystems/ibc-rs): The official Github repository for Hermes.
   - [IBC Github repository](https://github.com/cosmos/ics) : The official repository for the Inter-blockchain protocol (IBC).
   - [IBC Protocol](https://ibcprotocol.org) : The official IBC protocol page. (TODO : check description)
