@@ -23,7 +23,6 @@
 
 - [Advanced](./advanced/index.md)
     - [Features](./advanced/features.md)
-        - [Feature matrix](./features/matrix.md)
     - [Troubleshooting](./advanced/troubleshooting.md)
 - [Documentation](./documentation/index.md)
     - [Configuration](./documentation/config.md)

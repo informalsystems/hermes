@@ -37,14 +37,14 @@ Hermes is actively developed and maintained by [Informal Systems](https://inform
   - **Deploy multiple instances** TODO
 
 * Advanced
-  - **[Features](./features.md)** : This section discusses what features to expect from Hermes, as well as a comparison between the Cosmos Go relayer and Hermes.
-  - **Troubleshooting**
+  - **[Features](./advanced/features.md)** : This section discusses what features to expect from Hermes, as well as a comparison between the Cosmos Go relayer and Hermes.
+  - **[Troubleshooting](./advanced/troubleshooting.md)**
 
 * Documentation
-  - **[Configuration](./config.md)**: How to configure Hermes.
-  - **[Telemetry](./telemetry.md)**: Description of the Prometheus metrics.
-  - **[REST API](./rest-api.md)**: Description of the REST API
-  - **[Commands Reference](./commands/index.md)**: The commands let you interact with Hermes using its command line interface.
+  - **[Configuration](./documentation/config.md)**: How to configure Hermes.
+  - **[Telemetry](./documentation/telemetry.md)**: Description of the Prometheus metrics.
+  - **[REST API](./documentation/rest-api.md)**: Description of the REST API
+  - **[Commands Reference](./documentation/commands/index.md)**: The commands let you interact with Hermes using its command line interface.
 
 * Educational resources
   - [About IBC](https://ibc.cosmos.network/): TODO 
