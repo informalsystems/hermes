@@ -18,7 +18,8 @@ After more than 2 years in the works, this is the first stable release of the He
   The flag to specify the key name for the CLI command `keys add` has been changed
   from `-n` to `-k`. Restoring a key now takes a file containing the mnemonic as
   input instead of directly taking the mnemonic
-- Deprecated `gas_adjustment` setting in favor of new `gas_multiplier` setting
+- Deprecated `gas_adjustment` setting in favor of new `gas_multiplier` setting.
+  Check out the [upgrading instructions][gas-mul] for more details about the new setting.
 - Updated all CLI commands to take flags instead of positional arguments
 - Renamed `query packet unreceived-packets` to `query packet pending-sends`
   and `query packet unreceived-acks` to `query packet pending-acks`
@@ -34,6 +35,8 @@ After more than 2 years in the works, this is the first stable release of the He
 - [A new section was added to guide][telemetry-guide] which describes how the new metrics
   can be used to observe both the current state of the relayer and the networks it is connected to
 - Added many new metrics to the telemetry. The full list can be found in new the guide section linked above
+
+[gas-mul]: https://github.com/informalsystems/ibc-rs/blob/v1.0.0/UPGRADING.md#the-gas_adjustment-setting-has-been-deprecated-in-favor-of-gas_multiplier
 
 ### Change to the versioning scheme
 
