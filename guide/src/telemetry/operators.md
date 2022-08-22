@@ -8,6 +8,7 @@ the current state of the Hermes relayer and the networks it is connected to.
 - All Hermes metrics are tracked and updated from the moment the Hermes service (i.e., `start`) starts up.
 Metrics are automatically reset if the service is restarted.
 - For maximum reliability, it is advised to combine monitoring of your Hermes service with monitoring of your full nodes.
+- Some metrics require specific configurations to be enabled, this is described in the `Configuration Dependencies` column.
 
 ## Table of Contents
 
@@ -28,13 +29,13 @@ For each of this question, there is a dedicated sub-section:
 By _active_ we mean specifically: is Hermes *submitting* any transactions to any network?
 The metrics in the table below are design to answer this question on multiple dimensions.
 
-| Name                       | Description                                                                                                                                                                 | OpenTelemetry type  |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| `workers`                  | Number of workers per type                                                                                                                                                  | `i64` UpDownCounter |
-| `client_updates_submitted` | Number of client update messages submitted, per chain and client                                                                                                            | `u64` Counter       |
-| `wallet_balance`           | The balance of each wallet Hermes uses per chain                                                                                                                            | `f64` ValueRecorder |
-| `tx_latency_submitted`     | Latency for all transactions submitted to a chain | `u64` ValueRecorder |
-| `total_messages_submitted` | Number of messages submitted to a specific chain                                                                                                                            | `u64` Counter       |
+| Name                       | Description                                                                                                                                                                 | OpenTelemetry type  | Configuration Dependencies |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | -------------------------- |
+| `workers`                  | Number of workers per type                                                                                                                                                  | `i64` UpDownCounter | Corresponding workers enabled |
+| `client_updates_submitted` | Number of client update messages submitted, per sending chain, receiving chain and client                                                                                                            | `u64` Counter       | Client, Connection, Channel or Packet workers enabled |
+| `wallet_balance`           | The balance of each wallet Hermes uses per chain                                                                                                                            | `f64` ValueRecorder | None                       |
+| `tx_latency_submitted`     | Latency for all transactions submitted to a chain | `u64` ValueRecorder | None                       |
+| `total_messages_submitted` | Number of messages submitted to a specific chain                                                                                                                            | `u64` Counter       | None                       |
 
 Notes & more details below:
 
@@ -63,12 +64,12 @@ For the `wallet_balance`, we convert from a String into a f64, which can lead to
 This table shows the metrics for Hermes performance.
 Importantly, these metrics are only displayed if the configuration `tx_confirmation = true` is set in your config.toml.
 
-| Name                               | Description                                                                                                                                                              | OpenTelemetry type  |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------- |
-| `tx_latency_confirmed`             | Latency for all transactions confirmed by a chain | `u64` ValueRecorder |
-| `receive_packets_confirmed`        | Number of confirmed receive packets, per chain, channel and port                                                                                                         | `u64` Counter       |
-| `acknowledgment_packets_confirmed` | Number of confirmed acknowledgment packets, per chain, channel and port                                                                                                  | `u64` Counter       |
-| `timeout_packets_confirmed`        | Number of confirmed timeout packets, per chain, channel and port                                                                                                         | `u64` Counter       |
+| Name                               | Description                                                                                                                                                              | OpenTelemetry type  | Configuration Dependencies |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------- | -------------------------- |
+| `tx_latency_confirmed`             | Latency for all transactions confirmed by a chain | `u64` ValueRecorder | Transaction confirmation enabled |
+| `receive_packets_confirmed`        | Number of confirmed receive packets, per chain, channel and port                                                                                                         | `u64` Counter       | Packet workers enabled and Transaction confirmation enabled |
+| `acknowledgment_packets_confirmed` | Number of confirmed acknowledgment packets, per chain, channel and port                                                                                                  | `u64` Counter       | Packet workers enabled and Transaction confirmation enabled |
+| `timeout_packets_confirmed`        | Number of confirmed timeout packets, per chain, channel and port                                                                                                         | `u64` Counter       | Packet workers enabled and Transaction confirmation enabled |
 
 **How do we define the latency of a confirmed transaction?**
 This is the difference between the moment when Hermes received an event until the corresponding transaction(s) were confirmed.
@@ -86,14 +87,14 @@ These metrics are not specific to your Hermes instance. These are metrics that c
 >   - The network has no IBC activity, or
 >   - The websocket connection to that network is broken.
 
-| Name                           | Description                                                                        | OpenTelemetry type |
-| ------------------------------ | ---------------------------------------------------------------------------------- | ------------------ |
-| `send_packet_events`       | Number of SendPacket events received                           | `u64` Counter       |
-| `acknowledgement_events`   | Number of WriteAcknowledgement events received                 | `u64` Counter       |
-| `timeout_events`           | Number of TimeoutPacket events received                        | `u64` Counter       |
-| `ws_events`                    | Number of events Hermes (including `send_packet`, `acknowledgment`, and `timeout`) received via the websocket subscription, per chain         | `u64` Counter      |
-| `ws_reconnect`                 | Number of times Hermes reconnected to the websocket endpoint, per chain            | `u64` Counter      |
-| `queries`                      | Number of queries submitted by Hermes, per chain and query type                    | `u64` Counter      |
+| Name                           | Description                                                                        | OpenTelemetry type | Configuration Dependencies |
+| ------------------------------ | ---------------------------------------------------------------------------------- | ------------------ | -------------------------- |
+| `send_packet_events`           | Number of SendPacket events received                                               | `u64` Counter      | Packet workers enabled     |
+| `acknowledgement_events`       | Number of WriteAcknowledgement events received                                     | `u64` Counter      | Packet workers enabled     |
+| `timeout_events`               | Number of TimeoutPacket events received                                            | `u64` Counter      | Packet workers enabled     |
+| `ws_events`                    | Number of events Hermes (including `send_packet`, `acknowledgment`, and `timeout`) received via the websocket subscription, per chain         | `u64` Counter      | None                       |
+| `ws_reconnect`                 | Number of times Hermes reconnected to the websocket endpoint, per chain            | `u64` Counter      | None                       |
+| `queries`                      | Number of queries submitted by Hermes, per chain and query type                    | `u64` Counter      | None                       |
 
 Notes:
 
@@ -102,11 +103,11 @@ Notes:
 
 Since Hermes v1, we also introduced 3 metrics that sketch the backlog status of IBC relaying.
 
-| Name                       | Description                                                    | OpenTelemetry type  |
-| -------------------------- | -------------------------------------------------------------- | ------------------- |
-| `backlog_oldest_sequence`  | Sequence number of the oldest SendPacket event in the backlog  | `u64` ValueRecorder |
-| `backlog_oldest_timestamp` | Local timestamp for the oldest SendPacket event in the backlog | `u64` ValueRecorder |
-| `backlog_size`             | Total number of SendPacket events in the backlog               | `u64` ValueRecorder |
+| Name                       | Description                                                    | OpenTelemetry type  | Configuration Dependencies |
+| -------------------------- | -------------------------------------------------------------- | ------------------- | -------------------------- |
+| `backlog_oldest_sequence`  | Sequence number of the oldest SendPacket event in the backlog  | `u64` ValueRecorder | Packet workers enabled     |
+| `backlog_oldest_timestamp` | Local timestamp for the oldest SendPacket event in the backlog | `u64` ValueRecorder | Packet workers enabled     |
+| `backlog_size`             | Total number of SendPacket events in the backlog               | `u64` ValueRecorder | Packet workers enabled     |
 
 
 Notes:
@@ -119,13 +120,13 @@ the `backlog_oldest_sequence` that is blocked.
 
 ## How efficient and how secure is the IBC status on each network?
 
-| Name                           | Description                                                                                                                                                                 | OpenTelemetry type  |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
-| `queries`                      | Number of queries submitted by Hermes, per chain and query type                                                                                                             | `u64` Counter       |
-| `queries_cache_hits`           | Number of cache hits for queries submitted by Hermes, per chain and query type                                                                                              | `u64` Counter       |
-| `tx_latency_submitted`         | Latency for all transactions submitted to a chain (i.e., difference between the moment when Hermes received an event until the corresponding transaction(s) were submitted), per chain, counterparty chain, channel and port | `u64` ValueRecorder |
-| `cleared_send_packet_count`    | Number of SendPacket events received during the initial and periodic clearing, per chain, counterparty chain, channel and port                                              | `u64` Counter       |
-| `cleared_acknowledgment_count` | Number of WriteAcknowledgement events received during the initial and periodic clearing, per chain, counterparty chain, channel and port                                    | `u64` Counter       |
+| Name                           | Description                                                                                                                                                                 | OpenTelemetry type  | Configuration Dependencies |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | -------------------------- |
+| `queries`                      | Number of queries submitted by Hermes, per chain and query type                                                                                                             | `u64` Counter       | None                       |
+| `queries_cache_hits`           | Number of cache hits for queries submitted by Hermes, per chain and query type                                                                                              | `u64` Counter       | None                       |
+| `tx_latency_submitted`         | Latency for all transactions submitted to a chain (i.e., difference between the moment when Hermes received an event until the corresponding transaction(s) were submitted), per chain, counterparty chain, channel and port | `u64` ValueRecorder | None                       |
+| `cleared_send_packet_count`    | Number of SendPacket events received during the initial and periodic clearing, per chain, counterparty chain, channel and port                                              | `u64` Counter       | Packet workers enabled, and periodic packet clearing or clear on start enabled |
+| `cleared_acknowledgment_count` | Number of WriteAcknowledgement events received during the initial and periodic clearing, per chain, counterparty chain, channel and port                                    | `u64` Counter       | Packet workers enabled, and periodic packet clearing or clear on start enabled |
 
 Notes:
 - The two metrics `cleared_send_packet_count` and `cleared_acknowledgment_count` are only populated if `tx_confirmation = true`.
@@ -136,6 +137,6 @@ finds packets to clear (i.e., unblock).
 For security, we only expose one metric, described in the table below.
 Note that this metrics is disabled if `misbehaviour = false` in your Hermes config.toml.
 
-| Name                             | Description                                                                                   | OpenTelemetry type |
-| -------------------------------- | --------------------------------------------------------------------------------------------- | ------------------ |
-| `client_misbehaviours_submitted` | Number of misbehaviours detected and submitted, per sending chain, receiving chain and client | `u64` Counter      |
+| Name                             | Description                                                                                   | OpenTelemetry type | Configuration Dependencies |
+| -------------------------------- | --------------------------------------------------------------------------------------------- | ------------------ | -------------------------- |
+| `client_misbehaviours_submitted` | Number of misbehaviours detected and submitted, per sending chain, receiving chain and client | `u64` Counter      | Client workers enabled and Clients misbehaviour detection enabled |

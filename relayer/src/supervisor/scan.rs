@@ -34,6 +34,8 @@ use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets
 use crate::error::Error as RelayerError;
 use crate::spawn::SpawnError;
 
+use crate::telemetry;
+
 flex_error::define_error! {
     Error {
         Spawn
@@ -217,6 +219,10 @@ impl ChannelScan {
         &self.channel.channel_id
     }
 
+    pub fn port(&self) -> &PortId {
+        &self.channel.port_id
+    }
+
     pub fn unreceived_packets_on_counterparty(
         &self,
         chain: &impl ChainHandle,
@@ -288,6 +294,8 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
 
         info!("scanning chain...");
 
+        telemetry!(init_per_chain, &chain_config.id);
+
         let chain = match self.registry.get_or_spawn(&chain_config.id) {
             Ok(chain_handle) => chain_handle,
             Err(e) => {
@@ -339,6 +347,16 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
                     counterparty_connection_state,
                     client,
                 }) => {
+                    let counterparty_chain_id = client.client_state.chain_id();
+                    init_telemetry(
+                        &chain.id(),
+                        &client.client_id,
+                        &counterparty_chain_id,
+                        channel_id,
+                        port_id,
+                        self.config,
+                    );
+
                     let client_scan = scan
                         .clients
                         .entry(client.client_id.clone())
@@ -370,6 +388,24 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
 
         for client in clients {
             if let Some(client_scan) = self.scan_client(chain, client)? {
+                if self.config.telemetry.enabled {
+                    // discovery phase : query every chain, connections and channels
+                    let connection_scans = client_scan.connections.values();
+
+                    for connection_scan in connection_scans {
+                        for channel in connection_scan.channels.values() {
+                            init_telemetry(
+                                &chain.id(),
+                                client_scan.id(),
+                                &client_scan.counterparty_chain_id(),
+                                channel.id(),
+                                channel.port(),
+                                self.config,
+                            );
+                        }
+                    }
+                }
+
                 scan.clients.insert(client_scan.id().clone(), client_scan);
             }
         }
@@ -643,14 +679,16 @@ fn scan_allowed_channel<Chain: ChainHandle>(
     info!(client = %client_id, "querying client...");
     let client = query_client(chain, client_id)?;
 
+    let counterparty_chain_id = client.client_state.chain_id();
+
     info!(
         client = %client_id,
-        counterparty_chain = %client.client_state.chain_id(),
+        counterparty_chain = %counterparty_chain_id,
         "found counterparty chain for client",
     );
 
     let counterparty_chain = registry
-        .get_or_spawn(&client.client_state.chain_id())
+        .get_or_spawn(&counterparty_chain_id)
         .map_err(Error::spawn)?;
 
     let counterparty_channel =
@@ -814,4 +852,71 @@ fn query_connection_channels<Chain: ChainHandle>(
             pagination: Some(PageRequest::all()),
         })
         .map_err(Error::query)
+}
+
+/// Telemetry discovery is only done for metrics which will be recorded.
+/// For example if the client workers or client misbehaviour detection have
+/// been disabled in the configuration, the `client_misbehaviours_submitted`
+/// will never record any value as no misbehaviour will be submitted.
+#[allow(unused_variables)]
+fn init_telemetry(
+    chain_id: &ChainId,
+    client: &ClientId,
+    counterparty_chain_id: &ChainId,
+    channel_id: &ChannelId,
+    port_id: &PortId,
+    config: &Config,
+) {
+    // Boolean flag that is toggled if any of the tx workers are enabled
+    let mut tx_worker_enabled = false;
+
+    let clear_packets = config.mode.packets.enabled
+        && (config.mode.packets.clear_on_start || config.mode.packets.clear_interval > 0);
+
+    if config.mode.packets.enabled {
+        tx_worker_enabled = true;
+
+        telemetry!(
+            init_per_path,
+            chain_id,
+            counterparty_chain_id,
+            channel_id,
+            port_id,
+            clear_packets
+        );
+
+        telemetry!(init_worker_by_type, WorkerType::Packet);
+
+        if config.mode.packets.tx_confirmation {
+            telemetry!(init_per_channel, chain_id, channel_id, port_id);
+        }
+    }
+
+    if config.mode.clients.enabled {
+        tx_worker_enabled = true;
+        telemetry!(init_worker_by_type, WorkerType::Client);
+    }
+
+    if config.mode.connections.enabled {
+        tx_worker_enabled = true;
+        telemetry!(init_worker_by_type, WorkerType::Connection);
+    }
+
+    if config.mode.channels.enabled {
+        tx_worker_enabled = true;
+        telemetry!(init_worker_by_type, WorkerType::Channel);
+    }
+
+    // Now we can just check this boolean
+    if tx_worker_enabled {
+        telemetry!(
+            init_per_client,
+            chain_id,
+            counterparty_chain_id,
+            client,
+            config.mode.clients.misbehaviour && config.mode.clients.enabled
+        );
+    }
+
+    telemetry!(init_worker_by_type, WorkerType::Wallet);
 }
