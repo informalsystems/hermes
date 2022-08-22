@@ -1,4 +1,14 @@
-# Create a new path
+# Start relaying
+
+A relay path refers to a specific channel used to interconnect two chains and over which packets are being sent.
+
+Hermes can be started to listen for packet events on the two ends of multiple paths and relay packets over these paths.
+This can be done over a new path or over existing paths.
+
+>__WARNING__ Before proceeding to the sections above, please first, make sure you followed the steps in the [Identifiers section](../identifiers.md)
+
+
+## Create a new path
 
 Perform client creation, connection and channel handshake to establish a new path between the `transfer` ports on `ibc-0` and `ibc-1` chains.
 
@@ -62,4 +72,7 @@ Success: Channel {
 ```
 
 Note that for each side, *a_side* (__ibc-0__) and *b_side* (__ibc-1__) there are a __client_id__, __connection_id__, __channel_id__ and __port_id__.
-With all these established, you have [a path that you can relay packets over](./multiple-paths.md).
+With all these established, you have a path that you can relay packets over.
+
+## Start relaying
+

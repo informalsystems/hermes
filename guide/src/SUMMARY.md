@@ -14,10 +14,9 @@
    - [Local chains](./tutorials/local-chains/index.md)
      - [Start the local chains](./tutorials/local-chains/start.md)
      - [Identifiers](./tutorials/local-chains/identifiers.md)
-     - [Connect the chains using relay paths](./tutorials/local-chains/relay-paths/index.md)
-       - [Create a new path](./tutorials/local-chains/relay-paths/create-new-path.md)
-       - [Relay packets on multiple paths](./tutorials/local-chains/relay-paths/multiple-paths.md)
+     - [Start relaying](./tutorials/local-chains/create-new-path.md)
     - [More Local Chains](./tutorials/more-chains/index.md)
+      - [Relay packets on multiple paths](./tutorials/more-chains/multiple-paths.md)
     - [Relaying in production](./tutorials/production/index.md)
     - [Run multiple instances](./tutorials/concurrent/index.md)
 

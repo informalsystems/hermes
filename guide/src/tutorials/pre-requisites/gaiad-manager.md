@@ -67,7 +67,7 @@ your path.
 
 **Entries**: All entries are defined and documented in the `scripts/gm/gm.toml` example configuration file.
 
-Copy and paste below to `$HOME/.gm/gm.toml`
+Copy and paste below to `$HOME/.gm/gm.toml` and set Hermes' binary path according to your setup.
 
 The following configuration you need to specify 2 `gaiad` chains. `hermes` will know about these chains.
 
