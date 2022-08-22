@@ -187,7 +187,7 @@ fn batch_messages(
         // field tag (small varint) and the length delimiter.
         let tagged_len = 1 + prost::length_delimiter_len(message_len) + message_len;
 
-        if tagged_len > max_tx_size {
+        if tx_envelope_len + tagged_len > max_tx_size {
             return Err(Error::message_too_big_for_tx(message_len));
         }
 
@@ -201,7 +201,7 @@ fn batch_messages(
 
             batches.push(insert_batch);
             current_count = 0;
-            current_size = 0;
+            current_size = tx_envelope_len;
         }
 
         current_count += 1;
@@ -293,7 +293,7 @@ mod tests {
         let batches = batch_messages(
             &config,
             MaxMsgNum::default(),
-            MaxTxSize::new(42).unwrap(),
+            MaxTxSize::new(214).unwrap(),
             &key_entry,
             &account,
             &Memo::new("").unwrap(),
@@ -324,7 +324,7 @@ mod tests {
         let batches = batch_messages(
             &config,
             MaxMsgNum::default(),
-            MaxTxSize::new(22).unwrap(),
+            MaxTxSize::new(192).unwrap(),
             &key_entry,
             &account,
             &Memo::new("").unwrap(),
@@ -338,7 +338,7 @@ mod tests {
         let res = batch_messages(
             &config,
             MaxMsgNum::default(),
-            MaxTxSize::new(21).unwrap(),
+            MaxTxSize::new(191).unwrap(),
             &key_entry,
             &account,
             &Memo::new("").unwrap(),
@@ -413,8 +413,8 @@ mod tests {
     #[test]
     fn test_batches_are_structured_appropriately_per_max_tx_size() {
         let (config, key_entry, account) = test_fixture();
-        // Ensure that when MaxTxSize == the size of each message, the resulting batch
-        // consists of 5 smaller batches, each with a single message
+        // Ensure that when MaxTxSize is only enough to fit each one of the messages,
+        // the resulting batch consists of 5 smaller batches, each with a single message.
         let messages = vec![
             Any {
                 type_url: "/example.Foo".into(),
@@ -441,7 +441,7 @@ mod tests {
         let batches = batch_messages(
             &config,
             MaxMsgNum::default(),
-            MaxTxSize::new(26).unwrap(),
+            MaxTxSize::new(196).unwrap(),
             &key_entry,
             &account,
             &Memo::new("").unwrap(),
