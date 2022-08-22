@@ -185,7 +185,7 @@ SUBCOMMANDS:
 It might be easier to create an alias for `hermes` so you can just run it by specifying the executable name instead of the whole path. In order to create an alias execute the following command:
 
 ```shell
-alias hermes='cargo run --release --bin hermes --'
+alias hermes='cargo run --manifest-path $IBCRSPATH/Cargo.toml --release --bin hermes --'
 ```
 
 ## Shell auto-completions

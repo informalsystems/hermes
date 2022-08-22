@@ -5,7 +5,8 @@ This section includes tutorials for some common relayer use cases and commands. 
 ---
 
 ## Sections
-
+- **[Pre-requisites for local chains](./pre-requisites/index.md)**
+    Install `Gaia` and `gm` (Gaia Manager) for tutorials using local chains.
 - **[Two Local Chains](./local-chains/index.md)**
     * Learn how to start two local [`Cosmos Gaia`](https://github.com/cosmos/gaia) chains that support the `IBC` protocol, relay packets between them and to monitor your relayer.
 - **[More Local Chains](./more-chains/index.md)**

@@ -1,6 +1,6 @@
 # Help
 
-This section provides generalresources for getting help with `hermes`:
+This section provides general resources for getting help with `hermes`:
 
 - Request a [new feature][feature];
 - Consult the [list of reported issues][issues] and search by relevant

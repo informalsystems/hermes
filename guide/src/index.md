@@ -25,7 +25,7 @@ Hermes is actively developed and maintained by [Informal Systems](https://inform
   - This section provides some definitions of terms used throughout the guide.
 
 
-* **[Quick start](./quick_start/index.md)**
+* **[Quick start](./quick-start/index.md)**
 
   - This section can help you install Hermes.
 
@@ -37,14 +37,14 @@ Hermes is actively developed and maintained by [Informal Systems](https://inform
   - **Deploy multiple instances** TODO
 
 * Advanced
-  - **[Features](./advanced/features.md)** : This section discusses what features to expect from Hermes, as well as a comparison between the Cosmos Go relayer and Hermes.
+  - **[Features](./advanced/features.md)** : This section discusses summarizes Hermes' features and includes a comparison between the Cosmos Go relayer and Hermes.
   - **[Troubleshooting](./advanced/troubleshooting/index.md)**
 
 * Documentation
-  - **[Configuration](./documentation/config.md)**: How to configure Hermes.
-  - **[Telemetry](./documentation/telemetry.md)**: Description of the Prometheus metrics.
-  - **[REST API](./documentation/rest-api.md)**: Description of the REST API
-  - **[Commands Reference](./documentation/commands/index.md)**: The commands let you interact with Hermes using its command line interface.
+  - **[Configuration](./documentation/config.md)**: This section provides a description to every parameter of Hermes' configuration file.
+  - **[Telemetry](./documentation/telemetry.md)**: This section describes all Prometheus metrics and how to use them efficiently.
+  - **[REST API](./documentation/rest-api.md)**: This section presents Hermes' REST API.
+  - **[Commands Reference](./documentation/commands/index.md)**: This section describes the command line interface from which you can interact with Hermes.
 
 * Educational resources
   - [About IBC](https://ibc.cosmos.network/): TODO 
@@ -55,7 +55,7 @@ Hermes is actively developed and maintained by [Informal Systems](https://inform
   - [Hermes FAQ Page](https://github.com/informalsystems/ibc-rs/discussions/2472): The official FAQ of Hermes.
   - [Hermes Github repository](https://github.com/informalsystems/ibc-rs): The official Github repository for Hermes.
   - [IBC Github repository](https://github.com/cosmos/ics) : The official repository for the Inter-blockchain protocol (IBC).
-  - [IBC Protocol](https://ibcprotocol.org) : The official IBC protocol page. (TODO : check description)
+  - [IBC Protocol](https://ibcprotocol.org) : The official IBC protocol page.
 
 * Other
 
