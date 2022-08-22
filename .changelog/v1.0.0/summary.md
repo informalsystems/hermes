@@ -28,9 +28,9 @@ After more than 2 years in the works, this is the first stable release of the He
   * `tx raw upgrade-client`, which is the same as `upgrade client`
   * `tx raw upgrade-clients`, which is the same as `upgrade clients`
   * `tx raw create-client`, which is the same as `create client`
-- [A new section was added to guide][telemetry-guide] which describes how the new metrics
+- [A new section was added to the guide][telemetry-guide] which describes how the new metrics
   can be used to observe both the current state of the relayer and the networks it is connected to
-- Added many new metrics to the telemetry. The full list can be found in new the guide section linked above
+- Added many new metrics to the telemetry API. The full list can be found in new the guide section linked above
 
 ### Change to the versioning scheme
 
@@ -41,8 +41,8 @@ the repository do not necessarily match this version. For example,
 the `ibc` and `ibc-relayer` crates are released under version 0.19.0
 for Hermes v1.0.0.
 
-The structure of this changelog has therefore changed as well,
-changes are now grouped first by crate and then by the type of change,
+The structure of this changelog has therefore changed as well.
+Changes are now grouped first by crate and then by the type of change,
 eg. feature, bug fix, etc.
 
 ### Full release notes

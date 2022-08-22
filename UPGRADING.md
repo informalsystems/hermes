@@ -3,9 +3,9 @@
 ## v1.0.0
 
 > These instructions assume that you are running Hermes v1.0.0-rc.2.
-> If you are running an older version, please refer the corresponding
-> in reverse chronological order to update to v1.0.0-rc.2 first and then
-> follow these instructions.
+> If you are running an older version, please refer to the upgrading instructions
+> for the older release candidates in reverse chronological order to update to
+> v1.0.0-rc.2 first and then follow these instructions.
 
 This release includes multiple changes related to telemetry:
 - Renamed the following metrics:
