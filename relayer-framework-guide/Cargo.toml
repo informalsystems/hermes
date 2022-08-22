@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-relayer-framework-guide"
-version      = "0.18.0"
+version      = "0.19.0"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
@@ -18,11 +18,11 @@ all-features = true
 [features]
 
 [dependencies]
-ibc             = { version = "0.18.0", path = "../modules" }
+ibc             = { version = "0.19.0", path = "../modules" }
 ibc-proto       = { version = "0.20.0", path = "../proto" }
-ibc-relayer     = { version = "0.18.0", path = "../relayer" }
-ibc-relayer-cosmos      = { version = "0.18.0", path = "../relayer-cosmos" }
-ibc-relayer-framework   = { version = "0.18.0", path = "../relayer-framework" }
+ibc-relayer     = { version = "0.19.0", path = "../relayer" }
+ibc-relayer-cosmos      = { version = "0.19.0", path = "../relayer-cosmos" }
+ibc-relayer-framework   = { version = "0.19.0", path = "../relayer-framework" }
 
 serde = "1.0"
 serde_derive = "1.0"

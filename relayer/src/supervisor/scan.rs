@@ -13,7 +13,6 @@ use ibc::core::{
     },
     ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
 };
-use ibc_telemetry::state::WorkerType;
 
 use crate::{
     chain::{
@@ -859,6 +858,7 @@ fn query_connection_channels<Chain: ChainHandle>(
 /// For example if the client workers or client misbehaviour detection have
 /// been disabled in the configuration, the `client_misbehaviours_submitted`
 /// will never record any value as no misbehaviour will be submitted.
+#[allow(unused_variables)]
 fn init_telemetry(
     chain_id: &ChainId,
     client: &ClientId,
