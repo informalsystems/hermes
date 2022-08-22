@@ -161,7 +161,9 @@ If successful, the command should show an output similar to:
 Success: Added key testkey ([ADDRESS]) on [CHAIN ID] chain
 ```
 
-
+> __TROUBLESHOOTING__: 
+> - If the command outputs an error, run `gm rm ibc-0` and `gm rm ibc-1`. 
+> - If it does not out output anything, make sure the path to Hermes' binary is set in `$HOME/.gm/gm.toml`.
 
 ### Starting the chains with `gm`
 
