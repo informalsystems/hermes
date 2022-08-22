@@ -1,9 +1,12 @@
 # Identifiers
 
+In order to connect two IBC-enabled chains, both chains need an on-chain client that keeps track of the other chain. These two clients can be connected by one or multiple connections. Then, channels need to be created, over a connection, to specify the destination module.
+
+> __WARNING__: Do not create clients, connections or channels between two chains/modules before checking that they are not already created.
 
 A chain allocates identifiers when it creates clients, connections and channels. These identifiers can subsequently be used to refer to existing clients, connections and channels.
 
-> NOTE: If you want to ensure you get the same identifiers while following the tutorials, run the each of the three commands below __once__ on `ibc-1`. This will ensure that when going through the tutorial, a second channel on `ibc-1` with identifier `channel-1` will created.
+> NOTE: If you want to ensure you get the same identifiers while following the tutorials, run the each of the three commands below __once__ on `ibc-1`. This will ensure that when going through the tutorial, a second channel on `ibc-1` with identifier `channel-1` will be created.
 
 Chains allocate identifiers using a chain specific allocation scheme. Currently, *cosmos-sdk* implementation uses the follow identifiers:
 
@@ -37,8 +40,7 @@ Success: CreateClient(
     ),
 )
  ```
-
-We will create a second client on `ibc-1` with identifier `07-tendermint-1` in the client tutorial.
+We created a client on chain `ibc-1` that keeps track of the state of `ibc-0`. We will create a second client on `ibc-1` with identifier `07-tendermint-1` in the client tutorial.
 
 ### 2. Connection Identifiers
 
@@ -47,7 +49,7 @@ __`connection-<n>`__ for connections
 For example `connection-0` is assigned to the first connection created on `ibc-1`:
 
 ```shell
-hermes tx conn-init --b-chain ibc-1 --a-chain ibc-0 --b-client 07-tendermint-0 --a-client 07-tendermint-0
+hermes tx conn-init --dst-chain ibc-1 --src-chain ibc-0 --dst-client 07-tendermint-0 --src-client dummyclientname
 ```
 
 ```json
@@ -68,7 +70,7 @@ Success: OpenInitConnection(
             ),
             counterparty_connection_id: None,
             counterparty_client_id: ClientId(
-                "07-tendermint-0",
+                "dummyclientname",
             ),
         },
     ),
@@ -83,7 +85,7 @@ We will create a second connection on `ibc-1` with identifier `connection-1` in 
 For example `channel-0` is assigned to the first channel created on `ibc-1`:
 
 ```shell
-hermes tx chan-open-init --b-chain ibc-1 --a-chain ibc-0 --b-connection connection-0 --b-port transfer --a-port transfer
+hermes tx chan-open-init --dst-chain ibc-1 --src-chain ibc-0 --dst-connection connection-0 --dst-port transfer --src-port transfer
 ```
 
 ```json
