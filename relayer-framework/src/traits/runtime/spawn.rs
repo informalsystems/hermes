@@ -2,7 +2,13 @@ use core::future::Future;
 
 use crate::traits::core::Async;
 
-pub trait CanSpawn: Async {
+pub trait HasSpawner: Async {
+    type Spawner: Spawner;
+
+    fn spawner(&self) -> Self::Spawner;
+}
+
+pub trait Spawner: Async {
     fn spawn<F>(&self, task: F) -> F::Output
     where
         F: Future + Send + 'static,
