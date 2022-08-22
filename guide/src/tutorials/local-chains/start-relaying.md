@@ -74,5 +74,32 @@ Success: Channel {
 Note that for each side, *a_side* (__ibc-0__) and *b_side* (__ibc-1__) there are a __client_id__, __connection_id__, __channel_id__ and __port_id__.
 With all these established, you have a path that you can relay packets over.
 
+Visualize the current network with 
+
+```bash
+hermes query channels --chain ibc-1 --show-counterparty
+```
+
+If all the commands were successful, this command should output : 
+
+```
+ibc-1: transfer/channel-0 --- ibc-0: transfer/None
+ibc-1: transfer/channel-1 --- ibc-0: transfer/channel-0
+```
+
+The first line represents the dummy channel opened in section [Identifiers](./identifiers.md) for which the handshake was never completed. The second represents the path you created in this section.
+
 ## Start relaying
 
+- Open a new terminal and start Hermes using the `start` command : 
+
+```bash
+hermes start
+```
+Hermes will first relay the pending packets that have not been relayed and then start passive relaying by listening to and acting on packet events. 
+
+- In a separate terminal, use the `ft-transfer` command to send:
+    - Two packets from ibc-0 to ibc-1 from channel-0
+    ```bash
+        hermes tx ft-transfer --dst-chain ibc-1 --src-chain ibc-0 --src-port transfer --src-channel channel-0 --amount 9999 --timeout-seconds 1000 --number-msgs 2
+    ```
