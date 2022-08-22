@@ -727,6 +727,18 @@ fn process_batch<Chain: ChainHandle>(
     Ok(())
 }
 
+/// This method parses a list of IbcEvent and record the following three metrics if there is
+/// the corresponding event:
+/// * send_packet_events: The number of SendPacket events received
+/// * acknowledgement_events: The number of WriteAcknowledgment events received.
+/// * timeout_events: The number of TimeoutPacket events received.
+///
+/// The labels `chain_id` represents the chain sending the event, and `counterparty_chain_id` represents
+/// the chain receiving the event.
+/// So successfully sending a packet from chain A to chain B will result in first a SendPacket
+/// event with `chain_id = A` and `counterparty_chain_id = B` and then a WriteAcknowlegment
+/// event with `chain_id = B` and `counterparty_chain_id = A`.
+///
 fn send_telemetry<Src, Dst>(src: &Src, dst: &Dst, events: &[IbcEventWithHeight], path: &Packet)
 where
     Src: ChainHandle,
@@ -748,18 +760,18 @@ where
                 ibc_telemetry::global().acknowledgement_events(
                     write_ack_ev.packet.sequence.into(),
                     e.height.revision_height(),
-                    &dst.id(),
+                    &src.id(),
                     &path.src_channel_id,
                     &path.src_port_id,
-                    &src.id(),
+                    &dst.id(),
                 );
             }
             IbcEvent::TimeoutPacket(_) => {
                 ibc_telemetry::global().timeout_events(
-                    &dst.id(),
+                    &src.id(),
                     &path.src_channel_id,
                     &path.src_port_id,
-                    &src.id(),
+                    &dst.id(),
                 );
             }
             _ => {}

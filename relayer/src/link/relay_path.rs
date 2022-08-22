@@ -1835,10 +1835,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 ibc_telemetry::global().cleared_acknowledgment_events(
                     write_ack_ev.packet.sequence.into(),
                     event_with_height.height.revision_height(),
-                    &self.dst_chain().id(),
+                    &self.src_chain().id(),
                     self.src_channel_id(),
                     self.src_port_id(),
-                    &self.src_chain().id(),
+                    &self.dst_chain().id(),
                 );
             }
         }
