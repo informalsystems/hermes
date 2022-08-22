@@ -5,7 +5,7 @@
 ---
 - [Introduction](./index.md)
 - [Quick start](./quick-start/index.md)
-   - [Pre-requisites](./quick-start/pre_requisites.md)
+   - [Pre-requisites](./quick-start/pre-requisites.md)
    - [Installation](./quick-start/installation.md)
 - [Tutorials](./tutorials/index.md)
    - [Pre-requisites for local chains](./tutorials/pre-requisites/index.md)

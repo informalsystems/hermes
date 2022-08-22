@@ -1,7 +1,7 @@
 # Quick Start
 
 In order to run Hermes, please make sure you have all the 
-[pre-requisites](./pre_requisites.md) installed on your machine.
+[pre-requisites](./pre-requisites.md) installed on your machine.
 
 Once you have these pre-requisites, you can
 [build and run Hermes](./installation.md).
