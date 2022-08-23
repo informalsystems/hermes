@@ -1,5 +1,5 @@
 use eyre::Report;
-use flex_error::{define_error, DisplayOnly, TraceError};
+use flex_error::{define_error, DisplayOnly, ErrorMessageTracer, TraceError};
 use ibc::core::ics04_channel::error::Error as ChannelError;
 use ibc_relayer::error::Error as RelayerError;
 use ibc_relayer::foreign_client::ForeignClientError;
@@ -51,6 +51,12 @@ define_error! {
         MismatchEventType
             { expected: String, actual: String }
             | e | { format_args!("mismatch event type, expected: {}, actual: {}", e.expected, e.actual) },
+    }
+}
+
+impl Clone for Error {
+    fn clone(&self) -> Self {
+        Error(self.detail().clone(), ErrorMessageTracer::new_message(self))
     }
 }
 

@@ -10,9 +10,19 @@ use crate::std_prelude::*;
 use crate::traits::core::Async;
 use crate::traits::target::{DestinationTarget, SourceTarget};
 
+#[derive(Clone)]
 pub struct OfaBatchContext<Chain, Batch> {
     pub batch_context: Batch,
     pub phantom: PhantomData<Chain>,
+}
+
+impl<Chain, Batch> OfaBatchContext<Chain, Batch> {
+    pub fn new(batch_context: Batch) -> Self {
+        Self {
+            batch_context,
+            phantom: PhantomData,
+        }
+    }
 }
 
 #[async_trait]
