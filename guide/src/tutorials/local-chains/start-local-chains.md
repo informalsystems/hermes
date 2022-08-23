@@ -2,11 +2,11 @@
 
 In this chapter, you will learn how to spawn two Gaia chains, and use Hermes to relay packets between them.
 
-To spawn the chains and configure Hermes accordingly, we will make use of Gaiad Manager `gm` that we installed in the last section [Install Gaiad Manager](gaiad-manager.md)
+To spawn the chains and configure Hermes accordingly, we will make use of Gaiad Manager `gm` that we installed in the last section [Install Gaiad Manager](../pre-requisites/gaiad-manager.md).
 
 ### Reset your configuration and start the chains
 
-Make sure you have the `$HOME/.gm/gm.toml` that we configured in the previous section [Install Gaiad Manager](gaiad-manager.md). If this is not the first time you are running the script, you can manually stop the two gaia instances executing the following command to kill all `gaiad` processes:
+Make sure you have the `$HOME/.gm/gm.toml` that we configured in the previous section [Install Gaiad Manager](../pre-requisites/gaiad-manager.md). If this is not the first time you are running the script, you can manually stop the two gaia instances executing the following command to kill all `gaiad` processes:
 
 ```shell
 killall gaiad
@@ -21,7 +21,7 @@ gm rm node-1
 ```
 
 
-> __NOTE__: If you have any `Docker` containers running that might be using the same ports as `gaiad` (e.g. port 26657 or port 9090), please ensure you stop them first before proceeding to the next step.
+> __NOTE__: If you have any `Docker` containers running that might be using the same ports as `gaiad` (e.g. port 27010-27012), please ensure you stop them first before proceeding to the next step.
 
 Finally, start the chains with the `start` command.
 
@@ -75,9 +75,9 @@ Gaiad Manager `gm` takes care of creating the configuration file. Run the comman
 ```bash
 gm hermes config
 ```
-Please check the [`Configuration`](../../config.md) section for more information about the relayer configuration file.
+Please check the [`Configuration`](../../documentation/config.md) section for more information about the relayer configuration file.
 
-Based on the `gm.toml` we created in the previous section [Install Gaiad Manager](gaiad-manager.md), your `$HOME/.hermes/config.toml` file should look like below :
+Based on the `gm.toml` we created in the previous section [Install Gaiad Manager](../pre-requisites/gaiad-manager.md), your `$HOME/.hermes/config.toml` file should look like below :
 
 __config.toml__
 
@@ -212,7 +212,12 @@ gm hermes keys
 If successful, the command should show an output similar to:
 
 ```
-Success: Added key testkey ([ADDRESS]) on [CHAIN ID] chain
+SUCCESS Added key 'wallet' (cosmos1qsl5sq48r7xdfwq085x9pnlfu9ul5seufu3n03) on chain ibc-0
+SUCCESS Added key 'wallet2' (cosmos1haaphqucg2u9g8gwgv6z8jzegvca85r4d7yqh9) on chain ibc-0
+SUCCESS Added key 'wallet1' (cosmos1cgjf7m9txsxf2pdekxk60ll6xusx0heznqsnxn) on chain ibc-0
+SUCCESS Added key 'wallet' (cosmos1zp3t2rp7tjr23wchp36lmw7vhk77gtvvc7lc5s) on chain ibc-1
+SUCCESS Added key 'wallet2' (cosmos1644x9c8pyfwcmg43ch2u3vr6hl4rkmkz2weq39) on chain ibc-1
+SUCCESS Added key 'wallet1' (cosmos1dsrj2uqjvtssenkwperuvfkgkg2xvmydvpzswy) on chain ibc-1
 ```
 
 > __TROUBLESHOOTING__: 
@@ -220,7 +225,7 @@ Success: Added key testkey ([ADDRESS]) on [CHAIN ID] chain
 
 ### $HOME/.gm directory
 
-This directory is creted when you install `gm` and the binaries are stored here but when we start the chains, all the related files and folders are stored here as well.
+This directory is created when you install `gm` and the binaries are stored here but when we start the chains, all the related files and folders are stored here as well.
 
 The $HOME/.gm directory has a tree structure similar to the one below:
 

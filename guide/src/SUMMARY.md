@@ -16,6 +16,7 @@
      - [Identifiers](./tutorials/local-chains/identifiers.md)
      - [Start relaying](./tutorials/local-chains/start-relaying.md)
     - [More Local Chains](./tutorials/more-chains/index.md)
+      - [Start the local chains](./tutorials/more-chains/start-local-chains.md)
       - [Relay packets on multiple paths](./tutorials/more-chains/multiple-paths.md)
     - [Relaying in production](./tutorials/production/index.md)
     - [Run multiple instances](./tutorials/concurrent/index.md)
