@@ -27,7 +27,7 @@ pub use error::Error;
 
 pub use filter::PacketFilter;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GasPrice {
     pub price: f64,
     pub denom: String,
@@ -45,7 +45,7 @@ impl fmt::Display for GasPrice {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(
     rename_all = "snake_case",
     tag = "type",
