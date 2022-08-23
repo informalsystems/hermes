@@ -1,10 +1,12 @@
 use core::mem;
 
+use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::IbcEvent;
 use ibc::Height;
 use ibc_proto::google::protobuf::Any;
 use prost::Message;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
+use tracing::debug;
 
 use crate::chain::cosmos::encode::encoded_tx_len;
 use crate::chain::cosmos::gas::gas_amount_to_fee;
@@ -18,6 +20,13 @@ use crate::error::Error;
 use crate::event::IbcEventWithHeight;
 use crate::keyring::KeyEntry;
 
+/**
+   Broadcast messages as multiple batched transactions to the chain all at once,
+   and then wait for all transactions to be committed.
+   This may improve performance in case when multiple transactions are
+   committed into the same block. However this approach may not work if
+   priority mempool is enabled.
+*/
 pub async fn send_batched_messages_and_wait_commit(
     config: &TxConfig,
     max_msg_num: MaxMsgNum,
@@ -48,6 +57,43 @@ pub async fn send_batched_messages_and_wait_commit(
         &config.rpc_address,
         &config.rpc_timeout,
         &mut tx_sync_results,
+    )
+    .await?;
+
+    let events = tx_sync_results
+        .into_iter()
+        .flat_map(|el| el.events)
+        .collect();
+
+    Ok(events)
+}
+
+/**
+   Send batched messages one after another, only after the previous one
+   has been committed. This is only used in case if parallel transactions
+   are committed in the wrong order due to interference from priority mempool.
+*/
+pub async fn sequential_send_batched_messages_and_wait_commit(
+    config: &TxConfig,
+    max_msg_num: MaxMsgNum,
+    max_tx_size: MaxTxSize,
+    key_entry: &KeyEntry,
+    account: &mut Account,
+    tx_memo: &Memo,
+    messages: Vec<Any>,
+) -> Result<Vec<IbcEventWithHeight>, Error> {
+    if messages.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let tx_sync_results = sequential_send_messages_as_batches(
+        config,
+        max_msg_num,
+        max_tx_size,
+        key_entry,
+        account,
+        tx_memo,
+        messages,
     )
     .await?;
 
@@ -107,6 +153,8 @@ async fn send_messages_as_batches(
         return Ok(Vec::new());
     }
 
+    let message_count = messages.len();
+
     let batches = batch_messages(
         config,
         max_msg_num,
@@ -117,6 +165,13 @@ async fn send_messages_as_batches(
         messages,
     )?;
 
+    debug!(
+        "sending {} messages as {} batches to chain {} in parallel",
+        message_count,
+        batches.len(),
+        config.chain_id
+    );
+
     let mut tx_sync_results = Vec::new();
 
     for batch in batches {
@@ -125,35 +180,98 @@ async fn send_messages_as_batches(
         let response =
             send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, batch).await?;
 
-        if response.code.is_err() {
-            // Note: we don't have any height information in this case. This hack will fix itself
-            // once we remove the `ChainError` event (which is not actually an event)
-            let height = Height::new(config.chain_id.version(), 1).unwrap();
+        let tx_sync_result = response_to_tx_sync_result(&config.chain_id, message_count, response);
 
-            let events_per_tx = vec![IbcEventWithHeight::new(IbcEvent::ChainError(format!(
-                "check_tx (broadcast_tx_sync) on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
-                config.chain_id, response.hash, response.code, response.log
-            )), height); message_count];
-
-            let tx_sync_result = TxSyncResult {
-                response,
-                events: events_per_tx,
-                status: TxStatus::ReceivedResponse,
-            };
-
-            tx_sync_results.push(tx_sync_result);
-        } else {
-            let tx_sync_result = TxSyncResult {
-                response,
-                events: Vec::new(),
-                status: TxStatus::Pending { message_count },
-            };
-
-            tx_sync_results.push(tx_sync_result);
-        }
+        tx_sync_results.push(tx_sync_result);
     }
 
     Ok(tx_sync_results)
+}
+
+async fn sequential_send_messages_as_batches(
+    config: &TxConfig,
+    max_msg_num: MaxMsgNum,
+    max_tx_size: MaxTxSize,
+    key_entry: &KeyEntry,
+    account: &mut Account,
+    tx_memo: &Memo,
+    messages: Vec<Any>,
+) -> Result<Vec<TxSyncResult>, Error> {
+    if messages.is_empty() {
+        return Ok(Vec::new());
+    }
+
+    let message_count = messages.len();
+
+    let batches = batch_messages(
+        config,
+        max_msg_num,
+        max_tx_size,
+        key_entry,
+        account,
+        tx_memo,
+        messages,
+    )?;
+
+    debug!(
+        "sending {} messages as {} batches to chain {} in serial",
+        message_count,
+        batches.len(),
+        config.chain_id
+    );
+
+    let mut tx_sync_results = Vec::new();
+
+    for batch in batches {
+        let message_count = batch.len();
+
+        let response =
+            send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, batch).await?;
+
+        let tx_sync_result = response_to_tx_sync_result(&config.chain_id, message_count, response);
+
+        tx_sync_results.push(tx_sync_result);
+
+        wait_for_block_commits(
+            &config.chain_id,
+            &config.rpc_client,
+            &config.rpc_address,
+            &config.rpc_timeout,
+            &mut tx_sync_results,
+        )
+        .await?;
+    }
+
+    Ok(tx_sync_results)
+}
+
+fn response_to_tx_sync_result(
+    chain_id: &ChainId,
+    message_count: usize,
+    response: Response,
+) -> TxSyncResult {
+    if response.code.is_err() {
+        // Note: we don't have any height information in this case. This hack will fix itself
+        // once we remove the `ChainError` event (which is not actually an event)
+        let height = Height::new(chain_id.version(), 1).unwrap();
+
+        let events_per_tx = vec![IbcEventWithHeight::new(IbcEvent::ChainError(format!(
+            "check_tx (broadcast_tx_sync) on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
+            chain_id, response.hash, response.code, response.log
+        )), height); message_count];
+
+        TxSyncResult {
+            response,
+            events: events_per_tx,
+            status: TxStatus::ReceivedResponse,
+        }
+    } else {
+        TxSyncResult {
+            response,
+            events: Vec::new(),
+            status: TxStatus::Pending { message_count },
+        }
+    }
 }
 
 fn batch_messages(
