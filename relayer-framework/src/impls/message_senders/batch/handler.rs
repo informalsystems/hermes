@@ -27,7 +27,6 @@ where
     Batch: BatchContext<
         IbcMessage<Target::TargetChain, Target::CounterpartyChain>,
         IbcEvent<Target::TargetChain, Target::CounterpartyChain>,
-        Relay::Error,
     >,
 {
     pub relay: Relay,
@@ -48,7 +47,7 @@ where
     Relay: HasBatchContext<Target, BatchContext = Batch>,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
     Sender: IbcMessageSender<Relay, Target>,
-    Batch: BatchContext<Message, Event, Error>,
+    Batch: BatchContext<Message, Event, Error = Error>,
     Message: SomeMessage,
     Event: Async,
     TargetChain: IbcChainContext<Target::CounterpartyChain, IbcMessage = Message, IbcEvent = Event>,
@@ -78,7 +77,7 @@ where
         let mut last_sent_time = self.relay.runtime().now();
 
         loop {
-            match Batch::try_receive_messages(&self.messages_receiver).await {
+            match Batch::try_receive_messages(&mut self.messages_receiver).await {
                 Ok(Some(batch)) => {
                     self.pending_batches.push_back(batch);
                     let current_batch_size = self.pending_batches.len();

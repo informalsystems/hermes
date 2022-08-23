@@ -7,7 +7,9 @@ use crate::traits::target::ChainTarget;
 use crate::types::aliases::{IbcEvent, IbcMessage};
 
 #[async_trait]
-pub trait BatchContext<Message, Event, Error>: Async {
+pub trait BatchContext<Message, Event>: Async {
+    type Error: Async;
+
     type MessagesSender: Async;
     type MessagesReceiver: Async;
 
@@ -18,21 +20,24 @@ pub trait BatchContext<Message, Event, Error>: Async {
 
     fn new_result_channel(&self) -> (Self::ResultSender, Self::ResultReceiver);
 
-    fn send_messages(
+    async fn send_messages(
         sender: &Self::MessagesSender,
         messages: Vec<Message>,
         result_sender: Self::ResultSender,
-    );
+    ) -> Result<(), Self::Error>;
 
     async fn try_receive_messages(
-        receiver: &Self::MessagesReceiver,
-    ) -> Result<Option<(Vec<Message>, Self::ResultSender)>, Error>;
+        receiver: &mut Self::MessagesReceiver,
+    ) -> Result<Option<(Vec<Message>, Self::ResultSender)>, Self::Error>;
 
     async fn receive_result(
         result_receiver: Self::ResultReceiver,
-    ) -> Result<Result<Vec<Vec<Event>>, Error>, Error>;
+    ) -> Result<Result<Vec<Vec<Event>>, Self::Error>, Self::Error>;
 
-    fn send_result(result_sender: Self::ResultSender, events: Result<Vec<Vec<Event>>, Error>);
+    fn send_result(
+        result_sender: Self::ResultSender,
+        events: Result<Vec<Vec<Event>>, Self::Error>,
+    ) -> Result<(), Self::Error>;
 }
 
 pub trait HasBatchContext<Target>: RelayContext
@@ -42,7 +47,7 @@ where
     type BatchContext: BatchContext<
         IbcMessage<Target::TargetChain, Target::CounterpartyChain>,
         IbcEvent<Target::TargetChain, Target::CounterpartyChain>,
-        Self::Error,
+        Error = Self::Error,
     >;
 
     fn batch_context(&self) -> &Self::BatchContext;
@@ -52,6 +57,5 @@ where
     ) -> &<Self::BatchContext as BatchContext<
         IbcMessage<Target::TargetChain, Target::CounterpartyChain>,
         IbcEvent<Target::TargetChain, Target::CounterpartyChain>,
-        Self::Error,
     >>::MessagesSender;
 }

@@ -29,7 +29,7 @@ where
 
         let message_sender = context.messages_sender();
 
-        Relay::BatchContext::send_messages(message_sender, messages, result_sender);
+        Relay::BatchContext::send_messages(message_sender, messages, result_sender).await?;
 
         let events = Relay::BatchContext::receive_result(result_receiver).await??;
 
