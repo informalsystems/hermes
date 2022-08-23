@@ -97,7 +97,7 @@ where
         }
     }
 
-    pub async fn process_message_batches(
+    async fn process_message_batches(
         &mut self,
         now: Runtime::Time,
         last_sent_time: &mut Runtime::Time,
@@ -161,7 +161,7 @@ where
         ready_batches
     }
 
-    pub async fn send_ready_batches(
+    async fn send_ready_batches(
         context: &Relay,
         ready_batches: VecDeque<(Vec<Message>, Batch::ResultSender)>,
     ) {

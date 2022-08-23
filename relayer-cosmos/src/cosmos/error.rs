@@ -6,12 +6,17 @@ use ibc_relayer::foreign_client::ForeignClientError;
 use prost::EncodeError;
 
 use crate::cosmos::message_senders::batch::{BatchError, ChannelClosedError};
+use crate::tokio::error::Error as TokioError;
 
 define_error! {
     Error {
         Generic
             [ TraceError<Report> ]
             | _ | { "generic error" },
+
+        Tokio
+            [ TokioError ]
+            | _ | { "tokio runtime error" },
 
         Channel
             [ ChannelError ]
@@ -65,5 +70,11 @@ impl BatchError for Error {
 impl From<ChannelClosedError> for Error {
     fn from(_: ChannelClosedError) -> Error {
         Error::channel_closed()
+    }
+}
+
+impl From<TokioError> for Error {
+    fn from(e: TokioError) -> Error {
+        Error::tokio(e)
     }
 }

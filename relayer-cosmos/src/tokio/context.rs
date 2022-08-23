@@ -1,8 +1,10 @@
 use alloc::sync::Arc;
 use async_trait::async_trait;
 use core::future::Future;
+use core::marker::PhantomData;
 use core::time::Duration;
 use ibc_relayer_framework::impls::message_senders::batch::context::BatchContext;
+use ibc_relayer_framework::one_for_all::traits::error::OfaError;
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntime;
 use ibc_relayer_framework::traits::core::Async;
 use std::time::Instant;
@@ -10,21 +12,33 @@ use tokio::runtime::Runtime;
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::sleep;
 
-use crate::cosmos::error::Error;
+use super::error::Error as TokioError;
 
-#[derive(Clone)]
-pub struct TokioRuntimeContext {
+pub struct TokioRuntimeContext<Error> {
     pub runtime: Arc<Runtime>,
+    pub phantom: PhantomData<Error>,
 }
 
-impl TokioRuntimeContext {
+impl<Error> TokioRuntimeContext<Error> {
     pub fn new(runtime: Arc<Runtime>) -> Self {
-        Self { runtime }
+        Self {
+            runtime,
+            phantom: PhantomData,
+        }
+    }
+}
+
+impl<Error> Clone for TokioRuntimeContext<Error> {
+    fn clone(&self) -> Self {
+        Self::new(self.runtime.clone())
     }
 }
 
 #[async_trait]
-impl OfaRuntime for TokioRuntimeContext {
+impl<Error> OfaRuntime for TokioRuntimeContext<Error>
+where
+    Error: OfaError + From<TokioError>,
+{
     type Error = Error;
 
     type Time = Instant;
@@ -51,10 +65,11 @@ impl OfaRuntime for TokioRuntimeContext {
 }
 
 #[async_trait]
-impl<Message, Event> BatchContext<Message, Event> for TokioRuntimeContext
+impl<Message, Event, Error> BatchContext<Message, Event> for TokioRuntimeContext<Error>
 where
     Message: Async,
     Event: Async,
+    Error: From<TokioError> + Clone + Async,
 {
     type Error = Error;
 
@@ -80,7 +95,7 @@ where
         sender
             .send((messages, result_sender))
             .await
-            .map_err(|_| Error::channel_closed())
+            .map_err(|_| TokioError::channel_closed().into())
     }
 
     async fn try_receive_messages(
@@ -89,14 +104,18 @@ where
         match receiver.try_recv() {
             Ok(batch) => Ok(Some(batch)),
             Err(mpsc::error::TryRecvError::Empty) => Ok(None),
-            Err(mpsc::error::TryRecvError::Disconnected) => Err(Error::channel_closed()),
+            Err(mpsc::error::TryRecvError::Disconnected) => {
+                Err(TokioError::channel_closed().into())
+            }
         }
     }
 
     async fn receive_result(
         result_receiver: Self::ResultReceiver,
     ) -> Result<Result<Vec<Vec<Event>>, Error>, Error> {
-        result_receiver.await.map_err(|_| Error::channel_closed())
+        result_receiver
+            .await
+            .map_err(|_| TokioError::channel_closed().into())
     }
 
     fn send_result(
@@ -105,6 +124,6 @@ where
     ) -> Result<(), Error> {
         result_sender
             .send(events)
-            .map_err(|_| Error::channel_closed())
+            .map_err(|_| TokioError::channel_closed().into())
     }
 }

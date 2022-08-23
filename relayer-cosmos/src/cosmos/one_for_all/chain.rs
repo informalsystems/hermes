@@ -23,9 +23,9 @@ use prost::Message as _;
 use tendermint::abci::responses::Event;
 
 use crate::cosmos::context::chain::CosmosChainContext;
+use crate::cosmos::context::runtime::CosmosRuntimeContext;
 use crate::cosmos::error::Error;
 use crate::cosmos::message::CosmosIbcMessage;
-use crate::tokio::context::TokioRuntimeContext;
 
 #[async_trait]
 impl<Handle> OfaChain for CosmosChainContext<Handle>
@@ -36,7 +36,7 @@ where
 
     type Error = Error;
 
-    type Runtime = TokioRuntimeContext;
+    type Runtime = CosmosRuntimeContext;
 
     type Height = Height;
 
@@ -101,7 +101,7 @@ where
         }
     }
 
-    fn runtime(&self) -> &OfaRuntimeContext<TokioRuntimeContext> {
+    fn runtime(&self) -> &OfaRuntimeContext<CosmosRuntimeContext> {
         &self.runtime
     }
 

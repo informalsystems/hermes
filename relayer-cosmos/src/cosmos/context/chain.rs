@@ -3,7 +3,7 @@ use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::keyring::KeyEntry;
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
 
-use crate::tokio::context::TokioRuntimeContext;
+use crate::cosmos::context::runtime::CosmosRuntimeContext;
 
 #[derive(Clone)]
 pub struct CosmosChainContext<Handle> {
@@ -11,12 +11,12 @@ pub struct CosmosChainContext<Handle> {
     pub signer: Signer,
     pub tx_config: TxConfig,
     pub key_entry: KeyEntry,
-    pub runtime: OfaRuntimeContext<TokioRuntimeContext>,
+    pub runtime: OfaRuntimeContext<CosmosRuntimeContext>,
 }
 
 impl<Handle> CosmosChainContext<Handle> {
     pub fn new(
-        runtime: TokioRuntimeContext,
+        runtime: CosmosRuntimeContext,
         handle: Handle,
         signer: Signer,
         tx_config: TxConfig,
