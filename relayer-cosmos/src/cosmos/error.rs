@@ -1,14 +1,14 @@
 use eyre::Report;
-use flex_error::{define_error, TraceError};
+use flex_error::{define_error, DisplayOnly, TraceError};
 use ibc::core::ics04_channel::error::Error as ChannelError;
 use ibc_relayer::error::Error as RelayerError;
 use ibc_relayer::foreign_client::ForeignClientError;
 use prost::EncodeError;
 
-use crate::cosmos::message_senders::batch::{BatchError, ChannelClosedError};
 use crate::tokio::error::Error as TokioError;
 
 define_error! {
+    #[derive(Clone)]
     Error {
         Generic
             [ TraceError<Report> ]
@@ -19,15 +19,15 @@ define_error! {
             | _ | { "tokio runtime error" },
 
         Channel
-            [ ChannelError ]
+            [ DisplayOnly<ChannelError> ]
             | _ | { "channel error" },
 
         Relayer
-            [ RelayerError ]
+            [ DisplayOnly<RelayerError> ]
             | _ | { "ibc-relayer error" },
 
         ForeignClient
-            [ ForeignClientError ]
+            [ DisplayOnly<ForeignClientError> ]
             | _ | { "foreign client error" },
 
         Encode
@@ -48,28 +48,9 @@ define_error! {
             { retries: usize }
             | e | { format_args!("max retries exceeded after trying for {} time", e.retries) },
 
-        ChannelClosed
-            | _ | { "unexpected closure of internal rust channels" },
-
-        Batch
-            { message: String }
-            | e | { format_args!("error when sending messages as batches: {}", e.message) },
-
         MismatchEventType
             { expected: String, actual: String }
             | e | { format_args!("mismatch event type, expected: {}, actual: {}", e.expected, e.actual) },
-    }
-}
-
-impl BatchError for Error {
-    fn to_batch_error(&self) -> Self {
-        Self::batch(self.to_string())
-    }
-}
-
-impl From<ChannelClosedError> for Error {
-    fn from(_: ChannelClosedError) -> Error {
-        Error::channel_closed()
     }
 }
 

@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use core::future::Future;
 use core::marker::PhantomData;
 use core::time::Duration;
-use ibc_relayer_framework::impls::message_senders::batch::context::BatchContext;
+use ibc_relayer_framework::extras::batch::context::BatchContext;
 use ibc_relayer_framework::one_for_all::traits::error::OfaError;
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntime;
 use ibc_relayer_framework::traits::core::Async;

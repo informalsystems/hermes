@@ -16,7 +16,6 @@ use crate::types::aliases::{IbcEvent, IbcMessage};
 
 use super::config::BatchConfig;
 use super::context::{BatchContext, HasBatchContext};
-use super::error::BatchError;
 
 pub struct BatchMessageHandler<Relay, Target, Sender, Batch>
 where
@@ -48,10 +47,10 @@ where
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
     Sender: IbcMessageSender<Relay, Target>,
     Batch: BatchContext<Message, Event, Error = Error>,
+    TargetChain: IbcChainContext<Target::CounterpartyChain, IbcMessage = Message, IbcEvent = Event>,
     Message: SomeMessage,
     Event: Async,
-    TargetChain: IbcChainContext<Target::CounterpartyChain, IbcMessage = Message, IbcEvent = Event>,
-    Error: BatchError,
+    Error: Clone + Async,
 {
     pub fn spawn_batch_message_handler(
         relay: Relay,
@@ -180,7 +179,7 @@ where
         match send_result {
             Err(e) => {
                 for (_, sender) in senders.into_iter() {
-                    let _ = Batch::send_result(sender, Err(e.as_batch_error()));
+                    let _ = Batch::send_result(sender, Err(e.clone()));
                 }
             }
             Ok(all_events) => {

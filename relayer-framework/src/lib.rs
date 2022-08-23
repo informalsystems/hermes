@@ -8,9 +8,11 @@ extern crate alloc;
 #[cfg(doc)]
 pub mod docs;
 
+mod std_prelude;
+
 pub mod all_for_one;
+pub mod extras;
 pub mod impls;
 pub mod one_for_all;
-mod std_prelude;
 pub mod traits;
 pub mod types;

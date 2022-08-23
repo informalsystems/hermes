@@ -16,7 +16,6 @@ use ibc_relayer::chain::requests::{
     IncludeProof, QueryConsensusStateRequest, QueryHeight, QueryUnreceivedPacketsRequest,
 };
 use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
-use ibc_relayer_framework::one_for_all::impls::default::DefaultComponents;
 use ibc_relayer_framework::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
 use prost::Message as _;
@@ -26,13 +25,14 @@ use crate::cosmos::context::chain::CosmosChainContext;
 use crate::cosmos::context::runtime::CosmosRuntimeContext;
 use crate::cosmos::error::Error;
 use crate::cosmos::message::CosmosIbcMessage;
+use crate::cosmos::one_for_all::components::CosmosComponents;
 
 #[async_trait]
 impl<Handle> OfaChain for CosmosChainContext<Handle>
 where
     Handle: ChainHandle,
 {
-    type Components = DefaultComponents;
+    type Components = CosmosComponents;
 
     type Error = Error;
 
