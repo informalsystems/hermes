@@ -515,6 +515,7 @@ pub mod test_utils {
             address_type: AddressType::default(),
             memo_prefix: Default::default(),
             proof_specs: Default::default(),
+            sequential_batch_tx: false,
         }
     }
 }
