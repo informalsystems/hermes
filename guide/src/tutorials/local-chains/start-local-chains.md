@@ -4,15 +4,69 @@ In this chapter, you will learn how to spawn two Gaia chains, and use Hermes to 
 
 To spawn the chains and configure Hermes accordingly, we will make use of Gaiad Manager `gm` that we installed in the last section [Install Gaiad Manager](gaiad-manager.md)
 
-### Stop existing `gaiad` processes
+### Reset your configuration and start the chains
 
-If this is not the first time you are running the script, you can manually stop the two gaia instances executing the following command to kill all `gaiad` processes:
+Make sure you have the `$HOME/.gm/gm.toml` that we configured in the previous section [Install Gaiad Manager](gaiad-manager.md). If this is not the first time you are running the script, you can manually stop the two gaia instances executing the following command to kill all `gaiad` processes:
 
 ```shell
 killall gaiad
 ```
 
+Then, reset the configuration of every node and every chain with:
+```shell
+gm rm ibc-0
+gm rm ibc-1
+gm rm node-0
+gm rm node-1
+```
+
+
 > __NOTE__: If you have any `Docker` containers running that might be using the same ports as `gaiad` (e.g. port 26657 or port 9090), please ensure you stop them first before proceeding to the next step.
+
+Finally, start the chains with the `start` command.
+
+```bash
+gm start
+```
+
+This configures and starts two __`gaiad`__ instances, one named __`ibc-0`__ and the other __`ibc-1`__
+
+```mermaid
+graph TD
+    A[gm] -->|start| C(start chains)
+    C -->|gaiad| D[ibc-0]
+    C -->|gaiad| F[ibc-1]
+```
+
+If the command runs successfully you should see a message similar to the one below in the terminal:
+
+```shell
+Creating ibc-0 config...
+ibc-0 started, PID: 11244, LOG: $HOME/.gm/ibc-0/log
+Creating ibc-1 config...
+ibc-1 started, PID: 11796, LOG: $HOME/.gm/ibc-1/log
+Creating node-0 config...
+node-0 started, PID: 12342, LOG: $HOME/.gm/node-0/log
+Creating node-1 config...
+node-1 started, PID: 12885, LOG: $HOME/.gm/node-1/log
+```
+
+Run the below command to check the status of the chains
+
+```bash
+gm status
+```
+
+If the command is succesful, you should see a message similar to:
+```
+NODE               PID    RPC   APP  GRPC  HOME_DIR
+ibc-0            11244  27010 27011 27012  $HOME/.gm/ibc-0
+ node-0          12342  27030 27031 27032  $HOME/.gm/node-0
+ibc-1            11796  27020 27021 27022  $HOME/.gm/ibc-1
+ node-1          12885  27040 27041 27042  $HOME/.gm/node-1
+```
+
+
 
 ### Configuration file
 
@@ -162,39 +216,7 @@ Success: Added key testkey ([ADDRESS]) on [CHAIN ID] chain
 ```
 
 > __TROUBLESHOOTING__: 
-> - If the command outputs an error, run `gm rm ibc-0` and `gm rm ibc-1`. 
-> - If it does not out output anything, make sure the path to Hermes' binary is set in `$HOME/.gm/gm.toml`.
-
-### Starting the chains with `gm`
-
-Make sure you have the `$HOME/.gm/gm.toml` that we configured in the previous section [Install Gaiad Manager](gaiad-manager.md) and run the `gm` command below to start the chains.
-
-```bash
-gm start
-```
-
-This configures and starts two __`gaiad`__ instances, one named __`ibc-0`__ and the other __`ibc-1`__
-
-```mermaid
-graph TD
-    A[gm] -->|start| C(start chains)
-    C -->|gaiad| D[ibc-0]
-    C -->|gaiad| F[ibc-1]
-```
-
-If the command runs successfully you should see a message similar to the one below in the terminal:
-
-```shell
-network1 started, PID: 99468, LOG: /Users/testuser/.gm/network1/log
-network2 started, PID: 99538, LOG: /Users/testuser/.gm/network2/log
-ibc-0 started, PID: 99645, LOG: /Users/testuser/.gm/ibc-0/log
-ibc-1 started, PID: 99750, LOG: /Users/testuser/.gm/ibc-1/log
-```
-Run the below command to check the status of the chains
-
-```bash
-gm status
-```
+> - If the command does not out output anything, make sure the path to Hermes' binary is set in `$HOME/.gm/gm.toml`.
 
 ### $HOME/.gm directory
 

@@ -32,7 +32,7 @@
 - [Documentation](./documentation/index.md)
     - [Configuration](./documentation/config.md)
         - [Example Configuration](./documentation/example-config.md)
-    - [Telemetry](./documentation/telemetry.md)
+    - [Telemetry](./documentation/telemetry/index.md)
         - [Operators guide](./documentation/telemetry/operators.md)
         - [Integration](./documentation/telemetry/integration.md)
     - [REST API](./documentation/rest-api.md)
