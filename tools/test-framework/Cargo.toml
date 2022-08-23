@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-test-framework"
-version    = "0.18.0"
+version    = "0.19.0"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -14,10 +14,10 @@ description = """
 """
 
 [dependencies]
-ibc             = { version = "=0.18.0",     path = "../../modules" }
-ibc-relayer     = { version = "=0.18.0",     path = "../../relayer" }
-ibc-relayer-cli = { version = "=1.0.0-rc.2", path = "../../relayer-cli" }
-ibc-proto       = { version = "=0.20.0",     path = "../../proto" }
+ibc             = { version = "=0.19.0",     path = "../../modules" }
+ibc-relayer     = { version = "=0.19.0",     path = "../../relayer" }
+ibc-relayer-cli = { version = "=1.0.0", path = "../../relayer-cli" }
+ibc-proto       = { version = "=0.20.1",     path = "../../proto" }
 tendermint      = { version = "=0.23.9" }
 tendermint-rpc  = { version = "=0.23.9", features = ["http-client", "websocket-client"] }
 
@@ -29,11 +29,10 @@ tracing-subscriber = "0.3.14"
 eyre = "0.6.8"
 color-eyre = "0.6"
 rand = "0.8.5"
-env_logger = "0.9.0"
 hex = "0.4.3"
 serde = "1.0"
 serde_json = "1"
-serde_yaml = "0.9.4"
+serde_yaml = "0.9.9"
 itertools = "0.10"
 toml = "0.5"
 subtle-encoding = "0.5.1"

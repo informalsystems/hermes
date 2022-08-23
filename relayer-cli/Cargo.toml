@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-relayer-cli"
-version    = "1.0.0-rc.2"
+version    = "1.0.0"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -26,11 +26,11 @@ telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server = ["ibc-relayer-rest"]
 
 [dependencies]
-ibc              = { version = "0.18.0", path = "../modules", features = ["std", "clock"] }
-ibc-relayer      = { version = "0.18.0", path = "../relayer" }
-ibc-proto        = { version = "0.20.0", path = "../proto" }
-ibc-telemetry    = { version = "0.18.0", path = "../telemetry", optional = true }
-ibc-relayer-rest = { version = "0.18.0", path = "../relayer-rest", optional = true }
+ibc              = { version = "0.19.0", path = "../modules", features = ["std", "clock"] }
+ibc-relayer      = { version = "0.19.0", path = "../relayer" }
+ibc-proto        = { version = "0.20.1", path = "../proto" }
+ibc-telemetry    = { version = "0.19.0", path = "../telemetry", optional = true }
+ibc-relayer-rest = { version = "0.19.0", path = "../relayer-rest", optional = true }
 
 clap = { version = "3.2", features = ["cargo"] }
 clap_complete = "3.2"
@@ -42,7 +42,7 @@ tracing-subscriber = { version = "0.3.14", features = ["fmt", "env-filter", "jso
 eyre = "0.6.8"
 color-eyre = "0.6"
 oneline-eyre = "0.1"
-futures = "0.3.21"
+futures = "0.3.23"
 toml = "0.5.9"
 serde_derive = "1.0.116"
 serde_json = "1"

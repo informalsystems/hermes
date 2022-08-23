@@ -33,14 +33,20 @@ pub type Telemetry = TelemetryDisabled;
 macro_rules! telemetry {
     ($id:ident, $($args:expr),* $(,)*) => {
         #[cfg(feature = "telemetry")]
+        #[allow(unused_imports, unused_variables)]
         {
+            use ::ibc_telemetry::state::WorkerType;
+
             ::ibc_telemetry::global().$id($($args),*);
         }
     };
 
     ($e:expr) => {
         #[cfg(feature = "telemetry")]
+        #[allow(unused_imports, unused_variables)]
         {
+            use ::ibc_telemetry::state::WorkerType;
+
             $e;
         }
     };

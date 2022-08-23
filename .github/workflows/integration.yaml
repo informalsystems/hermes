@@ -41,6 +41,7 @@ env:
 jobs:
   integration-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     strategy:
       matrix:
         chain:
@@ -65,9 +66,6 @@ jobs:
           - package: ibc-go-v5-simapp
             command: simd
             account_prefix: cosmos
-          - package: osmosis
-            command: osmosisd
-            account_prefix: osmo
           - package: wasmd
             command: wasmd
             account_prefix: wasm
@@ -104,6 +102,7 @@ jobs:
 
   ordered-channel-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v15
@@ -167,6 +166,7 @@ jobs:
 
   model-based-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     strategy:
       matrix:
         gaiad:
