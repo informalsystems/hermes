@@ -1,6 +1,7 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_cosmos::cosmos::context::chain::CosmosChainContext;
 use ibc_relayer_cosmos::cosmos::context::relay::CosmosRelayContext;
+use ibc_relayer_cosmos::tokio::context::TokioRuntimeContext;
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
 use ibc_test_framework::types::binary::chains::ConnectedChains;
 
@@ -11,7 +12,10 @@ where
     ChainA: ChainHandle,
     ChainB: ChainHandle,
 {
+    let runtime = TokioRuntimeContext::new(chains.node_a.value().chain_driver.runtime.clone());
+
     let handler_a = CosmosChainContext::new(
+        runtime.clone(),
         chains.handle_a.clone(),
         chains
             .node_a
@@ -27,6 +31,7 @@ where
     );
 
     let handler_b = CosmosChainContext::new(
+        runtime.clone(),
         chains.handle_b.clone(),
         chains
             .node_b
@@ -42,6 +47,7 @@ where
     );
 
     let relay = CosmosRelayContext::new(
+        runtime,
         handler_a.clone(),
         handler_b.clone(),
         chains.foreign_clients.client_a_to_b.clone(),

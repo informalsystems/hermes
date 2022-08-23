@@ -4,7 +4,7 @@ use ibc_relayer_framework::one_for_all::traits::chain::OfaChainContext;
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
 
 use crate::cosmos::context::chain::CosmosChainContext;
-use crate::cosmos::context::runtime::CosmosRuntime;
+use crate::tokio::context::TokioRuntimeContext;
 
 #[derive(Clone)]
 pub struct CosmosRelayContext<SrcChain, DstChain>
@@ -16,7 +16,7 @@ where
     pub dst_handle: OfaChainContext<CosmosChainContext<DstChain>>,
     pub src_to_dst_client: ForeignClient<DstChain, SrcChain>,
     pub dst_to_src_client: ForeignClient<SrcChain, DstChain>,
-    pub runtime: OfaRuntimeContext<CosmosRuntime>,
+    pub runtime: OfaRuntimeContext<TokioRuntimeContext>,
 }
 
 impl<SrcChain, DstChain> CosmosRelayContext<SrcChain, DstChain>
@@ -25,12 +25,13 @@ where
     DstChain: ChainHandle,
 {
     pub fn new(
+        runtime: TokioRuntimeContext,
         src_handle: CosmosChainContext<SrcChain>,
         dst_handle: CosmosChainContext<DstChain>,
         src_to_dst_client: ForeignClient<DstChain, SrcChain>,
         dst_to_src_client: ForeignClient<SrcChain, DstChain>,
     ) -> Self {
-        let runtime = OfaRuntimeContext::new(CosmosRuntime);
+        let runtime = OfaRuntimeContext::new(runtime);
 
         let context = Self {
             src_handle: OfaChainContext::new(src_handle),

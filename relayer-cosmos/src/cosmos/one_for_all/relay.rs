@@ -16,9 +16,9 @@ use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
 
 use crate::cosmos::context::chain::CosmosChainContext;
 use crate::cosmos::context::relay::CosmosRelayContext;
-use crate::cosmos::context::runtime::CosmosRuntime;
 use crate::cosmos::error::Error;
 use crate::cosmos::message::CosmosIbcMessage;
+use crate::tokio::context::TokioRuntimeContext;
 
 #[async_trait]
 impl<SrcChain, DstChain> OfaRelay for CosmosRelayContext<SrcChain, DstChain>
@@ -30,7 +30,7 @@ where
 
     type Error = Error;
 
-    type Runtime = CosmosRuntime;
+    type Runtime = TokioRuntimeContext;
 
     type SrcChain = CosmosChainContext<SrcChain>;
 
@@ -71,7 +71,7 @@ where
         &packet.timeout_timestamp
     }
 
-    fn runtime(&self) -> &OfaRuntimeContext<CosmosRuntime> {
+    fn runtime(&self) -> &OfaRuntimeContext<TokioRuntimeContext> {
         &self.runtime
     }
 
