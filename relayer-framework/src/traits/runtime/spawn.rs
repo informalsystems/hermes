@@ -9,7 +9,7 @@ pub trait HasSpawner: Async {
 }
 
 pub trait Spawner: Async {
-    fn spawn<F>(&self, task: F) -> F::Output
+    fn spawn<F>(&self, task: F)
     where
         F: Future + Send + 'static,
         F::Output: Send + 'static;

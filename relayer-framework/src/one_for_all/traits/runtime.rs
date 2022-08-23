@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use core::future::Future;
 use core::time::Duration;
 
 use crate::one_for_all::traits::error::OfaError;
@@ -17,8 +18,19 @@ impl<Runtime> OfaRuntimeContext<Runtime> {
 }
 
 #[async_trait]
-pub trait OfaRuntime: Async {
+pub trait OfaRuntime: Clone + Async {
     type Error: OfaError;
 
+    type Time: Async;
+
     async fn sleep(&self, duration: Duration);
+
+    fn now(&self) -> Self::Time;
+
+    fn duration_since(time: &Self::Time, other: &Self::Time) -> Duration;
+
+    fn spawn<F>(&self, task: F)
+    where
+        F: Future + Send + 'static,
+        F::Output: Send + 'static;
 }
