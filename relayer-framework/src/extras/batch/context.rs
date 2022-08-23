@@ -7,8 +7,11 @@ use crate::traits::target::ChainTarget;
 use crate::types::aliases::{IbcEvent, IbcMessage};
 
 #[async_trait]
-pub trait BatchContext<Message, Event>: Async {
+pub trait BatchContext: Async {
     type Error: Async;
+
+    type Message;
+    type Event;
 
     type MessagesSender: Async;
     type MessagesReceiver: Async;
@@ -22,21 +25,21 @@ pub trait BatchContext<Message, Event>: Async {
 
     async fn send_messages(
         sender: &Self::MessagesSender,
-        messages: Vec<Message>,
+        messages: Vec<Self::Message>,
         result_sender: Self::ResultSender,
     ) -> Result<(), Self::Error>;
 
     async fn try_receive_messages(
         receiver: &mut Self::MessagesReceiver,
-    ) -> Result<Option<(Vec<Message>, Self::ResultSender)>, Self::Error>;
+    ) -> Result<Option<(Vec<Self::Message>, Self::ResultSender)>, Self::Error>;
 
     async fn receive_result(
         result_receiver: Self::ResultReceiver,
-    ) -> Result<Result<Vec<Vec<Event>>, Self::Error>, Self::Error>;
+    ) -> Result<Result<Vec<Vec<Self::Event>>, Self::Error>, Self::Error>;
 
     fn send_result(
         result_sender: Self::ResultSender,
-        events: Result<Vec<Vec<Event>>, Self::Error>,
+        events: Result<Vec<Vec<Self::Event>>, Self::Error>,
     ) -> Result<(), Self::Error>;
 }
 
@@ -45,17 +48,12 @@ where
     Target: ChainTarget<Self>,
 {
     type BatchContext: BatchContext<
-        IbcMessage<Target::TargetChain, Target::CounterpartyChain>,
-        IbcEvent<Target::TargetChain, Target::CounterpartyChain>,
+        Message = IbcMessage<Target::TargetChain, Target::CounterpartyChain>,
+        Event = IbcEvent<Target::TargetChain, Target::CounterpartyChain>,
         Error = Self::Error,
     >;
 
     fn batch_context(&self) -> &Self::BatchContext;
 
-    fn messages_sender(
-        &self,
-    ) -> &<Self::BatchContext as BatchContext<
-        IbcMessage<Target::TargetChain, Target::CounterpartyChain>,
-        IbcEvent<Target::TargetChain, Target::CounterpartyChain>,
-    >>::MessagesSender;
+    fn messages_sender(&self) -> &<Self::BatchContext as BatchContext>::MessagesSender;
 }

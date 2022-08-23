@@ -8,8 +8,7 @@ use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
-use ibc_relayer_framework::one_for_all::traits::chain::OfaChain;
-use ibc_relayer_framework::one_for_all::traits::chain::OfaChainContext;
+use ibc_relayer_framework::one_for_all::traits::chain::{OfaChain, OfaChainContext};
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelay;
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
 

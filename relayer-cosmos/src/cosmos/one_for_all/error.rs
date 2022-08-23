@@ -1,6 +1,5 @@
-use ibc_relayer_framework::one_for_all::traits::error::OfaError;
-
 use crate::cosmos::error::Error;
+use ibc_relayer_framework::one_for_all::traits::error::OfaError;
 
 impl OfaError for Error {
     fn is_retryable(&self) -> bool {

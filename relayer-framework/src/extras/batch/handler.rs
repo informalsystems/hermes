@@ -12,7 +12,7 @@ use crate::traits::runtime::sleep::CanSleep;
 use crate::traits::runtime::spawn::{HasSpawner, Spawner};
 use crate::traits::runtime::time::{HasTime, Time};
 use crate::traits::target::ChainTarget;
-use crate::types::aliases::{IbcEvent, IbcMessage};
+use crate::types::aliases::IbcMessage;
 
 use super::config::BatchConfig;
 use super::context::{BatchContext, HasBatchContext};
@@ -23,10 +23,7 @@ where
     Relay: HasBatchContext<Target, BatchContext = Batch>,
     Target: ChainTarget<Relay>,
     Sender: IbcMessageSender<Relay, Target>,
-    Batch: BatchContext<
-        IbcMessage<Target::TargetChain, Target::CounterpartyChain>,
-        IbcEvent<Target::TargetChain, Target::CounterpartyChain>,
-    >,
+    Batch: BatchContext,
 {
     pub relay: Relay,
     pub messages_receiver: Batch::MessagesReceiver,
@@ -46,7 +43,7 @@ where
     Relay: HasBatchContext<Target, BatchContext = Batch>,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
     Sender: IbcMessageSender<Relay, Target>,
-    Batch: BatchContext<Message, Event, Error = Error>,
+    Batch: BatchContext<Message = Message, Event = Event, Error = Error>,
     TargetChain: IbcChainContext<Target::CounterpartyChain, IbcMessage = Message, IbcEvent = Event>,
     Message: SomeMessage,
     Event: Async,

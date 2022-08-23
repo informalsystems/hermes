@@ -3,7 +3,8 @@ use async_trait::async_trait;
 use core::future::Future;
 use core::marker::PhantomData;
 use core::time::Duration;
-use ibc_relayer_framework::extras::batch::context::BatchContext;
+use ibc_relayer_framework::one_for_all::traits::batch::OfaBatch;
+use ibc_relayer_framework::one_for_all::traits::chain::OfaChain;
 use ibc_relayer_framework::one_for_all::traits::error::OfaError;
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntime;
 use ibc_relayer_framework::traits::core::Async;
@@ -65,19 +66,16 @@ where
 }
 
 #[async_trait]
-impl<Message, Event, Error> BatchContext<Message, Event> for TokioRuntimeContext<Error>
+impl<Chain, Error> OfaBatch<Chain> for TokioRuntimeContext<Error>
 where
-    Message: Async,
-    Event: Async,
+    Chain: OfaChain<Error = Error>,
     Error: From<TokioError> + Clone + Async,
 {
-    type Error = Error;
+    type MessagesSender = mpsc::Sender<(Vec<Chain::Message>, Self::ResultSender)>;
+    type MessagesReceiver = mpsc::Receiver<(Vec<Chain::Message>, Self::ResultSender)>;
 
-    type MessagesSender = mpsc::Sender<(Vec<Message>, Self::ResultSender)>;
-    type MessagesReceiver = mpsc::Receiver<(Vec<Message>, Self::ResultSender)>;
-
-    type ResultSender = oneshot::Sender<Result<Vec<Vec<Event>>, Error>>;
-    type ResultReceiver = oneshot::Receiver<Result<Vec<Vec<Event>>, Error>>;
+    type ResultSender = oneshot::Sender<Result<Vec<Vec<Chain::Event>>, Chain::Error>>;
+    type ResultReceiver = oneshot::Receiver<Result<Vec<Vec<Chain::Event>>, Chain::Error>>;
 
     fn new_messages_channel(&self) -> (Self::MessagesSender, Self::MessagesReceiver) {
         mpsc::channel(1024)
@@ -89,9 +87,9 @@ where
 
     async fn send_messages(
         sender: &Self::MessagesSender,
-        messages: Vec<Message>,
+        messages: Vec<Chain::Message>,
         result_sender: Self::ResultSender,
-    ) -> Result<(), Error> {
+    ) -> Result<(), Chain::Error> {
         sender
             .send((messages, result_sender))
             .await
@@ -100,7 +98,7 @@ where
 
     async fn try_receive_messages(
         receiver: &mut Self::MessagesReceiver,
-    ) -> Result<Option<(Vec<Message>, Self::ResultSender)>, Error> {
+    ) -> Result<Option<(Vec<Chain::Message>, Self::ResultSender)>, Chain::Error> {
         match receiver.try_recv() {
             Ok(batch) => Ok(Some(batch)),
             Err(mpsc::error::TryRecvError::Empty) => Ok(None),
@@ -112,7 +110,7 @@ where
 
     async fn receive_result(
         result_receiver: Self::ResultReceiver,
-    ) -> Result<Result<Vec<Vec<Event>>, Error>, Error> {
+    ) -> Result<Result<Vec<Vec<Chain::Event>>, Chain::Error>, Chain::Error> {
         result_receiver
             .await
             .map_err(|_| TokioError::channel_closed().into())
@@ -120,8 +118,8 @@ where
 
     fn send_result(
         result_sender: Self::ResultSender,
-        events: Result<Vec<Vec<Event>>, Error>,
-    ) -> Result<(), Error> {
+        events: Result<Vec<Vec<Chain::Event>>, Chain::Error>,
+    ) -> Result<(), Chain::Error> {
         result_sender
             .send(events)
             .map_err(|_| TokioError::channel_closed().into())
