@@ -27,7 +27,7 @@ pub use error::Error;
 
 pub use filter::PacketFilter;
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct GasPrice {
     pub price: f64,
     pub denom: String,
