@@ -5,12 +5,14 @@ use core::mem;
 use crate::std_prelude::*;
 use crate::traits::contexts::chain::IbcChainContext;
 use crate::traits::contexts::relay::RelayContext;
+use crate::traits::core::Async;
 use crate::traits::ibc_message_sender::IbcMessageSender;
-use crate::traits::message::IbcMessage;
+use crate::traits::message::Message as SomeMessage;
 use crate::traits::runtime::sleep::CanSleep;
 use crate::traits::runtime::spawn::{HasSpawner, Spawner};
 use crate::traits::runtime::time::{HasTime, Time};
 use crate::traits::target::ChainTarget;
+use crate::types::aliases::{IbcEvent, IbcMessage};
 
 use super::config::BatchConfig;
 use super::context::{BatchContext, HasBatchContext};
@@ -22,11 +24,18 @@ where
     Relay: HasBatchContext<Target, BatchContext = Batch>,
     Target: ChainTarget<Relay>,
     Sender: IbcMessageSender<Relay, Target>,
-    Batch: BatchContext,
+    Batch: BatchContext<
+        IbcMessage<Target::TargetChain, Target::CounterpartyChain>,
+        IbcEvent<Target::TargetChain, Target::CounterpartyChain>,
+        Relay::Error,
+    >,
 {
     pub relay: Relay,
     pub messages_receiver: Batch::MessagesReceiver,
-    pub pending_batches: VecDeque<(Vec<Batch::Message>, Batch::ResultSender)>,
+    pub pending_batches: VecDeque<(
+        Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
+        Batch::ResultSender,
+    )>,
     pub config: BatchConfig,
     pub phantom: PhantomData<(Target, Sender)>,
 }
@@ -39,8 +48,9 @@ where
     Relay: HasBatchContext<Target, BatchContext = Batch>,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
     Sender: IbcMessageSender<Relay, Target>,
-    Batch: BatchContext<Message = Message, Event = Event, Error = Error>,
-    Message: IbcMessage<Target::CounterpartyChain>,
+    Batch: BatchContext<Message, Event, Error>,
+    Message: SomeMessage,
+    Event: Async,
     TargetChain: IbcChainContext<Target::CounterpartyChain, IbcMessage = Message, IbcEvent = Event>,
     Error: BatchError,
 {
