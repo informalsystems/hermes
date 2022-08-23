@@ -1,0 +1,129 @@
+# Build the topology
+
+At this point of the tutorial, you should have four chains running and hermes correctly configured. You can perform a `health-check` with the command :
+
+```shell
+hermes health-check
+```
+
+If the command runs successfully you should see a message similar to the one below in the terminal:
+```
+    2022-08-23T15:54:58.150005Z  INFO ThreadId(01) using default configuration from '$HOME/.hermes/config.toml'
+    2022-08-23T15:54:58.150179Z  INFO ThreadId(01) [ibc-0] performing health check...
+    2022-08-23T15:54:58.163298Z  INFO ThreadId(01) chain is healthy chain=ibc-0
+    2022-08-23T15:54:58.163323Z  INFO ThreadId(01) [ibc-1] performing health check...
+    2022-08-23T15:54:58.169132Z  INFO ThreadId(01) chain is healthy chain=ibc-1
+    2022-08-23T15:54:58.169154Z  INFO ThreadId(01) [ibc-2] performing health check...
+    2022-08-23T15:54:58.178418Z  INFO ThreadId(01) chain is healthy chain=ibc-2
+    2022-08-23T15:54:58.178445Z  INFO ThreadId(01) [ibc-3] performing health check...
+    2022-08-23T15:54:58.184615Z  INFO ThreadId(01) chain is healthy chain=ibc-3
+    SUCCESS performed health check for all chains in the config
+```
+
+## Connect all the chains
+
+Execute the following command :
+```shell
+    gm hermes cc
+```
+
+If this command runs succesfully, it should output the following :
+
+```shell
+"$HOME/ibc-rs/target/release/hermes" create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --new-client-connection --yes
+"$HOME/ibc-rs/target/release/hermes" create channel --a-chain ibc-0 --b-chain ibc-2 --a-port transfer --b-port transfer --new-client-connection --yes
+"$HOME/ibc-rs/target/release/hermes" create channel --a-chain ibc-0 --b-chain ibc-3 --a-port transfer --b-port transfer --new-client-connection --yes
+"$HOME/ibc-rs/target/release/hermes" create channel --a-chain ibc-1 --b-chain ibc-2 --a-port transfer --b-port transfer --new-client-connection --yes
+"$HOME/ibc-rs/target/release/hermes" create channel --a-chain ibc-1 --b-chain ibc-3 --a-port transfer --b-port transfer --new-client-connection --yes
+"$HOME/ibc-rs/target/release/hermes" create channel --a-chain ibc-2 --b-chain ibc-3 --a-port transfer --b-port transfer --new-client-connection --yes
+```
+
+Executing these commands will :
+* For every pair of chain, create a client on both chain tracking the state of the counterparty chain.
+* Create a connection between these two clients.
+* Create a `transfer` channel over this connection.
+
+Use the flag `--exec` flag to execute these commands:
+
+```shell
+gm hermes cc --exec
+```
+
+At this point, your network should be fully connected. However, we want to relay on a specific topology presented at the beginning of [Start the local chains](./start-local-chains.md). The following chart displays the current state of the network. The channels that we want to filter out are filled in red while the channels we want to relay on are filled in green  :
+
+
+```mermaid
+flowchart TD 
+    ibc0((ibc-0))
+    ibc0ibc1[[channel-0]]
+    ibc0ibc2[[channel-1]]
+    ibc0ibc3[[channel-2]]
+
+    ibc1((ibc-1))
+    ibc1ibc0[[channel-0]]
+    ibc1ibc2[[channel-1]]
+    ibc1ibc3[[channel-2]]
+
+    ibc2((ibc-2))
+    ibc2ibc0[[channel-0]]
+    ibc2ibc1[[channel-1]]
+    ibc2ibc3[[channel-2]]
+
+    ibc3((ibc-3))
+    ibc3ibc0[[channel-0]]
+    ibc3ibc1[[channel-1]]
+    ibc3ibc2[[channel-2]]
+
+    classDef deny fill:#AA0000,color:#000000;
+    classDef allow fill:#00AA00,color:#000000;
+    class ibc0ibc1 allow;
+    class ibc1ibc0 allow;
+    class ibc0ibc3 allow;
+    class ibc3ibc0 allow;
+    class ibc2ibc1 allow;
+    class ibc1ibc2 allow;
+    class ibc2ibc3 allow;
+    class ibc3ibc2 allow;
+
+
+    class ibc1ibc3 deny;
+    class ibc3ibc1 deny;
+    class ibc0ibc2 deny;
+    class ibc2ibc0 deny;
+
+    ibc0---ibc0ibc1---ibc1ibc0---ibc1
+    ibc0---ibc0ibc2---ibc2ibc0---ibc2
+    ibc0---ibc0ibc3---ibc3ibc0---ibc3
+    ibc1---ibc1ibc2---ibc2ibc1---ibc2
+    ibc1---ibc1ibc3---ibc3ibc1---ibc3
+    ibc2---ibc2ibc3---ibc3ibc2---ibc3
+```
+
+You can verify that everything is correct with the commands:
+
+```shell
+hermes query channels --chain ibc-0 --show-counterparty 
+hermes query channels --chain ibc-1 --show-counterparty
+hermes query channels --chain ibc-2 --show-counterparty
+hermes query channels --chain ibc-3 --show-counterparty
+```
+
+Which should normally output: 
+
+```
+ibc-0: transfer/channel-0 --- ibc-1: transfer/channel-0
+ibc-0: transfer/channel-1 --- ibc-2: transfer/channel-0
+ibc-0: transfer/channel-2 --- ibc-3: transfer/channel-0
+
+ibc-1: transfer/channel-0 --- ibc-0: transfer/channel-0
+ibc-1: transfer/channel-1 --- ibc-2: transfer/channel-1
+ibc-1: transfer/channel-2 --- ibc-3: transfer/channel-1
+
+ibc-2: transfer/channel-0 --- ibc-0: transfer/channel-1
+ibc-2: transfer/channel-1 --- ibc-1: transfer/channel-1
+ibc-2: transfer/channel-2 --- ibc-3: transfer/channel-2
+
+ibc-3: transfer/channel-0 --- ibc-0: transfer/channel-2
+ibc-3: transfer/channel-1 --- ibc-1: transfer/channel-2
+ibc-3: transfer/channel-2 --- ibc-2: transfer/channel-2
+```

@@ -2,6 +2,20 @@
 
 In this chapter, you will learn how to spawn four Gaia chains, connect them in an arbitrary topology and use Hermes to transfer tokens between them.
 
+```mermaid
+flowchart LR
+    ibc0((ibc-0))
+    ibc1((ibc-1))
+    ibc2((ibc-2))
+    ibc3((ibc-3))
+
+    ibc0---ibc1
+    ibc1---ibc2
+    ibc2---ibc3
+    ibc0---ibc3
+    
+```
+
 As for the [Local chains tutorial](../local-chains/index.md), we will make use of Gaiad Manager `gm` that we installed in [Install Gaiad Manager](../pre-requisites/gaiad-manager.md).
 
 ### Reset your configuration
@@ -390,4 +404,4 @@ $HOME/.hermes/
 
 #### Next Steps
 
-[The next section](./topology.md) describes how to create an arbitrary topology between these chains before relaying packets.
+[The next section](./build-the-topology.md) describes how to create an arbitrary topology between these chains before relaying packets.
