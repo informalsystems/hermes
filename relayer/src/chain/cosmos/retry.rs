@@ -4,7 +4,6 @@ use std::thread;
 use tracing::{debug, error, instrument, warn};
 
 use ibc_proto::google::protobuf::Any;
-use std::thread;
 use tendermint::abci::Code;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 

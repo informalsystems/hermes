@@ -70,8 +70,8 @@ impl ExtensionOption {
     }
 }
 
-impl fmt::Display for ExtensionOption {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for ExtensionOption {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
             Self::EthermintDynamicFee(max_priority_price) => {
                 write!(

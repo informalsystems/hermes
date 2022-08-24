@@ -52,7 +52,6 @@ use ibc::{
 };
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 
-use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
 use crate::chain::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::query::balance::query_balance;
 use crate::chain::cosmos::query::denom_trace::query_denom_trace;
@@ -62,6 +61,10 @@ use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query,
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::gas::{default_gas_from_config, max_gas_from_config};
+use crate::chain::cosmos::{
+    batch::sequential_send_batched_messages_and_wait_commit,
+    gas::{calculate_fee, mul_ceil},
+};
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
 use crate::chain::tracking::TrackedMsgs;
 use crate::config::ChainConfig;
@@ -143,6 +146,9 @@ impl CosmosSdkChain {
             .map_err(Error::key_base)
     }
 
+    /// Fetches the trusting period as a `Duration` from the chain config.
+    /// If no trusting period exists in the config, the trusting period is calculated
+    /// as two-thirds of the `unbonding_period`.
     fn trusting_period(&self, unbonding_period: Duration) -> Duration {
         self.config
             .trusting_period
