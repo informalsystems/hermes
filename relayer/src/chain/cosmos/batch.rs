@@ -286,6 +286,8 @@ fn batch_messages(
     let max_message_count = max_msg_num.to_usize();
     let max_tx_size = max_tx_size.into();
 
+    dbg!(config, key_entry, account, tx_memo);
+
     let mut batches = vec![];
 
     // Estimate the overhead of the transaction envelope's encoding,
@@ -337,50 +339,17 @@ fn batch_messages(
 #[cfg(test)]
 mod tests {
     use super::batch_messages;
-    use crate::chain::cosmos::types::account::{Account, AccountNumber, AccountSequence};
-    use crate::chain::cosmos::types::config::TxConfig;
-    use crate::config;
+    use crate::chain::cosmos::test_utils::TestFixture;
     use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
-    use crate::keyring::{self, KeyEntry, KeyRing};
-    use ibc::core::ics24_host::identifier::ChainId;
     use ibc_proto::google::protobuf::Any;
-    use std::fs;
-
-    const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
-
-    fn test_fixture() -> (TxConfig, KeyEntry, Account) {
-        let path = concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/tests/config/fixtures/relayer_conf_example.toml"
-        );
-        let config = config::load(path).expect("could not parse config");
-        let chain_id = ChainId::from_string("chain_A");
-        let chain_config = config.find_chain(&chain_id).unwrap();
-
-        let tx_config = TxConfig::try_from(chain_config).expect("could not obtain tx config");
-
-        let path = concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/tests/config/fixtures/relayer-seed.json"
-        );
-        let seed_file_content = fs::read_to_string(path).unwrap();
-        let keyring = KeyRing::new(keyring::Store::Memory, "cosmos", &chain_id).unwrap();
-        let hd_path = COSMOS_HD_PATH.parse().unwrap();
-        let key_entry = keyring
-            .key_from_seed_file(&seed_file_content, &hd_path)
-            .unwrap();
-
-        let account = Account {
-            number: AccountNumber::new(0),
-            sequence: AccountSequence::new(0),
-        };
-
-        (tx_config, key_entry, account)
-    }
 
     #[test]
     fn batch_does_not_exceed_max_tx_size() {
-        let (config, key_entry, account) = test_fixture();
+        let TestFixture {
+            tx_config,
+            key_entry,
+            account,
+        } = TestFixture::new();
         let messages = vec![
             Any {
                 type_url: "/example.Foo".into(),
@@ -396,7 +365,7 @@ mod tests {
             },
         ];
         let batches = batch_messages(
-            &config,
+            &tx_config,
             MaxMsgNum::default(),
             MaxTxSize::new(214).unwrap(),
             &key_entry,
@@ -420,14 +389,18 @@ mod tests {
 
     #[test]
     fn batch_error_on_oversized_message() {
-        let (config, key_entry, account) = test_fixture();
+        let TestFixture {
+            tx_config,
+            key_entry,
+            account,
+        } = TestFixture::new();
         let messages = vec![Any {
             type_url: "/example.Foo".into(),
             value: vec![0; 6],
         }];
 
         let batches = batch_messages(
-            &config,
+            &tx_config,
             MaxMsgNum::default(),
             MaxTxSize::new(192).unwrap(),
             &key_entry,
@@ -441,7 +414,7 @@ mod tests {
         assert_eq!(batches[0].len(), 1);
 
         let res = batch_messages(
-            &config,
+            &tx_config,
             MaxMsgNum::default(),
             MaxTxSize::new(191).unwrap(),
             &key_entry,
@@ -455,7 +428,11 @@ mod tests {
 
     #[test]
     fn test_batches_are_structured_appropriately_per_max_msg_num() {
-        let (config, key_entry, account) = test_fixture();
+        let TestFixture {
+            tx_config,
+            key_entry,
+            account,
+        } = TestFixture::new();
         // Ensure that when MaxMsgNum is 1, the resulting batch
         // consists of 5 smaller batches, each with a single message
         let messages = vec![
@@ -482,7 +459,7 @@ mod tests {
         ];
 
         let batches = batch_messages(
-            &config,
+            &tx_config,
             MaxMsgNum::new(1).unwrap(),
             MaxTxSize::default(),
             &key_entry,
@@ -501,7 +478,7 @@ mod tests {
         // Ensure that when MaxMsgNum > the number of messages, the resulting
         // batch consists of a single smaller batch with all of the messages
         let batches = batch_messages(
-            &config,
+            &tx_config,
             MaxMsgNum::new(100).unwrap(),
             MaxTxSize::default(),
             &key_entry,
@@ -517,7 +494,11 @@ mod tests {
 
     #[test]
     fn test_batches_are_structured_appropriately_per_max_tx_size() {
-        let (config, key_entry, account) = test_fixture();
+        let TestFixture {
+            tx_config,
+            key_entry,
+            account,
+        } = TestFixture::new();
         // Ensure that when MaxTxSize is only enough to fit each one of the messages,
         // the resulting batch consists of 5 smaller batches, each with a single message.
         let messages = vec![
@@ -544,7 +525,7 @@ mod tests {
         ];
 
         let batches = batch_messages(
-            &config,
+            &tx_config,
             MaxMsgNum::default(),
             MaxTxSize::new(196).unwrap(),
             &key_entry,
@@ -564,7 +545,7 @@ mod tests {
         // resulting batch consists of a single smaller batch with all of
         // messages inside
         let batches = batch_messages(
-            &config,
+            &tx_config,
             MaxMsgNum::default(),
             MaxTxSize::max(),
             &key_entry,
@@ -581,9 +562,13 @@ mod tests {
     #[test]
     #[should_panic(expected = "`max_msg_num` must be greater than or equal to 1, found 0")]
     fn test_max_msg_num_of_zero_panics() {
-        let (config, key_entry, account) = test_fixture();
+        let TestFixture {
+            tx_config,
+            key_entry,
+            account,
+        } = TestFixture::new();
         let _batches = batch_messages(
-            &config,
+            &tx_config,
             MaxMsgNum::new(0).unwrap(),
             MaxTxSize::default(),
             &key_entry,
