@@ -9,6 +9,7 @@ use alloc::collections::BTreeMap;
 use core::{fmt, time::Duration};
 use std::{fs, fs::File, io::Write, path::Path};
 
+use ibc_proto::google::protobuf::Any;
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client_verifier::types::TrustThreshold;
 
@@ -18,6 +19,8 @@ use ibc::timestamp::ZERO_DURATION;
 
 use crate::chain::ChainType;
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
+use crate::error::Error as RelayerError;
+use crate::extension_options::ExtensionOptionDynamicFeeTx;
 use crate::keyring::Store;
 
 pub use error::Error;
@@ -39,6 +42,42 @@ impl GasPrice {
 impl fmt::Display for GasPrice {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}{}", self.price, self.denom)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    rename_all = "snake_case",
+    tag = "type",
+    content = "value",
+    deny_unknown_fields
+)]
+pub enum ExtensionOption {
+    EthermintDynamicFee(String),
+}
+
+impl ExtensionOption {
+    pub fn to_any(&self) -> Result<Any, RelayerError> {
+        match self {
+            Self::EthermintDynamicFee(max_priority_price) => ExtensionOptionDynamicFeeTx {
+                max_priority_price: max_priority_price.into(),
+            }
+            .to_any(),
+        }
+    }
+}
+
+impl fmt::Display for ExtensionOption {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::EthermintDynamicFee(max_priority_price) => {
+                write!(
+                    f,
+                    "EthermintDynamicFee(max_priority_price: {})",
+                    max_priority_price
+                )
+            }
+        }
     }
 }
 
@@ -372,6 +411,15 @@ pub struct ChainConfig {
     )]
     pub proof_specs: Option<ProofSpecs>,
 
+    // This is an undocumented and hidden config to make the relayer wait for
+    // DeliverTX before sending the next transaction when sending messages in
+    // multiple batches. We will instruct relayer operators to turn this on
+    // in case relaying failed in a chain with priority mempool enabled.
+    // Warning: turning this on may cause degradation in performance.
+    #[serde(default)]
+    pub sequential_batch_tx: bool,
+
+    // these two need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML
     /// The trust threshold defines what fraction of the total voting power of a known
     /// and trusted validator set is sufficient for a commit to be accepted going forward.
     #[serde(default)]
@@ -384,6 +432,8 @@ pub struct ChainConfig {
 
     #[serde(default)]
     pub address_type: AddressType,
+    #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]
+    pub extension_options: Vec<ExtensionOption>,
 }
 
 /// Attempt to load and parse the TOML config file as a `Config`.

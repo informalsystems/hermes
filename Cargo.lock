@@ -1514,6 +1514,7 @@ dependencies = [
  "tendermint",
  "tendermint-rpc",
  "time",
+ "toml",
 ]
 
 [[package]]
