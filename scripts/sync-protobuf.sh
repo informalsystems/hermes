@@ -38,9 +38,9 @@ echo "IBC_GO_COMMIT: $IBC_GO_COMMIT"
 
 if [[ "$COSMOS_SDK_COMMIT" =~ ^[a-zA-Z0-9]{40}$ ]]
 then
-	SDK_COMMIT_OPTION="--sdk-commit"
+    SDK_COMMIT_OPTION="--sdk-commit"
 else
-	SDK_COMMIT_OPTION="--sdk-tag"
+    SDK_COMMIT_OPTION="--sdk-tag"
 fi
 
 # If the git directories does not exist, clone them as
@@ -49,18 +49,18 @@ fi
 
 if [[ ! -e "$COSMOS_SDK_GIT" ]]
 then
-	echo "Cloning cosmos-sdk source code to as bare git repository to $COSMOS_SDK_GIT"
-	git clone --mirror https://github.com/cosmos/cosmos-sdk.git "$COSMOS_SDK_GIT"
+    echo "Cloning cosmos-sdk source code to as bare git repository to $COSMOS_SDK_GIT"
+    git clone --mirror https://github.com/cosmos/cosmos-sdk.git "$COSMOS_SDK_GIT"
 else
-	echo "Using existing cosmos-sdk bare git repository at $COSMOS_SDK_GIT"
+    echo "Using existing cosmos-sdk bare git repository at $COSMOS_SDK_GIT"
 fi
 
 if [[ ! -e "$IBC_GO_GIT" ]]
 then
-	echo "Cloning ibc-go source code to as bare git repository to $IBC_GO_GIT"
-	git clone --mirror https://github.com/cosmos/ibc-go.git "$IBC_GO_GIT"
+    echo "Cloning ibc-go source code to as bare git repository to $IBC_GO_GIT"
+    git clone --mirror https://github.com/cosmos/ibc-go.git "$IBC_GO_GIT"
 else
-	echo "Using existing ibc-go bare git repository at $IBC_GO_GIT"
+    echo "Using existing ibc-go bare git repository at $IBC_GO_GIT"
 fi
 
 # Update the repositories using git fetch. This is so that
@@ -87,6 +87,9 @@ git checkout "$COSMOS_SDK_COMMIT"
 # proto-compiler uses the branch name as the commit
 # output. Otherwise it will just output HEAD
 git checkout -b "$COSMOS_SDK_COMMIT"
+
+cd proto
+buf export -v -o ../proto-include
 popd
 
 IBC_GO_DIR=$(mktemp -d /tmp/ibc-go-XXXXXXXX)
@@ -95,6 +98,9 @@ pushd "$IBC_GO_DIR"
 git clone "$IBC_GO_GIT" .
 git checkout "$IBC_GO_COMMIT"
 git checkout -b "$IBC_GO_COMMIT"
+
+cd proto
+buf export -v -o ../proto-include
 popd
 
 # Remove the existing generated protobuf files
@@ -113,7 +119,9 @@ cargo build --locked
 # and once for no-std version with --build-tonic set to false
 
 cargo run --locked -- compile \
-	--sdk "$COSMOS_SDK_DIR" --ibc "$IBC_GO_DIR" --out ../proto/src/prost
+  --sdk "$COSMOS_SDK_DIR/proto-include" \
+  --ibc "$IBC_GO_DIR/proto-include" \
+  --out ../proto/src/prost
 
 # Remove the temporary checkouts of the repositories
 
