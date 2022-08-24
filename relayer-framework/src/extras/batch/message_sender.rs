@@ -7,18 +7,22 @@ use crate::traits::contexts::relay::RelayContext;
 use crate::traits::ibc_message_sender::IbcMessageSender;
 use crate::traits::target::ChainTarget;
 
-pub struct BatchedMessageSender<InSender> {
-    pub sender: InSender,
+pub struct SendMessagetoBatchWorker;
+
+pub trait HasIbcMessageSenderForBatchWorker<Target>: RelayContext
+where
+    Target: ChainTarget<Self>,
+{
+    type IbcMessageSenderForBatchWorker: IbcMessageSender<Self, Target>;
 }
 
 #[async_trait]
-impl<InSender, Relay, Target, TargetChain> IbcMessageSender<Relay, Target>
-    for BatchedMessageSender<InSender>
+impl<Relay, Target, TargetChain> IbcMessageSender<Relay, Target> for SendMessagetoBatchWorker
 where
     Relay: RelayContext,
     Relay: HasBatchContext<Target>,
+    Relay: HasIbcMessageSenderForBatchWorker<Target>,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
-    InSender: IbcMessageSender<Relay, Target>,
     TargetChain: IbcChainContext<Target::CounterpartyChain>,
 {
     async fn send_messages(

@@ -3,7 +3,6 @@ use core::marker::PhantomData;
 use crate::std_prelude::*;
 use crate::traits::contexts::chain::IbcChainContext;
 use crate::traits::contexts::relay::RelayContext;
-use crate::traits::ibc_message_sender::{HasIbcMessageSender, IbcMessageSender};
 use crate::traits::runtime::log::{HasLogger, LevelDebug};
 use crate::traits::runtime::sleep::CanSleep;
 use crate::traits::runtime::spawn::HasSpawner;
@@ -12,7 +11,7 @@ use crate::traits::target::ChainTarget;
 
 use super::config::BatchConfig;
 use super::context::{BatchContext, HasBatchContext};
-use super::message_sender::BatchedMessageSender;
+use super::message_sender::HasIbcMessageSenderForBatchWorker;
 use super::worker::BatchMessageWorker;
 
 pub struct BatchMessageWorkerSpawner<Target>(PhantomData<Target>);
@@ -30,16 +29,14 @@ where
     );
 }
 
-impl<Relay, Target, Sender, TargetChain, Runtime> CanSpawnBatchMessageWorker<Relay, Target>
+impl<Relay, Target, TargetChain, Runtime> CanSpawnBatchMessageWorker<Relay, Target>
     for BatchMessageWorkerSpawner<Target>
 where
     Relay: RelayContext<Runtime = Runtime>,
-    Relay: HasIbcMessageSender<Target, IbcMessageSender = BatchedMessageSender<Sender>>,
-    Sender: IbcMessageSender<Relay, Target>,
+    Relay: HasIbcMessageSenderForBatchWorker<Target>,
     Runtime: HasTime + CanSleep + HasSpawner + HasLogger<LevelDebug>,
     Relay: HasBatchContext<Target>,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
-    Sender: IbcMessageSender<Relay, Target>,
     TargetChain: IbcChainContext<Target::CounterpartyChain>,
     Relay::Error: Clone,
 {
@@ -48,7 +45,7 @@ where
         config: BatchConfig,
         messages_receiver: <Relay::BatchContext as BatchContext>::MessagesReceiver,
     ) {
-        <BatchMessageWorker<Relay, Target, Sender>>::spawn_batch_message_worker(
+        <BatchMessageWorker<Relay, Target, Relay::IbcMessageSenderForBatchWorker>>::spawn_batch_message_worker(
             relay,
             config,
             messages_receiver,
