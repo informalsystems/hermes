@@ -247,7 +247,7 @@ trust_threshold = { numerator = '1', denominator = '3' }
 policy = 'allow'
 list = [
     ['transfer', 'channel-0'],
-    ['transfer', 'channel-2'],
+    ['transfer', 'channel-1'],
 ]
 
 [[chains]]
