@@ -33,7 +33,7 @@ where
     ) -> Self {
         let runtime = OfaRuntimeContext::new(runtime);
 
-        let context = Self {
+        let relay = Self {
             src_handle: OfaChainContext::new(src_handle),
             dst_handle: OfaChainContext::new(dst_handle),
             src_to_dst_client,
@@ -41,6 +41,6 @@ where
             runtime,
         };
 
-        context
+        relay
     }
 }

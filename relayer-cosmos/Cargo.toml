@@ -16,7 +16,8 @@ description  = """
 all-features = true
 
 [features]
-default   = ["flex-error/std", "flex-error/eyre_tracer"]
+default   = ["flex-error/std", "flex-error/eyre_tracer", "batch"]
+batch = []
 
 [dependencies]
 ibc           = { version = "0.19.0", path = "../modules" }

@@ -17,7 +17,11 @@ pub struct CosmosChainContext<Handle> {
     pub tx_config: TxConfig,
     pub key_entry: KeyEntry,
     pub runtime: OfaRuntimeContext<CosmosRuntimeContext>,
+
+    #[cfg(feature = "batch")]
     pub batch: OfaBatchContext<Self, CosmosRuntimeContext>,
+
+    #[cfg(feature = "batch")]
     pub batch_sender: mpsc::Sender<(
         Vec<CosmosIbcMessage>,
         oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
@@ -25,7 +29,29 @@ pub struct CosmosChainContext<Handle> {
 }
 
 impl<Handle> CosmosChainContext<Handle> {
+    #[cfg(not(feature = "batch"))]
     pub fn new(
+        runtime: CosmosRuntimeContext,
+        handle: Handle,
+        signer: Signer,
+        tx_config: TxConfig,
+        key_entry: KeyEntry,
+    ) -> Self {
+        let runtime = OfaRuntimeContext::new(runtime);
+
+        let chain = Self {
+            handle,
+            signer,
+            tx_config,
+            key_entry,
+            runtime,
+        };
+
+        chain
+    }
+
+    #[cfg(feature = "batch")]
+    pub fn new_with_batch(
         runtime: CosmosRuntimeContext,
         handle: Handle,
         signer: Signer,

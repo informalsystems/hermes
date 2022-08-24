@@ -16,13 +16,18 @@ use ibc_relayer::chain::requests::{
     IncludeProof, QueryConsensusStateRequest, QueryHeight, QueryUnreceivedPacketsRequest,
 };
 use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
-use ibc_relayer_framework::one_for_all::components::batch::BatchComponents;
 use ibc_relayer_framework::one_for_all::traits::batch::{OfaBatchContext, OfaChainWithBatch};
 use ibc_relayer_framework::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
 use prost::Message as _;
 use tendermint::abci::responses::Event;
 use tokio::sync::{mpsc, oneshot};
+
+#[cfg(not(feature = "batch"))]
+use ibc_relayer_framework::one_for_all::components::default::DefaultComponents;
+
+#[cfg(feature = "batch")]
+use ibc_relayer_framework::one_for_all::components::batch::BatchComponents;
 
 use crate::cosmos::context::chain::CosmosChainContext;
 use crate::cosmos::context::runtime::CosmosRuntimeContext;
@@ -34,6 +39,10 @@ impl<Handle> OfaChain for CosmosChainContext<Handle>
 where
     Handle: ChainHandle,
 {
+    #[cfg(not(feature = "batch"))]
+    type Components = DefaultComponents;
+
+    #[cfg(feature = "batch")]
     type Components = BatchComponents;
 
     type Error = Error;
@@ -190,6 +199,7 @@ where
     }
 }
 
+#[cfg(feature = "batch")]
 impl<Handle> OfaChainWithBatch for CosmosChainContext<Handle>
 where
     Handle: ChainHandle,
