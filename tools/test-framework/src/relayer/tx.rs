@@ -53,6 +53,8 @@ pub fn new_tx_config_for_test(
 
     let address_type = Default::default();
 
+    let extension_options = Default::default();
+
     Ok(TxConfig {
         chain_id,
         gas_config,
@@ -61,5 +63,6 @@ pub fn new_tx_config_for_test(
         grpc_address,
         rpc_timeout,
         address_type,
+        extension_options,
     })
 }
