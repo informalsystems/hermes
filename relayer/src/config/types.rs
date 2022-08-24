@@ -249,10 +249,10 @@ pub mod memo {
         }
     }
 
-    use core::fmt;
+    use core::fmt::{Display, Error as FmtError, Formatter};
 
-    impl fmt::Display for Memo {
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    impl Display for Memo {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
             write!(f, "{}", self.as_str())
         }
     }

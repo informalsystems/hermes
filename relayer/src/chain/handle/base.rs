@@ -1,4 +1,4 @@
-use core::fmt::Debug;
+use core::fmt::{Debug, Display, Error as FmtError, Formatter};
 
 use crossbeam_channel as channel;
 use tracing::Span;
@@ -72,6 +72,12 @@ impl BaseChainHandle {
             .map_err(Error::send)?;
 
         receiver.recv().map_err(Error::channel_receive)?
+    }
+}
+
+impl Display for BaseChainHandle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "BaseChainHandle {{ chain_id: {} }}", self.chain_id)
     }
 }
 

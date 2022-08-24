@@ -1,5 +1,5 @@
 use alloc::sync::Arc;
-use core::fmt::{self, Debug};
+use core::fmt::{self, Debug, Display};
 
 use crossbeam_channel as channel;
 use tracing::Span;
@@ -345,7 +345,7 @@ pub enum ChainRequest {
     },
 }
 
-pub trait ChainHandle: Clone + Send + Sync + Debug + 'static {
+pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
     fn new(chain_id: ChainId, sender: channel::Sender<(Span, ChainRequest)>) -> Self;
 
     /// Get the [`ChainId`] of this chain.

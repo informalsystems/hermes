@@ -1,3 +1,4 @@
+use core::fmt::{Display, Error as FmtError, Formatter};
 use crossbeam_channel as channel;
 use tracing::Span;
 
@@ -57,6 +58,16 @@ impl<Handle> CachingChainHandle<Handle> {
 
     fn inner(&self) -> &Handle {
         &self.inner
+    }
+}
+
+impl<Handle: ChainHandle> Display for CachingChainHandle<Handle> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(
+            f,
+            "CachingChainHandle {{ chain_id: {} }}",
+            self.inner().id()
+        )
     }
 }
 

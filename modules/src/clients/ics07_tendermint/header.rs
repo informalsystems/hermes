@@ -1,4 +1,5 @@
 use core::cmp::Ordering;
+use core::fmt::{Display, Error as FmtError, Formatter};
 
 use bytes::Buf;
 use prost::Message;
@@ -8,6 +9,7 @@ use tendermint::validator::Set as ValidatorSet;
 use tendermint_proto::Protobuf;
 
 use crate::alloc::string::ToString;
+use crate::utils::pretty::{PrettySignedHeader, PrettyValidatorSet};
 
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 
@@ -29,8 +31,14 @@ pub struct Header {
 }
 
 impl core::fmt::Debug for Header {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, " Header {{...}}")
+    }
+}
+
+impl Display for Header {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "Header {{ signed_header: {}, validator_set: {}, trusted_height: {}, trusted_validator_set: {} }}", PrettySignedHeader(&self.signed_header), PrettyValidatorSet(&self.validator_set), self.trusted_height, PrettyValidatorSet(&self.trusted_validator_set))
     }
 }
 

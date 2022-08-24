@@ -52,10 +52,6 @@ use ibc::{
 };
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 
-use crate::chain::cosmos::batch::{
-    send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
-};
-use crate::chain::cosmos::encode::encode_to_bech32;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
 use crate::chain::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::query::balance::query_balance;
@@ -77,6 +73,16 @@ use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::{account::Balance, event::IbcEventWithHeight};
 use crate::{chain::client::ClientSettings, event::ibc_event_try_from_abci_event};
+use crate::{
+    chain::cosmos::batch::{
+        send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
+    },
+    util::pretty::{PrettyIdentifiedClientState, PrettyIdentifiedConnection},
+};
+use crate::{
+    chain::cosmos::encode::encode_to_bech32,
+    util::pretty::{PrettyConsensusStateWithHeight, PrettyIdentifiedChannel},
+};
 
 use super::requests::{
     IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
@@ -108,7 +114,6 @@ pub mod wait;
 /// fraction of the maximum block size defined in the Tendermint core consensus parameters.
 pub const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 // https://github.com/cosmos/cosmos-sdk/blob/v0.44.0/types/errors/errors.go#L115-L117
-
 pub struct CosmosSdkChain {
     config: ChainConfig,
     tx_config: TxConfig,
@@ -782,7 +787,17 @@ impl ChainEndpoint for CosmosSdkChain {
         let mut clients: Vec<IdentifiedAnyClientState> = response
             .client_states
             .into_iter()
-            .filter_map(|cs| IdentifiedAnyClientState::try_from(cs).ok())
+            .filter_map(|cs| {
+                IdentifiedAnyClientState::try_from(cs.clone())
+                    .map_err(|e| {
+                        warn!(
+                            "failed to parse client state {}. Error: {}",
+                            PrettyIdentifiedClientState(&cs),
+                            e
+                        )
+                    })
+                    .ok()
+            })
             .collect();
 
         // Sort by client identifier counter
@@ -888,7 +903,17 @@ impl ChainEndpoint for CosmosSdkChain {
         let mut consensus_states: Vec<AnyConsensusStateWithHeight> = response
             .consensus_states
             .into_iter()
-            .filter_map(|cs| TryFrom::try_from(cs).ok())
+            .filter_map(|cs| {
+                TryFrom::try_from(cs.clone())
+                    .map_err(|e| {
+                        warn!(
+                            "failed to parse consensus state {}. Error: {}",
+                            PrettyConsensusStateWithHeight(&cs),
+                            e
+                        )
+                    })
+                    .ok()
+            })
             .collect();
         consensus_states.sort_by(|a, b| a.height.cmp(&b.height));
         consensus_states.reverse();
@@ -954,13 +979,14 @@ impl ChainEndpoint for CosmosSdkChain {
             Err(e) => return Err(Error::grpc_status(e)),
         };
 
-        // TODO: add warnings for any identifiers that fail to parse (below).
-        //      similar to the parsing in `query_connection_channels`.
-
         let ids = response
             .connection_paths
             .iter()
-            .filter_map(|id| ConnectionId::from_str(id).ok())
+            .filter_map(|id| {
+                ConnectionId::from_str(id)
+                    .map_err(|e| warn!("connection with ID {} failed parsing. Error: {}", id, e))
+                    .ok()
+            })
             .collect();
 
         Ok(ids)
@@ -988,13 +1014,20 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(Error::grpc_status)?
             .into_inner();
 
-        // TODO: add warnings for any identifiers that fail to parse (below).
-        //      similar to the parsing in `query_connection_channels`.
-
         let connections = response
             .connections
             .into_iter()
-            .filter_map(|co| IdentifiedConnectionEnd::try_from(co).ok())
+            .filter_map(|co| {
+                IdentifiedConnectionEnd::try_from(co.clone())
+                    .map_err(|e| {
+                        warn!(
+                            "connection with ID {} failed parsing. Error: {}",
+                            PrettyIdentifiedConnection(&co),
+                            e
+                        )
+                    })
+                    .ok()
+            })
             .collect();
 
         Ok(connections)
@@ -1101,13 +1134,20 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(Error::grpc_status)?
             .into_inner();
 
-        // TODO: add warnings for any identifiers that fail to parse (below).
-        //  https://github.com/informalsystems/ibc-rs/pull/506#discussion_r555945560
-
         let channels = response
             .channels
             .into_iter()
-            .filter_map(|ch| IdentifiedChannelEnd::try_from(ch).ok())
+            .filter_map(|ch| {
+                IdentifiedChannelEnd::try_from(ch.clone())
+                    .map_err(|e| {
+                        warn!(
+                            "channel with ID {} failed parsing. Error: {}",
+                            PrettyIdentifiedChannel(&ch),
+                            e
+                        )
+                    })
+                    .ok()
+            })
             .collect();
         Ok(channels)
     }
@@ -1137,7 +1177,17 @@ impl ChainEndpoint for CosmosSdkChain {
         let channels = response
             .channels
             .into_iter()
-            .filter_map(|ch| IdentifiedChannelEnd::try_from(ch).ok())
+            .filter_map(|ch| {
+                IdentifiedChannelEnd::try_from(ch.clone())
+                    .map_err(|e| {
+                        warn!(
+                            "channel with ID {} failed parsing. Error: {}",
+                            PrettyIdentifiedChannel(&ch),
+                            e
+                        )
+                    })
+                    .ok()
+            })
             .collect();
         Ok(channels)
     }

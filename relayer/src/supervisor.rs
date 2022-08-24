@@ -146,7 +146,7 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     )
     .scan_chains();
 
-    info!("Scanned chains:");
+    info!("scanned chains:");
     info!("{}", scan);
 
     spawn_context(&config, &mut registry.write(), &mut workers.acquire_write()).spawn_workers(scan);

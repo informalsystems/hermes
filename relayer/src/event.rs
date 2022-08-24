@@ -1,4 +1,4 @@
-use core::fmt::{self, Display, Formatter};
+use core::fmt::{Display, Error as FmtError, Formatter};
 use ibc::{
     core::ics02_client::{
         error::Error as ClientError,
@@ -43,20 +43,8 @@ impl IbcEventWithHeight {
 }
 
 impl Display for IbcEventWithHeight {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{} at height {}", self.event, self.height)
-    }
-}
-
-/// For use in debug messages
-pub struct PrettyEvents<'a>(pub &'a [IbcEventWithHeight]);
-impl<'a> Display for PrettyEvents<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "events:")?;
-        for v in self.0 {
-            writeln!(f, "\t{}", v)?;
-        }
-        Ok(())
     }
 }
 

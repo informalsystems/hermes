@@ -1,5 +1,6 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the client module.
 
+use core::fmt::{Display, Error as FmtError, Formatter};
 use serde_derive::{Deserialize, Serialize};
 use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
@@ -42,6 +43,12 @@ impl NewBlock {
     }
 }
 
+impl Display for NewBlock {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "NewBlock {{ height: {} }}", self.height)
+    }
+}
+
 impl From<NewBlock> for IbcEvent {
     fn from(v: NewBlock) -> Self {
         IbcEvent::NewBlock(v)
@@ -62,6 +69,16 @@ impl Default for Attributes {
             client_type: ClientType::Tendermint,
             consensus_height: Height::new(0, 1).unwrap(),
         }
+    }
+}
+
+impl Display for Attributes {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(
+            f,
+            "Attributes {{ client_id: {}, client_type: {}, consensus_height: {} }}",
+            self.client_id, self.client_type, self.consensus_height
+        )
     }
 }
 
@@ -98,6 +115,12 @@ pub struct CreateClient(pub Attributes);
 impl CreateClient {
     pub fn client_id(&self) -> &ClientId {
         &self.0.client_id
+    }
+}
+
+impl Display for CreateClient {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "CreateClient {{ {} }}", self.0)
     }
 }
 
@@ -144,6 +167,23 @@ impl UpdateClient {
     }
 }
 
+impl Display for UpdateClient {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        match &self.header {
+            Some(header) => write!(
+                f,
+                "UpdateClient {{ common: {}, header: {} }}",
+                self.common, header
+            ),
+            None => write!(
+                f,
+                "UpdateClient {{ common: {}, header: None }}",
+                self.common
+            ),
+        }
+    }
+}
+
 impl From<Attributes> for UpdateClient {
     fn from(attrs: Attributes) -> Self {
         UpdateClient {
@@ -187,6 +227,12 @@ impl ClientMisbehaviour {
     }
 }
 
+impl Display for ClientMisbehaviour {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "ClientMisbehaviour {{ {} }}", self.0)
+    }
+}
+
 impl From<Attributes> for ClientMisbehaviour {
     fn from(attrs: Attributes) -> Self {
         ClientMisbehaviour(attrs)
@@ -216,6 +262,12 @@ pub struct UpgradeClient(pub Attributes);
 impl UpgradeClient {
     pub fn client_id(&self) -> &ClientId {
         &self.0.client_id
+    }
+}
+
+impl Display for UpgradeClient {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "UpgradeClient {{ {} }}", self.0)
     }
 }
 

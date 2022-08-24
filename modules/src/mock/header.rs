@@ -1,3 +1,4 @@
+use core::fmt::{Display, Error as FmtError, Formatter};
 use serde_derive::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
@@ -24,6 +25,16 @@ impl Default for MockHeader {
             height: Height::new(0, 1).unwrap(),
             timestamp: Default::default(),
         }
+    }
+}
+
+impl Display for MockHeader {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(
+            f,
+            "MockHeader {{ height: {}, timestamp: {} }}",
+            self.height, self.timestamp
+        )
     }
 }
 

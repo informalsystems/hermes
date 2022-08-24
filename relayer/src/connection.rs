@@ -1,3 +1,4 @@
+use core::fmt::{Display, Error as FmtError, Formatter};
 use core::time::Duration;
 use std::thread;
 
@@ -26,6 +27,7 @@ use crate::chain::requests::{
 use crate::chain::tracking::TrackedMsgs;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Connection as WorkerConnectionObject;
+use crate::util::pretty::{PrettyDuration, PrettyOption};
 use crate::util::retry::{retry_count, retry_with_index, RetryResult};
 use crate::util::task::Next;
 
@@ -92,6 +94,23 @@ pub struct ConnectionSide<Chain: ChainHandle> {
     connection_id: Option<ConnectionId>,
 }
 
+impl<Chain: ChainHandle> Display for ConnectionSide<Chain> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        match &self.connection_id {
+            Some(connection_id) => write!(
+                f,
+                "ConnectionSide {{ chain: {}, client_id: {}, connection_id: {} }}",
+                self.chain, self.client_id, connection_id
+            ),
+            None => write!(
+                f,
+                "ConnectionSide {{ chain: {}, client_id: {}, connection_id: None }}",
+                self.chain, self.client_id
+            ),
+        }
+    }
+}
+
 impl<Chain: ChainHandle> ConnectionSide<Chain> {
     pub fn new(chain: Chain, client_id: ClientId, connection_id: Option<ConnectionId>) -> Self {
         Self {
@@ -123,6 +142,18 @@ pub struct Connection<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub delay_period: Duration,
     pub a_side: ConnectionSide<ChainA>,
     pub b_side: ConnectionSide<ChainB>,
+}
+
+impl<ChainA: ChainHandle, ChainB: ChainHandle> Display for Connection<ChainA, ChainB> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(
+            f,
+            "Connection {{ delay_period: {}, a_side: {}, b_side: {} }}",
+            PrettyDuration(&self.delay_period),
+            self.a_side,
+            self.b_side
+        )
+    }
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
@@ -495,13 +526,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         if a_counterparty_id.is_some() && a_counterparty_id != relayer_b_id.as_ref() {
             warn!(
-                "updating the expected {:?} of side_b({}) since it is different than the \
-                counterparty of {:?}: {:?}, on {}. This is typically caused by crossing handshake \
+                "updating the expected {} of side_b({}) since it is different than the \
+                counterparty of {}: {}, on {}. This is typically caused by crossing handshake \
                 messages in the presence of multiple relayers.",
-                relayer_b_id,
+                PrettyOption(&relayer_b_id),
                 self.b_chain().id(),
-                relayer_a_id,
-                a_counterparty_id,
+                PrettyOption(&relayer_a_id),
+                PrettyOption(&a_counterparty_id),
                 self.a_chain().id(),
             );
             self.b_side.connection_id = a_counterparty_id.cloned();
@@ -514,13 +545,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         if b_counterparty_id.is_some() && b_counterparty_id != relayer_a_id {
             if updated_relayer_b_id == relayer_b_id.as_ref() {
                 warn!(
-                    "updating the expected {:?} of side_a({}) since it is different than the \
-                counterparty of {:?}: {:?}, on {}. This is typically caused by crossing handshake \
-                messages in the presence of multiple relayers.",
-                    relayer_a_id,
+                    "updating the expected {} of side_a({}) since it is different than the \
+                    counterparty of {}: {}, on {}. This is typically caused by crossing handshake \
+                    messages in the presence of multiple relayers.",
+                    PrettyOption(&relayer_a_id),
                     self.a_chain().id(),
-                    updated_relayer_b_id,
-                    b_counterparty_id,
+                    PrettyOption(&updated_relayer_b_id),
+                    PrettyOption(&b_counterparty_id),
                     self.b_chain().id(),
                 );
                 self.a_side.connection_id = b_counterparty_id.cloned();
@@ -550,7 +581,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             // send the Init message to chain a (source)
             (State::Uninitialized, State::Uninitialized) => {
                 let event = self.flipped().build_conn_init_and_send().map_err(|e| {
-                    error!("failed ConnOpenInit {:?}: {:?}", self.a_side, e);
+                    error!("failed ConnOpenInit {}: {}", self.a_side, e);
                     e
                 })?;
                 let connection_id = extract_connection_id(&event)?;
@@ -560,7 +591,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             // send the Try message to chain a (source)
             (State::Uninitialized, State::Init) | (State::Init, State::Init) => {
                 let event = self.flipped().build_conn_try_and_send().map_err(|e| {
-                    error!("failed ConnOpenTry {:?}: {:?}", self.a_side, e);
+                    error!("failed ConnOpenTry {}: {}", self.a_side, e);
                     e
                 })?;
 
@@ -571,7 +602,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             // send the Try message to chain b (destination)
             (State::Init, State::Uninitialized) => {
                 let event = self.build_conn_try_and_send().map_err(|e| {
-                    error!("failed ConnOpenTry {:?}: {:?}", self.b_side, e);
+                    error!("failed ConnOpenTry {}: {}", self.b_side, e);
                     e
                 })?;
 
@@ -582,7 +613,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             // send the Ack message to chain a (source)
             (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
                 self.flipped().build_conn_ack_and_send().map_err(|e| {
-                    error!("failed ConnOpenAck {:?}: {:?}", self.a_side, e);
+                    error!("failed ConnOpenAck {}: {}", self.a_side, e);
                     e
                 })?;
             }
@@ -590,7 +621,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             // send the Ack message to chain b (destination)
             (State::TryOpen, State::Init) => {
                 self.build_conn_ack_and_send().map_err(|e| {
-                    error!("failed ConnOpenAck {:?}: {:?}", self.b_side, e);
+                    error!("failed ConnOpenAck {}: {}", self.b_side, e);
                     e
                 })?;
             }
@@ -598,7 +629,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             // send the Confirm message to chain b (destination)
             (State::Open, State::TryOpen) => {
                 self.build_conn_confirm_and_send().map_err(|e| {
-                    error!("failed ConnOpenConfirm {:?}: {:?}", self.b_side, e);
+                    error!("failed ConnOpenConfirm {}: {}", self.b_side, e);
                     e
                 })?;
             }
@@ -606,13 +637,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             // send the Confirm message to chain a (source)
             (State::TryOpen, State::Open) => {
                 self.flipped().build_conn_confirm_and_send().map_err(|e| {
-                    error!("failed ConnOpenConfirm {:?}: {:?}", self.a_side, e);
+                    error!("failed ConnOpenConfirm {}: {}", self.a_side, e);
                     e
                 })?;
             }
 
             (State::Open, State::Open) => {
-                info!("connection handshake already finished for {:?}\n", self);
+                info!("connection handshake already finished for {}", self);
                 return Ok(());
             }
 
@@ -717,15 +748,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                     );
                     RetryResult::Err(index)
                 } else {
-                    error!("failed {:?} with error {}", state, e);
+                    error!("failed {} with error {}", state, e);
                     RetryResult::Retry(index)
                 }
             }
             Ok((Some(ev), handshake_completed)) => {
-                info!(
-                    "connection handshake step completed with events: {:?}\n",
-                    ev
-                );
+                info!("connection handshake step completed with events: {}", ev);
                 RetryResult::Ok(handshake_completed)
             }
             Ok((None, handshake_completed)) => RetryResult::Ok(handshake_completed),
@@ -892,7 +920,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         // TODO - make chainError an actual error
         match &result.event {
             IbcEvent::OpenInitConnection(_) => {
-                info!("🥂 {} => {:?}\n", self.dst_chain().id(), result);
+                info!("🥂 {} => {}", self.dst_chain().id(), result);
                 Ok(result.event)
             }
             IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e.clone())),
@@ -1064,7 +1092,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         match &result.event {
             IbcEvent::OpenTryConnection(_) => {
-                info!("🥂 {} => {:?}\n", self.dst_chain().id(), result);
+                info!("🥂 {} => {}", self.dst_chain().id(), result);
                 Ok(result.event)
             }
             IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e.clone())),
@@ -1179,7 +1207,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         match &result.event {
             IbcEvent::OpenAckConnection(_) => {
-                info!("🥂 {} => {:?}\n", self.dst_chain().id(), result);
+                info!("🥂 {} => {}", self.dst_chain().id(), result);
                 Ok(result.event)
             }
             IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e.clone())),
@@ -1267,7 +1295,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         match &result.event {
             IbcEvent::OpenConfirmConnection(_) => {
-                info!("🥂 {} => {:?}\n", self.dst_chain().id(), result);
+                info!("🥂 {} => {}", self.dst_chain().id(), result);
                 Ok(result.event)
             }
             IbcEvent::ChainError(e) => Err(ConnectionError::tx_response(e.clone())),

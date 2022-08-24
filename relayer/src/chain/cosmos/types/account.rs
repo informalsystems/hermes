@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{Display, Error as FmtError, Formatter};
 use ibc_proto::cosmos::auth::v1beta1::BaseAccount;
 
 /// Wrapper for account number and sequence number.
@@ -40,8 +40,8 @@ impl AccountAddress {
     }
 }
 
-impl fmt::Display for AccountAddress {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for AccountAddress {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}", self.0)
     }
 }
@@ -60,8 +60,8 @@ impl AccountNumber {
     }
 }
 
-impl fmt::Display for AccountNumber {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for AccountNumber {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}", self.0)
     }
 }
@@ -88,8 +88,8 @@ impl AccountSequence {
     }
 }
 
-impl fmt::Display for AccountSequence {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for AccountSequence {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}", self.0)
     }
 }

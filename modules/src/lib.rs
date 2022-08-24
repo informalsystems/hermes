@@ -64,6 +64,7 @@ pub mod relayer;
 pub mod signer;
 pub mod timestamp;
 pub mod tx_msg;
+pub mod utils;
 
 mod serializers;
 

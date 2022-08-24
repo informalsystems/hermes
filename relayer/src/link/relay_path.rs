@@ -27,7 +27,6 @@ use crate::channel::error::ChannelError;
 use crate::channel::Channel;
 use crate::event::monitor::EventBatch;
 use crate::event::IbcEventWithHeight;
-use crate::event::PrettyEvents;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::link::error::{self, LinkError};
 use crate::link::operational_data::{
@@ -42,6 +41,7 @@ use crate::link::relay_summary::RelaySummary;
 use crate::link::{pending, relay_sender};
 use crate::path::PathIdentifiers;
 use crate::telemetry;
+use crate::util::pretty::PrettyEvents;
 use crate::util::queue::Queue;
 use ibc::{
     core::{
@@ -1028,7 +1028,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         tracking_id: TrackingId,
         retries_left: usize,
     ) -> Result<Height, LinkError> {
-        info!( "sending update_client to client hosted on source chain for height {} (retries left: {})", dst_chain_height, retries_left );
+        info!("sending update_client to client hosted on source chain for height {} (retries left: {})", dst_chain_height, retries_left);
 
         let src_update = self.build_update_client_on_src(dst_chain_height)?;
         let tm = TrackedMsgs::new(src_update, tracking_id);
@@ -1661,10 +1661,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 }
             }
         } else {
-            debug!(
-                "connection delay need not be taken into account: client update message will be \
-            prepended later"
-            );
+            debug!("connection delay need not be taken into account: client update message will be prepended later");
             Instant::now()
         };
 

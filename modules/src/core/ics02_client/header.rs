@@ -1,3 +1,4 @@
+use core::fmt::{Display, Error as FmtError, Formatter};
 use core::ops::Deref;
 
 use ibc_proto::google::protobuf::Any;
@@ -39,6 +40,19 @@ pub enum AnyHeader {
 
     #[cfg(any(test, feature = "mocks"))]
     Mock(MockHeader),
+}
+
+impl Display for AnyHeader {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        match self {
+            AnyHeader::Tendermint(tendermint_header) => {
+                write!(f, "TendermintHeader {{ {} }}", tendermint_header)
+            }
+
+            #[cfg(any(test, feature = "mocks"))]
+            AnyHeader::Mock(mock_header) => write!(f, "MockHeader {{ {} }}", mock_header),
+        }
+    }
 }
 
 impl Header for AnyHeader {

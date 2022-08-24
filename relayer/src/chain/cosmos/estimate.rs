@@ -5,7 +5,7 @@ use tonic::codegen::http::Uri;
 use tracing::{debug, error, span, warn, Level};
 
 use crate::chain::cosmos::encode::sign_tx;
-use crate::chain::cosmos::gas::{gas_amount_to_fee, PrettyFee};
+use crate::chain::cosmos::gas::gas_amount_to_fee;
 use crate::chain::cosmos::simulate::send_tx_simulate;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
@@ -13,6 +13,7 @@ use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::types::Memo;
 use crate::error::Error;
 use crate::keyring::KeyEntry;
+use crate::util::pretty::PrettyFee;
 
 pub async fn estimate_tx_fees(
     config: &TxConfig,

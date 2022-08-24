@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{Display, Error as FmtError, Formatter};
 use std::time::{Duration, Instant};
 
 use dashmap::DashMap;
@@ -28,8 +28,8 @@ pub enum WorkerType {
     Wallet,
 }
 
-impl fmt::Display for WorkerType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for WorkerType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
             Self::Client => write!(f, "client"),
             Self::Connection => write!(f, "connection"),

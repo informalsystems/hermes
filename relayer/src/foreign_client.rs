@@ -45,6 +45,7 @@ use crate::chain::tracking::TrackedMsgs;
 use crate::error::Error as RelayerError;
 use crate::event::IbcEventWithHeight;
 use crate::telemetry;
+use crate::util::pretty::{PrettyDuration, PrettyVec};
 
 const MAX_MISBEHAVIOUR_CHECK_DURATION: Duration = Duration::from_secs(120);
 
@@ -110,7 +111,7 @@ define_error! {
                 height: Height,
             }
             |e| {
-                format_args!("Client {} is already up-to-date with chain {}@{}",
+                format_args!("client {} is already up-to-date with chain {}@{}",
                     e.client_id, e.chain_id, e.height)
             },
 
@@ -959,11 +960,11 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             // Header would be considered in the future, wait for destination chain to
             // advance to the next height.
             warn!(
-                "src header {} is after dst latest header {} + client state drift {:?},\
+                "src header {} is after dst latest header {} + client state drift {},\
                  wait for next height on {}",
                 header.timestamp(),
                 status.timestamp,
-                client_state.max_clock_drift(),
+                PrettyDuration(&client_state.max_clock_drift()),
                 self.dst_chain().id()
             );
 
@@ -1674,16 +1675,20 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // warn the user and continue.
         match result {
             Err(ForeignClientError(ForeignClientErrorDetail::MisbehaviourExit(s), _)) => {
-                warn!("misbehaviour checking is being disabled, reason: {:?}", s);
+                warn!("misbehaviour checking is being disabled, reason: {}", s);
 
                 MisbehaviourResults::CannotExecute
             }
 
             Ok(misbehaviour_detection_result) => {
+                info!(
+                    "evidence submission result: {}",
+                    PrettyVec(&misbehaviour_detection_result)
+                );
                 if !misbehaviour_detection_result.is_empty() {
                     info!(
-                        "evidence submission result: {:?}",
-                        misbehaviour_detection_result
+                        "evidence submission result: {}",
+                        PrettyVec(&misbehaviour_detection_result)
                     );
 
                     MisbehaviourResults::EvidenceSubmitted(misbehaviour_detection_result)
@@ -1696,7 +1701,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
             Err(e) => match e.detail() {
                 ForeignClientErrorDetail::MisbehaviourExit(s) => {
-                    error!("misbehaviour checking is being disabled, reason: {:?}", s);
+                    error!("misbehaviour checking is being disabled, reason: {}", s);
 
                     MisbehaviourResults::CannotExecute
                 }
@@ -1709,7 +1714,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 _ if update_event.is_some() => MisbehaviourResults::CannotExecute,
 
                 _ => {
-                    warn!("misbehaviour checking result: {:?}", e);
+                    warn!("misbehaviour checking result: {}", e);
 
                     MisbehaviourResults::ValidClient
                 }

@@ -1,3 +1,4 @@
+use core::fmt::{Display, Error as FmtError, Formatter};
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock, RwLockReadGuard};
 
@@ -67,6 +68,16 @@ impl<Handle> CountingChainHandle<Handle> {
         } else {
             metrics.insert(key.to_string(), 1);
         }
+    }
+}
+
+impl<Handle: ChainHandle> Display for CountingChainHandle<Handle> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(
+            f,
+            "CountingChainHandle {{ chain_id: {} }}",
+            self.inner().id()
+        )
     }
 }
 
@@ -450,6 +461,7 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         &self,
         request: QueryHostConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error> {
+        self.inc_metric("query_host_consensus_state");
         self.inner.query_host_consensus_state(request)
     }
 }

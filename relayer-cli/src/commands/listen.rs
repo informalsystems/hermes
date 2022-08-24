@@ -1,5 +1,9 @@
 use alloc::sync::Arc;
-use core::{fmt, ops::Deref, str::FromStr};
+use core::{
+    fmt::{Display, Error as FmtError, Formatter},
+    ops::Deref,
+    str::FromStr,
+};
 use std::thread;
 
 use abscissa_core::clap::Parser;
@@ -32,8 +36,8 @@ impl EventFilter {
     }
 }
 
-impl fmt::Display for EventFilter {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for EventFilter {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
             Self::NewBlock => write!(f, "NewBlock"),
             Self::Tx => write!(f, "Tx"),
@@ -114,6 +118,9 @@ pub fn listen(
     while let Ok(event_batch) = rx.recv() {
         match event_batch {
             Ok(batch) => {
+                let _span =
+                    tracing::error_span!("event_batch", batch_height = %batch.height).entered();
+
                 let matching_events = batch
                     .events
                     .into_iter()
@@ -124,13 +131,9 @@ pub fn listen(
                     continue;
                 }
 
-                info!("- event batch at height {}", batch.height);
-
                 for event in matching_events {
-                    info!("{:?}", event);
+                    info!("{}", event);
                 }
-
-                info!("");
             }
             Err(e) => error!("- error: {}", e),
         }

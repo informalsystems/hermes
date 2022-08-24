@@ -62,7 +62,7 @@ define_error! {
 
         TokenTransfer
             [ Ics20Error ]
-            |_| { "Token transfer error" },
+            |_| { "token transfer error" },
 
         ZeroTimeout
             | _ | { "packet timeout height and packet timeout timestamp cannot both be 0" },

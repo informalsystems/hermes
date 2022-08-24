@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{Display, Error as FmtError, Formatter};
 use std::collections::BTreeMap;
 
 use itertools::Itertools;
@@ -91,8 +91,8 @@ pub struct ChainsScan {
     pub chains: Vec<Result<ChainScan, Error>>,
 }
 
-impl fmt::Display for ChainsScan {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for ChainsScan {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         for scan in self.chains.iter().flatten() {
             writeln!(f, "# Chain: {}", scan.chain_id)?;
 
@@ -444,7 +444,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         info!("scanning connection...");
 
         if !self.connection_allowed(chain, client, &connection) {
-            warn!("skipping connection, reason: connection is not allowed",);
+            warn!("skipping connection, reason: connection is not allowed");
             return Ok(None);
         }
 
@@ -779,12 +779,10 @@ fn query_client_connections<Chain: ChainHandle>(
 
     let connections = ids
         .into_iter()
-        .filter_map(|id| match query_connection(chain, &id) {
-            Ok(connection) => Some(connection),
-            Err(e) => {
-                error!("failed to query connection: {}", e);
-                None
-            }
+        .filter_map(|id| {
+            query_connection(chain, &id)
+                .map_err(|e| error!("failed to query connection: {}", e))
+                .ok()
         })
         .collect_vec();
 

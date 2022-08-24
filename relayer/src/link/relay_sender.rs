@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{Display, Error as FmtError, Formatter};
 
 use tendermint_rpc::endpoint::broadcast::tx_sync;
 use tracing::info;
@@ -7,9 +7,9 @@ use ibc::events::IbcEvent;
 
 use crate::chain::handle::ChainHandle;
 use crate::chain::tracking::TrackedMsgs;
-use crate::event::PrettyEvents;
 use crate::link::error::LinkError;
 use crate::link::RelaySummary;
+use crate::util::pretty::{PrettyCode, PrettyEvents};
 
 pub trait SubmitReply {
     /// Creates a new, empty instance, i.e., comprising zero replies.
@@ -105,11 +105,11 @@ impl Submit for AsyncSender {
     }
 }
 
-impl fmt::Display for AsyncReply {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for AsyncReply {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "response(s): {}", self.responses.len())?;
         self.responses
             .iter()
-            .try_for_each(|r| write!(f, "; {:?}:{}", r.code, r.hash))
+            .try_for_each(|r| write!(f, "; {}:{}", PrettyCode(&r.code), r.hash))
     }
 }

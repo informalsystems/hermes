@@ -2,7 +2,7 @@
 //! of Cosmos-SDK networks. The extracted version specification
 //! is captured in a domain-type semver format in [`Specs`].
 
-use core::fmt;
+use core::fmt::{Display, Error as FmtError, Formatter};
 
 use flex_error::define_error;
 use tracing::trace;
@@ -39,8 +39,8 @@ pub struct Specs {
     pub tendermint: semver::Version,
 }
 
-impl fmt::Display for Specs {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for Specs {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         let ibc_go = self
             .ibc_go
             .as_ref()
@@ -213,8 +213,8 @@ pub struct AppInfo {
     git_commit: String,
 }
 
-impl core::fmt::Display for AppInfo {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+impl Display for AppInfo {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}:{}-{}", self.app_name, self.version, self.git_commit)
     }
 }

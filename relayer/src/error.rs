@@ -475,7 +475,7 @@ define_error! {
                 type_url: String
             }
             |e| {
-                format!("Failed to deserialize account of an unknown protobuf type: {0}", e.type_url)
+                format!("failed to deserialize account of an unknown protobuf type: {0}", e.type_url)
             },
 
         EmptyBaseAccount

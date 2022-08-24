@@ -174,7 +174,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             chain = %chain.id(),
             connection = %connection.connection_id,
             counterparty_chain = %counterparty_chain.id(),
-            "connection is {:?}, state on destination chain is {:?}",
+            "connection is {}, state on destination chain is {}",
             conn_state_src,
             conn_state_dst
         );
