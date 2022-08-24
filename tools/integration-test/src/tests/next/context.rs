@@ -2,7 +2,9 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_cosmos::cosmos::context::chain::CosmosChainContext;
 use ibc_relayer_cosmos::cosmos::context::relay::CosmosRelayContext;
 use ibc_relayer_cosmos::tokio::context::TokioRuntimeContext;
-use ibc_relayer_framework::extras::batch::worker::BatchMessageWorker;
+use ibc_relayer_framework::extras::batch::spawn::{
+    BatchMessageWorkerSpawner, CanSpawnBatchMessageWorker,
+};
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
 use ibc_relayer_framework::traits::target::{DestinationTarget, SourceTarget};
 use ibc_test_framework::types::binary::chains::ConnectedChains;
@@ -58,16 +60,17 @@ where
 
     let relay_context = OfaRelayContext::new(relay);
 
-    // BatchMessageHandler::<
-    //     OfaRelayContext<CosmosRelayContext<ChainA, ChainB>>,
-    //     SourceTarget,
-    //     _,
-    //     _
-    // >::spawn_batch_message_handler(
-    //     relay_context.clone(),
-    //     Default::default(),
-    //     receiver_a,
-    // );
+    <BatchMessageWorkerSpawner<SourceTarget>>::spawn_batch_message_worker(
+        relay_context.clone(),
+        Default::default(),
+        receiver_a,
+    );
+
+    <BatchMessageWorkerSpawner<DestinationTarget>>::spawn_batch_message_worker(
+        relay_context.clone(),
+        Default::default(),
+        receiver_b,
+    );
 
     relay_context
 }
