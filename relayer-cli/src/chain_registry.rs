@@ -233,7 +233,7 @@ pub async fn get_configs(
             })
         })
         .collect();
-    Ok(get_data_from_handles::<ChainConfig>(config_handles, "config_handle_join").await?)
+    get_data_from_handles::<ChainConfig>(config_handles, "config_handle_join").await
 }
 
 #[cfg(test)]
