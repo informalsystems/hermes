@@ -33,6 +33,12 @@ impl<'a> TryFrom<&'a ChainConfig> for TxConfig {
 
         let gas_config = GasConfig::from(config);
 
+        let extension_options = config
+            .extension_options
+            .iter()
+            .map(|opt| opt.to_any())
+            .collect::<Result<_, _>>()?;
+
         Ok(Self {
             chain_id: config.id.clone(),
             gas_config,
@@ -41,11 +47,7 @@ impl<'a> TryFrom<&'a ChainConfig> for TxConfig {
             grpc_address,
             rpc_timeout: config.rpc_timeout,
             address_type: config.address_type.clone(),
-            extension_options: config
-                .extension_options
-                .iter()
-                .map(|opt| opt.to_any())
-                .collect::<Result<_, _>>()?,
+            extension_options,
         })
     }
 }
