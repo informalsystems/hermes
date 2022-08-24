@@ -45,7 +45,8 @@ pub fn sign_tx(
 
     let signer = encode_signer_info(&config.address_type, account.sequence, key_bytes)?;
 
-    let (body, body_bytes) = tx_body_and_bytes(messages, tx_memo)?;
+    let (body, body_bytes) =
+        tx_body_and_bytes(messages, tx_memo, config.extension_options.clone())?;
 
     let (auth_info, auth_info_bytes) = auth_info_and_bytes(signer, fee.clone())?;
 
@@ -160,13 +161,17 @@ fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, V
     Ok((auth_info, auth_buf))
 }
 
-fn tx_body_and_bytes(proto_msgs: Vec<Any>, memo: &Memo) -> Result<(TxBody, Vec<u8>), Error> {
+fn tx_body_and_bytes(
+    proto_msgs: Vec<Any>,
+    memo: &Memo,
+    extension_options: Vec<Any>,
+) -> Result<(TxBody, Vec<u8>), Error> {
     // Create TxBody
     let body = TxBody {
         messages: proto_msgs.to_vec(),
         memo: memo.to_string(),
         timeout_height: 0_u64,
-        extension_options: Vec::<Any>::new(),
+        extension_options,
         non_critical_extension_options: Vec::<Any>::new(),
     };
 
