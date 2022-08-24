@@ -27,35 +27,38 @@ rest-server = ["ibc-relayer-rest"]
 
 [dependencies]
 ibc              = { version = "0.19.0", path = "../modules", features = ["std", "clock"] }
+ibc-chain-registry       = { version = "0.1.0" , path = "../ibc-chain-registry"}
 ibc-relayer      = { version = "0.19.0", path = "../relayer" }
 ibc-proto        = { version = "0.20.1", path = "../proto" }
 ibc-telemetry    = { version = "0.19.0", path = "../telemetry", optional = true }
 ibc-relayer-rest = { version = "0.19.0", path = "../relayer-rest", optional = true }
 
-clap = { version = "3.2", features = ["cargo"] }
-clap_complete = "3.2"
-humantime = "2.1"
-serde = { version = "1.0", features = ["serde_derive"] }
-tokio = { version = "1.0", features = ["full"] }
-tracing = "0.1.36"
-tracing-subscriber = { version = "0.3.14", features = ["fmt", "env-filter", "json"]}
-eyre = "0.6.8"
-color-eyre = "0.6"
-oneline-eyre = "0.1"
-futures = "0.3.23"
-toml = "0.5.9"
-serde_derive = "1.0.116"
-serde_json = "1"
-hex = "0.4"
-crossbeam-channel = "0.5.5"
-subtle-encoding = "0.5"
-dirs-next = "2.0.0"
-itertools = "0.10.3"
-atty = "0.2.14"
-flex-error = { version = "0.4.4", default-features = false, features = ["std", "eyre_tracer"] }
-signal-hook = "0.3.14"
-dialoguer = "0.10.2"
-console = "0.15.1"
+atty                     = "0.2.14"
+clap                     = { version = "3.2", features = ["cargo"] }
+clap_complete            = "3.2"
+color-eyre               = "0.6"
+console                  = "0.15.1"
+crossbeam-channel        = "0.5.5"
+dialoguer                = "0.10.2"
+dirs-next                = "2.0.0"
+eyre                     = "0.6.8"
+flex-error               = { version = "0.4.4", default-features = false, features = ["std", "eyre_tracer"] }
+futures                  = "0.3.23"
+hex                      = "0.4"
+http                     = "0.2"
+humantime                = "2.1"
+itertools                = "0.10.3"
+oneline-eyre             = "0.1"
+regex                    = "1.6.0"
+serde                    = { version = "1.0", features = ["serde_derive"] }
+serde_derive             = "1.0.116"
+serde_json               = "1"
+signal-hook              = "0.3.14"
+subtle-encoding          = "0.5"
+tokio                    = { version = "1.0", features = ["full"] }
+toml                     = "0.5.9"
+tracing                  = "0.1.36"
+tracing-subscriber       = { version = "0.3.14", features = ["fmt", "env-filter", "json"]}
 
 [dependencies.tendermint-proto]
 version = "=0.23.9"

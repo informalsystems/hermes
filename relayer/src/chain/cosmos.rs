@@ -1581,6 +1581,8 @@ impl ChainEndpoint for CosmosSdkChain {
             .trusting_period
             .unwrap_or_else(|| self.trusting_period(unbonding_period));
 
+        let proof_specs = self.config.proof_specs.clone().unwrap_or_default();
+
         // Build the client state.
         ClientState::new(
             self.id().clone(),
@@ -1589,7 +1591,7 @@ impl ChainEndpoint for CosmosSdkChain {
             unbonding_period,
             settings.max_clock_drift,
             height,
-            self.config.proof_specs.clone(),
+            proof_specs,
             vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
             AllowUpdate {
                 after_expiry: true,

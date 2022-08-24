@@ -71,6 +71,7 @@ entry_indent = 2
     # to Markdown) and a path relative to the project folder (i.e. relative to
     # the parent of the `.changelog` folder).
     [components.all]
+    chain-registry       = { name = "Chain Registry",             path = "chain-registry" }
     ibc                  = { name = "IBC Modules",                path = "modules" }
     ibc-proto            = { name = "IBC Proto",                  path = "proto" }
     ibc-relayer          = { name = "Relayer Library",            path = "relayer" }
