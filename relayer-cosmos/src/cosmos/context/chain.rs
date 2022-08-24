@@ -31,12 +31,18 @@ impl<Handle> CosmosChainContext<Handle> {
         signer: Signer,
         tx_config: TxConfig,
         key_entry: KeyEntry,
-    ) -> Self {
+    ) -> (
+        Self,
+        mpsc::Receiver<(
+            Vec<CosmosIbcMessage>,
+            oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
+        )>,
+    ) {
         let batch = OfaBatchContext::new(runtime.clone());
         let runtime = OfaRuntimeContext::new(runtime);
         let (batch_sender, receiver) = mpsc::channel(1024);
 
-        Self {
+        let chain = Self {
             handle,
             signer,
             tx_config,
@@ -44,6 +50,8 @@ impl<Handle> CosmosChainContext<Handle> {
             runtime,
             batch,
             batch_sender,
-        }
+        };
+
+        (chain, receiver)
     }
 }

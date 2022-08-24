@@ -9,6 +9,7 @@ use crate::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::std_prelude::*;
 use crate::traits::core::Async;
 
+#[derive(Clone)]
 pub struct OfaRelayContext<Relay: OfaRelay> {
     pub relay: Relay,
 }

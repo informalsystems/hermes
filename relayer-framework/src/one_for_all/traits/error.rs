@@ -1,7 +1,7 @@
 use crate::traits::core::Async;
 use core::fmt::Debug;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct OfaErrorContext<Error> {
     pub error: Error,
 }

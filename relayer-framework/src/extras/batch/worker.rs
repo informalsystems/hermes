@@ -17,26 +17,25 @@ use crate::types::aliases::IbcMessage;
 use super::config::BatchConfig;
 use super::context::{BatchContext, HasBatchContext};
 
-pub struct BatchMessageHandler<Relay, Target, Sender, Batch>
+pub struct BatchMessageWorker<Relay, Target, Sender>
 where
     Relay: RelayContext,
-    Relay: HasBatchContext<Target, BatchContext = Batch>,
+    Relay: HasBatchContext<Target>,
     Target: ChainTarget<Relay>,
     Sender: IbcMessageSender<Relay, Target>,
-    Batch: BatchContext,
 {
     pub relay: Relay,
-    pub messages_receiver: Batch::MessagesReceiver,
+    pub messages_receiver: <Relay::BatchContext as BatchContext>::MessagesReceiver,
     pub pending_batches: VecDeque<(
         Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
-        Batch::ResultSender,
+        <Relay::BatchContext as BatchContext>::ResultSender,
     )>,
     pub config: BatchConfig,
     pub phantom: PhantomData<(Target, Sender)>,
 }
 
 impl<Relay, Target, Sender, Batch, TargetChain, Message, Event, Runtime, Error>
-    BatchMessageHandler<Relay, Target, Sender, Batch>
+    BatchMessageWorker<Relay, Target, Sender>
 where
     Relay: RelayContext<Runtime = Runtime, Error = Error>,
     Runtime: HasTime + CanSleep + HasSpawner,
@@ -49,7 +48,7 @@ where
     Event: Async,
     Error: Clone + Async,
 {
-    pub fn spawn_batch_message_handler(
+    pub fn spawn_batch_message_worker(
         relay: Relay,
         config: BatchConfig,
         messages_receiver: Batch::MessagesReceiver,

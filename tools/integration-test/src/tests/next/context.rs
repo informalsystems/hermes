@@ -2,7 +2,9 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_cosmos::cosmos::context::chain::CosmosChainContext;
 use ibc_relayer_cosmos::cosmos::context::relay::CosmosRelayContext;
 use ibc_relayer_cosmos::tokio::context::TokioRuntimeContext;
+use ibc_relayer_framework::extras::batch::worker::BatchMessageWorker;
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
+use ibc_relayer_framework::traits::target::{DestinationTarget, SourceTarget};
 use ibc_test_framework::types::binary::chains::ConnectedChains;
 
 pub fn build_cosmos_relay_context<ChainA, ChainB>(
@@ -14,7 +16,7 @@ where
 {
     let runtime = TokioRuntimeContext::new(chains.node_a.value().chain_driver.runtime.clone());
 
-    let handler_a = CosmosChainContext::new(
+    let (handler_a, receiver_a) = CosmosChainContext::new(
         runtime.clone(),
         chains.handle_a.clone(),
         chains
@@ -30,7 +32,7 @@ where
         chains.node_a.value().wallets.relayer.key.clone(),
     );
 
-    let handler_b = CosmosChainContext::new(
+    let (handler_b, receiver_b) = CosmosChainContext::new(
         runtime.clone(),
         chains.handle_b.clone(),
         chains
@@ -54,5 +56,18 @@ where
         chains.foreign_clients.client_b_to_a.clone(),
     );
 
-    OfaRelayContext::new(relay)
+    let relay_context = OfaRelayContext::new(relay);
+
+    // BatchMessageHandler::<
+    //     OfaRelayContext<CosmosRelayContext<ChainA, ChainB>>,
+    //     SourceTarget,
+    //     _,
+    //     _
+    // >::spawn_batch_message_handler(
+    //     relay_context.clone(),
+    //     Default::default(),
+    //     receiver_a,
+    // );
+
+    relay_context
 }
