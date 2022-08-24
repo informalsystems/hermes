@@ -1,116 +1,69 @@
 # Start relaying
 
-A relay path refers to a specific channel used to interconnect two chains and over which packets are being sent.
+In the previous tutorial, you learned about how to relay packets between a pair of chain on a relay path. Now, you will learn how to relay packets on an arbitrary topology.
 
-Hermes can be started to listen for packet events on the two ends of multiple paths and relay packets over these paths.
-This can be done over a new path or over existing paths.
+>__WARNING__ Before proceeding to the sections above, please first, make sure you followed the steps in the [Build the topology section](./build-the-topology.md).
 
->__WARNING__ Before proceeding to the sections above, please first, make sure you followed the steps in the [Identifiers section](../identifiers.md)
+The chains should be fully connected and the relayer should be setup to relay on these channels:
 
+```mermaid
+flowchart TD 
+    ibc0((ibc-0))
+    ibc0ibc1[[channel-0]]
+    ibc0ibc3[[channel-2]]
 
-## Create a new path
+    ibc1((ibc-1))
+    ibc1ibc0[[channel-0]]
+    ibc1ibc2[[channel-1]]
 
-Perform client creation, connection and channel handshake to establish a new path between the `transfer` ports on `ibc-0` and `ibc-1` chains.
+    ibc2((ibc-2))
+    ibc2ibc1[[channel-1]]
+    ibc2ibc3[[channel-2]]
 
-```shell
-hermes create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --new-client-connection
+    ibc3((ibc-3))
+    ibc3ibc0[[channel-0]]
+    ibc3ibc2[[channel-2]]
+
+    ibc0---ibc0ibc1---ibc1ibc0---ibc1
+    ibc0---ibc0ibc3---ibc3ibc0---ibc3
+    ibc1---ibc1ibc2---ibc2ibc1---ibc2
+    ibc2---ibc2ibc3---ibc3ibc2---ibc3
 ```
-
-If all the handshakes are performed successfully you should see a message similar to the one below:
-
-```json
-Success: Channel {
-    ordering: Unordered,
-    a_side: ChannelSide {
-        chain: ProdChainHandle {
-            chain_id: ChainId {
-                id: "ibc-0",
-                version: 0,
-            },
-            runtime_sender: Sender { .. },
-        },
-        client_id: ClientId(
-            "07-tendermint-0",
-        ),
-        connection_id: ConnectionId(
-            "connection-0",
-        ),
-        port_id: PortId(
-            "transfer",
-        ),
-        channel_id: ChannelId(
-            "channel-0",
-        ),
-    },
-    b_side: ChannelSide {
-        chain: ProdChainHandle {
-            chain_id: ChainId {
-                id: "ibc-1",
-                version: 1,
-            },
-            runtime_sender: Sender { .. },
-        },
-        client_id: ClientId(
-            "07-tendermint-1",
-        ),
-        connection_id: ConnectionId(
-            "connection-1",
-        ),
-        port_id: PortId(
-            "transfer",
-        ),
-        channel_id: ChannelId(
-            "channel-1",
-        ),
-    },
-    connection_delay: 0s,
-    version: Some(
-        "ics20-1",
-    ),
-}
-
-```
-
-Note that for each side, *a_side* (__ibc-0__) and *b_side* (__ibc-1__) there are a __client_id__, __connection_id__, __channel_id__ and __port_id__.
-With all these established, you have a path that you can relay packets over.
-
-Visualize the current network with: 
-
-```shell
-hermes query channels --chain ibc-1 --show-counterparty
-```
-
-If all the commands were successful, this command should output : 
-
-```
-ibc-1: transfer/channel-0 --- ibc-0: transfer/None
-ibc-1: transfer/channel-1 --- ibc-0: transfer/channel-0
-```
-
-The first line represents the dummy channel opened in section [Identifiers](./identifiers.md) for which the handshake was never completed. The second represents the path you created in this section.
 
 ## Query balances
 
 - balance at ibc-0:
 
     ```shell
-    gaiad --node tcp://localhost:27030 query bank balances $(gaiad --home ~/.gm/ibc-0 keys --keyring-backend="test" show wallet -a)
+    gaiad --node tcp://localhost:27050 query bank balances $(gaiad --home ~/.gm/ibc-0 keys --keyring-backend="test" show wallet -a)
     ```
 
 - balance at ibc-1:
 
     ```shell
-    gaiad --node tcp://localhost:27040 query bank balances $(gaiad --home ~/.gm/ibc-1 keys --keyring-backend="test" show wallet -a)
+    gaiad --node tcp://localhost:27060 query bank balances $(gaiad --home ~/.gm/ibc-1 keys --keyring-backend="test" show wallet -a)
+    ```
+
+- balance at ibc-2:
+
+    ```shell
+    gaiad --node tcp://localhost:27070 query bank balances $(gaiad --home ~/.gm/ibc-2 keys --keyring-backend="test" show wallet -a)
+    ```
+
+- balance at ibc-3:
+
+    ```shell
+    gaiad --node tcp://localhost:27080 query bank balances $(gaiad --home ~/.gm/ibc-3 keys --keyring-backend="test" show wallet -a)
     ```
 
 > __NOTE__ the RPC addresses used in the two commands above are configured in `~/.hermes/config.toml` file. It can also be found with `gm status`
 
-At this point of the tutorial, the two commands should output something similar to:
+At this point of the tutorial, every command should output something similar to:
 
 ```
 - amount: "100000000"
   denom: samoleans
-- amount: "99994088"
+- amount: "99982481"
   denom: stake
 pagination:
   next_key: null
@@ -119,7 +72,7 @@ pagination:
 
 ## Start relaying
 
-Now, let's exchange `samoleans` between two chains.
+Now, let's exchange `samoleans` between chains.
 
 - Open a new terminal and start Hermes using the `start` command : 
 

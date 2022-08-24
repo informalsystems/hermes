@@ -20,6 +20,10 @@ If the command runs successfully you should see a message similar to the one bel
     SUCCESS performed health check for all chains in the config
 ```
 
+In the following tutorial, we will connect all of these chains in a full mesh topology then use `Packet filters` to simulate the topology given at the beginning of the [previous section](./start-local-chains.md).
+
+> __NOTE__: It is also possible to only create the channels that you want. However, in production, anyone can open channels and recreate a fully-connected topology.
+
 ## Connect all the chains
 
 Execute the following command :
@@ -49,9 +53,9 @@ Use the flag `--exec` flag to execute these commands:
 gm hermes cc --exec
 ```
 
-At this point, your network should be fully connected. However, we want to relay on a specific topology presented at the beginning of [Start the local chains](./start-local-chains.md). The following chart displays the current state of the network. The channels that we want to filter out are filled in red while the channels we want to relay on are filled in green  :
+At this point, your network should be fully connected. It is now time to filter channels. The following chart shows the current state of the network. The channels that we want to filter out are filled in red while the channels we want to relay on are filled in green:
 
-
+__Network topology__
 ```mermaid
 flowchart TD 
     ibc0((ibc-0))
@@ -127,3 +131,181 @@ ibc-3: transfer/channel-0 --- ibc-0: transfer/channel-2
 ibc-3: transfer/channel-1 --- ibc-1: transfer/channel-2
 ibc-3: transfer/channel-2 --- ibc-2: transfer/channel-2
 ```
+
+## Add packet filters
+
+Let's use packet filters to relay only on the green paths of the chart. In order to add filters, open your default configuration file `$HOME/.hermes/config.toml` and add:
+- Under `ibc-0`'s config: 
+    ```
+    [chains.packet_filter]
+    policy = 'allow'
+    list = [
+        ['transfer', 'channel-0'],
+        ['transfer', 'channel-2'],
+    ]
+    ```
+- Under `ibc-1`'s config:
+    ```
+    [chains.packet_filter]
+    policy = 'allow'
+    list = [
+        ['transfer', 'channel-0'],
+        ['transfer', 'channel-1'],
+    ]
+    ```
+- Under Under `ibc-2`'s config:
+    ```
+    [chains.packet_filter]
+    policy = 'allow'
+    list = [
+        ['transfer', 'channel-0'],
+        ['transfer', 'channel-2'],
+    ]
+    ```
+- Under `ibc-3`'s config:
+    ```
+    [chains.packet_filter]
+    policy = 'allow'
+    list = [
+        ['transfer', 'channel-0'],
+        ['transfer', 'channel-2'],
+    ]
+    ```
+
+> __NOTE__: It is also possible to use a `deny` policy to filter out the channels you do not want to relay on. However, if other channels exist or are created, the relayer will also relay on them.
+
+At this point, your config file should be:
+
+__config.toml__
+```
+[global]
+log_level = 'info'
+
+[mode]
+
+[mode.clients]
+enabled = true
+refresh = true
+misbehaviour = true
+
+[mode.connections]
+enabled = true
+
+[mode.channels]
+enabled = true
+
+[mode.packets]
+enabled = true
+clear_interval = 100
+clear_on_start = true
+tx_confirmation = true
+
+[telemetry]
+enabled = true
+host = '127.0.0.1'
+port = 3001
+
+[[chains]]
+id = 'ibc-0'
+rpc_addr = 'http://localhost:27050'
+grpc_addr = 'http://localhost:27052'
+websocket_addr = 'ws://localhost:27050/websocket'
+rpc_timeout = '15s'
+account_prefix = 'cosmos'
+key_name = 'wallet'
+store_prefix = 'ibc'
+gas_price = { price = 0.01, denom = 'stake' }
+max_gas = 10000000
+clock_drift = '5s'
+trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }
+
+[chains.packet_filter]
+policy = 'allow'
+list = [
+    ['transfer', 'channel-0'],
+    ['transfer', 'channel-2'],
+]
+
+[[chains]]
+id = 'ibc-1'
+rpc_addr = 'http://localhost:27060'
+grpc_addr = 'http://localhost:27062'
+websocket_addr = 'ws://localhost:27060/websocket'
+rpc_timeout = '15s'
+account_prefix = 'cosmos'
+key_name = 'wallet'
+store_prefix = 'ibc'
+gas_price = { price = 0.01, denom = 'stake' }
+max_gas = 10000000
+clock_drift = '5s'
+trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }
+
+
+[chains.packet_filter]
+policy = 'allow'
+list = [
+    ['transfer', 'channel-0'],
+    ['transfer', 'channel-2'],
+]
+
+[[chains]]
+id = 'ibc-2'
+rpc_addr = 'http://localhost:27070'
+grpc_addr = 'http://localhost:27072'
+websocket_addr = 'ws://localhost:27070/websocket'
+rpc_timeout = '15s'
+account_prefix = 'cosmos'
+key_name = 'wallet'
+store_prefix = 'ibc'
+gas_price = { price = 0.01, denom = 'stake' }
+max_gas = 10000000
+clock_drift = '5s'
+trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }
+
+[chains.packet_filter]
+policy = 'allow'
+list = [
+    ['transfer', 'channel-0'],
+    ['transfer', 'channel-2'],
+]
+
+[[chains]]
+id = 'ibc-3'
+rpc_addr = 'http://localhost:27080'
+grpc_addr = 'http://localhost:27082'
+websocket_addr = 'ws://localhost:27080/websocket'
+rpc_timeout = '15s'
+account_prefix = 'cosmos'
+key_name = 'wallet'
+store_prefix = 'ibc'
+gas_price = { price = 0.01, denom = 'stake' }
+max_gas = 10000000
+clock_drift = '5s'
+trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }
+
+[chains.packet_filter]
+policy = 'allow'
+list = [
+    ['transfer', 'channel-0'],
+    ['transfer', 'channel-2'],
+]
+```
+
+It is also possible to check that the configuration file is valid with the command:
+
+```shell
+hermes config validate
+```
+
+If the command runs succesfully, the output should be:
+
+```
+SUCCESS "configuration is valid"
+```
+
+## Next Steps
+The [following section](./start-relaying.md) describes how to relay packets between any chain with this topology.

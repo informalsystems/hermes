@@ -18,6 +18,7 @@
     - [More Local Chains](./tutorials/more-chains/index.md)
       - [Start the local chains](./tutorials/more-chains/start-local-chains.md)
       - [Build the topology](./tutorials/more-chains/build-the-topology.md)
+      - [Start relaying](./tutorials/more-chains/start-relaying.md)
     - [Relaying in production](./tutorials/production/index.md)
     - [Run multiple instances](./tutorials/concurrent/index.md)
 
