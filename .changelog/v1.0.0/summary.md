@@ -2,11 +2,14 @@
 
 After more than 2 years in the works, this is the first stable release of the Hermes relayer! 🎉
 
+For reaching this milestone, we thank the valuable contributions of over 50 individuals, spread across more than 800 documented & resolved issues. Beside Cosmos-SDK and Tendermint, we are fortunate to maintain some of the most active and intense repository in the Cosmos ecosystem. Most importantly, we thank the relentless work of relayer operators that have already relayed billions worth of value in IBC production networks, and have provided us with invaluable feedback on improving Hermes and raising the overall stability of IBC. Kudos to everyone!
+
+
 ### Note for operators
 
 > ⚠️  If upgrading from Hermes v0.15.0, be aware that this release contains multiple breaking
 > ⚠️  changes to the Hermes command-line interface and configuration.
-> ⚠️  Please consult the [UPGRADING document for instructions](UPGRADING.md) ) for a more detadetails.
+> ⚠️  Please consult the UPGRADING document for instructions for more details.
 
 ### Highlights
 
