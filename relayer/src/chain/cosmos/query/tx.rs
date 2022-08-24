@@ -1,3 +1,4 @@
+use ibc::core::ics02_client::height::Height;
 use ibc::core::ics04_channel::packet::{Packet, Sequence};
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::IbcEvent;
@@ -41,35 +42,67 @@ pub async fn query_txs(
 
             let mut result: Vec<IbcEventWithHeight> = vec![];
 
-            for seq in &request.sequences {
-                // query first (and only) Tx that includes the event specified in the query request
-                let response = rpc_client
-                    .tx_search(
-                        packet_query(&request, *seq),
-                        false,
-                        1,
-                        1, // get only the first Tx matching the query
-                        Order::Ascending,
-                    )
-                    .await
-                    .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
-
-                assert!(
-                    response.txs.len() <= 1,
-                    "packet_from_tx_search_response: unexpected number of txs"
-                );
-
-                if response.txs.is_empty() {
-                    continue;
+            let tm_height = match request.height {
+                QueryHeight::Latest => tendermint::block::Height::default(),
+                QueryHeight::Specific(h) => {
+                    tendermint::block::Height::try_from(h.revision_height()).unwrap()
                 }
+            };
+            let height = Height::new(chain_id.version(), u64::from(tm_height))
+                .map_err(|_| Error::invalid_height_no_source())?;
+            let exact_block_results = rpc_client
+                .block_results(tm_height)
+                .await
+                .map_err(|e| Error::rpc(rpc_address.clone(), e))?
+                .txs_results;
 
-                if let Some(event) = packet_from_tx_search_response(
-                    chain_id,
-                    &request,
-                    *seq,
-                    response.txs[0].clone(),
-                )? {
-                    result.push(event);
+            if let Some(txs) = exact_block_results {
+                for tx in txs.iter() {
+                    let tx_copy = tx.clone();
+                    result.append(
+                        &mut tx_copy
+                            .events
+                            .into_iter()
+                            .filter_map(|e| filter_matching_event(e, &request, &request.sequences))
+                            .map(|e| IbcEventWithHeight::new(e, height))
+                            .collect(),
+                    )
+                }
+            }
+
+            // Call to /block_results doesn't get SendPacket events, so an additional tx_search is required.
+            // Without this check, WriteAcknowledgment will be sent twice.
+            if result.is_empty() {
+                for seq in &request.sequences {
+                    // query first (and only) Tx that includes the event specified in the query request
+                    let response = rpc_client
+                        .tx_search(
+                            packet_query(&request, *seq),
+                            false,
+                            1,
+                            1, // get only the first Tx matching the query
+                            Order::Ascending,
+                        )
+                        .await
+                        .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
+
+                    assert!(
+                        response.txs.len() <= 1,
+                        "packet_from_tx_search_response: unexpected number of txs"
+                    );
+
+                    if response.txs.is_empty() {
+                        continue;
+                    }
+
+                    if let Some(event) = packet_from_tx_search_response(
+                        chain_id,
+                        &request,
+                        *seq,
+                        response.txs[0].clone(),
+                    )? {
+                        result.push(event);
+                    }
                 }
             }
             Ok(result)
@@ -198,25 +231,25 @@ fn packet_from_tx_search_response(
         .tx_result
         .events
         .into_iter()
-        .find_map(|ev| filter_matching_event(ev, request, seq))
+        .find_map(|ev| filter_matching_event(ev, request, &[seq]))
         .map(|ibc_event| IbcEventWithHeight::new(ibc_event, height)))
 }
 
 fn filter_matching_event(
     event: Event,
     request: &QueryPacketEventDataRequest,
-    seq: Sequence,
+    seqs: &[Sequence],
 ) -> Option<IbcEvent> {
     fn matches_packet(
         request: &QueryPacketEventDataRequest,
-        seq: Sequence,
+        seqs: Vec<Sequence>,
         packet: &Packet,
     ) -> bool {
         packet.source_port == request.source_port_id
             && packet.source_channel == request.source_channel_id
             && packet.destination_port == request.destination_port_id
             && packet.destination_channel == request.destination_channel_id
-            && packet.sequence == seq
+            && seqs.contains(&packet.sequence)
     }
 
     if event.type_str != request.event_id.as_str() {
@@ -225,11 +258,13 @@ fn filter_matching_event(
 
     let ibc_event = ibc_event_try_from_abci_event(&event).ok()?;
     match ibc_event {
-        IbcEvent::SendPacket(ref send_ev) if matches_packet(request, seq, &send_ev.packet) => {
+        IbcEvent::SendPacket(ref send_ev)
+            if matches_packet(request, seqs.to_vec(), &send_ev.packet) =>
+        {
             Some(ibc_event)
         }
         IbcEvent::WriteAcknowledgement(ref ack_ev)
-            if matches_packet(request, seq, &ack_ev.packet) =>
+            if matches_packet(request, seqs.to_vec(), &ack_ev.packet) =>
         {
             Some(ibc_event)
         }

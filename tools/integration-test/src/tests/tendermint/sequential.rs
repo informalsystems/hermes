@@ -24,7 +24,7 @@ impl TestOverrides for SequentialCommitTest {
         config::set_timeout_commit(config, BLOCK_TIME)?;
         config::set_timeout_propose(config, BLOCK_TIME)?;
 
-        // Enable priority mempool. Note that this is not working currently
+        // Enable priority mempool
         config::set_mempool_version(config, "v1")?;
 
         Ok(())
