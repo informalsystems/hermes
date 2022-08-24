@@ -11,7 +11,7 @@ use crate::application::app_config;
 use crate::cli_utils::spawn_chain_runtime;
 use crate::error::Error;
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct RegisterCounterpartyPayeeCmd {
     #[clap(
         long = "chain",
