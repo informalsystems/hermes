@@ -64,6 +64,19 @@ pub struct QueryAccountRequest {
     #[prost(string, tag="1")]
     pub address: ::prost::alloc::string::String,
 }
+/// QueryModuleAccountsRequest is the request type for the Query/ModuleAccounts RPC method.
+///
+/// Since: cosmos-sdk 0.46
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryModuleAccountsRequest {
+}
+/// QueryParamsResponse is the response type for the Query/Params RPC method.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryParamsResponse {
+    /// params defines the parameters of the module.
+    #[prost(message, optional, tag="1")]
+    pub params: ::core::option::Option<Params>,
+}
 /// QueryAccountResponse is the response type for the Query/Account RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryAccountResponse {
@@ -75,12 +88,71 @@ pub struct QueryAccountResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryParamsRequest {
 }
-/// QueryParamsResponse is the response type for the Query/Params RPC method.
+/// QueryModuleAccountsResponse is the response type for the Query/ModuleAccounts RPC method.
+///
+/// Since: cosmos-sdk 0.46
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryParamsResponse {
-    /// params defines the parameters of the module.
-    #[prost(message, optional, tag="1")]
-    pub params: ::core::option::Option<Params>,
+pub struct QueryModuleAccountsResponse {
+    #[prost(message, repeated, tag="1")]
+    pub accounts: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
+}
+/// Bech32PrefixRequest is the request type for Bech32Prefix rpc method.
+///
+/// Since: cosmos-sdk 0.46
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Bech32PrefixRequest {
+}
+/// Bech32PrefixResponse is the response type for Bech32Prefix rpc method.
+///
+/// Since: cosmos-sdk 0.46
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Bech32PrefixResponse {
+    #[prost(string, tag="1")]
+    pub bech32_prefix: ::prost::alloc::string::String,
+}
+/// AddressBytesToStringRequest is the request type for AddressString rpc method.
+///
+/// Since: cosmos-sdk 0.46
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AddressBytesToStringRequest {
+    #[prost(bytes="vec", tag="1")]
+    pub address_bytes: ::prost::alloc::vec::Vec<u8>,
+}
+/// AddressBytesToStringResponse is the response type for AddressString rpc method.
+///
+/// Since: cosmos-sdk 0.46
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AddressBytesToStringResponse {
+    #[prost(string, tag="1")]
+    pub address_string: ::prost::alloc::string::String,
+}
+/// AddressStringToBytesRequest is the request type for AccountBytes rpc method.
+///
+/// Since: cosmos-sdk 0.46
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AddressStringToBytesRequest {
+    #[prost(string, tag="1")]
+    pub address_string: ::prost::alloc::string::String,
+}
+/// AddressStringToBytesResponse is the response type for AddressBytes rpc method.
+///
+/// Since: cosmos-sdk 0.46
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AddressStringToBytesResponse {
+    #[prost(bytes="vec", tag="1")]
+    pub address_bytes: ::prost::alloc::vec::Vec<u8>,
+}
+/// QueryAccountAddressByIDRequest is the request type for AccountAddressByID rpc method
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryAccountAddressByIdRequest {
+    #[prost(int64, tag="1")]
+    pub id: i64,
+}
+/// QueryAccountAddressByIDResponse is the response type for AccountAddressByID rpc method
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryAccountAddressByIdResponse {
+    #[prost(string, tag="1")]
+    pub account_address: ::prost::alloc::string::String,
 }
 /// Generated client implementations.
 #[cfg(feature = "client")]
@@ -195,6 +267,29 @@ pub mod query_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
+        /// AccountAddressByID returns account address based on account id
+        pub async fn account_address_by_id(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryAccountAddressByIdRequest>,
+        ) -> Result<
+            tonic::Response<super::QueryAccountAddressByIdResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.auth.v1beta1.Query/AccountAddressByID",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
         /// Params queries all parameters.
         pub async fn params(
             &mut self,
@@ -212,6 +307,100 @@ pub mod query_client {
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/cosmos.auth.v1beta1.Query/Params",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// ModuleAccounts returns all the existing module accounts.
+        ///
+        /// Since: cosmos-sdk 0.46
+        pub async fn module_accounts(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryModuleAccountsRequest>,
+        ) -> Result<tonic::Response<super::QueryModuleAccountsResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.auth.v1beta1.Query/ModuleAccounts",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// Bech32Prefix queries bech32Prefix
+        ///
+        /// Since: cosmos-sdk 0.46
+        pub async fn bech32_prefix(
+            &mut self,
+            request: impl tonic::IntoRequest<super::Bech32PrefixRequest>,
+        ) -> Result<tonic::Response<super::Bech32PrefixResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.auth.v1beta1.Query/Bech32Prefix",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// AddressBytesToString converts Account Address bytes to string
+        ///
+        /// Since: cosmos-sdk 0.46
+        pub async fn address_bytes_to_string(
+            &mut self,
+            request: impl tonic::IntoRequest<super::AddressBytesToStringRequest>,
+        ) -> Result<
+            tonic::Response<super::AddressBytesToStringResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.auth.v1beta1.Query/AddressBytesToString",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        /// AddressStringToBytes converts Address string to bytes
+        ///
+        /// Since: cosmos-sdk 0.46
+        pub async fn address_string_to_bytes(
+            &mut self,
+            request: impl tonic::IntoRequest<super::AddressStringToBytesRequest>,
+        ) -> Result<
+            tonic::Response<super::AddressStringToBytesResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.auth.v1beta1.Query/AddressStringToBytes",
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
@@ -237,11 +426,47 @@ pub mod query_server {
             &self,
             request: tonic::Request<super::QueryAccountRequest>,
         ) -> Result<tonic::Response<super::QueryAccountResponse>, tonic::Status>;
+        /// AccountAddressByID returns account address based on account id
+        async fn account_address_by_id(
+            &self,
+            request: tonic::Request<super::QueryAccountAddressByIdRequest>,
+        ) -> Result<
+            tonic::Response<super::QueryAccountAddressByIdResponse>,
+            tonic::Status,
+        >;
         /// Params queries all parameters.
         async fn params(
             &self,
             request: tonic::Request<super::QueryParamsRequest>,
         ) -> Result<tonic::Response<super::QueryParamsResponse>, tonic::Status>;
+        /// ModuleAccounts returns all the existing module accounts.
+        ///
+        /// Since: cosmos-sdk 0.46
+        async fn module_accounts(
+            &self,
+            request: tonic::Request<super::QueryModuleAccountsRequest>,
+        ) -> Result<tonic::Response<super::QueryModuleAccountsResponse>, tonic::Status>;
+        /// Bech32Prefix queries bech32Prefix
+        ///
+        /// Since: cosmos-sdk 0.46
+        async fn bech32_prefix(
+            &self,
+            request: tonic::Request<super::Bech32PrefixRequest>,
+        ) -> Result<tonic::Response<super::Bech32PrefixResponse>, tonic::Status>;
+        /// AddressBytesToString converts Account Address bytes to string
+        ///
+        /// Since: cosmos-sdk 0.46
+        async fn address_bytes_to_string(
+            &self,
+            request: tonic::Request<super::AddressBytesToStringRequest>,
+        ) -> Result<tonic::Response<super::AddressBytesToStringResponse>, tonic::Status>;
+        /// AddressStringToBytes converts Address string to bytes
+        ///
+        /// Since: cosmos-sdk 0.46
+        async fn address_string_to_bytes(
+            &self,
+            request: tonic::Request<super::AddressStringToBytesRequest>,
+        ) -> Result<tonic::Response<super::AddressStringToBytesResponse>, tonic::Status>;
     }
     /// Query defines the gRPC querier service.
     #[derive(Debug)]
@@ -379,6 +604,48 @@ pub mod query_server {
                     };
                     Box::pin(fut)
                 }
+                "/cosmos.auth.v1beta1.Query/AccountAddressByID" => {
+                    #[allow(non_camel_case_types)]
+                    struct AccountAddressByIDSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<super::QueryAccountAddressByIdRequest>
+                    for AccountAddressByIDSvc<T> {
+                        type Response = super::QueryAccountAddressByIdResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                super::QueryAccountAddressByIdRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).account_address_by_id(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = AccountAddressByIDSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
                 "/cosmos.auth.v1beta1.Query/Params" => {
                     #[allow(non_camel_case_types)]
                     struct ParamsSvc<T: Query>(pub Arc<T>);
@@ -404,6 +671,166 @@ pub mod query_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = ParamsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/cosmos.auth.v1beta1.Query/ModuleAccounts" => {
+                    #[allow(non_camel_case_types)]
+                    struct ModuleAccountsSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<super::QueryModuleAccountsRequest>
+                    for ModuleAccountsSvc<T> {
+                        type Response = super::QueryModuleAccountsResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::QueryModuleAccountsRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).module_accounts(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ModuleAccountsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/cosmos.auth.v1beta1.Query/Bech32Prefix" => {
+                    #[allow(non_camel_case_types)]
+                    struct Bech32PrefixSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<super::Bech32PrefixRequest>
+                    for Bech32PrefixSvc<T> {
+                        type Response = super::Bech32PrefixResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::Bech32PrefixRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).bech32_prefix(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = Bech32PrefixSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/cosmos.auth.v1beta1.Query/AddressBytesToString" => {
+                    #[allow(non_camel_case_types)]
+                    struct AddressBytesToStringSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<super::AddressBytesToStringRequest>
+                    for AddressBytesToStringSvc<T> {
+                        type Response = super::AddressBytesToStringResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::AddressBytesToStringRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).address_bytes_to_string(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = AddressBytesToStringSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/cosmos.auth.v1beta1.Query/AddressStringToBytes" => {
+                    #[allow(non_camel_case_types)]
+                    struct AddressStringToBytesSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<super::AddressStringToBytesRequest>
+                    for AddressStringToBytesSvc<T> {
+                        type Response = super::AddressStringToBytesResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::AddressStringToBytesRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).address_string_to_bytes(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = AddressStringToBytesSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

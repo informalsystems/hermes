@@ -1,4 +1,71 @@
-/// GetValidatorSetByHeightRequest is the request type for the Query/GetValidatorSetByHeight RPC method.
+/// Block is tendermint type Block, with the Header proposer address
+/// field converted to bech32 string.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Block {
+    #[prost(message, optional, tag="1")]
+    pub header: ::core::option::Option<Header>,
+    #[prost(message, optional, tag="2")]
+    pub data: ::core::option::Option<::tendermint_proto::types::Data>,
+    #[prost(message, optional, tag="3")]
+    pub evidence: ::core::option::Option<::tendermint_proto::types::EvidenceList>,
+    #[prost(message, optional, tag="4")]
+    pub last_commit: ::core::option::Option<::tendermint_proto::types::Commit>,
+}
+/// Header defines the structure of a Tendermint block header.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Header {
+    /// basic block info
+    #[prost(message, optional, tag="1")]
+    pub version: ::core::option::Option<::tendermint_proto::version::Consensus>,
+    #[prost(string, tag="2")]
+    pub chain_id: ::prost::alloc::string::String,
+    #[prost(int64, tag="3")]
+    pub height: i64,
+    #[prost(message, optional, tag="4")]
+    pub time: ::core::option::Option<super::super::super::super::google::protobuf::Timestamp>,
+    /// prev block info
+    #[prost(message, optional, tag="5")]
+    pub last_block_id: ::core::option::Option<::tendermint_proto::types::BlockId>,
+    /// hashes of block data
+    ///
+    /// commit from validators from the last block
+    #[prost(bytes="vec", tag="6")]
+    pub last_commit_hash: ::prost::alloc::vec::Vec<u8>,
+    /// transactions
+    #[prost(bytes="vec", tag="7")]
+    pub data_hash: ::prost::alloc::vec::Vec<u8>,
+    /// hashes from the app output from the prev block
+    ///
+    /// validators for the current block
+    #[prost(bytes="vec", tag="8")]
+    pub validators_hash: ::prost::alloc::vec::Vec<u8>,
+    /// validators for the next block
+    #[prost(bytes="vec", tag="9")]
+    pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
+    /// consensus params for current block
+    #[prost(bytes="vec", tag="10")]
+    pub consensus_hash: ::prost::alloc::vec::Vec<u8>,
+    /// state after txs from the previous block
+    #[prost(bytes="vec", tag="11")]
+    pub app_hash: ::prost::alloc::vec::Vec<u8>,
+    /// root hash of all results from the txs from the previous block
+    #[prost(bytes="vec", tag="12")]
+    pub last_results_hash: ::prost::alloc::vec::Vec<u8>,
+    /// consensus info
+    ///
+    /// evidence included in the block
+    #[prost(bytes="vec", tag="13")]
+    pub evidence_hash: ::prost::alloc::vec::Vec<u8>,
+    /// proposer_address is the original block proposer address, formatted as a Bech32 string.
+    /// In Tendermint, this type is `bytes`, but in the SDK, we convert it to a Bech32 string
+    /// for better UX.
+    ///
+    /// original proposer of the block
+    #[prost(string, tag="14")]
+    pub proposer_address: ::prost::alloc::string::String,
+}
+/// GetValidatorSetByHeightRequest is the request type for the
+/// Query/GetValidatorSetByHeight RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetValidatorSetByHeightRequest {
     #[prost(int64, tag="1")]
@@ -7,7 +74,8 @@ pub struct GetValidatorSetByHeightRequest {
     #[prost(message, optional, tag="2")]
     pub pagination: ::core::option::Option<super::super::query::v1beta1::PageRequest>,
 }
-/// GetValidatorSetByHeightResponse is the response type for the Query/GetValidatorSetByHeight RPC method.
+/// GetValidatorSetByHeightResponse is the response type for the
+/// Query/GetValidatorSetByHeight RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetValidatorSetByHeightResponse {
     #[prost(int64, tag="1")]
@@ -18,14 +86,16 @@ pub struct GetValidatorSetByHeightResponse {
     #[prost(message, optional, tag="3")]
     pub pagination: ::core::option::Option<super::super::query::v1beta1::PageResponse>,
 }
-/// GetLatestValidatorSetRequest is the request type for the Query/GetValidatorSetByHeight RPC method.
+/// GetLatestValidatorSetRequest is the request type for the
+/// Query/GetValidatorSetByHeight RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetLatestValidatorSetRequest {
     /// pagination defines an pagination for the request.
     #[prost(message, optional, tag="1")]
     pub pagination: ::core::option::Option<super::super::query::v1beta1::PageRequest>,
 }
-/// GetLatestValidatorSetResponse is the response type for the Query/GetValidatorSetByHeight RPC method.
+/// GetLatestValidatorSetResponse is the response type for the
+/// Query/GetValidatorSetByHeight RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetLatestValidatorSetResponse {
     #[prost(int64, tag="1")]
@@ -48,31 +118,43 @@ pub struct Validator {
     #[prost(int64, tag="4")]
     pub proposer_priority: i64,
 }
-/// GetBlockByHeightRequest is the request type for the Query/GetBlockByHeight RPC method.
+/// GetBlockByHeightRequest is the request type for the Query/GetBlockByHeight
+/// RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetBlockByHeightRequest {
     #[prost(int64, tag="1")]
     pub height: i64,
 }
-/// GetBlockByHeightResponse is the response type for the Query/GetBlockByHeight RPC method.
+/// GetBlockByHeightResponse is the response type for the Query/GetBlockByHeight
+/// RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetBlockByHeightResponse {
     #[prost(message, optional, tag="1")]
     pub block_id: ::core::option::Option<::tendermint_proto::types::BlockId>,
+    /// Deprecated: please use `sdk_block` instead
     #[prost(message, optional, tag="2")]
     pub block: ::core::option::Option<::tendermint_proto::types::Block>,
+    /// Since: cosmos-sdk 0.47
+    #[prost(message, optional, tag="3")]
+    pub sdk_block: ::core::option::Option<Block>,
 }
-/// GetLatestBlockRequest is the request type for the Query/GetLatestBlock RPC method.
+/// GetLatestBlockRequest is the request type for the Query/GetLatestBlock RPC
+/// method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetLatestBlockRequest {
 }
-/// GetLatestBlockResponse is the response type for the Query/GetLatestBlock RPC method.
+/// GetLatestBlockResponse is the response type for the Query/GetLatestBlock RPC
+/// method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetLatestBlockResponse {
     #[prost(message, optional, tag="1")]
     pub block_id: ::core::option::Option<::tendermint_proto::types::BlockId>,
+    /// Deprecated: please use `sdk_block` instead
     #[prost(message, optional, tag="2")]
     pub block: ::core::option::Option<::tendermint_proto::types::Block>,
+    /// Since: cosmos-sdk 0.47
+    #[prost(message, optional, tag="3")]
+    pub sdk_block: ::core::option::Option<Block>,
 }
 /// GetSyncingRequest is the request type for the Query/GetSyncing RPC method.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -88,7 +170,8 @@ pub struct GetSyncingResponse {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetNodeInfoRequest {
 }
-/// GetNodeInfoResponse is the request type for the Query/GetNodeInfo RPC method.
+/// GetNodeInfoResponse is the response type for the Query/GetNodeInfo RPC
+/// method.
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GetNodeInfoResponse {
     #[prost(message, optional, tag="1")]
@@ -129,6 +212,70 @@ pub struct Module {
     /// checksum
     #[prost(string, tag="3")]
     pub sum: ::prost::alloc::string::String,
+}
+/// ABCIQueryRequest defines the request structure for the ABCIQuery gRPC query.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AbciQueryRequest {
+    #[prost(bytes="vec", tag="1")]
+    pub data: ::prost::alloc::vec::Vec<u8>,
+    #[prost(string, tag="2")]
+    pub path: ::prost::alloc::string::String,
+    #[prost(int64, tag="3")]
+    pub height: i64,
+    #[prost(bool, tag="4")]
+    pub prove: bool,
+}
+/// ABCIQueryResponse defines the response structure for the ABCIQuery gRPC
+/// query.
+///
+/// Note: This type is a duplicate of the ResponseQuery proto type defined in
+/// Tendermint.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AbciQueryResponse {
+    #[prost(uint32, tag="1")]
+    pub code: u32,
+    /// nondeterministic
+    #[prost(string, tag="3")]
+    pub log: ::prost::alloc::string::String,
+    /// nondeterministic
+    #[prost(string, tag="4")]
+    pub info: ::prost::alloc::string::String,
+    #[prost(int64, tag="5")]
+    pub index: i64,
+    #[prost(bytes="vec", tag="6")]
+    pub key: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="7")]
+    pub value: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag="8")]
+    pub proof_ops: ::core::option::Option<ProofOps>,
+    #[prost(int64, tag="9")]
+    pub height: i64,
+    #[prost(string, tag="10")]
+    pub codespace: ::prost::alloc::string::String,
+}
+/// ProofOp defines an operation used for calculating Merkle root. The data could
+/// be arbitrary format, providing nessecary data for example neighbouring node
+/// hash.
+///
+/// Note: This type is a duplicate of the ProofOp proto type defined in
+/// Tendermint.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ProofOp {
+    #[prost(string, tag="1")]
+    pub r#type: ::prost::alloc::string::String,
+    #[prost(bytes="vec", tag="2")]
+    pub key: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes="vec", tag="3")]
+    pub data: ::prost::alloc::vec::Vec<u8>,
+}
+/// ProofOps is Merkle proof defined by the list of ProofOps.
+///
+/// Note: This type is a duplicate of the ProofOps proto type defined in
+/// Tendermint.
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ProofOps {
+    #[prost(message, repeated, tag="1")]
+    pub ops: ::prost::alloc::vec::Vec<ProofOp>,
 }
 /// Generated client implementations.
 #[cfg(feature = "client")]
@@ -327,6 +474,30 @@ pub mod service_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
+        /// ABCIQuery defines a query handler that supports ABCI queries directly to
+        /// the application, bypassing Tendermint completely. The ABCI query must
+        /// contain a valid and supported path, including app, custom, p2p, and store.
+        ///
+        /// Since: cosmos-sdk 0.46
+        pub async fn abci_query(
+            &mut self,
+            request: impl tonic::IntoRequest<super::AbciQueryRequest>,
+        ) -> Result<tonic::Response<super::AbciQueryResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.base.tendermint.v1beta1.Service/ABCIQuery",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -373,6 +544,15 @@ pub mod service_server {
             tonic::Response<super::GetValidatorSetByHeightResponse>,
             tonic::Status,
         >;
+        /// ABCIQuery defines a query handler that supports ABCI queries directly to
+        /// the application, bypassing Tendermint completely. The ABCI query must
+        /// contain a valid and supported path, including app, custom, p2p, and store.
+        ///
+        /// Since: cosmos-sdk 0.46
+        async fn abci_query(
+            &self,
+            request: tonic::Request<super::AbciQueryRequest>,
+        ) -> Result<tonic::Response<super::AbciQueryResponse>, tonic::Status>;
     }
     /// Service defines the gRPC querier service for tendermint queries.
     #[derive(Debug)]
@@ -663,6 +843,42 @@ pub mod service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = GetValidatorSetByHeightSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/cosmos.base.tendermint.v1beta1.Service/ABCIQuery" => {
+                    #[allow(non_camel_case_types)]
+                    struct ABCIQuerySvc<T: Service>(pub Arc<T>);
+                    impl<T: Service> tonic::server::UnaryService<super::AbciQueryRequest>
+                    for ABCIQuerySvc<T> {
+                        type Response = super::AbciQueryResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::AbciQueryRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move { (*inner).abci_query(request).await };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ABCIQuerySvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

@@ -292,6 +292,7 @@ pub enum HashOp {
     Ripemd160 = 4,
     /// ripemd160(sha256(x))
     Bitcoin = 5,
+    Sha512256 = 6,
 }
 impl HashOp {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -306,6 +307,7 @@ impl HashOp {
             HashOp::Keccak => "KECCAK",
             HashOp::Ripemd160 => "RIPEMD160",
             HashOp::Bitcoin => "BITCOIN",
+            HashOp::Sha512256 => "SHA512_256",
         }
     }
 }

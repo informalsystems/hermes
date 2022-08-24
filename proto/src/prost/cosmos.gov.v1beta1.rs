@@ -37,6 +37,9 @@ pub struct Proposal {
     pub content: ::core::option::Option<super::super::super::google::protobuf::Any>,
     #[prost(enumeration="ProposalStatus", tag="3")]
     pub status: i32,
+    /// final_tally_result is the final tally result of the proposal. When
+    /// querying a proposal via gRPC, this field is not populated until the
+    /// proposal's voting period has ended.
     #[prost(message, optional, tag="4")]
     pub final_tally_result: ::core::option::Option<TallyResult>,
     #[prost(message, optional, tag="5")]
@@ -147,7 +150,7 @@ impl VoteOption {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
 #[repr(i32)]
 pub enum ProposalStatus {
-    /// PROPOSAL_STATUS_UNSPECIFIED defines the default propopsal status.
+    /// PROPOSAL_STATUS_UNSPECIFIED defines the default proposal status.
     Unspecified = 0,
     /// PROPOSAL_STATUS_DEPOSIT_PERIOD defines a proposal status during the deposit
     /// period.
@@ -722,7 +725,7 @@ pub struct QueryVoteRequest {
     /// proposal_id defines the unique id of the proposal.
     #[prost(uint64, tag="1")]
     pub proposal_id: u64,
-    /// voter defines the oter address for the proposals.
+    /// voter defines the voter address for the proposals.
     #[prost(string, tag="2")]
     pub voter: ::prost::alloc::string::String,
 }
