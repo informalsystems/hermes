@@ -286,8 +286,6 @@ fn batch_messages(
     let max_message_count = max_msg_num.to_usize();
     let max_tx_size = max_tx_size.into();
 
-    dbg!(config, key_entry, account, tx_memo);
-
     let mut batches = vec![];
 
     // Estimate the overhead of the transaction envelope's encoding,
@@ -296,8 +294,15 @@ fn batch_messages(
     let max_fee = gas_amount_to_fee(&config.gas_config, config.gas_config.max_gas);
     let tx_envelope_len = encoded_tx_len(config, key_entry, account, tx_memo, &[], &max_fee)?;
 
+    // Full length of the transaction can then be derived from the envelope length
+    // and the length of the body field, taking into account the varint encoding
+    // of the body field's length delimiter.
+    fn tx_len(envelope_len: usize, body_len: usize) -> usize {
+        envelope_len + prost::length_delimiter_len(body_len) - 1 + body_len
+    }
+
     let mut current_count = 0;
-    let mut current_size = tx_envelope_len;
+    let mut current_len = 0;
     let mut current_batch = vec![];
 
     for message in messages {
@@ -307,11 +312,15 @@ fn batch_messages(
         // field tag (small varint) and the length delimiter.
         let tagged_len = 1 + prost::length_delimiter_len(message_len) + message_len;
 
-        if tx_envelope_len + tagged_len > max_tx_size {
+        // Check if the message is too big to fit into the transaction size limit
+        // even if the message is taken alone.
+        if tx_len(tx_envelope_len, tagged_len) > max_tx_size {
             return Err(Error::message_too_big_for_tx(message_len));
         }
 
-        if current_count >= max_message_count || current_size + tagged_len > max_tx_size {
+        if current_count >= max_message_count
+            || tx_len(tx_envelope_len, current_len + tagged_len) > max_tx_size
+        {
             let insert_batch = mem::take(&mut current_batch);
 
             assert!(
@@ -321,11 +330,11 @@ fn batch_messages(
 
             batches.push(insert_batch);
             current_count = 0;
-            current_size = tx_envelope_len;
+            current_len = 0;
         }
 
         current_count += 1;
-        current_size += tagged_len;
+        current_len += tagged_len;
         current_batch.push(message);
     }
 
