@@ -6,7 +6,7 @@ use itertools::Itertools;
 use std::thread;
 use std::time::Instant;
 use tendermint_rpc::{HttpClient, Url};
-use tracing::{info, trace};
+use tracing::{debug, trace};
 
 use crate::chain::cosmos::query::tx::query_tx_response;
 use crate::chain::cosmos::types::events::from_tx_response_event;
@@ -26,6 +26,10 @@ pub async fn wait_for_block_commits(
     rpc_timeout: &Duration,
     tx_sync_results: &mut [TxSyncResult],
 ) -> Result<(), Error> {
+    if all_tx_results_found(tx_sync_results) {
+        return Ok(());
+    }
+
     let start_time = Instant::now();
 
     let hashes = tx_sync_results
@@ -33,7 +37,7 @@ pub async fn wait_for_block_commits(
         .map(|res| res.response.hash.to_string())
         .join(", ");
 
-    info!(
+    debug!(
         id = %chain_id,
         "wait_for_block_commits: waiting for commit of tx hashes(s) {}",
         hashes
