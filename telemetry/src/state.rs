@@ -11,6 +11,7 @@ use opentelemetry_prometheus::PrometheusExporter;
 use prometheus::proto::MetricFamily;
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
+
 use tendermint::Time;
 
 use crate::path_identifier::PathIdentifier;
@@ -18,6 +19,40 @@ use crate::path_identifier::PathIdentifier;
 const EMPTY_BACKLOG_SYMBOL: u64 = 0;
 const BACKLOG_CAPACITY: usize = 1000;
 const BACKLOG_RESET_THRESHOLD: usize = 900;
+
+const QUERY_TYPES_CACHE: [&str; 4] = [
+    "query_latest_height",
+    "query_client_state",
+    "query_connection",
+    "query_channel",
+];
+
+const QUERY_TYPES: [&str; 24] = [
+    "query_latest_height",
+    "query_blocks",
+    "query_txs",
+    "query_next_sequence_receive",
+    "query_unreceived_acknowledgements",
+    "query_packet_acknowledgements",
+    "query_unreceived_packets",
+    "query_packet_commitments",
+    "query_channel_client_state",
+    "query_channel",
+    "query_channels",
+    "query_connection_channels",
+    "query_connection",
+    "query_connections",
+    "query_client_connections",
+    "query_consensus_state",
+    "query_consensus_states",
+    "query_upgraded_consensus_state",
+    "query_client_state",
+    "query_clients",
+    "query_application_status",
+    "query_commitment_prefix",
+    "query_latest_height",
+    "query_staking_params",
+];
 
 #[derive(Copy, Clone, Debug)]
 pub enum WorkerType {
@@ -137,6 +172,106 @@ impl TelemetryState {
         self.exporter.registry().gather()
     }
 
+    pub fn init_worker_by_type(&self, worker_type: WorkerType) {
+        self.worker(worker_type, 0);
+    }
+
+    pub fn init_per_chain(&self, chain_id: &ChainId) {
+        let labels = &[KeyValue::new("chain", chain_id.to_string())];
+
+        self.ws_reconnect.add(0, labels);
+        self.ws_events.add(0, labels);
+        self.total_messages_submitted.add(0, labels);
+
+        self.init_queries(chain_id);
+    }
+
+    pub fn init_per_channel(
+        &self,
+        src_chain: &ChainId,
+        src_channel: &ChannelId,
+        src_port: &PortId,
+    ) {
+        let labels = &[
+            KeyValue::new("src_chain", src_chain.to_string()),
+            KeyValue::new("src_channel", src_channel.to_string()),
+            KeyValue::new("src_port", src_port.to_string()),
+        ];
+
+        self.receive_packets_confirmed.add(0, labels);
+        self.acknowledgment_packets_confirmed.add(0, labels);
+        self.timeout_packets_confirmed.add(0, labels);
+    }
+
+    pub fn init_per_path(
+        &self,
+        chain: &ChainId,
+        counterparty: &ChainId,
+        channel: &ChannelId,
+        port: &PortId,
+        clear_packets: bool,
+    ) {
+        let labels = &[
+            KeyValue::new("chain", chain.to_string()),
+            KeyValue::new("counterparty", counterparty.to_string()),
+            KeyValue::new("channel", channel.to_string()),
+            KeyValue::new("port", port.to_string()),
+        ];
+
+        self.send_packet_events.add(0, labels);
+        self.acknowledgement_events.add(0, labels);
+        self.timeout_events.add(0, labels);
+
+        if clear_packets {
+            self.cleared_send_packet_events.add(0, labels);
+            self.cleared_acknowledgment_events.add(0, labels);
+        }
+
+        self.backlog_oldest_sequence.record(0, labels);
+        self.backlog_oldest_timestamp.record(0, labels);
+        self.backlog_size.record(0, labels);
+    }
+
+    pub fn init_per_client(
+        &self,
+        src_chain: &ChainId,
+        dst_chain: &ChainId,
+        client: &ClientId,
+        misbehaviour: bool,
+    ) {
+        let labels = &[
+            KeyValue::new("src_chain", src_chain.to_string()),
+            KeyValue::new("dst_chain", dst_chain.to_string()),
+            KeyValue::new("client", client.to_string()),
+        ];
+
+        self.client_updates_submitted.add(0, labels);
+
+        if misbehaviour {
+            self.client_misbehaviours_submitted.add(0, labels);
+        }
+    }
+
+    fn init_queries(&self, chain_id: &ChainId) {
+        for query_type in QUERY_TYPES {
+            let labels = &[
+                KeyValue::new("chain", chain_id.to_string()),
+                KeyValue::new("query_type", query_type),
+            ];
+
+            self.queries.add(0, labels);
+        }
+
+        for query_type in QUERY_TYPES_CACHE {
+            let labels = &[
+                KeyValue::new("chain", chain_id.to_string()),
+                KeyValue::new("query_type", query_type),
+            ];
+
+            self.queries_cache_hits.add(0, labels);
+        }
+    }
+
     /// Update the number of workers per object
     pub fn worker(&self, worker_type: WorkerType, count: i64) {
         let labels = &[KeyValue::new("type", worker_type.to_string())];
@@ -144,9 +279,16 @@ impl TelemetryState {
     }
 
     /// Update the number of client updates per client
-    pub fn client_updates_submitted(&self, chain: &ChainId, client: &ClientId, count: u64) {
+    pub fn client_updates_submitted(
+        &self,
+        src_chain: &ChainId,
+        dst_chain: &ChainId,
+        client: &ClientId,
+        count: u64,
+    ) {
         let labels = &[
-            KeyValue::new("chain", chain.to_string()),
+            KeyValue::new("src_chain", src_chain.to_string()),
+            KeyValue::new("dst_chain", dst_chain.to_string()),
             KeyValue::new("client", client.to_string()),
         ];
 
@@ -178,13 +320,13 @@ impl TelemetryState {
         src_port: &PortId,
         count: u64,
     ) {
-        let labels = &[
-            KeyValue::new("src_chain", src_chain.to_string()),
-            KeyValue::new("src_channel", src_channel.to_string()),
-            KeyValue::new("src_port", src_port.to_string()),
-        ];
-
         if count > 0 {
+            let labels = &[
+                KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("src_port", src_port.to_string()),
+            ];
+
             self.receive_packets_confirmed.add(count, labels);
         }
     }
@@ -197,13 +339,13 @@ impl TelemetryState {
         src_port: &PortId,
         count: u64,
     ) {
-        let labels = &[
-            KeyValue::new("src_chain", src_chain.to_string()),
-            KeyValue::new("src_channel", src_channel.to_string()),
-            KeyValue::new("src_port", src_port.to_string()),
-        ];
-
         if count > 0 {
+            let labels = &[
+                KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("src_port", src_port.to_string()),
+            ];
+
             self.acknowledgment_packets_confirmed.add(count, labels);
         }
     }
@@ -216,13 +358,13 @@ impl TelemetryState {
         src_port: &PortId,
         count: u64,
     ) {
-        let labels = &[
-            KeyValue::new("src_chain", src_chain.to_string()),
-            KeyValue::new("src_channel", src_channel.to_string()),
-            KeyValue::new("src_port", src_port.to_string()),
-        ];
-
         if count > 0 {
+            let labels = &[
+                KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("src_port", src_port.to_string()),
+            ];
+
             self.timeout_packets_confirmed.add(count, labels);
         }
     }

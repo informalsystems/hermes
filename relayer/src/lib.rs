@@ -29,6 +29,7 @@ pub mod connection;
 pub mod denom;
 pub mod error;
 pub mod event;
+pub mod extension_options;
 pub mod foreign_client;
 pub mod keyring;
 pub mod light_client;

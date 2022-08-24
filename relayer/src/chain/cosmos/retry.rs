@@ -4,6 +4,7 @@ use std::thread;
 use tracing::{debug, error, instrument, warn};
 
 use ibc_proto::google::protobuf::Any;
+use std::thread;
 use tendermint::abci::Code;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 
@@ -53,13 +54,13 @@ pub async fn send_tx_with_account_sequence_retry(
 ) -> Result<Response, Error> {
     time!("send_tx_with_account_sequence_retry");
 
-    let message_count = messages.len() as u64;
+    let _message_count = messages.len() as u64;
 
     let response =
         do_send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, messages).await;
 
     if response.is_ok() {
-        telemetry!(total_messages_submitted, &config.chain_id, message_count);
+        telemetry!(total_messages_submitted, &config.chain_id, _message_count);
     }
 
     response

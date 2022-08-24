@@ -1157,6 +1157,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         telemetry!(
             client_updates_submitted,
+            &self.src_chain.id(),
             &self.dst_chain.id(),
             &self.id,
             msgs.len() as u64

@@ -47,7 +47,7 @@ __`connection-<n>`__ for connections
 For example `connection-0` is assigned to the first connection created on `ibc-1`:
 
 ```shell
-hermes tx conn-init --b-chain ibc-1 --a-chain ibc-0 --b-client 07-tendermint-0 --a-client 07-tendermint-0
+hermes tx conn-init --dst-chain ibc-1 --src-chain ibc-0 --dst-client 07-tendermint-0 --src-client dummyclientname
 ```
 
 ```json
@@ -68,7 +68,7 @@ Success: OpenInitConnection(
             ),
             counterparty_connection_id: None,
             counterparty_client_id: ClientId(
-                "07-tendermint-0",
+                "dummyclientname",
             ),
         },
     ),
@@ -83,7 +83,7 @@ We will create a second connection on `ibc-1` with identifier `connection-1` in 
 For example `channel-0` is assigned to the first channel created on `ibc-1`:
 
 ```shell
-hermes tx chan-open-init --b-chain ibc-1 --a-chain ibc-0 --b-connection connection-0 --b-port transfer --a-port transfer
+hermes tx chan-open-init --dst-chain ibc-1 --src-chain ibc-0 --dst-connection connection-0 --dst-port transfer --src-port transfer
 ```
 
 ```json
