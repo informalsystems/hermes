@@ -16,6 +16,7 @@ pub mod memo;
 pub mod python;
 mod query_packet;
 pub mod supervisor;
+pub mod tendermint;
 pub mod ternary_transfer;
 pub mod transfer;
 
