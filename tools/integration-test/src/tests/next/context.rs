@@ -1,12 +1,12 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_cosmos::cosmos::context::chain::CosmosChainContext;
 use ibc_relayer_cosmos::cosmos::context::relay::CosmosRelayContext;
-use ibc_relayer_cosmos::tokio::context::TokioRuntimeContext;
 use ibc_relayer_framework::extras::batch::spawn::{
     BatchMessageWorkerSpawner, CanSpawnBatchMessageWorker,
 };
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
 use ibc_relayer_framework::traits::target::{DestinationTarget, SourceTarget};
+use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_test_framework::types::binary::chains::ConnectedChains;
 
 pub fn build_cosmos_relay_context<ChainA, ChainB>(

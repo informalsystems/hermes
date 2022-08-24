@@ -17,6 +17,7 @@ description = """
 ibc             = { path = "../../modules" }
 ibc-relayer     = { path = "../../relayer" }
 ibc-relayer-framework     = { path = "../../relayer-framework" }
+ibc-relayer-runtime     = { path = "../../relayer-runtime" }
 ibc-relayer-cosmos     = { path = "../../relayer-cosmos" }
 ibc-relayer-cli = { path = "../../relayer-cli" }
 ibc-proto       = { path = "../../proto" }

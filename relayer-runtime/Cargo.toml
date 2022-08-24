@@ -1,5 +1,5 @@
 [package]
-name         = "ibc-relayer-framework"
+name         = "ibc-relayer-runtime"
 version      = "0.1.0"
 edition      = "2021"
 license      = "Apache-2.0"
@@ -19,3 +19,7 @@ all-features = true
 
 [dependencies]
 async-trait = "0.1.56"
+tokio = "1.19.2"
+tracing = "0.1.36"
+flex-error = { version = "0.4.4", default-features = false }
+ibc-relayer-framework = { version = "0.1.0", path = "../relayer-framework" }

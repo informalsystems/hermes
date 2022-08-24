@@ -22,7 +22,8 @@ default   = ["flex-error/std", "flex-error/eyre_tracer"]
 ibc           = { version = "0.19.0", path = "../modules" }
 ibc-proto     = { version = "0.20.0", path = "../proto" }
 ibc-relayer     = { version = "0.19.0", path = "../relayer" }
-ibc-relayer-framework     = { version = "0.19.0", path = "../relayer-framework" }
+ibc-relayer-runtime = { version = "0.1.0", path = "../relayer-runtime" }
+ibc-relayer-framework = { version = "0.1.0", path = "../relayer-framework" }
 
 serde = "1.0"
 serde_derive = "1.0"

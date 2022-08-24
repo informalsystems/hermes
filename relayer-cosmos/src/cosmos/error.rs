@@ -5,7 +5,7 @@ use ibc_relayer::error::Error as RelayerError;
 use ibc_relayer::foreign_client::ForeignClientError;
 use prost::EncodeError;
 
-use crate::tokio::error::Error as TokioError;
+use ibc_relayer_runtime::tokio::error::Error as TokioError;
 
 define_error! {
     #[derive(Clone)]

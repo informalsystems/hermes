@@ -7,6 +7,7 @@ members = [
     "relayer",
     "relayer-framework",
     "relayer-framework-guide",
+    "relayer-runtime",
     "relayer-cosmos",
     "relayer-cli",
     "relayer-rest",

@@ -1452,6 +1452,7 @@ dependencies = [
  "ibc-relayer-cli",
  "ibc-relayer-cosmos",
  "ibc-relayer-framework",
+ "ibc-relayer-runtime",
  "ibc-test-framework",
  "serde",
  "serde_json",
@@ -1588,6 +1589,7 @@ dependencies = [
  "ibc-proto",
  "ibc-relayer",
  "ibc-relayer-framework",
+ "ibc-relayer-runtime",
  "itertools",
  "prost",
  "serde",
@@ -1603,7 +1605,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-framework"
-version = "0.19.0"
+version = "0.1.0"
 dependencies = [
  "async-trait",
 ]
@@ -1620,6 +1622,7 @@ dependencies = [
  "ibc-relayer",
  "ibc-relayer-cosmos",
  "ibc-relayer-framework",
+ "ibc-relayer-runtime",
  "itertools",
  "prost",
  "serde",
@@ -1645,6 +1648,17 @@ dependencies = [
  "toml",
  "tracing",
  "ureq",
+]
+
+[[package]]
+name = "ibc-relayer-runtime"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "flex-error",
+ "ibc-relayer-framework",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
