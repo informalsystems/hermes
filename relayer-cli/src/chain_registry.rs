@@ -129,6 +129,8 @@ where
         },
         packet_filter: packet_filter.unwrap_or_default(),
         address_type: AddressType::default(),
+        sequential_batch_tx: false,
+        extension_options: Vec::new(),
     })
 }
 
