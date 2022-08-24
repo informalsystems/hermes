@@ -81,12 +81,40 @@ Now, let's exchange `samoleans` between chains.
     ```
     Hermes will first relay the pending packets that have not been relayed and then start passive relaying by listening to and acting on packet events. 
 
-- In a separate terminal, use the `ft-transfer` command to send `100000 samoleans` from ibc-0 to ibc-1 from channel-0:
+- Let's transfer `1000000 samoleans` from ibc-1 to ibc-3. Remember that there is a direct path between ibc-1 (channel-2) and ibc-3 (channel-1).
+
+    - In a separate terminal, use the `ft-transfer` command to send `1000000 samoleans` from ibc-1 to ibc-3 from channel-2:
     ```shell
-        hermes tx ft-transfer --dst-chain ibc-1 --src-chain ibc-0 --src-port transfer --src-channel channel-0 --amount 100000 --timeout-seconds 1000
+        hermes tx ft-transfer --dst-chain ibc-3 --src-chain ibc-1 --src-port transfer --src-channel channel-2 --amount 1000000 --timeout-seconds 1000
+    ``` 
+    - Wait a few seconds then query balances on `ibc-1` and `ibc-3`. You should observe that `ibc-1` lost 1000000 samoleans but `ibc-3` did not receive any:
+
+        * ibc-1 : 
+        ```
+        
+        ```
+        * ibc-3 : 
+        ```
+        
+        ```
+
+    - Observe the output on the relayer terminal and verify that no event is processed. 
+
+    If you correctly created the packet filters in the [previous section](./build-the-topology.md), the relayer does not relay on this path. So what happened to the 1000000 samoleans you just sent ? It is stuck until a relayer decides to relay this packet to `ibc-3`. For now, let's forget about these samoleans. We can get as many as we want anyway. 
+
+    It might be impossible to send packets directly from `ibc-1` to `ibc-3`, however, it is possible to use `ibc-2` as a bridge:
+
+    ```mermaid
+    graph LR;
+    ibc1 --> ibc2 --> ibc3
     ```
-- Wait a few seconds then query balances on `ibc-1` and `ibc-0`. You should observe something similar to:
-    - ibc-0:
+
+- In a separate terminal, use the `ft-transfer` command to send `1000000 samoleans` from ibc-1 to ibc-2 from channel-1:
+    ```shell
+        hermes tx ft-transfer --dst-chain ibc-2 --src-chain ibc-1 --src-port transfer --src-channel channel-1 --amount 1000000 --timeout-seconds 1000
+    ```
+- Wait a few seconds then query balances on `ibc-1` and `ibc-2`. You should observe something similar to:
+    - ibc-1:
         ```
             - amount: "99900000"
             denom: samoleans
@@ -96,7 +124,7 @@ Now, let's exchange `samoleans` between chains.
             next_key: null
             total: "0"
         ```
-    - ibc-1:
+    - ibc-2:
         ```
             - amount: "100000"
             denom: ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
