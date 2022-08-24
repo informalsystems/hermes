@@ -341,20 +341,12 @@ mod tests {
     use crate::chain::cosmos::types::config::TxConfig;
     use crate::config;
     use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
-    use crate::keyring::KeyEntry;
-    use bitcoin::network::constants::Network;
-    use bitcoin::util::bip32::{ExtendedPrivKey, ExtendedPubKey};
-    use bitcoin::util::key::Secp256k1;
+    use crate::keyring::{self, KeyEntry, KeyRing};
     use ibc::core::ics24_host::identifier::ChainId;
     use ibc_proto::google::protobuf::Any;
+    use std::fs;
 
-    fn decode_bech32(input: &str) -> Vec<u8> {
-        use bech32::FromBase32;
-
-        bech32::decode(input)
-            .and_then(|(_, data, _)| Vec::from_base32(&data))
-            .unwrap()
-    }
+    const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
 
     fn test_fixture() -> (TxConfig, KeyEntry, Account) {
         let path = concat!(
@@ -362,26 +354,21 @@ mod tests {
             "/tests/config/fixtures/relayer_conf_example.toml"
         );
         let config = config::load(path).expect("could not parse config");
-        let chain_config = config.find_chain(&ChainId::from_string("chain_A")).unwrap();
+        let chain_id = ChainId::from_string("chain_A");
+        let chain_config = config.find_chain(&chain_id).unwrap();
 
         let tx_config = TxConfig::try_from(chain_config).expect("could not obtain tx config");
 
-        let secp256k1 = Secp256k1::new();
-        let private_key = ExtendedPrivKey::new_master(
-            Network::Testnet,
-            b"the quick brown fox jumps over the lazy dog",
-        )
-        .unwrap();
-        // Derive a private subkey with a path?
-        let public_key = ExtendedPubKey::from_priv(&secp256k1, &private_key);
-        let account = String::from("cosmos1m2rdz42g8xwqa63r4s8tnsfwyvktcajpn93cvn");
-        let address = decode_bech32(&account);
-        let key_entry = KeyEntry {
-            public_key,
-            private_key,
-            account,
-            address,
-        };
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer-seed.json"
+        );
+        let seed_file_content = fs::read_to_string(path).unwrap();
+        let keyring = KeyRing::new(keyring::Store::Memory, "cosmos", &chain_id).unwrap();
+        let hd_path = COSMOS_HD_PATH.parse().unwrap();
+        let key_entry = keyring
+            .key_from_seed_file(&seed_file_content, &hd_path)
+            .unwrap();
 
         let account = Account {
             number: AccountNumber::new(0),
