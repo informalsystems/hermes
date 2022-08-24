@@ -7,7 +7,7 @@ whose metrics can be exposed over HTTP for integration with the [Prometheus][pro
 The official Hermes builds for Linux and macOS come with telemetry support since version `v0.4.0`.
 See the [installation instructions][installation] for how to obtain the latest version of Hermes.
 
-[installation]: installation.html#install-the-relayer
+[installation]: installation.md#install-the-relayer
 [opentelemetry]: https://opentelemetry.io
 [prometheus]: https://prometheus.io
 
