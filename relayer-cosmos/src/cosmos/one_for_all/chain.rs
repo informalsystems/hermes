@@ -206,6 +206,6 @@ where
         Vec<CosmosIbcMessage>,
         oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
     )> {
-        todo!()
+        &self.batch_sender
     }
 }

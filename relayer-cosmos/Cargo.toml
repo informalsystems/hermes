@@ -32,6 +32,7 @@ prost = { version = "0.11" }
 eyre = "0.6.8"
 tokio = "1.19.2"
 itertools = "0.10.3"
+tracing = "0.1.36"
 
 [dependencies.tendermint]
 version = "=0.23.9"

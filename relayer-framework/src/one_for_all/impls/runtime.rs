@@ -3,9 +3,12 @@ use core::future::Future;
 use core::time::Duration;
 
 use crate::one_for_all::traits::error::OfaErrorContext;
-use crate::one_for_all::traits::runtime::{OfaRuntime, OfaRuntimeContext};
+use crate::one_for_all::traits::runtime::{LogLevel, OfaRuntime, OfaRuntimeContext};
 use crate::std_prelude::*;
 use crate::traits::contexts::error::HasError;
+use crate::traits::runtime::log::{
+    HasLogger, LevelDebug, LevelError, LevelInfo, LevelTrace, LevelWarn,
+};
 use crate::traits::runtime::sleep::CanSleep;
 use crate::traits::runtime::spawn::{HasSpawner, Spawner};
 use crate::traits::runtime::time::{HasTime, Time};
@@ -55,5 +58,40 @@ impl<Runtime: OfaRuntime> HasTime for OfaRuntimeContext<Runtime> {
 impl<Runtime: OfaRuntime> Time for OfaTime<Runtime> {
     fn duration_since(&self, other: &Self) -> Duration {
         Runtime::duration_since(&self.time, &other.time)
+    }
+}
+
+#[async_trait]
+impl<Runtime: OfaRuntime> HasLogger<LevelError> for OfaRuntimeContext<Runtime> {
+    async fn log(&self, _level: LevelError, message: &str) {
+        self.runtime.log(LogLevel::Error, message).await;
+    }
+}
+
+#[async_trait]
+impl<Runtime: OfaRuntime> HasLogger<LevelWarn> for OfaRuntimeContext<Runtime> {
+    async fn log(&self, _level: LevelWarn, message: &str) {
+        self.runtime.log(LogLevel::Warn, message).await;
+    }
+}
+
+#[async_trait]
+impl<Runtime: OfaRuntime> HasLogger<LevelInfo> for OfaRuntimeContext<Runtime> {
+    async fn log(&self, _level: LevelInfo, message: &str) {
+        self.runtime.log(LogLevel::Info, message).await;
+    }
+}
+
+#[async_trait]
+impl<Runtime: OfaRuntime> HasLogger<LevelDebug> for OfaRuntimeContext<Runtime> {
+    async fn log(&self, _level: LevelDebug, message: &str) {
+        self.runtime.log(LogLevel::Debug, message).await;
+    }
+}
+
+#[async_trait]
+impl<Runtime: OfaRuntime> HasLogger<LevelTrace> for OfaRuntimeContext<Runtime> {
+    async fn log(&self, _level: LevelTrace, message: &str) {
+        self.runtime.log(LogLevel::Trace, message).await;
     }
 }

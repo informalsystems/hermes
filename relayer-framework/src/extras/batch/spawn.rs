@@ -4,6 +4,7 @@ use crate::std_prelude::*;
 use crate::traits::contexts::chain::IbcChainContext;
 use crate::traits::contexts::relay::RelayContext;
 use crate::traits::ibc_message_sender::{HasIbcMessageSender, IbcMessageSender};
+use crate::traits::runtime::log::{HasLogger, LevelDebug};
 use crate::traits::runtime::sleep::CanSleep;
 use crate::traits::runtime::spawn::HasSpawner;
 use crate::traits::runtime::time::HasTime;
@@ -35,7 +36,7 @@ where
     Relay: RelayContext<Runtime = Runtime>,
     Relay: HasIbcMessageSender<Target, IbcMessageSender = BatchedMessageSender<Sender>>,
     Sender: IbcMessageSender<Relay, Target>,
-    Runtime: HasTime + CanSleep + HasSpawner,
+    Runtime: HasTime + CanSleep + HasSpawner + HasLogger<LevelDebug>,
     Relay: HasBatchContext<Target>,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
     Sender: IbcMessageSender<Relay, Target>,

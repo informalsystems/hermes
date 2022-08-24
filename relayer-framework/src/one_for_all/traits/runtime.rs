@@ -17,11 +17,21 @@ impl<Runtime> OfaRuntimeContext<Runtime> {
     }
 }
 
+pub enum LogLevel {
+    Error,
+    Warn,
+    Info,
+    Debug,
+    Trace,
+}
+
 #[async_trait]
 pub trait OfaRuntime: Clone + Async {
     type Error: OfaError;
 
     type Time: Async;
+
+    async fn log(&self, level: LogLevel, message: &str);
 
     async fn sleep(&self, duration: Duration);
 

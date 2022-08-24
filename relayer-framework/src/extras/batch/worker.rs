@@ -8,6 +8,7 @@ use crate::traits::contexts::relay::RelayContext;
 use crate::traits::core::Async;
 use crate::traits::ibc_message_sender::IbcMessageSender;
 use crate::traits::message::Message as SomeMessage;
+use crate::traits::runtime::log::{HasLogger, LevelDebug};
 use crate::traits::runtime::sleep::CanSleep;
 use crate::traits::runtime::spawn::{HasSpawner, Spawner};
 use crate::traits::runtime::time::{HasTime, Time};
@@ -38,7 +39,7 @@ impl<Relay, Target, Sender, Batch, TargetChain, Message, Event, Runtime, Error>
     BatchMessageWorker<Relay, Target, Sender>
 where
     Relay: RelayContext<Runtime = Runtime, Error = Error>,
-    Runtime: HasTime + CanSleep + HasSpawner,
+    Runtime: HasTime + CanSleep + HasSpawner + HasLogger<LevelDebug>,
     Relay: HasBatchContext<Target, BatchContext = Batch>,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
     Sender: IbcMessageSender<Relay, Target>,
@@ -73,8 +74,15 @@ where
 
         loop {
             match Batch::try_receive_messages(&mut self.messages_receiver).await {
-                Ok(Some(batch)) => {
-                    self.pending_batches.push_back(batch);
+                Ok(m_batch) => {
+                    if let Some(batch) = m_batch {
+                        self.relay
+                            .runtime()
+                            .log(LevelDebug, "received message batch")
+                            .await;
+                        self.pending_batches.push_back(batch);
+                    }
+
                     let current_batch_size = self.pending_batches.len();
                     let now = self.relay.runtime().now();
 
@@ -84,8 +92,11 @@ where
                         self.relay.runtime().sleep(self.config.sleep_time).await;
                     }
                 }
-                Ok(None) => {}
                 Err(_) => {
+                    self.relay
+                        .runtime()
+                        .log(LevelDebug, "error in try_receive, terminating worker")
+                        .await;
                     return;
                 }
             }
@@ -99,14 +110,23 @@ where
     ) {
         let ready_batches = self.partition_message_batches();
 
-        if !ready_batches.is_empty() {
+        if ready_batches.is_empty() {
             // If there is nothing to send, return the remaining batches which should also be empty
         } else if self.pending_batches.is_empty()
             && now.duration_since(last_sent_time) < self.config.max_delay
         {
             // If the current batch is not full and there is still some time until max delay,
             // return everything and wait until the next batch is full
+            self.relay
+                .runtime()
+                .log(LevelDebug, "waiting for more batch to arrive")
+                .await;
+            self.pending_batches = ready_batches;
         } else {
+            self.relay
+                .runtime()
+                .log(LevelDebug, "sending reading batches")
+                .await;
             Self::send_ready_batches(&self.relay, ready_batches).await;
             *last_sent_time = now;
         }
@@ -157,7 +177,7 @@ where
     }
 
     async fn send_ready_batches(
-        context: &Relay,
+        relay: &Relay,
         ready_batches: VecDeque<(Vec<Message>, Batch::ResultSender)>,
     ) {
         let (messages, senders): (Vec<_>, Vec<_>) = ready_batches
@@ -170,7 +190,12 @@ where
 
         let in_messages = messages.into_iter().flatten().collect::<Vec<_>>();
 
-        let send_result = Sender::send_messages(context, in_messages).await;
+        relay
+            .runtime()
+            .log(LevelDebug, "sending batched messages to inner sender")
+            .await;
+
+        let send_result = Sender::send_messages(relay, in_messages).await;
 
         match send_result {
             Err(e) => {

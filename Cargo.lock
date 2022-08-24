@@ -1597,6 +1597,7 @@ dependencies = [
  "tendermint-proto",
  "tendermint-rpc",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
