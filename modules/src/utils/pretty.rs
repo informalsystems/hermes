@@ -1,5 +1,5 @@
 use core::fmt::{Debug, Display, Error as FmtError, Formatter};
-use std::time::Duration;
+use core::time::Duration;
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
 
