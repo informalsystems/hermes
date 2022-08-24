@@ -787,17 +787,17 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             Ok(res) => {
                 // If elapsed < refresh_window for the client, `try_refresh()` will
                 // be successful with an empty vector.
-                if let Some(ibc_events) = res.clone() {
+                if let Some(ibc_events) = &res {
                     // The assumption is that only one IbcEventType::ChainError will be
                     // in the resulting Vec<IbcEvent> if an error occurred.
                     match ibc_events
-                        .into_iter()
-                        .find(|e| e.event_type() == IbcEventType::ChainError)
+                        .iter()
+                        .find(|&e| e.event_type() == IbcEventType::ChainError)
                     {
                         Some(ev) => {
                             return Err(ForeignClientError::chain_error_event(
                                 self.dst_chain().id(),
-                                ev,
+                                ev.to_owned(),
                             ));
                         }
                         None => {
@@ -806,7 +806,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                     }
                 }
                 // Return the successful empty vector.
-                Ok(res)
+                Ok(None)
             }
             Err(e) => Err(e),
         }
