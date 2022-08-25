@@ -22,7 +22,7 @@ impl<Chain: OfaChain> HasRuntime for OfaChainContext<Chain> {
     type Runtime = OfaRuntimeContext<Chain::Runtime>;
 
     fn runtime(&self) -> &Self::Runtime {
-        &self.chain.runtime()
+        self.chain.runtime()
     }
 }
 

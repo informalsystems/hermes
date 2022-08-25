@@ -12,9 +12,9 @@ pub fn full_packet_relayer<Relay: AfoRelayContext>(max_retry: usize) -> impl Pac
 }
 
 pub fn receive_packet_relayer<Relay: AfoRelayContext>() -> impl ReceivePacketRelayer<Relay> {
-    TopReceivePacketRelayer::new()
+    TopReceivePacketRelayer::default()
 }
 
 pub fn ack_packet_relayer<Relay: AfoRelayContext>() -> impl AckPacketRelayer<Relay> {
-    TopAckPacketRelayer::new()
+    TopAckPacketRelayer::default()
 }

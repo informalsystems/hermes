@@ -38,7 +38,7 @@ impl<Relay: OfaRelay> HasRuntime for OfaRelayContext<Relay> {
     type Runtime = OfaRuntimeContext<Relay::Runtime>;
 
     fn runtime(&self) -> &Self::Runtime {
-        &self.relay.runtime()
+        self.relay.runtime()
     }
 }
 
@@ -82,11 +82,11 @@ impl<Relay: OfaRelay> RelayContext for OfaRelayContext<Relay> {
     type Packet = OfaPacket<Relay>;
 
     fn source_chain(&self) -> &Self::SrcChain {
-        &self.relay.src_chain()
+        self.relay.src_chain()
     }
 
     fn destination_chain(&self) -> &Self::DstChain {
-        &self.relay.dst_chain()
+        self.relay.dst_chain()
     }
 
     fn source_client_id(&self) -> &<Relay::SrcChain as OfaChain>::ClientId {

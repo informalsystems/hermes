@@ -50,7 +50,7 @@ where
     );
 
     let relay = new_relay_context_with_batch(
-        runtime.clone(),
+        runtime,
         Arc::new(chain_a),
         Arc::new(chain_b),
         chains.foreign_clients.client_a_to_b.clone(),

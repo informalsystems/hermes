@@ -94,14 +94,14 @@ where
         &self,
         height: &<Self::DstChain as OfaChain>::Height,
     ) -> Result<Vec<<Self::SrcChain as OfaChain>::Message>, Self::Error> {
-        build_update_client_messages(&self.relay.dst_to_src_client(), height)
+        build_update_client_messages(self.relay.dst_to_src_client(), height)
     }
 
     async fn build_dst_update_client_messages(
         &self,
         height: &<Self::SrcChain as OfaChain>::Height,
     ) -> Result<Vec<<Self::DstChain as OfaChain>::Message>, Self::Error> {
-        build_update_client_messages(&self.relay.src_to_dst_client(), height)
+        build_update_client_messages(self.relay.src_to_dst_client(), height)
     }
 
     async fn build_receive_packet_message(
@@ -155,7 +155,7 @@ where
         let packet = packet.clone();
         let ack = ack.ack.clone();
 
-        let message = CosmosIbcMessage::new(Some(destination_height.clone()), move |signer| {
+        let message = CosmosIbcMessage::new(Some(*destination_height), move |signer| {
             Ok(MsgAcknowledgement::new(
                 packet.clone(),
                 ack.clone().into(),

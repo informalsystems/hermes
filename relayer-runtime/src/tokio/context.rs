@@ -65,7 +65,7 @@ where
     }
 
     fn duration_since(time: &Instant, other: &Instant) -> Duration {
-        time.duration_since(other.clone())
+        time.duration_since(*other)
     }
 
     fn spawn<F>(&self, task: F)
