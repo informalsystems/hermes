@@ -94,3 +94,18 @@ pub enum SignMode {
     /// Since: cosmos-sdk 0.45.2
     Eip191 = 191,
 }
+impl SignMode {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            SignMode::Unspecified => "SIGN_MODE_UNSPECIFIED",
+            SignMode::Direct => "SIGN_MODE_DIRECT",
+            SignMode::Textual => "SIGN_MODE_TEXTUAL",
+            SignMode::LegacyAminoJson => "SIGN_MODE_LEGACY_AMINO_JSON",
+            SignMode::Eip191 => "SIGN_MODE_EIP_191",
+        }
+    }
+}

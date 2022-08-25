@@ -18,11 +18,10 @@ class Packet:
 
 @dataclass
 class TxPacketSendRes:
-    height: BlockHeight
     packet: Packet
 
 
-@cmd("tx raw ft-transfer")
+@cmd("tx ft-transfer")
 @dataclass
 class TxPacketSend(Cmd[TxPacketSendRes]):
     dst_chain_id: ChainId
@@ -39,7 +38,7 @@ class TxPacketSend(Cmd[TxPacketSendRes]):
             "--dst-chain", self.dst_chain_id,
             "--src-chain", self.src_chain_id,
             "--src-port", self.src_port,
-            "--src-chan", self.src_channel,
+            "--src-channel", self.src_channel,
             "--amount", str(self.amount),
             "--timeout-height-offset", str(self.height_offset),
         ]
@@ -61,12 +60,11 @@ class TxPacketSend(Cmd[TxPacketSendRes]):
 
 @dataclass
 class TxPacketRecvRes:
-    height: BlockHeight
     packet: Packet
     ack: Hex
 
 
-@cmd("tx raw packet-recv")
+@cmd("tx packet-recv")
 @dataclass
 class TxPacketRecv(Cmd[TxPacketRecvRes]):
     dst_chain_id: ChainId
@@ -75,7 +73,7 @@ class TxPacketRecv(Cmd[TxPacketRecvRes]):
     src_channel: ChannelId
 
     def args(self) -> List[str]:
-        return ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id, "--src-port", self.src_port, "--src-chan", self.src_channel]
+        return ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id, "--src-port", self.src_port, "--src-channel", self.src_channel]
 
     def process(self, result: Any) -> TxPacketRecvRes:
         entry = find_entry(result, 'WriteAcknowledgement')
@@ -86,11 +84,10 @@ class TxPacketRecv(Cmd[TxPacketRecvRes]):
 
 @dataclass
 class TxPacketTimeoutRes:
-    height: BlockHeight
     packet: Packet
 
 
-@cmd("tx raw packet-recv")
+@cmd("tx packet-recv")
 @dataclass
 class TxPacketTimeout(Cmd[TxPacketTimeoutRes]):
     dst_chain_id: ChainId
@@ -99,7 +96,7 @@ class TxPacketTimeout(Cmd[TxPacketTimeoutRes]):
     src_channel: ChannelId
 
     def args(self) -> List[str]:
-        return ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id, "--src-port", self.src_port, "--src-chan", self.src_channel]
+        return ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id, "--src-port", self.src_port, "--src-channel", self.src_channel]
 
     def process(self, result: Any) -> TxPacketTimeoutRes:
         entry = find_entry(result, 'TimeoutPacket')
@@ -111,11 +108,10 @@ class TxPacketTimeout(Cmd[TxPacketTimeoutRes]):
 
 @dataclass
 class TxPacketAckRes:
-    height: BlockHeight
     packet: Packet
 
 
-@cmd("tx raw packet-ack")
+@cmd("tx packet-ack")
 @dataclass
 class TxPacketAck(Cmd[TxPacketAckRes]):
     dst_chain_id: ChainId
@@ -124,7 +120,7 @@ class TxPacketAck(Cmd[TxPacketAckRes]):
     src_channel: ChannelId
 
     def args(self) -> List[str]:
-        return ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id, "--src-port", self.src_port, "--src-chan", self.src_channel]
+        return ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id, "--src-port", self.src_port, "--src-channel", self.src_channel]
 
     def process(self, result: Any) -> TxPacketAckRes:
         entry = find_entry(result, 'AcknowledgePacket')

@@ -12,11 +12,10 @@ class TxChanOpenInitRes:
     connection_id: ConnectionId
     counterparty_channel_id: Optional[ChannelId]
     counterparty_port_id: PortId
-    height: BlockHeight
     port_id: PortId
 
 
-@cmd("tx raw chan-open-init")
+@cmd("tx chan-open-init")
 @dataclass
 class TxChanOpenInit(Cmd[TxChanOpenInitRes]):
     dst_chain_id: ChainId
@@ -28,7 +27,7 @@ class TxChanOpenInit(Cmd[TxChanOpenInitRes]):
 
     def args(self) -> List[str]:
         args = ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id,
-                "--dst-conn", self.connection_id,
+                "--dst-connection", self.connection_id,
                 "--dst-port", self.dst_port_id, "--src-port", self.src_port_id]
 
         if self.ordering is not None:
@@ -49,11 +48,10 @@ class TxChanOpenTryRes:
     connection_id: ConnectionId
     counterparty_channel_id: ChannelId
     counterparty_port_id: ChannelId
-    height: BlockHeight
     port_id: PortId
 
 
-@cmd("tx raw chan-open-try")
+@cmd("tx chan-open-try")
 @dataclass
 class TxChanOpenTry(Cmd[TxChanOpenTryRes]):
     dst_chain_id: ChainId
@@ -66,9 +64,9 @@ class TxChanOpenTry(Cmd[TxChanOpenTryRes]):
 
     def args(self) -> List[str]:
         args = ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id,
-                "--dst-conn", self.connection_id,
+                "--dst-connection", self.connection_id,
                 "--dst-port", self.dst_port_id, "--src-port", self.src_port_id,
-                "--src-chan", self.src_channel_id]
+                "--src-channel", self.src_channel_id]
 
         if self.ordering is not None:
             args.extend(['--ordering', str(self.ordering)])
@@ -88,11 +86,10 @@ class TxChanOpenAckRes:
     connection_id: ConnectionId
     counterparty_channel_id: ChannelId
     counterparty_port_id: ChannelId
-    height: BlockHeight
     port_id: PortId
 
 
-@cmd("tx raw chan-open-ack")
+@cmd("tx chan-open-ack")
 @dataclass
 class TxChanOpenAck(Cmd[TxChanOpenAckRes]):
     dst_chain_id: ChainId
@@ -105,10 +102,10 @@ class TxChanOpenAck(Cmd[TxChanOpenAckRes]):
 
     def args(self) -> List[str]:
         args = ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id,
-                "--dst-conn", self.connection_id,
+                "--dst-connection", self.connection_id,
                 "--dst-port", self.dst_port_id, "--src-port", self.src_port_id,
-                "--dst-chan", self.dst_channel_id,
-                "--src-chan", self.src_channel_id]
+                "--dst-channel", self.dst_channel_id,
+                "--src-channel", self.src_channel_id]
 
         return args
 
@@ -125,11 +122,10 @@ class TxChanOpenConfirmRes:
     connection_id: ConnectionId
     counterparty_channel_id: ChannelId
     counterparty_port_id: ChannelId
-    height: BlockHeight
     port_id: PortId
 
 
-@cmd("tx raw chan-open-confirm")
+@cmd("tx chan-open-confirm")
 @dataclass
 class TxChanOpenConfirm(Cmd[TxChanOpenConfirmRes]):
     dst_chain_id: ChainId
@@ -142,10 +138,10 @@ class TxChanOpenConfirm(Cmd[TxChanOpenConfirmRes]):
 
     def args(self) -> List[str]:
         args = ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id,
-                "--dst-conn", self.connection_id,
+                "--dst-connection", self.connection_id,
                 "--dst-port", self.dst_port_id, "--src-port", self.src_port_id,
-                "--dst-chan", self.dst_channel_id,
-                "--src-chan", self.src_channel_id]
+                "--dst-channel", self.dst_channel_id,
+                "--src-channel", self.src_channel_id]
 
         return args
 
@@ -161,11 +157,10 @@ class TxChanCloseInitRes:
     connection_id: ConnectionId
     counterparty_channel_id: ChannelId
     counterparty_port_id: ChannelId
-    height: BlockHeight
     port_id: PortId
 
 
-@cmd("tx raw chan-close-init")
+@cmd("tx chan-close-init")
 @dataclass
 class TxChanCloseInit(Cmd[TxChanCloseInitRes]):
     dst_chain_id: ChainId
@@ -178,10 +173,10 @@ class TxChanCloseInit(Cmd[TxChanCloseInitRes]):
 
     def args(self) -> List[str]:
         args = ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id,
-                "--dst-conn", self.dst_conn_id,
+                "--dst-connection", self.dst_conn_id,
                 "--dst-port", self.dst_port_id, "--src-port", self.src_port_id,
-                "--dst-chan", self.dst_chan_id,
-                "--src-chan", self.src_chan_id]
+                "--dst-channel", self.dst_chan_id,
+                "--src-channel", self.src_chan_id]
 
         return args
 
@@ -198,11 +193,10 @@ class TxChanCloseConfirmRes:
     connection_id: ConnectionId
     counterparty_channel_id: ChannelId
     counterparty_port_id: ChannelId
-    height: BlockHeight
     port_id: PortId
 
 
-@cmd("tx raw chan-close-confirm")
+@cmd("tx chan-close-confirm")
 @dataclass
 class TxChanCloseConfirm(Cmd[TxChanCloseConfirmRes]):
     dst_chain_id: ChainId
@@ -215,10 +209,10 @@ class TxChanCloseConfirm(Cmd[TxChanCloseConfirmRes]):
 
     def args(self) -> List[str]:
         args = ["--dst-chain", self.dst_chain_id, "--src-chain", self.src_chain_id,
-                "--dst-conn", self.dst_conn_id,
+                "--dst-connection", self.dst_conn_id,
                 "--dst-port", self.dst_port_id, "--src-port", self.src_port_id,
-                "--dst-chan", self.dst_chan_id,
-                "--src-chan", self.src_chan_id]
+                "--dst-channel", self.dst_chan_id,
+                "--src-channel", self.src_chan_id]
 
         return args
 

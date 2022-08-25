@@ -31,45 +31,25 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                         let last_event = batch.events.last();
                         debug!("starts processing {:#?}", last_event);
 
-                        if let Some(event) = last_event {
+                        if let Some(event_with_height) = last_event {
                             let mut handshake_channel = RelayChannel::restore_from_event(
                                 chains.a.clone(),
                                 chains.b.clone(),
-                                event.clone(),
+                                event_with_height.event.clone(),
                             )
                             .map_err(|e| TaskError::Fatal(RunError::channel(e)))?;
 
                             retry_with_index(retry_strategy::worker_default_strategy(), |index| {
-                                handshake_channel.step_event(event.clone(), index)
+                                handshake_channel.step_event(&event_with_height.event, index)
                             })
                             .map_err(|e| TaskError::Fatal(RunError::retry(e)))
                         } else {
                             Ok(Next::Continue)
                         }
                     }
-                    WorkerCmd::NewBlock {
-                        height: current_height,
-                        new_block: _,
-                    } => {
-                        debug!("starts processing block event at {:#?}", current_height);
 
-                        let height = current_height
-                            .decrement()
-                            .map_err(|e| TaskError::Fatal(RunError::ics02(e)))?;
-
-                        let (mut handshake_channel, state) = RelayChannel::restore_from_state(
-                            chains.a.clone(),
-                            chains.b.clone(),
-                            channel.clone(),
-                            height,
-                        )
-                        .map_err(|e| TaskError::Fatal(RunError::channel(e)))?;
-
-                        retry_with_index(retry_strategy::worker_default_strategy(), |index| {
-                            handshake_channel.step_state(state, index)
-                        })
-                        .map_err(|e| TaskError::Fatal(RunError::retry(e)))
-                    }
+                    // nothing to do
+                    WorkerCmd::NewBlock { .. } => Ok(Next::Continue),
 
                     // nothing to do
                     WorkerCmd::ClearPendingPackets => Ok(Next::Continue),

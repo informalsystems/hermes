@@ -61,6 +61,8 @@ pub fn new_tx_config_for_test(
 
     let address_type = Default::default();
 
+    let extension_options = Default::default();
+
     Ok(TxConfig {
         chain_id,
         gas_config,
@@ -69,6 +71,7 @@ pub fn new_tx_config_for_test(
         grpc_address,
         rpc_timeout,
         address_type,
+        extension_options,
     })
 }
 
@@ -118,7 +121,7 @@ pub async fn simple_send_tx(
 
     for result in tx_sync_results.iter() {
         for event in result.events.iter() {
-            if let IbcEvent::ChainError(e) = event {
+            if let IbcEvent::ChainError(ref e) = event.event {
                 return Err(Error::generic(eyre!("send_tx result in error: {}", e)));
             }
         }

@@ -8,13 +8,13 @@ The **Inter-Blockchain Communication protocol** is an end-to-end, connection-ori
 stateful protocol for reliable, ordered, and authenticated communication between modules
 on separate distributed ledgers. [^ibc]
 
-An IBC **relayer** is an off-chain process responsible for relaying IBC datagrams between any two chains.
+An IBC **relayer** is an off-chain process responsible for relaying IBC messages between any two chains.
 The way it does so is by scanning chain states, building transactions based on these states,
 and submitting the transactions to the chains involved in the network.
 
 The relayer is a central element in the IBC network architecture. This is because chain modules
 in this architecture are not directly sending messages to each other over networking infrastructure,
-but instead they create and store the data to be retrieved and used by a relayer to build the IBC datagrams.
+but instead they create and store the data to be retrieved and used by a relayer to build the IBC messages.
 
 We sometimes refer to Hermes as "IBC Relayer CLI", to make it clear that this
 is a relayer CLI (i.e., a binary) and distinguish it from the relayer core library

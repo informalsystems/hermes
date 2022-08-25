@@ -1,5 +1,89 @@
 # Upgrading Hermes to a newer version
 
+## v1.0.0
+
+> These instructions assume that you are running Hermes v1.0.0-rc.2.
+> If you are running an older version, please refer to the upgrading instructions
+> for the older release candidates in reverse chronological order to update to
+> v1.0.0-rc.2 first and then follow these instructions.
+
+This release includes multiple changes related to telemetry:
+- Renamed the following metrics:
+  * `ibc_client_updates` to `client_updates_submitted`
+  * `ibc_client_misbehaviours ` to `client_misbehaviours_submitted`
+  * `ibc_receive_packets` to `receive_packets_confirmed`
+  * `ibc_acknowledgment_packets ` to `acknowledgment_packets_confirmed`
+  * `ibc_timeout_packets ` to `timeout_packets_confirmed`
+  * `cache_hits` to `queries_cache_hits`
+  * `msg_num` to `total_messages_submitted`
+  * `send_packet_count` to `send_packet_events`
+  * `acknowledgement_count` to `acknowledgement_events`
+  * `cleared_send_packet_count` to `cleared_send_packet_events`
+  * `cleared_acknowledgment_count` to `cleared_acknowledgment_events`
+- Added the following metric:
+  * `timeout_events`
+
+For more details, please check out the [new section that was added to guide][telemetry-guide],
+which describes how the new metrics can be used to observe both the current state of
+the relayer and the networks it is connected to.
+
+[telemetry-guide]: https://hermes.informal.systems/telemetry/operators.html
+
+
+## v1.0.0-rc.2
+
+This release is backward compatible with Hermes v1.0.0-rc.1 🎉
+
+
+## v1.0.0-rc.1
+
+> These instructions assume that you are running Hermes v1.0.0-rc.0.
+> If you are running an older version, please refer the corresponding
+> in reverse chronological order to update to v1.0.0-rc.0 first and then
+> follow these instructions.
+
+### Default value of `tx_confirmation` setting has changed
+
+The default value of the configuration `tx_confirmation`
+in Hermes `config.toml` has been changed from `true` to `false`.
+
+If you previously did not specify a value for this setting, you will
+have to set `tx_confirmation = true` in `config.toml` under
+the `[mode.packets]` section.
+
+### All `tx raw` subcommands were moved to the `tx` namespace
+
+The `raw` prefix was removed from all the commands listed below,
+they are now available directly under the `tx` namespace:
+
+- `hermes tx chan-close-confirm`
+- `hermes tx chan-close-init`
+- `hermes tx chan-open-ack`
+- `hermes tx chan-open-confirm`
+- `hermes tx chan-open-init`
+- `hermes tx chan-open-try`
+- `hermes tx conn-ack`
+- `hermes tx conn-confirm`
+- `hermes tx conn-init`
+- `hermes tx conn-try`
+- `hermes tx create-client`
+- `hermes tx ft-transfer`
+- `hermes tx packet-ack`
+- `hermes tx packet-recv`
+- `hermes tx update-client`
+- `hermes tx upgrade-chain`
+- `hermes tx upgrade-client`
+- `hermes tx upgrade-clients`
+
+### Rename `--a-` and `--b-` prefixes in `hermes tx` subcommands to `--src-` and `--dst-`
+
+All commands under the `tx` namespace, with the exception of `tx upgrade-chain`, now use
+`--src-` and `--dst` prefix for flags names instead of `--a-` and `--b-`.
+
+The `tx upgrade-chain` command now uses `--reference-` and `--host-` prefixes.
+
+Please check the commands help or [ADR 010][adr-010] for the full updated list of commands.
+
 ## v1.0.0-rc.0
 
 > These instructions assume that you are running Hermes v0.15.0.
@@ -26,9 +110,7 @@ positional arguments:
 $ hermes create client --host-chain ibc-0 --reference-chain ibc-1
 ```
 
-Please [consult the ADR][flags-adr] which describes the new CLI flags for all commands.
-
-[flags-adr]: https://github.com/informalsystems/ibc-rs/blob/v1.0.0-rc.0/docs/architecture/adr-010-unified-cli-arguments-hermes.md
+Please [consult the ADR][adr-010] which describes the new CLI flags for all commands.
 
 ### The `keys restore` command has been merged into `keys add`
 
@@ -93,4 +175,6 @@ Please [refer to the guide][create-channel] for more information.
 ## Older versions
 
 Please refer to the [CHANGELOG](CHANGELOG.md) for older versions.
+
+[adr-010]: https://github.com/informalsystems/ibc-rs/blob/v1.0.0-rc.1/docs/architecture/adr-010-unified-cli-arguments-hermes.md
 

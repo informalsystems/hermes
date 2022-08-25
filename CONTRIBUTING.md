@@ -1,14 +1,15 @@
 # Contributing
 
-Thank you for your interest in contributing. The goal
+Thank you for your interest in contributing! The goal
 of ibc-rs is to provide a high quality, formally verified implementation of
 the IBC protocol and relayer.
 
 All work on the code base should be motivated by a Github
-Issue. Search is a good place to start when looking for places to contribute.
+issue. Before opening a new issue, first do a search of open and closed issues
+to make sure that yours will not be a duplicate.
 If you would like to work on an issue which already exists, please indicate so
-by leaving a comment. If you'd like to work on something else, open an Issue to
-start the discussion.
+by leaving a comment. If what you'd like to work on hasn't already been covered
+by an issue, then open a new one to get the process going.
 
 The rest of this document outlines the best practices for contributing to this
 repository:
@@ -22,75 +23,74 @@ repository:
 ## Decision Making
 
 When contributing to the project, the following process leads to the best chance of
-landing the changes in master.
+landing the changes in `master`.
 
-All new contributions should start with a Github
-Issue. The issue helps capture the problem you're trying to solve and allows for
-early feedback. Once the issue is created, maintainers may request more detailed
-documentation be written in the form of a Request for Comment (RFC) or
+All new contributions should start with a Github issue which captures the
+problem you're trying to solve. Starting off with an issue allows for early
+feedback. Once the issue is created, maintainers may request that more detailed
+documentation be written in the form of a Request for Comment (RFC) or an
 Architectural Decision Record
 ([ADR](https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/README.md)).
 
 Discussion at the RFC stage will build collective understanding of the dimensions
-of the problems and help structure conversations around trade-offs.
+of the problem and help structure conversations around trade-offs.
 
 When the problem is well understood but the solution leads to large
 structural changes to the code base, these changes should be proposed in
 the form of an [Architectural Decision Record
 (ADR)](./docs/architecture/). The ADR will help build consensus on an
-overall strategy to ensure the code base maintains coherence
+overall strategy to ensure that the code base maintains coherence
 in the larger context. If you are not comfortable with writing an ADR,
-you can open a less-formal issue and the maintainers will help you
+you can open a regular issue and the maintainers will help you
 turn it into an ADR.
 
-When the problem as well as proposed solution are well understood,
+When the problem and the proposed solution are well understood,
 changes should start with a [draft
 pull request](https://github.blog/2019-02-14-introducing-draft-pull-requests/)
-against master. The draft signals that work is underway. When the work
+against `master`. The draft status signals that work is underway. When the work
 is ready for feedback, hitting "Ready for Review" will signal to the
 maintainers to take a look.
 
 Implementation trajectories should aim to proceed where possible as a series
 of smaller incremental changes, in the form of small PRs that can be merged
 quickly. This helps manage the load for reviewers and reduces the likelihood
-that PRs will sit open for longer.
+that PRs will sit open for long periods of time.
 
 ![Contributing flow](https://github.com/tendermint/tendermint/blob/v0.33.6/docs/imgs/contributing.png?raw=true)
 
-Each stage of the process is aimed at creating feedback cycles which align contributors and maintainers to make sure:
-
-- Contributors don’t waste their time implementing/proposing features which won’t land in `master`.
-- Maintainers have the necessary context in order to support and review contributions.
+Each stage of the process is aimed at creating feedback cycles which align
+contributors and maintainers in order to ensure that:
+- Contributors don’t waste their time implementing/proposing features which won’t land in `master`
+- Maintainers have the necessary context in order to support and review contributions
 
 ## Forking
 
 If you do not have write access to the repository, your contribution should be
-made through a fork on Github. Fork the repository, contribute to your fork,
-and make a pull request back upstream.
+made through a fork on Github. Fork the repository, contribute to your fork
+(either in the `master` branch of the fork or in a separate branch), and then
+make a pull request back upstream.
 
 When forking, add your fork's URL as a new git remote in your local copy of the
 repo. For instance, to create a fork and work on a branch of it:
-
 - Create the fork on GitHub, using the fork button.
 - `cd` to the original clone of the repo on your machine
 - `git remote rename origin upstream`
 - `git remote add origin git@github.com:<location of fork>
 
-Now `origin` refers to your fork and `upstream` refers to this version.
-Now `git push -u origin master` to update the fork, and make pull requests against this repo.
+Now `origin` refers to your fork and `upstream` refers to the original version.
+Now `git push -u origin master` to update the fork, and make pull requests
+against the original repo.
 
-To pull in updates from the origin repo, run
-
-- `git fetch upstream`
-- `git rebase upstream/master` (or whatever branch you want)
+To pull in updates from the origin repo, run `git fetch upstream` followed by
+`git rebase upstream/master` (or whatever branch you're working in).
 
 ## Changelog
 
 Every non-trivial PR must update the [CHANGELOG](CHANGELOG.md). This is
 accomplished indirectly by adding entries to the `.changelog` folder in
 [`unclog`](https://github.com/informalsystems/unclog) format using the `unclog` CLI tool.
-`CHANGELOG.md` will be built by whomever is responsible for performing a release just 
-prior to release - this is to avoid changelog conflicts prior to releases. 
+`CHANGELOG.md` will be built by whomever is responsible for performing a release just
+prior to release - this is to avoid changelog conflicts prior to releases.
 
 ### Install `unclog`
 
@@ -100,7 +100,7 @@ cargo install unclog
 
 ### Examples
 
-Add a .changelog entry to signal that a bug was fixed, without mentioning any
+Add a `.changelog` entry to signal that a bug was fixed, without mentioning any
 component.
 
 ```bash
@@ -177,23 +177,42 @@ exposed.
 
 ## Pull Requests
 
-The master development branch is `master`.
-Branch names should be prefixed with the author, eg. `name/feature-x`.
+If you have write access to the ibc-rs repo, you can directly branch off of `master`.
+This makes it easier for project maintainers to directly make changes to your
+branch should the need arise.
 
-Pull requests are made against `master`
-and are squash merged into master.
+Branch names should be prefixed with the author's name followed by a short description
+of the feature, eg. `name/feature-x`.
+
+Pull requests are made against `master` and are squash-merged into master.
 
 PRs must:
-
-- make reference to an issue outlining the context.
-- update any relevant documentation and include tests.
+- make reference to an issue outlining the context
+- update any relevant documentation and include tests
 - add a corresponding entry in the `.changelog` directory using `unclog`,
   see the section above for more details.
 
-Pull requests should aim to be small and self contained to facilitate quick
+Pull requests should aim to be small and self-contained to facilitate quick
 review and merging. Larger change sets should be broken up across multiple PRs.
 Commits should be concise but informative, and moderately clean. Commits will be squashed into a
 single commit for the PR with all the commit messages.
+
+In order to help facilitate the PR review process, tag *one* person as the
+reviewer of the PR. If you are unsure of who to tag, your point of contact on
+the ibc-rs team is always a natural candidate; they'll make sure that the PR gets
+reviewed by whomever is most appropriate to review it. It also helps to notify
+the person whom you tagged as reviewer through direct means, such as through
+Slack or Discord, as it is easy for GitHub notifications to get lost or buried.
+
+## Responsibilities of a PR Reviewer
+
+If you're tagged as the reviewer of a PR, you are responsible for shepherding it
+through to completion. This includes fixing issues with the PR and taking the
+lead on decisions that need to be resolved in order to get the PR merged.
+
+If you're tagged as a reviewer on a PR that affects a part of the code base that
+you are unfamiliar with, you can hand it off to someone (with their
+consent) who is more appropriate to shepherd the PR through to completion.
 
 ## Releases
 
@@ -208,7 +227,7 @@ Our release process is as follows:
       in this release.
    3. Committing the updated `CHANGELOG.md` file and `.changelog` directory to the repo.
 2. Push this to a branch `release/vX.Y.Z` according to the version number of
-   the anticipated release (e.g. `release/v0.17.0`) and open a **draft PR**.
+   the anticipated release (e.g. `release/v0.18.0`) and open a **draft PR**.
 3. Bump all relevant versions in the codebase to the new version and push these
    changes to the release PR. This includes:
    1. All `Cargo.toml` files (making sure dependencies' versions are updated
@@ -231,7 +250,7 @@ Our release process is as follows:
    ability to fix publishing problems as they arise, is that we would like the embedded
    metadata of the published crates, namely the Git commit at which the release was done,
    to match the Git commit on the `master` branch which will be tagged.
-   [See this article][crates.io-security] for a more in-depth explanation.  
+   [See this article][crates.io-security] for a more in-depth explanation.
    **Note:** This step requires the appropriate privileges to push crates to [crates.io].
 8. Once all crates have been successfully released, create a signed tag and push it to
    GitHub: `git tag -s -a vX.Y.Z`. In the tag message, write the version and the link

@@ -1,6 +1,7 @@
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::commitment::AcknowledgementCommitment;
 use crate::core::ics04_channel::events::WriteAcknowledgement;
+use crate::core::ics04_channel::msgs::acknowledgement::Acknowledgement;
 use crate::core::ics04_channel::packet::{Packet, PacketResult, Sequence};
 use crate::core::ics04_channel::{context::ChannelReader, error::Error};
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
@@ -21,7 +22,7 @@ pub struct WriteAckPacketResult {
 pub fn process(
     ctx: &dyn ChannelReader,
     packet: Packet,
-    ack: Vec<u8>,
+    ack: Acknowledgement,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
@@ -56,18 +57,17 @@ pub fn process(
     }
 
     let result = PacketResult::WriteAck(WriteAckPacketResult {
-        port_id: packet.source_port.clone(),
-        channel_id: packet.source_channel.clone(),
+        port_id: packet.destination_port.clone(),
+        channel_id: packet.destination_channel.clone(),
         seq: packet.sequence,
-        ack_commitment: ctx.ack_commitment(ack.clone().into()),
+        ack_commitment: ctx.ack_commitment(ack.clone()),
     });
 
     output.log("success: packet write acknowledgement");
 
     output.emit(IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
-        height: ctx.host_height(),
         packet,
-        ack,
+        ack: ack.into(),
     }));
 
     Ok(output.with_result(result))
@@ -75,7 +75,6 @@ pub fn process(
 
 #[cfg(test)]
 mod tests {
-    use crate::core::ics04_channel::context::ChannelReader;
     use crate::prelude::*;
 
     use test_log::test;
@@ -176,7 +175,7 @@ mod tests {
         .collect();
 
         for test in tests {
-            let res = process(&test.ctx, test.packet.clone(), test.ack);
+            let res = process(&test.ctx, test.packet.clone(), test.ack.into());
             // Additionally check the events and the output objects in the result.
             match res {
                 Ok(proto_output) => {
@@ -192,7 +191,6 @@ mod tests {
 
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::WriteAcknowledgement(_)));
-                        assert_eq!(e.height(), test.ctx.host_height());
                     }
                 }
                 Err(e) => {

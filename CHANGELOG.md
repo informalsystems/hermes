@@ -1,5 +1,361 @@
 # CHANGELOG
 
+## v1.0.0
+*August 22nd, 2022*
+
+After more than 2 years in the works, this is the first stable release of the Hermes relayer! 🎉
+
+For reaching this milestone, we thank the valuable contributions of over 50 individuals, spread across more than 800 documented & resolved issues. Beside Cosmos-SDK and Tendermint, we are fortunate to maintain some of the most active and intense repository in the Cosmos ecosystem. Most importantly, we thank the relentless work of relayer operators that have already relayed billions worth of value in IBC production networks, and have provided us with invaluable feedback on improving Hermes and raising the overall stability of IBC. Kudos to everyone!
+
+### Note for operators
+
+> ⚠️  If upgrading from Hermes v0.15.0, be aware that this release contains multiple breaking
+> ⚠️  changes to the Hermes command-line interface and configuration.
+> ⚠️  Please consult the [UPGRADING document for instructions](UPGRADING.md) for more details.
+
+### Highlights
+
+- The performance and reliability of the relayer has been greatly improved
+- Merged commands `keys add` and `keys restore` into single command `keys add`
+  The flag to specify the key name for the CLI command `keys add` has been changed
+  from `-n` to `-k`. Restoring a key now takes a file containing the mnemonic as
+  input instead of directly taking the mnemonic
+- Deprecated `gas_adjustment` setting in favor of new `gas_multiplier` setting.
+  Check out the [upgrading instructions][gas-mul] for more details about the new setting.
+- Updated all CLI commands to take flags instead of positional arguments
+- Renamed `query packet unreceived-packets` to `query packet pending-sends`
+  and `query packet unreceived-acks` to `query packet pending-acks`
+- Added CLI command `keys balance` which outputs the balance of an account associated with a key
+- Added CLI command `query channel client` which outputs the channel's client state
+- Added CLI command `query transfer denom-trace` which outputs the base denomination and path of a given trace hash
+- Dropped the `raw` prefix from all the `tx raw` commands
+- Remove the four duplicate commands:
+  * `tx raw update-client`, which is the same as `update client`
+  * `tx raw upgrade-client`, which is the same as `upgrade client`
+  * `tx raw upgrade-clients`, which is the same as `upgrade clients`
+  * `tx raw create-client`, which is the same as `create client`
+- [A new section was added to guide][telemetry-guide] which describes how the new metrics
+  can be used to observe both the current state of the relayer and the networks it is connected to
+- Added many new metrics to the telemetry. The full list can be found in new the guide section linked above
+
+[gas-mul]: https://github.com/informalsystems/ibc-rs/blob/v1.0.0/UPGRADING.md#the-gas_adjustment-setting-has-been-deprecated-in-favor-of-gas_multiplier
+
+### Change to the versioning scheme
+
+As of v1.0.0-rc.0, the Hermes CLI is now versioned separately from
+the other crates in the project. As such, the top-level version
+designates the version of the Hermes CLI, but the other crates in
+the repository do not necessarily match this version. For example,
+the `ibc` and `ibc-relayer` crates are released under version 0.19.0
+for Hermes v1.0.0.
+
+The structure of this changelog has therefore changed as well,
+changes are now grouped first by crate and then by the type of change,
+eg. feature, bug fix, etc.
+
+### Full release notes
+
+The release notes below only contain the changes introduced since v1.0.0-rc.2.
+For the full list of changes since v0.15.0, please consult the sections below for
+v1.0.0-rc.2, v1.0.0-rc.1 and v1.0.0-rc.0.
+
+### General
+
+- Bumped crates to the following versions:
+  - `ibc-relayer-cli`: 1.0.0
+  - `ibc-proto`: 0.20.1
+  - `ibc`: 0.19.0
+  - `ibc-relayer`: 0.19.0
+  - `ibc-telemetry`: 0.19.0
+  - `ibc-relayer-rest`: 0.19.0
+
+### Hermes - [`ibc-relayer-cli`](relayer-cli) (v1.0.0)
+
+- Release version 1.0.0 of Hermes (`ibc-relayer-cli`)
+
+### IBC Proto - [`ibc-proto`](proto) (v0.20.0)
+
+- Release version 0.20.1 of `ibc-proto`
+
+### IBC Modules - [`ibc`](modules) (v0.19.0)
+
+- Release version 0.19.0 of `ibc`
+
+#### BREAKING CHANGES
+
+- Remove `height` attribute from `IbcEvent` and its variants
+  ([#2542](https://github.com/informalsystems/ibc-rs/issues/2542))
+
+#### BUG FIXES
+
+- Fix `MsgTimeoutOnClose` to verify the channel proof
+  ([#2534](https://github.com/informalsystems/ibc-rs/issues/2534))
+
+
+### Relayer Library - [`ibc-relayer`](relayer) (v0.19.0)
+
+- Release version 0.19.0 of `ibc-relayer`
+
+#### FEATURES
+
+- Introduces discovery phase to initialize Prometheus metrics
+  ([#2479](https://github.com/informalsystems/ibc-rs/issues/2479))
+
+#### IMPROVEMENTS
+
+- Refactor the `ChainEndpoint` trait to expose the light client
+  functionality directly. Instead of exposing a getter for the
+  `LightClient` trait, the `ChainEndpoint` trait now defines the
+  two methods `verify_header` and `check_misbehaviour` directly.
+  ([#2548](https://github.com/informalsystems/ibc-rs/issues/2548))
+
+
+### Telemetry & Metrics - [`ibc-telemetry`](telemetry) (v0.19.0)
+
+- Release version 0.18.0 of `ibc-telemetry`
+
+#### BREAKING CHANGES
+
+- Multiple fixes related to telemetry, detailed below ([#2479](https://github.com/informalsystems/ibc-rs/issues/2479))
+  - Renamed the following metrics:
+    * `ibc_client_updates` to `client_updates_submitted`
+    * `ibc_client_misbehaviours ` to `client_misbehaviours_submitted`
+    * `ibc_receive_packets` to `receive_packets_confirmed`
+    * `ibc_acknowledgment_packets ` to `acknowledgment_packets_confirmed`
+    * `ibc_timeout_packets ` to `timeout_packets_confirmed`
+    * `cache_hits` to `queries_cache_hits`
+    * `msg_num` to `total_messages_submitted`
+    * `send_packet_count` to `send_packet_events`
+    * `acknowledgement_count` to `acknowledgement_events`
+    * `cleared_send_packet_count` to `cleared_send_packet_events`
+    * `cleared_acknowledgment_count` to `cleared_acknowledgment_events`
+  - Added the following metric:
+    * `timeout_events`
+  - Fixed the following metrics:
+    * `client_updates_submitted`: Now correctly count all ClientUpdate messages
+    * `total_messages_submitted`: Now count only submitted messages
+  - Changed telemetry `enabled` to `false` in the default config.toml, to match the default value for this parameter
+  - Changed `misbehaviour` to `false` in the default config.toml, to match the default value for this parameter
+
+### REST API - [`ibc-relayer-rest`](relayer-rest) (v0.19.0)
+
+- Release version 0.19.0 of `ibc-relayer-rest`
+
+### [Guide](guide)
+
+#### General
+
+- Document all metrics and [add a section][telemetry-guide] describing how Hermes metrics can be used to observe
+  both the current state of the Hermes relayer and the networks it is connected to
+ ([#2479](https://github.com/informalsystems/ibc-rs/issues/2479))
+
+[telemetry-guide]: https://hermes.informal.systems/telemetry/operators.html
+
+
+## v1.0.0-rc.2
+
+*August 8th, 2022*
+
+This is the third release candidate for Hermes v1.0.0 🎉
+
+### General
+
+- Bumped crates to the following versions:
+  - `ibc-relayer-cli`: 1.0.0-rc.2
+  - `ibc-proto`: 0.20.0
+  - `ibc`: 0.18.0
+  - `ibc-relayer`: 0.18.0
+  - `ibc-telemetry`: 0.18.0
+  - `ibc-relayer-rest`: 0.18.0
+- Bump tendermint-rs dependencies to 0.23.9
+
+### Hermes - [`ibc-relayer-cli`](relayer-cli) (v1.0.0-rc.2)
+
+- Release version 1.0.0-rc.2 of Hermes (`ibc-relayer-cli`)
+
+### IBC Proto - [`ibc-proto`](proto) (v0.20.0)
+
+- Release version 0.20.0 of `ibc-proto`
+
+### IBC Modules - [`ibc`](modules) (v0.18.0)
+
+- Release version 0.18.0 of `ibc`
+
+### Relayer Library - [`ibc-relayer`](relayer) (v0.18.0)
+
+- Release version 0.18.0 of `ibc-relayer`
+
+#### BUG FIXES
+
+- For the `ConnOpenTry` and `ConnOpenAck` steps, wait for the destination
+  app height to be higher than the consensus height, otherwise we fail to
+  complete the handshake when the block times of the two chains involved differ
+  significantly ([#2433](https://github.com/informalsystems/ibc-rs/issues/2433))
+- Fix code that could result in message batch size growing above the transaction size limit
+  ([#2477](https://github.com/informalsystems/ibc-rs/issues/2477)).
+
+#### FEATURES
+
+- Enable connecting to full nodes over IPv6
+  ([#2380](https://github.com/informalsystems/ibc-rs/issues/2380))
+
+### Telemetry & Metrics - [`ibc-telemetry`](telemetry) (v0.18.0)
+
+- Release version 0.18.0 of `ibc-telemetry`
+
+#### IMROVEMENTS
+
+- Improve the metrics
+  - Renamed `oldest_sequence` metric to `backlog_oldest_sequence`
+  - Renamed `oldest_timestamp` metric to `backlog_oldest_timestamp`
+  - Introduced `backlog_size` Prometheus metric to complement the other `backlog_*` data,
+    as a metric reporting how many packets are pending on a channel
+  - Ensures the `backlog_oldest_sequence` and `backlog_oldest_timestamp` are correctly
+    updated when a timeout occurs or when another relayer clears the channel
+    ([#2451](https://github.com/informalsystems/ibc-rs/issues/2451))
+  - Ensures `backlog_timestamp` is never updated by a packet with a higher `sequence` than the oldest pending packet
+    ([#2469](https://github.com/informalsystems/ibc-rs/issues/2469))
+
+#### BUG FIXES
+
+- Fixed a bug with updating of Prometheus metrics in the presence of concurrent relayers
+  ([#2467](https://github.com/informalsystems/ibc-rs/issues/2467))
+
+### REST API - [`ibc-relayer-rest`](relayer-rest) (v0.18.0)
+
+- Release version 0.18.0 of `ibc-relayer-rest`
+
+### [Guide](guide)
+
+#### IMPROVEMENTS
+
+- Document how to use HTTP basic authentication in the guide
+  ([#2459](https://github.com/informalsystems/ibc-rs/issues/2459))
+- Remove tutorial featuring raw commands from the guide
+  ([#2466](https://github.com/informalsystems/ibc-rs/issues/2466))
+
+
+## v1.0.0-rc.1
+
+*July 27th, 2022*
+
+This is the second release candidate for Hermes v1.0.0 🎉
+
+### Note for operators
+
+> ⚠️  This release contains multiple breaking changes to the Hermes command-line interface and configuration.
+> ⚠️  Please consult the [UPGRADING document for instructions](UPGRADING.md) to update to Hermes v1.0.0-rc.1.
+
+### General
+
+- Bump `ibc-proto` crate to 0.19.1
+- Bump `ibc`, `ibc-relayer`, `ibc-telemetry`, `ibc-relayer-rest` crates to v0.17.0
+- Bump tendermint-rs dependencies to 0.23.8
+  ([#2455](https://github.com/informalsystems/ibc-rs/issues/2455))
+
+### Hermes - [`ibc-relayer-cli`](relayer-cli) (v1.0.0-rc.1)
+
+#### BREAKING CHANGES
+
+- Drop the `raw` prefix from all the `tx raw` commands
+  ([#2315](https://github.com/informalsystems/ibc-rs/issues/2315)
+- Remove the four duplicate commands:
+  * `tx raw update-client`, which is the same as `update client`
+  * `tx raw upgrade-client`, which is the same as `upgrade client`
+  * `tx raw upgrade-clients`, which is the same as `upgrade clients`
+  * `tx raw create-client`, which is the same as `create client`
+  * ([#2315](https://github.com/informalsystems/ibc-rs/issues/2376))
+- Rename `--a-` and `--b-` prefixes in `hermes tx` subcommands to `--src-` and `--dst-`
+  ([#2410](https://github.com/informalsystems/ibc-rs/issues/2410))
+- Rename flags of `tx upgrade-chain` command from `--src`/`--dst` to `--reference`/`--host`
+  ([#2376](https://github.com/informalsystems/ibc-rs/issues/2376))
+- The default value of the configuration `tx_confirmation`
+  in Hermes `config.toml` has been changed from `true` to `false`.
+  ([#2408](https://github.com/informalsystems/ibc-rs/issues/2408))
+
+#### BUG FIXES
+
+- Fixed filtering counterparty chain in Hermes command `query channels`
+  ([#1132](https://github.com/informalsystems/ibc-rs/issues/1132))
+- Fixed command `tx raw ft-transfer` to correctly use the address given by the `--receiver` flag
+  ([#2405](https://github.com/informalsystems/ibc-rs/issues/2405))
+
+#### FEATURES
+
+- Add an optional `--show-counterparty` flag to `hermes query channels` which outputs every channel
+  along with its corresponding port, and the counterparty chain's id, in a pretty way
+  ([#2429](https://github.com/informalsystems/ibc-rs/issues/2429))
+- New optional flags `--counterparty-chain` and `--verbose` for the command `query connections`
+  ([#2310](https://github.com/informalsystems/ibc-rs/issues/2310))
+- Added new optional flag `--host-chain` to filter which clients are upgraded when running `upgrade clients` command
+  ([#2311](https://github.com/informalsystems/ibc-rs/issues/2311))
+
+#### IMPROVEMENTS
+
+- Hermes command `keys add` now checks for existing key and overwrites only if the flag `--overwrite` is passed
+  ([#2375](https://github.com/informalsystems/ibc-rs/issues/2375))
+- Rename `--a-` and `--b-` prefixes in `hermes tx` subcommands to `--src-` and `--dst-`
+  ([#2410](https://github.com/informalsystems/ibc-rs/issues/2410))
+- Increase default value for `gas_multiplier` setting to 1.1
+  ([#2435](https://github.com/informalsystems/ibc-rs/issues/2435))
+- Output status is now colored in green for success and red for error
+  ([#2431](https://github.com/informalsystems/ibc-rs/issues/2431))
+
+
+### IBC Proto - [`ibc-proto`](proto) (v0.19.1)
+
+#### IMPROVEMENTS
+
+- Update Protobuf definitions for IBC-Go to v4.0.0-rc0 and Cosmos SDK to v0.45.6
+  ([#2403](https://github.com/informalsystems/ibc-rs/issues/2403))
+
+
+### IBC Modules - [`ibc`](modules) (v0.17.0)
+
+#### BREAKING CHANGES
+
+- Remove provided `Ics20Reader::get_channel_escrow_address()` implementation and make `cosmos_adr028_escrow_address()` public.
+  ([#2387](https://github.com/informalsystems/ibc-rs/issues/2387))
+
+#### BUG FIXES
+
+- Fix serialization for ICS20 packet data structures
+  ([#2386](https://github.com/informalsystems/ibc-rs/issues/2386))
+- Properly process `WriteAcknowledgement`s on packet callback
+  ([#2424](https://github.com/informalsystems/ibc-rs/issues/2424))
+- Fix `write_acknowledgement` handler which incorrectly used packet's `source_{port, channel}` as key for storing acks
+  ([#2428](https://github.com/informalsystems/ibc-rs/issues/2428))
+
+#### IMPROVEMENTS
+
+- Propose ADR011 for light client extraction
+  ([#2356](https://github.com/informalsystems/ibc-rs/pull/2356))
+
+
+### Relayer Library - [`ibc-relayer`](relayer) (v0.17.0)
+
+#### BUG FIXES
+
+- Fix a regression where Hermes would not retry relaying packet on account
+  mismatch error when the sequence number used was smaller than the expected one
+  ([#2411](https://github.com/informalsystems/ibc-rs/issues/2411))
+- Fix a bug where the relayer would fail to relay any packets when the
+  `/acbi_info` endpoint of a chain did not include `data` and `version` fields
+  ([#2444](https://github.com/informalsystems/ibc-rs/issues/2444))
+
+
+### Telemetry & Metrics - [`ibc-telemetry`](telemetry) (v0.17.0)
+
+#### IMPROVEMENTS
+
+- Updated telemetry metric `wallet_balance` to f64 and removed downscaling
+  displayed value. Please note that when converting the balance to f64 a loss in
+  precision might be introduced in the displayed value
+  ([#2381](https://github.com/informalsystems/ibc-rs/issues/2381))
+- Improved naming and description of some telemetry metrics and added
+  histogram buckets for `tx_latency` metrics
+  ([#2408](https://github.com/informalsystems/ibc-rs/issues/2408))
+
 ## v1.0.0-rc.0
 
 *July 7th, 2022*
@@ -54,11 +410,11 @@ eg. feature, bug fix, etc.
 #### FEATURES
 
 - Added CLI command `keys balance` which outputs the balance of an account associated with a
-  key. ([#912](https://github.com/informalsystems/ibc-rs/issues/912))
-- Added CLI command `query channel client` which outputs the channel's client state.
+  key ([#912](https://github.com/informalsystems/ibc-rs/issues/912))
+- Added CLI command `query channel client` which outputs the channel's client state
   ([#999](https://github.com/informalsystems/ibc-rs/issues/999))
 - Added CLI command `query transfer denom-trace` which outputs the base denomination and path of a given
-  trace hash. ([#2201](https://github.com/informalsystems/ibc-rs/issues/2201))
+  trace hash ([#2201](https://github.com/informalsystems/ibc-rs/issues/2201))
 - Add unit tests for all Hermes commands with at least one argument
   ([#2358](https://github.com/informalsystems/ibc-rs/issues/2358))
 

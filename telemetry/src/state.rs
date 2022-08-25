@@ -1,6 +1,7 @@
 use core::fmt;
 use std::time::{Duration, Instant};
 
+use dashmap::DashMap;
 use opentelemetry::{
     global,
     metrics::{Counter, UpDownCounter, ValueRecorder},
@@ -10,15 +11,48 @@ use opentelemetry_prometheus::PrometheusExporter;
 use prometheus::proto::MetricFamily;
 
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
-use tendermint::Time;
 
-use dashmap::DashMap;
+use tendermint::Time;
 
 use crate::path_identifier::PathIdentifier;
 
-const NO_PENDING_PACKETS: u64 = 0;
-const HISTORY_SET_CAPACITY: usize = 1000;
-const HISTORY_RESET_THRESHOLD: usize = 900;
+const EMPTY_BACKLOG_SYMBOL: u64 = 0;
+const BACKLOG_CAPACITY: usize = 1000;
+const BACKLOG_RESET_THRESHOLD: usize = 900;
+
+const QUERY_TYPES_CACHE: [&str; 4] = [
+    "query_latest_height",
+    "query_client_state",
+    "query_connection",
+    "query_channel",
+];
+
+const QUERY_TYPES: [&str; 24] = [
+    "query_latest_height",
+    "query_blocks",
+    "query_txs",
+    "query_next_sequence_receive",
+    "query_unreceived_acknowledgements",
+    "query_packet_acknowledgements",
+    "query_unreceived_packets",
+    "query_packet_commitments",
+    "query_channel_client_state",
+    "query_channel",
+    "query_channels",
+    "query_connection_channels",
+    "query_connection",
+    "query_connections",
+    "query_client_connections",
+    "query_consensus_state",
+    "query_consensus_states",
+    "query_upgraded_consensus_state",
+    "query_client_state",
+    "query_clients",
+    "query_application_status",
+    "query_commitment_prefix",
+    "query_latest_height",
+    "query_staking_params",
+];
 
 #[derive(Copy, Clone, Debug)]
 pub enum WorkerType {
@@ -44,42 +78,41 @@ impl fmt::Display for WorkerType {
 pub struct TelemetryState {
     exporter: PrometheusExporter,
 
-    /// Number of workers per object
+    /// Number of workers per type
     workers: UpDownCounter<i64>,
 
-    /// Number of client updates per client
-    ibc_client_updates: Counter<u64>,
+    /// Number of client update messages submitted per client
+    client_updates_submitted: Counter<u64>,
 
-    /// Number of client misbehaviours per client
-    ibc_client_misbehaviours: Counter<u64>,
+    /// Number of misbehaviours detected and submitted per client
+    client_misbehaviours_submitted: Counter<u64>,
 
-    /// Number of receive packets relayed, per channel
-    receive_packets: Counter<u64>,
+    /// Number of confirmed receive packets per channel
+    receive_packets_confirmed: Counter<u64>,
 
-    /// Number of acknowledgment packets relayed, per channel
-    acknowledgment_packets: Counter<u64>,
+    /// Number of confirmed acknowledgment packets per channel
+    acknowledgment_packets_confirmed: Counter<u64>,
 
-    /// Number of timeout packets relayed, per channel
-    timeout_packets: Counter<u64>,
+    /// Number of confirmed timeout packets per channel
+    timeout_packets_confirmed: Counter<u64>,
 
-    /// Number of queries emitted by the relayer, per chain and query type
+    /// Number of queries submitted by Hermes, per chain and query type
     queries: Counter<u64>,
 
-    /// Number of cache hits for queries emitted by the relayer, per chain and query type
-    query_cache_hits: Counter<u64>,
+    /// Number of cache hits for queries submitted by Hermes, per chain and query type
+    queries_cache_hits: Counter<u64>,
 
-    /// Number of time the relayer had to reconnect to the WebSocket endpoint, per chain
+    /// Number of times Hermes reconnected to the websocket endpoint, per chain
     ws_reconnect: Counter<u64>,
 
     /// How many IBC events did Hermes receive via the WebSocket subscription, per chain
     ws_events: Counter<u64>,
 
-    /// How many messages Hermes submitted to the chain, per chain
-    msg_num: Counter<u64>,
+    /// Number of messages submitted to a specific chain
+    total_messages_submitted: Counter<u64>,
 
-    /// The balance in each wallet that Hermes is using, per wallet, denom and chain.
-    /// The amount given is of unit: 10^6 * `denom`
-    wallet_balance: ValueRecorder<u64>,
+    /// The balance of each wallet Hermes uses per chain
+    wallet_balance: ValueRecorder<f64>,
 
     /// Indicates the latency for all transactions submitted to a specific chain,
     /// i.e. the difference between the moment when Hermes received a batch of events
@@ -95,32 +128,148 @@ pub struct TelemetryState {
     /// Used for computing the `tx_latency` metric.
     in_flight_events: moka::sync::Cache<String, Instant>,
 
-    /// Counts the number of SendPacket Hermes transfers.
-    send_packet_count: Counter<u64>,
+    /// Number of SendPacket events received
+    send_packet_events: Counter<u64>,
 
-    /// Counts the number of WriteAcknowledgement Hermes transfers.
-    acknowledgement_count: Counter<u64>,
+    /// Number of WriteAcknowledgement events received
+    acknowledgement_events: Counter<u64>,
 
-    /// Counts the number of SendPacket Hermes transfers from ClearPacket.
-    cleared_count: Counter<u64>,
+    /// Number of Timeout events received
+    timeout_events: Counter<u64>,
 
-    /// Records the sequence number of the oldest SendPacket for which no
-    /// WriteAcknowledgement has been received. The value is 0 if all the
-    /// WriteAcknowledgement were received.
-    oldest_sequence: ValueRecorder<u64>,
+    /// Number of SendPacket events received during the initial and periodic clearing
+    cleared_send_packet_events: Counter<u64>,
 
-    /// Record the timestamp related to the oldest sequence number.
+    /// Number of WriteAcknowledgement events received during the initial and periodic clearing
+    cleared_acknowledgment_events: Counter<u64>,
+
+    /// Records the sequence number of the oldest pending packet. This corresponds to
+    /// the sequence number of the oldest SendPacket event for which no
+    /// WriteAcknowledgement or Timeout events have been received. The value is 0 if all the
+    /// SendPacket events were relayed.
+    backlog_oldest_sequence: ValueRecorder<u64>,
+
+    /// Record the timestamp related to `backlog_oldest_sequence`.
     /// The timestamp is the time passed since since the unix epoch in seconds.
-    oldest_timestamp: ValueRecorder<u64>,
+    backlog_oldest_timestamp: ValueRecorder<u64>,
 
-    /// History of SendPacket sequence numbers received and not yet Acknowledged.
-    sequences_histories: DashMap<PathIdentifier, DashMap<u64, u64>>,
+    /// Records the length of the backlog, i.e., how many packets are pending.
+    backlog_size: ValueRecorder<u64>,
+
+    /// Stores the backlogs for all the paths the relayer is active on.
+    /// This is a map of multiple inner backlogs, one inner backlog per path.
+    ///
+    /// Each inner backlog is represented as a [`DashMap`].
+    /// Each inner backlog captures the sequence numbers & timestamp for all SendPacket events
+    /// that the relayer observed, and for which there was no associated Acknowledgement or
+    /// Timeout event.
+    backlogs: DashMap<PathIdentifier, DashMap<u64, u64>>,
 }
 
 impl TelemetryState {
     /// Gather the metrics for export
     pub fn gather(&self) -> Vec<MetricFamily> {
         self.exporter.registry().gather()
+    }
+
+    pub fn init_worker_by_type(&self, worker_type: WorkerType) {
+        self.worker(worker_type, 0);
+    }
+
+    pub fn init_per_chain(&self, chain_id: &ChainId) {
+        let labels = &[KeyValue::new("chain", chain_id.to_string())];
+
+        self.ws_reconnect.add(0, labels);
+        self.ws_events.add(0, labels);
+        self.total_messages_submitted.add(0, labels);
+
+        self.init_queries(chain_id);
+    }
+
+    pub fn init_per_channel(
+        &self,
+        src_chain: &ChainId,
+        src_channel: &ChannelId,
+        src_port: &PortId,
+    ) {
+        let labels = &[
+            KeyValue::new("src_chain", src_chain.to_string()),
+            KeyValue::new("src_channel", src_channel.to_string()),
+            KeyValue::new("src_port", src_port.to_string()),
+        ];
+
+        self.receive_packets_confirmed.add(0, labels);
+        self.acknowledgment_packets_confirmed.add(0, labels);
+        self.timeout_packets_confirmed.add(0, labels);
+    }
+
+    pub fn init_per_path(
+        &self,
+        chain: &ChainId,
+        counterparty: &ChainId,
+        channel: &ChannelId,
+        port: &PortId,
+        clear_packets: bool,
+    ) {
+        let labels = &[
+            KeyValue::new("chain", chain.to_string()),
+            KeyValue::new("counterparty", counterparty.to_string()),
+            KeyValue::new("channel", channel.to_string()),
+            KeyValue::new("port", port.to_string()),
+        ];
+
+        self.send_packet_events.add(0, labels);
+        self.acknowledgement_events.add(0, labels);
+        self.timeout_events.add(0, labels);
+
+        if clear_packets {
+            self.cleared_send_packet_events.add(0, labels);
+            self.cleared_acknowledgment_events.add(0, labels);
+        }
+
+        self.backlog_oldest_sequence.record(0, labels);
+        self.backlog_oldest_timestamp.record(0, labels);
+        self.backlog_size.record(0, labels);
+    }
+
+    pub fn init_per_client(
+        &self,
+        src_chain: &ChainId,
+        dst_chain: &ChainId,
+        client: &ClientId,
+        misbehaviour: bool,
+    ) {
+        let labels = &[
+            KeyValue::new("src_chain", src_chain.to_string()),
+            KeyValue::new("dst_chain", dst_chain.to_string()),
+            KeyValue::new("client", client.to_string()),
+        ];
+
+        self.client_updates_submitted.add(0, labels);
+
+        if misbehaviour {
+            self.client_misbehaviours_submitted.add(0, labels);
+        }
+    }
+
+    fn init_queries(&self, chain_id: &ChainId) {
+        for query_type in QUERY_TYPES {
+            let labels = &[
+                KeyValue::new("chain", chain_id.to_string()),
+                KeyValue::new("query_type", query_type),
+            ];
+
+            self.queries.add(0, labels);
+        }
+
+        for query_type in QUERY_TYPES_CACHE {
+            let labels = &[
+                KeyValue::new("chain", chain_id.to_string()),
+                KeyValue::new("query_type", query_type),
+            ];
+
+            self.queries_cache_hits.add(0, labels);
+        }
     }
 
     /// Update the number of workers per object
@@ -130,74 +279,94 @@ impl TelemetryState {
     }
 
     /// Update the number of client updates per client
-    pub fn ibc_client_updates(&self, chain: &ChainId, client: &ClientId, count: u64) {
+    pub fn client_updates_submitted(
+        &self,
+        src_chain: &ChainId,
+        dst_chain: &ChainId,
+        client: &ClientId,
+        count: u64,
+    ) {
         let labels = &[
-            KeyValue::new("chain", chain.to_string()),
+            KeyValue::new("src_chain", src_chain.to_string()),
+            KeyValue::new("dst_chain", dst_chain.to_string()),
             KeyValue::new("client", client.to_string()),
         ];
 
-        self.ibc_client_updates.add(count, labels);
+        self.client_updates_submitted.add(count, labels);
     }
 
     /// Number of client misbehaviours per client
-    pub fn ibc_client_misbehaviour(&self, chain: &ChainId, client: &ClientId, count: u64) {
+    pub fn client_misbehaviours_submitted(
+        &self,
+        src_chain: &ChainId,
+        dst_chain: &ChainId,
+        client: &ClientId,
+        count: u64,
+    ) {
         let labels = &[
-            KeyValue::new("chain", chain.to_string()),
+            KeyValue::new("src_chain", src_chain.to_string()),
+            KeyValue::new("dst_chain", dst_chain.to_string()),
             KeyValue::new("client", client.to_string()),
         ];
 
-        self.ibc_client_misbehaviours.add(count, labels);
+        self.client_misbehaviours_submitted.add(count, labels);
     }
 
     /// Number of receive packets relayed, per channel
-    pub fn ibc_receive_packets(
+    pub fn receive_packets_confirmed(
         &self,
         src_chain: &ChainId,
         src_channel: &ChannelId,
         src_port: &PortId,
         count: u64,
     ) {
-        let labels = &[
-            KeyValue::new("src_chain", src_chain.to_string()),
-            KeyValue::new("src_channel", src_channel.to_string()),
-            KeyValue::new("src_port", src_port.to_string()),
-        ];
+        if count > 0 {
+            let labels = &[
+                KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("src_port", src_port.to_string()),
+            ];
 
-        self.receive_packets.add(count, labels);
+            self.receive_packets_confirmed.add(count, labels);
+        }
     }
 
     /// Number of acknowledgment packets relayed, per channel
-    pub fn ibc_acknowledgment_packets(
+    pub fn acknowledgment_packets_confirmed(
         &self,
         src_chain: &ChainId,
         src_channel: &ChannelId,
         src_port: &PortId,
         count: u64,
     ) {
-        let labels = &[
-            KeyValue::new("src_chain", src_chain.to_string()),
-            KeyValue::new("src_channel", src_channel.to_string()),
-            KeyValue::new("src_port", src_port.to_string()),
-        ];
+        if count > 0 {
+            let labels = &[
+                KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("src_port", src_port.to_string()),
+            ];
 
-        self.acknowledgment_packets.add(count, labels);
+            self.acknowledgment_packets_confirmed.add(count, labels);
+        }
     }
 
     /// Number of timeout packets relayed, per channel
-    pub fn ibc_timeout_packets(
+    pub fn timeout_packets_confirmed(
         &self,
         src_chain: &ChainId,
         src_channel: &ChannelId,
         src_port: &PortId,
         count: u64,
     ) {
-        let labels = &[
-            KeyValue::new("src_chain", src_chain.to_string()),
-            KeyValue::new("src_channel", src_channel.to_string()),
-            KeyValue::new("src_port", src_port.to_string()),
-        ];
+        if count > 0 {
+            let labels = &[
+                KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("src_port", src_port.to_string()),
+            ];
 
-        self.timeout_packets.add(count, labels);
+            self.timeout_packets_confirmed.add(count, labels);
+        }
     }
 
     /// Number of queries emitted by the relayer, per chain and query type
@@ -211,13 +380,13 @@ impl TelemetryState {
     }
 
     /// Number of cache hits for queries emitted by the relayer, per chain and query type
-    pub fn query_cache_hit(&self, chain_id: &ChainId, query_type: &'static str) {
+    pub fn queries_cache_hits(&self, chain_id: &ChainId, query_type: &'static str) {
         let labels = &[
             KeyValue::new("chain", chain_id.to_string()),
             KeyValue::new("query_type", query_type),
         ];
 
-        self.query_cache_hits.add(1, labels);
+        self.queries_cache_hits.add(1, labels);
     }
 
     /// Number of time the relayer had to reconnect to the WebSocket endpoint, per chain
@@ -234,16 +403,16 @@ impl TelemetryState {
         self.ws_events.add(count, labels);
     }
 
-    /// How many messages Hermes submitted to the chain, per chain
-    pub fn msg_num(&self, chain_id: &ChainId, count: u64) {
+    /// How many messages Hermes submitted to the chain
+    pub fn total_messages_submitted(&self, chain_id: &ChainId, count: u64) {
         let labels = &[KeyValue::new("chain", chain_id.to_string())];
 
-        self.msg_num.add(count, labels);
+        self.total_messages_submitted.add(count, labels);
     }
 
     /// The balance in each wallet that Hermes is using, per account, denom and chain.
     /// The amount given is of unit: 10^6 * `denom`
-    pub fn wallet_balance(&self, chain_id: &ChainId, account: &str, amount: u64, denom: &str) {
+    pub fn wallet_balance(&self, chain_id: &ChainId, account: &str, amount: f64, denom: &str) {
         let labels = &[
             KeyValue::new("chain", chain_id.to_string()),
             KeyValue::new("account", account.to_string()),
@@ -314,7 +483,7 @@ impl TelemetryState {
         }
     }
 
-    pub fn send_packet_count(
+    pub fn send_packet_events(
         &self,
         _seq_nr: u64,
         _height: u64,
@@ -330,10 +499,10 @@ impl TelemetryState {
             KeyValue::new("port", port_id.to_string()),
         ];
 
-        self.send_packet_count.add(1, labels);
+        self.send_packet_events.add(1, labels);
     }
 
-    pub fn acknowledgement_count(
+    pub fn acknowledgement_events(
         &self,
         _seq_nr: u64,
         _height: u64,
@@ -349,10 +518,27 @@ impl TelemetryState {
             KeyValue::new("port", port_id.to_string()),
         ];
 
-        self.acknowledgement_count.add(1, labels);
+        self.acknowledgement_events.add(1, labels);
     }
 
-    pub fn cleared_count(
+    pub fn timeout_events(
+        &self,
+        chain_id: &ChainId,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_chain_id: &ChainId,
+    ) {
+        let labels = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("counterparty", counterparty_chain_id.to_string()),
+            KeyValue::new("channel", channel_id.to_string()),
+            KeyValue::new("port", port_id.to_string()),
+        ];
+
+        self.timeout_events.add(1, labels);
+    }
+
+    pub fn cleared_send_packet_events(
         &self,
         _seq_nr: u64,
         _height: u64,
@@ -368,20 +554,40 @@ impl TelemetryState {
             KeyValue::new("port", port_id.to_string()),
         ];
 
-        self.cleared_count.add(1, labels);
+        self.cleared_send_packet_events.add(1, labels);
     }
 
-    pub fn record_send_history(
+    pub fn cleared_acknowledgment_events(
         &self,
-        seq_nr: u64,
+        _seq_nr: u64,
         _height: u64,
         chain_id: &ChainId,
         channel_id: &ChannelId,
         port_id: &PortId,
         counterparty_chain_id: &ChainId,
     ) {
-        // Unique Identifier for a chain/channel/port.
-        let uid: PathIdentifier = PathIdentifier::new(
+        let labels: &[KeyValue; 4] = &[
+            KeyValue::new("chain", chain_id.to_string()),
+            KeyValue::new("counterparty", counterparty_chain_id.to_string()),
+            KeyValue::new("channel", channel_id.to_string()),
+            KeyValue::new("port", port_id.to_string()),
+        ];
+
+        self.cleared_acknowledgment_events.add(1, labels);
+    }
+
+    /// Inserts in the backlog a new event for the given sequence number.
+    /// This happens when the relayer observed a new SendPacket event.
+    pub fn backlog_insert(
+        &self,
+        seq_nr: u64,
+        chain_id: &ChainId,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_chain_id: &ChainId,
+    ) {
+        // Unique identifier for a chain/channel/port.
+        let path_uid: PathIdentifier = PathIdentifier::new(
             chain_id.to_string(),
             channel_id.to_string(),
             port_id.to_string(),
@@ -394,53 +600,73 @@ impl TelemetryState {
             KeyValue::new("port", port_id.to_string()),
         ];
 
-        // Retrieve timestamp for recieved SendPacket.
+        // Retrieve local timestamp when this SendPacket event was recorded.
         let now = Time::now();
         let timestamp = match now.duration_since(Time::unix_epoch()) {
             Ok(ts) => ts.as_secs(),
             Err(_) => 0,
         };
 
-        // If there are no HashSet for this uid, create a new one.
-        // Else update the min value.
-        if let Some(set) = self.sequences_histories.get(&uid) {
-            // Avoid having the DashSet growing more than a given threshold, by removing
+        // Update the backlog with the incoming data and retrieve the oldest values
+        let (oldest_sn, oldest_ts, total) = if let Some(path_backlog) = self.backlogs.get(&path_uid)
+        {
+            // Avoid having the inner backlog map growing more than a given threshold, by removing
             // the oldest sequence number entry.
-            if set.len() > HISTORY_RESET_THRESHOLD {
-                if let Some(min) = set.iter().map(|v| *v.key()).min() {
-                    set.remove(&min);
+            if path_backlog.len() > BACKLOG_RESET_THRESHOLD {
+                if let Some(min) = path_backlog.iter().map(|v| *v.key()).min() {
+                    path_backlog.remove(&min);
                 }
             }
-            set.insert(seq_nr, timestamp);
-            // Record the min of the HashSet as the oldest sequence.
-            if let Some(min) = set.iter().map(|v| *v.key()).min() {
-                // Updated oldest sequence number and add associated timestamp to labels.
-                self.oldest_sequence.record(min, labels);
-                self.oldest_timestamp.record(timestamp, labels);
+            path_backlog.insert(seq_nr, timestamp);
+
+            // Return the oldest event information to be recorded in telemetry
+            if let Some(min) = path_backlog.iter().map(|v| *v.key()).min() {
+                if let Some(oldest) = path_backlog.get(&min) {
+                    (min, *oldest.value(), path_backlog.len() as u64)
+                } else {
+                    // Timestamp was not found, this should not happen, record a 0 ts.
+                    (min, 0, path_backlog.len() as u64)
+                }
+            } else {
+                // We just inserted a new key/value, so this else branch is unlikely to activate,
+                // but it can happen in case of concurrent updates to the backlog.
+                (
+                    EMPTY_BACKLOG_SYMBOL,
+                    EMPTY_BACKLOG_SYMBOL,
+                    EMPTY_BACKLOG_SYMBOL,
+                )
             }
         } else {
-            let new_dashmap = DashMap::with_capacity(HISTORY_SET_CAPACITY);
-            new_dashmap.insert(seq_nr, timestamp);
+            // If there is no inner backlog for this path, create a new map to store it.
+            let new_path_backlog = DashMap::with_capacity(BACKLOG_CAPACITY);
+            new_path_backlog.insert(seq_nr, timestamp);
+            // Record it in the global backlog
+            self.backlogs.insert(path_uid, new_path_backlog);
 
-            // Updated oldest sequence number and add associated timestamp to labels.
-            self.oldest_sequence.record(seq_nr, labels);
-            self.oldest_timestamp.record(timestamp, labels);
+            // Return the current event information to be recorded in telemetry
+            (seq_nr, timestamp, 1)
+        };
 
-            self.sequences_histories.insert(uid, new_dashmap);
-        }
+        // Update metrics to reflect the new state of the backlog
+        self.backlog_oldest_sequence.record(oldest_sn, labels);
+        self.backlog_oldest_timestamp.record(oldest_ts, labels);
+        self.backlog_size.record(total, labels);
     }
 
-    pub fn record_ack_history(
+    /// Evicts from the backlog the event for the given sequence number.
+    /// Removing events happens when the relayer observed either an acknowledgment
+    /// or a timeout for a packet sequence number, which means that the corresponding
+    /// packet was relayed.
+    pub fn backlog_remove(
         &self,
         seq_nr: u64,
-        _height: u64,
         chain_id: &ChainId,
         channel_id: &ChannelId,
         port_id: &PortId,
         counterparty_chain_id: &ChainId,
     ) {
-        // Unique Identifier for a chain/channel/port.
-        let uid: PathIdentifier = PathIdentifier::new(
+        // Unique identifier for a chain/channel/port path.
+        let path_uid: PathIdentifier = PathIdentifier::new(
             chain_id.to_string(),
             channel_id.to_string(),
             port_id.to_string(),
@@ -453,23 +679,29 @@ impl TelemetryState {
             KeyValue::new("port", port_id.to_string()),
         ];
 
-        // If there are no HashSet for this uid, create a new one.
-        if let Some(set) = self.sequences_histories.get(&uid) {
-            match set.remove(&seq_nr) {
+        if let Some(path_backlog) = self.backlogs.get(&path_uid) {
+            match path_backlog.remove(&seq_nr) {
                 Some(_) => {
-                    // Record the min of the HashSet as the oldest sequence.
-                    if let Some(min) = set.iter().map(|v| *v.key()).min() {
-                        if let Some(timestamp) = set.get(&min) {
-                            self.oldest_timestamp.record(*timestamp, labels);
+                    // The oldest pending sequence number is the minimum key in the inner (path) backlog.
+                    if let Some(min_key) = path_backlog.iter().map(|v| *v.key()).min() {
+                        if let Some(oldest) = path_backlog.get(&min_key) {
+                            self.backlog_oldest_timestamp
+                                .record(*oldest.value(), labels);
                         } else {
-                            self.oldest_timestamp.record(0, labels);
+                            self.backlog_oldest_timestamp.record(0, labels);
                         }
-                        self.oldest_sequence.record(min, labels);
+                        self.backlog_oldest_sequence.record(min_key, labels);
+                        self.backlog_size.record(path_backlog.len() as u64, labels);
                     } else {
-                        self.oldest_sequence.record(NO_PENDING_PACKETS, labels);
-                        self.oldest_timestamp.record(0, labels);
+                        // No mimimum found, update the metrics to reflect an empty backlog
+                        self.backlog_oldest_sequence
+                            .record(EMPTY_BACKLOG_SYMBOL, labels);
+                        self.backlog_oldest_timestamp
+                            .record(EMPTY_BACKLOG_SYMBOL, labels);
+                        self.backlog_size.record(EMPTY_BACKLOG_SYMBOL, labels);
                     }
                 }
+                // No change performed to the backlog, no need to update the metrics.
                 None => {}
             }
         }
@@ -489,14 +721,20 @@ impl AggregatorSelector for CustomAggregatorSelector {
     fn aggregator_for(&self, descriptor: &Descriptor) -> Option<Arc<dyn Aggregator + Send + Sync>> {
         match descriptor.name() {
             "wallet_balance" => Some(Arc::new(last_value())),
-            "oldest_sequence" => Some(Arc::new(last_value())),
-            "oldest_timestamp" => Some(Arc::new(last_value())),
+            "backlog_oldest_sequence" => Some(Arc::new(last_value())),
+            "backlog_oldest_timestamp" => Some(Arc::new(last_value())),
+            "backlog_size" => Some(Arc::new(last_value())),
             // Prometheus' supports only collector for histogram, sum, and last value aggregators.
-            // https://docs.rs/opentelemetry-prometheus/0.10.0/src/opentelemetry_prometheus/lib.rs.html#411-418
+            // https://docs.rs/opentelemetry-prometheus/0.11.0/src/opentelemetry_prometheus/lib.rs.html#411-418
             // TODO: Once quantile sketches are supported, replace histograms with that.
-            // For the moment, disable histogram buckets since no values make sense for all use-cases.
-            "tx_latency_submitted" => Some(Arc::new(histogram(descriptor, &[]))),
-            "tx_latency_confirmed" => Some(Arc::new(histogram(descriptor, &[]))),
+            "tx_latency_submitted" => Some(Arc::new(histogram(
+                descriptor,
+                &[200.0, 500.0, 1000.0, 2000.0, 5000.0, 10000.0],
+            ))),
+            "tx_latency_confirmed" => Some(Arc::new(histogram(
+                descriptor,
+                &[1000.0, 5000.0, 9000.0, 13000.0, 17000.0, 20000.0],
+            ))),
             _ => Some(Arc::new(sum())),
         }
     }
@@ -515,79 +753,89 @@ impl Default for TelemetryState {
 
             workers: meter
                 .i64_up_down_counter("workers")
-                .with_description("Number of workers per object")
+                .with_description("Number of workers")
                 .init(),
 
-            ibc_client_updates: meter
-                .u64_counter("ibc_client_updates")
-                .with_description("Number of client updates performed per client")
+            client_updates_submitted: meter
+                .u64_counter("client_updates_submitted")
+                .with_description("Number of client update messages submitted")
                 .init(),
 
-            ibc_client_misbehaviours: meter
-                .u64_counter("ibc_client_misbehaviours")
-                .with_description("Number of misbehaviours detected per client")
+            client_misbehaviours_submitted: meter
+                .u64_counter("client_misbehaviours_submitted")
+                .with_description("Number of misbehaviours detected and submitted")
                 .init(),
 
-            receive_packets: meter
-                .u64_counter("ibc_receive_packets")
-                .with_description("Number of receive packets relayed per channel")
+            receive_packets_confirmed: meter
+                .u64_counter("receive_packets_confirmed")
+                .with_description("Number of confirmed receive packets. Available if relayer runs with Tx confirmation enabled")
                 .init(),
 
-            acknowledgment_packets: meter
-                .u64_counter("ibc_acknowledgment_packets")
-                .with_description("Number of acknowledgment packets relayed per channel")
+            acknowledgment_packets_confirmed: meter
+                .u64_counter("acknowledgment_packets_confirmed")
+                .with_description("Number of confirmed acknowledgment packets. Available if relayer runs with Tx confirmation enabled")
                 .init(),
 
-            timeout_packets: meter
-                .u64_counter("ibc_timeout_packets")
-                .with_description("Number of timeout packets relayed per channel")
+            timeout_packets_confirmed: meter
+                .u64_counter("timeout_packets_confirmed")
+                .with_description("Number of confirmed timeout packets. Available if relayer runs with Tx confirmation enabled")
                 .init(),
 
             queries: meter
                 .u64_counter("queries")
                 .with_description(
-                    "Number of queries emitted by the relayer, per chain and query type",
+                    "Number of queries submitted by Hermes",
                 )
                 .init(),
 
-            query_cache_hits: meter
-                .u64_counter("cache_hits")
-                .with_description("Number of cache hits for queries emitted by the relayer, per chain and query type")
+            queries_cache_hits: meter
+                .u64_counter("queries_cache_hits")
+                .with_description("Number of cache hits for queries submitted by Hermes")
                 .init(),
 
             ws_reconnect: meter
                 .u64_counter("ws_reconnect")
-                .with_description("Number of time the relayer had to reconnect to the WebSocket endpoint, per chain")
+                .with_description("Number of times Hermes reconnected to the websocket endpoint")
                 .init(),
 
             ws_events: meter
                 .u64_counter("ws_events")
-                .with_description("How many IBC events did Hermes receive via the WebSocket subscription, per chain")
+                .with_description("How many IBC events did Hermes receive via the websocket subscription")
                 .init(),
 
-            msg_num: meter
-                .u64_counter("msg_num")
-                .with_description("How many messages Hermes submitted to the chain, per chain")
+            total_messages_submitted: meter
+                .u64_counter("total_messages_submitted")
+                .with_description("Number of messages submitted to a specific chain")
                 .init(),
 
             wallet_balance: meter
-                .u64_value_recorder("wallet_balance")
-                .with_description("The balance in each wallet that Hermes is using, per wallet, denom and chain. The amount is of unit: 10^6 * `denom`")
+                .f64_value_recorder("wallet_balance")
+                .with_description("The balance of each wallet Hermes uses per chain. Please note that when converting the balance to f64 a loss in precision might be introduced in the displayed value")
                 .init(),
 
-            send_packet_count: meter
-                .u64_counter("send_packet_count")
-                .with_description("Number of SendPacket relayed")
+            send_packet_events: meter
+                .u64_counter("send_packet_events")
+                .with_description("Number of SendPacket events received")
                 .init(),
 
-            acknowledgement_count: meter
-                .u64_counter("acknowledgement_count")
-                .with_description("Number of WriteAcknowledgement relayed")
+            acknowledgement_events: meter
+                .u64_counter("acknowledgement_events")
+                .with_description("Number of WriteAcknowledgement events received")
                 .init(),
 
-            cleared_count: meter
-                .u64_counter("cleared_count")
-                .with_description("Number of SendPacket relayed through ClearPendingPackets")
+            timeout_events: meter
+                .u64_counter("timeout_events")
+                .with_description("Number of TimeoutPacket events received")
+                .init(),
+
+            cleared_send_packet_events: meter
+                .u64_counter("cleared_send_packet_events")
+                .with_description("Number of SendPacket events received during the initial and periodic clearing")
+                .init(),
+
+            cleared_acknowledgment_events: meter
+                .u64_counter("cleared_acknowledgment_events")
+                .with_description("Number of WriteAcknowledgement events received during the initial and periodic clearing")
                 .init(),
 
             tx_latency_submitted: meter
@@ -611,17 +859,22 @@ impl Default for TelemetryState {
                 .time_to_idle(Duration::from_secs(30 * 60)) // Remove entries if they have been idle for 30 minutes
                 .build(),
 
-            sequences_histories: DashMap::new(),
+            backlogs: DashMap::new(),
 
-            oldest_sequence: meter
-                .u64_value_recorder("oldest_sequence")
-                .with_description("The sequence number of the oldest pending SendPacket. If this value is 0, it means there are no pending SendPacket")
+            backlog_oldest_sequence: meter
+                .u64_value_recorder("backlog_oldest_sequence")
+                .with_description("Sequence number of the oldest SendPacket event in the backlog")
                 .init(),
 
-            oldest_timestamp: meter
-                .u64_value_recorder("oldest_timestamp")
+            backlog_oldest_timestamp: meter
+                .u64_value_recorder("backlog_oldest_timestamp")
                 .with_unit(Unit::new("seconds"))
-                .with_description("The timestamp of the oldest sequence number in seconds")
+                .with_description("Local timestamp for the oldest SendPacket event in the backlog")
+                .init(),
+
+            backlog_size: meter
+                .u64_value_recorder("backlog_size")
+                .with_description("Total number of SendPacket events in the backlog")
                 .init(),
         }
     }

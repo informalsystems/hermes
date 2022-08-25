@@ -16,7 +16,7 @@ use crate::conclude::json;
 use crate::conclude::Output;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct StartCmd {
     #[clap(
         long = "full-scan",
@@ -155,10 +155,8 @@ fn spawn_telemetry_server(config: &Config) -> Result<(), Box<dyn Error + Send + 
 }
 
 #[cfg(not(feature = "telemetry"))]
-fn spawn_telemetry_server(
-    config: &Arc<RwLock<Config>>,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
-    if config.read().expect("poisoned lock").telemetry.enabled {
+fn spawn_telemetry_server(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> {
+    if config.telemetry.enabled {
         warn!(
             "telemetry enabled in the config but Hermes was built without telemetry support, \
              build Hermes with --features=telemetry to enable telemetry support."

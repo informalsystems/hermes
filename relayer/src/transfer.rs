@@ -1,3 +1,6 @@
+use ibc::signer::SignerError;
+use std::str::FromStr;
+
 use core::time::Duration;
 
 use flex_error::{define_error, DetailOnly};
@@ -20,6 +23,9 @@ use crate::error::Error;
 
 define_error! {
     TransferError {
+        ReceiverAddress
+            [ SignerError ]
+            |_| { "receiver address error "},
         Relayer
             [ Error ]
             |_| { "relayer error" },
@@ -151,7 +157,10 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
     packet_dst_chain: &DstChain, // the chain whose account eventually gets credited
     opts: &TransferOptions,
 ) -> Result<Vec<IbcEvent>, TransferError> {
-    let receiver = packet_dst_chain.get_signer().map_err(TransferError::key)?;
+    let receiver = match &opts.receiver {
+        Some(receiver) => Signer::from_str(receiver).map_err(TransferError::receiver_address)?,
+        None => packet_dst_chain.get_signer().map_err(TransferError::key)?,
+    };
 
     let sender = packet_src_chain.get_signer().map_err(TransferError::key)?;
 
@@ -181,19 +190,19 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
     let raw_msg = msg.to_any();
     let msgs = vec![raw_msg; opts.number_msgs];
 
-    let events = packet_src_chain
+    let events_with_heights = packet_src_chain
         .send_messages_and_wait_commit(TrackedMsgs::new_static(msgs, "ft-transfer"))
         .map_err(|e| TransferError::submit(packet_src_chain.id(), e))?;
 
     // Check if the chain rejected the transaction
-    let result = events
+    let result = events_with_heights
         .iter()
-        .find(|event| matches!(event, IbcEvent::ChainError(_)));
+        .find(|event| matches!(event.event, IbcEvent::ChainError(_)));
 
     match result {
-        None => Ok(events),
+        None => Ok(events_with_heights.into_iter().map(|ev| ev.event).collect()),
         Some(err) => {
-            if let IbcEvent::ChainError(err) = err {
+            if let IbcEvent::ChainError(ref err) = err.event {
                 Err(TransferError::tx_response(err.clone()))
             } else {
                 panic!(

@@ -1,17 +1,18 @@
 use core::time::Duration;
 use ibc::core::ics24_host::identifier::ChainId;
-use ibc::events::from_tx_response_event;
 use ibc::events::IbcEvent;
 use ibc::Height;
 use itertools::Itertools;
 use std::thread;
 use std::time::Instant;
 use tendermint_rpc::{HttpClient, Url};
-use tracing::{info, trace};
+use tracing::{debug, trace};
 
 use crate::chain::cosmos::query::tx::query_tx_response;
+use crate::chain::cosmos::types::events::from_tx_response_event;
 use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use crate::error::Error;
+use crate::event::IbcEventWithHeight;
 
 const WAIT_BACKOFF: Duration = Duration::from_millis(300);
 
@@ -25,6 +26,10 @@ pub async fn wait_for_block_commits(
     rpc_timeout: &Duration,
     tx_sync_results: &mut [TxSyncResult],
 ) -> Result<(), Error> {
+    if all_tx_results_found(tx_sync_results) {
+        return Ok(());
+    }
+
     let start_time = Instant::now();
 
     let hashes = tx_sync_results
@@ -32,7 +37,7 @@ pub async fn wait_for_block_commits(
         .map(|res| res.response.hash.to_string())
         .join(", ");
 
-    info!(
+    debug!(
         id = %chain_id,
         "wait_for_block_commits: waiting for commit of tx hashes(s) {}",
         hashes
@@ -77,22 +82,24 @@ async fn update_tx_sync_result(
         if let Some(response) = response {
             tx_sync_result.status = TxStatus::ReceivedResponse;
 
+            let height = Height::new(chain_id.version(), u64::from(response.height)).unwrap();
             if response.tx_result.code.is_err() {
                 tx_sync_result.events = vec![
-                    IbcEvent::ChainError(format!(
-                        "deliver_tx for {} reports error: code={:?}, log={:?}",
-                        response.hash, response.tx_result.code, response.tx_result.log
-                    ));
+                    IbcEventWithHeight::new(
+                        IbcEvent::ChainError(format!(
+                            "deliver_tx for {} reports error: code={:?}, log={:?}",
+                            response.hash, response.tx_result.code, response.tx_result.log
+                        )),
+                        height
+                    );
                     message_count
                 ];
             } else {
-                let height = Height::new(chain_id.version(), u64::from(response.height)).unwrap();
-
                 tx_sync_result.events = response
                     .tx_result
                     .events
                     .iter()
-                    .flat_map(|event| from_tx_response_event(height, event).into_iter())
+                    .flat_map(|event| from_tx_response_event(height, event))
                     .collect::<Vec<_>>();
             }
         }

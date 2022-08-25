@@ -12,7 +12,8 @@ __Legend__:
 | `Cl`              | client related                                                                                   |
 | `Conn`            | connection related                                                                               |
 | `Chan`            | channel related                                                                                  |
-| `.._Handshake_..`   | can execute all transactions required to finish a handshake from a single command                |
+| `Cfg`             | config related                                                                                  |
+| `.._Handshake_..` | can execute all transactions required to finish a handshake from a single command                |
 | `.._<msg>_A`      | building and sending `msg` from a command that scans chain state                                 |
 | `.._<msg>_P`      | building and sending `msg` from IBC event; doesn't apply to `.._Init` and `FT_Transfer` features |
 
@@ -58,8 +59,14 @@ __Feature comparison between Hermes and the Go relayer__
 | Cl_Non_Tendermint      | ❌    | ❌     | supports non tendermint IBC light clients
 | Chain_Non_Cosmos       | ❌    | ❌     | supports non cosmos-SDK chains
 |                        |       |        |
-| Mgmt_Static            | ✅    | ✅     | provides means for configuration prior to being started
-| Mgmt_Dynamic           | ❌    | ❌     | provides means for configuration and monitoring during runtime
+| Cfg_Static            | ✅    | ✅     | provides means for configuration prior to being started
+| Cfg_Dynamic           | ❌    | ❌     | provides means for configuration and monitoring during runtime
+| Cfg_Download_Config   | ✅    | ✅     | provides means for downloading recommended configuration 
+| Cfg_Edit_Config       | ❌    | ✅     | provides means for editing the configuration from the CLI 
+| Cfg_Validation        | ✅    | ✅     | provides means to validate the current configuration 
+| Telemetry             | ✅    | ❌     | telemetry server to collect metrics 
+| REST API              | ✅    | ❌     | REST API to interact with the relayer 
+
 
 
 [cosmos-go-relayer]: https://github.com/cosmos/relayer

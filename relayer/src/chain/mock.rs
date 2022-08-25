@@ -1,6 +1,8 @@
 use alloc::sync::Arc;
 use core::ops::Add;
 use core::time::Duration;
+use ibc::core::ics02_client::events::UpdateClient;
+use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::core::ics23_commitment::merkle::MerkleProof;
 
 use crossbeam_channel as channel;
@@ -38,6 +40,7 @@ use crate::config::ChainConfig;
 use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
+use crate::event::IbcEventWithHeight;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
@@ -61,9 +64,12 @@ use super::tracking::TrackedMsgs;
 pub struct MockChain {
     config: ChainConfig,
     context: MockContext,
+    light_client: MockLightClient,
 
     // keep a reference to event sender to prevent it from being dropped
-    _event_sender: EventSender,
+    #[allow(dead_code)]
+    event_sender: EventSender,
+
     event_receiver: EventReceiver,
 }
 
@@ -80,25 +86,26 @@ impl ChainEndpoint for MockChain {
     type Header = TendermintHeader;
     type ConsensusState = TendermintConsensusState;
     type ClientState = TendermintClientState;
-    type LightClient = MockLightClient;
 
     fn bootstrap(config: ChainConfig, _rt: Arc<Runtime>) -> Result<Self, Error> {
-        let (sender, receiver) = channel::unbounded();
-        Ok(MockChain {
-            config: config.clone(),
-            context: MockContext::new(
-                config.id.clone(),
-                HostType::SyntheticTendermint,
-                50,
-                Height::new(config.id.version(), 20).unwrap(),
-            ),
-            _event_sender: sender,
-            event_receiver: receiver,
-        })
-    }
+        let (event_sender, event_receiver) = channel::unbounded();
 
-    fn init_light_client(&self) -> Result<Self::LightClient, Error> {
-        Ok(MockLightClient::new(self))
+        let context = MockContext::new(
+            config.id.clone(),
+            HostType::SyntheticTendermint,
+            50,
+            Height::new(config.id.version(), 20).unwrap(),
+        );
+
+        let light_client = MockLightClient::new(config.id.clone());
+
+        Ok(MockChain {
+            config,
+            light_client,
+            context,
+            event_sender,
+            event_receiver,
+        })
     }
 
     fn init_event_monitor(
@@ -129,14 +136,38 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
+    fn verify_header(
+        &mut self,
+        trusted: Height,
+        target: Height,
+        client_state: &AnyClientState,
+    ) -> Result<Self::LightBlock, Error> {
+        self.light_client
+            .verify(trusted, target, client_state)
+            .map(|v| v.target)
+    }
+
+    /// Given a client update event that includes the header used in a client update,
+    /// look for misbehaviour by fetching a header at same or latest height.
+    fn check_misbehaviour(
+        &mut self,
+        update: &UpdateClient,
+        client_state: &AnyClientState,
+    ) -> Result<Option<MisbehaviourEvidence>, Error> {
+        self.light_client.check_misbehaviour(update, client_state)
+    }
+
     fn send_messages_and_wait_commit(
         &mut self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<IbcEvent>, Error> {
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         // Use the ICS18Context interface to submit the set of messages.
         let events = self.context.send(tracked_msgs.msgs).map_err(Error::ics18)?;
 
-        Ok(events)
+        Ok(events
+            .into_iter()
+            .map(|ev| IbcEventWithHeight::new(ev, Height::new(0, 1).unwrap()))
+            .collect())
     }
 
     fn send_messages_and_wait_check_tx(
@@ -324,7 +355,7 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn query_txs(&self, _request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
+    fn query_txs(&self, _request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error> {
         unimplemented!()
     }
 
@@ -379,16 +410,16 @@ impl ChainEndpoint for MockChain {
     }
 
     fn build_header(
-        &self,
+        &mut self,
         trusted_height: Height,
         target_height: Height,
         client_state: &AnyClientState,
-        light_client: &mut Self::LightClient,
     ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
-        let succ_trusted = light_client.fetch(trusted_height.increment())?;
+        let succ_trusted = self.light_client.fetch(trusted_height.increment())?;
 
         let Verified { target, supporting } =
-            light_client.verify(trusted_height, target_height, client_state)?;
+            self.light_client
+                .verify(trusted_height, target_height, client_state)?;
 
         let target_header = Self::Header {
             signed_header: target.signed_header,
@@ -484,6 +515,8 @@ pub mod test_utils {
             address_type: AddressType::default(),
             memo_prefix: Default::default(),
             proof_specs: Default::default(),
+            extension_options: Default::default(),
+            sequential_batch_tx: false,
         }
     }
 }
