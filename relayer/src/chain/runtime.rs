@@ -591,8 +591,6 @@ where
             height,
         );
 
-        let result = result.map(|(opt_client_state, proofs)| (opt_client_state, proofs));
-
         reply_to.send(result).map_err(Error::send)
     }
 
