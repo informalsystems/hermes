@@ -24,6 +24,7 @@
 extern crate alloc;
 
 pub mod application;
+pub mod chain_registry;
 pub mod cli_utils;
 pub mod commands;
 pub mod components;
