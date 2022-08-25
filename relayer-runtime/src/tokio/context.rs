@@ -89,11 +89,7 @@ where
     type ResultSender = oneshot::Sender<Result<Vec<Vec<Chain::Event>>, Chain::Error>>;
     type ResultReceiver = oneshot::Receiver<Result<Vec<Vec<Chain::Event>>, Chain::Error>>;
 
-    fn new_messages_channel(&self) -> (Self::MessagesSender, Self::MessagesReceiver) {
-        mpsc::channel(1024)
-    }
-
-    fn new_result_channel(&self) -> (Self::ResultSender, Self::ResultReceiver) {
+    fn new_result_channel() -> (Self::ResultSender, Self::ResultReceiver) {
         oneshot::channel()
     }
 

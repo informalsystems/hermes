@@ -29,7 +29,7 @@ where
         context: &Relay,
         messages: Vec<TargetChain::IbcMessage>,
     ) -> Result<Vec<Vec<TargetChain::IbcEvent>>, Relay::Error> {
-        let (result_sender, result_receiver) = context.batch_context().new_result_channel();
+        let (result_sender, result_receiver) = Relay::BatchContext::new_result_channel();
 
         let message_sender = context.messages_sender();
 

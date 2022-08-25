@@ -12,17 +12,7 @@ use crate::std_prelude::*;
 
 #[derive(Clone)]
 pub struct OfaBatchContext<Chain, Batch> {
-    pub batch_context: Batch,
-    pub phantom: PhantomData<Chain>,
-}
-
-impl<Chain, Batch> OfaBatchContext<Chain, Batch> {
-    pub fn new(batch_context: Batch) -> Self {
-        Self {
-            batch_context,
-            phantom: PhantomData,
-        }
-    }
+    pub phantom: PhantomData<(Chain, Batch)>,
 }
 
 #[async_trait]
@@ -33,9 +23,7 @@ pub trait OfaBatch<Chain: OfaChain>: Async {
     type ResultSender: Async;
     type ResultReceiver: Async;
 
-    fn new_messages_channel(&self) -> (Self::MessagesSender, Self::MessagesReceiver);
-
-    fn new_result_channel(&self) -> (Self::ResultSender, Self::ResultReceiver);
+    fn new_result_channel() -> (Self::ResultSender, Self::ResultReceiver);
 
     async fn send_messages(
         sender: &Self::MessagesSender,
@@ -60,8 +48,6 @@ pub trait OfaBatch<Chain: OfaChain>: Async {
 pub trait OfaChainWithBatch: OfaChain {
     type BatchContext: OfaBatch<Self>;
 
-    fn batch_context(&self) -> &OfaBatchContext<Self, Self::BatchContext>;
-
     fn batch_sender(&self) -> &<Self::BatchContext as OfaBatch<Self>>::MessagesSender;
 }
 
@@ -85,12 +71,8 @@ where
 
     type ResultReceiver = Batch::ResultReceiver;
 
-    fn new_messages_channel(&self) -> (Self::MessagesSender, Self::MessagesReceiver) {
-        self.batch_context.new_messages_channel()
-    }
-
-    fn new_result_channel(&self) -> (Self::ResultSender, Self::ResultReceiver) {
-        self.batch_context.new_result_channel()
+    fn new_result_channel() -> (Self::ResultSender, Self::ResultReceiver) {
+        Batch::new_result_channel()
     }
 
     async fn send_messages(
@@ -153,10 +135,6 @@ where
     type BatchContext =
         OfaBatchContext<Relay::SrcChain, <Relay::SrcChain as OfaChainWithBatch>::BatchContext>;
 
-    fn batch_context(&self) -> &Self::BatchContext {
-        self.relay.src_chain().chain.batch_context()
-    }
-
     fn messages_sender(&self) -> &<Self::BatchContext as BatchContext>::MessagesSender {
         self.relay.src_chain().chain.batch_sender()
     }
@@ -169,10 +147,6 @@ where
 {
     type BatchContext =
         OfaBatchContext<Relay::DstChain, <Relay::DstChain as OfaChainWithBatch>::BatchContext>;
-
-    fn batch_context(&self) -> &Self::BatchContext {
-        self.relay.dst_chain().chain.batch_context()
-    }
 
     fn messages_sender(&self) -> &<Self::BatchContext as BatchContext>::MessagesSender {
         self.relay.dst_chain().chain.batch_sender()

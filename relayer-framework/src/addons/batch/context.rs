@@ -19,9 +19,7 @@ pub trait BatchContext: Async {
     type ResultSender: Async;
     type ResultReceiver: Async;
 
-    fn new_messages_channel(&self) -> (Self::MessagesSender, Self::MessagesReceiver);
-
-    fn new_result_channel(&self) -> (Self::ResultSender, Self::ResultReceiver);
+    fn new_result_channel() -> (Self::ResultSender, Self::ResultReceiver);
 
     async fn send_messages(
         sender: &Self::MessagesSender,
@@ -52,8 +50,6 @@ where
         Event = IbcEvent<Target::TargetChain, Target::CounterpartyChain>,
         Error = Self::Error,
     >;
-
-    fn batch_context(&self) -> &Self::BatchContext;
 
     fn messages_sender(&self) -> &<Self::BatchContext as BatchContext>::MessagesSender;
 }

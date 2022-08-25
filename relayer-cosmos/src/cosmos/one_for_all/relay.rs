@@ -8,15 +8,10 @@ use ibc::tx_msg::Msg;
 use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer_framework::one_for_all::components::batch::BatchComponents;
 use ibc_relayer_framework::one_for_all::traits::chain::{OfaChain, OfaChainContext};
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelay;
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
-
-#[cfg(not(feature = "batch"))]
-use ibc_relayer_framework::one_for_all::components::default::DefaultComponents;
-
-#[cfg(feature = "batch")]
-use ibc_relayer_framework::one_for_all::components::batch::BatchComponents;
 
 use crate::cosmos::context::chain::CosmosChainContext;
 use crate::cosmos::context::relay::CosmosRelayContext;
@@ -30,10 +25,6 @@ where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
 {
-    #[cfg(not(feature = "batch"))]
-    type Components = DefaultComponents;
-
-    #[cfg(feature = "batch")]
     type Components = BatchComponents;
 
     type Error = Error;

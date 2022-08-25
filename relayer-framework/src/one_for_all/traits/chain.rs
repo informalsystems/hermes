@@ -7,10 +7,7 @@ use crate::one_for_all::traits::runtime::{OfaRuntime, OfaRuntimeContext};
 use crate::std_prelude::*;
 
 #[derive(Clone)]
-pub struct OfaChainContext<Chain>
-where
-    Chain: OfaChain,
-{
+pub struct OfaChainContext<Chain> {
     pub chain: Chain,
 }
 

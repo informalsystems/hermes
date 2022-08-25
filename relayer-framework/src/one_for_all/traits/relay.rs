@@ -10,7 +10,7 @@ use crate::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::std_prelude::*;
 
 #[derive(Clone)]
-pub struct OfaRelayContext<Relay: OfaRelay> {
+pub struct OfaRelayContext<Relay> {
     pub relay: Relay,
 }
 
