@@ -31,7 +31,7 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "zOfqtEiVk"
+        "uid": "NPRbmtW4z"
       },
       "gridPos": {
         "h": 2,
@@ -44,13 +44,13 @@
         "content": "# Is hermes active ?",
         "mode": "markdown"
       },
-      "pluginVersion": "9.0.6",
+      "pluginVersion": "9.0.7",
       "type": "text"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "Indicates if you have enough funds on your wallet. Hermes can not relay without spending gas. Thus, it is important to set alarms which monitor the gas.",
       "fieldConfig": {
@@ -133,7 +133,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -153,7 +153,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "Indicates if clients are getting updated.",
       "fieldConfig": {
@@ -228,11 +228,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "expr": "increase(client_updates_submitted{job=\"hermes\"}[5m])",
-          "legendFormat": "{{src_chain}} -> {{dst_chain}}:{{client}} ({{instance}} ",
+          "legendFormat": "{{src_chain}} -> {{dst_chain}}:{{client}} ({{instance}})",
           "range": true,
           "refId": "A"
         }
@@ -243,7 +243,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "Indicates if Hermes is submitting messages to a specific chain ",
       "fieldConfig": {
@@ -318,7 +318,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "expr": "increase(total_messages_submitted{job=\"hermes\"}[5m])",
@@ -333,7 +333,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "Indicates if you are spending gas and how much you are spending.",
       "fieldConfig": {
@@ -387,7 +387,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 8,
         "w": 8,
         "x": 0,
         "y": 9
@@ -408,11 +408,11 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "expr": "delta(wallet_balance{job=\"hermes\"}[5m])",
-          "legendFormat": "{{chain}}: {{account}}",
+          "legendFormat": "{{chain}}: {{account}} ({{instance}})",
           "range": true,
           "refId": "A"
         }
@@ -423,7 +423,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "This panel indicates which type of workers are active for every instance.",
       "fieldConfig": {
@@ -477,7 +477,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 8,
         "w": 8,
         "x": 8,
         "y": 9
@@ -498,7 +498,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "exemplar": false,
@@ -515,7 +515,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "Indicates the latency rate for all transactions confirmed by each chain.",
       "fieldConfig": {
@@ -570,7 +570,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
+        "h": 8,
         "w": 8,
         "x": 16,
         "y": 9
@@ -591,7 +591,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "expr": "histogram_quantile(0.95, sum by(le, chain) (rate(tx_latency_confirmed_bucket[5m])))",
@@ -606,27 +606,27 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "zOfqtEiVk"
+        "uid": "NPRbmtW4z"
       },
       "description": "",
       "gridPos": {
         "h": 2,
         "w": 24,
         "x": 0,
-        "y": 16
+        "y": 17
       },
       "id": 25,
       "options": {
         "content": "# Are transaction successful ?\n",
         "mode": "markdown"
       },
-      "pluginVersion": "9.0.6",
+      "pluginVersion": "9.0.7",
       "type": "text"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "Represents the sequence number and the date of the oldest pending packet. Use this metric to identify stuck packets.",
       "fieldConfig": {
@@ -792,7 +792,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 18
+        "y": 19
       },
       "id": 9,
       "options": {
@@ -807,12 +807,12 @@
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "9.0.6",
+      "pluginVersion": "9.0.7",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "exemplar": false,
@@ -826,7 +826,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "exemplar": false,
@@ -927,7 +927,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "Indicates how many packets are being processed by Hermes. If this value stays constantly more than 0, it could mean that a packet is stuck.",
       "fieldConfig": {
@@ -984,7 +984,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 27
+        "y": 28
       },
       "id": 5,
       "options": {
@@ -1003,13 +1003,13 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "exemplar": false,
           "expr": "backlog_size{job=\"hermes\"}",
           "instant": false,
-          "legendFormat": "{{chain}}:{{channel}}/{{port}}-{{counterparty}}",
+          "legendFormat": "{{chain}}:{{channel}}/{{port}}-{{counterparty}} ({{instance}})",
           "range": true,
           "refId": "A"
         }
@@ -1021,7 +1021,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "Indicates how many `receive_packets` were processed by the relayer. It can be used with `send_packet_events` as every `send_packet_event` should trigger the processing of a `receive_packet`.",
       "fieldConfig": {
@@ -1078,7 +1078,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 27
+        "y": 28
       },
       "id": 23,
       "options": {
@@ -1096,7 +1096,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "expr": "delta(receive_packets_confirmed{job=\"hermes\"}[5m])",
@@ -1111,7 +1111,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "Indicates how many `timeout_packets` were processed by the relayer. It can be used with `timeout_packet_events` as every `timeout_event` should be processed by the relayer.",
       "fieldConfig": {
@@ -1168,7 +1168,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 36
+        "y": 37
       },
       "id": 21,
       "options": {
@@ -1186,7 +1186,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "expr": "delta(timeout_packets_confirmed{job=\"hermes\"}[5m])",
@@ -1201,7 +1201,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "Indicates how many acknowledgements were processed by the relayer. It can be used with `acknowledgment_events` as every event should be processed by the relayer.",
       "fieldConfig": {
@@ -1258,7 +1258,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 36
+        "y": 37
       },
       "id": 17,
       "options": {
@@ -1276,7 +1276,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "expr": "delta(acknowledgment_packets_confirmed{job=\"hermes\"}[5m])",
@@ -1291,26 +1291,26 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "",
       "gridPos": {
         "h": 2,
         "w": 24,
         "x": 0,
-        "y": 45
+        "y": 46
       },
       "id": 31,
       "options": {
         "content": "# What is the overall IBC status of each network?\r\n\r\n",
         "mode": "markdown"
       },
-      "pluginVersion": "9.0.6",
+      "pluginVersion": "9.0.7",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "expr": "",
           "range": true,
@@ -1322,7 +1322,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "Indicates the number of  `send_packet_event` observed.",
       "fieldConfig": {
@@ -1379,7 +1379,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 47
+        "y": 48
       },
       "id": 11,
       "options": {
@@ -1397,7 +1397,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "expr": "delta(send_packet_events{job=\"hermes\"}[5m])",
@@ -1413,7 +1413,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "Indicates the number of  `acknowledgement_event` observed.",
       "fieldConfig": {
@@ -1470,7 +1470,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 47
+        "y": 48
       },
       "id": 15,
       "options": {
@@ -1488,7 +1488,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "expr": "rate(acknowledgement_events{job=\"hermes\"}[5m])",
@@ -1503,7 +1503,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "Indicates the number of  `timeout_event` observed.",
       "fieldConfig": {
@@ -1560,7 +1560,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 47
+        "y": 48
       },
       "id": 19,
       "options": {
@@ -1578,7 +1578,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "expr": "rate(timeout_events{job=\"hermes\"}[5m])",
@@ -1593,7 +1593,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "Indicates the number of  `event` observed via the websocket subcription.",
       "fieldConfig": {
@@ -1650,7 +1650,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 55
+        "y": 56
       },
       "id": 44,
       "options": {
@@ -1668,7 +1668,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "expr": "delta(ws_events{job=\"hermes\"}[5m])",
@@ -1684,7 +1684,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "Indicates the number of times Hermes reconnected to the websocket.",
       "fieldConfig": {
@@ -1741,7 +1741,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 55
+        "y": 56
       },
       "id": 46,
       "options": {
@@ -1759,7 +1759,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "expr": "delta(ws_reconnect{job=\"hermes\"}[5m])",
@@ -1774,7 +1774,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "Indicate the number of queries per instance and chain.",
       "fieldConfig": {
@@ -1831,7 +1831,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 55
+        "y": 56
       },
       "id": 48,
       "options": {
@@ -1849,7 +1849,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "code",
           "expr": "sum(delta(queries{job=\"hermes\"}[5m])) by(instance,chain)",
@@ -1865,26 +1865,26 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "zOfqtEiVk"
+        "uid": "NPRbmtW4z"
       },
       "gridPos": {
         "h": 2,
         "w": 24,
         "x": 0,
-        "y": 63
+        "y": 64
       },
       "id": 36,
       "options": {
         "content": "# How efficient and how secure is the IBC status on each network ?\n\n",
         "mode": "markdown"
       },
-      "pluginVersion": "9.0.6",
+      "pluginVersion": "9.0.7",
       "type": "text"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "Cleared `acknowledgment_events` rate per path. It is an indication that IBC packet relaying may be unsuccessful and that Hermes periodically finds packets to clear (i.e., unblock).",
       "fieldConfig": {
@@ -1941,7 +1941,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 65
+        "y": 66
       },
       "id": 33,
       "options": {
@@ -1959,7 +1959,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "expr": "delta(cleared_acknowledgment_events{job=\"hermes\"}[5m])",
@@ -1974,7 +1974,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "Cleared `send_packet_events` rate per path. It is an indication that IBC packet relaying may be unsuccessful and that Hermes periodically finds packets to clear (i.e., unblock).",
       "fieldConfig": {
@@ -2031,7 +2031,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 65
+        "y": 66
       },
       "id": 13,
       "options": {
@@ -2049,7 +2049,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "expr": "delta(cleared_send_packet_events{job=\"hermes\"}[1h])",
@@ -2064,7 +2064,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "Indicates the latency rate for all transactions submitted to each chain.",
       "fieldConfig": {
@@ -2122,7 +2122,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 74
+        "y": 75
       },
       "id": 37,
       "options": {
@@ -2140,7 +2140,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "expr": "histogram_quantile(0.95, sum by(le, chain, instance) (rate(tx_latency_submitted_bucket[1h])))",
@@ -2155,7 +2155,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "",
       "fieldConfig": {
@@ -2212,7 +2212,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 74
+        "y": 75
       },
       "id": 54,
       "options": {
@@ -2230,7 +2230,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "expr": "sum by(chain, instance) (delta(queries_cache_hits{job=\"hermes\"}[1m]))",
@@ -2245,26 +2245,26 @@
     {
       "datasource": {
         "type": "loki",
-        "uid": "zOfqtEiVk"
+        "uid": "NPRbmtW4z"
       },
       "gridPos": {
         "h": 2,
         "w": 23,
         "x": 0,
-        "y": 82
+        "y": 83
       },
       "id": 58,
       "options": {
         "content": "# Extra",
         "mode": "markdown"
       },
-      "pluginVersion": "9.0.6",
+      "pluginVersion": "9.0.7",
       "type": "text"
     },
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "AJHhFUmVz"
+        "uid": "O8HJmtZ4z"
       },
       "description": "If `misbehaviour = true` then hermes will detect misbehaviours from clients and stop relaying to this client if one is detected. It is possible to set an alarm on this. ",
       "fieldConfig": {
@@ -2321,7 +2321,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 84
+        "y": 85
       },
       "id": 56,
       "options": {
@@ -2339,7 +2339,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "AJHhFUmVz"
+            "uid": "O8HJmtZ4z"
           },
           "editorMode": "builder",
           "expr": "delta(client_misbehaviours_submitted[5m])",
@@ -2367,6 +2367,6 @@
   "timezone": "",
   "title": "Grafana template",
   "uid": "lrkGhUmVz",
-  "version": 15,
+  "version": 4,
   "weekStart": ""
 }
