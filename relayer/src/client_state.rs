@@ -12,7 +12,9 @@ use ibc::clients::ics07_tendermint::client_state::{
     ClientState as TmClientState, UpgradeOptions as TmUpgradeOptions,
     TENDERMINT_CLIENT_STATE_TYPE_URL,
 };
-use ibc::core::ics02_client::client_state::{ClientState, UpdatedState, UpgradeOptions};
+use ibc::core::ics02_client::client_state::{
+    downcast_client_state, ClientState, UpdatedState, UpgradeOptions,
+};
 use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::consensus_state::ConsensusState;
 use ibc::core::ics02_client::context::ClientReader;
@@ -360,6 +362,21 @@ impl From<TmClientState> for AnyClientState {
 impl From<MockClientState> for AnyClientState {
     fn from(cs: MockClientState) -> Self {
         Self::Mock(cs)
+    }
+}
+
+impl From<&dyn ClientState> for AnyClientState {
+    fn from(client_state: &dyn ClientState) -> Self {
+        #[cfg(test)]
+        if let Some(cs) = downcast_client_state::<MockClientState>(client_state) {
+            return AnyClientState::from(*cs);
+        }
+
+        if let Some(cs) = downcast_client_state::<TmClientState>(client_state) {
+            AnyClientState::from(cs.clone())
+        } else {
+            unreachable!()
+        }
     }
 }
 

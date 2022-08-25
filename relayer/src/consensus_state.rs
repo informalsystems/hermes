@@ -2,7 +2,7 @@ use ibc::clients::ics07_tendermint::consensus_state::{
     ConsensusState as TmConsensusState, TENDERMINT_CONSENSUS_STATE_TYPE_URL,
 };
 use ibc::core::ics02_client::client_type::ClientType;
-use ibc::core::ics02_client::consensus_state::ConsensusState;
+use ibc::core::ics02_client::consensus_state::{downcast_consensus_state, ConsensusState};
 use ibc::core::ics02_client::error::Error;
 use ibc::core::ics23_commitment::commitment::CommitmentRoot;
 #[cfg(test)]
@@ -101,6 +101,21 @@ impl From<MockConsensusState> for AnyConsensusState {
 impl From<TmConsensusState> for AnyConsensusState {
     fn from(cs: TmConsensusState) -> Self {
         Self::Tendermint(cs)
+    }
+}
+
+impl From<&dyn ConsensusState> for AnyConsensusState {
+    fn from(cs: &dyn ConsensusState) -> Self {
+        #[cfg(test)]
+        if let Some(cs) = downcast_consensus_state::<MockConsensusState>(cs) {
+            return AnyConsensusState::from(cs.clone());
+        }
+
+        if let Some(cs) = downcast_consensus_state::<TmConsensusState>(cs) {
+            AnyConsensusState::from(cs.clone())
+        } else {
+            unreachable!()
+        }
     }
 }
 
