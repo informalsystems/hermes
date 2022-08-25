@@ -20,6 +20,7 @@
       - [Build the topology](./tutorials/more-chains/build-the-topology.md)
       - [Start relaying](./tutorials/more-chains/start-relaying.md)
     - [Relaying in production](./tutorials/production/index.md)
+      - [Setup Grafana](./tutorials/production/setup-grafana.md)
     - [Run multiple instances](./tutorials/concurrent/index.md)
 
 
