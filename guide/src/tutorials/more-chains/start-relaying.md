@@ -324,9 +324,11 @@ A((ibc-3))-->B((ibc-2))-->C((ibc-1));
     - balances at ibc-1:
         ```
         balances:
+        - amount: "500000"
+        denom: ibc/8F3641F853A1D075C549E733AB624BA8607C8D2FFC26B32717DE660AE6A34A73
         - amount: "98500000"
         denom: samoleans
-        - amount: "99978141"
+        - amount: "99975741"
         denom: stake
         pagination:
         next_key: null
@@ -345,10 +347,14 @@ A((ibc-3))-->B((ibc-2))-->C((ibc-1));
         next_key: null
         total: "0"
         ```
-    The tokens were correctly received by `ibc-1` under the denom `samoleans`. 
+    The tokens were succesfully received by `ibc-1` under the denom `samoleans`. 
 
 ## Stop relaying and stop the chains
 
 - Stop Hermes by pressing `Ctrl+C` on the terminal running `hermes start`.
 
 - Stop the chains with `gm stop`.
+
+## Next Steps
+
+In the [next tutorial](./production/index.md), you will learn how to set up Hermes in production.

@@ -268,7 +268,7 @@ trust_threshold = { numerator = '1', denominator = '3' }
 [chains.packet_filter]
 policy = 'allow'
 list = [
-    ['transfer', 'channel-0'],
+    ['transfer', 'channel-1'],
     ['transfer', 'channel-2'],
 ]
 
