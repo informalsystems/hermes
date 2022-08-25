@@ -11,7 +11,7 @@ For reaching this milestone, we thank the valuable contributions of over 50 indi
 
 > ⚠️  If upgrading from Hermes v0.15.0, be aware that this release contains multiple breaking
 > ⚠️  changes to the Hermes command-line interface and configuration.
-> ⚠️  Please consult the [UPGRADING document for instructions](UPGRADING.md) ) for a more detadetails.
+> ⚠️  Please consult the [UPGRADING document for instructions](UPGRADING.md) for more details.
 
 ### Highlights
 
