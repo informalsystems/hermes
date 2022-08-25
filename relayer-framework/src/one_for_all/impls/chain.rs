@@ -1,16 +1,18 @@
 use async_trait::async_trait;
 
+use crate::core::traits::contexts::chain::{ChainContext, IbcChainContext};
+use crate::core::traits::contexts::error::HasError;
+use crate::core::traits::contexts::ibc_event::HasIbcEvents;
+use crate::core::traits::contexts::runtime::HasRuntime;
+use crate::core::traits::queries::consensus_state::{ConsensusStateQuerier, HasConsensusState};
+use crate::core::traits::queries::received_packet::{
+    HasReceivedPacketQuerier, ReceivedPacketQuerier,
+};
 use crate::one_for_all::impls::message::OfaMessage;
 use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext, OfaIbcChain};
 use crate::one_for_all::traits::error::OfaErrorContext;
 use crate::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::std_prelude::*;
-use crate::traits::contexts::chain::{ChainContext, IbcChainContext};
-use crate::traits::contexts::error::HasError;
-use crate::traits::contexts::ibc_event::HasIbcEvents;
-use crate::traits::contexts::runtime::HasRuntime;
-use crate::traits::queries::consensus_state::{ConsensusStateQuerier, HasConsensusState};
-use crate::traits::queries::received_packet::{HasReceivedPacketQuerier, ReceivedPacketQuerier};
 
 impl<Chain: OfaChain> HasError for OfaChainContext<Chain> {
     type Error = OfaErrorContext<Chain::Error>;

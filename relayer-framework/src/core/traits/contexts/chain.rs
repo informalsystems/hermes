@@ -1,0 +1,32 @@
+use crate::core::traits::contexts::runtime::HasRuntime;
+use crate::core::traits::core::Async;
+use crate::core::traits::message::{IbcMessage, Message};
+
+pub trait ChainContext: HasRuntime {
+    type Height: Async;
+
+    type Timestamp: Async;
+
+    type Message: Message;
+
+    type Event: Async;
+}
+
+pub trait IbcChainContext<Counterparty>: ChainContext
+where
+    Counterparty: ChainContext,
+{
+    type ClientId: Async;
+
+    type ConnectionId: Async;
+
+    type ChannelId: Async;
+
+    type PortId: Async;
+
+    type Sequence: Async;
+
+    type IbcMessage: IbcMessage<Counterparty>;
+
+    type IbcEvent: Async;
+}

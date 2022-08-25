@@ -1,8 +1,8 @@
-use crate::traits::contexts::chain::{ChainContext, IbcChainContext};
-use crate::traits::contexts::ibc_event::HasIbcEvents;
-use crate::traits::queries::consensus_state::{HasConsensusState, HasConsensusStateQuerier};
-use crate::traits::queries::received_packet::HasReceivedPacketQuerier;
-use crate::traits::queries::status::HasChainStatusQuerier;
+use crate::core::traits::contexts::chain::{ChainContext, IbcChainContext};
+use crate::core::traits::contexts::ibc_event::HasIbcEvents;
+use crate::core::traits::queries::consensus_state::{HasConsensusState, HasConsensusStateQuerier};
+use crate::core::traits::queries::received_packet::HasReceivedPacketQuerier;
+use crate::core::traits::queries::status::HasChainStatusQuerier;
 
 pub trait AfoChainContext<Counterparty>:
     IbcChainContext<Counterparty>

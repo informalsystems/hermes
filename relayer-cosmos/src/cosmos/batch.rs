@@ -1,11 +1,11 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
-use ibc_relayer_framework::extras::batch::config::BatchConfig;
-use ibc_relayer_framework::extras::batch::spawn::{
+use ibc_relayer_framework::addons::batch::config::BatchConfig;
+use ibc_relayer_framework::addons::batch::spawn::{
     BatchMessageWorkerSpawner, CanSpawnBatchMessageWorker,
 };
+use ibc_relayer_framework::core::traits::target::{DestinationTarget, SourceTarget};
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
-use ibc_relayer_framework::traits::target::{DestinationTarget, SourceTarget};
 use tendermint::abci::responses::Event;
 use tokio::sync::{mpsc, oneshot};
 

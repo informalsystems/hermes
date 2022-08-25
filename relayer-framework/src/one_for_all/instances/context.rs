@@ -1,7 +1,7 @@
+use crate::core::traits::contexts::chain::{ChainContext, IbcChainContext};
+use crate::core::traits::contexts::relay::RelayContext;
 use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext, OfaIbcChain};
 use crate::one_for_all::traits::relay::{OfaRelay, OfaRelayContext};
-use crate::traits::contexts::chain::{ChainContext, IbcChainContext};
-use crate::traits::contexts::relay::RelayContext;
 
 pub fn relay_context<Relay: OfaRelay>(relay: Relay) -> impl RelayContext {
     OfaRelayContext::new(relay)

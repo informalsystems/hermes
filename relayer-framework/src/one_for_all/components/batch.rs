@@ -1,9 +1,9 @@
-use crate::extras::batch::message_sender::SendMessagetoBatchWorker;
-use crate::impls::message_senders::chain_sender::SendIbcMessagesToChain;
-use crate::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
-use crate::impls::messages::skip_update_client::SkipUpdateClient;
-use crate::impls::messages::wait_update_client::WaitUpdateClient;
-use crate::impls::packet_relayers::top::TopRelayer;
+use crate::addons::batch::message_sender::SendMessagetoBatchWorker;
+use crate::core::impls::message_senders::chain_sender::SendIbcMessagesToChain;
+use crate::core::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
+use crate::core::impls::messages::skip_update_client::SkipUpdateClient;
+use crate::core::impls::messages::wait_update_client::WaitUpdateClient;
+use crate::core::impls::packet_relayers::top::TopRelayer;
 use crate::one_for_all::impls::chain::OfaConsensusStateQuerier;
 use crate::one_for_all::impls::relay::OfaUpdateClientMessageBuilder;
 use crate::one_for_all::impls::status::OfaChainStatusQuerier;

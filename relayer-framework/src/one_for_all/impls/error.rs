@@ -1,6 +1,6 @@
-use crate::impls::packet_relayers::retry::{MaxRetryExceeded, RetryableError};
+use crate::core::impls::packet_relayers::retry::{MaxRetryExceeded, RetryableError};
+use crate::core::traits::ibc_message_sender::MismatchIbcEventsCountError;
 use crate::one_for_all::traits::error::{OfaError, OfaErrorContext};
-use crate::traits::ibc_message_sender::MismatchIbcEventsCountError;
 
 impl<Error: OfaError> RetryableError for OfaErrorContext<Error> {
     fn is_retryable(&self) -> bool {

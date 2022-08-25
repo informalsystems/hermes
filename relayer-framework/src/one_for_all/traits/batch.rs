@@ -1,14 +1,14 @@
 use async_trait::async_trait;
 use core::marker::PhantomData;
 
-use crate::extras::batch::context::{BatchContext, HasBatchContext};
+use crate::addons::batch::context::{BatchContext, HasBatchContext};
+use crate::core::traits::core::Async;
+use crate::core::traits::target::{DestinationTarget, SourceTarget};
 use crate::one_for_all::impls::message::OfaMessage;
 use crate::one_for_all::traits::chain::OfaChain;
 use crate::one_for_all::traits::error::OfaErrorContext;
 use crate::one_for_all::traits::relay::{OfaRelay, OfaRelayContext};
 use crate::std_prelude::*;
-use crate::traits::core::Async;
-use crate::traits::target::{DestinationTarget, SourceTarget};
 
 #[derive(Clone)]
 pub struct OfaBatchContext<Chain, Batch> {

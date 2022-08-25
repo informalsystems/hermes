@@ -1,4 +1,4 @@
-use crate::traits::core::Async;
+use crate::core::traits::core::Async;
 use core::fmt::Debug;
 
 #[derive(Debug, Clone)]

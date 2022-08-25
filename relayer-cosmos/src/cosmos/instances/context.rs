@@ -1,8 +1,8 @@
 use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer_framework::core::traits::contexts::chain::{ChainContext, IbcChainContext};
+use ibc_relayer_framework::core::traits::contexts::relay::RelayContext;
 use ibc_relayer_framework::one_for_all::traits::chain::OfaChainContext;
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
-use ibc_relayer_framework::traits::contexts::chain::{ChainContext, IbcChainContext};
-use ibc_relayer_framework::traits::contexts::relay::RelayContext;
 
 use crate::cosmos::context::chain::CosmosChainContext;
 use crate::cosmos::context::relay::CosmosRelayContext;

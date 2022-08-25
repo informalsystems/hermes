@@ -1,6 +1,6 @@
+use crate::core::traits::contexts::error::HasError;
+use crate::core::traits::message::{IbcMessage, Message};
 use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext, OfaIbcChain};
-use crate::traits::contexts::error::HasError;
-use crate::traits::message::{IbcMessage, Message};
 
 pub struct OfaMessage<Chain: OfaChain> {
     pub message: Chain::Message,

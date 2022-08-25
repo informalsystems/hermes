@@ -10,9 +10,7 @@ pub mod docs;
 
 mod std_prelude;
 
+pub mod addons;
 pub mod all_for_one;
-pub mod extras;
-pub mod impls;
+pub mod core;
 pub mod one_for_all;
-pub mod traits;
-pub mod types;

@@ -1,10 +1,10 @@
-use crate::one_for_all::traits::relay::{OfaRelay, OfaRelayContext};
-use crate::traits::ibc_message_sender::{HasIbcMessageSender, IbcMessageSender};
-use crate::traits::messages::update_client::{
+use crate::core::traits::ibc_message_sender::{HasIbcMessageSender, IbcMessageSender};
+use crate::core::traits::messages::update_client::{
     HasUpdateClientMessageBuilder, UpdateClientMessageBuilder,
 };
-use crate::traits::packet_relayer::PacketRelayer;
-use crate::traits::target::{DestinationTarget, SourceTarget};
+use crate::core::traits::packet_relayer::PacketRelayer;
+use crate::core::traits::target::{DestinationTarget, SourceTarget};
+use crate::one_for_all::traits::relay::{OfaRelay, OfaRelayContext};
 
 pub trait OfaRelayComponents<Relay>
 where

@@ -2,9 +2,9 @@ use async_trait::async_trait;
 use core::future::Future;
 use core::time::Duration;
 
+use crate::core::traits::core::Async;
 use crate::one_for_all::traits::error::OfaError;
 use crate::std_prelude::*;
-use crate::traits::core::Async;
 
 #[derive(Clone)]
 pub struct OfaRuntimeContext<Runtime> {
