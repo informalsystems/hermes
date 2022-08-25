@@ -11,7 +11,7 @@ pub struct OfaChainContext<Chain> {
     pub chain: Chain,
 }
 
-impl<Chain: OfaChain> OfaChainContext<Chain> {
+impl<Chain> OfaChainContext<Chain> {
     pub fn new(chain: Chain) -> Self {
         Self { chain }
     }
