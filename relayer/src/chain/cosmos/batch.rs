@@ -8,7 +8,7 @@ use prost::Message;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tracing::debug;
 
-use crate::chain::cosmos::encode::encoded_tx_len;
+use crate::chain::cosmos::encode::encoded_tx_metrics;
 use crate::chain::cosmos::gas::gas_amount_to_fee;
 use crate::chain::cosmos::retry::send_tx_with_account_sequence_retry;
 use crate::chain::cosmos::types::account::Account;
@@ -292,17 +292,19 @@ fn batch_messages(
     // by taking the encoded length of an empty tx with the same auth info and signatures.
     // Use the maximum possible fee to get an upper bound for varint encoding.
     let max_fee = gas_amount_to_fee(&config.gas_config, config.gas_config.max_gas);
-    let tx_envelope_len = encoded_tx_len(config, key_entry, account, tx_memo, &[], &max_fee)?;
+    let tx_metrics = encoded_tx_metrics(config, key_entry, account, tx_memo, &[], &max_fee)?;
+    let empty_body_len = tx_metrics.body_bytes_len;
+    let tx_envelope_len = tx_metrics.total_len - prost::length_delimiter_len(empty_body_len);
 
-    // Full length of the transaction can then be derived from the envelope length
-    // and the length of the body field, taking into account the varint encoding
+    // Full length of the transaction can then be derived from the length of the invariable
+    // envelope and the length of the body field, taking into account the varint encoding
     // of the body field's length delimiter.
     fn tx_len(envelope_len: usize, body_len: usize) -> usize {
-        envelope_len + prost::length_delimiter_len(body_len) - 1 + body_len
+        envelope_len + prost::length_delimiter_len(body_len) + body_len
     }
 
     let mut current_count = 0;
-    let mut current_len = 0;
+    let mut current_len = empty_body_len;
     let mut current_batch = vec![];
 
     for message in messages {
@@ -312,25 +314,19 @@ fn batch_messages(
         // field tag (small varint) and the length delimiter.
         let tagged_len = 1 + prost::length_delimiter_len(message_len) + message_len;
 
-        // Check if the message is too big to fit into the transaction size limit
-        // even if the message is taken alone.
-        if tx_len(tx_envelope_len, tagged_len) > max_tx_size {
-            return Err(Error::message_too_big_for_tx(message_len));
-        }
-
         if current_count >= max_message_count
             || tx_len(tx_envelope_len, current_len + tagged_len) > max_tx_size
         {
             let insert_batch = mem::take(&mut current_batch);
 
-            assert!(
-                !insert_batch.is_empty(),
-                "max message count should not be 0"
-            );
+            if insert_batch.is_empty() {
+                assert!(max_message_count != 0);
+                return Err(Error::message_too_big_for_tx(message_len));
+            }
 
             batches.push(insert_batch);
             current_count = 0;
-            current_len = 0;
+            current_len = empty_body_len;
         }
 
         current_count += 1;

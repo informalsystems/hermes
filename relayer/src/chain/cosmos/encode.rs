@@ -34,14 +34,19 @@ pub fn sign_and_encode_tx(
     encode_tx_raw(tx_raw)
 }
 
-pub fn encoded_tx_len(
+pub struct EncodedTxMetrics {
+    pub total_len: usize,
+    pub body_bytes_len: usize,
+}
+
+pub fn encoded_tx_metrics(
     config: &TxConfig,
     key_entry: &KeyEntry,
     account: &Account,
     tx_memo: &Memo,
     messages: &[Any],
     fee: &Fee,
-) -> Result<usize, Error> {
+) -> Result<EncodedTxMetrics, Error> {
     let signed_tx = sign_tx(config, key_entry, account, tx_memo, messages, fee)?;
 
     let tx_raw = TxRaw {
@@ -50,9 +55,13 @@ pub fn encoded_tx_len(
         signatures: signed_tx.signatures,
     };
 
-    let len = tx_raw.encoded_len();
+    let total_len = tx_raw.encoded_len();
+    let body_bytes_len = tx_raw.body_bytes.len();
 
-    Ok(len)
+    Ok(EncodedTxMetrics {
+        total_len,
+        body_bytes_len,
+    })
 }
 
 pub fn sign_tx(
