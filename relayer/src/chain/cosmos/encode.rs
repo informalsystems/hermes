@@ -34,8 +34,11 @@ pub fn sign_and_encode_tx(
     encode_tx_raw(tx_raw)
 }
 
+/// Length information for an encoded transaction.
 pub struct EncodedTxMetrics {
+    /// Total length of the transaction encoding.
     pub total_len: usize,
+    /// Length of the byte array in the `body_bytes` field of the `TxRaw` message.
     pub body_bytes_len: usize,
 }
 
