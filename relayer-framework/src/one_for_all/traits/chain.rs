@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 
 use crate::core::traits::core::Async;
-use crate::one_for_all::traits::components::chain::OfaChainComponents;
 use crate::one_for_all::traits::error::OfaError;
 use crate::one_for_all::traits::runtime::{OfaRuntime, OfaRuntimeContext};
 use crate::std_prelude::*;
@@ -19,7 +18,7 @@ impl<Chain> OfaChainContext<Chain> {
 
 #[async_trait]
 pub trait OfaChain: Async {
-    type Components: OfaChainComponents<Self>;
+    type Components;
 
     type Error: OfaError;
 

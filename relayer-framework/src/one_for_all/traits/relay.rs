@@ -2,8 +2,6 @@ use async_trait::async_trait;
 
 use crate::core::traits::core::Async;
 use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext, OfaIbcChain};
-use crate::one_for_all::traits::components::chain::OfaIbcChainComponents;
-use crate::one_for_all::traits::components::relay::OfaRelayComponents;
 use crate::one_for_all::traits::error::OfaError;
 use crate::one_for_all::traits::runtime::OfaRuntime;
 use crate::one_for_all::traits::runtime::OfaRuntimeContext;
@@ -22,9 +20,7 @@ impl<Relay: OfaRelay> OfaRelayContext<Relay> {
 
 #[async_trait]
 pub trait OfaRelay: Async {
-    type Components: OfaRelayComponents<Self>
-        + OfaIbcChainComponents<Self::SrcChain, Self::DstChain>
-        + OfaIbcChainComponents<Self::DstChain, Self::SrcChain>;
+    type Components;
 
     type Error: OfaError;
 

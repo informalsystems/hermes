@@ -10,7 +10,7 @@ use crate::cosmos::types::chain::CosmosChainContext;
 pub struct CosmosRelayContext<Relay: CosmosRelay> {
     pub relay: Arc<Relay>,
     pub src_chain: OfaChainContext<CosmosChainContext<Relay::SrcChain>>,
-    pub dst_chain: OfaChainContext<CosmosChainContext<Relay::SrcChain>>,
+    pub dst_chain: OfaChainContext<CosmosChainContext<Relay::DstChain>>,
     pub runtime: OfaRuntimeContext<CosmosRuntimeContext>,
 }
 
@@ -22,7 +22,7 @@ impl<Relay: CosmosRelay> CosmosRelayContext<Relay> {
         ));
 
         let dst_chain = OfaChainContext::new(CosmosChainContext::new(
-            relay.src_chain().clone(),
+            relay.dst_chain().clone(),
             runtime.clone(),
         ));
 

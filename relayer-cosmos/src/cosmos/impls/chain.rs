@@ -23,8 +23,6 @@ use prost::Message as _;
 use tendermint::abci::responses::Event;
 use tokio::sync::{mpsc, oneshot};
 
-use ibc_relayer_framework::one_for_all::components::default::DefaultComponents;
-
 use crate::cosmos::context::runtime::CosmosRuntimeContext;
 use crate::cosmos::error::Error;
 use crate::cosmos::message::CosmosIbcMessage;
@@ -36,7 +34,7 @@ impl<Chain> OfaChain for CosmosChainContext<Chain>
 where
     Chain: CosmosChain,
 {
-    type Components = DefaultComponents;
+    type Components = Chain::Components;
 
     type Error = Error;
 

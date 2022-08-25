@@ -4,9 +4,12 @@ use crate::core::traits::messages::update_client::{
 };
 use crate::core::traits::packet_relayer::PacketRelayer;
 use crate::core::traits::target::{DestinationTarget, SourceTarget};
+use crate::one_for_all::traits::components::chain::OfaIbcChainComponents;
 use crate::one_for_all::traits::relay::{OfaRelay, OfaRelayContext};
 
-pub trait OfaRelayComponents<Relay>
+pub trait OfaRelayComponents<Relay>:
+    OfaIbcChainComponents<Relay::SrcChain, Relay::DstChain>
+    + OfaIbcChainComponents<Relay::DstChain, Relay::SrcChain>
 where
     Relay: OfaRelay,
 {

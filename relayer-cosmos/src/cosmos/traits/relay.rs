@@ -1,11 +1,15 @@
 use alloc::sync::Arc;
 use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer_framework::core::traits::core::Async;
 
 use crate::cosmos::traits::chain::CosmosChain;
 
-pub trait CosmosRelay {
-    type SrcChain: CosmosChain;
-    type DstChain: CosmosChain;
+pub trait CosmosRelay: Async {
+    type Components;
+
+    type SrcChain: CosmosChain<Components = Self::Components>;
+
+    type DstChain: CosmosChain<Components = Self::Components>;
 
     fn src_chain(&self) -> &Arc<Self::SrcChain>;
 

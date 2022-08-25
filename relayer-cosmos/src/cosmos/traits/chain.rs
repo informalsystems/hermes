@@ -10,6 +10,8 @@ use crate::cosmos::error::Error;
 use crate::cosmos::message::CosmosIbcMessage;
 
 pub trait CosmosChain: Async {
+    type Components;
+
     type ChainHandle: ChainHandle;
 
     fn chain_handle(&self) -> &Self::ChainHandle;
