@@ -1,35 +1,33 @@
-use ibc_relayer::chain::handle::ChainHandle;
+use core::marker::PhantomData;
 use ibc_relayer_framework::core::traits::contexts::chain::{ChainContext, IbcChainContext};
 use ibc_relayer_framework::core::traits::contexts::relay::RelayContext;
 use ibc_relayer_framework::one_for_all::traits::chain::OfaChainContext;
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
 
-use crate::cosmos::context::chain::CosmosChainContext;
-use crate::cosmos::context::relay::CosmosRelayContext;
+use crate::cosmos::traits::chain::CosmosChain;
+use crate::cosmos::traits::relay::CosmosRelay;
+use crate::cosmos::types::chain::CosmosChainContext;
+use crate::cosmos::types::relay::CosmosRelayContext;
 
-pub fn relay_context<SrcChain, DstChain>(
-    relay: CosmosRelayContext<SrcChain, DstChain>,
-) -> impl RelayContext
+pub fn relay_context<Relay>() -> PhantomData<impl RelayContext>
 where
-    SrcChain: ChainHandle,
-    DstChain: ChainHandle,
+    Relay: CosmosRelay,
 {
-    OfaRelayContext::new(relay)
+    PhantomData::<OfaRelayContext<CosmosRelayContext<Relay>>>
 }
 
-pub fn chain_context<Chain>(handler: CosmosChainContext<Chain>) -> impl ChainContext
+pub fn chain_context<Chain>() -> PhantomData<impl ChainContext>
 where
-    Chain: ChainHandle,
+    Chain: CosmosChain,
 {
-    OfaChainContext::new(handler)
+    PhantomData::<OfaChainContext<CosmosChainContext<Chain>>>
 }
 
 pub fn ibc_chain_context<Chain, Counterparty>(
-    handler: CosmosChainContext<Chain>,
-) -> impl IbcChainContext<OfaChainContext<CosmosChainContext<Counterparty>>>
+) -> PhantomData<impl IbcChainContext<OfaChainContext<CosmosChainContext<Counterparty>>>>
 where
-    Chain: ChainHandle,
-    Counterparty: ChainHandle,
+    Chain: CosmosChain,
+    Counterparty: CosmosChain,
 {
-    OfaChainContext::new(handler)
+    PhantomData::<OfaChainContext<CosmosChainContext<Chain>>>
 }

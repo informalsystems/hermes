@@ -1,46 +1,88 @@
-use ibc_relayer::chain::handle::ChainHandle;
+use crate::cosmos::traits::chain::CosmosChain;
+use crate::cosmos::traits::relay::CosmosRelay;
+use alloc::sync::Arc;
 use ibc_relayer::foreign_client::ForeignClient;
-use ibc_relayer_framework::one_for_all::traits::chain::OfaChainContext;
-use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
-
-use crate::cosmos::context::chain::CosmosChainContext;
-use crate::cosmos::context::runtime::CosmosRuntimeContext;
 
 #[derive(Clone)]
-pub struct CosmosRelayContext<SrcChain, DstChain>
+pub struct CosmosRelayImpl<SrcChain, DstChain>
 where
-    SrcChain: ChainHandle,
-    DstChain: ChainHandle,
+    SrcChain: CosmosChain,
+    DstChain: CosmosChain,
 {
-    pub src_handle: OfaChainContext<CosmosChainContext<SrcChain>>,
-    pub dst_handle: OfaChainContext<CosmosChainContext<DstChain>>,
-    pub src_to_dst_client: ForeignClient<DstChain, SrcChain>,
-    pub dst_to_src_client: ForeignClient<SrcChain, DstChain>,
-    pub runtime: OfaRuntimeContext<CosmosRuntimeContext>,
+    pub src_chain: Arc<SrcChain>,
+    pub dst_chain: Arc<DstChain>,
+    pub src_to_dst_client: ForeignClient<
+        <DstChain as CosmosChain>::ChainHandle,
+        <SrcChain as CosmosChain>::ChainHandle,
+    >,
+    pub dst_to_src_client: ForeignClient<
+        <SrcChain as CosmosChain>::ChainHandle,
+        <DstChain as CosmosChain>::ChainHandle,
+    >,
 }
 
-impl<SrcChain, DstChain> CosmosRelayContext<SrcChain, DstChain>
+impl<SrcChain, DstChain> CosmosRelayImpl<SrcChain, DstChain>
 where
-    SrcChain: ChainHandle,
-    DstChain: ChainHandle,
+    SrcChain: CosmosChain,
+    DstChain: CosmosChain,
 {
     pub fn new(
-        runtime: CosmosRuntimeContext,
-        src_handle: CosmosChainContext<SrcChain>,
-        dst_handle: CosmosChainContext<DstChain>,
-        src_to_dst_client: ForeignClient<DstChain, SrcChain>,
-        dst_to_src_client: ForeignClient<SrcChain, DstChain>,
+        src_chain: Arc<SrcChain>,
+        dst_chain: Arc<DstChain>,
+        src_to_dst_client: ForeignClient<
+            <DstChain as CosmosChain>::ChainHandle,
+            <SrcChain as CosmosChain>::ChainHandle,
+        >,
+        dst_to_src_client: ForeignClient<
+            <SrcChain as CosmosChain>::ChainHandle,
+            <DstChain as CosmosChain>::ChainHandle,
+        >,
     ) -> Self {
-        let runtime = OfaRuntimeContext::new(runtime);
-
         let relay = Self {
-            src_handle: OfaChainContext::new(src_handle),
-            dst_handle: OfaChainContext::new(dst_handle),
+            src_chain,
+            dst_chain,
             src_to_dst_client,
             dst_to_src_client,
-            runtime,
         };
 
         relay
+    }
+}
+
+impl<SrcChain, DstChain, Components> CosmosRelay for CosmosRelayImpl<SrcChain, DstChain>
+where
+    SrcChain: CosmosChain<Components = Components>,
+    DstChain: CosmosChain<Components = Components>,
+{
+    type Components = Components;
+
+    type SrcChain = SrcChain;
+
+    type DstChain = DstChain;
+
+    fn src_chain(&self) -> &Arc<Self::SrcChain> {
+        &self.src_chain
+    }
+
+    fn dst_chain(&self) -> &Arc<Self::DstChain> {
+        &self.dst_chain
+    }
+
+    fn src_to_dst_client(
+        &self,
+    ) -> &ForeignClient<
+        <Self::DstChain as CosmosChain>::ChainHandle,
+        <Self::SrcChain as CosmosChain>::ChainHandle,
+    > {
+        &self.src_to_dst_client
+    }
+
+    fn dst_to_src_client(
+        &self,
+    ) -> &ForeignClient<
+        <Self::SrcChain as CosmosChain>::ChainHandle,
+        <Self::DstChain as CosmosChain>::ChainHandle,
+    > {
+        &self.dst_to_src_client
     }
 }

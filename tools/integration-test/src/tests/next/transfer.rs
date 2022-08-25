@@ -29,7 +29,7 @@ impl BinaryChannelTest for IbcTransferTest {
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let relay_context = build_cosmos_relay_context(&chains);
-        let relayer = full_packet_relayer::<ChainA, ChainB>(1);
+        let relayer = full_packet_relayer(1);
 
         let denom_a = chains.node_a.denom();
 
