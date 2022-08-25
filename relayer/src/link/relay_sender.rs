@@ -51,7 +51,7 @@ impl Submit for SyncSender {
             .map_err(LinkError::relayer)?;
 
         info!(
-            "[Sync->{}] result {}\n",
+            "[Sync->{}] result {}",
             target.id(),
             PrettyEvents(tx_events.as_slice())
         );
@@ -99,7 +99,7 @@ impl Submit for AsyncSender {
             .send_messages_and_wait_check_tx(msgs)
             .map_err(LinkError::relayer)?;
         let reply = AsyncReply { responses: a };
-        info!("[Async~>{}] {}\n", target.id(), reply);
+        info!("[Async~>{}] {}", target.id(), reply);
 
         Ok(reply)
     }
