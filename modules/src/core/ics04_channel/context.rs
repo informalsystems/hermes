@@ -138,20 +138,29 @@ pub trait ChannelKeeper {
                     res.commitment,
                 )?;
 
-                self.store_packet((res.port_id.clone(), res.channel_id, res.seq), res.packet)?;
+                self.store_send_packet((res.port_id.clone(), res.channel_id, res.seq), res.packet)?;
             }
             PacketResult::Recv(res) => match res {
                 RecvPacketResult::Ordered {
                     port_id,
                     channel_id,
                     next_seq_recv,
-                } => self.store_next_sequence_recv((port_id, channel_id), next_seq_recv)?,
+                    packet,
+                } => {
+                    self.store_next_sequence_recv((port_id.clone(), channel_id), next_seq_recv)?;
+                    self.store_recv_packet((port_id, channel_id, packet.sequence), packet)?
+                }
                 RecvPacketResult::Unordered {
                     port_id,
                     channel_id,
                     sequence,
                     receipt,
-                } => self.store_packet_receipt((port_id, channel_id, sequence), receipt)?,
+                    packet,
+                } => {
+                    self.store_packet_receipt((port_id.clone(), channel_id, sequence), receipt)?;
+                    self.store_recv_packet((port_id, channel_id, packet.sequence), packet)?
+                }
+
                 RecvPacketResult::NoOp => unreachable!(),
             },
             PacketResult::WriteAck(res) => {
@@ -193,8 +202,15 @@ pub trait ChannelKeeper {
         commitment: PacketCommitment,
     ) -> Result<(), Error>;
 
-    /// Allow implementers to optionally store packet in storage
-    fn store_packet(
+    /// Allow implementers to optionally store send packets in storage
+    fn store_send_packet(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+        packet: Packet,
+    ) -> Result<(), Error>;
+
+    /// Allow implementers to optionally store received packets in storage
+    fn store_recv_packet(
         &mut self,
         key: (PortId, ChannelId, Sequence),
         packet: Packet,

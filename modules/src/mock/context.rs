@@ -961,7 +961,15 @@ impl ChannelKeeper for MockContext {
         Ok(())
     }
 
-    fn store_packet(
+    fn store_send_packet(
+        &mut self,
+        _key: (PortId, ChannelId, Sequence),
+        _packet: crate::core::ics04_channel::packet::Packet,
+    ) -> Result<(), Ics04Error> {
+        Ok(())
+    }
+
+    fn store_recv_packet(
         &mut self,
         _key: (PortId, ChannelId, Sequence),
         _packet: crate::core::ics04_channel::packet::Packet,

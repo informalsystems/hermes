@@ -5,7 +5,7 @@ use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::events::ReceivePacket;
 use crate::core::ics04_channel::handler::verify::verify_packet_recv_proofs;
 use crate::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
-use crate::core::ics04_channel::packet::{PacketResult, Receipt, Sequence};
+use crate::core::ics04_channel::packet::{Packet, PacketResult, Receipt, Sequence};
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::core::ics26_routing::context::ReaderContext;
 use crate::events::IbcEvent;
@@ -23,11 +23,13 @@ pub enum RecvPacketResult {
         channel_id: ChannelId,
         sequence: Sequence,
         receipt: Receipt,
+        packet: Packet,
     },
     Ordered {
         port_id: PortId,
         channel_id: ChannelId,
         next_seq_recv: Sequence,
+        packet: Packet,
     },
 }
 
@@ -112,6 +114,7 @@ pub fn process<HostFunctions: HostFunctionsProvider>(
             port_id: packet.destination_port.clone(),
             channel_id: packet.destination_channel,
             next_seq_recv: next_seq_recv.increment(),
+            packet: packet.clone(),
         })
     } else {
         let packet_rec = ctx.get_packet_receipt(&(
@@ -135,6 +138,7 @@ pub fn process<HostFunctions: HostFunctionsProvider>(
                     channel_id: packet.destination_channel,
                     sequence: packet.sequence,
                     receipt: Receipt::Ok,
+                    packet: packet.clone(),
                 })
             }
             Err(e) => return Err(Error::implementation_specific(e.to_string())),
