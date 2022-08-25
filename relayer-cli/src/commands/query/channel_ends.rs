@@ -62,7 +62,7 @@ pub struct QueryChannelEndsCmd {
     verbose: bool,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ChannelEnds {
     pub channel_end: ChannelEnd,
     pub connection_end: ConnectionEnd,

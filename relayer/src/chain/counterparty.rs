@@ -16,7 +16,7 @@ use ibc::{
     },
     Height,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tracing::{error, trace};
 
 use super::requests::{
@@ -132,7 +132,7 @@ pub fn connection_state_on_destination(
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelConnectionClient {
     pub channel: IdentifiedChannelEnd,
     pub connection: IdentifiedConnectionEnd,

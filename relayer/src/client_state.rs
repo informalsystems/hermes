@@ -56,7 +56,7 @@ impl AnyUpgradeOptions {
 
 impl UpgradeOptions for AnyUpgradeOptions {}
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum AnyClientState {
     Tendermint(TmClientState),
@@ -363,7 +363,7 @@ impl From<MockClientState> for AnyClientState {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub struct IdentifiedAnyClientState {
     pub client_id: ClientId,

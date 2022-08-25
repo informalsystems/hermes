@@ -5,15 +5,15 @@ use ibc::core::{
     ics02_client::{error::Error, misbehaviour::Misbehaviour},
     ics24_host::identifier::ClientId,
 };
-use ibc::Height;
-use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
-
-use crate::light_client::AnyHeader;
-
 #[cfg(test)]
 use ibc::mock::misbehaviour::Misbehaviour as MockMisbehaviour;
 #[cfg(test)]
 use ibc::mock::misbehaviour::MOCK_MISBEHAVIOUR_TYPE_URL;
+use ibc::Height;
+use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
+use serde::{Deserialize, Serialize};
+
+use crate::light_client::AnyHeader;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MisbehaviourEvidence {
@@ -21,7 +21,7 @@ pub struct MisbehaviourEvidence {
     pub supporting_headers: Vec<AnyHeader>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(clippy::large_enum_variant)]
 pub enum AnyMisbehaviour {
     Tendermint(TmMisbehaviour),

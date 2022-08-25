@@ -45,7 +45,7 @@ use crate::Height;
 
 pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientState {
     pub chain_id: ChainId,
     pub trust_level: TrustThreshold,
@@ -57,7 +57,7 @@ pub struct ClientState {
     pub upgrade_path: Vec<String>,
     pub allow_update: AllowUpdate,
     pub frozen_height: Option<Height>,
-    #[serde(skip_serializing)]
+    #[serde(skip)]
     pub verifier: ProdVerifier,
 }
 
