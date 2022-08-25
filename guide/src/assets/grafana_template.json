@@ -1,4 +1,53 @@
 {
+  "__inputs": [
+    {
+      "name": "DS_PROMETHEUS",
+      "label": "Prometheus",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "prometheus",
+      "pluginName": "Prometheus"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "panel",
+      "id": "barchart",
+      "name": "Bar chart",
+      "version": ""
+    },
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "9.0.7"
+    },
+    {
+      "type": "datasource",
+      "id": "prometheus",
+      "name": "Prometheus",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "text",
+      "name": "Text",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
   "annotations": {
     "list": [
       {
@@ -24,15 +73,11 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 1,
+  "id": null,
   "links": [],
   "liveNow": false,
   "panels": [
     {
-      "datasource": {
-        "type": "loki",
-        "uid": "NPRbmtW4z"
-      },
       "gridPos": {
         "h": 2,
         "w": 24,
@@ -50,7 +95,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Indicates if you have enough funds on your wallet. Hermes can not relay without spending gas. Thus, it is important to set alarms which monitor the gas.",
       "fieldConfig": {
@@ -133,7 +178,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "exemplar": false,
@@ -153,7 +198,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Indicates if clients are getting updated.",
       "fieldConfig": {
@@ -228,7 +273,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "expr": "increase(client_updates_submitted{job=\"hermes\"}[5m])",
@@ -243,7 +288,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Indicates if Hermes is submitting messages to a specific chain ",
       "fieldConfig": {
@@ -318,7 +363,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "expr": "increase(total_messages_submitted{job=\"hermes\"}[5m])",
@@ -333,7 +378,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Indicates if you are spending gas and how much you are spending.",
       "fieldConfig": {
@@ -408,7 +453,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "expr": "delta(wallet_balance{job=\"hermes\"}[5m])",
@@ -423,7 +468,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "This panel indicates which type of workers are active for every instance.",
       "fieldConfig": {
@@ -498,7 +543,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "exemplar": false,
@@ -515,7 +560,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Indicates the latency rate for all transactions confirmed by each chain.",
       "fieldConfig": {
@@ -591,7 +636,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "expr": "histogram_quantile(0.95, sum by(le, chain) (rate(tx_latency_confirmed_bucket[5m])))",
@@ -604,10 +649,6 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "loki",
-        "uid": "NPRbmtW4z"
-      },
       "description": "",
       "gridPos": {
         "h": 2,
@@ -626,7 +667,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Represents the sequence number and the date of the oldest pending packet. Use this metric to identify stuck packets.",
       "fieldConfig": {
@@ -812,7 +853,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "exemplar": false,
@@ -826,7 +867,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "exemplar": false,
@@ -927,7 +968,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Indicates how many packets are being processed by Hermes. If this value stays constantly more than 0, it could mean that a packet is stuck.",
       "fieldConfig": {
@@ -1003,7 +1044,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "exemplar": false,
@@ -1021,7 +1062,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Indicates how many `receive_packets` were processed by the relayer. It can be used with `send_packet_events` as every `send_packet_event` should trigger the processing of a `receive_packet`.",
       "fieldConfig": {
@@ -1096,7 +1137,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "expr": "delta(receive_packets_confirmed{job=\"hermes\"}[5m])",
@@ -1111,7 +1152,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Indicates how many `timeout_packets` were processed by the relayer. It can be used with `timeout_packet_events` as every `timeout_event` should be processed by the relayer.",
       "fieldConfig": {
@@ -1152,8 +1193,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1186,7 +1226,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "expr": "delta(timeout_packets_confirmed{job=\"hermes\"}[5m])",
@@ -1201,7 +1241,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Indicates how many acknowledgements were processed by the relayer. It can be used with `acknowledgment_events` as every event should be processed by the relayer.",
       "fieldConfig": {
@@ -1242,8 +1282,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1276,7 +1315,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "expr": "delta(acknowledgment_packets_confirmed{job=\"hermes\"}[5m])",
@@ -1289,10 +1328,6 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "O8HJmtZ4z"
-      },
       "description": "",
       "gridPos": {
         "h": 2,
@@ -1308,10 +1343,6 @@
       "pluginVersion": "9.0.7",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "O8HJmtZ4z"
-          },
           "expr": "",
           "range": true,
           "refId": "A"
@@ -1322,7 +1353,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Indicates the number of  `send_packet_event` observed.",
       "fieldConfig": {
@@ -1363,8 +1394,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1397,7 +1427,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "expr": "delta(send_packet_events{job=\"hermes\"}[5m])",
@@ -1413,7 +1443,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Indicates the number of  `acknowledgement_event` observed.",
       "fieldConfig": {
@@ -1454,8 +1484,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1488,7 +1517,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "expr": "rate(acknowledgement_events{job=\"hermes\"}[5m])",
@@ -1503,7 +1532,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Indicates the number of  `timeout_event` observed.",
       "fieldConfig": {
@@ -1544,8 +1573,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1578,7 +1606,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "expr": "rate(timeout_events{job=\"hermes\"}[5m])",
@@ -1593,7 +1621,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Indicates the number of  `event` observed via the websocket subcription.",
       "fieldConfig": {
@@ -1634,8 +1662,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1668,7 +1695,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "expr": "delta(ws_events{job=\"hermes\"}[5m])",
@@ -1684,7 +1711,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Indicates the number of times Hermes reconnected to the websocket.",
       "fieldConfig": {
@@ -1725,8 +1752,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1759,7 +1785,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "expr": "delta(ws_reconnect{job=\"hermes\"}[5m])",
@@ -1774,7 +1800,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Indicate the number of queries per instance and chain.",
       "fieldConfig": {
@@ -1815,8 +1841,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1849,7 +1874,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
           "expr": "sum(delta(queries{job=\"hermes\"}[5m])) by(instance,chain)",
@@ -1863,10 +1888,6 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "loki",
-        "uid": "NPRbmtW4z"
-      },
       "gridPos": {
         "h": 2,
         "w": 24,
@@ -1884,7 +1905,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Cleared `acknowledgment_events` rate per path. It is an indication that IBC packet relaying may be unsuccessful and that Hermes periodically finds packets to clear (i.e., unblock).",
       "fieldConfig": {
@@ -1925,8 +1946,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -1959,7 +1979,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "expr": "delta(cleared_acknowledgment_events{job=\"hermes\"}[5m])",
@@ -1974,7 +1994,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Cleared `send_packet_events` rate per path. It is an indication that IBC packet relaying may be unsuccessful and that Hermes periodically finds packets to clear (i.e., unblock).",
       "fieldConfig": {
@@ -2015,8 +2035,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2049,7 +2068,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "expr": "delta(cleared_send_packet_events{job=\"hermes\"}[1h])",
@@ -2064,7 +2083,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "Indicates the latency rate for all transactions submitted to each chain.",
       "fieldConfig": {
@@ -2105,8 +2124,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2140,7 +2158,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "expr": "histogram_quantile(0.95, sum by(le, chain, instance) (rate(tx_latency_submitted_bucket[1h])))",
@@ -2155,7 +2173,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "",
       "fieldConfig": {
@@ -2196,8 +2214,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2230,7 +2247,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "expr": "sum by(chain, instance) (delta(queries_cache_hits{job=\"hermes\"}[1m]))",
@@ -2243,10 +2260,6 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "loki",
-        "uid": "NPRbmtW4z"
-      },
       "gridPos": {
         "h": 2,
         "w": 23,
@@ -2264,7 +2277,7 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "O8HJmtZ4z"
+        "uid": "${DS_PROMETHEUS}"
       },
       "description": "If `misbehaviour = true` then hermes will detect misbehaviours from clients and stop relaying to this client if one is detected. It is possible to set an alarm on this. ",
       "fieldConfig": {
@@ -2305,8 +2318,7 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": null
+                "color": "green"
               },
               {
                 "color": "red",
@@ -2339,7 +2351,7 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "O8HJmtZ4z"
+            "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
           "expr": "delta(client_misbehaviours_submitted[5m])",
