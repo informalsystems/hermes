@@ -21,7 +21,7 @@
       - [Start relaying](./tutorials/more-chains/start-relaying.md)
     - [Relaying in production](./tutorials/production/index.md)
       - [Setup the monitoring platform](./tutorials/production/setup-grafana.md)
-      - [Setup accounts on public testnets](./tutorials/production/setup-accounts.md)
+      - [Setup Hermes](./tutorials/production/setup-hermes.md)
       - [Start relaying](./tutorials/production/start-relaying.md)
     - [Run multiple instances](./tutorials/concurrent/index.md)
 

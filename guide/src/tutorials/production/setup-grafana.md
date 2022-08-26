@@ -1,5 +1,8 @@
 # Setup Grafana
 
+Hermes provides many metrics to monitor its activity. You can find the detailed description of all the metrics in the [Telemetry](../../documentation/telemetry/index.md) section. In this chapter, you will install [Grafana](https://grafana.com/) components which will ingest the data produced by Hermes and provide both analytics and visualization.
+
+---
 ## Install Docker
 
 You will need [Docker](https://www.docker.com/) installed and configured on your machine. We provide a [Compose file](../../assets/docker-compose.yaml) to install Grafana and all its dependencies through Docker. 
