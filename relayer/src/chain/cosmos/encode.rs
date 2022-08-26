@@ -36,8 +36,8 @@ pub fn sign_and_encode_tx(
 
 /// Length information for an encoded transaction.
 pub struct EncodedTxMetrics {
-    /// Total length of the transaction encoding.
-    pub total_len: usize,
+    /// Length of the encoded message, excluding the `body_bytes` field.
+    pub envelope_len: usize,
     /// Length of the byte array in the `body_bytes` field of the `TxRaw` message.
     pub body_bytes_len: usize,
 }
@@ -60,9 +60,14 @@ pub fn encoded_tx_metrics(
 
     let total_len = tx_raw.encoded_len();
     let body_bytes_len = tx_raw.body_bytes.len();
+    let envelope_len = if body_bytes_len == 0 {
+        total_len
+    } else {
+        total_len - 1 - prost::length_delimiter_len(body_bytes_len) - body_bytes_len
+    };
 
     Ok(EncodedTxMetrics {
-        total_len,
+        envelope_len,
         body_bytes_len,
     })
 }

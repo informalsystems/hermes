@@ -293,14 +293,19 @@ fn batch_messages(
     // Use the maximum possible fee to get an upper bound for varint encoding.
     let max_fee = gas_amount_to_fee(&config.gas_config, config.gas_config.max_gas);
     let tx_metrics = encoded_tx_metrics(config, key_entry, account, tx_memo, &[], &max_fee)?;
+    let tx_envelope_len = tx_metrics.envelope_len;
     let empty_body_len = tx_metrics.body_bytes_len;
-    let tx_envelope_len = tx_metrics.total_len - prost::length_delimiter_len(empty_body_len);
 
     // Full length of the transaction can then be derived from the length of the invariable
     // envelope and the length of the body field, taking into account the varint encoding
     // of the body field's length delimiter.
     fn tx_len(envelope_len: usize, body_len: usize) -> usize {
-        envelope_len + prost::length_delimiter_len(body_len) + body_len
+        if body_len == 0 {
+            // An empty body is not encoded as a field
+            envelope_len
+        } else {
+            envelope_len + 1 + prost::length_delimiter_len(body_len) + body_len
+        }
     }
 
     let mut current_count = 0;
@@ -344,6 +349,8 @@ fn batch_messages(
 #[cfg(test)]
 mod tests {
     use super::batch_messages;
+    use crate::chain::cosmos::encode::sign_and_encode_tx;
+    use crate::chain::cosmos::gas::gas_amount_to_fee;
     use crate::chain::cosmos::types::account::{Account, AccountNumber, AccountSequence};
     use crate::chain::cosmos::types::config::TxConfig;
     use crate::config;
@@ -387,6 +394,8 @@ mod tests {
 
     #[test]
     fn batch_does_not_exceed_max_tx_size() {
+        const MAX_TX_SIZE: usize = 216;
+
         let (config, key_entry, account) = test_fixture();
         let messages = vec![
             Any {
@@ -402,16 +411,19 @@ mod tests {
                 value: vec![0; 2],
             },
         ];
+        let memo = Memo::new("").unwrap();
         let batches = batch_messages(
             &config,
             MaxMsgNum::default(),
-            MaxTxSize::new(214).unwrap(),
+            MaxTxSize::new(MAX_TX_SIZE).unwrap(),
             &key_entry,
             &account,
-            &Memo::new("").unwrap(),
+            &memo,
             messages,
         )
         .unwrap();
+
+        let max_fee = gas_amount_to_fee(&config.gas_config, config.gas_config.max_gas);
 
         assert_eq!(batches.len(), 2);
         assert_eq!(batches[0].len(), 2);
@@ -420,26 +432,39 @@ mod tests {
         assert_eq!(batches[0][1].type_url, "/example.Bar");
         assert_eq!(batches[0][1].value.len(), 4);
 
+        let tx_bytes =
+            sign_and_encode_tx(&config, &key_entry, &account, &memo, &batches[0], &max_fee)
+                .unwrap();
+        assert_eq!(tx_bytes.len(), MAX_TX_SIZE);
+
         assert_eq!(batches[1].len(), 1);
         assert_eq!(batches[1][0].type_url, "/example.Baz");
         assert_eq!(batches[1][0].value.len(), 2);
+
+        let tx_bytes =
+            sign_and_encode_tx(&config, &key_entry, &account, &memo, &batches[1], &max_fee)
+                .unwrap();
+        assert!(tx_bytes.len() <= MAX_TX_SIZE);
     }
 
     #[test]
     fn batch_error_on_oversized_message() {
+        const MAX_TX_SIZE: usize = 203;
+
         let (config, key_entry, account) = test_fixture();
         let messages = vec![Any {
             type_url: "/example.Foo".into(),
             value: vec![0; 6],
         }];
+        let memo = Memo::new("example").unwrap();
 
         let batches = batch_messages(
             &config,
             MaxMsgNum::default(),
-            MaxTxSize::new(192).unwrap(),
+            MaxTxSize::new(MAX_TX_SIZE).unwrap(),
             &key_entry,
             &account,
-            &Memo::new("").unwrap(),
+            &memo,
             messages.clone(),
         )
         .unwrap();
@@ -447,13 +472,19 @@ mod tests {
         assert_eq!(batches.len(), 1);
         assert_eq!(batches[0].len(), 1);
 
+        let max_fee = gas_amount_to_fee(&config.gas_config, config.gas_config.max_gas);
+        let tx_bytes =
+            sign_and_encode_tx(&config, &key_entry, &account, &memo, &batches[0], &max_fee)
+                .unwrap();
+        assert_eq!(tx_bytes.len(), MAX_TX_SIZE);
+
         let res = batch_messages(
             &config,
             MaxMsgNum::default(),
-            MaxTxSize::new(191).unwrap(),
+            MaxTxSize::new(MAX_TX_SIZE - 1).unwrap(),
             &key_entry,
             &account,
-            &Memo::new("").unwrap(),
+            &memo,
             messages,
         );
 
@@ -524,6 +555,8 @@ mod tests {
 
     #[test]
     fn test_batches_are_structured_appropriately_per_max_tx_size() {
+        const MAX_TX_SIZE: usize = 198;
+
         let (config, key_entry, account) = test_fixture();
         // Ensure that when MaxTxSize is only enough to fit each one of the messages,
         // the resulting batch consists of 5 smaller batches, each with a single message.
@@ -549,22 +582,28 @@ mod tests {
                 value: vec![0; 10],
             },
         ];
+        let memo = Memo::new("").unwrap();
 
         let batches = batch_messages(
             &config,
             MaxMsgNum::default(),
-            MaxTxSize::new(196).unwrap(),
+            MaxTxSize::new(MAX_TX_SIZE).unwrap(),
             &key_entry,
             &account,
-            &Memo::new("").unwrap(),
+            &memo,
             messages.clone(),
         )
         .unwrap();
 
         assert_eq!(batches.len(), 5);
 
+        let max_fee = gas_amount_to_fee(&config.gas_config, config.gas_config.max_gas);
+
         for batch in batches {
             assert_eq!(batch.len(), 1);
+            let tx_bytes =
+                sign_and_encode_tx(&config, &key_entry, &account, &memo, &batch, &max_fee).unwrap();
+            assert_eq!(tx_bytes.len(), MAX_TX_SIZE);
         }
 
         // Ensure that when MaxTxSize > the size of all the messages, the
