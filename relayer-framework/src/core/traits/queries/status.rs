@@ -4,14 +4,12 @@ use crate::core::traits::contexts::chain::ChainContext;
 use crate::core::traits::core::Async;
 use crate::std_prelude::*;
 
-pub trait ChainStatus<Chain: ChainContext>: Async {
-    fn height(&self) -> &Chain::Height;
-
-    fn timestamp(&self) -> &Chain::Timestamp;
-}
-
 pub trait HasChainStatus: ChainContext {
-    type ChainStatus: ChainStatus<Self>;
+    type ChainStatus: Async;
+
+    fn chain_status_height(status: &Self::ChainStatus) -> &Self::Height;
+
+    fn chain_status_timestamp(status: &Self::ChainStatus) -> &Self::Timestamp;
 }
 
 #[async_trait]

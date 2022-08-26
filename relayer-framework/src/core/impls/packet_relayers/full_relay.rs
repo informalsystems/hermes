@@ -5,7 +5,7 @@ use crate::core::traits::contexts::relay::RelayContext;
 use crate::core::traits::packet_relayer::PacketRelayer;
 use crate::core::traits::packet_relayers::ack_packet::AckPacketRelayer;
 use crate::core::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
-use crate::core::traits::queries::status::{ChainStatus, HasChainStatusQuerier};
+use crate::core::traits::queries::status::{HasChainStatus, HasChainStatusQuerier};
 use crate::core::types::aliases::Packet;
 use crate::std_prelude::*;
 
@@ -33,14 +33,23 @@ where
 
         let write_ack = self
             .receive_relayer
-            .relay_receive_packet(context, source_status.height(), packet)
+            .relay_receive_packet(
+                context,
+                Context::SrcChain::chain_status_height(&source_status),
+                packet,
+            )
             .await?;
 
         if let Some(ack) = write_ack {
             let destination_status = context.destination_chain().query_chain_status().await?;
 
             self.ack_relayer
-                .relay_ack_packet(context, destination_status.height(), packet, &ack)
+                .relay_ack_packet(
+                    context,
+                    Context::DstChain::chain_status_height(&destination_status),
+                    packet,
+                    &ack,
+                )
                 .await?;
         }
 

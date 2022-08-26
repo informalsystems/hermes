@@ -7,7 +7,7 @@ use crate::core::traits::contexts::chain::IbcChainContext;
 use crate::core::traits::contexts::relay::RelayContext;
 use crate::core::traits::core::Async;
 use crate::core::traits::messages::update_client::UpdateClientMessageBuilder;
-use crate::core::traits::queries::status::{ChainStatus, HasChainStatusQuerier};
+use crate::core::traits::queries::status::HasChainStatusQuerier;
 use crate::core::traits::runtime::sleep::CanSleep;
 use crate::core::traits::target::ChainTarget;
 use crate::std_prelude::*;
@@ -39,7 +39,7 @@ where
 
         loop {
             let current_status = chain.query_chain_status().await?;
-            let current_height = current_status.height();
+            let current_height = CounterpartyChain::chain_status_height(&current_status);
 
             if current_height > height {
                 return InUpdateClient::build_update_client_messages(context, height).await;
