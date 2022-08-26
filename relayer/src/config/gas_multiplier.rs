@@ -74,7 +74,7 @@ impl From<GasMultiplier> for f64 {
 }
 
 #[cfg(test)]
-#[allow(dead_code)] // the fields of the structs defined below are never accessed
+#[allow(dead_code)] // the field of the struct `DummyConfig` defined below is never accessed
 mod tests {
     use super::*;
 
