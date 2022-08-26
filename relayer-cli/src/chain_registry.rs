@@ -15,8 +15,9 @@ use http::Uri;
 use ibc_relayer::{
     config::{
         filter::{ChannelFilters, FilterPattern, PacketFilter},
+        gas_multiplier::GasMultiplier,
         types::{MaxMsgNum, MaxTxSize, Memo},
-        {default, AddressType, ChainConfig, GasPrice}, gas_multiplier::GasMultiplier,
+        {default, AddressType, ChainConfig, GasPrice},
     },
     keyring::Store,
 };
