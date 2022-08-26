@@ -7,7 +7,8 @@ use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc;
 
 use crate::cosmos::batch::payload::BatchPayload;
-use crate::cosmos::core::traits::chain::{CosmosChain, CosmosChainWithBatch};
+use crate::cosmos::core::traits::batch::CosmosChainWithBatch;
+use crate::cosmos::core::traits::chain::CosmosChain;
 
 #[derive(Clone)]
 pub struct CosmosChainEnv<Handle: ChainHandle> {

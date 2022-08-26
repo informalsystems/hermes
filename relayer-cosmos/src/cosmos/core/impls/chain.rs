@@ -16,17 +16,13 @@ use ibc_relayer::chain::requests::{
     IncludeProof, QueryConsensusStateRequest, QueryHeight, QueryUnreceivedPacketsRequest,
 };
 use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
-use ibc_relayer_framework::one_for_all::impls::message::OfaMessage;
-use ibc_relayer_framework::one_for_all::traits::batch::OfaChainWithBatch;
 use ibc_relayer_framework::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
 use prost::Message as _;
-use std::sync::Mutex;
 use tendermint::abci::responses::Event;
-use tokio::sync::{mpsc, oneshot};
 
 use crate::cosmos::core::error::Error;
-use crate::cosmos::core::traits::chain::{CosmosChain, CosmosChainWithBatch};
+use crate::cosmos::core::traits::chain::CosmosChain;
 use crate::cosmos::core::types::chain::CosmosChainContext;
 use crate::cosmos::core::types::message::CosmosIbcMessage;
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
@@ -192,32 +188,5 @@ where
         let is_packet_received = unreceived_packet.is_empty();
 
         Ok(is_packet_received)
-    }
-}
-
-impl<Chain> OfaChainWithBatch for CosmosChainContext<Chain>
-where
-    Chain: CosmosChainWithBatch,
-{
-    type BatchContext = CosmosRuntimeContext;
-
-    fn batch_sender(
-        &self,
-    ) -> &mpsc::Sender<(
-        Vec<OfaMessage<CosmosChainContext<Chain>>>,
-        oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
-    )> {
-        self.chain.batch_sender()
-    }
-
-    fn batch_receiver(
-        &self,
-    ) -> &Mutex<
-        mpsc::Receiver<(
-            Vec<OfaMessage<CosmosChainContext<Chain>>>,
-            oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
-        )>,
-    > {
-        self.chain.batch_receiver()
     }
 }
