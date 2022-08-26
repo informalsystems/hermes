@@ -200,9 +200,19 @@ For the tutorial, we will follow the [example of Crypto Crew](https://github.com
 ## Health-check
 
 Finally, perform a `health-check` to verify that your setup is correct with:
-```
+```shell
 hermes health-check
 ``` 
+
+If the command runs succesfully, it should output:
+```
+2022-08-26T15:54:21.321683Z  INFO ThreadId(01) using default configuration from '$HOME/.hermes/config.toml'
+2022-08-26T15:54:21.321882Z  INFO ThreadId(01) [cosmoshub-4] performing health check...
+2022-08-26T15:54:22.909339Z  WARN ThreadId(01) chain is healthy chain=cosmoshub-4
+2022-08-26T15:54:22.909374Z  INFO ThreadId(01) [osmosis-1] performing health check...
+2022-08-26T15:54:23.954362Z  INFO ThreadId(01) chain is healthy chain=osmosis-1
+SUCCESS performed health check for all chains in the config
+```
 
 ## Next steps
 

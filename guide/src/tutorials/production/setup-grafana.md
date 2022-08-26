@@ -65,13 +65,9 @@ docker-compose -f docker-compose.yaml up
 ### Set up the dashboard
 
 - Download the [grafana template](../../assets/grafana_template.json) we provide. 
-
 - In the side bar, hover your cursor over the Dashboard icon, and then click `Import`.
-
 - Click on `Upload JSON file` and select the Grafana template you just downloaded.
-
 - On the `Import` page, enter `Hermes dashboard template` as a name, enter your data sources and click `Import`.
-
 - On the top right corner, next to the `refresh dashboard` button, select `5s` to automatically query Prometheus and Loki every 5s.
 
 ## Next steps
