@@ -1,8 +1,6 @@
 use crate::cosmos::core::traits::chain::CosmosChain;
-use crate::cosmos::core::types::batch::{BatchReceiver, BatchSender};
+use crate::cosmos::core::types::batch::CosmosBatchChannel;
 
 pub trait CosmosChainWithBatch: CosmosChain {
-    fn batch_sender(&self) -> &BatchSender<Self>;
-
-    fn batch_receiver(&self) -> &BatchReceiver<Self>;
+    fn batch_channel(&self) -> &CosmosBatchChannel<Self>;
 }

@@ -6,6 +6,28 @@ use crate::core::traits::target::ChainTarget;
 use crate::core::types::aliases::{IbcEvent, IbcMessage};
 use crate::std_prelude::*;
 
+#[derive(Clone)]
+pub struct BatchChannel<Sender, Receiver> {
+    sender: Sender,
+    receiver: Receiver,
+}
+
+pub fn new_batch_channel<Batch: BatchContext>(
+) -> BatchChannel<Batch::BatchSender, Batch::BatchReceiver> {
+    let (sender, receiver) = Batch::new_batch_channel();
+    BatchChannel { sender, receiver }
+}
+
+impl<Sender, Receiver> BatchChannel<Sender, Receiver> {
+    pub(crate) fn sender(&self) -> &Sender {
+        &self.sender
+    }
+
+    pub(crate) fn receiver(&self) -> &Receiver {
+        &self.receiver
+    }
+}
+
 #[async_trait]
 pub trait BatchContext: Async {
     type Error: Async;
@@ -53,7 +75,10 @@ where
         Error = Self::Error,
     >;
 
-    fn batch_sender(&self) -> &<Self::BatchContext as BatchContext>::BatchSender;
-
-    fn batch_receiver(&self) -> &<Self::BatchContext as BatchContext>::BatchReceiver;
+    fn batch_channel(
+        &self,
+    ) -> &BatchChannel<
+        <Self::BatchContext as BatchContext>::BatchSender,
+        <Self::BatchContext as BatchContext>::BatchReceiver,
+    >;
 }

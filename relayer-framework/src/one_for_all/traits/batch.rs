@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use core::marker::PhantomData;
 
-use crate::addons::batch::context::{BatchContext, HasBatchContext};
+use crate::addons::batch::context::{BatchChannel, BatchContext, HasBatchContext};
 use crate::core::traits::core::Async;
 use crate::core::traits::target::{DestinationTarget, SourceTarget};
 use crate::one_for_all::impls::message::OfaMessage;
@@ -50,9 +50,12 @@ pub trait OfaBatch<Chain: OfaChain>: Async {
 pub trait OfaChainWithBatch: OfaChain {
     type BatchContext: OfaBatch<Self>;
 
-    fn batch_sender(&self) -> &<Self::BatchContext as OfaBatch<Self>>::BatchSender;
-
-    fn batch_receiver(&self) -> &<Self::BatchContext as OfaBatch<Self>>::BatchReceiver;
+    fn batch_channel(
+        &self,
+    ) -> &BatchChannel<
+        <Self::BatchContext as OfaBatch<Self>>::BatchSender,
+        <Self::BatchContext as OfaBatch<Self>>::BatchReceiver,
+    >;
 }
 
 #[async_trait]
@@ -132,12 +135,13 @@ where
 {
     type BatchContext = OfaBatchContext<Relay::SrcChain>;
 
-    fn batch_sender(&self) -> &<Self::BatchContext as BatchContext>::BatchSender {
-        self.relay.src_chain().chain.batch_sender()
-    }
-
-    fn batch_receiver(&self) -> &<Self::BatchContext as BatchContext>::BatchReceiver {
-        self.relay.src_chain().chain.batch_receiver()
+    fn batch_channel(
+        &self,
+    ) -> &BatchChannel<
+        <Self::BatchContext as BatchContext>::BatchSender,
+        <Self::BatchContext as BatchContext>::BatchReceiver,
+    > {
+        self.relay.src_chain().chain.batch_channel()
     }
 }
 
@@ -148,11 +152,12 @@ where
 {
     type BatchContext = OfaBatchContext<Relay::DstChain>;
 
-    fn batch_sender(&self) -> &<Self::BatchContext as BatchContext>::BatchSender {
-        self.relay.dst_chain().chain.batch_sender()
-    }
-
-    fn batch_receiver(&self) -> &<Self::BatchContext as BatchContext>::BatchReceiver {
-        self.relay.dst_chain().chain.batch_receiver()
+    fn batch_channel(
+        &self,
+    ) -> &BatchChannel<
+        <Self::BatchContext as BatchContext>::BatchSender,
+        <Self::BatchContext as BatchContext>::BatchReceiver,
+    > {
+        self.relay.dst_chain().chain.batch_channel()
     }
 }

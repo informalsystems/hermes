@@ -2,13 +2,14 @@ use ibc::signer::Signer;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::keyring::KeyEntry;
+use ibc_relayer_framework::addons::batch::context::new_batch_channel;
 use ibc_relayer_framework::one_for_all::components::batch::BatchComponents;
-use std::sync::{Arc, Mutex};
-use tokio::sync::mpsc;
+use ibc_relayer_framework::one_for_all::traits::batch::OfaBatchContext;
 
 use crate::cosmos::core::traits::batch::CosmosChainWithBatch;
 use crate::cosmos::core::traits::chain::CosmosChain;
-use crate::cosmos::core::types::batch::{BatchReceiver, BatchSender};
+use crate::cosmos::core::types::batch::CosmosBatchChannel;
+use crate::cosmos::core::types::chain::CosmosChainContext;
 
 #[derive(Clone)]
 pub struct CosmosChainEnv<Handle: ChainHandle> {
@@ -16,21 +17,19 @@ pub struct CosmosChainEnv<Handle: ChainHandle> {
     pub signer: Signer,
     pub tx_config: TxConfig,
     pub key_entry: KeyEntry,
-    pub batch_sender: BatchSender<Self>,
-    pub batch_receiver: BatchReceiver<Self>,
+    pub batch_channel: CosmosBatchChannel<Self>,
 }
 
 impl<Handle: ChainHandle> CosmosChainEnv<Handle> {
     pub fn new(handle: Handle, signer: Signer, tx_config: TxConfig, key_entry: KeyEntry) -> Self {
-        let (batch_sender, receiver) = mpsc::unbounded_channel();
+        let batch_channel = new_batch_channel::<OfaBatchContext<CosmosChainContext<Self>>>();
 
         let chain = Self {
             handle,
             signer,
             tx_config,
             key_entry,
-            batch_sender,
-            batch_receiver: Arc::new(Mutex::new(receiver)),
+            batch_channel,
         };
 
         chain
@@ -66,11 +65,7 @@ impl<Handle> CosmosChainWithBatch for CosmosChainEnv<Handle>
 where
     Handle: ChainHandle,
 {
-    fn batch_sender(&self) -> &BatchSender<Self> {
-        &self.batch_sender
-    }
-
-    fn batch_receiver(&self) -> &BatchReceiver<Self> {
-        &self.batch_receiver
+    fn batch_channel(&self) -> &CosmosBatchChannel<Self> {
+        &self.batch_channel
     }
 }
