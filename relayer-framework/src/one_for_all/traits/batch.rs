@@ -27,13 +27,13 @@ pub trait OfaBatch<Chain: OfaChain>: Async {
 
     async fn send_batch(
         sender: &Self::BatchSender,
-        messages: Vec<Chain::Message>,
+        messages: Vec<OfaMessage<Chain>>,
         result_sender: Self::ResultSender,
     ) -> Result<(), Chain::Error>;
 
     async fn try_receive_batch(
         receiver: &Self::BatchReceiver,
-    ) -> Result<Option<(Vec<Chain::Message>, Self::ResultSender)>, Chain::Error>;
+    ) -> Result<Option<(Vec<OfaMessage<Chain>>, Self::ResultSender)>, Chain::Error>;
 
     async fn receive_result(
         result_receiver: Self::ResultReceiver,
@@ -82,11 +82,7 @@ where
         messages: Vec<Self::Message>,
         result_sender: Self::ResultSender,
     ) -> Result<(), Self::Error> {
-        let in_messages = messages
-            .into_iter()
-            .map(|message| message.message)
-            .collect();
-        Batch::send_batch(sender, in_messages, result_sender)
+        Batch::send_batch(sender, messages, result_sender)
             .await
             .map_err(OfaErrorContext::new)
     }
@@ -98,13 +94,7 @@ where
             .await
             .map_err(OfaErrorContext::new)?;
 
-        match result {
-            Some((messages, result_sender)) => Ok(Some((
-                messages.into_iter().map(OfaMessage::new).collect(),
-                result_sender,
-            ))),
-            None => Ok(None),
-        }
+        Ok(result)
     }
 
     async fn receive_result(

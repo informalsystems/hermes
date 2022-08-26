@@ -16,6 +16,7 @@ use ibc_relayer::chain::requests::{
     IncludeProof, QueryConsensusStateRequest, QueryHeight, QueryUnreceivedPacketsRequest,
 };
 use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
+use ibc_relayer_framework::one_for_all::impls::message::OfaMessage;
 use ibc_relayer_framework::one_for_all::traits::batch::OfaChainWithBatch;
 use ibc_relayer_framework::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
@@ -203,7 +204,7 @@ where
     fn batch_sender(
         &self,
     ) -> &mpsc::Sender<(
-        Vec<CosmosIbcMessage>,
+        Vec<OfaMessage<CosmosChainContext<Chain>>>,
         oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
     )> {
         self.chain.batch_sender()
@@ -213,7 +214,7 @@ where
         &self,
     ) -> &Mutex<
         mpsc::Receiver<(
-            Vec<CosmosIbcMessage>,
+            Vec<OfaMessage<CosmosChainContext<Chain>>>,
             oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
         )>,
     > {

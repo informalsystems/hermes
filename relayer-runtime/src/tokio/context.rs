@@ -11,6 +11,7 @@ use tokio::time::sleep;
 use tracing;
 
 use ibc_relayer_framework::core::traits::core::Async;
+use ibc_relayer_framework::one_for_all::impls::message::OfaMessage;
 use ibc_relayer_framework::one_for_all::traits::batch::OfaBatch;
 use ibc_relayer_framework::one_for_all::traits::chain::OfaChain;
 use ibc_relayer_framework::one_for_all::traits::error::OfaError;
@@ -84,8 +85,8 @@ where
     Chain: OfaChain<Error = Error>,
     Error: From<TokioError> + Clone + Async,
 {
-    type BatchSender = mpsc::Sender<(Vec<Chain::Message>, Self::ResultSender)>;
-    type BatchReceiver = Mutex<mpsc::Receiver<(Vec<Chain::Message>, Self::ResultSender)>>;
+    type BatchSender = mpsc::Sender<(Vec<OfaMessage<Chain>>, Self::ResultSender)>;
+    type BatchReceiver = Mutex<mpsc::Receiver<(Vec<OfaMessage<Chain>>, Self::ResultSender)>>;
 
     type ResultSender = oneshot::Sender<Result<Vec<Vec<Chain::Event>>, Chain::Error>>;
     type ResultReceiver = oneshot::Receiver<Result<Vec<Vec<Chain::Event>>, Chain::Error>>;
@@ -96,7 +97,7 @@ where
 
     async fn send_batch(
         sender: &Self::BatchSender,
-        messages: Vec<Chain::Message>,
+        messages: Vec<OfaMessage<Chain>>,
         result_sender: Self::ResultSender,
     ) -> Result<(), Chain::Error> {
         sender
@@ -107,7 +108,7 @@ where
 
     async fn try_receive_batch(
         receiver_lock: &Self::BatchReceiver,
-    ) -> Result<Option<(Vec<Chain::Message>, Self::ResultSender)>, Chain::Error> {
+    ) -> Result<Option<(Vec<OfaMessage<Chain>>, Self::ResultSender)>, Chain::Error> {
         let mut receiver = receiver_lock
             .lock()
             .map_err(|_| TokioError::poisoned_lock())?;
