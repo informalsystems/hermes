@@ -23,6 +23,8 @@ pub trait OfaBatch<Chain: OfaChain>: Async {
     type ResultSender: Async;
     type ResultReceiver: Async;
 
+    fn new_batch_channel() -> (Self::BatchSender, Self::BatchReceiver);
+
     fn new_result_channel() -> (Self::ResultSender, Self::ResultReceiver);
 
     async fn send_batch(
@@ -72,6 +74,10 @@ where
     type ResultSender = Batch::ResultSender;
 
     type ResultReceiver = Batch::ResultReceiver;
+
+    fn new_batch_channel() -> (Self::BatchSender, Self::BatchReceiver) {
+        Batch::new_batch_channel()
+    }
 
     fn new_result_channel() -> (Self::ResultSender, Self::ResultReceiver) {
         Batch::new_result_channel()

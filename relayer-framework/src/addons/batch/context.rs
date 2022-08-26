@@ -19,6 +19,8 @@ pub trait BatchContext: Async {
     type ResultSender: Async;
     type ResultReceiver: Async;
 
+    fn new_batch_channel() -> (Self::BatchSender, Self::BatchReceiver);
+
     fn new_result_channel() -> (Self::ResultSender, Self::ResultReceiver);
 
     async fn send_batch(

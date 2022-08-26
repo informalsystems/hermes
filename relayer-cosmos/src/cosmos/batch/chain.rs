@@ -16,13 +16,13 @@ pub struct CosmosChainEnv<Handle: ChainHandle> {
     pub signer: Signer,
     pub tx_config: TxConfig,
     pub key_entry: KeyEntry,
-    pub batch_sender: mpsc::Sender<BatchPayload<Self>>,
-    pub batch_receiver: Arc<Mutex<mpsc::Receiver<BatchPayload<Self>>>>,
+    pub batch_sender: mpsc::UnboundedSender<BatchPayload<Self>>,
+    pub batch_receiver: Arc<Mutex<mpsc::UnboundedReceiver<BatchPayload<Self>>>>,
 }
 
 impl<Handle: ChainHandle> CosmosChainEnv<Handle> {
     pub fn new(handle: Handle, signer: Signer, tx_config: TxConfig, key_entry: KeyEntry) -> Self {
-        let (batch_sender, receiver) = mpsc::channel(1024);
+        let (batch_sender, receiver) = mpsc::unbounded_channel();
 
         let chain = Self {
             handle,
@@ -66,11 +66,11 @@ impl<Handle> CosmosChainWithBatch for CosmosChainEnv<Handle>
 where
     Handle: ChainHandle,
 {
-    fn batch_sender(&self) -> &mpsc::Sender<BatchPayload<Self>> {
+    fn batch_sender(&self) -> &mpsc::UnboundedSender<BatchPayload<Self>> {
         &self.batch_sender
     }
 
-    fn batch_receiver(&self) -> &Mutex<mpsc::Receiver<BatchPayload<Self>>> {
+    fn batch_receiver(&self) -> &Arc<Mutex<mpsc::UnboundedReceiver<BatchPayload<Self>>>> {
         &self.batch_receiver
     }
 }

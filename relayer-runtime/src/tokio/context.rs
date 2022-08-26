@@ -85,11 +85,18 @@ where
     Chain: OfaChain<Error = Error>,
     Error: From<TokioError> + Clone + Async,
 {
-    type BatchSender = mpsc::Sender<(Vec<OfaMessage<Chain>>, Self::ResultSender)>;
-    type BatchReceiver = Mutex<mpsc::Receiver<(Vec<OfaMessage<Chain>>, Self::ResultSender)>>;
+    type BatchSender = mpsc::UnboundedSender<(Vec<OfaMessage<Chain>>, Self::ResultSender)>;
+    type BatchReceiver =
+        Arc<Mutex<mpsc::UnboundedReceiver<(Vec<OfaMessage<Chain>>, Self::ResultSender)>>>;
 
     type ResultSender = oneshot::Sender<Result<Vec<Vec<Chain::Event>>, Chain::Error>>;
     type ResultReceiver = oneshot::Receiver<Result<Vec<Vec<Chain::Event>>, Chain::Error>>;
+
+    fn new_batch_channel() -> (Self::BatchSender, Self::BatchReceiver) {
+        let (sender, receiver) = mpsc::unbounded_channel();
+
+        (sender, Arc::new(Mutex::new(receiver)))
+    }
 
     fn new_result_channel() -> (Self::ResultSender, Self::ResultReceiver) {
         oneshot::channel()
@@ -102,7 +109,6 @@ where
     ) -> Result<(), Chain::Error> {
         sender
             .send((messages, result_sender))
-            .await
             .map_err(|_| TokioError::channel_closed().into())
     }
 
