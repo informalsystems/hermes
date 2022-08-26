@@ -1,88 +1,51 @@
-use crate::cosmos::core::traits::chain::CosmosChain;
-use crate::cosmos::core::traits::relay::CosmosRelay;
 use alloc::sync::Arc;
+use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer_framework::addons::batch::config::BatchConfig;
+use ibc_relayer_framework::addons::batch::spawn::{
+    BatchMessageWorkerSpawner, CanSpawnBatchMessageWorker,
+};
+use ibc_relayer_framework::core::traits::target::{DestinationTarget, SourceTarget};
+use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
 
-#[derive(Clone)]
-pub struct CosmosRelayImpl<SrcChain, DstChain>
-where
-    SrcChain: CosmosChain,
-    DstChain: CosmosChain,
-{
-    pub src_chain: Arc<SrcChain>,
-    pub dst_chain: Arc<DstChain>,
-    pub src_to_dst_client: ForeignClient<
-        <DstChain as CosmosChain>::ChainHandle,
-        <SrcChain as CosmosChain>::ChainHandle,
-    >,
-    pub dst_to_src_client: ForeignClient<
-        <SrcChain as CosmosChain>::ChainHandle,
-        <DstChain as CosmosChain>::ChainHandle,
-    >,
-}
+use crate::cosmos::basic::relay::CosmosRelayEnv;
+use crate::cosmos::batch::chain::CosmosChainEnv;
+use crate::cosmos::core::types::relay::CosmosRelayContext;
+use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
 
-impl<SrcChain, DstChain> CosmosRelayImpl<SrcChain, DstChain>
+pub fn new_relay_context_with_batch<SrcChain, DstChain>(
+    runtime: CosmosRuntimeContext,
+    src_chain: CosmosChainEnv<SrcChain>,
+    dst_chain: CosmosChainEnv<DstChain>,
+    src_to_dst_client: ForeignClient<DstChain, SrcChain>,
+    dst_to_src_client: ForeignClient<SrcChain, DstChain>,
+    batch_config: BatchConfig,
+) -> OfaRelayContext<
+    CosmosRelayContext<CosmosRelayEnv<CosmosChainEnv<SrcChain>, CosmosChainEnv<DstChain>>>,
+>
 where
-    SrcChain: CosmosChain,
-    DstChain: CosmosChain,
+    SrcChain: ChainHandle,
+    DstChain: ChainHandle,
 {
-    pub fn new(
-        src_chain: Arc<SrcChain>,
-        dst_chain: Arc<DstChain>,
-        src_to_dst_client: ForeignClient<
-            <DstChain as CosmosChain>::ChainHandle,
-            <SrcChain as CosmosChain>::ChainHandle,
-        >,
-        dst_to_src_client: ForeignClient<
-            <SrcChain as CosmosChain>::ChainHandle,
-            <DstChain as CosmosChain>::ChainHandle,
-        >,
-    ) -> Self {
-        let relay = Self {
-            src_chain,
-            dst_chain,
+    let relay = OfaRelayContext::new(CosmosRelayContext::new(
+        Arc::new(CosmosRelayEnv::new(
+            Arc::new(src_chain),
+            Arc::new(dst_chain),
             src_to_dst_client,
             dst_to_src_client,
-        };
+        )),
+        runtime,
+    ));
 
-        relay
-    }
-}
+    <BatchMessageWorkerSpawner<SourceTarget>>::spawn_batch_message_worker(
+        relay.clone(),
+        batch_config.clone(),
+    );
 
-impl<SrcChain, DstChain, Components> CosmosRelay for CosmosRelayImpl<SrcChain, DstChain>
-where
-    SrcChain: CosmosChain<Components = Components>,
-    DstChain: CosmosChain<Components = Components>,
-{
-    type Components = Components;
+    <BatchMessageWorkerSpawner<DestinationTarget>>::spawn_batch_message_worker(
+        relay.clone(),
+        batch_config,
+    );
 
-    type SrcChain = SrcChain;
-
-    type DstChain = DstChain;
-
-    fn src_chain(&self) -> &Arc<Self::SrcChain> {
-        &self.src_chain
-    }
-
-    fn dst_chain(&self) -> &Arc<Self::DstChain> {
-        &self.dst_chain
-    }
-
-    fn src_to_dst_client(
-        &self,
-    ) -> &ForeignClient<
-        <Self::DstChain as CosmosChain>::ChainHandle,
-        <Self::SrcChain as CosmosChain>::ChainHandle,
-    > {
-        &self.src_to_dst_client
-    }
-
-    fn dst_to_src_client(
-        &self,
-    ) -> &ForeignClient<
-        <Self::SrcChain as CosmosChain>::ChainHandle,
-        <Self::DstChain as CosmosChain>::ChainHandle,
-    > {
-        &self.dst_to_src_client
-    }
+    relay
 }
