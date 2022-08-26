@@ -6,13 +6,12 @@ use crate::core::traits::contexts::chain::IbcChainContext;
 use crate::core::traits::contexts::relay::RelayContext;
 use crate::core::traits::core::Async;
 use crate::core::traits::ibc_message_sender::IbcMessageSender;
-use crate::core::traits::message::Message as SomeMessage;
 use crate::core::traits::runtime::log::{HasLogger, LevelDebug};
 use crate::core::traits::runtime::sleep::CanSleep;
 use crate::core::traits::runtime::spawn::{HasSpawner, Spawner};
 use crate::core::traits::runtime::time::{HasTime, Time};
 use crate::core::traits::target::ChainTarget;
-use crate::core::types::aliases::IbcMessage;
+use crate::core::types::aliases::Message;
 use crate::std_prelude::*;
 
 use super::config::BatchConfig;
@@ -27,7 +26,7 @@ where
 {
     pub relay: Relay,
     pub pending_batches: VecDeque<(
-        Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
+        Vec<Message<Target::TargetChain>>,
         <Relay::BatchContext as BatchContext>::ResultSender,
     )>,
     pub config: BatchConfig,
@@ -43,10 +42,10 @@ where
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
     Sender: IbcMessageSender<Relay, Target>,
     Batch: BatchContext<Message = Message, Event = Event, Error = Error>,
-    TargetChain: IbcChainContext<Target::CounterpartyChain, IbcMessage = Message, IbcEvent = Event>,
-    Message: SomeMessage,
+    TargetChain: IbcChainContext<Target::CounterpartyChain, Message = Message, Event = Event>,
     Event: Async,
     Error: Clone + Async,
+    Message: Async,
 {
     pub fn spawn_batch_message_worker(relay: Relay, config: BatchConfig) {
         let spawner = relay.runtime().spawner();
@@ -213,7 +212,7 @@ where
             .map(|message| {
                 // return 0 on encoding error, as we don't want
                 // the batching operation to error out.
-                message.estimate_len().unwrap_or(0)
+                TargetChain::estimate_message_len(message).unwrap_or(0)
             })
             .sum()
     }

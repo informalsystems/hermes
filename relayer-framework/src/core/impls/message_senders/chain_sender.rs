@@ -19,14 +19,8 @@ where
     Context: RelayContext<Error = Error>,
     Target: ChainTarget<Context, TargetChain = TargetChain>,
     TargetChain: HasMessageSender,
-    TargetChain: IbcChainContext<
-        Target::CounterpartyChain,
-        Message = Message,
-        IbcMessage = Message,
-        Event = Event,
-        IbcEvent = Event,
-        Error = Error,
-    >,
+    TargetChain:
+        IbcChainContext<Target::CounterpartyChain, Message = Message, Event = Event, Error = Error>,
 {
     async fn send_messages(
         context: &Context,

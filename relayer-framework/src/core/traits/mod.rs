@@ -1,7 +1,6 @@
 pub mod contexts;
 pub mod core;
 pub mod ibc_message_sender;
-pub mod message;
 pub mod message_channel;
 pub mod message_sender;
 pub mod messages;

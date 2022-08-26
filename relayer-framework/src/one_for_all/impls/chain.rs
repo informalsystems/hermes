@@ -8,7 +8,6 @@ use crate::core::traits::queries::consensus_state::{ConsensusStateQuerier, HasCo
 use crate::core::traits::queries::received_packet::{
     HasReceivedPacketQuerier, ReceivedPacketQuerier,
 };
-use crate::one_for_all::impls::message::OfaMessage;
 use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext, OfaIbcChain};
 use crate::one_for_all::traits::error::OfaErrorContext;
 use crate::one_for_all::traits::runtime::OfaRuntimeContext;
@@ -31,9 +30,24 @@ impl<Chain: OfaChain> ChainContext for OfaChainContext<Chain> {
 
     type Timestamp = Chain::Timestamp;
 
-    type Message = OfaMessage<Chain>;
+    type Message = Chain::Message;
+
+    type RawMessage = Chain::RawMessage;
+
+    type Signer = Chain::Signer;
 
     type Event = Chain::Event;
+
+    fn encode_message(
+        message: &Self::Message,
+        signer: &Self::Signer,
+    ) -> Result<Self::RawMessage, Self::Error> {
+        Chain::encode_raw_message(message, signer).map_err(OfaErrorContext::new)
+    }
+
+    fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error> {
+        Chain::estimate_message_len(message).map_err(OfaErrorContext::new)
+    }
 }
 
 impl<Chain, Counterparty> IbcChainContext<OfaChainContext<Counterparty>> for OfaChainContext<Chain>
@@ -51,9 +65,9 @@ where
 
     type Sequence = Chain::Sequence;
 
-    type IbcMessage = OfaMessage<Chain>;
-
-    type IbcEvent = Chain::Event;
+    fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height> {
+        Chain::counterparty_message_height(message)
+    }
 }
 
 impl<Chain, Counterparty> HasIbcEvents<OfaChainContext<Counterparty>> for OfaChainContext<Chain>
@@ -64,7 +78,7 @@ where
     type WriteAcknowledgementEvent = Chain::WriteAcknowledgementEvent;
 
     fn try_extract_write_acknowledgement_event(
-        event: Self::IbcEvent,
+        event: Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent> {
         Chain::try_extract_write_acknowledgement_event(event)
     }

@@ -27,8 +27,8 @@ where
 {
     async fn send_messages(
         context: &Relay,
-        messages: Vec<TargetChain::IbcMessage>,
-    ) -> Result<Vec<Vec<TargetChain::IbcEvent>>, Relay::Error> {
+        messages: Vec<TargetChain::Message>,
+    ) -> Result<Vec<Vec<TargetChain::Event>>, Relay::Error> {
         let (result_sender, result_receiver) = Relay::BatchContext::new_result_channel();
 
         let message_sender = context.batch_channel().sender();

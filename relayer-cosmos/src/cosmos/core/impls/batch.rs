@@ -11,7 +11,7 @@ where
 {
     type BatchContext = CosmosRuntimeContext;
 
-    fn batch_channel(&self) -> &CosmosBatchChannel<Chain> {
+    fn batch_channel(&self) -> &CosmosBatchChannel {
         self.chain.batch_channel()
     }
 }

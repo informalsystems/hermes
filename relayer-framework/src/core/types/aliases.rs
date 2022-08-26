@@ -12,11 +12,7 @@ pub type PortId<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>:
 
 pub type Sequence<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::Sequence;
 
-pub type IbcMessage<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::IbcMessage;
-
 pub type Message<Chain> = <Chain as ChainContext>::Message;
-
-pub type IbcEvent<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::IbcEvent;
 
 pub type Event<Chain> = <Chain as ChainContext>::Event;
 

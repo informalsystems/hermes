@@ -10,7 +10,6 @@ use crate::core::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::core::traits::queries::status::{ChainStatus, HasChainStatusQuerier};
 use crate::core::traits::runtime::sleep::CanSleep;
 use crate::core::traits::target::ChainTarget;
-use crate::core::types::aliases::IbcMessage;
 use crate::std_prelude::*;
 
 /**
@@ -35,7 +34,7 @@ where
     async fn build_update_client_messages(
         context: &Relay,
         height: &Height,
-    ) -> Result<Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>, Relay::Error> {
+    ) -> Result<Vec<TargetChain::Message>, Relay::Error> {
         let chain = Target::counterparty_chain(context);
 
         loop {

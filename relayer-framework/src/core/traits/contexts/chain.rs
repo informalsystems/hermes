@@ -1,15 +1,25 @@
 use crate::core::traits::contexts::runtime::HasRuntime;
 use crate::core::traits::core::Async;
-use crate::core::traits::message::{IbcMessage, Message};
 
 pub trait ChainContext: HasRuntime {
     type Height: Async;
 
     type Timestamp: Async;
 
-    type Message: Message;
+    type Message: Async;
+
+    type RawMessage: Async;
+
+    type Signer: Async;
 
     type Event: Async;
+
+    fn encode_message(
+        message: &Self::Message,
+        signer: &Self::Signer,
+    ) -> Result<Self::RawMessage, Self::Error>;
+
+    fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error>;
 }
 
 pub trait IbcChainContext<Counterparty>: ChainContext
@@ -26,7 +36,5 @@ where
 
     type Sequence: Async;
 
-    type IbcMessage: IbcMessage<Counterparty>;
-
-    type IbcEvent: Async;
+    fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
 }

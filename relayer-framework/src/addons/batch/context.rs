@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::core::traits::contexts::relay::RelayContext;
 use crate::core::traits::core::Async;
 use crate::core::traits::target::ChainTarget;
-use crate::core::types::aliases::{IbcEvent, IbcMessage};
+use crate::core::types::aliases::{Event, Message};
 use crate::std_prelude::*;
 
 #[derive(Clone)]
@@ -70,8 +70,8 @@ where
     Target: ChainTarget<Self>,
 {
     type BatchContext: BatchContext<
-        Message = IbcMessage<Target::TargetChain, Target::CounterpartyChain>,
-        Event = IbcEvent<Target::TargetChain, Target::CounterpartyChain>,
+        Message = Message<Target::TargetChain>,
+        Event = Event<Target::TargetChain>,
         Error = Self::Error,
     >;
 

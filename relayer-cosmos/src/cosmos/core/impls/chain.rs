@@ -141,7 +141,7 @@ where
     Chain: CosmosChain,
     Counterparty: CosmosChain,
 {
-    fn source_message_height(message: &CosmosIbcMessage) -> Option<Height> {
+    fn counterparty_message_height(message: &CosmosIbcMessage) -> Option<Height> {
         message.source_height
     }
 

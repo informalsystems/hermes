@@ -4,7 +4,6 @@ use core::marker::PhantomData;
 use crate::addons::batch::context::{BatchChannel, BatchContext, HasBatchContext};
 use crate::core::traits::core::Async;
 use crate::core::traits::target::{DestinationTarget, SourceTarget};
-use crate::one_for_all::impls::message::OfaMessage;
 use crate::one_for_all::traits::chain::OfaChain;
 use crate::one_for_all::traits::error::OfaErrorContext;
 use crate::one_for_all::traits::relay::{OfaRelay, OfaRelayContext};
@@ -29,13 +28,13 @@ pub trait OfaBatch<Chain: OfaChain>: Async {
 
     async fn send_batch(
         sender: &Self::BatchSender,
-        messages: Vec<OfaMessage<Chain>>,
+        messages: Vec<Chain::Message>,
         result_sender: Self::ResultSender,
     ) -> Result<(), Chain::Error>;
 
     async fn try_receive_batch(
         receiver: &Self::BatchReceiver,
-    ) -> Result<Option<(Vec<OfaMessage<Chain>>, Self::ResultSender)>, Chain::Error>;
+    ) -> Result<Option<(Vec<Chain::Message>, Self::ResultSender)>, Chain::Error>;
 
     async fn receive_result(
         result_receiver: Self::ResultReceiver,
@@ -66,7 +65,7 @@ where
 {
     type Error = OfaErrorContext<Chain::Error>;
 
-    type Message = OfaMessage<Chain>;
+    type Message = Chain::Message;
 
     type Event = Chain::Event;
 

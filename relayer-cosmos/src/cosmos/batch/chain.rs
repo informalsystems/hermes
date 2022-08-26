@@ -17,7 +17,7 @@ pub struct CosmosChainEnv<Handle: ChainHandle> {
     pub signer: Signer,
     pub tx_config: TxConfig,
     pub key_entry: KeyEntry,
-    pub batch_channel: CosmosBatchChannel<Self>,
+    pub batch_channel: CosmosBatchChannel,
 }
 
 impl<Handle: ChainHandle> CosmosChainEnv<Handle> {
@@ -65,7 +65,7 @@ impl<Handle> CosmosChainWithBatch for CosmosChainEnv<Handle>
 where
     Handle: ChainHandle,
 {
-    fn batch_channel(&self) -> &CosmosBatchChannel<Self> {
+    fn batch_channel(&self) -> &CosmosBatchChannel {
         &self.batch_channel
     }
 }

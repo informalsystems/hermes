@@ -82,7 +82,7 @@ pub trait OfaIbcChain<Counterparty>: OfaChain
 where
     Counterparty: OfaChain,
 {
-    fn source_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
+    fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
 
     async fn query_consensus_state(
         &self,

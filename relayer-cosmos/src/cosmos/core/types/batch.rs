@@ -1,21 +1,18 @@
 use ibc_relayer_framework::addons::batch::context::BatchChannel;
-use ibc_relayer_framework::one_for_all::impls::message::OfaMessage;
 use std::sync::{Arc, Mutex};
 use tendermint::abci::responses::Event;
 use tokio::sync::{mpsc, oneshot};
 
 use crate::cosmos::core::error::Error;
-use crate::cosmos::core::types::chain::CosmosChainContext;
+use crate::cosmos::core::types::message::CosmosIbcMessage;
 
-pub type CosmosBatchPayload<Chain> = (
-    Vec<OfaMessage<CosmosChainContext<Chain>>>,
+pub type CosmosBatchPayload = (
+    Vec<CosmosIbcMessage>,
     oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
 );
 
-pub type CosmosBatchSender<Chain> = mpsc::UnboundedSender<CosmosBatchPayload<Chain>>;
+pub type CosmosBatchSender = mpsc::UnboundedSender<CosmosBatchPayload>;
 
-pub type CosmosBatchReceiver<Chain> =
-    Arc<Mutex<mpsc::UnboundedReceiver<CosmosBatchPayload<Chain>>>>;
+pub type CosmosBatchReceiver = Arc<Mutex<mpsc::UnboundedReceiver<CosmosBatchPayload>>>;
 
-pub type CosmosBatchChannel<Chain> =
-    BatchChannel<CosmosBatchSender<Chain>, CosmosBatchReceiver<Chain>>;
+pub type CosmosBatchChannel = BatchChannel<CosmosBatchSender, CosmosBatchReceiver>;

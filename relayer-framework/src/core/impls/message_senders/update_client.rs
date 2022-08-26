@@ -5,7 +5,6 @@ use crate::core::traits::contexts::chain::IbcChainContext;
 use crate::core::traits::contexts::relay::RelayContext;
 use crate::core::traits::core::Async;
 use crate::core::traits::ibc_message_sender::IbcMessageSender;
-use crate::core::traits::message::IbcMessage;
 use crate::core::traits::messages::update_client::HasUpdateClientMessageBuilder;
 use crate::core::traits::target::ChainTarget;
 use crate::std_prelude::*;
@@ -19,11 +18,11 @@ where
     Context: RelayContext,
     Target: ChainTarget<Context, TargetChain = TargetChain, CounterpartyChain = CounterpartyChain>,
     Sender: IbcMessageSender<Context, Target>,
-    TargetChain: IbcChainContext<CounterpartyChain, IbcMessage = Message, IbcEvent = Event>,
+    TargetChain: IbcChainContext<CounterpartyChain, Message = Message, Event = Event>,
     CounterpartyChain: IbcChainContext<TargetChain, Height = Height>,
     Context: HasUpdateClientMessageBuilder<Target>,
-    Message: IbcMessage<CounterpartyChain> + Async,
     Height: Ord + Async,
+    Message: Async,
 {
     async fn send_messages(
         context: &Context,
@@ -31,7 +30,7 @@ where
     ) -> Result<Vec<Vec<Event>>, Context::Error> {
         let source_heights: BTreeSet<Height> = messages
             .iter()
-            .flat_map(|message| message.source_height().into_iter())
+            .flat_map(|message| TargetChain::counterparty_message_height(message).into_iter())
             .collect();
 
         let mut in_messages = Vec::new();

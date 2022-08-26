@@ -24,8 +24,8 @@ where
     DstChain: HasIbcEvents<
         Context::SrcChain,
         WriteAcknowledgementEvent = AckEvent,
-        IbcMessage = Message,
-        IbcEvent = Event,
+        Message = Message,
+        Event = Event,
     >,
     Context::Error: From<MismatchIbcEventsCountError>,
     Message: Async,

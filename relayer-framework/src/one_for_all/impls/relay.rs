@@ -12,7 +12,6 @@ use crate::core::traits::messages::receive_packet::{
 use crate::core::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::core::traits::packet::IbcPacket;
 use crate::core::traits::target::{DestinationTarget, SourceTarget};
-use crate::one_for_all::impls::message::OfaMessage;
 use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext};
 use crate::one_for_all::traits::error::OfaErrorContext;
 use crate::one_for_all::traits::relay::OfaRelay;
@@ -101,60 +100,65 @@ impl<Relay: OfaRelay> RelayContext for OfaRelayContext<Relay> {
 pub struct OfaUpdateClientMessageBuilder;
 
 #[async_trait]
-impl<Relay: OfaRelay> UpdateClientMessageBuilder<OfaRelayContext<Relay>, SourceTarget>
+impl<Relay, SrcChain> UpdateClientMessageBuilder<OfaRelayContext<Relay>, SourceTarget>
     for OfaUpdateClientMessageBuilder
+where
+    Relay: OfaRelay<SrcChain = SrcChain>,
+    SrcChain: OfaChain,
 {
     async fn build_update_client_messages(
         context: &OfaRelayContext<Relay>,
         height: &<Relay::DstChain as OfaChain>::Height,
-    ) -> Result<Vec<OfaMessage<Relay::SrcChain>>, OfaErrorContext<Relay::Error>> {
+    ) -> Result<Vec<SrcChain::Message>, OfaErrorContext<Relay::Error>> {
         let messages = context
             .relay
             .build_src_update_client_messages(height)
             .await?;
 
-        let out_messages = messages.into_iter().map(OfaMessage::new).collect();
-
-        Ok(out_messages)
+        Ok(messages)
     }
 }
 
 #[async_trait]
-impl<Relay: OfaRelay> UpdateClientMessageBuilder<OfaRelayContext<Relay>, DestinationTarget>
+impl<Relay, DstChain> UpdateClientMessageBuilder<OfaRelayContext<Relay>, DestinationTarget>
     for OfaUpdateClientMessageBuilder
+where
+    Relay: OfaRelay<DstChain = DstChain>,
+    DstChain: OfaChain,
 {
     async fn build_update_client_messages(
         context: &OfaRelayContext<Relay>,
         height: &<Relay::SrcChain as OfaChain>::Height,
-    ) -> Result<Vec<OfaMessage<Relay::DstChain>>, OfaErrorContext<Relay::Error>> {
+    ) -> Result<Vec<DstChain::Message>, OfaErrorContext<Relay::Error>> {
         let messages = context
             .relay
             .build_dst_update_client_messages(height)
             .await?;
 
-        let out_messages = messages.into_iter().map(OfaMessage::new).collect();
-
-        Ok(out_messages)
+        Ok(messages)
     }
 }
 
 pub struct OfaReceivePacketMessageBuilder;
 
 #[async_trait]
-impl<Relay: OfaRelay> ReceivePacketMessageBuilder<OfaRelayContext<Relay>>
+impl<Relay, DstChain> ReceivePacketMessageBuilder<OfaRelayContext<Relay>>
     for OfaReceivePacketMessageBuilder
+where
+    Relay: OfaRelay<DstChain = DstChain>,
+    DstChain: OfaChain,
 {
     async fn build_receive_packet_message(
         relay: &OfaRelayContext<Relay>,
         height: &<Relay::SrcChain as OfaChain>::Height,
         packet: &OfaPacket<Relay>,
-    ) -> Result<OfaMessage<Relay::DstChain>, OfaErrorContext<Relay::Error>> {
+    ) -> Result<DstChain::Message, OfaErrorContext<Relay::Error>> {
         let message = relay
             .relay
             .build_receive_packet_message(height, &packet.packet)
             .await?;
 
-        Ok(OfaMessage::new(message))
+        Ok(message)
     }
 }
 
@@ -165,21 +169,23 @@ impl<Relay: OfaRelay> HasReceivePacketMessageBuilder for OfaRelayContext<Relay> 
 pub struct OfaAckPacketMessageBuilder;
 
 #[async_trait]
-impl<Relay: OfaRelay> AckPacketMessageBuilder<OfaRelayContext<Relay>>
-    for OfaAckPacketMessageBuilder
+impl<Relay, SrcChain> AckPacketMessageBuilder<OfaRelayContext<Relay>> for OfaAckPacketMessageBuilder
+where
+    Relay: OfaRelay<SrcChain = SrcChain>,
+    SrcChain: OfaChain,
 {
     async fn build_ack_packet_message(
         relay: &OfaRelayContext<Relay>,
         destination_height: &<Relay::DstChain as OfaChain>::Height,
         packet: &OfaPacket<Relay>,
         ack: &<Relay::DstChain as OfaChain>::WriteAcknowledgementEvent,
-    ) -> Result<OfaMessage<Relay::SrcChain>, OfaErrorContext<Relay::Error>> {
+    ) -> Result<SrcChain::Message, OfaErrorContext<Relay::Error>> {
         let message = relay
             .relay
             .build_ack_packet_message(destination_height, &packet.packet, ack)
             .await?;
 
-        Ok(OfaMessage::new(message))
+        Ok(message)
     }
 }
 

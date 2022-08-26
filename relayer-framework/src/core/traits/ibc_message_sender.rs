@@ -4,7 +4,7 @@ use crate::core::traits::contexts::chain::IbcChainContext;
 use crate::core::traits::contexts::relay::RelayContext;
 use crate::core::traits::core::Async;
 use crate::core::traits::target::ChainTarget;
-use crate::core::types::aliases::{IbcEvent, IbcMessage};
+use crate::core::types::aliases::{Event, Message};
 use crate::std_prelude::*;
 
 #[async_trait]
@@ -23,8 +23,8 @@ where
 {
     async fn send_messages(
         context: &Context,
-        messages: Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
-    ) -> Result<Vec<Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>>, Context::Error>;
+        messages: Vec<Message<Target::TargetChain>>,
+    ) -> Result<Vec<Vec<Event<Target::TargetChain>>>, Context::Error>;
 }
 
 pub struct MismatchIbcEventsCountError {
@@ -40,23 +40,20 @@ where
 {
     async fn send_messages(
         &self,
-        messages: Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
-    ) -> Result<Vec<Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>>, Context::Error>;
+        messages: Vec<Message<Target::TargetChain>>,
+    ) -> Result<Vec<Vec<Event<Target::TargetChain>>>, Context::Error>;
 
     async fn send_messages_fixed<const COUNT: usize>(
         &self,
-        messages: [IbcMessage<Target::TargetChain, Target::CounterpartyChain>; COUNT],
-    ) -> Result<
-        [Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>; COUNT],
-        Context::Error,
-    >
+        messages: [Message<Target::TargetChain>; COUNT],
+    ) -> Result<[Vec<Event<Target::TargetChain>>; COUNT], Context::Error>
     where
         Context::Error: From<MismatchIbcEventsCountError>;
 
     async fn send_message(
         &self,
-        message: IbcMessage<Target::TargetChain, Target::CounterpartyChain>,
-    ) -> Result<Vec<IbcEvent<Target::TargetChain, Target::CounterpartyChain>>, Context::Error>;
+        message: Message<Target::TargetChain>,
+    ) -> Result<Vec<Event<Target::TargetChain>>, Context::Error>;
 }
 
 #[async_trait]
@@ -64,7 +61,7 @@ impl<Context, Target, TargetChain, Event, Message> IbcMessageSenderExt<Context, 
 where
     Context: HasIbcMessageSender<Target>,
     Target: ChainTarget<Context, TargetChain = TargetChain>,
-    TargetChain: IbcChainContext<Target::CounterpartyChain, IbcEvent = Event, IbcMessage = Message>,
+    TargetChain: IbcChainContext<Target::CounterpartyChain, Event = Event, Message = Message>,
     Message: Async,
 {
     async fn send_messages(

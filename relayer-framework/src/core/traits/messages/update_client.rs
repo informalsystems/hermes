@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::core::traits::contexts::relay::RelayContext;
 use crate::core::traits::target::ChainTarget;
-use crate::core::types::aliases::{Height, IbcMessage};
+use crate::core::types::aliases::{Height, Message};
 use crate::std_prelude::*;
 
 #[async_trait]
@@ -16,7 +16,7 @@ where
         &self,
         _target: Target,
         height: &Height<Target::CounterpartyChain>,
-    ) -> Result<Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>, Self::Error> {
+    ) -> Result<Vec<Message<Target::TargetChain>>, Self::Error> {
         Self::UpdateClientMessageBuilder::build_update_client_messages(self, height).await
     }
 }
@@ -30,5 +30,5 @@ where
     async fn build_update_client_messages(
         context: &Relay,
         height: &Height<Target::CounterpartyChain>,
-    ) -> Result<Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>, Relay::Error>;
+    ) -> Result<Vec<Message<Target::TargetChain>>, Relay::Error>;
 }
