@@ -37,3 +37,27 @@ where
     Counterparty: AfoCounterpartyContext<Self>,
 {
 }
+
+impl<Chain, Counterparty> AfoCosmosChainContext<Counterparty> for Chain
+where
+    Chain: AfoChainContext<
+        Counterparty,
+        Error = OfaErrorContext<Error>,
+        Height = Height,
+        Timestamp = Timestamp,
+        Message = CosmosIbcMessage,
+        Signer = Signer,
+        RawMessage = Any,
+        Event = Event,
+        ClientId = ClientId,
+        ConnectionId = ConnectionId,
+        ChannelId = ChannelId,
+        PortId = PortId,
+        Sequence = Sequence,
+        WriteAcknowledgementEvent = WriteAcknowledgement,
+        ConsensusState = ConsensusState,
+        ChainStatus = ChainStatus,
+    >,
+    Counterparty: AfoCounterpartyContext<Chain>,
+{
+}
