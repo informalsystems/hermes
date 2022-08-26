@@ -1,30 +1,40 @@
 use core::marker::{Send, Sync};
 use core::time::Duration;
 
+use dyn_clone::DynClone;
+use erased_serde::Serialize as ErasedSerialize;
 use ibc_proto::google::protobuf::Any;
-use serde::{Deserialize, Serialize};
-use tendermint_proto::Protobuf;
+use ibc_proto::ibc::core::commitment::v1::MerkleProof;
+use ibc_proto::protobuf::Protobuf as ErasedProtobuf;
 
-use ibc_proto::ibc::core::client::v1::IdentifiedClientState;
-
-use crate::clients::ics07_tendermint::client_state;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
-use crate::core::ics02_client::trust_threshold::TrustThreshold;
-use crate::core::ics24_host::error::ValidationError;
-use crate::core::ics24_host::identifier::{ChainId, ClientId};
-#[cfg(any(test, feature = "mocks"))]
-use crate::mock::client_state::MockClientState;
+use crate::core::ics03_connection::connection::ConnectionEnd;
+use crate::core::ics04_channel::channel::ChannelEnd;
+use crate::core::ics04_channel::commitment::{AcknowledgementCommitment, PacketCommitment};
+use crate::core::ics04_channel::context::ChannelReader;
+use crate::core::ics04_channel::packet::Sequence;
+use crate::core::ics23_commitment::commitment::{
+    CommitmentPrefix, CommitmentProofBytes, CommitmentRoot,
+};
+use crate::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
+use crate::dynamic_typing::AsAny;
 use crate::prelude::*;
 use crate::Height;
 
-pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.ClientState";
-pub const MOCK_CLIENT_STATE_TYPE_URL: &str = "/ibc.mock.ClientState";
+use super::consensus_state::ConsensusState;
+use super::context::ClientReader;
 
-pub trait ClientState: Clone + core::fmt::Debug + Send + Sync {
-    /// Client-specific options for upgrading the client
-    type UpgradeOptions;
-
+pub trait ClientState:
+    AsAny
+    + sealed::ErasedPartialEqClientState
+    + DynClone
+    + ErasedSerialize
+    + ErasedProtobuf<Any, Error = Error>
+    + core::fmt::Debug
+    + Send
+    + Sync
+{
     /// Return the chain identifier which this client is serving (i.e., the client is verifying
     /// consensus states from this chain).
     fn chain_id(&self) -> ChainId;
@@ -32,7 +42,7 @@ pub trait ClientState: Clone + core::fmt::Debug + Send + Sync {
     /// Type of client associated with this state (eg. Tendermint)
     fn client_type(&self) -> ClientType;
 
-    /// Latest height of consensus state
+    /// Latest height the client was updated to
     fn latest_height(&self) -> Height;
 
     /// Freeze status of the client
@@ -43,266 +53,205 @@ pub trait ClientState: Clone + core::fmt::Debug + Send + Sync {
     /// Frozen height of the client
     fn frozen_height(&self) -> Option<Height>;
 
+    /// Check if the state is expired when `elapsed` time has passed since the latest consensus
+    /// state timestamp
+    fn expired(&self, elapsed: Duration) -> bool;
+
     /// Helper function to verify the upgrade client procedure.
     /// Resets all fields except the blockchain-specific ones,
     /// and updates the given fields.
     fn upgrade(
-        self,
+        &mut self,
         upgrade_height: Height,
-        upgrade_options: Self::UpgradeOptions,
+        upgrade_options: &dyn UpgradeOptions,
         chain_id: ChainId,
-    ) -> Self;
+    );
 
-    /// Wrap into an `AnyClientState`
-    fn wrap_any(self) -> AnyClientState;
+    /// Convert into a boxed trait object
+    fn into_box(self) -> Box<dyn ClientState>
+    where
+        Self: Sized,
+    {
+        Box::new(self)
+    }
+
+    fn initialise(&self, consensus_state: Any) -> Result<Box<dyn ConsensusState>, Error>;
+
+    fn check_header_and_update_state(
+        &self,
+        ctx: &dyn ClientReader,
+        client_id: ClientId,
+        header: Any,
+    ) -> Result<UpdatedState, Error>;
+
+    fn verify_upgrade_and_update_state(
+        &self,
+        consensus_state: Any,
+        proof_upgrade_client: MerkleProof,
+        proof_upgrade_consensus_state: MerkleProof,
+    ) -> Result<UpdatedState, Error>;
+
+    /// Verification functions as specified in:
+    /// <https://github.com/cosmos/ibc/tree/master/spec/core/ics-002-client-semantics>
+    ///
+    /// Verify a `proof` that the consensus state of a given client (at height `consensus_height`)
+    /// matches the input `consensus_state`. The parameter `counterparty_height` represent the
+    /// height of the counterparty chain that this proof assumes (i.e., the height at which this
+    /// proof was computed).
+    #[allow(clippy::too_many_arguments)]
+    fn verify_client_consensus_state(
+        &self,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        client_id: &ClientId,
+        consensus_height: Height,
+        expected_consensus_state: &dyn ConsensusState,
+    ) -> Result<(), Error>;
+
+    /// Verify a `proof` that a connection state matches that of the input `connection_end`.
+    #[allow(clippy::too_many_arguments)]
+    fn verify_connection_state(
+        &self,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        connection_id: &ConnectionId,
+        expected_connection_end: &ConnectionEnd,
+    ) -> Result<(), Error>;
+
+    /// Verify a `proof` that a channel state matches that of the input `channel_end`.
+    #[allow(clippy::too_many_arguments)]
+    fn verify_channel_state(
+        &self,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        expected_channel_end: &ChannelEnd,
+    ) -> Result<(), Error>;
+
+    /// Verify the client state for this chain that it is stored on the counterparty chain.
+    #[allow(clippy::too_many_arguments)]
+    fn verify_client_full_state(
+        &self,
+        height: Height,
+        prefix: &CommitmentPrefix,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        client_id: &ClientId,
+        expected_client_state: Any,
+    ) -> Result<(), Error>;
+
+    /// Verify a `proof` that a packet has been commited.
+    #[allow(clippy::too_many_arguments)]
+    fn verify_packet_data(
+        &self,
+        ctx: &dyn ChannelReader,
+        height: Height,
+        connection_end: &ConnectionEnd,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
+        commitment: PacketCommitment,
+    ) -> Result<(), Error>;
+
+    /// Verify a `proof` that a packet has been commited.
+    #[allow(clippy::too_many_arguments)]
+    fn verify_packet_acknowledgement(
+        &self,
+        ctx: &dyn ChannelReader,
+        height: Height,
+        connection_end: &ConnectionEnd,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
+        ack: AcknowledgementCommitment,
+    ) -> Result<(), Error>;
+
+    /// Verify a `proof` that of the next_seq_received.
+    #[allow(clippy::too_many_arguments)]
+    fn verify_next_sequence_recv(
+        &self,
+        ctx: &dyn ChannelReader,
+        height: Height,
+        connection_end: &ConnectionEnd,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
+    ) -> Result<(), Error>;
+
+    /// Verify a `proof` that a packet has not been received.
+    #[allow(clippy::too_many_arguments)]
+    fn verify_packet_receipt_absence(
+        &self,
+        ctx: &dyn ChannelReader,
+        height: Height,
+        connection_end: &ConnectionEnd,
+        proof: &CommitmentProofBytes,
+        root: &CommitmentRoot,
+        port_id: &PortId,
+        channel_id: &ChannelId,
+        sequence: Sequence,
+    ) -> Result<(), Error>;
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum AnyUpgradeOptions {
-    Tendermint(client_state::UpgradeOptions),
+// Implements `Clone` for `Box<dyn ClientState>`
+dyn_clone::clone_trait_object!(ClientState);
 
-    #[cfg(any(test, feature = "mocks"))]
-    Mock(()),
-}
+// Implements `serde::Serialize` for all types that have ClientState as supertrait
+erased_serde::serialize_trait_object!(ClientState);
 
-impl AnyUpgradeOptions {
-    fn into_tendermint(self) -> client_state::UpgradeOptions {
-        match self {
-            Self::Tendermint(options) => options,
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(_) => {
-                panic!("cannot downcast AnyUpgradeOptions::Mock to Tendermint::UpgradeOptions")
-            }
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum AnyClientState {
-    Tendermint(client_state::ClientState),
-
-    #[cfg(any(test, feature = "mocks"))]
-    Mock(MockClientState),
-}
-
-impl AnyClientState {
-    pub fn latest_height(&self) -> Height {
-        match self {
-            Self::Tendermint(tm_state) => tm_state.latest_height(),
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(mock_state) => mock_state.latest_height(),
-        }
-    }
-
-    pub fn frozen_height(&self) -> Option<Height> {
-        match self {
-            Self::Tendermint(tm_state) => tm_state.frozen_height(),
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(mock_state) => mock_state.frozen_height(),
-        }
-    }
-
-    pub fn trust_threshold(&self) -> Option<TrustThreshold> {
-        match self {
-            AnyClientState::Tendermint(state) => Some(state.trust_level),
-
-            #[cfg(any(test, feature = "mocks"))]
-            AnyClientState::Mock(_) => None,
-        }
-    }
-
-    pub fn max_clock_drift(&self) -> Duration {
-        match self {
-            AnyClientState::Tendermint(state) => state.max_clock_drift,
-
-            #[cfg(any(test, feature = "mocks"))]
-            AnyClientState::Mock(_) => Duration::new(0, 0),
-        }
-    }
-
-    pub fn client_type(&self) -> ClientType {
-        match self {
-            Self::Tendermint(state) => state.client_type(),
-
-            #[cfg(any(test, feature = "mocks"))]
-            Self::Mock(state) => state.client_type(),
-        }
-    }
-
-    pub fn refresh_period(&self) -> Option<Duration> {
-        match self {
-            AnyClientState::Tendermint(tm_state) => tm_state.refresh_time(),
-
-            #[cfg(any(test, feature = "mocks"))]
-            AnyClientState::Mock(mock_state) => mock_state.refresh_time(),
-        }
-    }
-
-    pub fn expired(&self, elapsed_since_latest: Duration) -> bool {
-        match self {
-            AnyClientState::Tendermint(tm_state) => tm_state.expired(elapsed_since_latest),
-
-            #[cfg(any(test, feature = "mocks"))]
-            AnyClientState::Mock(mock_state) => mock_state.expired(elapsed_since_latest),
-        }
-    }
-}
-
-impl Protobuf<Any> for AnyClientState {}
-
-impl TryFrom<Any> for AnyClientState {
-    type Error = Error;
-
-    fn try_from(raw: Any) -> Result<Self, Self::Error> {
-        match raw.type_url.as_str() {
-            "" => Err(Error::empty_client_state_response()),
-
-            TENDERMINT_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Tendermint(
-                client_state::ClientState::decode_vec(&raw.value)
-                    .map_err(Error::decode_raw_client_state)?,
-            )),
-
-            #[cfg(any(test, feature = "mocks"))]
-            MOCK_CLIENT_STATE_TYPE_URL => Ok(AnyClientState::Mock(
-                MockClientState::decode_vec(&raw.value).map_err(Error::decode_raw_client_state)?,
-            )),
-
-            _ => Err(Error::unknown_client_state_type(raw.type_url)),
-        }
-    }
-}
-
-impl From<AnyClientState> for Any {
-    fn from(value: AnyClientState) -> Self {
-        match value {
-            AnyClientState::Tendermint(value) => Any {
-                type_url: TENDERMINT_CLIENT_STATE_TYPE_URL.to_string(),
-                value: value
-                    .encode_vec()
-                    .expect("encoding to `Any` from `AnyClientState::Tendermint`"),
-            },
-            #[cfg(any(test, feature = "mocks"))]
-            AnyClientState::Mock(value) => Any {
-                type_url: MOCK_CLIENT_STATE_TYPE_URL.to_string(),
-                value: value
-                    .encode_vec()
-                    .expect("encoding to `Any` from `AnyClientState::Mock`"),
-            },
-        }
-    }
-}
-
-impl ClientState for AnyClientState {
-    type UpgradeOptions = AnyUpgradeOptions;
-
-    fn chain_id(&self) -> ChainId {
-        match self {
-            AnyClientState::Tendermint(tm_state) => tm_state.chain_id(),
-
-            #[cfg(any(test, feature = "mocks"))]
-            AnyClientState::Mock(mock_state) => mock_state.chain_id(),
-        }
-    }
-
-    fn client_type(&self) -> ClientType {
-        self.client_type()
-    }
-
-    fn latest_height(&self) -> Height {
-        self.latest_height()
-    }
-
-    fn frozen_height(&self) -> Option<Height> {
-        self.frozen_height()
-    }
-
-    fn upgrade(
-        self,
-        upgrade_height: Height,
-        upgrade_options: Self::UpgradeOptions,
-        chain_id: ChainId,
-    ) -> Self {
-        match self {
-            AnyClientState::Tendermint(tm_state) => tm_state
-                .upgrade(upgrade_height, upgrade_options.into_tendermint(), chain_id)
-                .wrap_any(),
-
-            #[cfg(any(test, feature = "mocks"))]
-            AnyClientState::Mock(mock_state) => {
-                mock_state.upgrade(upgrade_height, (), chain_id).wrap_any()
-            }
-        }
-    }
-
-    fn wrap_any(self) -> AnyClientState {
-        self
+impl PartialEq for dyn ClientState {
+    fn eq(&self, other: &Self) -> bool {
+        self.eq_client_state(other)
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub struct IdentifiedAnyClientState {
-    pub client_id: ClientId,
-    pub client_state: AnyClientState,
+// see https://github.com/rust-lang/rust/issues/31740
+impl PartialEq<&Self> for Box<dyn ClientState> {
+    fn eq(&self, other: &&Self) -> bool {
+        self.eq_client_state(other.as_ref())
+    }
 }
 
-impl IdentifiedAnyClientState {
-    pub fn new(client_id: ClientId, client_state: AnyClientState) -> Self {
-        IdentifiedAnyClientState {
-            client_id,
-            client_state,
+pub fn downcast_client_state<CS: ClientState>(h: &dyn ClientState) -> Option<&CS> {
+    h.as_any().downcast_ref::<CS>()
+}
+
+pub trait UpgradeOptions: AsAny {}
+
+pub struct UpdatedState {
+    pub client_state: Box<dyn ClientState>,
+    pub consensus_state: Box<dyn ConsensusState>,
+}
+
+mod sealed {
+    use super::*;
+
+    pub trait ErasedPartialEqClientState {
+        fn eq_client_state(&self, other: &dyn ClientState) -> bool;
+    }
+
+    impl<CS> ErasedPartialEqClientState for CS
+    where
+        CS: ClientState + PartialEq,
+    {
+        fn eq_client_state(&self, other: &dyn ClientState) -> bool {
+            other
+                .as_any()
+                .downcast_ref::<CS>()
+                .map_or(false, |h| self == h)
         }
-    }
-}
-
-impl Protobuf<IdentifiedClientState> for IdentifiedAnyClientState {}
-
-impl TryFrom<IdentifiedClientState> for IdentifiedAnyClientState {
-    type Error = Error;
-
-    fn try_from(raw: IdentifiedClientState) -> Result<Self, Self::Error> {
-        Ok(IdentifiedAnyClientState {
-            client_id: raw.client_id.parse().map_err(|e: ValidationError| {
-                Error::invalid_raw_client_id(raw.client_id.clone(), e)
-            })?,
-            client_state: raw
-                .client_state
-                .ok_or_else(Error::missing_raw_client_state)?
-                .try_into()?,
-        })
-    }
-}
-
-impl From<IdentifiedAnyClientState> for IdentifiedClientState {
-    fn from(value: IdentifiedAnyClientState) -> Self {
-        IdentifiedClientState {
-            client_id: value.client_id.to_string(),
-            client_state: Some(value.client_state.into()),
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-
-    use ibc_proto::google::protobuf::Any;
-    use test_log::test;
-
-    use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
-    use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
-    use crate::core::ics02_client::client_state::AnyClientState;
-
-    #[test]
-    fn any_client_state_serialization() {
-        let tm_client_state = get_dummy_tendermint_client_state(get_dummy_tendermint_header());
-
-        let raw: Any = tm_client_state.clone().into();
-        let tm_client_state_back = AnyClientState::try_from(raw).unwrap();
-        assert_eq!(tm_client_state, tm_client_state_back);
     }
 }

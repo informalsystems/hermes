@@ -1,8 +1,7 @@
 //! ICS3 verification functions, common across all four handlers of ICS3.
 
-use crate::core::ics02_client::client_consensus::ConsensusState;
-use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
-use crate::core::ics02_client::{client_def::AnyClient, client_def::ClientDef};
+use ibc_proto::google::protobuf::Any;
+
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics03_connection::context::ConnectionReader;
 use crate::core::ics03_connection::error::Error;
@@ -13,7 +12,7 @@ use crate::Height;
 /// Entry point for verifying all proofs bundled in any ICS3 message.
 pub fn verify_proofs(
     ctx: &dyn ConnectionReader,
-    client_state: Option<AnyClientState>,
+    client_state: Option<Any>,
     height: Height,
     connection_end: &ConnectionEnd,
     expected_conn: &ConnectionEnd,
@@ -80,12 +79,9 @@ pub fn verify_connection_proof(
         .connection_id()
         .ok_or_else(Error::invalid_counterparty)?;
 
-    let client_def = AnyClient::from_client_type(client_state.client_type());
-
     // Verify the proof for the connection state against the expected connection end.
-    client_def
+    client_state
         .verify_connection_state(
-            &client_state,
             height,
             connection_end.counterparty().prefix(),
             proof,
@@ -107,7 +103,7 @@ pub fn verify_client_proof(
     ctx: &dyn ConnectionReader,
     height: Height,
     connection_end: &ConnectionEnd,
-    expected_client_state: AnyClientState,
+    expected_client_state: Any,
     proof_height: Height,
     proof: &CommitmentProofBytes,
 ) -> Result<(), Error> {
@@ -120,17 +116,14 @@ pub fn verify_client_proof(
 
     let consensus_state = ctx.client_consensus_state(connection_end.client_id(), proof_height)?;
 
-    let client_def = AnyClient::from_client_type(client_state.client_type());
-
-    client_def
+    client_state
         .verify_client_full_state(
-            &client_state,
             height,
             connection_end.counterparty().prefix(),
             proof,
             consensus_state.root(),
             connection_end.counterparty().client_id(),
-            &expected_client_state,
+            expected_client_state,
         )
         .map_err(|e| {
             Error::client_state_verification_failure(connection_end.client_id().clone(), e)
@@ -155,18 +148,15 @@ pub fn verify_consensus_proof(
 
     let consensus_state = ctx.client_consensus_state(connection_end.client_id(), height)?;
 
-    let client = AnyClient::from_client_type(client_state.client_type());
-
-    client
+    client_state
         .verify_client_consensus_state(
-            &client_state,
             height,
             connection_end.counterparty().prefix(),
             proof.proof(),
             consensus_state.root(),
             connection_end.counterparty().client_id(),
             proof.height(),
-            &expected_consensus,
+            expected_consensus.as_ref(),
         )
         .map_err(|e| Error::consensus_state_verification_failure(proof.height(), e))
 }
