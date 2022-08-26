@@ -1,16 +1,17 @@
 use crate::prelude::*;
 
-use tendermint_proto::Protobuf;
-
 use ibc_proto::ibc::mock::Misbehaviour as RawMisbehaviour;
+use ibc_proto::protobuf::Protobuf;
+use serde::{Deserialize, Serialize};
 
 use crate::core::ics02_client::error::Error;
-use crate::core::ics02_client::misbehaviour::AnyMisbehaviour;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::mock::header::MockHeader;
 use crate::Height;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+pub const MOCK_MISBEHAVIOUR_TYPE_URL: &str = "/ibc.mock.Misbehavior";
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Misbehaviour {
     pub client_id: ClientId,
     pub header1: MockHeader,
@@ -24,10 +25,6 @@ impl crate::core::ics02_client::misbehaviour::Misbehaviour for Misbehaviour {
 
     fn height(&self) -> Height {
         self.header1.height()
-    }
-
-    fn wrap_any(self) -> AnyMisbehaviour {
-        AnyMisbehaviour::Mock(self)
     }
 }
 

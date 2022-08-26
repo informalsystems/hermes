@@ -27,7 +27,10 @@ pub enum RecvPacketResult {
     },
 }
 
-pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<PacketResult, Error> {
+pub fn process<Ctx: ChannelReader>(
+    ctx: &Ctx,
+    msg: &MsgRecvPacket,
+) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let packet = &msg.packet;
@@ -64,7 +67,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
         ));
     }
 
-    let latest_height = ctx.host_height();
+    let latest_height = ChannelReader::host_height(ctx);
     if packet.timeout_height.has_expired(latest_height) {
         return Err(Error::low_packet_height(
             latest_height,
@@ -72,7 +75,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
         ));
     }
 
-    let latest_timestamp = ctx.host_timestamp();
+    let latest_timestamp = ChannelReader::host_timestamp(ctx);
     if let Expiry::Expired = latest_timestamp.check_expiry(&packet.timeout_timestamp) {
         return Err(Error::low_packet_timestamp());
     }

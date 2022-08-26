@@ -13,19 +13,14 @@ use itertools::Itertools;
 use tracing::{debug, error, info, span, trace, warn, Level};
 
 use flex_error::define_error;
-use ibc::core::ics02_client::client_consensus::{
-    AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState,
-};
-use ibc::core::ics02_client::client_state::AnyClientState;
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics02_client::error::Error as ClientError;
 use ibc::core::ics02_client::events::UpdateClient;
-use ibc::core::ics02_client::header::{AnyHeader, Header};
-use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
-use ibc::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
-use ibc::core::ics02_client::msgs::misbehavior::MsgSubmitAnyMisbehaviour;
-use ibc::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
-use ibc::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
+use ibc::core::ics02_client::header::Header;
+use ibc::core::ics02_client::msgs::create_client::MsgCreateClient;
+use ibc::core::ics02_client::msgs::misbehaviour::MsgSubmitMisbehaviour;
+use ibc::core::ics02_client::msgs::update_client::MsgUpdateClient;
+use ibc::core::ics02_client::msgs::upgrade_client::MsgUpgradeClient;
 use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::downcast;
@@ -42,8 +37,12 @@ use crate::chain::requests::{
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
+use crate::client_state::AnyClientState;
+use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::error::Error as RelayerError;
 use crate::event::IbcEventWithHeight;
+use crate::light_client::AnyHeader;
+use crate::misbehaviour::MisbehaviourEvidence;
 use crate::telemetry;
 
 const MAX_MISBEHAVIOUR_CHECK_DURATION: Duration = Duration::from_secs(120);
@@ -506,10 +505,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             )
         })?;
 
-        let msg_upgrade = MsgUpgradeAnyClient {
+        let msg_upgrade = MsgUpgradeClient {
             client_id: self.id.clone(),
-            client_state,
-            consensus_state,
+            client_state: client_state.into(),
+            consensus_state: consensus_state.into(),
             proof_upgrade_client: proof_upgrade_client.into(),
             proof_upgrade_consensus_state: proof_upgrade_consensus_state.into(),
             signer,
@@ -556,7 +555,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     pub fn build_create_client(
         &self,
         options: CreateOptions,
-    ) -> Result<MsgCreateAnyClient, ForeignClientError> {
+    ) -> Result<MsgCreateClient, ForeignClientError> {
         // Get signer
         let signer = self.dst_chain.get_signer().map_err(|e| {
             ForeignClientError::client_create(
@@ -596,7 +595,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         })?;
         let settings = ClientSettings::for_create_command(options, &src_config, &dst_config);
 
-        let client_state = self
+        let client_state: AnyClientState = self
             .src_chain
             .build_client_state(latest_height, settings)
             .map_err(|e| {
@@ -605,8 +604,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                     "failed when building client state".to_string(),
                     e,
                 )
-            })?
-            .wrap_any();
+            })?;
 
         let consensus_state = self
             .src_chain
@@ -621,11 +619,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                     "failed while building client consensus state from src chain".to_string(),
                     e,
                 )
-            })?
-            .wrap_any();
+            })?;
 
         //TODO Get acct_prefix
-        let msg = MsgCreateAnyClient::new(client_state, consensus_state, signer)
+        let msg = MsgCreateClient::new(client_state.into(), consensus_state.into(), signer)
             .map_err(ForeignClientError::client)?;
 
         Ok(msg)
@@ -1101,8 +1098,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             );
 
             msgs.push(
-                MsgUpdateAnyClient {
-                    header,
+                MsgUpdateClient {
+                    header: header.into(),
                     client_id: self.id.clone(),
                     signer: signer.clone(),
                 }
@@ -1118,8 +1115,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         );
 
         msgs.push(
-            MsgUpdateAnyClient {
-                header,
+            MsgUpdateClient {
+                header: header.into(),
                 signer,
                 client_id: self.id.clone(),
             }
@@ -1516,8 +1513,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         for header in evidence.supporting_headers {
             msgs.push(
-                MsgUpdateAnyClient {
-                    header,
+                MsgUpdateClient {
+                    header: header.into(),
                     client_id: self.id.clone(),
                     signer: signer.clone(),
                 }
@@ -1526,8 +1523,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         }
 
         msgs.push(
-            MsgSubmitAnyMisbehaviour {
-                misbehaviour: evidence.misbehaviour,
+            MsgSubmitMisbehaviour {
+                misbehaviour: evidence.misbehaviour.into(),
                 client_id: self.id.clone(),
                 signer,
             }

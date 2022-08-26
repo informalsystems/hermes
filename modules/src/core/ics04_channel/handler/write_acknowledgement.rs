@@ -19,8 +19,8 @@ pub struct WriteAckPacketResult {
     pub ack_commitment: AcknowledgementCommitment,
 }
 
-pub fn process(
-    ctx: &dyn ChannelReader,
+pub fn process<Ctx: ChannelReader>(
+    ctx: &Ctx,
     packet: Packet,
     ack: Acknowledgement,
 ) -> HandlerResult<PacketResult, Error> {
