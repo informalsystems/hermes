@@ -26,10 +26,10 @@ use tendermint::abci::responses::Event;
 use tokio::sync::{mpsc, oneshot};
 
 use crate::cosmos::context::runtime::CosmosRuntimeContext;
-use crate::cosmos::error::Error;
-use crate::cosmos::message::CosmosIbcMessage;
-use crate::cosmos::traits::chain::{CosmosChain, CosmosChainWithBatch};
-use crate::cosmos::types::chain::CosmosChainContext;
+use crate::cosmos::core::error::Error;
+use crate::cosmos::core::traits::chain::{CosmosChain, CosmosChainWithBatch};
+use crate::cosmos::core::types::chain::CosmosChainContext;
+use crate::cosmos::core::types::message::CosmosIbcMessage;
 
 #[async_trait]
 impl<Chain> OfaChain for CosmosChainContext<Chain>

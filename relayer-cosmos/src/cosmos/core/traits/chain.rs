@@ -8,8 +8,8 @@ use std::sync::Mutex;
 use tendermint::abci::responses::Event;
 use tokio::sync::{mpsc, oneshot};
 
-use crate::cosmos::error::Error;
-use crate::cosmos::types::chain::CosmosChainContext;
+use crate::cosmos::core::error::Error;
+use crate::cosmos::core::types::chain::CosmosChainContext;
 
 pub trait CosmosChain: Async {
     type Components;

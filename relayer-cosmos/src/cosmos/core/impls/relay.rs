@@ -13,12 +13,12 @@ use ibc_relayer_framework::one_for_all::traits::relay::OfaRelay;
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
 
 use crate::cosmos::context::runtime::CosmosRuntimeContext;
-use crate::cosmos::error::Error;
-use crate::cosmos::message::CosmosIbcMessage;
-use crate::cosmos::traits::chain::CosmosChain;
-use crate::cosmos::traits::relay::CosmosRelay;
-use crate::cosmos::types::chain::CosmosChainContext;
-use crate::cosmos::types::relay::CosmosRelayContext;
+use crate::cosmos::core::error::Error;
+use crate::cosmos::core::traits::chain::CosmosChain;
+use crate::cosmos::core::traits::relay::CosmosRelay;
+use crate::cosmos::core::types::chain::CosmosChainContext;
+use crate::cosmos::core::types::message::CosmosIbcMessage;
+use crate::cosmos::core::types::relay::CosmosRelayContext;
 
 #[async_trait]
 impl<Relay> OfaRelay for CosmosRelayContext<Relay>

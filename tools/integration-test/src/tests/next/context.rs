@@ -2,7 +2,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_cosmos::cosmos::batch::new_relay_context_with_batch;
 use ibc_relayer_cosmos::cosmos::context::chain::CosmosChainImpl;
 use ibc_relayer_cosmos::cosmos::context::relay::CosmosRelayImpl;
-use ibc_relayer_cosmos::cosmos::types::relay::CosmosRelayContext;
+use ibc_relayer_cosmos::cosmos::core::types::relay::CosmosRelayContext;
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_test_framework::types::binary::chains::ConnectedChains;

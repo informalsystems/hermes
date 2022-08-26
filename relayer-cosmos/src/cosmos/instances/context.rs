@@ -4,10 +4,10 @@ use ibc_relayer_framework::core::traits::contexts::relay::RelayContext;
 use ibc_relayer_framework::one_for_all::traits::chain::OfaChainContext;
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
 
-use crate::cosmos::traits::chain::CosmosChain;
-use crate::cosmos::traits::relay::CosmosRelay;
-use crate::cosmos::types::chain::CosmosChainContext;
-use crate::cosmos::types::relay::CosmosRelayContext;
+use crate::cosmos::core::traits::chain::CosmosChain;
+use crate::cosmos::core::traits::relay::CosmosRelay;
+use crate::cosmos::core::types::chain::CosmosChainContext;
+use crate::cosmos::core::types::relay::CosmosRelayContext;
 
 pub fn relay_context<Relay>() -> PhantomData<impl RelayContext>
 where

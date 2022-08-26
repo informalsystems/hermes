@@ -8,9 +8,9 @@ use std::sync::{Arc, Mutex};
 use tendermint::abci::responses::Event;
 use tokio::sync::{mpsc, oneshot};
 
-use crate::cosmos::error::Error;
-use crate::cosmos::traits::chain::{CosmosChain, CosmosChainWithBatch};
-use crate::cosmos::types::chain::CosmosChainContext;
+use crate::cosmos::core::error::Error;
+use crate::cosmos::core::traits::chain::{CosmosChain, CosmosChainWithBatch};
+use crate::cosmos::core::types::chain::CosmosChainContext;
 
 #[derive(Clone)]
 pub struct CosmosChainImpl<Handle: ChainHandle> {

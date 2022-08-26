@@ -3,8 +3,8 @@ use ibc_relayer_framework::core::traits::packet_relayer::PacketRelayer;
 use ibc_relayer_framework::one_for_all::traits::components::relay::OfaRelayComponents;
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
 
-use crate::cosmos::traits::relay::CosmosRelay;
-use crate::cosmos::types::relay::CosmosRelayContext;
+use crate::cosmos::core::traits::relay::CosmosRelay;
+use crate::cosmos::core::types::relay::CosmosRelayContext;
 
 pub fn full_packet_relayer<Relay>(
     max_retry: usize,

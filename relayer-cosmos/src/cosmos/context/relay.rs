@@ -1,5 +1,5 @@
-use crate::cosmos::traits::chain::CosmosChain;
-use crate::cosmos::traits::relay::CosmosRelay;
+use crate::cosmos::core::traits::chain::CosmosChain;
+use crate::cosmos::core::traits::relay::CosmosRelay;
 use alloc::sync::Arc;
 use ibc_relayer::foreign_client::ForeignClient;
 

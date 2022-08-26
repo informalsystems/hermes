@@ -2,7 +2,7 @@ use alloc::sync::Arc;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer_framework::core::traits::core::Async;
 
-use crate::cosmos::traits::chain::CosmosChain;
+use crate::cosmos::core::traits::chain::CosmosChain;
 
 pub trait CosmosRelay: Async {
     type Components;
