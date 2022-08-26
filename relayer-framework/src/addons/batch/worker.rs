@@ -67,7 +67,7 @@ where
         let mut last_sent_time = self.relay.runtime().now();
 
         loop {
-            match Batch::try_receive_messages(self.relay.messages_receiver()).await {
+            match Batch::try_receive_batch(self.relay.batch_receiver()).await {
                 Ok(m_batch) => {
                     if let Some(batch) = m_batch {
                         self.relay

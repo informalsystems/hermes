@@ -84,8 +84,8 @@ where
     Chain: OfaChain<Error = Error>,
     Error: From<TokioError> + Clone + Async,
 {
-    type MessagesSender = mpsc::Sender<(Vec<Chain::Message>, Self::ResultSender)>;
-    type MessagesReceiver = Mutex<mpsc::Receiver<(Vec<Chain::Message>, Self::ResultSender)>>;
+    type BatchSender = mpsc::Sender<(Vec<Chain::Message>, Self::ResultSender)>;
+    type BatchReceiver = Mutex<mpsc::Receiver<(Vec<Chain::Message>, Self::ResultSender)>>;
 
     type ResultSender = oneshot::Sender<Result<Vec<Vec<Chain::Event>>, Chain::Error>>;
     type ResultReceiver = oneshot::Receiver<Result<Vec<Vec<Chain::Event>>, Chain::Error>>;
@@ -94,8 +94,8 @@ where
         oneshot::channel()
     }
 
-    async fn send_messages(
-        sender: &Self::MessagesSender,
+    async fn send_batch(
+        sender: &Self::BatchSender,
         messages: Vec<Chain::Message>,
         result_sender: Self::ResultSender,
     ) -> Result<(), Chain::Error> {
@@ -105,10 +105,14 @@ where
             .map_err(|_| TokioError::channel_closed().into())
     }
 
-    async fn try_receive_messages(
-        receiver: &Self::MessagesReceiver,
+    async fn try_receive_batch(
+        receiver_lock: &Self::BatchReceiver,
     ) -> Result<Option<(Vec<Chain::Message>, Self::ResultSender)>, Chain::Error> {
-        match receiver.lock().unwrap().try_recv() {
+        let mut receiver = receiver_lock
+            .lock()
+            .map_err(|_| TokioError::poisoned_lock())?;
+
+        match receiver.try_recv() {
             Ok(batch) => Ok(Some(batch)),
             Err(mpsc::error::TryRecvError::Empty) => Ok(None),
             Err(mpsc::error::TryRecvError::Disconnected) => {

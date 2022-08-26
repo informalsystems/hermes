@@ -31,9 +31,9 @@ where
     ) -> Result<Vec<Vec<TargetChain::IbcEvent>>, Relay::Error> {
         let (result_sender, result_receiver) = Relay::BatchContext::new_result_channel();
 
-        let message_sender = context.messages_sender();
+        let message_sender = context.batch_sender();
 
-        Relay::BatchContext::send_messages(message_sender, messages, result_sender).await?;
+        Relay::BatchContext::send_batch(message_sender, messages, result_sender).await?;
 
         let events = Relay::BatchContext::receive_result(result_receiver).await??;
 

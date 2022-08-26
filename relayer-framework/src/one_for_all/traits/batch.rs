@@ -17,22 +17,22 @@ pub struct OfaBatchContext<Chain> {
 
 #[async_trait]
 pub trait OfaBatch<Chain: OfaChain>: Async {
-    type MessagesSender: Async;
-    type MessagesReceiver: Async;
+    type BatchSender: Async;
+    type BatchReceiver: Async;
 
     type ResultSender: Async;
     type ResultReceiver: Async;
 
     fn new_result_channel() -> (Self::ResultSender, Self::ResultReceiver);
 
-    async fn send_messages(
-        sender: &Self::MessagesSender,
+    async fn send_batch(
+        sender: &Self::BatchSender,
         messages: Vec<Chain::Message>,
         result_sender: Self::ResultSender,
     ) -> Result<(), Chain::Error>;
 
-    async fn try_receive_messages(
-        receiver: &Self::MessagesReceiver,
+    async fn try_receive_batch(
+        receiver: &Self::BatchReceiver,
     ) -> Result<Option<(Vec<Chain::Message>, Self::ResultSender)>, Chain::Error>;
 
     async fn receive_result(
@@ -48,9 +48,9 @@ pub trait OfaBatch<Chain: OfaChain>: Async {
 pub trait OfaChainWithBatch: OfaChain {
     type BatchContext: OfaBatch<Self>;
 
-    fn batch_sender(&self) -> &<Self::BatchContext as OfaBatch<Self>>::MessagesSender;
+    fn batch_sender(&self) -> &<Self::BatchContext as OfaBatch<Self>>::BatchSender;
 
-    fn batch_receiver(&self) -> &<Self::BatchContext as OfaBatch<Self>>::MessagesReceiver;
+    fn batch_receiver(&self) -> &<Self::BatchContext as OfaBatch<Self>>::BatchReceiver;
 }
 
 #[async_trait]
@@ -65,9 +65,9 @@ where
 
     type Event = Chain::Event;
 
-    type MessagesSender = Batch::MessagesSender;
+    type BatchSender = Batch::BatchSender;
 
-    type MessagesReceiver = Batch::MessagesReceiver;
+    type BatchReceiver = Batch::BatchReceiver;
 
     type ResultSender = Batch::ResultSender;
 
@@ -77,8 +77,8 @@ where
         Batch::new_result_channel()
     }
 
-    async fn send_messages(
-        sender: &Self::MessagesSender,
+    async fn send_batch(
+        sender: &Self::BatchSender,
         messages: Vec<Self::Message>,
         result_sender: Self::ResultSender,
     ) -> Result<(), Self::Error> {
@@ -86,15 +86,15 @@ where
             .into_iter()
             .map(|message| message.message)
             .collect();
-        Batch::send_messages(sender, in_messages, result_sender)
+        Batch::send_batch(sender, in_messages, result_sender)
             .await
             .map_err(OfaErrorContext::new)
     }
 
-    async fn try_receive_messages(
-        receiver: &Self::MessagesReceiver,
+    async fn try_receive_batch(
+        receiver: &Self::BatchReceiver,
     ) -> Result<Option<(Vec<Self::Message>, Self::ResultSender)>, Self::Error> {
-        let result = Batch::try_receive_messages(receiver)
+        let result = Batch::try_receive_batch(receiver)
             .await
             .map_err(OfaErrorContext::new)?;
 
@@ -136,11 +136,11 @@ where
 {
     type BatchContext = OfaBatchContext<Relay::SrcChain>;
 
-    fn messages_sender(&self) -> &<Self::BatchContext as BatchContext>::MessagesSender {
+    fn batch_sender(&self) -> &<Self::BatchContext as BatchContext>::BatchSender {
         self.relay.src_chain().chain.batch_sender()
     }
 
-    fn messages_receiver(&self) -> &<Self::BatchContext as BatchContext>::MessagesReceiver {
+    fn batch_receiver(&self) -> &<Self::BatchContext as BatchContext>::BatchReceiver {
         self.relay.src_chain().chain.batch_receiver()
     }
 }
@@ -152,11 +152,11 @@ where
 {
     type BatchContext = OfaBatchContext<Relay::DstChain>;
 
-    fn messages_sender(&self) -> &<Self::BatchContext as BatchContext>::MessagesSender {
+    fn batch_sender(&self) -> &<Self::BatchContext as BatchContext>::BatchSender {
         self.relay.dst_chain().chain.batch_sender()
     }
 
-    fn messages_receiver(&self) -> &<Self::BatchContext as BatchContext>::MessagesReceiver {
+    fn batch_receiver(&self) -> &<Self::BatchContext as BatchContext>::BatchReceiver {
         self.relay.dst_chain().chain.batch_receiver()
     }
 }

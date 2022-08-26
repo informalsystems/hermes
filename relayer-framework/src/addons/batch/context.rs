@@ -10,25 +10,25 @@ use crate::std_prelude::*;
 pub trait BatchContext: Async {
     type Error: Async;
 
-    type Message;
-    type Event;
+    type Message: Async;
+    type Event: Async;
 
-    type MessagesSender: Async;
-    type MessagesReceiver: Async;
+    type BatchSender: Async;
+    type BatchReceiver: Async;
 
     type ResultSender: Async;
     type ResultReceiver: Async;
 
     fn new_result_channel() -> (Self::ResultSender, Self::ResultReceiver);
 
-    async fn send_messages(
-        sender: &Self::MessagesSender,
+    async fn send_batch(
+        sender: &Self::BatchSender,
         messages: Vec<Self::Message>,
         result_sender: Self::ResultSender,
     ) -> Result<(), Self::Error>;
 
-    async fn try_receive_messages(
-        receiver: &Self::MessagesReceiver,
+    async fn try_receive_batch(
+        receiver: &Self::BatchReceiver,
     ) -> Result<Option<(Vec<Self::Message>, Self::ResultSender)>, Self::Error>;
 
     async fn receive_result(
@@ -51,7 +51,7 @@ where
         Error = Self::Error,
     >;
 
-    fn messages_sender(&self) -> &<Self::BatchContext as BatchContext>::MessagesSender;
+    fn batch_sender(&self) -> &<Self::BatchContext as BatchContext>::BatchSender;
 
-    fn messages_receiver(&self) -> &<Self::BatchContext as BatchContext>::MessagesReceiver;
+    fn batch_receiver(&self) -> &<Self::BatchContext as BatchContext>::BatchReceiver;
 }
