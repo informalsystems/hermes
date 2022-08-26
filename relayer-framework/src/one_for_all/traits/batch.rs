@@ -11,8 +11,8 @@ use crate::one_for_all::traits::relay::{OfaRelay, OfaRelayContext};
 use crate::std_prelude::*;
 
 #[derive(Clone)]
-pub struct OfaBatchContext<Chain, Batch> {
-    pub phantom: PhantomData<(Chain, Batch)>,
+pub struct OfaBatchContext<Chain> {
+    pub phantom: PhantomData<Chain>,
 }
 
 #[async_trait]
@@ -52,9 +52,9 @@ pub trait OfaChainWithBatch: OfaChain {
 }
 
 #[async_trait]
-impl<Chain, Batch> BatchContext for OfaBatchContext<Chain, Batch>
+impl<Chain, Batch> BatchContext for OfaBatchContext<Chain>
 where
-    Chain: OfaChain,
+    Chain: OfaChainWithBatch<BatchContext = Batch>,
     Batch: OfaBatch<Chain>,
 {
     type Error = OfaErrorContext<Chain::Error>;
@@ -132,8 +132,7 @@ where
     Relay: OfaRelay,
     Relay::SrcChain: OfaChainWithBatch,
 {
-    type BatchContext =
-        OfaBatchContext<Relay::SrcChain, <Relay::SrcChain as OfaChainWithBatch>::BatchContext>;
+    type BatchContext = OfaBatchContext<Relay::SrcChain>;
 
     fn messages_sender(&self) -> &<Self::BatchContext as BatchContext>::MessagesSender {
         self.relay.src_chain().chain.batch_sender()
@@ -145,8 +144,7 @@ where
     Relay: OfaRelay,
     Relay::DstChain: OfaChainWithBatch,
 {
-    type BatchContext =
-        OfaBatchContext<Relay::DstChain, <Relay::DstChain as OfaChainWithBatch>::BatchContext>;
+    type BatchContext = OfaBatchContext<Relay::DstChain>;
 
     fn messages_sender(&self) -> &<Self::BatchContext as BatchContext>::MessagesSender {
         self.relay.dst_chain().chain.batch_sender()
