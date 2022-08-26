@@ -20,6 +20,7 @@ use ibc_relayer_framework::one_for_all::traits::batch::OfaChainWithBatch;
 use ibc_relayer_framework::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
 use prost::Message as _;
+use std::sync::Mutex;
 use tendermint::abci::responses::Event;
 use tokio::sync::{mpsc, oneshot};
 
@@ -206,5 +207,16 @@ where
         oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
     )> {
         self.chain.batch_sender()
+    }
+
+    fn batch_receiver(
+        &self,
+    ) -> &Mutex<
+        mpsc::Receiver<(
+            Vec<CosmosIbcMessage>,
+            oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
+        )>,
+    > {
+        self.chain.batch_receiver()
     }
 }

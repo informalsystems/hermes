@@ -3,6 +3,7 @@ use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::keyring::KeyEntry;
 use ibc_relayer_framework::core::traits::core::Async;
+use std::sync::Mutex;
 use tendermint::abci::responses::Event;
 use tokio::sync::{mpsc, oneshot};
 
@@ -30,4 +31,13 @@ pub trait CosmosChainWithBatch: CosmosChain {
         Vec<CosmosIbcMessage>,
         oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
     )>;
+
+    fn batch_receiver(
+        &self,
+    ) -> &Mutex<
+        mpsc::Receiver<(
+            Vec<CosmosIbcMessage>,
+            oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
+        )>,
+    >;
 }

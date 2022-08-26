@@ -19,7 +19,7 @@ where
 {
     let runtime = TokioRuntimeContext::new(chains.node_a.value().chain_driver.runtime.clone());
 
-    let (chain_a, receiver_a) = CosmosChainImpl::new(
+    let chain_a = CosmosChainImpl::new(
         chains.handle_a.clone(),
         chains
             .node_a
@@ -34,7 +34,7 @@ where
         chains.node_a.value().wallets.relayer.key.clone(),
     );
 
-    let (chain_b, receiver_b) = CosmosChainImpl::new(
+    let chain_b = CosmosChainImpl::new(
         chains.handle_b.clone(),
         chains
             .node_b
@@ -56,8 +56,6 @@ where
         chains.foreign_clients.client_a_to_b.clone(),
         chains.foreign_clients.client_b_to_a.clone(),
         Default::default(),
-        receiver_a,
-        receiver_b,
     );
 
     relay

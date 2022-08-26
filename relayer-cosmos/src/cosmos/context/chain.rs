@@ -3,6 +3,7 @@ use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::keyring::KeyEntry;
 use ibc_relayer_framework::one_for_all::components::batch::BatchComponents;
+use std::sync::{Arc, Mutex};
 use tendermint::abci::responses::Event;
 use tokio::sync::{mpsc, oneshot};
 
@@ -20,21 +21,18 @@ pub struct CosmosChainImpl<Handle> {
         Vec<CosmosIbcMessage>,
         oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
     )>,
+    pub batch_receiver: Arc<
+        Mutex<
+            mpsc::Receiver<(
+                Vec<CosmosIbcMessage>,
+                oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
+            )>,
+        >,
+    >,
 }
 
 impl<Handle> CosmosChainImpl<Handle> {
-    pub fn new(
-        handle: Handle,
-        signer: Signer,
-        tx_config: TxConfig,
-        key_entry: KeyEntry,
-    ) -> (
-        Self,
-        mpsc::Receiver<(
-            Vec<CosmosIbcMessage>,
-            oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
-        )>,
-    ) {
+    pub fn new(handle: Handle, signer: Signer, tx_config: TxConfig, key_entry: KeyEntry) -> Self {
         let (batch_sender, receiver) = mpsc::channel(1024);
 
         let chain = Self {
@@ -43,9 +41,10 @@ impl<Handle> CosmosChainImpl<Handle> {
             tx_config,
             key_entry,
             batch_sender,
+            batch_receiver: Arc::new(Mutex::new(receiver)),
         };
 
-        (chain, receiver)
+        chain
     }
 }
 
@@ -85,5 +84,16 @@ where
         oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
     )> {
         &self.batch_sender
+    }
+
+    fn batch_receiver(
+        &self,
+    ) -> &Mutex<
+        mpsc::Receiver<(
+            Vec<CosmosIbcMessage>,
+            oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
+        )>,
+    > {
+        &self.batch_receiver
     }
 }

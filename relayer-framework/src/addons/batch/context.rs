@@ -28,7 +28,7 @@ pub trait BatchContext: Async {
     ) -> Result<(), Self::Error>;
 
     async fn try_receive_messages(
-        receiver: &mut Self::MessagesReceiver,
+        receiver: &Self::MessagesReceiver,
     ) -> Result<Option<(Vec<Self::Message>, Self::ResultSender)>, Self::Error>;
 
     async fn receive_result(
@@ -52,4 +52,6 @@ where
     >;
 
     fn messages_sender(&self) -> &<Self::BatchContext as BatchContext>::MessagesSender;
+
+    fn messages_receiver(&self) -> &<Self::BatchContext as BatchContext>::MessagesReceiver;
 }

@@ -26,7 +26,6 @@ where
     Sender: IbcMessageSender<Relay, Target>,
 {
     pub relay: Relay,
-    pub messages_receiver: <Relay::BatchContext as BatchContext>::MessagesReceiver,
     pub pending_batches: VecDeque<(
         Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
         <Relay::BatchContext as BatchContext>::ResultSender,
@@ -49,16 +48,11 @@ where
     Event: Async,
     Error: Clone + Async,
 {
-    pub fn spawn_batch_message_worker(
-        relay: Relay,
-        config: BatchConfig,
-        messages_receiver: Batch::MessagesReceiver,
-    ) {
+    pub fn spawn_batch_message_worker(relay: Relay, config: BatchConfig) {
         let spawner = relay.runtime().spawner();
 
         let mut handler = Self {
             relay,
-            messages_receiver,
             pending_batches: VecDeque::new(),
             config,
             phantom: PhantomData,
@@ -73,7 +67,7 @@ where
         let mut last_sent_time = self.relay.runtime().now();
 
         loop {
-            match Batch::try_receive_messages(&mut self.messages_receiver).await {
+            match Batch::try_receive_messages(self.relay.messages_receiver()).await {
                 Ok(m_batch) => {
                     if let Some(batch) = m_batch {
                         self.relay

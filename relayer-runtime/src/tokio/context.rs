@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use core::future::Future;
 use core::marker::PhantomData;
 use core::time::Duration;
+use std::sync::Mutex;
 use std::time::Instant;
 use tokio::runtime::Runtime;
 use tokio::sync::{mpsc, oneshot};
@@ -84,7 +85,7 @@ where
     Error: From<TokioError> + Clone + Async,
 {
     type MessagesSender = mpsc::Sender<(Vec<Chain::Message>, Self::ResultSender)>;
-    type MessagesReceiver = mpsc::Receiver<(Vec<Chain::Message>, Self::ResultSender)>;
+    type MessagesReceiver = Mutex<mpsc::Receiver<(Vec<Chain::Message>, Self::ResultSender)>>;
 
     type ResultSender = oneshot::Sender<Result<Vec<Vec<Chain::Event>>, Chain::Error>>;
     type ResultReceiver = oneshot::Receiver<Result<Vec<Vec<Chain::Event>>, Chain::Error>>;
@@ -105,9 +106,9 @@ where
     }
 
     async fn try_receive_messages(
-        receiver: &mut Self::MessagesReceiver,
+        receiver: &Self::MessagesReceiver,
     ) -> Result<Option<(Vec<Chain::Message>, Self::ResultSender)>, Chain::Error> {
-        match receiver.try_recv() {
+        match receiver.lock().unwrap().try_recv() {
             Ok(batch) => Ok(Some(batch)),
             Err(mpsc::error::TryRecvError::Empty) => Ok(None),
             Err(mpsc::error::TryRecvError::Disconnected) => {
