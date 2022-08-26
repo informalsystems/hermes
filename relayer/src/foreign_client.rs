@@ -779,37 +779,33 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         }
     }
 
-    fn verify_chain_error(
-        ibc_events: Vec<IbcEvent>,
-        dst_chain_id: ChainId,
-    ) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
-        // The assumption is that only one IbcEventType::ChainError will be
-        // in the resulting Vec<IbcEvent> if an error occurred.
-        let chain_error = ibc_events
-            .iter()
-            .find(|&e| e.event_type() == IbcEventType::ChainError);
-
-        match chain_error {
-            Some(ev) => Err(ForeignClientError::chain_error_event(
-                dst_chain_id,
-                ev.to_owned(),
-            )),
-            None => Ok(Some(ibc_events)),
-        }
-    }
-
     pub fn refresh(&mut self) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
-        match self.try_refresh() {
-            Ok(res) => {
-                // If elapsed < refresh_window for the client, `try_refresh()` will
-                // be successful with an empty vector.
-                if let Some(ibc_events) = res {
-                    return Self::verify_chain_error(ibc_events, self.dst_chain().id());
-                }
-                // Return the successful empty vector.
-                Ok(None)
+        fn check_no_errors(
+            ibc_events: &[IbcEvent],
+            dst_chain_id: ChainId,
+        ) -> Result<(), ForeignClientError> {
+            // The assumption is that only one IbcEventType::ChainError will be
+            // in the resulting Vec<IbcEvent> if an error occurred.
+            let chain_error = ibc_events
+                .iter()
+                .find(|&e| e.event_type() == IbcEventType::ChainError);
+
+            match chain_error {
+                None => Ok(()),
+                Some(ev) => Err(ForeignClientError::chain_error_event(
+                    dst_chain_id,
+                    ev.to_owned(),
+                )),
             }
-            Err(e) => Err(e),
+        }
+
+        // If elapsed < refresh_window for the client, `try_refresh()` will
+        // be successful with an empty vector.
+        if let Some(events) = self.try_refresh()? {
+            check_no_errors(&events, self.dst_chain().id())?;
+            Ok(Some(events))
+        } else {
+            Ok(None)
         }
     }
 
