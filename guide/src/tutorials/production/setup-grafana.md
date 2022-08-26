@@ -38,37 +38,28 @@ Prometheus is a free software application used for event monitoring and alerting
 docker-compose -f docker-compose.yaml up
 ```
 
-### Add data sources
+### Sign in to Grafana
 
 - Open your web browser and go to `http://localhost:3000/`.
-
 - On the sign-in page, enter `admin` for the username and password.
-
 - Click Sign in.
-
     If successful, you will see a prompt to change the password.
-
 - Click OK on the prompt and change your password.
 
+### Add Prometheus
 
 - In the side bar, hover your cursor over the Configuration (gear) icon, and then select `Data Sources`.
-
 - Click `Add data source`.
-
 - In the list of data sources, select `Prometheus`.
-
 - In the URL box, enter `http://prometheus:9090`.
-
 - Click `Save & Test`.
-
     Prometheus is now available as a data source in Grafana.
 
+### Add Loki
+
 - Add another data source, however, this time, select `Loki`.
-
 - In the URL box, enter http://loki:311.
-
 - Click `Save & Test`.
-
     Loki is now available as a data source in Grafana.
 
 ### Set up the dashboard
@@ -85,4 +76,4 @@ docker-compose -f docker-compose.yaml up
 
 ## Next steps
 
-In the [next section](./setup-accounts.md), you will learn how to setup accounts on public testnets.
+In the [next section](./setup-hermes.md), you will learn how to setup accounts on public testnets.

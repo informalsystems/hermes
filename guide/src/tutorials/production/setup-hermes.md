@@ -4,10 +4,7 @@ In this section, you will learn how to setup Hermes to relay between the Hub and
 
 ## Setup accounts
 
-First, you need a wallet with enough funds on both chains. It is difficult to estimate how much gas you will spend as it depends on many parameters like:
-- The volume of IBC transfers on the channels you are relaying.
-- The chain's activity. More congestion means higher gas prices.
-- The transaction's size. Bigger transactions need more gas. 
+First, you need a wallet with enough funds on both chains. We suppose that you already know how to create a wallet on the chains you want and to transfer them some funds.
 
 ### Adding a private key
 
@@ -20,24 +17,26 @@ You can add a private key by two different ways:
     ```
 >__NOTE__: Do not confuse the `chain-name` and the `chain-id` which follows the format `chain_name-version`.
 
-- If you have a `mnemonic`, you can restore a private key from a [mnemonic-file](../../documentation/commands/keys/index.md#restore-a-private-key-to-a-chain-from-a-mnemonic). The following steps create a `mnemonic-file` and restore its key:
+- If you have a `mnemonic`, you can restore a private key from a [mnemonic-file](../../documentation/commands/keys/index.md#restore-a-private-key-to-a-chain-from-a-mnemonic). The following steps create a `mnemonic-file` and restore its key for each chain under names `keyhub` and `keyosmosis` :
     ```shell
     echo word1 ... word12or24 > mnemonic_file_hub
-    hermes keys add --chain cosmoshub-4 --mnemonic-file mnemonic_file_hub.json
+    hermes keys add --chain cosmoshub-4 --mnemonic-file mnemonic_file_hub.json --key-name keyhub
     rm mnemonic_file_hub
     echo word1 ... word12or24 > mnemonic_file_osmosis
-    hermes keys add --chain cosmoshub-4 --mnemonic-file mnemonic_file_osmosis.json
+    hermes keys add --chain cosmoshub-4 --mnemonic-file mnemonic_file_osmosis.json --key-name keyosmosis
     rm mnemonic_file_osmosis
     ``` 
 
 ## Configuration file
 
-Then, you need to create a configuration file for Hermes. The command `hermes config auto` provides a way to automatically generate a configuration file for chains in the [chain-registry](https://github.com/cosmos/chain-registry):
+Then, you need to create a configuration file for Hermes (more details in the [documentation](../../documentation/config.md)). 
+
+The command `hermes config auto` provides a way to automatically generate a configuration file for chains in the [chain-registry](https://github.com/cosmos/chain-registry):
 
 ```shell
 hermes config auto --output $HOME/.hermes/config.toml --chains cosmoshub:keyhub osmosis:keyosmosis
 ```
-__NOTE__: This command also automatically finds and generates packet filters from the [_IBC](https://github.com/cosmos/chain-registry/tree/master/_IBC) folder in the chain-registry.
+__NOTE__: This command also automatically finds IBC paths and generates packet filters from the [_IBC](https://github.com/cosmos/chain-registry/tree/master/_IBC) folder in the chain-registry.
 
 If the command runs successfully, it should output:
 ```
@@ -48,6 +47,7 @@ If the command runs successfully, it should output:
 2022-08-26T11:40:36.253860Z  WARN ThreadId(01) Gas parameters are set to default values.
 SUCCESS "Config file written successfully : $HOME/.hermes/config.toml."
 ```
+And generate the following configuration : 
 
 __config.toml__
 ```
@@ -158,3 +158,52 @@ list = [[
 [chains.address_type]
 derivation = 'cosmos'
 ```
+
+As you can observe, the command created packet filters so the relayer will only relay on `channel-0` for osmosis and `channel-141` for the hub.
+
+>__WARNING__: It is difficult to estimate how much gas you will spend as it depends on many parameters like:
+> - The volume of transactions. More congestion means higher gas prices.
+> - The transaction's size. Bigger transactions need more gas. 
+> - The volume of IBC messages to relay.
+> We cannot provide a way to precisely set those parameters. However, you can refer to [other relayer's configuration](https://github.com/informalsystems/ibc-rs/discussions/2472#discussioncomment-3331695). You can also find IBC transfers on [mintscan.io](https://www.mintscan.io/cosmos/txs) to see how much other relayers are spending. But remember that if the gas wanted is too low, the transactions will fail. If the gas price is too high, gas will be wasted but the transaction will have a higher priority. 
+
+For the tutorial, we will follow the [example of Crypto Crew](https://github.com/notional-labs/notional/blob/master/relaying/hermes/all-ibc.toml) and set the gas parameters as follows.
+
+- For Cosmoshub:
+    ```
+    default_gas = 2000000
+    max_gas = 10000000
+    gas_multiplier = 1.1
+    max_msg_num = 25
+    ...
+    [chains.gas_price]
+    price = 0.005
+    denom = 'uatom'
+    ```
+
+- For Osmosis:
+    ```
+    default_gas = 5000000
+    max_gas = 15000000
+    gas_multiplier = 1.1
+    max_msg_num = 20
+    ...
+    [chains.gas_price]
+    price = 0.0026
+    denom = 'uosmo'
+    ```
+
+>__NOTE__: `max_msg_nums` defines the number of messages that can be sent in the same transaction. 
+
+>__DISCLAIMER__: These parameters need to be tuned. We can not guarantee that they will always work.
+
+## Health-check
+
+Finally, perform a `health-check` to verify that your setup is correct with:
+```
+hermes health-check
+``` 
+
+## Next steps
+
+You are now ready to relay. In the [next chapter](./start-relaying.md), you will start relaying and monitoring Hermes with Grafana.
