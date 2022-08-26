@@ -25,11 +25,11 @@ use std::sync::Mutex;
 use tendermint::abci::responses::Event;
 use tokio::sync::{mpsc, oneshot};
 
-use crate::cosmos::context::runtime::CosmosRuntimeContext;
 use crate::cosmos::core::error::Error;
 use crate::cosmos::core::traits::chain::{CosmosChain, CosmosChainWithBatch};
 use crate::cosmos::core::types::chain::CosmosChainContext;
 use crate::cosmos::core::types::message::CosmosIbcMessage;
+use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
 
 #[async_trait]
 impl<Chain> OfaChain for CosmosChainContext<Chain>

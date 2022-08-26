@@ -2,9 +2,9 @@ use alloc::sync::Arc;
 use ibc_relayer_framework::one_for_all::traits::chain::OfaChainContext;
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
 
-use crate::cosmos::context::runtime::CosmosRuntimeContext;
 use crate::cosmos::core::traits::relay::CosmosRelay;
 use crate::cosmos::core::types::chain::CosmosChainContext;
+use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
 
 #[derive(Clone)]
 pub struct CosmosRelayContext<Relay: CosmosRelay> {

@@ -1,7 +1,7 @@
 use alloc::sync::Arc;
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
 
-use crate::cosmos::context::runtime::CosmosRuntimeContext;
+use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
 
 #[derive(Clone)]
 pub struct CosmosChainContext<Chain> {
