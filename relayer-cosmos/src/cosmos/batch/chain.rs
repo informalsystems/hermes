@@ -3,14 +3,11 @@ use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::keyring::KeyEntry;
 use ibc_relayer_framework::one_for_all::components::batch::BatchComponents;
-use ibc_relayer_framework::one_for_all::impls::message::OfaMessage;
 use std::sync::{Arc, Mutex};
-use tendermint::abci::responses::Event;
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::mpsc;
 
-use crate::cosmos::core::error::Error;
+use crate::cosmos::batch::payload::BatchPayload;
 use crate::cosmos::core::traits::chain::{CosmosChain, CosmosChainWithBatch};
-use crate::cosmos::core::types::chain::CosmosChainContext;
 
 #[derive(Clone)]
 pub struct CosmosChainImpl<Handle: ChainHandle> {
@@ -18,18 +15,8 @@ pub struct CosmosChainImpl<Handle: ChainHandle> {
     pub signer: Signer,
     pub tx_config: TxConfig,
     pub key_entry: KeyEntry,
-    pub batch_sender: mpsc::Sender<(
-        Vec<OfaMessage<CosmosChainContext<Self>>>,
-        oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
-    )>,
-    pub batch_receiver: Arc<
-        Mutex<
-            mpsc::Receiver<(
-                Vec<OfaMessage<CosmosChainContext<Self>>>,
-                oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
-            )>,
-        >,
-    >,
+    pub batch_sender: mpsc::Sender<BatchPayload<Self>>,
+    pub batch_receiver: Arc<Mutex<mpsc::Receiver<BatchPayload<Self>>>>,
 }
 
 impl<Handle: ChainHandle> CosmosChainImpl<Handle> {
@@ -78,23 +65,11 @@ impl<Handle> CosmosChainWithBatch for CosmosChainImpl<Handle>
 where
     Handle: ChainHandle,
 {
-    fn batch_sender(
-        &self,
-    ) -> &mpsc::Sender<(
-        Vec<OfaMessage<CosmosChainContext<Self>>>,
-        oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
-    )> {
+    fn batch_sender(&self) -> &mpsc::Sender<BatchPayload<Self>> {
         &self.batch_sender
     }
 
-    fn batch_receiver(
-        &self,
-    ) -> &Mutex<
-        mpsc::Receiver<(
-            Vec<OfaMessage<CosmosChainContext<Self>>>,
-            oneshot::Sender<Result<Vec<Vec<Event>>, Error>>,
-        )>,
-    > {
+    fn batch_receiver(&self) -> &Mutex<mpsc::Receiver<BatchPayload<Self>>> {
         &self.batch_receiver
     }
 }
