@@ -6,9 +6,9 @@ use ibc_relayer_framework::one_for_all::components::batch::BatchComponents;
 use std::sync::{Arc, Mutex};
 use tokio::sync::mpsc;
 
-use crate::cosmos::batch::payload::BatchPayload;
 use crate::cosmos::core::traits::batch::CosmosChainWithBatch;
 use crate::cosmos::core::traits::chain::CosmosChain;
+use crate::cosmos::core::types::batch::{BatchReceiver, BatchSender};
 
 #[derive(Clone)]
 pub struct CosmosChainEnv<Handle: ChainHandle> {
@@ -16,8 +16,8 @@ pub struct CosmosChainEnv<Handle: ChainHandle> {
     pub signer: Signer,
     pub tx_config: TxConfig,
     pub key_entry: KeyEntry,
-    pub batch_sender: mpsc::UnboundedSender<BatchPayload<Self>>,
-    pub batch_receiver: Arc<Mutex<mpsc::UnboundedReceiver<BatchPayload<Self>>>>,
+    pub batch_sender: BatchSender<Self>,
+    pub batch_receiver: BatchReceiver<Self>,
 }
 
 impl<Handle: ChainHandle> CosmosChainEnv<Handle> {
@@ -66,11 +66,11 @@ impl<Handle> CosmosChainWithBatch for CosmosChainEnv<Handle>
 where
     Handle: ChainHandle,
 {
-    fn batch_sender(&self) -> &mpsc::UnboundedSender<BatchPayload<Self>> {
+    fn batch_sender(&self) -> &BatchSender<Self> {
         &self.batch_sender
     }
 
-    fn batch_receiver(&self) -> &Arc<Mutex<mpsc::UnboundedReceiver<BatchPayload<Self>>>> {
+    fn batch_receiver(&self) -> &BatchReceiver<Self> {
         &self.batch_receiver
     }
 }
