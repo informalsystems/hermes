@@ -35,11 +35,126 @@ You can add a private key by two different ways:
 Then, you need to create a configuration file for Hermes. The command `hermes config auto` provides a way to automatically generate a configuration file for chains in the [chain-registry](https://github.com/cosmos/chain-registry):
 
 ```shell
-hermes config auto --output $HOME/.hermes/config.toml --chains cosmoshub osmosis
+hermes config auto --output $HOME/.hermes/config.toml --chains cosmoshub:keyhub osmosis:keyosmosis
 ```
-__NOTE__: This command also generates packet filters from the [_IBC](https://github.com/cosmos/chain-registry/tree/master/_IBC) folder in the chain-registry.
+__NOTE__: This command also automatically finds and generates packet filters from the [_IBC](https://github.com/cosmos/chain-registry/tree/master/_IBC) folder in the chain-registry.
+
+If the command runs successfully, it should output:
+```
+2022-08-26T11:40:35.164371Z  INFO ThreadId(01) using default configuration from '$HOME/.hermes/config.toml'
+2022-08-26T11:40:35.165353Z  INFO ThreadId(01) Fetching configuration for chains: ["cosmoshub", "osmosis"]
+2022-08-26T11:40:36.253328Z  WARN ThreadId(01) cosmoshub-4: uses key "keyhub"
+2022-08-26T11:40:36.253704Z  WARN ThreadId(01) osmosis-1: uses key "keyosmosis"
+2022-08-26T11:40:36.253860Z  WARN ThreadId(01) Gas parameters are set to default values.
+SUCCESS "Config file written successfully : $HOME/.hermes/config.toml."
+```
 
 __config.toml__
 ```
+[global]
+log_level = 'info'
+[mode.clients]
+enabled = true
+refresh = true
+misbehaviour = false
 
+[mode.connections]
+enabled = false
+
+[mode.channels]
+enabled = false
+
+[mode.packets]
+enabled = true
+clear_interval = 100
+clear_on_start = true
+tx_confirmation = false
+
+[rest]
+enabled = false
+host = '127.0.0.1'
+port = 3000
+
+[telemetry]
+enabled = false
+host = '127.0.0.1'
+port = 3001
+
+[[chains]]
+id = 'cosmoshub-4'
+type = 'CosmosSdk'
+rpc_addr = 'https://rpc.cosmoshub.strange.love/'
+websocket_addr = 'wss://rpc.cosmoshub.strange.love/websocket'
+grpc_addr = 'https://grpc-cosmoshub-ia.notional.ventures/'
+rpc_timeout = '10s'
+account_prefix = 'cosmos'
+key_name = 'keyhub'
+key_store_type = 'Test'
+store_prefix = 'ibc'
+default_gas = 100000
+max_gas = 400000
+gas_multiplier = 1.1
+max_msg_num = 30
+max_tx_size = 2097152
+clock_drift = '5s'
+max_block_time = '30s'
+memo_prefix = ''
+sequential_batch_tx = false
+
+[chains.trust_threshold]
+numerator = '1'
+denominator = '3'
+
+[chains.gas_price]
+price = 0.1
+denom = 'uatom'
+
+[chains.packet_filter]
+policy = 'allow'
+list = [[
+    'transfer',
+    'channel-141',
+]]
+
+[chains.address_type]
+derivation = 'cosmos'
+
+[[chains]]
+id = 'osmosis-1'
+type = 'CosmosSdk'
+rpc_addr = 'https://rpc.osmosis.interbloc.org/'
+websocket_addr = 'wss://rpc.osmosis.interbloc.org/websocket'
+grpc_addr = 'https://grpc-osmosis-ia.notional.ventures/'
+rpc_timeout = '10s'
+account_prefix = 'osmo'
+key_name = 'keyosmosis'
+key_store_type = 'Test'
+store_prefix = 'ibc'
+default_gas = 100000
+max_gas = 400000
+gas_multiplier = 1.1
+max_msg_num = 30
+max_tx_size = 2097152
+clock_drift = '5s'
+max_block_time = '30s'
+memo_prefix = ''
+sequential_batch_tx = false
+
+[chains.trust_threshold]
+numerator = '1'
+denominator = '3'
+
+[chains.gas_price]
+price = 0.1
+denom = 'uosmo'
+
+[chains.packet_filter]
+policy = 'allow'
+list = [[
+    'transfer',
+    'channel-0',
+]]
+
+[chains.address_type]
+derivation = 'cosmos'
 ```
