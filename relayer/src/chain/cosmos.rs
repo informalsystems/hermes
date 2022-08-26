@@ -106,9 +106,6 @@ pub mod types;
 pub mod version;
 pub mod wait;
 
-#[cfg(test)]
-mod test_utils;
-
 /// fraction of the maximum block size defined in the Tendermint core consensus parameters.
 pub const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 // https://github.com/cosmos/cosmos-sdk/blob/v0.44.0/types/errors/errors.go#L115-L117
