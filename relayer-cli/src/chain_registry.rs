@@ -16,7 +16,7 @@ use ibc_relayer::{
     config::{
         filter::{ChannelFilters, FilterPattern, PacketFilter},
         types::{MaxMsgNum, MaxTxSize, Memo},
-        {default, AddressType, ChainConfig, GasPrice},
+        {default, AddressType, ChainConfig, GasPrice}, gas_multiplier::GasMultiplier,
     },
     keyring::Store,
 };
@@ -113,7 +113,7 @@ where
         default_gas: Some(100000),
         max_gas: Some(400000),
         gas_adjustment: None,
-        gas_multiplier: Some(1.1),
+        gas_multiplier: Some(GasMultiplier::new(1.1).unwrap()),
         fee_granter: None,
         max_msg_num: MaxMsgNum::default(),
         max_tx_size: MaxTxSize::default(),
