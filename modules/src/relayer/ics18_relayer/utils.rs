@@ -1,5 +1,5 @@
-use crate::core::ics02_client::header::{AnyHeader, Header};
-use crate::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
+use crate::core::ics02_client::header::Header;
+use crate::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use crate::core::ics02_client::msgs::ClientMsg;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::relayer::ics18_relayer::context::Ics18Context;
@@ -10,7 +10,7 @@ use crate::relayer::ics18_relayer::error::Error;
 pub fn build_client_update_datagram<Ctx>(
     dest: &Ctx,
     client_id: &ClientId,
-    src_header: AnyHeader,
+    src_header: &dyn Header,
 ) -> Result<ClientMsg, Error>
 where
     Ctx: Ics18Context,
@@ -40,9 +40,9 @@ where
     };
 
     // Client on destination chain can be updated.
-    Ok(ClientMsg::UpdateClient(MsgUpdateAnyClient {
+    Ok(ClientMsg::UpdateClient(MsgUpdateClient {
         client_id: client_id.clone(),
-        header: src_header,
+        header: src_header.clone_into(),
         signer: dest.signer(),
     }))
 }
@@ -50,15 +50,16 @@ where
 #[cfg(test)]
 mod tests {
     use crate::core::ics02_client::client_type::ClientType;
-    use crate::core::ics02_client::header::{AnyHeader, Header};
+    use crate::core::ics02_client::header::{downcast_header, Header};
     use crate::core::ics24_host::identifier::{ChainId, ClientId};
     use crate::core::ics26_routing::msgs::Ics26Envelope;
     use crate::mock::context::MockContext;
-    use crate::mock::host::HostType;
+    use crate::mock::host::{HostBlock, HostType};
     use crate::prelude::*;
     use crate::relayer::ics18_relayer::context::Ics18Context;
     use crate::relayer::ics18_relayer::utils::build_client_update_datagram;
     use crate::Height;
+
     use test_log::test;
     use tracing::debug;
 
@@ -115,7 +116,7 @@ mod tests {
             );
 
             let client_msg_b_res =
-                build_client_update_datagram(&ctx_b, &client_on_b_for_a, a_latest_header);
+                build_client_update_datagram(&ctx_b, &client_on_b_for_a, a_latest_header.as_ref());
 
             assert!(
                 client_msg_b_res.is_ok(),
@@ -152,15 +153,12 @@ mod tests {
             // Update client on chain B to latest height of B.
             // - create the client update message with the latest header from B
             // The test uses LightClientBlock that does not store the trusted height
-            let b_latest_header = match ctx_b.query_latest_header().unwrap() {
-                AnyHeader::Tendermint(header) => {
-                    let th = header.height();
-                    let mut hheader = header.clone();
-                    hheader.trusted_height = th.decrement().unwrap();
-                    hheader.wrap_any()
-                }
-                AnyHeader::Mock(header) => header.wrap_any(),
-            };
+            let b_latest_header = ctx_b.query_latest_header().unwrap();
+            let b_latest_header: &HostBlock = downcast_header(b_latest_header.as_ref()).unwrap();
+            let mut b_latest_header = b_latest_header.clone();
+
+            let th = b_latest_header.height();
+            b_latest_header.set_trusted_height(th.decrement().unwrap());
 
             assert_eq!(
                 b_latest_header.client_type(),
@@ -170,8 +168,11 @@ mod tests {
                 ClientType::Tendermint
             );
 
-            let client_msg_a_res =
-                build_client_update_datagram(&ctx_a, &client_on_a_for_b, b_latest_header);
+            let client_msg_a_res = build_client_update_datagram(
+                &ctx_a,
+                &client_on_a_for_b,
+                b_latest_header.into_box().as_ref(),
+            );
 
             assert!(
                 client_msg_a_res.is_ok(),

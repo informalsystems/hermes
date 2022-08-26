@@ -1,9 +1,9 @@
 use crate::prelude::*;
 
+use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
-use tendermint_proto::Protobuf;
+use ibc_proto::protobuf::Protobuf;
 
-use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics03_connection::error::Error;
 use crate::core::ics03_connection::version::Version;
 use crate::core::ics23_commitment::commitment::CommitmentProofBytes;
@@ -20,7 +20,7 @@ pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenAck";
 pub struct MsgConnectionOpenAck {
     pub connection_id: ConnectionId,
     pub counterparty_connection_id: ConnectionId,
-    pub client_state: Option<AnyClientState>,
+    pub client_state: Option<Any>,
     pub proofs: Proofs,
     pub version: Version,
     pub signer: Signer,
@@ -82,11 +82,7 @@ impl TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck {
                 .counterparty_connection_id
                 .parse()
                 .map_err(Error::invalid_identifier)?,
-            client_state: msg
-                .client_state
-                .map(AnyClientState::try_from)
-                .transpose()
-                .map_err(Error::ics02_client)?,
+            client_state: msg.client_state,
             version: msg.version.ok_or_else(Error::empty_versions)?.try_into()?,
             proofs: Proofs::new(
                 msg.proof_try.try_into().map_err(Error::invalid_proof)?,
@@ -106,9 +102,7 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
         RawMsgConnectionOpenAck {
             connection_id: ics_msg.connection_id.as_str().to_string(),
             counterparty_connection_id: ics_msg.counterparty_connection_id.as_str().to_string(),
-            client_state: ics_msg
-                .client_state
-                .map_or_else(|| None, |v| Some(v.into())),
+            client_state: ics_msg.client_state,
             proof_height: Some(ics_msg.proofs.height().into()),
             proof_try: ics_msg.proofs.object_proof().clone().into(),
             proof_client: ics_msg

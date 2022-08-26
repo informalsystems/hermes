@@ -3,7 +3,7 @@ use crate::prelude::*;
 use core::time::Duration;
 
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
-use tendermint_proto::Protobuf;
+use ibc_proto::protobuf::Protobuf;
 
 use crate::core::ics03_connection::connection::Counterparty;
 use crate::core::ics03_connection::error::Error;
