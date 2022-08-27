@@ -8,6 +8,7 @@ use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::{Error, ErrorDetail};
 use crate::core::ics02_client::handler::ClientResult::{self, Create, Update, Upgrade};
+use crate::core::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::timestamp::Timestamp;
 use crate::Height;
@@ -64,7 +65,8 @@ pub trait ClientReader {
     fn host_timestamp(&self) -> Timestamp;
 
     /// Returns the `ConsensusState` of the host (local) chain at a specific height.
-    fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Error>;
+    /// If this is fetched from a proof whose origin is off-chain, it should ideally be verified first.
+    fn host_consensus_state(&self, height: Height, proof: &CommitmentProofBytes) -> Result<AnyConsensusState, Error>;
 
     /// Returns a natural number, counting how many clients have been created thus far.
     /// The value of this counter should increase only via method `ClientKeeper::increase_client_counter`.

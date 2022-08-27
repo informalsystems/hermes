@@ -208,7 +208,7 @@ pub fn verify_consensus_proof<HostFunctions: HostFunctionsProvider>(
 
     // Fetch the expected consensus state from the historical (local) header data.
     let expected_consensus = ctx
-        .host_consensus_state(proof.height())
+        .host_consensus_state(proof.height(), proof.proof())
         .map_err(|e| Error::consensus_state_verification_failure(proof.height(), e))?;
 
     let consensus_state = ctx
