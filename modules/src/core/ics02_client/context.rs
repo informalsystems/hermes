@@ -8,10 +8,11 @@ use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::{Error, ErrorDetail};
 use crate::core::ics02_client::handler::ClientResult::{self, Create, Update, Upgrade};
-use crate::core::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::timestamp::Timestamp;
 use crate::Height;
+use sp_std::vec::Vec;
+
 
 /// Defines the read-only part of ICS2 (client functions) context.
 pub trait ClientReader {
