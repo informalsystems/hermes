@@ -394,57 +394,56 @@ mod tests {
 
     #[test]
     fn batch_does_not_exceed_max_tx_size() {
-        const MAX_TX_SIZE: usize = 216;
-
         let (config, key_entry, account) = test_fixture();
-        let messages = vec![
-            Any {
-                type_url: "/example.Foo".into(),
-                value: vec![0; 6],
-            },
-            Any {
-                type_url: "/example.Bar".into(),
-                value: vec![0; 4],
-            },
-            Any {
-                type_url: "/example.Baz".into(),
-                value: vec![0; 2],
-            },
-        ];
-        let memo = Memo::new("").unwrap();
-        let batches = batch_messages(
-            &config,
-            MaxMsgNum::default(),
-            MaxTxSize::new(MAX_TX_SIZE).unwrap(),
-            &key_entry,
-            &account,
-            &memo,
-            messages,
-        )
-        .unwrap();
-
         let max_fee = gas_amount_to_fee(&config.gas_config, config.gas_config.max_gas);
+        let mut messages = vec![Any {
+            type_url: "/example.Baz".into(),
+            value: vec![0; 2],
+        }];
+        let memo = Memo::new("").unwrap();
+        for n in 0..100 {
+            messages.insert(
+                messages.len() - 1,
+                Any {
+                    type_url: "/example.Foo".into(),
+                    value: vec![0; n],
+                },
+            );
+            let expected_batch_len = messages.len() - 1;
+            let tx_bytes = sign_and_encode_tx(
+                &config,
+                &key_entry,
+                &account,
+                &memo,
+                &messages[..expected_batch_len],
+                &max_fee,
+            )
+            .unwrap();
+            let max_tx_size = MaxTxSize::new(tx_bytes.len()).unwrap();
 
-        assert_eq!(batches.len(), 2);
-        assert_eq!(batches[0].len(), 2);
-        assert_eq!(batches[0][0].type_url, "/example.Foo");
-        assert_eq!(batches[0][0].value.len(), 6);
-        assert_eq!(batches[0][1].type_url, "/example.Bar");
-        assert_eq!(batches[0][1].value.len(), 4);
+            let batches = batch_messages(
+                &config,
+                MaxMsgNum::new(100).unwrap(),
+                max_tx_size,
+                &key_entry,
+                &account,
+                &memo,
+                messages.clone(),
+            )
+            .unwrap();
 
-        let tx_bytes =
-            sign_and_encode_tx(&config, &key_entry, &account, &memo, &batches[0], &max_fee)
-                .unwrap();
-        assert_eq!(tx_bytes.len(), MAX_TX_SIZE);
+            assert_eq!(batches.len(), 2);
+            assert_eq!(batches[0].len(), expected_batch_len);
 
-        assert_eq!(batches[1].len(), 1);
-        assert_eq!(batches[1][0].type_url, "/example.Baz");
-        assert_eq!(batches[1][0].value.len(), 2);
+            let tx_bytes =
+                sign_and_encode_tx(&config, &key_entry, &account, &memo, &batches[0], &max_fee)
+                    .unwrap();
+            assert_eq!(tx_bytes.len(), max_tx_size.to_usize());
 
-        let tx_bytes =
-            sign_and_encode_tx(&config, &key_entry, &account, &memo, &batches[1], &max_fee)
-                .unwrap();
-        assert!(tx_bytes.len() <= MAX_TX_SIZE);
+            assert_eq!(batches[1].len(), 1);
+            assert_eq!(batches[1][0].type_url, "/example.Baz");
+            assert_eq!(batches[1][0].value.len(), 2);
+        }
     }
 
     #[test]
