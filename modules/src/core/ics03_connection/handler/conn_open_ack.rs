@@ -5,7 +5,8 @@ use crate::core::ics03_connection::connection::{ConnectionEnd, Counterparty, Sta
 use crate::core::ics03_connection::error::Error;
 use crate::core::ics03_connection::events::Attributes;
 use crate::core::ics03_connection::handler::verify::{
-    check_client_consensus_height, verify_proofs,
+    check_client_consensus_height, verify_client_proof, verify_connection_proof,
+    verify_consensus_proof,
 };
 use crate::core::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
 use crate::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
@@ -67,15 +68,40 @@ pub(crate) fn process<HostFunctions: HostFunctionsProvider>(
         )
     };
 
-    // 2. Pass the details to the verification function.
-    verify_proofs::<HostFunctions>(
+    let client_state = msg.client_state.ok_or_else(|| {
+        Error::implementation_specific("client state is required in connOpenTry".into())
+    })?;
+
+    let client_proof = msg.proofs.client_proof().as_ref().ok_or_else(|| {
+        Error::implementation_specific("client proof is required in connOpenTry".into())
+    })?;
+
+    let consensus_proof = msg.proofs.consensus_proof().ok_or_else(|| {
+        Error::implementation_specific("consensus proof is required in connOpenTry".into())
+    })?;
+
+    ctx.validate_self_client(&client_state)
+        .map_err(Error::ics02_client)?;
+
+    verify_connection_proof::<HostFunctions>(
         ctx,
-        msg.client_state.clone(),
         msg.proofs.height(),
         &conn_end,
         &expected_conn,
-        &msg.proofs,
+        msg.proofs.height(),
+        msg.proofs.object_proof(),
     )?;
+
+    verify_client_proof::<HostFunctions>(
+        ctx,
+        msg.proofs.height(),
+        &conn_end,
+        client_state,
+        msg.proofs.height(),
+        client_proof,
+    )?;
+
+    verify_consensus_proof::<HostFunctions>(ctx, msg.proofs.height(), &conn_end, &consensus_proof)?;
 
     output.log("success: connection verification passed");
 

@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use crate::clients::host_functions::HostFunctionsProvider;
-use crate::core::ics02_client::context::ClientReader;
+use crate::core::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::core::ics03_connection::context::ConnectionReader;
 use crate::prelude::*;
 use sp_core::keccak_256;
@@ -17,6 +17,7 @@ use crate::applications::transfer::context::{BankKeeper, Ics20Context, Ics20Keep
 use crate::applications::transfer::{error::Error as Ics20Error, PrefixedCoin};
 use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_state::AnyClientState;
+use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics03_connection::error::Error as Ics03Error;
 use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order};
@@ -416,7 +417,11 @@ impl ClientReader for DummyTransferModule {
         Height::zero()
     }
 
-    fn host_consensus_state(&self, _height: Height, _proof: &CommitmentProofBytes) -> Result<AnyConsensusState, Ics02Error> {
+    fn host_consensus_state(
+        &self,
+        _height: Height,
+        _proof: Option<Vec<u8>>,
+    ) -> Result<AnyConsensusState, Ics02Error> {
         unimplemented!()
     }
 
@@ -440,10 +445,7 @@ impl ClientReader for DummyTransferModule {
         }
     }
 
-    fn client_type(
-        &self,
-        _client_id: &ClientId,
-    ) -> Result<crate::core::ics02_client::client_type::ClientType, Ics02Error> {
+    fn client_type(&self, _client_id: &ClientId) -> Result<ClientType, Ics02Error> {
         todo!()
     }
 
@@ -469,6 +471,10 @@ impl ClientReader for DummyTransferModule {
 
     fn client_counter(&self) -> Result<u64, Ics02Error> {
         todo!()
+    }
+
+    fn host_client_type(&self) -> ClientType {
+        ClientType::Tendermint
     }
 }
 
@@ -560,6 +566,59 @@ impl ChannelReader for DummyTransferModule {
 
     fn max_expected_time_per_block(&self) -> Duration {
         unimplemented!()
+    }
+}
+
+impl ClientKeeper for DummyTransferModule {
+    fn store_client_type(
+        &mut self,
+        _client_id: ClientId,
+        _client_type: ClientType,
+    ) -> Result<(), Ics02Error> {
+        todo!()
+    }
+
+    fn store_client_state(
+        &mut self,
+        _client_id: ClientId,
+        _client_state: AnyClientState,
+    ) -> Result<(), Ics02Error> {
+        todo!()
+    }
+
+    fn store_consensus_state(
+        &mut self,
+        _client_id: ClientId,
+        _height: Height,
+        _consensus_state: AnyConsensusState,
+    ) -> Result<(), Ics02Error> {
+        todo!()
+    }
+
+    fn increase_client_counter(&mut self) {
+        todo!()
+    }
+
+    fn store_update_time(
+        &mut self,
+        _client_id: ClientId,
+        _height: Height,
+        _timestamp: Timestamp,
+    ) -> Result<(), Ics02Error> {
+        todo!()
+    }
+
+    fn store_update_height(
+        &mut self,
+        _client_id: ClientId,
+        _height: Height,
+        _host_height: Height,
+    ) -> Result<(), Ics02Error> {
+        Ok(())
+    }
+
+    fn validate_self_client(&self, _client_state: &AnyClientState) -> Result<(), Ics02Error> {
+        Ok(())
     }
 }
 

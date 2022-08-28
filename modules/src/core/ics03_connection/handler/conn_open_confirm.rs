@@ -4,7 +4,7 @@ use crate::clients::host_functions::HostFunctionsProvider;
 use crate::core::ics03_connection::connection::{ConnectionEnd, Counterparty, State};
 use crate::core::ics03_connection::error::Error;
 use crate::core::ics03_connection::events::Attributes;
-use crate::core::ics03_connection::handler::verify::verify_proofs;
+use crate::core::ics03_connection::handler::verify::verify_connection_proof;
 use crate::core::ics03_connection::handler::{ConnectionIdState, ConnectionResult};
 use crate::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
 use crate::core::ics26_routing::context::ReaderContext;
@@ -41,13 +41,13 @@ pub(crate) fn process<HostFunctions: HostFunctionsProvider>(
     );
 
     // 2. Pass the details to the verification function.
-    verify_proofs::<HostFunctions>(
+    verify_connection_proof::<HostFunctions>(
         ctx,
-        None,
         msg.proofs.height(),
         &conn_end,
         &expected_conn,
-        &msg.proofs,
+        msg.proofs.height(),
+        msg.proofs.object_proof(),
     )?;
 
     output.log("success: connection verification passed");

@@ -55,6 +55,13 @@ pub struct CommitmentProofBytes {
     bytes: Vec<u8>,
 }
 
+impl CommitmentProofBytes {
+    /// Get proof bytes
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+}
+
 impl fmt::Debug for CommitmentProofBytes {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let hex = Hex::upper_case().encode_to_string(&self.bytes).unwrap();

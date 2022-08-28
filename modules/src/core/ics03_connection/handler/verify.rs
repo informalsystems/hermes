@@ -1,97 +1,23 @@
 //! ICS3 verification functions, common across all four handlers of ICS3.
 use crate::clients::host_functions::HostFunctionsProvider;
+#[cfg(feature = "ics11_beefy")]
 use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
+use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics03_connection::error::Error;
 use crate::core::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::core::ics26_routing::context::ReaderContext;
-use crate::proofs::{ConsensusProof, Proofs};
+use crate::proofs::ConsensusProof;
 use crate::Height;
+use codec::{Decode, Encode};
 
-#[cfg(not(feature = "skip_host_consensus_verification"))]
-/// Entry point for verifying all proofs bundled in any ICS3 message.
-pub fn verify_proofs<HostFunctions: HostFunctionsProvider>(
-    ctx: &dyn ReaderContext,
-    client_state: Option<AnyClientState>,
-    height: Height,
-    connection_end: &ConnectionEnd,
-    expected_conn: &ConnectionEnd,
-    proofs: &Proofs,
-) -> Result<(), Error> {
-    verify_connection_proof::<HostFunctions>(
-        ctx,
-        height,
-        connection_end,
-        expected_conn,
-        proofs.height(),
-        proofs.object_proof(),
-    )?;
-
-    // If the message includes a client state, then verify the proof for that state.
-    if let Some(expected_client_state) = client_state {
-        verify_client_proof::<HostFunctions>(
-            ctx,
-            height,
-            connection_end,
-            expected_client_state,
-            proofs.height(),
-            proofs
-                .client_proof()
-                .as_ref()
-                .ok_or_else(Error::null_client_proof)?,
-        )?;
-    }
-
-    // If a consensus proof is attached to the message, then verify it.
-    if let Some(proof) = proofs.consensus_proof() {
-        Ok(verify_consensus_proof::<HostFunctions>(
-            ctx,
-            height,
-            connection_end,
-            &proof,
-        )?)
-    } else {
-        Ok(())
-    }
-}
-
-#[cfg(feature = "skip_host_consensus_verification")]
-/// Entry point for verifying all proofs bundled in any ICS3 message.
-pub fn verify_proofs<HostFunctions: HostFunctionsProvider>(
-    ctx: &dyn ReaderContext,
-    client_state: Option<AnyClientState>,
-    height: Height,
-    connection_end: &ConnectionEnd,
-    expected_conn: &ConnectionEnd,
-    proofs: &Proofs,
-) -> Result<(), Error> {
-    verify_connection_proof::<HostFunctions>(
-        ctx,
-        height,
-        connection_end,
-        expected_conn,
-        proofs.height(),
-        proofs.object_proof(),
-    )?;
-
-    // If the message includes a client state, then verify the proof for that state.
-    if let Some(expected_client_state) = client_state {
-        verify_client_proof::<HostFunctions>(
-            ctx,
-            height,
-            connection_end,
-            expected_client_state,
-            proofs.height(),
-            proofs
-                .client_proof()
-                .as_ref()
-                .ok_or_else(Error::null_client_proof)?,
-        )?;
-    }
-
-    Ok(())
+/// Connection proof type, used in relayer
+#[derive(Encode, Decode)]
+pub struct ConnectionProof {
+    pub host_proof: Vec<u8>,
+    pub connection_proof: Vec<u8>,
 }
 
 /// Verifies the authenticity and semantic correctness of a commitment `proof`. The commitment
@@ -206,16 +132,37 @@ pub fn verify_consensus_proof<HostFunctions: HostFunctionsProvider>(
         return Err(Error::frozen_client(connection_end.client_id().clone()));
     }
 
-    // Fetch the expected consensus state from the historical (local) header data.
-    let expected_consensus = ctx
-        .host_consensus_state(proof.height(), proof.proof())
-        .map_err(|e| Error::consensus_state_verification_failure(proof.height(), e))?;
-
     let consensus_state = ctx
         .consensus_state(connection_end.client_id(), height)
         .map_err(|e| Error::consensus_state_verification_failure(height, e))?;
 
     let client = AnyClient::<HostFunctions>::from_client_type(client_state.client_type());
+
+    let (consensus_proof, expected_consensus) = match ctx.host_client_type() {
+        #[cfg(feature = "ics11_beefy")]
+        ClientType::Beefy => {
+            // if the host is beefy or near, we need to decode the proof before passing it on.
+            let connection_proof: ConnectionProof =
+                codec::Decode::decode(&mut proof.proof().as_bytes()).map_err(|e| {
+                    Error::implementation_specific(format!("failed to decode: {:?}", e))
+                })?;
+            // Fetch the expected consensus state from the historical (local) header data.
+            let expected_consensus = ctx
+                .host_consensus_state(proof.height(), Some(connection_proof.host_proof))
+                .map_err(|e| Error::consensus_state_verification_failure(proof.height(), e))?;
+            (
+                CommitmentProofBytes::try_from(connection_proof.connection_proof).map_err(|e| {
+                    Error::implementation_specific(format!("empty proof bytes: {:?}", e))
+                })?,
+                expected_consensus,
+            )
+        }
+        _ => (
+            proof.proof().clone(),
+            ctx.host_consensus_state(proof.height(), None)
+                .map_err(|e| Error::consensus_state_verification_failure(proof.height(), e))?,
+        ),
+    };
 
     client
         .verify_client_consensus_state(
@@ -223,13 +170,15 @@ pub fn verify_consensus_proof<HostFunctions: HostFunctionsProvider>(
             &client_state,
             height,
             connection_end.counterparty().prefix(),
-            proof.proof(),
+            &consensus_proof,
             consensus_state.root(),
             connection_end.counterparty().client_id(),
             proof.height(),
             &expected_consensus,
         )
-        .map_err(|e| Error::consensus_state_verification_failure(proof.height(), e))
+        .map_err(|e| Error::consensus_state_verification_failure(proof.height(), e))?;
+
+    Ok(())
 }
 
 /// Checks that `claimed_height` is within normal bounds, i.e., fresh enough so that the chain has
