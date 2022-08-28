@@ -9,7 +9,6 @@ use ibc_relayer::{
     config::{ChainConfig, Config},
     keyring::{KeyEntry, KeyRing, Store},
 };
-
 use crate::conclude::Output;
 use crate::{application::app_config, conclude::json};
 
@@ -70,7 +69,7 @@ pub struct KeysListOptions {
 
 pub fn list_keys(
     config: ChainConfig,
-) -> Result<Vec<(String, KeyEntry)>, Box<dyn std::error::Error>> {
+) -> eyre::Result<Vec<(String, KeyEntry)>> {
     let keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
     let keys = keyring.keys()?;
     Ok(keys)

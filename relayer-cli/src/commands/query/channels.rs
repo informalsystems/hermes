@@ -13,6 +13,7 @@ use ibc_relayer::chain::requests::{
     QueryConnectionRequest, QueryHeight,
 };
 use ibc_relayer::registry::Registry;
+use eyre::eyre;
 
 use crate::commands::query::channel_ends::ChannelEnds;
 use crate::conclude::Output;
@@ -51,7 +52,7 @@ pub struct QueryChannelsCmd {
 
 fn run_query_channels<Chain: ChainHandle>(
     cmd: &QueryChannelsCmd,
-) -> Result<QueryChannelsOutput, Box<dyn std::error::Error>> {
+) -> eyre::Result<QueryChannelsOutput> {
     debug!("Options: {:?}", cmd);
 
     let mut output = match (cmd.verbose, cmd.show_counterparty) {
@@ -78,18 +79,17 @@ fn run_query_channels<Chain: ChainHandle>(
         let channel_end = identified_channel.channel_end;
 
         if channel_end.state_matches(&State::Uninitialized) {
-            return Err(format!(
+            return Err(eyre!(
                 "{}/{} on chain {} @ {:?} is uninitialized",
                 port_id, channel_id, chain_id, chain_height
-            )
-            .into());
+            ));
         }
 
         let connection_id = channel_end
             .connection_hops
             .first()
             .ok_or_else(|| {
-                format!(
+                eyre!(
                     "missing connection_hops for {}/{} on chain {} @ {:?}",
                     port_id, channel_id, chain_id, chain_height
                 )
@@ -183,7 +183,7 @@ fn query_channel_ends<Chain: ChainHandle>(
     port_id: PortId,
     channel_id: ChannelId,
     chain_height_query: QueryHeight,
-) -> Result<ChannelEnds, Box<dyn std::error::Error>> {
+) -> eyre::Result<ChannelEnds> {
     let (connection_end, _) = chain.query_connection(
         QueryConnectionRequest {
             connection_id: connection_id.clone(),
@@ -206,7 +206,7 @@ fn query_channel_ends<Chain: ChainHandle>(
     let counterparty_client_id = connection_counterparty.client_id().clone();
 
     let counterparty_connection_id = connection_counterparty.connection_id.ok_or_else(|| {
-        format!(
+        eyre!(
             "connection end for {} on chain {} @ {:?} does not have counterparty connection id: {:?}",
             connection_id,
             chain_id,
@@ -218,7 +218,7 @@ fn query_channel_ends<Chain: ChainHandle>(
     let counterparty_port_id = channel_counterparty.port_id().clone();
 
     let counterparty_channel_id = channel_counterparty.channel_id.ok_or_else(|| {
-        format!(
+        eyre!(
             "channel end for {}/{} on chain {} @ {:?} does not have counterparty channel id: {:?}",
             port_id, channel_id, chain_id, chain_height_query, channel_end
         )

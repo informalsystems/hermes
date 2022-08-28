@@ -13,6 +13,7 @@ use ibc_relayer::{
     keyring::{HDPath, KeyEntry, KeyRing, Store},
 };
 use tracing::warn;
+use eyre::eyre;
 
 use crate::application::app_config;
 use crate::conclude::Output;
@@ -89,10 +90,10 @@ pub struct KeysAddCmd {
 }
 
 impl KeysAddCmd {
-    fn options(&self, config: &Config) -> Result<KeysAddOptions, Box<dyn std::error::Error>> {
+    fn options(&self, config: &Config) -> eyre::Result<KeysAddOptions> {
         let chain_config = config
             .find_chain(&self.chain_id)
-            .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
+            .ok_or_else(|| eyre!("chain '{}' not found in configuration file", self.chain_id))?;
 
         let name = self
             .key_name
@@ -100,7 +101,7 @@ impl KeysAddCmd {
             .unwrap_or_else(|| chain_config.key_name.clone());
 
         let hd_path = HDPath::from_str(&self.hd_path)
-            .map_err(|_| format!("invalid derivation path: {}", self.hd_path))?;
+            .map_err(|_| eyre!("invalid derivation path: {}", self.hd_path))?;
 
         Ok(KeysAddOptions {
             config: chain_config.clone(),
@@ -188,12 +189,12 @@ pub fn add_key(
     file: &Path,
     hd_path: &HDPath,
     overwrite: bool,
-) -> Result<KeyEntry, Box<dyn std::error::Error>> {
+) -> eyre::Result<KeyEntry> {
     let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
 
     check_key_exists(&keyring, key_name, overwrite);
 
-    let key_contents = fs::read_to_string(file).map_err(|_| "error reading the key file")?;
+    let key_contents = fs::read_to_string(file).map_err(|_| eyre!("error reading the key file"))?;
     let key = keyring.key_from_seed_file(&key_contents, hd_path)?;
 
     keyring.add_key(key_name, key.clone())?;
@@ -206,9 +207,9 @@ pub fn restore_key(
     hdpath: &HDPath,
     config: &ChainConfig,
     overwrite: bool,
-) -> Result<KeyEntry, Box<dyn std::error::Error>> {
+) -> eyre::Result<KeyEntry> {
     let mnemonic_content =
-        fs::read_to_string(mnemonic).map_err(|_| "error reading the mnemonic file")?;
+        fs::read_to_string(mnemonic).map_err(|_| eyre!("error reading the mnemonic file"))?;
 
     let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
 

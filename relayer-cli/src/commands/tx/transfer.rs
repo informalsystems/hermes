@@ -18,6 +18,7 @@ use ibc_relayer::{
     config::Config,
     transfer::{build_and_send_transfer_messages, TransferOptions},
 };
+use eyre::eyre;
 
 use crate::cli_utils::ChainHandlePair;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
@@ -139,16 +140,16 @@ impl TxIcs20MsgTransferCmd {
     fn validate_options(
         &self,
         config: &Config,
-    ) -> Result<TransferOptions, Box<dyn std::error::Error>> {
+    ) -> eyre::Result<TransferOptions> {
         config.find_chain(&self.src_chain_id).ok_or_else(|| {
-            format!(
+            eyre!(
                 "missing configuration for source chain '{}'",
                 self.src_chain_id
             )
         })?;
 
         config.find_chain(&self.dst_chain_id).ok_or_else(|| {
-            format!(
+            eyre!(
                 "missing configuration for destination chain '{}'",
                 self.dst_chain_id
             )
@@ -158,7 +159,7 @@ impl TxIcs20MsgTransferCmd {
 
         let number_msgs = self.number_msgs.unwrap_or(1);
         if number_msgs == 0 {
-            return Err("number of messages should be greater than zero".into());
+            return Err(eyre!("number of messages should be greater than zero"));
         }
 
         let opts = TransferOptions {

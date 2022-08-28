@@ -14,6 +14,7 @@ use ibc_relayer::chain::requests::{
 };
 use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer::registry::Registry;
+use eyre::eyre;
 
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
@@ -87,7 +88,7 @@ pub struct ChannelEndsSummary {
     counterparty_port_id: PortId,
 }
 
-fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn std::error::Error>> {
+fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> eyre::Result<()> {
     debug!("Options: {:?}", cmd);
 
     let config = app_config();
@@ -118,18 +119,17 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
         IncludeProof::No,
     )?;
     if channel_end.state_matches(&State::Uninitialized) {
-        return Err(format!(
+        return Err(eyre!(
             "{}/{} on chain {} @ {:?} is uninitialized",
             port_id, channel_id, chain_id, chain_height
-        )
-        .into());
+        ));
     }
 
     let connection_id = channel_end
         .connection_hops
         .first()
         .ok_or_else(|| {
-            format!(
+            eyre!(
                 "missing connection_hops for {}/{} on chain {} @ {:?}",
                 port_id, channel_id, chain_id, chain_height
             )
@@ -160,7 +160,7 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
     let counterparty_client_id = connection_counterparty.client_id().clone();
 
     let counterparty_connection_id = connection_counterparty.connection_id.ok_or_else(|| {
-        format!(
+        eyre!(
             "connection end for {} on chain {} @ {:?} does not have counterparty connection id: {:?}",
             connection_id,
             chain_id,
@@ -172,7 +172,7 @@ fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> Result<(), Box<dyn s
     let counterparty_port_id = channel_counterparty.port_id().clone();
 
     let counterparty_channel_id = channel_counterparty.channel_id.ok_or_else(|| {
-        format!(
+        eyre!(
             "channel end for {}/{} on chain {} @ {:?} does not have counterparty channel id: {:?}",
             port_id, channel_id, chain_id, chain_height, channel_end
         )

@@ -14,6 +14,7 @@ use ibc_relayer::{
     config::ChainConfig,
     event::monitor::{EventMonitor, EventReceiver},
 };
+use eyre::eyre;
 
 use crate::prelude::*;
 
@@ -71,12 +72,12 @@ pub struct ListenCmd {
 }
 
 impl ListenCmd {
-    fn cmd(&self) -> Result<(), Box<dyn std::error::Error>> {
+    fn cmd(&self) -> eyre::Result<()> {
         let config = app_config();
 
         let chain_config = config
             .find_chain(&self.chain_id)
-            .ok_or_else(|| format!("chain '{}' not found in configuration", self.chain_id))?;
+            .ok_or_else(|| eyre!("chain '{}' not found in configuration", self.chain_id))?;
 
         let events = if self.events.is_empty() {
             &[EventFilter::Tx, EventFilter::NewBlock]
@@ -99,7 +100,7 @@ impl Runnable for ListenCmd {
 pub fn listen(
     config: &ChainConfig,
     filters: &[EventFilter],
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> eyre::Result<()> {
     let rt = Arc::new(TokioRuntime::new()?);
     let (event_monitor, rx) = subscribe(config, rt)?;
 
@@ -146,17 +147,17 @@ fn event_match(event: &IbcEvent, filters: &[EventFilter]) -> bool {
 fn subscribe(
     chain_config: &ChainConfig,
     rt: Arc<TokioRuntime>,
-) -> Result<(EventMonitor, EventReceiver), Box<dyn std::error::Error>> {
+) -> eyre::Result<(EventMonitor, EventReceiver)> {
     let (mut event_monitor, rx, _) = EventMonitor::new(
         chain_config.id.clone(),
         chain_config.websocket_addr.clone(),
         rt,
     )
-    .map_err(|e| format!("could not initialize event monitor: {}", e))?;
+    .map_err(|e| eyre!("could not initialize event monitor: {}", e))?;
 
     event_monitor
         .subscribe()
-        .map_err(|e| format!("could not initialize subscriptions: {}", e))?;
+        .map_err(|e| eyre!("could not initialize subscriptions: {}", e))?;
 
     Ok((event_monitor, rx))
 }
