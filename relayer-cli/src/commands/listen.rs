@@ -10,11 +10,11 @@ use tracing::{error, info};
 
 use ibc::{core::ics24_host::identifier::ChainId, events::IbcEvent};
 
+use eyre::eyre;
 use ibc_relayer::{
     config::ChainConfig,
     event::monitor::{EventMonitor, EventReceiver},
 };
-use eyre::eyre;
 
 use crate::prelude::*;
 
@@ -97,10 +97,7 @@ impl Runnable for ListenCmd {
 }
 
 /// Listen to events
-pub fn listen(
-    config: &ChainConfig,
-    filters: &[EventFilter],
-) -> eyre::Result<()> {
+pub fn listen(config: &ChainConfig, filters: &[EventFilter]) -> eyre::Result<()> {
     let rt = Arc::new(TokioRuntime::new()?);
     let (event_monitor, rx) = subscribe(config, rt)?;
 

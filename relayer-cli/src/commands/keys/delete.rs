@@ -1,12 +1,12 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
+use eyre::eyre;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::{
     config::{ChainConfig, Config},
     keyring::{KeyRing, Store},
 };
-use eyre::eyre;
 
 use crate::application::app_config;
 use crate::conclude::Output;
@@ -48,10 +48,7 @@ pub struct KeysDeleteCmd {
 }
 
 impl KeysDeleteCmd {
-    fn options(
-        &self,
-        config: &Config,
-    ) -> eyre::Result<KeysDeleteOptions<'_>> {
+    fn options(&self, config: &Config) -> eyre::Result<KeysDeleteOptions<'_>> {
         let chain_config = config
             .find_chain(&self.chain_id)
             .ok_or_else(|| eyre!("chain '{}' not found in configuration file", self.chain_id))?;

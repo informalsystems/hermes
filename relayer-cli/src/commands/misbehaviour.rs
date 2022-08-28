@@ -12,8 +12,8 @@ use std::ops::Deref;
 use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic};
 use crate::conclude::Output;
 use crate::prelude::*;
-use ibc::core::ics02_client::client_state::ClientState;
 use eyre::eyre;
+use ibc::core::ics02_client::client_state::ClientState;
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct MisbehaviourCmd {

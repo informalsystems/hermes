@@ -7,13 +7,13 @@ use std::{
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
+use eyre::eyre;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::{
     config::{ChainConfig, Config},
     keyring::{HDPath, KeyEntry, KeyRing, Store},
 };
 use tracing::warn;
-use eyre::eyre;
 
 use crate::application::app_config;
 use crate::conclude::Output;

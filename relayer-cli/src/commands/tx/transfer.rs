@@ -2,6 +2,7 @@ use abscissa_core::clap::Parser;
 use abscissa_core::{config::Override, Command, FrameworkErrorKind, Runnable};
 
 use core::time::Duration;
+use eyre::eyre;
 use ibc::{
     applications::transfer::Amount,
     core::{
@@ -18,7 +19,6 @@ use ibc_relayer::{
     config::Config,
     transfer::{build_and_send_transfer_messages, TransferOptions},
 };
-use eyre::eyre;
 
 use crate::cli_utils::ChainHandlePair;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
@@ -137,10 +137,7 @@ impl Override<Config> for TxIcs20MsgTransferCmd {
 }
 
 impl TxIcs20MsgTransferCmd {
-    fn validate_options(
-        &self,
-        config: &Config,
-    ) -> eyre::Result<TransferOptions> {
+    fn validate_options(&self, config: &Config) -> eyre::Result<TransferOptions> {
         config.find_chain(&self.src_chain_id).ok_or_else(|| {
             eyre!(
                 "missing configuration for source chain '{}'",

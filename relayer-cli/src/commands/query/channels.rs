@@ -4,6 +4,7 @@ use abscissa_core::clap::Parser;
 use abscissa_core::Runnable;
 use serde::Serialize;
 
+use eyre::eyre;
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics04_channel::channel::{ChannelEnd, State};
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId};
@@ -13,7 +14,6 @@ use ibc_relayer::chain::requests::{
     QueryConnectionRequest, QueryHeight,
 };
 use ibc_relayer::registry::Registry;
-use eyre::eyre;
 
 use crate::commands::query::channel_ends::ChannelEnds;
 use crate::conclude::Output;
@@ -81,7 +81,10 @@ fn run_query_channels<Chain: ChainHandle>(
         if channel_end.state_matches(&State::Uninitialized) {
             return Err(eyre!(
                 "{}/{} on chain {} @ {:?} is uninitialized",
-                port_id, channel_id, chain_id, chain_height
+                port_id,
+                channel_id,
+                chain_id,
+                chain_height
             ));
         }
 
@@ -91,7 +94,10 @@ fn run_query_channels<Chain: ChainHandle>(
             .ok_or_else(|| {
                 eyre!(
                     "missing connection_hops for {}/{} on chain {} @ {:?}",
-                    port_id, channel_id, chain_id, chain_height
+                    port_id,
+                    channel_id,
+                    chain_id,
+                    chain_height
                 )
             })?
             .clone();
@@ -217,12 +223,13 @@ fn query_channel_ends<Chain: ChainHandle>(
 
     let counterparty_port_id = channel_counterparty.port_id().clone();
 
-    let counterparty_channel_id = channel_counterparty.channel_id.ok_or_else(|| {
-        eyre!(
+    let counterparty_channel_id =
+        channel_counterparty.channel_id.ok_or_else(|| {
+            eyre!(
             "channel end for {}/{} on chain {} @ {:?} does not have counterparty channel id: {:?}",
             port_id, channel_id, chain_id, chain_height_query, channel_end
         )
-    })?;
+        })?;
 
     let counterparty_chain = registry.get_or_spawn(&counterparty_chain_id)?;
     let counterparty_chain_height_query =
