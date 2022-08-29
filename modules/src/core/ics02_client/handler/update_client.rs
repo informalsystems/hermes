@@ -124,6 +124,7 @@ pub fn process<HostFunctions: HostFunctionsProvider>(
 #[cfg(test)]
 mod tests {
     use core::str::FromStr;
+    use subxt::sp_runtime::traits::Header;
     use test_log::test;
 
     use crate::core::ics02_client::client_consensus::{AnyConsensusState, ConsensusState};
@@ -744,10 +745,15 @@ mod tests {
             );
 
             let block_number = signed_commitment.commitment.block_number;
+            let headers = client_wrapper
+                .query_finalized_parachain_headers_at(block_number, client_state.latest_beefy_height)
+                .await
+                .unwrap();
             let (parachain_headers, batch_proof) = client_wrapper
-                .fetch_finalized_parachain_headers_at(
+                .query_finalized_parachain_headers_with_proof(
                     block_number,
                     client_state.latest_beefy_height,
+                    headers.iter().map(|h| *h.number()).collect(),
                 )
                 .await
                 .unwrap();
