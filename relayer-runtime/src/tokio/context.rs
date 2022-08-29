@@ -3,6 +3,7 @@ use async_trait::async_trait;
 use core::future::Future;
 use core::marker::PhantomData;
 use core::time::Duration;
+use std::sync::Mutex;
 use std::time::Instant;
 use tokio::runtime::Runtime;
 use tokio::sync::{mpsc, oneshot};
@@ -65,7 +66,7 @@ where
     }
 
     fn duration_since(time: &Instant, other: &Instant) -> Duration {
-        time.duration_since(other.clone())
+        time.duration_since(*other)
     }
 
     fn spawn<F>(&self, task: F)
@@ -83,34 +84,40 @@ where
     Chain: OfaChain<Error = Error>,
     Error: From<TokioError> + Clone + Async,
 {
-    type MessagesSender = mpsc::Sender<(Vec<Chain::Message>, Self::ResultSender)>;
-    type MessagesReceiver = mpsc::Receiver<(Vec<Chain::Message>, Self::ResultSender)>;
+    type BatchSender = mpsc::UnboundedSender<(Vec<Chain::Message>, Self::ResultSender)>;
+    type BatchReceiver =
+        Arc<Mutex<mpsc::UnboundedReceiver<(Vec<Chain::Message>, Self::ResultSender)>>>;
 
     type ResultSender = oneshot::Sender<Result<Vec<Vec<Chain::Event>>, Chain::Error>>;
     type ResultReceiver = oneshot::Receiver<Result<Vec<Vec<Chain::Event>>, Chain::Error>>;
 
-    fn new_messages_channel(&self) -> (Self::MessagesSender, Self::MessagesReceiver) {
-        mpsc::channel(1024)
+    fn new_batch_channel() -> (Self::BatchSender, Self::BatchReceiver) {
+        let (sender, receiver) = mpsc::unbounded_channel();
+
+        (sender, Arc::new(Mutex::new(receiver)))
     }
 
-    fn new_result_channel(&self) -> (Self::ResultSender, Self::ResultReceiver) {
+    fn new_result_channel() -> (Self::ResultSender, Self::ResultReceiver) {
         oneshot::channel()
     }
 
-    async fn send_messages(
-        sender: &Self::MessagesSender,
+    async fn send_batch(
+        sender: &Self::BatchSender,
         messages: Vec<Chain::Message>,
         result_sender: Self::ResultSender,
     ) -> Result<(), Chain::Error> {
         sender
             .send((messages, result_sender))
-            .await
             .map_err(|_| TokioError::channel_closed().into())
     }
 
-    async fn try_receive_messages(
-        receiver: &mut Self::MessagesReceiver,
+    async fn try_receive_batch(
+        receiver_lock: &Self::BatchReceiver,
     ) -> Result<Option<(Vec<Chain::Message>, Self::ResultSender)>, Chain::Error> {
+        let mut receiver = receiver_lock
+            .lock()
+            .map_err(|_| TokioError::poisoned_lock())?;
+
         match receiver.try_recv() {
             Ok(batch) => Ok(Some(batch)),
             Err(mpsc::error::TryRecvError::Empty) => Ok(None),

@@ -1,27 +1,21 @@
 use async_trait::async_trait;
 
-use crate::core::traits::queries::status::{ChainStatus, ChainStatusQuerier, HasChainStatus};
+use crate::core::traits::queries::status::{ChainStatusQuerier, HasChainStatus};
 use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext};
 use crate::one_for_all::traits::error::OfaErrorContext;
 use crate::std_prelude::*;
 
 pub struct OfaChainStatusQuerier;
 
-pub struct OfaChainStatus<Chain: OfaChain> {
-    pub status: Chain::ChainStatus,
-}
-
 impl<Chain: OfaChain> HasChainStatus for OfaChainContext<Chain> {
-    type ChainStatus = OfaChainStatus<Chain>;
-}
+    type ChainStatus = Chain::ChainStatus;
 
-impl<Chain: OfaChain> ChainStatus<OfaChainContext<Chain>> for OfaChainStatus<Chain> {
-    fn height(&self) -> &Chain::Height {
-        Chain::chain_status_height(&self.status)
+    fn chain_status_height(status: &Chain::ChainStatus) -> &Chain::Height {
+        Chain::chain_status_height(status)
     }
 
-    fn timestamp(&self) -> &Chain::Timestamp {
-        Chain::chain_status_timestamp(&self.status)
+    fn chain_status_timestamp(status: &Chain::ChainStatus) -> &Chain::Timestamp {
+        Chain::chain_status_timestamp(status)
     }
 }
 
@@ -29,9 +23,9 @@ impl<Chain: OfaChain> ChainStatus<OfaChainContext<Chain>> for OfaChainStatus<Cha
 impl<Chain: OfaChain> ChainStatusQuerier<OfaChainContext<Chain>> for OfaChainStatusQuerier {
     async fn query_chain_status(
         context: &OfaChainContext<Chain>,
-    ) -> Result<OfaChainStatus<Chain>, OfaErrorContext<Chain::Error>> {
+    ) -> Result<Chain::ChainStatus, OfaErrorContext<Chain::Error>> {
         let status = context.chain.query_chain_status().await?;
 
-        Ok(OfaChainStatus { status })
+        Ok(status)
     }
 }

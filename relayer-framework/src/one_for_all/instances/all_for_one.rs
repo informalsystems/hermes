@@ -3,6 +3,7 @@ use crate::all_for_one::traits::error::AfoError;
 use crate::all_for_one::traits::relay::AfoRelayContext;
 use crate::one_for_all::traits::chain::{OfaChainContext, OfaIbcChain};
 use crate::one_for_all::traits::components::chain::OfaIbcChainComponents;
+use crate::one_for_all::traits::components::relay::OfaRelayComponents;
 use crate::one_for_all::traits::error::OfaError;
 use crate::one_for_all::traits::error::OfaErrorContext;
 use crate::one_for_all::traits::relay::{OfaRelay, OfaRelayContext};
@@ -10,6 +11,7 @@ use crate::one_for_all::traits::relay::{OfaRelay, OfaRelayContext};
 pub fn afo_relay_context<Relay>(relay: OfaRelayContext<Relay>) -> impl AfoRelayContext
 where
     Relay: OfaRelay,
+    Relay::Components: OfaRelayComponents<Relay>,
 {
     relay
 }

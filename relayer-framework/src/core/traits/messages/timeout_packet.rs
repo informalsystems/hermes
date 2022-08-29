@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::core::traits::contexts::relay::RelayContext;
-use crate::core::types::aliases::{ChannelId, Height, IbcMessage, PortId, Sequence};
+use crate::core::types::aliases::{ChannelId, Height, Message, PortId, Sequence};
 use crate::std_prelude::*;
 
 #[async_trait]
@@ -12,7 +12,7 @@ pub trait TimeoutUnorderedPacketMessageBuilder<Relay: RelayContext> {
         port_id: PortId<Relay::DstChain, Relay::SrcChain>,
         channel_id: ChannelId<Relay::DstChain, Relay::SrcChain>,
         sequence: Sequence<Relay::SrcChain, Relay::DstChain>,
-    ) -> Result<IbcMessage<Relay::SrcChain, Relay::DstChain>, Relay::Error>;
+    ) -> Result<Message<Relay::SrcChain>, Relay::Error>;
 }
 
 #[async_trait]
@@ -22,7 +22,7 @@ pub trait TimeoutOrderedPacketMessageBuilder<Relay: RelayContext> {
         height: Height<Relay::DstChain>,
         port_id: PortId<Relay::DstChain, Relay::SrcChain>,
         channel_id: ChannelId<Relay::DstChain, Relay::SrcChain>,
-    ) -> Result<IbcMessage<Relay::SrcChain, Relay::DstChain>, Relay::Error>;
+    ) -> Result<Message<Relay::SrcChain>, Relay::Error>;
 }
 
 #[async_trait]
@@ -32,5 +32,5 @@ pub trait TimeoutChannelClosedMessageBuilder<Relay: RelayContext> {
         height: Height<Relay::DstChain>,
         port_id: PortId<Relay::DstChain, Relay::SrcChain>,
         channel_id: ChannelId<Relay::DstChain, Relay::SrcChain>,
-    ) -> Result<IbcMessage<Relay::SrcChain, Relay::DstChain>, Relay::Error>;
+    ) -> Result<Message<Relay::SrcChain>, Relay::Error>;
 }

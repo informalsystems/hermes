@@ -6,20 +6,16 @@
 use async_trait::async_trait;
 
 use crate::core::traits::core::Async;
-use crate::one_for_all::traits::components::chain::OfaChainComponents;
 use crate::one_for_all::traits::error::OfaError;
 use crate::one_for_all::traits::runtime::{OfaRuntime, OfaRuntimeContext};
 use crate::std_prelude::*;
 
 #[derive(Clone)]
-pub struct OfaChainContext<Chain>
-where
-    Chain: OfaChain,
-{
+pub struct OfaChainContext<Chain> {
     pub chain: Chain,
 }
 
-impl<Chain: OfaChain> OfaChainContext<Chain> {
+impl<Chain> OfaChainContext<Chain> {
     pub fn new(chain: Chain) -> Self {
         Self { chain }
     }
@@ -27,7 +23,7 @@ impl<Chain: OfaChain> OfaChainContext<Chain> {
 
 #[async_trait]
 pub trait OfaChain: Async {
-    type Components: OfaChainComponents<Self>;
+    type Components;
 
     type Error: OfaError;
 
@@ -91,7 +87,7 @@ pub trait OfaIbcChain<Counterparty>: OfaChain
 where
     Counterparty: OfaChain,
 {
-    fn source_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
+    fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
 
     async fn query_consensus_state(
         &self,

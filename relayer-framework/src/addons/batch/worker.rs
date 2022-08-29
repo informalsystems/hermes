@@ -6,13 +6,12 @@ use crate::core::traits::contexts::chain::IbcChainContext;
 use crate::core::traits::contexts::relay::RelayContext;
 use crate::core::traits::core::Async;
 use crate::core::traits::ibc_message_sender::IbcMessageSender;
-use crate::core::traits::message::Message as SomeMessage;
 use crate::core::traits::runtime::log::{HasLogger, LevelDebug};
 use crate::core::traits::runtime::sleep::CanSleep;
 use crate::core::traits::runtime::spawn::{HasSpawner, Spawner};
 use crate::core::traits::runtime::time::{HasTime, Time};
 use crate::core::traits::target::ChainTarget;
-use crate::core::types::aliases::IbcMessage;
+use crate::core::types::aliases::Message;
 use crate::std_prelude::*;
 
 use super::config::BatchConfig;
@@ -26,9 +25,8 @@ where
     Sender: IbcMessageSender<Relay, Target>,
 {
     pub relay: Relay,
-    pub messages_receiver: <Relay::BatchContext as BatchContext>::MessagesReceiver,
     pub pending_batches: VecDeque<(
-        Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>,
+        Vec<Message<Target::TargetChain>>,
         <Relay::BatchContext as BatchContext>::ResultSender,
     )>,
     pub config: BatchConfig,
@@ -44,21 +42,16 @@ where
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
     Sender: IbcMessageSender<Relay, Target>,
     Batch: BatchContext<Message = Message, Event = Event, Error = Error>,
-    TargetChain: IbcChainContext<Target::CounterpartyChain, IbcMessage = Message, IbcEvent = Event>,
-    Message: SomeMessage,
+    TargetChain: IbcChainContext<Target::CounterpartyChain, Message = Message, Event = Event>,
     Event: Async,
     Error: Clone + Async,
+    Message: Async,
 {
-    pub fn spawn_batch_message_worker(
-        relay: Relay,
-        config: BatchConfig,
-        messages_receiver: Batch::MessagesReceiver,
-    ) {
+    pub fn spawn_batch_message_worker(relay: Relay, config: BatchConfig) {
         let spawner = relay.runtime().spawner();
 
         let mut handler = Self {
             relay,
-            messages_receiver,
             pending_batches: VecDeque::new(),
             config,
             phantom: PhantomData,
@@ -73,7 +66,7 @@ where
         let mut last_sent_time = self.relay.runtime().now();
 
         loop {
-            match Batch::try_receive_messages(&mut self.messages_receiver).await {
+            match Batch::try_receive_batch(self.relay.batch_channel().receiver()).await {
                 Ok(m_batch) => {
                     if let Some(batch) = m_batch {
                         self.relay
@@ -219,7 +212,7 @@ where
             .map(|message| {
                 // return 0 on encoding error, as we don't want
                 // the batching operation to error out.
-                message.estimate_len().unwrap_or(0)
+                TargetChain::estimate_message_len(message).unwrap_or(0)
             })
             .sum()
     }

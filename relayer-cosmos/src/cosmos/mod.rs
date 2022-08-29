@@ -1,8 +1,5 @@
-pub mod context;
-pub mod error;
-pub mod instances;
-pub mod message;
-pub mod one_for_all;
-
-#[cfg(feature = "batch")]
+pub mod all_for_one;
+pub mod basic;
 pub mod batch;
+pub mod core;
+pub mod instances;

@@ -11,8 +11,8 @@ use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 
-pub(crate) fn process(
-    ctx: &dyn ChannelReader,
+pub(crate) fn process<Ctx: ChannelReader>(
+    ctx: &Ctx,
     msg: &MsgChannelOpenInit,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();

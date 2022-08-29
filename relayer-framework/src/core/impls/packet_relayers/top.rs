@@ -32,8 +32,8 @@ pub type TopReceivePacketRelayer_ = SkipReceivedPacketRelayer<BaseReceivePacketR
 impl TopRelayer {
     pub fn new(max_retry: usize) -> Self {
         let relayer1 = FullRelayer {
-            receive_relayer: TopReceivePacketRelayer::new(),
-            ack_relayer: TopAckPacketRelayer::new(),
+            receive_relayer: TopReceivePacketRelayer::default(),
+            ack_relayer: TopAckPacketRelayer::default(),
         };
 
         let relayer2 = RetryRelayer::new(max_retry, relayer1);
@@ -42,16 +42,16 @@ impl TopRelayer {
     }
 }
 
-impl TopReceivePacketRelayer {
-    pub fn new() -> Self {
+impl Default for TopReceivePacketRelayer {
+    fn default() -> Self {
         let relayer = SkipReceivedPacketRelayer::new(BaseReceivePacketRelayer);
 
         TopReceivePacketRelayer { relayer }
     }
 }
 
-impl TopAckPacketRelayer {
-    pub fn new() -> Self {
+impl Default for TopAckPacketRelayer {
+    fn default() -> Self {
         TopAckPacketRelayer {
             relayer: BaseAckPacketRelayer,
         }

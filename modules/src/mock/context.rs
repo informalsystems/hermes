@@ -16,12 +16,13 @@ use sha2::Digest;
 use tracing::debug;
 
 use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
-use crate::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
-use crate::core::ics02_client::client_state::AnyClientState;
+use crate::clients::ics07_tendermint::client_state::ClientState as TmClientState;
+use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics02_client::client_type::ClientType;
+use crate::core::ics02_client::consensus_state::ConsensusState;
 use crate::core::ics02_client::context::{ClientKeeper, ClientReader};
 use crate::core::ics02_client::error::Error as Ics02Error;
-use crate::core::ics02_client::header::AnyHeader;
+use crate::core::ics02_client::header::Header;
 use crate::core::ics03_connection::connection::ConnectionEnd;
 use crate::core::ics03_connection::context::{ConnectionKeeper, ConnectionReader};
 use crate::core::ics03_connection::error::Error as Ics03Error;
@@ -39,7 +40,8 @@ use crate::core::ics26_routing::context::{Ics26Context, Module, ModuleId, Router
 use crate::core::ics26_routing::handler::{deliver, dispatch, MsgReceipt};
 use crate::core::ics26_routing::msgs::Ics26Envelope;
 use crate::events::IbcEvent;
-use crate::mock::client_state::{MockClientRecord, MockClientState, MockConsensusState};
+use crate::mock::client_state::{MockClientRecord, MockClientState};
+use crate::mock::consensus_state::MockConsensusState;
 use crate::mock::header::MockHeader;
 use crate::mock::host::{HostBlock, HostType};
 use crate::relayer::ics18_relayer::context::Ics18Context;
@@ -196,8 +198,8 @@ impl MockContext {
         let (client_state, consensus_state) = match client_type {
             // If it's a mock client, create the corresponding mock states.
             ClientType::Mock => (
-                Some(MockClientState::new(MockHeader::new(client_state_height)).into()),
-                MockConsensusState::new(MockHeader::new(cs_height)).into(),
+                Some(MockClientState::new(MockHeader::new(client_state_height)).into_box()),
+                MockConsensusState::new(MockHeader::new(cs_height)).into_box(),
             ),
             // If it's a Tendermint client, we need TM states.
             ClientType::Tendermint => {
@@ -207,12 +209,11 @@ impl MockContext {
                     Timestamp::now(),
                 );
 
-                let consensus_state = AnyConsensusState::from(light_block.clone());
                 let client_state =
-                    get_dummy_tendermint_client_state(light_block.signed_header.header);
+                    get_dummy_tendermint_client_state(light_block.header().clone()).into_box();
 
                 // Return the tuple.
-                (Some(client_state), consensus_state)
+                (Some(client_state), light_block.into())
             }
         };
         let consensus_states = vec![(cs_height, consensus_state)].into_iter().collect();
@@ -248,8 +249,8 @@ impl MockContext {
         let (client_state, consensus_state) = match client_type {
             // If it's a mock client, create the corresponding mock states.
             ClientType::Mock => (
-                Some(MockClientState::new(MockHeader::new(client_state_height)).into()),
-                MockConsensusState::new(MockHeader::new(cs_height)).into(),
+                Some(MockClientState::new(MockHeader::new(client_state_height)).into_box()),
+                MockConsensusState::new(MockHeader::new(cs_height)).into_box(),
             ),
             // If it's a Tendermint client, we need TM states.
             ClientType::Tendermint => {
@@ -259,18 +260,17 @@ impl MockContext {
                     now,
                 );
 
-                let consensus_state = AnyConsensusState::from(light_block.clone());
                 let client_state =
-                    get_dummy_tendermint_client_state(light_block.signed_header.header);
+                    get_dummy_tendermint_client_state(light_block.header().clone()).into_box();
 
                 // Return the tuple.
-                (Some(client_state), consensus_state)
+                (Some(client_state), light_block.into())
             }
         };
 
         let prev_consensus_state = match client_type {
             // If it's a mock client, create the corresponding mock states.
-            ClientType::Mock => MockConsensusState::new(MockHeader::new(prev_cs_height)).into(),
+            ClientType::Mock => MockConsensusState::new(MockHeader::new(prev_cs_height)).into_box(),
             // If it's a Tendermint client, we need TM states.
             ClientType::Tendermint => {
                 let light_block = HostBlock::generate_tm_block(
@@ -278,7 +278,7 @@ impl MockContext {
                     prev_cs_height.revision_height(),
                     now.sub(self.block_time).unwrap(),
                 );
-                AnyConsensusState::from(light_block)
+                light_block.into()
             }
         };
 
@@ -496,18 +496,7 @@ impl MockContext {
             .insert(port_id, module_id);
     }
 
-    pub fn consensus_states(&self, client_id: &ClientId) -> Vec<AnyConsensusStateWithHeight> {
-        self.ibc_store.lock().unwrap().clients[client_id]
-            .consensus_states
-            .iter()
-            .map(|(k, v)| AnyConsensusStateWithHeight {
-                height: *k,
-                consensus_state: v.clone(),
-            })
-            .collect()
-    }
-
-    pub fn latest_client_states(&self, client_id: &ClientId) -> AnyClientState {
+    pub fn latest_client_states(&self, client_id: &ClientId) -> Box<dyn ClientState> {
         self.ibc_store.lock().unwrap().clients[client_id]
             .client_state
             .as_ref()
@@ -519,12 +508,14 @@ impl MockContext {
         &self,
         client_id: &ClientId,
         height: &Height,
-    ) -> AnyConsensusState {
-        self.ibc_store.lock().unwrap().clients[client_id]
-            .consensus_states
-            .get(height)
-            .unwrap()
-            .clone()
+    ) -> Box<dyn ConsensusState> {
+        dyn_clone::clone_box(
+            self.ibc_store.lock().unwrap().clients[client_id]
+                .consensus_states
+                .get(height)
+                .unwrap()
+                .as_ref(),
+        )
     }
 
     #[inline]
@@ -678,7 +669,7 @@ impl ChannelReader for MockContext {
         }
     }
 
-    fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics04Error> {
+    fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Ics04Error> {
         ClientReader::client_state(self, client_id)
             .map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
     }
@@ -687,7 +678,7 @@ impl ChannelReader for MockContext {
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<AnyConsensusState, Ics04Error> {
+    ) -> Result<Box<dyn ConsensusState>, Ics04Error> {
         ClientReader::consensus_state(self, client_id, height)
             .map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
     }
@@ -788,11 +779,11 @@ impl ChannelReader for MockContext {
         ClientReader::host_timestamp(self)
     }
 
-    fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics04Error> {
+    fn host_consensus_state(&self, height: Height) -> Result<Box<dyn ConsensusState>, Ics04Error> {
         ConnectionReader::host_consensus_state(self, height).map_err(Ics04Error::ics03_connection)
     }
 
-    fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Ics04Error> {
+    fn pending_host_consensus_state(&self) -> Result<Box<dyn ConsensusState>, Ics04Error> {
         ClientReader::pending_host_consensus_state(self)
             .map_err(|e| Ics04Error::ics03_connection(Ics03Error::ics02_client(e)))
     }
@@ -990,9 +981,13 @@ impl ConnectionReader for MockContext {
         }
     }
 
-    fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics03Error> {
+    fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Ics03Error> {
         // Forward method call to the Ics2 Client-specific method.
         ClientReader::client_state(self, client_id).map_err(Ics03Error::ics02_client)
+    }
+
+    fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, Ics03Error> {
+        ClientReader::decode_client_state(self, client_state).map_err(Ics03Error::ics02_client)
     }
 
     fn host_current_height(&self) -> Height {
@@ -1012,13 +1007,13 @@ impl ConnectionReader for MockContext {
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<AnyConsensusState, Ics03Error> {
+    ) -> Result<Box<dyn ConsensusState>, Ics03Error> {
         // Forward method call to the Ics2Client-specific method.
         self.consensus_state(client_id, height)
             .map_err(Ics03Error::ics02_client)
     }
 
-    fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics03Error> {
+    fn host_consensus_state(&self, height: Height) -> Result<Box<dyn ConsensusState>, Ics03Error> {
         ClientReader::host_consensus_state(self, height).map_err(Ics03Error::ics02_client)
     }
 
@@ -1067,7 +1062,7 @@ impl ClientReader for MockContext {
         }
     }
 
-    fn client_state(&self, client_id: &ClientId) -> Result<AnyClientState, Ics02Error> {
+    fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Ics02Error> {
         match self.ibc_store.lock().unwrap().clients.get(client_id) {
             Some(client_record) => client_record
                 .client_state
@@ -1077,11 +1072,21 @@ impl ClientReader for MockContext {
         }
     }
 
+    fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, Ics02Error> {
+        if let Ok(client_state) = TmClientState::try_from(client_state.clone()) {
+            Ok(client_state.into_box())
+        } else if let Ok(client_state) = MockClientState::try_from(client_state.clone()) {
+            Ok(client_state.into_box())
+        } else {
+            Err(Ics02Error::unknown_client_state_type(client_state.type_url))
+        }
+    }
+
     fn consensus_state(
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<AnyConsensusState, Ics02Error> {
+    ) -> Result<Box<dyn ConsensusState>, Ics02Error> {
         match self.ibc_store.lock().unwrap().clients.get(client_id) {
             Some(client_record) => match client_record.consensus_states.get(&height) {
                 Some(consensus_state) => Ok(consensus_state.clone()),
@@ -1102,7 +1107,7 @@ impl ClientReader for MockContext {
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<Option<AnyConsensusState>, Ics02Error> {
+    ) -> Result<Option<Box<dyn ConsensusState>>, Ics02Error> {
         let ibc_store = self.ibc_store.lock().unwrap();
         let client_record = ibc_store
             .clients
@@ -1130,7 +1135,7 @@ impl ClientReader for MockContext {
         &self,
         client_id: &ClientId,
         height: Height,
-    ) -> Result<Option<AnyConsensusState>, Ics02Error> {
+    ) -> Result<Option<Box<dyn ConsensusState>>, Ics02Error> {
         let ibc_store = self.ibc_store.lock().unwrap();
         let client_record = ibc_store
             .clients
@@ -1166,14 +1171,14 @@ impl ClientReader for MockContext {
             .unwrap()
     }
 
-    fn host_consensus_state(&self, height: Height) -> Result<AnyConsensusState, Ics02Error> {
+    fn host_consensus_state(&self, height: Height) -> Result<Box<dyn ConsensusState>, Ics02Error> {
         match self.host_block(height) {
             Some(block_ref) => Ok(block_ref.clone().into()),
             None => Err(Ics02Error::missing_local_consensus_state(height)),
         }
     }
 
-    fn pending_host_consensus_state(&self) -> Result<AnyConsensusState, Ics02Error> {
+    fn pending_host_consensus_state(&self) -> Result<Box<dyn ConsensusState>, Ics02Error> {
         Err(Ics02Error::implementation_specific())
     }
 
@@ -1205,7 +1210,7 @@ impl ClientKeeper for MockContext {
     fn store_client_state(
         &mut self,
         client_id: ClientId,
-        client_state: AnyClientState,
+        client_state: Box<dyn ClientState>,
     ) -> Result<(), Ics02Error> {
         let mut ibc_store = self.ibc_store.lock().unwrap();
         let client_record = ibc_store
@@ -1225,7 +1230,7 @@ impl ClientKeeper for MockContext {
         &mut self,
         client_id: ClientId,
         height: Height,
-        consensus_state: AnyConsensusState,
+        consensus_state: Box<dyn ConsensusState>,
     ) -> Result<(), Ics02Error> {
         let mut ibc_store = self.ibc_store.lock().unwrap();
         let client_record = ibc_store
@@ -1283,14 +1288,14 @@ impl Ics18Context for MockContext {
         self.host_current_height()
     }
 
-    fn query_client_full_state(&self, client_id: &ClientId) -> Option<AnyClientState> {
+    fn query_client_full_state(&self, client_id: &ClientId) -> Option<Box<dyn ClientState>> {
         // Forward call to Ics2.
         ClientReader::client_state(self, client_id).ok()
     }
 
-    fn query_latest_header(&self) -> Option<AnyHeader> {
+    fn query_latest_header(&self) -> Option<Box<dyn Header>> {
         let block_ref = self.host_block(self.host_current_height());
-        block_ref.cloned().map(Into::into)
+        block_ref.cloned().map(Header::into_box)
     }
 
     fn send(&mut self, msgs: Vec<Any>) -> Result<Vec<IbcEvent>, Ics18Error> {

@@ -2,10 +2,9 @@ use async_trait::async_trait;
 
 use crate::core::traits::contexts::ibc_event::HasIbcEvents;
 use crate::core::traits::contexts::relay::RelayContext;
-use crate::core::traits::packet::IbcPacket;
 use crate::core::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
 use crate::core::traits::queries::received_packet::HasReceivedPacketQuerier;
-use crate::core::types::aliases::{Height, Packet, WriteAcknowledgementEvent};
+use crate::core::types::aliases::{Height, WriteAcknowledgementEvent};
 use crate::std_prelude::*;
 
 pub struct SkipReceivedPacketRelayer<Relayer> {
@@ -19,34 +18,32 @@ impl<Relayer> SkipReceivedPacketRelayer<Relayer> {
 }
 
 #[async_trait]
-impl<Context, Relayer> ReceivePacketRelayer<Context> for SkipReceivedPacketRelayer<Relayer>
+impl<Relay, Relayer> ReceivePacketRelayer<Relay> for SkipReceivedPacketRelayer<Relayer>
 where
-    Context: RelayContext,
-    Relayer: ReceivePacketRelayer<Context>,
-    Context::DstChain: HasIbcEvents<Context::SrcChain>,
-    Context::DstChain: HasReceivedPacketQuerier<Context::SrcChain>,
+    Relay: RelayContext,
+    Relayer: ReceivePacketRelayer<Relay>,
+    Relay::DstChain: HasIbcEvents<Relay::SrcChain>,
+    Relay::DstChain: HasReceivedPacketQuerier<Relay::SrcChain>,
 {
     async fn relay_receive_packet(
         &self,
-        context: &Context,
-        source_height: &Height<Context::SrcChain>,
-        packet: &Packet<Context>,
-    ) -> Result<
-        Option<WriteAcknowledgementEvent<Context::DstChain, Context::SrcChain>>,
-        Context::Error,
-    > {
-        let is_packet_received = context
+        relay: &Relay,
+        source_height: &Height<Relay::SrcChain>,
+        packet: &Relay::Packet,
+    ) -> Result<Option<WriteAcknowledgementEvent<Relay::DstChain, Relay::SrcChain>>, Relay::Error>
+    {
+        let is_packet_received = relay
             .destination_chain()
             .is_packet_received(
-                packet.destination_port(),
-                packet.destination_channel_id(),
-                packet.sequence(),
+                Relay::packet_dst_port(packet),
+                Relay::packet_dst_channel_id(packet),
+                Relay::packet_sequence(packet),
             )
             .await?;
 
         if !is_packet_received {
             self.relayer
-                .relay_receive_packet(context, source_height, packet)
+                .relay_receive_packet(relay, source_height, packet)
                 .await
         } else {
             Ok(None)

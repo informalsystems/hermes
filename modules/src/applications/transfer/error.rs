@@ -1,8 +1,8 @@
 use alloc::string::FromUtf8Error;
 
 use flex_error::{define_error, DisplayOnly, TraceError};
+use ibc_proto::protobuf::Error as TendermintProtoError;
 use subtle_encoding::Error as EncodingError;
-use tendermint_proto::Error as TendermintProtoError;
 use uint::FromDecStrErr;
 
 use crate::core::ics04_channel::channel::Order;

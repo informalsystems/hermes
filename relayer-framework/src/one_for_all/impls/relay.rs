@@ -11,25 +11,14 @@ use crate::core::traits::messages::receive_packet::{
 };
 use crate::core::traits::messages::timeout_packet::TimeoutUnorderedPacketMessageBuilder;
 use crate::core::traits::messages::update_client::UpdateClientMessageBuilder;
-use crate::core::traits::packet::IbcPacket;
 use crate::core::traits::target::{DestinationTarget, SourceTarget};
-use crate::one_for_all::impls::message::OfaMessage;
+use crate::core::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
 use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext};
 use crate::one_for_all::traits::error::OfaErrorContext;
 use crate::one_for_all::traits::relay::OfaRelay;
 use crate::one_for_all::traits::relay::OfaRelayContext;
 use crate::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::std_prelude::*;
-
-pub struct OfaPacket<Relay: OfaRelay> {
-    pub packet: Relay::Packet,
-}
-
-impl<Relay: OfaRelay> OfaPacket<Relay> {
-    pub fn new(packet: Relay::Packet) -> Self {
-        Self { packet }
-    }
-}
 
 impl<Relay: OfaRelay> HasError for OfaRelayContext<Relay> {
     type Error = OfaErrorContext<Relay::Error>;
@@ -39,39 +28,7 @@ impl<Relay: OfaRelay> HasRuntime for OfaRelayContext<Relay> {
     type Runtime = OfaRuntimeContext<Relay::Runtime>;
 
     fn runtime(&self) -> &Self::Runtime {
-        &self.relay.runtime()
-    }
-}
-
-impl<Relay: OfaRelay> IbcPacket<OfaChainContext<Relay::SrcChain>, OfaChainContext<Relay::DstChain>>
-    for OfaPacket<Relay>
-{
-    fn source_port(&self) -> &<Relay::SrcChain as OfaChain>::PortId {
-        Relay::packet_src_port(&self.packet)
-    }
-
-    fn source_channel_id(&self) -> &<Relay::SrcChain as OfaChain>::ChannelId {
-        Relay::packet_src_channel_id(&self.packet)
-    }
-
-    fn destination_port(&self) -> &<Relay::DstChain as OfaChain>::PortId {
-        Relay::packet_dst_port(&self.packet)
-    }
-
-    fn destination_channel_id(&self) -> &<Relay::DstChain as OfaChain>::ChannelId {
-        Relay::packet_dst_channel_id(&self.packet)
-    }
-
-    fn sequence(&self) -> &<Relay::SrcChain as OfaChain>::Sequence {
-        Relay::packet_sequence(&self.packet)
-    }
-
-    fn timeout_height(&self) -> Option<&<Relay::DstChain as OfaChain>::Height> {
-        Relay::packet_timeout_height(&self.packet)
-    }
-
-    fn timeout_timestamp(&self) -> &<Relay::DstChain as OfaChain>::Timestamp {
-        Relay::packet_timeout_timestamp(&self.packet)
+        self.relay.runtime()
     }
 }
 
@@ -80,14 +37,42 @@ impl<Relay: OfaRelay> RelayContext for OfaRelayContext<Relay> {
 
     type DstChain = OfaChainContext<Relay::DstChain>;
 
-    type Packet = OfaPacket<Relay>;
+    type Packet = Relay::Packet;
+
+    fn packet_src_port(packet: &Self::Packet) -> &PortId<Self::SrcChain, Self::DstChain> {
+        Relay::packet_src_port(packet)
+    }
+
+    fn packet_src_channel_id(packet: &Self::Packet) -> &ChannelId<Self::SrcChain, Self::DstChain> {
+        Relay::packet_src_channel_id(packet)
+    }
+
+    fn packet_dst_port(packet: &Self::Packet) -> &PortId<Self::DstChain, Self::SrcChain> {
+        Relay::packet_dst_port(packet)
+    }
+
+    fn packet_dst_channel_id(packet: &Self::Packet) -> &ChannelId<Self::DstChain, Self::SrcChain> {
+        Relay::packet_dst_channel_id(packet)
+    }
+
+    fn packet_sequence(packet: &Self::Packet) -> &Sequence<Self::SrcChain, Self::DstChain> {
+        Relay::packet_sequence(packet)
+    }
+
+    fn packet_timeout_height(packet: &Self::Packet) -> Option<&Height<Self::DstChain>> {
+        Relay::packet_timeout_height(packet)
+    }
+
+    fn packet_timeout_timestamp(packet: &Self::Packet) -> &Timestamp<Self::DstChain> {
+        Relay::packet_timeout_timestamp(packet)
+    }
 
     fn source_chain(&self) -> &Self::SrcChain {
-        &self.relay.src_chain()
+        self.relay.src_chain()
     }
 
     fn destination_chain(&self) -> &Self::DstChain {
-        &self.relay.dst_chain()
+        self.relay.dst_chain()
     }
 
     fn source_client_id(&self) -> &<Relay::SrcChain as OfaChain>::ClientId {
@@ -102,60 +87,65 @@ impl<Relay: OfaRelay> RelayContext for OfaRelayContext<Relay> {
 pub struct OfaUpdateClientMessageBuilder;
 
 #[async_trait]
-impl<Relay: OfaRelay> UpdateClientMessageBuilder<OfaRelayContext<Relay>, SourceTarget>
+impl<Relay, SrcChain> UpdateClientMessageBuilder<OfaRelayContext<Relay>, SourceTarget>
     for OfaUpdateClientMessageBuilder
+where
+    Relay: OfaRelay<SrcChain = SrcChain>,
+    SrcChain: OfaChain,
 {
     async fn build_update_client_messages(
         context: &OfaRelayContext<Relay>,
         height: &<Relay::DstChain as OfaChain>::Height,
-    ) -> Result<Vec<OfaMessage<Relay::SrcChain>>, OfaErrorContext<Relay::Error>> {
+    ) -> Result<Vec<SrcChain::Message>, OfaErrorContext<Relay::Error>> {
         let messages = context
             .relay
             .build_src_update_client_messages(height)
             .await?;
 
-        let out_messages = messages.into_iter().map(OfaMessage::new).collect();
-
-        Ok(out_messages)
+        Ok(messages)
     }
 }
 
 #[async_trait]
-impl<Relay: OfaRelay> UpdateClientMessageBuilder<OfaRelayContext<Relay>, DestinationTarget>
+impl<Relay, DstChain> UpdateClientMessageBuilder<OfaRelayContext<Relay>, DestinationTarget>
     for OfaUpdateClientMessageBuilder
+where
+    Relay: OfaRelay<DstChain = DstChain>,
+    DstChain: OfaChain,
 {
     async fn build_update_client_messages(
         context: &OfaRelayContext<Relay>,
         height: &<Relay::SrcChain as OfaChain>::Height,
-    ) -> Result<Vec<OfaMessage<Relay::DstChain>>, OfaErrorContext<Relay::Error>> {
+    ) -> Result<Vec<DstChain::Message>, OfaErrorContext<Relay::Error>> {
         let messages = context
             .relay
             .build_dst_update_client_messages(height)
             .await?;
 
-        let out_messages = messages.into_iter().map(OfaMessage::new).collect();
-
-        Ok(out_messages)
+        Ok(messages)
     }
 }
 
 pub struct OfaReceivePacketMessageBuilder;
 
 #[async_trait]
-impl<Relay: OfaRelay> ReceivePacketMessageBuilder<OfaRelayContext<Relay>>
+impl<Relay, DstChain> ReceivePacketMessageBuilder<OfaRelayContext<Relay>>
     for OfaReceivePacketMessageBuilder
+where
+    Relay: OfaRelay<DstChain = DstChain>,
+    DstChain: OfaChain,
 {
     async fn build_receive_packet_message(
         relay: &OfaRelayContext<Relay>,
         height: &<Relay::SrcChain as OfaChain>::Height,
-        packet: &OfaPacket<Relay>,
-    ) -> Result<OfaMessage<Relay::DstChain>, OfaErrorContext<Relay::Error>> {
+        packet: &Relay::Packet,
+    ) -> Result<DstChain::Message, OfaErrorContext<Relay::Error>> {
         let message = relay
             .relay
-            .build_receive_packet_message(height, &packet.packet)
+            .build_receive_packet_message(height, packet)
             .await?;
 
-        Ok(OfaMessage::new(message))
+        Ok(message)
     }
 }
 
@@ -166,21 +156,23 @@ impl<Relay: OfaRelay> HasReceivePacketMessageBuilder for OfaRelayContext<Relay> 
 pub struct OfaAckPacketMessageBuilder;
 
 #[async_trait]
-impl<Relay: OfaRelay> AckPacketMessageBuilder<OfaRelayContext<Relay>>
-    for OfaAckPacketMessageBuilder
+impl<Relay, SrcChain> AckPacketMessageBuilder<OfaRelayContext<Relay>> for OfaAckPacketMessageBuilder
+where
+    Relay: OfaRelay<SrcChain = SrcChain>,
+    SrcChain: OfaChain,
 {
     async fn build_ack_packet_message(
         relay: &OfaRelayContext<Relay>,
         destination_height: &<Relay::DstChain as OfaChain>::Height,
-        packet: &OfaPacket<Relay>,
+        packet: &Relay::Packet,
         ack: &<Relay::DstChain as OfaChain>::WriteAcknowledgementEvent,
-    ) -> Result<OfaMessage<Relay::SrcChain>, OfaErrorContext<Relay::Error>> {
+    ) -> Result<SrcChain::Message, OfaErrorContext<Relay::Error>> {
         let message = relay
             .relay
-            .build_ack_packet_message(destination_height, &packet.packet, ack)
+            .build_ack_packet_message(destination_height, packet, ack)
             .await?;
 
-        Ok(OfaMessage::new(message))
+        Ok(message)
     }
 }
 

@@ -1,4 +1,6 @@
-#[allow(clippy::too_many_arguments)]
+#![allow(clippy::too_many_arguments)]
+#![allow(clippy::let_and_return)]
+
 #[cfg(test)]
 pub mod tests;
 

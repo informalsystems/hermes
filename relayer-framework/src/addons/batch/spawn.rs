@@ -10,7 +10,7 @@ use crate::core::traits::target::ChainTarget;
 use crate::std_prelude::*;
 
 use super::config::BatchConfig;
-use super::context::{BatchContext, HasBatchContext};
+use super::context::HasBatchContext;
 use super::message_sender::HasIbcMessageSenderForBatchWorker;
 use super::worker::BatchMessageWorker;
 
@@ -22,11 +22,7 @@ where
     Target: ChainTarget<Relay>,
     Relay: HasBatchContext<Target>,
 {
-    fn spawn_batch_message_worker(
-        relay: Relay,
-        config: BatchConfig,
-        messages_receiver: <Relay::BatchContext as BatchContext>::MessagesReceiver,
-    );
+    fn spawn_batch_message_worker(relay: Relay, config: BatchConfig);
 }
 
 impl<Relay, Target, TargetChain, Runtime> CanSpawnBatchMessageWorker<Relay, Target>
@@ -40,15 +36,10 @@ where
     TargetChain: IbcChainContext<Target::CounterpartyChain>,
     Relay::Error: Clone,
 {
-    fn spawn_batch_message_worker(
-        relay: Relay,
-        config: BatchConfig,
-        messages_receiver: <Relay::BatchContext as BatchContext>::MessagesReceiver,
-    ) {
+    fn spawn_batch_message_worker(relay: Relay, config: BatchConfig) {
         <BatchMessageWorker<Relay, Target, Relay::IbcMessageSenderForBatchWorker>>::spawn_batch_message_worker(
             relay,
             config,
-            messages_receiver,
         )
     }
 }

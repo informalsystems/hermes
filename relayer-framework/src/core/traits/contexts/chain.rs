@@ -7,7 +7,6 @@
 
 use crate::core::traits::contexts::runtime::HasRuntime;
 use crate::core::traits::core::Async;
-use crate::core::traits::message::{IbcMessage, Message};
 
 /// The minimal datatypes that any chain needs to expose.
 pub trait ChainContext: HasRuntime {
@@ -15,9 +14,20 @@ pub trait ChainContext: HasRuntime {
 
     type Timestamp: Async;
 
-    type Message: Message;
+    type Message: Async;
+
+    type RawMessage: Async;
+
+    type Signer: Async;
 
     type Event: Async;
+
+    fn encode_message(
+        message: &Self::Message,
+        signer: &Self::Signer,
+    ) -> Result<Self::RawMessage, Self::Error>;
+
+    fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error>;
 }
 
 /// The datatypes that IBC chains need to expose in addition
@@ -39,7 +49,5 @@ where
 
     type Sequence: Async;
 
-    type IbcMessage: IbcMessage<Counterparty>;
-
-    type IbcEvent: Async;
+    fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
 }

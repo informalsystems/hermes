@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::core::traits::contexts::ibc_event::HasIbcEvents;
 use crate::core::traits::contexts::relay::RelayContext;
-use crate::core::types::aliases::{Height, IbcMessage, WriteAcknowledgementEvent};
+use crate::core::types::aliases::{Height, Message, WriteAcknowledgementEvent};
 use crate::std_prelude::*;
 
 #[async_trait]
@@ -15,7 +15,7 @@ where
         destination_height: &Height<Relay::DstChain>,
         packet: &Relay::Packet,
         ack: &WriteAcknowledgementEvent<Relay::DstChain, Relay::SrcChain>,
-    ) -> Result<IbcMessage<Relay::SrcChain, Relay::DstChain>, Relay::Error>;
+    ) -> Result<Message<Relay::SrcChain>, Relay::Error>;
 }
 
 #[async_trait]
@@ -30,7 +30,7 @@ where
         destination_height: &Height<Self::DstChain>,
         packet: &Self::Packet,
         ack: &WriteAcknowledgementEvent<Self::DstChain, Self::SrcChain>,
-    ) -> Result<IbcMessage<Self::SrcChain, Self::DstChain>, Self::Error> {
+    ) -> Result<Message<Self::SrcChain>, Self::Error> {
         Self::AckPacketMessageBuilder::build_ack_packet_message(
             self,
             destination_height,

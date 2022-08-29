@@ -5,5 +5,8 @@ define_error! {
     Error {
         ChannelClosed
             | _ | { "unexpected closure of internal rust channels" },
+
+        PoisonedLock
+            | _ | { "poisoned mutex lock" },
     }
 }

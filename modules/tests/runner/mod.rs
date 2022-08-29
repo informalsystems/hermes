@@ -1,20 +1,16 @@
 pub mod step;
 
 use alloc::collections::btree_map::BTreeMap as HashMap;
-
 use core::convert::TryInto;
 use core::fmt::Debug;
 use core::time::Duration;
 
-use ibc::core::ics02_client::client_consensus::AnyConsensusState;
-use ibc::core::ics02_client::client_state::AnyClientState;
 use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::context::ClientReader;
 use ibc::core::ics02_client::error as client_error;
-use ibc::core::ics02_client::header::AnyHeader;
-use ibc::core::ics02_client::msgs::create_client::MsgCreateAnyClient;
-use ibc::core::ics02_client::msgs::update_client::MsgUpdateAnyClient;
-use ibc::core::ics02_client::msgs::upgrade_client::MsgUpgradeAnyClient;
+use ibc::core::ics02_client::msgs::create_client::MsgCreateClient;
+use ibc::core::ics02_client::msgs::update_client::MsgUpdateClient;
+use ibc::core::ics02_client::msgs::upgrade_client::MsgUpgradeClient;
 use ibc::core::ics02_client::msgs::ClientMsg;
 use ibc::core::ics03_connection::connection::{Counterparty, State as ConnectionState};
 use ibc::core::ics03_connection::error as connection_error;
@@ -29,7 +25,8 @@ use ibc::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofB
 use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::core::ics26_routing::error as routing_error;
 use ibc::core::ics26_routing::msgs::Ics26Envelope;
-use ibc::mock::client_state::{MockClientState, MockConsensusState};
+use ibc::mock::client_state::MockClientState;
+use ibc::mock::consensus_state::MockConsensusState;
 use ibc::mock::context::MockContext;
 use ibc::mock::header::MockHeader;
 use ibc::mock::host::HostType;
@@ -150,16 +147,8 @@ impl IbcTestRunner {
         MockHeader::new(Self::height(height))
     }
 
-    pub fn header(height: Height) -> AnyHeader {
-        AnyHeader::Mock(Self::mock_header(height))
-    }
-
-    pub fn client_state(height: Height) -> AnyClientState {
-        AnyClientState::Mock(MockClientState::new(Self::mock_header(height)))
-    }
-
-    pub fn consensus_state(height: Height) -> AnyConsensusState {
-        AnyConsensusState::Mock(MockConsensusState::new(Self::mock_header(height)))
+    pub fn client_state(height: Height) -> MockClientState {
+        MockClientState::new(Self::mock_header(height))
     }
 
     fn signer() -> Signer {
@@ -309,9 +298,10 @@ impl IbcTestRunner {
                 let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
-                let msg = Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(MsgCreateAnyClient {
-                    client_state: Self::client_state(client_state),
-                    consensus_state: Self::consensus_state(consensus_state),
+                let msg = Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(MsgCreateClient {
+                    client_state: Self::client_state(client_state).into(),
+                    consensus_state: MockConsensusState::new(Self::mock_header(consensus_state))
+                        .into(),
                     signer: Self::signer(),
                 }));
                 ctx.deliver(msg)
@@ -325,9 +315,9 @@ impl IbcTestRunner {
                 let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
-                let msg = Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
+                let msg = Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateClient {
                     client_id: Self::client_id(client_id),
-                    header: Self::header(header),
+                    header: Self::mock_header(header).into(),
                     signer: Self::signer(),
                 }));
                 ctx.deliver(msg)
@@ -341,7 +331,7 @@ impl IbcTestRunner {
                 let ctx = self.chain_context_mut(chain_id);
 
                 // create ICS26 message and deliver it
-                let msg = Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeAnyClient {
+                let msg = Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeClient {
                     client_id: Self::client_id(client_id),
                     client_state: MockClientState::new(MockHeader::new(header)).into(),
                     consensus_state: MockConsensusState::new(MockHeader::new(header)).into(),

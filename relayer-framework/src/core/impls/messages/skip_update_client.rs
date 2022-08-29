@@ -5,7 +5,7 @@ use crate::core::traits::contexts::relay::RelayContext;
 use crate::core::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::core::traits::queries::consensus_state::{HasConsensusState, HasConsensusStateQuerier};
 use crate::core::traits::target::ChainTarget;
-use crate::core::types::aliases::{Height, IbcMessage};
+use crate::core::types::aliases::Height;
 use crate::std_prelude::*;
 
 pub struct SkipUpdateClient<InUpdateClient>(PhantomData<InUpdateClient>);
@@ -23,7 +23,7 @@ where
     async fn build_update_client_messages(
         context: &Relay,
         height: &Height<Target::CounterpartyChain>,
-    ) -> Result<Vec<IbcMessage<Target::TargetChain, Target::CounterpartyChain>>, Relay::Error> {
+    ) -> Result<Vec<TargetChain::Message>, Relay::Error> {
         let target_chain = Target::target_chain(context);
         let target_client_id = Target::target_client_id(context);
 
