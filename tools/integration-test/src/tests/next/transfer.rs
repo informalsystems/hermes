@@ -30,12 +30,7 @@ impl BinaryChannelTest for IbcTransferTest {
         let relay_context = build_cosmos_relay_context(&chains);
         let relayer = full_packet_relayer(1);
 
-        let runtime = chains
-            .node_a
-            .value()
-            .chain_driver
-            .runtime
-            .as_ref();
+        let runtime = chains.node_a.value().chain_driver.runtime.as_ref();
 
         let denom_a = chains.node_a.denom();
 
@@ -68,9 +63,7 @@ impl BinaryChannelTest for IbcTransferTest {
 
         info!("running relayer");
 
-        runtime.block_on(async {
-            relayer.relay_packet(&relay_context, &packet).await.unwrap()
-        });
+        runtime.block_on(async { relayer.relay_packet(&relay_context, &packet).await.unwrap() });
 
         info!("finished running relayer");
 
