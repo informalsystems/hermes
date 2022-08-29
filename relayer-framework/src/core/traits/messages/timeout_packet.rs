@@ -8,7 +8,6 @@ use crate::std_prelude::*;
 pub trait TimeoutUnorderedPacketMessageBuilder<Relay: RelayContext> {
     async fn build_timeout_unordered_packet_message(
         &self,
-        relay: &Relay,
         height: Height<Relay::DstChain>,
         port_id: PortId<Relay::DstChain, Relay::SrcChain>,
         channel_id: ChannelId<Relay::DstChain, Relay::SrcChain>,
