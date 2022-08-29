@@ -22,7 +22,7 @@
       - [Concurrent instances](./tutorials/more-chains/concurrent-instances.md)
     - [Relaying in production](./tutorials/production/index.md)
       - [Set up the monitoring platform](./tutorials/production/setup-grafana.md)
-      - [Setup Hermes](./tutorials/production/setup-hermes.md)
+      - [Set up Hermes](./tutorials/production/setup-hermes.md)
       - [Start relaying](./tutorials/production/start-relaying.md)
 
 - [Advanced](./advanced/index.md)
