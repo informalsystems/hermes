@@ -32,25 +32,25 @@ ibc2---ibc2ibc3---ibc3ibc2---ibc3
 
 ## Query balances
 
-- balances at ibc-0:
+- Balances at ibc-0:
 
     ```shell
     gaiad --node tcp://localhost:27050 query bank balances $(gaiad --home ~/.gm/ibc-0 keys --keyring-backend="test" show wallet -a)
     ```
 
-- balances at ibc-1:
+- Balances at ibc-1:
 
     ```shell
     gaiad --node tcp://localhost:27060 query bank balances $(gaiad --home ~/.gm/ibc-1 keys --keyring-backend="test" show wallet -a)
     ```
 
-- balances at ibc-2:
+- Balances at ibc-2:
 
     ```shell
     gaiad --node tcp://localhost:27070 query bank balances $(gaiad --home ~/.gm/ibc-2 keys --keyring-backend="test" show wallet -a)
     ```
 
-- balances at ibc-3:
+- Balances at ibc-3:
 
     ```shell
     gaiad --node tcp://localhost:27080 query bank balances $(gaiad --home ~/.gm/ibc-3 keys --keyring-backend="test" show wallet -a)
@@ -86,11 +86,11 @@ Now, let's exchange `samoleans` between chains.
 
     - In a separate terminal, use the `ft-transfer` command to send `1000000 samoleans` from ibc-1 to ibc-3 from channel-2:
     ```shell
-    hermes tx ft-transfer --dst-chain ibc-3 --src-chain ibc-1 --src-port transfer --src-channel channel-2 --amount 1000000 --timeout-seconds 1000
+    hermes tx ft-transfer --dst-chain ibc-3 --src-chain ibc-1 --src-port transfer --src-channel channel-2 --amount 1000000 --timeout-seconds 10000
     ``` 
     - Wait a few seconds then query balances on `ibc-1` and `ibc-3`. You should observe that `ibc-1` lost 1000000 samoleans but `ibc-3` did not receive any:
 
-        * balances at ibc-1 : 
+        * Balances at ibc-1 : 
             ```
             balances:
             - amount: "99000000"
@@ -101,7 +101,7 @@ Now, let's exchange `samoleans` between chains.
             next_key: null
             total: "0"
             ```
-        * balances at ibc-3 : 
+        * Balances at ibc-3 : 
             ```
             balances:
             - amount: "100000000"
@@ -126,10 +126,10 @@ Now, let's exchange `samoleans` between chains.
 
 - In a separate terminal, use the `ft-transfer` command to send `1000000 samoleans` from ibc-1 to ibc-2 from channel-1:
     ```shell
-        hermes tx ft-transfer --dst-chain ibc-2 --src-chain ibc-1 --src-port transfer --src-channel channel-1 --amount 1000000 --timeout-seconds 1000
+        hermes tx ft-transfer --dst-chain ibc-2 --src-chain ibc-1 --src-port transfer --src-channel channel-1 --amount 1000000 --timeout-seconds 10000
     ```
 - Wait a few seconds then query balances on `ibc-1` and `ibc-2`. You should observe something similar to:
-    - balances at ibc-1:
+    - Balances at ibc-1:
         ```
         balances:
         - amount: "98000000"
@@ -140,7 +140,7 @@ Now, let's exchange `samoleans` between chains.
         next_key: null
         total: "0"
         ```
-    - balances at ibc-2:
+    - Balances at ibc-2:
         ```
         balances:
         - amount: "1000000"
@@ -157,10 +157,10 @@ Now, let's exchange `samoleans` between chains.
 
 - Transfer these tokens to ibc-3:
     ```shell
-    hermes tx ft-transfer --dst-chain ibc-3 --src-chain ibc-2 --src-port transfer --src-channel channel-2 --amount 1000000 --timeout-seconds 1000 --denom ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
+    hermes tx ft-transfer --dst-chain ibc-3 --src-chain ibc-2 --src-port transfer --src-channel channel-2 --amount 1000000 --timeout-seconds 10000 --denom ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
     ```
 - Wait a few seconds then query balances on `ibc-2` and `ibc-3`. You should observe something similar to:
-    - balances at ibc-2:
+    - Balances at ibc-2:
         ```
         balances:
         - amount: "0"
@@ -173,7 +173,7 @@ Now, let's exchange `samoleans` between chains.
         next_key: null
         total: "0"
         ```
-    - balances at ibc-3:
+    - Balances at ibc-3:
         ```
         balances:
         - amount: "1000000"
@@ -205,10 +205,10 @@ A((ibc-3)) --> B((ibc-0)) --> C((ibc-1));
 
 - Use the `ft-transfer` command to transfer `500000 ibc/C658...` tokens from ibc-3 to ibc-0:
     ```shell
-    hermes tx ft-transfer --dst-chain ibc-0 --src-chain ibc-3 --src-port transfer --src-channel channel-0 --amount 500000 --timeout-seconds 1000 --denom ibc/C658F0EB9DE176E080B586D634004141239C3E55676462C976266DB54C56EBE4
+    hermes tx ft-transfer --dst-chain ibc-0 --src-chain ibc-3 --src-port transfer --src-channel channel-0 --amount 500000 --timeout-seconds 10000 --denom ibc/C658F0EB9DE176E080B586D634004141239C3E55676462C976266DB54C56EBE4
     ```
 - Wait a few seconds then query balances on `ibc-0` and `ibc-3`. You should observe something similar to:
-    - balances at ibc-0:
+    - Balances at ibc-0:
         ```
         balances:
         - amount: "500000"
@@ -221,7 +221,7 @@ A((ibc-3)) --> B((ibc-0)) --> C((ibc-1));
         next_key: null
         total: "0"
         ```
-    - balances at ibc-3:
+    - Balances at ibc-3:
         ```
         balances:
         - amount: "500000"
@@ -238,11 +238,11 @@ A((ibc-3)) --> B((ibc-0)) --> C((ibc-1));
 
 - Transfer the `ibc/563...` tokens from ibc-0 to ibc-1:
     ```shell
-    hermes tx ft-transfer --dst-chain ibc-1 --src-chain ibc-0 --src-port transfer --src-channel channel-0 --amount 500000 --timeout-seconds 1000 --denom ibc/563FDAE5A0D8C15013E4485134A2D2EE3317452278B56B2ED63DDB4EB677DF84
+    hermes tx ft-transfer --dst-chain ibc-1 --src-chain ibc-0 --src-port transfer --src-channel channel-0 --amount 500000 --timeout-seconds 10000 --denom ibc/563FDAE5A0D8C15013E4485134A2D2EE3317452278B56B2ED63DDB4EB677DF84
     ```
 
 - Wait a few seconds then query balances on `ibc-0` and `ibc-3`. You should observe something similar to:
-    - balances at ibc-0:
+    - Balances at ibc-0:
         ```
         balances:
         - amount: "0"
@@ -255,7 +255,7 @@ A((ibc-3)) --> B((ibc-0)) --> C((ibc-1));
         next_key: null
         total: "0"
         ```
-    - balances at ibc-1:
+    - Balances at ibc-1:
         ```
         balances:
         - amount: "500000"
@@ -284,10 +284,10 @@ A((ibc-3))-->B((ibc-2))-->C((ibc-1));
 
 - Use the `ft-transfer` command to transfer `500000 ibc/C658...` tokens from ibc-3 to ibc-2:
     ```shell
-    hermes tx ft-transfer --dst-chain ibc-2 --src-chain ibc-3 --src-port transfer --src-channel channel-2 --amount 500000 --timeout-seconds 1000 --denom ibc/C658F0EB9DE176E080B586D634004141239C3E55676462C976266DB54C56EBE4
+    hermes tx ft-transfer --dst-chain ibc-2 --src-chain ibc-3 --src-port transfer --src-channel channel-2 --amount 500000 --timeout-seconds 10000 --denom ibc/C658F0EB9DE176E080B586D634004141239C3E55676462C976266DB54C56EBE4
     ```
 - Wait a few seconds then query balances on `ibc-2` and `ibc-3`. You should observe something similar to:
-    - balances at ibc-2:
+    - Balances at ibc-2:
         ```
         balances:
         - amount: "500000"
@@ -300,7 +300,7 @@ A((ibc-3))-->B((ibc-2))-->C((ibc-1));
         next_key: null
         total: "0"
         ```
-    - balances at ibc-3:
+    - Balances at ibc-3:
         ```
         balances:
         - amount: "0"
@@ -317,11 +317,11 @@ A((ibc-3))-->B((ibc-2))-->C((ibc-1));
 
 - Transfer the `ibc/C184...` tokens from ibc-2 to ibc-1:
     ```shell
-    hermes tx ft-transfer --dst-chain ibc-1 --src-chain ibc-2 --src-port transfer --src-channel channel-1 --amount 500000 --timeout-seconds 1000 --denom ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
+    hermes tx ft-transfer --dst-chain ibc-1 --src-chain ibc-2 --src-port transfer --src-channel channel-1 --amount 500000 --timeout-seconds 10000 --denom ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
     ```
 
 - Wait a few seconds then query balances on `ibc-1` and `ibc-2`. You should observe something similar to:
-    - balances at ibc-1:
+    - Balances at ibc-1:
         ```
         balances:
         - amount: "500000"
@@ -334,7 +334,7 @@ A((ibc-3))-->B((ibc-2))-->C((ibc-1));
         next_key: null
         total: "0"
         ```
-    - balances at ibc-2:
+    - Balances at ibc-2:
         ```
         balances:
         - amount: "0"
@@ -348,12 +348,6 @@ A((ibc-3))-->B((ibc-2))-->C((ibc-1));
         total: "0"
         ```
     The tokens were successfully received by `ibc-1` under the denomination `samoleans`. 
-
-## Stop relaying and stop the chains
-
-- Stop Hermes by pressing `Ctrl+C` on the terminal running `hermes start`.
-
-- Stop the chains with `gm stop`.
 
 ---
 

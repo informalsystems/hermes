@@ -175,8 +175,8 @@ Let's use packet filters to relay only on the green paths of the chart. In order
 > __NOTE__: It is also possible to use a `deny` policy to filter out the channels you do not want to relay on. However, if other channels exist or are created, the relayer will also relay on them.
 
 At this point, your config file should be:
+<details><summary style="font-weight:bold">config.toml</summary>
 
-__config.toml__
 ```
 [global]
 log_level = 'info'
@@ -294,6 +294,8 @@ list = [
     ['transfer', 'channel-2'],
 ]
 ```
+
+</details>
 
 It is also possible to check that the configuration file is valid with the command:
 

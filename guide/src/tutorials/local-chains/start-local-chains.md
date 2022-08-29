@@ -156,6 +156,9 @@ gm keys
 ```
 
 This will generate an output similar to the one below (albeit all on the same line):
+
+<details><summary style="font-weight:bold">gm keys output</summary>
+
 ```
 "$HOME/go/bin/gaiad" keys list --keyring-backend test --keyring-dir "$HOME/.gm/ibc-0"
 
@@ -207,6 +210,8 @@ mnemonic: "wish burden unfair subway club pulp wood helmet whip decline between 
 "$HOME/go/bin/gaiad" keys list --keyring-backend test --keyring-dir "$HOME/.gm/node-1"
 []
 ```
+
+</details>
 
 Next, we will need to associate a private key with chains `ibc-0` and `ibc-1` which `hermes` will use to sign transactions. 
 
@@ -277,7 +282,6 @@ The $HOME/.gm directory has a tree structure similar to the one below:
     ├── keyring-test
     ├── log
     └── pid
-
 ```
 
 > __Tip__: You can use the command `tree ./data/ -L 2` to view the folder structure above
