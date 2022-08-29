@@ -2,6 +2,8 @@
 
 In section [Setup Grafana](./setup-grafana.md), you did set up a Grafana dashboard which is now waiting to receive data produced by `hermes` and running on port 3000. You also configured Hermes in section [Setup Hermes](./setup-hermes.md) and added the keys you will be using. 
 
+---
+
 ## Create an empty log file
 
 Promtail is shipping every log file from `/var/log` to Loki. Follow the steps above to create an empty log file for Hermes:
@@ -26,6 +28,8 @@ You can now inspect the logs to verify whether the gas parameters are set correc
 Finally, Hermes is designed to relay without any intervention however you might have to manually trigger `hermes clear packets` to clear outstanding packets that Hermes failed to relay.
 
 >__NOTE__: It is not possible to share a wallet between two instances of Hermes.
+
+---
 
 ## Next steps
 

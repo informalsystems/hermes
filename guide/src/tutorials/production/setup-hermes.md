@@ -2,6 +2,8 @@
 
 In this section, you will learn how to set up Hermes to relay between the Hub and Osmosis.
 
+---
+
 ## Setup accounts
 
 First, you need a wallet with enough funds on both chains. We suppose that you already know how to create a wallet on the chains you want and to transfer them some funds.
@@ -213,6 +215,8 @@ If the command runs successfully, it should output:
 2022-08-26T15:54:23.954362Z  INFO ThreadId(01) chain is healthy chain=osmosis-1
 SUCCESS performed health check for all chains in the config
 ```
+
+---
 
 ## Next steps
 

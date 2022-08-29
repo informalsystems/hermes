@@ -41,6 +41,8 @@ version: v4.2.1
 commit: dbd8a6fb522c571debf958837f9113c56d418f6b
 ```
 
+---
+
 ## Next Steps
 
 In the next section you will learn how to [start two local chains](./start.md)

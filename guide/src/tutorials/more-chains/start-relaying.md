@@ -355,6 +355,8 @@ A((ibc-3))-->B((ibc-2))-->C((ibc-1));
 
 - Stop the chains with `gm stop`.
 
+---
+
 ## Next Steps
 
-In the [next tutorial](./production/index.md), you will learn how to set up Hermes in production.
+In the [next section](./concurrent-instances.md), you will start new instances of Hermes to relay packets over the channels that were filtered out by the first instance.

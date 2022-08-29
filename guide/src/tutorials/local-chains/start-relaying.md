@@ -119,6 +119,8 @@ Now, let's exchange `samoleans` between two chains.
 
 - Stop the chains with `gm stop`.
 
+---
+
 ## Next steps
 
 In this tutorial, you learned the basics of relaying:

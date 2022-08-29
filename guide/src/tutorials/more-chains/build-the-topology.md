@@ -308,4 +308,5 @@ SUCCESS "configuration is valid"
 ```
 
 ## Next Steps
+
 The [following section](./start-relaying.md) describes how to relay packets between any chain with this topology.

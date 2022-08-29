@@ -70,6 +70,8 @@ docker-compose -f docker-compose.yaml up
 - On the `Import` page, enter `Hermes dashboard template` as a name, enter your data sources and click `Import`.
 - In the top right corner, next to the `refresh dashboard` button, select `5s` to automatically query Prometheus and Loki every 5s.
 
+---
+
 ## Next steps
 
 In the [next section](./setup-hermes.md), you will learn how to set up Hermes on production chains.

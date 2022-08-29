@@ -19,7 +19,7 @@
       - [Start the local chains](./tutorials/more-chains/start-local-chains.md)
       - [Build the topology](./tutorials/more-chains/build-the-topology.md)
       - [Start relaying](./tutorials/more-chains/start-relaying.md)
-      - [Concurrent instances](./tutorials/more-chains/concurrent-instances.md)
+      - [Add new instances of Hermes](./tutorials/more-chains/concurrent-instances.md)
     - [Relaying in production](./tutorials/production/index.md)
       - [Set up the monitoring platform](./tutorials/production/setup-grafana.md)
       - [Set up Hermes](./tutorials/production/setup-hermes.md)

@@ -108,6 +108,12 @@ The following configuration you need to specify 2 `gaiad` chains. `hermes` will 
   ports_start_at = 27040
 
 ```
-In the [next section](start.md) we will configure Hermes and start local chains using `gm`
 
 > __NOTE:__ Go to this page for more details about [Gaiad Manager](https://github.com/informalsystems/ibc-rs/tree/master/scripts/gm)
+
+
+---
+
+## Next steps
+
+Now that `Gaiad Manager` is installed on your machine, visit the [first tutorial](../local-chains/index.md) to learn the basics of Hermes. You will start two local chains and exchange tokens over IBC transfers.

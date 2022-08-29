@@ -555,7 +555,7 @@ ibc-0: transfer/channel-0 --- ibc-1: transfer/channel-0
 
 The chains __ibc-0__ and __ibc-1__ are now set up and configured as above:
 
-__Relay path__:
+__Relay path__: 
 ```mermaid
 flowchart LR
     A((ibc-0))---B(transfer<br>channel-0)---C(transfer<br>channel-0)---D((ibc-1))
@@ -563,7 +563,9 @@ flowchart LR
 
 Before going over the next sections, please ensure the commands above are executed.
 
-### Next Steps
+---
 
-The following sections describe the commands how to relay packets between two chains.
+## Next Steps
+
+The [following section](./start-relaying.md) describe the commands how to relay packets over the relay path you just created.
 

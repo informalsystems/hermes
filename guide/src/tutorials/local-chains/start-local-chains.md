@@ -302,7 +302,9 @@ $HOME/.hermes/
             └── testkey.json
 ```
 
-#### Next Steps
+---
+
+## Next Steps
 
 [The next section](./add-a-new-relay-path.md) describes how clients, connections and channels are created and how their identifiers are assigned.
 

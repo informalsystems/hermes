@@ -402,6 +402,8 @@ $HOME/.hermes/
             └── wallet2.json
 ```
 
-#### Next Steps
+---
+
+## Next Steps
 
 [The next section](./build-the-topology.md) describes how to create an arbitrary topology between these chains before relaying packets.
