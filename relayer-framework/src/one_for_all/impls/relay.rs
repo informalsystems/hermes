@@ -183,8 +183,11 @@ impl<Relay: OfaRelay> HasAckPacketMessageBuilder for OfaRelayContext<Relay> {
 pub struct OfaTimeoutUnorderedPacketMessageBuilder; 
 
 #[async_trait]
-impl<Relay: OfaRelay> TimeoutUnorderedPacketMessageBuilder<OfaRelayContext<Relay>> 
+impl<Relay, SrcChain> TimeoutUnorderedPacketMessageBuilder<OfaRelayContext<Relay>> 
     for OfaTimeoutUnorderedPacketMessageBuilder 
+where
+    Relay: OfaRelay<SrcChain = SrcChain>,
+    SrcChain: OfaChain,
 {
     async fn build_timeout_unordered_packet_message(
         relay: &OfaRelayContext<Relay>,
@@ -192,12 +195,12 @@ impl<Relay: OfaRelay> TimeoutUnorderedPacketMessageBuilder<OfaRelayContext<Relay
         port_id: &<Relay::DstChain as OfaChain>::PortId,
         channel_id: &<Relay::DstChain as OfaChain>::ChannelId,
         sequence: &<Relay::SrcChain as OfaChain>::Sequence,
-    ) -> Result<OfaMessage<Relay::SrcChain>, OfaErrorContext<Relay::Error>> {
+    ) -> Result<SrcChain::Message, OfaErrorContext<Relay::Error>> {
         let message = relay
             .relay
             .build_timeout_unordered_packet_message(height, port_id, channel_id, sequence)
             .await?;
 
-        Ok(OfaMessage::new(message))
+        Ok(message)
     }
 }
