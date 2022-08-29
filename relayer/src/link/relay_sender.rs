@@ -99,7 +99,11 @@ impl Submit for AsyncSender {
             .send_messages_and_wait_check_tx(msgs)
             .map_err(LinkError::relayer)?;
         let reply = AsyncReply { responses: a };
-        info!("[Async~>{}] {}\n", target.id(), reply);
+
+        // Note: There may be errors in the reply, for example:
+        // `Response { code: Err(11), data: Data([]), log: Log("Too much gas wanted: 35000000, maximum is 25000000: out of gas")`
+        // The runtime deliberately did not catch or retry on such errors.
+        info!(target_chain = %target.id(), "{}", reply);
 
         Ok(reply)
     }
