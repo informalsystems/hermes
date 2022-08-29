@@ -94,8 +94,6 @@ pub trait OfaRelay: Async {
     async fn build_timeout_unordered_packet_message(
         &self,
         height: &<Self::DstChain as OfaChain>::Height,
-        port_id: &<Self::DstChain as OfaChain>::PortId,
-        channel_id: &<Self::DstChain as OfaChain>::ChannelId,
-        sequence: &<Self::SrcChain as OfaChain>::Sequence,
+        packet: &Self::Packet,
     ) -> Result<<Self::SrcChain as OfaChain>::Message, Self::Error>;
 }

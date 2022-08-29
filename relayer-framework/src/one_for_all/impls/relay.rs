@@ -12,7 +12,7 @@ use crate::core::traits::messages::receive_packet::{
 use crate::core::traits::messages::timeout_packet::TimeoutUnorderedPacketMessageBuilder;
 use crate::core::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::core::traits::target::{DestinationTarget, SourceTarget};
-use crate::core::types::aliases::{ChannelId, Height, Message, PortId, Sequence, SrcChain, Timestamp};
+use crate::core::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
 use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext};
 use crate::one_for_all::traits::error::OfaErrorContext;
 use crate::one_for_all::traits::relay::OfaRelay;
@@ -183,20 +183,21 @@ impl<Relay: OfaRelay> HasAckPacketMessageBuilder for OfaRelayContext<Relay> {
 pub struct OfaTimeoutUnorderedPacketMessageBuilder; 
 
 #[async_trait]
-impl<Relay, DstChain> TimeoutUnorderedPacketMessageBuilder<OfaRelayContext<Relay>> 
+impl<Relay, DstChain, SrcChain> TimeoutUnorderedPacketMessageBuilder<OfaRelayContext<Relay>> 
     for OfaTimeoutUnorderedPacketMessageBuilder 
 where
-    Relay: OfaRelay<DstChain = DstChain>,
+    Relay: OfaRelay<DstChain=DstChain, SrcChain=SrcChain>,
     DstChain: OfaChain,
+    SrcChain: OfaChain,
 {
     async fn build_timeout_unordered_packet_message(
         relay: &OfaRelayContext<Relay>,
         height: &<Relay::DstChain as OfaChain>::Height,
         packet: &Relay::Packet,
-    ) -> Result<Message<SrcChain<OfaRelayContext<Relay>>>, OfaErrorContext<Relay::Error>> {
+    ) -> Result<SrcChain::Message, OfaErrorContext<Relay::Error>> {
         let message = relay
             .relay
-            .build_timeout_unordered_packet_message(relay, height, packet)
+            .build_timeout_unordered_packet_message(height, packet)
             .await?;
 
         Ok(message)
