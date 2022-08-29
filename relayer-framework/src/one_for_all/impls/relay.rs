@@ -195,14 +195,13 @@ impl<Relay: OfaRelay> TimeoutUnorderedPacketMessageBuilder<OfaRelayContext<Relay
     for OfaTimeoutUnorderedPacketMessageBuilder 
 {
     async fn build_timeout_unordered_packet_message(
-        &self,
         relay: &OfaRelayContext<Relay>,
         height: &<Relay::DstChain as OfaChain>::Height,
         port_id: &<Relay::DstChain as OfaChain>::PortId,
         channel_id: &<Relay::DstChain as OfaChain>::ChannelId,
         sequence: &<Relay::SrcChain as OfaChain>::Sequence,
     ) -> Result<OfaMessage<Relay::SrcChain>, OfaErrorContext<Relay::Error>> {
-        let message = relay      
+        let message = relay
             .relay
             .build_timeout_unordered_packet_message(height, port_id, channel_id, sequence)
             .await?;
