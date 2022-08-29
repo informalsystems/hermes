@@ -36,11 +36,11 @@ Hermes is actively developed and maintained by [Informal Systems](https://inform
   - **Relay in production** TODO
   - **Deploy multiple instances** TODO
 
-* Advanced
+* **[Advanced](./advanced/index.md)**
   - **[Features](./advanced/features.md)** : This section summarizes Hermes' features and includes a comparison between the Cosmos Go relayer and Hermes.
   - **[Troubleshooting](./advanced/troubleshooting/index.md)**
 
-* Documentation
+* **[Documentation](./documentation/index.md)**
   - **[Configuration](./documentation/config.md)**: This section provides a description to every parameter of Hermes' configuration file.
   - **[Telemetry](./documentation/telemetry.md)**: This section describes all Prometheus metrics and how to use them efficiently.
   - **[REST API](./documentation/rest-api.md)**: This section presents Hermes' REST API.
