@@ -38,6 +38,7 @@ pagination:
   next_key: null
   total: "0"
 ```
+>__NOTE__: Some `stake` tokens were used during the connection and channel handshakes.
 
 ## Exchange packets
 
@@ -83,7 +84,7 @@ Now, let's exchange `samoleans` between two chains.
 
 - Transfer back half of these tokens to ibc-0:
     ```shell
-    hermes tx ft-transfer --dst-chain ibc-0 --src-chain ibc-1 --src-port transfer --src-channel channel-0 --amount 50000 --timeout-seconds 1000 --denom ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
+    hermes tx ft-transfer --dst-chain ibc-0 --src-chain ibc-1 --src-port transfer --src-channel channel-0 --amount 100000 --timeout-seconds 1000 --denom ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
     ```
 - Wait a few seconds then query balances on `ibc-1` and `ibc-0` again. You should observe something similar to:
     - Balances at ibc-0:
