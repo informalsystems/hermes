@@ -1,103 +1,24 @@
 # Start relaying
 
-A relay path refers to a specific channel used to interconnect two chains and over which packets are being sent.
+In the [previous section](./add-a-new-relay-path.md), you created clients, established a connection between them and opened a channel on top of it. Now you can start relay on this path.
 
-Hermes can be started to listen for packet events on the two ends of multiple paths and relay packets over these paths.
-This can be done over a new path or over existing paths.
-
->__WARNING__ Before proceeding to the sections above, please first, make sure you followed the steps in the [Identifiers section](../identifiers.md)
-
-
-## Create a new path
-
-Perform client creation, connection and channel handshake to establish a new path between the `transfer` ports on `ibc-0` and `ibc-1` chains.
-
-```shell
-hermes create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --new-client-connection
+__Relay path__:
+```mermaid
+flowchart LR
+    A((ibc-0))---B(transfer<br>channel-0)---C(transfer<br>channel-0)---D((ibc-1))
 ```
-
-If all the handshakes are performed successfully you should see a message similar to the one below:
-
-```json
-Success: Channel {
-    ordering: Unordered,
-    a_side: ChannelSide {
-        chain: ProdChainHandle {
-            chain_id: ChainId {
-                id: "ibc-0",
-                version: 0,
-            },
-            runtime_sender: Sender { .. },
-        },
-        client_id: ClientId(
-            "07-tendermint-0",
-        ),
-        connection_id: ConnectionId(
-            "connection-0",
-        ),
-        port_id: PortId(
-            "transfer",
-        ),
-        channel_id: ChannelId(
-            "channel-0",
-        ),
-    },
-    b_side: ChannelSide {
-        chain: ProdChainHandle {
-            chain_id: ChainId {
-                id: "ibc-1",
-                version: 1,
-            },
-            runtime_sender: Sender { .. },
-        },
-        client_id: ClientId(
-            "07-tendermint-1",
-        ),
-        connection_id: ConnectionId(
-            "connection-1",
-        ),
-        port_id: PortId(
-            "transfer",
-        ),
-        channel_id: ChannelId(
-            "channel-1",
-        ),
-    },
-    connection_delay: 0s,
-    version: Some(
-        "ics20-1",
-    ),
-}
-
-```
-
-Note that for each side, *a_side* (__ibc-0__) and *b_side* (__ibc-1__) there are a __client_id__, __connection_id__, __channel_id__ and __port_id__.
-With all these established, you have a path that you can relay packets over.
-
-Visualize the current network with: 
-
-```shell
-hermes query channels --chain ibc-1 --show-counterparty
-```
-
-If all the commands were successful, this command should output : 
-
-```
-ibc-1: transfer/channel-0 --- ibc-0: transfer/None
-ibc-1: transfer/channel-1 --- ibc-0: transfer/channel-0
-```
-
-The first line represents the dummy channel opened in section [Identifiers](./identifiers.md) for which the handshake was never completed. The second represents the path you created in this section.
 
 ## Query balances
 
-- balance at ibc-0:
+Use the following commands to query balances on your local chains:
+
+- Balance at ibc-0:
 
     ```shell
     gaiad --node tcp://localhost:27030 query bank balances $(gaiad --home ~/.gm/ibc-0 keys --keyring-backend="test" show wallet -a)
     ```
 
-- balance at ibc-1:
+- Balance at ibc-1:
 
     ```shell
     gaiad --node tcp://localhost:27040 query bank balances $(gaiad --home ~/.gm/ibc-1 keys --keyring-backend="test" show wallet -a)
@@ -118,7 +39,7 @@ pagination:
   total: "0"
 ```
 
-## Start relaying
+## Exchange packets
 
 Now, let's exchange `samoleans` between two chains.
 
@@ -134,7 +55,7 @@ Now, let's exchange `samoleans` between two chains.
     hermes tx ft-transfer --dst-chain ibc-1 --src-chain ibc-0 --src-port transfer --src-channel channel-0 --amount 100000 --timeout-seconds 1000
     ```
 - Wait a few seconds then query balances on `ibc-1` and `ibc-0`. You should observe something similar to:
-    - balances at ibc-0:
+    - Balances at ibc-0:
         ```
         balances:
         - amount: "99900000"
@@ -145,7 +66,7 @@ Now, let's exchange `samoleans` between two chains.
         next_key: null
         total: "0"
         ```
-    - balances at ibc-1:
+    - Balances at ibc-1:
         ```
         balances:
         - amount: "100000"
@@ -162,10 +83,10 @@ Now, let's exchange `samoleans` between two chains.
 
 - Transfer back half of these tokens to ibc-0:
     ```shell
-    hermes tx ft-transfer --dst-chain ibc-0 --src-chain ibc-1 --src-port transfer --src-channel channel-1 --amount 50000 --timeout-seconds 1000 --denom ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
+    hermes tx ft-transfer --dst-chain ibc-0 --src-chain ibc-1 --src-port transfer --src-channel channel-0 --amount 50000 --timeout-seconds 1000 --denom ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
     ```
 - Wait a few seconds then query balances on `ibc-1` and `ibc-0` again. You should observe something similar to:
-    - balances at ibc-0:
+    - Balances at ibc-0:
         ```
         balances:
         - amount: "100000000"
@@ -176,7 +97,7 @@ Now, let's exchange `samoleans` between two chains.
         next_key: null
         total: "0"
         ```
-    - balances at ibc-1:
+    - Balances at ibc-1:
         ```
         balances:
         - amount: "0"
@@ -196,3 +117,14 @@ Now, let's exchange `samoleans` between two chains.
 - Stop Hermes by pressing `Ctrl+C` on the terminal running `hermes start`.
 
 - Stop the chains with `gm stop`.
+
+## Next steps
+
+In this tutorial, you learned the basics of relaying:
+- Create clients on two chains.
+- Establish a connection between them.
+- Open a channel.
+- Visualize your network.
+- Exchange packets. 
+
+In the [next tutorial](../more-chains/index.md), you will learn how to relay between multiple chains with multiple instances.

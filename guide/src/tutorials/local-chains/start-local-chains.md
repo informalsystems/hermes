@@ -2,6 +2,11 @@
 
 In this chapter, you will learn how to spawn two Gaia chains, and use Hermes to relay packets between them.
 
+```mermaid
+flowchart LR
+    A((ibc-0))---B((ibc-1))
+```
+
 To spawn the chains and configure Hermes accordingly, we will make use of Gaiad Manager `gm` that we installed in the last section [Install Gaiad Manager](../pre-requisites/gaiad-manager.md).
 
 ### Reset your configuration and start the chains
@@ -299,6 +304,5 @@ $HOME/.hermes/
 
 #### Next Steps
 
-[The next section](./identifiers.md) describes how identifiers for clients, connections and channels
-are allocated, and will walk you through how to pre-allocate some identifiers
-to help to match them with their corresponding chains for the purpose of this tutorial.
+[The next section](./add-a-new-relay-path.md) describes how clients, connections and channels are created and how their identifiers are assigned.
+

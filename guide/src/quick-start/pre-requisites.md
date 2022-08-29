@@ -8,7 +8,7 @@ The IBC Relayer is developed with the [Rust](https://www.rust-lang.org) programm
 
 For instructions on how to install `Rust` on your machine please follow the official [`Notes about Rust Installation`](https://www.rust-lang.org/tools/install).
 
-The provided instructions will install all the Rust toolchain including `rustc`, `cargo`, and `rustup` that are required to build the project.
+The provided instructions will install all the Rust tool chain including `rustc`, `cargo`, and `rustup` that are required to build the project.
 
 ### Version requirements
 

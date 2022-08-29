@@ -13,7 +13,7 @@
      - [Install Gaiad Manager](./tutorials/pre-requisites/gaiad-manager.md)
    - [Local chains](./tutorials/local-chains/index.md)
      - [Start the local chains](./tutorials/local-chains/start-local-chains.md)
-     - [Identifiers](./tutorials/local-chains/identifiers.md)
+     - [Add a new relay path](./tutorials/local-chains/add-a-new-relay-path.md)
      - [Start relaying](./tutorials/local-chains/start-relaying.md)
     - [More Local Chains](./tutorials/more-chains/index.md)
       - [Start the local chains](./tutorials/more-chains/start-local-chains.md)
