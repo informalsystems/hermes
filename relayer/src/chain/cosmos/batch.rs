@@ -300,12 +300,9 @@ fn batch_messages(
     // envelope and the length of the body field, taking into account the varint encoding
     // of the body field's length delimiter.
     fn tx_len(envelope_len: usize, body_len: usize) -> usize {
-        if body_len == 0 {
-            // An empty body is not encoded as a field
-            envelope_len
-        } else {
-            envelope_len + 1 + prost::length_delimiter_len(body_len) + body_len
-        }
+        // The caller has at least one message field length added to the body's
+        debug_assert!(body_len != 0);
+        envelope_len + 1 + prost::length_delimiter_len(body_len) + body_len
     }
 
     let mut current_count = 0;
