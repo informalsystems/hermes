@@ -5,7 +5,7 @@
 Hermes is an open-source Rust implementation of a relayer for the
 [Inter-Blockchain Communication protocol](https://ibc.cosmos.network) (**IBC**) released under the [ibc-relayer-cli](https://crates.io/crates/ibc-relayer-cli) crate. It provides a CLI to relay packets between Cosmos SDK chains, exposes [Prometheus](https://prometheus.io/) metrics and offers a REST API. 
 
-This guide can help you setup, configure, operate and monitor Hermes to relay
+This guide can help you set up, configure, operate and monitor Hermes to relay
 packets between two or more IBC-enabled chains.
 
 ## About Hermes
@@ -37,7 +37,7 @@ Hermes is actively developed and maintained by [Informal Systems](https://inform
   - **Deploy multiple instances** TODO
 
 * Advanced
-  - **[Features](./advanced/features.md)** : This section discusses summarizes Hermes' features and includes a comparison between the Cosmos Go relayer and Hermes.
+  - **[Features](./advanced/features.md)** : This section summarizes Hermes' features and includes a comparison between the Cosmos Go relayer and Hermes.
   - **[Troubleshooting](./advanced/troubleshooting/index.md)**
 
 * Documentation
@@ -53,8 +53,8 @@ Hermes is actively developed and maintained by [Informal Systems](https://inform
 
 * Useful links
   - [Hermes FAQ Page](https://github.com/informalsystems/ibc-rs/discussions/2472): The official FAQ of Hermes.
-  - [Hermes Github repository](https://github.com/informalsystems/ibc-rs): The official Github repository for Hermes.
-  - [IBC Github repository](https://github.com/cosmos/ics) : The official repository for the Inter-blockchain protocol (IBC).
+  - [Hermes GitHub repository](https://github.com/informalsystems/ibc-rs): The official GitHub repository for Hermes.
+  - [IBC GitHub repository](https://github.com/cosmos/ics) : The official repository for the Inter-blockchain protocol (IBC).
   - [IBC Protocol](https://ibcprotocol.org) : The official IBC protocol page.
 
 * Other
@@ -67,4 +67,4 @@ __Disclaimer__ This project is undergoing heavy development, use at your own ris
 
 ---
 
-[^ibc]: [The Interblockchain Communication Protocol: An Overview](https://arxiv.org/pdf/2006.15918.pdf)
+[^ibc]: [The Inter Blockchain Communication Protocol: An Overview](https://arxiv.org/pdf/2006.15918.pdf)

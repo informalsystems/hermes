@@ -148,7 +148,7 @@ EventBatch {
 
 ## Filter events
 
-The `listen` command accepts an `--event` flag to specify which event types to listen for.
+The `listen` command accepts a `--event` flag to specify which event types to listen for.
 
 At the moment, two event types are available:
 - `NewBlock` 

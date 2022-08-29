@@ -35,9 +35,9 @@ We also describe how to test the channel closing feature.
 
 In order to test the correct operation during the channel close, perform the steps below.
 
-- the channel should be in state open-open:
+- The channel should be in state open-open:
 
-- transfer of 5555 samoleans from `ibc-1` to `ibc-0`. This results in a
+- Transfer of 5555 samoleans from `ibc-1` to `ibc-0`. This results in a
   Tx to `ibc-1` for a `MsgTransfer` packet.
   Make sure you're not relaying this packet (the relayer should not be running on
   this path).
@@ -46,26 +46,26 @@ In order to test the correct operation during the channel close, perform the ste
   hermes tx ft-transfer --receiver-chain ibc-0 --sender-chain ibc-1 --sender-port transfer --sender-channel channel-1 --amount 5555 --timeout-height-offset 1000 --number-msgs 1 --denom samoleans
   ```
 
-- now do the first step of channel closing: the channel will transition
+- Now do the first step of channel closing: the channel will transition
 to close-open:
 
     ```shell
     hermes --config config.toml tx chan-close-init --receiver-chain ibc-0 --sender-chain ibc-1 --receiver-connection connection-0 --receiver-port transfer --sender-port transfer --receiver-channel channel-0 --sender-channel channel-1
     ```
 
-- trigger timeout on close to ibc-1
+- Trigger timeout on close to ibc-1
 
     ```shell
     hermes --config config.toml tx packet-recv --receiver-chain ibc-0 --sender-chain ibc-1 --sender-port transfer --sender-channel channel-1
     ```
 
-- close-close
+- Close the channel
 
     ```shell
     hermes --config config.toml tx chan-close-confirm --receiver-chain ibc-1 --sender-chain ibc-0 --receiver-connection connection-1 --receiver-port transfer --sender-port transfer --receiver-channel channel-1 --sender-channel channel-0
     ```
 
-- verify that the two ends are in Close state:
+- Verify that the two ends are in Close state:
 
   ```shell
   hermes --config config.toml query channel end --chain ibc-0 --port transfer --channel channel-0

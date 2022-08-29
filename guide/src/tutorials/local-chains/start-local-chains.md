@@ -57,7 +57,7 @@ Run the below command to check the status of the chains
 gm status
 ```
 
-If the command is succesful, you should see a message similar to:
+If the command is successful, you should see a message similar to:
 ```
 NODE               PID    RPC   APP  GRPC  HOME_DIR
 ibc-0            11244  27010 27011 27012  $HOME/.gm/ibc-0
@@ -75,7 +75,7 @@ Gaiad Manager `gm` takes care of creating the configuration file. Run the comman
 ```bash
 gm hermes config
 ```
-Please check the [`Configuration`](../../documentation/config.md) section for more information about the relayer configuration file.
+Please check the [`Configuration`](../../documentation/config.md) section for more information about Hermes' configuration file.
 
 Based on the `gm.toml` we created in the previous section [Install Gaiad Manager](../pre-requisites/gaiad-manager.md), your `$HOME/.hermes/config.toml` file should look like below :
 
@@ -299,6 +299,6 @@ $HOME/.hermes/
 
 #### Next Steps
 
-[The next section](./identifiers.md) describes how identifers for clients, connections and channels
-are allocated, and will walk you through how to pre-allocate some identifers
-to help matching them with their corresponding chains for the purpose of this tutorial.
+[The next section](./identifiers.md) describes how identifiers for clients, connections and channels
+are allocated, and will walk you through how to pre-allocate some identifiers
+to help to match them with their corresponding chains for the purpose of this tutorial.

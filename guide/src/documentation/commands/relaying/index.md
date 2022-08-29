@@ -22,4 +22,4 @@ OPTIONS:
         --full-scan    Force a full scan of the chains for clients, connections and channels
 ```
 
-As described in next sub-sections, the type of relaying can be configured in the `global` section of the configuration file, by specifying different values in `strategy` field.
+As described in next subsections, the type of relaying can be configured in the `global` section of the configuration file, by specifying different values in `strategy` field.

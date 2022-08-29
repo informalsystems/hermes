@@ -13,18 +13,18 @@ The provided instructions will install all the Rust toolchain including `rustc`,
 ### Version requirements
 
 Hermes is developed and tested using the latest version of Rust, `1.60` at
-the moment. To check that your toolchain is up-to-date run:
+the moment. To check that your tool chain is up-to-date run:
 
 ```shell
 rustc --version
 ```
 
-In case you already had installed the Rust toolchain in the past, you can
+In case you already had installed the Rust tool chain in the past, you can
 update your installation by running `rustup update`.
 
 ### Testing the installation
 
-After you install the `Rust` toolchain you can execute the following command:
+After you install the `Rust` tool chain you can execute the following command:
 
 ```shell
 cargo version
@@ -34,7 +34,7 @@ This should display the `cargo` version and confirm the proper installation.
 
 ## 2. Golang
 
-You will also need the __Go__ programming language installed and configured on your machine. This is a requirement for the the section [Installing Gaia](./tutorials/local-chains/gaia.md) in the [Two Local Chains](./tutorials/local-chains/index.md) tutorial.
+You will also need the __Go__ programming language installed and configured on your machine. This is a requirement for the section [Installing Gaia](./tutorials/local-chains/gaia.md) in the [Two Local Chains](./tutorials/local-chains/index.md) tutorial.
 
 To install and configure Golang on your machine please follow the [Golang official documentation](https://golang.org/doc/install).
 

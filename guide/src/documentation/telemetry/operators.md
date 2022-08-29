@@ -12,21 +12,21 @@ Metrics are automatically reset if the service is restarted.
 
 ## Table of Contents
 
-Hermes metrics are designed to be able to answer four basic questions:
+Hermes' metrics are designed to be able to answer four basic questions:
 
 1. Is Hermes active (i.e., *submitting* any transactions to any network)?
 2. Are Hermes transactions successful (i.e., *confirmed* and included in the network)?
 3. What is the overall IBC status of each network?
-4. How efficient and how secure is the IBC status on each network?
+4. How efficient, and how secure is the IBC status on each network?
 
-For each of this question, there is a dedicated sub-section:
+For each of this question, there is a dedicated subsection:
 
 <!-- toc -->
 
 
 ## Is Hermes active?
 
-By _active_ we mean specifically: is Hermes *submitting* any transactions to any network?
+By _active_, we mean specifically: is Hermes *submitting* any transactions to any network?
 The metrics in the table below are design to answer this question on multiple dimensions.
 
 | Name                       | Description                                                                                                                                                                 | OpenTelemetry type  | Configuration Dependencies |
@@ -67,8 +67,8 @@ Importantly, these metrics are only displayed if the configuration `tx_confirmat
 | Name                               | Description                                                                                                                                                              | OpenTelemetry type  | Configuration Dependencies |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------- | -------------------------- |
 | `tx_latency_confirmed`             | Latency for all transactions confirmed by a chain | `u64` ValueRecorder | Transaction confirmation enabled |
-| `receive_packets_confirmed`        | Number of confirmed receive packets, per chain, channel and port                                                                                                         | `u64` Counter       | Packet workers enabled and Transaction confirmation enabled |
-| `acknowledgment_packets_confirmed` | Number of confirmed acknowledgment packets, per chain, channel and port                                                                                                  | `u64` Counter       | Packet workers enabled and Transaction confirmation enabled |
+| `receive_packets_confirmed`        | Number of confirmed receive packets, per chain, channel and port                                                                                                         | `u64` Counter       | Packet workers enabled, and Transaction confirmation enabled |
+| `acknowledgment_packets_confirmed` | Number of confirmed acknowledgment packets, per chain, channel and port                                                                                                  | `u64` Counter       | Packet workers enabled, and Transaction confirmation enabled |
 | `timeout_packets_confirmed`        | Number of confirmed timeout packets, per chain, channel and port                                                                                                         | `u64` Counter       | Packet workers enabled and Transaction confirmation enabled |
 
 **How do we define the latency of a confirmed transaction?**

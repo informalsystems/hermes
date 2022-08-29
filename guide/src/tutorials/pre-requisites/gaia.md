@@ -1,14 +1,14 @@
 # Install Gaia
 
-For `gm` to start the chains, it requires gaia to be installed.
+For `gm` to start the chains, it requires Gaia to be installed.
 
 > __NOTE__: This assumes you have `Golang` programming language installed on 
 > your machine. If not, please ensure you install before proceeding. See 
 > more details in the [Pre-requisites](../../quick-start/pre-requisites.md#2-golang) section.
 
-#### Clone gaia
+#### Clone Gaia
 
-Clone the repository from Github:
+Clone the repository from GitHub:
 
 ```shell
 git clone https://github.com/cosmos/gaia.git ~/go/src/github.com/cosmos/gaia
@@ -25,7 +25,7 @@ make install
 ```
 > Find the [latest-release-tag](https://github.com/cosmos/gaia/releases) here.
 
->__NOTE__: Specific to M1 MacOS, there could be some warnings after running `make install` which can be safely ignored as long as `gaiad` binaries are built in `$HOME/go/bin` directory.
+>__NOTE__: Specific to M1 macOS, there could be some warnings after running `make install` which can be safely ignored as long as `gaiad` binaries are built in `$HOME/go/bin` directory.
 ><br /><br />Add the path `export PATH=$HOME/go/bin:$PATH`
 
 If the command above is successful you can run the following command to ensure it was properly installed:

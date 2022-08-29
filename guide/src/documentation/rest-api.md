@@ -73,7 +73,7 @@ information about each chain's configuration. See the next section for more deta
 ### GET `/chain/:id`
 
 This endpoint returns the configuration of the chain with the given identifier,
-where `:id` stands for the identififer.
+where `:id` stands for the identifier.
 
 **Example**
 

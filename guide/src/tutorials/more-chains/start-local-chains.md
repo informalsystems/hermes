@@ -137,7 +137,7 @@ Run the below command to check the status of the chains
 gm status
 ```
 
-If the command is succesful, you should see a message similar to:
+If the command is successful, you should see a message similar to:
 ```
 NODE               PID    RPC   APP  GRPC  HOME_DIR
 ibc-0            21330  27010 27011 27012  $HOME/.gm/ibc-0
@@ -152,7 +152,7 @@ ibc-3            22999  27040 27041 27042  $HOME/.gm/ibc-3
 
 
 
-### Hermes configuration file
+### Hermes' configuration file
 
 Gaiad Manager `gm` takes care of creating the configuration file. Run the command below to create the `$HOME/.hermes/config.toml` file
 

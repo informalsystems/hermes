@@ -1,6 +1,6 @@
 # Start relaying
 
-In the previous tutorial, you learned about how to relay packets between a pair of chain on a relay path. Now, you will learn how to relay packets on an arbitrary topology.
+In the previous tutorial, you learned about how to relay packets between a pair of chains on a relay path. Now, you will learn how to relay packets on an arbitrary topology.
 
 >__WARNING__ Before proceeding to the sections above, please first, make sure you followed the steps in the [Build the topology section](./build-the-topology.md).
 
@@ -153,7 +153,7 @@ Now, let's exchange `samoleans` between chains.
         next_key: null
         total: "0"
         ```
-    The samoleans were transfered to ibc-1 and are visible under the denom `ibc/C1840...` (it might be a different one for you). 
+    The samoleans were transferred to ibc-1 and are visible under the denomination `ibc/C1840...` (it might be a different one for you). 
 
 - Transfer these tokens to ibc-3:
     ```shell
@@ -186,7 +186,7 @@ Now, let's exchange `samoleans` between chains.
         next_key: null
         total: "0"
         ```
-    The tokens were correctly received by `ibc-3` under the denom `ibc/C658...`.
+    The tokens were correctly received by `ibc-3` under the denomination `ibc/C658...`.
 
 ## Send back the tokens
 
@@ -234,7 +234,7 @@ A((ibc-3)) --> B((ibc-0)) --> C((ibc-1));
         next_key: null
         total: "0"
         ```
-    The tokens were correctly received by `ibc-0` under the denom `ibc/563...`.
+    The tokens were correctly received by `ibc-0` under the denomination `ibc/563...`.
 
 - Transfer the `ibc/563...` tokens from ibc-0 to ibc-1:
     ```shell
@@ -268,7 +268,7 @@ A((ibc-3)) --> B((ibc-0)) --> C((ibc-1));
         next_key: null
         total: "0"
         ```
-    The tokens were correctly received by `ibc-1` under the denom `ibc/8F3...` while they should be recognized as samoleans. Indeed, **it is impossible to transfer back tokens from a different channel than the one they were received from**.
+    The tokens were successfully received by `ibc-1` under the denomination `ibc/8F3...` while they should be recognized as samoleans. Indeed, **it is impossible to transfer back tokens from a different channel than the one they were received from**.
 
     Let's forget about these tokens.
 
@@ -313,7 +313,7 @@ A((ibc-3))-->B((ibc-2))-->C((ibc-1));
         next_key: null
         total: "0"
         ```
-    The tokens were correctly received by `ibc-0` under the denom `ibc/C184...`. The tokens retrieved the denom they had before they were transferred to ibc-3.
+    The tokens were correctly received by `ibc-0` under the denomination `ibc/C184...`. The tokens retrieved the denomination they had before they were transferred to ibc-3.
 
 - Transfer the `ibc/C184...` tokens from ibc-2 to ibc-1:
     ```shell
@@ -347,7 +347,7 @@ A((ibc-3))-->B((ibc-2))-->C((ibc-1));
         next_key: null
         total: "0"
         ```
-    The tokens were succesfully received by `ibc-1` under the denom `samoleans`. 
+    The tokens were successfully received by `ibc-1` under the denomination `samoleans`. 
 
 ## Stop relaying and stop the chains
 

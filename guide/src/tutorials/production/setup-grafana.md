@@ -16,7 +16,7 @@ To install and configure Docker, please follow the [Docker official documentatio
 
 ### Prometheus
 
-Prometheus is a free software application used for event monitoring and alerting. It records real-time metrics in a time series database (allowing for high dimensionality) built using a HTTP pull model, with flexible queries and real-time alerting. Hermes can expose Prometheus metrics. The Prometheus server will pull them and Grafana will use this server as a data source for data visualization.
+Prometheus is a free software application used for event monitoring and alerting. It records real-time metrics in a time series database (allowing for high dimensionality) built using an HTTP pull model, with flexible queries and real-time alerting. Hermes can expose Prometheus metrics. The Prometheus server will pull them and Grafana will use this server as a data source for data visualization.
 
 ### Grafana Loki 
 
@@ -26,7 +26,7 @@ Prometheus is a free software application used for event monitoring and alerting
 
 [Promtail](https://grafana.com/docs/loki/latest/clients/promtail/) is an agent which ships the contents of local logs to a private Grafana Loki instance or Grafana Cloud. It is usually deployed to every machine that has applications needed to be monitored. You will use it to ship Hermes' logs to Loki.
 
->__NOTE__: You will redirect `hermes`' output to `/var/log/hermes.log`. The configuration we provide ships every logfile in `/var/log` to Loki.
+>__NOTE__: You will redirect `hermes`' output to `/var/log/hermes.log`. The configuration we provide ships every log file in `/var/log` to Loki.
 
 ## Setup Grafana
 
@@ -48,7 +48,7 @@ docker-compose -f docker-compose.yaml up
 
 ### Add Prometheus
 
-- In the side bar, hover your cursor over the Configuration (gear) icon, and then select `Data Sources`.
+- In the sidebar, hover your cursor over the Configuration (gear) icon, and then select `Data Sources`.
 - Click `Add data source`.
 - In the list of data sources, select `Prometheus`.
 - In the URL box, enter `http://prometheus:9090`.
@@ -64,12 +64,12 @@ docker-compose -f docker-compose.yaml up
 
 ### Set up the dashboard
 
-- Download the [grafana template](../../assets/grafana_template.json) we provide. 
-- In the side bar, hover your cursor over the Dashboard icon, and then click `Import`.
+- Download the [Grafana template](../../assets/grafana_template.json) we provide. 
+- In the sidebar, hover your cursor over the Dashboard icon, and then click `Import`.
 - Click on `Upload JSON file` and select the Grafana template you just downloaded.
 - On the `Import` page, enter `Hermes dashboard template` as a name, enter your data sources and click `Import`.
-- On the top right corner, next to the `refresh dashboard` button, select `5s` to automatically query Prometheus and Loki every 5s.
+- In the top right corner, next to the `refresh dashboard` button, select `5s` to automatically query Prometheus and Loki every 5s.
 
 ## Next steps
 
-In the [next section](./setup-hermes.md), you will learn how to setup accounts on public testnets.
+In the [next section](./setup-hermes.md), you will learn how to set up Hermes on production chains.

@@ -7,7 +7,7 @@ The format supported for the configuration file is [TOML](https://toml.io/en/).
 By default, Hermes expects the configuration file to be located at `$HOME/.hermes/config.toml`.
 
 This can be overridden by supplying the `--config` flag when invoking `hermes`, before the
-name of the command to run, eg. `hermes --config my_config.toml query connection channels --chain ibc-1 --connection connection-1`.
+name of the command to run, e.g. `hermes --config my_config.toml query connection channels --chain ibc-1 --connection connection-1`.
 
 > The current version of Hermes does not support managing the configuration file programmatically.
 > You will need to use a text editor to create the file and add content to it.

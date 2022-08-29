@@ -108,7 +108,7 @@ Success: [
 
 ## Relay receive and timeout packets
 
-Use the `tx packet-recv` command to relay the packets sent but not yet received. If the sent packets have timed out then a timeout packet is sent to the source chain.
+Use the `tx packet-recv` command to relay the packets sent but not yet received. If the packets sent have timed out then a timeout packet is sent to the source chain.
 
 ```shell
 USAGE:
@@ -135,7 +135,7 @@ __Example__
 
 Send the two transfer packets to the `ibc-1` module bound to the `transfer` port and the `channel-0`'s counterparty.
 
-__NOTE__: The relayer prepends a client update message before the receive messages.
+__NOTE__: The relayer prepends a client update message before the Receive messages.
 
 ```shell
 hermes tx packet-recv --reference-chain ibc-1 --host-chain ibc-0 --host-port transfer --host-channel channel-0

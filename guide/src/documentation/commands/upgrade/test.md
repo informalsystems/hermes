@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-- gaiad `(v7.0.*)`, for example:
+- Gaiad `(v7.0.*)`, for example:
 
 ```shell
 gaiad version --log_level error --long | head -n4
@@ -67,7 +67,7 @@ gaiad version --log_level error --long | head -n4
 
 2. Create and submit an upgrade plan for chain `ibc-0`:
 
-    Use the hermes test command to make an upgrade proposal. In the example below a software upgrade proposal is made for `ibc-0`, for the height `300` blocks from latest height. `10000000stake` is deposited.
+    Use test command to make an upgrade proposal. In the example below a software upgrade proposal is made for `ibc-0`, for the height `300` blocks from the latest height. `10000000stake` is deposited.
     The proposal includes the upgraded client state constructed from the state of `07-tendermint-0` client on `ibc-1` that was created in the previous step.
 
     ```shell

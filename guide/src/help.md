@@ -20,13 +20,11 @@ issue template.
 
 > Note that Hermes is packaged as part of the `ibc-relayer-cli` crate.
 
-[help]: ./help.md#help-command
 [feature-request]: https://github.com/informalsystems/ibc-rs/issues/new?assignees=&labels=&template=feature-request.md
 [bug-report]: https://github.com/informalsystems/ibc-rs/issues/new?assignees=&labels=&template=bug-report.md
 [twitter]: https://twitter.com/informalinc
 [twitter-image]: https://abs.twimg.com/errors/logo23x19.png
 [website]: https://informal.systems
-[log-level]: ./help.md#parametrizing-the-log-output-level
 [issues]: https://github.com/informalsystems/ibc-rs/issues
 [profiling]: ./help.md#profiling
 [feature]: ./help.md#new-feature-request

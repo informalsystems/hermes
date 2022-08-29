@@ -1,9 +1,9 @@
-# Install the relayer
+# Install Hermes
 
 There are two main approaches for obtaining Hermes:
 
 1. Installation:
-   1. If you are running on a Unix machine (Linux/MacOS), then the simplest
+   1. If you are running on a Unix machine (Linux/macOS), then the simplest
       option is to [download the latest binary](#install-by-downloading).
    2. You can also install via [Cargo](#install-via-cargo).
 
@@ -14,7 +14,7 @@ There are two main approaches for obtaining Hermes:
 
 Simply head to the GitHub [Releases][releases] page and download the latest
 version of Hermes binary matching your platform:
-- MacOS: `hermes-v1.0.0-rc.2-x86_64-apple-darwin.tar.gz` (or .zip),
+- macOS: `hermes-v1.0.0-rc.2-x86_64-apple-darwin.tar.gz` (or .zip),
 - Linux: `hermes-v1.0.0-rc.2-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
 
 The step-by-step instruction below should carry you through the whole process:
@@ -36,7 +36,7 @@ The step-by-step instruction below should carry you through the whole process:
    ```
 
 > NOTE: The binary may be initially prevented from running if you're
-> on MacOS.
+> on macOS.
 > See the ["Open Anyway" instructions from this support forum][developer-app]
 > if that is the case.
 
@@ -53,7 +53,7 @@ hermes v1.0.0-rc.2
 ## Install via Cargo
 
 > NOTE: This approach assumes you have installed all
-> the [pre-requisites](./pre_requisites.md) on your machine.
+> the [prerequisites](./pre-requisites.md) on your machine.
 
 Hermes is packaged in the `ibc-relayer-cli` Rust crate.
 To install the latest release of Hermes, run the following command in a terminal:
@@ -103,7 +103,7 @@ cd ibc-rs
 
 Go to the [ibc-rs releases](https://github.com/informalsystems/ibc-rs/releases) page to see what is the most recent release.
 
-Then checkout the release, for example if the most recent release is `v1.0.0-rc.2` then execute the command:
+Then `checkout` the release, for example if the most recent release is `v1.0.0-rc.2` then execute the command:
 
 ```shell
 git checkout v1.0.0-rc.2
@@ -182,7 +182,7 @@ SUBCOMMANDS:
 
 ### Creating an alias for the executable
 
-It might be easier to create an alias for `hermes` so you can just run it by specifying the executable name instead of the whole path. In order to create an alias execute the following command:
+It might be easier to create an alias for `hermes`, so you can just run it by specifying the executable name instead of the whole path. In order to create an alias execute the following command:
 
 ```shell
 alias hermes='cargo run --manifest-path $IBCRSPATH/Cargo.toml --release --bin hermes --'
@@ -190,7 +190,7 @@ alias hermes='cargo run --manifest-path $IBCRSPATH/Cargo.toml --release --bin he
 
 ## Shell auto-completions
 
-The `completions` subcommand of Hermes can be used to output a completion script
+The `completions` sub-command of Hermes can be used to output a completion script
 for a choice of widely used command-line shells.
 Refer to `hermes completions --help` for the list. Some shell-specific examples
 of setting up auto-completion with this command are provided below; check your
@@ -203,7 +203,7 @@ and any further necessary modifications to the shell's startup files.
 hermes completions --shell bash > ~/.local/share/bash-completion/completions/hermes
 ```
 
-On a MacOS installation with Homebrew `bash-completion` formula installed, use 
+On a macOS installation with Homebrew `bash-completion` formula installed, use 
 
 ```sh
 hermes completions --shell bash > $(brew --prefix)/etc/bash_completion.d/hermes.bash-completion

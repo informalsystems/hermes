@@ -14,8 +14,8 @@ FLAGS:
 
 ## Ordering of command-line options
 
-The global options must be specified right after the `hermes` command and _before_ any subcommand.
-The non-global options have to be specified _after_ the subcommand.
+The global options must be specified right after the `hermes` command and _before_ any sub-command.
+The non-global options have to be specified _after_ the sub-command.
 
 ```shell
 hermes <GLOBAL_OPTIONS> subcommand <OPTIONS>
@@ -61,7 +61,7 @@ The first three lines are printed to `stderr`, while the last line with a `"resu
 
 __Example__
 
-To improve the readability, pipe all of the output to `jq`:
+To improve the readability, pipe all the output to `jq`:
 
 ```
 hermes --config /home/my_chain.toml --json create client --host-chain ibc-0 --reference-chain ibc-1 2>&1 | jq
@@ -115,7 +115,7 @@ hermes --config /home/my_chain.toml --json create client --host-chain ibc-0 --re
 
 __Example__
 
-To extract the identifer of the newly created client above:
+To extract the identifier of the newly created client above:
 
 ```
 hermes --config /home/my_chain.toml --json create client --host-chain ibc-0 --reference-chain ibc-1 | jq '.result.CreateClient.client_id'

@@ -1,6 +1,6 @@
 # Build the topology
 
-At this point of the tutorial, you should have four chains running and hermes correctly configured. You can perform a `health-check` with the command :
+At this point of the tutorial, you should have four chains running and Hermes correctly configured. You can perform a `health-check` with the command :
 
 ```shell
 hermes health-check
@@ -31,7 +31,7 @@ Execute the following command :
     gm hermes cc
 ```
 
-If this command runs succesfully, it should output the following :
+If this command runs successfully, it should output the following :
 
 ```shell
 "$HOME/ibc-rs/target/release/hermes" create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --new-client-connection --yes
@@ -43,7 +43,7 @@ If this command runs succesfully, it should output the following :
 ```
 
 Executing these commands will :
-* For every pair of chain, create a client on both chain tracking the state of the counterparty chain.
+* For every pair of chains, create a client on both chain tracking the state of the counterparty chain.
 * Create a connection between these two clients.
 * Create a `transfer` channel over this connection.
 
@@ -153,7 +153,7 @@ Let's use packet filters to relay only on the green paths of the chart. In order
         ['transfer', 'channel-1'],
     ]
     ```
-- Under Under `ibc-2`'s config:
+- Under `ibc-2`'s config:
     ```
     [chains.packet_filter]
     policy = 'allow'
@@ -301,7 +301,7 @@ It is also possible to check that the configuration file is valid with the comma
 hermes config validate
 ```
 
-If the command runs succesfully, the output should be:
+If the command runs successfully, the output should be:
 
 ```
 SUCCESS "configuration is valid"

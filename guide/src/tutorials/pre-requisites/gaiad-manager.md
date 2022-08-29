@@ -15,7 +15,7 @@ Follow the instructions
 
 1. Install the dependencies.
 
-On MacOS:
+On macOS:
 ```bash
 # You might need sudo permissions and create the `usr/local/bin` directory
 
@@ -35,7 +35,7 @@ chmod 755 /usr/local/bin/stoml
 2. Install `gm`
 
 ```bash
-git clone https://github.com/informal/ibc-rs
+git clone https://github.com/informalsystems/ibc-rs.git
 ibc-rs/scripts/gm/bin/gm install
 ```
 Alternatively, you can create the folder `$HOME/.gm/bin` and copy the files from `scripts/gm/bin` in there.
@@ -44,7 +44,7 @@ Alternatively, you can create the folder `$HOME/.gm/bin` and copy the files from
 * Add `source $HOME/.gm/bin/shell-support` to a file that executes when a new terminal window comes up
   (`$HOME/.bash_profile` or `$HOME/.bashrc` or `$HOME/.zprofile`)
 * (Optional) Enable auto-completion
-On MacOS:
+On macOS:
 ```bash
 # Note: zsh is the default shell on MacOS, so no need to run this unless you explicitly use bash
 brew install bash-completion
@@ -108,6 +108,6 @@ The following configuration you need to specify 2 `gaiad` chains. `hermes` will 
   ports_start_at = 27040
 
 ```
-In the [next section](start.md) we will configure hermes and start local chains using `gm`
+In the [next section](start.md) we will configure Hermes and start local chains using `gm`
 
-> __NOTE:__ Go to this page for more detils about [Gaiad Manager](https://github.com/informalsystems/ibc-rs/tree/master/scripts/gm)
+> __NOTE:__ Go to this page for more details about [Gaiad Manager](https://github.com/informalsystems/ibc-rs/tree/master/scripts/gm)

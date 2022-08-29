@@ -158,7 +158,7 @@ Now, let's exchange `samoleans` between two chains.
         next_key: null
         total: "0"
         ```
-    The samoleans were transfered to ibc-1 and are visible under the denom `ibc/C1840...`. 
+    The samoleans were transferred to ibc-1 and are visible under the denomination `ibc/C1840...`. 
 
 - Transfer back half of these tokens to ibc-0:
     ```shell

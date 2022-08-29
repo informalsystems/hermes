@@ -5,7 +5,7 @@ This section explains how to parametrize the log output level of `hermes`.
 
 The relayer configuration file permits parametrization of output verbosity via the knob called `log_level`.
 This file is loaded by default from `$HOME/.hermes/config.toml`, but can be overridden in all commands
-with the `--config` flag, eg. `hermes --config ./path/to/my/config.toml some command`.
+with the `--config` flag, e.g. `hermes --config ./path/to/my/config.toml some command`.
 
 Relevant snippet:
 
@@ -15,7 +15,7 @@ log_level = 'error'
 ```
 
 Valid options for `log_level` are: 'error', 'warn', 'info', 'debug', 'trace'.
-These levels correspond to the tracing sub-component of the relayer-cli,
+These levels correspond to the tracing subcomponent of the relayer-cli,
 [see here](https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html).
 
 The relayer will _always_ print a last line summarizing the result of its

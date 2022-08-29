@@ -13,40 +13,41 @@ This section includes a summary of the supported and planned features. It also i
 ## Supported Features
 
 - Basic features
-    - create and update clients
-    - refresh clients to prevent expiration
-    - establish connections with new or existing clients
-    - establish channels with new or existing connection
-    - channel closing handshake
-    - relay packets, acknowledgments, timeout and timeout-on-close packets, with zero or non-zero delay.
-    - queries for all objects
+    - Create and update clients.
+    - Refresh clients to prevent expiration.
+    - Establish connections with new or existing clients.
+    - Establish channels with new or existing connection.
+    - Channel closing handshake.
+    - Relay packets, acknowledgments, timeout and timeout-on-close packets, with zero or non-zero delay.
+    - Queries for all objects.
 - Packet relaying over:
-    - multiple paths, for the chains in `config.toml`
-- Restart support
-    - clear packets
-    - resume channel handshake if configured to relay `all`
-    - resume connection handshake if configured to relay `all`
-- Client upgrade
-    - upgrading clients after a counterparty chain has performed an upgrade for IBC breaking changes
+    - multiple paths, for the chains in `config.toml`.
+- Restart support:
+    - Clear packets.
+    - Resume channel handshake if configured to relay `all`.
+    - Resume connection handshake if configured to relay `all`.
+- Client upgrade:
+    - Upgrading clients after a counterparty chain has performed an upgrade for IBC breaking changes.
 - Packet delay:
-    - establish path over non-zero delay connection
-    - relay all packets with the specified delay
+    - Establish path over non-zero delay connection.
+    - Relay all packets with the specified delay.
 - Interchain Accounts & Interchain Security
 - Monitor and submit misbehaviour for clients
-    - monitor client updates for misbehaviour (fork and BFT time violation)
-    - submit misbehaviour evidence to the on-chain IBC client.
-    > misbehaviour submission to full node not yet supported
+    - Monitor client updates for misbehaviour (fork and BFT time violation).
+    - Submit misbehaviour evidence to the on-chain IBC client.
+    > Misbehaviour submission to full node not yet supported.
 - Individual commands that build and send transactions for:
-    - creating and updating IBC Tendermint light clients
-    - sending connection open handshake messages
-    - sending channel open handshake messages
-    - sending channel closing handshake messages
-    - initiating a cross chain transfer (mainly for testing)
-    - relaying sent packets, acknowledgments and timeouts
-    - client upgrade
-- Channel handshake for existing channel that is not in `Open` state
-- Connection handshake for existing connection that is not in `Open` state
-- Telemetry support
+    - Creating and updating IBC Tendermint light clients.
+    - Sending connection open handshake messages.
+    - Sending channel open handshake messages.
+    - Sending channel closing handshake messages.
+    - Initiating a cross chain transfer (mainly for testing).
+    - Relaying sent packets, acknowledgments and timeouts.
+    - Automatically generate a configuration file from the [chain-registry](https://github.com/cosmos/chain-registry)
+    - Client upgrade.
+- Channel handshake for existing channel that is not in `Open` state.
+- Connection handshake for existing connection that is not in `Open` state.
+- Telemetry support.
 
 ## Upcoming / Unsupported Features
 

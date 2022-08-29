@@ -6,7 +6,7 @@ In order to connect two IBC-enabled chains, both chains need an on-chain client 
 
 A chain allocates identifiers when it creates clients, connections and channels. These identifiers can subsequently be used to refer to existing clients, connections and channels.
 
-> NOTE: If you want to ensure you get the same identifiers while following the tutorials, run the each of the three commands below __once__ on `ibc-1`. This will ensure that when going through the tutorial, a second channel on `ibc-1` with identifier `channel-1` will be created.
+> NOTE: If you want to ensure you get the same identifiers while following the tutorials, run each of the three commands below __once__ on `ibc-1`. This will ensure that when going through the tutorial, a second channel on `ibc-1` with identifier `channel-1` will be created.
 
 Chains allocate identifiers using a chain specific allocation scheme. Currently, *cosmos-sdk* implementation uses the follow identifiers:
 

@@ -1,6 +1,6 @@
 # Tutorials
 
-This section includes tutorials for some common relayer use cases and commands. You can also refer to the [Commands Reference](../commands/index.md) section to learn more about individual commands.
+This section includes tutorials for some common use cases and commands. You can also refer to the [Commands Reference](../commands/index.md) section to learn more about individual commands.
 
 ---
 
@@ -12,6 +12,6 @@ This section includes tutorials for some common relayer use cases and commands. 
 - **[More Local Chains](./more-chains/index.md)**
     * Learn how to relay on an arbitrary topology of more than two chains.
 - **[Relaying in production](./production/index.md)**
-    * Learn how to setup, configure and run `hermes` on IBC-enabled chains in production.
+    * Learn how to set up, configure and run `hermes` on IBC-enabled chains in production.
 - **[Run multiple instances](./concurrent/index.md)**
     * Learn how to run multiple instances of `hermes` for a fine-grained control over your relayer.

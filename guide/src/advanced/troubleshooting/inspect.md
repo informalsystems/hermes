@@ -1,6 +1,6 @@
 # Inspecting the relayer state
 
-To get a little bit of insight into the state of the relayer,
+To get some insight into the state of the relayer,
 Hermes will react to a `SIGUSR1` signal by dumping its state to
 the console, either in plain text form or as a JSON object if Hermes
 was started with the `--json` option.
