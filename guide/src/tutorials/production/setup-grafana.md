@@ -1,6 +1,6 @@
 # Setup Grafana
 
-Hermes provides many metrics to monitor its activity. You can find the detailed description of all the metrics in the [Telemetry](../../documentation/telemetry/index.md) section. In this chapter, you will install [Grafana](https://grafana.com/) components which will ingest the data produced by Hermes and provide both analytics and visualization.
+Hermes provides many metrics to monitor its activity. You can find a detailed description of all the metrics in the [Telemetry](../../documentation/telemetry/index.md) section. In this chapter, you will install [Grafana](https://grafana.com/) components which will ingest the data produced by Hermes and provide both analytics and visualization.
 
 ---
 ## Install Docker
@@ -12,7 +12,7 @@ To install and configure Docker, please follow the [Docker official documentatio
 ## Tools
 
 ### Grafana Dashboard
-[Grafana](https://grafana.com/) is a multi-platform open source analytics and interactive visualization web application. It provides charts, graphs and alerts for the web when connected to supported data sources. It can be used to monitor the health of an application and the data it produces. In the following tutorial, we will use a Grafana Dashboard to visualize the [Prometheus](https://prometheus.io/) metrics and the logs.
+[Grafana](https://grafana.com/) is a multi-platform open source analytics and interactive visualization web application. It provides charts, graphs, and alerts for the web when connected to supported data sources. It can be used to monitor the health of an application and the data it produces. In the following tutorial, we will use a Grafana Dashboard to visualize the [Prometheus](https://prometheus.io/) metrics and the logs.
 
 ### Prometheus
 
@@ -33,7 +33,7 @@ Prometheus is a free software application used for event monitoring and alerting
 ### Installation
 - Download [docker-compose.yaml](../../assets/docker-compose.yaml), [prometheus.yaml](../../assets/docker-compose.yaml) and [grafana_template.json](../../assets/grafana_template.json) and place them in the same repository. 
 
-- Run the following command in your command line to start Grafana, Prometheus, Loki and Promtail.
+- Run the following command in your command line to start Grafana, Prometheus, Loki, and Promtail.
 ```
 docker-compose -f docker-compose.yaml up
 ```

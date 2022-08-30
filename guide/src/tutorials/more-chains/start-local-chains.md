@@ -35,7 +35,7 @@ rm -r $HOME/.gm/node-*
 rm -r $HOME/.gm/ibc-*
 ```
 
-Copy and paste below to `$HOME/.gm/gm.toml` and set Hermes' binary path according to your setup. The following contains the configuration of 4 IBC-enabled chains.
+Copy and paste the configuration below to `$HOME/.gm/gm.toml` and set Hermes' binary path according to your setup. The following contains the configuration of 4 IBC-enabled chains.
 
 __gm.toml__
 
@@ -284,11 +284,11 @@ SUCCESS Added key 'wallet1' (cosmos15jxyjskrx7s8yqpfn3xddlrx7qcq0f8r69mp4g) on c
 > __TROUBLESHOOTING__: 
 > - If the command does not out output anything, make sure the path to Hermes' binary is set in `$HOME/.gm/gm.toml`.
 
-### $HOME/.gm directory
+### The `$HOME/.gm` directory
 
 This directory is created when you install `gm` and the binaries are stored here but when we start the chains, all the related files and folders are stored here as well.
 
-The $HOME/.gm directory has a tree structure similar to:
+The `$HOME/.gm` directory has a tree structure similar to:
 
 ```shell
 .gm
@@ -370,9 +370,9 @@ The $HOME/.gm directory has a tree structure similar to:
 
 > __Tip__: You can use the command `tree ./data/ -L 2` to view the folder structure above
 
-### $HOME/.hermes directory
+### The `$HOME/.hermes` directory
 
-By the default `hermes` expects the configuration file to be in the __`$HOME/.hermes`__ folder.
+By default `hermes` expects the configuration file to be in the __`$HOME/.hermes`__ folder.
 
 It also stores the private keys for each chain in this folder as outlined in the [Keys](../../commands/keys/index.md) section.
 

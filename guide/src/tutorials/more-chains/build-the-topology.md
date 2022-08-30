@@ -1,6 +1,6 @@
 # Build the topology
 
-At this point of the tutorial, you should have four chains running and Hermes correctly configured. You can perform a `health-check` with the command :
+At this point in the tutorial, you should have four chains running and Hermes correctly configured. You can perform a `health-check` with the command :
 
 ```shell
 hermes health-check
@@ -20,7 +20,7 @@ If the command runs successfully, it should output something similar to:
     SUCCESS performed health check for all chains in the config
 ```
 
-In the following tutorial, we will connect all of these chains in a full mesh topology then use `Packet filters` to simulate the topology given at the beginning of the [previous section](./start-local-chains.md).
+In the following tutorial, we will connect all of these chains in a full mesh topology, then use `Packet filters` to simulate the topology given at the beginning of the [previous section](./start-local-chains.md).
 
 > __NOTE__: It is also possible to only create the channels that you want. However, in production, anyone can open channels and recreate a fully-connected topology.
 
@@ -28,12 +28,12 @@ In the following tutorial, we will connect all of these chains in a full mesh to
 
 ## Connect all the chains
 
-Execute the following command :
+Execute the following command:
 ```shell
     gm hermes cc
 ```
 
-If this command runs successfully, it should output the following :
+If this command runs successfully, it should output the following:
 
 ```shell
 "$HOME/ibc-rs/target/release/hermes" create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --new-client-connection --yes
@@ -44,7 +44,7 @@ If this command runs successfully, it should output the following :
 "$HOME/ibc-rs/target/release/hermes" create channel --a-chain ibc-2 --b-chain ibc-3 --a-port transfer --b-port transfer --new-client-connection --yes
 ```
 
-Executing these commands will :
+Executing these commands will:
 * For every pair of chains, create a client on both chain tracking the state of the counterparty chain.
 * Create a connection between these two clients.
 * Create a `transfer` channel over this connection.
@@ -136,7 +136,7 @@ ibc-3: transfer/channel-2 --- ibc-2: transfer/channel-2
 
 ## Add packet filters
 
-Let's use packet filters to relay only on the green paths of the chart. In order to add filters, open your default configuration file `$HOME/.hermes/config.toml` and add:
+Let's use packet filters to relay only on the green paths specified in the chart. In order to add filters, open your default configuration file `$HOME/.hermes/config.toml` and add:
 - Under `ibc-0`'s config: 
     ```
     [chains.packet_filter]
@@ -176,7 +176,7 @@ Let's use packet filters to relay only on the green paths of the chart. In order
 
 > __NOTE__: It is also possible to use a `deny` policy to filter out the channels you do not want to relay on. However, if other channels exist or are created, the relayer will also relay on them.
 
-At this point, your config file should be:
+At this point, your config file should look like this:
 <details><summary style="font-weight:bold">config.toml</summary>
 
 ```

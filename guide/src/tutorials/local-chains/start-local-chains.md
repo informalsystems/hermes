@@ -1,6 +1,6 @@
 # Start the local chains
 
-In this chapter, you will learn how to spawn two Gaia chains, and use Hermes to relay packets between them.
+In this chapter, you will learn how to spawn two Gaia chains, and use Hermes to relay packets between them. The topology of the network will look like this:
 
 ```mermaid
 flowchart LR
@@ -36,7 +36,7 @@ Finally, start the chains with the `start` command.
 gm start
 ```
 
-This configures and starts two __`gaiad`__ instances, one named __`ibc-0`__ and the other __`ibc-1`__
+This configures and starts two __`gaiad`__ instances, one named __`ibc-0`__ and the other named __`ibc-1`__:
 
 ```mermaid
 graph TD
@@ -235,11 +235,11 @@ SUCCESS Added key 'wallet1' (cosmos1dsrj2uqjvtssenkwperuvfkgkg2xvmydvpzswy) on c
 > __TROUBLESHOOTING__: 
 > - If the command does not out output anything, make sure the path to Hermes' binary is set in `$HOME/.gm/gm.toml`.
 
-### $HOME/.gm directory
+### The `$HOME/.gm` directory
 
 This directory is created when you install `gm` and the binaries are stored here but when we start the chains, all the related files and folders are stored here as well.
 
-The $HOME/.gm directory has a tree structure similar to the one below:
+The `$HOME/.gm` directory has a tree structure similar to the one below:
 
 ```shell
 .gm
@@ -288,7 +288,7 @@ The $HOME/.gm directory has a tree structure similar to the one below:
 
 > __Tip__: You can use the command `tree ./data/ -L 2` to view the folder structure above
 
-### $HOME/.hermes directory
+### The `$HOME/.hermes` directory
 
 By the default `hermes` expects the configuration file to be in the __`$HOME/.hermes`__ folder.
 

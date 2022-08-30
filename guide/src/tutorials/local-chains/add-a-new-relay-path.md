@@ -8,11 +8,11 @@ In order to connect two IBC-enabled chains, both chains need an on-chain client 
 
 ## Identifiers
 
-A chain allocates identifiers when it creates clients, connections and channels. These identifiers can subsequently be used to refer to existing clients, connections and channels.
+A chain allocates identifiers when it creates clients, connections and channels. These identifiers can subsequently be used to refer to existing clients, connections, and channels.
 
 > NOTE: If you want to ensure you get the same identifiers while following the tutorials, run each of the commands in this page only __once__ or reset the chains as instructed in section [Start local chains](./start-local-chains.md#reset-your-configuration-and-start-the-chains). 
 
-Chains allocate identifiers using a chain specific allocation scheme. Currently, *cosmos-sdk* implementation uses the following identifiers:
+Chains allocate identifiers using a chain-specific allocation scheme. Currently, the *cosmos-sdk* implementation uses the following identifiers:
 
 - `07-tendermint-<n>` for tendermint clients.
 - `connection-<n>` for connections.
@@ -28,13 +28,14 @@ A relay path refers to a specific channel used to interconnect two chains and ov
 Hermes can be started to listen for packet events on the two ends of multiple paths and relay packets over these paths.
 This can be done over a new path or over existing paths.
 
->__NOTE__: The following steps decompose every step from the creation of the clients to the channel handshake for educational purposes. Hermes can do it in a single command with `hermes create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --new-client-connection` which creates a new client on each chain, establish a connection and open a channel. 
+>__NOTE__: The following steps decompose every step from the creation of the clients to the channel handshake for educational purposes. 
+> More realistically, you'd use the command `hermes create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --new-client-connection` in order to create a new client on each chain, establish a connection, and open a channel, all with a single command.
 
-You will need to first create a client on both chain then establish a connection between them. It is possible to have multiple connections between clients and can be useful to support multiple versions of IBC. Finally, you need to create channels over a connection to identify the source and destination modules. Learn more in the [cosmos academy tutorial](https://tutorials.cosmos.network/academy/4-ibc/what-is-ibc.html).  
+You will need to first create a client on both chains and then establish a connection between them. It is possible to have multiple connections between clients, which can be useful in order to support multiple versions of IBC. Finally, you need to create channels over a connection to identify the source and destination modules. You can learn more in the [cosmos academy tutorial](https://tutorials.cosmos.network/academy/4-ibc/what-is-ibc.html).  
 
 ### Create clients
 
-First, create a client on `ibc-1` tracking the state of `ibc-0`. It will be assigned `07-tendermint-0` is as identifier:
+First, create a client on `ibc-1` tracking the state of `ibc-0`. It will be assigned `07-tendermint-0` as its identifier:
 
 ```shell
 hermes create client --host-chain ibc-1 --reference-chain ibc-0
@@ -297,7 +298,7 @@ SUCCESS Connection {
 ```
 </details>
 
-### 3. Channel Identifiers
+### 3. Channel identifiers
 
 
 Finally, after the connection has been established, you can now open a new channel on top of it. Both chains will assign `channel-0` as the identifier of their first channel:
@@ -305,7 +306,7 @@ Finally, after the connection has been established, you can now open a new chann
 ```shell
 hermes create channel --a-chain ibc-0 --a-connection connection-0 --a-port transfer --b-port transfer
 ```
->__NOTE__: Again, you do not need to specify the counterparty chain as a connection can only be established with a single counterparty. The `port` specify the protocol which will be used on this channel. 
+>__NOTE__: Again, you do not need to specify the counterparty chain as a connection can only be established with a single counterparty. The `port` specifies the protocol which will be used on this channel. 
 
 If the command runs succesfully, it should output something similar to:
 
@@ -543,7 +544,7 @@ SUCCESS Channel {
 
 ## Visualize the current network
 
-Visualize the current network with: 
+You can visualize the topology of the current network with: 
 
 ```shell
 hermes query channels --chain ibc-0 --show-counterparty
@@ -555,7 +556,7 @@ If all the commands were successful, this command should output :
 ibc-0: transfer/channel-0 --- ibc-1: transfer/channel-0
 ```
 
-The chains __ibc-0__ and __ibc-1__ are now set up and configured as:
+The chains __ibc-0__ and __ibc-1__ are now set up and configured as so:
 
 __Relay path__: 
 ```mermaid

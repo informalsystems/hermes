@@ -18,7 +18,7 @@ class G deny;
 class H deny;
 ```
 
-Running multiple instances of Hermes can have many advantages and disadvantages. It allows a fine-grained control over every channel and can be more stable. However, you will also need to manage more wallets. 
+Running multiple instances of Hermes can have many advantages and disadvantages. It allows for fine-grained control over every channel and can be more stable than running a single instance. However, you will also need to manage more wallets. 
 
 ---
 
@@ -36,7 +36,7 @@ First, you will have to create a new configuration file with:
 
 - A different telemetry port.
 
-    **Two processes can not share the same port for any of their service.**
+    **Two processes can not share the same port for any of their services.**
 
 Create the following configuration file at `$HOME/hermes_second_instance.toml`:
 
@@ -156,7 +156,7 @@ list = [
 ]
 ```
 
-You can use this config file with:
+In order to make use of this config, specify it with the `--config` flag:
 
 ```shell
 hermes --config $HOME/hermes_second_instance.toml <COMMAND>
@@ -243,7 +243,7 @@ As you can see, there is currently no stuck packet between `ibc-1` and `ibc-3`.
 
 ## Make stuck packets
 
-For the sake of learning, let's make new stuck packets on `ibc-0<>ibc-2` and `ibc-1<>ibc-3`.
+For the sake of learning, let's make new stuck packets on the `ibc-0<>ibc-2` channel and the `ibc-1<>ibc-3` channel.
 
 ```shell
 hermes tx ft-transfer --dst-chain ibc-3 --src-chain ibc-1 --src-port transfer --src-channel channel-2 --amount 1000000 --timeout-seconds 10000
@@ -254,7 +254,7 @@ If both commands run successfully, they should output a `SUCCESS` message.
 
 Now, let's verify that these packets are indeed stuck with the `query packets` commands:
 
-- At ibc-0:
+- On `ibc-0`:
     ```shell
      hermes query packet pending --chain ibc-0 --port transfer --channel channel-1
     ```
@@ -279,7 +279,7 @@ Now, let's verify that these packets are indeed stuck with the `query packets` c
     ```
     
 
-- At ibc-1:
+- On `ibc-1`:
     ```shell
     hermes query packet pending --chain ibc-1 --port transfer --channel channel-2
     ```
@@ -305,7 +305,7 @@ Now, let's verify that these packets are indeed stuck with the `query packets` c
 
 You have pending packets on the two paths filtered out by our running instance. 
 
->You can also verify that Hermes is still relaying on the other paths by sending a packet from `ibc-1` to `ibc-2`:
+>__NOTE__: You can also verify that Hermes is still relaying on the other paths by sending a packet from `ibc-1` to `ibc-2`:
 >
 >```shell
 >hermes tx ft-transfer --dst-chain ibc-2 --src-chain ibc-1 --src-port transfer --src-channel channel-1 --amount 1000000 --timeout-seconds 10000

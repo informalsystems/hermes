@@ -34,25 +34,25 @@ ibc2---ibc2ibc3---ibc3ibc2---ibc3
 
 ## Query balances
 
-- Balances at ibc-0:
+- Balances on `ibc-0`:
 
     ```shell
     gaiad --node tcp://localhost:27050 query bank balances $(gaiad --home ~/.gm/ibc-0 keys --keyring-backend="test" show wallet -a)
     ```
 
-- Balances at ibc-1:
+- Balances on `ibc-1`:
 
     ```shell
     gaiad --node tcp://localhost:27060 query bank balances $(gaiad --home ~/.gm/ibc-1 keys --keyring-backend="test" show wallet -a)
     ```
 
-- Balances at ibc-2:
+- Balances on `ibc-2`:
 
     ```shell
     gaiad --node tcp://localhost:27070 query bank balances $(gaiad --home ~/.gm/ibc-2 keys --keyring-backend="test" show wallet -a)
     ```
 
-- Balances at ibc-3:
+- Balances on `ibc-3`:
 
     ```shell
     gaiad --node tcp://localhost:27080 query bank balances $(gaiad --home ~/.gm/ibc-3 keys --keyring-backend="test" show wallet -a)
@@ -60,7 +60,7 @@ ibc2---ibc2ibc3---ibc3ibc2---ibc3
 
 > __NOTE__ the RPC addresses used in the two commands above are configured in `~/.hermes/config.toml` file. It can also be found with `gm status`
 
-At this point of the tutorial, every command should output something similar to:
+At this point in the tutorial, every command should output something similar to:
 
 ```
 balances:
@@ -82,7 +82,7 @@ Now, let's exchange `samoleans` between chains.
     ```shell
     hermes start
     ```
-    Hermes will first relay the pending packets that have not been relayed and then start passive relaying by listening to and acting on packet events. 
+    Hermes will first relay the pending packets that have not been relayed and then start passively relaying by listening for and acting on packet events. 
 
 - Let's transfer `1000000 samoleans` from ibc-1 to ibc-3. There is a direct path between ibc-1 (channel-2) and ibc-3 (channel-1). Let's attempt the transfer on this path.
 
@@ -131,7 +131,7 @@ Now, let's exchange `samoleans` between chains.
         hermes tx ft-transfer --dst-chain ibc-2 --src-chain ibc-1 --src-port transfer --src-channel channel-1 --amount 1000000 --timeout-seconds 10000
     ```
 - Wait a few seconds then query balances on `ibc-1` and `ibc-2`. You should observe something similar to:
-    - Balances at ibc-1:
+    - Balances on `ibc-1`:
         ```
         balances:
         - amount: "98000000"
@@ -155,14 +155,14 @@ Now, let's exchange `samoleans` between chains.
         next_key: null
         total: "0"
         ```
-    The samoleans were transferred to ibc-1 and are visible under the denomination `ibc/C1840...` (it might be a different one for you). 
+    The samoleans were transferred to `ibc-1` and are visible under the denomination `ibc/C1840...` (it might be a different one for you). 
 
-- Transfer these tokens to ibc-3:
+- Transfer these tokens to `ibc-3`:
     ```shell
     hermes tx ft-transfer --dst-chain ibc-3 --src-chain ibc-2 --src-port transfer --src-channel channel-2 --amount 1000000 --timeout-seconds 10000 --denom ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
     ```
 - Wait a few seconds then query balances on `ibc-2` and `ibc-3`. You should observe something similar to:
-    - Balances at ibc-2:
+    - Balances on `ibc-2`:
         ```
         balances:
         - amount: "0"
@@ -175,7 +175,7 @@ Now, let's exchange `samoleans` between chains.
         next_key: null
         total: "0"
         ```
-    - Balances at ibc-3:
+    - Balances on `ibc-3`:
         ```
         balances:
         - amount: "1000000"
@@ -196,7 +196,7 @@ Now let's send some of these coins back to `ibc-1`. We will dedicate half of the
 
 ### The wrong way
 
-Let's start with a common mistake and send back these coins on another path than the one they were received on:
+Let's start with a common mistake and send back these coins on a different path than the one they were received on:
 
 __Another path to ibc-1__
 
@@ -205,12 +205,12 @@ graph LR;
 A((ibc-3)) --> B((ibc-0)) --> C((ibc-1));
 ```
 
-- Use the `ft-transfer` command to transfer `500000 ibc/C658...` tokens from ibc-3 to ibc-0:
+- Use the `ft-transfer` command to transfer `500000 ibc/C658...` tokens from `ibc-3` to `ibc-0`:
     ```shell
     hermes tx ft-transfer --dst-chain ibc-0 --src-chain ibc-3 --src-port transfer --src-channel channel-0 --amount 500000 --timeout-seconds 10000 --denom ibc/C658F0EB9DE176E080B586D634004141239C3E55676462C976266DB54C56EBE4
     ```
-- Wait a few seconds then query balances on `ibc-0` and `ibc-3`. You should observe something similar to:
-    - Balances at ibc-0:
+- Wait a few seconds, then query balances on `ibc-0` and `ibc-3`. You should observe something similar to:
+    - Balances on `ibc-0`:
         ```
         balances:
         - amount: "500000"
@@ -223,7 +223,7 @@ A((ibc-3)) --> B((ibc-0)) --> C((ibc-1));
         next_key: null
         total: "0"
         ```
-    - Balances at ibc-3:
+    - Balances on `ibc-3`:
         ```
         balances:
         - amount: "500000"
@@ -238,13 +238,13 @@ A((ibc-3)) --> B((ibc-0)) --> C((ibc-1));
         ```
     The tokens were correctly received by `ibc-0` under the denomination `ibc/563...`.
 
-- Transfer the `ibc/563...` tokens from ibc-0 to ibc-1:
+- Transfer the `ibc/563...` tokens from `ibc-0` to `ibc-1`:
     ```shell
     hermes tx ft-transfer --dst-chain ibc-1 --src-chain ibc-0 --src-port transfer --src-channel channel-0 --amount 500000 --timeout-seconds 10000 --denom ibc/563FDAE5A0D8C15013E4485134A2D2EE3317452278B56B2ED63DDB4EB677DF84
     ```
 
 - Wait a few seconds then query balances on `ibc-0` and `ibc-3`. You should observe something similar to:
-    - Balances at ibc-0:
+    - Balances on `ibc-0`:
         ```
         balances:
         - amount: "0"
@@ -257,7 +257,7 @@ A((ibc-3)) --> B((ibc-0)) --> C((ibc-1));
         next_key: null
         total: "0"
         ```
-    - Balances at ibc-1:
+    - Balances on `ibc-1`:
         ```
         balances:
         - amount: "500000"
@@ -276,7 +276,7 @@ A((ibc-3)) --> B((ibc-0)) --> C((ibc-1));
 
 ### The right way
 
-Now that you have seen the wrong way to transfer back tokens, let's see the right way. **Tokens should be transferred back on the same path they were transferred**.
+Now that you have seen the wrong way to transfer back tokens, let's see the right way. **Tokens should be transferred back on the same path they were received**.
 
 __Correct Path__:
 ```mermaid
@@ -284,7 +284,7 @@ graph LR;
 A((ibc-3))-->B((ibc-2))-->C((ibc-1));
 ```
 
-- Use the `ft-transfer` command to transfer `500000 ibc/C658...` tokens from ibc-3 to ibc-2:
+- Use the `ft-transfer` command to transfer `500000 ibc/C658...` tokens from `ibc-3` to `ibc-2`:
     ```shell
     hermes tx ft-transfer --dst-chain ibc-2 --src-chain ibc-3 --src-port transfer --src-channel channel-2 --amount 500000 --timeout-seconds 10000 --denom ibc/C658F0EB9DE176E080B586D634004141239C3E55676462C976266DB54C56EBE4
     ```
@@ -322,8 +322,8 @@ A((ibc-3))-->B((ibc-2))-->C((ibc-1));
     hermes tx ft-transfer --dst-chain ibc-1 --src-chain ibc-2 --src-port transfer --src-channel channel-1 --amount 500000 --timeout-seconds 10000 --denom ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
     ```
 
-- Wait a few seconds then query balances on `ibc-1` and `ibc-2`. You should observe something similar to:
-    - Balances at ibc-1:
+- Wait a few seconds, then query balances on `ibc-1` and `ibc-2`. You should observe something similar to:
+    - Balances on `ibc-1`:
         ```
         balances:
         - amount: "500000"
@@ -336,7 +336,7 @@ A((ibc-3))-->B((ibc-2))-->C((ibc-1));
         next_key: null
         total: "0"
         ```
-    - Balances at ibc-2:
+    - Balances on `ibc-2`:
         ```
         balances:
         - amount: "0"
