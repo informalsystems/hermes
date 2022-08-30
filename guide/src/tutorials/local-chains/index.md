@@ -11,13 +11,10 @@ Make sure that you followed the steps in the [Prerequisites for local chains](..
 ## Sections
 
 * **[Start Local Chains](./start-local-chains.md)**
-
-    Start two local chains with `gm` and set up Hermes.
+    * Start two local chains with `gm` and set up Hermes.
 
 * **[Add a new relay path](./add-a-new-relay-path.md)**
-
-    Add a relay path between the two chains you started.
+    * Add a relay path between the two chains you started.
 
 * **[Start relaying](./start-relaying.md)**
-
-    Exchange and relay packets between two local chains.
+    * Exchange and relay packets between two local chains.

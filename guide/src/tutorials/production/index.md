@@ -11,13 +11,10 @@ The [next section](./setup-grafana.md) will contain the steps to install all the
 ## Sections
 
 * **[Set up Grafana](./setup-grafana.md)**
-
-    Learn how to set up [Grafana](https://grafana.com)'s monitoring stack for Hermes.
+    * Learn how to set up [Grafana](https://grafana.com)'s monitoring stack for Hermes.
 
 * **[Set up Hermes](./setup-hermes.md)**
-
-    Learn how to configure Hermes on production chains (Cosmoshub <> Osmosis).
+    * Learn how to configure Hermes on production chains (Cosmoshub <> Osmosis).
 
 * **[Start relaying](./start-relaying.md)**
-
-    Exchange and relay packets between production chains.
+    * Exchange and relay packets between production chains.

@@ -4,38 +4,38 @@ The `Commands` section presents the commands current available in Hermes
 
 ## Sections
 
-**[Keys](./keys/index.md)**
+* **[Keys](./keys/index.md)**
 
-Commands to manage keys (private keys) for each chain.
+    * Commands to manage keys (private keys) for each chain.
 
-**[Config](./config.md)**
+* **[Config](./config.md)**
 
-Commands to manage configuration file, in particular to validate it.
+    * Commands to manage configuration file, in particular to validate it.
 
-**[Path Setup](./path-setup/index.md)**
+* **[Path Setup](./path-setup/index.md)**
 
-Commands to manage clients, connections, channels.
+    * Commands to manage clients, connections, channels.
 
-**[Relaying](./relaying/index.md)**
+* **[Relaying](./relaying/index.md)**
 
-Commands to start the relayer and relay packets.
+    * Commands to start the relayer and relay packets.
 
-**[Listen Mode](./listen/index.md)**
+* **[Listen Mode](./listen/index.md)**
 
-Commands to listen for IBC events
+    * Commands to listen for IBC events
 
-**[Upgrade](./upgrade/index.md)**
+* **[Upgrade](./upgrade/index.md)**
 
-Commands to perform client upgrade
+    * Commands to perform client upgrade
 
-**[Monitor](./misbehaviour/index.md)**
+* **[Monitor](./misbehaviour/index.md)**
 
-Commands to monitor clients and submit evidence of misbehaviour
+    * Commands to monitor clients and submit evidence of misbehaviour
 
-**[Queries](./queries/index.md)**
+* **[Queries](./queries/index.md)**
 
-Commands to execute queries on configured chains
+    * Commands to execute queries on configured chains
 
-**[Transactions](./tx/index.md)**
+* **[Transactions](./tx/index.md)**
 
-Commands to submit individual transactions to configured chains
+    * Commands to submit individual transactions to configured chains

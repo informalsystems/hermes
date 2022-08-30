@@ -44,7 +44,7 @@ Hermes is actively developed and maintained by [Informal Systems](https://inform
   - **[Features](./advanced/features.md)** 
       - This section summarizes Hermes' features and includes a comparison between the Cosmos Go relayer and Hermes.
   - **[Troubleshooting](./advanced/troubleshooting/index.md)**
-      - todo
+      - Learn the general guidelines regarding troubleshooting.
     
 
 * **[Documentation](./documentation/index.md)**
