@@ -819,10 +819,28 @@ pub async fn query_clients(
 #[tracing::instrument(skip(pool))]
 pub async fn query_consensus_states(
     pool: &PgPool,
+    client_id: &ClientId,
     query_height: &QueryHeight,
 ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
     let result = query_ibc_data(pool, query_height).await?;
-    Ok(result.data.consensus_states.values().cloned().collect())
+
+    // TOOD: Change representation to get all consensus states for a given client
+    let mut consensus_states = result
+        .data
+        .consensus_states
+        .iter()
+        .filter_map(|(Key((cid, h)), consensus_state)| {
+            if cid == client_id {
+                Some(consensus_state.clone())
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+
+    consensus_states.sort_by(|a, b| b.height.cmp(&a.height));
+
+    Ok(consensus_states)
 }
 
 #[tracing::instrument(skip(pool))]

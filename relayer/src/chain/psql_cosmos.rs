@@ -947,7 +947,18 @@ impl ChainEndpoint for PsqlChain {
         &self,
         request: QueryConsensusStatesRequest,
     ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
-        self.chain.query_consensus_states(request)
+        if self.is_synced() {
+            crate::time!("query_consensus_states_psql");
+            crate::telemetry!(query, self.id(), "query_consensus_states_psql");
+
+            self.block_on(query_consensus_states(
+                &self.pool,
+                &request.client_id,
+                &QueryHeight::Latest,
+            ))
+        } else {
+            self.chain.query_consensus_states(request)
+        }
     }
 
     fn query_consensus_state(
