@@ -252,7 +252,7 @@ hermes tx ft-transfer --dst-chain ibc-2 --src-chain ibc-0 --src-port transfer --
 
 If both commands run successfully, they should output a `SUCCESS` message. 
 
-Now, let's verify that these packets are indeed stuck with the `query packets` command above :
+Now, let's verify that these packets are indeed stuck with the `query packets` commands:
 
 - At ibc-0:
     ```shell

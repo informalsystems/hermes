@@ -45,7 +45,7 @@ graph TD
     C -->|gaiad| F[ibc-1]
 ```
 
-If the command runs successfully you should see a message similar to the one below in the terminal:
+If the command runs successfully, it should output something similar to:
 
 ```shell
 Creating ibc-0 config...
@@ -58,7 +58,7 @@ Creating node-1 config...
 node-1 started, PID: 12885, LOG: $HOME/.gm/node-1/log
 ```
 
-Run the below command to check the status of the chains
+Run the following command to check the status of the chains:
 
 ```bash
 gm status

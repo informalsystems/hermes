@@ -6,7 +6,7 @@ At this point of the tutorial, you should have four chains running and Hermes co
 hermes health-check
 ```
 
-If the command runs successfully you should see a message similar to the one below in the terminal:
+If the command runs successfully, it should output something similar to:
 ```
     2022-08-23T15:54:58.150005Z  INFO ThreadId(01) using default configuration from '$HOME/.hermes/config.toml'
     2022-08-23T15:54:58.150179Z  INFO ThreadId(01) [ibc-0] performing health check...

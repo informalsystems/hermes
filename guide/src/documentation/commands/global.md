@@ -121,6 +121,8 @@ To extract the identifier of the newly created client above:
 hermes --config /home/my_chain.toml --json create client --host-chain ibc-0 --reference-chain ibc-1 | jq '.result.CreateClient.client_id'
 ```
 
+Which should output:
+
 ```
 "07-tendermint-2"
 ```

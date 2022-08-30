@@ -112,7 +112,7 @@ graph TD
     
 ```
 
-If the command runs successfully you should see a message similar to the one below in the terminal:
+If the command runs successfully, it should output something similar to:
 
 ```shell
 Creating ibc-0 config...
@@ -133,7 +133,7 @@ Creating node-3 config...
 node-3 started, PID: 25194, LOG: $HOME/.gm/node-3/log
 ```
 
-Run the below command to check the status of the chains
+Run the following command to check the status of the chains:
 
 ```bash
 gm status
@@ -163,7 +163,7 @@ gm hermes config
 ```
 >__NOTE__: You can visit the [`Configuration`](../../documentation/configuration/index.md) section for more information about the configuration file.
 
-Based on the `gm.toml` above, your `$HOME/.hermes/config.toml` file should look like below :
+Based on the `gm.toml` above, your `$HOME/.hermes/config.toml` file should look like:
 
 __config.toml__
 
@@ -288,7 +288,7 @@ SUCCESS Added key 'wallet1' (cosmos15jxyjskrx7s8yqpfn3xddlrx7qcq0f8r69mp4g) on c
 
 This directory is created when you install `gm` and the binaries are stored here but when we start the chains, all the related files and folders are stored here as well.
 
-The $HOME/.gm directory has a tree structure similar to the one below:
+The $HOME/.gm directory has a tree structure similar to:
 
 ```shell
 .gm

@@ -6,7 +6,7 @@ In section [Setup Grafana](./setup-grafana.md), you did set up a Grafana dashboa
 
 ## Create an empty log file
 
-Promtail is shipping every log file from `/var/log` to Loki. Follow the steps above to create an empty log file for Hermes:
+Promtail is shipping every log file from `/var/log` to Loki. Follow the steps below to create an empty log file for Hermes:
 ```shell
 sudo touch /var/log/hermes.log 
 sudo chown $(whoami) /var/log/hermes.log 

@@ -2,7 +2,7 @@
 
 In the previous tutorial, you learned about how to relay packets between a pair of chains on a relay path. Now, you will learn how to relay packets on an arbitrary topology.
 
->__WARNING__ Before proceeding to the sections above, please first, make sure you followed the steps in the [Build the topology section](./build-the-topology.md).
+>__WARNING__ Before proceeding to the sections below, please first, make sure you followed the steps in the [Build the topology section](./build-the-topology.md).
 
 The chains should be fully connected and the relayer should be setup to relay on these channels:
 

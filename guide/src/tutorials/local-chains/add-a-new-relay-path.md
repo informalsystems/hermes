@@ -10,13 +10,13 @@ In order to connect two IBC-enabled chains, both chains need an on-chain client 
 
 A chain allocates identifiers when it creates clients, connections and channels. These identifiers can subsequently be used to refer to existing clients, connections and channels.
 
-> NOTE: If you want to ensure you get the same identifiers while following the tutorials, run each of the three commands below __once__ on `ibc-1` or reset the chains as instructed in section [Start local chains](./start-local-chains.md#reset-your-configuration-and-start-the-chains). 
+> NOTE: If you want to ensure you get the same identifiers while following the tutorials, run each of the commands in this page only __once__ or reset the chains as instructed in section [Start local chains](./start-local-chains.md#reset-your-configuration-and-start-the-chains). 
 
 Chains allocate identifiers using a chain specific allocation scheme. Currently, *cosmos-sdk* implementation uses the following identifiers:
 
-    * `07-tendermint-<n>` for tendermint clients.
-    * `connection-<n>` for connections.
-    * `channel-<n>` for channels.
+- `07-tendermint-<n>` for tendermint clients.
+- `connection-<n>` for connections.
+- `channel-<n>` for channels.
 
 It is possible for two chains to use the same identifier to designate two different objects. e.g. `channel-0` does not designate the same channel on the Hub and on Osmosis or Juno.
 
@@ -57,7 +57,7 @@ SUCCESS CreateClient(
 )
 ```
 
-Now, create a second client on `ibc-0` tracking `ibc-1`:
+Now, create a client on `ibc-0` tracking `ibc-1`:
 
 ```shell
 hermes create client --host-chain ibc-0 --reference-chain ibc-1
@@ -554,7 +554,7 @@ If all the commands were successful, this command should output :
 ibc-0: transfer/channel-0 --- ibc-1: transfer/channel-0
 ```
 
-The chains __ibc-0__ and __ibc-1__ are now set up and configured as above:
+The chains __ibc-0__ and __ibc-1__ are now set up and configured as:
 
 __Relay path__: 
 ```mermaid
