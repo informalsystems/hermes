@@ -18,9 +18,9 @@ use bytes::Buf;
 use codec::{Compact, Decode, Encode};
 use ibc_proto::ibc::lightclients::beefy::v1::{
     BeefyAuthoritySet as RawBeefyAuthoritySet, BeefyMmrLeaf as RawBeefyMmrLeaf,
-    BeefyMmrLeafPartial as RawBeefyMmrLeafPartial, Commitment as RawCommitment,
-    CommitmentSignature, Header as RawBeefyHeader, MmrUpdateProof as RawMmrUpdateProof,
-    PayloadItem, SignedCommitment as RawSignedCommitment,
+    BeefyMmrLeafPartial as RawBeefyMmrLeafPartial, ClientStateUpdateProof as RawMmrUpdateProof,
+    Commitment as RawCommitment, CommitmentSignature, ConsensusStateUpdateProof,
+    Header as RawBeefyHeader, PayloadItem, SignedCommitment as RawSignedCommitment,
 };
 use pallet_mmr_primitives::Proof;
 use sp_core::H256;
@@ -30,10 +30,15 @@ use sp_runtime::traits::{BlakeTwo256, SaturatedConversion};
 /// Beefy consensus header
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct BeefyHeader {
-    pub parachain_headers: Vec<ParachainHeader>, // contains the parachain headers
-    pub mmr_proofs: Vec<Vec<u8>>,                // mmr proofs for these headers
-    pub mmr_size: u64,                           // The latest mmr size
+    pub headers_with_proof: Option<ParachainHeadersWithProof>,
     pub mmr_update_proof: Option<MmrUpdateProof>, // Proof for updating the latest mmr root hash
+}
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct ParachainHeadersWithProof {
+    pub headers: Vec<ParachainHeader>, // contains the parachain headers
+    pub mmr_proofs: Vec<Vec<u8>>,      // mmr proofs for these headers
+    pub mmr_size: u64,                 // The latest mmr size
 }
 
 impl crate::core::ics02_client::header::Header for BeefyHeader {
@@ -77,59 +82,70 @@ impl TryFrom<RawBeefyHeader> for BeefyHeader {
     type Error = Error;
 
     fn try_from(raw_header: RawBeefyHeader) -> Result<Self, Self::Error> {
-        let parachain_headers = raw_header
-            .parachain_headers
-            .into_iter()
-            .map(|raw_para_header| {
-                let mmr_partial_leaf = raw_para_header
-                    .mmr_leaf_partial
-                    .ok_or_else(Error::invalid_raw_header)?;
-                let parent_hash =
-                    H256::decode(&mut mmr_partial_leaf.parent_hash.as_slice()).unwrap();
-                let beefy_next_authority_set =
-                    if let Some(next_set) = mmr_partial_leaf.beefy_next_authority_set {
-                        BeefyNextAuthoritySet {
-                            id: next_set.id,
-                            len: next_set.len,
-                            root: H256::decode(&mut next_set.authority_root.as_slice())
-                                .map_err(|e| Error::invalid_mmr_update(e.to_string()))?,
-                        }
-                    } else {
-                        Default::default()
-                    };
-                Ok(ParachainHeader {
-                    parachain_header: decode_parachain_header(raw_para_header.parachain_header)
-                        .map_err(|_| Error::invalid_raw_header())?,
-                    partial_mmr_leaf: PartialMmrLeaf {
-                        version: {
-                            let (major, minor) =
-                                split_leaf_version(mmr_partial_leaf.version.saturated_into::<u8>());
-                            MmrLeafVersion::new(major, minor)
-                        },
-                        parent_number_and_hash: (mmr_partial_leaf.parent_number, parent_hash),
-                        beefy_next_authority_set,
-                    },
-                    parachain_heads_proof: raw_para_header
-                        .parachain_heads_proof
-                        .into_iter()
-                        .map(|item| {
-                            let mut dest = [0u8; 32];
-                            if item.len() != 32 {
-                                return Err(Error::invalid_raw_header());
+        let headers_with_proof = raw_header.consensus_state.map(|consensus_update| {
+            let parachain_headers = consensus_update
+                .parachain_headers
+                .into_iter()
+                .map(|raw_para_header| {
+                    let mmr_partial_leaf = raw_para_header
+                        .mmr_leaf_partial
+                        .ok_or_else(Error::invalid_raw_header)?;
+                    let parent_hash =
+                        H256::decode(&mut mmr_partial_leaf.parent_hash.as_slice()).unwrap();
+                    let beefy_next_authority_set =
+                        if let Some(next_set) = mmr_partial_leaf.beefy_next_authority_set {
+                            BeefyNextAuthoritySet {
+                                id: next_set.id,
+                                len: next_set.len,
+                                root: H256::decode(&mut next_set.authority_root.as_slice())
+                                    .map_err(|e| Error::invalid_mmr_update(e.to_string()))?,
                             }
-                            dest.copy_from_slice(&*item);
-                            Ok(dest)
-                        })
-                        .collect::<Result<Vec<_>, Error>>()?,
-                    heads_leaf_index: raw_para_header.heads_leaf_index,
-                    heads_total_count: raw_para_header.heads_total_count,
-                    extrinsic_proof: raw_para_header.extrinsic_proof,
-                    timestamp_extrinsic: raw_para_header.timestamp_extrinsic,
+                        } else {
+                            Default::default()
+                        };
+                    Ok(ParachainHeader {
+                        parachain_header: decode_parachain_header(raw_para_header.parachain_header)
+                            .map_err(|_| Error::invalid_raw_header())?,
+                        partial_mmr_leaf: PartialMmrLeaf {
+                            version: {
+                                let (major, minor) = split_leaf_version(
+                                    mmr_partial_leaf.version.saturated_into::<u8>(),
+                                );
+                                MmrLeafVersion::new(major, minor)
+                            },
+                            parent_number_and_hash: (mmr_partial_leaf.parent_number, parent_hash),
+                            beefy_next_authority_set,
+                        },
+                        parachain_heads_proof: raw_para_header
+                            .parachain_heads_proof
+                            .into_iter()
+                            .map(|item| {
+                                let mut dest = [0u8; 32];
+                                if item.len() != 32 {
+                                    return Err(Error::invalid_raw_header());
+                                }
+                                dest.copy_from_slice(&*item);
+                                Ok(dest)
+                            })
+                            .collect::<Result<Vec<_>, Error>>()?,
+                        heads_leaf_index: raw_para_header.heads_leaf_index,
+                        heads_total_count: raw_para_header.heads_total_count,
+                        extrinsic_proof: raw_para_header.extrinsic_proof,
+                        timestamp_extrinsic: raw_para_header.timestamp_extrinsic,
+                    })
                 })
+                .collect::<Result<Vec<_>, Error>>()
+                .ok();
+            parachain_headers.map(|parachain_headers| {
+                ParachainHeadersWithProof {
+                    headers: parachain_headers,
+                    mmr_proofs: consensus_update.mmr_proofs,
+                    mmr_size: consensus_update.mmr_size,
+                }
             })
-            .collect::<Result<Vec<_>, Error>>()?;
+        }).flatten();
 
-        let mmr_update_proof = if let Some(mmr_update) = raw_header.mmr_update_proof {
+        let mmr_update_proof = if let Some(mmr_update) = raw_header.client_state {
             let commitment = mmr_update
                 .signed_commitment
                 .as_ref()
@@ -253,9 +269,7 @@ impl TryFrom<RawBeefyHeader> for BeefyHeader {
         };
 
         Ok(Self {
-            parachain_headers,
-            mmr_proofs: raw_header.mmr_proofs,
-            mmr_size: raw_header.mmr_size,
+            headers_with_proof,
             mmr_update_proof,
         })
     }
@@ -264,48 +278,57 @@ impl TryFrom<RawBeefyHeader> for BeefyHeader {
 impl From<BeefyHeader> for RawBeefyHeader {
     fn from(beefy_header: BeefyHeader) -> Self {
         Self {
-            parachain_headers: beefy_header
-                .parachain_headers
-                .into_iter()
-                .map(
-                    |para_header| ibc_proto::ibc::lightclients::beefy::v1::ParachainHeader {
-                        parachain_header: para_header.parachain_header.encode(),
-                        mmr_leaf_partial: Some(RawBeefyMmrLeafPartial {
-                            version: {
-                                let (major, minor) = para_header.partial_mmr_leaf.version.split();
-                                merge_leaf_version(major, minor) as u32
-                            },
-                            parent_number: para_header.partial_mmr_leaf.parent_number_and_hash.0,
-                            parent_hash: para_header
-                                .partial_mmr_leaf
-                                .parent_number_and_hash
-                                .1
-                                .encode(),
-                            beefy_next_authority_set: Some(RawBeefyAuthoritySet {
-                                id: para_header.partial_mmr_leaf.beefy_next_authority_set.id,
-                                len: para_header.partial_mmr_leaf.beefy_next_authority_set.len,
-                                authority_root: para_header
+            consensus_state: beefy_header.headers_with_proof.map(|headers| {
+                let parachain_headers = headers
+                    .headers
+                    .into_iter()
+                    .map(
+                        |para_header| ibc_proto::ibc::lightclients::beefy::v1::ParachainHeader {
+                            parachain_header: para_header.parachain_header.encode(),
+                            mmr_leaf_partial: Some(RawBeefyMmrLeafPartial {
+                                version: {
+                                    let (major, minor) =
+                                        para_header.partial_mmr_leaf.version.split();
+                                    merge_leaf_version(major, minor) as u32
+                                },
+                                parent_number: para_header
                                     .partial_mmr_leaf
-                                    .beefy_next_authority_set
-                                    .root
+                                    .parent_number_and_hash
+                                    .0,
+                                parent_hash: para_header
+                                    .partial_mmr_leaf
+                                    .parent_number_and_hash
+                                    .1
                                     .encode(),
+                                beefy_next_authority_set: Some(RawBeefyAuthoritySet {
+                                    id: para_header.partial_mmr_leaf.beefy_next_authority_set.id,
+                                    len: para_header.partial_mmr_leaf.beefy_next_authority_set.len,
+                                    authority_root: para_header
+                                        .partial_mmr_leaf
+                                        .beefy_next_authority_set
+                                        .root
+                                        .encode(),
+                                }),
                             }),
-                        }),
-                        parachain_heads_proof: para_header
-                            .parachain_heads_proof
-                            .into_iter()
-                            .map(|item| item.to_vec())
-                            .collect(),
-                        heads_leaf_index: para_header.heads_leaf_index,
-                        heads_total_count: para_header.heads_total_count,
-                        extrinsic_proof: para_header.extrinsic_proof,
-                        timestamp_extrinsic: para_header.timestamp_extrinsic,
-                    },
-                )
-                .collect(),
-            mmr_proofs: beefy_header.mmr_proofs,
-            mmr_size: beefy_header.mmr_size,
-            mmr_update_proof: if let Some(mmr_update) = beefy_header.mmr_update_proof {
+                            parachain_heads_proof: para_header
+                                .parachain_heads_proof
+                                .into_iter()
+                                .map(|item| item.to_vec())
+                                .collect(),
+                            heads_leaf_index: para_header.heads_leaf_index,
+                            heads_total_count: para_header.heads_total_count,
+                            extrinsic_proof: para_header.extrinsic_proof,
+                            timestamp_extrinsic: para_header.timestamp_extrinsic,
+                        },
+                    )
+                    .collect();
+                ConsensusStateUpdateProof {
+                    parachain_headers,
+                    mmr_proofs: headers.mmr_proofs,
+                    mmr_size: headers.mmr_size,
+                }
+            }),
+            client_state: if let Some(mmr_update) = beefy_header.mmr_update_proof {
                 Some(RawMmrUpdateProof {
                     mmr_leaf: Some(RawBeefyMmrLeaf {
                         version: {

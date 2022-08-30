@@ -80,54 +80,57 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         };
 
         // Extract parachain headers from the beefy header if they exist
-        let mut leaf_indices = vec![];
-        let parachain_headers = header
-            .parachain_headers
-            .clone()
-            .into_iter()
-            .map(|header| {
-                let leaf_index = client_state
-                    .to_leaf_index(header.partial_mmr_leaf.parent_number_and_hash.0 + 1);
-                leaf_indices.push(leaf_index as u64);
-                ParachainHeader {
-                    parachain_header: header.parachain_header.encode(),
-                    partial_mmr_leaf: header.partial_mmr_leaf,
-                    para_id: client_state.para_id,
-                    parachain_heads_proof: header.parachain_heads_proof,
-                    heads_leaf_index: header.heads_leaf_index,
-                    heads_total_count: header.heads_total_count,
-                    extrinsic_proof: header.extrinsic_proof,
-                    timestamp_extrinsic: header.timestamp_extrinsic,
-                }
-            })
-            .collect::<Vec<_>>();
+        if let Some(headers_with_proof) = header.headers_with_proof {
+            let mut leaf_indices = vec![];
+            let parachain_headers = headers_with_proof
+                .headers
+                .into_iter()
+                .map(|header| {
+                    let leaf_index = client_state
+                        .to_leaf_index(header.partial_mmr_leaf.parent_number_and_hash.0 + 1);
+                    leaf_indices.push(leaf_index as u64);
+                    ParachainHeader {
+                        parachain_header: header.parachain_header.encode(),
+                        partial_mmr_leaf: header.partial_mmr_leaf,
+                        para_id: client_state.para_id,
+                        parachain_heads_proof: header.parachain_heads_proof,
+                        heads_leaf_index: header.heads_leaf_index,
+                        heads_total_count: header.heads_total_count,
+                        extrinsic_proof: header.extrinsic_proof,
+                        timestamp_extrinsic: header.timestamp_extrinsic,
+                    }
+                })
+                .collect::<Vec<_>>();
 
-        let leaf_count =
-            (client_state.to_leaf_index(light_client_state.latest_beefy_height) + 1) as u64;
+            let leaf_count =
+                (client_state.to_leaf_index(light_client_state.latest_beefy_height) + 1) as u64;
 
-        let parachain_update_proof = ParachainsUpdateProof {
-            parachain_headers,
-            mmr_proof: BatchProof {
-                leaf_indices,
-                leaf_count,
-                items: header
-                    .mmr_proofs
-                    .into_iter()
-                    .map(|item| {
-                        H256::decode(&mut &*item).map_err(|e| {
-                            Error::beefy(BeefyError::invalid_mmr_update(format!("{:?}", e)))
+            let parachain_update_proof = ParachainsUpdateProof {
+                parachain_headers,
+                mmr_proof: BatchProof {
+                    leaf_indices,
+                    leaf_count,
+                    items: headers_with_proof
+                        .mmr_proofs
+                        .into_iter()
+                        .map(|item| {
+                            H256::decode(&mut &*item).map_err(|e| {
+                                Error::beefy(BeefyError::invalid_mmr_update(format!("{:?}", e)))
+                            })
                         })
-                    })
-                    .collect::<Result<Vec<_>, _>>()?,
-            },
-        };
+                        .collect::<Result<Vec<_>, _>>()?,
+                },
+            };
 
-        // Perform the parachain header verification
-        beefy_client::verify_parachain_headers::<HostFunctionsManager<HostFunctions>>(
-            light_client_state,
-            parachain_update_proof,
-        )
-        .map_err(|e| Error::beefy(BeefyError::invalid_mmr_update(format!("{:?}", e))))
+            // Perform the parachain header verification
+            beefy_client::verify_parachain_headers::<HostFunctionsManager<HostFunctions>>(
+                light_client_state,
+                parachain_update_proof,
+            )
+            .map_err(|e| Error::beefy(BeefyError::invalid_mmr_update(format!("{:?}", e))))?
+        }
+
+        Ok(())
     }
 
     fn update_state(
@@ -143,26 +146,29 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
             .from_header(header.clone())
             .map_err(Error::beefy)?;
         let mut latest_para_height = client_state.latest_para_height;
-        for header in header.parachain_headers {
-            // Skip genesis block of parachains since it has no timestamp or ibc root
-            if header.parachain_header.number == 0 {
-                continue;
+
+        if let Some(parachain_headers) = header.headers_with_proof {
+            for header in parachain_headers.headers {
+                // Skip genesis block of parachains since it has no timestamp or ibc root
+                if header.parachain_header.number == 0 {
+                    continue;
+                }
+                if latest_para_height < header.parachain_header.number {
+                    latest_para_height = header.parachain_header.number;
+                }
+                let height = Height::new(
+                    client_state.para_id as u64,
+                    header.parachain_header.number as u64,
+                );
+                // Skip duplicate consensus states
+                if ctx.consensus_state(&client_id, height).is_ok() {
+                    continue;
+                }
+                parachain_cs_states.push((
+                    height,
+                    AnyConsensusState::Beefy(ConsensusState::from_header(header)?),
+                ))
             }
-            if latest_para_height < header.parachain_header.number {
-                latest_para_height = header.parachain_header.number;
-            }
-            let height = Height::new(
-                client_state.para_id as u64,
-                header.parachain_header.number as u64,
-            );
-            // Skip duplicate consensus states
-            if ctx.consensus_state(&client_id, height).is_ok() {
-                continue;
-            }
-            parachain_cs_states.push((
-                height,
-                AnyConsensusState::Beefy(ConsensusState::from_header(header)?),
-            ))
         }
 
         client_state.latest_para_height = latest_para_height;
@@ -179,10 +185,15 @@ impl<HostFunctions: HostFunctionsProvider> ClientDef for BeefyClient<HostFunctio
         header: Self::Header,
     ) -> Result<Self::ClientState, Error> {
         let latest_para_height = header
-            .parachain_headers
-            .into_iter()
-            .map(|header| header.parachain_header.number)
-            .max();
+            .headers_with_proof
+            .map(|headers| {
+                headers
+                    .headers
+                    .into_iter()
+                    .map(|header| header.parachain_header.number)
+                    .max()
+            })
+            .flatten();
         let frozen_height = latest_para_height
             .map(|height| Height::new(client_state.para_id.into(), height.into()))
             .unwrap_or(Height::new(

@@ -34,7 +34,7 @@ use crate::core::ics04_channel::packet::{Receipt, Sequence};
 use crate::core::ics05_port::context::PortReader;
 use crate::core::ics05_port::error::Error as Ics05Error;
 use crate::core::ics05_port::error::Error;
-use crate::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
+use crate::core::ics23_commitment::commitment::CommitmentPrefix;
 use crate::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use crate::core::ics26_routing::context::{
     Ics26Context, Module, ModuleId, ReaderContext, Router, RouterBuilder,

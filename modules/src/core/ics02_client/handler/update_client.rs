@@ -123,6 +123,7 @@ pub fn process<HostFunctions: HostFunctionsProvider>(
 
 #[cfg(test)]
 mod tests {
+    use crate::clients::ics11_beefy::header::ParachainHeadersWithProof;
     use core::str::FromStr;
     use subxt::sp_runtime::traits::Header;
     use test_log::test;
@@ -567,7 +568,6 @@ mod tests {
     #[tokio::test]
     async fn test_continuous_update_of_beefy_client() {
         use crate::clients::ics11_beefy::client_state::ClientState as BeefyClientState;
-        use crate::clients::ics11_beefy::client_state::RelayChain;
         use crate::clients::ics11_beefy::consensus_state::ConsensusState;
         use crate::clients::ics11_beefy::header::BeefyHeader;
         use crate::clients::ics11_beefy::header::ParachainHeader as BeefyParachainHeader;
@@ -615,85 +615,98 @@ mod tests {
         };
 
         let mut count = 0;
-        let client_state = client_wrapper
-            .construct_beefy_client_state(0)
-            .await
-            .unwrap();
-        let beefy_client_state = BeefyClientState::new(
-            RelayChain::Rococo,
-            client_wrapper.para_id,
-            0,
-            client_state.mmr_root_hash,
-            client_state.beefy_activation_block,
-            client_state.latest_beefy_height,
-            client_state.current_authorities,
-            client_state.next_authorities,
-        )
-        .unwrap();
+        let (client_state, consensus_state) = loop {
+            let beefy_state = client_wrapper
+                .construct_beefy_client_state(0)
+                .await
+                .unwrap();
 
-        let api = client_wrapper
-            .relay_client
-            .clone()
-            .to_runtime_api::<runtime::api::RuntimeApi<subxt::DefaultConfig, subxt::PolkadotExtrinsicParams<_>>>();
-        let subxt_block_number: subxt::BlockNumber = beefy_client_state.latest_beefy_height.into();
-        let block_hash = client_wrapper
-            .relay_client
-            .rpc()
-            .block_hash(Some(subxt_block_number))
-            .await
+            let api =
+                client_wrapper
+                    .relay_client
+                    .clone()
+                    .to_runtime_api::<runtime::api::RuntimeApi<
+                        subxt::DefaultConfig,
+                        subxt::PolkadotExtrinsicParams<_>,
+                    >>();
+            let subxt_block_number: subxt::BlockNumber = beefy_state.latest_beefy_height.into();
+            let block_hash = client_wrapper
+                .relay_client
+                .rpc()
+                .block_hash(Some(subxt_block_number))
+                .await
+                .unwrap();
+            let head_data = api
+                .storage()
+                .paras()
+                .heads(
+                    &runtime::api::runtime_types::polkadot_parachain::primitives::Id(
+                        client_wrapper.para_id,
+                    ),
+                    block_hash,
+                )
+                .await
+                .unwrap()
+                .unwrap();
+            let decoded_para_head = frame_support::sp_runtime::generic::Header::<
+                u32,
+                frame_support::sp_runtime::traits::BlakeTwo256,
+            >::decode(&mut &*head_data.0)
             .unwrap();
-        let head_data = api
-            .storage()
-            .paras()
-            .heads(
-                &runtime::api::runtime_types::polkadot_parachain::primitives::Id(
-                    client_wrapper.para_id,
-                ),
-                block_hash,
-            )
-            .await
-            .unwrap()
-            .unwrap();
-        let decoded_para_head =
-            sp_runtime::generic::Header::<u32, sp_runtime::traits::BlakeTwo256>::decode(
-                &mut &*head_data.0,
-            )
-            .unwrap();
-        let block_number = decoded_para_head.number;
-        let subxt_block_number: subxt::BlockNumber = block_number.into();
-        let block_hash = client_wrapper
-            .para_client
-            .rpc()
-            .block_hash(Some(subxt_block_number))
-            .await
-            .unwrap();
+            let block_number = decoded_para_head.number;
+            let client_state = BeefyClientState {
+                chain_id: ChainId::new("relay-chain".to_string(), 0),
+                relay_chain: Default::default(),
+                mmr_root_hash: beefy_state.mmr_root_hash,
+                latest_beefy_height: beefy_state.latest_beefy_height,
+                frozen_height: None,
+                beefy_activation_block: beefy_state.beefy_activation_block,
+                latest_para_height: block_number,
+                para_id: client_wrapper.para_id,
+                authority: beefy_state.current_authorities,
+                next_authority_set: beefy_state.next_authorities,
+            };
+            // we can't use the genesis block to construct the initial state.
+            if block_number == 0 {
+                continue;
+            }
+            let subxt_block_number: subxt::BlockNumber = block_number.into();
+            let block_hash = client_wrapper
+                .para_client
+                .rpc()
+                .block_hash(Some(subxt_block_number))
+                .await
+                .unwrap();
 
-        let TimeStampExtWithProof {
-            ext: timestamp_extrinsic,
-            proof: extrinsic_proof,
-        } = fetch_timestamp_extrinsic_with_proof(&client_wrapper.para_client, block_hash)
-            .await
-            .unwrap();
-        let parachain_header = BeefyParachainHeader {
-            parachain_header: decoded_para_head,
-            partial_mmr_leaf: PartialMmrLeaf {
-                version: Default::default(),
-                parent_number_and_hash: Default::default(),
-                beefy_next_authority_set: Default::default(),
-            },
-            parachain_heads_proof: vec![],
-            heads_leaf_index: 0,
-            heads_total_count: 0,
-            extrinsic_proof,
-            timestamp_extrinsic,
+            let TimeStampExtWithProof {
+                ext: timestamp_extrinsic,
+                proof: extrinsic_proof,
+            } = fetch_timestamp_extrinsic_with_proof(&client_wrapper.para_client, block_hash)
+                .await
+                .unwrap();
+            let parachain_header = BeefyParachainHeader {
+                parachain_header: decoded_para_head,
+                partial_mmr_leaf: PartialMmrLeaf {
+                    version: Default::default(),
+                    parent_number_and_hash: Default::default(),
+                    beefy_next_authority_set: Default::default(),
+                },
+                parachain_heads_proof: vec![],
+                heads_leaf_index: 0,
+                heads_total_count: 0,
+                extrinsic_proof,
+                timestamp_extrinsic,
+            };
+
+            let consensus_state = ConsensusState::from_header(parachain_header)
+                .unwrap()
+                .wrap_any();
+
+            break (client_state.wrap_any(), consensus_state);
         };
 
-        let consensus_state = ConsensusState::from_header(parachain_header)
-            .unwrap()
-            .wrap_any();
-
         let create_client = MsgCreateAnyClient {
-            client_state: AnyClientState::Beefy(beefy_client_state),
+            client_state,
             consensus_state,
             signer: signer.clone(),
         };
@@ -746,7 +759,10 @@ mod tests {
 
             let block_number = signed_commitment.commitment.block_number;
             let headers = client_wrapper
-                .query_finalized_parachain_headers_at(block_number, client_state.latest_beefy_height)
+                .query_finalized_parachain_headers_at(
+                    block_number,
+                    client_state.latest_beefy_height,
+                )
                 .await
                 .unwrap();
             let (parachain_headers, batch_proof) = client_wrapper
@@ -766,25 +782,29 @@ mod tests {
             let mmr_size = NodesUtils::new(batch_proof.leaf_count).size();
 
             let header = BeefyHeader {
-                parachain_headers: parachain_headers
-                    .into_iter()
-                    .map(|header| BeefyParachainHeader {
-                        parachain_header: Decode::decode(&mut &*header.parachain_header.as_slice())
+                headers_with_proof: Some(ParachainHeadersWithProof {
+                    headers: parachain_headers
+                        .into_iter()
+                        .map(|header| BeefyParachainHeader {
+                            parachain_header: Decode::decode(
+                                &mut &*header.parachain_header.as_slice(),
+                            )
                             .unwrap(),
-                        partial_mmr_leaf: header.partial_mmr_leaf,
-                        parachain_heads_proof: header.parachain_heads_proof,
-                        heads_leaf_index: header.heads_leaf_index,
-                        heads_total_count: header.heads_total_count,
-                        extrinsic_proof: header.extrinsic_proof,
-                        timestamp_extrinsic: header.timestamp_extrinsic,
-                    })
-                    .collect(),
-                mmr_proofs: batch_proof
-                    .items
-                    .into_iter()
-                    .map(|item| item.encode())
-                    .collect(),
-                mmr_size,
+                            partial_mmr_leaf: header.partial_mmr_leaf,
+                            parachain_heads_proof: header.parachain_heads_proof,
+                            heads_leaf_index: header.heads_leaf_index,
+                            heads_total_count: header.heads_total_count,
+                            extrinsic_proof: header.extrinsic_proof,
+                            timestamp_extrinsic: header.timestamp_extrinsic,
+                        })
+                        .collect(),
+                    mmr_proofs: batch_proof
+                        .items
+                        .into_iter()
+                        .map(|item| item.encode())
+                        .collect(),
+                    mmr_size,
+                }),
                 mmr_update_proof: Some(mmr_update),
             };
 

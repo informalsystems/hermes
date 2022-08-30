@@ -450,6 +450,30 @@ pub struct QueryAllBalancesResponse {
     #[prost(message, optional, tag="2")]
     pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
 }
+/// QuerySpendableBalancesRequest defines the gRPC request structure for querying
+/// an account's spendable balances.
+#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QuerySpendableBalancesRequest {
+    /// address is the address to query spendable balances for.
+    #[prost(string, tag="1")]
+    pub address: ::prost::alloc::string::String,
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag="2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageRequest>,
+}
+/// QuerySpendableBalancesResponse defines the gRPC response structure for querying
+/// an account's spendable balances.
+#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QuerySpendableBalancesResponse {
+    /// balances is the spendable balances of all the coins.
+    #[prost(message, repeated, tag="1")]
+    pub balances: ::prost::alloc::vec::Vec<super::super::base::v1beta1::Coin>,
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag="2")]
+    pub pagination: ::core::option::Option<super::super::base::query::v1beta1::PageResponse>,
+}
 /// QueryTotalSupplyRequest is the request type for the Query/TotalSupply RPC
 /// method.
 #[derive(::serde::Serialize, ::serde::Deserialize)]
@@ -646,6 +670,30 @@ pub mod query_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
+        /// SpendableBalances queries the spenable balance of all coins for a single
+        /// account.
+        pub async fn spendable_balances(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QuerySpendableBalancesRequest>,
+        ) -> Result<
+            tonic::Response<super::QuerySpendableBalancesResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/cosmos.bank.v1beta1.Query/SpendableBalances",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
         /// TotalSupply queries the total supply of all coins.
         pub async fn total_supply(
             &mut self,
@@ -766,6 +814,15 @@ pub mod query_server {
             &self,
             request: tonic::Request<super::QueryAllBalancesRequest>,
         ) -> Result<tonic::Response<super::QueryAllBalancesResponse>, tonic::Status>;
+        /// SpendableBalances queries the spenable balance of all coins for a single
+        /// account.
+        async fn spendable_balances(
+            &self,
+            request: tonic::Request<super::QuerySpendableBalancesRequest>,
+        ) -> Result<
+            tonic::Response<super::QuerySpendableBalancesResponse>,
+            tonic::Status,
+        >;
         /// TotalSupply queries the total supply of all coins.
         async fn total_supply(
             &self,
@@ -907,6 +964,46 @@ pub mod query_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = AllBalancesSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/cosmos.bank.v1beta1.Query/SpendableBalances" => {
+                    #[allow(non_camel_case_types)]
+                    struct SpendableBalancesSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<super::QuerySpendableBalancesRequest>
+                    for SpendableBalancesSvc<T> {
+                        type Response = super::QuerySpendableBalancesResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::QuerySpendableBalancesRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).spendable_balances(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = SpendableBalancesSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

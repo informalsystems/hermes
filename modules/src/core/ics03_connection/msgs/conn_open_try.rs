@@ -1,7 +1,6 @@
 use crate::prelude::*;
 use core::{
     convert::{TryFrom, TryInto},
-    str::FromStr,
     time::Duration,
 };
 
@@ -14,7 +13,7 @@ use crate::core::ics03_connection::connection::Counterparty;
 use crate::core::ics03_connection::error::Error;
 use crate::core::ics03_connection::version::Version;
 use crate::core::ics23_commitment::commitment::CommitmentProofBytes;
-use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
+use crate::core::ics24_host::identifier::ClientId;
 use crate::proofs::{ConsensusProof, Proofs};
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
@@ -27,7 +26,6 @@ pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenTry";
 ///
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgConnectionOpenTry {
-    pub previous_connection_id: Option<ConnectionId>,
     pub client_id: ClientId,
     pub client_state: Option<AnyClientState>,
     pub counterparty: Counterparty,
@@ -67,12 +65,6 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
     type Error = Error;
 
     fn try_from(msg: RawMsgConnectionOpenTry) -> Result<Self, Self::Error> {
-        let previous_connection_id = Some(msg.previous_connection_id)
-            .filter(|x| !x.is_empty())
-            .map(|v| FromStr::from_str(v.as_str()))
-            .transpose()
-            .map_err(Error::invalid_identifier)?;
-
         let consensus_proof_obj = {
             let proof_bytes: Option<CommitmentProofBytes> = msg.proof_consensus.try_into().ok();
             let consensus_height = msg
@@ -107,7 +99,6 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
         }
 
         Ok(Self {
-            previous_connection_id,
             client_id: msg.client_id.parse().map_err(Error::invalid_identifier)?,
             client_state: msg
                 .client_state
@@ -137,9 +128,6 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
     fn from(ics_msg: MsgConnectionOpenTry) -> Self {
         RawMsgConnectionOpenTry {
             client_id: ics_msg.client_id.as_str().to_string(),
-            previous_connection_id: ics_msg
-                .previous_connection_id
-                .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
             client_state: ics_msg
                 .client_state
                 .map_or_else(|| None, |v| Some(v.into())),
@@ -166,12 +154,14 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
                 .consensus_proof()
                 .map_or_else(|| None, |h| Some(h.height().into())),
             signer: ics_msg.signer.to_string(),
+            ..Default::default()
         }
     }
 }
 
 #[cfg(test)]
 pub mod test_util {
+    use crate::core::ics02_client::client_state::AnyClientState;
     use crate::prelude::*;
     use ibc_proto::ibc::core::client::v1::Height;
     use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
@@ -179,22 +169,13 @@ pub mod test_util {
     use crate::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
     use crate::core::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
     use crate::core::ics03_connection::version::get_compatible_versions;
-    use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
+    use crate::core::ics24_host::identifier::ClientId;
+    use crate::mock::client_state::MockClientState;
+    use crate::mock::header::MockHeader;
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
 
     /// Testing-specific helper methods.
     impl MsgConnectionOpenTry {
-        /// Moves the given message into another one, and updates the `previous_connection_id` field.
-        pub fn with_previous_connection_id(
-            self,
-            previous_connection_id: Option<ConnectionId>,
-        ) -> MsgConnectionOpenTry {
-            MsgConnectionOpenTry {
-                previous_connection_id,
-                ..self
-            }
-        }
-
         /// Setter for `client_id`.
         pub fn with_client_id(self, client_id: ClientId) -> MsgConnectionOpenTry {
             MsgConnectionOpenTry { client_id, ..self }
@@ -211,8 +192,9 @@ pub mod test_util {
     ) -> RawMsgConnectionOpenTry {
         RawMsgConnectionOpenTry {
             client_id: ClientId::default().to_string(),
-            previous_connection_id: ConnectionId::default().to_string(),
-            client_state: None,
+            client_state: Some(
+                AnyClientState::Mock(MockClientState::new(MockHeader::default())).into(),
+            ),
             counterparty: Some(get_dummy_raw_counterparty()),
             delay_period: 0,
             counterparty_versions: get_compatible_versions()
@@ -231,6 +213,7 @@ pub mod test_util {
             }),
             proof_client: get_dummy_proof(),
             signer: get_dummy_bech32_account(),
+            ..Default::default()
         }
     }
 }

@@ -76,7 +76,7 @@ pub struct SignedCommitment {
 }
 /// data needed to update the client
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MmrUpdateProof {
+pub struct ClientStateUpdateProof {
     /// the new mmr leaf SCALE encoded.
     #[prost(message, optional, tag="1")]
     pub mmr_leaf: ::core::option::Option<BeefyMmrLeaf>,
@@ -113,9 +113,19 @@ pub struct Misbehaviour {
     #[prost(message, optional, tag="3")]
     pub header_2: ::core::option::Option<Header>,
 }
-/// Header contains the neccessary data to proove finality about IBC commitments
+/// Header contains the neccessary data to prove finality about IBC commitments
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Header {
+    /// optional payload to update ConsensusState
+    #[prost(message, optional, tag="1")]
+    pub consensus_state: ::core::option::Option<ConsensusStateUpdateProof>,
+    /// optional payload to update the ClientState.
+    #[prost(message, optional, tag="2")]
+    pub client_state: ::core::option::Option<ClientStateUpdateProof>,
+}
+//// Parachain headers and their mmr proofs. 
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ConsensusStateUpdateProof {
     /// parachain headers needed for proofs and ConsensusState
     #[prost(message, repeated, tag="1")]
     pub parachain_headers: ::prost::alloc::vec::Vec<ParachainHeader>,
@@ -125,9 +135,6 @@ pub struct Header {
     /// size of the mmr for the given proof
     #[prost(uint64, tag="3")]
     pub mmr_size: u64,
-    /// optional payload to update the mmr root hash.
-    #[prost(message, optional, tag="4")]
-    pub mmr_update_proof: ::core::option::Option<MmrUpdateProof>,
 }
 /// data needed to prove parachain header inclusion in mmr.
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -135,7 +142,7 @@ pub struct ParachainHeader {
     /// scale-encoded parachain header bytes
     #[prost(bytes="vec", tag="1")]
     pub parachain_header: ::prost::alloc::vec::Vec<u8>,
-    /// see beefy-go spec
+    /// see beefy spec
     #[prost(message, optional, tag="2")]
     pub mmr_leaf_partial: ::core::option::Option<BeefyMmrLeafPartial>,
     /// proofs for our header in the parachain heads root

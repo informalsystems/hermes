@@ -73,9 +73,7 @@ mod tests {
     use core::time::Duration;
     use test_log::test;
 
-    use crate::clients::ics07_tendermint::client_state::{
-        AllowUpdate, ClientState as TendermintClientState,
-    };
+    use crate::clients::ics07_tendermint::client_state::ClientState as TendermintClientState;
     use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
     use crate::core::ics02_client::client_consensus::AnyConsensusState;
     use crate::core::ics02_client::client_state::ClientState;
@@ -248,10 +246,6 @@ mod tests {
             Height::new(0, u64::from(tm_header.height)),
             ProofSpecs::default(),
             vec!["".to_string()],
-            AllowUpdate {
-                after_expiry: false,
-                after_misbehaviour: false,
-            },
         )
         .unwrap()
         .wrap_any();

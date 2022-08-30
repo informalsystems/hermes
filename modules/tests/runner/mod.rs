@@ -374,7 +374,7 @@ impl IbcTestRunner {
             }
             Action::Ics03ConnectionOpenTry {
                 chain_id,
-                previous_connection_id,
+                previous_connection_id: _,
                 client_id,
                 client_state,
                 counterparty_chain_id: _,
@@ -387,7 +387,6 @@ impl IbcTestRunner {
                 // create ICS26 message and deliver it
                 let msg = Ics26Envelope::Ics3Msg(ConnectionMsg::ConnectionOpenTry(Box::new(
                     MsgConnectionOpenTry {
-                        previous_connection_id: previous_connection_id.map(Self::connection_id),
                         client_id: Self::client_id(client_id),
                         // TODO: is this ever needed?
                         client_state: None,

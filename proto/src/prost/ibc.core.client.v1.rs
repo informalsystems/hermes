@@ -771,6 +771,30 @@ pub struct QueryConsensusStatesResponse {
     #[prost(message, optional, tag="2")]
     pub pagination: ::core::option::Option<super::super::super::super::cosmos::base::query::v1beta1::PageResponse>,
 }
+/// QueryConsensusStateHeightsRequest is the request type for Query/ConsensusStateHeights
+/// RPC method.
+#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryConsensusStateHeightsRequest {
+    /// client identifier
+    #[prost(string, tag="1")]
+    pub client_id: ::prost::alloc::string::String,
+    /// pagination request
+    #[prost(message, optional, tag="2")]
+    pub pagination: ::core::option::Option<super::super::super::super::cosmos::base::query::v1beta1::PageRequest>,
+}
+/// QueryConsensusStateHeightsResponse is the response type for the
+/// Query/ConsensusStateHeights RPC method
+#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryConsensusStateHeightsResponse {
+    /// consensus state heights
+    #[prost(message, repeated, tag="1")]
+    pub consensus_state_heights: ::prost::alloc::vec::Vec<Height>,
+    /// pagination response
+    #[prost(message, optional, tag="2")]
+    pub pagination: ::core::option::Option<super::super::super::super::cosmos::base::query::v1beta1::PageResponse>,
+}
 /// QueryClientStatusRequest is the request type for the Query/ClientStatus RPC
 /// method
 #[derive(::serde::Serialize, ::serde::Deserialize)]
@@ -984,6 +1008,29 @@ pub mod query_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
+        /// ConsensusStateHeights queries the height of every consensus states associated with a given client.
+        pub async fn consensus_state_heights(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryConsensusStateHeightsRequest>,
+        ) -> Result<
+            tonic::Response<super::QueryConsensusStateHeightsResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.core.client.v1.Query/ConsensusStateHeights",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
         /// Status queries the status of an IBC client.
         pub async fn client_status(
             &mut self,
@@ -1102,6 +1149,14 @@ pub mod query_server {
             &self,
             request: tonic::Request<super::QueryConsensusStatesRequest>,
         ) -> Result<tonic::Response<super::QueryConsensusStatesResponse>, tonic::Status>;
+        /// ConsensusStateHeights queries the height of every consensus states associated with a given client.
+        async fn consensus_state_heights(
+            &self,
+            request: tonic::Request<super::QueryConsensusStateHeightsRequest>,
+        ) -> Result<
+            tonic::Response<super::QueryConsensusStateHeightsResponse>,
+            tonic::Status,
+        >;
         /// Status queries the status of an IBC client.
         async fn client_status(
             &self,
@@ -1326,6 +1381,49 @@ pub mod query_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = ConsensusStatesSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/ibc.core.client.v1.Query/ConsensusStateHeights" => {
+                    #[allow(non_camel_case_types)]
+                    struct ConsensusStateHeightsSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<
+                        super::QueryConsensusStateHeightsRequest,
+                    > for ConsensusStateHeightsSvc<T> {
+                        type Response = super::QueryConsensusStateHeightsResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<
+                                super::QueryConsensusStateHeightsRequest,
+                            >,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).consensus_state_heights(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = ConsensusStateHeightsSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

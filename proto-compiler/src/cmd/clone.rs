@@ -20,13 +20,18 @@ pub struct CloneCmd {
     #[argh(option, short = 'i')]
     ibc_go_commit: Option<String>,
 
+    /// commit to checkout
+    #[argh(option, short = 'l')]
+    composable_ibc_go_commit: Option<String>,
+
     /// where to checkout the repository
     #[argh(option, short = 'o')]
     out: PathBuf,
 }
 
 pub const COSMOS_SDK_URL: &str = "https://github.com/cosmos/cosmos-sdk";
-pub const IBC_GO_URL: &str = "https://github.com/ComposableFi/ibc-go.git";
+pub const IBC_GO_URL: &str = "https://github.com/cosmos/ibc-go";
+pub const COMPOSABLE_IBC_GO_URL: &str = "https://github.com/ComposableFi/ibc-go";
 
 impl CloneCmd {
     pub fn validate(&self) {
@@ -45,6 +50,12 @@ impl CloneCmd {
     pub fn ibc_subdir(&self) -> PathBuf {
         let mut ibc_path = self.out.clone();
         ibc_path.push("ibc/");
+        ibc_path
+    }
+
+    pub fn composable_ibc_subdir(&self) -> PathBuf {
+        let mut ibc_path = self.out.clone();
+        ibc_path.push("composable/ibc/");
         ibc_path
     }
 
@@ -117,7 +128,42 @@ impl CloneCmd {
             }
             None => {
                 println!(
-                    "[info ] No `-i`/`--ibc_go_commit` option passed. Skipping the IBC Go repo."
+                    "[info ] No `-i`/`--ibc_go_commit` option passed. Skipping the Cosmos's IBC Go repo."
+                )
+            }
+        }
+
+        println!("[info ] Cloning composabl;efi/ibc-go repository...");
+
+        match &self.composable_ibc_go_commit {
+            Some(ibc_go_commit) => {
+                let ibc_path = self.composable_ibc_subdir();
+                let ibc_repo = if ibc_path.exists() {
+                    println!("[info ] Found IBC Go source at '{}'", ibc_path.display());
+
+                    Repository::open(&ibc_path).unwrap_or_else(|e| {
+                        println!("[error] Failed to open repository: {}", e);
+                        process::exit(1)
+                    })
+                } else {
+                    Repository::clone(COMPOSABLE_IBC_GO_URL, &ibc_path).unwrap_or_else(|e| {
+                        println!("[error] Failed to clone the IBC Go repository: {}", e);
+                        process::exit(1)
+                    })
+                };
+
+                println!("[info ] Cloned at '{}'", ibc_path.display());
+                checkout_commit(&ibc_repo, ibc_go_commit).unwrap_or_else(|e| {
+                    println!(
+                        "[error] Failed to checkout IBC Go commit {}: {}",
+                        ibc_go_commit, e
+                    );
+                    process::exit(1)
+                });
+            }
+            None => {
+                println!(
+                    "[info ] No `-i`/`--ibc_go_commit` option passed. Skipping the Composable's IBC Go repo."
                 )
             }
         }

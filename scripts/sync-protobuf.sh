@@ -24,13 +24,16 @@ set -eou pipefail
 CACHE_PATH="${XDG_CACHE_HOME:-$HOME/.cache}"
 COSMOS_SDK_GIT="${COSMOS_SDK_GIT:-$CACHE_PATH/cosmos/cosmos-sdk.git}"
 IBC_GO_GIT="${IBC_GO_GIT:-$CACHE_PATH/ibc-go.git}"
+COMPOSABLE_IBC_GO_GIT="${COMPOSABLE_IBC_GO_GIT:-$CACHE_PATH/composable/ibc-go.git}"
 
 
 COSMOS_SDK_COMMIT="$(cat proto/src/COSMOS_SDK_COMMIT)"
 IBC_GO_COMMIT="$(cat proto/src/IBC_GO_COMMIT)"
+COMPOSABLE_IBC_GO_COMMIT="$(cat proto/src/COMPOSABLE_IBC_GO_COMMIT)"
 
 echo "COSMOS_SDK_COMMIT: $COSMOS_SDK_COMMIT"
 echo "IBC_GO_COMMIT: $IBC_GO_COMMIT"
+echo "COMPOSABLE_IBC_GO_COMMIT: $COMPOSABLE_IBC_GO_COMMIT"
 
 # Use either --sdk-commit flag for commit ID,
 # or --sdk-tag for git tag. Because we can't modify
@@ -58,9 +61,17 @@ fi
 if [[ ! -e "$IBC_GO_GIT" ]]
 then
 	echo "Cloning ibc-go source code to as bare git repository to $IBC_GO_GIT"
-	git clone --mirror https://github.com/ComposableFi/ibc-go.git "$IBC_GO_GIT"
+	git clone --mirror https://github.com/cosmos/ibc-go.git "$IBC_GO_GIT"
 else
 	echo "Using existing ibc-go bare git repository at $IBC_GO_GIT"
+fi
+
+if [[ ! -e "$COMPOSABLE_IBC_GO_GIT" ]]
+then
+	echo "Cloning composable ibc-go source code to as bare git repository to $COMPOSABLE_IBC_GO_GIT"
+	git clone --mirror https://github.com/ComposableFi/ibc-go.git "$COMPOSABLE_IBC_GO_GIT"
+else
+	echo "Using existing composable ibc-go bare git repository at $COMPOSABLE_IBC_GO_GIT"
 fi
 
 # Update the repositories using git fetch. This is so that
@@ -70,6 +81,10 @@ git fetch
 popd
 
 pushd "$IBC_GO_GIT"
+git fetch
+popd
+
+pushd "$COMPOSABLE_IBC_GO_GIT"
 git fetch
 popd
 
@@ -97,6 +112,17 @@ git checkout "$IBC_GO_COMMIT"
 git checkout -b "$IBC_GO_COMMIT"
 popd
 
+# Make the composable temp repo first
+rm -rf /tmp/composable
+mktemp -d /tmp/composable
+COMPOSABLE_IBC_GO_DIR=$(mktemp -d /tmp/composable/ibc-go-XXXXXXXX)
+
+pushd "$COMPOSABLE_IBC_GO_DIR"
+git clone "$COMPOSABLE_IBC_GO_GIT" .
+git checkout "$COMPOSABLE_IBC_GO_COMMIT"
+git checkout -b "$COMPOSABLE_IBC_GO_COMMIT"
+popd
+
 # Remove the existing generated protobuf files
 # so that the newly generated code does not
 # contain removed files.
@@ -113,9 +139,10 @@ cargo build
 # and once for no-std version with --build-tonic set to false
 
 cargo run -- compile \
-	--sdk "$COSMOS_SDK_DIR" --ibc "$IBC_GO_DIR" --out ../proto/src/prost
+	--sdk "$COSMOS_SDK_DIR" --ibc "$IBC_GO_DIR" --beefy "$COMPOSABLE_IBC_GO_DIR" --out ../proto/src/prost
 
 # Remove the temporary checkouts of the repositories
 
 rm -rf "$COSMOS_SDK_DIR"
 rm -rf "$IBC_GO_DIR"
+rm -rf "$COMPOSABLE_IBC_GO_DIR"

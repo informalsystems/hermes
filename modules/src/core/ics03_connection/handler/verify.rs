@@ -1,8 +1,8 @@
 //! ICS3 verification functions, common across all four handlers of ICS3.
 use crate::clients::host_functions::HostFunctionsProvider;
-#[cfg(feature = "ics11_beefy")]
 use crate::core::ics02_client::client_consensus::ConsensusState;
 use crate::core::ics02_client::client_state::{AnyClientState, ClientState};
+#[cfg(feature = "ics11_beefy")]
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::{client_def::AnyClient, client_def::ClientDef};
 use crate::core::ics03_connection::connection::ConnectionEnd;
@@ -11,10 +11,14 @@ use crate::core::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::core::ics26_routing::context::ReaderContext;
 use crate::proofs::ConsensusProof;
 use crate::Height;
-use codec::{Decode, Encode};
+#[cfg(feature = "ics11_beefy")]
 use alloc::format;
+#[cfg(feature = "ics11_beefy")]
+use codec::{Decode, Encode};
+#[cfg(feature = "ics11_beefy")]
 use sp_std::vec::Vec;
 
+#[cfg(feature = "ics11_beefy")]
 /// Connection proof type, used in relayer
 #[derive(Encode, Decode)]
 pub struct ConnectionProof {

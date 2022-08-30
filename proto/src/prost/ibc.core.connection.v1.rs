@@ -171,8 +171,8 @@ pub struct MsgConnectionOpenInitResponse {
 pub struct MsgConnectionOpenTry {
     #[prost(string, tag="1")]
     pub client_id: ::prost::alloc::string::String,
-    /// in the case of crossing hello's, when both chains call OpenInit, we need
-    /// the connection identifier of the previous connection in state INIT
+    /// Deprecated: this field is unused. Crossing hellos are no longer supported in core IBC.
+    #[deprecated]
     #[prost(string, tag="2")]
     pub previous_connection_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag="3")]

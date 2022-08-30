@@ -298,7 +298,7 @@ dependencies = [
 [[package]]
 name = "beefy-light-client"
 version = "0.1.0"
-source = "git+https://github.com/ComposableFi/beefy-rs?rev=78ee13ceca9df7f2776a894850454648abd67e6a#78ee13ceca9df7f2776a894850454648abd67e6a"
+source = "git+https://github.com/ComposableFi/beefy-rs?rev=cb8cadc8d45bc444367002c77cbd395eff8a741c#cb8cadc8d45bc444367002c77cbd395eff8a741c"
 dependencies = [
  "beefy-primitives",
  "ckb-merkle-mountain-range",
@@ -345,7 +345,7 @@ dependencies = [
 [[package]]
 name = "beefy-prover"
 version = "0.1.0"
-source = "git+https://github.com/ComposableFi/beefy-rs?rev=78ee13ceca9df7f2776a894850454648abd67e6a#78ee13ceca9df7f2776a894850454648abd67e6a"
+source = "git+https://github.com/ComposableFi/beefy-rs?rev=cb8cadc8d45bc444367002c77cbd395eff8a741c#cb8cadc8d45bc444367002c77cbd395eff8a741c"
 dependencies = [
  "beefy-primitives",
  "color-eyre",
@@ -1843,6 +1843,7 @@ dependencies = [
  "derive_more",
  "env_logger",
  "flex-error",
+ "frame-support",
  "ibc-proto",
  "ics23",
  "modelator",
@@ -3125,7 +3126,7 @@ dependencies = [
 [[package]]
 name = "primitives"
 version = "0.1.0"
-source = "git+https://github.com/ComposableFi/beefy-rs?rev=78ee13ceca9df7f2776a894850454648abd67e6a#78ee13ceca9df7f2776a894850454648abd67e6a"
+source = "git+https://github.com/ComposableFi/beefy-rs?rev=cb8cadc8d45bc444367002c77cbd395eff8a741c#cb8cadc8d45bc444367002c77cbd395eff8a741c"
 dependencies = [
  "beefy-primitives",
  "ckb-merkle-mountain-range",

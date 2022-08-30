@@ -2276,7 +2276,7 @@ pub struct StakeAuthorization {
 pub mod stake_authorization {
     /// Validators defines list of validator addresses.
     #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct ValidatorsVec {
+    pub struct ValidatorVec {
         #[prost(string, repeated, tag="1")]
         pub address: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
     }
@@ -2286,10 +2286,10 @@ pub mod stake_authorization {
         /// allow_list specifies list of validator addresses to whom grantee can delegate tokens on behalf of granter's
         /// account.
         #[prost(message, tag="2")]
-        AllowList(ValidatorsVec),
+        AllowList(ValidatorVec),
         /// deny_list specifies list of validator addresses to whom grantee can not delegate tokens.
         #[prost(message, tag="3")]
-        DenyList(ValidatorsVec),
+        DenyList(ValidatorVec),
     }
 }
 /// AuthorizationType defines the type of staking module authorization type
