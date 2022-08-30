@@ -5,6 +5,7 @@ use core::time::Duration;
 use flex_error::{define_error, DisplayOnly, TraceClone, TraceError};
 use http::uri::InvalidUri;
 use humantime::format_duration;
+use ibc_proto::protobuf::Error as TendermintProtoError;
 use prost::{DecodeError, EncodeError};
 use regex::Regex;
 use tendermint::Error as TendermintError;
@@ -12,7 +13,6 @@ use tendermint_light_client::components::io::IoError as LightClientIoError;
 use tendermint_light_client::errors::{
     Error as LightClientError, ErrorDetail as LightClientErrorDetail,
 };
-use tendermint_proto::Error as TendermintProtoError;
 use tendermint_rpc::endpoint::abci_query::AbciQuery;
 use tendermint_rpc::endpoint::broadcast::tx_commit::TxResult;
 use tendermint_rpc::Error as TendermintRpcError;
@@ -457,6 +457,15 @@ define_error! {
             |e| {
                 format!("semantic config validation failed for option `default_gas` of chain '{}', reason: default gas ({}) must be smaller than the max gas ({})",
                     e.chain_id, e.default_gas, e.max_gas)
+            },
+
+        ConfigValidationGasMultiplierLow
+            {
+                chain_id: ChainId,
+                gas_multiplier: f64,
+            }
+            |e| {
+                format!("semantic config validation failed for option `gas_multiplier` of chain '{}', reason: gas multiplier ({}) is smaller than `1.1`, which could trigger gas fee errors in production", e.chain_id, e.gas_multiplier)
             },
 
         SdkModuleVersion

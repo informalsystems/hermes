@@ -2,6 +2,7 @@
 
 pub mod error;
 pub mod filter;
+pub mod gas_multiplier;
 pub mod proof_specs;
 pub mod types;
 
@@ -18,6 +19,7 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
 
 use crate::chain::ChainType;
+use crate::config::gas_multiplier::GasMultiplier;
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error as RelayerError;
 use crate::extension_options::ExtensionOptionDynamicFeeTx;
@@ -374,7 +376,7 @@ pub struct ChainConfig {
 
     // This field is deprecated, use `gas_multiplier` instead
     pub gas_adjustment: Option<f64>,
-    pub gas_multiplier: Option<f64>,
+    pub gas_multiplier: Option<GasMultiplier>,
 
     pub fee_granter: Option<String>,
     #[serde(default)]

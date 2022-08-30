@@ -1,6 +1,21 @@
 use std::collections::HashSet;
 
-use ibc::core::ics04_channel::packet::Sequence;
+use ibc::{
+    core::{
+        ics02_client::client_state::ClientState,
+        ics03_connection::connection::{
+            ConnectionEnd, IdentifiedConnectionEnd, State as ConnectionState,
+        },
+        ics04_channel::{
+            channel::{IdentifiedChannelEnd, State},
+            packet::Sequence,
+        },
+        ics24_host::identifier::{
+            ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
+        },
+    },
+    Height,
+};
 use serde::{Deserialize, Serialize};
 use tracing::{error, trace};
 
@@ -15,21 +30,9 @@ use super::{
 };
 use crate::chain::requests::QueryHeight;
 use crate::channel::ChannelError;
+use crate::client_state::IdentifiedAnyClientState;
 use crate::path::PathIdentifiers;
 use crate::supervisor::Error;
-use ibc::{
-    core::{
-        ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
-        ics03_connection::connection::{
-            ConnectionEnd, IdentifiedConnectionEnd, State as ConnectionState,
-        },
-        ics04_channel::channel::{IdentifiedChannelEnd, State},
-        ics24_host::identifier::{
-            ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
-        },
-    },
-    Height,
-};
 
 pub fn counterparty_chain_from_connection(
     src_chain: &impl ChainHandle,
