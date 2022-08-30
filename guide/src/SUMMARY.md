@@ -69,6 +69,5 @@
         - [Channel Close](./documentation/commands/tx/channel-close.md)
         - [Packet](./documentation/commands/tx/packet.md)
         - [Upgrade](./documentation/commands/tx/upgrade.md)
-- [Help](./help.md)
 - [Glossary](./glossary.md)
 ---

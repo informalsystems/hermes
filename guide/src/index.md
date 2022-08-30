@@ -31,35 +31,65 @@ Hermes is actively developed and maintained by [Informal Systems](https://inform
 
 * **[Tutorials](./tutorials/index.md)**
 
-  - **Two local chains** TODO
-  - **More local chains** TODO
-  - **Relay in production** TODO
-  - **Deploy multiple instances** TODO
+  - **[Prerequisites for local chains](./pre-requisites/index.md)**
+      - Install `Gaia` and `gm` (Gaia Manager) for tutorials using local chains.
+  - **[Two Local Chains](./local-chains/index.md)**
+      - Start two local [`Cosmos Gaia`](https://github.com/cosmos/gaia) chains that support the `IBC` protocol and learn the fundamentals of IBC.
+  - **[More Local Chains](./more-chains/index.md)**
+      - Learn how to relay on an arbitrary topology of more than two chains by using packet filters and to run multiple instances of Hermes.
+  - **[Relaying in production](./production/index.md)**
+      - Learn how to set up, configure and run `hermes` on IBC-enabled chains in production.
 
 * **[Advanced](./advanced/index.md)**
-  - **[Features](./advanced/features.md)** : This section summarizes Hermes' features and includes a comparison between the Cosmos Go relayer and Hermes.
+  - **[Features](./advanced/features.md)** 
+      - This section summarizes Hermes' features and includes a comparison between the Cosmos Go relayer and Hermes.
   - **[Troubleshooting](./advanced/troubleshooting/index.md)**
+      - todo
+    
 
 * **[Documentation](./documentation/index.md)**
-  - **[Configuration](./documentation/config.md)**: This section provides a description to every parameter of Hermes' configuration file.
-  - **[Telemetry](./documentation/telemetry.md)**: This section describes all Prometheus metrics and how to use them efficiently.
-  - **[REST API](./documentation/rest-api.md)**: This section presents Hermes' REST API.
-  - **[Commands Reference](./documentation/commands/index.md)**: This section describes the command line interface from which you can interact with Hermes.
+  - **[Configuration](./documentation/config.md)**
+      - This section provides a description to every parameter of Hermes' configuration file.
+  - **[Telemetry](./documentation/telemetry.md)**
+      - This section describes all Prometheus metrics and how to use them efficiently.
+  - **[REST API](./documentation/rest-api.md)**
+      - This section presents Hermes' REST API.
+  - **[Commands Reference](./documentation/commands/index.md)**
+      - This section describes the command line interface from which you can interact with Hermes.
 
 * Educational resources
-  - [About IBC](https://ibc.cosmos.network/): TODO 
-  - [Cosmos network tutorial](https://tutorials.cosmos.network/academy/4-ibc/what-is-ibc.html#): TODO 
-  - Video : [Connect IBC enabled chains with Hermes](https://www.youtube.com/watch?v=_xQDTj1PcEw&t=4289s): TODO 
+  - [About IBC](https://ibc.cosmos.network/)
+      - The official IBC-Go documentation. 
+  - [Cosmos network tutorial](https://tutorials.cosmos.network/academy/4-ibc/what-is-ibc.html#)
+      - Learn the basics of IBC in the official tutorial. 
+  - [Connect IBC enabled chains with Hermes](https://www.youtube.com/watch?v=_xQDTj1PcEw&t=4289s)
+      - Video demonstration of Hermes at Hackatom 2021.
 
 * Useful links
-  - [Hermes FAQ Page](https://github.com/informalsystems/ibc-rs/discussions/2472): The official FAQ of Hermes.
-  - [Hermes GitHub repository](https://github.com/informalsystems/ibc-rs): The official GitHub repository for Hermes.
-  - [IBC GitHub repository](https://github.com/cosmos/ics) : The official repository for the Inter-blockchain protocol (IBC).
-  - [IBC Protocol](https://ibcprotocol.org) : The official IBC protocol page.
+  - [Hermes FAQ Page](https://github.com/informalsystems/ibc-rs/discussions/2472)
+      - The official FAQ of Hermes.
+  - [Hermes GitHub repository](https://github.com/informalsystems/ibc-rs)
+      - The official GitHub repository for Hermes.
+  - [IBC GitHub repository](https://github.com/cosmos/ics)
+      - The official repository for the Inter-blockchain protocol (IBC).
+  - [IBC Protocol](https://ibcprotocol.org)
+      - The official IBC protocol page.
 
-* Other
+## Contact
 
-  - **[Help](./help.md)** : This part provides general resources for getting help.
+- Request a [new feature](#new-feature-request) via the [feature request][feature-request] issue template;
+- Consult the [list of reported issues][issues] and search by relevant
+  keywords to see if you're dealing with a known problem;
+- We would be grateful if you can submit a [bug report][bug-report]
+  discussing any problem you find, and from there on we can look at the
+  problem together;
+- Reach Hermes developpers and other relayer operators on the [Cosmos Network Discord server](https://discord.com/invite/cosmosnetwork).
+
+Lastly, for general questions, you can reach us at `hello@informal.systems`,
+or on Twitter [@informalinc][twitter].
+
+> Note that Hermes is packaged as part of the `ibc-relayer-cli` crate.
+
 
 ---
 
@@ -67,4 +97,9 @@ __Disclaimer__ This project is undergoing heavy development, use at your own ris
 
 ---
 
-[^ibc]: [The Inter Blockchain Communication Protocol: An Overview](https://arxiv.org/pdf/2006.15918.pdf)
+
+
+[feature-request]: https://github.com/informalsystems/ibc-rs/issues/new?assignees=&labels=&template=feature-request.md
+[bug-report]: https://github.com/informalsystems/ibc-rs/issues/new?assignees=&labels=&template=bug-report.md
+[twitter]: https://twitter.com/informalinc
+[issues]: https://github.com/informalsystems/ibc-rs/issue
