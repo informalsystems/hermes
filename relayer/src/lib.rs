@@ -7,7 +7,7 @@
     unused_qualifications,
     rust_2018_idioms
 )]
-#![allow(clippy::too_many_arguments)]
+#![allow(clippy::large_enum_variant, clippy::derive_partial_eq_without_eq)]
 // TODO: disable unwraps:
 //  https://github.com/informalsystems/ibc-rs/issues/987
 // #![cfg_attr(not(test), deny(clippy::unwrap_used))]

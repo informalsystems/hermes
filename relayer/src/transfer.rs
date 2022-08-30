@@ -126,6 +126,7 @@ pub struct TransferOptions {
     pub number_msgs: usize,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn build_transfer_message(
     packet_src_port_id: PortId,
     packet_src_channel_id: ChannelId,

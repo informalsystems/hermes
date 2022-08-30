@@ -11,6 +11,7 @@ use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error;
 use crate::keyring::KeyEntry;
 
+#[allow(clippy::too_many_arguments)]
 pub async fn send_batched_messages_and_wait_commit(
     pool: &PgPool,
     config: &TxConfig,

@@ -28,11 +28,15 @@ pub async fn create_table(pool: &PgPool) -> Result<(), Error> {
 pub async fn update_snapshot(pool: &PgPool, snapshot: &IbcSnapshot) -> Result<(), Error> {
     crate::time!("update_snapshot");
 
+    // dbg!(&snapshot);
+
     // create the ibc table if it does not exist
     create_table(pool).await?;
 
     let height = BigDecimal::from(snapshot.height);
     let data = Json(&snapshot.data);
+
+    // println!("{}", serde_json::to_string_pretty(&snapshot.data).unwrap());
 
     // insert the json blob, update if already there
     let query = "INSERT INTO ibc_json (height, data) VALUES ($1, $2) \
