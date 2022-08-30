@@ -1,10 +1,14 @@
 # Install Gaia
 
-For `gm` to start the chains, it requires Gaia to be installed.
+For `gm` to start the chains, it requires `Gaia` to be installed.
 
 > __NOTE__: This assumes you have `Golang` programming language installed on 
 > your machine. If not, please ensure you install before proceeding. See 
 > more details in the [Pre-requisites](../../quick-start/pre-requisites.md#2-golang) section.
+
+Follow the instructions below to install `Gaia`.
+
+---
 
 #### Clone Gaia
 
@@ -45,4 +49,4 @@ commit: dbd8a6fb522c571debf958837f9113c56d418f6b
 
 ## Next Steps
 
-In the next section you will learn how to [start two local chains](./start.md)
+Go to the [next section](./gaiad-manager.md) to install `gm`, a tool to easily start IBC-enabled local chains.

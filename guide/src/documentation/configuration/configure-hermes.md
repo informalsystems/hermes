@@ -1,4 +1,4 @@
-# Configuration
+# Configure Hermes
 
 In order to run Hermes, you will need to have a configuration file.
 
@@ -34,7 +34,7 @@ and as a destination (to relay packets that others chains have sent).
 
 For example, if there are only two chains configured, then Hermes will only relay packets between those two,
 i.e. the two chains will serve as a source for each other, and likewise as a destination for each other's relevant events.
-Hermes will ignore all events that pertain to chains which are unknown (ie. not present in config.toml).
+Hermes will ignore all events that pertain to chains which are unknown (i.e. not present in config.toml).
 
 To restrict relaying on specific channels, or uni-directionally, you can use [packet filtering policies](https://github.com/informalsystems/ibc-rs/blob/v1.0.0-rc.2/config.toml#L209-L231).
 

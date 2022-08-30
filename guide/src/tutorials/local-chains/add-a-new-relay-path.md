@@ -4,6 +4,7 @@ In order to connect two IBC-enabled chains, both chains need an on-chain client 
 
 > __WARNING__: Do not create clients, connections or channels between two chains/modules before checking that a client/connection/channel does not already fulfill the same function.
 
+---
 
 ## Identifiers
 

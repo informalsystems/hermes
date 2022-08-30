@@ -1,6 +1,6 @@
 # Tutorials
 
-This section includes tutorials for some common use cases and commands. You can also refer to the [Commands Reference](../commands/index.md) section to learn more about individual commands.
+This section includes tutorials to learn the basics of relaying and the main commands. You can also refer to the [Commands Reference](../commands/index.md) section to learn more about individual commands.
 
 ---
 

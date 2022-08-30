@@ -31,7 +31,7 @@ You can add a private key by two different ways:
 
 ## Configuration file
 
-Then, you need to create a configuration file for Hermes (more details in the [documentation](../../documentation/config.md)). 
+Then, you need to create a configuration file for Hermes (more details in the [documentation](../../documentation/configuration/index.md)). 
 
 The command `hermes config auto` provides a way to automatically generate a configuration file for chains in the [chain-registry](https://github.com/cosmos/chain-registry):
 

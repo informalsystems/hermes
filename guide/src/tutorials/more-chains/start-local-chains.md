@@ -18,6 +18,8 @@ flowchart LR
 
 As for the [Local chains tutorial](../local-chains/index.md), we will make use of Gaiad Manager `gm` that we installed in [Install Gaiad Manager](../pre-requisites/gaiad-manager.md).
 
+---
+
 ### Reset your configuration
 
 First, make sure that no chain is currently running by killing all `gaiad` processes.
@@ -154,12 +156,12 @@ ibc-3            22999  27040 27041 27042  $HOME/.gm/ibc-3
 
 ### Hermes' configuration file
 
-Gaiad Manager `gm` takes care of creating the configuration file. Run the command below to create the `$HOME/.hermes/config.toml` file
+Gaiad Manager `gm` takes care of creating the configuration file. Run the command below to create the `$HOME/.hermes/config.toml` file:
 
 ```bash
 gm hermes config
 ```
-Please check the [`Configuration`](../../documentation/config.md) section for more information about the relayer configuration file.
+>__NOTE__: You can visit the [`Configuration`](../../documentation/configuration/index.md) section for more information about the configuration file.
 
 Based on the `gm.toml` above, your `$HOME/.hermes/config.toml` file should look like below :
 

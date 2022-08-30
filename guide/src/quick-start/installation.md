@@ -120,7 +120,7 @@ cargo build --release --bin hermes
 
 <a name="telemetry-support"></a>
 
-> By default, Hermes bundles a [telemetry service and server](./telemetry.md).
+> By default, Hermes bundles a [telemetry service and server](../documentation/telemetry/index.md).
 > To build Hermes without telemetry support, and get a smaller executable,
 > supply the `--no-default-features flag` to `cargo build`:
 >
@@ -224,7 +224,7 @@ fpath+=~/.zfunc
 
 ## Next Steps
 
-Go to the [`Configuration`](./config.md) section to learn how to create a configuration file to be used by Hermes.
+Go to the [`Tutorials`](../tutorials/index.md) section to learn the basics of Hermes.
 
 
 [releases]: https://github.com/informalsystems/ibc-rs/releases

@@ -2,7 +2,9 @@
 
 Gaiad manager (`gm`) is a command-line tool (CLI) that helps manage local `gaiad` networks. 
 
-Follow the instructions 
+Follow the instructions below to install and configure `gm`.
+
+---
 
 ### Requirements
 * Bourne shell (`sh`)

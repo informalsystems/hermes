@@ -48,8 +48,8 @@ Hermes is actively developed and maintained by [Informal Systems](https://inform
     
 
 * **[Documentation](./documentation/index.md)**
-  - **[Configuration](./documentation/config.md)**
-      - This section provides a description to every parameter of Hermes' configuration file.
+  - **[Configuration](./documentation/configuration/index.md)**
+      - This section includes everything you need to know to configure Hermes.
   - **[Telemetry](./documentation/telemetry.md)**
       - This section describes all Prometheus metrics and how to use them efficiently.
   - **[REST API](./documentation/rest-api.md)**

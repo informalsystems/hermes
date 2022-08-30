@@ -5,7 +5,7 @@ This section includes detailed descriptions for configuring, monitoring and usin
 ---
 
 ## Sections
-- **[Configuration](./config.md)**
+- **[Configuration](./configuration/index.md)**
     * Detailed description of every parameter of Hermes.
 - **[Telemetry](./telemetry/index.md)**
     * Detailed description of Telemetry metrics.

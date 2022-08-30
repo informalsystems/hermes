@@ -22,4 +22,4 @@ host    = '127.0.0.1'   # default value
 port    = 3001          # default value
 ```
 
-Please see the [relevant section for *Configuration*](./config.md) for more general details about Hermes configuration options.
+Please see the [relevant section for *Configuration*](../configuration/index.md) for more general details about Hermes configuration options.

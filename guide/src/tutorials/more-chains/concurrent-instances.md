@@ -18,9 +18,10 @@ class G deny;
 class H deny;
 ```
 
-TODO : Pros and cons ?
+Running multiple instances of Hermes can have many advantages and disadvantages. It allows a fine-grained control over every channel and can be more stable. However, you will also need to manage more wallets. 
 
 ---
+
 
 ## Create a new config file
 
@@ -354,4 +355,4 @@ You can now send packets between any pair of chains. One of your two instances w
 
 ## Next Steps
 
-In the [next tutorial](./production/index.md), you will learn how to set up Hermes in production.
+In the [next tutorial](../production/index.md), you will learn how to set up Hermes in production.

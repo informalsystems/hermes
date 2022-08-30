@@ -8,6 +8,8 @@ flowchart LR
     A((ibc-0))---B(transfer<br>channel-0)---C(transfer<br>channel-0)---D((ibc-1))
 ```
 
+---
+
 ## Query balances
 
 Use the following commands to query balances on your local chains:

@@ -30,6 +30,8 @@ ibc1---ibc1ibc2---ibc2ibc1---ibc2
 ibc2---ibc2ibc3---ibc3ibc2---ibc3
 ```
 
+---
+
 ## Query balances
 
 - Balances at ibc-0:

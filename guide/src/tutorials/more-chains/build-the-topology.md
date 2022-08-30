@@ -24,6 +24,8 @@ In the following tutorial, we will connect all of these chains in a full mesh to
 
 > __NOTE__: It is also possible to only create the channels that you want. However, in production, anyone can open channels and recreate a fully-connected topology.
 
+---
+
 ## Connect all the chains
 
 Execute the following command :

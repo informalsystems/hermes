@@ -20,8 +20,6 @@ host    = '127.0.0.1'
 port    = 3000
 ```
 
-Please see the [relevant section in the *Configuration* page](./config.md#rest) for details about the configuration options.
-
 ## Endpoints
 
 ### GET `/version`

@@ -9,6 +9,8 @@ flowchart LR
 
 To spawn the chains and configure Hermes accordingly, we will make use of Gaiad Manager `gm` that we installed in the last section [Install Gaiad Manager](../pre-requisites/gaiad-manager.md).
 
+---
+
 ### Reset your configuration and start the chains
 
 Make sure you have the `$HOME/.gm/gm.toml` that we configured in the previous section [Install Gaiad Manager](../pre-requisites/gaiad-manager.md). If this is not the first time you are running the script, you can manually stop the two gaia instances executing the following command to kill all `gaiad` processes:
@@ -75,12 +77,12 @@ ibc-1            11796  27020 27021 27022  $HOME/.gm/ibc-1
 
 ### Configuration file
 
-Gaiad Manager `gm` takes care of creating the configuration file. Run the command below to create the `$HOME/.hermes/config.toml` file
+Gaiad Manager `gm` takes care of creating the configuration file. Run the command below to create the `$HOME/.hermes/config.toml` file:
 
 ```bash
 gm hermes config
 ```
-Please check the [`Configuration`](../../documentation/config.md) section for more information about Hermes' configuration file.
+>__NOTE__: You can visit the [`Configuration`](../../documentation/configuration/index.md) section for more information about the configuration file.
 
 Based on the `gm.toml` we created in the previous section [Install Gaiad Manager](../pre-requisites/gaiad-manager.md), your `$HOME/.hermes/config.toml` file should look like below :
 
