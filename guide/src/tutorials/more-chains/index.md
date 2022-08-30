@@ -1,8 +1,8 @@
 # Even more local chains
 
-In this tutorial we will show how you can test Hermes against four chains using Gaiad manager `gm` connected in an arbitrary topology of IBC channels.
+In this tutorial, you will test Hermes against four chains using Gaiad manager `gm` connected in an arbitrary topology of IBC channels.
 
-Using `gm` we will start four [`gaia`](https://github.com/cosmos/gaia) chains that support the `IBC` protocol.
+Using `gm` you will start four [`gaia`](https://github.com/cosmos/gaia) chains that support the `IBC` protocol.
 
 Make sure that you followed the steps in the [Prerequisites for local chains](../pre-requisites/index.md) section before moving to the [next section](./start-local-chains.md).
 

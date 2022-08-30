@@ -12,13 +12,13 @@ flowchart LR
 
 Use the following commands to query balances on your local chains:
 
-- Balance at ibc-0:
+- Balances at ibc-0:
 
     ```shell
     gaiad --node tcp://localhost:27030 query bank balances $(gaiad --home ~/.gm/ibc-0 keys --keyring-backend="test" show wallet -a)
     ```
 
-- Balance at ibc-1:
+- Balances at ibc-1:
 
     ```shell
     gaiad --node tcp://localhost:27040 query bank balances $(gaiad --home ~/.gm/ibc-1 keys --keyring-backend="test" show wallet -a)

@@ -9,3 +9,11 @@ Once you have these prerequisites, you can
 > The instructions in this guide have been tested on `Linux` and `MacOS` 
 > environments. Most of the commands should work on both environments. It is
 > currently impossible to build and run `Hermes` on `Windows`.
+
+---
+
+## Sections
+- **[Prerequisites](./pre-requisites.md)**
+    * Install the latest versions of `Rust` and `Golang`.
+- **[Installation](./local-chains/index.md)**
+    * Install Hermes.
