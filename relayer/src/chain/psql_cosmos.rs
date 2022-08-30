@@ -137,6 +137,100 @@ impl PsqlChain {
     }
 
     #[tracing::instrument(skip_all)]
+    fn populate_clients(
+        &self,
+        query_height: &QueryHeight,
+        request: QueryClientStatesRequest,
+        snapshot: &mut IbcSnapshot,
+    ) -> Result<(), Error> {
+        crate::time!("populate_clients");
+        crate::telemetry!(query, self.id(), "populate_clients");
+
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(
+                    self.chain.grpc_addr.clone(),
+                ),
+            )
+            .map_err(Error::grpc_transport)?;
+
+        let mut request = tonic::Request::new(request.into());
+        let height_param = AsciiMetadataValue::try_from(*query_height)?;
+
+        request
+            .metadata_mut()
+            .insert("x-cosmos-block-height", height_param);
+
+        let response = self
+            .block_on(client.client_states(request))
+            .map_err(Error::grpc_status)?
+            .into_inner();
+
+        let clients = response
+            .client_states
+            .into_iter()
+            .filter_map(|cs| IdentifiedAnyClientState::try_from(cs).ok());
+
+        for c in clients {
+            snapshot
+                .data
+                .client_states
+                .entry(c.client_id.clone())
+                .or_insert(c);
+        }
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip_all)]
+    fn populate_consensus_states(
+        &self,
+        query_height: &QueryHeight,
+        request: QueryConsensusStatesRequest,
+        snapshot: &mut IbcSnapshot,
+    ) -> Result<(), Error> {
+        crate::time!("populate_consensus_states");
+        crate::telemetry!(query, self.id(), "populate_consensus_states");
+
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(
+                    self.chain.grpc_addr.clone(),
+                ),
+            )
+            .map_err(Error::grpc_transport)?;
+
+        let client_id = request.client_id.clone();
+
+        let mut request = tonic::Request::new(request.into());
+        let height_param = AsciiMetadataValue::try_from(*query_height)?;
+
+        request
+            .metadata_mut()
+            .insert("x-cosmos-block-height", height_param);
+
+        let response = self
+            .block_on(client.consensus_states(request))
+            .map_err(Error::grpc_status)?
+            .into_inner();
+
+        let consensus_states = response
+            .consensus_states
+            .into_iter()
+            .filter_map(|cs| AnyConsensusStateWithHeight::try_from(cs).ok());
+
+        for c in consensus_states {
+            snapshot
+                .data
+                .consensus_states
+                .entry((client_id.clone(), c.height))
+                .or_insert(c);
+        }
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip_all)]
     fn populate_connections(
         &self,
         query_height: &QueryHeight,
@@ -178,20 +272,21 @@ impl PsqlChain {
             }
         }
 
-        let connections: Vec<IdentifiedConnectionEnd> = response
+        let connections = response
             .connections
             .into_iter()
-            .filter_map(|co| IdentifiedConnectionEnd::try_from(co).ok())
-            .collect();
+            .filter_map(|co| IdentifiedConnectionEnd::try_from(co).ok());
 
-        for c in connections.iter() {
+        for c in connections {
             snapshot
                 .data
                 .connections
                 .entry(c.connection_id.clone())
-                .or_insert_with(|| c.clone());
+                .or_insert(c);
         }
+
         snapshot.height = response_height.revision_height();
+
         Ok(())
     }
 
@@ -360,6 +455,8 @@ impl PsqlChain {
                 app_status: self.chain_status_on_start(query_height).unwrap(),
                 connections: HashMap::new(),
                 channels: HashMap::new(),
+                client_states: HashMap::new(),
+                consensus_states: HashMap::new(),
                 pending_sent_packets: HashMap::new(),
             },
         };
@@ -406,6 +503,7 @@ impl PsqlChain {
         self.block_on(update_snapshot(&self.pool, &work_copy))
     }
 
+    #[tracing::instrument(skip(self))]
     fn maybe_chain_connection(
         &self,
         connection_id: &ConnectionId,
@@ -418,10 +516,10 @@ impl PsqlChain {
             IncludeProof::No,
         );
         match connection {
-            Ok((connection_end, _p)) => Some(IdentifiedConnectionEnd {
-                connection_id: connection_id.clone(),
+            Ok((connection_end, _p)) => Some(IdentifiedConnectionEnd::new(
+                connection_id.clone(),
                 connection_end,
-            }),
+            )),
             Err(e) => None,
         }
     }
@@ -443,6 +541,7 @@ impl PsqlChain {
         match connection {
             None => {
                 let new_partial_connection = events::connection_from_event(event).unwrap();
+
                 if let Some(ch) = result
                     .data
                     .connections
@@ -456,13 +555,17 @@ impl PsqlChain {
                         new_partial_connection.connection_end.state,
                         event
                     );
+
                     ch.connection_end.state = new_partial_connection.connection_end.state;
+
                     // Update counterparty client and connection IDs only, don't overwrite the prefix.
+
                     ch.connection_end.counterparty.client_id = new_partial_connection
                         .connection_end
                         .counterparty()
                         .client_id
                         .clone();
+
                     ch.connection_end.counterparty.connection_id = new_partial_connection
                         .connection_end
                         .counterparty()
@@ -780,6 +883,7 @@ impl ChainEndpoint for PsqlChain {
     fn handle_ibc_event_batch(&mut self, batch: EventBatch) -> Result<(), Error> {
         crate::time!("handle_ibc_event_batch");
         crate::telemetry!(query, self.id(), "handle_ibc_event_batch");
+
         self.update_with_events(batch)
     }
 
@@ -787,7 +891,14 @@ impl ChainEndpoint for PsqlChain {
         &self,
         request: QueryClientStatesRequest,
     ) -> Result<Vec<IdentifiedAnyClientState>, Error> {
-        self.chain.query_clients(request)
+        if self.is_synced() {
+            crate::time!("query_clients_psql");
+            crate::telemetry!(query, self.id(), "query_clients_psql");
+
+            self.block_on(query_clients(&self.pool, &QueryHeight::Latest))
+        } else {
+            self.chain.query_clients(request)
+        }
     }
 
     fn query_client_state(

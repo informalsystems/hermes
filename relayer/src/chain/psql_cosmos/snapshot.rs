@@ -3,13 +3,16 @@ use std::collections::HashMap;
 use bigdecimal::BigDecimal;
 use serde::de::{Deserializer, Error as _};
 use serde::{Deserialize, Serialize, Serializer};
+use sqlx::postgres::PgRow;
+use sqlx::types::Json;
 
+use ibc::core::ics02_client::client_consensus::AnyConsensusStateWithHeight;
+use ibc::core::ics02_client::client_state::IdentifiedAnyClientState;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::packet::{Packet, Sequence};
-use ibc::core::ics24_host::identifier::{ChannelId, ConnectionId, PortChannelId, PortId};
-use sqlx::postgres::PgRow;
-use sqlx::types::Json;
+use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortChannelId, PortId};
+use ibc::Height;
 
 use crate::chain::endpoint::ChainStatus;
 
@@ -37,10 +40,19 @@ impl Serialize for PacketId {
 impl<'de> Deserialize<'de> for PacketId {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let data = <&str>::deserialize(deserializer)?;
-        let mut parts = data.splitn(3, '/');
-        let port_id: PortId = parts.next().unwrap().parse().map_err(D::Error::custom)?;
-        let channel_id: ChannelId = parts.next().unwrap().parse().map_err(D::Error::custom)?;
-        let sequence: Sequence = parts.next().unwrap().parse().map_err(D::Error::custom)?;
+        let parts: [_; 3] = data
+            .splitn(3, '/')
+            .collect::<Vec<_>>()
+            .as_slice()
+            .try_into()
+            .map_err(D::Error::custom)?;
+
+        let [port_id, channel_id, sequence] = parts;
+
+        let port_id: PortId = port_id.parse().map_err(D::Error::custom)?;
+        let channel_id: ChannelId = channel_id.parse().map_err(D::Error::custom)?;
+        let sequence: Sequence = sequence.parse().map_err(D::Error::custom)?;
+
         Ok(Self {
             port_id,
             channel_id,
@@ -58,8 +70,6 @@ impl<'de> Deserialize<'de> for PacketId {
 //
 // - to get clients, their state and consensus states, etc
 //   (update on create and update client events)
-// pub client_states: HashMap<ClientId, ClientState>
-// pub consensus_states: HashMap<(ClientId, Height), ConsensusState>
 //
 // - to help with packet acknowledgments...this is tricky as we need to pass from
 //   the counterparty chain:
@@ -69,8 +79,13 @@ impl<'de> Deserialize<'de> for PacketId {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct IbcData {
     pub app_status: ChainStatus,
+
     pub connections: HashMap<ConnectionId, IdentifiedConnectionEnd>,
     pub channels: HashMap<PortChannelId, IdentifiedChannelEnd>,
+
+    pub client_states: HashMap<ClientId, IdentifiedAnyClientState>,
+    pub consensus_states: HashMap<(ClientId, Height), AnyConsensusStateWithHeight>,
+
     pub pending_sent_packets: HashMap<PacketId, Packet>, // TODO - use IbcEvent val (??)
 }
 

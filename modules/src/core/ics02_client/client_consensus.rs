@@ -5,7 +5,7 @@ use core::marker::{Send, Sync};
 
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
 use crate::clients::ics07_tendermint::consensus_state;
@@ -36,7 +36,7 @@ pub trait ConsensusState: Clone + core::fmt::Debug + Send + Sync {
     fn wrap_any(self) -> AnyConsensusState;
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum AnyConsensusState {
     Tendermint(consensus_state::ConsensusState),
@@ -110,7 +110,7 @@ impl From<AnyConsensusState> for Any {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AnyConsensusStateWithHeight {
     pub height: Height,
     pub consensus_state: AnyConsensusState,

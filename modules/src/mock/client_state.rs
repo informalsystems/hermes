@@ -125,7 +125,7 @@ impl From<MockConsensusState> for MockClientState {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MockConsensusState {
     pub header: MockHeader,
     pub root: CommitmentRoot,

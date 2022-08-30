@@ -10,6 +10,8 @@ use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::endpoint::tx_search::Response as TxSearchResponse;
 use tracing::{info, trace};
 
+use ibc::core::ics02_client::client_consensus::AnyConsensusStateWithHeight;
+use ibc::core::ics02_client::client_state::IdentifiedAnyClientState;
 use ibc::core::ics02_client::height::Height;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
@@ -801,6 +803,24 @@ pub async fn query_channel(
 ) -> Result<Option<IdentifiedChannelEnd>, Error> {
     let result = query_ibc_data(pool, query_height).await?;
     Ok(result.data.channels.get(id).cloned())
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn query_clients(
+    pool: &PgPool,
+    query_height: &QueryHeight,
+) -> Result<Vec<IdentifiedAnyClientState>, Error> {
+    let result = query_ibc_data(pool, query_height).await?;
+    Ok(result.data.client_states.values().cloned().collect())
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn query_consensus_states(
+    pool: &PgPool,
+    query_height: &QueryHeight,
+) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
+    let result = query_ibc_data(pool, query_height).await?;
+    Ok(result.data.consensus_states.values().cloned().collect())
 }
 
 #[tracing::instrument(skip(pool))]

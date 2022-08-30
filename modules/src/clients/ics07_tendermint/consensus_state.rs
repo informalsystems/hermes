@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 use core::convert::Infallible;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tendermint::{hash::Algorithm, time::Time, Hash};
 use tendermint_proto::google::protobuf as tpb;
 use tendermint_proto::Protobuf;
@@ -15,7 +15,7 @@ use crate::core::ics02_client::client_consensus::AnyConsensusState;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics23_commitment::commitment::CommitmentRoot;
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ConsensusState {
     pub timestamp: Time,
     pub root: CommitmentRoot,

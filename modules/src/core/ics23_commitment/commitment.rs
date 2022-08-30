@@ -9,10 +9,13 @@ use subtle_encoding::{Encoding, Hex};
 
 use super::merkle::MerkleProof;
 
-#[derive(Clone, PartialEq, Eq, Serialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct CommitmentRoot {
-    #[serde(serialize_with = "crate::serializers::ser_hex_upper")]
+    #[serde(
+        serialize_with = "crate::serializers::ser_hex_upper",
+        deserialize_with = "crate::serializers::des_hex_upper"
+    )]
     bytes: Vec<u8>,
 }
 
