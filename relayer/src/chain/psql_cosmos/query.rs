@@ -30,6 +30,8 @@ use crate::chain::psql_cosmos::snapshot::{IbcSnapshot, PacketId};
 use crate::chain::requests::*;
 use crate::error::Error;
 
+use super::snapshot::Key;
+
 /// This function queries transactions for events matching certain criteria.
 /// 1. Client Update request - returns a vector with at most one update client event
 /// 2. Packet event request - returns at most one packet event for each sequence specified
@@ -802,7 +804,7 @@ pub async fn query_channel(
     id: &PortChannelId,
 ) -> Result<Option<IdentifiedChannelEnd>, Error> {
     let result = query_ibc_data(pool, query_height).await?;
-    Ok(result.data.channels.get(id).cloned())
+    Ok(result.data.channels.get(&Key(id.clone())).cloned())
 }
 
 #[tracing::instrument(skip(pool))]

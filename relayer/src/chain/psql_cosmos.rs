@@ -40,8 +40,10 @@ use crate::{
         cosmos::{query::account::get_or_fetch_account, CosmosSdkChain},
         endpoint::{ChainEndpoint, ChainStatus, HealthCheck},
         psql_cosmos::{
-            batch::send_batched_messages_and_wait_commit, query::*,
-            snapshot::psql::update_snapshot, snapshot::PacketId,
+            batch::send_batched_messages_and_wait_commit,
+            query::*,
+            snapshot::psql::update_snapshot,
+            snapshot::{Key, PacketId},
         },
         requests::*,
         tracking::TrackedMsgs,
@@ -137,6 +139,34 @@ impl PsqlChain {
     }
 
     #[tracing::instrument(skip_all)]
+    fn populate_clients_and_consensus_states(
+        &self,
+        query_height: &QueryHeight,
+        snapshot: &mut IbcSnapshot,
+    ) -> Result<(), Error> {
+        let request = QueryClientStatesRequest { pagination: None };
+        self.populate_clients(query_height, request, snapshot)?;
+
+        let client_ids = snapshot
+            .data
+            .client_states
+            .keys()
+            .cloned()
+            .collect::<Vec<_>>();
+
+        for client_id in client_ids {
+            let request = QueryConsensusStatesRequest {
+                client_id,
+                pagination: None,
+            };
+
+            self.populate_consensus_states(query_height, request, snapshot)?;
+        }
+
+        Ok(())
+    }
+
+    #[tracing::instrument(skip_all)]
     fn populate_clients(
         &self,
         query_height: &QueryHeight,
@@ -220,11 +250,8 @@ impl PsqlChain {
             .filter_map(|cs| AnyConsensusStateWithHeight::try_from(cs).ok());
 
         for c in consensus_states {
-            snapshot
-                .data
-                .consensus_states
-                .entry((client_id.clone(), c.height))
-                .or_insert(c);
+            let key = Key((client_id.clone(), c.height));
+            snapshot.data.consensus_states.entry(key).or_insert(c);
         }
 
         Ok(())
@@ -342,7 +369,7 @@ impl PsqlChain {
             snapshot
                 .data
                 .channels
-                .entry(channel.port_channel_id())
+                .entry(Key(channel.port_channel_id()))
                 .or_insert_with(|| channel.clone());
 
             self.populate_packets(query_height, channel, snapshot)?;
@@ -460,6 +487,11 @@ impl PsqlChain {
                 pending_sent_packets: HashMap::new(),
             },
         };
+
+        self.populate_clients_and_consensus_states(
+            &QueryHeight::Specific(*query_height),
+            &mut result,
+        )?;
 
         self.populate_connections(
             &QueryHeight::Specific(*query_height),
@@ -633,7 +665,7 @@ impl PsqlChain {
                 if let Some(ch) = result
                     .data
                     .channels
-                    .get_mut(&new_partial_channel.port_channel_id())
+                    .get_mut(&Key(new_partial_channel.port_channel_id()))
                 {
                     debug!(
                         "psql chain {} - changing channel {} from {} to {} due to event {}",
@@ -660,7 +692,7 @@ impl PsqlChain {
                 result
                     .data
                     .channels
-                    .insert(channel.port_channel_id(), channel);
+                    .insert(Key(channel.port_channel_id()), channel);
             }
         }
     }
@@ -673,6 +705,7 @@ impl PsqlChain {
                     channel_id: sp.src_channel_id().clone(),
                     sequence: sp.packet.sequence,
                 };
+
                 snapshot
                     .data
                     .pending_sent_packets
@@ -686,6 +719,7 @@ impl PsqlChain {
                     channel_id: ap.src_channel_id().clone(),
                     sequence: ap.packet.sequence,
                 };
+
                 let removed = snapshot.data.pending_sent_packets.remove(&key);
                 match removed {
                     Some(p) => trace!("removed pending packet {:?}", key),

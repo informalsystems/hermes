@@ -21,7 +21,7 @@ pub mod psql;
 
 pub const KEEP_SNAPSHOTS: u64 = 8;
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PacketId {
     pub port_id: PortId,
     pub channel_id: ChannelId,
@@ -61,6 +61,60 @@ impl<'de> Deserialize<'de> for PacketId {
     }
 }
 
+#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Key<A>(pub A);
+
+impl Serialize for Key<(ClientId, Height)> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let Self((client_id, height)) = self;
+        serializer.serialize_str(&format!("{}@{}", client_id, height))
+    }
+}
+
+impl<'de> Deserialize<'de> for Key<(ClientId, Height)> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let data = <&str>::deserialize(deserializer)?;
+        let parts: [_; 2] = data
+            .splitn(2, '@')
+            .collect::<Vec<_>>()
+            .as_slice()
+            .try_into()
+            .map_err(D::Error::custom)?;
+
+        let [client_id, height] = parts;
+
+        let client_id: ClientId = client_id.parse().map_err(D::Error::custom)?;
+        let height: Height = height.parse().map_err(D::Error::custom)?;
+
+        Ok(Self((client_id, height)))
+    }
+}
+
+impl Serialize for Key<PortChannelId> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(&format!("{}:{}", self.0.channel_id, self.0.port_id))
+    }
+}
+
+impl<'de> Deserialize<'de> for Key<PortChannelId> {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let data = <&str>::deserialize(deserializer)?;
+        let parts: [_; 2] = data
+            .splitn(2, ':')
+            .collect::<Vec<_>>()
+            .as_slice()
+            .try_into()
+            .map_err(D::Error::custom)?;
+
+        let [channel_id, port_id] = parts;
+
+        let channel_id: ChannelId = channel_id.parse().map_err(D::Error::custom)?;
+        let port_id: PortId = port_id.parse().map_err(D::Error::custom)?;
+
+        Ok(Self(PortChannelId::new(channel_id, port_id)))
+    }
+}
+
 // TODO: Consider:
 //
 // - to help with reducing RPCs from update client
@@ -81,10 +135,10 @@ pub struct IbcData {
     pub app_status: ChainStatus,
 
     pub connections: HashMap<ConnectionId, IdentifiedConnectionEnd>,
-    pub channels: HashMap<PortChannelId, IdentifiedChannelEnd>,
+    pub channels: HashMap<Key<PortChannelId>, IdentifiedChannelEnd>,
 
     pub client_states: HashMap<ClientId, IdentifiedAnyClientState>,
-    pub consensus_states: HashMap<(ClientId, Height), AnyConsensusStateWithHeight>,
+    pub consensus_states: HashMap<Key<(ClientId, Height)>, AnyConsensusStateWithHeight>,
 
     pub pending_sent_packets: HashMap<PacketId, Packet>, // TODO - use IbcEvent val (??)
 }
