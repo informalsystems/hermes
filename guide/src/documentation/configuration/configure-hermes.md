@@ -123,10 +123,5 @@ websocket_addr = 'wss://hello:world@mydomain.com:26657/websocket'
 > This would be completely insecure unless the exchange was over a secure connection (HTTPS/TLS).
 
 [http-basic-auth]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication
-
-## Next steps
-
-Now that you learned how to build the relayer and how to create a configuration file, you can go to the [`Two Chains`](./tutorials/local-chains/index.md) tutorial to learn how to perform some local testing connecting the relayer to two local chains.
-
 [log-level]: ./help.md#parametrizing-the-log-output-level
 [ica]: https://github.com/cosmos/ibc/blob/master/spec/app/ics-027-interchain-accounts/README.md

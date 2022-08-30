@@ -8,7 +8,7 @@ This section includes a summary of the supported and planned features. It also i
 > IBC-go versions `1.1.*` thorough `3.*` are officially supported.
 > In case Hermes finds an incompatible SDK or IBC-go version, it will output a log warning upon initialization as part of the `start` command or upon `health-check` command.
 
-[ibcv1-proto]: https://github.com/cosmos/ibc
+---
 
 ## Supported Features
 
@@ -127,4 +127,6 @@ __Feature comparison between Hermes and the Go relayer__
 | Telemetry             | ✅    | ❌     | telemetry server to collect metrics 
 | REST API              | ✅    | ❌     | REST API to interact with the relayer 
 
+
 [cosmos-go-relayer]: https://github.com/cosmos/relayer
+[ibcv1-proto]: https://github.com/cosmos/ibc
