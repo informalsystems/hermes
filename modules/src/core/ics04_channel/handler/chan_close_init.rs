@@ -9,8 +9,8 @@ use crate::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 
-pub(crate) fn process(
-    ctx: &dyn ChannelReader,
+pub(crate) fn process<Ctx: ChannelReader>(
+    ctx: &Ctx,
     msg: &MsgChannelCloseInit,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();

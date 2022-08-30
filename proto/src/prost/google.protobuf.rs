@@ -1090,7 +1090,7 @@ pub mod generated_code_info {
 ///      }
 ///
 #[derive(::serde::Serialize, ::serde::Deserialize)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, Eq, ::prost::Message)]
 pub struct Any {
     /// A URL/resource name that uniquely identifies the type of the serialized
     /// protocol buffer message. This string must contain at least

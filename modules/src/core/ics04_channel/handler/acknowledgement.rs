@@ -19,8 +19,8 @@ pub struct AckPacketResult {
     pub seq_number: Option<Sequence>,
 }
 
-pub fn process(
-    ctx: &dyn ChannelReader,
+pub fn process<Ctx: ChannelReader>(
+    ctx: &Ctx,
     msg: &MsgAcknowledgement,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();

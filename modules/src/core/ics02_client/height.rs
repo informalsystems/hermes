@@ -5,8 +5,8 @@ use core::num::ParseIntError;
 use core::str::FromStr;
 
 use flex_error::{define_error, TraceError};
+use ibc_proto::protobuf::Protobuf;
 use serde_derive::{Deserialize, Serialize};
-use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 

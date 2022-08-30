@@ -15,8 +15,8 @@ use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 use crate::proofs::{ProofError, Proofs};
 
-pub fn process(
-    ctx: &dyn ChannelReader,
+pub fn process<Ctx: ChannelReader>(
+    ctx: &Ctx,
     msg: &MsgTimeoutOnClose,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();

@@ -9,7 +9,7 @@ use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
-use tendermint_proto::Protobuf;
+use ibc_proto::protobuf::Protobuf;
 
 use core::str::FromStr;
 

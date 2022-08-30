@@ -6,9 +6,6 @@ use crate::config::{ChainConfig, GasPrice};
 /// Default gas limit when submitting a transaction.
 const DEFAULT_MAX_GAS: u64 = 400_000;
 
-/// By default, we do not increase the estimated gas to compute the fee.
-const DEFAULT_GAS_MULTIPLIER: f64 = 1.1;
-
 const DEFAULT_FEE_GRANTER: &str = "";
 
 #[derive(Debug, Clone)]
@@ -48,8 +45,8 @@ pub fn max_gas_from_config(config: &ChainConfig) -> u64 {
 }
 
 /// The gas multiplier
-fn gas_multiplier_from_config(config: &ChainConfig) -> f64 {
-    config.gas_multiplier.unwrap_or(DEFAULT_GAS_MULTIPLIER)
+pub fn gas_multiplier_from_config(config: &ChainConfig) -> f64 {
+    config.gas_multiplier.unwrap_or_default().to_f64()
 }
 
 /// Get the fee granter address
