@@ -629,7 +629,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             match self.send_from_operational_data::<S>(&odata) {
                 Ok(reply) => {
                     // Done with this op. data
-                    info!("success");
+                    info!("submitted");
                     telemetry!({
                         let (chain, counterparty, channel_id, port_id) =
                             self.target_info(odata.target);

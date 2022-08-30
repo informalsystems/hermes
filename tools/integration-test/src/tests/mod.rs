@@ -7,6 +7,7 @@
 
 pub mod clear_packet;
 pub mod client_expiration;
+mod client_refresh;
 mod client_settings;
 pub mod connection_delay;
 pub mod denom_trace;
@@ -16,6 +17,7 @@ pub mod memo;
 pub mod python;
 mod query_packet;
 pub mod supervisor;
+pub mod tendermint;
 pub mod ternary_transfer;
 pub mod transfer;
 

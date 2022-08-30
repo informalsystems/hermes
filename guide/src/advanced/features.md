@@ -121,7 +121,7 @@ __Feature comparison between Hermes and the Go relayer__
 |                        |       |        |
 | Cfg_Static            | ✅    | ✅     | provides means for configuration prior to being started
 | Cfg_Dynamic           | ❌    | ❌     | provides means for configuration and monitoring during runtime
-| Cfg_Download_Config   | ❌    | ✅     | provides means for downloading recommended configuration 
+| Cfg_Download_Config   | ✅    | ✅     | provides means for downloading recommended configuration 
 | Cfg_Edit_Config       | ❌    | ✅     | provides means for editing the configuration from the CLI 
 | Cfg_Validation        | ✅    | ✅     | provides means to validate the current configuration 
 | Telemetry             | ✅    | ❌     | telemetry server to collect metrics 

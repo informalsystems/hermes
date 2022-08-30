@@ -1,4 +1,3 @@
-use crate::core::ics02_client::client_state::ClientState;
 use crate::core::ics04_channel::channel::Counterparty;
 use crate::core::ics04_channel::channel::State;
 use crate::core::ics04_channel::commitment::PacketCommitment;

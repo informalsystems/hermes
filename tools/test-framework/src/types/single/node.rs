@@ -138,7 +138,7 @@ impl FullNode {
             default_gas: None,
             max_gas: Some(3000000),
             gas_adjustment: None,
-            gas_multiplier: Some(1.1),
+            gas_multiplier: Default::default(),
             fee_granter: None,
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),
@@ -151,6 +151,8 @@ impl FullNode {
             address_type: Default::default(),
             memo_prefix: Default::default(),
             proof_specs: Default::default(),
+            extension_options: Default::default(),
+            sequential_batch_tx: false,
         })
     }
 

@@ -70,7 +70,7 @@ pub(crate) fn process(
     // 2. Pass the details to the verification function.
     verify_proofs(
         ctx,
-        msg.client_state.clone(),
+        msg.client_state,
         msg.proofs.height(),
         &conn_end,
         &expected_conn,

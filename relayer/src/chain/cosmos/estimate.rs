@@ -19,7 +19,7 @@ pub async fn estimate_tx_fees(
     key_entry: &KeyEntry,
     account: &Account,
     tx_memo: &Memo,
-    messages: Vec<Any>,
+    messages: &[Any],
 ) -> Result<Fee, Error> {
     let gas_config = &config.gas_config;
 

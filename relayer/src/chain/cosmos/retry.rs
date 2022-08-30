@@ -45,13 +45,13 @@ pub async fn send_tx_with_account_sequence_retry(
     let _span =
         span!(Level::ERROR, "send_tx_with_account_sequence_retry", id = %config.chain_id).entered();
 
-    let number_messages = messages.len() as u64;
+    let _number_messages = messages.len() as u64;
 
     match do_send_tx_with_account_sequence_retry(config, key_entry, account, tx_memo, messages)
         .await
     {
         Ok(res) => {
-            telemetry!(total_messages_submitted, &config.chain_id, number_messages);
+            telemetry!(total_messages_submitted, &config.chain_id, _number_messages);
             Ok(res)
         }
         Err(e) => Err(e),
@@ -69,7 +69,7 @@ async fn refresh_account_and_retry_send_tx_with_account_sequence(
     refresh_account(&config.grpc_address, &key_entry.account, account).await?;
     // Retry after delay.
     thread::sleep(Duration::from_millis(ACCOUNT_SEQUENCE_RETRY_DELAY));
-    estimate_fee_and_send_tx(config, key_entry, account, tx_memo, messages.clone()).await
+    estimate_fee_and_send_tx(config, key_entry, account, tx_memo, &messages).await
 }
 
 async fn do_send_tx_with_account_sequence_retry(
@@ -79,7 +79,7 @@ async fn do_send_tx_with_account_sequence_retry(
     tx_memo: &Memo,
     messages: Vec<Any>,
 ) -> Result<Response, Error> {
-    match estimate_fee_and_send_tx(config, key_entry, account, tx_memo, messages.clone()).await {
+    match estimate_fee_and_send_tx(config, key_entry, account, tx_memo, &messages).await {
         // Gas estimation failed with acct. s.n. mismatch at estimate gas step.
         // It indicates that the account sequence cached by hermes is stale (got < expected).
         // This can happen when the same account is used by another agent.

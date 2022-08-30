@@ -5,7 +5,7 @@ use itertools::Itertools;
 use tracing::{debug, error, info, info_span, warn};
 
 use ibc::core::{
-    ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
+    ics02_client::client_state::ClientState,
     ics03_connection::connection::{IdentifiedConnectionEnd, State as ConnectionState},
     ics04_channel::{
         channel::{IdentifiedChannelEnd, State as ChannelState},
@@ -13,7 +13,6 @@ use ibc::core::{
     },
     ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
 };
-use ibc_telemetry::state::WorkerType;
 
 use crate::{
     chain::{
@@ -25,6 +24,7 @@ use crate::{
             QueryConnectionRequest, QueryHeight,
         },
     },
+    client_state::IdentifiedAnyClientState,
     config::{filter::ChannelFilters, ChainConfig, Config, PacketFilter},
     registry::Registry,
     supervisor::client_state_filter::{FilterPolicy, Permission},
@@ -859,6 +859,7 @@ fn query_connection_channels<Chain: ChainHandle>(
 /// For example if the client workers or client misbehaviour detection have
 /// been disabled in the configuration, the `client_misbehaviours_submitted`
 /// will never record any value as no misbehaviour will be submitted.
+#[allow(unused_variables)]
 fn init_telemetry(
     chain_id: &ChainId,
     client: &ClientId,

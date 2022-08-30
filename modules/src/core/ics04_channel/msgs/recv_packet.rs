@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use tendermint_proto::Protobuf;
+use ibc_proto::protobuf::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
 

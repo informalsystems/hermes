@@ -61,6 +61,8 @@ pub fn new_tx_config_for_test(
 
     let address_type = Default::default();
 
+    let extension_options = Default::default();
+
     Ok(TxConfig {
         chain_id,
         gas_config,
@@ -69,6 +71,7 @@ pub fn new_tx_config_for_test(
         grpc_address,
         rpc_timeout,
         address_type,
+        extension_options,
     })
 }
 
@@ -96,7 +99,7 @@ pub async fn simple_send_tx(
     let message_count = messages.len();
 
     let response =
-        estimate_fee_and_send_tx(config, key_entry, &account, &Default::default(), messages)
+        estimate_fee_and_send_tx(config, key_entry, &account, &Default::default(), &messages)
             .await?;
 
     let tx_sync_result = TxSyncResult {

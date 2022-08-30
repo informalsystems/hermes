@@ -1,22 +1,23 @@
+use alloc::string::ToString;
 use core::cmp::Ordering;
 
 use bytes::Buf;
+use ibc_proto::google::protobuf::Any;
+use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
+use ibc_proto::protobuf::Protobuf;
 use prost::Message;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::block::signed_header::SignedHeader;
 use tendermint::validator::Set as ValidatorSet;
-use tendermint_proto::Protobuf;
-
-use crate::alloc::string::ToString;
-
-use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::header::AnyHeader;
+use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics24_host::identifier::ChainId;
 use crate::timestamp::Timestamp;
 use crate::Height;
+
+pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
 
 /// Tendermint consensus header
 #[derive(Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -80,10 +81,6 @@ impl crate::core::ics02_client::header::Header for Header {
     fn timestamp(&self) -> Timestamp {
         self.signed_header.header.time.into()
     }
-
-    fn wrap_any(self) -> AnyHeader {
-        AnyHeader::Tendermint(self)
-    }
 }
 
 impl Protobuf<RawHeader> for Header {}
@@ -125,6 +122,35 @@ impl TryFrom<RawHeader> for Header {
     }
 }
 
+impl Protobuf<Any> for Header {}
+
+impl TryFrom<Any> for Header {
+    type Error = Ics02Error;
+
+    fn try_from(raw: Any) -> Result<Self, Ics02Error> {
+        use core::ops::Deref;
+
+        fn decode_header<B: Buf>(buf: B) -> Result<Header, Error> {
+            RawHeader::decode(buf).map_err(Error::decode)?.try_into()
+        }
+
+        match raw.type_url.as_str() {
+            TENDERMINT_HEADER_TYPE_URL => decode_header(raw.value.deref()).map_err(Into::into),
+            _ => Err(Ics02Error::unknown_header_type(raw.type_url)),
+        }
+    }
+}
+
+impl From<Header> for Any {
+    fn from(header: Header) -> Self {
+        Any {
+            type_url: TENDERMINT_HEADER_TYPE_URL.to_string(),
+            value: Protobuf::<RawHeader>::encode_vec(&header)
+                .expect("encoding to `Any` from `TmHeader`"),
+        }
+    }
+}
+
 pub fn decode_header<B: Buf>(buf: B) -> Result<Header, Error> {
     RawHeader::decode(buf).map_err(Error::decode)?.try_into()
 }
@@ -140,7 +166,7 @@ impl From<Header> for RawHeader {
     }
 }
 
-#[cfg(test)]
+#[cfg(any(test, feature = "mocks"))]
 pub mod test_util {
     use alloc::vec;
 

@@ -47,7 +47,7 @@ hermes version
 ```
 
 ```
-hermes v1.0.0-rc.2
+hermes v1.0.0
 ```
 
 ## Install via Cargo
@@ -59,7 +59,7 @@ Hermes is packaged in the `ibc-relayer-cli` Rust crate.
 To install the latest release of Hermes, run the following command in a terminal:
 
 ```shell
-cargo install ibc-relayer-cli@1.0.0-rc.2 --bin hermes --locked
+cargo install ibc-relayer-cli@1.0.0 --bin hermes --locked
 ```
 
 This will download and build the crate `ibc-relayer-cli`, and install the
@@ -81,7 +81,7 @@ hermes version
 ```
 
 ```
-hermes v1.0.0-rc.2
+hermes v1.0.0
 ```
 
 ## Build from source
@@ -103,10 +103,10 @@ cd ibc-rs
 
 Go to the [ibc-rs releases](https://github.com/informalsystems/ibc-rs/releases) page to see what is the most recent release.
 
-Then `checkout` the release, for example if the most recent release is `v1.0.0-rc.2` then execute the command:
+Then checkout the release, for example if the most recent release is `v1.0.0` then execute the command:
 
 ```shell
-git checkout v1.0.0-rc.2
+git checkout v1.0.0
 ```
 
 ### Building with `cargo build`
@@ -151,7 +151,7 @@ If you run the `hermes` without any additional parameters you should see the usa
 ```
 
 ```
-hermes v1.0.0-rc.2
+hermes v1.0.0
 Informal Systems <hello@informal.systems>
 
 USAGE:
