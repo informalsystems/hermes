@@ -7,6 +7,14 @@
       "type": "datasource",
       "pluginId": "prometheus",
       "pluginName": "Prometheus"
+    },
+    {
+      "name": "DS_LOKI",
+      "label": "Loki",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "loki",
+      "pluginName": "Loki"
     }
   ],
   "__elements": {},
@@ -22,6 +30,18 @@
       "id": "grafana",
       "name": "Grafana",
       "version": "9.0.7"
+    },
+    {
+      "type": "panel",
+      "id": "logs",
+      "name": "Logs",
+      "version": ""
+    },
+    {
+      "type": "datasource",
+      "id": "loki",
+      "name": "Loki",
+      "version": "1.0.0"
     },
     {
       "type": "datasource",
@@ -67,6 +87,17 @@
           "type": "dashboard"
         },
         "type": "dashboard"
+      },
+      {
+        "datasource": {
+          "type": "loki",
+          "uid": "${DS_LOKI}"
+        },
+        "enable": true,
+        "expr": "{filename=\"/var/log/hermes.log\"} |= \"ERROR\"",
+        "iconColor": "red",
+        "name": "Errors",
+        "target": {}
       }
     ]
   },
@@ -78,11 +109,67 @@
   "liveNow": false,
   "panels": [
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 62,
+      "options": {
+        "content": "# Hermes Grafana Dashboard\n\nhttp://hermes.informal.systems/documentation/telemetry/operators.html to learn more about the metrics.",
+        "mode": "markdown"
+      },
+      "pluginVersion": "9.0.7",
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "${DS_LOKI}"
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 24,
+        "x": 0,
+        "y": 3
+      },
+      "id": 60,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "${DS_LOKI}"
+          },
+          "editorMode": "builder",
+          "expr": "{filename=\"/var/log/hermes.log\"}",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Hermes logs",
+      "type": "logs"
+    },
+    {
       "gridPos": {
         "h": 2,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 15
       },
       "id": 50,
       "options": {
@@ -151,7 +238,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 2
+        "y": 17
       },
       "id": 1,
       "options": {
@@ -255,7 +342,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 2
+        "y": 17
       },
       "id": 52,
       "options": {
@@ -276,13 +363,13 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "increase(client_updates_submitted{job=\"hermes\"}[5m])",
+          "expr": "delta(client_updates_submitted{job=\"hermes\"}[1m])",
           "legendFormat": "{{src_chain}} -> {{dst_chain}}:{{client}} ({{instance}})",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "client_updates_submitted over 5 minutes",
+      "title": "client_updates_submitted over 1 minute",
       "type": "timeseries"
     },
     {
@@ -345,7 +432,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 2
+        "y": 17
       },
       "id": 40,
       "options": {
@@ -366,13 +453,13 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "increase(total_messages_submitted{job=\"hermes\"}[5m])",
+          "expr": "delta(total_messages_submitted{job=\"hermes\"}[1m])",
           "legendFormat": "{{instance}}:{{chain}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "total_messages_submitted over 5 minutes",
+      "title": "total_messages_submitted over 1 minute",
       "type": "timeseries"
     },
     {
@@ -435,7 +522,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 9
+        "y": 24
       },
       "id": 3,
       "options": {
@@ -456,13 +543,13 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(wallet_balance{job=\"hermes\"}[5m])",
+          "expr": "delta(wallet_balance{job=\"hermes\"}[1m])",
           "legendFormat": "{{chain}}: {{account}} ({{instance}})",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Gas variation over 5 minutes",
+      "title": "Gas variation over 1 minute",
       "type": "timeseries"
     },
     {
@@ -525,7 +612,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 9
+        "y": 24
       },
       "id": 42,
       "options": {
@@ -618,7 +705,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 9
+        "y": 24
       },
       "id": 35,
       "options": {
@@ -654,7 +741,7 @@
         "h": 2,
         "w": 24,
         "x": 0,
-        "y": 17
+        "y": 32
       },
       "id": 25,
       "options": {
@@ -833,7 +920,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 19
+        "y": 34
       },
       "id": 9,
       "options": {
@@ -1025,7 +1112,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 28
+        "y": 43
       },
       "id": 5,
       "options": {
@@ -1119,7 +1206,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 28
+        "y": 43
       },
       "id": 23,
       "options": {
@@ -1140,13 +1227,13 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(receive_packets_confirmed{job=\"hermes\"}[5m])",
+          "expr": "delta(receive_packets_confirmed{job=\"hermes\"}[1m])",
           "legendFormat": "{{src_chain}}:{{src_channel}}/{{src_port}} ({{instance}})",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "receive_packets_confirmed over 5 minutes",
+      "title": "receive_packets_confirmed over 1 minute",
       "type": "timeseries"
     },
     {
@@ -1193,7 +1280,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1208,7 +1296,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 37
+        "y": 52
       },
       "id": 21,
       "options": {
@@ -1229,13 +1317,13 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(timeout_packets_confirmed{job=\"hermes\"}[5m])",
+          "expr": "delta(timeout_packets_confirmed{job=\"hermes\"}[1m])",
           "legendFormat": "{{src_chain}}:{{src_channel}}/{{src_port}} ({{instance}})",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "timeout_packets_confirmed over 5 minutes",
+      "title": "timeout_packets_confirmed over 1 minute",
       "type": "timeseries"
     },
     {
@@ -1282,7 +1370,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1297,7 +1386,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 37
+        "y": 52
       },
       "id": 17,
       "options": {
@@ -1318,13 +1407,13 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(acknowledgment_packets_confirmed{job=\"hermes\"}[5m])",
+          "expr": "delta(acknowledgment_packets_confirmed{job=\"hermes\"}[1m])",
           "legendFormat": "{{src_chain}}:{{src_channel}}/{{src_port}} ({{instance}})",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "acknowledgment_packets_confirmed over 5 minutes",
+      "title": "acknowledgment_packets_confirmed over 1 minute",
       "type": "timeseries"
     },
     {
@@ -1333,7 +1422,7 @@
         "h": 2,
         "w": 24,
         "x": 0,
-        "y": 46
+        "y": 61
       },
       "id": 31,
       "options": {
@@ -1394,7 +1483,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1409,7 +1499,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 48
+        "y": 63
       },
       "id": 11,
       "options": {
@@ -1430,14 +1520,14 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(send_packet_events{job=\"hermes\"}[5m])",
+          "expr": "delta(send_packet_events{job=\"hermes\"}[1m])",
           "interval": "",
           "legendFormat": "{{chain}}:{{channel}}/{{port}}-{{counterparty}} ({{instance}})",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "send_packets_events over 5 minutes",
+      "title": "send_packets_events over 1 minute",
       "type": "timeseries"
     },
     {
@@ -1484,7 +1574,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1499,7 +1590,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 48
+        "y": 63
       },
       "id": 15,
       "options": {
@@ -1520,13 +1611,13 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "rate(acknowledgement_events{job=\"hermes\"}[5m])",
+          "expr": "delta(acknowledgement_events{job=\"hermes\"}[1m])",
           "legendFormat": "{{chain}}:{{channel}}/{{port}}-{{counterparty}} ({{instance}})",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "acknowledgement_events over 5 minutes",
+      "title": "acknowledgement_events over 1 minute",
       "type": "timeseries"
     },
     {
@@ -1573,7 +1664,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1588,7 +1680,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 48
+        "y": 63
       },
       "id": 19,
       "options": {
@@ -1609,13 +1701,13 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "rate(timeout_events{job=\"hermes\"}[5m])",
+          "expr": "delta(timeout_events{job=\"hermes\"}[1m])",
           "legendFormat": "{{chain}}:{{channel}}/{{port}}-{{counterparty}} ({{instance}})",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "timeout_events over 5 minutes",
+      "title": "timeout_events over 1 minute",
       "type": "timeseries"
     },
     {
@@ -1662,7 +1754,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1677,7 +1770,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 56
+        "y": 71
       },
       "id": 44,
       "options": {
@@ -1698,14 +1791,14 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(ws_events{job=\"hermes\"}[5m])",
+          "expr": "delta(ws_events{job=\"hermes\"}[1m])",
           "interval": "",
           "legendFormat": "{{instance}}:{{chain}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "ws_events rate 5 minutes",
+      "title": "ws_events received over 1 minute",
       "type": "timeseries"
     },
     {
@@ -1752,7 +1845,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1767,7 +1861,7 @@
         "h": 8,
         "w": 8,
         "x": 8,
-        "y": 56
+        "y": 71
       },
       "id": 46,
       "options": {
@@ -1788,13 +1882,13 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(ws_reconnect{job=\"hermes\"}[5m])",
+          "expr": "delta(ws_reconnect{job=\"hermes\"}[1m])",
           "legendFormat": "{{instance}}:{{chain}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "ws_reconnect over 5 minutes",
+      "title": "ws_reconnect over 1 minute",
       "type": "timeseries"
     },
     {
@@ -1841,7 +1935,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1856,7 +1951,7 @@
         "h": 8,
         "w": 8,
         "x": 16,
-        "y": 56
+        "y": 71
       },
       "id": 48,
       "options": {
@@ -1877,13 +1972,13 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(delta(queries{job=\"hermes\"}[5m])) by(instance,chain)",
+          "expr": "sum(delta(queries{job=\"hermes\"}[1m])) by(instance,chain)",
           "legendFormat": "{{instance}}:{{chain}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "queries over 5 minutes",
+      "title": "RPC queries sent over 1 minute",
       "transformations": [],
       "type": "timeseries"
     },
@@ -1892,7 +1987,7 @@
         "h": 2,
         "w": 24,
         "x": 0,
-        "y": 64
+        "y": 79
       },
       "id": 36,
       "options": {
@@ -1946,7 +2041,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -1961,7 +2057,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 66
+        "y": 81
       },
       "id": 33,
       "options": {
@@ -1982,13 +2078,13 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(cleared_acknowledgment_events{job=\"hermes\"}[5m])",
+          "expr": "delta(cleared_acknowledgment_events{job=\"hermes\"}[1m])",
           "legendFormat": "{{chain}}:{{channel}}/{{port}}-{{counterparty}} ({{instance}})",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "cleared_acknowledgment_events over 5 minutes",
+      "title": "cleared_acknowledgment_events over 1 minute",
       "type": "timeseries"
     },
     {
@@ -2035,7 +2131,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -2050,7 +2147,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 66
+        "y": 81
       },
       "id": 13,
       "options": {
@@ -2071,13 +2168,13 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "delta(cleared_send_packet_events{job=\"hermes\"}[1h])",
+          "expr": "delta(cleared_send_packet_events{job=\"hermes\"}[1m])",
           "legendFormat": "{{chain}}:{{channel}}/{{port}}-{{counterparty}} ({{instance}})",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "cleared_send_packet_events over 5 minutes",
+      "title": "cleared_send_packet_events over 1 minute",
       "type": "timeseries"
     },
     {
@@ -2124,7 +2221,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -2140,7 +2238,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 75
+        "y": 90
       },
       "id": 37,
       "options": {
@@ -2161,7 +2259,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "builder",
-          "expr": "histogram_quantile(0.95, sum by(le, chain, instance) (rate(tx_latency_submitted_bucket[1h])))",
+          "expr": "histogram_quantile(0.95, sum by(le, chain, instance) (rate(tx_latency_submitted_bucket[5m])))",
           "legendFormat": "{{instance}}:{{chain}}",
           "range": true,
           "refId": "A"
@@ -2214,7 +2312,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -2229,7 +2328,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 75
+        "y": 90
       },
       "id": 54,
       "options": {
@@ -2256,15 +2355,15 @@
           "refId": "A"
         }
       ],
-      "title": "queries_cache_hits over 5 minutes",
+      "title": "queries_cache_hits over 1 minute",
       "type": "timeseries"
     },
     {
       "gridPos": {
         "h": 2,
-        "w": 23,
+        "w": 24,
         "x": 0,
-        "y": 83
+        "y": 98
       },
       "id": 58,
       "options": {
@@ -2318,7 +2417,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": null
               },
               {
                 "color": "red",
@@ -2330,10 +2430,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
+        "h": 10,
+        "w": 24,
         "x": 0,
-        "y": 85
+        "y": 100
       },
       "id": 56,
       "options": {
@@ -2379,6 +2479,6 @@
   "timezone": "",
   "title": "Grafana template",
   "uid": "lrkGhUmVz",
-  "version": 4,
+  "version": 1,
   "weekStart": ""
 }

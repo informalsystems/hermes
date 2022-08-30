@@ -58,7 +58,7 @@ docker-compose -f docker-compose.yaml up
 ### Add Loki
 
 - Add another data source, however, this time, select `Loki`.
-- In the URL box, enter http://loki:311.
+- In the URL box, enter `http://loki:3100`.
 - Click `Save & Test`.
     Loki is now available as a data source in Grafana.
 
