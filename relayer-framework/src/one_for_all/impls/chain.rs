@@ -4,6 +4,7 @@ use crate::core::traits::contexts::chain::{ChainContext, IbcChainContext};
 use crate::core::traits::contexts::error::HasError;
 use crate::core::traits::contexts::ibc_event::HasIbcEvents;
 use crate::core::traits::contexts::runtime::HasRuntime;
+use crate::core::traits::contexts::telemetry::HasTelemetry;
 use crate::core::traits::queries::consensus_state::{ConsensusStateQuerier, HasConsensusState};
 use crate::core::traits::queries::received_packet::{
     HasReceivedPacketQuerier, ReceivedPacketQuerier,
@@ -22,6 +23,16 @@ impl<Chain: OfaChain> HasRuntime for OfaChainContext<Chain> {
 
     fn runtime(&self) -> &Self::Runtime {
         self.chain.runtime()
+    }
+}
+
+impl<Chain: OfaChain> HasTelemetry for OfaChainContext<Chain> {
+    const TELEMETRY_ENABLED: bool = true; // Not sure how to deal with that yet.
+
+    type Telemetry = Chain::Telemetry;
+
+    fn telemetry(&self) -> &Self::Telemetry {
+        self.chain.telemetry()
     }
 }
 

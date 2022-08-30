@@ -68,6 +68,10 @@ pub trait OfaRelay: Async {
 
     fn dst_chain(&self) -> &OfaChainContext<Self::DstChain>;
 
+    fn src_telemetry(&self) -> &<Self::SrcChain as OfaChain>::Telemetry;
+
+    fn dst_telemetry(&self) -> &<Self::DstChain as OfaChain>::Telemetry;
+
     async fn build_src_update_client_messages(
         &self,
         height: &<Self::DstChain as OfaChain>::Height,

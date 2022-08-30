@@ -1,9 +1,17 @@
 use crate::core::traits::core::Async;
 
 pub trait TelemetryContext: Async {
-    type Entry: Async;
+    type Label: Async;
+    type Error: Async; // Needs to be taken out of this trait
 
-    fn new_entry(key: &str, value: &str) -> Self::Entry;
+    fn new_label(key: &str, value: &str) -> Self::Label;
 
-    fn add_counter(&self, name: &str, count: u64, labels: &[Self::Entry]);
+    fn new_counter(&self, name: &str, description: &str) -> Result<(), Self::Error>;
+
+    fn add_counter(
+        &self,
+        name: &str,
+        count: u64,
+        labels: &[Self::Label],
+    ) -> Result<(), Self::Error>;
 }

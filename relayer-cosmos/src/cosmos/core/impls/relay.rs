@@ -19,6 +19,7 @@ use crate::cosmos::core::types::chain::CosmosChainContext;
 use crate::cosmos::core::types::message::CosmosIbcMessage;
 use crate::cosmos::core::types::relay::CosmosRelayContext;
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
+use crate::cosmos::core::types::telemetry::CosmosTelemetry;
 
 #[async_trait]
 impl<Relay> OfaRelay for CosmosRelayContext<Relay>
@@ -130,6 +131,14 @@ where
         });
 
         Ok(message)
+    }
+
+    fn src_telemetry(&self) -> &CosmosTelemetry {
+        &self.src_chain.chain.telemetry
+    }
+
+    fn dst_telemetry(&self) -> &CosmosTelemetry {
+        &self.dst_chain.chain.telemetry
     }
 
     async fn build_ack_packet_message(

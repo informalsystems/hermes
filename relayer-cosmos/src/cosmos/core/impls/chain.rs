@@ -26,6 +26,7 @@ use crate::cosmos::core::traits::chain::CosmosChain;
 use crate::cosmos::core::types::chain::CosmosChainContext;
 use crate::cosmos::core::types::message::CosmosIbcMessage;
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
+use crate::cosmos::core::types::telemetry::CosmosTelemetry;
 
 #[async_trait]
 impl<Chain> OfaChain for CosmosChainContext<Chain>
@@ -65,6 +66,8 @@ where
     type ConsensusState = ConsensusState;
 
     type ChainStatus = ChainStatus;
+
+    type Telemetry = CosmosTelemetry;
 
     fn encode_raw_message(message: &CosmosIbcMessage, signer: &Signer) -> Result<Any, Error> {
         (message.to_protobuf_fn)(signer).map_err(Error::encode)
@@ -131,6 +134,10 @@ where
             .map_err(Error::relayer)?;
 
         Ok(status)
+    }
+
+    fn telemetry(&self) -> &CosmosTelemetry {
+        &self.telemetry
     }
 }
 
