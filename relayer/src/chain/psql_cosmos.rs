@@ -26,7 +26,7 @@ use ibc::{
             packet::Sequence,
         },
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
-        ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortId},
+        ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId},
     },
     downcast,
     events::{IbcEvent, WithBlockDataType},
@@ -243,13 +243,14 @@ impl PsqlChain {
             .filter_map(|ch| IdentifiedChannelEnd::try_from(ch).ok())
             .collect();
 
-        for c in channels.iter() {
+        for channel in channels.iter() {
             snapshot
                 .data
                 .channels
-                .entry(c.channel_id.clone())
-                .or_insert_with(|| c.clone());
-            self.populate_packets(query_height, c, snapshot)?;
+                .entry(channel.port_channel_id())
+                .or_insert_with(|| channel.clone());
+
+            self.populate_packets(query_height, channel, snapshot)?;
         }
 
         Ok(())
@@ -525,10 +526,11 @@ impl PsqlChain {
         match channel {
             None => {
                 let new_partial_channel = events::channel_from_event(event).unwrap();
+
                 if let Some(ch) = result
                     .data
                     .channels
-                    .get_mut(&new_partial_channel.channel_id)
+                    .get_mut(&new_partial_channel.port_channel_id())
                 {
                     debug!(
                         "psql chain {} - changing channel {} from {} to {} due to event {}",
@@ -538,6 +540,7 @@ impl PsqlChain {
                         new_partial_channel.channel_end.state,
                         event
                     );
+
                     ch.channel_end.state = new_partial_channel.channel_end.state;
                     ch.channel_end.remote = new_partial_channel.channel_end.remote;
                 }
@@ -550,10 +553,11 @@ impl PsqlChain {
                     channel.channel_end.state.clone(),
                     event
                 );
+
                 result
                     .data
                     .channels
-                    .insert(channel.channel_id.clone(), channel);
+                    .insert(channel.port_channel_id(), channel);
             }
         }
     }
@@ -932,16 +936,16 @@ impl ChainEndpoint for PsqlChain {
                 if self.is_synced() {
                     crate::time!("query_channel_psql");
                     crate::telemetry!(query, self.id(), "query_channel_psql");
-                    Ok((
-                        self.block_on(query_channel(
-                            &self.pool,
-                            &request.height,
-                            &request.channel_id,
-                        ))?
+
+                    let port_channel_id =
+                        PortChannelId::new(request.channel_id.clone(), request.port_id.clone());
+
+                    let channel_end = self
+                        .block_on(query_channel(&self.pool, &request.height, &port_channel_id))?
                         .ok_or_else(|| PsqlError::channel_not_found(request.channel_id.clone()))?
-                        .channel_end,
-                        None,
-                    ))
+                        .channel_end;
+
+                    Ok((channel_end, None))
                 } else {
                     warn!("chain psql dbs not synchronized on {}, falling back to gRPC query_channel for {}/{}",
                     self.chain.id(), request.port_id, request.channel_id);

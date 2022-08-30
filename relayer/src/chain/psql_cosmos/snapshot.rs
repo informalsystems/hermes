@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize, Serializer};
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::packet::{Packet, Sequence};
-use ibc::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use ibc::core::ics24_host::identifier::{ChannelId, ConnectionId, PortChannelId, PortId};
 use sqlx::postgres::PgRow;
 use sqlx::types::Json;
 
@@ -49,27 +49,29 @@ impl<'de> Deserialize<'de> for PacketId {
     }
 }
 
+// TODO: Consider:
+//
+// - to help with reducing RPCs from update client
+//   (update on NewBlock event, beefed up with block data, probably still the validators RPC is needed)
+// pub signed_header: SignedHeader,
+// pub validator_set: ValidatorSet,
+//
+// - to get clients, their state and consensus states, etc
+//   (update on create and update client events)
+// pub client_states: HashMap<ClientId, ClientState>
+// pub consensus_states: HashMap<(ClientId, Height), ConsensusState>
+//
+// - to help with packet acknowledgments...this is tricky as we need to pass from
+//   the counterparty chain:
+//     1. data (seqs for packets with commitments) on start
+//     2. Acknowledge and Timeout packet events in order to clear
+// pub pending_ack_packets: HashMap<PacketId, Packet>,
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct IbcData {
     pub app_status: ChainStatus,
     pub connections: HashMap<ConnectionId, IdentifiedConnectionEnd>,
-    pub channels: HashMap<ChannelId, IdentifiedChannelEnd>, // TODO - use PortChannelId key
-    pub pending_sent_packets: HashMap<PacketId, Packet>,    // TODO - use IbcEvent val (??)
-
-                                                            // TODO consider:
-                                                            // - to help with reducing RPCs from update client
-                                                            //   (update on NewBlock event, beefed up with block data, probably still the validators RPC is needed)
-                                                            // pub signed_header: SignedHeader,
-                                                            // pub validator_set: ValidatorSet,
-                                                            // - to get clients, their state and consensus states, etc
-                                                            //   (update on create and update client events)
-                                                            // pub client_states: HashMap<ClientId, ClientState>
-                                                            // pub consensus_states: HashMap<(ClientId, Height), ConsensusState>
-                                                            // - to help with packet acknowledgments...this is tricky as we need to pass from
-                                                            //   the counterparty chain:
-                                                            //     1. data (seqs for packets with commitments) on start
-                                                            //     2. Acknowledge and Timeout packet events in order to clear
-                                                            // pub pending_ack_packets: HashMap<PacketId, Packet>,
+    pub channels: HashMap<PortChannelId, IdentifiedChannelEnd>,
+    pub pending_sent_packets: HashMap<PacketId, Packet>, // TODO - use IbcEvent val (??)
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

@@ -12,7 +12,7 @@ use ibc_proto::ibc::core::channel::v1::{
 };
 
 use crate::core::ics04_channel::{error::Error, Version};
-use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
+use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortChannelId, PortId};
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IdentifiedChannelEnd {
@@ -28,6 +28,10 @@ impl IdentifiedChannelEnd {
             channel_id,
             channel_end,
         }
+    }
+
+    pub fn port_channel_id(&self) -> PortChannelId {
+        PortChannelId::new(self.channel_id.clone(), self.port_id.clone())
     }
 }
 

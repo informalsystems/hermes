@@ -15,7 +15,7 @@ use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc::core::ics04_channel::packet::Packet;
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId};
+use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId, PortChannelId};
 use ibc::events::{self, IbcEvent, WithBlockDataType};
 use ibc::Height as ICSHeight;
 
@@ -797,7 +797,7 @@ pub async fn query_channels(
 pub async fn query_channel(
     pool: &PgPool,
     query_height: &QueryHeight,
-    id: &ChannelId,
+    id: &PortChannelId,
 ) -> Result<Option<IdentifiedChannelEnd>, Error> {
     let result = query_ibc_data(pool, query_height).await?;
     Ok(result.data.channels.get(id).cloned())
