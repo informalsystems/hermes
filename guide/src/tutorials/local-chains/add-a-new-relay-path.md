@@ -2,7 +2,7 @@
 
 In order to connect two IBC-enabled chains, both chains need an on-chain client that keeps track of the other chain. These two clients can be connected by one or multiple connections. Then, channels need to be created, over a connection, to specify the destination module.
 
-> __WARNING__: Do not create clients, connections or channels between two chains/modules before checking that a client/connection/channel does not already fulfill the same function.
+> __WARNING__: In production, do not create clients, connections or channels between two chains before checking that a client/connection/channel does not already fulfill the same function.
 
 ---
 
@@ -30,6 +30,7 @@ This can be done over a new path or over existing paths.
 
 >__NOTE__: The following steps decompose every step from the creation of the clients to the channel handshake for educational purposes. Hermes can do it in a single command with `hermes create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --new-client-connection` which creates a new client on each chain, establish a connection and open a channel. 
 
+You will need to first create a client on both chain then establish a connection between them. It is possible to have multiple connections between clients and can be useful to support multiple versions of IBC. Finally, you need to create channels over a connection to identify the source and destination modules. Learn more in the [cosmos academy tutorial](https://tutorials.cosmos.network/academy/4-ibc/what-is-ibc.html).  
 
 ### Create clients
 
@@ -568,5 +569,5 @@ Before going over the next sections, please ensure the commands above are execut
 
 ## Next Steps
 
-The [following section](./start-relaying.md) describe the commands how to relay packets over the relay path you just created.
+The [following section](./start-relaying.md) describes how to relay packets over the relay path you just created.
 

@@ -1,6 +1,6 @@
 # Setup Hermes
 
-In this section, you will learn how to set up Hermes to relay between the Hub and Osmosis.
+In this section, you will learn how to set up Hermes to relay between the Hub and Osmosis. You will relay on channels that are already created. **It is strongly advised not to create any channels between two chains if another one with the same port already exists.**
 
 ---
 
@@ -38,7 +38,7 @@ The command `hermes config auto` provides a way to automatically generate a conf
 ```shell
 hermes config auto --output $HOME/.hermes/config.toml --chains cosmoshub:keyhub osmosis:keyosmosis
 ```
-__NOTE__: This command also automatically finds IBC paths and generates packet filters from the [_IBC](https://github.com/cosmos/chain-registry/tree/master/_IBC) folder in the chain-registry.
+>__NOTE__: This command also automatically finds IBC paths and generates packet filters from the [_IBC](https://github.com/cosmos/chain-registry/tree/master/_IBC) folder in the chain-registry.
 
 If the command runs successfully, it should output:
 ```
@@ -167,7 +167,7 @@ As you can observe, the command created packet filters so the relayer will only 
 > - The volume of transactions. More congestion means higher gas prices.
 > - The transaction's size. Bigger transactions need more gas. 
 > - The volume of IBC messages to relay.
-> We cannot provide a way to precisely set those parameters. However, you can refer to [other relayer's configuration](https://github.com/informalsystems/ibc-rs/discussions/2472#discussioncomment-3331695). You can also find IBC transfers on [mintscan.io](https://www.mintscan.io/cosmos/txs) to observe how much other operators are spending. But remember that if the gas wanted is too low, the transactions will fail. If the gas price is too high gas will be wasted, but the transaction will have a higher priority. 
+> We cannot provide a way to precisely set those parameters. However, you can refer to [other operators' configuration](https://github.com/informalsystems/ibc-rs/discussions/2472#discussioncomment-3331695). You can also find IBC transfers on [mintscan.io](https://www.mintscan.io/cosmos/txs) to observe how much other operators are spending. But remember that if the gas wanted is too low, the transactions will fail. If the gas price is too high gas will be wasted, but the transaction will have a higher priority. 
 
 For the tutorial, we will follow the [example of Crypto Crew](https://github.com/notional-labs/notional/blob/master/relaying/hermes/all-ibc.toml) and set the gas parameters as follows.
 
@@ -215,6 +215,8 @@ If the command runs successfully, it should output:
 2022-08-26T15:54:23.954362Z  INFO ThreadId(01) chain is healthy chain=osmosis-1
 SUCCESS performed health check for all chains in the config
 ```
+
+>__WARNING__: In the previous tutorials, after setting up Hermes, we started by creating a new relay path. In production, the relay path most likely already exists and does not need to be created. **Do not create channels between the Hub and Osmosis.**
 
 ---
 
