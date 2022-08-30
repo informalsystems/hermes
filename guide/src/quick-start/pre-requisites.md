@@ -34,7 +34,7 @@ This should display the `cargo` version and confirm the proper installation.
 
 ## 2. Golang
 
-You will also need the __Go__ programming language installed and configured on your machine. This is a requirement for the section [Installing Gaia](./tutorials/local-chains/gaia.md) in the [Two Local Chains](./tutorials/local-chains/index.md) tutorial.
+You will also need the __Go__ programming language installed and configured on your machine. This is a requirement for the section [Installing Gaia](../tutorials/pre-requisites/gaia.md).
 
 To install and configure Golang on your machine please follow the [Golang official documentation](https://golang.org/doc/install).
 

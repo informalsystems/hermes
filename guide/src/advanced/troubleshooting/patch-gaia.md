@@ -72,4 +72,4 @@ to close-open:
   hermes --config config.toml query channel end --chain ibc-1 --port transfer --channel channel-1
   ```
 
-[chan-close]: ./commands/tx/channel-close.md#channel-close-init
+[chan-close]: ../../documentation/commands/tx/channel-close.md#channel-close-init

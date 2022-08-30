@@ -154,4 +154,4 @@ Success: CloseConfirmChannel(
 __NOTE__: The `cosmos-sdk` transfer module implementation does not allow the user (`hermes` in this case) to initiate the closing of channels.
 Therefore, when using the Gaia release image, the `chan-close-init` command
 fails as the `MsgChannelCloseInit` message included in the transaction is rejected.
-To be able to test channel closure, you need to [patch](../../help.md#patching-gaia) your gaia deployments.
+To be able to test channel closure, you need to [patch](../../../advanced/troubleshooting/patch-gaia.md) your gaia deployments.

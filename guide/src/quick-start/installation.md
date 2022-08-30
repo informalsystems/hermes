@@ -228,4 +228,4 @@ Go to the [`Tutorials`](../tutorials/index.md) section to learn the basics of He
 
 
 [releases]: https://github.com/informalsystems/ibc-rs/releases
-[developer-app]: https://support.apple.com/en-gb/HT202491
+[developer-app]: https://support.apple.com/HT202491

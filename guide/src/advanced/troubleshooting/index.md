@@ -18,7 +18,7 @@ This section provides guidelines regarding troubleshooting.
     * Learn how to `inspect` the state of your relayer.
 
 
-[help]: ./help_command.md
+[help]: ./help-command.md
 [log-level]: ./log-level.md
 [profiling]: ./profiling.md
 [patching]: ./patch-gaia.md

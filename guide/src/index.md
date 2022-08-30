@@ -31,13 +31,13 @@ Hermes is actively developed and maintained by [Informal Systems](https://inform
 
 * **[Tutorials](./tutorials/index.md)**
 
-  - **[Prerequisites for local chains](./pre-requisites/index.md)**
+  - **[Prerequisites for local chains](./tutorials/local-chains/index.md)**
       - Install `Gaia` and `gm` (Gaia Manager) for tutorials using local chains.
-  - **[Two Local Chains](./local-chains/index.md)**
+  - **[Two Local Chains](./tutorials/local-chains/index.md)**
       - Start two local [`Cosmos Gaia`](https://github.com/cosmos/gaia) chains that support the `IBC` protocol and learn the fundamentals of IBC.
-  - **[More Local Chains](./more-chains/index.md)**
+  - **[More Local Chains](./tutorials/more-chains/index.md)**
       - Learn how to relay on an arbitrary topology of more than two chains by using packet filters and to run multiple instances of Hermes.
-  - **[Relaying in production](./production/index.md)**
+  - **[Relaying in production](./tutorials/production/index.md)**
       - Learn how to set up, configure and run `hermes` on IBC-enabled chains in production.
 
 * **[Advanced](./advanced/index.md)**
@@ -50,7 +50,7 @@ Hermes is actively developed and maintained by [Informal Systems](https://inform
 * **[Documentation](./documentation/index.md)**
   - **[Configuration](./documentation/configuration/index.md)**
       - This section includes everything you need to know to configure Hermes.
-  - **[Telemetry](./documentation/telemetry.md)**
+  - **[Telemetry](./documentation/telemetry/index.md)**
       - This section describes all Prometheus metrics and how to use them efficiently.
   - **[REST API](./documentation/rest-api.md)**
       - This section presents Hermes' REST API.
@@ -102,4 +102,4 @@ __Disclaimer__ This project is undergoing heavy development, use at your own ris
 [feature-request]: https://github.com/informalsystems/ibc-rs/issues/new?assignees=&labels=&template=feature-request.md
 [bug-report]: https://github.com/informalsystems/ibc-rs/issues/new?assignees=&labels=&template=bug-report.md
 [twitter]: https://twitter.com/informalinc
-[issues]: https://github.com/informalsystems/ibc-rs/issue
+[issues]: https://github.com/informalsystems/ibc-rs/issues
