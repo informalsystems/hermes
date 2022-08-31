@@ -1053,7 +1053,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
 
         let new_msg = MsgConnectionOpenTry {
             client_id: self.dst_client_id().clone(),
-            client_state,
+            client_state: client_state.map(Into::into),
             previous_connection_id,
             counterparty,
             counterparty_versions,
@@ -1171,7 +1171,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
         let new_msg = MsgConnectionOpenAck {
             connection_id: dst_connection_id.clone(),
             counterparty_connection_id: src_connection_id.clone(),
-            client_state,
+            client_state: client_state.map(Into::into),
             proofs,
             version: src_connection.versions()[0].clone(),
             signer,

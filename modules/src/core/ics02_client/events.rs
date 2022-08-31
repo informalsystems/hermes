@@ -5,8 +5,8 @@ use serde_derive::{Deserialize, Serialize};
 use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
+use super::header::Header;
 use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::header::AnyHeader;
 use crate::core::ics02_client::height::Height;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::events::{IbcEvent, IbcEventType};
@@ -147,10 +147,10 @@ impl From<CreateClient> for AbciEvent {
 }
 
 /// UpdateClient event signals a recent update of an on-chain client (IBC Client).
-#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct UpdateClient {
     pub common: Attributes,
-    pub header: Option<AnyHeader>,
+    pub header: Option<Box<dyn Header>>,
 }
 
 impl UpdateClient {
@@ -169,18 +169,12 @@ impl UpdateClient {
 
 impl Display for UpdateClient {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
-        match &self.header {
-            Some(header) => write!(
-                f,
-                "UpdateClient {{ common: {}, header: {} }}",
-                self.common, header
-            ),
-            None => write!(
-                f,
-                "UpdateClient {{ common: {}, header: None }}",
-                self.common
-            ),
-        }
+        // TODO Display: Check for a solution for Box<dyn Header>
+        write!(
+            f,
+            "UpdateClient {{ common: {}, header: None }}",
+            self.common
+        )
     }
 }
 
@@ -205,7 +199,7 @@ impl From<UpdateClient> for AbciEvent {
         if let Some(h) = v.header {
             let header = Tag {
                 key: HEADER_ATTRIBUTE_KEY.parse().unwrap(),
-                value: h.encode_to_string().parse().unwrap(),
+                value: h.encode_to_hex_string().parse().unwrap(),
             };
             attributes.push(header);
         }

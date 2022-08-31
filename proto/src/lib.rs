@@ -11,6 +11,7 @@
 #![doc(html_root_url = "https://docs.rs/ibc-proto/0.20.1")]
 
 pub mod google;
+pub mod protobuf;
 
 extern crate alloc;
 

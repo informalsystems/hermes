@@ -99,7 +99,7 @@ pub async fn simple_send_tx(
     let message_count = messages.len();
 
     let response =
-        estimate_fee_and_send_tx(config, key_entry, &account, &Default::default(), messages)
+        estimate_fee_and_send_tx(config, key_entry, &account, &Default::default(), &messages)
             .await?;
 
     let tx_sync_result = TxSyncResult {

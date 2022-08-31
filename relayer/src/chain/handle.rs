@@ -6,13 +6,7 @@ use tracing::Span;
 
 use ibc::{
     core::{
-        ics02_client::{
-            client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
-            client_state::{AnyClientState, IdentifiedAnyClientState},
-            events::UpdateClient,
-            header::AnyHeader,
-            misbehaviour::MisbehaviourEvidence,
-        },
+        ics02_client::events::UpdateClient,
         ics03_connection::{
             connection::{ConnectionEnd, IdentifiedConnectionEnd},
             version::Version,
@@ -32,8 +26,10 @@ use ibc::{
 
 use crate::{
     account::Balance,
+    client_state::{AnyClientState, IdentifiedAnyClientState},
     config::ChainConfig,
     connection::ConnectionMsgType,
+    consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight},
     denom::DenomTrace,
     error::Error,
     event::{
@@ -41,6 +37,8 @@ use crate::{
         IbcEventWithHeight,
     },
     keyring::KeyEntry,
+    light_client::AnyHeader,
+    misbehaviour::MisbehaviourEvidence,
 };
 
 use super::{

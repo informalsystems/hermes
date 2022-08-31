@@ -60,19 +60,6 @@ define_error! {
                     e.threshold, e.chain_id, e.reason)
             },
 
-        InvalidGasMultiplier
-            {
-                gas_multiplier: f64,
-                chain_id: ChainId,
-            }
-            |e| {
-                format!(
-                    "config file specifies an invalid `gas_multiplier` ({0}) for the chain '{1}', \
-                    the value must be greater than or equal to 1.0",
-                    e.gas_multiplier, e.chain_id
-                )
-            },
-
         DeprecatedGasAdjustment
             {
                 gas_adjustment: f64,
@@ -170,16 +157,6 @@ fn validate_trust_threshold(
 }
 
 fn validate_gas_settings(id: &ChainId, config: &ChainConfig) -> Result<(), Diagnostic<Error>> {
-    // Check that the gas_multiplier is greater than or equal to 1.0
-    if let Some(gas_multiplier) = config.gas_multiplier {
-        if gas_multiplier < 1.0 {
-            return Err(Diagnostic::Error(Error::invalid_gas_multiplier(
-                gas_multiplier,
-                id.clone(),
-            )));
-        }
-    }
-
     // Check that the gas_adjustment option is not set
     if let Some(gas_adjustment) = config.gas_adjustment {
         let gas_multiplier = gas_adjustment + 1.0;

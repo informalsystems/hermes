@@ -2,6 +2,7 @@
 
 pub mod error;
 pub mod filter;
+pub mod gas_multiplier;
 pub mod proof_specs;
 pub mod types;
 
@@ -21,6 +22,7 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
 
 use crate::chain::ChainType;
+use crate::config::gas_multiplier::GasMultiplier;
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error as RelayerError;
 use crate::extension_options::ExtensionOptionDynamicFeeTx;
@@ -198,7 +200,7 @@ impl Default for ModeConfig {
                 enabled: true,
                 clear_interval: default::clear_packets_interval(),
                 clear_on_start: true,
-                tx_confirmation: false,
+                tx_confirmation: default::tx_confirmation(),
             },
         }
     }
@@ -377,7 +379,7 @@ pub struct ChainConfig {
 
     // This field is deprecated, use `gas_multiplier` instead
     pub gas_adjustment: Option<f64>,
-    pub gas_multiplier: Option<f64>,
+    pub gas_multiplier: Option<GasMultiplier>,
 
     pub fee_granter: Option<String>,
     #[serde(default)]
@@ -404,8 +406,15 @@ pub struct ChainConfig {
 
     #[serde(default)]
     pub memo_prefix: Memo,
-    #[serde(default, with = "self::proof_specs")]
-    pub proof_specs: ProofSpecs,
+
+    // Note: These last few need to be last otherwise we run into `ValueAfterTable` error when serializing to TOML.
+    //       That's because these are all tables and have to come last when serializing.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "self::proof_specs"
+    )]
+    pub proof_specs: Option<ProofSpecs>,
 
     // This is an undocumented and hidden config to make the relayer wait for
     // DeliverTX before sending the next transaction when sending messages in
@@ -420,9 +429,12 @@ pub struct ChainConfig {
     /// and trusted validator set is sufficient for a commit to be accepted going forward.
     #[serde(default)]
     pub trust_threshold: TrustThreshold,
+
     pub gas_price: GasPrice,
+
     #[serde(default)]
     pub packet_filter: PacketFilter,
+
     #[serde(default)]
     pub address_type: AddressType,
     #[serde(default = "Vec::new", skip_serializing_if = "Vec::is_empty")]

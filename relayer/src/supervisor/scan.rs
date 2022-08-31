@@ -5,7 +5,7 @@ use itertools::Itertools;
 use tracing::{debug, error, error_span, info, warn};
 
 use ibc::core::{
-    ics02_client::client_state::{ClientState, IdentifiedAnyClientState},
+    ics02_client::client_state::ClientState,
     ics03_connection::connection::{IdentifiedConnectionEnd, State as ConnectionState},
     ics04_channel::{
         channel::{IdentifiedChannelEnd, State as ChannelState},
@@ -24,6 +24,7 @@ use crate::{
             QueryConnectionRequest, QueryHeight,
         },
     },
+    client_state::IdentifiedAnyClientState,
     config::{filter::ChannelFilters, ChainConfig, Config, PacketFilter},
     path::PathIdentifiers,
     registry::Registry,

@@ -1,10 +1,8 @@
 use crate::prelude::*;
 
 use flex_error::{define_error, TraceError};
-use tendermint::Error as TendermintError;
-use tendermint_proto::Error as TendermintProtoError;
+use ibc_proto::protobuf::Error as TendermintProtoError;
 
-use crate::clients::ics07_tendermint::error::Error as Ics07Error;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::height::HeightError;
 use crate::core::ics23_commitment::error::Error as Ics23Error;
@@ -61,7 +59,6 @@ define_error! {
 
         FailedTrustThresholdConversion
             { numerator: u64, denominator: u64 }
-            [ TendermintError ]
             | e | { format_args!("failed to build Tendermint domain type trust threshold from fraction: {}/{}", e.numerator, e.denominator) },
 
         UnknownClientStateType
@@ -179,10 +176,6 @@ define_error! {
             [ Ics23Error ]
             | _ | { "invalid commitment proof bytes" },
 
-        Tendermint
-            [ Ics07Error ]
-            | _ | { "tendermint error" },
-
         InvalidPacketTimestamp
             [ crate::timestamp::ParseTimestampError ]
             | _ | { "invalid packet timeout timestamp value" },
@@ -248,10 +241,6 @@ define_error! {
                 format_args!("header not withing trusting period: expires_at={0} now={1}", e.latest_time, e.update_time)
             },
 
-        TendermintHandlerError
-            [ Ics07Error ]
-            | _ | { format_args!("Tendermint-specific handler error") },
-
         MissingLocalConsensusState
             { height: Height }
             | e | { format_args!("the local consensus state could not be retrieved for height {}", e.height) },
@@ -275,11 +264,13 @@ define_error! {
         Signer
             [ SignerError ]
             | _ | { "failed to parse signer" },
-    }
-}
 
-impl From<Ics07Error> for Error {
-    fn from(e: Ics07Error) -> Error {
-        Error::tendermint_handler_error(e)
+        Ics23Verification
+            [ Ics23Error ]
+            | _ | { "ics23 verification failure" },
+
+        ClientSpecific
+            { description: String }
+            | e | { format_args!("client specific error: {0}", e.description) },
     }
 }

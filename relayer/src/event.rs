@@ -2,29 +2,27 @@ use core::fmt::{Display, Error as FmtError, Formatter};
 use ibc::{
     core::ics02_client::{
         error::Error as ClientError,
-        events::{self as client_events, Attributes as ClientAttributes},
+        events::{self as client_events, Attributes as ClientAttributes, HEADER_ATTRIBUTE_KEY},
+        header::Header,
+        height::HeightErrorDetail,
     },
-    core::{
-        ics02_client::height::HeightErrorDetail,
-        ics04_channel::{
-            error::Error as ChannelError,
-            events::{self as channel_events, Attributes as ChannelAttributes},
-            packet::Packet,
-            timeout::TimeoutHeight,
-        },
+    core::ics03_connection::{
+        error::Error as ConnectionError,
+        events::{self as connection_events, Attributes as ConnectionAttributes},
     },
-    core::{
-        ics02_client::{events::HEADER_ATTRIBUTE_KEY, header::AnyHeader},
-        ics03_connection::{
-            error::Error as ConnectionError,
-            events::{self as connection_events, Attributes as ConnectionAttributes},
-        },
+    core::ics04_channel::{
+        error::Error as ChannelError,
+        events::{self as channel_events, Attributes as ChannelAttributes},
+        packet::Packet,
+        timeout::TimeoutHeight,
     },
     events::{Error as IbcEventError, IbcEvent, IbcEventType},
     Height,
 };
 use serde::Serialize;
 use tendermint::abci::Event as AbciEvent;
+
+use crate::light_client::AnyHeader;
 
 pub mod bus;
 pub mod monitor;
@@ -308,12 +306,12 @@ fn client_extract_attributes_from_tx(event: &AbciEvent) -> Result<ClientAttribut
     Ok(attr)
 }
 
-pub fn extract_header_from_tx(event: &AbciEvent) -> Result<AnyHeader, ClientError> {
+pub fn extract_header_from_tx(event: &AbciEvent) -> Result<Box<dyn Header>, ClientError> {
     for tag in &event.attributes {
         let key = tag.key.as_ref();
         let value = tag.value.as_ref();
         if key == HEADER_ATTRIBUTE_KEY {
-            return AnyHeader::decode_from_string(value);
+            return AnyHeader::decode_from_string(value).map(AnyHeader::into_box);
         }
     }
     Err(ClientError::missing_raw_header())
@@ -465,8 +463,8 @@ mod tests {
         let upgrade_client = client_events::UpgradeClient::from(attributes.clone());
         abci_events.push(AbciEvent::from(upgrade_client.clone()));
         let mut update_client = client_events::UpdateClient::from(attributes);
-        let header = MockHeader::new(consensus_height).wrap_any();
-        update_client.header = Some(header);
+        let header = AnyHeader::Mock(MockHeader::new(consensus_height));
+        update_client.header = Some(header.into_box());
         abci_events.push(AbciEvent::from(update_client.clone()));
 
         for abci_event in abci_events {

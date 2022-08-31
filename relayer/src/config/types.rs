@@ -199,7 +199,8 @@ pub mod memo {
     impl Memo {
         const MAX_LEN: usize = 50;
 
-        pub fn new(memo: String) -> Result<Self, Error> {
+        pub fn new(memo: impl Into<String>) -> Result<Self, Error> {
+            let memo = memo.into();
             if memo.len() > Self::MAX_LEN {
                 return Err(Error::too_long(memo.len()));
             }

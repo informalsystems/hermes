@@ -68,8 +68,6 @@ fn adjust_estimated_gas(
         gas_amount,
     }: AdjustGas,
 ) -> u64 {
-    assert!(gas_multiplier >= 1.0);
-
     // No need to compute anything if the gas amount is zero
     if gas_amount == 0 {
         return 0;

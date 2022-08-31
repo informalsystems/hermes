@@ -1,5 +1,4 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
-use core::iter;
 use std::time::{Duration, Instant};
 
 use ibc_proto::google::protobuf::Any;
@@ -211,12 +210,10 @@ impl OperationalData {
             }
         };
 
-        let msgs: Vec<Any> = match client_update_msg {
-            Some(client_update) => iter::once(client_update)
-                .chain(self.batch.iter().map(|gm| gm.msg.clone()))
-                .collect(),
-            None => self.batch.iter().map(|gm| gm.msg.clone()).collect(),
-        };
+        let msgs = client_update_msg
+            .into_iter()
+            .chain(self.batch.iter().map(|gm| gm.msg.clone()))
+            .collect();
 
         let tm = TrackedMsgs::new(msgs, self.tracking_id);
 
