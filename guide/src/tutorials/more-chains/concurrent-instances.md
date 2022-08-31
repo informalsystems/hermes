@@ -42,118 +42,8 @@ Create the following configuration file at `$HOME/hermes_second_instance.toml`:
 
 __hermes_second_instance.toml__
 
-```
-[global]
-log_level = 'info'
-
-[mode]
-
-[mode.clients]
-enabled = true
-refresh = true
-misbehaviour = true
-
-[mode.connections]
-enabled = true
-
-[mode.channels]
-enabled = true
-
-[mode.packets]
-enabled = true
-clear_interval = 100
-clear_on_start = true
-tx_confirmation = true
-
-[telemetry]
-enabled = true
-host = '127.0.0.1'
-port = 3002
-
-[[chains]]
-id = 'ibc-0'
-rpc_addr = 'http://localhost:27050'
-grpc_addr = 'http://localhost:27052'
-websocket_addr = 'ws://localhost:27050/websocket'
-rpc_timeout = '15s'
-account_prefix = 'cosmos'
-key_name = 'wallet1'
-store_prefix = 'ibc'
-gas_price = { price = 0.01, denom = 'stake' }
-max_gas = 10000000
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
-
-[chains.packet_filter]
-policy = 'allow'
-list = [
-    ['transfer', 'channel-1'],
-]
-
-[[chains]]
-id = 'ibc-1'
-rpc_addr = 'http://localhost:27060'
-grpc_addr = 'http://localhost:27062'
-websocket_addr = 'ws://localhost:27060/websocket'
-rpc_timeout = '15s'
-account_prefix = 'cosmos'
-key_name = 'wallet1'
-store_prefix = 'ibc'
-gas_price = { price = 0.01, denom = 'stake' }
-max_gas = 10000000
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
-
-
-[chains.packet_filter]
-policy = 'allow'
-list = [
-    ['transfer', 'channel-2'],
-]
-
-[[chains]]
-id = 'ibc-2'
-rpc_addr = 'http://localhost:27070'
-grpc_addr = 'http://localhost:27072'
-websocket_addr = 'ws://localhost:27070/websocket'
-rpc_timeout = '15s'
-account_prefix = 'cosmos'
-key_name = 'wallet1'
-store_prefix = 'ibc'
-gas_price = { price = 0.01, denom = 'stake' }
-max_gas = 10000000
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
-
-[chains.packet_filter]
-policy = 'allow'
-list = [
-    ['transfer', 'channel-0'],
-]
-
-[[chains]]
-id = 'ibc-3'
-rpc_addr = 'http://localhost:27080'
-grpc_addr = 'http://localhost:27082'
-websocket_addr = 'ws://localhost:27080/websocket'
-rpc_timeout = '15s'
-account_prefix = 'cosmos'
-key_name = 'wallet1'
-store_prefix = 'ibc'
-gas_price = { price = 0.01, denom = 'stake' }
-max_gas = 10000000
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
-
-[chains.packet_filter]
-policy = 'allow'
-list = [
-    ['transfer', 'channel-1'],
-]
+```toml
+{{#template ../../templates/files/hermes/more-chains/hermes_second_instance.toml}}
 ```
 
 In order to make use of this config, specify it with the `--config` flag:
@@ -163,10 +53,10 @@ hermes --config $HOME/hermes_second_instance.toml <COMMAND>
 ```
 
 ## Query pending packets
-Let's find the packet that was lost in the first step of the [previous section](./start-relaying.md) with the command `query packets`:
+Let's find the packet that was lost in the first step of the [previous section](./start-relaying.md) with the `query packet` command:
 
 ```shell
-hermes query packet pending --chain ibc-1 --port transfer --channel channel-2
+{{#template ../../templates/commands/hermes/query_packet_pending chain=ibc-1 port=transfer channel=channel-2}}
 ```
 
 >__NOTE__: You do not need to specify the configuration file as long as `ibc-1` and `ibc-3` are in the default config file.
@@ -194,7 +84,7 @@ SUCCESS Summary {
 Now that we have retrieved this packet, let's clear it manually with the command `hermes clear packets`:
 
 ```shell
-hermes --config $HOME/hermes_second_instance.toml clear packets --chain ibc-1 --port transfer --channel channel-2
+{{#template ../../templates/commands/hermes/optional_config_flag/clear_packets config=$HOME/hermes_second_instance.toml chain=ibc-1 port=transfer channel=channel-2}}
 ```
 >__NOTE__: We are using the second config to avoid using the same wallets as the running instance of the relayer. You could also simply use the `key-name` and `counterparty-key-name` flags to set another wallet. If you do not use it, you will observe a few `account_sequence_mismatch` errors on the terminal running `hermes start` but hermes will automatically recover.
 
@@ -221,7 +111,7 @@ SUCCESS [
 
 You can verify that the packet was correctly relayed by querying balances or directly querying packets:
 ```shell
-hermes query packet pending --chain ibc-1 --port transfer --channel channel-2
+{{#template ../../templates/commands/hermes/query_packet_pending chain=ibc-1 port=transfer channel=channel-2}}
 ```
 
 If the command runs successfully, it should output:
@@ -246,17 +136,17 @@ As you can see, there is currently no stuck packet between `ibc-1` and `ibc-3`.
 For the sake of learning, let's make new stuck packets on the `ibc-0<>ibc-2` channel and the `ibc-1<>ibc-3` channel.
 
 ```shell
-hermes tx ft-transfer --dst-chain ibc-3 --src-chain ibc-1 --src-port transfer --src-channel channel-2 --amount 1000000 --timeout-seconds 10000
-hermes tx ft-transfer --dst-chain ibc-2 --src-chain ibc-0 --src-port transfer --src-channel channel-1 --amount 1000000 --timeout-seconds 10000
+{{#template ../../templates/commands/hermes/transfer dst-chain=ibc-3 src-chain=ibc-1 src-port=transfer src-channel=channel-2 amount=1000000 timeout-seconds=10000}}
+{{#template ../../templates/commands/hermes/transfer dst-chain=ibc-2 src-chain=ibc-0 src-port=transfer src-channel=channel-1 amount=1000000 timeout-seconds=10000}}
 ```
 
 If both commands run successfully, they should output a `SUCCESS` message. 
 
-Now, let's verify that these packets are indeed stuck with the `query packets` commands:
+Now, let's verify that these packets are indeed stuck with the `query packet` command:
 
 - On `ibc-0`:
     ```shell
-     hermes query packet pending --chain ibc-0 --port transfer --channel channel-1
+    {{#template ../../templates/commands/hermes/query_packet_pending chain=ibc-0 port=transfer channel=channel-1}}
     ```
 
     Which should output:
@@ -281,7 +171,7 @@ Now, let's verify that these packets are indeed stuck with the `query packets` c
 
 - On `ibc-1`:
     ```shell
-    hermes query packet pending --chain ibc-1 --port transfer --channel channel-2
+    {{#template ../../templates/commands/hermes/query_packet_pending chain=ibc-1 port=transfer channel=channel-2}}
     ```
 
     Which should output:
@@ -308,12 +198,12 @@ You have pending packets on the two paths filtered out by our running instance.
 >__NOTE__: You can also verify that Hermes is still relaying on the other paths by sending a packet from `ibc-1` to `ibc-2`:
 >
 >```shell
->hermes tx ft-transfer --dst-chain ibc-2 --src-chain ibc-1 --src-port transfer --src-channel channel-1 --amount 1000000 --timeout-seconds 10000
+>{{#template ../../templates/commands/hermes/transfer dst-chain=ibc-2 src-chain=ibc-1 src-port=transfer src-channel=channel-1 amount=1000000 timeout-seconds=10000}}
 >```
 >
 >Wait a few seconds then verify that no packet is pending with:
 >```shell
->hermes query packet pending --chain ibc-1 --port transfer --channel channel-1
+>{{#template ../../templates/commands/hermes/query_packet_pending chain=ibc-1 port=transfer channel=channel-1}}
 >```
 
 
@@ -322,14 +212,14 @@ You have pending packets on the two paths filtered out by our running instance.
 Instead of clearing packets manually again, you can just start Hermes with the [new config file you created](#create-a-new-config-file) in a new terminal:
 
 ```shell
-hermes --config $HOME/hermes_second_instance.toml start
+{{#template ../../templates/commands/hermes/optional_config_flag/start config=$HOME/hermes_second_instance.toml}}
 ```
 
 At launch, Hermes will clear pending packets before moving into passive mode.
 
 - Wait a few seconds. You should observe logs produced on the terminal running the second instance of Hermes.
 
-- Query for pending packets at `ibc-0` on `channel-1` and `ibc-1` on `channel-2` again with the `query packet pending`. Both should output:
+- Query for pending packets at `ibc-0` on `channel-1` and `ibc-1` on `channel-2` again with the `query packet pending` command. Both should output:
     ```
     SUCCESS Summary {
         src: PendingPackets {
