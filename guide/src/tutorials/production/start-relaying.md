@@ -19,7 +19,7 @@ Follow the steps to get started :
 
 - Open your dashboard. Make sure it gets refreshed every 5s.
 
-- In a new terminal, run `hermes start &> hermes.log`. 
+- In a new terminal, run `{{#template ../../templates/commands/hermes/start}} &> hermes.log`. 
 
 If the command runs successfully, you should be able to see the metrics panels displaying data on the Grafana Dashboard and you should also be able to see the logs on the `Logs` panel at the top of the dashboard. You can also explore them on the `explore` page.
 

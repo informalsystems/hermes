@@ -24,7 +24,7 @@ services:
       - loki
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:8.2.6
     ports:
       - "3000:3000"
     networks:
@@ -32,7 +32,7 @@ services:
       - prometheus
   
   prometheus:
-    image: prom/prometheus:latest
+    image: prom/prometheus:v2.38.0
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     command: --config.file=/etc/prometheus/prometheus.yml
