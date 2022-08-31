@@ -1,0 +1,1 @@
+[[#binary gm]] stop

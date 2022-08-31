@@ -1,0 +1,50 @@
+[global]
+  add_to_hermes = false
+  auto_maintain_config = true
+  extra_wallets = 2
+  gaiad_binary = "~/go/bin/gaiad"
+  hdpath = ""
+  home_dir = "~/.gm"
+  ports_start_at = 27000
+  validator_mnemonic = ""
+  wallet_mnemonic = ""
+
+  [global.hermes]
+    binary = "$HOME/ibc-rs/target/release/hermes" #change this path according to your setup
+    config = "~/.hermes/config.toml"
+    log_level = "info"
+    telemetry_enabled = true
+    telemetry_host = "127.0.0.1"
+    telemetry_port = 3001
+
+[ibc-0]
+  ports_start_at = 27010
+
+[ibc-1]
+  ports_start_at = 27020
+
+[ibc-2]
+  ports_start_at = 27030
+
+[ibc-3]
+  ports_start_at = 27040
+
+[node-0]
+  add_to_hermes = true
+  network = "ibc-0"
+  ports_start_at = 27050
+
+[node-1]
+  add_to_hermes = true
+  network = "ibc-1"
+  ports_start_at = 27060
+
+[node-2]
+  add_to_hermes = true
+  network = "ibc-2"
+  ports_start_at = 27070
+
+[node-3]
+  add_to_hermes = true
+  network = "ibc-3"
+  ports_start_at = 27080

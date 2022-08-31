@@ -1,0 +1,1 @@
+gaiad version --log_level error --long | head -n4
