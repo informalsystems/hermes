@@ -1,0 +1,8 @@
+default_gas = 5000000
+max_gas = 15000000
+gas_multiplier = 1.1
+max_msg_num = 20
+# ...
+[chains.gas_price]
+price = 0.0026
+denom = 'uosmo'
