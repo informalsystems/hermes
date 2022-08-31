@@ -55,8 +55,9 @@ Now, let's exchange `samoleans` between two chains.
 
 - In a separate terminal, use the `ft-transfer` command to send `100000 samoleans` from ibc-0 to ibc-1 over channel-0:
     ```shell
-    hermes tx ft-transfer --dst-chain ibc-1 --src-chain ibc-0 --src-port transfer --src-channel channel-0 --amount 100000 --timeout-seconds 1000
+    {{#template ../../templates/hermes/transfer dst-chain=ibc-1 src-chain=ibc-0 src-port=transfer src-channel=channel-0 amount=100000 timeout-seconds=1000}}
     ```
+
 - Wait a few seconds, then query balances on `ibc-1` and `ibc-0`. You should observe something similar to:
     - Balances at ibc-0:
         ```
@@ -84,9 +85,9 @@ Now, let's exchange `samoleans` between two chains.
         ```
     The samoleans were transferred to ibc-1 and are visible under the denomination `ibc/C1840...`. 
 
-- Transfer back half of these tokens to ibc-0:
+- Transfer back these tokens to ibc-0:
     ```shell
-    hermes tx ft-transfer --dst-chain ibc-0 --src-chain ibc-1 --src-port transfer --src-channel channel-0 --amount 100000 --timeout-seconds 1000 --denom ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199
+    {{#template ../../templates/hermes/transfer_with_denom dst-chain=ibc-1 src-chain=ibc-0 src-port=transfer src-channel=channel-0 amount=100000 timeout-seconds=10000 --denom ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199}}
     ```
 - Wait a few seconds then query balances on `ibc-1` and `ibc-0` again. You should observe something similar to:
     - Balances on ibc-0:
