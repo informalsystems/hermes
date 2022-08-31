@@ -9,7 +9,7 @@ use crate::core::traits::messages::ack_packet::{
 use crate::core::traits::messages::receive_packet::{
     HasReceivePacketMessageBuilder, ReceivePacketMessageBuilder,
 };
-use crate::core::traits::messages::timeout_packet::TimeoutUnorderedPacketMessageBuilder;
+use crate::core::traits::messages::timeout_packet::{HasTimeoutUnorderedPacketMessageBuilder, TimeoutUnorderedPacketMessageBuilder};
 use crate::core::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::core::traits::target::{DestinationTarget, SourceTarget};
 use crate::core::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
@@ -202,4 +202,8 @@ where
 
         Ok(message)
     }
+}
+
+impl<Relay: OfaRelay> HasTimeoutUnorderedPacketMessageBuilder for OfaRelayContext<Relay> {
+    type TimeoutUnorderedPacketMessageBuilder = OfaTimeoutUnorderedPacketMessageBuilder;
 }
