@@ -1,5 +1,5 @@
-use crate::core::traits::core::Async;
 use crate::core::traits::contexts::error::HasError;
+use crate::core::traits::core::Async;
 
 pub trait TelemetryContext: Async + HasError {
     type Label: Async;
