@@ -1,8 +1,8 @@
 use crate::core::traits::core::Async;
+use crate::core::traits::contexts::error::HasError;
 
-pub trait TelemetryContext: Async {
+pub trait TelemetryContext: Async + HasError {
     type Label: Async;
-    type Error: Async; // Needs to be taken out of this trait
 
     fn new_label(key: &str, value: &str) -> Self::Label;
 

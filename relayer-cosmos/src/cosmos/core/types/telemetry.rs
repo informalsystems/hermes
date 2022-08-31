@@ -1,4 +1,6 @@
 use alloc::sync::Arc;
+
+use ibc_relayer_framework::core::traits::contexts::error::HasError;
 use ibc_relayer_framework::core::traits::runtime::telemetry::TelemetryContext;
 use opentelemetry::{
     metrics::{Counter, Meter},
@@ -29,15 +31,18 @@ impl CosmosTelemetry {
     }
 }
 
+impl HasError for CosmosTelemetry {
+    type Error = TelemetryError;
+}
+
 impl TelemetryContext for CosmosTelemetry {
     type Label = KeyValue;
-    type Error = TelemetryError;
 
     fn new_label(key: &str, value: &str) -> KeyValue {
         KeyValue::new(key.to_string(), value.to_string())
     }
 
-    fn new_counter(&self, name: &str, description: &str) -> Result<(), TelemetryError> {
+    fn new_counter(&self, name: &str, description: &str) -> Result<(), Self::Error> {
         let mut telemetry_state = self.telemetry_state.lock().unwrap(); // TODO: Remove unwrap
 
         let meter = &telemetry_state.meter;
