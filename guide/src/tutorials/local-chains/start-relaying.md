@@ -26,7 +26,7 @@ Use the following commands to query balances on your local chains:
     {{#template ../../templates/commands/gaia/query_balances node=tcp://localhost:27040 home=~/.gm/ibc-1 wallet=wallet}}
     ```
 
-> __NOTE__ the RPC addresses used in the two commands above are configured in `~/.hermes/config.toml` file. It can also be found with `gm status`
+> __NOTE__ the RPC addresses used in the two commands above are configured in `~/.hermes/config.toml` file. It can also be found with `{{#template ../../templates/commands/gm/status}}`
 
 At this point in the tutorial, the two commands should output something similar to:
 

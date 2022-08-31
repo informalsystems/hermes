@@ -204,19 +204,19 @@ and any further necessary modifications to the shell's startup files.
 ### Bash
 
 ```sh
-hermes completions --shell bash > ~/.local/share/bash-completion/completions/hermes
+{{#template ../templates/commands/hermes/completions shell=bash}} > ~/.local/share/bash-completion/completions/hermes
 ```
 
 On a macOS installation with Homebrew `bash-completion` formula installed, use 
 
 ```sh
-hermes completions --shell bash > $(brew --prefix)/etc/bash_completion.d/hermes.bash-completion
+{{#template ../templates/commands/hermes/completions shell=bash}} > $(brew --prefix)/etc/bash_completion.d/hermes.bash-completion
 ```
 
 ### Zsh
 
 ```sh
-hermes completions --shell zsh > ~/.zfunc/_hermes
+{{#template ../templates/commands/hermes/completions shell=zsh}} > ~/.zfunc/_hermes
 ```
 
 To make the shell load the script on initialization, add the directory to `fpath`

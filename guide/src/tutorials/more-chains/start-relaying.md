@@ -58,7 +58,7 @@ ibc2---ibc2ibc3---ibc3ibc2---ibc3
     gaiad --node tcp://localhost:27080 query bank balances $(gaiad --home ~/.gm/ibc-3 keys --keyring-backend="test" show wallet -a)
     ```
 
-> __NOTE__ the RPC addresses used in the two commands above are configured in `~/.hermes/config.toml` file. It can also be found with `gm status`
+> __NOTE__ the RPC addresses used in the two commands above are configured in `~/.hermes/config.toml` file. It can also be found with `{{#template ../../templates/commands/gm/status}}`
 
 At this point in the tutorial, every command should output something similar to:
 

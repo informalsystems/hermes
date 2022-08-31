@@ -25,7 +25,7 @@ As for the [Local chains tutorial](../local-chains/index.md), we will make use o
 First, make sure that no chain is currently running by killing all `gaiad` processes.
 
 ```shell
-killall gaiad
+{{#template ../../templates/commands/gm/stop}}
 ```
 
 Then, make sure that your folder `$HOME/.gm` does not contain any `ibc-*` or `node-*` file. You can remove them with
@@ -35,7 +35,7 @@ rm -r $HOME/.gm/node-*
 rm -r $HOME/.gm/ibc-*
 ```
 
-Copy and paste the configuration below to `$HOME/.gm/gm.toml` and set Hermes' binary path according to your setup. The following contains the configuration of 4 IBC-enabled chains.
+Copy and paste the configuration below to `{{#template ../../templates/path/gm/default_path}}` and set Hermes' binary path according to your setup. The following contains the configuration of 4 IBC-enabled chains.
 
 __gm.toml__
 
@@ -97,7 +97,8 @@ __gm.toml__
 Finally, start the chains with the `start` command.
 
 ```bash
-gm start
+{{#template ../../templates/commands/gm/start}}
+
 ```
 
 This configures and starts four __`gaiad`__ instances.
@@ -136,7 +137,7 @@ node-3 started, PID: 25194, LOG: $HOME/.gm/node-3/log
 Run the following command to check the status of the chains:
 
 ```bash
-gm status
+{{#template ../../templates/commands/gm/status}}
 ```
 
 If the command is successful, you should see a message similar to:
@@ -261,7 +262,7 @@ trust_threshold = { numerator = '1', denominator = '3' }
 Next, we will need to associate a private key to every chain which `hermes` will use to sign transactions. `gm` will automatically generate and associate them with:
 
 ```bash
-gm hermes keys
+{{#template ../../templates/commands/gm/hermes_keys}}
 ```
 
 If successful, the command should show an output similar to:
@@ -282,7 +283,7 @@ SUCCESS Added key 'wallet1' (cosmos15jxyjskrx7s8yqpfn3xddlrx7qcq0f8r69mp4g) on c
 ```
 
 > __TROUBLESHOOTING__: 
-> - If the command does not out output anything, make sure the path to Hermes' binary is set in `$HOME/.gm/gm.toml`.
+> - If the command does not out output anything, make sure the path to Hermes' binary is set in `{{#template ../../templates/path/gm/default_path}}`.
 
 ### The `$HOME/.gm` directory
 
@@ -376,7 +377,8 @@ By default `hermes` expects the configuration file to be in the __`$HOME/.hermes
 
 It also stores the private keys for each chain in this folder as outlined in the [Keys](../../commands/keys/index.md) section.
 
-After executing `gm start`, this is how the folder should look like:
+After executing `{{#template ../../templates/commands/gm/start}}
+`, this is how the folder should look like:
 
 ```shell
 $HOME/.hermes/

@@ -15,7 +15,7 @@ Follow the instructions below to install `Gaia`.
 Clone the repository from GitHub:
 
 ```shell
-git clone https://github.com/cosmos/gaia.git ~/go/src/github.com/cosmos/gaia
+{{#template ../../templates/commands/git/gaia}} ~/go/src/github.com/cosmos/gaia
 ```
 
 #### Build and Install
@@ -24,10 +24,9 @@ Run the `make` command to build and install `gaiad`
 
 ```shell
 cd ~/go/src/github.com/cosmos/gaia
-git checkout <latest-release-tag> 
+git checkout v4.2.1 
 make install
 ```
-> Find the [latest-release-tag](https://github.com/cosmos/gaia/releases) here.
 
 >__NOTE__: Specific to M1 macOS, there could be some warnings after running `make install` which can be safely ignored as long as `gaiad` binaries are built in `$HOME/go/bin` directory.
 ><br /><br />Add the path `export PATH=$HOME/go/bin:$PATH`
@@ -35,8 +34,9 @@ make install
 If the command is successful, you can run the following command to ensure it was properly installed:
 
 ```shell
-gaiad version --log_level error --long | head -n4
+{{#template ../../templates/commands/gaia/version}}
 ```
+
 Output:
 ```shell
 name: gaia

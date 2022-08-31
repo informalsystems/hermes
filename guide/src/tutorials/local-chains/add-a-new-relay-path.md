@@ -29,7 +29,7 @@ Hermes can be started to listen for packet events on the two ends of multiple pa
 This can be done over a new path or over existing paths.
 
 >__NOTE__: The following steps decompose every step from the creation of the clients to the channel handshake for educational purposes. 
-> More realistically, you'd use the command `hermes create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --new-client-connection` in order to create a new client on each chain, establish a connection, and open a channel, all with a single command.
+> More realistically, you'd use the command `{{#template ../../templates/commands/hermes/create_channel_new_client a-chain=ibc-0 b-chain=ibc-1 a-port=transfer b-port=transfer}}` in order to create a new client on each chain, establish a connection, and open a channel, all with a single command.
 
 You will need to first create a client on both chains and then establish a connection between them. It is possible to have multiple connections between clients, which can be useful in order to support multiple versions of IBC. Finally, you need to create channels over a connection to identify the source and destination modules. You can learn more in the [cosmos academy tutorial](https://tutorials.cosmos.network/academy/4-ibc/what-is-ibc.html).  
 
