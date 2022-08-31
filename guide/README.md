@@ -29,6 +29,7 @@ cargo install mdbook
 You also need to install the mdbook plug-in for [`mermaid`](https://mermaid-js.github.io/mermaid/#/) to generate graphs and diagrams, and the `mdbook-toc` plug-in for generating table of contents:
 
 ```bash
+cargo install mdbook-template
 cargo install mdbook-mermaid
 cargo install mdbook-toc
 ```
