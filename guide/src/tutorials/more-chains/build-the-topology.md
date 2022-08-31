@@ -36,12 +36,12 @@ Execute the following command:
 If this command runs successfully, it should output the following:
 
 ```shell
-{{#template ../../templates/commands/hermes/create_channel_new_client binary="$HOME/ibc-rs/target/release/hermes" a-chain=ibc-0 b-chain=ibc-1 a-port=transfer b-port=transfer other=--yes}}
-{{#template ../../templates/commands/hermes/create_channel_new_client binary="$HOME/ibc-rs/target/release/hermes" a-chain=ibc-0 b-chain=ibc-2 a-port=transfer b-port=transfer other=--yes}}
-{{#template ../../templates/commands/hermes/create_channel_new_client binary="$HOME/ibc-rs/target/release/hermes" a-chain=ibc-0 b-chain=ibc-3 a-port=transfer b-port=transfer other=--yes}}
-{{#template ../../templates/commands/hermes/create_channel_new_client binary="$HOME/ibc-rs/target/release/hermes" a-chain=ibc-1 b-chain=ibc-2 a-port=transfer b-port=transfer other=--yes}}
-{{#template ../../templates/commands/hermes/create_channel_new_client binary="$HOME/ibc-rs/target/release/hermes" a-chain=ibc-1 b-chain=ibc-3 a-port=transfer b-port=transfer other=--yes}}
-{{#template ../../templates/commands/hermes/create_channel_new_client binary="$HOME/ibc-rs/target/release/hermes" a-chain=ibc-2 b-chain=ibc-3 a-port=transfer b-port=transfer other=--yes}}
+{{#template ../../templates/commands/hermes/create_channel_new_client binary="$HOME/ibc-rs/target/release/hermes" a-chain=ibc-0 b-chain=ibc-1 a-port=transfer b-port=transfer}}
+{{#template ../../templates/commands/hermes/create_channel_new_client binary="$HOME/ibc-rs/target/release/hermes" a-chain=ibc-0 b-chain=ibc-2 a-port=transfer b-port=transfer}}
+{{#template ../../templates/commands/hermes/create_channel_new_client binary="$HOME/ibc-rs/target/release/hermes" a-chain=ibc-0 b-chain=ibc-3 a-port=transfer b-port=transfer}}
+{{#template ../../templates/commands/hermes/create_channel_new_client binary="$HOME/ibc-rs/target/release/hermes" a-chain=ibc-1 b-chain=ibc-2 a-port=transfer b-port=transfer}}
+{{#template ../../templates/commands/hermes/create_channel_new_client binary="$HOME/ibc-rs/target/release/hermes" a-chain=ibc-1 b-chain=ibc-3 a-port=transfer b-port=transfer}}
+{{#template ../../templates/commands/hermes/create_channel_new_client binary="$HOME/ibc-rs/target/release/hermes" a-chain=ibc-2 b-chain=ibc-3 a-port=transfer b-port=transfer}}
 ```
 
 Executing these commands will:
