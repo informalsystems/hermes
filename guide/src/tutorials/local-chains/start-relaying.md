@@ -17,13 +17,13 @@ Use the following commands to query balances on your local chains:
 - Balances on ibc-0:
 
     ```shell
-    gaiad --node tcp://localhost:27030 query bank balances $(gaiad --home ~/.gm/ibc-0 keys --keyring-backend="test" show wallet -a)
+    {{#template ../../templates/commands/gaia/query_balances node=tcp://localhost:27030 home=~/.gm/ibc-0 wallet=wallet}}
     ```
 
 - Balances on ibc-1:
 
     ```shell
-    gaiad --node tcp://localhost:27040 query bank balances $(gaiad --home ~/.gm/ibc-1 keys --keyring-backend="test" show wallet -a)
+    {{#template ../../templates/commands/gaia/query_balances node=tcp://localhost:27040 home=~/.gm/ibc-1 wallet=wallet}}
     ```
 
 > __NOTE__ the RPC addresses used in the two commands above are configured in `~/.hermes/config.toml` file. It can also be found with `gm status`
@@ -49,13 +49,13 @@ Now, let's exchange `samoleans` between two chains.
 - Open a new terminal and start Hermes using the `start` command : 
 
     ```shell
-    hermes start
+    {{#template ../../templates/commands/hermes/start}}
     ```
     Hermes will first relay the pending packets that have not been relayed and then start passively relaying by listening for and acting on packet events. 
 
 - In a separate terminal, use the `ft-transfer` command to send `100000 samoleans` from ibc-0 to ibc-1 over channel-0:
     ```shell
-    {{#template ../../templates/hermes/transfer dst-chain=ibc-1 src-chain=ibc-0 src-port=transfer src-channel=channel-0 amount=100000 timeout-seconds=1000}}
+    {{#template ../../templates/commands/hermes/transfer dst-chain=ibc-1 src-chain=ibc-0 src-port=transfer src-channel=channel-0 amount=100000 timeout-seconds=1000}}
     ```
 
 - Wait a few seconds, then query balances on `ibc-1` and `ibc-0`. You should observe something similar to:
@@ -87,7 +87,7 @@ Now, let's exchange `samoleans` between two chains.
 
 - Transfer back these tokens to ibc-0:
     ```shell
-    {{#template ../../templates/hermes/transfer_with_denom dst-chain=ibc-1 src-chain=ibc-0 src-port=transfer src-channel=channel-0 amount=100000 timeout-seconds=10000 --denom ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199}}
+    {{#template ../../templates/commands/hermes/transfer_with_denom dst-chain=ibc-1 src-chain=ibc-0 src-port=transfer src-channel=channel-0 amount=100000 timeout-seconds=10000 --denom ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199}}
     ```
 - Wait a few seconds then query balances on `ibc-1` and `ibc-0` again. You should observe something similar to:
     - Balances on ibc-0:

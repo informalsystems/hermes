@@ -14,8 +14,8 @@ There are two main approaches for obtaining Hermes:
 
 Simply head to the GitHub [Releases][releases] page and download the latest
 version of Hermes binary matching your platform:
-- macOS: `hermes-v1.0.0-rc.2-x86_64-apple-darwin.tar.gz` (or .zip),
-- Linux: `hermes-v1.0.0-rc.2-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
+- macOS: `hermes-{{#template ../templates/version}}-x86_64-apple-darwin.tar.gz` (or .zip),
+- Linux: `hermes-{{#template ../templates/version}}-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
 
 The step-by-step instruction below should carry you through the whole process:
 
@@ -43,11 +43,13 @@ The step-by-step instruction below should carry you through the whole process:
 You should now be able to run Hermes by invoking the `hermes` executable.
 
 ```shell
-hermes version
+{{#template ../templates/commands/hermes/version}}
 ```
 
+Which should be:
+
 ```
-hermes v1.0.0
+hermes {{#template ../templates/version}}
 ```
 
 ## Install via Cargo
@@ -77,11 +79,13 @@ This will download and build the crate `ibc-relayer-cli`, and install the
 You should now be able to run Hermes by invoking the `hermes` executable.
 
 ```shell
-hermes version
+{{#template ../templates/commands/hermes/version}}
 ```
 
+Which should be:
+
 ```
-hermes v1.0.0
+hermes {{#template ../templates/version}}
 ```
 
 ## Build from source
@@ -91,7 +95,7 @@ hermes v1.0.0
 Open a terminal and clone the `ibc-rs` repository:
 
 ```shell
-git clone https://github.com/informalsystems/ibc-rs.git
+{{#template ../templates/commands/git/clone_ibc_rs}}
 ```
 
 Change to the repository directory
@@ -103,10 +107,10 @@ cd ibc-rs
 
 Go to the [ibc-rs releases](https://github.com/informalsystems/ibc-rs/releases) page to see what is the most recent release.
 
-Then checkout the release, for example if the most recent release is `v1.0.0` then execute the command:
+Then checkout the release, for example if the most recent release is `{{#template ../templates/version}}` then execute the command:
 
 ```shell
-git checkout v1.0.0
+git checkout {{#template ../templates/version}}
 ```
 
 ### Building with `cargo build`
@@ -151,7 +155,7 @@ If you run the `hermes` without any additional parameters you should see the usa
 ```
 
 ```
-hermes v1.0.0
+hermes {{#template ../templates/version}}
 Informal Systems <hello@informal.systems>
 
 USAGE:
