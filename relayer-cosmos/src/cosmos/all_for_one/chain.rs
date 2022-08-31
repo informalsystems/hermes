@@ -13,6 +13,7 @@ use tendermint::abci::responses::Event;
 
 use crate::cosmos::core::error::Error;
 use crate::cosmos::core::types::message::CosmosIbcMessage;
+use crate::cosmos::core::types::telemetry::CosmosTelemetry;
 
 pub trait AfoCosmosChainContext<Counterparty>:
     AfoChainContext<
@@ -32,6 +33,7 @@ pub trait AfoCosmosChainContext<Counterparty>:
     WriteAcknowledgementEvent = WriteAcknowledgement,
     ConsensusState = ConsensusState,
     ChainStatus = ChainStatus,
+    Telemetry = CosmosTelemetry,
 >
 where
     Counterparty: AfoCounterpartyContext<Self>,
@@ -57,6 +59,7 @@ where
         WriteAcknowledgementEvent = WriteAcknowledgement,
         ConsensusState = ConsensusState,
         ChainStatus = ChainStatus,
+        Telemetry = CosmosTelemetry,
     >,
     Counterparty: AfoCounterpartyContext<Chain>,
 {
