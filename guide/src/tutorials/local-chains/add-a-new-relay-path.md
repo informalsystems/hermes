@@ -18,7 +18,7 @@ Chains allocate identifiers using a chain-specific allocation scheme. Currently,
 - `connection-<n>` for connections.
 - `channel-<n>` for channels.
 
-It is possible for two chains to use the same identifier to designate two different objects. e.g. `channel-0` does not designate the same channel on the Hub and on Osmosis or Juno.
+It is possible for two chains to use the same identifier to designate two different objects. For example, two different channels, one on the Hub and one on Osmosis, can both be designated with the `channel-0` identifier. 
 
 
 ## Create the relay path
