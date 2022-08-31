@@ -106,3 +106,10 @@ pub fn is_packet_event(event: &IbcEvent) -> bool {
             | &IbcEvent::AcknowledgePacket(_)
     )
 }
+
+pub fn is_client_event(event: &IbcEvent) -> bool {
+    matches!(
+        event,
+        &IbcEvent::CreateClient(_) | &IbcEvent::UpdateClient(_)
+    )
+}

@@ -17,7 +17,7 @@ use ibc::{
         ics02_client::{
             client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
             client_state::{AnyClientState, IdentifiedAnyClientState},
-            events::{NewBlock, UpdateClient},
+            events::{CreateClient, NewBlock, UpdateClient},
             misbehaviour::MisbehaviourEvidence,
         },
         ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
@@ -544,7 +544,7 @@ impl PsqlChain {
 
         work_copy.height = batch.height.revision_height();
 
-        for event in batch.events.iter() {
+        for event in batch.events {
             // best effort to maintain the IBC snapshot based on events
             self.update_with_event(event, &mut work_copy);
         }
@@ -573,23 +573,133 @@ impl PsqlChain {
         }
     }
 
-    fn try_update_with_connection_event(&mut self, event: &IbcEvent, result: &mut IbcSnapshot) {
+    fn try_update_with_create_client(
+        &mut self,
+        ev: CreateClient,
+        result: &mut IbcSnapshot,
+    ) -> Result<(), Error> {
+        let client_state = self
+            .chain
+            .query_client_state(
+                QueryClientStateRequest {
+                    client_id: ev.client_id().clone(),
+                    height: QueryHeight::Specific(ev.height()),
+                },
+                IncludeProof::No,
+            )
+            .map(|(client_state, _proof)| {
+                IdentifiedAnyClientState::new(ev.client_id().clone(), client_state)
+            })?;
+
+        let consensus_states = self
+            .chain
+            .query_consensus_states(QueryConsensusStatesRequest {
+                client_id: ev.client_id().clone(),
+                pagination: None,
+            })?;
+
+        debug!(
+            "psql chain {} - adding client {} due to event {}",
+            self.chain.id(),
+            client_state.client_id,
+            ev
+        );
+
+        result
+            .data
+            .client_states
+            .insert(ev.client_id().clone(), client_state);
+
+        result
+            .data
+            .consensus_states
+            .insert(ev.client_id().clone(), consensus_states);
+
+        Ok(())
+    }
+
+    fn try_update_with_update_client(
+        &mut self,
+        ev: UpdateClient,
+        result: &mut IbcSnapshot,
+    ) -> Result<(), Error> {
+        let client_state = self
+            .chain
+            .query_client_state(
+                QueryClientStateRequest {
+                    client_id: ev.client_id().clone(),
+                    height: QueryHeight::Specific(ev.height()),
+                },
+                IncludeProof::No,
+            )
+            .map(|(client_state, _proof)| {
+                IdentifiedAnyClientState::new(ev.client_id().clone(), client_state)
+            })?;
+
+        let consensus_state = self
+            .chain
+            .query_consensus_state(
+                QueryConsensusStateRequest {
+                    client_id: ev.client_id().clone(),
+                    query_height: QueryHeight::Specific(ev.height()),
+                    consensus_height: ev.consensus_height(),
+                },
+                IncludeProof::No,
+            )
+            .map(|(consensus_state, _proof)| {
+                AnyConsensusStateWithHeight::new(ev.consensus_height(), consensus_state)
+            })?;
+
+        debug!(
+            "psql chain {} - updating client {} due to event {}",
+            self.chain.id(),
+            client_state.client_id,
+            ev
+        );
+
+        result
+            .data
+            .client_states
+            .insert(ev.client_id().clone(), client_state);
+
+        let entry = result
+            .data
+            .consensus_states
+            .entry(ev.client_id().clone())
+            .or_insert_with(Vec::new);
+
+        entry.push(consensus_state);
+        entry.sort_by(|a, b| b.height.cmp(&a.height));
+        entry.dedup_by_key(|cs| cs.height);
+
+        Ok(())
+    }
+
+    fn try_update_with_client_event(&mut self, event: IbcEvent, result: &mut IbcSnapshot) {
+        let _ = match event {
+            IbcEvent::CreateClient(ev) => self.try_update_with_create_client(ev, result),
+            IbcEvent::UpdateClient(ev) => self.try_update_with_update_client(ev, result),
+            _ => Ok(()),
+        };
+    }
+
+    fn try_update_with_connection_event(&mut self, event: IbcEvent, result: &mut IbcSnapshot) {
         // Connection events do not include the delay and version so a connection cannot be currently
         // fully constructed from an event. Because of this we need to query the chain directly for
         // Init and Try events.
         let connection = match event {
-            IbcEvent::OpenInitConnection(ev) => {
-                self.maybe_chain_connection(&ev.connection_id().cloned().unwrap())
+            IbcEvent::OpenInitConnection(ref ev) => {
+                self.maybe_chain_connection(ev.connection_id().unwrap())
             }
-            IbcEvent::OpenTryConnection(ev) => {
-                self.maybe_chain_connection(&ev.connection_id().cloned().unwrap())
+            IbcEvent::OpenTryConnection(ref ev) => {
+                self.maybe_chain_connection(ev.connection_id().unwrap())
             }
             _ => None,
         };
 
         match connection {
             None => {
-                let new_partial_connection = events::connection_from_event(event).unwrap();
+                let new_partial_connection = events::connection_from_event(&event).unwrap();
 
                 if let Some(ch) = result
                     .data
@@ -661,23 +771,23 @@ impl PsqlChain {
         }
     }
 
-    fn try_update_with_channel_event(&mut self, event: &IbcEvent, result: &mut IbcSnapshot) {
+    fn try_update_with_channel_event(&mut self, event: IbcEvent, result: &mut IbcSnapshot) {
         // Channel events do not include the ordering and version so a channel cannot be currently
         // fully constructed from an event. Because of this we need to query the chain directly for
         // Init and Try events.
         let channel = match event {
-            IbcEvent::OpenInitChannel(ev) => {
-                self.maybe_chain_channel(&ev.port_id, &ev.channel_id.clone().unwrap())
+            IbcEvent::OpenInitChannel(ref ev) => {
+                self.maybe_chain_channel(&ev.port_id, ev.channel_id.as_ref().unwrap())
             }
-            IbcEvent::OpenTryChannel(ev) => {
-                self.maybe_chain_channel(&ev.port_id, &ev.channel_id.clone().unwrap())
+            IbcEvent::OpenTryChannel(ref ev) => {
+                self.maybe_chain_channel(&ev.port_id, ev.channel_id.as_ref().unwrap())
             }
             _ => None,
         };
 
         match channel {
             None => {
-                let new_partial_channel = events::channel_from_event(event).unwrap();
+                let new_partial_channel = events::channel_from_event(&event).unwrap();
 
                 if let Some(ch) = result
                     .data
@@ -714,7 +824,7 @@ impl PsqlChain {
         }
     }
 
-    fn try_update_with_packet_event(&mut self, event: &IbcEvent, snapshot: &mut IbcSnapshot) {
+    fn try_update_with_packet_event(&mut self, event: IbcEvent, snapshot: &mut IbcSnapshot) {
         match event {
             IbcEvent::SendPacket(sp) => {
                 let key = PacketId {
@@ -723,12 +833,7 @@ impl PsqlChain {
                     sequence: sp.packet.sequence,
                 };
 
-                snapshot
-                    .data
-                    .pending_sent_packets
-                    .entry(key)
-                    .and_modify(|e| *e = sp.packet.clone())
-                    .or_insert_with(|| sp.packet.clone());
+                snapshot.data.pending_sent_packets.insert(key, sp.packet);
             }
             IbcEvent::AcknowledgePacket(ap) => {
                 let key = PacketId {
@@ -738,6 +843,7 @@ impl PsqlChain {
                 };
 
                 let removed = snapshot.data.pending_sent_packets.remove(&key);
+
                 match removed {
                     Some(p) => trace!("removed pending packet {:?}", key),
                     None => debug!("no pending send packet found by ack event for {:?}", key),
@@ -786,26 +892,24 @@ impl PsqlChain {
             )
     }
 
-    fn update_with_event(&mut self, event: &IbcEvent, snapshot: &mut IbcSnapshot) {
+    fn update_with_event(&mut self, event: IbcEvent, snapshot: &mut IbcSnapshot) {
         // TODO - There should be a NewBlock event in the caller's batch.
         // If not we need to figure out that the app_status has not been updated in this snapshot
         // and do an explicit block query.
         if let IbcEvent::NewBlock(b) = event {
-            if let Some(status) = self.chain_status_from_block_event(b) {
-                snapshot.data.app_status = status
+            if let Some(status) = self.chain_status_from_block_event(&b) {
+                snapshot.data.app_status = status;
             }
         }
 
-        if events::is_connection_event(event) {
-            self.try_update_with_connection_event(event, snapshot);
-        }
-
-        if events::is_channel_event(event) {
-            self.try_update_with_channel_event(event, snapshot);
-        }
-
-        if events::is_packet_event(event) {
+        if events::is_packet_event(&event) {
             self.try_update_with_packet_event(event, snapshot);
+        } else if events::is_client_event(&event) {
+            self.try_update_with_client_event(event, snapshot);
+        } else if events::is_connection_event(&event) {
+            self.try_update_with_connection_event(event, snapshot);
+        } else if events::is_channel_event(&event) {
+            self.try_update_with_channel_event(event, snapshot);
         }
     }
 }

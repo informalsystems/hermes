@@ -116,6 +116,15 @@ pub struct AnyConsensusStateWithHeight {
     pub consensus_state: AnyConsensusState,
 }
 
+impl AnyConsensusStateWithHeight {
+    pub fn new(height: Height, consensus_state: AnyConsensusState) -> Self {
+        Self {
+            height,
+            consensus_state,
+        }
+    }
+}
+
 impl Protobuf<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {}
 
 impl TryFrom<ConsensusStateWithHeight> for AnyConsensusStateWithHeight {

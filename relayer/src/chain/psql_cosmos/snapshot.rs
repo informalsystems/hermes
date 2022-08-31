@@ -92,17 +92,19 @@ impl<'de> Deserialize<'de> for Key<PortChannelId> {
 //
 // - to help with reducing RPCs from update client
 //   (update on NewBlock event, beefed up with block data, probably still the validators RPC is needed)
-// pub signed_header: SignedHeader,
-// pub validator_set: ValidatorSet,
 //
-// - to get clients, their state and consensus states, etc
-//   (update on create and update client events)
+//   pub signed_header: SignedHeader,
+//   pub validator_set: ValidatorSet,
+//
+// - update  clients, their state and consensus states on create and update client events
 //
 // - to help with packet acknowledgments...this is tricky as we need to pass from
 //   the counterparty chain:
 //     1. data (seqs for packets with commitments) on start
 //     2. Acknowledge and Timeout packet events in order to clear
-// pub pending_ack_packets: HashMap<PacketId, Packet>,
+//
+//   pub pending_ack_packets: HashMap<PacketId, Packet>,
+//
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct IbcData {
     pub app_status: ChainStatus,
