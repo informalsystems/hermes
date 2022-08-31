@@ -26,7 +26,9 @@ use ibc::{
             packet::Sequence,
         },
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
-        ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId},
+        ics24_host::identifier::{
+            ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
+        },
     },
     downcast,
     events::{IbcEvent, WithBlockDataType},
@@ -69,15 +71,25 @@ flex_error::define_error! {
         MissingConnectionConfig
             { chain_id: ChainId }
             |e| { format_args!("missing `psql_conn` config for chain '{}'", e.chain_id) },
+
         UnexpectedEvent
             { event: IbcEvent }
             |e| { format_args!("unexpected event '{}'", e.event) },
+
         ConnectionNotFound
             { connection_id: ConnectionId }
             |e| { format_args!("connection not found '{}'", e.connection_id) },
+
         ChannelNotFound
             { channel_id: ChannelId }
             |e| { format_args!("channel not found '{}'", e.channel_id) },
+
+        ConsensusStateNotFound
+            {
+                client_id: ClientId,
+                consensus_height: Height,
+            }
+            |e| { format_args!("consensus state for client '{}' at height {} not found", e.client_id, e.consensus_height) },
     }
 }
 #[derive(PartialEq)]
@@ -249,10 +261,15 @@ impl PsqlChain {
             .into_iter()
             .filter_map(|cs| AnyConsensusStateWithHeight::try_from(cs).ok());
 
-        for c in consensus_states {
-            let key = Key((client_id.clone(), c.height));
-            snapshot.data.consensus_states.entry(key).or_insert(c);
-        }
+        let entry = snapshot
+            .data
+            .consensus_states
+            .entry(client_id)
+            .or_insert(Vec::new());
+
+        entry.extend(consensus_states);
+        entry.sort_by(|a, b| b.height.cmp(&a.height));
+        entry.dedup_by_key(|cs| cs.height);
 
         Ok(())
     }
@@ -953,7 +970,7 @@ impl ChainEndpoint for PsqlChain {
 
             self.block_on(query_consensus_states(
                 &self.pool,
-                &request.client_id,
+                request,
                 &QueryHeight::Latest,
             ))
         } else {
@@ -966,7 +983,16 @@ impl ChainEndpoint for PsqlChain {
         request: QueryConsensusStateRequest,
         include_proof: IncludeProof,
     ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error> {
-        self.chain.query_consensus_state(request, include_proof)
+        if self.is_synced() {
+            crate::time!("query_consensus_state_psql");
+            crate::telemetry!(query, self.id(), "query_consensus_state_psql");
+
+            let states = self.block_on(query_consensus_state(&self.pool, request))?;
+
+            Ok((states, None)) // TODO(ibc): Handle IncludeProof::Yes
+        } else {
+            self.chain.query_consensus_state(request, include_proof)
+        }
     }
 
     fn query_upgraded_client_state(

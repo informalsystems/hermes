@@ -10,7 +10,7 @@ use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::endpoint::tx_search::Response as TxSearchResponse;
 use tracing::{info, trace};
 
-use ibc::core::ics02_client::client_consensus::AnyConsensusStateWithHeight;
+use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc::core::ics02_client::client_state::IdentifiedAnyClientState;
 use ibc::core::ics02_client::height::Height;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
@@ -31,6 +31,7 @@ use crate::chain::requests::*;
 use crate::error::Error;
 
 use super::snapshot::Key;
+use super::PsqlError;
 
 /// This function queries transactions for events matching certain criteria.
 /// 1. Client Update request - returns a vector with at most one update client event
@@ -819,28 +820,39 @@ pub async fn query_clients(
 #[tracing::instrument(skip(pool))]
 pub async fn query_consensus_states(
     pool: &PgPool,
-    client_id: &ClientId,
+    request: QueryConsensusStatesRequest,
     query_height: &QueryHeight,
 ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
     let result = query_ibc_data(pool, query_height).await?;
 
-    // TOOD: Change representation to get all consensus states for a given client
-    let mut consensus_states = result
+    let consensus_states = result
         .data
         .consensus_states
-        .iter()
-        .filter_map(|(Key((cid, h)), consensus_state)| {
-            if cid == client_id {
-                Some(consensus_state.clone())
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>();
-
-    consensus_states.sort_by(|a, b| b.height.cmp(&a.height));
+        .get(&request.client_id)
+        .cloned()
+        .unwrap_or_default();
 
     Ok(consensus_states)
+}
+
+#[tracing::instrument(skip(pool))]
+pub async fn query_consensus_state(
+    pool: &PgPool,
+    request: QueryConsensusStateRequest,
+) -> Result<AnyConsensusState, Error> {
+    let result = query_ibc_data(pool, &request.query_height).await?;
+
+    let consensus_state = result
+        .data
+        .consensus_states
+        .get(&request.client_id)
+        .and_then(|cs| cs.iter().find(|cs| cs.height == request.consensus_height))
+        .cloned()
+        .ok_or_else(|| {
+            PsqlError::consensus_state_not_found(request.client_id, request.consensus_height)
+        })?;
+
+    Ok(consensus_state.consensus_state)
 }
 
 #[tracing::instrument(skip(pool))]

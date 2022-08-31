@@ -12,7 +12,6 @@ use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::packet::{Packet, Sequence};
 use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortChannelId, PortId};
-use ibc::Height;
 
 use crate::chain::endpoint::ChainStatus;
 
@@ -64,32 +63,6 @@ impl<'de> Deserialize<'de> for PacketId {
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Key<A>(pub A);
 
-impl Serialize for Key<(ClientId, Height)> {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let Self((client_id, height)) = self;
-        serializer.serialize_str(&format!("{}@{}", client_id, height))
-    }
-}
-
-impl<'de> Deserialize<'de> for Key<(ClientId, Height)> {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let data = <&str>::deserialize(deserializer)?;
-        let parts: [_; 2] = data
-            .splitn(2, '@')
-            .collect::<Vec<_>>()
-            .as_slice()
-            .try_into()
-            .map_err(D::Error::custom)?;
-
-        let [client_id, height] = parts;
-
-        let client_id: ClientId = client_id.parse().map_err(D::Error::custom)?;
-        let height: Height = height.parse().map_err(D::Error::custom)?;
-
-        Ok(Self((client_id, height)))
-    }
-}
-
 impl Serialize for Key<PortChannelId> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_str(&format!("{}:{}", self.0.channel_id, self.0.port_id))
@@ -138,7 +111,7 @@ pub struct IbcData {
     pub channels: HashMap<Key<PortChannelId>, IdentifiedChannelEnd>,
 
     pub client_states: HashMap<ClientId, IdentifiedAnyClientState>,
-    pub consensus_states: HashMap<Key<(ClientId, Height)>, AnyConsensusStateWithHeight>,
+    pub consensus_states: HashMap<ClientId, Vec<AnyConsensusStateWithHeight>>,
 
     pub pending_sent_packets: HashMap<PacketId, Packet>, // TODO - use IbcEvent val (??)
 }
