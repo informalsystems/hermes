@@ -90,7 +90,7 @@ As you can see, the identifier is also `07-tendermint-0` because the client-id i
 After creating clients on both chains, you have to establish a connection between them. Both chains will assign `connection-0` as the identifier of their first connection:
 
 ```shell
-hermes create connection --a-chain ibc-0 --a-client 07-tendermint-0 --b-client 07-tendermint-0
+{{#template ../../templates/commands/hermes/create_connection a-chain=ibc-0 a-client=07-tendermint-0 b-client=07-tendermint-0}}
 ```
 >__NOTE__: The command does not take `--b-chain` as argument as `--a-client` can only track one chain (`ibc-1`). 
 
@@ -304,7 +304,7 @@ SUCCESS Connection {
 Finally, after the connection has been established, you can now open a new channel on top of it. Both chains will assign `channel-0` as the identifier of their first channel:
 
 ```shell
-hermes create channel --a-chain ibc-0 --a-connection connection-0 --a-port transfer --b-port transfer
+{{#template ../../templates/commands/hermes/create_channel a-chain=ibc-0 a-connection=connection-0 a-port=transfer b-port=transfer}}
 ```
 >__NOTE__: Again, you do not need to specify the counterparty chain as a connection can only be established with a single counterparty. The `port` specifies the protocol which will be used on this channel. 
 
@@ -547,7 +547,7 @@ SUCCESS Channel {
 You can visualize the topology of the current network with: 
 
 ```shell
-hermes query channels --chain ibc-0 --show-counterparty
+{{#template ../../templates/commands/hermes/query_channels_show_counterparty chain=ibc-0}}
 ```
 
 If all the commands were successful, this command should output : 
