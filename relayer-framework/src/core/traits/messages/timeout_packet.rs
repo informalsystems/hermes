@@ -14,6 +14,19 @@ pub trait TimeoutUnorderedPacketMessageBuilder<Relay: RelayContext> {
 }
 
 #[async_trait]
+pub trait HasTimeoutUnorderedPacketMessageBuilder: RelayContext {
+    type TimeoutUnorderedPacketMessageBuilder: TimeoutUnorderedPacketMessageBuilder<Self>;
+
+    async fn build_timeout_unordered_packet_message(
+        &self,
+        height: &Height<Self::DstChain>,
+        packet: &Self::Packet,
+    ) -> Result<Message<Self::SrcChain>, Self::Error> {
+        Self::TimeoutUnorderedPacketMessageBuilder::build_timeout_unordered_packet_message(self, height, packet).await
+    }
+}
+
+#[async_trait]
 pub trait TimeoutOrderedPacketMessageBuilder<Relay: RelayContext> {
     async fn build_timeout_ordered_packet_message(
         relay: &Relay,
