@@ -32,6 +32,8 @@ use crate::types::wallet::{Wallet, WalletAddress, WalletId};
 use crate::util::file::pipe_to_file;
 use crate::util::retry::assert_eventually_succeed;
 
+use super::chain_binary::ChainBinary;
+
 pub mod interchain;
 pub mod query_txs;
 pub mod transfer;
@@ -48,8 +50,6 @@ pub mod transfer;
    be indication of some underlying performance issues.
 */
 const WAIT_WALLET_AMOUNT_ATTEMPTS: u16 = 90;
-
-const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
 
 /**
     A driver for interacting with a chain full nodes through command line.
@@ -68,6 +68,7 @@ const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
 
 #[derive(Debug, Clone)]
 pub struct ChainDriver {
+    pub chain_binary: ChainBinary,
     /**
        The filesystem path to the Gaia CLI. Defaults to `gaiad`.
     */
@@ -119,6 +120,7 @@ impl ExportEnv for ChainDriver {
 impl ChainDriver {
     /// Create a new [`ChainDriver`]
     pub fn create(
+        chain_binary: ChainBinary,
         command_path: String,
         chain_id: ChainId,
         home_path: String,
@@ -133,9 +135,11 @@ impl ChainDriver {
             chain_id.clone(),
             format!("http://localhost:{}", rpc_port),
             format!("http://localhost:{}", grpc_port),
+            chain_binary.get_default_address_type(),
         )?;
 
         Ok(Self {
+            chain_binary,
             command_path,
             chain_id,
             home_path,
@@ -303,7 +307,7 @@ impl ChainDriver {
         let seed_path = format!("{}-seed.json", wallet_id);
         self.write_file(&seed_path, &seed_content)?;
 
-        let hd_path = HDPath::from_str(COSMOS_HD_PATH)
+        let hd_path = HDPath::from_str(self.chain_binary.get_hd_path())
             .map_err(|e| eyre!("failed to create HDPath: {:?}", e))?;
 
         let key_file: KeyFile = json::from_str(&seed_content).map_err(handle_generic_error)?;
@@ -406,6 +410,7 @@ impl ChainDriver {
        value is dropped.
     */
     pub fn start(&self) -> Result<ChildProcess, Error> {
+        let json_rpc_address = self.chain_binary.get_json_rpc_address();
         let base_args = [
             "--home",
             &self.home_path,
@@ -416,6 +421,8 @@ impl ChainDriver {
             &self.grpc_listen_address(),
             "--rpc.laddr",
             &self.rpc_listen_address(),
+            &json_rpc_address.0,
+            &json_rpc_address.1,
         ];
 
         let args: Vec<&str> = base_args.to_vec();

@@ -15,6 +15,7 @@
 */
 
 pub mod builder;
+pub mod chain_binary;
 pub mod config;
 pub mod driver;
 pub mod exec;

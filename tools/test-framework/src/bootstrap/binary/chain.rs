@@ -250,7 +250,8 @@ pub fn new_registry(config: Config) -> SharedRegistry<CountingAndCachingChainHan
    [`FullNode`] and add it to the relayer's [`Config`].
 */
 pub fn add_chain_config(config: &mut Config, running_node: &FullNode) -> Result<(), Error> {
-    let chain_config = running_node.generate_chain_config()?;
+    let chain_config =
+        running_node.generate_chain_config(&running_node.chain_driver.chain_binary)?;
 
     config.chains.push(chain_config);
     Ok(())
