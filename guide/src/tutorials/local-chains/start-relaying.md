@@ -118,9 +118,9 @@ Now, let's exchange `samoleans` between two chains.
 
 ## Stop relaying and stop the chains
 
-- Stop Hermes by pressing `Ctrl+C` on the terminal running `hermes start`.
+- Stop Hermes by pressing `Ctrl+C` on the terminal running `{{#template ../../templates/commands/hermes/start}}`.
 
-- Stop the chains with `gm stop`.
+- Stop the chains with `{{#template ../../templates/commands/gm/stop}}`.
 
 ---
 

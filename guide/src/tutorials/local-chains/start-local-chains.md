@@ -78,7 +78,7 @@ ibc-1            11796  27020 27021 27022  $HOME/.gm/ibc-1
 Gaiad Manager `gm` takes care of creating the configuration file. Run the command below to create the `$HOME/.hermes/config.toml` file:
 
 ```bash
-gm hermes config
+{{#template ../../templates/commands/gm/hermes_config}}
 ```
 >__NOTE__: You can visit the [`Configuration`](../../documentation/configuration/index.md) section for more information about the configuration file.
 
@@ -237,8 +237,7 @@ By the default `hermes` expects the configuration file to be in the __`$HOME/.he
 
 It also stores the private keys for each chain in this folder as outlined in the [Keys](../../commands/keys/index.md) section.
 
-After executing `{{#template ../../templates/commands/gm/start}}
-`, this is how the folder should look like:
+After executing `{{#template ../../templates/commands/gm/start}}`, this is how the folder should look like:
 
 ```shell
 $HOME/.hermes/

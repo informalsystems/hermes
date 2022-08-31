@@ -3,7 +3,7 @@
 At this point in the tutorial, you should have four chains running and Hermes correctly configured. You can perform a `health-check` with the command :
 
 ```shell
-hermes health-check
+{{#template ../../templates/commands/hermes/health_check}}
 ```
 
 If the command runs successfully, it should output something similar to:
@@ -30,7 +30,7 @@ In the following tutorial, we will connect all of these chains in a full mesh to
 
 Execute the following command:
 ```shell
-    gm hermes cc
+{{#template ../../templates/commands/gm/hermes_cc}}
 ```
 
 If this command runs successfully, it should output the following:
@@ -52,7 +52,7 @@ Executing these commands will:
 Use the flag `--exec` flag to execute these commands:
 
 ```shell
-gm hermes cc --exec
+{{#template ../../templates/commands/gm/hermes_cc_exec}}
 ```
 
 At this point, your network should be fully connected. It is now time to filter channels. The following chart shows the current state of the network. The channels that we want to filter out are filled in red while the channels we want to relay on are filled in green:
@@ -108,10 +108,10 @@ flowchart TD
 You can verify that everything is correct with the commands:
 
 ```shell
-hermes query channels --chain ibc-0 --show-counterparty 
-hermes query channels --chain ibc-1 --show-counterparty
-hermes query channels --chain ibc-2 --show-counterparty
-hermes query channels --chain ibc-3 --show-counterparty
+{{#template ../../templates/commands/hermes/query_channels_show_counterparty chain=ibc-0}}
+{{#template ../../templates/commands/hermes/query_channels_show_counterparty chain=ibc-1}}
+{{#template ../../templates/commands/hermes/query_channels_show_counterparty chain=ibc-2}}
+{{#template ../../templates/commands/hermes/query_channels_show_counterparty chain=ibc-3}}
 ```
 
 Which should normally output: 
@@ -180,121 +180,7 @@ At this point, your config file should look like this:
 <details><summary style="font-weight:bold">config.toml</summary>
 
 ```
-[global]
-log_level = 'info'
-
-[mode]
-
-[mode.clients]
-enabled = true
-refresh = true
-misbehaviour = true
-
-[mode.connections]
-enabled = true
-
-[mode.channels]
-enabled = true
-
-[mode.packets]
-enabled = true
-clear_interval = 100
-clear_on_start = true
-tx_confirmation = true
-
-[telemetry]
-enabled = true
-host = '127.0.0.1'
-port = 3001
-
-[[chains]]
-id = 'ibc-0'
-rpc_addr = 'http://localhost:27050'
-grpc_addr = 'http://localhost:27052'
-websocket_addr = 'ws://localhost:27050/websocket'
-rpc_timeout = '15s'
-account_prefix = 'cosmos'
-key_name = 'wallet'
-store_prefix = 'ibc'
-gas_price = { price = 0.01, denom = 'stake' }
-max_gas = 10000000
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
-
-[chains.packet_filter]
-policy = 'allow'
-list = [
-    ['transfer', 'channel-0'],
-    ['transfer', 'channel-2'],
-]
-
-[[chains]]
-id = 'ibc-1'
-rpc_addr = 'http://localhost:27060'
-grpc_addr = 'http://localhost:27062'
-websocket_addr = 'ws://localhost:27060/websocket'
-rpc_timeout = '15s'
-account_prefix = 'cosmos'
-key_name = 'wallet'
-store_prefix = 'ibc'
-gas_price = { price = 0.01, denom = 'stake' }
-max_gas = 10000000
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
-
-
-[chains.packet_filter]
-policy = 'allow'
-list = [
-    ['transfer', 'channel-0'],
-    ['transfer', 'channel-1'],
-]
-
-[[chains]]
-id = 'ibc-2'
-rpc_addr = 'http://localhost:27070'
-grpc_addr = 'http://localhost:27072'
-websocket_addr = 'ws://localhost:27070/websocket'
-rpc_timeout = '15s'
-account_prefix = 'cosmos'
-key_name = 'wallet'
-store_prefix = 'ibc'
-gas_price = { price = 0.01, denom = 'stake' }
-max_gas = 10000000
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
-
-[chains.packet_filter]
-policy = 'allow'
-list = [
-    ['transfer', 'channel-1'],
-    ['transfer', 'channel-2'],
-]
-
-[[chains]]
-id = 'ibc-3'
-rpc_addr = 'http://localhost:27080'
-grpc_addr = 'http://localhost:27082'
-websocket_addr = 'ws://localhost:27080/websocket'
-rpc_timeout = '15s'
-account_prefix = 'cosmos'
-key_name = 'wallet'
-store_prefix = 'ibc'
-gas_price = { price = 0.01, denom = 'stake' }
-max_gas = 10000000
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
-
-[chains.packet_filter]
-policy = 'allow'
-list = [
-    ['transfer', 'channel-0'],
-    ['transfer', 'channel-2'],
-]
+{{#template ../../templates/files/hermes/more-chains/config_with_filters.toml}}
 ```
 
 </details>
@@ -302,7 +188,7 @@ list = [
 It is also possible to check that the configuration file is valid with the command:
 
 ```shell
-hermes config validate
+{{#template ../../templates/commands/hermes/config_validate}}
 ```
 
 If the command runs successfully, the output should be:

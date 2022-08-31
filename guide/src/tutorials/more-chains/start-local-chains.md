@@ -39,57 +39,8 @@ Copy and paste the configuration below to `{{#template ../../templates/path/gm/d
 
 __gm.toml__
 
-```
-[global]
-  add_to_hermes = false
-  auto_maintain_config = true
-  extra_wallets = 2
-  gaiad_binary = "~/go/bin/gaiad"
-  hdpath = ""
-  home_dir = "~/.gm"
-  ports_start_at = 27000
-  validator_mnemonic = ""
-  wallet_mnemonic = ""
-
-  [global.hermes]
-    binary = "$HOME/ibc-rs/target/release/hermes" #change this path according to your setup
-    config = "~/.hermes/config.toml"
-    log_level = "info"
-    telemetry_enabled = true
-    telemetry_host = "127.0.0.1"
-    telemetry_port = 3001
-
-[ibc-0]
-  ports_start_at = 27010
-
-[ibc-1]
-  ports_start_at = 27020
-
-[ibc-2]
-  ports_start_at = 27030
-
-[ibc-3]
-  ports_start_at = 27040
-
-[node-0]
-  add_to_hermes = true
-  network = "ibc-0"
-  ports_start_at = 27050
-
-[node-1]
-  add_to_hermes = true
-  network = "ibc-1"
-  ports_start_at = 27060
-
-[node-2]
-  add_to_hermes = true
-  network = "ibc-2"
-  ports_start_at = 27070
-
-[node-3]
-  add_to_hermes = true
-  network = "ibc-3"
-  ports_start_at = 27080
+```toml
+{{#template ../../templates/files/gm/more-chains/gm.toml}}
 ```
 
 > __NOTE__: If you have any `Docker` containers running that might be using the same ports as `gaiad` (e.g. port 27010-27012), please ensure you stop them first before proceeding to the next step.
@@ -98,7 +49,6 @@ Finally, start the chains with the `start` command.
 
 ```bash
 {{#template ../../templates/commands/gm/start}}
-
 ```
 
 This configures and starts four __`gaiad`__ instances.
@@ -160,7 +110,7 @@ ibc-3            22999  27040 27041 27042  $HOME/.gm/ibc-3
 Gaiad Manager `gm` takes care of creating the configuration file. Run the command below to create the `$HOME/.hermes/config.toml` file:
 
 ```bash
-gm hermes config
+{{#template ../../templates/commands/gm/hermes_config}}
 ```
 >__NOTE__: You can visit the [`Configuration`](../../documentation/configuration/index.md) section for more information about the configuration file.
 
@@ -169,92 +119,7 @@ Based on the `gm.toml` above, your `$HOME/.hermes/config.toml` file should look 
 __config.toml__
 
 ```toml
-[global]
-log_level = 'info'
-
-[mode]
-
-[mode.clients]
-enabled = true
-refresh = true
-misbehaviour = true
-
-[mode.connections]
-enabled = true
-
-[mode.channels]
-enabled = true
-
-[mode.packets]
-enabled = true
-clear_interval = 100
-clear_on_start = true
-tx_confirmation = true
-
-[telemetry]
-enabled = true
-host = '127.0.0.1'
-port = 3001
-
-[[chains]]
-id = 'ibc-0'
-rpc_addr = 'http://localhost:27050'
-grpc_addr = 'http://localhost:27052'
-websocket_addr = 'ws://localhost:27050/websocket'
-rpc_timeout = '15s'
-account_prefix = 'cosmos'
-key_name = 'wallet'
-store_prefix = 'ibc'
-gas_price = { price = 0.01, denom = 'stake' }
-max_gas = 10000000
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
-
-[[chains]]
-id = 'ibc-1'
-rpc_addr = 'http://localhost:27060'
-grpc_addr = 'http://localhost:27062'
-websocket_addr = 'ws://localhost:27060/websocket'
-rpc_timeout = '15s'
-account_prefix = 'cosmos'
-key_name = 'wallet'
-store_prefix = 'ibc'
-gas_price = { price = 0.01, denom = 'stake' }
-max_gas = 10000000
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
-
-[[chains]]
-id = 'ibc-2'
-rpc_addr = 'http://localhost:27070'
-grpc_addr = 'http://localhost:27072'
-websocket_addr = 'ws://localhost:27070/websocket'
-rpc_timeout = '15s'
-account_prefix = 'cosmos'
-key_name = 'wallet'
-store_prefix = 'ibc'
-gas_price = { price = 0.01, denom = 'stake' }
-max_gas = 10000000
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
-
-[[chains]]
-id = 'ibc-3'
-rpc_addr = 'http://localhost:27080'
-grpc_addr = 'http://localhost:27082'
-websocket_addr = 'ws://localhost:27080/websocket'
-rpc_timeout = '15s'
-account_prefix = 'cosmos'
-key_name = 'wallet'
-store_prefix = 'ibc'
-gas_price = { price = 0.01, denom = 'stake' }
-max_gas = 10000000
-clock_drift = '5s'
-trusting_period = '14days'
-trust_threshold = { numerator = '1', denominator = '3' }
+{{#template ../../templates/files/hermes/more-chains/config_without_filters.toml}}
 ```
 
 ### Adding private keys to the chains
@@ -373,12 +238,11 @@ The `$HOME/.gm` directory has a tree structure similar to:
 
 ### The `$HOME/.hermes` directory
 
-By default `hermes` expects the configuration file to be in the __`$HOME/.hermes`__ folder.
+By default, `hermes` expects the configuration file to be in the __`$HOME/.hermes`__ folder.
 
 It also stores the private keys for each chain in this folder as outlined in the [Keys](../../commands/keys/index.md) section.
 
-After executing `{{#template ../../templates/commands/gm/start}}
-`, this is how the folder should look like:
+After executing `{{#template ../../templates/commands/gm/start}}`, this is how the folder should look like:
 
 ```shell
 $HOME/.hermes/
