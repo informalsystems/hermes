@@ -38,7 +38,7 @@ You will need to first create a client on both chains and then establish a conne
 First, create a client on `ibc-1` tracking the state of `ibc-0`. It will be assigned `07-tendermint-0` as its identifier:
 
 ```shell
-hermes create client --host-chain ibc-1 --reference-chain ibc-0
+{{#template ../../templates/commands/hermes/create_client host-chain=ibc-1 reference-chain=ibc-0}}
 ```
 
 If the command is successful, the output should be similar to:
@@ -62,7 +62,7 @@ SUCCESS CreateClient(
 Now, create a client on `ibc-0` tracking `ibc-1`:
 
 ```shell
-hermes create client --host-chain ibc-0 --reference-chain ibc-1
+{{#template ../../templates/commands/hermes/create_client host-chain=ibc-0 reference-chain=ibc-1}}
 ```
 If the command is successful, the output should be similar to:
 ```json
