@@ -60,6 +60,7 @@ impl From<String> for ChainBinary {
             name if name.contains("gaiad") => ChainBinary::CosmosChain,
             name if name.contains("simd") => ChainBinary::CosmosChain,
             name if name.contains("wasmd") => ChainBinary::CosmosChain,
+            name if name.contains("icad") => ChainBinary::CosmosChain,
             name if name.contains("evmosd") => ChainBinary::EvmosChain,
             _ => panic!("Unhandled chain binary `{}`", item),
         }
