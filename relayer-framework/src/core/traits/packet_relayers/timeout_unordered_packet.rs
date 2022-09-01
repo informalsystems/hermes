@@ -8,7 +8,7 @@ use crate::std_prelude::*;
 /// Encapsulates the capability of a relayer to send timeout
 /// packets over unordered channels. 
 ///
-/// Timeout packets are generally sent back to the source chain.
+/// Timeout packets are sent from the destination chain to the source chain.
 ///
 /// When a timeout packet is sent, a response is not expected to 
 /// be received. This is in contrast when sending e.g. receive

@@ -4,6 +4,9 @@ use crate::core::traits::contexts::relay::RelayContext;
 use crate::core::types::aliases::{ChannelId, Height, Message, PortId};
 use crate::std_prelude::*;
 
+/// Encapsulates the capability of the implementer to construct a timeout
+/// message that gets sent over an unordered channel from the destination
+/// chain to the source chain.
 #[async_trait]
 pub trait TimeoutUnorderedPacketMessageBuilder<Relay: RelayContext> {
     async fn build_timeout_unordered_packet_message(
@@ -13,6 +16,9 @@ pub trait TimeoutUnorderedPacketMessageBuilder<Relay: RelayContext> {
     ) -> Result<Message<Relay::SrcChain>, Relay::Error>;
 }
 
+/// A type that implements this trait has the capability to construct a 
+/// timeout message that gets sent over an unordered channel from the 
+/// destination chain to the source chain.
 #[async_trait]
 pub trait HasTimeoutUnorderedPacketMessageBuilder: RelayContext {
     type TimeoutUnorderedPacketMessageBuilder: TimeoutUnorderedPacketMessageBuilder<Self>;
