@@ -38,6 +38,8 @@ where
 
     type Packet = Packet;
 
+    type Telemetry = CosmosTelemetry;
+
     fn packet_src_port(packet: &Self::Packet) -> &<Self::SrcChain as OfaChain>::PortId {
         &packet.source_port
     }
@@ -133,12 +135,8 @@ where
         Ok(message)
     }
 
-    fn src_telemetry(&self) -> &CosmosTelemetry {
-        &self.src_chain.chain.telemetry
-    }
-
-    fn dst_telemetry(&self) -> &CosmosTelemetry {
-        &self.dst_chain.chain.telemetry
+    fn telemetry(&self) -> &Self::Telemetry {
+        &self.telemetry
     }
 
     async fn build_ack_packet_message(

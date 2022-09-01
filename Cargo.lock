@@ -1522,6 +1522,7 @@ dependencies = [
  "ibc-relayer-framework",
  "ibc-relayer-runtime",
  "ibc-test-framework",
+ "opentelemetry",
  "serde",
  "serde_json",
  "tempfile",

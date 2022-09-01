@@ -3,10 +3,7 @@ use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
 
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
 
-use super::telemetry::{CosmosTelemetry, TelemetryState};
-use opentelemetry::global;
-use std::collections::HashMap;
-use std::sync::Mutex;
+use super::telemetry::CosmosTelemetry;
 
 #[derive(Clone)]
 pub struct CosmosChainContext<Chain> {
@@ -16,16 +13,15 @@ pub struct CosmosChainContext<Chain> {
 }
 
 impl<Chain> CosmosChainContext<Chain> {
-    pub fn new(chain: Arc<Chain>, runtime: CosmosRuntimeContext) -> Self {
-        let telemetry_state = Arc::new(Mutex::new(TelemetryState {
-            meter: global::meter("hermes"),
-            counters: HashMap::new(),
-        }));
-
+    pub fn new(
+        chain: Arc<Chain>,
+        runtime: CosmosRuntimeContext,
+        telemetry: CosmosTelemetry,
+    ) -> Self {
         Self {
             chain,
             runtime: OfaRuntimeContext::new(runtime),
-            telemetry: CosmosTelemetry::new(telemetry_state),
+            telemetry: telemetry,
         }
     }
 }

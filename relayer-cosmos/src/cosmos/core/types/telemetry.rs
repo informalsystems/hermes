@@ -1,23 +1,17 @@
 use alloc::sync::Arc;
-
-use ibc_relayer_framework::core::traits::contexts::error::HasError;
-use ibc_relayer_framework::core::traits::runtime::telemetry::TelemetryContext;
+use ibc_relayer_framework::core::traits::runtime::telemetry::*;
 use opentelemetry::{
-    metrics::{Counter, Meter},
+    metrics::{Counter, Meter, UpDownCounter, ValueRecorder},
     KeyValue,
 };
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-pub enum TelemetryError {
-    FailedToCreateMetric,
-    FailedToCreateLabel,
-    FailedToUpdateMetric,
-}
-
 pub struct TelemetryState {
     pub meter: Meter,
     pub counters: HashMap<String, Counter<u64>>,
+    pub value_recorders: HashMap<String, ValueRecorder<u64>>,
+    pub updown_counters: HashMap<String, UpDownCounter<i64>>,
 }
 
 #[derive(Clone)]
@@ -31,43 +25,98 @@ impl CosmosTelemetry {
     }
 }
 
-impl HasError for CosmosTelemetry {
-    type Error = TelemetryError;
-}
-
-impl TelemetryContext for CosmosTelemetry {
+impl HasLabel for CosmosTelemetry {
     type Label = KeyValue;
-
-    fn new_label(key: &str, value: &str) -> KeyValue {
+    fn new_label(key: &str, value: &str) -> Self::Label {
         KeyValue::new(key.to_string(), value.to_string())
     }
+}
 
-    fn new_counter(&self, name: &str, description: &str) -> Result<(), Self::Error> {
-        let mut telemetry_state = self.telemetry_state.lock().unwrap(); // TODO: Remove unwrap
+impl HasMetric<TelemetryCounter, u64> for CosmosTelemetry {
+    type Metric = Counter<u64>;
 
-        let meter = &telemetry_state.meter;
-        let metric = meter.u64_counter(name).with_description(description).init();
-
-        telemetry_state
-            .counters
-            .insert(name.to_string(), metric)
-            .ok_or(TelemetryError::FailedToCreateMetric)?;
-        Ok(())
-    }
-
-    fn add_counter(
+    fn update_metric(
         &self,
         name: &str,
-        count: u64,
-        labels: &[KeyValue],
-    ) -> Result<(), TelemetryError> {
-        self.telemetry_state
-            .lock()
-            .unwrap() // TODO: Remove unwrap
+        labels: &[Self::Label],
+        value: u64,
+        description: Option<&str>,
+    ) -> () {
+        let mut telemetry_state = self.telemetry_state.lock().unwrap();
+        let default = if let Some(description) = description {
+            telemetry_state
+                .meter
+                .u64_counter(name)
+                .with_description(description)
+                .init()
+        } else {
+            telemetry_state.meter.u64_counter(name).init()
+        };
+
+        let metric = telemetry_state
             .counters
-            .get(name)
-            .ok_or(TelemetryError::FailedToUpdateMetric)?
-            .add(count, labels);
-        Ok(())
+            .entry(name.to_string())
+            .or_insert(default);
+        metric.add(value, labels)
     }
 }
+
+impl HasMetric<TelemetryValueRecorder, u64> for CosmosTelemetry {
+    type Metric = ValueRecorder<u64>;
+
+    fn update_metric(
+        &self,
+        name: &str,
+        labels: &[Self::Label],
+        value: u64,
+        description: Option<&str>,
+    ) -> () {
+        let mut telemetry_state = self.telemetry_state.lock().unwrap();
+        let default = if let Some(description) = description {
+            telemetry_state
+                .meter
+                .u64_value_recorder(name)
+                .with_description(description)
+                .init()
+        } else {
+            telemetry_state.meter.u64_value_recorder(name).init()
+        };
+
+        let metric = telemetry_state
+            .value_recorders
+            .entry(name.to_string())
+            .or_insert(default);
+        metric.record(value, labels)
+    }
+}
+
+impl HasMetric<TelemetryUpDownCounter, i64> for CosmosTelemetry {
+    type Metric = UpDownCounter<i64>;
+
+    fn update_metric(
+        &self,
+        name: &str,
+        labels: &[Self::Label],
+        value: i64,
+        description: Option<&str>,
+    ) -> () {
+        let mut telemetry_state = self.telemetry_state.lock().unwrap();
+        let default = if let Some(description) = description {
+            telemetry_state
+                .meter
+                .i64_up_down_counter(name)
+                .with_description(description)
+                .init()
+        } else {
+            telemetry_state.meter.i64_up_down_counter(name).init()
+        };
+
+        let metric = telemetry_state
+            .updown_counters
+            .entry(name.to_string())
+            .or_insert(default);
+        metric.add(value, labels)
+    }
+}
+
+impl TelemetryContext for CosmosTelemetry {}
