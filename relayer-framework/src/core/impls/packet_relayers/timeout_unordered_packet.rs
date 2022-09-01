@@ -4,10 +4,12 @@ use crate::core::traits::contexts::ibc_event::HasIbcEvents;
 use crate::core::traits::contexts::relay::RelayContext;
 use crate::core::traits::core::Async;
 use crate::core::traits::ibc_message_sender::{
-    HasIbcMessageSender, IbcMessageSenderExt, MismatchIbcEventsCountError,
+    HasIbcMessageSender, MismatchIbcEventsCountError,
 };
 use crate::core::traits::messages::timeout_packet::HasTimeoutUnorderedPacketMessageBuilder;
-use crate::core::traits::packet_relayers::timeout_packet::TimeoutUnorderedPacketRelayer;
+use crate::core::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer;
+use crate::core::traits::target::DestinationTarget;
+use crate::core::types::aliases::{Height, Packet, WriteAcknowledgementEvent};
 use crate::std_prelude::*;
 
 pub struct BaseTimeoutUnorderedPacketRelayer;
