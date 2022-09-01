@@ -42,7 +42,7 @@ impl<Relay: CosmosRelay> CosmosRelayContext<Relay> {
             src_chain,
             dst_chain,
             runtime,
-            telemetry: telemetry.clone(),
+            telemetry,
         }
     }
 }

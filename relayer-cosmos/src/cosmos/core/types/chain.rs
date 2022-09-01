@@ -21,7 +21,7 @@ impl<Chain> CosmosChainContext<Chain> {
         Self {
             chain,
             runtime: OfaRuntimeContext::new(runtime),
-            telemetry: telemetry,
+            telemetry,
         }
     }
 }

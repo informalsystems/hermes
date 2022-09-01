@@ -41,7 +41,7 @@ impl HasMetric<TelemetryCounter, u64> for CosmosTelemetry {
         labels: &[Self::Label],
         value: u64,
         description: Option<&str>,
-    ) -> () {
+    ) {
         let mut telemetry_state = self.telemetry_state.lock().unwrap();
         let default = if let Some(description) = description {
             telemetry_state
@@ -70,7 +70,7 @@ impl HasMetric<TelemetryValueRecorder, u64> for CosmosTelemetry {
         labels: &[Self::Label],
         value: u64,
         description: Option<&str>,
-    ) -> () {
+    ) {
         let mut telemetry_state = self.telemetry_state.lock().unwrap();
         let default = if let Some(description) = description {
             telemetry_state
@@ -99,7 +99,7 @@ impl HasMetric<TelemetryUpDownCounter, i64> for CosmosTelemetry {
         labels: &[Self::Label],
         value: i64,
         description: Option<&str>,
-    ) -> () {
+    ) {
         let mut telemetry_state = self.telemetry_state.lock().unwrap();
         let default = if let Some(description) = description {
             telemetry_state
