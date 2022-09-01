@@ -41,7 +41,7 @@ impl ChainType {
         let mut res = vec![];
         let json_rpc_port = random_unused_tcp_port();
         match self {
-            Self::Cosmos => {},
+            Self::Cosmos => {}
             Self::Evmos => {
                 res.push("--json-rpc.address".to_owned());
                 res.push(format!("localhost:{}", json_rpc_port));
