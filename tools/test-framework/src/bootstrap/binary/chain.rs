@@ -251,7 +251,7 @@ pub fn new_registry(config: Config) -> SharedRegistry<CountingAndCachingChainHan
 */
 pub fn add_chain_config(config: &mut Config, running_node: &FullNode) -> Result<(), Error> {
     let chain_config =
-        running_node.generate_chain_config(&running_node.chain_driver.chain_binary)?;
+        running_node.generate_chain_config(&running_node.chain_driver.chain_type)?;
 
     config.chains.push(chain_config);
     Ok(())

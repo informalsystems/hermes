@@ -32,7 +32,7 @@ use crate::types::wallet::{Wallet, WalletAddress, WalletId};
 use crate::util::file::pipe_to_file;
 use crate::util::retry::assert_eventually_succeed;
 
-use super::chain_binary::ChainType;
+use super::chain_type::ChainType;
 
 pub mod interchain;
 pub mod query_txs;
@@ -68,7 +68,7 @@ const WAIT_WALLET_AMOUNT_ATTEMPTS: u16 = 90;
 
 #[derive(Debug, Clone)]
 pub struct ChainDriver {
-    pub chain_binary: ChainType,
+    pub chain_type: ChainType,
     /**
        The filesystem path to the Gaia CLI. Defaults to `gaiad`.
     */
@@ -120,7 +120,7 @@ impl ExportEnv for ChainDriver {
 impl ChainDriver {
     /// Create a new [`ChainDriver`]
     pub fn create(
-        chain_binary: ChainType,
+        chain_type: ChainType,
         command_path: String,
         chain_id: ChainId,
         home_path: String,
@@ -135,11 +135,11 @@ impl ChainDriver {
             chain_id.clone(),
             format!("http://localhost:{}", rpc_port),
             format!("http://localhost:{}", grpc_port),
-            chain_binary.address_type(),
+            chain_type.address_type(),
         )?;
 
         Ok(Self {
-            chain_binary,
+            chain_type,
             command_path,
             chain_id,
             home_path,
@@ -307,7 +307,7 @@ impl ChainDriver {
         let seed_path = format!("{}-seed.json", wallet_id);
         self.write_file(&seed_path, &seed_content)?;
 
-        let hd_path = HDPath::from_str(self.chain_binary.hd_path())
+        let hd_path = HDPath::from_str(self.chain_type.hd_path())
             .map_err(|e| eyre!("failed to create HDPath: {:?}", e))?;
 
         let key_file: KeyFile = json::from_str(&seed_content).map_err(handle_generic_error)?;
@@ -410,7 +410,6 @@ impl ChainDriver {
        value is dropped.
     */
     pub fn start(&self) -> Result<ChildProcess, Error> {
-        let extra_start_args = self.chain_binary.extra_start_args();
         let base_args = [
             "--home",
             &self.home_path,
@@ -421,11 +420,12 @@ impl ChainDriver {
             &self.grpc_listen_address(),
             "--rpc.laddr",
             &self.rpc_listen_address(),
-            &extra_start_args.0,
-            &extra_start_args.1,
         ];
 
-        let args: Vec<&str> = base_args.to_vec();
+        let mut args: Vec<&str> = base_args.to_vec();
+
+        let extra_start_args = self.chain_type.extra_start_args();
+        args.append(&mut extra_start_args.iter().map(|s| s.as_ref()).collect());
 
         let mut child = Command::new(&self.command_path)
             .args(&args)

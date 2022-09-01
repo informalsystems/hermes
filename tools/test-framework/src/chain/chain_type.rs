@@ -36,16 +36,18 @@ impl ChainType {
         }
     }
 
-    // Extra arguments required to run `chain_binary start`
-    pub fn extra_start_args(&self) -> (String, String) {
+    // Extra arguments required to run `<chain binary> start`
+    pub fn extra_start_args(&self) -> Vec<String> {
+        let mut res = vec![];
         let json_rpc_port = random_unused_tcp_port();
         match self {
-            Self::Cosmos => ("".to_owned(), "".to_owned()),
-            Self::Evmos => (
-                "--json-rpc.address".to_owned(),
-                format!("localhost:{}", json_rpc_port),
-            ),
+            Self::Cosmos => {},
+            Self::Evmos => {
+                res.push("--json-rpc.address".to_owned());
+                res.push(format!("localhost:{}", json_rpc_port));
+            }
         }
+        res
     }
 
     pub fn address_type(&self) -> AddressType {

@@ -12,7 +12,7 @@ use crate::error::Error;
 use crate::types::config::TestConfig;
 use crate::util::random::random_unused_tcp_port;
 
-use super::chain_binary::ChainType;
+use super::chain_type::ChainType;
 
 /**
    Used for holding common configuration needed to create new `ChainDriver`s.
@@ -87,9 +87,9 @@ impl ChainBuilder {
        `"ibc-alpha-f5a2a988"`.
     */
     pub fn new_chain(&self, prefix: &str, use_random_id: bool) -> Result<ChainDriver, Error> {
-        let chain_binary = ChainType::from_str(&self.command_path[..])?;
+        let chain_type = ChainType::from_str(&self.command_path[..])?;
 
-        let chain_id = chain_binary.chain_id(prefix, use_random_id);
+        let chain_id = chain_type.chain_id(prefix, use_random_id);
 
         let rpc_port = random_unused_tcp_port();
         let grpc_port = random_unused_tcp_port();
@@ -99,7 +99,7 @@ impl ChainBuilder {
         let home_path = format!("{}/{}", self.base_store_dir, chain_id);
 
         let driver = ChainDriver::create(
-            chain_binary,
+            chain_type,
             self.command_path.clone(),
             chain_id,
             home_path,
