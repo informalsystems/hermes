@@ -1,6 +1,5 @@
 use core::str::FromStr;
 use eyre::eyre;
-use flex_error::define_error;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::config::AddressType;
 
@@ -9,15 +8,6 @@ use crate::util::random::{random_u32, random_unused_tcp_port};
 
 const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
 const EVMOS_HD_PATH: &str = "m/44'/60'/0'/0/0";
-
-define_error! {
-    #[derive(Debug, PartialEq, Eq)]
-    ChainTypeError {
-        UnhandledChainType
-        { chain_type: String }
-        | e | { format_args!("channel type unhandled: {}", e.chain_type) },
-    }
-}
 
 #[derive(Clone, Debug)]
 pub enum ChainType {
