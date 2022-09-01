@@ -7,20 +7,20 @@ const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
 const EVMOS_HD_PATH: &str = "m/44'/60'/0'/0/0";
 
 #[derive(Clone, Debug)]
-pub enum ChainBinary {
-    CosmosChain,
-    EvmosChain,
+pub enum ChainType {
+    Cosmos,
+    Evmos,
 }
 
 impl ChainBinary {
-    pub fn get_hd_path(&self) -> &str {
+    pub fn hd_path(&self) -> &str {
         match self {
             Self::CosmosChain => COSMOS_HD_PATH,
             Self::EvmosChain => EVMOS_HD_PATH,
         }
     }
 
-    pub fn get_chain_id(&self, prefix: &str, use_random_id: bool) -> ChainId {
+    pub fn chain_id(&self, prefix: &str, use_random_id: bool) -> ChainId {
         match self {
             Self::CosmosChain => {
                 if use_random_id {
@@ -44,7 +44,7 @@ impl ChainBinary {
         }
     }
 
-    pub fn get_default_address_type(&self) -> AddressType {
+    pub fn address_type(&self) -> AddressType {
         match self {
             Self::CosmosChain => AddressType::default(),
             Self::EvmosChain => AddressType::Ethermint {
