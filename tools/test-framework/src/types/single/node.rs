@@ -13,7 +13,7 @@ use ibc_relayer::keyring::Store;
 use std::sync::{Arc, RwLock};
 use tendermint_rpc::Url;
 
-use crate::chain::chain_binary::ChainBinary;
+use crate::chain::chain_binary::ChainType as BinaryType;
 use crate::chain::driver::ChainDriver;
 use crate::ibc::denom::Denom;
 use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
@@ -121,7 +121,7 @@ impl FullNode {
     */
     pub fn generate_chain_config(
         &self,
-        chain_binary: &ChainBinary,
+        chain_binary: &BinaryType,
     ) -> Result<config::ChainConfig, Error> {
         Ok(config::ChainConfig {
             id: self.chain_driver.chain_id.clone(),
@@ -152,7 +152,7 @@ impl FullNode {
             trust_threshold: Default::default(),
             gas_price: config::GasPrice::new(0.001, "stake".to_string()),
             packet_filter: Default::default(),
-            address_type: chain_binary.get_default_address_type(),
+            address_type: chain_binary.address_type(),
             memo_prefix: Default::default(),
             proof_specs: Default::default(),
             extension_options: Default::default(),

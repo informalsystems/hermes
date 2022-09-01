@@ -2,6 +2,8 @@
    Builder construct that spawn new chains with some common parameters.
 */
 
+use std::str::FromStr;
+
 use alloc::sync::Arc;
 use tokio::runtime::Runtime;
 
@@ -10,7 +12,7 @@ use crate::error::Error;
 use crate::types::config::TestConfig;
 use crate::util::random::random_unused_tcp_port;
 
-use super::chain_binary::ChainBinary;
+use super::chain_binary::ChainType;
 
 /**
    Used for holding common configuration needed to create new `ChainDriver`s.
@@ -85,9 +87,9 @@ impl ChainBuilder {
        `"ibc-alpha-f5a2a988"`.
     */
     pub fn new_chain(&self, prefix: &str, use_random_id: bool) -> Result<ChainDriver, Error> {
-        let chain_binary = ChainBinary::from(self.command_path.clone());
+        let chain_binary = ChainType::from_str(&self.command_path[..])?;
 
-        let chain_id = chain_binary.get_chain_id(prefix, use_random_id);
+        let chain_id = chain_binary.chain_id(prefix, use_random_id);
 
         let rpc_port = random_unused_tcp_port();
         let grpc_port = random_unused_tcp_port();
