@@ -119,4 +119,4 @@ impl HasMetric<TelemetryUpDownCounter, i64> for CosmosTelemetry {
     }
 }
 
-impl TelemetryContext for CosmosTelemetry {}
+impl BasicTelemetryContext for CosmosTelemetry {}

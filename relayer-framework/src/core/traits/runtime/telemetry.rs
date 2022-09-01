@@ -22,7 +22,7 @@ pub struct TelemetryCounter;
 pub struct TelemetryValueRecorder;
 pub struct TelemetryUpDownCounter;
 
-pub trait TelemetryContext:
+pub trait BasicTelemetryContext:
     HasMetric<TelemetryCounter, u64>
     + HasMetric<TelemetryValueRecorder, u64>
     + HasMetric<TelemetryUpDownCounter, i64>

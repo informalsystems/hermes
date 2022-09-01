@@ -27,8 +27,6 @@ impl<Chain: OfaChain> HasRuntime for OfaChainContext<Chain> {
 }
 
 impl<Chain: OfaChain> HasTelemetry for OfaChainContext<Chain> {
-    const TELEMETRY_ENABLED: bool = true; // Not sure how to deal with that.
-
     type Telemetry = Chain::Telemetry;
 
     fn telemetry(&self) -> &Self::Telemetry {
