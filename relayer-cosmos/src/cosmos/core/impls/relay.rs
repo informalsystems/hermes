@@ -169,7 +169,8 @@ where
         Ok(message)
     }
     
-    /// Construct a timeout packet message to be sent over unordered channels.
+    /// Construct a timeout packet message to be sent back to the 
+    /// source chain over an unordered Cosmos channel.
     async fn build_timeout_unordered_packet_message(
         &self,
         destination_height: &<Self::DstChain as OfaChain>::Height,
