@@ -1,42 +1,39 @@
 use async_trait::async_trait;
 
-use crate::core::traits::contexts::ibc_event::HasIbcEvents;
 use crate::core::traits::contexts::relay::RelayContext;
-use crate::core::traits::core::Async;
 use crate::core::traits::ibc_message_sender::{
-    HasIbcMessageSender, MismatchIbcEventsCountError,
+    HasIbcMessageSender, IbcMessageSenderExt, MismatchIbcEventsCountError,
 };
 use crate::core::traits::messages::timeout_packet::HasTimeoutUnorderedPacketMessageBuilder;
 use crate::core::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer;
-use crate::core::traits::target::DestinationTarget;
-use crate::core::types::aliases::{Height, Packet, WriteAcknowledgementEvent};
+use crate::core::traits::target::SourceTarget;
+use crate::core::types::aliases::{Height, Packet};
 use crate::std_prelude::*;
 
 pub struct BaseTimeoutUnorderedPacketRelayer;
 
 #[async_trait]
-impl<Context, Message, Event, AckEvent, DstChain> TimeoutUnorderedPacketRelayer<Context>
+impl<Context> TimeoutUnorderedPacketRelayer<Context>
     for BaseTimeoutUnorderedPacketRelayer
 where
     Context: HasTimeoutUnorderedPacketMessageBuilder,
-    Context: HasIbcMessageSender<DestinationTarget>,
-    Context: RelayContext<DstChain = DstChain>,
-    DstChain: HasIbcEvents<
-        Context::SrcChain,
-        WriteAcknowledgementEvent = AckEvent,
-        Message = Message,
-        Event = Event,
-    >,
+    Context: HasIbcMessageSender<SourceTarget>,
+    Context: RelayContext,
     Context::Error: From<MismatchIbcEventsCountError>,
-    Message: Async,
 {
     async fn relay_timeout_unordered_packet(
         &self,
         context: &Context,
         destination_height: &Height<Context::DstChain>,
         packet: &Packet<Context>,
-    ) -> Result<Option<WriteAcknowledgementEvent<DstChain, Context::SrcChain>>, Context::Error>
+    ) -> Result<(), Context::Error>
     {
+        let message = context
+            .build_timeout_unordered_packet_message(destination_height, packet)
+            .await?;
 
+        context.send_message(message).await?;
+
+        Ok(())
     }
 }
