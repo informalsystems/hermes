@@ -15,7 +15,7 @@ pub trait HasMetric<MetricType: Async, Value: Async>: Async + HasLabel {
         labels: &[Self::Label],
         value: Value,
         description: Option<&str>,
-    ) -> ();
+    );
 }
 
 pub struct TelemetryCounter;
