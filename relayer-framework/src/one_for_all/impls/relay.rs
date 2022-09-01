@@ -180,6 +180,9 @@ impl<Relay: OfaRelay> HasAckPacketMessageBuilder for OfaRelayContext<Relay> {
     type AckPacketMessageBuilder = OfaAckPacketMessageBuilder;
 }
 
+/// Implements the timeout packet message builder that constructs timeout packets
+/// to be sent over unordered channels between chains that implement the One For 
+/// All trait.
 pub struct OfaTimeoutUnorderedPacketMessageBuilder; 
 
 #[async_trait]
