@@ -226,15 +226,10 @@ pub trait ChannelKeeper {
                 )?;
             }
             PacketResult::Ack(res) => {
-                match res.seq_number {
-                    Some(s) => {
-                        //Ordered Channel
-                        self.store_next_sequence_ack(res.port_id, res.channel_id, s)?;
-                    }
-                    None => {
-                        //Unordered Channel
-                        self.delete_packet_commitment(&res.port_id, &res.channel_id, res.seq)?;
-                    }
+                self.delete_packet_commitment(&res.port_id, &res.channel_id, res.seq)?;
+                if let Some(s) = res.seq_number {
+                    //Ordered Channel
+                    self.store_next_sequence_ack(res.port_id, res.channel_id, s)?;
                 }
             }
             PacketResult::Timeout(res) => {
