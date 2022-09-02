@@ -19,7 +19,7 @@ where
         packet: &Relay::Packet,
     ) -> Result<bool, Relay::Error>;
 }
-pub struct AndPacketFilter<FilterA, FilterB>{
+pub struct AndPacketFilter<FilterA, FilterB> {
     pub filter_a: FilterA,
     pub filter_b: FilterB,
 }
@@ -35,12 +35,13 @@ where
         &self,
         relay: &Relay,
         packet: &Relay::Packet,
-    ) -> Result<bool, Relay::Error>{
-        Ok(self.filter_a.should_relay_packet(relay, packet).await? && self.filter_b.should_relay_packet(relay, packet).await?)
+    ) -> Result<bool, Relay::Error> {
+        Ok(self.filter_a.should_relay_packet(relay, packet).await?
+            && self.filter_b.should_relay_packet(relay, packet).await?)
     }
 }
 
-pub struct OrPacketFilter<FilterA, FilterB>{
+pub struct OrPacketFilter<FilterA, FilterB> {
     pub filter_a: FilterA,
     pub filter_b: FilterB,
 }
@@ -56,7 +57,8 @@ where
         &self,
         relay: &Relay,
         packet: &Relay::Packet,
-    ) -> Result<bool, Relay::Error>{
-        Ok(self.filter_a.should_relay_packet(relay, packet).await? || self.filter_b.should_relay_packet(relay, packet).await?)
+    ) -> Result<bool, Relay::Error> {
+        Ok(self.filter_a.should_relay_packet(relay, packet).await?
+            || self.filter_b.should_relay_packet(relay, packet).await?)
     }
 }

@@ -13,10 +13,7 @@ pub struct FilterRelayer<Filter, InRelay> {
 
 impl<Filter, InRelay> FilterRelayer<Filter, InRelay> {
     pub fn new(filter: Filter, in_relayer: InRelay) -> Self {
-        Self {
-            in_relayer,
-            filter,
-        }
+        Self { in_relayer, filter }
     }
 }
 
