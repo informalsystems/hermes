@@ -1,7 +1,7 @@
-//! The [`OfaChainContext`] (where "Ofa" stands for "one for all") 
+//! The [`OfaChainContext`] (where "Ofa" stands for "one for all")
 //! trait can be implemented by a chain in lieu of the [`ChainContext`]
 //! trait in the common case where the implementing chain wants
-//! sensible defaults. 
+//! sensible defaults.
 
 use async_trait::async_trait;
 

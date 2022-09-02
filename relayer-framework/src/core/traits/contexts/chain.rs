@@ -1,8 +1,8 @@
 //! The base chain contexts upon which higher level chain
 //! contexts such as [`OfaChain`] are composed from.
-//! 
-//! These traits can be implemented over the default 
-//! `OfaChain` trait if the default behavior is not 
+//!
+//! These traits can be implemented over the default
+//! `OfaChain` trait if the default behavior is not
 //! suitable.
 
 use crate::core::traits::contexts::runtime::HasRuntime;
@@ -33,7 +33,7 @@ pub trait ChainContext: HasRuntime {
 /// The datatypes that IBC chains need to expose in addition
 /// to the datatypes exposed by the base [`ChainContext`].
 ///
-/// Each [`IbcChainContext`] is parameterized by a [`Counterparty`] 
+/// Each [`IbcChainContext`] is parameterized by a [`Counterparty`]
 /// chain.
 pub trait IbcChainContext<Counterparty>: ChainContext
 where

@@ -6,14 +6,14 @@ use crate::core::types::aliases::Height;
 use crate::std_prelude::*;
 
 /// Encapsulates the capability of a relayer to send timeout
-/// packets over unordered channels. 
+/// packets over unordered channels.
 ///
 /// Timeout packets are sent from the destination chain to the source chain.
 ///
-/// When a timeout packet is sent, a response is not expected to 
+/// When a timeout packet is sent, a response is not expected to
 /// be received. This is in contrast when sending e.g. receive
 /// packets, which expect to receive back a `WriteAcknowledgementEvent`
-/// in response to the receive packet. 
+/// in response to the receive packet.
 #[async_trait]
 pub trait TimeoutUnorderedPacketRelayer<Relay>: Async
 where

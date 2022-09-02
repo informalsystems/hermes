@@ -16,8 +16,8 @@ pub trait TimeoutUnorderedPacketMessageBuilder<Relay: RelayContext> {
     ) -> Result<Message<Relay::SrcChain>, Relay::Error>;
 }
 
-/// A type that implements this trait has the capability to construct a 
-/// timeout message that gets sent over an unordered channel from the 
+/// A type that implements this trait has the capability to construct a
+/// timeout message that gets sent over an unordered channel from the
 /// destination chain to the source chain.
 #[async_trait]
 pub trait HasTimeoutUnorderedPacketMessageBuilder: RelayContext {
@@ -28,7 +28,10 @@ pub trait HasTimeoutUnorderedPacketMessageBuilder: RelayContext {
         height: &Height<Self::DstChain>,
         packet: &Self::Packet,
     ) -> Result<Message<Self::SrcChain>, Self::Error> {
-        Self::TimeoutUnorderedPacketMessageBuilder::build_timeout_unordered_packet_message(self, height, packet).await
+        Self::TimeoutUnorderedPacketMessageBuilder::build_timeout_unordered_packet_message(
+            self, height, packet,
+        )
+        .await
     }
 }
 

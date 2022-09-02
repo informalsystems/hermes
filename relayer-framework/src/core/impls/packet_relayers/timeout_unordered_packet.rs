@@ -19,8 +19,7 @@ impl Default for BaseTimeoutUnorderedPacketRelayer {
 }
 
 #[async_trait]
-impl<Context> TimeoutUnorderedPacketRelayer<Context>
-    for BaseTimeoutUnorderedPacketRelayer
+impl<Context> TimeoutUnorderedPacketRelayer<Context> for BaseTimeoutUnorderedPacketRelayer
 where
     Context: HasTimeoutUnorderedPacketMessageBuilder,
     Context: HasIbcMessageSender<SourceTarget>,
@@ -32,8 +31,7 @@ where
         context: &Context,
         destination_height: &Height<Context::DstChain>,
         packet: &Packet<Context>,
-    ) -> Result<(), Context::Error>
-    {
+    ) -> Result<(), Context::Error> {
         let message = context
             .build_timeout_unordered_packet_message(destination_height, packet)
             .await?;
