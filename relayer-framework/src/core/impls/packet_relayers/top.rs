@@ -2,18 +2,21 @@ use async_trait::async_trait;
 
 use crate::core::impls::packet_relayers::base_ack_packet::BaseAckPacketRelayer;
 use crate::core::impls::packet_relayers::base_receive_packet::BaseReceivePacketRelayer;
+use crate::core::impls::packet_relayers::filter_relayer::FilterRelayer;
 use crate::core::impls::packet_relayers::full_relay::FullRelayer;
 use crate::core::impls::packet_relayers::retry::RetryRelayer;
 use crate::core::impls::packet_relayers::skip_received_packet::SkipReceivedPacketRelayer;
-use crate::core::impls::packet_relayers::filter_relayer::FilterRelayer;
 use crate::core::traits::contexts::ibc_event::HasIbcEvents;
 use crate::core::traits::contexts::relay::RelayContext;
-use crate::core::traits::filters::{EmptyFilter, Filter};
 use crate::core::traits::packet_relayer::PacketRelayer;
 use crate::core::traits::packet_relayers::ack_packet::AckPacketRelayer;
 use crate::core::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
 use crate::core::types::aliases::{Height, WriteAcknowledgementEvent};
 use crate::std_prelude::*;
+
+pub struct TopFilterRelayer {
+    pub relayer: TopFilterRelayer_,
+}
 
 pub struct TopRelayer {
     pub relayer: TopRelayer_,
@@ -27,15 +30,11 @@ pub struct TopAckPacketRelayer {
     pub relayer: BaseAckPacketRelayer,
 }
 
-pub struct TopFilterRelayer<F : Filter>{
-    pub relayer: FilterRelayer_<F>,
-}
-
 pub type TopRelayer_ = RetryRelayer<FullRelayer<TopReceivePacketRelayer, TopAckPacketRelayer>>;
 
 pub type TopReceivePacketRelayer_ = SkipReceivedPacketRelayer<BaseReceivePacketRelayer>;
 
-pub type FilterRelayer_<Filter> = FilterRelayer<Filter, TopRelayer_>;
+pub type TopFilterRelayer_ = FilterRelayer<TopRelayer_>;
 
 impl TopRelayer {
     pub fn new(max_retry: usize) -> Self {
