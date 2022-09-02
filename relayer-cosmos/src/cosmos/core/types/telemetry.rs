@@ -43,21 +43,21 @@ impl HasMetric<TelemetryCounter> for CosmosTelemetry {
         description: Option<&str>,
     ) {
         let mut telemetry_state = self.telemetry_state.lock().unwrap();
-        let default = if let Some(description) = description {
-            telemetry_state
-                .meter
-                .u64_counter(name)
-                .with_description(description)
-                .init()
+        if let Some(metric) = telemetry_state.counters.get(name) {
+            metric.add(value, labels);
         } else {
-            telemetry_state.meter.u64_counter(name).init()
-        };
-
-        let metric = telemetry_state
-            .counters
-            .entry(name.to_string())
-            .or_insert(default);
-        metric.add(value, labels)
+            let metric = if let Some(description) = description {
+                telemetry_state
+                    .meter
+                    .u64_counter(name)
+                    .with_description(description)
+                    .init()
+            } else {
+                telemetry_state.meter.u64_counter(name).init()
+            };
+            metric.add(value, labels);
+            telemetry_state.counters.insert(name.to_string(), metric);
+        }
     }
 }
 
@@ -72,21 +72,21 @@ impl HasMetric<TelemetryValueRecorder> for CosmosTelemetry {
         description: Option<&str>,
     ) {
         let mut telemetry_state = self.telemetry_state.lock().unwrap();
-        let default = if let Some(description) = description {
-            telemetry_state
-                .meter
-                .u64_value_recorder(name)
-                .with_description(description)
-                .init()
+        if let Some(metric) = telemetry_state.value_recorders.get(name) {
+            metric.record(value, labels);
         } else {
-            telemetry_state.meter.u64_value_recorder(name).init()
-        };
-
-        let metric = telemetry_state
-            .value_recorders
-            .entry(name.to_string())
-            .or_insert(default);
-        metric.record(value, labels)
+            let metric = if let Some(description) = description {
+                telemetry_state
+                    .meter
+                    .u64_value_recorder(name)
+                    .with_description(description)
+                    .init()
+            } else {
+                telemetry_state.meter.u64_value_recorder(name).init()
+            };
+            metric.record(value, labels);
+            telemetry_state.value_recorders.insert(name.to_string(), metric);
+        }
     }
 }
 
@@ -101,21 +101,21 @@ impl HasMetric<TelemetryUpDownCounter> for CosmosTelemetry {
         description: Option<&str>,
     ) {
         let mut telemetry_state = self.telemetry_state.lock().unwrap();
-        let default = if let Some(description) = description {
-            telemetry_state
-                .meter
-                .i64_up_down_counter(name)
-                .with_description(description)
-                .init()
+        if let Some(metric) = telemetry_state.updown_counters.get(name) {
+            metric.add(value, labels);
         } else {
-            telemetry_state.meter.i64_up_down_counter(name).init()
-        };
-
-        let metric = telemetry_state
-            .updown_counters
-            .entry(name.to_string())
-            .or_insert(default);
-        metric.add(value, labels)
+            let metric = if let Some(description) = description {
+                telemetry_state
+                    .meter
+                    .i64_up_down_counter(name)
+                    .with_description(description)
+                    .init()
+            } else {
+                telemetry_state.meter.i64_up_down_counter(name).init()
+            };
+            metric.add(value, labels);
+            telemetry_state.updown_counters.insert(name.to_string(), metric);
+        }
     }
 }
 
