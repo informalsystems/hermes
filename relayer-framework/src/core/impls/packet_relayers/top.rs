@@ -14,8 +14,8 @@ use crate::core::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
 use crate::core::types::aliases::{Height, WriteAcknowledgementEvent};
 use crate::std_prelude::*;
 
-pub struct TopFilterRelayer {
-    pub relayer: TopFilterRelayer_,
+pub struct TopFilterRelayer<Filter> {
+    pub relayer: TopFilterRelayer_<Filter>,
 }
 
 pub struct TopRelayer {
@@ -34,7 +34,7 @@ pub type TopRelayer_ = RetryRelayer<FullRelayer<TopReceivePacketRelayer, TopAckP
 
 pub type TopReceivePacketRelayer_ = SkipReceivedPacketRelayer<BaseReceivePacketRelayer>;
 
-pub type TopFilterRelayer_ = FilterRelayer<TopRelayer_>;
+pub type TopFilterRelayer_<Filter> = FilterRelayer<Filter, TopRelayer_>;
 
 impl TopRelayer {
     pub fn new(max_retry: usize) -> Self {

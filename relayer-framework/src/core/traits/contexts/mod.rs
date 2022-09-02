@@ -5,3 +5,4 @@ pub mod ibc_event;
 pub mod relay;
 pub mod runtime;
 pub mod telemetry;
+pub mod packet_querier;
