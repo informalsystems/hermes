@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use semver::Version;
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use tonic::metadata::AsciiMetadataValue;
-use tracing::{debug, info, span, trace, warn, Level};
+use tracing::{debug, info, span, warn, Level};
 
 use tendermint::block;
 use tendermint_rpc::{endpoint::broadcast::tx_sync, Client};
@@ -468,9 +468,10 @@ impl PsqlChain {
             }),
         ))?;
 
-        for ev in results.iter() {
+        for ev in results {
             let send_packet = downcast!(ev.clone() => IbcEvent::SendPacket)
-                .ok_or_else(|| PsqlError::unexpected_event(ev.clone()))?;
+                .ok_or_else(|| PsqlError::unexpected_event(ev))?;
+
             let packet_id = PacketId {
                 channel_id: c.channel_id.clone(),
                 port_id: c.port_id.clone(),
@@ -480,11 +481,7 @@ impl PsqlChain {
             snapshot
                 .data
                 .pending_sent_packets
-                .entry(PacketId {
-                    channel_id: c.channel_id.clone(),
-                    port_id: c.port_id.clone(),
-                    sequence: send_packet.packet.sequence,
-                })
+                .entry(packet_id)
                 .or_insert_with(|| send_packet.packet);
         }
 
@@ -827,26 +824,42 @@ impl PsqlChain {
     fn try_update_with_packet_event(&mut self, event: IbcEvent, snapshot: &mut IbcSnapshot) {
         match event {
             IbcEvent::SendPacket(sp) => {
-                let key = PacketId {
+                let packet_id = PacketId {
                     port_id: sp.src_port_id().clone(),
                     channel_id: sp.src_channel_id().clone(),
                     sequence: sp.packet.sequence,
                 };
 
-                snapshot.data.pending_sent_packets.insert(key, sp.packet);
+                debug!(
+                    "psql chain {} - inserting pending sent packet '{}' due to event SendPacket({})",
+                    self.chain.id(),
+                    packet_id,
+                    sp
+                );
+
+                snapshot
+                    .data
+                    .pending_sent_packets
+                    .insert(packet_id, sp.packet);
             }
             IbcEvent::AcknowledgePacket(ap) => {
-                let key = PacketId {
+                let packet_id = PacketId {
                     port_id: ap.src_port_id().clone(),
                     channel_id: ap.src_channel_id().clone(),
                     sequence: ap.packet.sequence,
                 };
 
-                let removed = snapshot.data.pending_sent_packets.remove(&key);
+                let removed = snapshot.data.pending_sent_packets.remove(&packet_id);
 
                 match removed {
-                    Some(p) => trace!("removed pending packet {:?}", key),
-                    None => debug!("no pending send packet found by ack event for {:?}", key),
+                    Some(_) => debug!(
+                        "removed pending packet '{}' due to event AcknowledgePacket({})",
+                        packet_id, ap
+                    ),
+                    None => debug!(
+                        "no pending send packet found by ack event for '{}' due to event AcknowledgePacket({})",
+                        packet_id, ap
+                    ),
                 }
             }
             _ => {}

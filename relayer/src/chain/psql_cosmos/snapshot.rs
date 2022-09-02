@@ -1,3 +1,4 @@
+use core::fmt;
 use std::collections::HashMap;
 
 use bigdecimal::BigDecimal;
@@ -27,12 +28,15 @@ pub struct PacketId {
     pub sequence: Sequence,
 }
 
+impl fmt::Display for PacketId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}/{}/{}", self.port_id, self.channel_id, self.sequence)
+    }
+}
+
 impl Serialize for PacketId {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        serializer.serialize_str(&format!(
-            "{}/{}/{}",
-            self.port_id, self.channel_id, self.sequence
-        ))
+        serializer.serialize_str(&self.to_string())
     }
 }
 
