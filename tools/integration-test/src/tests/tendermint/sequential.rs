@@ -68,6 +68,7 @@ impl BinaryChannelTest for SequentialCommitTest {
                 &wallet_b.address(),
                 &denom_a,
                 100,
+                None,
             )?;
 
             let messages = TrackedMsgs::new_static(
@@ -110,6 +111,7 @@ impl BinaryChannelTest for SequentialCommitTest {
                 &wallet_a.address(),
                 &denom_b,
                 100,
+                None,
             )?;
 
             let messages = TrackedMsgs::new_static(

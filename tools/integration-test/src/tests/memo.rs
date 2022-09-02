@@ -48,6 +48,7 @@ impl BinaryChannelTest for MemoTest {
             &chains.node_b.wallets().user1().address(),
             &denom_a,
             a_to_b_amount,
+            None,
         )?;
 
         let denom_b = derive_ibc_denom(

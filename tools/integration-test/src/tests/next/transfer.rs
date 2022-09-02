@@ -59,6 +59,7 @@ impl BinaryChannelTest for IbcTransferTest {
             &wallet_b.address(),
             &denom_a,
             a_to_b_amount,
+            None,
         )?;
 
         info!("running relayer");

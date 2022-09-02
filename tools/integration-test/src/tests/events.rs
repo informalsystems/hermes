@@ -30,6 +30,7 @@ impl BinaryChannelTest for EventsTest {
             &wallet_b.address(),
             &denom_a,
             100,
+            None,
         )?;
 
         let messages = vec![transfer_message; 2];

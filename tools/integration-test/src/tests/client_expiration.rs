@@ -294,6 +294,7 @@ impl BinaryChainTest for PacketExpirationTest {
             &chains.node_b.wallets().user1().address(),
             &chains.node_a.denom(),
             100,
+            None,
         )?;
 
         wait_for_client_expiry();

@@ -53,6 +53,7 @@ impl BinaryChannelTest for QueryPacketPendingTest {
             &wallet_b.address(),
             &denom_a,
             amount1,
+            None,
         )?;
 
         sleep(Duration::from_secs(2));
@@ -109,6 +110,7 @@ impl BinaryChannelTest for QueryPacketPendingTest {
             &wallet_a.address(),
             &denom_b,
             amount2,
+            None,
         )?;
 
         info!(
