@@ -9,24 +9,54 @@ use crate::std_prelude::*;
 // }
 
 #[async_trait]
-pub trait PacketFilter<Relay> : Async
+pub trait PacketFilter<Relay>: Async
 where
     Relay: RelayContext,
 {
     async fn should_relay_packet(
+        &self,
         relay: &Relay,
         packet: &Relay::Packet,
     ) -> Result<bool, Relay::Error>;
 }
+pub struct AndPacketFilter<FilterA, FilterB>{
+    pub filter_a: FilterA,
+    pub filter_b: FilterB,
+}
 
-/*
-If the packet filter must be part of the relay context
 #[async_trait]
-pub trait HasPacketFilter: RelayContext {
-    type PacketFilter: PacketFilter<Self>;
-
-    async fn should_relay_packet(&self, packet: &Self::Packet) -> Result<bool, Self::Error> {
-        Self::PacketFilter::should_relay_packet(self, packet).await
+impl<FilterA, FilterB, Relay> PacketFilter<Relay> for AndPacketFilter<FilterA, FilterB>
+where
+    Relay: RelayContext,
+    FilterA: PacketFilter<Relay>,
+    FilterB: PacketFilter<Relay>,
+{
+    async fn should_relay_packet(
+        &self,
+        relay: &Relay,
+        packet: &Relay::Packet,
+    ) -> Result<bool, Relay::Error>{
+        Ok(self.filter_a.should_relay_packet(relay, packet).await? && self.filter_b.should_relay_packet(relay, packet).await?)
     }
 }
-*/
+
+pub struct OrPacketFilter<FilterA, FilterB>{
+    pub filter_a: FilterA,
+    pub filter_b: FilterB,
+}
+
+#[async_trait]
+impl<FilterA, FilterB, Relay> PacketFilter<Relay> for OrPacketFilter<FilterA, FilterB>
+where
+    Relay: RelayContext,
+    FilterA: PacketFilter<Relay>,
+    FilterB: PacketFilter<Relay>,
+{
+    async fn should_relay_packet(
+        &self,
+        relay: &Relay,
+        packet: &Relay::Packet,
+    ) -> Result<bool, Relay::Error>{
+        Ok(self.filter_a.should_relay_packet(relay, packet).await? || self.filter_b.should_relay_packet(relay, packet).await?)
+    }
+}

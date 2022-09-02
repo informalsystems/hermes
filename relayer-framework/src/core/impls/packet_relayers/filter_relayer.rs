@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use core::marker::PhantomData;
 
 use crate::core::traits::contexts::filter::PacketFilter;
 use crate::core::traits::contexts::relay::RelayContext;
@@ -9,14 +8,14 @@ use crate::std_prelude::*;
 
 pub struct FilterRelayer<Filter, InRelay> {
     pub in_relayer: InRelay,
-    pub phantom: PhantomData<Filter>,
+    pub filter: Filter,
 }
 
 impl<Filter, InRelay> FilterRelayer<Filter, InRelay> {
-    pub fn new(in_relayer: InRelay) -> Self {
+    pub fn new(filter: Filter, in_relayer: InRelay) -> Self {
         Self {
             in_relayer,
-            phantom: PhantomData,
+            filter,
         }
     }
 }
@@ -33,7 +32,7 @@ where
         context: &Context,
         packet: &Packet<Context>,
     ) -> Result<(), Context::Error> {
-        if Filter::should_relay_packet(context, packet).await? {
+        if self.filter.should_relay_packet(context, packet).await? {
             self.in_relayer.relay_packet(context, packet).await?;
         }
         Ok(())
