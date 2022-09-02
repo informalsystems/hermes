@@ -85,7 +85,9 @@ impl HasMetric<TelemetryValueRecorder> for CosmosTelemetry {
                 telemetry_state.meter.u64_value_recorder(name).init()
             };
             metric.record(value, labels);
-            telemetry_state.value_recorders.insert(name.to_string(), metric);
+            telemetry_state
+                .value_recorders
+                .insert(name.to_string(), metric);
         }
     }
 }
@@ -114,7 +116,9 @@ impl HasMetric<TelemetryUpDownCounter> for CosmosTelemetry {
                 telemetry_state.meter.i64_up_down_counter(name).init()
             };
             metric.add(value, labels);
-            telemetry_state.updown_counters.insert(name.to_string(), metric);
+            telemetry_state
+                .updown_counters
+                .insert(name.to_string(), metric);
         }
     }
 }
