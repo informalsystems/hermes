@@ -18,7 +18,8 @@ where
     Chain: IbcChainContext<Counterparty> + HasTelemetry<Telemetry = Telemetry>,
     Counterparty: HasConsensusState<Chain>,
     InQuerier: ConsensusStateQuerier<Chain, Counterparty>,
-    Telemetry: HasMetric<TelemetryCounter, Value = u64>,
+    Telemetry: HasMetric<TelemetryCounter>,
+    Telemetry::Value: From<u64>,
 {
     async fn query_consensus_state(
         chain: &Chain,
@@ -27,7 +28,7 @@ where
     ) -> Result<Counterparty::ConsensusState, Chain::Error> {
         let telemetry = chain.telemetry();
         let label = Telemetry::new_label("query_type", "consensus_state");
-        telemetry.update_metric("query", &[label], 1, None);
+        telemetry.update_metric("query", &[label], 1u64.into(), None);
         let status = InQuerier::query_consensus_state(chain, client_id, height).await?;
         Ok(status)
     }

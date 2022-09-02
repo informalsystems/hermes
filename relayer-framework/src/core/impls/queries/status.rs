@@ -16,12 +16,13 @@ impl<InQuerier, Chain, Telemetry> ChainStatusQuerier<Chain>
 where
     InQuerier: ChainStatusQuerier<Chain>,
     Chain: HasTelemetry<Telemetry = Telemetry> + HasChainStatus,
-    Telemetry: HasMetric<TelemetryCounter, Value = u64>,
+    Telemetry: HasMetric<TelemetryCounter>,
+    Telemetry::Value: From<u64>,
 {
     async fn query_chain_status(context: &Chain) -> Result<Chain::ChainStatus, Chain::Error> {
         let telemetry = context.telemetry();
         let label = Telemetry::new_label("query_type", "status");
-        telemetry.update_metric("query", &[label], 1, None);
+        telemetry.update_metric("query", &[label], 1u64.into(), None);
         let status = InQuerier::query_chain_status(context).await?;
         Ok(status)
     }
