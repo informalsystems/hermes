@@ -32,8 +32,8 @@ impl HasLabel for CosmosTelemetry {
     }
 }
 
-impl HasMetric<TelemetryCounter, u64> for CosmosTelemetry {
-    type Metric = Counter<u64>;
+impl HasMetric<TelemetryCounter> for CosmosTelemetry {
+    type Value = u64;
 
     fn update_metric(
         &self,
@@ -61,8 +61,8 @@ impl HasMetric<TelemetryCounter, u64> for CosmosTelemetry {
     }
 }
 
-impl HasMetric<TelemetryValueRecorder, u64> for CosmosTelemetry {
-    type Metric = ValueRecorder<u64>;
+impl HasMetric<TelemetryValueRecorder> for CosmosTelemetry {
+    type Value = u64;
 
     fn update_metric(
         &self,
@@ -90,8 +90,8 @@ impl HasMetric<TelemetryValueRecorder, u64> for CosmosTelemetry {
     }
 }
 
-impl HasMetric<TelemetryUpDownCounter, i64> for CosmosTelemetry {
-    type Metric = UpDownCounter<i64>;
+impl HasMetric<TelemetryUpDownCounter> for CosmosTelemetry {
+    type Value = i64;
 
     fn update_metric(
         &self,

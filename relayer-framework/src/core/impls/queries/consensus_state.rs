@@ -18,7 +18,7 @@ where
     Chain: IbcChainContext<Counterparty> + HasTelemetry<Telemetry = Telemetry>,
     Counterparty: HasConsensusState<Chain>,
     InQuerier: ConsensusStateQuerier<Chain, Counterparty>,
-    Telemetry: HasMetric<TelemetryCounter, u64>,
+    Telemetry: HasMetric<TelemetryCounter, Value = u64>,
 {
     async fn query_consensus_state(
         chain: &Chain,

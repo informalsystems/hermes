@@ -16,7 +16,7 @@ impl<InQuerier, Chain, Telemetry> ChainStatusQuerier<Chain>
 where
     InQuerier: ChainStatusQuerier<Chain>,
     Chain: HasTelemetry<Telemetry = Telemetry> + HasChainStatus,
-    Telemetry: HasMetric<TelemetryCounter, u64>,
+    Telemetry: HasMetric<TelemetryCounter, Value = u64>,
 {
     async fn query_chain_status(context: &Chain) -> Result<Chain::ChainStatus, Chain::Error> {
         let telemetry = context.telemetry();

@@ -6,14 +6,14 @@ pub trait HasLabel: Async {
     fn new_label(key: &str, value: &str) -> Self::Label;
 }
 
-pub trait HasMetric<MetricType: Async, Value: Async>: Async + HasLabel {
-    type Metric: Async;
+pub trait HasMetric<MetricType: Async>: Async + HasLabel {
+    type Value: Async;
 
     fn update_metric(
         &self,
         name: &str,
         labels: &[Self::Label],
-        value: Value,
+        value: Self::Value,
         description: Option<&str>,
     );
 }
@@ -23,8 +23,8 @@ pub struct TelemetryValueRecorder;
 pub struct TelemetryUpDownCounter;
 
 pub trait BasicTelemetryContext:
-    HasMetric<TelemetryCounter, u64>
-    + HasMetric<TelemetryValueRecorder, u64>
-    + HasMetric<TelemetryUpDownCounter, i64>
+    HasMetric<TelemetryCounter, Value = u64>
+    + HasMetric<TelemetryValueRecorder, Value = u64>
+    + HasMetric<TelemetryUpDownCounter, Value = i64>
 {
 }
