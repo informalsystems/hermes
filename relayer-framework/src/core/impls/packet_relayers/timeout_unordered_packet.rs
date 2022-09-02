@@ -12,6 +12,12 @@ use crate::std_prelude::*;
 
 pub struct BaseTimeoutUnorderedPacketRelayer;
 
+impl Default for BaseTimeoutUnorderedPacketRelayer {
+    fn default() -> Self {
+        BaseTimeoutUnorderedPacketRelayer
+    }
+}
+
 #[async_trait]
 impl<Context> TimeoutUnorderedPacketRelayer<Context>
     for BaseTimeoutUnorderedPacketRelayer
