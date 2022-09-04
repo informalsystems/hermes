@@ -388,6 +388,13 @@ pub struct QueryHostConsensusStateRequest {
     pub height: QueryHeight,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct CrossChainQueryRequest {
+    pub path: String,
+    pub param: String,
+    pub height: QueryHeight,
+}
+
 /// Used for queries and not yet standardized in channel's query.proto
 #[derive(Clone, Debug)]
 pub enum QueryTxRequest {

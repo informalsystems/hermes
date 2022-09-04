@@ -42,6 +42,7 @@ use crate::{
     light_client::AnyHeader,
     misbehaviour::MisbehaviourEvidence,
 };
+use crate::chain::requests::CrossChainQueryRequest;
 
 use super::{
     client::ClientSettings,
@@ -147,8 +148,8 @@ pub struct ChainRuntime<Endpoint: ChainEndpoint> {
 }
 
 impl<Endpoint> ChainRuntime<Endpoint>
-where
-    Endpoint: ChainEndpoint + Send + 'static,
+    where
+        Endpoint: ChainEndpoint + Send + 'static,
 {
     /// Spawns a new runtime for a specific Chain implementation.
     pub fn spawn<Handle: ChainHandle>(
@@ -412,6 +413,11 @@ where
                         Ok(ChainRequest::QueryHostConsensusState { request, reply_to }) => {
                             self.query_host_consensus_state(request, reply_to)?
                         },
+
+                        Ok(ChainRequest::CrossChainQuery { request, reply_to }) => {
+                            println!("cross chain query");
+                            self.cross_chain_query(request, reply_to)?
+                        }
 
                         Err(e) => error!("received error via chain request channel: {}", e),
                     }
@@ -872,6 +878,15 @@ where
 
         reply_to.send(result).map_err(Error::send)?;
 
+        Ok(())
+    }
+
+    fn cross_chain_query(
+        &self,
+        request: CrossChainQueryRequest,
+        reply_to: ReplyTo<()>,
+    ) -> Result<(), Error> {
+        println!("cross chain implementation");
         Ok(())
     }
 }

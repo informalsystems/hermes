@@ -690,11 +690,14 @@ fn process_batch<Chain: ChainHandle>(
             .get_or_spawn(object.src_chain_id())
             .map_err(Error::spawn)?;
 
+
         let dst = registry
             .get_or_spawn(object.dst_chain_id())
             .map_err(Error::spawn)?;
 
         if let Object::Packet(_path) = object.clone() {
+            for _event_with_height in events_with_heights.iter() {
+            }
             // Update telemetry info
             telemetry!({
                 for event_with_height in events_with_heights.iter() {

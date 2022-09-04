@@ -18,6 +18,7 @@ pub mod balance;
 pub mod denom_trace;
 pub mod status;
 pub mod tx;
+pub mod custom_query;
 
 /// Generic query response type
 #[derive(Clone, Debug, PartialEq)]
