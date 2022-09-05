@@ -1,26 +1,27 @@
 use ibc_relayer_cosmos::cosmos::instances::packet_relayers::full_packet_relayer;
-use ibc_relayer_framework::core::impls::filters::trivial_filters::AllowFilter;
+use ibc_relayer_cosmos::cosmos::core::impls::filters::CosmosChannelFilter;
 use ibc_relayer_framework::core::traits::packet_relayer::PacketRelayer;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
+use ibc_relayer::config::filter::PacketFilter;
 
 use crate::tests::next::context::build_cosmos_relay_context;
 
 #[test]
-fn test_ibc_transfer_next() -> Result<(), Error> {
-    run_binary_channel_test(&IbcTransferTest)
+fn test_ibc_filter_next() -> Result<(), Error> {
+    run_binary_channel_test(&ChannelFilterTest)
 }
 
-pub struct IbcTransferTest;
+pub struct ChannelFilterTest;
 
-impl TestOverrides for IbcTransferTest {
+impl TestOverrides for ChannelFilterTest {
     fn should_spawn_supervisor(&self) -> bool {
         false
     }
 }
 
-impl BinaryChannelTest for IbcTransferTest {
+impl BinaryChannelTest for ChannelFilterTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
@@ -28,12 +29,23 @@ impl BinaryChannelTest for IbcTransferTest {
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
+
+        let toml_content = r#"
+            policy = 'deny'
+            list = [
+              ['transfer', 'channel-*'],
+            ]
+            "#; 
+        let pf: PacketFilter = toml::from_str(toml_content).expect("could not parse filter policy");
+        let cosmosfilter = CosmosChannelFilter::new(pf);
+
         let relay_context = build_cosmos_relay_context(&chains);
-        let relayer = full_packet_relayer(1, AllowFilter {});
+        let relayer = full_packet_relayer(1, cosmosfilter);
 
         let runtime = chains.node_a.value().chain_driver.runtime.as_ref();
 
         let denom_a = chains.node_a.denom();
+        let denom_b = chains.node_b.denom();
 
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
@@ -42,6 +54,11 @@ impl BinaryChannelTest for IbcTransferTest {
             .node_a
             .chain_driver()
             .query_balance(&wallet_a.address(), &denom_a)?;
+
+        let balance_b = chains
+            .node_b
+            .chain_driver()
+            .query_balance(&wallet_b.address(), &denom_b)?;
 
         let a_to_b_amount = random_u64_range(1000, 5000);
 
@@ -75,7 +92,7 @@ impl BinaryChannelTest for IbcTransferTest {
         )?;
 
         info!(
-            "Waiting for user on chain B to receive IBC transferred amount of {} {}",
+            "User on chain B should not receive the transfer of {} {}",
             a_to_b_amount, denom_b
         );
 
@@ -87,12 +104,12 @@ impl BinaryChannelTest for IbcTransferTest {
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
             &wallet_b.address(),
-            a_to_b_amount,
+            balance_b,
             &denom_b.as_ref(),
         )?;
 
         info!(
-            "successfully performed IBC transfer from chain {} to chain {}",
+            "successfully filtered IBC transfer from chain {} to chain {}",
             chains.chain_id_a(),
             chains.chain_id_b(),
         );

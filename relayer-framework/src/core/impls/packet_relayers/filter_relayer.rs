@@ -29,7 +29,7 @@ where
         context: &Context,
         packet: &Packet<Context>,
     ) -> Result<(), Context::Error> {
-        if self.filter.should_relay_packet(context, packet).await? {
+        if self.filter.should_relay_packet(packet).await? {
             self.in_relayer.relay_packet(context, packet).await?;
         }
         Ok(())
