@@ -13,7 +13,6 @@ use crate::core::ics26_routing::context::ReaderContext;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
-use crate::timestamp::Expiry;
 use core::fmt::Debug;
 
 #[derive(Clone, Debug)]
@@ -59,14 +58,6 @@ pub fn process<HostFunctions: HostFunctionsProvider>(
 
     // check that timeout height or timeout timestamp has passed on the other end
     let proof_height = msg.proofs.height();
-    let packet_height = packet.timeout_height;
-
-    if (!packet.timeout_height.is_zero()) && packet_height > proof_height {
-        return Err(Error::packet_timeout_height_not_reached(
-            packet.timeout_height,
-            proof_height,
-        ));
-    }
 
     let consensus_state = ctx
         .consensus_state(&client_id, proof_height)
@@ -74,10 +65,11 @@ pub fn process<HostFunctions: HostFunctionsProvider>(
 
     let proof_timestamp = consensus_state.timestamp();
 
-    let packet_timestamp = packet.timeout_timestamp;
-    if let Expiry::Expired = packet_timestamp.check_expiry(&proof_timestamp) {
-        return Err(Error::packet_timeout_timestamp_not_reached(
-            packet_timestamp,
+    if !packet.timed_out(&proof_timestamp, proof_height) {
+        return Err(Error::packet_timeout_not_reached(
+            packet.timeout_height,
+            proof_height,
+            packet.timeout_timestamp,
             proof_timestamp,
         ));
     }

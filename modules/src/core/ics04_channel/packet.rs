@@ -153,6 +153,12 @@ impl core::fmt::Debug for Packet {
     }
 }
 
+pub enum TimeoutVariant {
+    Height,
+    Timestamp,
+    Both,
+}
+
 impl Packet {
     /// Checks whether a packet from a
     /// [`SendPacket`](crate::core::ics04_channel::events::SendPacket)
@@ -168,9 +174,29 @@ impl Packet {
     /// instead of the common-case where it results in
     /// [`MsgRecvPacket`](crate::core::ics04_channel::msgs::recv_packet::MsgRecvPacket).
     pub fn timed_out(&self, dst_chain_ts: &Timestamp, dst_chain_height: Height) -> bool {
-        (self.timeout_height != Height::zero() && self.timeout_height < dst_chain_height)
+        (self.timeout_height != Height::zero() && self.timeout_height <= dst_chain_height)
             || (self.timeout_timestamp != Timestamp::none()
                 && dst_chain_ts.check_expiry(&self.timeout_timestamp) == Expired)
+    }
+
+    pub fn timeout_variant(
+        &self,
+        dst_chain_ts: &Timestamp,
+        dst_chain_height: Height,
+    ) -> Option<TimeoutVariant> {
+        let height_timeout =
+            self.timeout_height != Height::zero() && self.timeout_height < dst_chain_height;
+        let timestamp_timeout = self.timeout_timestamp != Timestamp::none()
+            && (dst_chain_ts.check_expiry(&self.timeout_timestamp) == Expired);
+        if height_timeout && !timestamp_timeout {
+            Some(TimeoutVariant::Height)
+        } else if timestamp_timeout && !height_timeout {
+            Some(TimeoutVariant::Timestamp)
+        } else if timestamp_timeout && height_timeout {
+            Some(TimeoutVariant::Both)
+        } else {
+            None
+        }
     }
 }
 

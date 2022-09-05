@@ -81,7 +81,10 @@ pub fn process<HostFunctions: HostFunctionsProvider>(
         &source_channel_end,
         &connection_end,
         &expected_channel_end,
-        &msg.proofs,
+        msg.proofs
+            .other_proof()
+            .as_ref()
+            .ok_or_else(|| Error::missing_channel_proof())?,
     )?;
 
     let result = if source_channel_end.order_matches(&Order::Ordered) {

@@ -73,7 +73,7 @@ pub(crate) fn process<HostFunctions: HostFunctionsProvider>(
         &channel_end,
         &conn,
         &expected_channel_end,
-        &msg.proofs,
+        &msg.proofs.object_proof(),
     )
     .map_err(Error::chan_open_confirm_proof_verification)?;
 

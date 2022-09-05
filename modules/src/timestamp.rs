@@ -144,7 +144,7 @@ impl Timestamp {
     pub fn check_expiry(&self, other: &Timestamp) -> Expiry {
         match (self.time, other.time) {
             (Some(time1), Some(time2)) => {
-                if time1 > time2 {
+                if time1 >= time2 {
                     Expiry::Expired
                 } else {
                     Expiry::NotExpired
@@ -271,8 +271,8 @@ mod tests {
         assert!(Timestamp::from_nanoseconds(i64::MAX.try_into().unwrap()).is_ok());
 
         assert_eq!(timestamp1.check_expiry(&timestamp2), Expiry::NotExpired);
-        assert_eq!(timestamp1.check_expiry(&timestamp1), Expiry::NotExpired);
-        assert_eq!(timestamp2.check_expiry(&timestamp2), Expiry::NotExpired);
+        assert_eq!(timestamp1.check_expiry(&timestamp1), Expiry::Expired);
+        assert_eq!(timestamp2.check_expiry(&timestamp2), Expiry::Expired);
         assert_eq!(timestamp2.check_expiry(&timestamp1), Expiry::Expired);
         assert_eq!(
             timestamp1.check_expiry(&nil_timestamp),

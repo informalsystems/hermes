@@ -72,6 +72,9 @@ define_error! {
         MissingHeight
             | _ | { "invalid proof: missing height" },
 
+        MissingChannelProof
+            | _ | { "invalid proof: missing channel proof" },
+
         MissingNextRecvSeq
             { port_channel_id: (PortId, ChannelId) }
             | e | {
@@ -212,6 +215,16 @@ define_error! {
                     "Receiving chain block height {0} >= packet timeout height {1}",
                     e.chain_height, e.timeout_height)
             },
+        PacketTimeoutNotReached
+            {
+                timeout_height: Height,
+                chain_height: Height,
+                timeout_timestamp: Timestamp,
+                chain_timestamp: Timestamp,
+            }
+            | e | { format_args!(
+                    "Packet timeout not satisified for either packet height or timestamp, Packet timeout height {0}, chain height {1}, Packet timeout timestamp {2},  chain timestamp {3}",
+                     e.timeout_height, e.chain_height, e.timeout_timestamp, e.chain_timestamp) },
 
         PacketTimeoutHeightNotReached
             {
