@@ -6,45 +6,35 @@ use serde::Serialize;
 use std::path::PathBuf;
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, rename_all = "camelCase")]
+#[serde(default)]
 pub struct IBCPath {
     #[serde(rename = "$schema")]
     pub schema: String,
-    #[serde(rename = "chain-1")]
     pub chain_1: Chain1,
-    #[serde(rename = "chain-2")]
     pub chain_2: Chain2,
     pub channels: Vec<Channel>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, rename_all = "camelCase")]
+#[serde(default)]
 pub struct Chain1 {
-    #[serde(rename = "chain-name")]
     pub chain_name: String,
-    #[serde(rename = "client-id")]
     pub client_id: ClientId,
-    #[serde(rename = "connection-id")]
     pub connection_id: ConnectionId,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, rename_all = "camelCase")]
+#[serde(default)]
 pub struct Chain2 {
-    #[serde(rename = "chain-name")]
     pub chain_name: String,
-    #[serde(rename = "client-id")]
     pub client_id: ClientId,
-    #[serde(rename = "connection-id")]
     pub connection_id: ConnectionId,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, rename_all = "camelCase")]
+#[serde(default)]
 pub struct Channel {
-    #[serde(rename = "chain-1")]
     pub chain_1: ChannelChain1,
-    #[serde(rename = "chain-2")]
     pub chain_2: ChannelChain2,
     pub ordering: String,
     pub version: String,
@@ -52,25 +42,21 @@ pub struct Channel {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, rename_all = "camelCase")]
+#[serde(default)]
 pub struct ChannelChain1 {
-    #[serde(rename = "channel-id")]
     pub channel_id: ChannelId,
-    #[serde(rename = "port-id")]
     pub port_id: PortId,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, rename_all = "camelCase")]
+#[serde(default)]
 pub struct ChannelChain2 {
-    #[serde(rename = "channel-id")]
     pub channel_id: ChannelId,
-    #[serde(rename = "port-id")]
     pub port_id: PortId,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, rename_all = "camelCase")]
+#[serde(default)]
 pub struct Tags {
     pub dex: String,
     pub preferred: bool,
@@ -129,26 +115,26 @@ mod tests {
         use std::str::FromStr;
 
         let path = r#"{
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "chain-1": {
-                "chain-name": "chain-1",
-                "client-id": "tendermint-1",
-                "connection-id": "connection-1"
+            "$schema": "http://json_schema.org/draft_07/schema#",
+            "chain_1": {
+                "chain_name": "chain_1",
+                "client_id": "tendermint_1",
+                "connection_id": "connection_1"
             },
-            "chain-2": {
-                "chain-name": "chain-2",
-                "client-id": "tendermint-2",
-                "connection-id": "connection-2"
+            "chain_2": {
+                "chain_name": "chain_2",
+                "client_id": "tendermint_2",
+                "connection_id": "connection_2"
             },
             "channels": [
                 {
-                    "chain-1": {
-                        "channel-id": "channel-1",
-                        "port-id": "port-1"
+                    "chain_1": {
+                        "channel_id": "channel_1",
+                        "port_id": "port_1"
                     },
-                    "chain-2": {
-                        "channel-id": "channel-2",
-                        "port-id": "port-2"
+                    "chain_2": {
+                        "channel_id": "channel_2",
+                        "port_id": "port_2"
                     },
                     "ordering": "ordering",
                     "version": "version",
@@ -162,41 +148,41 @@ mod tests {
             ]
         }"#;
         let path: IBCPath = serde_json::from_str(path).unwrap();
-        assert_eq!(path.schema, "http://json-schema.org/draft-07/schema#");
-        assert_eq!(path.chain_1.chain_name, "chain-1");
+        assert_eq!(path.schema, "http://json_schema.org/draft_07/schema#");
+        assert_eq!(path.chain_1.chain_name, "chain_1");
         assert_eq!(
             path.chain_1.client_id,
-            ClientId::from_str("tendermint-1").unwrap()
+            ClientId::from_str("tendermint_1").unwrap()
         );
         assert_eq!(
             path.chain_1.connection_id,
-            ConnectionId::from_str("connection-1").unwrap()
+            ConnectionId::from_str("connection_1").unwrap()
         );
-        assert_eq!(path.chain_2.chain_name, "chain-2");
+        assert_eq!(path.chain_2.chain_name, "chain_2");
         assert_eq!(
             path.chain_2.client_id,
-            ClientId::from_str("tendermint-2").unwrap()
+            ClientId::from_str("tendermint_2").unwrap()
         );
         assert_eq!(
             path.chain_2.connection_id,
-            ConnectionId::from_str("connection-2").unwrap()
+            ConnectionId::from_str("connection_2").unwrap()
         );
         assert_eq!(path.channels.len(), 1);
         assert_eq!(
             path.channels[0].chain_1.channel_id,
-            ChannelId::from_str("channel-1").unwrap()
+            ChannelId::from_str("channel_1").unwrap()
         );
         assert_eq!(
             path.channels[0].chain_1.port_id,
-            PortId::from_str("port-1").unwrap()
+            PortId::from_str("port_1").unwrap()
         );
         assert_eq!(
             path.channels[0].chain_2.channel_id,
-            ChannelId::from_str("channel-2").unwrap()
+            ChannelId::from_str("channel_2").unwrap()
         );
         assert_eq!(
             path.channels[0].chain_2.port_id,
-            PortId::from_str("port-2").unwrap()
+            PortId::from_str("port_2").unwrap()
         );
         assert_eq!(path.channels[0].ordering, "ordering");
         assert_eq!(path.channels[0].version, "version");
