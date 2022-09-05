@@ -117,24 +117,24 @@ mod tests {
         let path = r#"{
             "$schema": "https://github.com/cosmos/chain-registry/blob/master/ibc_data.schema.json",
             "chain_1": {
-                "chain_name": "chain_1",
-                "client_id": "tendermint_1",
-                "connection_id": "connection_1"
+                "chain_name": "chain-1",
+                "client_id": "tendermint-1",
+                "connection_id": "connection-1"
             },
             "chain_2": {
-                "chain_name": "chain_2",
-                "client_id": "tendermint_2",
-                "connection_id": "connection_2"
+                "chain_name": "chain-2",
+                "client_id": "tendermint-2",
+                "connection_id": "connection-2"
             },
             "channels": [
                 {
                     "chain_1": {
-                        "channel_id": "channel_1",
-                        "port_id": "port_1"
+                        "channel_id": "channel-1",
+                        "port_id": "port-1"
                     },
                     "chain_2": {
-                        "channel_id": "channel_2",
-                        "port_id": "port_2"
+                        "channel_id": "channel-2",
+                        "port_id": "port-2"
                     },
                     "ordering": "ordering",
                     "version": "version",
@@ -149,40 +149,40 @@ mod tests {
         }"#;
         let path: IBCPath = serde_json::from_str(path).unwrap();
         assert_eq!(path.schema, "https://github.com/cosmos/chain-registry/blob/master/ibc_data.schema.json");
-        assert_eq!(path.chain_1.chain_name, "chain_1");
+        assert_eq!(path.chain_1.chain_name, "chain-1");
         assert_eq!(
             path.chain_1.client_id,
-            ClientId::from_str("tendermint_1").unwrap()
+            ClientId::from_str("tendermint-1").unwrap()
         );
         assert_eq!(
             path.chain_1.connection_id,
-            ConnectionId::from_str("connection_1").unwrap()
+            ConnectionId::from_str("connection-1").unwrap()
         );
-        assert_eq!(path.chain_2.chain_name, "chain_2");
+        assert_eq!(path.chain_2.chain_name, "chain-2");
         assert_eq!(
             path.chain_2.client_id,
-            ClientId::from_str("tendermint_2").unwrap()
+            ClientId::from_str("tendermint-2").unwrap()
         );
         assert_eq!(
             path.chain_2.connection_id,
-            ConnectionId::from_str("connection_2").unwrap()
+            ConnectionId::from_str("connection-2").unwrap()
         );
         assert_eq!(path.channels.len(), 1);
         assert_eq!(
             path.channels[0].chain_1.channel_id,
-            ChannelId::from_str("channel_1").unwrap()
+            ChannelId::from_str("channel-1").unwrap()
         );
         assert_eq!(
             path.channels[0].chain_1.port_id,
-            PortId::from_str("port_1").unwrap()
+            PortId::from_str("port-1").unwrap()
         );
         assert_eq!(
             path.channels[0].chain_2.channel_id,
-            ChannelId::from_str("channel_2").unwrap()
+            ChannelId::from_str("channel-2").unwrap()
         );
         assert_eq!(
             path.channels[0].chain_2.port_id,
-            PortId::from_str("port_2").unwrap()
+            PortId::from_str("port-2").unwrap()
         );
         assert_eq!(path.channels[0].ordering, "ordering");
         assert_eq!(path.channels[0].version, "version");
