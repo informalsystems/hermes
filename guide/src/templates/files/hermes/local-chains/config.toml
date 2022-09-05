@@ -1,0 +1,56 @@
+[global]
+log_level = 'info'
+
+[mode]
+
+[mode.clients]
+enabled = true
+refresh = true
+misbehaviour = true
+
+[mode.connections]
+enabled = true
+
+[mode.channels]
+enabled = true
+
+[mode.packets]
+enabled = true
+clear_interval = 100
+clear_on_start = true
+tx_confirmation = true
+
+[telemetry]
+enabled = true
+host = '127.0.0.1'
+port = 3001
+
+[[chains]]
+id = 'ibc-0'
+rpc_addr = 'http://localhost:27030'
+grpc_addr = 'http://localhost:27032'
+websocket_addr = 'ws://localhost:27030/websocket'
+rpc_timeout = '15s'
+account_prefix = 'cosmos'
+key_name = 'wallet'
+store_prefix = 'ibc'
+gas_price = { price = 0.01, denom = 'stake' }
+max_gas = 10000000
+clock_drift = '5s'
+trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }
+
+[[chains]]
+id = 'ibc-1'
+rpc_addr = 'http://localhost:27040'
+grpc_addr = 'http://localhost:27042'
+websocket_addr = 'ws://localhost:27040/websocket'
+rpc_timeout = '15s'
+account_prefix = 'cosmos'
+key_name = 'wallet'
+store_prefix = 'ibc'
+gas_price = { price = 0.01, denom = 'stake' }
+max_gas = 10000000
+clock_drift = '5s'
+trusting_period = '14days'
+trust_threshold = { numerator = '1', denominator = '3' }

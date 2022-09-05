@@ -1,6 +1,6 @@
 # Glossary
 
-These are some of the definitions used in this guide:
+These are some definitions used in this guide:
 
 | Term | Definition |
 |------|------------|
