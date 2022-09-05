@@ -10,22 +10,14 @@ use std::path::PathBuf;
 pub struct IBCPath {
     #[serde(rename = "$schema")]
     pub schema: String,
-    pub chain_1: Chain1,
-    pub chain_2: Chain2,
+    pub chain_1: ChainDesc,
+    pub chain_2: ChainDesc,
     pub channels: Vec<Channel>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
-pub struct Chain1 {
-    pub chain_name: String,
-    pub client_id: ClientId,
-    pub connection_id: ConnectionId,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default)]
-pub struct Chain2 {
+pub struct ChainDesc {
     pub chain_name: String,
     pub client_id: ClientId,
     pub connection_id: ConnectionId,
@@ -34,8 +26,8 @@ pub struct Chain2 {
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Channel {
-    pub chain_1: ChannelChain1,
-    pub chain_2: ChannelChain2,
+    pub chain_1: ChannelPort,
+    pub chain_2: ChannelPort,
     pub ordering: String,
     pub version: String,
     pub tags: Tags,
@@ -43,14 +35,7 @@ pub struct Channel {
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
-pub struct ChannelChain1 {
-    pub channel_id: ChannelId,
-    pub port_id: PortId,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default)]
-pub struct ChannelChain2 {
+pub struct ChannelPort {
     pub channel_id: ChannelId,
     pub port_id: PortId,
 }
