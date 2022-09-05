@@ -1,10 +1,10 @@
-use ibc_relayer_cosmos::cosmos::instances::packet_relayers::full_packet_relayer;
+use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer_cosmos::cosmos::core::impls::filters::CosmosChannelFilter;
+use ibc_relayer_cosmos::cosmos::instances::packet_relayers::full_packet_relayer;
 use ibc_relayer_framework::core::traits::packet_relayer::PacketRelayer;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
-use ibc_relayer::config::filter::PacketFilter;
 
 use crate::tests::next::context::build_cosmos_relay_context;
 
@@ -29,13 +29,12 @@ impl BinaryChannelTest for ChannelFilterTest {
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
-
         let toml_content = r#"
             policy = 'deny'
             list = [
               ['transfer', 'channel-*'],
             ]
-            "#; 
+            "#;
         let pf: PacketFilter = toml::from_str(toml_content).expect("could not parse filter policy");
         let cosmosfilter = CosmosChannelFilter::new(pf);
 
@@ -89,7 +88,7 @@ impl BinaryChannelTest for ChannelFilterTest {
             "User on chain B should not receive the transfer of {} {}",
             a_to_b_amount, &denom_b
         );
-            
+
         chains.node_a.chain_driver().assert_eventual_wallet_amount(
             &wallet_a.address(),
             balance_a - a_to_b_amount,
