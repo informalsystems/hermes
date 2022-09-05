@@ -131,9 +131,7 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
     fn from(ics_msg: MsgConnectionOpenTry) -> Self {
         RawMsgConnectionOpenTry {
             client_id: ics_msg.client_id.as_str().to_string(),
-            client_state: ics_msg
-                .client_state
-                .map_or_else(|| None, |v| Some(v.into())),
+            client_state: ics_msg.client_state.map_or_else(|| None, Some),
             counterparty: Some(ics_msg.counterparty.into()),
             delay_period: ics_msg.delay_period.as_nanos() as u64,
             counterparty_versions: ics_msg
