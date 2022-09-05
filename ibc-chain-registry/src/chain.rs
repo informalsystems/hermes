@@ -269,7 +269,10 @@ mod tests {
             ]
         }"#;
         let chain_data = serde_json::from_str::<ChainData>(json).unwrap();
-        assert_eq!(chain_data.schema, "https://github.com/cosmos/chain-registry/blob/master/chain.schema.json");
+        assert_eq!(
+            chain_data.schema,
+            "https://github.com/cosmos/chain-registry/blob/master/chain.schema.json"
+        );
         assert_eq!(chain_data.chain_name, "test");
         assert_eq!(chain_data.status, "active");
         assert_eq!(chain_data.network_type, "test");

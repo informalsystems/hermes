@@ -100,7 +100,10 @@ mod tests {
             ]
         }"#;
         let asset_list: AssetList = serde_json::from_str(json).unwrap();
-        assert_eq!(asset_list.schema, "https://github.com/cosmos/chain-registry/blob/master/assetlist.schema.json");
+        assert_eq!(
+            asset_list.schema,
+            "https://github.com/cosmos/chain-registry/blob/master/assetlist.schema.json"
+        );
         assert_eq!(asset_list.chain_name, "test");
         assert_eq!(asset_list.assets.len(), 1);
         assert_eq!(asset_list.assets[0].description, "test");

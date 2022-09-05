@@ -148,7 +148,10 @@ mod tests {
             ]
         }"#;
         let path: IBCPath = serde_json::from_str(path).unwrap();
-        assert_eq!(path.schema, "https://github.com/cosmos/chain-registry/blob/master/ibc_data.schema.json");
+        assert_eq!(
+            path.schema,
+            "https://github.com/cosmos/chain-registry/blob/master/ibc_data.schema.json"
+        );
         assert_eq!(path.chain_1.chain_name, "chain-1");
         assert_eq!(
             path.chain_1.client_id,
