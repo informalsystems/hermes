@@ -9,7 +9,7 @@ use flex_error::define_error;
 use tendermint::abci::transaction::Hash as TxHash;
 
 use ibc::clients::ics07_tendermint::client_state::UpgradeOptions;
-use ibc::core::ics02_client::client_state::{AnyClientState, ClientState};
+use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::downcast;
 use ibc_proto::cosmos::gov::v1beta1::MsgSubmitProposal;
@@ -20,6 +20,7 @@ use ibc_proto::ibc::core::client::v1::UpgradeProposal;
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use crate::chain::tracking::TrackedMsgs;
+use crate::client_state::AnyClientState;
 use crate::config::ChainConfig;
 use crate::error::Error;
 
@@ -84,7 +85,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
         )
         .map_err(UpgradeChainError::query)?;
 
-    let client_state = downcast!(client_state => AnyClientState::Tendermint)
+    let mut client_state = downcast!(client_state => AnyClientState::Tendermint)
         .ok_or_else(UpgradeChainError::tendermint_only)?;
 
     // Retain the old unbonding period in case the user did not specify a new one
@@ -94,16 +95,16 @@ pub fn build_and_send_ibc_upgrade_proposal(
             .unwrap_or(client_state.unbonding_period),
     };
 
-    let upgraded_client_state = client_state.upgrade(
+    client_state.upgrade(
         upgrade_height.increment(),
-        upgrade_options,
+        &upgrade_options,
         opts.upgraded_chain_id.clone(),
     );
 
     let proposal = UpgradeProposal {
         title: "proposal 0".to_string(),
         description: "upgrade the chain software and unbonding period".to_string(),
-        upgraded_client_state: Some(Any::from(upgraded_client_state.wrap_any())),
+        upgraded_client_state: Some(Any::from(AnyClientState::from(client_state))),
         plan: Some(Plan {
             name: opts.upgrade_plan_name.clone(),
             height: upgrade_height.revision_height() as i64,

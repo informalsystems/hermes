@@ -10,7 +10,7 @@ use ibc_relayer::{
 use crate::application::app_config;
 use crate::conclude::Output;
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 #[clap(
     override_usage = "hermes keys delete --chain <CHAIN_ID> --key-name <KEY_NAME>
 

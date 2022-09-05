@@ -5,7 +5,7 @@ use crate::prelude::*;
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::applications::transfer::v1::MsgTransfer as RawMsgTransfer;
-use tendermint_proto::Protobuf;
+use ibc_proto::protobuf::Protobuf;
 
 use crate::applications::transfer::error::Error;
 use crate::core::ics04_channel::timeout::TimeoutHeight;
@@ -23,7 +23,7 @@ pub const TYPE_URL: &str = "/ibc.applications.transfer.v1.MsgTransfer";
 /// packet, which might be the user of a command line application, should only
 /// have to specify the information related to the transfer of the token, and
 /// let the library figure out how to build the packet properly.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgTransfer<C = Coin> {
     /// the port on which the packet will be sent
     pub source_port: PortId,

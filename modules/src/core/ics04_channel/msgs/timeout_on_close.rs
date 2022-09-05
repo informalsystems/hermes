@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 use ibc_proto::ibc::core::channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose;
-use tendermint_proto::Protobuf;
+use ibc_proto::protobuf::Protobuf;
 
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::{Packet, Sequence};
@@ -14,7 +14,7 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgTimeoutOnClose";
 ///
 /// Message definition for packet timeout domain type.
 ///
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgTimeoutOnClose {
     pub packet: Packet,
     pub next_sequence_recv: Sequence,

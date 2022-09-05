@@ -13,7 +13,7 @@ use crate::timestamp::Timestamp;
 use crate::Height;
 
 use flex_error::{define_error, TraceError};
-use tendermint_proto::Error as TendermintError;
+use ibc_proto::protobuf::Error as TendermintError;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -345,6 +345,10 @@ define_error! {
                     "application module error: {0}",
                     e.description)
             },
+
+        AbciConversionFailed
+            { abci_event: String }
+            | e | { format_args!("Failed to convert abci event to IbcEvent: {}", e.abci_event)}
     }
 }
 

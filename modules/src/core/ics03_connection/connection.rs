@@ -4,8 +4,8 @@ use core::str::FromStr;
 use core::time::Duration;
 use core::{fmt, u64};
 
+use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
-use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::connection::v1::{
     ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty,

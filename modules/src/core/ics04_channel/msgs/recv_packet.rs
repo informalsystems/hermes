@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use tendermint_proto::Protobuf;
+use ibc_proto::protobuf::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
 
@@ -15,7 +15,7 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgRecvPacket";
 ///
 /// Message definition for the "packet receiving" datagram.
 ///
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgRecvPacket {
     pub packet: Packet,
     pub proofs: Proofs,

@@ -3,8 +3,8 @@ use crate::prelude::*;
 use core::fmt;
 use core::str::FromStr;
 
+use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
-use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::{
     Channel as RawChannel, Counterparty as RawCounterparty,

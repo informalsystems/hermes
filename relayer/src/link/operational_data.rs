@@ -1,5 +1,4 @@
 use core::fmt;
-use core::iter;
 use std::time::{Duration, Instant};
 
 use ibc_proto::google::protobuf::Any;
@@ -7,7 +6,6 @@ use tracing::{debug, info};
 
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics04_channel::context::calculate_block_delay;
-use ibc::events::IbcEvent;
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
@@ -16,11 +14,12 @@ use crate::chain::requests::QueryClientStateRequest;
 use crate::chain::requests::QueryHeight;
 use crate::chain::tracking::TrackedMsgs;
 use crate::chain::tracking::TrackingId;
+use crate::event::IbcEventWithHeight;
 use crate::link::error::LinkError;
 use crate::link::RelayPath;
 
 /// The chain that the events associated with a piece of [`OperationalData`] are bound for.
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum OperationalDataTarget {
     /// The chain which generated the events associated with the `OperationalData`.
     Source,
@@ -37,15 +36,15 @@ impl fmt::Display for OperationalDataTarget {
     }
 }
 
-/// A set of [`IbcEvent`]s that have an associated
+/// A set of [`IbcEventWithHeight`]s that have an associated
 /// tracking number to ensure better observability.
 pub struct TrackedEvents {
-    events: Vec<IbcEvent>,
+    events: Vec<IbcEventWithHeight>,
     tracking_id: TrackingId,
 }
 
 impl TrackedEvents {
-    pub fn new(events: Vec<IbcEvent>, tracking_id: TrackingId) -> Self {
+    pub fn new(events: Vec<IbcEventWithHeight>, tracking_id: TrackingId) -> Self {
         Self {
             events,
             tracking_id,
@@ -56,7 +55,7 @@ impl TrackedEvents {
         self.events.is_empty()
     }
 
-    pub fn events(&self) -> &[IbcEvent] {
+    pub fn events(&self) -> &[IbcEventWithHeight] {
         &self.events
     }
 
@@ -76,7 +75,7 @@ impl TrackedEvents {
 /// alongside the event which generated it.
 #[derive(Clone)]
 pub struct TransitMessage {
-    pub event: IbcEvent,
+    pub event_with_height: IbcEventWithHeight,
     pub msg: Any,
 }
 
@@ -139,7 +138,11 @@ impl OperationalData {
 
     /// Transforms `self` into the list of events accompanied with the tracking ID.
     pub fn into_events(self) -> TrackedEvents {
-        let events = self.batch.into_iter().map(|gm| gm.event).collect();
+        let events = self
+            .batch
+            .into_iter()
+            .map(|gm| gm.event_with_height)
+            .collect();
 
         TrackedEvents {
             events,
@@ -207,12 +210,10 @@ impl OperationalData {
             }
         };
 
-        let msgs: Vec<Any> = match client_update_msg {
-            Some(client_update) => iter::once(client_update)
-                .chain(self.batch.iter().map(|gm| gm.msg.clone()))
-                .collect(),
-            None => self.batch.iter().map(|gm| gm.msg.clone()).collect(),
-        };
+        let msgs = client_update_msg
+            .into_iter()
+            .chain(self.batch.iter().map(|gm| gm.msg.clone()))
+            .collect();
 
         let tm = TrackedMsgs::new(msgs, self.tracking_id);
 
@@ -223,7 +224,9 @@ impl OperationalData {
 
     /// Returns true iff the batch contains a packet event
     fn has_packet_msgs(&self) -> bool {
-        self.batch.iter().any(|msg| msg.event.packet().is_some())
+        self.batch
+            .iter()
+            .any(|msg| msg.event_with_height.event.packet().is_some())
     }
 
     /// Returns the `connection_delay` iff the connection delay for this relaying path is non-zero

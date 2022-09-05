@@ -1,14 +1,10 @@
 use crossbeam_channel as channel;
-use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
-use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::core::ics02_client::events::UpdateClient;
-use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::merkle::MerkleProof;
 use ibc::{
-    core::ics02_client::header::AnyHeader,
     core::ics03_connection::connection::ConnectionEnd,
     core::ics03_connection::version::Version,
     core::ics04_channel::channel::ChannelEnd,
@@ -40,12 +36,17 @@ use crate::chain::requests::{
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
+use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
+use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::monitor::EventBatch;
+use crate::event::IbcEventWithHeight;
 use crate::keyring::KeyEntry;
+use crate::light_client::AnyHeader;
+use crate::misbehaviour::MisbehaviourEvidence;
 use crate::telemetry;
 
 /// A chain handle with support for caching.
@@ -102,7 +103,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     fn send_messages_and_wait_commit(
         &self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<IbcEvent>, Error> {
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         self.inner().send_messages_and_wait_commit(tracked_msgs)
     }
 
@@ -472,7 +473,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().query_unreceived_acknowledgements(request)
     }
 
-    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error> {
         self.inner().query_txs(request)
     }
 

@@ -9,8 +9,8 @@ use crate::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
 use crate::events::IbcEvent;
 use crate::handler::{HandlerOutput, HandlerResult};
 
-pub(crate) fn process(
-    ctx: &dyn ChannelReader,
+pub(crate) fn process<Ctx: ChannelReader>(
+    ctx: &Ctx,
     msg: &MsgChannelCloseInit,
 ) -> HandlerResult<ChannelResult, Error> {
     let mut output = HandlerOutput::builder();
@@ -56,7 +56,6 @@ pub(crate) fn process(
 
     let event_attributes = Attributes {
         channel_id: Some(msg.channel_id.clone()),
-        height: ctx.host_height(),
         ..Default::default()
     };
     output.emit(IbcEvent::CloseInitChannel(
@@ -142,7 +141,6 @@ mod tests {
 
         for event in handler_output.events.iter() {
             assert!(matches!(event, &IbcEvent::CloseInitChannel(_)));
-            assert_eq!(event.height(), context.host_height());
         }
     }
 }

@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 use derive_more::{From, Into};
 use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
-use tendermint_proto::Protobuf;
+use ibc_proto::protobuf::Protobuf;
 
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::Packet;
@@ -13,7 +13,7 @@ use crate::tx_msg::Msg;
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgAcknowledgement";
 
 /// A generic Acknowledgement type that modules may interpret as they like.
-#[derive(Clone, Debug, PartialEq, From, Into)]
+#[derive(Clone, Debug, PartialEq, Eq, From, Into)]
 pub struct Acknowledgement(Vec<u8>);
 
 impl Acknowledgement {
@@ -31,7 +31,7 @@ impl AsRef<[u8]> for Acknowledgement {
 ///
 /// Message definition for packet acknowledgements.
 ///
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgAcknowledgement {
     pub packet: Packet,
     pub acknowledgement: Acknowledgement,

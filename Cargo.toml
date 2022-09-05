@@ -3,6 +3,7 @@
 resolver = "2"
 
 members = [
+    "ibc-chain-registry",
     "modules",
     "relayer",
     "relayer-cli",

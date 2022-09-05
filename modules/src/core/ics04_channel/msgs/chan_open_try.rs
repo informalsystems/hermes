@@ -9,7 +9,7 @@ use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenTry as RawMsgChannelOpenTry;
-use tendermint_proto::Protobuf;
+use ibc_proto::protobuf::Protobuf;
 
 use core::str::FromStr;
 
@@ -18,7 +18,7 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenTry";
 ///
 /// Message definition for the second step in the channel open handshake (`ChanOpenTry` datagram).
 ///
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgChannelOpenTry {
     pub port_id: PortId,
     pub previous_channel_id: Option<ChannelId>,

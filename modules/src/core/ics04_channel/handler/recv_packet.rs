@@ -27,7 +27,10 @@ pub enum RecvPacketResult {
     },
 }
 
-pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<PacketResult, Error> {
+pub fn process<Ctx: ChannelReader>(
+    ctx: &Ctx,
+    msg: &MsgRecvPacket,
+) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let packet = &msg.packet;
@@ -64,7 +67,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
         ));
     }
 
-    let latest_height = ctx.host_height();
+    let latest_height = ChannelReader::host_height(ctx);
     if packet.timeout_height.has_expired(latest_height) {
         return Err(Error::low_packet_height(
             latest_height,
@@ -72,7 +75,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
         ));
     }
 
-    let latest_timestamp = ctx.host_timestamp();
+    let latest_timestamp = ChannelReader::host_timestamp(ctx);
     if let Expiry::Expired = latest_timestamp.check_expiry(&packet.timeout_timestamp) {
         return Err(Error::low_packet_timestamp());
     }
@@ -93,7 +96,6 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
 
         if packet.sequence < next_seq_recv {
             output.emit(IbcEvent::ReceivePacket(ReceivePacket {
-                height: ctx.host_height(),
                 packet: msg.packet.clone(),
             }));
             return Ok(output.with_result(PacketResult::Recv(RecvPacketResult::NoOp)));
@@ -119,7 +121,6 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
         match packet_rec {
             Ok(_receipt) => {
                 output.emit(IbcEvent::ReceivePacket(ReceivePacket {
-                    height: ctx.host_height(),
                     packet: msg.packet.clone(),
                 }));
                 return Ok(output.with_result(PacketResult::Recv(RecvPacketResult::NoOp)));
@@ -140,7 +141,6 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
     output.log("success: packet receive");
 
     output.emit(IbcEvent::ReceivePacket(ReceivePacket {
-        height: ctx.host_height(),
         packet: msg.packet.clone(),
     }));
 
@@ -149,7 +149,6 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
 
 #[cfg(test)]
 mod tests {
-    use crate::core::ics04_channel::context::ChannelReader;
     use crate::prelude::*;
 
     use test_log::test;
@@ -292,7 +291,6 @@ mod tests {
 
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::ReceivePacket(_)));
-                        assert_eq!(e.height(), test.ctx.host_height());
                     }
                 }
                 Err(e) => {

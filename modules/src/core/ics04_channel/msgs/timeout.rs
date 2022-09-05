@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use tendermint_proto::Protobuf;
+use ibc_proto::protobuf::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgTimeout as RawMsgTimeout;
 
@@ -15,7 +15,7 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgTimeout";
 ///
 /// Message definition for packet timeout domain type.
 ///
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgTimeout {
     pub packet: Packet,
     pub next_sequence_recv: Sequence,

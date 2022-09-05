@@ -10,13 +10,13 @@ use num_bigint::BigInt;
 use std::thread;
 
 use bitcoin::hashes::hex::ToHex;
+use ibc_proto::protobuf::Protobuf;
 use tendermint::block::Height as TmHeight;
 use tendermint::{
     abci::{Event, Path as TendermintABCIPath},
     node::info::TxIndexStatus,
 };
 use tendermint_light_client_verifier::types::LightBlock as TmLightBlock;
-use tendermint_proto::Protobuf;
 use tendermint_rpc::{
     endpoint::broadcast::tx_sync::Response, endpoint::status, Client, HttpClient, Order,
 };
@@ -24,10 +24,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tonic::{codegen::http::Uri, metadata::AsciiMetadataValue};
 use tracing::{error, span, warn, Level};
 
-use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc::clients::ics07_tendermint::header::Header as TmHeader;
-use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
-use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::error::Error as ClientError;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
@@ -44,8 +41,12 @@ use ibc::events::IbcEvent;
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 use ibc::{
-    clients::ics07_tendermint::client_state::{AllowUpdate, ClientState},
+    clients::ics07_tendermint::client_state::{AllowUpdate, ClientState as TmClientState},
     core::ics23_commitment::merkle::MerkleProof,
+};
+use ibc::{
+    clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState,
+    core::ics02_client::events::UpdateClient,
 };
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 
@@ -53,6 +54,7 @@ use crate::account::Balance;
 use crate::chain::client::ClientSettings;
 use crate::chain::cosmos::batch::{
     send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
+    sequential_send_batched_messages_and_wait_commit,
 };
 use crate::chain::cosmos::encode::encode_to_bech32;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
@@ -64,17 +66,22 @@ use crate::chain::cosmos::query::tx::query_txs;
 use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query, QueryResponse};
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
-use crate::chain::cosmos::types::events::channel as channel_events;
-use crate::chain::cosmos::types::gas::{default_gas_from_config, max_gas_from_config};
+use crate::chain::cosmos::types::gas::{
+    default_gas_from_config, gas_multiplier_from_config, max_gas_from_config,
+};
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
 use crate::chain::tracking::TrackedMsgs;
+use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;
+use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::monitor::{EventMonitor, EventReceiver, TxMonitorCmd};
+use crate::event::{ibc_event_try_from_abci_event, IbcEventWithHeight};
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
+use crate::misbehaviour::MisbehaviourEvidence;
 
 use super::requests::{
     IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
@@ -108,14 +115,16 @@ pub const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 // https://github.com/cosmos/cosmos-sdk/blob/v0.44.0/types/errors/errors.go#L115-L117
 
 pub struct CosmosSdkChain {
-    pub(crate) config: ChainConfig,
-    pub(crate) tx_config: TxConfig,
-    pub(crate) rpc_client: HttpClient,
-    pub(crate) grpc_addr: Uri,
-    rt: Arc<TokioRuntime>,
-    keybase: KeyRing,
+    pub config: ChainConfig,
+    pub tx_config: TxConfig,
+    pub rpc_client: HttpClient,
+    pub grpc_addr: Uri,
+    pub light_client: TmLightClient,
+    pub rt: Arc<TokioRuntime>,
+    pub keybase: KeyRing,
+
     /// A cached copy of the account information
-    pub(crate) account: Option<Account>,
+    pub account: Option<Account>,
 }
 
 impl CosmosSdkChain {
@@ -218,6 +227,15 @@ impl CosmosSdkChain {
                     result.consensus_params.block.max_gas,
                 ));
             }
+        }
+
+        let gas_multiplier = gas_multiplier_from_config(&self.config);
+
+        if gas_multiplier < 1.1 {
+            return Err(Error::config_validation_gas_multiplier_low(
+                self.id().clone(),
+                gas_multiplier,
+            ));
         }
 
         Ok(())
@@ -404,7 +422,7 @@ impl CosmosSdkChain {
     async fn do_send_messages_and_wait_commit(
         &mut self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<IbcEvent>, Error> {
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         crate::time!("send_messages_and_wait_commit");
 
         let _span =
@@ -417,16 +435,29 @@ impl CosmosSdkChain {
         let account =
             get_or_fetch_account(&self.grpc_addr, &key_entry.account, &mut self.account).await?;
 
-        send_batched_messages_and_wait_commit(
-            &self.tx_config,
-            self.config.max_msg_num,
-            self.config.max_tx_size,
-            &key_entry,
-            account,
-            &self.config.memo_prefix,
-            proto_msgs,
-        )
-        .await
+        if self.config.sequential_batch_tx {
+            sequential_send_batched_messages_and_wait_commit(
+                &self.tx_config,
+                self.config.max_msg_num,
+                self.config.max_tx_size,
+                &key_entry,
+                account,
+                &self.config.memo_prefix,
+                proto_msgs,
+            )
+            .await
+        } else {
+            send_batched_messages_and_wait_commit(
+                &self.tx_config,
+                self.config.max_msg_num,
+                self.config.max_tx_size,
+                &key_entry,
+                account,
+                &self.config.memo_prefix,
+                proto_msgs,
+            )
+            .await
+        }
     }
 
     async fn do_send_messages_and_wait_check_tx(
@@ -462,12 +493,13 @@ impl ChainEndpoint for CosmosSdkChain {
     type LightBlock = TmLightBlock;
     type Header = TmHeader;
     type ConsensusState = TMConsensusState;
-    type ClientState = ClientState;
-    type LightClient = TmLightClient;
+    type ClientState = TmClientState;
 
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
         let rpc_client = HttpClient::new(config.rpc_addr.clone())
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
+
+        let light_client = rt.block_on(init_light_client(&rpc_client, &config))?;
 
         // Initialize key store and load key
         let keybase = KeyRing::new(config.key_store_type, &config.account_prefix, &config.id)
@@ -484,6 +516,7 @@ impl ChainEndpoint for CosmosSdkChain {
             config,
             rpc_client,
             grpc_addr,
+            light_client,
             rt,
             keybase,
             account: None,
@@ -491,22 +524,6 @@ impl ChainEndpoint for CosmosSdkChain {
         };
 
         Ok(chain)
-    }
-
-    fn init_light_client(&self) -> Result<Self::LightClient, Error> {
-        use tendermint_light_client_verifier::types::PeerId;
-
-        crate::time!("init_light_client");
-
-        let peer_id: PeerId = self
-            .rt
-            .block_on(self.rpc_client.status())
-            .map(|s| s.node_info.id)
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
-
-        let light_client = TmLightClient::from_config(&self.config, peer_id)?;
-
-        Ok(light_client)
     }
 
     fn init_event_monitor(
@@ -576,6 +593,30 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(HealthCheck::Healthy)
     }
 
+    /// Fetch a header from the chain at the given height and verify it.
+    fn verify_header(
+        &mut self,
+        trusted: ICSHeight,
+        target: ICSHeight,
+        client_state: &AnyClientState,
+    ) -> Result<Self::LightBlock, Error> {
+        self.light_client
+            .verify(trusted, target, client_state)
+            .map(|v| v.target)
+    }
+
+    /// Given a client update event that includes the header used in a client update,
+    /// look for misbehaviour by fetching a header at same or latest height.
+    fn check_misbehaviour(
+        &mut self,
+        update: &UpdateClient,
+        client_state: &AnyClientState,
+    ) -> Result<Option<MisbehaviourEvidence>, Error> {
+        self.light_client.check_misbehaviour(update, client_state)
+    }
+
+    // Queries
+
     /// Send one or more transactions that include all the specified messages.
     /// The `proto_msgs` are split in transactions such they don't exceed the configured maximum
     /// number of messages per transaction and the maximum transaction size.
@@ -587,7 +628,7 @@ impl ChainEndpoint for CosmosSdkChain {
     fn send_messages_and_wait_commit(
         &mut self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<IbcEvent>, Error> {
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         let runtime = self.rt.clone();
 
         runtime.block_on(self.do_send_messages_and_wait_commit(tracked_msgs))
@@ -1438,7 +1479,7 @@ impl ChainEndpoint for CosmosSdkChain {
     ///    Therefore, for packets we perform one tx_search for each sequence.
     ///    Alternatively, a single query for all packets could be performed but it would return all
     ///    packets ever sent.
-    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error> {
         crate::time!("query_txs");
         crate::telemetry!(query, self.id(), "query_txs");
 
@@ -1551,15 +1592,17 @@ impl ChainEndpoint for CosmosSdkChain {
             .trusting_period
             .unwrap_or_else(|| self.trusting_period(unbonding_period));
 
+        let proof_specs = self.config.proof_specs.clone().unwrap_or_default();
+
         // Build the client state.
-        ClientState::new(
+        TmClientState::new(
             self.id().clone(),
             settings.trust_threshold,
             trusting_period,
             unbonding_period,
             settings.max_clock_drift,
             height,
-            self.config.proof_specs.clone(),
+            proof_specs,
             vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
             AllowUpdate {
                 after_expiry: true,
@@ -1579,20 +1622,43 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     fn build_header(
-        &self,
+        &mut self,
         trusted_height: ICSHeight,
         target_height: ICSHeight,
         client_state: &AnyClientState,
-        light_client: &mut Self::LightClient,
     ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
         crate::time!("build_header");
 
         // Get the light block at target_height from chain.
-        let Verified { target, supporting } =
-            light_client.header_and_minimal_set(trusted_height, target_height, client_state)?;
+        let Verified { target, supporting } = self.light_client.header_and_minimal_set(
+            trusted_height,
+            target_height,
+            client_state,
+        )?;
 
         Ok((target, supporting))
     }
+}
+
+/// Initialize the light client for the given chain using the given HTTP client
+/// to fetch the node identifier to be used as peer id in the light client.
+async fn init_light_client(
+    rpc_client: &HttpClient,
+    config: &ChainConfig,
+) -> Result<TmLightClient, Error> {
+    use tendermint_light_client_verifier::types::PeerId;
+
+    crate::time!("init_light_client");
+
+    let peer_id: PeerId = rpc_client
+        .status()
+        .await
+        .map(|s| s.node_info.id)
+        .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
+
+    let light_client = TmLightClient::from_config(config, peer_id)?;
+
+    Ok(light_client)
 }
 
 fn filter_matching_event(
@@ -1616,7 +1682,7 @@ fn filter_matching_event(
         return None;
     }
 
-    let ibc_event = channel_events::try_from_tx(&event)?;
+    let ibc_event = ibc_event_try_from_abci_event(&event).ok()?;
     match ibc_event {
         IbcEvent::SendPacket(ref send_ev) if matches_packet(request, seq, &send_ev.packet) => {
             Some(ibc_event)
@@ -1694,16 +1760,13 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
 #[cfg(test)]
 mod tests {
     use ibc::{
-        core::{
-            ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState},
-            ics02_client::client_type::ClientType,
-            ics24_host::identifier::ClientId,
-        },
+        core::{ics02_client::client_type::ClientType, ics24_host::identifier::ClientId},
         mock::client_state::MockClientState,
         mock::header::MockHeader,
         Height,
     };
 
+    use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
     use crate::{chain::cosmos::client_id_suffix, config::GasPrice};
 
     use super::calculate_fee;

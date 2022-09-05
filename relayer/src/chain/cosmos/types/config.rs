@@ -2,6 +2,7 @@ use core::str::FromStr;
 use core::time::Duration;
 use http::Uri;
 use ibc::core::ics24_host::identifier::ChainId;
+use ibc_proto::google::protobuf::Any;
 use tendermint_rpc::{HttpClient, Url};
 
 use crate::chain::cosmos::types::gas::GasConfig;
@@ -17,6 +18,7 @@ pub struct TxConfig {
     pub grpc_address: Uri,
     pub rpc_timeout: Duration,
     pub address_type: AddressType,
+    pub extension_options: Vec<Any>,
 }
 
 impl<'a> TryFrom<&'a ChainConfig> for TxConfig {
@@ -31,6 +33,12 @@ impl<'a> TryFrom<&'a ChainConfig> for TxConfig {
 
         let gas_config = GasConfig::from(config);
 
+        let extension_options = config
+            .extension_options
+            .iter()
+            .map(|opt| opt.to_any())
+            .collect::<Result<_, _>>()?;
+
         Ok(Self {
             chain_id: config.id.clone(),
             gas_config,
@@ -39,6 +47,7 @@ impl<'a> TryFrom<&'a ChainConfig> for TxConfig {
             grpc_address,
             rpc_timeout: config.rpc_timeout,
             address_type: config.address_type.clone(),
+            extension_options,
         })
     }
 }

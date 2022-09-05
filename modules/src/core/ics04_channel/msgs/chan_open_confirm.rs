@@ -6,7 +6,7 @@ use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenConfirm as RawMsgChannelOpenConfirm;
-use tendermint_proto::Protobuf;
+use ibc_proto::protobuf::Protobuf;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenConfirm";
 
@@ -14,7 +14,7 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenConfirm";
 /// Message definition for the fourth step in the channel open handshake (`ChanOpenConfirm`
 /// datagram).
 ///
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgChannelOpenConfirm {
     pub port_id: PortId,
     pub channel_id: ChannelId,

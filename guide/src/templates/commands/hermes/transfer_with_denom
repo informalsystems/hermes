@@ -1,0 +1,1 @@
+[[#binary hermes]] tx ft-transfer --dst-chain [[#dst-chain]] --src-chain [[#src-chain]] --src-port [[#src-port]] --src-channel [[#src-channel]] --amount [[#amount]] --timeout-seconds [[#timeout-seconds]] --denom [[#denom]]

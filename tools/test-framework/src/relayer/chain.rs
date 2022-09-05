@@ -21,16 +21,12 @@
 */
 
 use crossbeam_channel as channel;
-use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
-use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc::core::ics02_client::events::UpdateClient;
-use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::merkle::MerkleProof;
 use ibc::{
-    core::ics02_client::header::AnyHeader,
     core::ics03_connection::connection::ConnectionEnd,
     core::ics03_connection::version::Version,
     core::ics04_channel::channel::ChannelEnd,
@@ -59,11 +55,16 @@ use ibc_relayer::chain::requests::{
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use ibc_relayer::chain::tracking::TrackedMsgs;
+use ibc_relayer::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc_relayer::config::ChainConfig;
 use ibc_relayer::connection::ConnectionMsgType;
+use ibc_relayer::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc_relayer::denom::DenomTrace;
 use ibc_relayer::error::Error;
+use ibc_relayer::event::IbcEventWithHeight;
 use ibc_relayer::keyring::KeyEntry;
+use ibc_relayer::light_client::AnyHeader;
+use ibc_relayer::misbehaviour::MisbehaviourEvidence;
 
 use crate::types::tagged::*;
 
@@ -100,7 +101,7 @@ where
     fn send_messages_and_wait_commit(
         &self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<IbcEvent>, Error> {
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         self.value().send_messages_and_wait_commit(tracked_msgs)
     }
 
@@ -379,7 +380,7 @@ where
         self.value().query_unreceived_acknowledgements(request)
     }
 
-    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error> {
         self.value().query_txs(request)
     }
 

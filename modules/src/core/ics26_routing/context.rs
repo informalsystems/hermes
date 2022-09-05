@@ -40,7 +40,7 @@ pub trait Ics26Context:
     fn router_mut(&mut self) -> &mut Self::Router;
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct InvalidModuleId;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]

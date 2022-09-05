@@ -1,15 +1,15 @@
 use crate::prelude::*;
+
 use core::{
     convert::{TryFrom, TryInto},
     str::FromStr,
     time::Duration,
 };
 
-use tendermint_proto::Protobuf;
-
+use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
+use ibc_proto::protobuf::Protobuf;
 
-use crate::core::ics02_client::client_state::AnyClientState;
 use crate::core::ics03_connection::connection::Counterparty;
 use crate::core::ics03_connection::error::Error;
 use crate::core::ics03_connection::version::Version;
@@ -29,7 +29,7 @@ pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenTry";
 pub struct MsgConnectionOpenTry {
     pub previous_connection_id: Option<ConnectionId>,
     pub client_id: ClientId,
-    pub client_state: Option<AnyClientState>,
+    pub client_state: Option<Any>,
     pub counterparty: Counterparty,
     pub counterparty_versions: Vec<Version>,
     pub proofs: Proofs,
@@ -104,11 +104,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
         Ok(Self {
             previous_connection_id,
             client_id: msg.client_id.parse().map_err(Error::invalid_identifier)?,
-            client_state: msg
-                .client_state
-                .map(AnyClientState::try_from)
-                .transpose()
-                .map_err(Error::ics02_client)?,
+            client_state: msg.client_state,
             counterparty: msg
                 .counterparty
                 .ok_or_else(Error::missing_counterparty)?
@@ -135,9 +131,7 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
             previous_connection_id: ics_msg
                 .previous_connection_id
                 .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
-            client_state: ics_msg
-                .client_state
-                .map_or_else(|| None, |v| Some(v.into())),
+            client_state: ics_msg.client_state,
             counterparty: Some(ics_msg.counterparty.into()),
             delay_period: ics_msg.delay_period.as_nanos() as u64,
             counterparty_versions: ics_msg

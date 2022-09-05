@@ -18,7 +18,7 @@ use crate::commands::query::channel_ends::ChannelEnds;
 use crate::conclude::Output;
 use crate::prelude::*;
 
-#[derive(Clone, Command, Debug, Parser, PartialEq)]
+#[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryChannelsCmd {
     #[clap(
         long = "chain",

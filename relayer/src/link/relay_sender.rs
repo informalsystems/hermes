@@ -3,10 +3,11 @@ use core::fmt;
 use tendermint_rpc::endpoint::broadcast::tx_sync;
 use tracing::info;
 
-use ibc::events::{IbcEvent, PrettyEvents};
+use ibc::events::IbcEvent;
 
 use crate::chain::handle::ChainHandle;
 use crate::chain::tracking::TrackedMsgs;
+use crate::event::PrettyEvents;
 use crate::link::error::LinkError;
 use crate::link::RelaySummary;
 
@@ -52,17 +53,22 @@ impl Submit for SyncSender {
         info!(
             "[Sync->{}] result {}\n",
             target.id(),
-            PrettyEvents(&tx_events)
+            PrettyEvents(tx_events.as_slice())
         );
 
         let ev = tx_events
             .clone()
             .into_iter()
-            .find(|event| matches!(event, IbcEvent::ChainError(_)));
+            .find(|event_with_height| matches!(event_with_height.event, IbcEvent::ChainError(_)));
 
         match ev {
-            Some(ev) => Err(LinkError::send(ev)),
-            None => Ok(RelaySummary::from_events(tx_events)),
+            Some(ev) => Err(LinkError::send(ev.event)),
+            None => Ok(RelaySummary::from_events(
+                tx_events
+                    .into_iter()
+                    .map(|event_with_height| event_with_height.event)
+                    .collect(),
+            )),
         }
     }
 }
@@ -93,7 +99,11 @@ impl Submit for AsyncSender {
             .send_messages_and_wait_check_tx(msgs)
             .map_err(LinkError::relayer)?;
         let reply = AsyncReply { responses: a };
-        info!("[Async~>{}] {}\n", target.id(), reply);
+
+        // Note: There may be errors in the reply, for example:
+        // `Response { code: Err(11), data: Data([]), log: Log("Too much gas wanted: 35000000, maximum is 25000000: out of gas")`
+        // The runtime deliberately did not catch or retry on such errors.
+        info!(target_chain = %target.id(), "{}", reply);
 
         Ok(reply)
     }

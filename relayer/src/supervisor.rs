@@ -18,7 +18,10 @@ use ibc::{
 use crate::{
     chain::{endpoint::HealthCheck, handle::ChainHandle, tracking::TrackingId},
     config::Config,
-    event::monitor::{self, Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
+    event::{
+        monitor::{self, Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
+        IbcEventWithHeight,
+    },
     object::Object,
     registry::{Registry, SharedRegistry},
     rest,
@@ -356,7 +359,7 @@ fn relay_on_object<Chain: ChainHandle>(
 /// and add the given `event` to the `collected` events for this `object`.
 fn collect_event<F>(
     collected: &mut CollectedEvents,
-    event: &IbcEvent,
+    event_with_height: IbcEventWithHeight,
     enabled: bool,
     object_ctor: F,
 ) where
@@ -368,7 +371,7 @@ fn collect_event<F>(
                 .per_object
                 .entry(object)
                 .or_default()
-                .push(event.clone());
+                .push(event_with_height);
         }
     }
 }
@@ -384,75 +387,118 @@ pub fn collect_events(
 
     let mode = config.mode;
 
-    for event in &batch.events {
-        match event {
+    for event_with_height in &batch.events {
+        match &event_with_height.event {
             IbcEvent::NewBlock(_) => {
-                collected.new_block = Some(event.clone());
+                collected.new_block = Some(event_with_height.event.clone());
             }
-            IbcEvent::UpdateClient(ref update) => {
-                collect_event(&mut collected, event, mode.clients.enabled, || {
-                    // Collect update client events only if the worker exists
-                    if let Ok(object) = Object::for_update_client(update, src_chain) {
-                        workers.contains(&object).then(|| object)
-                    } else {
-                        None
-                    }
-                });
+            IbcEvent::UpdateClient(update) => {
+                collect_event(
+                    &mut collected,
+                    event_with_height.clone(),
+                    mode.clients.enabled,
+                    || {
+                        // Collect update client events only if the worker exists
+                        if let Ok(object) = Object::for_update_client(update, src_chain) {
+                            workers.contains(&object).then(|| object)
+                        } else {
+                            None
+                        }
+                    },
+                );
             }
             IbcEvent::OpenInitConnection(..)
             | IbcEvent::OpenTryConnection(..)
             | IbcEvent::OpenAckConnection(..) => {
-                collect_event(&mut collected, event, mode.connections.enabled, || {
-                    event.connection_attributes().and_then(|attr| {
-                        Object::connection_from_conn_open_events(attr, src_chain).ok()
-                    })
-                });
+                collect_event(
+                    &mut collected,
+                    event_with_height.clone(),
+                    mode.connections.enabled,
+                    || {
+                        event_with_height
+                            .event
+                            .connection_attributes()
+                            .and_then(|attr| {
+                                Object::connection_from_conn_open_events(attr, src_chain).ok()
+                            })
+                    },
+                );
             }
             IbcEvent::OpenInitChannel(..) | IbcEvent::OpenTryChannel(..) => {
-                collect_event(&mut collected, event, mode.channels.enabled, || {
-                    event.clone().channel_attributes().and_then(|attr| {
-                        Object::channel_from_chan_open_events(&attr, src_chain).ok()
-                    })
-                });
+                collect_event(
+                    &mut collected,
+                    event_with_height.clone(),
+                    mode.channels.enabled,
+                    || {
+                        event_with_height
+                            .event
+                            .clone()
+                            .channel_attributes()
+                            .and_then(|attr| {
+                                Object::channel_from_chan_open_events(&attr, src_chain).ok()
+                            })
+                    },
+                );
             }
             IbcEvent::OpenAckChannel(open_ack) => {
                 // Create client and packet workers here as channel end must be opened
                 let attributes = open_ack.clone().into();
-                collect_event(&mut collected, event, mode.clients.enabled, || {
-                    Object::client_from_chan_open_events(&attributes, src_chain).ok()
-                });
+                collect_event(
+                    &mut collected,
+                    event_with_height.clone(),
+                    mode.clients.enabled,
+                    || Object::client_from_chan_open_events(&attributes, src_chain).ok(),
+                );
 
                 // If handshake message relaying is enabled create worker to send the MsgChannelOpenConfirm message
-                collect_event(&mut collected, event, mode.channels.enabled, || {
-                    Object::channel_from_chan_open_events(&attributes, src_chain).ok()
-                });
+                collect_event(
+                    &mut collected,
+                    event_with_height.clone(),
+                    mode.channels.enabled,
+                    || Object::channel_from_chan_open_events(&attributes, src_chain).ok(),
+                );
             }
             IbcEvent::OpenConfirmChannel(open_confirm) => {
                 let attributes = open_confirm.clone().into();
                 // Create client worker here as channel end must be opened
-                collect_event(&mut collected, event, mode.clients.enabled, || {
-                    Object::client_from_chan_open_events(&attributes, src_chain).ok()
-                });
+                collect_event(
+                    &mut collected,
+                    event_with_height.clone(),
+                    mode.clients.enabled,
+                    || Object::client_from_chan_open_events(&attributes, src_chain).ok(),
+                );
             }
             IbcEvent::SendPacket(ref packet) => {
-                collect_event(&mut collected, event, mode.packets.enabled, || {
-                    Object::for_send_packet(packet, src_chain).ok()
-                });
+                collect_event(
+                    &mut collected,
+                    event_with_height.clone(),
+                    mode.packets.enabled,
+                    || Object::for_send_packet(packet, src_chain).ok(),
+                );
             }
             IbcEvent::TimeoutPacket(ref packet) => {
-                collect_event(&mut collected, event, mode.packets.enabled, || {
-                    Object::for_timeout_packet(packet, src_chain).ok()
-                });
+                collect_event(
+                    &mut collected,
+                    event_with_height.clone(),
+                    mode.packets.enabled,
+                    || Object::for_timeout_packet(packet, src_chain).ok(),
+                );
             }
             IbcEvent::WriteAcknowledgement(ref packet) => {
-                collect_event(&mut collected, event, mode.packets.enabled, || {
-                    Object::for_write_ack(packet, src_chain).ok()
-                });
+                collect_event(
+                    &mut collected,
+                    event_with_height.clone(),
+                    mode.packets.enabled,
+                    || Object::for_write_ack(packet, src_chain).ok(),
+                );
             }
             IbcEvent::CloseInitChannel(ref packet) => {
-                collect_event(&mut collected, event, mode.packets.enabled, || {
-                    Object::for_close_init_channel(packet, src_chain).ok()
-                });
+                collect_event(
+                    &mut collected,
+                    event_with_height.clone(),
+                    mode.packets.enabled,
+                    || Object::for_close_init_channel(packet, src_chain).ok(),
+                );
             }
             _ => (),
         }
@@ -626,7 +672,7 @@ fn process_batch<Chain: ChainHandle>(
     }
 
     // Forward the IBC events.
-    for (object, events) in collected.per_object.into_iter() {
+    for (object, events_with_heights) in collected.per_object.into_iter() {
         if !relay_on_object(
             config,
             registry,
@@ -643,7 +689,7 @@ fn process_batch<Chain: ChainHandle>(
             continue;
         }
 
-        if events.is_empty() {
+        if events_with_heights.is_empty() {
             continue;
         }
 
@@ -658,12 +704,12 @@ fn process_batch<Chain: ChainHandle>(
         if let Object::Packet(_path) = object.clone() {
             // Update telemetry info
             telemetry!({
-                for e in events.clone() {
-                    match e {
+                for event_with_height in events_with_heights.iter() {
+                    match &event_with_height.event {
                         IbcEvent::SendPacket(send_packet_ev) => {
                             ibc_telemetry::global().send_packet_events(
                                 send_packet_ev.packet.sequence.into(),
-                                send_packet_ev.height().revision_height(),
+                                event_with_height.height.revision_height(),
                                 &src.id(),
                                 &_path.src_channel_id,
                                 &_path.src_port_id,
@@ -673,7 +719,7 @@ fn process_batch<Chain: ChainHandle>(
                         IbcEvent::WriteAcknowledgement(write_ack_ev) => {
                             ibc_telemetry::global().acknowledgement_events(
                                 write_ack_ev.packet.sequence.into(),
-                                write_ack_ev.height().revision_height(),
+                                event_with_height.height.revision_height(),
                                 &dst.id(),
                                 &_path.src_channel_id,
                                 &_path.src_port_id,
@@ -698,7 +744,7 @@ fn process_batch<Chain: ChainHandle>(
 
         worker.send_events(
             batch.height,
-            events,
+            events_with_heights,
             batch.chain_id.clone(),
             batch.tracking_id,
         );
@@ -763,7 +809,7 @@ pub struct CollectedEvents {
     /// collected from the [`EventBatch`].
     pub new_block: Option<IbcEvent>,
     /// Mapping between [`Object`]s and their associated [`IbcEvent`]s.
-    pub per_object: HashMap<Object, Vec<IbcEvent>>,
+    pub per_object: HashMap<Object, Vec<IbcEventWithHeight>>,
     /// Unique identifier for tracking this event batch
     pub tracking_id: TrackingId,
 }

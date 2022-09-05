@@ -15,8 +15,8 @@ use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 use crate::proofs::{ProofError, Proofs};
 
-pub fn process(
-    ctx: &dyn ChannelReader,
+pub fn process<Ctx: ChannelReader>(
+    ctx: &Ctx,
     msg: &MsgTimeoutOnClose,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
@@ -134,7 +134,6 @@ pub fn process(
     output.log("success: packet timeout ");
 
     output.emit(IbcEvent::TimeoutOnClosePacket(TimeoutOnClosePacket {
-        height: ctx.host_height(),
         packet: packet.clone(),
     }));
 
@@ -273,7 +272,6 @@ mod tests {
                     assert!(!proto_output.events.is_empty()); // Some events must exist.
                     for e in proto_output.events.iter() {
                         assert!(matches!(e, &IbcEvent::TimeoutOnClosePacket(_)));
-                        assert_eq!(e.height(), test.ctx.host_height());
                     }
                 }
                 Err(e) => {

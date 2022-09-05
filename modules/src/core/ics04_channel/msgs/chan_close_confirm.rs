@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use tendermint_proto::Protobuf;
+use ibc_proto::protobuf::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
 
@@ -16,7 +16,7 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelCloseConfirm";
 /// Message definition for the second step in the channel close handshake (the `ChanCloseConfirm`
 /// datagram).
 ///
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgChannelCloseConfirm {
     pub port_id: PortId,
     pub channel_id: ChannelId,
