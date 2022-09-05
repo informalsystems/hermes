@@ -10,8 +10,6 @@ use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::endpoint::tx_search::Response as TxSearchResponse;
 use tracing::{info, trace};
 
-use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
-use ibc::core::ics02_client::client_state::IdentifiedAnyClientState;
 use ibc::core::ics02_client::height::Height;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
@@ -21,14 +19,16 @@ use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId, PortCha
 use ibc::events::{self, IbcEvent, WithBlockDataType};
 use ibc::Height as ICSHeight;
 
-use crate::chain::cosmos::types::events::channel::{self as ChannelEvents, parse_timeout_height};
-use crate::chain::cosmos::types::events::client as ClientEvents;
+use crate::chain::cosmos::types::events::channel::parse_timeout_height;
 use crate::chain::cosmos::types::events::from_tx_response_event;
 use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use crate::chain::endpoint::ChainStatus;
 use crate::chain::psql_cosmos::snapshot::{IbcSnapshot, PacketId};
 use crate::chain::requests::*;
+use crate::client_state::IdentifiedAnyClientState;
+use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::error::Error;
+use crate::event::IbcEventWithHeight;
 
 use super::snapshot::Key;
 use super::PsqlError;
@@ -37,7 +37,11 @@ use super::PsqlError;
 /// 1. Client Update request - returns a vector with at most one update client event
 /// 2. Packet event request - returns at most one packet event for each sequence specified
 ///    in the request.
-fn filter_matching_event(event: Event, request: &QueryPacketEventDataRequest) -> Option<IbcEvent> {
+fn filter_matching_event(
+    event: Event,
+    height: Height,
+    request: &QueryPacketEventDataRequest,
+) -> Option<IbcEventWithHeight> {
     fn matches_packet(request: &QueryPacketEventDataRequest, packet: &Packet) -> bool {
         packet.source_port == request.source_port_id
             && packet.source_channel == request.source_channel_id
@@ -50,8 +54,9 @@ fn filter_matching_event(event: Event, request: &QueryPacketEventDataRequest) ->
         return None;
     }
 
-    let ibc_event = ChannelEvents::try_from_tx(&event)?;
-    match ibc_event {
+    let ibc_event = from_tx_response_event(height, &event)?;
+
+    match ibc_event.event {
         IbcEvent::SendPacket(ref send_ev) if matches_packet(request, &send_ev.packet) => {
             Some(ibc_event)
         }
@@ -65,7 +70,7 @@ fn filter_matching_event(event: Event, request: &QueryPacketEventDataRequest) ->
 pub fn all_ibc_events_from_tx_search_response(
     height: ICSHeight,
     result: abci::DeliverTx,
-) -> Vec<IbcEvent> {
+) -> Vec<IbcEventWithHeight> {
     let mut events = vec![];
     for event in result.events {
         if let Some(ibc_ev) = from_tx_response_event(height, &event) {
@@ -211,7 +216,7 @@ fn update_client_events_from_tx_search_response(
     chain_id: &ChainId,
     request: &QueryClientEventRequest,
     response: ResultTx,
-) -> Option<IbcEvent> {
+) -> Option<IbcEventWithHeight> {
     let height = ICSHeight::new(chain_id.version(), u64::from(response.height)).unwrap();
     if let QueryHeight::Specific(query_height) = request.query_height {
         if height > query_height {
@@ -224,19 +229,16 @@ fn update_client_events_from_tx_search_response(
         .events
         .into_iter()
         .filter(|event| event.type_str == request.event_id.as_str())
-        .flat_map(|event| ClientEvents::try_from_tx(&event))
-        .flat_map(|event| match event {
-            IbcEvent::UpdateClient(mut update) => {
-                update.common.height = height;
-                Some(update)
-            }
+        .flat_map(|event| from_tx_response_event(height, &event))
+        .flat_map(|event| match event.event {
+            IbcEvent::UpdateClient(update) => Some(update),
             _ => None,
         })
         .find(|update| {
             update.common.client_id == request.client_id
                 && update.common.consensus_height == request.consensus_height
         })
-        .map(IbcEvent::UpdateClient)
+        .map(|update| IbcEventWithHeight::new(IbcEvent::UpdateClient(update), height))
 }
 
 async fn tx_results_by_packet_fields(
@@ -320,8 +322,9 @@ fn packet_events_from_tx_search_response(
     chain_id: &ChainId,
     request: &QueryPacketEventDataRequest,
     responses: Vec<ResultTx>,
-) -> Vec<IbcEvent> {
+) -> Vec<IbcEventWithHeight> {
     let mut events = vec![];
+
     for response in responses {
         let height = ICSHeight::new(chain_id.version(), u64::from(response.height)).unwrap();
         if let QueryHeight::Specific(specific_query_height) = request.height {
@@ -334,11 +337,12 @@ fn packet_events_from_tx_search_response(
             .tx_result
             .events
             .into_iter()
-            .filter_map(|ev| filter_matching_event(ev, request))
+            .filter_map(|ev| filter_matching_event(ev, height, request))
             .collect::<Vec<_>>();
 
         events.append(&mut new_events)
     }
+
     events
 }
 
@@ -347,7 +351,7 @@ pub async fn query_txs_from_tendermint(
     pool: &PgPool,
     chain_id: &ChainId,
     search: &QueryTxRequest,
-) -> Result<Vec<IbcEvent>, Error> {
+) -> Result<Vec<IbcEventWithHeight>, Error> {
     match search {
         QueryTxRequest::Packet(request) => {
             crate::time!("query_txs_from_tendermint: query packet events");
@@ -384,13 +388,18 @@ pub async fn query_txs_from_tendermint(
                     .unwrap();
 
             let deliver_tx = raw_tx_result.result.unwrap();
+
             let tx_result = proto_to_deliver_tx(deliver_tx)?;
             if tx_result.code.is_err() {
-                return Ok(vec![IbcEvent::ChainError(format!(
-                    "deliver_tx for {} reports error: code={:?}, log={:?}",
-                    hash, tx_result.code, tx_result.log
-                ))]);
+                return Ok(vec![IbcEventWithHeight::new(
+                    IbcEvent::ChainError(format!(
+                        "deliver_tx for {} reports error: code={:?}, log={:?}",
+                        hash, tx_result.code, tx_result.log
+                    )),
+                    height,
+                )]);
             }
+
             Ok(all_ibc_events_from_tx_search_response(height, tx_result))
         }
     }
@@ -401,7 +410,7 @@ pub async fn query_txs_from_ibc_snapshots(
     pool: &PgPool,
     chain_id: &ChainId,
     search: &QueryTxRequest,
-) -> Result<Vec<IbcEvent>, Error> {
+) -> Result<Vec<IbcEventWithHeight>, Error> {
     match search {
         QueryTxRequest::Packet(request) => {
             crate::time!("query_txs_from_ibc_snapshots: query packet events");
@@ -415,7 +424,10 @@ pub async fn query_txs_from_ibc_snapshots(
                                 && packet.source_channel == request.source_channel_id
                                 && request.sequences.contains(&packet.sequence)
                             {
-                                Some(IbcEvent::SendPacket(SendPacket { height, packet }))
+                                Some(IbcEventWithHeight::new(
+                                    IbcEvent::SendPacket(SendPacket { packet }),
+                                    height,
+                                ))
                             } else {
                                 None
                             }
@@ -499,16 +511,20 @@ async fn rpc_tx_results_by_hashes(
 fn all_ibc_events_from_tx_result_batch(
     chain_id: &ChainId,
     responses: Vec<ResultTx>,
-) -> Vec<Vec<IbcEvent>> {
-    let mut events: Vec<Vec<IbcEvent>> = vec![];
+) -> Vec<Vec<IbcEventWithHeight>> {
+    let mut events = vec![];
+
     for response in responses {
         let height = ICSHeight::new(chain_id.version(), u64::from(response.height)).unwrap();
 
         let new_events = if response.tx_result.code.is_err() {
-            vec![IbcEvent::ChainError(format!(
-                "deliver_tx on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
-                chain_id, response.hash, response.tx_result.code, response.tx_result.log
-            ))]
+            vec![IbcEventWithHeight::new(
+                IbcEvent::ChainError(format!(
+                    "deliver_tx on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
+                    chain_id, response.hash, response.tx_result.code, response.tx_result.log
+                )),
+                height,
+            )]
         } else {
             response
                 .tx_result
@@ -562,19 +578,15 @@ pub async fn query_hashes_and_update_tx_sync_events(
         // Transaction was included in a block. Check if it was an error.
         let tx_chain_error = events
             .iter()
-            .find(|event| matches!(event, IbcEvent::ChainError(_)));
+            .find(|event| matches!(event.event, IbcEvent::ChainError(_)));
 
         if let Some(err) = tx_chain_error {
             // Save the error for all messages in the transaction
-            let err_events = tx_sync_result
-                .events
-                .iter()
-                .map(|_| err.clone())
-                .collect::<Vec<IbcEvent>>();
-            tx_sync_result.events = err_events.clone();
+            tx_sync_result.events = vec![err.clone(); tx_sync_result.events.len()];
         } else {
             tx_sync_result.events = events.clone();
         }
+
         tx_sync_result.status = TxStatus::ReceivedResponse;
     }
     Ok(())
@@ -588,9 +600,11 @@ pub async fn query_hashes_and_update_tx_sync_results(
 ) -> Result<(), Error> {
     for result in tx_sync_results.iter_mut() {
         if result.response.code.is_err() {
-            result.events = vec![IbcEvent::ChainError(format!(
+            let height = Height::new(1, 1).unwrap(); // FIXME
+
+            result.events = vec![IbcEventWithHeight::new(IbcEvent::ChainError(format!(
                 "check_tx (broadcast_tx_sync) on chain {} for Tx hash {} reports error: code={:?}, log={:?}",
-                chain_id, result.response.hash, result.response.code, result.response.log)); result.events.len()]
+                chain_id, result.response.hash, result.response.code, result.response.log)), height); result.events.len()]
         }
     }
 
@@ -678,27 +692,13 @@ fn ibc_packet_event_from_sql_block_query(
     }
 
     match event.r#type.as_str() {
-        events::SEND_PACKET_EVENT => {
-            Some(IbcEvent::SendPacket(SendPacket {
-                height: ICSHeight::new(
-                    ChainId::chain_version(chain_id.to_string().as_str()),
-                    event.block_id as u64, // TODO - get the height for the block with block_id
-                )
-                .unwrap(),
-                packet: ibc_packet_from_sql_block_by_packet_query(event),
-            }))
-        }
-        events::WRITE_ACK_EVENT => {
-            Some(IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
-                height: ICSHeight::new(
-                    ChainId::chain_version(chain_id.to_string().as_str()),
-                    event.block_id as u64, // TODO - get the height for the block with block_id
-                )
-                .unwrap(),
-                packet: ibc_packet_from_sql_block_by_packet_query(event),
-                ack: Vec::from(event.packet_ack.as_bytes()),
-            }))
-        }
+        events::SEND_PACKET_EVENT => Some(IbcEvent::SendPacket(SendPacket {
+            packet: ibc_packet_from_sql_block_by_packet_query(event),
+        })),
+        events::WRITE_ACK_EVENT => Some(IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
+            packet: ibc_packet_from_sql_block_by_packet_query(event),
+            ack: Vec::from(event.packet_ack.as_bytes()),
+        })),
         _ => None,
     }
 }

@@ -154,7 +154,6 @@ impl FullNode {
             extension_options: Default::default(),
             sequential_batch_tx: false,
             psql_conn: Default::default(),
-            psql_conn: Default::default(),
         })
     }
 

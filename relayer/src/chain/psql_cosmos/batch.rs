@@ -1,6 +1,5 @@
 use sqlx::PgPool;
 
-use ibc::events::IbcEvent;
 use ibc_proto::google::protobuf::Any;
 
 use crate::chain::cosmos::batch::send_messages_as_batches;
@@ -9,6 +8,7 @@ use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::psql_cosmos::wait::wait_for_block_commits;
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error;
+use crate::event::IbcEventWithHeight;
 use crate::keyring::KeyEntry;
 
 #[allow(clippy::too_many_arguments)]
@@ -21,7 +21,7 @@ pub async fn send_batched_messages_and_wait_commit(
     account: &mut Account,
     tx_memo: &Memo,
     messages: Vec<Any>,
-) -> Result<Vec<IbcEvent>, Error> {
+) -> Result<Vec<IbcEventWithHeight>, Error> {
     if messages.is_empty() {
         return Ok(Vec::new());
     }

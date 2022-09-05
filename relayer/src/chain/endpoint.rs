@@ -175,7 +175,7 @@ pub trait ChainEndpoint: Sized {
     fn query_application_status(&self) -> Result<ChainStatus, Error>;
 
     fn handle_ibc_event_batch(&mut self, _batch: EventBatch) -> Result<(), Error> {
-        unimplemented!()
+        Ok(())
     }
 
     /// Performs a query to retrieve the state of all clients that a chain hosts.

@@ -14,12 +14,7 @@ use tendermint_rpc::{endpoint::broadcast::tx_sync, Client};
 
 use ibc::{
     core::{
-        ics02_client::{
-            client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
-            client_state::{AnyClientState, IdentifiedAnyClientState},
-            events::{CreateClient, NewBlock, UpdateClient},
-            misbehaviour::MisbehaviourEvidence,
-        },
+        ics02_client::events::{CreateClient, NewBlock, UpdateClient},
         ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
         ics04_channel::{
             channel::{ChannelEnd, IdentifiedChannelEnd},
@@ -50,12 +45,17 @@ use crate::{
         requests::*,
         tracking::TrackedMsgs,
     },
+    client_state::{AnyClientState, IdentifiedAnyClientState},
     config::ChainConfig,
+    consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight},
     denom::DenomTrace,
     error::Error,
-    event::monitor::{EventBatch, EventReceiver, TxMonitorCmd},
+    event::{
+        monitor::{EventBatch, EventReceiver, TxMonitorCmd},
+        IbcEventWithHeight,
+    },
     keyring::{KeyEntry, KeyRing},
-    light_client::{tendermint::LightClient as TmLightClient, LightClient, Verified},
+    misbehaviour::MisbehaviourEvidence,
 };
 
 use self::snapshot::{IbcData, IbcSnapshot};
@@ -119,7 +119,7 @@ impl PsqlChain {
     async fn do_send_messages_and_wait_commit(
         &mut self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<IbcEvent>, Error> {
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         crate::time!("do_send_messages_and_wait_commit");
 
         let _span =
@@ -469,8 +469,8 @@ impl PsqlChain {
         ))?;
 
         for ev in results {
-            let send_packet = downcast!(ev.clone() => IbcEvent::SendPacket)
-                .ok_or_else(|| PsqlError::unexpected_event(ev))?;
+            let send_packet = downcast!(ev.event.clone() => IbcEvent::SendPacket)
+                .ok_or_else(|| PsqlError::unexpected_event(ev.event))?;
 
             let packet_id = PacketId {
                 channel_id: c.channel_id.clone(),
@@ -580,7 +580,7 @@ impl PsqlChain {
             .query_client_state(
                 QueryClientStateRequest {
                     client_id: ev.client_id().clone(),
-                    height: QueryHeight::Specific(ev.height()),
+                    height: QueryHeight::Specific(ev.consensus_height()),
                 },
                 IncludeProof::No,
             )
@@ -625,7 +625,7 @@ impl PsqlChain {
             .query_client_state(
                 QueryClientStateRequest {
                     client_id: ev.client_id().clone(),
-                    height: QueryHeight::Specific(ev.height()),
+                    height: QueryHeight::Specific(ev.consensus_height()),
                 },
                 IncludeProof::No,
             )
@@ -638,7 +638,7 @@ impl PsqlChain {
             .query_consensus_state(
                 QueryConsensusStateRequest {
                     client_id: ev.client_id().clone(),
-                    query_height: QueryHeight::Specific(ev.height()),
+                    query_height: QueryHeight::Specific(ev.consensus_height()),
                     consensus_height: ev.consensus_height(),
                 },
                 IncludeProof::No,
@@ -905,7 +905,9 @@ impl PsqlChain {
             )
     }
 
-    fn update_with_event(&mut self, event: IbcEvent, snapshot: &mut IbcSnapshot) {
+    fn update_with_event(&mut self, event: IbcEventWithHeight, snapshot: &mut IbcSnapshot) {
+        let event = event.event;
+
         // TODO - There should be a NewBlock event in the caller's batch.
         // If not we need to figure out that the app_status has not been updated in this snapshot
         // and do an explicit block query.
@@ -936,8 +938,6 @@ impl ChainEndpoint for PsqlChain {
 
     type ClientState = <CosmosSdkChain as ChainEndpoint>::ClientState;
 
-    type LightClient = PsqlLightClient;
-
     fn bootstrap(config: ChainConfig, rt: Arc<tokio::runtime::Runtime>) -> Result<Self, Error> {
         info!("bootstrapping");
 
@@ -960,10 +960,6 @@ impl ChainEndpoint for PsqlChain {
             rt,
             sync_state: PsqlSyncStatus::Unknown,
         })
-    }
-
-    fn init_light_client(&self) -> Result<Self::LightClient, Error> {
-        self.chain.init_light_client().map(PsqlLightClient)
     }
 
     fn init_event_monitor(
@@ -998,7 +994,7 @@ impl ChainEndpoint for PsqlChain {
     fn send_messages_and_wait_commit(
         &mut self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<IbcEvent>, Error> {
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         let runtime = self.rt.clone();
         runtime.block_on(self.do_send_messages_and_wait_commit(tracked_msgs))
     }
@@ -1298,7 +1294,7 @@ impl ChainEndpoint for PsqlChain {
             .query_next_sequence_receive(request, include_proof)
     }
 
-    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEvent>, Error> {
+    fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error> {
         if self.is_synced() {
             crate::time!("query_txs_snapshots_psql");
             crate::telemetry!(query, self.id(), "query_txs_snapshots_psql");
@@ -1349,18 +1345,13 @@ impl ChainEndpoint for PsqlChain {
     }
 
     fn build_header(
-        &self,
+        &mut self,
         trusted_height: Height,
         target_height: Height,
         client_state: &AnyClientState,
-        light_client: &mut Self::LightClient,
     ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
-        self.chain.build_header(
-            trusted_height,
-            target_height,
-            client_state,
-            &mut light_client.0,
-        )
+        self.chain
+            .build_header(trusted_height, target_height, client_state)
     }
 
     fn query_packet_commitment(
@@ -1391,38 +1382,21 @@ impl ChainEndpoint for PsqlChain {
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
         self.chain.query_denom_trace(hash)
     }
-}
 
-pub struct PsqlLightClient(TmLightClient);
-
-impl LightClient<PsqlChain> for PsqlLightClient {
-    fn header_and_minimal_set(
+    fn verify_header(
         &mut self,
         trusted: Height,
         target: Height,
         client_state: &AnyClientState,
-    ) -> Result<Verified<<PsqlChain as ChainEndpoint>::Header>, Error> {
-        self.0.header_and_minimal_set(trusted, target, client_state)
-    }
-
-    fn verify(
-        &mut self,
-        trusted: Height,
-        target: Height,
-        client_state: &AnyClientState,
-    ) -> Result<Verified<<PsqlChain as ChainEndpoint>::LightBlock>, Error> {
-        self.0.verify(trusted, target, client_state)
+    ) -> Result<Self::LightBlock, Error> {
+        self.chain.verify_header(trusted, target, client_state)
     }
 
     fn check_misbehaviour(
         &mut self,
-        update: UpdateClient,
+        update: &UpdateClient,
         client_state: &AnyClientState,
     ) -> Result<Option<MisbehaviourEvidence>, Error> {
-        self.0.check_misbehaviour(update, client_state)
-    }
-
-    fn fetch(&mut self, height: Height) -> Result<<PsqlChain as ChainEndpoint>::LightBlock, Error> {
-        self.0.fetch(height)
+        self.chain.check_misbehaviour(update, client_state)
     }
 }

@@ -61,6 +61,7 @@ use ibc_relayer::connection::ConnectionMsgType;
 use ibc_relayer::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use ibc_relayer::denom::DenomTrace;
 use ibc_relayer::error::Error;
+use ibc_relayer::event::monitor::EventBatch;
 use ibc_relayer::event::IbcEventWithHeight;
 use ibc_relayer::keyring::KeyEntry;
 use ibc_relayer::light_client::AnyHeader;
@@ -404,5 +405,9 @@ where
 
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
         self.value().query_denom_trace(hash)
+    }
+
+    fn handle_ibc_event_batch(&self, batch: EventBatch) -> Result<(), Error> {
+        self.value().handle_ibc_event_batch(batch)
     }
 }

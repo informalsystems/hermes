@@ -28,11 +28,7 @@ use ibc::{
 
 use crate::{
     account::Balance,
-<<<<<<< HEAD
-    chain::ChainType,
-=======
     client_state::{AnyClientState, IdentifiedAnyClientState},
->>>>>>> master
     config::ChainConfig,
     connection::ConnectionMsgType,
     consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight},
@@ -417,16 +413,7 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         Ok(self.query_application_status()?.height)
     }
 
-    fn handle_ibc_event_batch(&self, _batch: EventBatch) -> Result<(), Error> {
-        unimplemented!()
-    }
-
-    fn try_handle_ibc_event_batch(&self, batch: EventBatch) -> Result<(), Error> {
-        if self.config().unwrap().r#type != ChainType::CosmosPsql {
-            return Ok(());
-        }
-        self.handle_ibc_event_batch(batch)
-    }
+    fn handle_ibc_event_batch(&self, batch: EventBatch) -> Result<(), Error>;
 
     /// Performs a query to retrieve the state of all clients that a chain hosts.
     fn query_clients(

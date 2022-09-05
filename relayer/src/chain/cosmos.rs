@@ -50,7 +50,6 @@ use ibc::{
 };
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 
-use crate::account::Balance;
 use crate::chain::client::ClientSettings;
 use crate::chain::cosmos::batch::{
     send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
@@ -82,6 +81,7 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
+use crate::{account::Balance, event::monitor::EventBatch};
 
 use super::requests::{
     IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
@@ -1637,6 +1637,10 @@ impl ChainEndpoint for CosmosSdkChain {
         )?;
 
         Ok((target, supporting))
+    }
+
+    fn handle_ibc_event_batch(&mut self, _batch: EventBatch) -> Result<(), Error> {
+        Ok(())
     }
 }
 

@@ -7,14 +7,14 @@ use serde::{Deserialize, Serialize, Serializer};
 use sqlx::postgres::PgRow;
 use sqlx::types::Json;
 
-use ibc::core::ics02_client::client_consensus::AnyConsensusStateWithHeight;
-use ibc::core::ics02_client::client_state::IdentifiedAnyClientState;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::packet::{Packet, Sequence};
 use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortChannelId, PortId};
 
 use crate::chain::endpoint::ChainStatus;
+use crate::client_state::IdentifiedAnyClientState;
+use crate::consensus_state::AnyConsensusStateWithHeight;
 
 pub mod memory;
 pub mod psql;

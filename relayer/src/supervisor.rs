@@ -754,11 +754,8 @@ fn process_batch<Chain: ChainHandle>(
 }
 
 pub fn handle_events_in_runtime<Chain: ChainHandle>(chain: &Chain, batch: &EventBatch) {
-    match chain.try_handle_ibc_event_batch(batch.clone()) {
-        Ok(()) => {}
-        Err(e) => {
-            error!("error while handling batch {}", e);
-        }
+    if let Err(e) = chain.handle_ibc_event_batch(batch.clone()) {
+        error!("error while handling batch {}", e);
     }
 }
 

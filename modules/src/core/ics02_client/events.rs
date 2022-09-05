@@ -105,6 +105,12 @@ impl CreateClient {
     pub fn client_id(&self) -> &ClientId {
         &self.0.client_id
     }
+    pub fn client_type(&self) -> ClientType {
+        self.0.client_type
+    }
+    pub fn consensus_height(&self) -> Height {
+        self.0.consensus_height
+    }
 }
 
 impl From<Attributes> for CreateClient {
