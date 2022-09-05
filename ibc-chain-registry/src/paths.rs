@@ -115,7 +115,7 @@ mod tests {
         use std::str::FromStr;
 
         let path = r#"{
-            "$schema": "http://json_schema.org/draft_07/schema#",
+            "$schema": "https://github.com/cosmos/chain-registry/blob/master/ibc_data.schema.json",
             "chain_1": {
                 "chain_name": "chain_1",
                 "client_id": "tendermint_1",
@@ -148,7 +148,7 @@ mod tests {
             ]
         }"#;
         let path: IBCPath = serde_json::from_str(path).unwrap();
-        assert_eq!(path.schema, "http://json_schema.org/draft_07/schema#");
+        assert_eq!(path.schema, "https://github.com/cosmos/chain-registry/blob/master/ibc_data.schema.json");
         assert_eq!(path.chain_1.chain_name, "chain_1");
         assert_eq!(
             path.chain_1.client_id,
