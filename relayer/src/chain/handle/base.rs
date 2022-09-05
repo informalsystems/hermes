@@ -50,6 +50,7 @@ use crate::{
     light_client::AnyHeader,
     misbehaviour::MisbehaviourEvidence,
 };
+use crate::chain::requests::CrossChainQueryRequest;
 
 use super::{reply_channel, ChainHandle, ChainRequest, HealthCheck, ReplyTo, Subscription};
 
@@ -476,6 +477,10 @@ impl ChainHandle for BaseChainHandle {
         request: QueryHostConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error> {
         self.send(|reply_to| ChainRequest::QueryHostConsensusState { request, reply_to })
+    }
+
+    fn cross_chain_query(&self, request: CrossChainQueryRequest) -> Result<[u8], Error> {
+        self.send(|reply_to| ChainRequest::CrossChainQuery { request, reply_to })
     }
 }
 

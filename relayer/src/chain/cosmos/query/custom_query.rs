@@ -1,4 +1,3 @@
-use crate::chain::cosmos::query::{abci_query};
 use std::str::FromStr;
 use tonic::codegen::{Body, Bytes, http, StdError};
 use tonic::IntoRequest;
@@ -43,7 +42,14 @@ impl<T> QueryClient<T>
                 )
             })?;
         let codec = tonic::codec::ProstCodec::default();
-        let path = http::uri::PathAndQuery::from_str(path).unwrap();
-        self.inner.unary(param.into_request(), path, codec).await
+        let path = http::uri::PathAndQuery::from_str(path);
+
+        match path {
+            Ok(valid_path) => self.inner.unary(param.into_request(), valid_path, codec).await,
+            Err(e) => tonic::Status::new(
+                tonic::Code::NotFound,
+                format!("Path not found: {}", e),
+            )
+        }
     }
 }
