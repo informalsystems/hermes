@@ -256,6 +256,7 @@ mod tests {
         Ok(())
     }
 
+    #[ignore]
     #[tokio::test]
     async fn fetch_chain_config_with_packet_filters() -> Result<(), RegistryError> {
         let test_chains: &[String] = &[
@@ -340,18 +341,21 @@ mod tests {
         Ok(())
     }
 
+    #[ignore]
     #[tokio::test]
     async fn fetch_chain_config_without_packet_filters() -> Result<(), RegistryError> {
         let test_chains: &[String] = &["cosmoshub".to_string(), "evmos".to_string()]; // Must be sorted
         should_have_no_filter(test_chains).await
     }
 
+    #[ignore]
     #[tokio::test]
     async fn fetch_one_chain() -> Result<(), RegistryError> {
         let test_chains: &[String] = &["cosmoshub".to_string()]; // Must be sorted
         should_have_no_filter(test_chains).await
     }
 
+    #[ignore]
     #[tokio::test]
     async fn fetch_no_chain() -> Result<(), RegistryError> {
         let test_chains: &[String] = &[];
