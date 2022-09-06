@@ -197,12 +197,12 @@ where
 {
     async fn build_timeout_unordered_packet_message(
         relay: &OfaRelayContext<Relay>,
-        height: &<Relay::DstChain as OfaChain>::Height,
+        destination_height: &<Relay::DstChain as OfaChain>::Height,
         packet: &Relay::Packet,
     ) -> Result<SrcChain::Message, OfaErrorContext<Relay::Error>> {
         let message = relay
             .relay
-            .build_timeout_unordered_packet_message(height, packet)
+            .build_timeout_unordered_packet_message(destination_height, packet)
             .await?;
 
         Ok(message)

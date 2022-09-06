@@ -11,7 +11,7 @@ use crate::std_prelude::*;
 pub trait TimeoutUnorderedPacketMessageBuilder<Relay: RelayContext> {
     async fn build_timeout_unordered_packet_message(
         relay: &Relay,
-        height: &Height<Relay::DstChain>,
+        destination_height: &Height<Relay::DstChain>,
         packet: &Relay::Packet,
     ) -> Result<Message<Relay::SrcChain>, Relay::Error>;
 }
@@ -25,11 +25,13 @@ pub trait HasTimeoutUnorderedPacketMessageBuilder: RelayContext {
 
     async fn build_timeout_unordered_packet_message(
         &self,
-        height: &Height<Self::DstChain>,
+        destination_height: &Height<Self::DstChain>,
         packet: &Self::Packet,
     ) -> Result<Message<Self::SrcChain>, Self::Error> {
         Self::TimeoutUnorderedPacketMessageBuilder::build_timeout_unordered_packet_message(
-            self, height, packet,
+            self,
+            destination_height,
+            packet,
         )
         .await
     }

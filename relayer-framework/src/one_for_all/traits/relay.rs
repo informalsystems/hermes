@@ -93,7 +93,7 @@ pub trait OfaRelay: Async {
 
     async fn build_timeout_unordered_packet_message(
         &self,
-        height: &<Self::DstChain as OfaChain>::Height,
+        destination_height: &<Self::DstChain as OfaChain>::Height,
         packet: &Self::Packet,
     ) -> Result<<Self::SrcChain as OfaChain>::Message, Self::Error>;
 }
