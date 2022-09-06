@@ -9,7 +9,10 @@ use ibc_test_framework::types::binary::chains::ConnectedChains;
 
 pub fn build_cosmos_relay_context<ChainA, ChainB>(
     chains: &ConnectedChains<ChainA, ChainB>,
-) -> OfaRelayContext<CosmosRelayContext<CosmosRelayEnv<CosmosChainEnv<ChainA>, CosmosChainEnv<ChainB>>>> //TODO : impl AfoRelayContext
+) -> OfaRelayContext<
+    CosmosRelayContext<CosmosRelayEnv<CosmosChainEnv<ChainA>, CosmosChainEnv<ChainB>>>,
+>
+//TODO : impl AfoRelayContext
 where
     ChainA: ChainHandle,
     ChainB: ChainHandle,
