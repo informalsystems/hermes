@@ -12,6 +12,7 @@ use crate::core::traits::queries::received_packet::{
 use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext, OfaIbcChain};
 use crate::one_for_all::traits::error::OfaErrorContext;
 use crate::one_for_all::traits::runtime::OfaRuntimeContext;
+use crate::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 use crate::std_prelude::*;
 
 impl<Chain: OfaChain> HasError for OfaChainContext<Chain> {
@@ -27,7 +28,7 @@ impl<Chain: OfaChain> HasRuntime for OfaChainContext<Chain> {
 }
 
 impl<Chain: OfaChain> HasTelemetry for OfaChainContext<Chain> {
-    type Telemetry = Chain::Telemetry;
+    type Telemetry = OfaTelemetryWrapper<Chain::Telemetry>;
 
     fn telemetry(&self) -> &Self::Telemetry {
         self.chain.telemetry()

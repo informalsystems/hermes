@@ -18,12 +18,12 @@ impl<Chain> CosmosChainContext<Chain> {
     pub fn new(
         chain: Arc<Chain>,
         runtime: CosmosRuntimeContext,
-        telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
+        telemetry: CosmosTelemetry,
     ) -> Self {
         Self {
             chain,
             runtime: OfaRuntimeContext::new(runtime),
-            telemetry,
+            telemetry: OfaTelemetryWrapper::new(telemetry),
         }
     }
 }

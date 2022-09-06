@@ -40,6 +40,8 @@ where
 
     type Runtime = CosmosRuntimeContext;
 
+    type Telemetry = CosmosTelemetry;
+
     type Height = Height;
 
     type Timestamp = Timestamp;
@@ -67,8 +69,6 @@ where
     type ConsensusState = ConsensusState;
 
     type ChainStatus = ChainStatus;
-
-    type Telemetry = OfaTelemetryWrapper<CosmosTelemetry>;
 
     fn encode_raw_message(message: &CosmosIbcMessage, signer: &Signer) -> Result<Any, Error> {
         (message.to_protobuf_fn)(signer).map_err(Error::encode)

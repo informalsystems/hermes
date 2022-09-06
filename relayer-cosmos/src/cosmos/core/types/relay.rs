@@ -22,7 +22,7 @@ impl<Relay: CosmosRelay> CosmosRelayContext<Relay> {
     pub fn new(
         relay: Arc<Relay>,
         runtime: CosmosRuntimeContext,
-        telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
+        telemetry: CosmosTelemetry,
     ) -> Self {
         let src_chain = OfaChainContext::new(CosmosChainContext::new(
             relay.src_chain().clone(),
@@ -43,7 +43,7 @@ impl<Relay: CosmosRelay> CosmosRelayContext<Relay> {
             src_chain,
             dst_chain,
             runtime,
-            telemetry,
+            telemetry: OfaTelemetryWrapper::new(telemetry),
         }
     }
 }

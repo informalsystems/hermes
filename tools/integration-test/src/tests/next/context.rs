@@ -3,7 +3,6 @@ use ibc_relayer_cosmos::cosmos::all_for_one::relay::AfoCosmosRelayContext;
 use ibc_relayer_cosmos::cosmos::batch::chain::CosmosChainEnv;
 use ibc_relayer_cosmos::cosmos::batch::relay::new_relay_context_with_batch;
 use ibc_relayer_cosmos::cosmos::core::types::telemetry::{CosmosTelemetry, TelemetryState};
-use ibc_relayer_framework::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_test_framework::types::binary::chains::ConnectedChains;
 
@@ -18,13 +17,12 @@ where
     ChainA: ChainHandle,
     ChainB: ChainHandle,
 {
-    let telemetry_state =
-        OfaTelemetryWrapper::new(CosmosTelemetry::new(Arc::new(Mutex::new(TelemetryState {
-            meter: global::meter("hermes"),
-            counters: HashMap::new(),
-            value_recorders: HashMap::new(),
-            updown_counters: HashMap::new(),
-        }))));
+    let telemetry_state = CosmosTelemetry::new(Arc::new(Mutex::new(TelemetryState {
+        meter: global::meter("hermes"),
+        counters: HashMap::new(),
+        value_recorders: HashMap::new(),
+        updown_counters: HashMap::new(),
+    })));
 
     let runtime = TokioRuntimeContext::new(chains.node_a.value().chain_driver.runtime.clone());
 
