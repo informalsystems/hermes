@@ -21,6 +21,7 @@ use ibc::{
     Height,
 };
 
+use crate::chain::requests::CrossChainQueryRequest;
 use crate::{
     account::Balance,
     chain::{
@@ -50,7 +51,6 @@ use crate::{
     light_client::AnyHeader,
     misbehaviour::MisbehaviourEvidence,
 };
-use crate::chain::requests::CrossChainQueryRequest;
 
 use super::{reply_channel, ChainHandle, ChainRequest, HealthCheck, ReplyTo, Subscription};
 
@@ -479,7 +479,7 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryHostConsensusState { request, reply_to })
     }
 
-    fn cross_chain_query(&self, request: CrossChainQueryRequest) -> Result<[u8], Error> {
+    fn cross_chain_query(&self, request: CrossChainQueryRequest) -> Result<String, Error> {
         self.send(|reply_to| ChainRequest::CrossChainQuery { request, reply_to })
     }
 }

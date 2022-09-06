@@ -61,6 +61,7 @@ humantime = "2.1.0"
 regex = "1.5.5"
 moka = "0.9.1"
 uuid = { version = "1.1.2", features = ["v4"] }
+reqwest = "0.11.11"
 
 [dependencies.num-bigint]
 version = "0.4"

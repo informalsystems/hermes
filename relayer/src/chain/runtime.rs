@@ -25,6 +25,7 @@ use ibc::{
     Height,
 };
 
+use crate::chain::requests::CrossChainQueryRequest;
 use crate::{
     account::Balance,
     client_state::{AnyClientState, IdentifiedAnyClientState},
@@ -42,7 +43,6 @@ use crate::{
     light_client::AnyHeader,
     misbehaviour::MisbehaviourEvidence,
 };
-use crate::chain::requests::CrossChainQueryRequest;
 
 use super::{
     client::ClientSettings,
@@ -282,7 +282,7 @@ impl<Endpoint> ChainRuntime<Endpoint>
                             self.build_consensus_state(trusted, target, client_state, reply_to)?
                         },
 
-                       Ok(ChainRequest::BuildMisbehaviour { client_state, update_event, reply_to }) => {
+                        Ok(ChainRequest::BuildMisbehaviour { client_state, update_event, reply_to }) => {
                             self.check_misbehaviour(update_event, client_state, reply_to)?
                         },
 
@@ -884,9 +884,12 @@ impl<Endpoint> ChainRuntime<Endpoint>
     fn cross_chain_query(
         &self,
         request: CrossChainQueryRequest,
-        reply_to: ReplyTo<()>,
+        reply_to: ReplyTo<String>,
     ) -> Result<(), Error> {
-        println!("cross chain implementation");
+        let uri = request.uri;
+        let result = self.chain.cross_chain_query(uri);
+        reply_to.send(result).map_err(Error::send)?;
+
         Ok(())
     }
 }

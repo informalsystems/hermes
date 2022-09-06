@@ -347,6 +347,8 @@ pub trait ChainEndpoint: Sized {
         request: QueryHostConsensusStateRequest,
     ) -> Result<Self::ConsensusState, Error>;
 
+    fn cross_chain_query(&self, uri: String) -> Result<String, Error>;
+
     fn build_client_state(
         &self,
         height: ICSHeight,

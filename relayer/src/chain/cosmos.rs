@@ -60,6 +60,7 @@ use crate::chain::cosmos::encode::encode_to_bech32;
 use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
 use crate::chain::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::query::balance::query_balance;
+use crate::chain::cosmos::query::custom_query::rest_query;
 use crate::chain::cosmos::query::denom_trace::query_denom_trace;
 use crate::chain::cosmos::query::status::query_status;
 use crate::chain::cosmos::query::tx::query_txs;
@@ -1578,6 +1579,14 @@ impl ChainEndpoint for CosmosSdkChain {
             .block_on(rpc_call)
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
         Ok(response.block.header.into())
+    }
+
+    fn cross_chain_query(&self, uri: String) -> Result<String, Error> {
+        let response = self
+            .block_on(rest_query(uri))
+            .map_err(|_| Error::query("cross chain query failed".to_owned()))?;
+
+        Ok(response)
     }
 
     fn build_client_state(

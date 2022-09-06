@@ -62,9 +62,9 @@ mod base;
 mod cache;
 mod counting;
 
+use crate::chain::requests::CrossChainQueryRequest;
 pub use base::BaseChainHandle;
 pub use counting::CountingChainHandle;
-use crate::chain::requests::CrossChainQueryRequest;
 
 pub type CachingChainHandle = cache::CachingChainHandle<BaseChainHandle>;
 pub type CountingAndCachingChainHandle =
@@ -108,7 +108,7 @@ pub fn reply_channel<T>() -> (ReplyTo<T>, Reply<T>) {
 /// Requests that a `ChainHandle` may send to a `ChainRuntime`.
 #[derive(Clone, Debug)]
 #[allow(clippy::large_enum_variant)]
-pub enum ChainRequest<T = (), R = ()> {
+pub enum ChainRequest {
     Shutdown {
         reply_to: ReplyTo<()>,
     },
@@ -354,8 +354,8 @@ pub enum ChainRequest<T = (), R = ()> {
     },
 
     CrossChainQuery {
-        request: T,
-        reply_to: ReplyTo<R>,
+        request: CrossChainQueryRequest,
+        reply_to: ReplyTo<String>,
     },
 }
 
@@ -645,8 +645,5 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         request: QueryHostConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error>;
 
-    fn cross_chain_query(
-        &self,
-        request: CrossChainQueryRequest,
-    ) -> Result<[u8], Error>;
+    fn cross_chain_query(&self, request: CrossChainQueryRequest) -> Result<String, Error>;
 }

@@ -390,8 +390,7 @@ pub struct QueryHostConsensusStateRequest {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CrossChainQueryRequest {
-    pub path: String,
-    pub param: String,
+    pub uri: String,
     pub height: QueryHeight,
 }
 

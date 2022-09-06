@@ -15,10 +15,10 @@ use crate::error::Error;
 
 pub mod account;
 pub mod balance;
+pub mod custom_query;
 pub mod denom_trace;
 pub mod status;
 pub mod tx;
-pub mod custom_query;
 
 /// Generic query response type
 #[derive(Clone, Debug, PartialEq)]

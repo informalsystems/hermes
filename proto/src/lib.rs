@@ -138,6 +138,11 @@ pub mod ibc {
                 include_proto!("ibc.applications.transfer.v2.rs");
             }
         }
+        pub mod query {
+            pub mod v1 {
+                include_proto!("ibc.applications.ibc_query.v1.rs");
+            }
+        }
         pub mod interchain_accounts {
             pub mod v1 {
                 include_proto!("ibc.applications.interchain_accounts.v1.rs");
