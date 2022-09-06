@@ -1,5 +1,4 @@
 use core::str::FromStr;
-use eyre::eyre;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::config::AddressType;
 
@@ -70,7 +69,7 @@ impl FromStr for ChainType {
             name if name.contains("wasmd") => Ok(ChainType::Cosmos),
             name if name.contains("icad") => Ok(ChainType::Cosmos),
             name if name.contains("evmosd") => Ok(ChainType::Evmos),
-            _ => Err(Error::generic(eyre!("unhandled chain type: {}", s))),
+            _ => Ok(ChainType::Cosmos),
         }
     }
 }
