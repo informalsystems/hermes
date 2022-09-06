@@ -415,7 +415,6 @@ impl<Endpoint> ChainRuntime<Endpoint>
                         },
 
                         Ok(ChainRequest::CrossChainQuery { request, reply_to }) => {
-                            println!("cross chain query");
                             self.cross_chain_query(request, reply_to)?
                         }
 

@@ -24,7 +24,17 @@ use crate::account::Balance;
 use crate::chain::client::ClientSettings;
 use crate::chain::endpoint::{ChainStatus, HealthCheck};
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
-use crate::chain::requests::{CrossChainQueryRequest, IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest, QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest};
+use crate::chain::requests::{
+    CrossChainQueryRequest, IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest,
+    QueryChannelRequest, QueryChannelsRequest, QueryClientConnectionsRequest,
+    QueryClientStateRequest, QueryClientStatesRequest, QueryConnectionChannelsRequest,
+    QueryConnectionRequest, QueryConnectionsRequest, QueryConsensusStateRequest,
+    QueryConsensusStatesRequest, QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
+    QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
+    QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
+    QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+};
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;

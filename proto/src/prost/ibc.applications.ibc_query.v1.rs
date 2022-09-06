@@ -10,11 +10,11 @@ pub struct GenesisState {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CrossChainQuery {
     #[prost(string, tag="1")]
-    pub id: ::prost::alloc::string::String,
+    pub msg_type: ::prost::alloc::string::String,
     #[prost(string, tag="2")]
-    pub path: ::prost::alloc::string::String,
+    pub id: ::prost::alloc::string::String,
     #[prost(string, tag="3")]
-    pub param: ::prost::alloc::string::String,
+    pub path: ::prost::alloc::string::String,
     #[prost(uint64, tag="4")]
     pub local_timeout_height: u64,
     #[prost(uint64, tag="5")]
@@ -61,15 +61,32 @@ impl QueryResult {
         }
     }
 }
+/// QueryCrossChainQuery
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryCrossChainQuery {
+    /// query id
+    #[prost(string, tag="1")]
+    pub id: ::prost::alloc::string::String,
+}
+/// QueryCrossChainQueryResponse
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryCrossChainQueryResponse {
+    #[prost(string, tag="1")]
+    pub id: ::prost::alloc::string::String,
+    #[prost(enumeration="QueryResult", tag="2")]
+    pub result: i32,
+    #[prost(bytes="vec", tag="3")]
+    pub data: ::prost::alloc::vec::Vec<u8>,
+}
 /// MsgSubmitCrossChainQuery
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSubmitCrossChainQuery {
     #[prost(string, tag="1")]
-    pub id: ::prost::alloc::string::String,
+    pub msg_type: ::prost::alloc::string::String,
     #[prost(string, tag="2")]
-    pub path: ::prost::alloc::string::String,
+    pub id: ::prost::alloc::string::String,
     #[prost(string, tag="3")]
-    pub param: ::prost::alloc::string::String,
+    pub path: ::prost::alloc::string::String,
     #[prost(uint64, tag="4")]
     pub local_timeout_height: u64,
     #[prost(uint64, tag="5")]

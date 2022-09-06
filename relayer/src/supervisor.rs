@@ -35,19 +35,24 @@ use crate::{
 };
 
 pub mod client_state_filter;
+
 use client_state_filter::{FilterPolicy, Permission};
 
 pub mod error;
+
 pub use error::{Error, ErrorDetail};
 
 pub mod dump_state;
+
 use dump_state::SupervisorState;
 
 pub mod scan;
 pub mod spawn;
 
 pub mod cmd;
+
 use cmd::SupervisorCmd;
+use crate::chain::cosmos::query::custom_query::check_if_cross_chain_query_packet;
 
 use self::{scan::ChainScanner, spawn::SpawnContext};
 
@@ -55,11 +60,11 @@ type ArcBatch = Arc<monitor::Result<EventBatch>>;
 type Subscription = Receiver<ArcBatch>;
 
 /**
-    A wrapper around the SupervisorCmd sender so that we can
-    send stop signal to the supervisor before stopping the
-    chain drivers to prevent the supervisor from raising
-    errors caused by closed connections.
-*/
+A wrapper around the SupervisorCmd sender so that we can
+send stop signal to the supervisor before stopping the
+chain drivers to prevent the supervisor from raising
+errors caused by closed connections.
+ */
 pub struct SupervisorHandle {
     pub sender: Sender<SupervisorCmd>,
     tasks: Vec<TaskHandle>,
@@ -78,11 +83,11 @@ pub struct SupervisorOptions {
 }
 
 /**
-   Spawn a supervisor for testing purpose using the provided
-   [`Config`] and [`SharedRegistry`]. Returns a
-   [`SupervisorHandle`] that stops the supervisor when the
-   value is dropped.
-*/
+Spawn a supervisor for testing purpose using the provided
+[`Config`] and [`SharedRegistry`]. Returns a
+[`SupervisorHandle`] that stops the supervisor when the
+value is dropped.
+ */
 pub fn spawn_supervisor(
     config: Config,
     registry: SharedRegistry<impl ChainHandle>,
@@ -98,12 +103,12 @@ pub fn spawn_supervisor(
 
 impl SupervisorHandle {
     /**
-       Explicitly stop the running supervisor. This is useful in tests where
-       the supervisor has to be stopped and restarted explicitly.
+    Explicitly stop the running supervisor. This is useful in tests where
+    the supervisor has to be stopped and restarted explicitly.
 
-       Note that after stopping the supervisor, the only way to restart it
-       is by respawning a new supervisor using [`spawn_supervisor`].
-    */
+    Note that after stopping the supervisor, the only way to restart it
+    is by respawning a new supervisor using [`spawn_supervisor`].
+     */
     pub fn shutdown(self) {
         for task in self.tasks {
             // Send the shutdown signals in parallel
@@ -144,7 +149,7 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
             ScanMode::Auto
         },
     )
-    .scan_chains();
+        .scan_chains();
 
     info!("Scanned chains:");
     info!("{}", scan);
@@ -686,6 +691,18 @@ fn process_batch<Chain: ChainHandle>(
             continue;
         }
 
+        let mut cross_chain_queries: Vec<IbcEventWithHeight> = vec![];
+        let mut events_to_be_relayed: Vec<IbcEventWithHeight> = vec![];
+
+        for event_with_height in events_with_heights {
+            if check_if_cross_chain_query_packet(event_with_height.event.packet()) {
+                cross_chain_queries.push(event_with_height);
+            } else {
+                events_to_be_relayed.push(event_with_height);
+            }
+        }
+
+
         let src = registry
             .get_or_spawn(object.src_chain_id())
             .map_err(Error::spawn)?;
@@ -695,11 +712,11 @@ fn process_batch<Chain: ChainHandle>(
             .map_err(Error::spawn)?;
 
         if let Object::Packet(_path) = object.clone() {
-            // TODO: remove cross-chain query events from events_with_heights
-            for _event_with_height in events_with_heights.iter() {}
+            // TODO: cross chain handling
+            for _event_with_height in events_to_be_relayed.iter() {}
             // Update telemetry info
             telemetry!({
-                for event_with_height in events_with_heights.iter() {
+                for event_with_height in events_to_be_relayed.iter() {
                     match &event_with_height.event {
                         IbcEvent::SendPacket(send_packet_ev) => {
                             ibc_telemetry::global().send_packet_events(
@@ -739,7 +756,7 @@ fn process_batch<Chain: ChainHandle>(
 
         worker.send_events(
             batch.height,
-            events_with_heights,
+            events_to_be_relayed,
             batch.chain_id.clone(),
             batch.tracking_id,
         );
@@ -763,7 +780,7 @@ fn handle_batch<Chain: ChainHandle>(
     match batch.deref() {
         Ok(batch) => {
             if let Err(e) =
-                process_batch(config, registry, client_state_filter, workers, chain, batch)
+            process_batch(config, registry, client_state_filter, workers, chain, batch)
             {
                 error!("[{}] error during batch processing: {}", chain_id, e);
             }
