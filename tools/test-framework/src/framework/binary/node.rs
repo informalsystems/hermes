@@ -144,7 +144,7 @@ where
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
         let node = bootstrap_single_node(
             builder,
-            "11",
+            "alpha",
             config.bootstrap_with_random_ids,
             |config| self.test.get_overrides().modify_node_config(config),
             |genesis| self.test.get_overrides().modify_genesis_file(genesis),
