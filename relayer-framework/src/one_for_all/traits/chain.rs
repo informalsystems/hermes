@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
 use crate::core::traits::core::Async;
-use crate::core::traits::runtime::telemetry::BasicTelemetryContext;
 use crate::one_for_all::traits::error::OfaError;
 use crate::one_for_all::traits::runtime::{OfaRuntime, OfaRuntimeContext};
+use crate::one_for_all::traits::telemetry::OfaTelemetry;
 use crate::std_prelude::*;
 
 #[derive(Clone)]
@@ -53,7 +53,7 @@ pub trait OfaChain: Async {
 
     type WriteAcknowledgementEvent: Async;
 
-    type Telemetry: BasicTelemetryContext;
+    type Telemetry: OfaTelemetry;
 
     fn encode_raw_message(
         message: &Self::Message,
