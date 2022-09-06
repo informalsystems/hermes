@@ -4,6 +4,7 @@ use crate::core::traits::contexts::chain::{ChainContext, IbcChainContext};
 use crate::core::traits::contexts::error::HasError;
 use crate::core::traits::contexts::ibc_event::HasIbcEvents;
 use crate::core::traits::contexts::runtime::HasRuntime;
+use crate::core::traits::contexts::telemetry::HasTelemetry;
 use crate::core::traits::queries::consensus_state::{ConsensusStateQuerier, HasConsensusState};
 use crate::core::traits::queries::received_packet::{
     HasReceivedPacketQuerier, ReceivedPacketQuerier,
@@ -11,6 +12,7 @@ use crate::core::traits::queries::received_packet::{
 use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext, OfaIbcChain};
 use crate::one_for_all::traits::error::OfaErrorContext;
 use crate::one_for_all::traits::runtime::OfaRuntimeContext;
+use crate::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 use crate::std_prelude::*;
 
 impl<Chain: OfaChain> HasError for OfaChainContext<Chain> {
@@ -22,6 +24,14 @@ impl<Chain: OfaChain> HasRuntime for OfaChainContext<Chain> {
 
     fn runtime(&self) -> &Self::Runtime {
         self.chain.runtime()
+    }
+}
+
+impl<Chain: OfaChain> HasTelemetry for OfaChainContext<Chain> {
+    type Telemetry = OfaTelemetryWrapper<Chain::Telemetry>;
+
+    fn telemetry(&self) -> &Self::Telemetry {
+        self.chain.telemetry()
     }
 }
 

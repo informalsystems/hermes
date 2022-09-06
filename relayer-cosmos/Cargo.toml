@@ -24,6 +24,7 @@ ibc-proto     = { version = "0.20.0", path = "../proto" }
 ibc-relayer     = { version = "0.19.0", path = "../relayer" }
 ibc-relayer-runtime = { version = "0.1.0", path = "../relayer-runtime" }
 ibc-relayer-framework = { version = "0.1.0", path = "../relayer-framework" }
+ibc-telemetry = { version = "0.19.0", path = "../telemetry" }
 
 serde = "1.0"
 serde_derive = "1.0"
@@ -34,6 +35,8 @@ eyre = "0.6.8"
 tokio = "1.19.2"
 itertools = "0.10.3"
 tracing = "0.1.36"
+opentelemetry = "0.17.0"
+
 
 [dependencies.tendermint]
 version = "=0.23.9"

@@ -42,6 +42,8 @@ pub trait OfaRelay: Async {
 
     type Packet: Async;
 
+    type Telemetry: Async;
+
     fn packet_src_port(packet: &Self::Packet) -> &<Self::SrcChain as OfaChain>::PortId;
 
     fn packet_src_channel_id(packet: &Self::Packet) -> &<Self::SrcChain as OfaChain>::ChannelId;
@@ -67,6 +69,8 @@ pub trait OfaRelay: Async {
     fn src_chain(&self) -> &OfaChainContext<Self::SrcChain>;
 
     fn dst_chain(&self) -> &OfaChainContext<Self::DstChain>;
+
+    fn telemetry(&self) -> &Self::Telemetry;
 
     async fn build_src_update_client_messages(
         &self,
