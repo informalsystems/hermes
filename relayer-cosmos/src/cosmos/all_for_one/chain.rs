@@ -9,12 +9,10 @@ use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer_framework::all_for_one::traits::chain::{AfoChainContext, AfoCounterpartyContext};
 use ibc_relayer_framework::one_for_all::traits::error::OfaErrorContext;
-use ibc_relayer_framework::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 use tendermint::abci::responses::Event;
 
 use crate::cosmos::core::error::Error;
 use crate::cosmos::core::types::message::CosmosIbcMessage;
-use crate::cosmos::core::types::telemetry::CosmosTelemetry;
 
 pub trait AfoCosmosChainContext<Counterparty>:
     AfoChainContext<
@@ -34,7 +32,6 @@ pub trait AfoCosmosChainContext<Counterparty>:
     WriteAcknowledgementEvent = WriteAcknowledgement,
     ConsensusState = ConsensusState,
     ChainStatus = ChainStatus,
-    Telemetry = OfaTelemetryWrapper<CosmosTelemetry>,
 >
 where
     Counterparty: AfoCounterpartyContext<Self>,
@@ -60,7 +57,6 @@ where
         WriteAcknowledgementEvent = WriteAcknowledgement,
         ConsensusState = ConsensusState,
         ChainStatus = ChainStatus,
-        Telemetry = OfaTelemetryWrapper<CosmosTelemetry>,
     >,
     Counterparty: AfoCounterpartyContext<Chain>,
 {
