@@ -1,6 +1,5 @@
 use ibc_relayer_framework::core::impls::packet_relayers::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
 use ibc_relayer_framework::core::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer;
-use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
 
@@ -52,6 +51,8 @@ impl BinaryChannelTest for IbcTransferTest {
             denom_a
         );
 
+        let chain_a_height = chains.handle_a.query_latest_height().unwrap();
+
         let packet = chains.node_a.chain_driver().ibc_transfer_token(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
@@ -68,41 +69,30 @@ impl BinaryChannelTest for IbcTransferTest {
 
         runtime.block_on(async {
             relayer
-                .relay_timeout_unordered_packet(&relay_context, &packet)
+                .relay_timeout_unordered_packet(&relay_context, &chain_a_height, &packet)
                 .await
                 .unwrap()
         });
 
         info!("finished running relayer");
 
-        let denom_b = derive_ibc_denom(
-            &channel.port_b.as_ref(),
-            &channel.channel_id_b.as_ref(),
-            &denom_a,
-        )?;
-
-        info!(
-            "Waiting for user on chain B to receive IBC transferred amount of {} {}",
-            a_to_b_amount, denom_b
-        );
-
         chains.node_a.chain_driver().assert_eventual_wallet_amount(
             &wallet_a.address(),
-            balance_a - a_to_b_amount,
+            balance_a,
             &denom_a,
         )?;
 
-        chains.node_b.chain_driver().assert_eventual_wallet_amount(
-            &wallet_b.address(),
-            a_to_b_amount,
-            &denom_b.as_ref(),
-        )?;
+        // chains.node_b.chain_driver().assert_eventual_wallet_amount(
+        //     &wallet_b.address(),
+        //     balance_b,
+        //     &denom_b.as_ref(),
+        // )?;
 
-        info!(
-            "successfully performed IBC transfer from chain {} to chain {}",
-            chains.chain_id_a(),
-            chains.chain_id_b(),
-        );
+        // info!(
+        //     "successfully performed IBC transfer from chain {} to chain {}",
+        //     chains.chain_id_a(),
+        //     chains.chain_id_b(),
+        // );
 
         Ok(())
     }
