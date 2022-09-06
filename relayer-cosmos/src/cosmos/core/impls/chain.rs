@@ -18,6 +18,7 @@ use ibc_relayer::consensus_state::AnyConsensusState;
 use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
 use ibc_relayer_framework::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
+use ibc_relayer_framework::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 use prost::Message as _;
 use tendermint::abci::responses::Event;
 
@@ -67,7 +68,7 @@ where
 
     type ChainStatus = ChainStatus;
 
-    type Telemetry = CosmosTelemetry;
+    type Telemetry = OfaTelemetryWrapper<CosmosTelemetry>;
 
     fn encode_raw_message(message: &CosmosIbcMessage, signer: &Signer) -> Result<Any, Error> {
         (message.to_protobuf_fn)(signer).map_err(Error::encode)
@@ -136,7 +137,7 @@ where
         Ok(status)
     }
 
-    fn telemetry(&self) -> &CosmosTelemetry {
+    fn telemetry(&self) -> &OfaTelemetryWrapper<CosmosTelemetry> {
         &self.telemetry
     }
 }

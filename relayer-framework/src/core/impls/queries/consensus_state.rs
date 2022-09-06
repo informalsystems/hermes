@@ -28,7 +28,7 @@ where
     ) -> Result<Counterparty::ConsensusState, Chain::Error> {
         let telemetry = chain.telemetry();
         let label = Telemetry::new_label("query_type", "consensus_state");
-        telemetry.update_metric("query", &[label], 1u64.into(), None);
+        telemetry.update_metric("query", &[label], 1u64.into(), None, None);
         let status = InQuerier::query_consensus_state(chain, client_id, height).await?;
         Ok(status)
     }

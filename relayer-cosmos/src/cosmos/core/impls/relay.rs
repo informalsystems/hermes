@@ -11,6 +11,7 @@ use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer_framework::one_for_all::traits::chain::{OfaChain, OfaChainContext};
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelay;
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
+use ibc_relayer_framework::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 
 use crate::cosmos::core::error::Error;
 use crate::cosmos::core::traits::chain::CosmosChain;
@@ -38,7 +39,7 @@ where
 
     type Packet = Packet;
 
-    type Telemetry = CosmosTelemetry;
+    type Telemetry = OfaTelemetryWrapper<CosmosTelemetry>;
 
     fn packet_src_port(packet: &Self::Packet) -> &<Self::SrcChain as OfaChain>::PortId {
         &packet.source_port

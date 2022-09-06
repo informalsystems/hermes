@@ -1,6 +1,7 @@
 use alloc::sync::Arc;
 use ibc_relayer_framework::one_for_all::traits::chain::OfaChainContext;
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
+use ibc_relayer_framework::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 
 use crate::cosmos::core::traits::relay::CosmosRelay;
 use crate::cosmos::core::types::chain::CosmosChainContext;
@@ -14,14 +15,14 @@ pub struct CosmosRelayContext<Relay: CosmosRelay> {
     pub src_chain: OfaChainContext<CosmosChainContext<Relay::SrcChain>>,
     pub dst_chain: OfaChainContext<CosmosChainContext<Relay::DstChain>>,
     pub runtime: OfaRuntimeContext<CosmosRuntimeContext>,
-    pub telemetry: CosmosTelemetry,
+    pub telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
 }
 
 impl<Relay: CosmosRelay> CosmosRelayContext<Relay> {
     pub fn new(
         relay: Arc<Relay>,
         runtime: CosmosRuntimeContext,
-        telemetry: CosmosTelemetry,
+        telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
     ) -> Self {
         let src_chain = OfaChainContext::new(CosmosChainContext::new(
             relay.src_chain().clone(),

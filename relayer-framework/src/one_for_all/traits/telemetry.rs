@@ -31,6 +31,7 @@ pub trait OfaTelemetry: HasLabel {
     );
 }
 
+#[derive(Clone)]
 pub struct OfaTelemetryWrapper<Telemetry> {
     pub telemetry: Telemetry,
 }

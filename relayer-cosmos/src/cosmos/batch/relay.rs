@@ -7,6 +7,7 @@ use ibc_relayer_framework::addons::batch::spawn::{
 };
 use ibc_relayer_framework::core::traits::target::{DestinationTarget, SourceTarget};
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
+use ibc_relayer_framework::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 
 use crate::cosmos::basic::relay::CosmosRelayEnv;
 use crate::cosmos::batch::chain::CosmosChainEnv;
@@ -21,7 +22,7 @@ pub fn new_relay_context_with_batch<SrcChain, DstChain>(
     src_to_dst_client: ForeignClient<DstChain, SrcChain>,
     dst_to_src_client: ForeignClient<SrcChain, DstChain>,
     batch_config: BatchConfig,
-    telemetry: CosmosTelemetry,
+    telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
 ) -> OfaRelayContext<
     CosmosRelayContext<CosmosRelayEnv<CosmosChainEnv<SrcChain>, CosmosChainEnv<DstChain>>>,
 >
