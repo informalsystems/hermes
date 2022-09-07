@@ -166,12 +166,9 @@ pub mod test_util {
     }
 
     pub fn get_dummy_transfer_packet(msg: MsgTransfer<PrefixedCoin>, sequence: Sequence) -> Packet {
-        let coin = {
-            let token: PrefixedCoin = msg.token.try_into().unwrap();
-            Coin {
-                denom: token.denom.clone(),
-                amount: token.amount,
-            }
+        let coin = Coin {
+            denom: msg.token.denom.clone(),
+            amount: msg.token.amount,
         };
 
         let data = {

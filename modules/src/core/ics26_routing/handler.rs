@@ -486,12 +486,12 @@ mod tests {
                     .into(),
                 want_pass: true,
                 state_check: Some(Box::new(move |ctx| {
-                    !ctx.get_packet_commitment(
+                    ctx.get_packet_commitment(
                         &msg_ack_packet.packet.source_port,
                         &msg_ack_packet.packet.source_channel,
                         msg_ack_packet.packet.sequence,
                     )
-                    .is_ok()
+                    .is_err()
                 })),
             },
             Test {
