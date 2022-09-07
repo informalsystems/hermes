@@ -139,7 +139,7 @@ impl BinaryChainTest for ClientFailsTest {
         let mut client_b_to_a = chains2.foreign_clients.client_b_to_a;
 
         // Wait for elapsed > refresh_window
-        std::thread::sleep(core::time::Duration::from_secs(40));
+        std::thread::sleep(core::time::Duration::from_secs(45));
 
         let res = client_a_to_b.refresh();
         // Assert that `refresh()` returns an error as the update client will fail due to the low `gas_multiplier`.
