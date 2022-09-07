@@ -8,6 +8,8 @@ use std::path::PathBuf;
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct ChainData {
+    #[serde(rename = "$schema")]
+    pub schema: String,
     pub chain_name: String,
     pub status: String,
     pub network_type: String,
@@ -187,6 +189,7 @@ mod tests {
         use ibc::core::ics24_host::identifier::ChainId;
         use std::str::FromStr;
         let json = r#"{
+            "$schema": "https://github.com/cosmos/chain-registry/blob/master/chain.schema.json",
             "chain_name": "test",
             "status": "active",
             "network_type": "test",
@@ -266,6 +269,10 @@ mod tests {
             ]
         }"#;
         let chain_data = serde_json::from_str::<ChainData>(json).unwrap();
+        assert_eq!(
+            chain_data.schema,
+            "https://github.com/cosmos/chain-registry/blob/master/chain.schema.json"
+        );
         assert_eq!(chain_data.chain_name, "test");
         assert_eq!(chain_data.status, "active");
         assert_eq!(chain_data.network_type, "test");

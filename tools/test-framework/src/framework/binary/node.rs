@@ -112,7 +112,7 @@ where
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
         let node_a = bootstrap_single_node(
             builder,
-            "0",
+            "1",
             config.bootstrap_with_random_ids,
             |config| self.test.get_overrides().modify_node_config(config),
             |genesis| self.test.get_overrides().modify_genesis_file(genesis),
@@ -120,7 +120,7 @@ where
 
         let node_b = bootstrap_single_node(
             builder,
-            "1",
+            "2",
             config.bootstrap_with_random_ids,
             |config| self.test.get_overrides().modify_node_config(config),
             |genesis| self.test.get_overrides().modify_genesis_file(genesis),
@@ -144,7 +144,7 @@ where
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
         let node = bootstrap_single_node(
             builder,
-            "alpha",
+            "1",
             config.bootstrap_with_random_ids,
             |config| self.test.get_overrides().modify_node_config(config),
             |genesis| self.test.get_overrides().modify_genesis_file(genesis),
