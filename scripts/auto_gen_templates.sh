@@ -61,6 +61,9 @@ function generate_commands(){
 }
 
 function generate_help(){
+    # This command expects an array of commands as arguments where subcommands are separated by '/'
+    # (e.g. ["query/channels", "config"]). It will generate the help for each command and store it in the
+    # corresponding file.
     for path in "$@"; do
         command=$(echo "$path" | sed -e 's/\// /g')
         # Check that the command is not empty
