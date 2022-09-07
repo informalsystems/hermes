@@ -1,1 +1,1 @@
-pub mod channel_filter;
+pub mod trivial_filters;
