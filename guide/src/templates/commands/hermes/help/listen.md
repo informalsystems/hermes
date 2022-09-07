@@ -1,39 +1,13 @@
 DESCRIPTION:
-Run a binary or example of the local package
+Listen to and display IBC events emitted by a chain
 
 USAGE:
-    cargo run [OPTIONS] [--] [args]...
-
-ARGS:
-    <args>...    
+    hermes listen [OPTIONS] --chain <CHAIN_ID>
 
 OPTIONS:
-    -q, --quiet                     Do not print cargo log messages
-        --bin [<NAME>]              Name of the bin target to run
-        --example [<NAME>]          Name of the example target to run
-    -p, --package [<SPEC>...]       Package with the target to run
-    -v, --verbose                   Use verbose output (-vv very verbose/build.rs output)
-    -j, --jobs <N>                  Number of parallel jobs, defaults to # of CPUs
-        --color <WHEN>              Coloring: auto, always, never
-        --keep-going                Do not abort the build as soon as there is an error (unstable)
-        --frozen                    Require Cargo.lock and cache are up to date
-    -r, --release                   Build artifacts in release mode, with optimizations
-        --locked                    Require Cargo.lock is up to date
-        --profile <PROFILE-NAME>    Build artifacts with the specified profile
-        --features <FEATURES>       Space or comma separated list of features to activate
-        --offline                   Run without accessing the network
-        --all-features              Activate all available features
-        --config <KEY=VALUE>        Override a configuration value (unstable)
-        --no-default-features       Do not activate the `default` feature
-    -Z <FLAG>                       Unstable (nightly-only) flags to Cargo, see 'cargo -Z help' for
-                                    details
-        --target <TRIPLE>           Build for the target triple
-        --target-dir <DIRECTORY>    Directory for all generated artifacts
-        --manifest-path <PATH>      Path to Cargo.toml
-        --message-format <FMT>      Error format
-        --unit-graph                Output build graph in JSON (unstable)
-        --ignore-rust-version       Ignore `rust-version` specification in packages
-        --timings[=<FMTS>...]       Timing output formats (unstable) (comma separated): html, json
-    -h, --help                      Print help information
+        --events <EVENT>...    Add an event type to listen for, can be repeated. Listen for all
+                               events by default (available: Tx, NewBlock)
+    -h, --help                 Print help information
 
-Run `cargo help run` for more detailed information.
+REQUIRED:
+        --chain <CHAIN_ID>    Identifier of the chain to listen for events from

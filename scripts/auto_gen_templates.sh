@@ -62,7 +62,7 @@ function generate_commands(){
 
 function generate_help(){
     for path in "$@"; do
-        command=$(echo "$command" | sed -e 's/\// /g')
+        command=$(echo "$path" | sed -e 's/\// /g')
         # Check that the command is not empty
         if [ ! -z "$path" ]; then
             # Create the directory (if they don't exist) and the file
@@ -76,4 +76,5 @@ function generate_help(){
 }
 
 commands=$(generate_commands)
+echo $commands
 generate_help $commands

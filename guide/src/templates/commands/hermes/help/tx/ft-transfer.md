@@ -1,39 +1,44 @@
 DESCRIPTION:
-Run a binary or example of the local package
+Send a fungible token transfer test transaction (ICS20 MsgTransfer)
 
 USAGE:
-    cargo run [OPTIONS] [--] [args]...
-
-ARGS:
-    <args>...    
+    hermes tx ft-transfer [OPTIONS] --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --src-port <SRC_PORT_ID> --src-channel <SRC_CHANNEL_ID> --amount <AMOUNT>
 
 OPTIONS:
-    -q, --quiet                     Do not print cargo log messages
-        --bin [<NAME>]              Name of the bin target to run
-        --example [<NAME>]          Name of the example target to run
-    -p, --package [<SPEC>...]       Package with the target to run
-    -v, --verbose                   Use verbose output (-vv very verbose/build.rs output)
-    -j, --jobs <N>                  Number of parallel jobs, defaults to # of CPUs
-        --color <WHEN>              Coloring: auto, always, never
-        --keep-going                Do not abort the build as soon as there is an error (unstable)
-        --frozen                    Require Cargo.lock and cache are up to date
-    -r, --release                   Build artifacts in release mode, with optimizations
-        --locked                    Require Cargo.lock is up to date
-        --profile <PROFILE-NAME>    Build artifacts with the specified profile
-        --features <FEATURES>       Space or comma separated list of features to activate
-        --offline                   Run without accessing the network
-        --all-features              Activate all available features
-        --config <KEY=VALUE>        Override a configuration value (unstable)
-        --no-default-features       Do not activate the `default` feature
-    -Z <FLAG>                       Unstable (nightly-only) flags to Cargo, see 'cargo -Z help' for
-                                    details
-        --target <TRIPLE>           Build for the target triple
-        --target-dir <DIRECTORY>    Directory for all generated artifacts
-        --manifest-path <PATH>      Path to Cargo.toml
-        --message-format <FMT>      Error format
-        --unit-graph                Output build graph in JSON (unstable)
-        --ignore-rust-version       Ignore `rust-version` specification in packages
-        --timings[=<FMTS>...]       Timing output formats (unstable) (comma separated): html, json
-    -h, --help                      Print help information
+        --denom <DENOM>
+            Denomination of the coins to send [default: samoleans]
 
-Run `cargo help run` for more detailed information.
+    -h, --help
+            Print help information
+
+        --key-name <KEY_NAME>
+            Use the given signing key name (default: `key_name` config)
+
+        --number-msgs <NUMBER_MSGS>
+            Number of messages to send
+
+        --receiver <RECEIVER>
+            The account address on the destination chain which will receive the tokens. If omitted,
+            the relayer's wallet on the destination chain will be used
+
+        --timeout-height-offset <TIMEOUT_HEIGHT_OFFSET>
+            Timeout in number of blocks since current [default: 0]
+
+        --timeout-seconds <TIMEOUT_SECONDS>
+            Timeout in seconds since current [default: 0]
+
+REQUIRED:
+        --amount <AMOUNT>
+            Amount of coins (samoleans, by default) to send (e.g. `100000`)
+
+        --dst-chain <DST_CHAIN_ID>
+            Identifier of the destination chain
+
+        --src-chain <SRC_CHAIN_ID>
+            Identifier of the source chain
+
+        --src-channel <SRC_CHANNEL_ID>
+            Identifier of the source channel [aliases: src-chan]
+
+        --src-port <SRC_PORT_ID>
+            Identifier of the source port

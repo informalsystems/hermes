@@ -1,39 +1,50 @@
 DESCRIPTION:
-Run a binary or example of the local package
+Create a new channel between two chains.
+
+Can create a new channel using a pre-existing connection or alternatively, create a new client and a
+new connection underlying the new channel if a pre-existing connection is not provided.
 
 USAGE:
-    cargo run [OPTIONS] [--] [args]...
+    hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --a-connection <A_CONNECTION_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>
 
-ARGS:
-    <args>...    
+    hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID> --new-client-connection
 
 OPTIONS:
-    -q, --quiet                     Do not print cargo log messages
-        --bin [<NAME>]              Name of the bin target to run
-        --example [<NAME>]          Name of the example target to run
-    -p, --package [<SPEC>...]       Package with the target to run
-    -v, --verbose                   Use verbose output (-vv very verbose/build.rs output)
-    -j, --jobs <N>                  Number of parallel jobs, defaults to # of CPUs
-        --color <WHEN>              Coloring: auto, always, never
-        --keep-going                Do not abort the build as soon as there is an error (unstable)
-        --frozen                    Require Cargo.lock and cache are up to date
-    -r, --release                   Build artifacts in release mode, with optimizations
-        --locked                    Require Cargo.lock is up to date
-        --profile <PROFILE-NAME>    Build artifacts with the specified profile
-        --features <FEATURES>       Space or comma separated list of features to activate
-        --offline                   Run without accessing the network
-        --all-features              Activate all available features
-        --config <KEY=VALUE>        Override a configuration value (unstable)
-        --no-default-features       Do not activate the `default` feature
-    -Z <FLAG>                       Unstable (nightly-only) flags to Cargo, see 'cargo -Z help' for
-                                    details
-        --target <TRIPLE>           Build for the target triple
-        --target-dir <DIRECTORY>    Directory for all generated artifacts
-        --manifest-path <PATH>      Path to Cargo.toml
-        --message-format <FMT>      Error format
-        --unit-graph                Output build graph in JSON (unstable)
-        --ignore-rust-version       Ignore `rust-version` specification in packages
-        --timings[=<FMTS>...]       Timing output formats (unstable) (comma separated): html, json
-    -h, --help                      Print help information
+        --channel-version <VERSION>
+            The version for the new channel
+            
+            [aliases: chan-version]
 
-Run `cargo help run` for more detailed information.
+    -h, --help
+            Print help information
+
+        --new-client-connection
+            Indicates that a new client and connection will be created underlying the new channel
+            
+            [aliases: new-client-conn]
+
+        --order <ORDER>
+            The channel ordering, valid options 'unordered' (default) and 'ordered'
+            
+            [default: ORDER_UNORDERED]
+
+        --yes
+            Skip new_client_connection confirmation
+
+FLAGS:
+        --a-chain <A_CHAIN_ID>
+            Identifier of the side `a` chain for the new channel
+
+        --a-connection <A_CONNECTION_ID>
+            Identifier of the connection on chain `a` to use in creating the new channel
+            
+            [aliases: a-conn]
+
+        --a-port <A_PORT_ID>
+            Identifier of the side `a` port for the new channel
+
+        --b-chain <B_CHAIN_ID>
+            Identifier of the side `b` chain for the new channel
+
+        --b-port <B_PORT_ID>
+            Identifier of the side `b` port for the new channel

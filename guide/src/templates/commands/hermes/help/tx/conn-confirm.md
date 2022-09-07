@@ -1,39 +1,27 @@
 DESCRIPTION:
-Run a binary or example of the local package
+Confirm opening of a connection (ConnectionOpenConfirm)
 
 USAGE:
-    cargo run [OPTIONS] [--] [args]...
-
-ARGS:
-    <args>...    
+    hermes tx conn-confirm --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-client <DST_CLIENT_ID> --src-client <SRC_CLIENT_ID> --dst-connection <DST_CONNECTION_ID> --src-connection <SRC_CONNECTION_ID>
 
 OPTIONS:
-    -q, --quiet                     Do not print cargo log messages
-        --bin [<NAME>]              Name of the bin target to run
-        --example [<NAME>]          Name of the example target to run
-    -p, --package [<SPEC>...]       Package with the target to run
-    -v, --verbose                   Use verbose output (-vv very verbose/build.rs output)
-    -j, --jobs <N>                  Number of parallel jobs, defaults to # of CPUs
-        --color <WHEN>              Coloring: auto, always, never
-        --keep-going                Do not abort the build as soon as there is an error (unstable)
-        --frozen                    Require Cargo.lock and cache are up to date
-    -r, --release                   Build artifacts in release mode, with optimizations
-        --locked                    Require Cargo.lock is up to date
-        --profile <PROFILE-NAME>    Build artifacts with the specified profile
-        --features <FEATURES>       Space or comma separated list of features to activate
-        --offline                   Run without accessing the network
-        --all-features              Activate all available features
-        --config <KEY=VALUE>        Override a configuration value (unstable)
-        --no-default-features       Do not activate the `default` feature
-    -Z <FLAG>                       Unstable (nightly-only) flags to Cargo, see 'cargo -Z help' for
-                                    details
-        --target <TRIPLE>           Build for the target triple
-        --target-dir <DIRECTORY>    Directory for all generated artifacts
-        --manifest-path <PATH>      Path to Cargo.toml
-        --message-format <FMT>      Error format
-        --unit-graph                Output build graph in JSON (unstable)
-        --ignore-rust-version       Ignore `rust-version` specification in packages
-        --timings[=<FMTS>...]       Timing output formats (unstable) (comma separated): html, json
-    -h, --help                      Print help information
+    -h, --help    Print help information
 
-Run `cargo help run` for more detailed information.
+REQUIRED:
+        --dst-chain <DST_CHAIN_ID>
+            Identifier of the destination chain
+
+        --dst-client <DST_CLIENT_ID>
+            Identifier of the destination client
+
+        --dst-connection <DST_CONNECTION_ID>
+            Identifier of the destination connection (required) [aliases: dst-conn]
+
+        --src-chain <SRC_CHAIN_ID>
+            Identifier of the source chain
+
+        --src-client <SRC_CLIENT_ID>
+            Identifier of the source client
+
+        --src-connection <SRC_CONNECTION_ID>
+            Identifier of the source connection (required) [aliases: src-conn]

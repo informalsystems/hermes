@@ -1,39 +1,38 @@
 DESCRIPTION:
-Run a binary or example of the local package
+Create a new IBC client
 
 USAGE:
-    cargo run [OPTIONS] [--] [args]...
-
-ARGS:
-    <args>...    
+    hermes create client [OPTIONS] --host-chain <HOST_CHAIN_ID> --reference-chain <REFERENCE_CHAIN_ID>
 
 OPTIONS:
-    -q, --quiet                     Do not print cargo log messages
-        --bin [<NAME>]              Name of the bin target to run
-        --example [<NAME>]          Name of the example target to run
-    -p, --package [<SPEC>...]       Package with the target to run
-    -v, --verbose                   Use verbose output (-vv very verbose/build.rs output)
-    -j, --jobs <N>                  Number of parallel jobs, defaults to # of CPUs
-        --color <WHEN>              Coloring: auto, always, never
-        --keep-going                Do not abort the build as soon as there is an error (unstable)
-        --frozen                    Require Cargo.lock and cache are up to date
-    -r, --release                   Build artifacts in release mode, with optimizations
-        --locked                    Require Cargo.lock is up to date
-        --profile <PROFILE-NAME>    Build artifacts with the specified profile
-        --features <FEATURES>       Space or comma separated list of features to activate
-        --offline                   Run without accessing the network
-        --all-features              Activate all available features
-        --config <KEY=VALUE>        Override a configuration value (unstable)
-        --no-default-features       Do not activate the `default` feature
-    -Z <FLAG>                       Unstable (nightly-only) flags to Cargo, see 'cargo -Z help' for
-                                    details
-        --target <TRIPLE>           Build for the target triple
-        --target-dir <DIRECTORY>    Directory for all generated artifacts
-        --manifest-path <PATH>      Path to Cargo.toml
-        --message-format <FMT>      Error format
-        --unit-graph                Output build graph in JSON (unstable)
-        --ignore-rust-version       Ignore `rust-version` specification in packages
-        --timings[=<FMTS>...]       Timing output formats (unstable) (comma separated): html, json
-    -h, --help                      Print help information
+        --clock-drift <CLOCK_DRIFT>
+            The maximum allowed clock drift for this client.
+            
+            The clock drift is a correction parameter. It helps deal with clocks that are only
+            approximately synchronized between the source and destination chains of this client. The
+            destination chain for this client uses the clock drift parameter when deciding to accept
+            or reject a new header (originating from the source chain) for this client. If this
+            option is not specified, a suitable clock drift value is derived from the chain
+            configurations.
 
-Run `cargo help run` for more detailed information.
+    -h, --help
+            Print help information
+
+        --trust-threshold <TRUST_THRESHOLD>
+            Override the trust threshold specified in the configuration.
+            
+            The trust threshold defines what fraction of the total voting power of a known and
+            trusted validator set is sufficient for a commit to be accepted going forward.
+
+        --trusting-period <TRUSTING_PERIOD>
+            Override the trusting period specified in the config.
+            
+            The trusting period specifies how long a validator set is trusted for (must be shorter
+            than the chain's unbonding period).
+
+REQUIRED:
+        --host-chain <HOST_CHAIN_ID>
+            Identifier of the chain that hosts the client
+
+        --reference-chain <REFERENCE_CHAIN_ID>
+            Identifier of the chain targeted by the client

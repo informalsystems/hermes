@@ -1,39 +1,25 @@
 DESCRIPTION:
-Run a binary or example of the local package
+Create and send IBC transactions
 
 USAGE:
-    cargo run [OPTIONS] [--] [args]...
-
-ARGS:
-    <args>...    
+    hermes tx <SUBCOMMAND>
 
 OPTIONS:
-    -q, --quiet                     Do not print cargo log messages
-        --bin [<NAME>]              Name of the bin target to run
-        --example [<NAME>]          Name of the example target to run
-    -p, --package [<SPEC>...]       Package with the target to run
-    -v, --verbose                   Use verbose output (-vv very verbose/build.rs output)
-    -j, --jobs <N>                  Number of parallel jobs, defaults to # of CPUs
-        --color <WHEN>              Coloring: auto, always, never
-        --keep-going                Do not abort the build as soon as there is an error (unstable)
-        --frozen                    Require Cargo.lock and cache are up to date
-    -r, --release                   Build artifacts in release mode, with optimizations
-        --locked                    Require Cargo.lock is up to date
-        --profile <PROFILE-NAME>    Build artifacts with the specified profile
-        --features <FEATURES>       Space or comma separated list of features to activate
-        --offline                   Run without accessing the network
-        --all-features              Activate all available features
-        --config <KEY=VALUE>        Override a configuration value (unstable)
-        --no-default-features       Do not activate the `default` feature
-    -Z <FLAG>                       Unstable (nightly-only) flags to Cargo, see 'cargo -Z help' for
-                                    details
-        --target <TRIPLE>           Build for the target triple
-        --target-dir <DIRECTORY>    Directory for all generated artifacts
-        --manifest-path <PATH>      Path to Cargo.toml
-        --message-format <FMT>      Error format
-        --unit-graph                Output build graph in JSON (unstable)
-        --ignore-rust-version       Ignore `rust-version` specification in packages
-        --timings[=<FMTS>...]       Timing output formats (unstable) (comma separated): html, json
-    -h, --help                      Print help information
+    -h, --help    Print help information
 
-Run `cargo help run` for more detailed information.
+SUBCOMMANDS:
+    chan-close-confirm    Confirm the closing of a channel (ChannelCloseConfirm)
+    chan-close-init       Initiate the closing of a channel (ChannelCloseInit)
+    chan-open-ack         Relay acknowledgment of a channel attempt (ChannelOpenAck)
+    chan-open-confirm     Confirm opening of a channel (ChannelOpenConfirm)
+    chan-open-init        Initialize a channel (ChannelOpenInit)
+    chan-open-try         Relay the channel attempt (ChannelOpenTry)
+    conn-ack              Relay acknowledgment of a connection attempt (ConnectionOpenAck)
+    conn-confirm          Confirm opening of a connection (ConnectionOpenConfirm)
+    conn-init             Initialize a connection (ConnectionOpenInit)
+    conn-try              Relay the connection attempt (ConnectionOpenTry)
+    ft-transfer           Send a fungible token transfer test transaction (ICS20 MsgTransfer)
+    help                  Print this message or the help of the given subcommand(s)
+    packet-ack            Relay acknowledgment packets
+    packet-recv           Relay receive or timeout packets
+    upgrade-chain         Send an IBC upgrade plan
