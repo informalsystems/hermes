@@ -455,7 +455,7 @@ pub mod test_util {
     pub fn get_dummy_raw_channel_end() -> RawChannel {
         RawChannel {
             state: 1,
-            ordering: 1,
+            ordering: 2,
             counterparty: Some(get_dummy_raw_counterparty()),
             connection_hops: vec![ConnectionId::default().to_string()],
             version: "ics20".to_string(), // The version is not validated.
