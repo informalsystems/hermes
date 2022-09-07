@@ -27,8 +27,7 @@ pub fn process<Ctx: ChannelReader>(
 
     let packet = &msg.packet;
 
-    let source_channel_end =
-        ctx.channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))?;
+    let source_channel_end = ctx.channel_end(&packet.source_port, &packet.source_channel)?;
 
     if !source_channel_end.state_matches(&State::Open) {
         return Err(Error::channel_closed(packet.source_channel.clone()));
@@ -55,11 +54,8 @@ pub fn process<Ctx: ChannelReader>(
     }
 
     // Verify packet commitment
-    let packet_commitment = ctx.get_packet_commitment(&(
-        packet.source_port.clone(),
-        packet.source_channel.clone(),
-        packet.sequence,
-    ))?;
+    let packet_commitment =
+        ctx.get_packet_commitment(&packet.source_port, &packet.source_channel, packet.sequence)?;
 
     if packet_commitment
         != ctx.packet_commitment(
@@ -82,8 +78,8 @@ pub fn process<Ctx: ChannelReader>(
     )?;
 
     let result = if source_channel_end.order_matches(&Order::Ordered) {
-        let next_seq_ack = ctx
-            .get_next_sequence_ack(&(packet.source_port.clone(), packet.source_channel.clone()))?;
+        let next_seq_ack =
+            ctx.get_next_sequence_ack(&packet.source_port, &packet.source_channel)?;
 
         if packet.sequence != next_seq_ack {
             return Err(Error::invalid_packet_sequence(

@@ -22,7 +22,7 @@ pub(crate) fn process<Ctx: ChannelReader>(
     // Unwrap the old channel end (if any) and validate it against the message.
     let (mut new_channel_end, channel_id) = match &msg.previous_channel_id {
         Some(prev_id) => {
-            let old_channel_end = ctx.channel_end(&(msg.port_id.clone(), prev_id.clone()))?;
+            let old_channel_end = ctx.channel_end(&msg.port_id, prev_id)?;
 
             // Validate that existing channel end matches with the one we're trying to establish.
             if old_channel_end.state_matches(&State::Init)
