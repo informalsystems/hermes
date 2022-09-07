@@ -34,8 +34,7 @@ pub fn process<Ctx: ChannelReader>(
 
     let packet = &msg.packet;
 
-    let mut source_channel_end =
-        ctx.channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))?;
+    let mut source_channel_end = ctx.channel_end(&packet.source_port, &packet.source_channel)?;
 
     if !source_channel_end.state_matches(&State::Open) {
         return Err(Error::channel_closed(packet.source_channel.clone()));
@@ -80,11 +79,8 @@ pub fn process<Ctx: ChannelReader>(
     }
 
     //verify packet commitment
-    let packet_commitment = ctx.get_packet_commitment(&(
-        packet.source_port.clone(),
-        packet.source_channel.clone(),
-        packet.sequence,
-    ))?;
+    let packet_commitment =
+        ctx.get_packet_commitment(&packet.source_port, &packet.source_channel, packet.sequence)?;
 
     let expected_commitment = ctx.packet_commitment(
         packet.data.clone(),

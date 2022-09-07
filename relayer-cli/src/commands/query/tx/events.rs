@@ -2,7 +2,6 @@ use core::str::FromStr;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use tracing::debug;
 
 use tendermint::abci::transaction::Hash;
 
@@ -42,8 +41,6 @@ pub struct QueryTxEventsCmd {
 impl Runnable for QueryTxEventsCmd {
     fn run(&self) {
         let config = app_config();
-
-        debug!("Options: {:?}", self);
 
         let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);

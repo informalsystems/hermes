@@ -97,27 +97,37 @@ impl Ics20Keeper for DummyTransferModule {
 impl ChannelKeeper for DummyTransferModule {
     fn store_packet_commitment(
         &mut self,
-        key: (PortId, ChannelId, Sequence),
+        port_id: PortId,
+        channel_id: ChannelId,
+        seq: Sequence,
         commitment: PacketCommitment,
     ) -> Result<(), Error> {
         self.ibc_store
             .lock()
             .unwrap()
             .packet_commitment
-            .insert(key, commitment);
+            .entry(port_id)
+            .or_default()
+            .entry(channel_id)
+            .or_default()
+            .insert(seq, commitment);
         Ok(())
     }
 
     fn delete_packet_commitment(
         &mut self,
-        _key: (PortId, ChannelId, Sequence),
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _seq: Sequence,
     ) -> Result<(), Error> {
         unimplemented!()
     }
 
     fn store_packet_receipt(
         &mut self,
-        _key: (PortId, ChannelId, Sequence),
+        _port_id: PortId,
+        _channel_id: ChannelId,
+        _seq: Sequence,
         _receipt: Receipt,
     ) -> Result<(), Error> {
         unimplemented!()
@@ -125,7 +135,9 @@ impl ChannelKeeper for DummyTransferModule {
 
     fn store_packet_acknowledgement(
         &mut self,
-        _key: (PortId, ChannelId, Sequence),
+        _port_id: PortId,
+        _channel_id: ChannelId,
+        _seq: Sequence,
         _ack: AcknowledgementCommitment,
     ) -> Result<(), Error> {
         unimplemented!()
@@ -133,7 +145,9 @@ impl ChannelKeeper for DummyTransferModule {
 
     fn delete_packet_acknowledgement(
         &mut self,
-        _key: (PortId, ChannelId, Sequence),
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _seq: Sequence,
     ) -> Result<(), Error> {
         unimplemented!()
     }
@@ -141,35 +155,41 @@ impl ChannelKeeper for DummyTransferModule {
     fn store_connection_channels(
         &mut self,
         _conn_id: ConnectionId,
-        _port_channel_id: &(PortId, ChannelId),
+        _port_id: PortId,
+        _channel_id: ChannelId,
     ) -> Result<(), Error> {
         unimplemented!()
     }
 
     fn store_channel(
         &mut self,
-        _port_channel_id: (PortId, ChannelId),
-        _channel_end: &ChannelEnd,
+        _port_id: PortId,
+        _channel_id: ChannelId,
+        _channel_end: ChannelEnd,
     ) -> Result<(), Error> {
         unimplemented!()
     }
 
     fn store_next_sequence_send(
         &mut self,
-        port_channel_id: (PortId, ChannelId),
+        port_id: PortId,
+        channel_id: ChannelId,
         seq: Sequence,
     ) -> Result<(), Error> {
         self.ibc_store
             .lock()
             .unwrap()
             .next_sequence_send
-            .insert(port_channel_id, seq);
+            .entry(port_id)
+            .or_default()
+            .insert(channel_id, seq);
         Ok(())
     }
 
     fn store_next_sequence_recv(
         &mut self,
-        _port_channel_id: (PortId, ChannelId),
+        _port_id: PortId,
+        _channel_id: ChannelId,
         _seq: Sequence,
     ) -> Result<(), Error> {
         unimplemented!()
@@ -177,7 +197,8 @@ impl ChannelKeeper for DummyTransferModule {
 
     fn store_next_sequence_ack(
         &mut self,
-        _port_channel_id: (PortId, ChannelId),
+        _port_id: PortId,
+        _channel_id: ChannelId,
         _seq: Sequence,
     ) -> Result<(), Error> {
         unimplemented!()
@@ -249,10 +270,20 @@ impl Ics20Reader for DummyTransferModule {
 }
 
 impl ChannelReader for DummyTransferModule {
-    fn channel_end(&self, pcid: &(PortId, ChannelId)) -> Result<ChannelEnd, Error> {
-        match self.ibc_store.lock().unwrap().channels.get(pcid) {
+    fn channel_end(&self, port_id: &PortId, channel_id: &ChannelId) -> Result<ChannelEnd, Error> {
+        match self
+            .ibc_store
+            .lock()
+            .unwrap()
+            .channels
+            .get(port_id)
+            .and_then(|map| map.get(channel_id))
+        {
             Some(channel_end) => Ok(channel_end.clone()),
-            None => Err(Error::channel_not_found(pcid.0.clone(), pcid.1.clone())),
+            None => Err(Error::channel_not_found(
+                port_id.clone(),
+                channel_id.clone(),
+            )),
         }
     }
 
@@ -302,48 +333,64 @@ impl ChannelReader for DummyTransferModule {
 
     fn get_next_sequence_send(
         &self,
-        port_channel_id: &(PortId, ChannelId),
+        port_id: &PortId,
+        channel_id: &ChannelId,
     ) -> Result<Sequence, Error> {
         match self
             .ibc_store
             .lock()
             .unwrap()
             .next_sequence_send
-            .get(port_channel_id)
+            .get(port_id)
+            .and_then(|map| map.get(channel_id))
         {
             Some(sequence) => Ok(*sequence),
-            None => Err(Error::missing_next_send_seq(port_channel_id.clone())),
+            None => Err(Error::missing_next_send_seq(
+                port_id.clone(),
+                channel_id.clone(),
+            )),
         }
     }
 
     fn get_next_sequence_recv(
         &self,
-        _port_channel_id: &(PortId, ChannelId),
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
     ) -> Result<Sequence, Error> {
         unimplemented!()
     }
 
     fn get_next_sequence_ack(
         &self,
-        _port_channel_id: &(PortId, ChannelId),
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
     ) -> Result<Sequence, Error> {
         unimplemented!()
     }
 
     fn get_packet_commitment(
         &self,
-        _key: &(PortId, ChannelId, Sequence),
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _seq: Sequence,
     ) -> Result<PacketCommitment, Error> {
         unimplemented!()
     }
 
-    fn get_packet_receipt(&self, _key: &(PortId, ChannelId, Sequence)) -> Result<Receipt, Error> {
+    fn get_packet_receipt(
+        &self,
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _seq: Sequence,
+    ) -> Result<Receipt, Error> {
         unimplemented!()
     }
 
     fn get_packet_acknowledgement(
         &self,
-        _key: &(PortId, ChannelId, Sequence),
+        _port_id: &PortId,
+        _channel_id: &ChannelId,
+        _seq: Sequence,
     ) -> Result<AcknowledgementCommitment, Error> {
         unimplemented!()
     }

@@ -10,7 +10,7 @@ define_error! {
             |_| { "ICS02 Client Error" },
 
         UnexpectedOk
-            |_| { "Expected error code, instead got Ok" },
+            |_| { "expected error code, instead got Ok" },
 
         UnknownSdk
             {

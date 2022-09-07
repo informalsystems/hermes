@@ -31,7 +31,7 @@ impl JsonTracing {
         let builder = FmtSubscriber::builder()
             .with_target(false)
             .with_env_filter(filter)
-            .with_writer(std::io::stderr)
+            .with_writer(std::io::stdout)
             .with_ansi(use_color)
             .with_thread_ids(true)
             .json();

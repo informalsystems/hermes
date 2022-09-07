@@ -72,9 +72,8 @@ impl QueryPendingPacketsCmd {
         )?;
 
         debug!(
-            chain=%self.chain_id,
-            "fetched channel from source chain: {:?}",
-            chan_conn_cli.channel
+            "fetched from source chain {} the following channel {:?}",
+            self.chain_id, chan_conn_cli.channel
         );
 
         let src_summary = pending_packet_summary(&chains.src, &chains.dst, &chan_conn_cli.channel)

@@ -1,8 +1,8 @@
-use core::fmt;
+use core::fmt::{Display, Error as FmtError, Formatter};
 use std::collections::BTreeMap;
 
 use itertools::Itertools;
-use tracing::{debug, error, info, info_span, warn};
+use tracing::{debug, error, error_span, info, warn};
 
 use ibc::core::{
     ics02_client::client_state::ClientState,
@@ -26,6 +26,7 @@ use crate::{
     },
     client_state::IdentifiedAnyClientState,
     config::{filter::ChannelFilters, ChainConfig, Config, PacketFilter},
+    path::PathIdentifiers,
     registry::Registry,
     supervisor::client_state_filter::{FilterPolicy, Permission},
 };
@@ -93,8 +94,8 @@ pub struct ChainsScan {
     pub chains: Vec<Result<ChainScan, Error>>,
 }
 
-impl fmt::Display for ChainsScan {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for ChainsScan {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         for scan in self.chains.iter().flatten() {
             writeln!(f, "# Chain: {}", scan.chain_id)?;
 
@@ -229,11 +230,14 @@ impl ChannelScan {
         chain: &impl ChainHandle,
         counterparty_chain: &impl ChainHandle,
     ) -> Option<Vec<Sequence>> {
-        self.counterparty.as_ref().map(|counterparty| {
-            unreceived_packets(counterparty_chain, chain, &counterparty.into())
-                .map(|(seq, _)| seq)
-                .unwrap_or_default()
-        })
+        self.counterparty
+            .as_ref()
+            .and_then(|c| PathIdentifiers::from_channel_end(c.clone()))
+            .map(|ids| {
+                unreceived_packets(counterparty_chain, chain, &ids)
+                    .map(|(seq, _)| seq)
+                    .unwrap_or_default()
+            })
     }
 
     pub fn unreceived_acknowledgements_on_counterparty(
@@ -241,11 +245,14 @@ impl ChannelScan {
         chain: &impl ChainHandle,
         counterparty_chain: &impl ChainHandle,
     ) -> Option<Vec<Sequence>> {
-        self.counterparty.as_ref().map(|counterparty| {
-            unreceived_acknowledgements(counterparty_chain, chain, &counterparty.into())
-                .map(|(sns, _)| sns)
-                .unwrap_or_default()
-        })
+        self.counterparty
+            .as_ref()
+            .and_then(|c| PathIdentifiers::from_channel_end(c.clone()))
+            .map(|ids| {
+                unreceived_acknowledgements(counterparty_chain, chain, &ids)
+                    .map(|(sns, _)| sns)
+                    .unwrap_or_default()
+            })
     }
 }
 
@@ -290,7 +297,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
     }
 
     pub fn scan_chain(&mut self, chain_config: &ChainConfig) -> Result<ChainScan, Error> {
-        let span = info_span!("scan.chain", chain = %chain_config.id);
+        let span = error_span!("scan.chain", chain = %chain_config.id);
         let _guard = span.enter();
 
         info!("scanning chain...");
@@ -419,7 +426,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         chain: &Chain,
         client: IdentifiedAnyClientState,
     ) -> Result<Option<ClientScan>, Error> {
-        let span = info_span!("scan.client", client = %client.client_id);
+        let span = error_span!("scan.client", client = %client.client_id);
         let _guard = span.enter();
 
         info!("scanning client...");
@@ -468,13 +475,13 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         client: &IdentifiedAnyClientState,
         connection: IdentifiedConnectionEnd,
     ) -> Result<Option<ConnectionScan>, Error> {
-        let span = info_span!("scan.connection", connection = %connection.connection_id);
+        let span = error_span!("scan.connection", connection = %connection.connection_id);
         let _guard = span.enter();
 
         info!("scanning connection...");
 
         if !self.connection_allowed(chain, client, &connection) {
-            warn!("skipping connection, reason: connection is not allowed",);
+            warn!("skipping connection, reason: connection is not allowed");
             return Ok(None);
         }
 
@@ -652,7 +659,7 @@ fn scan_allowed_channel<Chain: ChainHandle>(
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<ScannedChannel, Error> {
-    let span = info_span!("scan.channel", port = %port_id, channel = %channel_id);
+    let span = error_span!("scan.channel", port = %port_id, channel = %channel_id);
     let _guard = span.enter();
 
     info!("querying channel...");
@@ -811,12 +818,10 @@ fn query_client_connections<Chain: ChainHandle>(
 
     let connections = ids
         .into_iter()
-        .filter_map(|id| match query_connection(chain, &id) {
-            Ok(connection) => Some(connection),
-            Err(e) => {
-                error!("failed to query connection: {}", e);
-                None
-            }
+        .filter_map(|id| {
+            query_connection(chain, &id)
+                .map_err(|e| error!("failed to query connection: {}", e))
+                .ok()
         })
         .collect_vec();
 

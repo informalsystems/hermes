@@ -72,8 +72,6 @@ impl QueryPacketCommitmentCmd {
     fn execute(&self) -> Result<String, Error> {
         let config = app_config();
 
-        debug!("Options: {:?}", self);
-
         let chain = spawn_chain_runtime(&config, &self.chain_id)?;
 
         let (bytes, _) = chain

@@ -1,6 +1,5 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use tracing::debug;
 
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
@@ -120,8 +119,6 @@ impl Runnable for QueryClientConsensusCmd {
     fn run(&self) {
         let config = app_config();
 
-        debug!("Options: {:?}", self);
-
         let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
@@ -234,8 +231,6 @@ impl Runnable for QueryClientHeaderCmd {
     fn run(&self) {
         let config = app_config();
 
-        debug!("Options: {:?}", self);
-
         let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
@@ -313,8 +308,6 @@ pub struct QueryClientConnectionsCmd {
 impl Runnable for QueryClientConnectionsCmd {
     fn run(&self) {
         let config = app_config();
-
-        debug!("Options: {:?}", self);
 
         let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);

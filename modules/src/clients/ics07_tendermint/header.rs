@@ -1,5 +1,6 @@
 use alloc::string::ToString;
 use core::cmp::Ordering;
+use core::fmt::{Display, Error as FmtError, Formatter};
 
 use bytes::Buf;
 use ibc_proto::google::protobuf::Any;
@@ -15,6 +16,7 @@ use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::core::ics24_host::identifier::ChainId;
 use crate::timestamp::Timestamp;
+use crate::utils::pretty::{PrettySignedHeader, PrettyValidatorSet};
 use crate::Height;
 
 pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
@@ -30,8 +32,14 @@ pub struct Header {
 }
 
 impl core::fmt::Debug for Header {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, " Header {{...}}")
+    }
+}
+
+impl Display for Header {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "Header {{ signed_header: {}, validator_set: {}, trusted_height: {}, trusted_validator_set: {} }}", PrettySignedHeader(&self.signed_header), PrettyValidatorSet(&self.validator_set), self.trusted_height, PrettyValidatorSet(&self.trusted_validator_set))
     }
 }
 

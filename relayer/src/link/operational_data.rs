@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{Display, Error as FmtError, Formatter};
 use std::time::{Duration, Instant};
 
 use ibc_proto::google::protobuf::Any;
@@ -27,8 +27,8 @@ pub enum OperationalDataTarget {
     Destination,
 }
 
-impl fmt::Display for OperationalDataTarget {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for OperationalDataTarget {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
             OperationalDataTarget::Source => write!(f, "Source"),
             OperationalDataTarget::Destination => write!(f, "Destination"),
@@ -394,8 +394,8 @@ impl OperationalInfo {
     }
 }
 
-impl fmt::Display for OperationalInfo {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for OperationalInfo {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(
             f,
             "{} ->{} @{}; len={}",

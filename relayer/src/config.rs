@@ -7,7 +7,10 @@ pub mod proof_specs;
 pub mod types;
 
 use alloc::collections::BTreeMap;
-use core::{fmt, time::Duration};
+use core::{
+    fmt::{Display, Error as FmtError, Formatter},
+    time::Duration,
+};
 use std::{fs, fs::File, io::Write, path::Path};
 
 use ibc_proto::google::protobuf::Any;
@@ -41,8 +44,8 @@ impl GasPrice {
     }
 }
 
-impl fmt::Display for GasPrice {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for GasPrice {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}{}", self.price, self.denom)
     }
 }
@@ -69,8 +72,8 @@ impl ExtensionOption {
     }
 }
 
-impl fmt::Display for ExtensionOption {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for ExtensionOption {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
             Self::EthermintDynamicFee(max_priority_price) => {
                 write!(
@@ -267,8 +270,8 @@ impl Default for LogLevel {
     }
 }
 
-impl fmt::Display for LogLevel {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for LogLevel {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
             LogLevel::Trace => write!(f, "trace"),
             LogLevel::Debug => write!(f, "debug"),
@@ -346,8 +349,8 @@ impl Default for AddressType {
     }
 }
 
-impl fmt::Display for AddressType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for AddressType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
             AddressType::Cosmos => write!(f, "cosmos"),
             AddressType::Ethermint { .. } => write!(f, "ethermint"),
