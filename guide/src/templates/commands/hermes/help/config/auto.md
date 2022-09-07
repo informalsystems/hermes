@@ -1,0 +1,19 @@
+DESCRIPTION:
+Automatically generate a configuration file by fetching data from the chain-registry. If a pair of
+chains exists in the _IBC folder of the chain-registry then a corresponding packet filter is added
+to the configuration
+
+USAGE:
+    hermes config auto [OPTIONS] --output <PATH> --chains <CHAIN_NAME_1[:<KEY1>] CHAIN_NAME_2[:<KEY2>]> [--commit <COMMIT_HASH>]
+
+OPTIONS:
+        --commit <COMMIT_HASH>    Commit hash from which the chain configs will be generated. If
+                                  it's not set, the latest commit will be used.
+    -h, --help                    Print help information
+
+REQUIRED:
+        --chains <CHAIN_NAME_1 CHAIN_NAME_2...>...
+            Names of the chains to include in the config. Every chain must be in the chain registry.
+
+        --output <PATH>
+            Path to the configuration file
