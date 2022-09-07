@@ -5,6 +5,8 @@ on:
       - .github/workflows/integration.yaml
       - Cargo.toml
       - Cargo.lock
+      - flake.nix
+      - flake.lock
       - ci/**
       - e2e/**
       - proto/**
@@ -20,6 +22,8 @@ on:
       - .github/workflows/integration.yaml
       - Cargo.toml
       - Cargo.lock
+      - flake.nix
+      - flake.lock
       - ci/**
       - e2e/**
       - proto/**
