@@ -1,3 +1,6 @@
+//! This test ensures that a source chain that initiates an IBC transfer is
+//! refunded the tokens that it sent in response to receiving a timeout packet.
+
 use ibc_relayer_framework::core::impls::packet_relayers::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
 use ibc_relayer_framework::core::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer;
 use ibc_test_framework::prelude::*;
@@ -83,17 +86,11 @@ impl BinaryChannelTest for IbcTransferTest {
             &denom_a,
         )?;
 
-        // chains.node_b.chain_driver().assert_eventual_wallet_amount(
-        //     &wallet_b.address(),
-        //     balance_b,
-        //     &denom_b.as_ref(),
-        // )?;
-
-        // info!(
-        //     "successfully performed IBC transfer from chain {} to chain {}",
-        //     chains.chain_id_a(),
-        //     chains.chain_id_b(),
-        // );
+        info!(
+            "successfully refunded IBC transfer back to chain {} from chain {}",
+            chains.chain_id_a(),
+            chains.chain_id_b(),
+        );
 
         Ok(())
     }
