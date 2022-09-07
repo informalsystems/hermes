@@ -52,6 +52,7 @@ impl BinaryChannelTest for IbcTransferTest {
         );
 
         let chain_a_height = chains.handle_a.query_latest_height().unwrap();
+        let chain_a_height = chain_a_height.decrement().unwrap();
 
         let packet = chains.node_a.chain_driver().ibc_transfer_token(
             &channel.port_a.as_ref(),
@@ -60,12 +61,12 @@ impl BinaryChannelTest for IbcTransferTest {
             &wallet_b.address(),
             &denom_a,
             a_to_b_amount,
-            Some(Duration::from_secs(3)),
+            Some(Duration::from_secs(1)),
         )?;
 
         info!("running relayer");
 
-        sleep(Duration::from_secs(4));
+        sleep(Duration::from_secs(5));
 
         runtime.block_on(async {
             relayer
