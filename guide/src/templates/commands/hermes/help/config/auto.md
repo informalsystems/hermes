@@ -1,19 +1,39 @@
 DESCRIPTION:
-Automatically generate a configuration file by fetching data from the chain-registry. If a pair of
-chains exists in the _IBC folder of the chain-registry then a corresponding packet filter is added
-to the configuration
+Run a binary or example of the local package
 
 USAGE:
-    hermes config auto [OPTIONS] --output <PATH> --chains <CHAIN_NAME_1[:<KEY1>] CHAIN_NAME_2[:<KEY2>]> [--commit <COMMIT_HASH>]
+    cargo run [OPTIONS] [--] [args]...
+
+ARGS:
+    <args>...    
 
 OPTIONS:
-        --commit <COMMIT_HASH>    Commit hash from which the chain configs will be generated. If
-                                  it's not set, the latest commit will be used.
-    -h, --help                    Print help information
+    -q, --quiet                     Do not print cargo log messages
+        --bin [<NAME>]              Name of the bin target to run
+        --example [<NAME>]          Name of the example target to run
+    -p, --package [<SPEC>...]       Package with the target to run
+    -v, --verbose                   Use verbose output (-vv very verbose/build.rs output)
+    -j, --jobs <N>                  Number of parallel jobs, defaults to # of CPUs
+        --color <WHEN>              Coloring: auto, always, never
+        --keep-going                Do not abort the build as soon as there is an error (unstable)
+        --frozen                    Require Cargo.lock and cache are up to date
+    -r, --release                   Build artifacts in release mode, with optimizations
+        --locked                    Require Cargo.lock is up to date
+        --profile <PROFILE-NAME>    Build artifacts with the specified profile
+        --features <FEATURES>       Space or comma separated list of features to activate
+        --offline                   Run without accessing the network
+        --all-features              Activate all available features
+        --config <KEY=VALUE>        Override a configuration value (unstable)
+        --no-default-features       Do not activate the `default` feature
+    -Z <FLAG>                       Unstable (nightly-only) flags to Cargo, see 'cargo -Z help' for
+                                    details
+        --target <TRIPLE>           Build for the target triple
+        --target-dir <DIRECTORY>    Directory for all generated artifacts
+        --manifest-path <PATH>      Path to Cargo.toml
+        --message-format <FMT>      Error format
+        --unit-graph                Output build graph in JSON (unstable)
+        --ignore-rust-version       Ignore `rust-version` specification in packages
+        --timings[=<FMTS>...]       Timing output formats (unstable) (comma separated): html, json
+    -h, --help                      Print help information
 
-REQUIRED:
-        --chains <CHAIN_NAME_1 CHAIN_NAME_2...>...
-            Names of the chains to include in the config. Every chain must be in the chain registry.
-
-        --output <PATH>
-            Path to the configuration file
+Run `cargo help run` for more detailed information.

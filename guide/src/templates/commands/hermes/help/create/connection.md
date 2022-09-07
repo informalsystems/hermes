@@ -1,19 +1,39 @@
 DESCRIPTION:
-Create a new connection between two chains
+Run a binary or example of the local package
 
 USAGE:
-    hermes create connection [OPTIONS] --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID>
+    cargo run [OPTIONS] [--] [args]...
 
-    hermes create connection [OPTIONS] --a-chain <A_CHAIN_ID> --a-client <A_CLIENT_ID> --b-client <B_CLIENT_ID>
+ARGS:
+    <args>...    
 
 OPTIONS:
-        --delay <DELAY>    Delay period parameter for the new connection (seconds) [default: 0]
-    -h, --help             Print help information
+    -q, --quiet                     Do not print cargo log messages
+        --bin [<NAME>]              Name of the bin target to run
+        --example [<NAME>]          Name of the example target to run
+    -p, --package [<SPEC>...]       Package with the target to run
+    -v, --verbose                   Use verbose output (-vv very verbose/build.rs output)
+    -j, --jobs <N>                  Number of parallel jobs, defaults to # of CPUs
+        --color <WHEN>              Coloring: auto, always, never
+        --keep-going                Do not abort the build as soon as there is an error (unstable)
+        --frozen                    Require Cargo.lock and cache are up to date
+    -r, --release                   Build artifacts in release mode, with optimizations
+        --locked                    Require Cargo.lock is up to date
+        --profile <PROFILE-NAME>    Build artifacts with the specified profile
+        --features <FEATURES>       Space or comma separated list of features to activate
+        --offline                   Run without accessing the network
+        --all-features              Activate all available features
+        --config <KEY=VALUE>        Override a configuration value (unstable)
+        --no-default-features       Do not activate the `default` feature
+    -Z <FLAG>                       Unstable (nightly-only) flags to Cargo, see 'cargo -Z help' for
+                                    details
+        --target <TRIPLE>           Build for the target triple
+        --target-dir <DIRECTORY>    Directory for all generated artifacts
+        --manifest-path <PATH>      Path to Cargo.toml
+        --message-format <FMT>      Error format
+        --unit-graph                Output build graph in JSON (unstable)
+        --ignore-rust-version       Ignore `rust-version` specification in packages
+        --timings[=<FMTS>...]       Timing output formats (unstable) (comma separated): html, json
+    -h, --help                      Print help information
 
-FLAGS:
-        --a-chain <A_CHAIN_ID>      Identifier of the side `a` chain for the new connection
-        --a-client <A_CLIENT_ID>    Identifier of client hosted on chain `a`; default: None (creates
-                                    a new client)
-        --b-chain <B_CHAIN_ID>      Identifier of the side `b` chain for the new connection
-        --b-client <B_CLIENT_ID>    Identifier of client hosted on chain `b`; default: None (creates
-                                    a new client)
+Run `cargo help run` for more detailed information.

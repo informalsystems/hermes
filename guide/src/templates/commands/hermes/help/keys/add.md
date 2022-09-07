@@ -1,18 +1,39 @@
 DESCRIPTION:
-Adds key to a configured chain or restores a key to a configured chain using a mnemonic
+Run a binary or example of the local package
 
 USAGE:
-    hermes keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>
+    cargo run [OPTIONS] [--] [args]...
 
-    hermes keys add [OPTIONS] --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>
+ARGS:
+    <args>...    
 
 OPTIONS:
-    -h, --help                   Print help information
-        --hd-path <HD_PATH>      Derivation path for this key [default: m/44'/118'/0'/0/0]
-        --key-name <KEY_NAME>    Name of the key (defaults to the `key_name` defined in the config)
-        --overwrite              Overwrite the key if there is already one with the same key name
+    -q, --quiet                     Do not print cargo log messages
+        --bin [<NAME>]              Name of the bin target to run
+        --example [<NAME>]          Name of the example target to run
+    -p, --package [<SPEC>...]       Package with the target to run
+    -v, --verbose                   Use verbose output (-vv very verbose/build.rs output)
+    -j, --jobs <N>                  Number of parallel jobs, defaults to # of CPUs
+        --color <WHEN>              Coloring: auto, always, never
+        --keep-going                Do not abort the build as soon as there is an error (unstable)
+        --frozen                    Require Cargo.lock and cache are up to date
+    -r, --release                   Build artifacts in release mode, with optimizations
+        --locked                    Require Cargo.lock is up to date
+        --profile <PROFILE-NAME>    Build artifacts with the specified profile
+        --features <FEATURES>       Space or comma separated list of features to activate
+        --offline                   Run without accessing the network
+        --all-features              Activate all available features
+        --config <KEY=VALUE>        Override a configuration value (unstable)
+        --no-default-features       Do not activate the `default` feature
+    -Z <FLAG>                       Unstable (nightly-only) flags to Cargo, see 'cargo -Z help' for
+                                    details
+        --target <TRIPLE>           Build for the target triple
+        --target-dir <DIRECTORY>    Directory for all generated artifacts
+        --manifest-path <PATH>      Path to Cargo.toml
+        --message-format <FMT>      Error format
+        --unit-graph                Output build graph in JSON (unstable)
+        --ignore-rust-version       Ignore `rust-version` specification in packages
+        --timings[=<FMTS>...]       Timing output formats (unstable) (comma separated): html, json
+    -h, --help                      Print help information
 
-FLAGS:
-        --chain <CHAIN_ID>                 Identifier of the chain
-        --key-file <KEY_FILE>              Path to the key file
-        --mnemonic-file <MNEMONIC_FILE>    Path to file containing mnemonic to restore the key from
+Run `cargo help run` for more detailed information.

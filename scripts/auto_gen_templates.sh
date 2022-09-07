@@ -2,81 +2,67 @@
 
 # This script is used to generate the templates for the guide
 
-commands=(
-    "clear"
-    "config"
-    "create"
-    "health-check"
-    "keys"
-    "listen"
-    "misbehaviour"
-    "query"
-    "start"
-    "tx"
-    "update"
-    "upgrade"
-    "completions"
-    "clear packets"
-    "config auto"
-    "config validate"
-    "create channel"
-    "create client"
-    "create connection"
-    "keys add"
-    "keys balance"
-    "keys delete"
-    "keys list"
-    "query channel"
-    "query channels"
-    "query client"
-    "query clients"
-    "query connection"
-    "query connections"
-    "query packet"
-    "query transfer"
-    "query tx"
-    "query channel client"
-    "query channel end"
-    "query channel ends"
-    "query client connections"
-    "query client consensus"
-    "query client header"
-    "query client state"
-    "query connection channels"
-    "query connection end"
-    "query packet ack"
-    "query packet acks"
-    "query packet commitment"
-    "query packet commitments"
-    "query packet pending"
-    "query packet pending-acks"
-    "query packet pending-sends"
-    "query transfer denom-trace"
-    "query tx events"
-    "tx chan-close-confirm"
-    "tx chan-close-init"
-    "tx chan-open-ack"
-    "tx chan-open-confirm"
-    "tx chan-open-init"
-    "tx chan-open-try"
-    "tx conn-confirm"
-    "tx conn-init"
-    "tx conn-try"
-    "tx ft-transfer"
-    "tx packet-ack"
-    "tx packet-recv"
-    "tx upgrade-chain"
-    "update client"
-    "upgrade client"
-    "upgrade clients"
-)
-
 HELP_DIR="./guide/src/templates/commands/hermes/help/"
 
+function print_array_with_prefix() {
+    prefix=$1
+    shift
+    for i in "$@"; do
+        if [ $i != "help" ]; then
+            echo $prefix"/"$i
+        fi
+    done
+}
+
+function print_array() {
+    for i in "$@"; do
+        if [ $i != "help" ]; then
+            echo "$i"
+        fi
+    done
+}
+
+function generate_commands_rec(){
+    # Args : 
+    # - $1: Command prefix with space replaced by '/'
+    # - $2: Beginning of the array of subcommands
+    local cmd_prefix=$(echo $1 | sed 's/\// /g')
+    shift
+    # Since there is no delimiter between two subcommands, a trick can be to cut the line up to the N-th character
+    for command in "$@"; do
+        if [ $command = "tx" ]; then
+            # The tx command needs a longer cut than the others
+            local cut=25
+        else 
+            local cut=19
+        fi
+
+        # if command is not help and not empty
+        if [ "$command" != "help" ] && [ ! -z "$command" ]; then
+            local new_commands=$(cargo run -q --bin hermes $cmd_prefix $command --help | sed '0,/^SUBCOMMAND.*/d' | cut -c 1-$cut | sed '/^\s*$/d' | sed 's/\s\+\(\S\+\)\s*.*/\1/')
+            if [ -z "$cmd_prefix" ]; then
+                local new_cmd_prefix=$command
+            else
+                local new_cmd_prefix=$(echo $cmd_prefix"/"$command | sed 's/ /\//g')
+            fi
+            if [ ! -z "$new_commands" ]; then
+                print_array_with_prefix $new_cmd_prefix $new_commands
+                generate_commands_rec $new_cmd_prefix $new_commands &
+            fi
+            wait
+        fi
+    done
+}
+
+function generate_commands(){
+    local new_commands=$(cargo run -q --bin hermes help | sed '0,/^SUBCOMMAND.*/d' | sed 's/\s\+\(\S\+\)\s*.*/\1/')
+    print_array $new_commands
+    generate_commands_rec "" $new_commands
+}
+
 function generate_help(){
-    declare -a arr=("${!1}")
-    for command in "${arr[@]}"; do
-        path=$(echo "$command" | sed -e 's/ /\//g')
+    for path in "$@"; do
+        command=$(echo "$command" | sed -e 's/\// /g')
         # Check that the command is not empty
         if [ ! -z "$path" ]; then
             # Create the directory (if they don't exist) and the file
@@ -89,4 +75,5 @@ function generate_help(){
     wait
 }
 
-generate_help commands[@]
+commands=$(generate_commands)
+generate_help $commands

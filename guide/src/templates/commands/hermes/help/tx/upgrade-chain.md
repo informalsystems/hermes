@@ -1,37 +1,39 @@
 DESCRIPTION:
-Send an IBC upgrade plan
+Run a binary or example of the local package
 
 USAGE:
-    hermes tx upgrade-chain [OPTIONS] --reference-chain <REFERENCE_CHAIN_ID> --host-chain <HOST_CHAIN_ID> --host-client <HOST_CLIENT_ID> --amount <AMOUNT> --height-offset <HEIGHT_OFFSET>
+    cargo run [OPTIONS] [--] [args]...
+
+ARGS:
+    <args>...    
 
 OPTIONS:
-        --denom <DENOM>
-            Denomination for the deposit (default: 'stake')
+    -q, --quiet                     Do not print cargo log messages
+        --bin [<NAME>]              Name of the bin target to run
+        --example [<NAME>]          Name of the example target to run
+    -p, --package [<SPEC>...]       Package with the target to run
+    -v, --verbose                   Use verbose output (-vv very verbose/build.rs output)
+    -j, --jobs <N>                  Number of parallel jobs, defaults to # of CPUs
+        --color <WHEN>              Coloring: auto, always, never
+        --keep-going                Do not abort the build as soon as there is an error (unstable)
+        --frozen                    Require Cargo.lock and cache are up to date
+    -r, --release                   Build artifacts in release mode, with optimizations
+        --locked                    Require Cargo.lock is up to date
+        --profile <PROFILE-NAME>    Build artifacts with the specified profile
+        --features <FEATURES>       Space or comma separated list of features to activate
+        --offline                   Run without accessing the network
+        --all-features              Activate all available features
+        --config <KEY=VALUE>        Override a configuration value (unstable)
+        --no-default-features       Do not activate the `default` feature
+    -Z <FLAG>                       Unstable (nightly-only) flags to Cargo, see 'cargo -Z help' for
+                                    details
+        --target <TRIPLE>           Build for the target triple
+        --target-dir <DIRECTORY>    Directory for all generated artifacts
+        --manifest-path <PATH>      Path to Cargo.toml
+        --message-format <FMT>      Error format
+        --unit-graph                Output build graph in JSON (unstable)
+        --ignore-rust-version       Ignore `rust-version` specification in packages
+        --timings[=<FMTS>...]       Timing output formats (unstable) (comma separated): html, json
+    -h, --help                      Print help information
 
-    -h, --help
-            Print help information
-
-        --new-chain <CHAIN_ID>
-            New chain identifier to assign to the upgrading chain (optional)
-
-        --new-unbonding <UNBONDING_PERIOD>
-            New unbonding period to assign to the upgrading chain, in seconds (optional)
-
-        --upgrade-name <UPGRADE_NAME>
-            A string to name the upgrade proposal plan (default: 'plan')
-
-REQUIRED:
-        --amount <AMOUNT>
-            Amount of stake
-
-        --height-offset <HEIGHT_OFFSET>
-            Upgrade height offset in number of blocks since current
-
-        --host-chain <HOST_CHAIN_ID>
-            Identifier of the host chain
-
-        --host-client <HOST_CLIENT_ID>
-            Identifier of the client on the host chain from which the plan is created
-
-        --reference-chain <REFERENCE_CHAIN_ID>
-            Identifier of the chain to upgrade
+Run `cargo help run` for more detailed information.
