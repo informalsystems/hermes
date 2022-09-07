@@ -38,7 +38,7 @@ macro_rules! tx_chan_cmd {
 
         let channel = $chan(chains, dst_connection);
 
-        info!("Message {}: {:?}", $dbg_string, channel);
+        info!("message {}: {}", $dbg_string, channel);
 
         let res: Result<IbcEvent, Error> = channel.$func().map_err(Error::channel);
 
@@ -148,7 +148,7 @@ impl Runnable for TxChanOpenInitCmd {
             ),
         };
 
-        info!("Message ChanOpenInit: {:?}", channel);
+        info!("message ChanOpenInit: {}", channel);
 
         let res: Result<IbcEvent, Error> = channel
             .build_chan_open_init_and_send()

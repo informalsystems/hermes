@@ -4,6 +4,7 @@ use abscissa_core::clap::Parser;
 use abscissa_core::Runnable;
 use serde::Serialize;
 
+use eyre::eyre;
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics04_channel::channel::{ChannelEnd, State};
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId};
@@ -51,9 +52,7 @@ pub struct QueryChannelsCmd {
 
 fn run_query_channels<Chain: ChainHandle>(
     cmd: &QueryChannelsCmd,
-) -> Result<QueryChannelsOutput, Box<dyn std::error::Error>> {
-    debug!("Options: {:?}", cmd);
-
+) -> eyre::Result<QueryChannelsOutput> {
     let mut output = match (cmd.verbose, cmd.show_counterparty) {
         (true, _) => QueryChannelsOutput::verbose(),
         (false, true) => QueryChannelsOutput::pretty(),
@@ -78,20 +77,25 @@ fn run_query_channels<Chain: ChainHandle>(
         let channel_end = identified_channel.channel_end;
 
         if channel_end.state_matches(&State::Uninitialized) {
-            return Err(format!(
+            return Err(eyre!(
                 "{}/{} on chain {} @ {:?} is uninitialized",
-                port_id, channel_id, chain_id, chain_height
-            )
-            .into());
+                port_id,
+                channel_id,
+                chain_id,
+                chain_height
+            ));
         }
 
         let connection_id = channel_end
             .connection_hops
             .first()
             .ok_or_else(|| {
-                format!(
+                eyre!(
                     "missing connection_hops for {}/{} on chain {} @ {:?}",
-                    port_id, channel_id, chain_id, chain_height
+                    port_id,
+                    channel_id,
+                    chain_id,
+                    chain_height
                 )
             })?
             .clone();
@@ -183,7 +187,7 @@ fn query_channel_ends<Chain: ChainHandle>(
     port_id: PortId,
     channel_id: ChannelId,
     chain_height_query: QueryHeight,
-) -> Result<ChannelEnds, Box<dyn std::error::Error>> {
+) -> eyre::Result<ChannelEnds> {
     let (connection_end, _) = chain.query_connection(
         QueryConnectionRequest {
             connection_id: connection_id.clone(),
@@ -206,7 +210,7 @@ fn query_channel_ends<Chain: ChainHandle>(
     let counterparty_client_id = connection_counterparty.client_id().clone();
 
     let counterparty_connection_id = connection_counterparty.connection_id.ok_or_else(|| {
-        format!(
+        eyre!(
             "connection end for {} on chain {} @ {:?} does not have counterparty connection id: {:?}",
             connection_id,
             chain_id,
@@ -217,12 +221,13 @@ fn query_channel_ends<Chain: ChainHandle>(
 
     let counterparty_port_id = channel_counterparty.port_id().clone();
 
-    let counterparty_channel_id = channel_counterparty.channel_id.ok_or_else(|| {
-        format!(
+    let counterparty_channel_id =
+        channel_counterparty.channel_id.ok_or_else(|| {
+            eyre!(
             "channel end for {}/{} on chain {} @ {:?} does not have counterparty channel id: {:?}",
             port_id, channel_id, chain_id, chain_height_query, channel_end
         )
-    })?;
+        })?;
 
     let counterparty_chain = registry.get_or_spawn(&counterparty_chain_id)?;
     let counterparty_chain_height_query =

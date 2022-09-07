@@ -1,8 +1,8 @@
 use alloc::sync::Arc;
-use core::fmt::{self, Debug};
+use core::fmt::{self, Debug, Display};
 
 use crossbeam_channel as channel;
-use serde::Serialize;
+use tracing::Span;
 
 use ibc::{
     core::{
@@ -44,17 +44,7 @@ use crate::{
 use super::{
     client::ClientSettings,
     endpoint::{ChainStatus, HealthCheck},
-    requests::{
-        IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
-        QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
-        QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
-        QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
-        QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
-        QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
-        QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
-        QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-        QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
-    },
+    requests::*,
     tracking::TrackedMsgs,
 };
 
@@ -353,8 +343,8 @@ pub enum ChainRequest {
     },
 }
 
-pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
-    fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self;
+pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
+    fn new(chain_id: ChainId, sender: channel::Sender<(Span, ChainRequest)>) -> Self;
 
     /// Get the [`ChainId`] of this chain.
     fn id(&self) -> ChainId;

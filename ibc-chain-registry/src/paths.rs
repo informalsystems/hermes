@@ -6,71 +6,42 @@ use serde::Serialize;
 use std::path::PathBuf;
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, rename_all = "camelCase")]
+#[serde(default)]
 pub struct IBCPath {
     #[serde(rename = "$schema")]
     pub schema: String,
-    #[serde(rename = "chain-1")]
-    pub chain_1: Chain1,
-    #[serde(rename = "chain-2")]
-    pub chain_2: Chain2,
+    pub chain_1: ChainDesc,
+    pub chain_2: ChainDesc,
     pub channels: Vec<Channel>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, rename_all = "camelCase")]
-pub struct Chain1 {
-    #[serde(rename = "chain-name")]
+#[serde(default)]
+pub struct ChainDesc {
     pub chain_name: String,
-    #[serde(rename = "client-id")]
     pub client_id: ClientId,
-    #[serde(rename = "connection-id")]
     pub connection_id: ConnectionId,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, rename_all = "camelCase")]
-pub struct Chain2 {
-    #[serde(rename = "chain-name")]
-    pub chain_name: String,
-    #[serde(rename = "client-id")]
-    pub client_id: ClientId,
-    #[serde(rename = "connection-id")]
-    pub connection_id: ConnectionId,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, rename_all = "camelCase")]
+#[serde(default)]
 pub struct Channel {
-    #[serde(rename = "chain-1")]
-    pub chain_1: ChannelChain1,
-    #[serde(rename = "chain-2")]
-    pub chain_2: ChannelChain2,
+    pub chain_1: ChannelPort,
+    pub chain_2: ChannelPort,
     pub ordering: String,
     pub version: String,
     pub tags: Tags,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, rename_all = "camelCase")]
-pub struct ChannelChain1 {
-    #[serde(rename = "channel-id")]
+#[serde(default)]
+pub struct ChannelPort {
     pub channel_id: ChannelId,
-    #[serde(rename = "port-id")]
     pub port_id: PortId,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, rename_all = "camelCase")]
-pub struct ChannelChain2 {
-    #[serde(rename = "channel-id")]
-    pub channel_id: ChannelId,
-    #[serde(rename = "port-id")]
-    pub port_id: PortId,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default, rename_all = "camelCase")]
+#[serde(default)]
 pub struct Tags {
     pub dex: String,
     pub preferred: bool,
@@ -129,26 +100,26 @@ mod tests {
         use std::str::FromStr;
 
         let path = r#"{
-            "$schema": "http://json-schema.org/draft-07/schema#",
-            "chain-1": {
-                "chain-name": "chain-1",
-                "client-id": "tendermint-1",
-                "connection-id": "connection-1"
+            "$schema": "https://github.com/cosmos/chain-registry/blob/master/ibc_data.schema.json",
+            "chain_1": {
+                "chain_name": "chain-1",
+                "client_id": "tendermint-1",
+                "connection_id": "connection-1"
             },
-            "chain-2": {
-                "chain-name": "chain-2",
-                "client-id": "tendermint-2",
-                "connection-id": "connection-2"
+            "chain_2": {
+                "chain_name": "chain-2",
+                "client_id": "tendermint-2",
+                "connection_id": "connection-2"
             },
             "channels": [
                 {
-                    "chain-1": {
-                        "channel-id": "channel-1",
-                        "port-id": "port-1"
+                    "chain_1": {
+                        "channel_id": "channel-1",
+                        "port_id": "port-1"
                     },
-                    "chain-2": {
-                        "channel-id": "channel-2",
-                        "port-id": "port-2"
+                    "chain_2": {
+                        "channel_id": "channel-2",
+                        "port_id": "port-2"
                     },
                     "ordering": "ordering",
                     "version": "version",
@@ -162,7 +133,10 @@ mod tests {
             ]
         }"#;
         let path: IBCPath = serde_json::from_str(path).unwrap();
-        assert_eq!(path.schema, "http://json-schema.org/draft-07/schema#");
+        assert_eq!(
+            path.schema,
+            "https://github.com/cosmos/chain-registry/blob/master/ibc_data.schema.json"
+        );
         assert_eq!(path.chain_1.chain_name, "chain-1");
         assert_eq!(
             path.chain_1.client_id,

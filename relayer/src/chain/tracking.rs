@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{Display, Error as FmtError, Formatter};
 
 use ibc_proto::google::protobuf::Any;
 use uuid::Uuid;
@@ -34,8 +34,8 @@ impl TrackingId {
     }
 }
 
-impl fmt::Display for TrackingId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for TrackingId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
             TrackingId::Uuid(u) => {
                 let mut s = u.to_string();
