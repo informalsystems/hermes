@@ -2,14 +2,17 @@
    Builder construct that spawn new chains with some common parameters.
 */
 
+use std::str::FromStr;
+
 use alloc::sync::Arc;
-use ibc::core::ics24_host::identifier::ChainId;
 use tokio::runtime::Runtime;
 
 use crate::chain::driver::ChainDriver;
 use crate::error::Error;
 use crate::types::config::TestConfig;
-use crate::util::random::{random_u32, random_unused_tcp_port};
+use crate::util::random::random_unused_tcp_port;
+
+use super::chain_type::ChainType;
 
 /**
    Used for holding common configuration needed to create new `ChainDriver`s.
@@ -84,11 +87,9 @@ impl ChainBuilder {
        `"ibc-alpha-f5a2a988"`.
     */
     pub fn new_chain(&self, prefix: &str, use_random_id: bool) -> Result<ChainDriver, Error> {
-        let chain_id = if use_random_id {
-            ChainId::from_string(&format!("ibc-{}-{:x}", prefix, random_u32()))
-        } else {
-            ChainId::from_string(&format!("ibc-{}", prefix))
-        };
+        let chain_type = ChainType::from_str(&self.command_path[..])?;
+
+        let chain_id = chain_type.chain_id(prefix, use_random_id);
 
         let rpc_port = random_unused_tcp_port();
         let grpc_port = random_unused_tcp_port();
@@ -98,6 +99,7 @@ impl ChainBuilder {
         let home_path = format!("{}/{}", self.base_store_dir, chain_id);
 
         let driver = ChainDriver::create(
+            chain_type,
             self.command_path.clone(),
             chain_id,
             home_path,

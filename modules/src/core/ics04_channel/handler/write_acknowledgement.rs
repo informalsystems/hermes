@@ -26,10 +26,8 @@ pub fn process<Ctx: ChannelReader>(
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    let dest_channel_end = ctx.channel_end(&(
-        packet.destination_port.clone(),
-        packet.destination_channel.clone(),
-    ))?;
+    let dest_channel_end =
+        ctx.channel_end(&packet.destination_port, &packet.destination_channel)?;
 
     if !dest_channel_end.state_matches(&State::Open) {
         return Err(Error::invalid_channel_state(
@@ -41,11 +39,11 @@ pub fn process<Ctx: ChannelReader>(
     // NOTE: IBC app modules might have written the acknowledgement synchronously on
     // the OnRecvPacket callback so we need to check if the acknowledgement is already
     // set on the store and return an error if so.
-    match ctx.get_packet_acknowledgement(&(
-        packet.destination_port.clone(),
-        packet.destination_channel.clone(),
+    match ctx.get_packet_acknowledgement(
+        &packet.destination_port,
+        &packet.destination_channel,
         packet.sequence,
-    )) {
+    ) {
         Ok(_) => return Err(Error::acknowledgement_exists(packet.sequence)),
         Err(e)
             if e.detail() == Error::packet_acknowledgement_not_found(packet.sequence).detail() => {}

@@ -15,6 +15,7 @@ use http::Uri;
 use ibc_relayer::{
     config::{
         filter::{ChannelFilters, FilterPattern, PacketFilter},
+        gas_multiplier::GasMultiplier,
         types::{MaxMsgNum, MaxTxSize, Memo},
         {default, AddressType, ChainConfig, GasPrice},
     },
@@ -113,7 +114,7 @@ where
         default_gas: Some(100000),
         max_gas: Some(400000),
         gas_adjustment: None,
-        gas_multiplier: Some(1.1),
+        gas_multiplier: Some(GasMultiplier::new(1.1).unwrap()),
         fee_granter: None,
         max_msg_num: MaxMsgNum::default(),
         max_tx_size: MaxTxSize::default(),
@@ -256,6 +257,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn fetch_chain_config_with_packet_filters() -> Result<(), RegistryError> {
         let test_chains: &[String] = &[
             "cosmoshub".to_string(),
@@ -340,12 +342,14 @@ mod tests {
     }
 
     #[tokio::test]
+    #[ignore]
     async fn fetch_chain_config_without_packet_filters() -> Result<(), RegistryError> {
         let test_chains: &[String] = &["cosmoshub".to_string(), "evmos".to_string()]; // Must be sorted
         should_have_no_filter(test_chains).await
     }
 
     #[tokio::test]
+    #[ignore]
     async fn fetch_one_chain() -> Result<(), RegistryError> {
         let test_chains: &[String] = &["cosmoshub".to_string()]; // Must be sorted
         should_have_no_filter(test_chains).await

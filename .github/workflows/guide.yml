@@ -38,6 +38,13 @@ jobs:
           version: latest
           use-tool-cache: true
 
+      - name: Install mdbook-template
+        uses: actions-rs/install@v0.1
+        with:
+          crate: mdbook-template
+          version: latest
+          use-tool-cache: true
+
       - name: Install mdbook-toc
         uses: actions-rs/install@v0.1
         with:

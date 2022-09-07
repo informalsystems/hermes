@@ -24,7 +24,7 @@ use ibc::core::ics02_client::msgs::upgrade_client::MsgUpgradeClient;
 use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc::downcast;
-use ibc::events::{IbcEvent, WithBlockDataType};
+use ibc::events::{IbcEvent, IbcEventType, WithBlockDataType};
 use ibc::timestamp::{Timestamp, TimestampOverflowError};
 use ibc::tx_msg::Msg;
 use ibc::Height;
@@ -780,6 +780,36 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     }
 
     pub fn refresh(&mut self) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
+        fn check_no_errors(
+            ibc_events: &[IbcEvent],
+            dst_chain_id: ChainId,
+        ) -> Result<(), ForeignClientError> {
+            // The assumption is that only one IbcEventType::ChainError will be
+            // in the resulting Vec<IbcEvent> if an error occurred.
+            let chain_error = ibc_events
+                .iter()
+                .find(|&e| e.event_type() == IbcEventType::ChainError);
+
+            match chain_error {
+                None => Ok(()),
+                Some(ev) => Err(ForeignClientError::chain_error_event(
+                    dst_chain_id,
+                    ev.to_owned(),
+                )),
+            }
+        }
+
+        // If elapsed < refresh_window for the client, `try_refresh()` will
+        // be successful with an empty vector.
+        if let Some(events) = self.try_refresh()? {
+            check_no_errors(&events, self.dst_chain().id())?;
+            Ok(Some(events))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn try_refresh(&mut self) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
         let (client_state, elapsed) = self.validated_client_state()?;
 
         // The refresh_window is the maximum duration
