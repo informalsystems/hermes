@@ -136,8 +136,6 @@ impl Runnable for TxIbcUpgradeChainCmd {
             Ok(result) => result,
         };
 
-        info!("Message {:?}", opts);
-
         let host_chain = spawn_chain_runtime(&config, &self.host_chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 

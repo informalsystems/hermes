@@ -227,7 +227,7 @@ pub fn restore_key(
 fn check_key_exists(keyring: &KeyRing, key_name: &str, overwrite: bool) {
     if keyring.get_key(key_name).is_ok() {
         if overwrite {
-            warn!("Key {} will be overwritten", key_name);
+            warn!("key {} will be overwritten", key_name);
         } else {
             Output::error(format!("A key with name '{}' already exists", key_name)).exit();
         }

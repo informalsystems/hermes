@@ -1,12 +1,16 @@
 use alloc::sync::Arc;
-use core::{fmt, ops::Deref, str::FromStr};
+use core::{
+    fmt::{Display, Error as FmtError, Formatter},
+    ops::Deref,
+    str::FromStr,
+};
 use std::thread;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{application::fatal_error, Runnable};
 use itertools::Itertools;
 use tokio::runtime::Runtime as TokioRuntime;
-use tracing::{error, info};
+use tracing::{error, info, instrument};
 
 use ibc::{core::ics24_host::identifier::ChainId, events::IbcEvent};
 
@@ -33,8 +37,8 @@ impl EventFilter {
     }
 }
 
-impl fmt::Display for EventFilter {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for EventFilter {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
             Self::NewBlock => write!(f, "NewBlock"),
             Self::Tx => write!(f, "Tx"),
@@ -97,13 +101,14 @@ impl Runnable for ListenCmd {
 }
 
 /// Listen to events
+
+#[instrument(skip_all, level = "error", fields(chain = %config.id))]
 pub fn listen(config: &ChainConfig, filters: &[EventFilter]) -> eyre::Result<()> {
     let rt = Arc::new(TokioRuntime::new()?);
     let (event_monitor, rx) = subscribe(config, rt)?;
 
     info!(
-        "[{}] listening for queries {}",
-        config.id,
+        "listening for queries: {}",
         event_monitor.queries().iter().format(", "),
     );
 
@@ -112,6 +117,9 @@ pub fn listen(config: &ChainConfig, filters: &[EventFilter]) -> eyre::Result<()>
     while let Ok(event_batch) = rx.recv() {
         match event_batch {
             Ok(batch) => {
+                let _span =
+                    tracing::error_span!("event_batch", batch_height = %batch.height).entered();
+
                 let matching_events = batch
                     .events
                     .into_iter()
@@ -122,13 +130,9 @@ pub fn listen(config: &ChainConfig, filters: &[EventFilter]) -> eyre::Result<()>
                     continue;
                 }
 
-                info!("- event batch at height {}", batch.height);
-
                 for event in matching_events {
-                    info!("+ {:#?}", event);
+                    info!("{}", event);
                 }
-
-                info!("");
             }
             Err(e) => error!("- error: {}", e),
         }

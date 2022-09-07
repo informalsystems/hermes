@@ -183,8 +183,6 @@ impl Runnable for TxIcs20MsgTransferCmd {
             Ok(result) => result,
         };
 
-        debug!("Message: {:?}", opts);
-
         let chains = ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 

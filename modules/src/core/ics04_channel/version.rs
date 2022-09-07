@@ -3,7 +3,7 @@
 //!
 
 use core::convert::Infallible;
-use core::fmt;
+use core::fmt::{Display, Error as FmtError, Formatter};
 use core::str::FromStr;
 use serde_derive::{Deserialize, Serialize};
 
@@ -53,8 +53,8 @@ impl Default for Version {
     }
 }
 
-impl fmt::Display for Version {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for Version {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}", self.0)
     }
 }

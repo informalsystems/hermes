@@ -1,10 +1,10 @@
 use crate::prelude::*;
+use crate::utils::pretty::PrettyVec;
 
 use core::convert::{TryFrom, TryInto};
-use core::fmt;
+use core::fmt::{Display, Error as FmtError, Formatter};
 use core::str::FromStr;
 use flex_error::{define_error, TraceError};
-use prost::alloc::fmt::Formatter;
 use serde_derive::{Deserialize, Serialize};
 use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
@@ -255,38 +255,38 @@ pub enum IbcEvent {
     ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
 }
 
-impl fmt::Display for IbcEvent {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl Display for IbcEvent {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
             IbcEvent::NewBlock(ev) => write!(f, "NewBlock({})", ev.height),
 
-            IbcEvent::CreateClient(ev) => write!(f, "CreateClientEv({})", ev),
-            IbcEvent::UpdateClient(ev) => write!(f, "UpdateClientEv({})", ev),
-            IbcEvent::UpgradeClient(ev) => write!(f, "UpgradeClientEv({:?})", ev),
-            IbcEvent::ClientMisbehaviour(ev) => write!(f, "ClientMisbehaviourEv({:?})", ev),
+            IbcEvent::CreateClient(ev) => write!(f, "CreateClient({})", ev),
+            IbcEvent::UpdateClient(ev) => write!(f, "UpdateClient({})", ev),
+            IbcEvent::UpgradeClient(ev) => write!(f, "UpgradeClient({})", ev),
+            IbcEvent::ClientMisbehaviour(ev) => write!(f, "ClientMisbehaviour({})", ev),
 
-            IbcEvent::OpenInitConnection(ev) => write!(f, "OpenInitConnectionEv({:?})", ev),
-            IbcEvent::OpenTryConnection(ev) => write!(f, "OpenTryConnectionEv({:?})", ev),
-            IbcEvent::OpenAckConnection(ev) => write!(f, "OpenAckConnectionEv({:?})", ev),
-            IbcEvent::OpenConfirmConnection(ev) => write!(f, "OpenConfirmConnectionEv({:?})", ev),
+            IbcEvent::OpenInitConnection(ev) => write!(f, "OpenInitConnection({})", ev),
+            IbcEvent::OpenTryConnection(ev) => write!(f, "OpenTryConnection({})", ev),
+            IbcEvent::OpenAckConnection(ev) => write!(f, "OpenAckConnection({})", ev),
+            IbcEvent::OpenConfirmConnection(ev) => write!(f, "OpenConfirmConnection({})", ev),
 
-            IbcEvent::OpenInitChannel(ev) => write!(f, "OpenInitChannelEv({:?})", ev),
-            IbcEvent::OpenTryChannel(ev) => write!(f, "OpenTryChannelEv({:?})", ev),
-            IbcEvent::OpenAckChannel(ev) => write!(f, "OpenAckChannelEv({:?})", ev),
-            IbcEvent::OpenConfirmChannel(ev) => write!(f, "OpenConfirmChannelEv({:?})", ev),
-            IbcEvent::CloseInitChannel(ev) => write!(f, "CloseInitChannelEv({})", ev),
-            IbcEvent::CloseConfirmChannel(ev) => write!(f, "CloseConfirmChannelEv({:?})", ev),
+            IbcEvent::OpenInitChannel(ev) => write!(f, "OpenInitChannel({})", ev),
+            IbcEvent::OpenTryChannel(ev) => write!(f, "OpenTryChannel({})", ev),
+            IbcEvent::OpenAckChannel(ev) => write!(f, "OpenAckChannel({})", ev),
+            IbcEvent::OpenConfirmChannel(ev) => write!(f, "OpenConfirmChannel({})", ev),
+            IbcEvent::CloseInitChannel(ev) => write!(f, "CloseInitChannel({})", ev),
+            IbcEvent::CloseConfirmChannel(ev) => write!(f, "CloseConfirmChannel({})", ev),
 
-            IbcEvent::SendPacket(ev) => write!(f, "SendPacketEv({})", ev),
-            IbcEvent::ReceivePacket(ev) => write!(f, "ReceivePacketEv({})", ev),
-            IbcEvent::WriteAcknowledgement(ev) => write!(f, "WriteAcknowledgementEv({})", ev),
-            IbcEvent::AcknowledgePacket(ev) => write!(f, "AcknowledgePacketEv({})", ev),
-            IbcEvent::TimeoutPacket(ev) => write!(f, "TimeoutPacketEv({})", ev),
-            IbcEvent::TimeoutOnClosePacket(ev) => write!(f, "TimeoutOnClosePacketEv({})", ev),
+            IbcEvent::SendPacket(ev) => write!(f, "SendPacket({})", ev),
+            IbcEvent::ReceivePacket(ev) => write!(f, "ReceivePacket({})", ev),
+            IbcEvent::WriteAcknowledgement(ev) => write!(f, "WriteAcknowledgement({})", ev),
+            IbcEvent::AcknowledgePacket(ev) => write!(f, "AcknowledgePacket({})", ev),
+            IbcEvent::TimeoutPacket(ev) => write!(f, "TimeoutPacket({})", ev),
+            IbcEvent::TimeoutOnClosePacket(ev) => write!(f, "TimeoutOnClosePacket({})", ev),
 
-            IbcEvent::AppModule(ev) => write!(f, "AppModuleEv({:?})", ev),
+            IbcEvent::AppModule(ev) => write!(f, "AppModule({})", ev),
 
-            IbcEvent::ChainError(ev) => write!(f, "ChainErrorEv({})", ev),
+            IbcEvent::ChainError(ev) => write!(f, "ChainError({})", ev),
         }
     }
 }
@@ -407,6 +407,18 @@ pub struct ModuleEvent {
     pub attributes: Vec<ModuleEventAttribute>,
 }
 
+impl Display for ModuleEvent {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(
+            f,
+            "ModuleEvent {{ kind: {}, module_name: {}, attributes: {} }}",
+            self.kind,
+            self.module_name,
+            PrettyVec(&self.attributes)
+        )
+    }
+}
+
 impl TryFrom<ModuleEvent> for AbciEvent {
     type Error = Error;
 
@@ -433,6 +445,16 @@ impl From<ModuleEvent> for IbcEvent {
 pub struct ModuleEventAttribute {
     pub key: String,
     pub value: String,
+}
+
+impl Display for ModuleEventAttribute {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(
+            f,
+            "ModuleEventAttribute {{ key: {}, value: {} }}",
+            self.key, self.value
+        )
+    }
 }
 
 impl<K: ToString, V: ToString> From<(K, V)> for ModuleEventAttribute {

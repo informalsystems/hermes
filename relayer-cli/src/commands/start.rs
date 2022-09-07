@@ -103,6 +103,8 @@ fn register_signals(tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
 
 #[cfg(feature = "rest-server")]
 fn spawn_rest_server(config: &Config) -> Option<rest::Receiver> {
+    let _span = tracing::error_span!("rest").entered();
+
     let rest = config.rest.clone();
 
     if rest.enabled {
@@ -110,7 +112,7 @@ fn spawn_rest_server(config: &Config) -> Option<rest::Receiver> {
         let (_, rest_receiver) = ibc_relayer_rest::server::spawn(rest_config);
         Some(rest_receiver)
     } else {
-        info!("[rest] address not configured, REST server disabled");
+        info!("REST server disabled");
         None
     }
 }
@@ -133,6 +135,8 @@ fn spawn_rest_server(config: &Config) -> Option<rest::Receiver> {
 
 #[cfg(feature = "telemetry")]
 fn spawn_telemetry_server(config: &Config) -> Result<(), Box<dyn Error + Send + Sync>> {
+    let _span = tracing::error_span!("telemetry").entered();
+
     let state = ibc_telemetry::global();
 
     let telemetry = config.telemetry.clone();

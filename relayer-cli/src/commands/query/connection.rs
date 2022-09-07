@@ -50,8 +50,6 @@ impl Runnable for QueryConnectionEndCmd {
     fn run(&self) {
         let config = app_config();
 
-        debug!("Options: {:?}", self);
-
         let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
@@ -112,8 +110,6 @@ pub struct QueryConnectionChannelsCmd {
 impl Runnable for QueryConnectionChannelsCmd {
     fn run(&self) {
         let config = app_config();
-
-        debug!("Options: {:?}", self);
 
         let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);

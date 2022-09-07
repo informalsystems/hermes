@@ -348,7 +348,9 @@ mod tests {
     use super::batch_messages;
     use crate::chain::cosmos::encode::sign_and_encode_tx;
     use crate::chain::cosmos::gas::gas_amount_to_fee;
-    use crate::chain::cosmos::types::account::{Account, AccountNumber, AccountSequence};
+    use crate::chain::cosmos::types::account::{
+        Account, AccountAddress, AccountNumber, AccountSequence,
+    };
     use crate::chain::cosmos::types::config::TxConfig;
     use crate::config;
     use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
@@ -382,6 +384,7 @@ mod tests {
             .unwrap();
 
         let account = Account {
+            address: AccountAddress::new("".to_owned()),
             number: AccountNumber::new(0),
             sequence: AccountSequence::new(0),
         };

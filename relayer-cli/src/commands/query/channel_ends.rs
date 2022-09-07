@@ -89,8 +89,6 @@ pub struct ChannelEndsSummary {
 }
 
 fn do_run<Chain: ChainHandle>(cmd: &QueryChannelEndsCmd) -> eyre::Result<()> {
-    debug!("Options: {:?}", cmd);
-
     let config = app_config();
 
     let QueryChannelEndsCmd {

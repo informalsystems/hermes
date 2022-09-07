@@ -1,3 +1,4 @@
+use core::fmt::{Display, Error as FmtError, Formatter};
 use core::time::Duration;
 
 use ibc_proto::google::protobuf::Any;
@@ -31,6 +32,7 @@ use crate::connection::Connection;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Channel as WorkerChannelObject;
 use crate::supervisor::error::Error as SupervisorError;
+use crate::util::pretty::{PrettyDuration, PrettyOption};
 use crate::util::retry::retry_with_index;
 use crate::util::retry::{retry_count, RetryResult};
 use crate::util::task::Next;
@@ -84,13 +86,26 @@ mod handshake_retry {
 }
 
 #[derive(Clone, Debug, Serialize)]
+#[serde(bound(serialize = "(): Serialize"))]
 pub struct ChannelSide<Chain: ChainHandle> {
+    #[serde(skip)]
     pub chain: Chain,
     client_id: ClientId,
     connection_id: ConnectionId,
     port_id: PortId,
     channel_id: Option<ChannelId>,
     version: Option<Version>,
+}
+
+impl<Chain: ChainHandle> Display for ChannelSide<Chain> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        match (&self.channel_id, &self.version) {
+            (Some(channel_id), Some(version)) => write!(f, "ChannelSide {{ chain: {}, client_id: {}, connection_id: {}, port_id: {}, channel_id: {}, version: {} }}", self.chain, self.client_id, self.connection_id, self.port_id, channel_id, version),
+            (Some(channel_id), None) => write!(f, "ChannelSide {{ chain: {}, client_id: {}, connection_id: {}, port_id: {}, channel_id: {}, version: None }}", self.chain, self.client_id, self.connection_id, self.port_id, channel_id),
+            (None, Some(version)) => write!(f, "ChannelSide {{ chain: {}, client_id: {}, connection_id: {}, port_id: {}, channel_id: None, version: {} }}", self.chain, self.client_id, self.connection_id, self.port_id, version),
+            (None, None) => write!(f, "ChannelSide {{ chain: {}, client_id: {}, connection_id: {}, port_id: {}, channel_id: None, version: None }}", self.chain, self.client_id, self.connection_id, self.port_id),
+        }
+    }
 }
 
 impl<Chain: ChainHandle> ChannelSide<Chain> {
@@ -152,11 +167,25 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
 }
 
 #[derive(Clone, Debug, Serialize)]
+#[serde(bound(serialize = "(): Serialize"))]
 pub struct Channel<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub ordering: Order,
     pub a_side: ChannelSide<ChainA>,
     pub b_side: ChannelSide<ChainB>,
     pub connection_delay: Duration,
+}
+
+impl<ChainA: ChainHandle, ChainB: ChainHandle> Display for Channel<ChainA, ChainB> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(
+            f,
+            "Channel {{ ordering: {}, a_side: {}, b_side: {}, connection_delay: {} }}",
+            self.ordering,
+            self.a_side,
+            self.b_side,
+            PrettyDuration(&self.connection_delay)
+        )
+    }
 }
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
@@ -534,13 +563,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         if a_counterparty_id.is_some() && a_counterparty_id != relayer_b_id.as_ref() {
             warn!(
-                "updating the expected {:?} of side_b({}) since it is different than the \
-                counterparty of {:?}: {:?}, on {}. This is typically caused by crossing handshake \
+                "updating the expected {} of side_b({}) since it is different than the \
+                counterparty of {}: {}, on {}. This is typically caused by crossing handshake \
                 messages in the presence of multiple relayers.",
-                relayer_b_id,
+                PrettyOption(&relayer_b_id),
                 self.b_chain().id(),
-                relayer_a_id,
-                a_counterparty_id,
+                PrettyOption(&relayer_a_id),
+                PrettyOption(&a_counterparty_id),
                 self.a_chain().id(),
             );
             self.b_side.channel_id = a_counterparty_id.cloned();
@@ -553,19 +582,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         if b_counterparty_id.is_some() && b_counterparty_id != relayer_a_id {
             if updated_relayer_b_id == relayer_b_id.as_ref() {
                 warn!(
-                    "updating the expected {:?} of side_a({}) since it is different than the \
-                counterparty of {:?}: {:?}, on {}. This is typically caused by crossing handshake \
-                messages in the presence of multiple relayers.",
-                    relayer_a_id,
+                    "updating the expected {} of side_a({}) since it is different than the \
+                    counterparty of {}: {}, on {}. This is typically caused by crossing handshake \
+                    messages in the presence of multiple relayers.",
+                    PrettyOption(&relayer_a_id),
                     self.a_chain().id(),
-                    updated_relayer_b_id,
-                    b_counterparty_id,
+                    PrettyOption(&updated_relayer_b_id),
+                    PrettyOption(&b_counterparty_id),
                     self.b_chain().id(),
                 );
                 self.a_side.channel_id = b_counterparty_id.cloned();
             } else {
                 panic!(
-                    "mismatched channel ids in channel ends: {} - {:?} and {} - {:?}",
+                    "mismatched channel ids in channel ends: {} - {} and {} - {}",
                     self.a_chain().id(),
                     a_channel,
                     self.b_chain().id(),
@@ -592,7 +621,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     .flipped()
                     .build_chan_open_init_and_send()
                     .map_err(|e| {
-                        error!("failed ChanOpenInit {:?}: {:?}", self.a_side, e);
+                        error!("failed ChanOpenInit {}: {}", self.a_side, e);
                         e
                     })?;
                 let channel_id = extract_channel_id(&event)?;
@@ -602,7 +631,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             // send the Try message to chain a (source)
             (State::Uninitialized, State::Init) | (State::Init, State::Init) => {
                 let event = self.flipped().build_chan_open_try_and_send().map_err(|e| {
-                    error!("failed ChanOpenTry {:?}: {:?}", self.a_side, e);
+                    error!("failed ChanOpenTry {}: {}", self.a_side, e);
                     e
                 })?;
 
@@ -613,7 +642,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             // send the Try message to chain b (destination)
             (State::Init, State::Uninitialized) => {
                 let event = self.build_chan_open_try_and_send().map_err(|e| {
-                    error!("failed ChanOpenTry {:?}: {:?}", self.b_side, e);
+                    error!("failed ChanOpenTry {}: {}", self.b_side, e);
                     e
                 })?;
 
@@ -624,7 +653,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             // send the Ack message to chain a (source)
             (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
                 self.flipped().build_chan_open_ack_and_send().map_err(|e| {
-                    error!("failed ChanOpenAck {:?}: {:?}", self.a_side, e);
+                    error!("failed ChanOpenAck {}: {}", self.a_side, e);
                     e
                 })?;
             }
@@ -632,7 +661,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             // send the Ack message to chain b (destination)
             (State::TryOpen, State::Init) => {
                 self.build_chan_open_ack_and_send().map_err(|e| {
-                    error!("failed ChanOpenAck {:?}: {:?}", self.b_side, e);
+                    error!("failed ChanOpenAck {}: {}", self.b_side, e);
                     e
                 })?;
             }
@@ -640,7 +669,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             // send the Confirm message to chain b (destination)
             (State::Open, State::TryOpen) => {
                 self.build_chan_open_confirm_and_send().map_err(|e| {
-                    error!("failed ChanOpenConfirm {:?}: {:?}", self.b_side, e);
+                    error!("failed ChanOpenConfirm {}: {}", self.b_side, e);
                     e
                 })?;
             }
@@ -650,13 +679,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 self.flipped()
                     .build_chan_open_confirm_and_send()
                     .map_err(|e| {
-                        error!("failed ChanOpenConfirm {:?}: {:?}", self.a_side, e);
+                        error!("failed ChanOpenConfirm {}: {}", self.a_side, e);
                         e
                     })?;
             }
 
             (State::Open, State::Open) => {
-                info!("channel handshake already finished for {:#?}\n", self);
+                info!("channel handshake already finished for {}", self);
                 return Ok(());
             }
 
@@ -750,12 +779,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     );
                     RetryResult::Err(index)
                 } else {
-                    error!("failed Chan{:?} with error: {}", state, e);
+                    error!("failed Chan{} with error: {}", state, e);
                     RetryResult::Retry(index)
                 }
             }
             Ok((Some(ev), handshake_completed)) => {
-                info!("channel handshake step completed with events: {:#?}\n", ev);
+                info!("channel handshake step completed with events: {}", ev);
                 RetryResult::Ok(handshake_completed)
             }
             Ok((None, handshake_completed)) => RetryResult::Ok(handshake_completed),
@@ -853,7 +882,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         match &result.event {
             IbcEvent::OpenInitChannel(_) => {
-                info!("🎊  {} => {:#?}\n", self.dst_chain().id(), result);
+                info!("🎊  {} => {}", self.dst_chain().id(), result);
                 Ok(result.event)
             }
             IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
@@ -1039,7 +1068,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         match &result.event {
             IbcEvent::OpenTryChannel(_) => {
-                info!("🎊  {} => {:#?}\n", self.dst_chain().id(), result);
+                info!("🎊  {} => {}", self.dst_chain().id(), result);
                 Ok(result.event)
             }
             IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
@@ -1142,7 +1171,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
             match &result.event {
                 IbcEvent::OpenAckChannel(_) => {
-                    info!("🎊  {} => {:#?}\n", channel.dst_chain().id(), result);
+                    info!("🎊  {} => {}", channel.dst_chain().id(), result);
                     Ok(result.event)
                 }
                 IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
@@ -1151,7 +1180,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
 
         do_build_chan_open_ack_and_send(self).map_err(|e| {
-            error!("failed ChanOpenAck {:?}: {}", self.b_side, e);
+            error!("failed ChanOpenAck {}: {}", self.b_side, e);
             e
         })
     }
@@ -1249,7 +1278,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
             match &result.event {
                 IbcEvent::OpenConfirmChannel(_) => {
-                    info!("🎊  {} => {:#?}\n", channel.dst_chain().id(), result);
+                    info!("🎊  {} => {}", channel.dst_chain().id(), result);
                     Ok(result.event)
                 }
                 IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
@@ -1258,7 +1287,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
 
         do_build_chan_open_confirm_and_send(self).map_err(|e| {
-            error!("failed ChanOpenConfirm {:?}: {}", self.b_side, e);
+            error!("failed ChanOpenConfirm {}: {}", self.b_side, e);
             e
         })
     }
@@ -1319,7 +1348,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         match &result.event {
             IbcEvent::CloseInitChannel(_) => {
-                info!("👋 {} => {:#?}\n", self.dst_chain().id(), result);
+                info!("👋 {} => {}", self.dst_chain().id(), result);
                 Ok(result.event)
             }
             IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
@@ -1416,7 +1445,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         match &result.event {
             IbcEvent::CloseConfirmChannel(_) => {
-                info!("👋 {} => {:#?}\n", self.dst_chain().id(), result);
+                info!("👋 {} => {}", self.dst_chain().id(), result);
                 Ok(result.event)
             }
             IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),

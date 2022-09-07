@@ -2,6 +2,8 @@
 //! of Cosmos-SDK networks. The extracted version specification
 //! is captured in a domain-type semver format in [`Specs`].
 
+use core::fmt::{Display, Error as FmtError, Formatter};
+
 use flex_error::define_error;
 use tracing::trace;
 
@@ -32,9 +34,25 @@ const TENDERMINT_MODULE_NAME: &str = "tendermint/tendermint";
 /// the IBC-go module version (if existing).
 #[derive(Debug)]
 pub struct Specs {
-    pub sdk_version: semver::Version,
-    pub ibc_go_version: Option<semver::Version>,
-    pub tendermint_version: semver::Version,
+    pub cosmos_sdk: semver::Version,
+    pub ibc_go: Option<semver::Version>,
+    pub tendermint: semver::Version,
+}
+
+impl Display for Specs {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        let ibc_go = self
+            .ibc_go
+            .as_ref()
+            .map(|v| v.to_string())
+            .unwrap_or_else(|| "UNKNOWN".to_string());
+
+        write!(
+            f,
+            "Cosmos SDK {}, IBC-Go {}, Tendermint {}",
+            self.cosmos_sdk, ibc_go, self.tendermint
+        )
+    }
 }
 
 define_error! {
@@ -85,9 +103,9 @@ impl TryFrom<VersionInfo> for Specs {
         );
 
         Ok(Self {
-            sdk_version,
-            ibc_go_version,
-            tendermint_version,
+            cosmos_sdk: sdk_version,
+            ibc_go: ibc_go_version,
+            tendermint: tendermint_version,
         })
     }
 }
@@ -195,8 +213,8 @@ pub struct AppInfo {
     git_commit: String,
 }
 
-impl core::fmt::Display for AppInfo {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+impl Display for AppInfo {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}:{}-{}", self.app_name, self.version, self.git_commit)
     }
 }
