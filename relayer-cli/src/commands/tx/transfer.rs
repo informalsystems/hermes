@@ -2,6 +2,7 @@ use abscissa_core::clap::Parser;
 use abscissa_core::{config::Override, Command, FrameworkErrorKind, Runnable};
 
 use core::time::Duration;
+use eyre::eyre;
 use ibc::{
     applications::transfer::Amount,
     core::{
@@ -136,19 +137,16 @@ impl Override<Config> for TxIcs20MsgTransferCmd {
 }
 
 impl TxIcs20MsgTransferCmd {
-    fn validate_options(
-        &self,
-        config: &Config,
-    ) -> Result<TransferOptions, Box<dyn std::error::Error>> {
+    fn validate_options(&self, config: &Config) -> eyre::Result<TransferOptions> {
         config.find_chain(&self.src_chain_id).ok_or_else(|| {
-            format!(
+            eyre!(
                 "missing configuration for source chain '{}'",
                 self.src_chain_id
             )
         })?;
 
         config.find_chain(&self.dst_chain_id).ok_or_else(|| {
-            format!(
+            eyre!(
                 "missing configuration for destination chain '{}'",
                 self.dst_chain_id
             )
@@ -158,7 +156,7 @@ impl TxIcs20MsgTransferCmd {
 
         let number_msgs = self.number_msgs.unwrap_or(1);
         if number_msgs == 0 {
-            return Err("number of messages should be greater than zero".into());
+            return Err(eyre!("number of messages should be greater than zero"));
         }
 
         let opts = TransferOptions {

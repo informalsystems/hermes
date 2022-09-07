@@ -13,6 +13,7 @@ use std::ops::Deref;
 use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic};
 use crate::conclude::Output;
 use crate::prelude::*;
+use eyre::eyre;
 use ibc::core::ics02_client::client_state::ClientState;
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
@@ -52,9 +53,9 @@ pub fn monitor_misbehaviour(
     chain_id: &ChainId,
     client_id: &ClientId,
     config: &Config,
-) -> Result<Option<IbcEvent>, Box<dyn std::error::Error>> {
+) -> eyre::Result<Option<IbcEvent>> {
     let chain = spawn_chain_runtime(config, chain_id)
-        .map_err(|e| format!("could not spawn the chain runtime for {}: {}", chain_id, e))?;
+        .map_err(|e| eyre!("could not spawn the chain runtime for {}: {}", chain_id, e))?;
 
     let subscription = chain.subscribe()?;
 
@@ -104,7 +105,7 @@ fn misbehaviour_handling<Chain: ChainHandle>(
     config: &Config,
     client_id: ClientId,
     update: Option<UpdateClient>,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> eyre::Result<()> {
     let (client_state, _) = chain
         .query_client_state(
             QueryClientStateRequest {
@@ -113,15 +114,15 @@ fn misbehaviour_handling<Chain: ChainHandle>(
             },
             IncludeProof::No,
         )
-        .map_err(|e| format!("could not query client state for {}: {}", client_id, e))?;
+        .map_err(|e| eyre!("could not query client state for {}: {}", client_id, e))?;
 
     if client_state.is_frozen() {
-        return Err(format!("client {} is already frozen", client_id).into());
+        return Err(eyre!("client {} is already frozen", client_id));
     }
 
     let counterparty_chain = spawn_chain_runtime_generic::<Chain>(config, &client_state.chain_id())
         .map_err(|e| {
-            format!(
+            eyre!(
                 "could not spawn the chain runtime for {}: {}",
                 client_state.chain_id(),
                 e

@@ -4,14 +4,13 @@ use core::fmt::Write;
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
+use crate::conclude::Output;
+use crate::{application::app_config, conclude::json};
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::{
     config::{ChainConfig, Config},
     keyring::{KeyEntry, KeyRing, Store},
 };
-
-use crate::conclude::Output;
-use crate::{application::app_config, conclude::json};
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct KeysListCmd {
@@ -68,9 +67,7 @@ pub struct KeysListOptions {
     pub chain_config: ChainConfig,
 }
 
-pub fn list_keys(
-    config: ChainConfig,
-) -> Result<Vec<(String, KeyEntry)>, Box<dyn std::error::Error>> {
+pub fn list_keys(config: ChainConfig) -> eyre::Result<Vec<(String, KeyEntry)>> {
     let keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
     let keys = keyring.keys()?;
     Ok(keys)
