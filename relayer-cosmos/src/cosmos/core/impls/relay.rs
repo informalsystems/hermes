@@ -12,6 +12,7 @@ use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer_framework::one_for_all::traits::chain::{OfaChain, OfaChainContext};
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelay;
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
+use ibc_relayer_framework::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 
 use crate::cosmos::core::error::Error;
 use crate::cosmos::core::traits::chain::CosmosChain;
@@ -20,6 +21,7 @@ use crate::cosmos::core::types::chain::CosmosChainContext;
 use crate::cosmos::core::types::message::CosmosIbcMessage;
 use crate::cosmos::core::types::relay::CosmosRelayContext;
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
+use crate::cosmos::core::types::telemetry::CosmosTelemetry;
 
 #[async_trait]
 impl<Relay> OfaRelay for CosmosRelayContext<Relay>
@@ -37,6 +39,8 @@ where
     type DstChain = CosmosChainContext<Relay::DstChain>;
 
     type Packet = Packet;
+
+    type Telemetry = OfaTelemetryWrapper<CosmosTelemetry>;
 
     fn packet_src_port(packet: &Self::Packet) -> &<Self::SrcChain as OfaChain>::PortId {
         &packet.source_port
@@ -131,6 +135,10 @@ where
         });
 
         Ok(message)
+    }
+
+    fn telemetry(&self) -> &Self::Telemetry {
+        &self.telemetry
     }
 
     async fn build_ack_packet_message(

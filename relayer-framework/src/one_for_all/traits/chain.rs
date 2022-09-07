@@ -10,6 +10,8 @@ use crate::one_for_all::traits::error::OfaError;
 use crate::one_for_all::traits::runtime::{OfaRuntime, OfaRuntimeContext};
 use crate::std_prelude::*;
 
+use super::telemetry::{OfaTelemetry, OfaTelemetryWrapper};
+
 #[derive(Clone)]
 pub struct OfaChainContext<Chain> {
     pub chain: Chain,
@@ -57,6 +59,8 @@ pub trait OfaChain: Async {
 
     type WriteAcknowledgementEvent: Async;
 
+    type Telemetry: OfaTelemetry;
+
     fn encode_raw_message(
         message: &Self::Message,
         signer: &Self::Signer,
@@ -78,6 +82,8 @@ pub trait OfaChain: Async {
         &self,
         messages: Vec<Self::Message>,
     ) -> Result<Vec<Vec<Self::Event>>, Self::Error>;
+
+    fn telemetry(&self) -> &OfaTelemetryWrapper<Self::Telemetry>;
 
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error>;
 }
