@@ -12,6 +12,7 @@ use crate::cosmos::basic::relay::CosmosRelayEnv;
 use crate::cosmos::batch::chain::CosmosChainEnv;
 use crate::cosmos::core::types::relay::CosmosRelayContext;
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
+use crate::cosmos::core::types::telemetry::CosmosTelemetry;
 
 pub fn new_relay_context_with_batch<SrcChain, DstChain>(
     runtime: CosmosRuntimeContext,
@@ -20,6 +21,7 @@ pub fn new_relay_context_with_batch<SrcChain, DstChain>(
     src_to_dst_client: ForeignClient<DstChain, SrcChain>,
     dst_to_src_client: ForeignClient<SrcChain, DstChain>,
     batch_config: BatchConfig,
+    telemetry: CosmosTelemetry,
 ) -> OfaRelayContext<
     CosmosRelayContext<CosmosRelayEnv<CosmosChainEnv<SrcChain>, CosmosChainEnv<DstChain>>>,
 >
@@ -35,6 +37,7 @@ where
             dst_to_src_client,
         )),
         runtime,
+        telemetry,
     ));
 
     <BatchMessageWorkerSpawner<SourceTarget>>::spawn_batch_message_worker(

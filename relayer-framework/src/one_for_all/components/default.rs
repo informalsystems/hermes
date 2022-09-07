@@ -3,6 +3,9 @@ use crate::core::impls::message_senders::update_client::SendIbcMessagesWithUpdat
 use crate::core::impls::messages::skip_update_client::SkipUpdateClient;
 use crate::core::impls::messages::wait_update_client::WaitUpdateClient;
 use crate::core::impls::packet_relayers::top::TopRelayer;
+use crate::core::impls::queries::consensus_state::ConsensusStateTelemetryQuerier;
+use crate::core::impls::queries::status::ChainStatusTelemetryQuerier;
+
 use crate::one_for_all::impls::chain::OfaConsensusStateQuerier;
 use crate::one_for_all::impls::relay::OfaUpdateClientMessageBuilder;
 use crate::one_for_all::impls::status::OfaChainStatusQuerier;
@@ -17,7 +20,7 @@ impl<Chain> OfaChainComponents<Chain> for DefaultComponents
 where
     Chain: OfaChain,
 {
-    type ChainStatusQuerier = OfaChainStatusQuerier;
+    type ChainStatusQuerier = ChainStatusTelemetryQuerier<OfaChainStatusQuerier>;
 }
 
 impl<Chain, Counterparty> OfaIbcChainComponents<Chain, Counterparty> for DefaultComponents
@@ -25,7 +28,7 @@ where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaIbcChain<Chain>,
 {
-    type ConsensusStateQuerier = OfaConsensusStateQuerier;
+    type ConsensusStateQuerier = ConsensusStateTelemetryQuerier<OfaConsensusStateQuerier>;
 }
 
 impl<Relay> OfaRelayComponents<Relay> for DefaultComponents
