@@ -10,6 +10,9 @@ use crate::core::traits::target::SourceTarget;
 use crate::core::types::aliases::{Height, Packet};
 use crate::std_prelude::*;
 
+/// The lowest-level minimal type that implements timeout packet relayer
+/// capabilities. Timeout packet relayers with more capabilities can be
+/// implemented on top of this base type.
 pub struct BaseTimeoutUnorderedPacketRelayer;
 
 impl Default for BaseTimeoutUnorderedPacketRelayer {
