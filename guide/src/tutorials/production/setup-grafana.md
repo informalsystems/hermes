@@ -65,7 +65,7 @@ Prometheus is a free software application used for event monitoring and alerting
 ### Set up the dashboard
 
 - Download the [Grafana template](../../assets/grafana_template.json) we provide. 
-- In the sidebar, hover your cursor over the `+` icon, and then click Import.
+- In the sidebar, hover your cursor over the `+` icon, and then click `Import`.
 - Click on `Upload JSON file` and select the Grafana template you just downloaded.
 - On the `Import` page, enter `Hermes dashboard template` as a name, enter your data sources and click `Import`.
 - In the top right corner, next to the `refresh dashboard` button, select `5s` to automatically query Prometheus and Loki every 5s.
