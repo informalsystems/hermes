@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use core::fmt;
+use core::fmt::{Display, Error as FmtError, Formatter};
 use serde_derive::{Deserialize, Serialize};
 
 use super::error::Error;
@@ -30,8 +30,8 @@ impl ClientType {
     }
 }
 
-impl fmt::Display for ClientType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for ClientType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "ClientType({})", self.as_str())
     }
 }

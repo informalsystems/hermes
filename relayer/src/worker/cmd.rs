@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{Display, Error as FmtError, Formatter};
 
 use ibc::{core::ics02_client::events::NewBlock, Height};
 
@@ -17,8 +17,8 @@ pub enum WorkerCmd {
     ClearPendingPackets,
 }
 
-impl fmt::Display for WorkerCmd {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for WorkerCmd {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
             WorkerCmd::IbcEvents { batch } => {
                 write!(f, "IbcEvents batch from {}: ", batch.chain_id)?;
@@ -28,7 +28,7 @@ impl fmt::Display for WorkerCmd {
                 write!(f, "batch Height: {}", batch.height)
             }
             WorkerCmd::NewBlock { height, new_block } => {
-                write!(f, "NewBlock({}, {:?})", height, new_block)
+                write!(f, "NewBlock({}, {})", height, new_block)
             }
             WorkerCmd::ClearPendingPackets => write!(f, "CleaPendingPackets"),
         }

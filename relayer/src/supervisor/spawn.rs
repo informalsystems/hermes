@@ -42,6 +42,8 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
     }
 
     pub fn spawn_workers(&mut self, scan: ChainsScan) {
+        let _span = tracing::error_span!("spawn").entered();
+
         for chain_scan in scan.chains {
             match chain_scan {
                 Ok(chain_scan) => self.spawn_workers_for_chain(chain_scan),
@@ -51,12 +53,13 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
     }
 
     pub fn spawn_workers_for_chain(&mut self, scan: ChainScan) {
+        let _span = tracing::error_span!("chain", chain = %scan.chain_id).entered();
+
         let chain = match self.registry.get_or_spawn(&scan.chain_id) {
             Ok(chain_handle) => chain_handle,
             Err(e) => {
                 error!(
-                    chain = %scan.chain_id,
-                    "skipping workers , reason: failed to spawn chain runtime with error: {}",
+                    "skipping workers, reason: failed to spawn chain runtime with error: {}",
                     e
                 );
 
@@ -87,6 +90,8 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
     }
 
     pub fn spawn_workers_for_client(&mut self, chain: Chain, client_scan: ClientScan) {
+        let _span = tracing::error_span!("client", client = %client_scan.id()).entered();
+
         for (_, connection_scan) in client_scan.connections {
             self.spawn_workers_for_connection(chain.clone(), &client_scan.client, connection_scan);
         }
@@ -98,6 +103,9 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
         client: &IdentifiedAnyClientState,
         connection_scan: ConnectionScan,
     ) {
+        let _span =
+            tracing::error_span!("connection", connection = %connection_scan.id()).entered();
+
         let connection_id = connection_scan.id().clone();
 
         match self.spawn_connection_workers(
@@ -165,7 +173,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             chain = %chain.id(),
             connection = %connection.connection_id,
             counterparty_chain = %counterparty_chain.id(),
-            "connection is {:?}, state on destination chain is {:?}",
+            "connection is {}, state on destination chain is {}",
             conn_state_src,
             conn_state_dst
         );
@@ -212,6 +220,8 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
         client: &IdentifiedAnyClientState,
         channel_scan: ChannelScan,
     ) -> Result<bool, Error> {
+        let _span = tracing::error_span!("channel", channel = %channel_scan.id()).entered();
+
         let mode = &self.config.mode;
 
         let counterparty_chain = self

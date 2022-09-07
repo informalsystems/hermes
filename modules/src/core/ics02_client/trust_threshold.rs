@@ -2,7 +2,10 @@
 //! represented as a fraction with valid values in the
 //! range `[0, 1)`.
 
-use core::{convert::TryFrom, fmt};
+use core::{
+    convert::TryFrom,
+    fmt::{Display, Error as FmtError, Formatter},
+};
 
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
@@ -123,8 +126,8 @@ impl Default for TrustThreshold {
     }
 }
 
-impl fmt::Display for TrustThreshold {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for TrustThreshold {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}/{}", self.numerator, self.denominator)
     }
 }

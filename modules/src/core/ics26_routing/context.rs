@@ -2,8 +2,10 @@ use crate::prelude::*;
 
 use alloc::borrow::{Borrow, Cow};
 use core::any::Any;
-use core::fmt::Debug;
-use core::{fmt, str::FromStr};
+use core::{
+    fmt::{Debug, Display, Error as FmtError, Formatter},
+    str::FromStr,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -56,8 +58,8 @@ impl ModuleId {
     }
 }
 
-impl fmt::Display for ModuleId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for ModuleId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}", self.0)
     }
 }

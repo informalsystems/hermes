@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{Display, Error as FmtError, Formatter};
 
 /// REST server configuration
 #[derive(Clone, Debug)]
@@ -17,8 +17,8 @@ impl Config {
     }
 }
 
-impl fmt::Display for Config {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for Config {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}:{}", self.host, self.port)
     }
 }

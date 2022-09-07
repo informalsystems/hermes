@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{Display, Error as FmtError, Formatter};
 
 use ibc::events::IbcEvent;
 
@@ -27,8 +27,8 @@ impl RelaySummary {
     }
 }
 
-impl fmt::Display for RelaySummary {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for RelaySummary {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "RelaySummary events: ")?;
         for e in &self.events {
             write!(f, "{}; ", e)?

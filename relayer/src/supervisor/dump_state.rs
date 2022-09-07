@@ -1,5 +1,5 @@
 use alloc::collections::BTreeMap;
-use alloc::fmt;
+use alloc::fmt::{Display, Error as FmtError, Formatter};
 
 use ibc::core::ics24_host::identifier::ChainId;
 use itertools::Itertools;
@@ -54,8 +54,8 @@ impl SupervisorState {
     }
 }
 
-impl fmt::Display for SupervisorState {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for SupervisorState {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         writeln!(f)?;
         writeln!(f, "* Chains: {}", self.chains.iter().join(", "))?;
         for (tpe, objects) in &self.workers {

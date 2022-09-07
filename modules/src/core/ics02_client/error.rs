@@ -209,7 +209,7 @@ define_error! {
                 latest_height: Height
             }
             | e | {
-                format!("received header height ({:?}) is lower than (or equal to) client latest height ({:?})",
+                format!("received header height ({}) is lower than (or equal to) client latest height ({})",
                     e.header_height, e.latest_height)
             },
 

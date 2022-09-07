@@ -52,8 +52,6 @@ pub struct QueryChannelsCmd {
 fn run_query_channels<Chain: ChainHandle>(
     cmd: &QueryChannelsCmd,
 ) -> Result<QueryChannelsOutput, Box<dyn std::error::Error>> {
-    debug!("Options: {:?}", cmd);
-
     let mut output = match (cmd.verbose, cmd.show_counterparty) {
         (true, _) => QueryChannelsOutput::verbose(),
         (false, true) => QueryChannelsOutput::pretty(),
