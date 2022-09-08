@@ -70,6 +70,7 @@ impl BinaryChannelTest for ChannelFilterTest {
             &wallet_b.address(),
             &denom_a,
             a_to_b_amount,
+            None,
         )?;
 
         info!("running relayer");

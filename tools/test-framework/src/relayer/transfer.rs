@@ -31,9 +31,10 @@ pub fn build_transfer_message<SrcChain, DstChain>(
     recipient: &MonoTagged<DstChain, &WalletAddress>,
     denom: &MonoTagged<SrcChain, &Denom>,
     amount: u64,
+    duration: Option<Duration>,
 ) -> Result<Any, Error> {
     let timeout_timestamp = Timestamp::now()
-        .add(Duration::from_secs(60))
+        .add(duration.unwrap_or_else(|| Duration::from_secs(60)))
         .map_err(handle_generic_error)?;
 
     let sender = sender
@@ -86,8 +87,11 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
     recipient: &MonoTagged<DstChain, &WalletAddress>,
     denom: &MonoTagged<SrcChain, &Denom>,
     amount: u64,
+    duration: Option<Duration>,
 ) -> Result<Packet, Error> {
-    let message = build_transfer_message(port_id, channel_id, sender, recipient, denom, amount)?;
+    let message = build_transfer_message(
+        port_id, channel_id, sender, recipient, denom, amount, duration,
+    )?;
 
     let events = simple_send_tx(tx_config.value(), &sender.value().key, vec![message]).await?;
 

@@ -39,6 +39,7 @@ impl BinaryChannelTest for IbcDenomTraceTest {
             &wallet_b.address(),
             &denom_a,
             a_to_b_amount,
+            None,
         )?;
 
         let denom_b = derive_ibc_denom(

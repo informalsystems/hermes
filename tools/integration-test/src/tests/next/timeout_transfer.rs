@@ -1,7 +1,8 @@
-use ibc_relayer_cosmos::cosmos::instances::packet_relayers::full_packet_relayer;
-use ibc_relayer_framework::core::impls::filters::trivial_filters::AllowFilter;
-use ibc_relayer_framework::core::traits::packet_relayer::PacketRelayer;
-use ibc_test_framework::ibc::denom::derive_ibc_denom;
+//! This test ensures that a source chain that initiates an IBC transfer is
+//! refunded the tokens that it sent in response to receiving a timeout packet.
+
+use ibc_relayer_framework::core::impls::packet_relayers::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
+use ibc_relayer_framework::core::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
 
@@ -29,7 +30,7 @@ impl BinaryChannelTest for IbcTransferTest {
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let relay_context = build_cosmos_relay_context(&chains);
-        let relayer = full_packet_relayer(1, AllowFilter {});
+        let relayer = BaseTimeoutUnorderedPacketRelayer;
 
         let runtime = chains.node_a.value().chain_driver.runtime.as_ref();
 
@@ -46,7 +47,7 @@ impl BinaryChannelTest for IbcTransferTest {
         let a_to_b_amount = random_u64_range(1000, 5000);
 
         info!(
-            "Sending IBC transfer from chain {} to chain {} with amount of {} {}",
+            "Sending IBC timeout from chain {} to chain {} with amount of {} {}",
             chains.chain_id_a(),
             chains.chain_id_b(),
             a_to_b_amount,
@@ -60,40 +61,33 @@ impl BinaryChannelTest for IbcTransferTest {
             &wallet_b.address(),
             &denom_a,
             a_to_b_amount,
-            None,
+            Some(Duration::from_secs(1)),
         )?;
 
         info!("running relayer");
 
-        runtime.block_on(async { relayer.relay_packet(&relay_context, &packet).await.unwrap() });
+        sleep(Duration::from_secs(5));
+
+        let chain_b_height = chains.handle_b.query_latest_height().unwrap();
+        let chain_b_height = chain_b_height.decrement().unwrap();
+
+        runtime.block_on(async {
+            relayer
+                .relay_timeout_unordered_packet(&relay_context, &chain_b_height, &packet)
+                .await
+                .unwrap()
+        });
 
         info!("finished running relayer");
 
-        let denom_b = derive_ibc_denom(
-            &channel.port_b.as_ref(),
-            &channel.channel_id_b.as_ref(),
-            &denom_a,
-        )?;
-
-        info!(
-            "Waiting for user on chain B to receive IBC transferred amount of {} {}",
-            a_to_b_amount, denom_b
-        );
-
         chains.node_a.chain_driver().assert_eventual_wallet_amount(
             &wallet_a.address(),
-            balance_a - a_to_b_amount,
+            balance_a,
             &denom_a,
         )?;
 
-        chains.node_b.chain_driver().assert_eventual_wallet_amount(
-            &wallet_b.address(),
-            a_to_b_amount,
-            &denom_b.as_ref(),
-        )?;
-
         info!(
-            "successfully performed IBC transfer from chain {} to chain {}",
+            "successfully refunded IBC transfer back to chain {} from chain {}",
             chains.chain_id_a(),
             chains.chain_id_b(),
         );

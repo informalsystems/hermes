@@ -77,6 +77,7 @@ impl BinaryChannelTest for IbcTransferTest {
             &wallet_b.address(),
             &denom_a,
             a_to_b_amount,
+            None,
         )?;
 
         let denom_b = derive_ibc_denom(
@@ -130,6 +131,7 @@ impl BinaryChannelTest for IbcTransferTest {
             &wallet_c.address(),
             &denom_b.as_ref(),
             b_to_a_amount,
+            None,
         )?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(

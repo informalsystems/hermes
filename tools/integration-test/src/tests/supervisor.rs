@@ -123,6 +123,7 @@ impl BinaryChainTest for SupervisorTest {
             &wallet_b.address(),
             &denom_a,
             transfer_amount,
+            None,
         )?;
 
         // During the test, you should see error logs showing "account sequence mismatch".

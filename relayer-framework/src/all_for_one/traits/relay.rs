@@ -4,6 +4,7 @@ use crate::core::traits::contexts::relay::RelayContext;
 use crate::core::traits::ibc_message_sender::HasIbcMessageSender;
 use crate::core::traits::messages::ack_packet::HasAckPacketMessageBuilder;
 use crate::core::traits::messages::receive_packet::HasReceivePacketMessageBuilder;
+use crate::core::traits::messages::timeout_packet::HasTimeoutUnorderedPacketMessageBuilder;
 use crate::core::traits::messages::update_client::HasUpdateClientMessageBuilder;
 use crate::core::traits::target::{DestinationTarget, SourceTarget};
 
@@ -15,6 +16,7 @@ pub trait AfoRelayContext:
     + HasIbcMessageSender<DestinationTarget>
     + HasReceivePacketMessageBuilder
     + HasAckPacketMessageBuilder
+    + HasTimeoutUnorderedPacketMessageBuilder
 {
     type AfoError: AfoError;
 
@@ -34,7 +36,8 @@ where
         + HasIbcMessageSender<SourceTarget>
         + HasIbcMessageSender<DestinationTarget>
         + HasReceivePacketMessageBuilder
-        + HasAckPacketMessageBuilder,
+        + HasAckPacketMessageBuilder
+        + HasTimeoutUnorderedPacketMessageBuilder,
 {
     type AfoError = Error;
 

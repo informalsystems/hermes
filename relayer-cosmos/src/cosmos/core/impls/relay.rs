@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use ibc::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use ibc::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
+use ibc::core::ics04_channel::msgs::timeout::MsgTimeout;
 use ibc::core::ics04_channel::packet::Packet;
 use ibc::core::ics04_channel::packet::PacketMsgType;
 use ibc::core::ics04_channel::timeout::TimeoutHeight;
@@ -167,6 +168,42 @@ where
             Ok(MsgAcknowledgement::new(
                 packet.clone(),
                 ack.clone().into(),
+                proofs.clone(),
+                signer.clone(),
+            )
+            .to_any())
+        });
+
+        Ok(message)
+    }
+
+    /// Construct a timeout packet message to be sent back to the
+    /// source chain over an unordered Cosmos channel.
+    async fn build_timeout_unordered_packet_message(
+        &self,
+        destination_height: &<Self::DstChain as OfaChain>::Height,
+        packet: &Self::Packet,
+    ) -> Result<<Self::SrcChain as OfaChain>::Message, Self::Error> {
+        let proofs = self
+            .dst_chain
+            .chain
+            .chain
+            .chain_handle()
+            .build_packet_proofs(
+                PacketMsgType::TimeoutUnordered,
+                &packet.destination_port,
+                &packet.destination_channel,
+                packet.sequence,
+                *destination_height,
+            )
+            .map_err(Error::relayer)?;
+
+        let packet = packet.clone();
+
+        let message = CosmosIbcMessage::new(Some(*destination_height), move |signer| {
+            Ok(MsgTimeout::new(
+                packet.clone(),
+                packet.sequence,
                 proofs.clone(),
                 signer.clone(),
             )

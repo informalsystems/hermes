@@ -58,6 +58,7 @@ impl BinaryChannelTest for OrderedChannelTest {
             &wallet_b.address(),
             &denom_a,
             amount1,
+            None,
         )?;
 
         sleep(Duration::from_secs(1));
@@ -79,6 +80,7 @@ impl BinaryChannelTest for OrderedChannelTest {
                 &wallet_b.address(),
                 &denom_a,
                 amount2,
+                None,
             )?;
 
             sleep(Duration::from_secs(1));

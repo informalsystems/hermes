@@ -56,6 +56,7 @@ impl BinaryChannelTest for ConnectionDelayTest {
                 &wallet_b.address(),
                 &denom_a,
                 a_to_b_amount,
+                None,
             )?;
 
             let time1 = OffsetDateTime::now_utc();
