@@ -2,12 +2,10 @@
    Implementation of [`ChainDriver`].
 */
 
-use core::str::FromStr;
 use core::time::Duration;
 
 use alloc::sync::Arc;
 use eyre::eyre;
-use serde_json as json;
 use std::str;
 use tokio::runtime::Runtime;
 
@@ -15,8 +13,9 @@ use ibc::core::ics24_host::identifier::ChainId;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 
+use crate::chain::cli::query::query_balance;
 use crate::chain::exec::{simple_exec, ExecOutput};
-use crate::error::{handle_generic_error, Error};
+use crate::error::Error;
 use crate::ibc::denom::Denom;
 use crate::relayer::tx::{new_tx_config_for_test, simple_send_tx};
 use crate::types::env::{EnvWriter, ExportEnv};
@@ -201,32 +200,13 @@ impl ChainDriver {
        Query for the balances for a given wallet address and denomination
     */
     pub fn query_balance(&self, wallet_id: &WalletAddress, denom: &Denom) -> Result<u64, Error> {
-        let res = self
-            .exec(&[
-                "--node",
-                &self.rpc_listen_address(),
-                "query",
-                "bank",
-                "balances",
-                &wallet_id.0,
-                "--denom",
-                denom.as_str(),
-                "--output",
-                "json",
-            ])?
-            .stdout;
-
-        let amount_str = json::from_str::<json::Value>(&res)
-            .map_err(handle_generic_error)?
-            .get("amount")
-            .ok_or_else(|| eyre!("expected amount field"))?
-            .as_str()
-            .ok_or_else(|| eyre!("expected string field"))?
-            .to_string();
-
-        let amount = u64::from_str(&amount_str).map_err(handle_generic_error)?;
-
-        Ok(amount)
+        query_balance(
+            self.chain_id.as_str(),
+            &self.command_path,
+            &self.rpc_listen_address(),
+            &wallet_id.0,
+            &denom.to_string(),
+        )
     }
 
     pub fn send_tx(&self, wallet: &Wallet, messages: Vec<Any>) -> Result<(), Error> {
