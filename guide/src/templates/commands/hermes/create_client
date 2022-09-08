@@ -1,0 +1,1 @@
+[[#binary hermes]] create client --host-chain [[#host-chain]] --reference-chain [[#reference-chain]]

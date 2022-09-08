@@ -1,5 +1,6 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the client module.
 
+use core::fmt::{Display, Error as FmtError, Formatter};
 use serde_derive::{Deserialize, Serialize};
 use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
@@ -42,6 +43,12 @@ impl NewBlock {
     }
 }
 
+impl Display for NewBlock {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "NewBlock {{ height: {} }}", self.height)
+    }
+}
+
 impl From<NewBlock> for IbcEvent {
     fn from(v: NewBlock) -> Self {
         IbcEvent::NewBlock(v)
@@ -62,6 +69,16 @@ impl Default for Attributes {
             client_type: ClientType::Tendermint,
             consensus_height: Height::new(0, 1).unwrap(),
         }
+    }
+}
+
+impl Display for Attributes {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(
+            f,
+            "Attributes {{ client_id: {}, client_type: {}, consensus_height: {} }}",
+            self.client_id, self.client_type, self.consensus_height
+        )
     }
 }
 
@@ -91,12 +108,6 @@ impl From<Attributes> for Vec<Tag> {
     }
 }
 
-impl core::fmt::Display for Attributes {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "cs_h: {}({})", self.client_id, self.consensus_height)
-    }
-}
-
 /// CreateClient event signals the creation of a new on-chain client (IBC client).
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
 pub struct CreateClient(pub Attributes);
@@ -104,6 +115,12 @@ pub struct CreateClient(pub Attributes);
 impl CreateClient {
     pub fn client_id(&self) -> &ClientId {
         &self.0.client_id
+    }
+}
+
+impl Display for CreateClient {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "CreateClient {{ {} }}", self.0)
     }
 }
 
@@ -129,14 +146,8 @@ impl From<CreateClient> for AbciEvent {
     }
 }
 
-impl core::fmt::Display for CreateClient {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "{}", self.0)
-    }
-}
-
 /// UpdateClient event signals a recent update of an on-chain client (IBC Client).
-#[derive(Serialize, Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct UpdateClient {
     pub common: Attributes,
     pub header: Option<Box<dyn Header>>,
@@ -153,6 +164,17 @@ impl UpdateClient {
 
     pub fn consensus_height(&self) -> Height {
         self.common.consensus_height
+    }
+}
+
+impl Display for UpdateClient {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        // TODO Display: Check for a solution for Box<dyn Header>
+        write!(
+            f,
+            "UpdateClient {{ common: {}, header: None }}",
+            self.common
+        )
     }
 }
 
@@ -188,18 +210,6 @@ impl From<UpdateClient> for AbciEvent {
     }
 }
 
-impl core::fmt::Display for UpdateClient {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
-        write!(f, "{}", self.common)
-    }
-}
-
-impl core::fmt::Debug for UpdateClient {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", self.common)
-    }
-}
-
 /// ClientMisbehaviour event signals the update of an on-chain client (IBC Client) with evidence of
 /// misbehaviour.
 #[derive(Debug, Serialize, Clone, PartialEq, Eq)]
@@ -208,6 +218,12 @@ pub struct ClientMisbehaviour(pub Attributes);
 impl ClientMisbehaviour {
     pub fn client_id(&self) -> &ClientId {
         &self.0.client_id
+    }
+}
+
+impl Display for ClientMisbehaviour {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "ClientMisbehaviour {{ {} }}", self.0)
     }
 }
 
@@ -240,6 +256,12 @@ pub struct UpgradeClient(pub Attributes);
 impl UpgradeClient {
     pub fn client_id(&self) -> &ClientId {
         &self.0.client_id
+    }
+}
+
+impl Display for UpgradeClient {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "UpgradeClient {{ {} }}", self.0)
     }
 }
 

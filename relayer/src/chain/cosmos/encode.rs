@@ -4,6 +4,7 @@ use ibc::core::ics24_host::identifier::ChainId;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
 use ibc_proto::google::protobuf::Any;
+use prost::Message;
 use tendermint::account::Id as AccountId;
 
 use crate::chain::cosmos::types::account::{Account, AccountNumber, AccountSequence};
@@ -19,7 +20,7 @@ pub fn sign_and_encode_tx(
     key_entry: &KeyEntry,
     account: &Account,
     tx_memo: &Memo,
-    messages: Vec<Any>,
+    messages: &[Any],
     fee: &Fee,
 ) -> Result<Vec<u8>, Error> {
     let signed_tx = sign_tx(config, key_entry, account, tx_memo, messages, fee)?;
@@ -33,12 +34,50 @@ pub fn sign_and_encode_tx(
     encode_tx_raw(tx_raw)
 }
 
+/// Length information for an encoded transaction.
+pub struct EncodedTxMetrics {
+    /// Length of the encoded message, excluding the `body_bytes` field.
+    pub envelope_len: usize,
+    /// Length of the byte array in the `body_bytes` field of the `TxRaw` message.
+    pub body_bytes_len: usize,
+}
+
+pub fn encoded_tx_metrics(
+    config: &TxConfig,
+    key_entry: &KeyEntry,
+    account: &Account,
+    tx_memo: &Memo,
+    messages: &[Any],
+    fee: &Fee,
+) -> Result<EncodedTxMetrics, Error> {
+    let signed_tx = sign_tx(config, key_entry, account, tx_memo, messages, fee)?;
+
+    let tx_raw = TxRaw {
+        body_bytes: signed_tx.body_bytes,
+        auth_info_bytes: signed_tx.auth_info_bytes,
+        signatures: signed_tx.signatures,
+    };
+
+    let total_len = tx_raw.encoded_len();
+    let body_bytes_len = tx_raw.body_bytes.len();
+    let envelope_len = if body_bytes_len == 0 {
+        total_len
+    } else {
+        total_len - 1 - prost::length_delimiter_len(body_bytes_len) - body_bytes_len
+    };
+
+    Ok(EncodedTxMetrics {
+        envelope_len,
+        body_bytes_len,
+    })
+}
+
 pub fn sign_tx(
     config: &TxConfig,
     key_entry: &KeyEntry,
     account: &Account,
     tx_memo: &Memo,
-    messages: Vec<Any>,
+    messages: &[Any],
     fee: &Fee,
 ) -> Result<SignedTx, Error> {
     let key_bytes = encode_key_bytes(key_entry)?;
@@ -161,7 +200,7 @@ fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, V
 }
 
 fn tx_body_and_bytes(
-    proto_msgs: Vec<Any>,
+    proto_msgs: &[Any],
     memo: &Memo,
     extension_options: Vec<Any>,
 ) -> Result<(TxBody, Vec<u8>), Error> {

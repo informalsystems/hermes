@@ -1,5 +1,4 @@
 use core::cmp::min;
-use core::fmt;
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::cosmos::tx::v1beta1::Fee;
 use num_bigint::BigInt;
@@ -7,8 +6,6 @@ use num_rational::BigRational;
 
 use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::GasPrice;
-
-pub struct PrettyFee<'a>(pub &'a Fee);
 
 pub fn gas_amount_to_fee(config: &GasConfig, gas_amount: u64) -> Fee {
     let adjusted_gas_limit = adjust_estimated_gas(AdjustGas {
@@ -71,8 +68,6 @@ fn adjust_estimated_gas(
         gas_amount,
     }: AdjustGas,
 ) -> u64 {
-    assert!(gas_multiplier >= 1.0);
-
     // No need to compute anything if the gas amount is zero
     if gas_amount == 0 {
         return 0;
@@ -99,20 +94,6 @@ fn adjust_estimated_gas(
 
     // Bound the gas estimate by the max_gas option
     min(gas, max_gas)
-}
-
-impl fmt::Display for PrettyFee<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let amount = match self.0.amount.get(0) {
-            Some(coin) => format!("{}{}", coin.amount, coin.denom),
-            None => "<no amount specified>".to_string(),
-        };
-
-        f.debug_struct("Fee")
-            .field("amount", &amount)
-            .field("gas_limit", &self.0.gas_limit)
-            .finish()
-    }
 }
 
 #[cfg(test)]

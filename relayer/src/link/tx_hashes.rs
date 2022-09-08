@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{Display, Error as FmtError, Formatter};
 
 use tendermint::abci::transaction;
 
@@ -20,8 +20,8 @@ impl From<TxHashes> for Vec<transaction::Hash> {
     }
 }
 
-impl fmt::Display for TxHashes {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for TxHashes {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "TxHashes: count={}", self.0.len())?;
         self.0.iter().try_for_each(|r| write!(f, "; {}", r))
     }

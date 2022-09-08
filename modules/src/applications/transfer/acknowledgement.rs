@@ -1,4 +1,4 @@
-use core::fmt::{Display, Formatter};
+use core::fmt::{Display, Error as FmtError, Formatter};
 
 use serde::{Deserialize, Serialize};
 
@@ -51,7 +51,7 @@ impl AsRef<[u8]> for Acknowledgement {
 }
 
 impl Display for Acknowledgement {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
             Acknowledgement::Success(_) => write!(f, "{}", ACK_SUCCESS_B64),
             Acknowledgement::Error(err_str) => write!(f, "{}", err_str),

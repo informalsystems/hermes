@@ -62,7 +62,7 @@ impl core::fmt::Display for Misbehaviour {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(
             f,
-            "{:?} h1: {:?}-{:?} h2: {:?}-{:?}",
+            "{} h1: {}-{} h2: {}-{}",
             self.client_id,
             self.header1.height(),
             self.header1.trusted_height,

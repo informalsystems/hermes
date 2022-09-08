@@ -1,0 +1,40 @@
+version: "3"
+
+networks:
+  loki:
+    driver: bridge
+  prometheus:
+    driver: bridge
+
+services:
+  loki:
+    image: grafana/loki:2.6.0
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - loki
+
+  promtail:
+    image: grafana/promtail:2.6.1
+    volumes:
+      - /var/log:/var/log
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - loki
+
+  grafana:
+    image: grafana/grafana:8.4.5
+    ports:
+      - "3000:3000"
+    networks:
+      - loki
+      - prometheus
+  
+  prometheus:
+    image: prom/prometheus:v2.38.0
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command: --config.file=/etc/prometheus/prometheus.yml
+    networks:
+      - prometheus

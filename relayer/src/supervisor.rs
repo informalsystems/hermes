@@ -7,7 +7,7 @@ use std::sync::RwLock;
 
 use crossbeam_channel::{unbounded, Receiver, Sender};
 use itertools::Itertools;
-use tracing::{debug, error, error_span, info, trace, warn};
+use tracing::{debug, error, error_span, info, instrument, trace, warn};
 
 use ibc::{
     core::ics24_host::identifier::{ChainId, ChannelId, PortId},
@@ -22,7 +22,7 @@ use crate::{
         monitor::{self, Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
         IbcEventWithHeight,
     },
-    object::Object,
+    object::{Object, Packet},
     registry::{Registry, SharedRegistry},
     rest,
     supervisor::scan::ScanMode,
@@ -146,7 +146,7 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     )
     .scan_chains();
 
-    info!("Scanned chains:");
+    info!("scanned chains:");
     info!("{}", scan);
 
     spawn_context(&config, &mut registry.write(), &mut workers.acquire_write()).spawn_workers(scan);
@@ -190,7 +190,7 @@ fn spawn_batch_workers<Chain: ChainHandle>(
         let workers = workers.clone();
 
         let handle = spawn_background_task(
-            tracing::Span::none(),
+            error_span!("worker.batch", chain = %chain.id()),
             Some(Duration::from_millis(5)),
             move || -> Result<Next, TaskError<Infallible>> {
                 if let Ok(batch) = subscription.try_recv() {
@@ -220,7 +220,7 @@ pub fn spawn_cmd_worker<Chain: ChainHandle>(
     cmd_rx: Receiver<SupervisorCmd>,
 ) -> TaskHandle {
     spawn_background_task(
-        error_span!("cmd"),
+        error_span!("worker.cmd"),
         Some(Duration::from_millis(500)),
         move || -> Result<Next, TaskError<Infallible>> {
             if let Ok(cmd) = cmd_rx.try_recv() {
@@ -533,17 +533,18 @@ fn health_check<Chain: ChainHandle>(config: &Config, registry: &mut Registry<Cha
 
     for config in chains {
         let id = &config.id;
+        let _span = error_span!("health_check", chain = %id).entered();
+
         let chain = registry.get_or_spawn(id);
 
         match chain {
             Ok(chain) => match chain.health_check() {
-                Ok(Healthy) => info!(chain = %id, "chain is healthy"),
-                Ok(Unhealthy(e)) => warn!(chain = %id, "chain is unhealthy: {}", e),
-                Err(e) => error!(chain = %id, "failed to perform health check: {}", e),
+                Ok(Healthy) => info!("chain is healthy"),
+                Ok(Unhealthy(e)) => warn!("chain is not healthy: {}", e),
+                Err(e) => error!("failed to perform health check: {}", e),
             },
             Err(e) => {
                 error!(
-                    chain = %id,
                     "skipping health check, reason: failed to spawn chain runtime with error: {}",
                     e
                 );
@@ -553,6 +554,7 @@ fn health_check<Chain: ChainHandle>(config: &Config, registry: &mut Registry<Cha
 }
 
 /// Subscribe to the events emitted by the chains the supervisor is connected to.
+#[instrument(name = "supervisor.init_subscriptions", level = "error", skip_all)]
 fn init_subscriptions<Chain: ChainHandle>(
     config: &Config,
     registry: &mut Registry<Chain>,
@@ -621,6 +623,7 @@ fn handle_rest_requests<Chain: ChainHandle>(
     }
 }
 
+#[instrument(name = "supervisor.handle_rest_cmd", level = "error", skip_all)]
 fn handle_rest_cmd<Chain: ChainHandle>(
     registry: &Registry<Chain>,
     workers: &WorkerMap,
@@ -636,6 +639,12 @@ fn handle_rest_cmd<Chain: ChainHandle>(
     }
 }
 
+#[instrument(
+    name = "supervisor.clear_pending_packets",
+    level = "error",
+    skip_all,
+    fields(chain = %chain_id)
+)]
 fn clear_pending_packets(workers: &mut WorkerMap, chain_id: &ChainId) -> Result<(), Error> {
     for worker in workers.workers_for_chain(chain_id) {
         worker.clear_pending_packets();
@@ -645,6 +654,12 @@ fn clear_pending_packets(workers: &mut WorkerMap, chain_id: &ChainId) -> Result<
 }
 
 /// Process a batch of events received from a chain.
+#[instrument(
+    name = "supervisor.process_batch",
+    level = "error",
+    skip_all,
+    fields(chain = %src_chain.id()))
+]
 fn process_batch<Chain: ChainHandle>(
     config: &Config,
     registry: &mut Registry<Chain>,
@@ -694,43 +709,9 @@ fn process_batch<Chain: ChainHandle>(
             .get_or_spawn(object.dst_chain_id())
             .map_err(Error::spawn)?;
 
-        if let Object::Packet(_path) = object.clone() {
+        if let Object::Packet(ref _path) = object {
             // Update telemetry info
-            telemetry!({
-                for event_with_height in events_with_heights.iter() {
-                    match &event_with_height.event {
-                        IbcEvent::SendPacket(send_packet_ev) => {
-                            ibc_telemetry::global().send_packet_events(
-                                send_packet_ev.packet.sequence.into(),
-                                event_with_height.height.revision_height(),
-                                &src.id(),
-                                &_path.src_channel_id,
-                                &_path.src_port_id,
-                                &dst.id(),
-                            );
-                        }
-                        IbcEvent::WriteAcknowledgement(write_ack_ev) => {
-                            ibc_telemetry::global().acknowledgement_events(
-                                write_ack_ev.packet.sequence.into(),
-                                event_with_height.height.revision_height(),
-                                &dst.id(),
-                                &_path.src_channel_id,
-                                &_path.src_port_id,
-                                &src.id(),
-                            );
-                        }
-                        IbcEvent::TimeoutPacket(_) => {
-                            ibc_telemetry::global().timeout_events(
-                                &dst.id(),
-                                &_path.src_channel_id,
-                                &_path.src_port_id,
-                                &src.id(),
-                            );
-                        }
-                        _ => {}
-                    }
-                }
-            });
+            telemetry!(send_telemetry(&src, &dst, &events_with_heights, _path));
         }
 
         let worker = workers.get_or_spawn(object, src, dst, config);
@@ -746,8 +727,66 @@ fn process_batch<Chain: ChainHandle>(
     Ok(())
 }
 
+/// This method parses a list of IbcEvent and record the following three metrics if there is
+/// the corresponding event:
+/// * send_packet_events: The number of SendPacket events received
+/// * acknowledgement_events: The number of WriteAcknowledgment events received.
+/// * timeout_events: The number of TimeoutPacket events received.
+///
+/// The labels `chain_id` represents the chain sending the event, and `counterparty_chain_id` represents
+/// the chain receiving the event.
+/// So successfully sending a packet from chain A to chain B will result in first a SendPacket
+/// event with `chain_id = A` and `counterparty_chain_id = B` and then a WriteAcknowlegment
+/// event with `chain_id = B` and `counterparty_chain_id = A`.
+///
+fn send_telemetry<Src, Dst>(src: &Src, dst: &Dst, events: &[IbcEventWithHeight], path: &Packet)
+where
+    Src: ChainHandle,
+    Dst: ChainHandle,
+{
+    for e in events {
+        match e.event.clone() {
+            IbcEvent::SendPacket(send_packet_ev) => {
+                ibc_telemetry::global().send_packet_events(
+                    send_packet_ev.packet.sequence.into(),
+                    e.height.revision_height(),
+                    &src.id(),
+                    &path.src_channel_id,
+                    &path.src_port_id,
+                    &dst.id(),
+                );
+            }
+            IbcEvent::WriteAcknowledgement(write_ack_ev) => {
+                ibc_telemetry::global().acknowledgement_events(
+                    write_ack_ev.packet.sequence.into(),
+                    e.height.revision_height(),
+                    &src.id(),
+                    &path.src_channel_id,
+                    &path.src_port_id,
+                    &dst.id(),
+                );
+            }
+            IbcEvent::TimeoutPacket(_) => {
+                ibc_telemetry::global().timeout_events(
+                    &src.id(),
+                    &path.src_channel_id,
+                    &path.src_port_id,
+                    &dst.id(),
+                );
+            }
+            _ => {}
+        }
+    }
+}
+
 /// Process the given batch if it does not contain any errors,
 /// output the errors on the console otherwise.
+#[instrument(
+    name = "supervisor.handle_batch",
+    level = "error",
+    skip_all,
+    fields(chain = %chain.id())
+)]
 fn handle_batch<Chain: ChainHandle>(
     config: &Config,
     registry: &mut Registry<Chain>,
@@ -763,21 +802,17 @@ fn handle_batch<Chain: ChainHandle>(
             if let Err(e) =
                 process_batch(config, registry, client_state_filter, workers, chain, batch)
             {
-                error!("[{}] error during batch processing: {}", chain_id, e);
+                error!("error during batch processing: {}", e);
             }
         }
         Err(EventError(EventErrorDetail::SubscriptionCancelled(_), _)) => {
-            warn!(chain.id = %chain_id, "event subscription was cancelled, clearing pending packets");
+            warn!("event subscription was cancelled, clearing pending packets");
 
-            let _ = clear_pending_packets(workers, &chain_id).map_err(|e| {
-                error!(
-                    "[{}] error during clearing pending packets: {}",
-                    chain_id, e
-                )
-            });
+            let _ = clear_pending_packets(workers, &chain_id)
+                .map_err(|e| error!("error during clearing pending packets: {}", e));
         }
         Err(e) => {
-            error!("[{}] error in receiving event batch: {}", chain_id, e)
+            error!("error when receiving event batch: {}", e)
         }
     }
 }

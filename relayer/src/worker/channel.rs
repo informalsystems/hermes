@@ -29,7 +29,7 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                         // there can be up to two event for this channel, e.g. init and try.
                         // process the last event, the one with highest "rank".
                         let last_event = batch.events.last();
-                        debug!("starts processing {:#?}", last_event);
+                        debug!("starts processing {:?}", last_event);
 
                         if let Some(event_with_height) = last_event {
                             let mut handshake_channel = RelayChannel::restore_from_event(

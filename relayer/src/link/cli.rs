@@ -21,6 +21,7 @@ use crate::link::relay_path::RelayPath;
 use crate::link::relay_sender::SyncSender;
 use crate::link::Link;
 use crate::path::PathIdentifiers;
+use crate::util::pretty::PrettyDuration;
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Fetches an operational data that has fulfilled its predefined delay period. May _block_
@@ -218,7 +219,7 @@ where
         }
         (Duration::ZERO, blocks_left) => {
             info!(
-                    "waiting ({:?} blocks left) for a scheduled op. data with batch of size {} targeting {}",
+                    "waiting ({} blocks left) for a scheduled op. data with batch of size {} targeting {}",
                     blocks_left,
                     odata.batch.len(),
                     odata.target,
@@ -233,8 +234,8 @@ where
         }
         (time_left, _) => {
             info!(
-                "waiting ({:?} left) for a scheduled op. data with batch of size {} targeting {}",
-                time_left,
+                "waiting ({} left) for a scheduled op. data with batch of size {} targeting {}",
+                PrettyDuration(&time_left),
                 odata.batch.len(),
                 odata.target,
             );

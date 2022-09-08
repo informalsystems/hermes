@@ -22,7 +22,7 @@ use tendermint_rpc::{
 };
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::{codegen::http::Uri, metadata::AsciiMetadataValue};
-use tracing::{error, span, warn, Level};
+use tracing::{error, instrument, warn};
 
 use ibc::clients::ics07_tendermint::header::Header as TmHeader;
 use ibc::core::ics02_client::client_type::ClientType;
@@ -68,7 +68,9 @@ use crate::chain::cosmos::query::tx::query_txs;
 use crate::chain::cosmos::query::version::fetch_version_specs;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
-use crate::chain::cosmos::types::gas::{default_gas_from_config, max_gas_from_config};
+use crate::chain::cosmos::types::gas::{
+    default_gas_from_config, gas_multiplier_from_config, max_gas_from_config,
+};
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
@@ -82,6 +84,8 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
+use crate::util::pretty::{PrettyConsensusStateWithHeight, PrettyIdentifiedChannel};
+use crate::util::pretty::{PrettyIdentifiedClientState, PrettyIdentifiedConnection};
 
 use super::requests::{
     IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
@@ -114,7 +118,6 @@ pub mod wait;
 /// fraction of the maximum block size defined in the Tendermint core consensus parameters.
 pub const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 // https://github.com/cosmos/cosmos-sdk/blob/v0.44.0/types/errors/errors.go#L115-L117
-
 pub struct CosmosSdkChain {
     config: ChainConfig,
     tx_config: TxConfig,
@@ -131,6 +134,26 @@ impl CosmosSdkChain {
     /// Get a reference to the configuration for this chain.
     pub fn config(&self) -> &ChainConfig {
         &self.config
+    }
+
+    /// The maximum size of any transaction sent by the relayer to this chain
+    fn max_tx_size(&self) -> usize {
+        self.config.max_tx_size.into()
+    }
+
+    fn key(&self) -> Result<KeyEntry, Error> {
+        self.keybase()
+            .get_key(&self.config.key_name)
+            .map_err(Error::key_base)
+    }
+
+    /// Fetches the trusting period as a `Duration` from the chain config.
+    /// If no trusting period exists in the config, the trusting period is calculated
+    /// as two-thirds of the `unbonding_period`.
+    fn trusting_period(&self, unbonding_period: Duration) -> Duration {
+        self.config
+            .trusting_period
+            .unwrap_or(2 * unbonding_period / 3)
     }
 
     /// Performs validation of chain-specific configuration
@@ -229,6 +252,15 @@ impl CosmosSdkChain {
             }
         }
 
+        let gas_multiplier = gas_multiplier_from_config(&self.config);
+
+        if gas_multiplier < 1.1 {
+            return Err(Error::config_validation_gas_multiplier_low(
+                self.id().clone(),
+                gas_multiplier,
+            ));
+        }
+
         Ok(())
     }
 
@@ -285,11 +317,6 @@ impl CosmosSdkChain {
     fn block_on<F: Future>(&self, f: F) -> F::Output {
         crate::time!("block_on");
         self.rt.block_on(f)
-    }
-
-    /// The maximum size of any transaction sent by the relayer to this chain
-    fn max_tx_size(&self) -> usize {
-        self.config.max_tx_size.into()
     }
 
     fn query(
@@ -351,6 +378,7 @@ impl CosmosSdkChain {
         // SAFETY: Creating a Path from a constant; this should never fail
         let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH)
             .expect("Turning SDK upgrade query path constant into a Tendermint ABCI path");
+
         let response: QueryResponse = self.block_on(abci_query(
             &self.rpc_client,
             &self.config.rpc_addr,
@@ -365,23 +393,14 @@ impl CosmosSdkChain {
         Ok((response.value, proof))
     }
 
-    fn key(&self) -> Result<KeyEntry, Error> {
-        self.keybase()
-            .get_key(&self.config.key_name)
-            .map_err(Error::key_base)
-    }
-
-    fn trusting_period(&self, unbonding_period: Duration) -> Duration {
-        self.config
-            .trusting_period
-            .unwrap_or(2 * unbonding_period / 3)
-    }
-
     /// Query the chain status via an RPC query.
     ///
     /// Returns an error if the node is still syncing and has not caught up,
     /// ie. if `sync_info.catching_up` is `true`.
     fn chain_status(&self) -> Result<status::Response, Error> {
+        crate::time!("chain_status");
+        crate::telemetry!(query, self.id(), "status");
+
         let status = self
             .block_on(self.rpc_client.status())
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
@@ -410,14 +429,20 @@ impl CosmosSdkChain {
         Ok(status.height)
     }
 
+    #[instrument(
+        name = "send_messages_and_wait_commit",
+        level = "error",
+        skip_all,
+        fields(
+            chain = %self.id(),
+            tracking_id = %tracked_msgs.tracking_id()
+        ),
+    )]
     async fn do_send_messages_and_wait_commit(
         &mut self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<IbcEventWithHeight>, Error> {
         crate::time!("send_messages_and_wait_commit");
-
-        let _span =
-            span!(Level::DEBUG, "send_tx_commit", id = %tracked_msgs.tracking_id()).entered();
 
         let proto_msgs = tracked_msgs.msgs;
 
@@ -451,14 +476,20 @@ impl CosmosSdkChain {
         }
     }
 
+    #[instrument(
+        name = "send_messages_and_wait_check_tx",
+        level = "error",
+        skip_all,
+        fields(
+            chain = %self.id(),
+            tracking_id = %tracked_msgs.tracking_id()
+        ),
+    )]
     async fn do_send_messages_and_wait_check_tx(
         &mut self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<Response>, Error> {
         crate::time!("send_messages_and_wait_check_tx");
-
-        let span = span!(Level::DEBUG, "send_tx_check", id = %tracked_msgs.tracking_id());
-        let _enter = span.enter();
 
         let proto_msgs = tracked_msgs.msgs;
 
@@ -678,7 +709,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
         let version_specs = self.block_on(fetch_version_specs(self.id(), &self.grpc_addr))?;
-        Ok(version_specs.ibc_go_version)
+        Ok(version_specs.ibc_go)
     }
 
     fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
@@ -715,7 +746,7 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_commitment_prefix");
 
         // TODO - do a real chain query
-        CommitmentPrefix::try_from(self.config().store_prefix.as_bytes().to_vec())
+        CommitmentPrefix::try_from(self.config.store_prefix.as_bytes().to_vec())
             .map_err(|_| Error::ics02(ClientError::empty_prefix()))
     }
 
@@ -785,7 +816,17 @@ impl ChainEndpoint for CosmosSdkChain {
         let mut clients: Vec<IdentifiedAnyClientState> = response
             .client_states
             .into_iter()
-            .filter_map(|cs| IdentifiedAnyClientState::try_from(cs).ok())
+            .filter_map(|cs| {
+                IdentifiedAnyClientState::try_from(cs.clone())
+                    .map_err(|e| {
+                        warn!(
+                            "failed to parse client state {}. Error: {}",
+                            PrettyIdentifiedClientState(&cs),
+                            e
+                        )
+                    })
+                    .ok()
+            })
             .collect();
 
         // Sort by client identifier counter
@@ -891,7 +932,17 @@ impl ChainEndpoint for CosmosSdkChain {
         let mut consensus_states: Vec<AnyConsensusStateWithHeight> = response
             .consensus_states
             .into_iter()
-            .filter_map(|cs| TryFrom::try_from(cs).ok())
+            .filter_map(|cs| {
+                TryFrom::try_from(cs.clone())
+                    .map_err(|e| {
+                        warn!(
+                            "failed to parse consensus state {}. Error: {}",
+                            PrettyConsensusStateWithHeight(&cs),
+                            e
+                        )
+                    })
+                    .ok()
+            })
             .collect();
         consensus_states.sort_by(|a, b| a.height.cmp(&b.height));
         consensus_states.reverse();
@@ -957,13 +1008,14 @@ impl ChainEndpoint for CosmosSdkChain {
             Err(e) => return Err(Error::grpc_status(e)),
         };
 
-        // TODO: add warnings for any identifiers that fail to parse (below).
-        //      similar to the parsing in `query_connection_channels`.
-
         let ids = response
             .connection_paths
             .iter()
-            .filter_map(|id| ConnectionId::from_str(id).ok())
+            .filter_map(|id| {
+                ConnectionId::from_str(id)
+                    .map_err(|e| warn!("connection with ID {} failed parsing. Error: {}", id, e))
+                    .ok()
+            })
             .collect();
 
         Ok(ids)
@@ -991,13 +1043,20 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(Error::grpc_status)?
             .into_inner();
 
-        // TODO: add warnings for any identifiers that fail to parse (below).
-        //      similar to the parsing in `query_connection_channels`.
-
         let connections = response
             .connections
             .into_iter()
-            .filter_map(|co| IdentifiedConnectionEnd::try_from(co).ok())
+            .filter_map(|co| {
+                IdentifiedConnectionEnd::try_from(co.clone())
+                    .map_err(|e| {
+                        warn!(
+                            "connection with ID {} failed parsing. Error: {}",
+                            PrettyIdentifiedConnection(&co),
+                            e
+                        )
+                    })
+                    .ok()
+            })
             .collect();
 
         Ok(connections)
@@ -1104,13 +1163,20 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(Error::grpc_status)?
             .into_inner();
 
-        // TODO: add warnings for any identifiers that fail to parse (below).
-        //  https://github.com/informalsystems/ibc-rs/pull/506#discussion_r555945560
-
         let channels = response
             .channels
             .into_iter()
-            .filter_map(|ch| IdentifiedChannelEnd::try_from(ch).ok())
+            .filter_map(|ch| {
+                IdentifiedChannelEnd::try_from(ch.clone())
+                    .map_err(|e| {
+                        warn!(
+                            "channel with ID {} failed parsing. Error: {}",
+                            PrettyIdentifiedChannel(&ch),
+                            e
+                        )
+                    })
+                    .ok()
+            })
             .collect();
         Ok(channels)
     }
@@ -1140,7 +1206,17 @@ impl ChainEndpoint for CosmosSdkChain {
         let channels = response
             .channels
             .into_iter()
-            .filter_map(|ch| IdentifiedChannelEnd::try_from(ch).ok())
+            .filter_map(|ch| {
+                IdentifiedChannelEnd::try_from(ch.clone())
+                    .map_err(|e| {
+                        warn!(
+                            "channel with ID {} failed parsing. Error: {}",
+                            PrettyIdentifiedChannel(&ch),
+                            e
+                        )
+                    })
+                    .ok()
+            })
             .collect();
         Ok(channels)
     }
@@ -1728,10 +1804,13 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     }
 
     // Check that the chain identifier matches the network name
-    if !status.node_info.network.as_str().eq(chain_id.as_str()) {
+    if status.node_info.network.as_str() != chain_id.as_str() {
         // Log the error, continue optimistically
-        error!("/status endpoint from chain id '{}' reports network identifier to be '{}': this is usually a sign of misconfiguration, check your config.toml",
-            chain_id, status.node_info.network);
+        error!(
+            "/status endpoint from chain '{}' reports network identifier to be '{}'. \
+            This is usually a sign of misconfiguration, please check your config.toml",
+            chain_id, status.node_info.network
+        );
     }
 
     let version_specs = chain.block_on(fetch_version_specs(&chain.config.id, &chain.grpc_addr))?;

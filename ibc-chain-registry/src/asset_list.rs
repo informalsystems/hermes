@@ -7,6 +7,8 @@ use std::path::PathBuf;
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
 pub struct AssetList {
+    #[serde(rename = "$schema")]
+    pub schema: String,
     pub chain_name: String,
     pub assets: Vec<Asset>,
 }
@@ -74,6 +76,7 @@ mod tests {
     #[test]
     fn asset_list_deserialize() {
         let json = r#"{
+            "$schema": "https://github.com/cosmos/chain-registry/blob/master/assetlist.schema.json",
             "chain_name": "test",
             "assets": [
                 {
@@ -97,6 +100,10 @@ mod tests {
             ]
         }"#;
         let asset_list: AssetList = serde_json::from_str(json).unwrap();
+        assert_eq!(
+            asset_list.schema,
+            "https://github.com/cosmos/chain-registry/blob/master/assetlist.schema.json"
+        );
         assert_eq!(asset_list.chain_name, "test");
         assert_eq!(asset_list.assets.len(), 1);
         assert_eq!(asset_list.assets[0].description, "test");

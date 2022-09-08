@@ -463,6 +463,15 @@ define_error! {
                     e.chain_id, e.default_gas, e.max_gas)
             },
 
+        ConfigValidationGasMultiplierLow
+            {
+                chain_id: ChainId,
+                gas_multiplier: f64,
+            }
+            |e| {
+                format!("semantic config validation failed for option `gas_multiplier` of chain '{}', reason: gas multiplier ({}) is smaller than `1.1`, which could trigger gas fee errors in production", e.chain_id, e.gas_multiplier)
+            },
+
         SdkModuleVersion
             {
                 chain_id: ChainId,
@@ -479,7 +488,7 @@ define_error! {
                 type_url: String
             }
             |e| {
-                format!("Failed to deserialize account of an unknown protobuf type: {0}", e.type_url)
+                format!("failed to deserialize account of an unknown protobuf type: {0}", e.type_url)
             },
 
         EmptyBaseAccount
@@ -516,10 +525,10 @@ define_error! {
                     "Query/DenomTrace RPC returned an empty denom trace for trace hash: {}", e.hash)
             },
 
-        MessageExceedsMaxTxSize
+        MessageTooBigForTx
             { len: usize }
             |e| {
-                format_args!("message length {} exceeds maximum transaction size", e.len)
+                format_args!("message with length {} is too large for a transaction", e.len)
             }
     }
 }

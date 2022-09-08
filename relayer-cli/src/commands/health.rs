@@ -16,23 +16,21 @@ impl Runnable for HealthCheckCmd {
         let config = (*app_config()).clone();
 
         for ch in &config.chains {
-            info!("[{}] performing health check...", ch.id);
+            let _span = tracing::error_span!("health_check", chain = %ch.id).entered();
+
+            info!("performing health check...");
 
             let chain =
                 spawn_chain_runtime(&config, &ch.id).unwrap_or_else(exit_with_unrecoverable_error);
 
             match chain.health_check() {
-                Ok(Healthy) => info!(chain = %ch.id, "chain is healthy"),
+                Ok(Healthy) => info!("chain is healthy"),
                 Ok(Unhealthy(_)) => {
                     // No need to print the error here as it's already printed in `Chain::health_check`
                     // TODO(romac): Move the printing code here and in the supervisor/registry
-                    warn!("[{}] chain is unhealthy", ch.id)
+                    warn!("chain is not healthy")
                 }
-                Err(e) => error!(
-                    "[{}] failed to perform health check, reason: {}",
-                    ch.id,
-                    e.detail()
-                ),
+                Err(e) => error!("failed to perform health check, reason: {}", e.detail()),
             }
         }
 

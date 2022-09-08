@@ -34,6 +34,8 @@ use crate::types::wallet::{Wallet, WalletAddress, WalletId};
 use crate::util::file::pipe_to_file;
 use crate::util::retry::assert_eventually_succeed;
 
+use super::chain_type::ChainType;
+
 pub mod interchain;
 pub mod query_txs;
 pub mod transfer;
@@ -50,8 +52,6 @@ pub mod transfer;
    be indication of some underlying performance issues.
 */
 const WAIT_WALLET_AMOUNT_ATTEMPTS: u16 = 90;
-
-const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
 
 /**
     A driver for interacting with a chain full nodes through command line.
@@ -70,6 +70,7 @@ const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
 
 #[derive(Debug, Clone)]
 pub struct ChainDriver {
+    pub chain_type: ChainType,
     /**
        The filesystem path to the Gaia CLI. Defaults to `gaiad`.
     */
@@ -121,6 +122,7 @@ impl ExportEnv for ChainDriver {
 impl ChainDriver {
     /// Create a new [`ChainDriver`]
     pub fn create(
+        chain_type: ChainType,
         command_path: String,
         chain_id: ChainId,
         home_path: String,
@@ -135,9 +137,11 @@ impl ChainDriver {
             chain_id.clone(),
             format!("http://localhost:{}", rpc_port),
             format!("http://localhost:{}", grpc_port),
+            chain_type.address_type(),
         )?;
 
         Ok(Self {
+            chain_type,
             command_path,
             chain_id,
             home_path,
@@ -305,7 +309,7 @@ impl ChainDriver {
         let seed_path = format!("{}-seed.json", wallet_id);
         self.write_file(&seed_path, &seed_content)?;
 
-        let hd_path = HDPath::from_str(COSMOS_HD_PATH)
+        let hd_path = HDPath::from_str(self.chain_type.hd_path())
             .map_err(|e| eyre!("failed to create HDPath: {:?}", e))?;
 
         let key_file: KeyFile = json::from_str(&seed_content).map_err(handle_generic_error)?;
@@ -420,7 +424,10 @@ impl ChainDriver {
             &self.rpc_listen_address(),
         ];
 
-        let args: Vec<&str> = base_args.to_vec();
+        let mut args: Vec<&str> = base_args.to_vec();
+
+        let extra_start_args = self.chain_type.extra_start_args();
+        args.append(&mut extra_start_args.iter().map(|s| s.as_ref()).collect());
 
         let mut child = Command::new(&self.command_path)
             .args(&args)

@@ -137,8 +137,8 @@ impl Runnable for CreateChannelCommand {
     fn run(&self) {
         match &self.connection_a {
             Some(conn) => self.run_reusing_connection(conn),
-            None => match &self.chain_b {
-                Some(chain_b) => {
+            None => {
+                if let Some(chain_b) = &self.chain_b {
                     if self.new_client_connection {
                         if self.yes {
                             self.run_using_new_connection(chain_b);
@@ -170,8 +170,7 @@ impl Runnable for CreateChannelCommand {
                         }
                     }
                 }
-                None => {}
-            },
+            }
         }
     }
 }

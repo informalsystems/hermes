@@ -1,4 +1,4 @@
-use core::fmt;
+use core::fmt::{Display, Error as FmtError, Formatter};
 
 use tendermint_rpc::endpoint::broadcast::tx_sync;
 use tracing::info;
@@ -7,9 +7,9 @@ use ibc::events::IbcEvent;
 
 use crate::chain::handle::ChainHandle;
 use crate::chain::tracking::TrackedMsgs;
-use crate::event::PrettyEvents;
 use crate::link::error::LinkError;
 use crate::link::RelaySummary;
+use crate::util::pretty::{PrettyCode, PrettyEvents};
 
 pub trait SubmitReply {
     /// Creates a new, empty instance, i.e., comprising zero replies.
@@ -51,7 +51,7 @@ impl Submit for SyncSender {
             .map_err(LinkError::relayer)?;
 
         info!(
-            "[Sync->{}] result {}\n",
+            "[Sync->{}] result {}",
             target.id(),
             PrettyEvents(tx_events.as_slice())
         );
@@ -99,17 +99,21 @@ impl Submit for AsyncSender {
             .send_messages_and_wait_check_tx(msgs)
             .map_err(LinkError::relayer)?;
         let reply = AsyncReply { responses: a };
-        info!("[Async~>{}] {}\n", target.id(), reply);
+
+        // Note: There may be errors in the reply, for example:
+        // `Response { code: Err(11), data: Data([]), log: Log("Too much gas wanted: 35000000, maximum is 25000000: out of gas")`
+        // The runtime deliberately did not catch or retry on such errors.
+        info!(target_chain = %target.id(), "{}", reply);
 
         Ok(reply)
     }
 }
 
-impl fmt::Display for AsyncReply {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for AsyncReply {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "response(s): {}", self.responses.len())?;
         self.responses
             .iter()
-            .try_for_each(|r| write!(f, "; {:?}:{}", r.code, r.hash))
+            .try_for_each(|r| write!(f, "; {}:{}", PrettyCode(&r.code), r.hash))
     }
 }

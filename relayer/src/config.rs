@@ -2,11 +2,15 @@
 
 pub mod error;
 pub mod filter;
+pub mod gas_multiplier;
 pub mod proof_specs;
 pub mod types;
 
 use alloc::collections::BTreeMap;
-use core::{fmt, time::Duration};
+use core::{
+    fmt::{Display, Error as FmtError, Formatter},
+    time::Duration,
+};
 use std::{fs, fs::File, io::Write, path::Path};
 
 use ibc_proto::google::protobuf::Any;
@@ -18,6 +22,7 @@ use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc::timestamp::ZERO_DURATION;
 
 use crate::chain::ChainType;
+use crate::config::gas_multiplier::GasMultiplier;
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
 use crate::error::Error as RelayerError;
 use crate::extension_options::ExtensionOptionDynamicFeeTx;
@@ -39,8 +44,8 @@ impl GasPrice {
     }
 }
 
-impl fmt::Display for GasPrice {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for GasPrice {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}{}", self.price, self.denom)
     }
 }
@@ -67,8 +72,8 @@ impl ExtensionOption {
     }
 }
 
-impl fmt::Display for ExtensionOption {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for ExtensionOption {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
             Self::EthermintDynamicFee(max_priority_price) => {
                 write!(
@@ -265,8 +270,8 @@ impl Default for LogLevel {
     }
 }
 
-impl fmt::Display for LogLevel {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for LogLevel {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
             LogLevel::Trace => write!(f, "trace"),
             LogLevel::Debug => write!(f, "debug"),
@@ -344,8 +349,8 @@ impl Default for AddressType {
     }
 }
 
-impl fmt::Display for AddressType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for AddressType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
             AddressType::Cosmos => write!(f, "cosmos"),
             AddressType::Ethermint { .. } => write!(f, "ethermint"),
@@ -374,7 +379,7 @@ pub struct ChainConfig {
 
     // This field is deprecated, use `gas_multiplier` instead
     pub gas_adjustment: Option<f64>,
-    pub gas_multiplier: Option<f64>,
+    pub gas_multiplier: Option<GasMultiplier>,
 
     pub fee_granter: Option<String>,
     #[serde(default)]

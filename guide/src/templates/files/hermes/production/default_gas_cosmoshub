@@ -1,0 +1,8 @@
+default_gas = 2000000
+max_gas = 10000000
+gas_multiplier = 1.1
+max_msg_num = 25
+# ...
+[chains.gas_price]
+price = 0.005
+denom = 'uatom'

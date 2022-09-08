@@ -127,11 +127,11 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::core::ics04_channel::timeout::TimeoutHeight;
-    use crate::prelude::*;
+    use core::default::Default;
 
     use test_log::test;
 
+    use crate::applications::transfer::msgs::transfer::test_util::get_dummy_transfer_packet;
     use crate::applications::transfer::{
         context::test::deliver as ics20_deliver, msgs::transfer::test_util::get_dummy_msg_transfer,
         msgs::transfer::MsgTransfer, packet::PacketData, PrefixedCoin, MODULE_ID_STR,
@@ -146,6 +146,9 @@ mod tests {
         conn_open_try::{test_util::get_dummy_raw_msg_conn_open_try, MsgConnectionOpenTry},
         ConnectionMsg,
     };
+    use crate::core::ics04_channel::context::ChannelReader;
+    use crate::core::ics04_channel::msgs::acknowledgement::test_util::get_dummy_raw_msg_ack_with_packet;
+    use crate::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
     use crate::core::ics04_channel::msgs::{
         chan_close_confirm::{
             test_util::get_dummy_raw_msg_chan_close_confirm, MsgChannelCloseConfirm,
@@ -158,6 +161,7 @@ mod tests {
         timeout_on_close::{test_util::get_dummy_raw_msg_timeout_on_close, MsgTimeoutOnClose},
         ChannelMsg, PacketMsg,
     };
+    use crate::core::ics04_channel::timeout::TimeoutHeight;
     use crate::core::ics23_commitment::commitment::test_util::get_dummy_merkle_proof;
     use crate::core::ics24_host::identifier::ConnectionId;
     use crate::core::ics26_routing::context::{Ics26Context, ModuleId, Router, RouterBuilder};
@@ -170,6 +174,7 @@ mod tests {
     use crate::mock::consensus_state::MockConsensusState;
     use crate::mock::context::{MockContext, MockRouterBuilder};
     use crate::mock::header::MockHeader;
+    use crate::prelude::*;
     use crate::test_utils::{get_dummy_account_id, DummyTransferModule};
     use crate::timestamp::Timestamp;
     use crate::Height;
@@ -198,11 +203,14 @@ mod tests {
             }
         }
 
+        type StateCheckFn = dyn FnOnce(&MockContext) -> bool;
+
         // Test parameters
         struct Test {
             name: String,
             msg: TestMsg,
             want_pass: bool,
+            state_check: Option<Box<StateCheckFn>>,
         }
         let default_signer = get_dummy_account_id();
         let client_height = 5;
@@ -312,6 +320,11 @@ mod tests {
         msg_to_on_close.packet.data = packet_data;
 
         let msg_recv_packet = MsgRecvPacket::try_from(get_dummy_raw_msg_recv_packet(35)).unwrap();
+        let msg_ack_packet = MsgAcknowledgement::try_from(get_dummy_raw_msg_ack_with_packet(
+            get_dummy_transfer_packet(msg_transfer.clone(), 1u64.into()).into(),
+            35,
+        ))
+        .unwrap();
 
         // First, create a client..
         let res = dispatch(
@@ -353,6 +366,7 @@ mod tests {
                 }))
                 .into(),
                 want_pass: true,
+                state_check: None,
             },
             Test {
                 name: "Client update fails due to stale header".to_string(),
@@ -363,6 +377,7 @@ mod tests {
                 }))
                 .into(),
                 want_pass: false,
+                state_check: None,
             },
             Test {
                 name: "Connection open init succeeds".to_string(),
@@ -371,6 +386,7 @@ mod tests {
                 ))
                 .into(),
                 want_pass: true,
+                state_check: None,
             },
             Test {
                 name: "Connection open try fails due to InvalidConsensusHeight (too high)"
@@ -380,6 +396,7 @@ mod tests {
                 )))
                 .into(),
                 want_pass: false,
+                state_check: None,
             },
             Test {
                 name: "Connection open try succeeds".to_string(),
@@ -388,6 +405,7 @@ mod tests {
                 )))
                 .into(),
                 want_pass: true,
+                state_check: None,
             },
             Test {
                 name: "Connection open ack succeeds".to_string(),
@@ -396,6 +414,7 @@ mod tests {
                 )))
                 .into(),
                 want_pass: true,
+                state_check: None,
             },
             // ICS04
             Test {
@@ -403,6 +422,7 @@ mod tests {
                 msg: Ics26Envelope::Ics4ChannelMsg(ChannelMsg::ChannelOpenInit(msg_chan_init))
                     .into(),
                 want_pass: true,
+                state_check: None,
             },
             Test {
                 name: "Channel open init fail due to missing connection".to_string(),
@@ -411,21 +431,25 @@ mod tests {
                 ))
                 .into(),
                 want_pass: false,
+                state_check: None,
             },
             Test {
                 name: "Channel open try succeeds".to_string(),
                 msg: Ics26Envelope::Ics4ChannelMsg(ChannelMsg::ChannelOpenTry(msg_chan_try)).into(),
                 want_pass: true,
+                state_check: None,
             },
             Test {
                 name: "Channel open ack succeeds".to_string(),
                 msg: Ics26Envelope::Ics4ChannelMsg(ChannelMsg::ChannelOpenAck(msg_chan_ack)).into(),
                 want_pass: true,
+                state_check: None,
             },
             Test {
                 name: "Packet send".to_string(),
                 msg: msg_transfer.into(),
                 want_pass: true,
+                state_check: None,
             },
             // The client update is required in this test, because the proof associated with
             // msg_recv_packet has the same height as the packet TO height (see get_dummy_raw_msg_recv_packet)
@@ -440,22 +464,41 @@ mod tests {
                 }))
                 .into(),
                 want_pass: true,
+                state_check: None,
             },
             Test {
                 name: "Receive packet".to_string(),
                 msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::RecvPacket(msg_recv_packet.clone()))
                     .into(),
                 want_pass: true,
+                state_check: None,
             },
             Test {
                 name: "Re-Receive packet".to_string(),
                 msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::RecvPacket(msg_recv_packet)).into(),
                 want_pass: true,
+                state_check: None,
+            },
+            // Ack packet
+            Test {
+                name: "Ack packet".to_string(),
+                msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::AckPacket(msg_ack_packet.clone()))
+                    .into(),
+                want_pass: true,
+                state_check: Some(Box::new(move |ctx| {
+                    ctx.get_packet_commitment(
+                        &msg_ack_packet.packet.source_port,
+                        &msg_ack_packet.packet.source_channel,
+                        msg_ack_packet.packet.sequence,
+                    )
+                    .is_err()
+                })),
             },
             Test {
                 name: "Packet send".to_string(),
                 msg: msg_transfer_two.into(),
                 want_pass: true,
+                state_check: None,
             },
             Test {
                 name: "Client update successful".to_string(),
@@ -466,17 +509,20 @@ mod tests {
                 }))
                 .into(),
                 want_pass: true,
+                state_check: None,
             },
             // Timeout packets
             Test {
                 name: "Transfer message no timeout".to_string(),
                 msg: msg_transfer_no_timeout.into(),
                 want_pass: true,
+                state_check: None,
             },
             Test {
                 name: "Transfer message no timeout nor timestamp".to_string(),
                 msg: msg_transfer_no_timeout_or_timestamp.into(),
                 want_pass: true,
+                state_check: None,
             },
             //ICS04-close channel
             Test {
@@ -486,6 +532,7 @@ mod tests {
                 ))
                 .into(),
                 want_pass: true,
+                state_check: None,
             },
             Test {
                 name: "Channel close confirm fails cause channel is already closed".to_string(),
@@ -494,12 +541,14 @@ mod tests {
                 ))
                 .into(),
                 want_pass: false,
+                state_check: None,
             },
             //ICS04-to_on_close
             Test {
                 name: "Timeout on close".to_string(),
                 msg: Ics26Envelope::Ics4PacketMsg(PacketMsg::ToClosePacket(msg_to_on_close)).into(),
                 want_pass: true,
+                state_check: None,
             },
             Test {
                 name: "Client upgrade successful".to_string(),
@@ -513,6 +562,7 @@ mod tests {
                 )))
                 .into(),
                 want_pass: true,
+                state_check: None,
             },
             Test {
                 name: "Client upgrade un-successful".to_string(),
@@ -526,6 +576,7 @@ mod tests {
                 )))
                 .into(),
                 want_pass: false,
+                state_check: None,
             },
         ]
         .into_iter()
@@ -558,6 +609,17 @@ mod tests {
                 test.msg,
                 res
             );
+
+            if let Some(state_check) = test.state_check {
+                assert_eq!(
+                    test.want_pass,
+                    state_check(&ctx),
+                    "ICS26 routing state check '{}' failed for message {:?}\nwith result: {:?}",
+                    test.name,
+                    test.msg,
+                    res
+                );
+            }
         }
     }
 }

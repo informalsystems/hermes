@@ -1,4 +1,7 @@
-use core::{fmt, time::Duration};
+use core::{
+    fmt::{Display, Error as FmtError, Formatter},
+    time::Duration,
+};
 use std::thread;
 
 use abscissa_core::clap::Parser;
@@ -484,8 +487,8 @@ type UpgradeClientsForChainResult = Result<Vec<UpgradeClientResult>, Error>;
 
 struct OutputBuffer(Vec<UpgradeClientsForChainResult>);
 
-impl fmt::Display for OutputBuffer {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for OutputBuffer {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         fn sep<'a>(pos: usize, len: usize, other: &'a str, last: &'a str) -> &'a str {
             if pos != len - 1 {
                 other

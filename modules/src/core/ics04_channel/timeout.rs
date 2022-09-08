@@ -1,4 +1,4 @@
-use core::fmt::Display;
+use core::fmt::{Display, Error as FmtError, Formatter};
 
 use serde::{Deserialize, Serialize};
 
@@ -121,7 +121,7 @@ impl From<TimeoutHeight> for TagValue {
 }
 
 impl Display for TimeoutHeight {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
             TimeoutHeight::At(timeout_height) => write!(f, "{}", timeout_height),
             TimeoutHeight::Never => write!(f, "no timeout"),
