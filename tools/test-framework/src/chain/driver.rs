@@ -26,7 +26,6 @@ use super::chain_type::ChainType;
 
 pub mod interchain;
 pub mod query_txs;
-pub mod transfer;
 
 /**
    Number of times (seconds) to try and query a wallet to reach the
