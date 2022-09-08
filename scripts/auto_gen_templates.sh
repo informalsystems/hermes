@@ -1,12 +1,14 @@
 #!/bin/sh
 
 # This script is used to generate the templates for the guide
+SCRIPT_NAME="$0"
 
 function usage() {
-    echo "Usage: $0 \"MODE\""
+    echo "Usage: $SCRIPT_NAME --mode <MODE>"
     echo "<MODE> is the mode to run the script in. It can be one of the following:"
     echo "  - check: checks if the templates are up to date"
     echo "  - update: updates the templates"
+    echo "Use --help to print the usage"
     exit 1
 }
 
@@ -15,16 +17,31 @@ missing() {
   >&2 usage
 }
 
-if [ -z "$1" ]; then
-  missing "MODE"
-fi
+while test $# -gt 0; do
+  case "$1" in
+    help)
+      usage
+      ;;
+    --mode)
+      shift
+      if test $# -gt 0; then
+        MODE=$1
+      else
+        missing "MODE"
+      fi
+      shift
+      ;;
+      *)
+      usage
+      ;;
+  esac
+done
 
-if [ "$1" != "check" ] && [ "$1" != "update" ]; then
+if [ "$MODE" != "check" ] && [ "$MODE" != "update" ]; then
     >&2 echo "Incorrect mode specified."
     usage
 fi
 
-MODE="$1"
 HELP_DIR="./guide/src/templates/help_templates/"
 COMMAND_DIR="./guide/src/templates/commands/hermes/"
 TMP_PATH="/tmp/hermes_mdbook_templates"
