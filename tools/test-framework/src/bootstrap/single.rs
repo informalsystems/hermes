@@ -9,6 +9,7 @@ use tracing::info;
 use crate::chain::builder::ChainBuilder;
 use crate::chain::config;
 use crate::chain::driver::ChainDriver;
+use crate::chain::ext::bootstrap::ChainBootstrapMethodsExt;
 use crate::error::Error;
 use crate::ibc::denom::Denom;
 use crate::types::single::node::FullNode;
