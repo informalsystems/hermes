@@ -25,7 +25,7 @@ As for the [Local chains tutorial](../local-chains/index.md), we will make use o
 First, make sure that no chain is currently running by killing all `gaiad` processes.
 
 ```shell
-{{#template ../../templates/commands/gm/stop}}
+{{#template ../../templates/commands/gm/stop.md}}
 ```
 
 Then, make sure that your folder `$HOME/.gm` does not contain any `ibc-*` or `node-*` file. You can remove them with
@@ -48,7 +48,7 @@ __gm.toml__
 Finally, start the chains with the `start` command.
 
 ```bash
-{{#template ../../templates/commands/gm/start}}
+{{#template ../../templates/commands/gm/start.md}}
 ```
 
 This configures and starts four __`gaiad`__ instances.
@@ -87,7 +87,7 @@ node-3 started, PID: 25194, LOG: $HOME/.gm/node-3/log
 Run the following command to check the status of the chains:
 
 ```bash
-{{#template ../../templates/commands/gm/status}}
+{{#template ../../templates/commands/gm/status.md}}
 ```
 
 If the command is successful, you should see a message similar to:
@@ -110,7 +110,7 @@ ibc-3            22999  27040 27041 27042  $HOME/.gm/ibc-3
 Gaiad Manager `gm` takes care of creating the configuration file. Run the command below to create the `$HOME/.hermes/config.toml` file:
 
 ```bash
-{{#template ../../templates/commands/gm/hermes_config}}
+{{#template ../../templates/commands/gm/hermes_config.md}}
 ```
 >__NOTE__: You can visit the [`Configuration`](../../documentation/configuration/index.md) section for more information about the configuration file.
 
@@ -127,7 +127,7 @@ __config.toml__
 Next, we will need to associate a private key to every chain which `hermes` will use to sign transactions. `gm` will automatically generate and associate them with:
 
 ```bash
-{{#template ../../templates/commands/gm/hermes_keys}}
+{{#template ../../templates/commands/gm/hermes_keys.md}}
 ```
 
 If successful, the command should show an output similar to:
@@ -242,7 +242,7 @@ By default, `hermes` expects the configuration file to be in the __`$HOME/.herme
 
 It also stores the private keys for each chain in this folder as outlined in the [Keys](../../commands/keys/index.md) section.
 
-After executing `{{#template ../../templates/commands/gm/start}}`, this is how the folder should look like:
+After executing `{{#template ../../templates/commands/gm/start.md}}`, this is how the folder should look like:
 
 ```shell
 $HOME/.hermes/

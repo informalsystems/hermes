@@ -38,7 +38,7 @@ You will need to first create a client on both chains and then establish a conne
 First, create a client on `ibc-1` tracking the state of `ibc-0`. It will be assigned `07-tendermint-0` as its identifier:
 
 ```shell
-{{#template ../../templates/commands/hermes/create_client host-chain=ibc-1 reference-chain=ibc-0}}
+{{#template ../../templates/commands/hermes/create/client.md HOST_CHAIN_ID=ibc-1 REFERENCE_CHAIN_ID=ibc-0}}
 ```
 
 If the command is successful, the output should be similar to:
@@ -547,7 +547,7 @@ SUCCESS Channel {
 You can visualize the topology of the current network with: 
 
 ```shell
-{{#template ../../templates/commands/hermes/query_channels_show_counterparty chain=ibc-0}}
+{{#template ../../templates/commands/hermes/query/channels.md OPTIONS=--show-counterparty CHAIN=ibc-0}}
 ```
 
 If all the commands were successful, this command should output : 

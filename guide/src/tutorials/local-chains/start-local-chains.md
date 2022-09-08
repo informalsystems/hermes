@@ -59,7 +59,7 @@ node-1 started, PID: 12885, LOG: $HOME/.gm/node-1/log
 Run the following command to check the status of the chains:
 
 ```bash
-{{#template ../../templates/commands/gm/status.md}}
+{{#template ../../templates/commands/gm/status.md.md}}
 ```
 
 If the command is successful, you should see a message similar to:

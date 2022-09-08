@@ -172,7 +172,7 @@ function generate_templates(){
             filename="$COMMAND_DIR$path.md"
             dir="${filename%/*}"
             mkdir -p $dir
-            cargo run -q --bin hermes $command --help | sed '0,/^USAGE.*/d' | head -n 1 | sed -r 's/^[[:blank:]]+//; s/</[[#/g ; s/>/]]/g; s/hermes/[[#binary hermes]]/' > $TMP_PATH
+            cargo run -q --bin hermes $command --help | sed '0,/^USAGE.*/d' | head -n 1 | sed -r 's/^\s+//; s/[<\[]/[[#/g ; s/]/]]/g ; s/>/]]/g; s/hermes/[[#BINARY hermes]]/' > $TMP_PATH
             if ! cmp -s $TMP_PATH $filename; then
                 if [ $MODE = "update" ]; then
                     mv $TMP_PATH $filename
@@ -187,8 +187,6 @@ function generate_templates(){
 }
 
 commands=$(generate_commands)
-echo $commands
-
 generate_help $commands
 generate_templates $commands
 

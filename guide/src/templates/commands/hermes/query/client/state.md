@@ -1,1 +1,1 @@
-[[#binary hermes]] query client state [OPTIONS] --chain [[#CHAIN_ID]] --client [[#CLIENT_ID]]
+[[#binary hermes]] query client state [[#OPTIONS]] --chain [[#CHAIN_ID]] --client [[#CLIENT_ID]]

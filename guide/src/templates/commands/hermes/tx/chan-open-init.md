@@ -1,1 +1,1 @@
-[[#binary hermes]] tx chan-open-init [OPTIONS] --dst-chain [[#DST_CHAIN_ID]] --src-chain [[#SRC_CHAIN_ID]] --dst-connection [[#DST_CONNECTION_ID]] --dst-port [[#DST_PORT_ID]] --src-port [[#SRC_PORT_ID]]
+[[#binary hermes]] tx chan-open-init [[#OPTIONS]] --dst-chain [[#DST_CHAIN_ID]] --src-chain [[#SRC_CHAIN_ID]] --dst-connection [[#DST_CONNECTION_ID]] --dst-port [[#DST_PORT_ID]] --src-port [[#SRC_PORT_ID]]

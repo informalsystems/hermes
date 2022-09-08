@@ -1,1 +1,1 @@
-[[#binary hermes]] query channel ends [OPTIONS] --chain [[#CHAIN_ID]] --port [[#PORT_ID]] --channel [[#CHANNEL_ID]]
+[[#binary hermes]] query channel ends [[#OPTIONS]] --chain [[#CHAIN_ID]] --port [[#PORT_ID]] --channel [[#CHANNEL_ID]]

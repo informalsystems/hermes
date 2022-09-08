@@ -1,1 +1,1 @@
-[[#binary hermes]] query client header [OPTIONS] --chain [[#CHAIN_ID]] --client [[#CLIENT_ID]] --consensus-height [[#CONSENSUS_HEIGHT]]
+[[#binary hermes]] query client header [[#OPTIONS]] --chain [[#CHAIN_ID]] --client [[#CLIENT_ID]] --consensus-height [[#CONSENSUS_HEIGHT]]

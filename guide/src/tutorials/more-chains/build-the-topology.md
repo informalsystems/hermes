@@ -30,18 +30,18 @@ In the following tutorial, we will connect all of these chains in a full mesh to
 
 Execute the following command:
 ```shell
-{{#template ../../templates/commands/gm/hermes_cc}}
+{{#template ../../templates/commands/gm/hermes_cc.md}}
 ```
 
 If this command runs successfully, it should output the following:
 
 ```shell
-{{#template ../../templates/commands/hermes/create_channel_new_client binary="$HOME/ibc-rs/target/release/hermes" a-chain=ibc-0 b-chain=ibc-1 a-port=transfer b-port=transfer}}
-{{#template ../../templates/commands/hermes/create_channel_new_client binary="$HOME/ibc-rs/target/release/hermes" a-chain=ibc-0 b-chain=ibc-2 a-port=transfer b-port=transfer}}
-{{#template ../../templates/commands/hermes/create_channel_new_client binary="$HOME/ibc-rs/target/release/hermes" a-chain=ibc-0 b-chain=ibc-3 a-port=transfer b-port=transfer}}
-{{#template ../../templates/commands/hermes/create_channel_new_client binary="$HOME/ibc-rs/target/release/hermes" a-chain=ibc-1 b-chain=ibc-2 a-port=transfer b-port=transfer}}
-{{#template ../../templates/commands/hermes/create_channel_new_client binary="$HOME/ibc-rs/target/release/hermes" a-chain=ibc-1 b-chain=ibc-3 a-port=transfer b-port=transfer}}
-{{#template ../../templates/commands/hermes/create_channel_new_client binary="$HOME/ibc-rs/target/release/hermes" a-chain=ibc-2 b-chain=ibc-3 a-port=transfer b-port=transfer}}
+{{#template ../../templates/commands/hermes/create/channel.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-1 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-2 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-1 B_CHAIN_ID=ibc-2 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-1 B_CHAIN_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-2 B_CHAIN_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
 ```
 
 Executing these commands will:
@@ -52,7 +52,7 @@ Executing these commands will:
 Use the flag `--exec` flag to execute these commands:
 
 ```shell
-{{#template ../../templates/commands/gm/hermes_cc_exec}}
+{{#template ../../templates/commands/gm/hermes_cc_exec.md}}
 ```
 
 At this point, your network should be fully connected. It is now time to filter channels. The following chart shows the current state of the network. The channels that we want to filter out are filled in red while the channels we want to relay on are filled in green:
@@ -108,10 +108,10 @@ flowchart TD
 You can verify that everything is correct with the commands:
 
 ```shell
-{{#template ../../templates/commands/hermes/query_channels_show_counterparty chain=ibc-0}}
-{{#template ../../templates/commands/hermes/query_channels_show_counterparty chain=ibc-1}}
-{{#template ../../templates/commands/hermes/query_channels_show_counterparty chain=ibc-2}}
-{{#template ../../templates/commands/hermes/query_channels_show_counterparty chain=ibc-3}}
+{{#template ../../templates/commands/hermes/query/channels OPTIONS=--show-counterparty CHAIN=ibc-0}}
+{{#template ../../templates/commands/hermes/query/channels OPTIONS=--show-counterparty CHAIN=ibc-1}}
+{{#template ../../templates/commands/hermes/query/channels OPTIONS=--show-counterparty CHAIN=ibc-2}}
+{{#template ../../templates/commands/hermes/query/channels OPTIONS=--show-counterparty CHAIN=ibc-3}}
 ```
 
 Which should normally output: 
@@ -188,7 +188,7 @@ At this point, your config file should look like this:
 It is also possible to check that the configuration file is valid with the command:
 
 ```shell
-{{#template ../../templates/commands/hermes/config_validate}}
+{{#template ../../templates/commands/hermes/config_validate.md}}
 ```
 
 If the command runs successfully, the output should be:
