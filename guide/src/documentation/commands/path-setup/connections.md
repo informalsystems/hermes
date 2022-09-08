@@ -8,7 +8,7 @@
 Use the `create connection` command to create a new connection.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/create/connection.md}}
+{{#template ../../../templates/help_templates/create/connection.md}}
 ```
 
 ## Examples

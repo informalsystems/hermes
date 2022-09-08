@@ -3,7 +3,7 @@
 Hermes can be started in `listen` mode to display the events emitted by a given chain. `NewBlock` and `Tx` IBC events are shown.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/listen.md}}
+{{#template ../../../templates/help_templates/listen.md}}
 ```
 
 __Example__

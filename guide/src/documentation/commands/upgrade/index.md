@@ -5,7 +5,7 @@
 Use the `upgrade client` command to upgrade a client after a chain upgrade.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/upgrade/client.md}}
+{{#template ../../../templates/help_templates/upgrade/client.md}}
 ```
 
 __Example__

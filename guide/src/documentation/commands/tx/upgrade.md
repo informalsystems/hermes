@@ -9,7 +9,7 @@
 Use this to make an upgrade proposal.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/tx/upgrade-chain.md}}
+{{#template ../../../templates/help_templates/tx/upgrade-chain.md}}
 ```
 
 __Example__

@@ -9,7 +9,7 @@ and [packet-acks](../tx/packet.md#relay-acknowledgment-packets).
 ### Usage
 
 ```
-{{#template ../../../templates/commands/hermes/help/clear/packets.md}}
+{{#template ../../../templates/help_templates/clear/packets.md}}
 ```
 
 ### Example

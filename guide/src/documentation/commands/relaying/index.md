@@ -10,7 +10,7 @@ Hermes can send transactions triggered by IBC events. It currently handles chann
 The `start` command can be used to start Hermes in IBC event listen mode.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/start.md}}
+{{#template ../../../templates/help_templates/start.md}}
 ```
 
 As described in next subsections, the type of relaying can be configured in the `global` section of the configuration file, by specifying different values in `strategy` field.

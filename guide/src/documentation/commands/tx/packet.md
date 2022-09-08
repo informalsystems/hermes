@@ -111,7 +111,7 @@ Success: [
 Use the `tx packet-recv` command to relay the packets sent but not yet received. If the packets sent have timed out then a timeout packet is sent to the source chain.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/tx/packet-recv.md}}
+{{#template ../../../templates/help_templates/tx/packet-recv.md}}
 ```
 
 __Example__
@@ -213,7 +213,7 @@ Both packets have been relayed to `ibc-1` and acknowledged.
 Use the `tx packet-ack` command to relay acknowledgments to the original source of the packets.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/tx/packet-ack.md}}
+{{#template ../../../templates/help_templates/tx/packet-ack.md}}
 ```
 
 __Example__

@@ -7,7 +7,7 @@
 Use the `query connections` command to query the identifiers of all connections on a given chain.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/connections.md}}
+{{#template ../../../templates/help_templates/query/connections.md}}
 ```
 
 __Example__
@@ -34,7 +34,7 @@ Success: [
 Use the `query connection` commands to query a specific connection.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/connection.md}}
+{{#template ../../../templates/help_templates/query/connection.md}}
 ```
 
 ## Query the connection end data
@@ -42,7 +42,7 @@ Use the `query connection` commands to query a specific connection.
 Use the `query connection end` command to query the connection end:
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/connection/end.md}}
+{{#template ../../../templates/help_templates/query/connection/end.md}}
 ```
 
 __Example__
@@ -88,7 +88,7 @@ Success: ConnectionEnd {
 Use the `query connection channels` command to query the identifiers of the channels associated with a given connection:
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/connection/channels.md}}
+{{#template ../../../templates/help_templates/query/connection/channels.md}}
 ```
 
 __Example__

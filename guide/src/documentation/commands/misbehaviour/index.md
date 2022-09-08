@@ -9,7 +9,7 @@ submit evidence to the chain. If the evidence passes the on-chain validation, th
 cannot be relayed using the frozen client.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/misbehaviour.md}}
+{{#template ../../../templates/help_templates/misbehaviour.md}}
 ```
 
 The misbehaviour monitor starts by analyzing all headers used in prior client updates.

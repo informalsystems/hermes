@@ -9,7 +9,7 @@
 Use the `create channel` command to establish a new channel.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/create/channel.md}}
+{{#template ../../../templates/help_templates/create/channel.md}}
 ```
 
 ## Examples

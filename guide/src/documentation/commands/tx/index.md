@@ -57,6 +57,6 @@ In the command template above:
 ## Usage
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/tx.md}}
+{{#template ../../../templates/help_templates/tx.md}}
 
 ```

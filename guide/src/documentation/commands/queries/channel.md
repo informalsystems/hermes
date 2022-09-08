@@ -7,7 +7,7 @@
 Use the `query channels` command to query the identifiers of all channels on a given chain.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/channels.md}}
+{{#template ../../../templates/help_templates/query/channels.md}}
 ```
 
 __Example__
@@ -44,7 +44,7 @@ Success: [
 Use the `query channel` commands to query the information about a specific channel.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/channel.md}}
+{{#template ../../../templates/help_templates/query/channel.md}}
 ```
 
 ## Query the channel end data
@@ -52,7 +52,7 @@ Use the `query channel` commands to query the information about a specific chann
 Use the `query channel end` command to query the channel end:
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/channel/end.md}}
+{{#template ../../../templates/help_templates/query/channel/end.md}}
 ```
 
 __Example__
@@ -92,7 +92,7 @@ Success: ChannelEnd {
 Use the `query channel ends` command to obtain both ends of a channel:
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/channel/ends.md}}
+{{#template ../../../templates/help_templates/query/channel/ends.md}}
 ```
 
 __Example__
@@ -148,7 +148,7 @@ channel, connection, and client on both ends.
 Use the `query channel client` command to obtain the channel's client state:
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/channel/client.md}}
+{{#template ../../../templates/help_templates/query/channel/client.md}}
 ```
 
 If the command is successful a message with the following format will be displayed:

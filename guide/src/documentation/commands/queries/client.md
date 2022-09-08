@@ -9,7 +9,7 @@ Use the `query clients` command to query the identifiers of all clients on a giv
 the _host_ chain.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/clients.md}}
+{{#template ../../../templates/help_templates/query/clients.md}}
 ```
 
 __Example__
@@ -62,7 +62,7 @@ Success: [
 Use the `query client` command to query the information about a specific client.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/client.md}}
+{{#template ../../../templates/help_templates/query/client.md}}
 ```
 
 ## Query the client state
@@ -70,7 +70,7 @@ Use the `query client` command to query the information about a specific client.
 Use the `query client state` command to query the client state of a client:
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/client/state.md}}
+{{#template ../../../templates/help_templates/query/client/state.md}}
 ```
 
 __Example__
@@ -116,7 +116,7 @@ Success: ClientState {
 Use the `query client consensus` command to query the consensus states of a given client, or the state at a specified height:
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/client/consensus.md}}
+{{#template ../../../templates/help_templates/query/client/consensus.md}}
 ```
 
 __Example__
@@ -181,7 +181,7 @@ Success: ConsensusState {
 Use the `query client connections` command to query the connections associated with a given client:
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/client/connections.md}}
+{{#template ../../../templates/help_templates/query/client/connections.md}}
 ```
 
 __Example__
@@ -202,7 +202,7 @@ Success: [
 ## Query for the header used in a client update at a certain height
 
 ```
-{{#template ../../../templates/commands/hermes/help/query/client/header.md}}
+{{#template ../../../templates/help_templates/query/client/header.md}}
 ```
 
 __Example__

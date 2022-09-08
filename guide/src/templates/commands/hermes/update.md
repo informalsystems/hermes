@@ -1,0 +1,1 @@
+[[#binary hermes]] update [[#SUBCOMMAND]]

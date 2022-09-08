@@ -1,0 +1,1 @@
+[[#binary hermes]] create [[#SUBCOMMAND]]

@@ -19,5 +19,5 @@ The `query` command provides the following sub-commands:
 ## Usage
 
 ```
-{{#template ../../../templates/commands/hermes/help/query.md}}
+{{#template ../../../templates/help_templates/query.md}}
 ```

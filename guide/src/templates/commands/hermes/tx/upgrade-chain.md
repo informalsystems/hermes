@@ -1,0 +1,1 @@
+[[#binary hermes]] tx upgrade-chain [OPTIONS] --reference-chain [[#REFERENCE_CHAIN_ID]] --host-chain [[#HOST_CHAIN_ID]] --host-client [[#HOST_CLIENT_ID]] --amount [[#AMOUNT]] --height-offset [[#HEIGHT_OFFSET]]

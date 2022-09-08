@@ -22,7 +22,7 @@ hermes help keys
 The available sub-commands are the following:
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/keys.md}}
+{{#template ../../../templates/help_templates/keys.md}}
 ```
 
 ### Key Seed file (Private Key)
@@ -57,7 +57,7 @@ The command `keys add` has two exclusive flags, `--key-file` and `--mnemonic-fil
 If a key with the same `key_name` already exists, the flag `--overwrite` must be passed in order to overwrite the existing key or else the command will abort.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/keys/add.md}}
+{{#template ../../../templates/help_templates/keys/add.md}}
 ```
 
 #### Add a private key to a chain from a key file
@@ -130,7 +130,7 @@ Success: Restore key testkey ([ADDRESS]) on [CHAIN ID] chain
 In order to delete the private keys added to chains use the `keys delete` command
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/keys/delete.md}}
+{{#template ../../../templates/help_templates/keys/delete.md}}
 ```
 
 #### Delete private keys that was previously added to a chain
@@ -152,7 +152,7 @@ hermes --config config.toml keys delete --chain [CHAIN_ID] --all
 In order to list the private keys added to chains use the `keys list` command
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/keys/list.md}}
+{{#template ../../../templates/help_templates/keys/list.md}}
 ```
 
 #### Listing the private key that was added to a chain
@@ -205,7 +205,7 @@ If the command is successful a message similar to the one below will be displaye
 In order to retrieve the balance of an account associated with a key use the `keys balance` command
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/keys/balance.md}}
+{{#template ../../../templates/help_templates/keys/balance.md}}
 ```
 
 If the command is successful a message with the following format will be displayed:

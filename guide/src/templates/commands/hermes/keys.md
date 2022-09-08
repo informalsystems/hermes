@@ -1,0 +1,1 @@
+[[#binary hermes]] keys [[#SUBCOMMAND]]

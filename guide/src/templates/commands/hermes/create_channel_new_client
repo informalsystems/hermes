@@ -1,1 +1,0 @@
-[[#binary hermes]] create channel --a-chain [[#a-chain]] --b-chain [[#b-chain]] --a-port [[#a-port]] --b-port [[#b-port]] --new-client-connection --yes

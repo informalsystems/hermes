@@ -14,12 +14,12 @@ This section describes a number of commands that can be used to manage clients, 
 Use the `create` commands to create new clients, connections, and channels.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/create.md}}
+{{#template ../../../templates/help_templates/create.md}}
 ```
 
 ## Update
 Use the `update` commands to update a client.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/update.md}}
+{{#template ../../../templates/help_templates/update.md}}
 ```

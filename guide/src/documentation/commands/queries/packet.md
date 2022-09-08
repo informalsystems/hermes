@@ -5,7 +5,7 @@ Use the `query packet` commands to query information about packets.
 
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/packet.md}}
+{{#template ../../../templates/help_templates/query/packet.md}}
 ```
 
 ## Table of Contents
@@ -18,7 +18,7 @@ Use the `query packet` commands to query information about packets.
 Use the `query packet pending` command to query the sequence numbers of all packets that have not yet been received or acknowledged, at both ends of a channel.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/packet/pending.md}}
+{{#template ../../../templates/help_templates/query/packet/pending.md}}
 ```
 
 __Example__
@@ -64,7 +64,7 @@ Success: Summary {
 Use the `query packet commitments` command to query the sequence numbers of all packets that have been sent but not yet acknowledged (these are the packets that still have their commitments stored).
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/packet/commitments.md}}
+{{#template ../../../templates/help_templates/query/packet/commitments.md}}
 ```
 
 __Example__
@@ -94,7 +94,7 @@ Success: PacketSeqs {
 Use the `query packet commitment` command to query the commitment value of a packet with a given sequence number.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/packet/commitment.md}}
+{{#template ../../../templates/help_templates/query/packet/commitment.md}}
 ```
 
 __Example__
@@ -114,7 +114,7 @@ Success: "F9458DC7EBEBCD6D18E983FCAB5BD752CC2A74532BBD50B812DB229997739EFC"
 Use the `query packet acks` command to query the sequence numbers of all packets that have been acknowledged.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/packet/acks.md}}
+{{#template ../../../templates/help_templates/query/packet/acks.md}}
 ```
 
 __Example__
@@ -144,7 +144,7 @@ Success: PacketSeqs {
 Use the `query packet acknowledgment` command to query the acknowledgment value of a packet with a given sequence number.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/packet/ack.md}}
+{{#template ../../../templates/help_templates/query/packet/ack.md}}
 ```
 
 __Example__
@@ -164,7 +164,7 @@ Success: "08F7557ED51826FE18D84512BF24EC75001EDBAF2123A477DF72A0A9F3640A7C"
 Use the `query packet pending-sends` command to query the sequence numbers of all packets that have been sent on the source chain but not yet received on the destination chain.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/packet/pending-sends.md}}
+{{#template ../../../templates/help_templates/query/packet/pending-sends.md}}
 ```
 
 __Example__
@@ -188,7 +188,7 @@ Success: [
 Use the `query packet pending-acks` command to query the sequence numbers of all packets that have not yet been acknowledged.
 
 ```shell
-{{#template ../../../templates/commands/hermes/help/query/packet/pending-acks.md}}
+{{#template ../../../templates/help_templates/query/packet/pending-acks.md}}
 ```
 
 __Example__
