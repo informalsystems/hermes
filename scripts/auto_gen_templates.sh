@@ -5,6 +5,10 @@
 HELP_DIR="./guide/src/templates/commands/hermes/help/"
 
 function print_array_with_prefix() {
+    # Prints every element of the array given as argument prefixed by $1.
+    # Args :
+    # - $1 : Prefix to use
+    # - $2 : Array to print
     prefix=$1
     shift
     for i in "$@"; do
@@ -15,6 +19,9 @@ function print_array_with_prefix() {
 }
 
 function print_array() {
+    # Prints every element of the array given as argument.
+    # Args :
+    # - $1 : Array to print
     for i in "$@"; do
         if [ $i != "help" ]; then
             echo "$i"
@@ -23,21 +30,22 @@ function print_array() {
 }
 
 function generate_commands_rec(){
+    # Called by generate_commands to generate every command or Hermes. 
+    # Echo all the subcommands of the commands given by $2.
     # Args : 
-    # - $1: Command prefix with space replaced by '/'
-    # - $2: Beginning of the array of subcommands
+    # - $1: Command prefix with whitespaces replaced by '/'
+    # - $2: Beginning of the array of commands
     local cmd_prefix=$(echo $1 | sed 's/\// /g')
     shift
-    # Since there is no delimiter between two subcommands, a trick can be to cut the line up to the N-th character
     for command in "$@"; do
+        # Since there is no delimiter between two subcommands, a trick can be to cut the line up to the N-th character
         if [ $command = "tx" ]; then
             # The tx command needs a longer cut than the others
             local cut=25
         else 
             local cut=19
         fi
-
-        # if command is not help and not empty
+        # if command is not help and not empty then echo its subcommands and call the function recursively
         if [ "$command" != "help" ] && [ ! -z "$command" ]; then
             local new_commands=$(cargo run -q --bin hermes $cmd_prefix $command --help | sed '0,/^SUBCOMMAND.*/d' | cut -c 1-$cut | sed '/^\s*$/d' | sed 's/\s\+\(\S\+\)\s*.*/\1/')
             if [ -z "$cmd_prefix" ]; then
@@ -55,6 +63,7 @@ function generate_commands_rec(){
 }
 
 function generate_commands(){
+    # Generates the list of every commands of Hermes
     local new_commands=$(cargo run -q --bin hermes help | sed '0,/^SUBCOMMAND.*/d' | sed 's/\s\+\(\S\+\)\s*.*/\1/')
     print_array $new_commands
     generate_commands_rec "" $new_commands
