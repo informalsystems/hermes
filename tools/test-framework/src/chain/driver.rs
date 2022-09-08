@@ -6,7 +6,6 @@ use core::time::Duration;
 
 use alloc::sync::Arc;
 use eyre::eyre;
-use std::str;
 use tokio::runtime::Runtime;
 
 use ibc::core::ics24_host::identifier::ChainId;
@@ -14,7 +13,6 @@ use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 
 use crate::chain::cli::query::query_balance;
-use crate::chain::exec::{simple_exec, ExecOutput};
 use crate::error::Error;
 use crate::ibc::denom::Denom;
 use crate::relayer::tx::{new_tx_config_for_test, simple_send_tx};
@@ -174,22 +172,6 @@ impl ChainDriver {
     */
     pub fn grpc_listen_address(&self) -> String {
         format!("localhost:{}", self.grpc_port)
-    }
-
-    /**
-       Execute the gaiad command with the given command line arguments, and
-       returns the STDOUT result as String.
-
-       This is not the most efficient way of interacting with the CLI, but
-       is sufficient for testing purposes of interacting with the `gaiad`
-       commmand.
-
-       The function also output debug logs that show what command is being
-       executed, so that users can manually re-run the commands by
-       copying from the logs.
-    */
-    pub fn exec(&self, args: &[&str]) -> Result<ExecOutput, Error> {
-        simple_exec(self.chain_id.as_str(), &self.command_path, args)
     }
 
     /**
