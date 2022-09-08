@@ -136,8 +136,8 @@ As you can see, there is currently no stuck packet between `ibc-1` and `ibc-3`.
 For the sake of learning, let's make new stuck packets on the `ibc-0<>ibc-2` channel and the `ibc-1<>ibc-3` channel.
 
 ```shell
-{{#template ../../templates/commands/hermes/tx/ft-transfer.md DST_CHAIN_ID=ibc-3 SRC_CHAIN_ID=ibc-1 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-2 AMOUNT=1000000 OPTIONS=timeout-seconds=10000}}
-{{#template ../../templates/commands/hermes/tx/ft-transfer.md DST_CHAIN_ID=ibc-2 SRC_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-1 AMOUNT=1000000 OPTIONS=timeout-seconds=10000}}
+{{#template ../../templates/commands/hermes/tx/ft-transfer.md DST_CHAIN_ID=ibc-3 SRC_CHAIN_ID=ibc-1 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-2 AMOUNT=1000000 OPTIONS=--timeout-seconds 10000}}
+{{#template ../../templates/commands/hermes/tx/ft-transfer.md DST_CHAIN_ID=ibc-2 SRC_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-1 AMOUNT=1000000 OPTIONS=--timeout-seconds 10000}}
 ```
 
 If both commands run successfully, they should output a `SUCCESS` message. 
@@ -198,7 +198,7 @@ You have pending packets on the two paths filtered out by our running instance.
 >__NOTE__: You can also verify that Hermes is still relaying on the other paths by sending a packet from `ibc-1` to `ibc-2`:
 >
 >```shell
->{{#template ../../templates/commands/hermes/tx/ft-transfer.md DST_CHAIN_ID=ibc-2 SRC_CHAIN_ID=ibc-1 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-1 AMOUNT=1000000 OPTIONS=timeout-seconds=10000}}
+>{{#template ../../templates/commands/hermes/tx/ft-transfer.md DST_CHAIN_ID=ibc-2 SRC_CHAIN_ID=ibc-1 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-1 AMOUNT=1000000 OPTIONS=--timeout-seconds 10000}}
 >```
 >
 >Wait a few seconds then verify that no packet is pending with:

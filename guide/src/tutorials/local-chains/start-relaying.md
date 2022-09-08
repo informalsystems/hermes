@@ -55,7 +55,7 @@ Now, let's exchange `samoleans` between two chains.
 
 - In a separate terminal, use the `ft-transfer` command to send `100000 samoleans` from ibc-0 to ibc-1 over channel-0:
     ```shell
-    {{#template ../../templates/commands/hermes/tx/ft-transfer.md DST_CHAIN_ID=ibc-1 SRC_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-0 AMOUNT=100000 OPTIONS=timeout-seconds=1000}}
+    {{#template ../../templates/commands/hermes/tx/ft-transfer.md DST_CHAIN_ID=ibc-1 SRC_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-0 AMOUNT=100000 OPTIONS=--timeout-seconds 1000}}
     ```
 
 - Wait a few seconds, then query balances on `ibc-1` and `ibc-0`. You should observe something similar to:
