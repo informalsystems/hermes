@@ -70,11 +70,11 @@ define_error! {
             | _ | { "invalid proof: missing height" },
 
         MissingNextRecvSeq
-            { port_channel_id: (PortId, ChannelId) }
-            | e | {
+            { port_id: PortId, channel_id: ChannelId }
+        | e | {
                 format_args!("Missing sequence number for receiving packets on port {0} and channel {1}",
-                             e.port_channel_id.0,
-                             e.port_channel_id.1)
+                             e.port_id,
+                             e.channel_id)
             },
 
         ZeroPacketSequence
@@ -169,11 +169,11 @@ define_error! {
             },
 
         MissingNextSendSeq
-            { port_channel_id: (PortId, ChannelId) }
+            { port_id: PortId, channel_id: ChannelId }
             | e | {
                 format_args!("Missing sequence number for sending packets on port {0} and channel {1}",
-                             e.port_channel_id.0,
-                             e.port_channel_id.1)
+                             e.port_id,
+                             e.channel_id)
             },
 
         InvalidStringAsSequence
@@ -303,11 +303,11 @@ define_error! {
             },
 
         MissingNextAckSeq
-            { port_channel_id: (PortId, ChannelId) }
+            { port_id: PortId, channel_id: ChannelId }
             | e | {
                 format_args!("Missing sequence number for ack packets on port {0} and channel {1}",
-                             e.port_channel_id.0,
-                             e.port_channel_id.1)
+                             e.port_id,
+                             e.channel_id)
             },
 
         ProcessedTimeNotFound

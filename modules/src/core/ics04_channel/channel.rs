@@ -1,6 +1,7 @@
 use crate::prelude::*;
+use crate::utils::pretty::PrettyVec;
 
-use core::fmt;
+use core::fmt::{Display, Error as FmtError, Formatter};
 use core::str::FromStr;
 
 use ibc_proto::protobuf::Protobuf;
@@ -79,6 +80,16 @@ pub struct ChannelEnd {
     pub remote: Counterparty,
     pub connection_hops: Vec<ConnectionId>,
     pub version: Version,
+}
+
+impl Display for ChannelEnd {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(
+            f,
+            "ChannelEnd {{ state: {}, ordering: {}, remote: {}, connection_hops: {}, version: {} }}",
+            self.state, self.ordering, self.remote, PrettyVec(&self.connection_hops), self.version
+        )
+    }
 }
 
 impl Default for ChannelEnd {
@@ -266,6 +277,23 @@ impl Counterparty {
     }
 }
 
+impl Display for Counterparty {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        match &self.channel_id {
+            Some(channel_id) => write!(
+                f,
+                "Counterparty(port_id: {}, channel_id: {})",
+                self.port_id, channel_id
+            ),
+            None => write!(
+                f,
+                "Counterparty(port_id: {}, channel_id: None)",
+                self.port_id
+            ),
+        }
+    }
+}
+
 impl Protobuf<RawCounterparty> for Counterparty {}
 
 impl TryFrom<RawCounterparty> for Counterparty {
@@ -308,8 +336,8 @@ impl Default for Order {
     }
 }
 
-impl fmt::Display for Order {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for Order {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}", self.as_str())
     }
 }
@@ -401,8 +429,8 @@ impl State {
 }
 
 /// Provides a `to_string` method.
-impl core::fmt::Display for State {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
+impl Display for State {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}", self.as_string())
     }
 }

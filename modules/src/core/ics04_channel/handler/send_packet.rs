@@ -22,8 +22,7 @@ pub struct SendPacketResult {
 pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
-    let source_channel_end =
-        ctx.channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))?;
+    let source_channel_end = ctx.channel_end(&packet.source_port, &packet.source_channel)?;
 
     if source_channel_end.state_matches(&State::Closed) {
         return Err(Error::channel_closed(packet.source_channel));
@@ -68,8 +67,7 @@ pub fn send_packet(ctx: &dyn ChannelReader, packet: Packet) -> HandlerResult<Pac
         return Err(Error::low_packet_timestamp());
     }
 
-    let next_seq_send =
-        ctx.get_next_sequence_send(&(packet.source_port.clone(), packet.source_channel.clone()))?;
+    let next_seq_send = ctx.get_next_sequence_send(&packet.source_port, &packet.source_channel)?;
 
     if packet.sequence != next_seq_send {
         return Err(Error::invalid_packet_sequence(

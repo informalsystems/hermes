@@ -1,4 +1,5 @@
 use alloc::string::ToString;
+use core::fmt::{Display, Error as FmtError, Formatter};
 
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::mock::Header as RawMockHeader;
@@ -25,6 +26,16 @@ impl Default for MockHeader {
             height: Height::new(0, 1).unwrap(),
             timestamp: Default::default(),
         }
+    }
+}
+
+impl Display for MockHeader {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(
+            f,
+            "MockHeader {{ height: {}, timestamp: {} }}",
+            self.height, self.timestamp
+        )
     }
 }
 

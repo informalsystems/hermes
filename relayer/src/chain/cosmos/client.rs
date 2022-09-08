@@ -8,6 +8,7 @@ use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 
 use crate::config::ChainConfig;
 use crate::foreign_client::CreateOptions;
+use crate::util::pretty::PrettyDuration;
 
 /// Cosmos-specific client parameters for the `build_client_state` operation.
 #[derive(Clone, Debug, Default)]
@@ -28,9 +29,10 @@ impl Settings {
             Some(user_value) => {
                 if user_value > dst_chain_config.max_block_time {
                     warn!(
-                        "user specified max_clock_drift ({:?}) exceeds max_block_time \
+                        "user specified max_clock_drift ({}) exceeds max_block_time \
                         of the destination chain {}",
-                        user_value, dst_chain_config.id,
+                        PrettyDuration(&user_value),
+                        dst_chain_config.id,
                     );
                 }
                 user_value

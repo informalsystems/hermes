@@ -1,5 +1,6 @@
 //! Types for the IBC events emitted from Tendermint Websocket by the connection module.
 
+use core::fmt::{Display, Error as FmtError, Formatter};
 use serde_derive::{Deserialize, Serialize};
 use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
@@ -14,12 +15,23 @@ pub const CLIENT_ID_ATTRIBUTE_KEY: &str = "client_id";
 pub const COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY: &str = "counterparty_connection_id";
 pub const COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY: &str = "counterparty_client_id";
 
-#[derive(Debug, Default, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
 pub struct Attributes {
     pub connection_id: Option<ConnectionId>,
     pub client_id: ClientId,
     pub counterparty_connection_id: Option<ConnectionId>,
     pub counterparty_client_id: ClientId,
+}
+
+impl Display for Attributes {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        match (&self.connection_id, &self.counterparty_connection_id) {
+            (Some(connection_id), Some(counterparty_connection_id)) => write!(f, "Attributes {{ connection_id: {}, client_id: {}, counterparty_connection_id: {}, counterparty_client_id: {} }}", connection_id, self.client_id, counterparty_connection_id, self.counterparty_client_id),
+            (Some(connection_id), None) => write!(f, "Attributes {{ connection_id: {}, client_id: {}, counterparty_connection_id: None, counterparty_client_id: {} }}", connection_id, self.client_id, self.counterparty_client_id),
+            (None, Some(counterparty_connection_id)) => write!(f, "Attributes {{ connection_id: None, client_id: {}, counterparty_connection_id: {}, counterparty_client_id: {} }}", self.client_id, counterparty_connection_id, self.counterparty_client_id),
+            (None, None) => write!(f, "Attributes {{ connection_id: None, client_id: {}, counterparty_connection_id: None, counterparty_client_id: {} }}", self.client_id, self.counterparty_client_id),
+        }
+    }
 }
 
 /// Convert attributes to Tendermint ABCI tags
@@ -61,7 +73,7 @@ impl From<Attributes> for Vec<Tag> {
     }
 }
 
-#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct OpenInit(pub Attributes);
 
 impl OpenInit {
@@ -70,6 +82,12 @@ impl OpenInit {
     }
     pub fn connection_id(&self) -> Option<&ConnectionId> {
         self.0.connection_id.as_ref()
+    }
+}
+
+impl Display for OpenInit {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "OpenInit {{ {} }}", self.0)
     }
 }
 
@@ -95,7 +113,7 @@ impl From<OpenInit> for AbciEvent {
     }
 }
 
-#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct OpenTry(pub Attributes);
 
 impl OpenTry {
@@ -104,6 +122,12 @@ impl OpenTry {
     }
     pub fn connection_id(&self) -> Option<&ConnectionId> {
         self.0.connection_id.as_ref()
+    }
+}
+
+impl Display for OpenTry {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "OpenTry {{ {} }}", self.0)
     }
 }
 
@@ -129,7 +153,7 @@ impl From<OpenTry> for AbciEvent {
     }
 }
 
-#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct OpenAck(pub Attributes);
 
 impl OpenAck {
@@ -138,6 +162,12 @@ impl OpenAck {
     }
     pub fn connection_id(&self) -> Option<&ConnectionId> {
         self.0.connection_id.as_ref()
+    }
+}
+
+impl Display for OpenAck {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "OpenAck {{ {} }}", self.0)
     }
 }
 
@@ -163,7 +193,7 @@ impl From<OpenAck> for AbciEvent {
     }
 }
 
-#[derive(Debug, Serialize, Clone, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct OpenConfirm(pub Attributes);
 
 impl OpenConfirm {
@@ -172,6 +202,12 @@ impl OpenConfirm {
     }
     pub fn connection_id(&self) -> Option<&ConnectionId> {
         self.0.connection_id.as_ref()
+    }
+}
+
+impl Display for OpenConfirm {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "OpenConfirm {{ {} }}", self.0)
     }
 }
 

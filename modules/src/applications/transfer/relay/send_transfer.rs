@@ -26,9 +26,8 @@ where
         return Err(Error::send_disabled());
     }
 
-    let source_channel_key = (msg.source_port.clone(), msg.source_channel.clone());
     let source_channel_end = ctx
-        .channel_end(&source_channel_key)
+        .channel_end(&msg.source_port, &msg.source_channel)
         .map_err(Error::ics04_channel)?;
 
     let destination_port = source_channel_end.counterparty().port_id().clone();
@@ -45,7 +44,7 @@ where
 
     // get the next sequence
     let sequence = ctx
-        .get_next_sequence_send(&source_channel_key)
+        .get_next_sequence_send(&msg.source_port, &msg.source_channel)
         .map_err(Error::ics04_channel)?;
 
     let token = msg.token.try_into().map_err(|_| Error::invalid_token())?;
