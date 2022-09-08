@@ -2,6 +2,8 @@
 //! constitutes a "fungible token transfer bridge module" between the IBC routing module and an
 //! asset tracking module.
 pub mod acknowledgement;
+pub mod amount;
+pub mod coin;
 pub mod context;
 pub mod denom;
 pub mod error;
@@ -10,6 +12,8 @@ pub mod msgs;
 pub mod packet;
 pub mod relay;
 
+pub use amount::*;
+pub use coin::*;
 pub use denom::*;
 
 /// Module identifier for the ICS20 application.

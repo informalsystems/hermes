@@ -1,5 +1,7 @@
 use alloc::string::FromUtf8Error;
 
+use core::convert::Infallible;
+use core::str::Utf8Error;
 use flex_error::{define_error, DisplayOnly, TraceError};
 use ibc_proto::protobuf::Error as TendermintProtoError;
 use subtle_encoding::Error as EncodingError;
@@ -132,5 +134,19 @@ define_error! {
         UnknownMsgType
             { msg_type: String }
             | e | { format_args!("unknown msg type: {0}", e.msg_type) },
+
+        InvalidCoin
+            { coin: String }
+            | e | { format_args!("invalid coin string: {}", e.coin) },
+
+        Utf8Decode
+            [ TraceError<Utf8Error> ]
+            | _ | { "error decoding raw bytes as UTF8 string" },
+    }
+}
+
+impl From<Infallible> for Error {
+    fn from(e: Infallible) -> Self {
+        match e {}
     }
 }
