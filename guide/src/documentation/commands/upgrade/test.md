@@ -38,9 +38,9 @@ gaiad version --log_level error --long | head -n4
 [ibc-1]
   ports_start_at = 27010
 ```
-* Run the command `{{#template ../../../templates/commands/gm/start}}`
+* Run the command `{{#template ../../../templates/commands/gm/start.md}}`
 * Go to the file `$HOME/.gm/ibc-0/config/genesis.json` and change `max_deposit_period` and `voting_period` to a lower value, such as 120s
-* Run the commands: `{{#template ../../../templates/commands/gm/reset}}`, `{{#template ../../../templates/commands/gm/hermes_config}}` and `{{#template ../../../templates/commands/gm/hermes_keys}}`
+* Run the commands: `{{#template ../../../templates/commands/gm/reset.md}}`, `{{#template ../../../templates/commands/gm/hermes_config.md}}` and `{{#template ../../../templates/commands/gm/hermes_keys.md}}`
 
 ### Test upgrading chain and client
 

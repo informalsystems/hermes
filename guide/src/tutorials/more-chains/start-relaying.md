@@ -80,7 +80,7 @@ Now, let's exchange `samoleans` between chains.
 - Open a new terminal and start Hermes using the `start` command : 
 
     ```shell
-    {{#template ../../templates/commands/hermes/start}}
+    {{#template ../../templates/commands/hermes/start.md}}
     ```
     Hermes will first relay the pending packets that have not been relayed and then start passively relaying by listening for and acting on packet events. 
 

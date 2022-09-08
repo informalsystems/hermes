@@ -29,7 +29,7 @@ Hermes can be started to listen for packet events on the two ends of multiple pa
 This can be done over a new path or over existing paths.
 
 >__NOTE__: The following steps decompose every step from the creation of the clients to the channel handshake for educational purposes. 
-> More realistically, you'd use the command `{{#template ../../templates/commands/hermes/create_channel_new_client a-chain=ibc-0 b-chain=ibc-1 a-port=transfer b-port=transfer}}` in order to create a new client on each chain, establish a connection, and open a channel, all with a single command.
+> More realistically, you'd use the command `{{#template ../../templates/commands/hermes/create/channel_todo.md A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-1 A_PORT_ID=transfer B_PORT_ID=transfer}}` in order to create a new client on each chain, establish a connection, and open a channel, all with a single command.
 
 You will need to first create a client on both chains and then establish a connection between them. It is possible to have multiple connections between clients, which can be useful in order to support multiple versions of IBC. Finally, you need to create channels over a connection to identify the source and destination modules. You can learn more in the [cosmos academy tutorial](https://tutorials.cosmos.network/academy/4-ibc/what-is-ibc.html).  
 
@@ -62,7 +62,7 @@ SUCCESS CreateClient(
 Now, create a client on `ibc-0` tracking `ibc-1`:
 
 ```shell
-{{#template ../../templates/commands/hermes/create_client host-chain=ibc-0 reference-chain=ibc-1}}
+{{#template ../../templates/commands/hermes/create/client.md HOST_CHAIN_ID=ibc-0 REFERENCE_CHAIN_ID=ibc-1}}
 ```
 If the command is successful, the output should be similar to:
 ```json
@@ -90,7 +90,7 @@ As you can see, the identifier is also `07-tendermint-0` because the client-id i
 After creating clients on both chains, you have to establish a connection between them. Both chains will assign `connection-0` as the identifier of their first connection:
 
 ```shell
-{{#template ../../templates/commands/hermes/create_connection a-chain=ibc-0 a-client=07-tendermint-0 b-client=07-tendermint-0}}
+{{#template ../../templates/commands/hermes/create/connection_todo.md A_CHAIN_ID=ibc-0 A_CLIENT_ID=07-tendermint-0 B_CHAIN_ID=07-tendermint-0}}
 ```
 >__NOTE__: The command does not take `--b-chain` as argument as `--a-client` can only track one chain (`ibc-1`). 
 
@@ -304,7 +304,7 @@ SUCCESS Connection {
 Finally, after the connection has been established, you can now open a new channel on top of it. Both chains will assign `channel-0` as the identifier of their first channel:
 
 ```shell
-{{#template ../../templates/commands/hermes/create_channel a-chain=ibc-0 a-connection=connection-0 a-port=transfer b-port=transfer}}
+{{#template ../../templates/commands/hermes/create/channel.md A_CHAIN_ID=ibc-0 A_CONNECTION_ID=connection-0 A_PORT_ID=transfer B_PORT_ID=transfer}}
 ```
 >__NOTE__: Again, you do not need to specify the counterparty chain as a connection can only be established with a single counterparty. The `port` specifies the protocol which will be used on this channel. 
 

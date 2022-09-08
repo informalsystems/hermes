@@ -49,7 +49,7 @@ Now, let's exchange `samoleans` between two chains.
 - Open a new terminal and start Hermes using the `start` command : 
 
     ```shell
-    {{#template ../../templates/commands/hermes/start}}
+    {{#template ../../templates/commands/hermes/start.md}}
     ```
     Hermes will first relay the pending packets that have not been relayed and then start passively relaying by listening for and acting on packet events. 
 
@@ -118,7 +118,7 @@ Now, let's exchange `samoleans` between two chains.
 
 ## Stop relaying and stop the chains
 
-- Stop Hermes by pressing `Ctrl+C` on the terminal running `{{#template ../../templates/commands/hermes/start}}`.
+- Stop Hermes by pressing `Ctrl+C` on the terminal running `{{#template ../../templates/commands/hermes/start.md}}`.
 
 - Stop the chains with `{{#template ../../templates/commands/gm/stop}}`.
 

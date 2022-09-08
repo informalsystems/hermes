@@ -3,7 +3,7 @@
 At this point in the tutorial, you should have four chains running and Hermes correctly configured. You can perform a `health-check` with the command :
 
 ```shell
-{{#template ../../templates/commands/hermes/health_check}}
+{{#template ../../templates/commands/hermes/health-check.md}}
 ```
 
 If the command runs successfully, it should output something similar to:

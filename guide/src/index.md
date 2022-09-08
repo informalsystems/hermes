@@ -1,4 +1,4 @@
-# Hermes Guide ({{#template templates/version}})
+# Hermes Guide ({{#template templates/version.md}})
 
 ## Overview 
 

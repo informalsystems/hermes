@@ -105,6 +105,7 @@ function generate_commands_rec(){
 
 function generate_commands(){
     # Generates the list of every commands of Hermes
+    echo "version"  # Special case
     local new_commands=$(cargo run -q --bin hermes help | sed '0,/^SUBCOMMAND.*/d ; s/\s\+\(\S\+\)\s*.*/\1/')
     print_array $new_commands
     generate_commands_rec "" $new_commands

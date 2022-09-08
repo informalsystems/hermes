@@ -86,7 +86,7 @@ For the tutorial, we will follow the [example of Crypto Crew](https://github.com
 
 Finally, perform a `health-check` to verify that your setup is correct with:
 ```shell
-{{#template ../../templates/commands/hermes/health_check}}
+{{#template ../../templates/commands/hermes/health-check.md}}
 ``` 
 
 If the command runs successfully, it should output:
