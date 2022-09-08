@@ -4,17 +4,12 @@
 
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
-use serde::Serialize;
 use serde_json as json;
 
-use crate::chain::driver::interchain::{
-    interchain_submit, query_interchain_account, register_interchain_account,
-};
-use crate::chain::driver::query_txs::query_recipient_transactions;
+use crate::chain::cli::query::query_recipient_transactions;
 use crate::chain::driver::ChainDriver;
 use crate::error::Error;
 use crate::ibc::denom::Denom;
-use crate::prelude::TaggedConnectionIdRef;
 use crate::types::id::TaggedChainIdRef;
 use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress};
@@ -72,25 +67,6 @@ pub trait TaggedChainDriverExt<Chain> {
         &self,
         recipient_address: &MonoTagged<Chain, &WalletAddress>,
     ) -> Result<json::Value, Error>;
-
-    fn register_interchain_account<Counterparty>(
-        &self,
-        from: &MonoTagged<Chain, &WalletAddress>,
-        connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
-    ) -> Result<(), Error>;
-
-    fn query_interchain_account<Counterparty>(
-        &self,
-        from: &MonoTagged<Chain, &WalletAddress>,
-        connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
-    ) -> Result<MonoTagged<Counterparty, WalletAddress>, Error>;
-
-    fn interchain_submit<Counterparty, T: Serialize>(
-        &self,
-        from: &MonoTagged<Chain, &WalletAddress>,
-        connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
-        msg: &T,
-    ) -> Result<(), Error>;
 }
 
 impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
@@ -132,32 +108,12 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
         &self,
         recipient_address: &MonoTagged<Chain, &WalletAddress>,
     ) -> Result<json::Value, Error> {
-        query_recipient_transactions(self.value(), recipient_address.value())
-    }
-
-    fn register_interchain_account<Counterparty>(
-        &self,
-        from: &MonoTagged<Chain, &WalletAddress>,
-        connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
-    ) -> Result<(), Error> {
-        register_interchain_account(self.value(), from.value(), connection_id.value())
-    }
-
-    fn query_interchain_account<Counterparty>(
-        &self,
-        from: &MonoTagged<Chain, &WalletAddress>,
-        connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
-    ) -> Result<MonoTagged<Counterparty, WalletAddress>, Error> {
-        query_interchain_account(self.value(), from.value(), connection_id.value())
-            .map(MonoTagged::new)
-    }
-
-    fn interchain_submit<Counterparty, T: Serialize>(
-        &self,
-        from: &MonoTagged<Chain, &WalletAddress>,
-        connection_id: &TaggedConnectionIdRef<Chain, Counterparty>,
-        msg: &T,
-    ) -> Result<(), Error> {
-        interchain_submit(self.value(), from.value(), connection_id.value(), msg)
+        let driver = *self.value();
+        query_recipient_transactions(
+            driver.chain_id.as_str(),
+            &driver.command_path,
+            &driver.rpc_listen_address(),
+            &recipient_address.value().0,
+        )
     }
 }

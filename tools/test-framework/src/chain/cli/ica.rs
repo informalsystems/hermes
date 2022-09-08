@@ -1,43 +1,41 @@
 use eyre::eyre;
-use serde::Serialize;
 use serde_json as json;
 
-use ibc::core::ics24_host::identifier::ConnectionId;
-
+use crate::chain::exec::simple_exec;
 use crate::error::{handle_generic_error, Error};
-use crate::prelude::WalletAddress;
-
-use super::ChainDriver;
 
 /// Register a new interchain account controlled by the given account
 /// over the given connection.
 pub fn register_interchain_account(
-    driver: &ChainDriver,
-    from: &WalletAddress,
-    connection_id: &ConnectionId,
+    chain_id: &str,
+    command_path: &str,
+    home_path: &str,
+    rpc_listen_address: &str,
+    from: &str,
+    connection_id: &str,
 ) -> Result<(), Error> {
     let args = &[
         "--home",
-        &driver.home_path,
+        home_path,
         "--node",
-        &driver.rpc_listen_address(),
+        rpc_listen_address,
         "--output",
         "json",
         "tx",
         "intertx",
         "register",
         "--from",
-        &from.0,
+        from,
         "--connection-id",
-        connection_id.as_str(),
+        connection_id,
         "--chain-id",
-        driver.chain_id.as_str(),
+        chain_id,
         "--keyring-backend",
         "test",
         "-y",
     ];
 
-    let res = driver.exec(args)?.stdout;
+    let res = simple_exec(chain_id, command_path, args)?.stdout;
     check_result_code(&res)?;
 
     Ok(())
@@ -46,25 +44,28 @@ pub fn register_interchain_account(
 /// Query the address of the interchain account
 /// corresponding to the given controller account.
 pub fn query_interchain_account(
-    driver: &ChainDriver,
-    account: &WalletAddress,
-    connection_id: &ConnectionId,
-) -> Result<WalletAddress, Error> {
+    chain_id: &str,
+    command_path: &str,
+    home_path: &str,
+    rpc_listen_address: &str,
+    account: &str,
+    connection_id: &str,
+) -> Result<String, Error> {
     let args = &[
         "--home",
-        &driver.home_path,
+        home_path,
         "--node",
-        &driver.rpc_listen_address(),
+        rpc_listen_address,
         "--output",
         "json",
         "query",
         "intertx",
         "interchainaccounts",
-        connection_id.as_str(),
-        &account.0,
+        connection_id,
+        account,
     ];
 
-    let res = driver.exec(args)?.stdout;
+    let res = simple_exec(chain_id, command_path, args)?.stdout;
     let json_res = json::from_str::<json::Value>(&res).map_err(handle_generic_error)?;
 
     let address = json_res
@@ -73,43 +74,43 @@ pub fn query_interchain_account(
         .as_str()
         .ok_or_else(|| eyre!("expected string field"))?;
 
-    Ok(WalletAddress(address.to_string()))
+    Ok(address.to_string())
 }
 
 /// Submit a msg from a controller account over an ICA channel
 /// using the given connection.
-pub fn interchain_submit<T: Serialize>(
-    driver: &ChainDriver,
-    from: &WalletAddress,
-    connection_id: &ConnectionId,
-    msg: &T,
+pub fn interchain_submit(
+    chain_id: &str,
+    command_path: &str,
+    home_path: &str,
+    rpc_listen_address: &str,
+    from: &str,
+    connection_id: &str,
+    msg: &str,
 ) -> Result<(), Error> {
-    let msg_json = serde_json::to_string_pretty(msg).unwrap();
-    println!("{}", msg_json);
-
     let args = &[
         "--home",
-        &driver.home_path,
+        home_path,
         "--node",
-        &driver.rpc_listen_address(),
+        rpc_listen_address,
         "--output",
         "json",
         "tx",
         "intertx",
         "submit",
-        &msg_json,
+        msg,
         "--connection-id",
-        connection_id.as_str(),
+        connection_id,
         "--from",
-        &from.0,
+        from,
         "--chain-id",
-        driver.chain_id.as_str(),
+        chain_id,
         "--keyring-backend",
         "test",
         "-y",
     ];
 
-    let res = driver.exec(args)?.stdout;
+    let res = simple_exec(chain_id, command_path, args)?.stdout;
     check_result_code(&res)?;
 
     Ok(())

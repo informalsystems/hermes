@@ -24,9 +24,6 @@ use crate::util::retry::assert_eventually_succeed;
 
 use super::chain_type::ChainType;
 
-pub mod interchain;
-pub mod query_txs;
-
 /**
    Number of times (seconds) to try and query a wallet to reach the
    target amount, as used by [`assert_eventual_wallet_amount`].

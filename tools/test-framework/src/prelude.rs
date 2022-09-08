@@ -15,6 +15,7 @@ pub use std::thread::sleep;
 pub use tracing::{debug, error, info, warn};
 
 pub use crate::chain::driver::ChainDriver;
+pub use crate::chain::ext::ica::InterchainAccountMethodsExt;
 pub use crate::chain::ext::transfer::ChainTransferMethodsExt;
 pub use crate::chain::tagged::TaggedChainDriverExt;
 pub use crate::error::{handle_generic_error, Error};
