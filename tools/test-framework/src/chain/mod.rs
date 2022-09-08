@@ -16,8 +16,10 @@
 
 pub mod builder;
 pub mod chain_type;
+pub mod cli;
 pub mod config;
 pub mod driver;
 pub mod exec;
+pub mod ext;
 pub mod tagged;
 pub mod version;
