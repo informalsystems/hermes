@@ -34,17 +34,7 @@ sequenceDiagram
 Use the `conn-init` command to initialize a new connection on a chain.
 
 ```shell
-USAGE:
-    hermes tx conn-init --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-client <DST_CLIENT_ID> --src-client <SRC_CLIENT_ID>
-
-DESCRIPTION:
-    Initialize a connection (ConnectionOpenInit)
-
-REQUIRED:
-        --src-chain <SRC_CHAIN_ID>      Identifier of the source chain
-        --src-client <SRC_CLIENT_ID>    Identifier of the source client
-        --dst-chain <DST_CHAIN_ID>      Identifier of the destination chain
-        --dst-client <DST_CLIENT_ID>    Identifier of the destination client
+{{#template ../../../templates/commands/hermes/help/tx/conn-init.md}}
 ```
 
 __Example__
@@ -93,31 +83,7 @@ A new connection has been initialized on `ibc-0` with identifier `connection-0`.
 Use the `conn-try` command to establish a counterparty to the connection on the other chain.
 
 ```shell
-USAGE:
-    hermes tx conn-try [OPTIONS] --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-client <DST_CLIENT_ID> --src-client <SRC_CLIENT_ID> --src-connection <SRC_CONNECTION_ID>
-
-DESCRIPTION:
-    Relay the connection attempt (ConnectionOpenTry)
-
-OPTIONS:
-        --dst-connection <DST_CONNECTION_ID>
-            Identifier of the destination connection (optional) [aliases: dst-conn]
-
-REQUIRED:
-        --src-chain <SRC_CHAIN_ID>
-            Identifier of the source chain
-
-        --src-client <SRC_CLIENT_ID>
-            Identifier of the source client
-
-        --src-connection <SRC_CONNECTION_ID>
-            Identifier of the source connection (required) [aliases: src-conn]
-
-        --dst-chain <DST_CHAIN_ID>
-            Identifier of the destination chain
-
-        --dst-client <DST_CLIENT_ID>
-            Identifier of the destination client
+{{#template ../../../templates/commands/hermes/help/tx/conn-try.md}}
 ```
 
 __Example__
@@ -167,30 +133,7 @@ A new connection has been created on `ibc-1` with identifier `connection-1`.
 Use the `conn-ack` command to acknowledge the connection on the initial chain.
 
 ```shell
-USAGE:
-    hermes tx conn-ack --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-client <DST_CLIENT_ID> --src-client <SRC_CLIENT_ID> --dst-connection <DST_CONNECTION_ID> --src-connection <SRC_CONNECTION_ID>
-
-DESCRIPTION:
-    Relay acknowledgment of a connection attempt (ConnectionOpenAck)
-
-REQUIRED:
-        --src-chain <SRC_CHAIN_ID>
-            Identifier of the source chain
-
-        --src-client <SRC_CLIENT_ID>
-            Identifier of the source client
-
-        --src-connection <SRC_CONNECTION_ID>
-            Identifier of the source connection (required) [aliases: src-conn]
-
-        --dst-chain <DST_CHAIN_ID>
-            Identifier of the destination chain
-
-        --dst-client <DST_CLIENT_ID>
-            Identifier of the destination client
-
-        --dst-connection <DST_CONNECTION_ID>
-            Identifier of the destination connection (required) [aliases: dst-conn]
+{{#template ../../../templates/commands/hermes/help/tx/conn-ack.md}}
 ```
 
 __Example__
@@ -239,30 +182,7 @@ Use the `conn-confirm` command to confirm that the connection has been acknowled
 and finish the handshake, after which the connection is open on both chains.
 
 ```shell
-USAGE:
-    hermes tx conn-confirm --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-client <DST_CLIENT_ID> --src-client <SRC_CLIENT_ID> --dst-connection <DST_CONNECTION_ID> --src-connection <SRC_CONNECTION_ID>
-
-DESCRIPTION:
-    Confirm opening of a connection (ConnectionOpenConfirm)
-
-REQUIRED:
-        --src-chain <SRC_CHAIN_ID>
-            Identifier of the source chain
-
-        --src-client <SRC_CLIENT_ID>
-            Identifier of the source client
-
-        --src-connection <SRC_CONNECTION_ID>
-            Identifier of the source connection (required) [aliases: src-conn]
-
-        --dst-chain <DST_CHAIN_ID>
-            Identifier of the destination chain
-
-        --dst-client <DST_CLIENT_ID>
-            Identifier of the destination client
-
-        --dst-connection <DST_CONNECTION_ID>
-            Identifier of the destination connection (required) [aliases: dst-conn]
+{{#template ../../../templates/commands/hermes/help/tx/conn-confirm.md}}
 ```
 
 __Example__

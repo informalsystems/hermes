@@ -22,20 +22,7 @@ hermes help keys
 The available sub-commands are the following:
 
 ```shell
-USAGE:
-    hermes keys <SUBCOMMAND>
-
-DESCRIPTION:
-    Manage keys in the relayer for each chain
-
-SUBCOMMANDS:
-    help       Get usage information
-    add        Adds key to a configured chain or restores a key to a configured chain
-                    using a mnemonic
-    balance    Query balance for a key from a configured chain. If no key is given, the
-                    key is retrieved from the configuration file
-    delete     Delete key(s) from a configured chain
-    list       List keys configured on a chain
+{{#template ../../../templates/commands/hermes/help/keys.md}}
 ```
 
 ### Key Seed file (Private Key)
@@ -70,43 +57,10 @@ The command `keys add` has two exclusive flags, `--key-file` and `--mnemonic-fil
 If a key with the same `key_name` already exists, the flag `--overwrite` must be passed in order to overwrite the existing key or else the command will abort.
 
 ```shell
-    hermes keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>
-
-    hermes keys add [OPTIONS] --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>
-
-DESCRIPTION:
-    Adds key to a configured chain or restores a key to a configured chain using a mnemonic
-
-OPTIONS:
-        --hd-path <HD_PATH>      Derivation path for this key [default: m/44'/118'/0'/0/0]
-        --key-name <KEY_NAME>    Name of the key (defaults to the `key_name` defined in the config)
-        --overwrite              Overwrite the key if there is already one with the same key name
-
-FLAGS:
-        --chain <CHAIN_ID>                 Identifier of the chain
-        --key-file <KEY_FILE>              Path to the key file
-        --mnemonic-file <MNEMONIC_FILE>    Path to file containing mnemonic to restore the key from
+{{#template ../../../templates/commands/hermes/help/keys/add.md}}
 ```
 
 #### Add a private key to a chain from a key file
-
-```shell
-    hermes keys add [OPTIONS] --chain <CHAIN_ID> --key-file <KEY_FILE>
-
-DESCRIPTION:
-    Adds key to a configured chain or restores a key to a configured chain using a mnemonic
-
-OPTIONS:
-        --hd-path <HD_PATH>      Derivation path for this key [default: m/44'/118'/0'/0/0]
-        --key-name <KEY_NAME>    Name of the key (defaults to the `key_name` defined in the config)
-        --overwrite              Overwrite the key if there is already one with the same key name
-
-FLAGS:
-        --chain <CHAIN_ID>                 Identifier of the chain
-        --key-file <KEY_FILE>              Path to the key file
-```
-
-To add a private key file to a chain:
 
 ```shell
 hermes --config config.toml keys add --chain [CHAIN_ID] --key-file [PRIVATE_KEY_FILE]
@@ -139,24 +93,6 @@ Success: Added key testkey ([ADDRESS]) on [CHAIN ID] chain
 > ```
 
 #### Restore a private key to a chain from a mnemonic
-
-```shell
-    hermes keys add [OPTIONS] --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>
-
-DESCRIPTION:
-    Adds key to a configured chain or restores a key to a configured chain using a mnemonic
-
-OPTIONS:
-        --hd-path <HD_PATH>      Derivation path for this key [default: m/44'/118'/0'/0/0]
-        --key-name <KEY_NAME>    Name of the key (defaults to the `key_name` defined in the config)
-        --overwrite              Overwrite the key if there is already one with the same key name
-
-FLAGS:
-        --chain <CHAIN_ID>                 Identifier of the chain
-        --mnemonic-file <MNEMONIC_FILE>    Path to file containing mnemonic to restore the key from
-```
-
-To restore a key from its mnemonic:
 
 ```shell
 hermes --config config.toml keys add --chain [CHAIN_ID] --mnemonic-file "[MNEMONIC_FILE]"
@@ -194,18 +130,7 @@ Success: Restore key testkey ([ADDRESS]) on [CHAIN ID] chain
 In order to delete the private keys added to chains use the `keys delete` command
 
 ```shell
-USAGE:
-    hermes keys delete [OPTIONS] --chain <CHAIN_ID>
-
-DESCRIPTION:
-    hermes keys delete --chain <CHAIN_ID> --key-name <KEY_NAME>
-
-    hermes keys delete --chain <CHAIN_ID> --all
-
-FLAGS:
-        --all                    Delete all keys
-        --chain <CHAIN_ID>       Identifier of the chain
-        --key-name <KEY_NAME>    Name of the key
+{{#template ../../../templates/commands/hermes/help/keys/delete.md}}
 ```
 
 #### Delete private keys that was previously added to a chain
@@ -227,14 +152,7 @@ hermes --config config.toml keys delete --chain [CHAIN_ID] --all
 In order to list the private keys added to chains use the `keys list` command
 
 ```shell
-USAGE:
-    hermes keys list --chain <CHAIN_ID>
-
-DESCRIPTION:
-    List keys configured on a chain
-
-REQUIRED:
-        --chain <CHAIN_ID>    Identifier of the chain
+{{#template ../../../templates/commands/hermes/help/keys/list.md}}
 ```
 
 #### Listing the private key that was added to a chain
@@ -287,18 +205,7 @@ If the command is successful a message similar to the one below will be displaye
 In order to retrieve the balance of an account associated with a key use the `keys balance` command
 
 ```shell
-USAGE:
-    hermes keys balance [OPTIONS] --chain <CHAIN_ID>
-
-DESCRIPTION:
-    Query balance for a key from a configured chain. If no key is given, the key is retrieved from the configuration file
-
-OPTIONS:
-        --key-name <KEY_NAME>    (optional) name of the key (defaults to the `key_name` defined in
-                                 the config)
-
-REQUIRED:
-        --chain <CHAIN_ID>    Identifier of the chain
+{{#template ../../../templates/commands/hermes/help/keys/balance.md}}
 ```
 
 If the command is successful a message with the following format will be displayed:

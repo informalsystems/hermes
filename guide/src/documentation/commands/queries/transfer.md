@@ -3,14 +3,7 @@
 Use the `query transfer` command to query information about transfer(s).
 
 ```shell
-USAGE:
-    hermes query transfer <SUBCOMMAND>
-
-DESCRIPTION:
-    Query information about token transfers
-
-SUBCOMMANDS:
-    denom-trace    Query the denomination trace info from a trace hash
+{{#template ../../../templates/commands/hermes/help/query/transfer.md}}
 ```
 
 ## Table of Contents
@@ -22,15 +15,7 @@ SUBCOMMANDS:
 Use the `query transfer denom-trace` command to obtain the path and base denomination of a given trace hash.
 
 ```shell
-USAGE:
-    hermes query transfer denom-trace --chain <CHAIN_ID> --hash <HASH>
-
-DESCRIPTION:
-    Query the denomination trace info from a trace hash
-
-REQUIRED:
-        --chain <CHAIN_ID>    Identifier of the chain
-        --hash <HASH>         Trace hash to query
+{{#template ../../../templates/commands/hermes/help/query/transfer/denom-trace.md}}
 ```
 
 __Example__

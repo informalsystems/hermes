@@ -16,7 +16,7 @@ The `tx` command provides the following sub-commands:
 | `chan-open-confirm`    | [Confirm opening of a channel (ChannelOpenConfirm)](./channel-open.md#channel-open-close)                  |
 | `chan-close-init`      | [Initiate the closing of a channel (ChannelCloseInit)](./channel-close.md#channel-close-init)              |
 | `chan-close-confirm`   | [Confirm the closing of a channel (ChannelCloseConfirm)](./channel-close.md#channel-close-confirm)         |
-| `ft-transfer`          | [Send a fungible token transfer test transaction (ICS20 MsgTransfer](./packet.md#fungible-token-transfer)  |
+| `ft-transfer`          | [Send a fungible token transfer test transaction (ICS20 MsgTransfer)](./packet.md#fungible-token-transfer)  |
 | `packet-recv`          | [Relay receive or timeout packets](./packet.md#relay-receive-and-timeout-packets)                          |
 | `packet-ack`           | [Relay acknowledgment packets](./packet.md#relay-acknowledgment-packets)                                   |
 | `upgrade-chain`        | [Send an IBC upgrade plan](./upgrade.md)
@@ -57,26 +57,6 @@ In the command template above:
 ## Usage
 
 ```shell
-USAGE:
-    hermes tx <SUBCOMMAND>
+{{#template ../../../templates/commands/hermes/help/tx.md}}
 
-DESCRIPTION:
-    Raw commands for sending transactions to a configured chain.
-
-SUBCOMMANDS:
-    help                Get usage information
-    conn-init           Initialize a connection (ConnectionOpenInit)
-    conn-try            Relay the connection attempt (ConnectionOpenTry)
-    conn-ack            Relay acknowledgment of a connection attempt (ConnectionOpenAck)
-    conn-confirm        Confirm opening of a connection (ConnectionOpenConfirm)
-    chan-open-init      Initialize a channel (ChannelOpenInit)
-    chan-open-try       Relay the channel attempt (ChannelOpenTry)
-    chan-open-ack       Relay acknowledgment of a channel attempt (ChannelOpenAck)
-    chan-open-confirm   Confirm opening of a channel (ChannelOpenConfirm)
-    chan-close-init     Initiate the closing of a channel (ChannelCloseInit)
-    chan-close-confirm  Confirm the closing of a channel (ChannelCloseConfirm)
-    ft-transfer         Send a fungible token transfer test transaction (ICS20 MsgTransfer)
-    packet-recv         Relay receive or timeout packets
-    packet-ack          Relay acknowledgment packets
-    upgrade-chain       Send an IBC upgrade plan
 ```

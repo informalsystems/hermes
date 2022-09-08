@@ -4,14 +4,7 @@ Use the `query tx` command to query information about transaction(s).
 
 
 ```shell
-USAGE:
-    hermes query tx <SUBCOMMAND>
-
-DESCRIPTION:
-    Query information about transactions
-
-SUBCOMMANDS:
-    events     Query the events emitted by transaction
+{{#template ../../../templates/commands/hermes/help/query/tx.md}}
 ```
 
 ## Table of Contents
@@ -25,15 +18,7 @@ Use the `query tx events` command to obtain a list of events that a chain genera
 delivering a transaction.
 
 ```shell
-USAGE:
-    hermes query tx events --chain <CHAIN_ID> --hash <HASH>
-
-DESCRIPTION:
-    Query the events emitted by transaction
-
-REQUIRED:
-        --chain <CHAIN_ID>    Identifier of the chain to query
-        --hash <HASH>         Transaction hash to query
+{{#template ../../../templates/commands/hermes/help/query/tx/events.md}}
 ```
 
 __Example__

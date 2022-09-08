@@ -11,16 +11,7 @@ hermes help config
 The available sub-commands are the following:
 
 ```shell
-USAGE:
-    hermes config <SUBCOMMAND>
-
-OPTIONS:
-    -h, --help    Print help information
-
-SUBCOMMANDS:
-    auto        Automatically generate a relayer configuration file
-    help        Print this message or the help of the given subcommand(s)
-    validate    Validate the relayer configuration
+{{#template ../../templates/commands/hermes/help/config.md}}
 ```
 
 ### Automatically generate configuration
@@ -29,23 +20,7 @@ Use `config auto` to automatically generate a configuration file from the [chain
 > __WARNING__: Currently, gas parameters are set to default value and require to be set manually.
 
 ```
-USAGE:
-    hermes config auto [OPTIONS] --output <PATH> --chains <CHAIN_NAME_1[:<KEY1>] CHAIN_NAME_2[:<KEY2>]> [--commit <COMMIT_HASH>]
-
-OPTIONS:
-        --commit <COMMIT_HASH>    Commit hash from which the chain configs will be generated. If
-                                  it's not set, the latest commit will be used.
-    -h, --help                    Print help information
-
-REQUIRED:
-        --chains <CHAIN_NAME_1 CHAIN_NAME_2...>
-            Names of the chains to include in the config. Every chain must be in the chain registry.
-
-        --path <PATH>
-            Path to the configuration file
-
-DESCRIPTION:
-    Automatically generate a configuration file by fetching data from the chain-registry. If a pair of chains exists in the _IBC folder of the chain-registry then a corresponding packet filter is added to the configuration
+{{#template ../../templates/commands/hermes/help/config/auto.md}}
 ```
 
 __Example__
@@ -80,11 +55,7 @@ Use `config validate` to perform a quick syntactic validation of
 your configuration file.
 
 ```shell
-USAGE:
-    hermes config validate
-
-DESCRIPTION:
-    validate the relayer configuration
+{{#template ../../templates/commands/hermes/help/config/validate.md}}
 ```
 
 __Example__

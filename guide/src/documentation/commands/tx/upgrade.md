@@ -9,40 +9,7 @@
 Use this to make an upgrade proposal.
 
 ```shell
-USAGE:
-    hermes tx upgrade-chain [OPTIONS] --reference-chain <REFERENCE_CHAIN_ID> --host-chain <HOST_CHAIN_ID> --host-client <HOST_CLIENT_ID> --amount <AMOUNT> --height-offset <HEIGHT_OFFSET>
-
-DESCRIPTION:
-    Send an IBC upgrade plan
- 
-OPTIONS:
-        --denom <DENOM>
-            Denomination for the deposit (default: 'stake')
-
-        --new-chain <CHAIN_ID>
-            New chain identifier to assign to the upgrading chain (optional)
-
-        --new-unbonding <UNBONDING_PERIOD>
-            New unbonding period to assign to the upgrading chain, in seconds (optional)
-
-        --upgrade-name <UPGRADE_NAME>
-            A string to name the upgrade proposal plan (default: 'plan')
-
-REQUIRED:
-        --amount <AMOUNT>
-            Amount of stake
-
-        --height-offset <HEIGHT_OFFSET>
-            Upgrade height offset in number of blocks since current
-
-        --reference-chain <REFERENCE_CHAIN_ID>
-            Identifier of the chain to upgrade
-
-        --host-chain <HOST_CHAIN_ID>
-            Identifier of the source chain
-
-        --host-client <HOST_CLIENT_ID>
-            Identifier of the client on source chain from which the plan is created
+{{#template ../../../templates/commands/hermes/help/tx/upgrade-chain.md}}
 ```
 
 __Example__

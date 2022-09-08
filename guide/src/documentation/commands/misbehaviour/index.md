@@ -9,16 +9,7 @@ submit evidence to the chain. If the evidence passes the on-chain validation, th
 cannot be relayed using the frozen client.
 
 ```shell
-USAGE:
-    hermes misbehaviour --chain <CHAIN_ID> --client <CLIENT_ID>
-
-DESCRIPTION:
-    Listen to client update IBC events and handles misbehaviour
-
-REQUIRED:
-        --chain <CHAIN_ID>      Identifier of the chain where client updates are monitored for
-                                misbehaviour
-        --client <CLIENT_ID>    Identifier of the client to be monitored for misbehaviour
+{{#template ../../../templates/commands/hermes/help/misbehaviour.md}}
 ```
 
 The misbehaviour monitor starts by analyzing all headers used in prior client updates.
@@ -34,7 +25,7 @@ The following types of misbehaviour are handled:
     Assumes at least one consensus state before the fork point exists.
     Let existing consensus states on chain B be: `[Sn,.., Sf, Sf-1, S0]` with `Sf-1` being
     the most recent state before the fork.
-    Chain A is queried for a header `Hf'` at `Sf.height` and if it is different than the `Hf`
+    Chain A is queried for a header `Hf'` at `Sf.height` and if it is different from the `Hf`
     in the event for the client update (the one that has generated `Sf` on chain), then the two
     headers are included in the evidence and submitted.
     Note that in this case the headers are different but have the same height.
@@ -42,7 +33,7 @@ The following types of misbehaviour are handled:
 2. **BFT time violation for an unavailable header**
 
     Some header with a height that is higher than the latest
-    height on chain `A` has been accepted and a consensus state was created on `B`. Note that this implies
+    height on chain `A` has been accepted and, a consensus state was created on `B`. Note that this implies
     that the timestamp of this header must be within the `clock_drift` of the client.
     Assume the client on `B` has been updated with `h2`(not present on/ produced by chain `A`)
     and it has a timestamp of `t2` that is at most `clock_drift` in the future.

@@ -14,30 +14,12 @@ This section describes a number of commands that can be used to manage clients, 
 Use the `create` commands to create new clients, connections, and channels.
 
 ```shell
-USAGE:
-    hermes create <SUBCOMMAND>
-
-DESCRIPTION:
-    Create objects (client, connection, or channel) on chains
-
-SUBCOMMANDS:
-    channel       Create a new channel between two chains using a pre-existing connection
-    client        Create a new IBC client
-    connection    Create a new connection between two chains
-    help          Print this message or the help of the given subcommand(s)
+{{#template ../../../templates/commands/hermes/help/create.md}}
 ```
 
 ## Update
 Use the `update` commands to update a client.
 
 ```shell
-USAGE:
-    hermes update <SUBCOMMAND>
-
-DESCRIPTION:
-    Update objects (clients) on chains
-
-SUBCOMMANDS:
-    help       Get usage information
-    client     Update an IBC client
+{{#template ../../../templates/commands/hermes/help/update.md}}
 ```

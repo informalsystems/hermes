@@ -5,21 +5,7 @@ Use the `query packet` commands to query information about packets.
 
 
 ```shell
-USAGE:
-    hermes query packet <SUBCOMMAND>
-
-OPTIONS:
-    -h, --help    Print help information
-
-SUBCOMMANDS:
-    ack                   Query packet acknowledgment
-    acks                  Query packet acknowledgments
-    commitment            Query packet commitment
-    commitments           Query packet commitments
-    pending               Output a summary of pending packets in both directions
-    pending-acks          Query pending acknowledgments
-    pending-sends         Query pending packets
-    help                  Print this message or the help of the given subcommand(s)
+{{#template ../../../templates/commands/hermes/help/query/packet.md}}
 ```
 
 ## Table of Contents
@@ -32,17 +18,7 @@ SUBCOMMANDS:
 Use the `query packet pending` command to query the sequence numbers of all packets that have not yet been received or acknowledged, at both ends of a channel.
 
 ```shell
-USAGE:
-    hermes query packet pending --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
-
-DESCRIPTION:
-    Output a summary of pending packets in both directions
-
-REQUIRED:
-        --chain <CHAIN_ID>        Identifier of the chain at one end of the channel
-        --channel <CHANNEL_ID>    Channel identifier on the chain given by <CHAIN_ID> [aliases:
-                                  chan]
-        --port <PORT_ID>          Port identifier on the chain given by <CHAIN_ID>
+{{#template ../../../templates/commands/hermes/help/query/packet/pending.md}}
 ```
 
 __Example__
@@ -88,16 +64,7 @@ Success: Summary {
 Use the `query packet commitments` command to query the sequence numbers of all packets that have been sent but not yet acknowledged (these are the packets that still have their commitments stored).
 
 ```shell
-USAGE:
-    hermes query packet commitments --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
-
-DESCRIPTION:
-    Query packet commitments
-
-REQUIRED:
-        --chain <CHAIN_ID>        Identifier of the chain to query
-        --channel <CHANNEL_ID>    Identifier of the channel to query [aliases: chan]
-        --port <PORT_ID>          Identifier of the port to query
+{{#template ../../../templates/commands/hermes/help/query/packet/commitments.md}}
 ```
 
 __Example__
@@ -127,20 +94,7 @@ Success: PacketSeqs {
 Use the `query packet commitment` command to query the commitment value of a packet with a given sequence number.
 
 ```shell
-USAGE:
-    hermes query packet commitment [OPTIONS] --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID> --sequence <SEQUENCE>
-
-DESCRIPTION:
-    Query packet commitment
-
-OPTIONS:
-        --height <HEIGHT>    Height of the state to query. Leave unspecified for latest height.
-
-REQUIRED:
-        --chain <CHAIN_ID>        Identifier of the chain to query
-        --channel <CHANNEL_ID>    Identifier of the channel to query [aliases: chan]
-        --port <PORT_ID>          Identifier of the port to query
-        --sequence <SEQUENCE>     Sequence of packet to query [aliases: seq]
+{{#template ../../../templates/commands/hermes/help/query/packet/commitment.md}}
 ```
 
 __Example__
@@ -157,19 +111,10 @@ Success: "F9458DC7EBEBCD6D18E983FCAB5BD752CC2A74532BBD50B812DB229997739EFC"
 
 ## Packet Acknowledgments
 
-Use the `query packet acknowledgments` command to query the sequence numbers of all packets that have been acknowledged.
+Use the `query packet acks` command to query the sequence numbers of all packets that have been acknowledged.
 
 ```shell
-USAGE:
-    hermes query packet acks --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
-
-DESCRIPTION:
-    Query packet acknowledgments
-
-REQUIRED:
-        --chain <CHAIN_ID>        Identifier of the chain to query
-        --channel <CHANNEL_ID>    Identifier of the channel to query [aliases: chan]
-        --port <PORT_ID>          Identifier of the port to query
+{{#template ../../../templates/commands/hermes/help/query/packet/acks.md}}
 ```
 
 __Example__
@@ -199,20 +144,7 @@ Success: PacketSeqs {
 Use the `query packet acknowledgment` command to query the acknowledgment value of a packet with a given sequence number.
 
 ```shell
-USAGE:
-    hermes query packet ack [OPTIONS] --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID> --sequence <SEQUENCE>
-
-DESCRIPTION:
-    Query packet acknowledgment
-
-OPTIONS:
-        --height <HEIGHT>    Height of the state to query. Leave unspecified for latest height.
-
-REQUIRED:
-        --chain <CHAIN_ID>        Identifier of the chain to query
-        --channel <CHANNEL_ID>    Identifier of the channel to query [aliases: chan]
-        --port <PORT_ID>          Identifier of the port to query
-        --sequence <SEQUENCE>     Sequence of packet to query [aliases: seq]
+{{#template ../../../templates/commands/hermes/help/query/packet/ack.md}}
 ```
 
 __Example__
@@ -232,16 +164,7 @@ Success: "08F7557ED51826FE18D84512BF24EC75001EDBAF2123A477DF72A0A9F3640A7C"
 Use the `query packet pending-sends` command to query the sequence numbers of all packets that have been sent on the source chain but not yet received on the destination chain.
 
 ```shell
-USAGE:
-    hermes query packet pending-sends --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
-
-DESCRIPTION:
-    Query pending packets
-
-REQUIRED:
-        --chain <CHAIN_ID>        Identifier of the chain for the pending sequences
-        --channel <CHANNEL_ID>    Channel identifier [aliases: chan]
-        --port <PORT_ID>          Port identifier
+{{#template ../../../templates/commands/hermes/help/query/packet/pending-sends.md}}
 ```
 
 __Example__
@@ -265,16 +188,7 @@ Success: [
 Use the `query packet pending-acks` command to query the sequence numbers of all packets that have not yet been acknowledged.
 
 ```shell
-USAGE:
-    hermes query packet pending-acks --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
-
-DESCRIPTION:
-    Query pending acknowledgments
-
-REQUIRED:
-        --chain <CHAIN_ID>        Identifier of the chain to query the pending acknowledgments
-        --channel <CHANNEL_ID>    Channel identifier [aliases: chan]
-        --port <PORT_ID>          Port identifier
+{{#template ../../../templates/commands/hermes/help/query/packet/pending-acks.md}}
 ```
 
 __Example__

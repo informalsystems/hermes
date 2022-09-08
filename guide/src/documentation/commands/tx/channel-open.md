@@ -34,31 +34,7 @@ sequenceDiagram
 Use the `chan-open-init` command to initialize a new channel.
 
 ```shell
-USAGE:
-    hermes tx chan-open-init [OPTIONS] --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-connection <DST_CONNECTION_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID>
-
-DESCRIPTION:
-    Initialize a channel (ChannelOpenInit)
-
-OPTIONS:
-        --order <ORDER>    The channel ordering, valid options 'unordered' (default) and 'ordered'
-                           [default: ORDER_UNORDERED]
-
-REQUIRED:
-        --src-chain <SRC_CHAIN_ID>
-            Identifier of the source chain
-
-        --src-port <SRC_PORT_ID>
-            Identifier of the source port
-
-        --dst-chain <DST_CHAIN_ID>
-            Identifier of the destination chain
-
-        --dst-connection <DST_CONNECTION_ID>
-            Identifier of the destination connection [aliases: dst-conn]
-
-        --dst-port <DST_PORT_ID>
-            Identifier of the destination port
+{{#template ../../../templates/commands/hermes/help/tx/chan-open-init.md}}
 ```
 
 __Example__
@@ -107,34 +83,7 @@ A new channel has been initialized on `ibc-1` with identifier `channel-0`.
 Use the `chan-open-try` command to establish a counterparty to the channel on the other chain.
 
 ```shell
-USAGE:
-    hermes tx chan-open-try [OPTIONS] --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-connection <DST_CONNECTION_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID> --src-channel <SRC_CHANNEL_ID>
-
-DESCRIPTION:
-    Relay the channel attempt (ChannelOpenTry)
-
-OPTIONS:
-        --dst-channel <DST_CHANNEL_ID>    Identifier of the destination channel (optional) [aliases:
-                                      b-chan]
-
-REQUIRED:
-        --src-chain <SRC_CHAIN_ID>
-            Identifier of the source chain
-
-        --src-channel <SRC_CHANNEL_ID>
-            Identifier of the source channel (required) [aliases: src-chan]
-
-        --src-port <SRC_PORT_ID>
-            Identifier of the source port
-
-        --dst-chain <DST_CHAIN_ID>
-            Identifier of the destination chain
-
-        --dst-connection <DST_CONNECTION_ID>
-            Identifier of the destination connection [aliases: dst-conn]
-
-        --dst-port <DST_PORT_ID>
-            Identifier of the destination port
+{{#template ../../../templates/commands/hermes/help/tx/chan-open-try.md}}
 ```
 
 __Example__
@@ -187,33 +136,7 @@ A new channel has been created on `ibc-1` with identifier `channel-1`.
 Use the `chan-open-ack` command to acknowledge the channel on the initial chain.
 
 ```shell
-USAGE:
-    hermes tx chan-open-ack --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-connection <DST_CONNECTION_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID> --dst-channel <DST_CHANNEL_ID> --src-channel <SRC_CHANNEL_ID>
-
-DESCRIPTION:
-    Relay acknowledgment of a channel attempt (ChannelOpenAck)
-
-REQUIRED:
-        --src-chain <SRC_CHAIN_ID>
-            Identifier of the source chain
-
-        --src-channel <SRC_CHANNEL_ID>
-            Identifier of the source channel (required) [aliases: src-chan]
-
-        --src-port <SRC_PORT_ID>
-            Identifier of the source port
-
-        --dst-chain <DST_CHAIN_ID>
-            Identifier of the destination chain
-
-        --dst-channel <DST_CHANNEL_ID>
-            Identifier of the destination channel (required) [aliases: dst-chan]
-
-        --dst-connection <DST_CONNECTION_ID>
-            Identifier of the destination connection [aliases: dst-conn]
-
-        --dst-port <DST_PORT_ID>
-            Identifier of the destination port
+{{#template ../../../templates/commands/hermes/help/tx/chan-open-ack.md}}
 ```
 
 __Example__
@@ -265,33 +188,7 @@ Use the `chan-open-confirm` command to confirm that the channel has been acknowl
 and finish the handshake, after which the channel is open on both chains.
 
 ```shell
-USAGE:
-    hermes tx chan-open-confirm --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --dst-connection <DST_CONNECTION_ID> --dst-port <DST_PORT_ID> --src-port <SRC_PORT_ID> --dst-channel <DST_CHANNEL_ID> --src-channel <SRC_CHANNEL_ID>
-
-DESCRIPTION:
-    Confirm opening of a channel (ChannelOpenConfirm)
-
-REQUIRED:
-        --src-chain <SRC_CHAIN_ID>
-            Identifier of the source chain
-
-        --src-channel <SRC_CHANNEL_ID>
-            Identifier of the source channel (required) [aliases: src-chan]
-
-        --src-port <SRC_PORT_ID>
-            Identifier of the source port
-
-        --dst-chain <DST_CHAIN_ID>
-            Identifier of the destination chain
-
-        --dst-channel <DST_CHANNEL_ID>
-            Identifier of the destination channel (required) [aliases: dst-chan]
-
-        --dst-connection <DST_CONNECTION_ID>
-            Identifier of the destination connection [aliases: dst-conn]
-
-        --dst-port <DST_PORT_ID>
-            Identifier of the destination port
+{{#template ../../../templates/commands/hermes/help/tx/chan-open-confirm.md}}
 ```
 
 __Example__

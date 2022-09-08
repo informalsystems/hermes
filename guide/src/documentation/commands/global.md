@@ -23,7 +23,7 @@ hermes <GLOBAL_OPTIONS> subcommand <OPTIONS>
 
 __Example__
 
-To `start` the relayer using the configuration file at `/home/my_chain.toml` and enable JSON output:
+To `start` Hermes using the configuration file at `/home/my_chain.toml` and enable JSON output:
 
 ```shell
 hermes --config /home/my_chain.toml --json start
@@ -37,7 +37,7 @@ hermes --json query clients --host-chain ibc-1
 
 ## JSON output
 
-If the `--json` option is supplied, all relayer commands will output single-line JSON values instead of plain text.
+If the `--json` option is supplied, all commands will output single-line JSON values instead of plain text.
 
 Log messages will be written to `stderr`, while the final result will be written to `stdout`, and everything
 will be formatted as JSON.
