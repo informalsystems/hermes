@@ -1,0 +1,1 @@
+[[#BINARY hermes]] tx [[#SUBCOMMAND]]

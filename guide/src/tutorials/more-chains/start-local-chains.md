@@ -35,7 +35,7 @@ rm -r $HOME/.gm/node-*
 rm -r $HOME/.gm/ibc-*
 ```
 
-Copy and paste the configuration below to `{{#template ../../templates/path/gm/default_path}}` and set Hermes' binary path according to your setup. The following contains the configuration of 4 IBC-enabled chains.
+Copy and paste the configuration below to `{{#template ../../templates/path/gm/default_path.md}}` and set Hermes' binary path according to your setup. The following contains the configuration of 4 IBC-enabled chains.
 
 __gm.toml__
 
@@ -148,7 +148,7 @@ SUCCESS Added key 'wallet1' (cosmos15jxyjskrx7s8yqpfn3xddlrx7qcq0f8r69mp4g) on c
 ```
 
 > __TROUBLESHOOTING__: 
-> - If the command does not out output anything, make sure the path to Hermes' binary is set in `{{#template ../../templates/path/gm/default_path}}`.
+> - If the command does not out output anything, make sure the path to Hermes' binary is set in `{{#template ../../templates/path/gm/default_path.md}}`.
 
 ### The `$HOME/.gm` directory
 

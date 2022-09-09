@@ -1,0 +1,1 @@
+[[#BINARY hermes]] query packet [[#SUBCOMMAND]]

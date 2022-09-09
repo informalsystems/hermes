@@ -67,13 +67,13 @@ entries to your PATH environment variable. If you don't want to use this, you ca
 your path.
 
 ### The configuration: `gm.toml`
-**Where**: `{{#template ../../templates/path/gm/default_path}}`.
+**Where**: `{{#template ../../templates/path/gm/default_path.md}}`.
 
 **Description**: This file contains all the high-level node configuration that `gm` is aware of. Note that all entries under `[global]` are also valid entries under any `[node]` header, and can be used to override the global entries for specific nodes/validators.
 
 **Entries**: All entries are defined and documented in the `scripts/gm/gm.toml` example configuration file.
 
-Copy and paste below to `{{#template ../../templates/path/gm/default_path}}` and set Hermes' binary path according to your setup.
+Copy and paste below to `{{#template ../../templates/path/gm/default_path.md}}` and set Hermes' binary path according to your setup.
 
 The following configuration you need to specify 2 `gaiad` chains. `hermes` will know about these chains.
 

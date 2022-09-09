@@ -59,7 +59,7 @@ node-1 started, PID: 12885, LOG: $HOME/.gm/node-1/log
 Run the following command to check the status of the chains:
 
 ```bash
-{{#template ../../templates/commands/gm/status.md.md}}
+{{#template ../../templates/commands/gm/status.md}}
 ```
 
 If the command is successful, you should see a message similar to:
@@ -176,7 +176,7 @@ SUCCESS Added key 'wallet1' (cosmos1dsrj2uqjvtssenkwperuvfkgkg2xvmydvpzswy) on c
 ```
 
 > __TROUBLESHOOTING__: 
-> - If the command does not out output anything, make sure the path to Hermes' binary is set in `{{#template ../../templates/path/gm/default_path}}`.
+> - If the command does not out output anything, make sure the path to Hermes' binary is set in `{{#template ../../templates/path/gm/default_path.md}}`.
 
 ### The `$HOME/.gm` directory
 

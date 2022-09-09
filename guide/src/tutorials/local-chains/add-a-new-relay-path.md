@@ -38,7 +38,7 @@ You will need to first create a client on both chains and then establish a conne
 First, create a client on `ibc-1` tracking the state of `ibc-0`. It will be assigned `07-tendermint-0` as its identifier:
 
 ```shell
-{{#template ../../templates/commands/hermes/create/client.md HOST_CHAIN_ID=ibc-1 REFERENCE_CHAIN_ID=ibc-0}}
+{{#template ../../templates/commands/hermes/create/client_1.md HOST_CHAIN_ID=ibc-1 REFERENCE_CHAIN_ID=ibc-0}}
 ```
 
 If the command is successful, the output should be similar to:
@@ -62,7 +62,7 @@ SUCCESS CreateClient(
 Now, create a client on `ibc-0` tracking `ibc-1`:
 
 ```shell
-{{#template ../../templates/commands/hermes/create/client.md HOST_CHAIN_ID=ibc-0 REFERENCE_CHAIN_ID=ibc-1}}
+{{#template ../../templates/commands/hermes/create/client_1.md HOST_CHAIN_ID=ibc-0 REFERENCE_CHAIN_ID=ibc-1}}
 ```
 If the command is successful, the output should be similar to:
 ```json
@@ -304,7 +304,7 @@ SUCCESS Connection {
 Finally, after the connection has been established, you can now open a new channel on top of it. Both chains will assign `channel-0` as the identifier of their first channel:
 
 ```shell
-{{#template ../../templates/commands/hermes/create/channel.md A_CHAIN_ID=ibc-0 A_CONNECTION_ID=connection-0 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel_1.md A_CHAIN_ID=ibc-0 A_CONNECTION_ID=connection-0 A_PORT_ID=transfer B_PORT_ID=transfer}}
 ```
 >__NOTE__: Again, you do not need to specify the counterparty chain as a connection can only be established with a single counterparty. The `port` specifies the protocol which will be used on this channel. 
 
@@ -547,7 +547,7 @@ SUCCESS Channel {
 You can visualize the topology of the current network with: 
 
 ```shell
-{{#template ../../templates/commands/hermes/query/channels.md OPTIONS=--show-counterparty CHAIN=ibc-0}}
+{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS=--show-counterparty CHAIN=ibc-0}}
 ```
 
 If all the commands were successful, this command should output : 

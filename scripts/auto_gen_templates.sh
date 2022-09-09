@@ -169,19 +169,28 @@ function generate_templates(){
         if [ $path != "help" ]; then
             # Create the directory (if they don't exist) and the file
             command=$(echo "$path" | sed -e 's/\// /g')
-            filename="$COMMAND_DIR$path.md"
-            dir="${filename%/*}"
+
+            local tmp="$COMMAND_DIR$path"
+            local dir="${tmp%/*}"
             mkdir -p $dir
-            cargo run -q --bin hermes $command --help | sed '0,/^USAGE.*/d' | head -n 1 | sed -r 's/^\s+//; s/[<\[]/[[#/g ; s/]/]]/g ; s/>/]]/g; s/hermes/[[#BINARY hermes]]/' > $TMP_PATH
-            if ! cmp -s $TMP_PATH $filename; then
-                if [ $MODE = "update" ]; then
-                    mv $TMP_PATH $filename
-                    echo "$filename was updated."
-                else
-                    >&2 echo "$filename is not up to date."
-                    OUTPUT=1
+
+            local cpt=1
+            cargo run -q --bin hermes $command --help | sed -n '/USAGE:/, /OPTIONS:/{ /USAGE:/! { /OPTIONS:/! p }}'  | sed -r '/^\s*$/d ;s/^\s+//; s/</[[#/ ; s/]/]]/g ; s/>/]]/g; s/hermes/[[#BINARY hermes]]/ ; s/\[OPTIONS]/\[\[#OPTIONS]]/ ;' | while read line || [[ -n $line ]]
+            do
+                # Create a template for every usage
+                filename=$COMMAND_DIR$path"_$cpt.md"
+                echo $line > $TMP_PATH
+                local cpt=$((cpt+1))
+                if ! cmp -s $TMP_PATH $filename; then
+                    if [ $MODE = "update" ]; then
+                        mv $TMP_PATH $filename
+                        echo "$filename was updated."
+                    else
+                        >&2 echo "$filename is not up to date."
+                        OUTPUT=1
+                    fi
                 fi
-            fi
+            done
         fi
     done
 }

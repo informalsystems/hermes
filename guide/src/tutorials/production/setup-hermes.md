@@ -36,7 +36,7 @@ Then, you need to create a configuration file for Hermes (more details in the [d
 The command `hermes config auto` provides a way to automatically generate a configuration file for chains in the [chain-registry](https://github.com/cosmos/chain-registry):
 
 ```shell
-{{#template ../../templates/commands/hermes/config/auto_todo.md PATH=$HOME/.hermes/config.toml chains=cosmoshub:keyhub osmosis:keyosmosis}}
+{{#template ../../templates/commands/hermes/config/auto.md PATH=$HOME/.hermes/config.toml CHAIN_NAME[:<KEY_NAME>]...=cosmoshub:keyhub osmosis:keyosmosis}}
 ```
 >__NOTE__: This command also automatically finds IBC paths and generates packet filters from the [_IBC](https://github.com/cosmos/chain-registry/tree/master/_IBC) folder in the chain-registry.
 
@@ -70,12 +70,12 @@ For the tutorial, we will follow the [example of Crypto Crew](https://github.com
 
 - For Cosmoshub:
 ```toml
-{{#template ../../templates/files/hermes/production/default_gas_cosmoshub}}
+{{#template ../../templates/files/hermes/production/default_gas_cosmoshub.toml}}
 ```
 
 - For Osmosis:
 ```toml
-{{#template ../../templates/files/hermes/production/default_gas_osmosis}}
+{{#template ../../templates/files/hermes/production/default_gas_osmosis.toml}}
 ```
 
 >__NOTE__: `max_msg_nums` defines the number of messages that can be sent in the same transaction. 

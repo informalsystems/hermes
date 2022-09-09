@@ -108,10 +108,10 @@ flowchart TD
 You can verify that everything is correct with the commands:
 
 ```shell
-{{#template ../../templates/commands/hermes/query/channels OPTIONS=--show-counterparty CHAIN=ibc-0}}
-{{#template ../../templates/commands/hermes/query/channels OPTIONS=--show-counterparty CHAIN=ibc-1}}
-{{#template ../../templates/commands/hermes/query/channels OPTIONS=--show-counterparty CHAIN=ibc-2}}
-{{#template ../../templates/commands/hermes/query/channels OPTIONS=--show-counterparty CHAIN=ibc-3}}
+{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS=--show-counterparty CHAIN=ibc-0}}
+{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS=--show-counterparty CHAIN=ibc-1}}
+{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS=--show-counterparty CHAIN=ibc-2}}
+{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS=--show-counterparty CHAIN=ibc-3}}
 ```
 
 Which should normally output: 
@@ -188,7 +188,7 @@ At this point, your config file should look like this:
 It is also possible to check that the configuration file is valid with the command:
 
 ```shell
-{{#template ../../templates/commands/hermes/config_validate.md}}
+{{#template ../../templates/commands/hermes/config/validate.md}}
 ```
 
 If the command runs successfully, the output should be:

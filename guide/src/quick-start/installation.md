@@ -43,7 +43,7 @@ The step-by-step instruction below should carry you through the whole process:
 You should now be able to run Hermes by invoking the `hermes` executable.
 
 ```shell
-{{#template ../templates/commands/hermes/version.md}}
+{{#template ../templates/commands/hermes/version_1.md}}
 ```
 
 Which should be:
@@ -79,7 +79,7 @@ This will download and build the crate `ibc-relayer-cli`, and install the
 You should now be able to run Hermes by invoking the `hermes` executable.
 
 ```shell
-{{#template ../templates/commands/hermes/version.md}}
+{{#template ../templates/commands/hermes/version_1.md}}
 ```
 
 Which should be:
@@ -178,19 +178,19 @@ and any further necessary modifications to the shell's startup files.
 ### Bash
 
 ```sh
-{{#template ../templates/commands/hermes/completions.md SHELL=bash}} > ~/.local/share/bash-completion/completions/hermes
+{{#template ../templates/commands/hermes/completions_1.md SHELL=bash}} > ~/.local/share/bash-completion/completions/hermes
 ```
 
 On a macOS installation with Homebrew `bash-completion` formula installed, use 
 
 ```sh
-{{#template ../templates/commands/hermes/completions.md SHELL=bash}} > $(brew --prefix)/etc/bash_completion.d/hermes.bash-completion
+{{#template ../templates/commands/hermes/completions_1.md SHELL=bash}} > $(brew --prefix)/etc/bash_completion.d/hermes.bash-completion
 ```
 
 ### Zsh
 
 ```sh
-{{#template ../templates/commands/hermes/completions.md SHELL=zsh}} > ~/.zfunc/_hermes
+{{#template ../templates/commands/hermes/completions_1.md SHELL=zsh}} > ~/.zfunc/_hermes
 ```
 
 To make the shell load the script on initialization, add the directory to `fpath`

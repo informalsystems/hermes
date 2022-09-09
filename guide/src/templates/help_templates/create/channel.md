@@ -5,9 +5,9 @@ Can create a new channel using a pre-existing connection or alternatively, creat
 new connection underlying the new channel if a pre-existing connection is not provided.
 
 USAGE:
-    hermes create channel [OPTIONS] --A_CHAIN_ID <A_CHAIN_ID> --a-connection <A_CONNECTION_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>
+    hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --a-connection <A_CONNECTION_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>
 
-    hermes create channel [OPTIONS] --A_CHAIN_ID <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID> --new-client-connection
+    hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID> --new-client-connection
 
 OPTIONS:
         --channel-version <VERSION>
@@ -32,7 +32,7 @@ OPTIONS:
             Skip new_client_connection confirmation
 
 FLAGS:
-        --A_CHAIN_ID <A_CHAIN_ID>
+        --a-chain <A_CHAIN_ID>
             Identifier of the side `a` chain for the new channel
 
         --a-connection <A_CONNECTION_ID>
