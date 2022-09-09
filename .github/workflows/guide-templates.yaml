@@ -40,4 +40,4 @@ jobs:
           toolchain: stable
           override: true
       - name: check templates
-        run: ./scripts/auto_gen_templates.sh --mode "check"
+        run: bash scripts/auto_gen_templates.sh --mode "check"
