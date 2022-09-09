@@ -1,6 +1,6 @@
-# Adding Keys to the Relayer
+# Adding Keys to Hermes
 
-> __WARNING__: Currently the relayer does NOT support a `keyring` store to securely
+> __WARNING__: Currently Hermes does NOT support a `keyring` store to securely
 > store the private key file. The key file will be stored on the local file system
 > in the user __$HOME__ folder under `$HOME/.hermes/keys/`
 
@@ -16,7 +16,7 @@ Using the `keys` command you can add and list keys.
 To see the available sub-commands for the `keys` command run:
 
 ```shell
-hermes help keys
+{{#template ../../../templates/commands/hermes/help_1.md SUBCOMMAND=help keys}}
 ```
 
 The available sub-commands are the following:
@@ -27,7 +27,7 @@ The available sub-commands are the following:
 
 ### Key Seed file (Private Key)
 
-In order to execute the command below you need a private key file (JSON). The relayer uses the private key file to sign the transactions submitted to the chain.
+In order to execute the command below you need a private key file (JSON). Hermes uses the private key file to sign the transactions submitted to the chain.
 
 The private key file can be obtained by using the `keys add` on a Cosmos chain. For example, the command for `gaiad` is:
 
@@ -49,7 +49,7 @@ The command outputs a JSON similar to the one below.
 }
 ```
 
-You can save this to a file (e.g. `key_seed.json`) and use it to add to the relayer with `hermes keys add --chain <chain_id> --key-file key_seed.json`. See the `Adding Keys` section for more details.
+You can save this to a file (e.g. `key_seed.json`) and use it to add to Hermes with `hermes keys add --chain <chain_id> --key-file key_seed.json`. See the `Adding Keys` section for more details.
 
 ### Adding and restoring Keys
 
@@ -63,7 +63,7 @@ If a key with the same `key_name` already exists, the flag `--overwrite` must be
 #### Add a private key to a chain from a key file
 
 ```shell
-hermes --config config.toml keys add --chain [CHAIN_ID] --key-file [PRIVATE_KEY_FILE]
+{{#template ../../../templates/commands/hermes/keys/add_1.md CHAIN_ID=<CHAIN_ID> KEY_FILE=<PRIVATE_KEY_FILE>}}
 ```
 
 The content of the file key should have the same format as the output of the `gaiad keys add` command:
@@ -81,7 +81,7 @@ The content of the file key should have the same format as the output of the `ga
 If the command is successful a message similar to the one below will be displayed:
 
 ```json
-Success: Added key testkey ([ADDRESS]) on [CHAIN ID] chain
+Success: Added key testkey (<ADDRESS>) on <CHAIN_ID> chain
 ```
 
 > **Key name:**
@@ -89,13 +89,13 @@ Success: Added key testkey ([ADDRESS]) on [CHAIN ID] chain
 > To use a different key name, specify the `--key-name` option when invoking `keys add`.
 >
 > ```
-> hermes --config config.toml keys add --chain [CHAINID] --key-file [PRIVATE_KEY_FILE] --key-name [KEY_NAME]
+> {{#template ../../../templates/commands/hermes/keys/add_1.md CHAIN_ID=<CHAIN_ID> KEY_FILE=<PRIVATE_KEY_FILE> OPTIONS=--key-name [KEY_NAME]}}
 > ```
 
 #### Restore a private key to a chain from a mnemonic
 
 ```shell
-hermes --config config.toml keys add --chain [CHAIN_ID] --mnemonic-file "[MNEMONIC_FILE]"
+{{#template ../../../templates/commands/hermes/keys/add_2.md CHAIN_ID=<CHAIN_ID> MNEMONIC_FILE=<MNEMONIC_FILE>}}
 ```
 
 or using an explicit [derivation path](https://github.com/satoshilabs/slips/blob/master/slip-0044.md), for example
@@ -103,7 +103,7 @@ an Ethereum coin type (used for Evmos, Injective, Umee, Cronos, and
 possibly other networks):
 
 ```shell
-hermes --config config.toml keys add --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE> --hd-path "m/44'/60'/0'/0/0"
+{{#template ../../../templates/commands/hermes/keys/add_2.md CHAIN_ID=<CHAIN_ID> MNEMONIC_FILE=<MNEMONIC_FILE> OPTIONS=--hd-path "m/44'/60'/0'/0/0"}}
 ```
 
 The mnemonic file needs to have the 24 mnemonic words on the same line, separated by a white space. So the content should have the following format:
@@ -114,7 +114,7 @@ word1 word2 word3 ... word24
 If the command is successful a message similar to the one below will be displayed:
 
 ```json
-Success: Restore key testkey ([ADDRESS]) on [CHAIN ID] chain
+Success: Restore key testkey (<ADDRESS>) on <CHAIN_ID> chain
 ```
 
 > **Key name:**
@@ -122,7 +122,7 @@ Success: Restore key testkey ([ADDRESS]) on [CHAIN ID] chain
 > To use a different key name, specify the `--key-name` option when invoking `keys add`.
 >
 > ```
-> hermes --config config.toml keys add --chain [CHAINID] --mnemonic-file "[MNEMONIC_FILE]" --key-name [KEY_NAME]
+> {{#template ../../../templates/commands/hermes/keys/add_2.md CHAIN_ID=<CHAIN_ID> MNEMONIC_FILE=<MNEMONIC_FILE> OPTIONS=--key-name <KEY_NAME>}}
 > ```
 
 ### Delete keys
@@ -138,13 +138,13 @@ In order to delete the private keys added to chains use the `keys delete` comman
 To delete a single private key by name:
 
 ```shell
-hermes --config config.toml keys delete --chain [CHAIN_ID] --key-name [KEY_NAME]
+{{#template ../../../templates/commands/hermes/keys/delete_1.md CHAIN_ID=<CHAIN_ID> KEY_NAME=<KEY_NAME>}}
 ```
 
 Alternatively, to delete all private keys added to a chain:
 
 ```shell
-hermes --config config.toml keys delete --chain [CHAIN_ID] --all
+hermes --config config.toml keys delete --chain <CHAIN_ID> --all
 ```
 
 ### List keys
@@ -160,7 +160,7 @@ In order to list the private keys added to chains use the `keys list` command
 To list the private key file that was added to a chain:
 
 ```shell
-hermes --config config.toml keys list --chain [CHAIN_ID]
+{{#template ../../../templates/commands/hermes/keys/list_1.md CHAIN_ID=<CHAIN_ID>}}
 ```
 
 If the command is successful a message similar to the one below will be displayed:
@@ -174,7 +174,7 @@ Success:
 **JSON:**
 
 ```shell
-hermes --json --config config.toml keys list --chain [CHAIN_ID] | jq
+{{#template ../../../templates/commands/hermes/keys/list_1.md CHAIN_ID=<CHAIN_ID> GLOBALOPTIONS=--json}} | jq
 ```
 
 If the command is successful a message similar to the one below will be displayed:
@@ -217,7 +217,7 @@ Success: balance for key `KEY_NAME`: 100000000000 stake
 **JSON:**
 
 ```shell
-hermes --json keys balance [OPTIONS] --chain <CHAIN_ID>
+{{#template ../../../templates/commands/hermes/keys/balance_1.md CHAIN_ID=<CHAIN_ID> OPTIONS=[OPTIONS] GLOBALOPTIONS=--json}}
 ```
 
 If the command is successful a message with the following format will be displayed:

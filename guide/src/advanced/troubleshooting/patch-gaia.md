@@ -49,26 +49,26 @@ In order to test the correct operation during the channel close, perform the ste
 to close-open:
 
     ```shell
-    {{#template ../../templates/commands/hermes/tx/chan-close-init_1.md SRC_CHAIN_ID=ibc-1 DST_CHAIN_ID=ibc-0 DST_CONNECTION_ID=connection-0 DST_PORT_ID=transfer SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-1 DST_CHANNEL_ID=channel-0 GLOBALOPTIONS=--config config.toml}}
+    {{#template ../../templates/commands/hermes/tx/chan-close-init_1.md SRC_CHAIN_ID=ibc-1 DST_CHAIN_ID=ibc-0 DST_CONNECTION_ID=connection-0 DST_PORT_ID=transfer SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-1 DST_CHANNEL_ID=channel-0}}
     ```
 
 - Trigger timeout on close to ibc-1
 
     ```shell
-    hermes --config config.toml tx packet-recv --receiver-chain ibc-0 --sender-chain ibc-1 --sender-port transfer --sender-channel channel-1
+    {{#template ../../templates/commands/hermes/tx/packet-recv_1.md SRC_CHAIN_ID=ibc-1 DST_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-1}}
     ```
 
 - Close the channel
 
     ```shell
-    hermes --config config.toml tx chan-close-confirm --receiver-chain ibc-1 --sender-chain ibc-0 --receiver-connection connection-1 --receiver-port transfer --sender-port transfer --receiver-channel channel-1 --sender-channel channel-0
+    {{#template ../../templates/commands/hermes/tx/chan-close-confirm_1.md SRC_CHAIN_ID=ibc-0 DST_CHAIN_ID=ibc-1 DST_CONNECTION_ID=connection-1 DST_PORT_ID=transfer SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-0 DST_CHANNEL_ID=channel-1}}
     ```
 
 - Verify that the two ends are in Close state:
 
   ```shell
-  hermes --config config.toml query channel end --chain ibc-0 --port transfer --channel channel-0
-  hermes --config config.toml query channel end --chain ibc-1 --port transfer --channel channel-1
+  {{#template ../../templates/commands/hermes/query/channel/end_1.md CHAIN_ID=ibc-0 PORT_ID=transfer CHANNEL_ID=channel-0}}
+  {{#template ../../templates/commands/hermes/query/channel/end_1.md CHAIN_ID=ibc-1 PORT_ID=transfer CHANNEL_ID=channel-1}}
   ```
 
 [chan-close]: ../../documentation/commands/tx/channel-close.md#channel-close-init

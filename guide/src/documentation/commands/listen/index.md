@@ -11,7 +11,7 @@ __Example__
 Start Hermes in listen mode for all `ibc-0` events and observe the output:
 
 ```shell
-hermes listen --chain ibc-0
+{{#template ../../../templates/commands/hermes/listen_1.md CHAIN_ID=ibc-0}}
 ```
 
 ```json
@@ -137,16 +137,16 @@ EventBatch {
 
 ## Filter events
 
-The `listen` command accepts a `--event` flag to specify which event types to listen for.
+The `listen` command accepts a `--events` flag to specify which event types to listen for.
 
 At the moment, two event types are available:
 - `NewBlock` 
 - `Tx`
 
-The `--event` flag can be repeated to specify more than one event type.
+The `--events` flag can be repeated to specify more than one event type.
 
-- To listen for only `NewBlock` events on `ibc-0`, invoke `hermes listen --chain ibc-0 --events NewBlock`
-- To listen for only `Tx` events on `ibc-0`, invoke `hermes listen --chain ibc-0 --events Tx`
-- To listen for both `NewBlock` and `Tx` events on `ibc-0`, invoke `hermes listen --chain ibc-0 --events NewBlock Tx`
+- To listen for only `NewBlock` events on `ibc-0`, invoke `{{#template ../../../templates/commands/hermes/listen_1.md CHAIN_ID=ibc-0 OPTIONS=--events NewBlock}}`
+- To listen for only `Tx` events on `ibc-0`, invoke `{{#template ../../../templates/commands/hermes/listen_1.md CHAIN_ID=ibc-0 OPTIONS=--events Tx}}`
+- To listen for both `NewBlock` and `Tx` events on `ibc-0`, invoke `{{#template ../../../templates/commands/hermes/listen_1.md CHAIN_ID=ibc-0 OPTIONS=--events NewBlock Tx}}`
 
-If the `--event` flag is omitted, Hermes will subscribe to all event types.
+If the `--events` flag is omitted, Hermes will subscribe to all event types.

@@ -18,7 +18,7 @@ __Example__
 Create a new client on `ibc-0` which tracks `ibc-1`:
 
 ```shell
-hermes create client --host-chain ibc-0 --reference-chain ibc-1
+{{#template ../../../templates/commands/hermes/create/client_1.md HOST_CHAIN_ID=ibc-0 REFERENCE_CHAIN_ID=ibc-1}}
 ```
 
 ```json
@@ -54,10 +54,10 @@ Specific update and trusted heights can be specified.
 
 __Update client with latest header__
 
-the client on `ibc-0` with latest header of `ibc-1`:
+the client on `ibc-0` with the latest header of `ibc-1`:
 
 ```shell
-hermes update client --host-chain ibc-0 --client 07-tendermint-9
+{{#template ../../../templates/commands/hermes/update/client_1.md HOST_CHAIN_ID=ibc-0 CLIENT_ID=07-tendermint-9}}
 ```
 
 ```json
@@ -85,7 +85,7 @@ The client with identifier `07-tendermint-1` has been updated with the consensus
 __Update a client to a specific target height__
 
 ```shell
-hermes update client --host-chain ibc-0 --client 07-tendermint-1 --height 320 --trusted-height 293
+{{#template ../../../templates/commands/hermes/update/client_1.md HOST_CHAIN_ID=ibc-0 CLIENT_ID=07-tendermint-1 OPTIONS=--height 320 --trusted-height 293}}
 ```
 
 ```json

@@ -5,7 +5,7 @@
 To see the available sub-commands for the `config` command run:
 
 ```shell
-hermes help config
+{{#template ../../templates/commands/hermes/help_1.md SUBCOMMAND=help config}}
 ```
 
 The available sub-commands are the following:
@@ -27,7 +27,7 @@ __Example__
 
 Use `config auto` to generate a configuration file able to relay between `cosmoshub` and `osmosis`. This command assumes the existence of a key file for `cosmoshub-4` and `osmosis-1` in `$HOME/.hermes/keys`.
 ```
-    hermes config auto --output ~/example_config.toml --chains cosmoshub osmosis
+{{#template ../../templates/commands/hermes/config/auto_1.md PATH=~/example_config.toml CHAIN_NAME:OPTIONAL_KEY_NAME=cosmoshub osmosis}}
 
 2022-08-16T17:27:26.966233Z  INFO ThreadId(01) using default configuration from '~/.hermes/config.toml'
 2022-08-16T17:27:27.800213Z  INFO ThreadId(01) cosmoshub-4: uses key "key_cosmoshub"
@@ -38,7 +38,7 @@ SUCCESS "Config file written successfully : ~/example_config.toml."
 
 It is also possible to manually specify a key name for any chain.
 ```
-    hermes config auto --output $HOME/example_config.toml --chains cosmoshub:random_key osmosis 
+{{#template ../../templates/commands/hermes/config/auto_1.md PATH=~/example_config.toml CHAIN_NAME:OPTIONAL_KEY_NAME=cosmoshub:random_key osmosis}}
 
 2022-08-16T17:29:56.902499Z  INFO ThreadId(01) using default configuration from '~/.hermes/config.toml'
 2022-08-16T17:29:57.288874Z  INFO ThreadId(01) cosmoshub-4: uses key "random_key"
@@ -64,11 +64,10 @@ Validate the default config file, the path inferred automatically to be
 `$HOME/.hermes/config.toml`.
 
 ```shell
-hermes config validate
+{{#template ../../templates/commands/hermes/config/validate_1.md}}
 ```
-
+Which should output something similar to:
 ```text
-hermes config validate
 Jul 12 16:31:07.017  INFO using default configuration from '$HOME/.hermes/config.toml'
 SUCCESS: "validation passed successfully"
 ```
@@ -76,13 +75,11 @@ SUCCESS: "validation passed successfully"
 Validate a config file at an arbitrary location:
 
 ```shell
-hermes --config ./config.toml config validate
+{{#template ../../templates/commands/hermes/config/validate_1.md GLOBALOPTIONS=--config $CONFIGPATH}}
 ```
 
-This one fails validation because we mistakenly added two separate sections for
-the same chain `ibc-1`:
+This one should fail validation because we mistakenly added two separate sections for the same chain `ibc-1`:
 
 ```text
-hermes --config ./config.toml config validate
 error: hermes fatal error: config error: config file has duplicate entry for the chain 'ibc-1'
 ```

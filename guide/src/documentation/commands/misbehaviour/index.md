@@ -4,7 +4,7 @@
 <!-- toc -->
 
 ## Monitoring Misbehaviour and Evidence Submission
-Use the `mishbehaviour` command to monitor the updates for a given client, detect certain types of misbehaviour and
+Use the `misbehaviour` command to monitor the updates for a given client, detect certain types of misbehaviour and
 submit evidence to the chain. If the evidence passes the on-chain validation, the client is frozen. Further packets
 cannot be relayed using the frozen client.
 
@@ -42,10 +42,10 @@ The following types of misbehaviour are handled:
 
 __Example__
 
-The `hermes misbehaviour` outputs an error message displaying `MISBEHAVIOUR DETECTED`:
+The `misbehaviour` command outputs an error message displaying `MISBEHAVIOUR DETECTED`:
 
 ```shell
-hermes misbehaviour --chain ibc-0 --client 07-tendermint-0
+{{#template ../../../templates/commands/hermes/misbehaviour_1.md CHAIN_ID=ibc-0 CLIENT_ID=07-tendermint-0}}
 ```
 
 ```json
@@ -77,8 +77,9 @@ Success: Some(
 
 Querying client state from this point will show the client is in frozen state, with `frozen_height` indicating the height at which the client was frozen:
 ```shell
-hermes query client state --chain ibc-0 --client 07-tendermint-0 | jq
+{{#template ../../../templates/commands/hermes/query/client/state_1.md CHAIN_ID=ibc-0 CLIENT_ID=07-tendermint-0}} | jq
 ```
+Which should output:
 ```json
 {
   "result": {

@@ -15,7 +15,7 @@ __Example__
 Query all channels on `ibc-1`:
 
 ```shell
-hermes query channels --chain ibc-1
+{{#template ../../../templates/commands/hermes/query/channels_1.md CHAIN_ID=ibc-1}}
 ```
 
 ```json

@@ -5,7 +5,7 @@ This section explains how to parametrize the log output level of `hermes`.
 
 The configuration file permits parametrization of output verbosity via the knob called `log_level`.
 This file is loaded by default from `$HOME/.hermes/config.toml`, but can be overridden in all commands
-with the `--config` flag, e.g. `hermes --config ./path/to/my/config.toml subcommand`.
+with the `--config` flag, e.g. `hermes --config $CONFIGPATH subcommand`.
 
 Relevant snippet:
 
