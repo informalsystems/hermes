@@ -174,7 +174,7 @@ Let's use packet filters to relay only on the green paths specified in the chart
     ]
     ```
 
-> __NOTE__: It is also possible to use a `deny` policy to filter out the channels you do not want to relay on. However, if other channels exist or are created, the relayer will also relay on them.
+> __NOTE__: It is also possible to use a `deny` policy to filter out the channels you do not want to relay on. However, if other channels exist or are created, Hermes will also relay on them.
 
 At this point, your config file should look like this:
 <details><summary style="font-weight:bold">config.toml</summary>

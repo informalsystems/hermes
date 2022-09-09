@@ -86,7 +86,7 @@ Now that we have retrieved this packet, let's clear it manually with the command
 ```shell
 {{#template ../../templates/commands/hermes/clear/packets_1.md OPTIONS=--config $HOME/hermes_second_instance.toml CHAIN_ID=ibc-1 PORT_ID=transfer CHANNEL_ID=channel-2}}
 ```
->__NOTE__: We are using the second config to avoid using the same wallets as the running instance of the relayer. You could also simply use the `key-name` and `counterparty-key-name` flags to set another wallet. If you do not use it, you will observe a few `account_sequence_mismatch` errors on the terminal running `hermes start` but hermes will automatically recover.
+>__NOTE__: We are using the second config to avoid using the same wallets as the running instance of Hermes. You could also simply use the `key-name` and `counterparty-key-name` flags to set another wallet. If you do not use it, you will observe a few `account_sequence_mismatch` errors on the terminal running `hermes start` but Hermes will automatically recover.
 
 If the command runs successfully, it should output:
 

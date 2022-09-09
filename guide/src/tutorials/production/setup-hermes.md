@@ -57,7 +57,7 @@ __config.toml__
 ```
 >__NOTE__: You might not have the same RPC and gRPC endpoints in your configuration file as they are randomly selected in the chain-registry.
 
-The command created packet filters so the relayer will only relay on `channel-0` for `osmosis-1` and `channel-141` for `cosmoshub-4`. It uses RPC and gRPC endpoints found in the chain registry. If you also run a full node, you can replace the endpoints with your own. It has many advantages as you can accept transactions with lower gas.
+The command created packet filters so Hermes will only relay on `channel-0` for `osmosis-1` and `channel-141` for `cosmoshub-4`. It uses RPC and gRPC endpoints found in the chain registry. If you also run a full node, you can replace the endpoints with your own. It has many advantages as you can accept transactions with lower gas.
 
 >__WARNING__: It is difficult to estimate how much gas you will spend as it depends on many parameters like:
 > - The volume of transactions. More congestion means higher gas prices.

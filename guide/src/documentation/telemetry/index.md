@@ -9,7 +9,7 @@ See the [installation instructions][installation] for how to obtain the latest v
 
 ## Configuration
 
-The telemetry service is not active by default, and must be enabled in the relayer configuration:
+The telemetry service is not active by default, and must be enabled in Hermes' configuration:
 
 ```toml
 [telemetry]

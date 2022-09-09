@@ -3,7 +3,7 @@
 *Since version 0.7.0.*
 
 Hermes features a built-in HTTP server which exposes information
-about the relayer configuration and state via a REST API.
+about the configuration and state via a REST API.
 
 ## Table of Contents
 
@@ -11,7 +11,7 @@ about the relayer configuration and state via a REST API.
 
 ## Configuration
 
-The REST API is not active by default, and must be enabled in the relayer configuration:
+The REST API is not active by default, and must be enabled in the configuration:
 
 ```toml
 [rest]
@@ -114,7 +114,7 @@ where `:id` stands for the identifier.
 
 ### GET `/state`
 
-This endpoint returns the current state of the relayer,
+This endpoint returns the current state of Hermes,
 namely which chains it is connected to, as well as a description
 of all the workers which are currently active.
 

@@ -115,9 +115,9 @@ Now, let's exchange `samoleans` between chains.
             total: "0"
             ```
 
-    - Observe the output on the relayer terminal and verify that no event is processed. 
+    - Observe the output on the relaying terminal and verify that no event is processed. 
 
-    If you correctly created the packet filters in the [previous section](./build-the-topology.md), the relayer does not relay on this path. So what happened to the 1000000 samoleans you just sent ? It is stuck until a relayer decides to relay this packet to `ibc-3`. For now, let's forget about these samoleans. We can get as many as we want anyway. 
+    If you correctly created the packet filters in the [previous section](./build-the-topology.md), Hermes does not relay on this path. So what happened to the 1000000 `samoleans` you just sent ? It is stuck until a relayer decides to relay this packet to `ibc-3`. For now, let's forget about these `samoleans`. We can get as many as we want anyway. 
 
     It might be impossible to send packets directly from `ibc-1` to `ibc-3`, however, it is possible to use `ibc-2` as a bridge:
 
