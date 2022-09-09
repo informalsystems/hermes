@@ -1,4 +1,4 @@
-name: Rust
+name: Guide Template Checker
 on:
   pull_request:
     paths:
