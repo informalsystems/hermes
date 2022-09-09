@@ -547,7 +547,7 @@ SUCCESS Channel {
 You can visualize the topology of the current network with: 
 
 ```shell
-{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS=--show-counterparty CHAIN=ibc-0}}
+{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS=--show-counterparty CHAIN_ID=ibc-0}}
 ```
 
 If all the commands were successful, this command should output : 

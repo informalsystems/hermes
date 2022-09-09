@@ -179,7 +179,7 @@ function generate_templates(){
             do
                 # Create a template for every usage
                 filename=$COMMAND_DIR$path"_$cpt.md"
-                echo $line > $TMP_PATH
+                echo -n $line > $TMP_PATH
                 local cpt=$((cpt+1))
                 if ! cmp -s $TMP_PATH $filename; then
                     if [ $MODE = "update" ]; then

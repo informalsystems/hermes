@@ -36,12 +36,12 @@ Execute the following command:
 If this command runs successfully, it should output the following:
 
 ```shell
-{{#template ../../templates/commands/hermes/create/channel_1.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-1 A_PORT_ID=transfer B_PORT_ID=transfer}}
-{{#template ../../templates/commands/hermes/create/channel_1.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-2 A_PORT_ID=transfer B_PORT_ID=transfer}}
-{{#template ../../templates/commands/hermes/create/channel_1.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
-{{#template ../../templates/commands/hermes/create/channel_1.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-1 B_CHAIN_ID=ibc-2 A_PORT_ID=transfer B_PORT_ID=transfer}}
-{{#template ../../templates/commands/hermes/create/channel_1.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-1 B_CHAIN_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
-{{#template ../../templates/commands/hermes/create/channel_1.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-2 B_CHAIN_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel_1.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID_ID=ibc-0 B_CHAIN_ID_ID=ibc-1 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel_1.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID_ID=ibc-0 B_CHAIN_ID_ID=ibc-2 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel_1.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID_ID=ibc-0 B_CHAIN_ID_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel_1.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID_ID=ibc-1 B_CHAIN_ID_ID=ibc-2 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel_1.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID_ID=ibc-1 B_CHAIN_ID_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel_1.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID_ID=ibc-2 B_CHAIN_ID_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
 ```
 
 Executing these commands will:
@@ -108,10 +108,10 @@ flowchart TD
 You can verify that everything is correct with the commands:
 
 ```shell
-{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS=--show-counterparty CHAIN=ibc-0}}
-{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS=--show-counterparty CHAIN=ibc-1}}
-{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS=--show-counterparty CHAIN=ibc-2}}
-{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS=--show-counterparty CHAIN=ibc-3}}
+{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS=--show-counterparty CHAIN_ID=ibc-0}}
+{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS=--show-counterparty CHAIN_ID=ibc-1}}
+{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS=--show-counterparty CHAIN_ID=ibc-2}}
+{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS=--show-counterparty CHAIN_ID=ibc-3}}
 ```
 
 Which should normally output: 
