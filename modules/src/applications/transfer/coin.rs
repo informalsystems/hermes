@@ -97,9 +97,9 @@ impl From<BaseCoin> for PrefixedCoin {
     }
 }
 
-impl Display for PrefixedCoin {
+impl<D: Display> Display for Coin<D> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
-        write!(f, "{}-{}", self.amount, self.denom)
+        write!(f, "{}{}", self.amount, self.denom)
     }
 }
 
