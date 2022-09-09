@@ -29,7 +29,7 @@ Hermes can be started to listen for packet events on the two ends of multiple pa
 This can be done over a new path or over existing paths.
 
 >__NOTE__: The following steps decompose every step from the creation of the clients to the channel handshake for educational purposes. 
-> More realistically, you'd use the command `{{#template ../../templates/commands/hermes/create/channel_todo.md A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-1 A_PORT_ID=transfer B_PORT_ID=transfer}}` in order to create a new client on each chain, establish a connection, and open a channel, all with a single command.
+> More realistically, you'd use the command `{{#template ../../templates/commands/hermes/create/channel_2.md A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-1 A_PORT_ID=transfer B_PORT_ID=transfer}}` in order to create a new client on each chain, establish a connection, and open a channel, all with a single command.
 
 You will need to first create a client on both chains and then establish a connection between them. It is possible to have multiple connections between clients, which can be useful in order to support multiple versions of IBC. Finally, you need to create channels over a connection to identify the source and destination modules. You can learn more in the [cosmos academy tutorial](https://tutorials.cosmos.network/academy/4-ibc/what-is-ibc.html).  
 
@@ -90,7 +90,7 @@ As you can see, the identifier is also `07-tendermint-0` because the client-id i
 After creating clients on both chains, you have to establish a connection between them. Both chains will assign `connection-0` as the identifier of their first connection:
 
 ```shell
-{{#template ../../templates/commands/hermes/create/connection_todo.md A_CHAIN_ID=ibc-0 A_CLIENT_ID=07-tendermint-0 B_CHAIN_ID=07-tendermint-0}}
+{{#template ../../templates/commands/hermes/create/connection_2.md A_CHAIN_ID=ibc-0 A_CLIENT_ID=07-tendermint-0 B_CLIENT_ID=07-tendermint-0}}
 ```
 >__NOTE__: The command does not take `--b-chain` as argument as `--a-client` can only track one chain (`ibc-1`). 
 

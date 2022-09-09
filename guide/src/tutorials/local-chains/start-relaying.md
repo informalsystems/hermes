@@ -49,13 +49,13 @@ Now, let's exchange `samoleans` between two chains.
 - Open a new terminal and start Hermes using the `start` command : 
 
     ```shell
-    {{#template ../../templates/commands/hermes/start.md}}
+    {{#template ../../templates/commands/hermes/start_1.md}}
     ```
     Hermes will first relay the pending packets that have not been relayed and then start passively relaying by listening for and acting on packet events. 
 
 - In a separate terminal, use the `ft-transfer` command to send `100000 samoleans` from ibc-0 to ibc-1 over channel-0:
     ```shell
-    {{#template ../../templates/commands/hermes/tx/ft-transfer.md DST_CHAIN_ID=ibc-1 SRC_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-0 AMOUNT=100000 OPTIONS=--timeout-seconds 1000}}
+    {{#template ../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-1 SRC_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-0 AMOUNT=100000 OPTIONS=--timeout-seconds 1000}}
     ```
 
 - Wait a few seconds, then query balances on `ibc-1` and `ibc-0`. You should observe something similar to:
@@ -87,7 +87,7 @@ Now, let's exchange `samoleans` between two chains.
 
 - Transfer back these tokens to ibc-0:
     ```shell
-    {{#template ../../templates/commands/hermes/tx/ft-transfer.md DST_CHAIN_ID=ibc-1 SRC_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-0 AMOUNT=100000 OPTIONS=--timeout-seconds=10000 --denom ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199}}
+    {{#template ../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-1 SRC_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-0 AMOUNT=100000 OPTIONS=--timeout-seconds=10000 --denom ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199}}
     ```
 - Wait a few seconds then query balances on `ibc-1` and `ibc-0` again. You should observe something similar to:
     - Balances on ibc-0:
@@ -118,7 +118,7 @@ Now, let's exchange `samoleans` between two chains.
 
 ## Stop relaying and stop the chains
 
-- Stop Hermes by pressing `Ctrl+C` on the terminal running `{{#template ../../templates/commands/hermes/start.md}}`.
+- Stop Hermes by pressing `Ctrl+C` on the terminal running `{{#template ../../templates/commands/hermes/start_1.md}}`.
 
 - Stop the chains with `{{#template ../../templates/commands/gm/stop.md}}`.
 

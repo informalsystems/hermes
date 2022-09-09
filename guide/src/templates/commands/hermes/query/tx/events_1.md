@@ -1,1 +1,1 @@
-[[#BINARY hermes]] query tx events --chain [[#CHAIN_ID]] --hash <HASH]]
+[[#BINARY hermes]] query tx events --chain [[#CHAIN_ID]] --hash [[#HASH]]

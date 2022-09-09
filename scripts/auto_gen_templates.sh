@@ -175,7 +175,7 @@ function generate_templates(){
             mkdir -p $dir
 
             local cpt=1
-            cargo run -q --bin hermes $command --help | sed -n '/USAGE:/, /OPTIONS:/{ /USAGE:/! { /OPTIONS:/! p }}'  | sed -r '/^\s*$/d ;s/^\s+//; s/</[[#/ ; s/]/]]/g ; s/>/]]/g; s/hermes/[[#BINARY hermes]]/ ; s/\[OPTIONS]/\[\[#OPTIONS]]/ ;' | while read line || [[ -n $line ]]
+            cargo run -q --bin hermes $command --help | sed -n '/USAGE:/, /OPTIONS:/{ /USAGE:/! { /OPTIONS:/! p }}'  | sed -r '/^\s*$/d ; s/^\s+// ; s/</[[#/g ; s/>/]]/g; s/hermes/[[#BINARY hermes]]/ ; s/\[OPTIONS]/\[\[#OPTIONS]]/ ;' | while read line || [[ -n $line ]]
             do
                 # Create a template for every usage
                 filename=$COMMAND_DIR$path"_$cpt.md"

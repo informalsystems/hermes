@@ -1,1 +1,1 @@
-[[#BINARY hermes]] keys balance [[#OPTIONS]]] --chain [[#CHAIN_ID]]
+[[#BINARY hermes]] keys balance [[#OPTIONS]] --chain [[#CHAIN_ID]]

@@ -3,7 +3,7 @@
 At this point in the tutorial, you should have four chains running and Hermes correctly configured. You can perform a `health-check` with the command :
 
 ```shell
-{{#template ../../templates/commands/hermes/health-check.md}}
+{{#template ../../templates/commands/hermes/health-check_1.md}}
 ```
 
 If the command runs successfully, it should output something similar to:
@@ -36,12 +36,12 @@ Execute the following command:
 If this command runs successfully, it should output the following:
 
 ```shell
-{{#template ../../templates/commands/hermes/create/channel.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-1 A_PORT_ID=transfer B_PORT_ID=transfer}}
-{{#template ../../templates/commands/hermes/create/channel.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-2 A_PORT_ID=transfer B_PORT_ID=transfer}}
-{{#template ../../templates/commands/hermes/create/channel.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
-{{#template ../../templates/commands/hermes/create/channel.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-1 B_CHAIN_ID=ibc-2 A_PORT_ID=transfer B_PORT_ID=transfer}}
-{{#template ../../templates/commands/hermes/create/channel.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-1 B_CHAIN_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
-{{#template ../../templates/commands/hermes/create/channel.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-2 B_CHAIN_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel_1.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-1 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel_1.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-2 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel_1.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel_1.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-1 B_CHAIN_ID=ibc-2 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel_1.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-1 B_CHAIN_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
+{{#template ../../templates/commands/hermes/create/channel_1.md OPTIONS=--new-client-connection --yes BINARY="$HOME/ibc-rs/target/release/hermes" A_CHAIN_ID=ibc-2 B_CHAIN_ID=ibc-3 A_PORT_ID=transfer B_PORT_ID=transfer}}
 ```
 
 Executing these commands will:
@@ -188,7 +188,7 @@ At this point, your config file should look like this:
 It is also possible to check that the configuration file is valid with the command:
 
 ```shell
-{{#template ../../templates/commands/hermes/config/validate.md}}
+{{#template ../../templates/commands/hermes/config/validate_1.md}}
 ```
 
 If the command runs successfully, the output should be:
