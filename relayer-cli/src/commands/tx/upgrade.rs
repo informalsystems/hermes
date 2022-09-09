@@ -97,13 +97,12 @@ impl TxIbcUpgradeChainCmd {
             )
         })?;
 
-        let reference_chain_config =
-            config.find_chain(&self.dst_chain_id).ok_or_else(|| {
-                format!(
-                    "missing configuration for destination chain '{}'",
-                    self.dst_chain_id
-                )
-            })?;
+        let reference_chain_config = config.find_chain(&self.dst_chain_id).ok_or_else(|| {
+            format!(
+                "missing configuration for destination chain '{}'",
+                self.dst_chain_id
+            )
+        })?;
 
         let opts = UpgradePlanOptions {
             dst_chain_config: reference_chain_config.clone(),
