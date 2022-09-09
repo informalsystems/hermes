@@ -187,7 +187,7 @@ interactive prompt that pops up notifying you that a new client and a new
 connection will be initialized as part of the process:
 
 ```shell
-hermes create channel --A_CHAIN_ID ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --order unordered --new-client-connection
+hermes create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --order unordered --new-client-connection
 ```
 
 ```json

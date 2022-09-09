@@ -66,7 +66,7 @@ the `profiling` feature and the [log level][log-level] should be `info` level or
 #### Example output for `tx conn-init` command
 
 ```
-hermes --config config.toml tx conn-init --b-chain ibc-0 --A_CHAIN_ID ibc-1 --b-client 07-tendermint-0 --a-client 07-tendermint-0
+hermes --config config.toml tx conn-init --b-chain ibc-0 --a-chain ibc-1 --b-client 07-tendermint-0 --a-client 07-tendermint-0
 ```
 
 ```
