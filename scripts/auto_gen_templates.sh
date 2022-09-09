@@ -88,7 +88,7 @@ function generate_commands_rec(){
         fi
         # if command is not help and not empty then echo its subcommands and call the function recursively
         if [ "$command" != "help" ] && [ ! -z "$command" ]; then
-            local new_commands=$(cargo run -q --bin hermes $cmd_prefix $command --help | sed '0,/^SUBCOMMAND.*/d' | cut -c 1-$cut | sed '/^\s*$/d ; s/\s\+\(\S\+\)\s*.*/\1/')
+            local new_commands=$(cargo run -q --bin hermes $cmd_prefix $command --help | sed '0,/^SUBCOMMANDS:.*/d' | cut -c 1-$cut | sed '/^\s*$/d ; s/\s\+\(\S\+\)\s*.*/\1/')
             if [ -z "$cmd_prefix" ]; then
                 local new_cmd_prefix=$command
             else
@@ -106,7 +106,7 @@ function generate_commands_rec(){
 function generate_commands(){
     # Generates the list of every commands of Hermes
     echo "version"  # Special case
-    local new_commands=$(cargo run -q --bin hermes help | sed '0,/^SUBCOMMAND.*/d ; s/\s\+\(\S\+\)\s*.*/\1/')
+    local new_commands=$(cargo run -q --bin hermes help | sed '0,/^SUBCOMMANDS:.*/d ; s/\s\+\(\S\+\)\s*.*/\1/')
     print_array $new_commands
     generate_commands_rec "" $new_commands
 }
@@ -126,6 +126,14 @@ function generate_help(){
     fi
     for path in "$@"; do
         command=$(echo "$path" | sed -e 's/\// /g')
+
+        # help commands are edge cases
+        if [ $path != "help" ]; then
+            local command=$(echo "$path" | sed -e 's/\// /g')" --help"
+        else 
+            local command="help"
+        fi
+
         # Check that the command is not empty
         if [ ! -z "$path" ]; then
             # Create the directory (if they don't exist) and the file
@@ -133,13 +141,7 @@ function generate_help(){
             dir="${filename%/*}"
             mkdir -p $dir
 
-            # help commands are special cases
-            if [ "$command" != "help" ]; then
-                cargo run -q --bin hermes $command --help | sed '1s/.*/DESCRIPTION:/' > $TMP_PATH
-            else 
-                cargo run -q --bin hermes help | sed '1s/.*/DESCRIPTION:/' > $TMP_PATH
-            fi
-
+            cargo run -q --bin hermes $command | sed '1s/.*/DESCRIPTION:/' > $TMP_PATH
             if ! cmp -s $TMP_PATH $filename; then
                 if [ $MODE = "update" ]; then
                     mv $TMP_PATH $filename
@@ -166,16 +168,20 @@ function generate_templates(){
         echo "Checking if templates are up to date."
     fi
     for path in "$@"; do
-        if [ $path != "help" ]; then
+            # help commands are edge cases
+            if [ $path != "help" ]; then
+                local command=$(echo "$path" | sed -e 's/\// /g')" --help"
+            else 
+                local command="help"
+            fi
+    
             # Create the directory (if they don't exist) and the file
-            command=$(echo "$path" | sed -e 's/\// /g')
-
             local tmp="$COMMAND_DIR$path"
             local dir="${tmp%/*}"
             mkdir -p $dir
 
             local cpt=1
-            cargo run -q --bin hermes $command --help | sed -n '/USAGE:/, /OPTIONS:/{ /USAGE:/! { /OPTIONS:/! p }}'  | sed -r '/^\s*$/d ; s/^\s+// ; s/</[[#/g ; s/>/]]/g; s/hermes/[[#BINARY hermes]]/ ; s/\[OPTIONS]/\[\[#OPTIONS]]/ ;' | while read line || [[ -n $line ]]
+            cargo run -q --bin hermes $command | sed -n '/USAGE:/, /OPTIONS:/{ /USAGE:/! { /OPTIONS:/! p }}'  | sed -r '/^\s*$/d ; s/^\s+// ; s/</[[#/g ; s/>/]]/g; s/hermes/[[#BINARY hermes]] [[#GLOBALOPTIONS]]/ ; s/\[(\w+)]/\[\[#\1]]/g ;' | while read line || [[ -n $line ]]
             do
                 # Create a template for every usage
                 filename=$COMMAND_DIR$path"_$cpt.md"
@@ -191,7 +197,6 @@ function generate_templates(){
                     fi
                 fi
             done
-        fi
     done
 }
 

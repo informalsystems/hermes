@@ -1,1 +1,1 @@
-[[#BINARY hermes]] config validate
+[[#BINARY hermes]] [[#GLOBALOPTIONS]] config validate

@@ -1,1 +1,1 @@
-[[#BINARY hermes]] clear [[#SUBCOMMAND]]
+[[#BINARY hermes]] [[#GLOBALOPTIONS]] clear [[#SUBCOMMAND]]

@@ -1,1 +1,1 @@
-[[#BINARY hermes]] query connections [[#OPTIONS]] --chain [[#CHAIN_ID]]
+[[#BINARY hermes]] [[#GLOBALOPTIONS]] query connections [[#OPTIONS]] --chain [[#CHAIN_ID]]

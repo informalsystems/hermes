@@ -27,30 +27,29 @@ We also describe how to test the channel closing feature.
     ```
 
 - Append the line below (watch for the placeholder `<your>`) as the last line
-  in your `go.mod` in the gaia clone:
+  in your `go.mod` in the `gaia` clone:
 
 ```replace github.com/cosmos/cosmos-sdk => /Users/<your>/go/src/github.com/cosmos/cosmos-sdk```
 
-- Now `make build` and `make install` your local copy of gaia
+- Now `make build` and `make install` your local copy of `gaia`
 
 In order to test the correct operation during the channel close, perform the steps below.
 
 - The channel should be in state open-open:
 
-- Transfer of 5555 samoleans from `ibc-1` to `ibc-0`. This results in a
+- Transfer of 5555 `samoleans` from `ibc-1` to `ibc-0`. This results in a
   Tx to `ibc-1` for a `MsgTransfer` packet.
-  Make sure you're not relaying this packet (the relayer should not be running on
-  this path).
+  Make sure you're not relaying this packet (Hermes should not be running on this path).
 
   ```shell
-  hermes tx ft-transfer --receiver-chain ibc-0 --sender-chain ibc-1 --sender-port transfer --sender-channel channel-1 --amount 5555 --timeout-height-offset 1000 --number-msgs 1 --denom samoleans
+  {{#template ../../templates/commands/hermes/tx/ft-transfer_1.md SRC_CHAIN_ID=ibc-0 DST_CHAIN_ID=ibc-1 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-1 AMOUNT=5555 OPTIONS=--timeout-height-offset 1000 --denom samoleans}}
   ```
 
 - Now do the first step of channel closing: the channel will transition
 to close-open:
 
     ```shell
-    hermes --config config.toml tx chan-close-init --receiver-chain ibc-0 --sender-chain ibc-1 --receiver-connection connection-0 --receiver-port transfer --sender-port transfer --receiver-channel channel-0 --sender-channel channel-1
+    {{#template ../../templates/commands/hermes/tx/chan-close-init_1.md SRC_CHAIN_ID=ibc-1 DST_CHAIN_ID=ibc-0 DST_CONNECTION_ID=connection-0 DST_PORT_ID=transfer SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-1 DST_CHANNEL_ID=channel-0 GLOBALOPTIONS=--config config.toml}}
     ```
 
 - Trigger timeout on close to ibc-1

@@ -1,1 +1,1 @@
-[[#BINARY hermes]] query tx [[#SUBCOMMAND]]
+[[#BINARY hermes]] [[#GLOBALOPTIONS]] query tx [[#SUBCOMMAND]]

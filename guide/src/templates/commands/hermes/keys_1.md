@@ -1,1 +1,1 @@
-[[#BINARY hermes]] keys [[#SUBCOMMAND]]
+[[#BINARY hermes]] [[#GLOBALOPTIONS]] keys [[#SUBCOMMAND]]
