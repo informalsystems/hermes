@@ -41,4 +41,4 @@ jobs:
           override: true
       - name: check templates
         run: bash scripts/auto_gen_templates.sh --mode "check"
-        working-directory: ./scripts
+        working-directory: ./ibc-rs
