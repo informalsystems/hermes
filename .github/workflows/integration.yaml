@@ -5,6 +5,8 @@ on:
       - .github/workflows/integration.yaml
       - Cargo.toml
       - Cargo.lock
+      - flake.nix
+      - flake.lock
       - ci/**
       - e2e/**
       - proto/**
@@ -20,6 +22,8 @@ on:
       - .github/workflows/integration.yaml
       - Cargo.toml
       - Cargo.lock
+      - flake.nix
+      - flake.lock
       - ci/**
       - e2e/**
       - proto/**
@@ -69,6 +73,9 @@ jobs:
           - package: wasmd
             command: wasmd
             account_prefix: wasm
+          - package: evmos
+            command: evmosd
+            account_prefix: evmos
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v15

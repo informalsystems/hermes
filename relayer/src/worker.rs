@@ -1,5 +1,5 @@
 use alloc::sync::Arc;
-use core::fmt;
+use core::fmt::{Display, Error as FmtError, Formatter};
 use ibc::core::ics04_channel::channel::Order;
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
@@ -47,8 +47,8 @@ impl WorkerId {
     }
 }
 
-impl fmt::Display for WorkerId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for WorkerId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}", self.0)
     }
 }

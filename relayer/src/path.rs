@@ -13,20 +13,15 @@ pub struct PathIdentifiers {
     pub counterparty_channel_id: ChannelId,
 }
 
-// TODO: This should probably be a `TryFrom` instead of `From` so we can get rid of `expect`.
-// TODO: Clarify if we should keep `From<&..>` or `From<..>.
-impl From<&IdentifiedChannelEnd> for PathIdentifiers {
-    fn from(ice: &IdentifiedChannelEnd) -> Self {
-        let counterparty = ice.channel_end.counterparty();
-        let counterparty_channel_id = counterparty
-            .channel_id()
-            .expect("no channel identifier in counterparty channel end");
+impl PathIdentifiers {
+    pub fn from_channel_end(ice: IdentifiedChannelEnd) -> Option<Self> {
+        let counterparty = ice.channel_end.remote;
 
-        Self {
-            port_id: ice.port_id.clone(),
-            channel_id: ice.channel_id.clone(),
-            counterparty_port_id: counterparty.port_id.clone(),
-            counterparty_channel_id: counterparty_channel_id.clone(),
-        }
+        Some(Self {
+            port_id: ice.port_id,
+            channel_id: ice.channel_id,
+            counterparty_port_id: counterparty.port_id,
+            counterparty_channel_id: counterparty.channel_id?,
+        })
     }
 }

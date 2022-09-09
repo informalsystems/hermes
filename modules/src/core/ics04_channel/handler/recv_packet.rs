@@ -27,15 +27,16 @@ pub enum RecvPacketResult {
     },
 }
 
-pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<PacketResult, Error> {
+pub fn process<Ctx: ChannelReader>(
+    ctx: &Ctx,
+    msg: &MsgRecvPacket,
+) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let packet = &msg.packet;
 
-    let dest_channel_end = ctx.channel_end(&(
-        packet.destination_port.clone(),
-        packet.destination_channel.clone(),
-    ))?;
+    let dest_channel_end =
+        ctx.channel_end(&packet.destination_port, &packet.destination_channel)?;
 
     if !dest_channel_end.state_matches(&State::Open) {
         return Err(Error::invalid_channel_state(
@@ -64,7 +65,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
         ));
     }
 
-    let latest_height = ctx.host_height();
+    let latest_height = ChannelReader::host_height(ctx);
     if packet.timeout_height.has_expired(latest_height) {
         return Err(Error::low_packet_height(
             latest_height,
@@ -72,7 +73,7 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
         ));
     }
 
-    let latest_timestamp = ctx.host_timestamp();
+    let latest_timestamp = ChannelReader::host_timestamp(ctx);
     if let Expiry::Expired = latest_timestamp.check_expiry(&packet.timeout_timestamp) {
         return Err(Error::low_packet_timestamp());
     }
@@ -86,10 +87,8 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
     )?;
 
     let result = if dest_channel_end.order_matches(&Order::Ordered) {
-        let next_seq_recv = ctx.get_next_sequence_recv(&(
-            packet.destination_port.clone(),
-            packet.destination_channel.clone(),
-        ))?;
+        let next_seq_recv =
+            ctx.get_next_sequence_recv(&packet.destination_port, &packet.destination_channel)?;
 
         if packet.sequence < next_seq_recv {
             output.emit(IbcEvent::ReceivePacket(ReceivePacket {
@@ -109,11 +108,11 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgRecvPacket) -> HandlerResult<Pa
             next_seq_recv: next_seq_recv.increment(),
         })
     } else {
-        let packet_rec = ctx.get_packet_receipt(&(
-            packet.destination_port.clone(),
-            packet.destination_channel.clone(),
+        let packet_rec = ctx.get_packet_receipt(
+            &packet.destination_port,
+            &packet.destination_channel,
             packet.sequence,
-        ));
+        );
 
         match packet_rec {
             Ok(_receipt) => {

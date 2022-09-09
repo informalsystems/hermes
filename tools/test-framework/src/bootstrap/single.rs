@@ -51,7 +51,10 @@ pub fn bootstrap_single_node(
         Denom::base("samoleans")
     };
 
-    let initial_amount = random_u128_range(1_000_000_000_000, 9_000_000_000_000);
+    // Evmos requires of at least 1_000_000_000_000_000_000 or else there will be the
+    // error `error during handshake: error on replay: validator set is nil in genesis and still empty after InitChain`
+    // when running `evmosd start`.
+    let initial_amount = random_u128_range(1_000_000_000_000_000_000, u128::MAX);
 
     let initial_stake = Token::new(stake_denom, initial_amount);
     let initial_coin = Token::new(denom.clone(), initial_amount);

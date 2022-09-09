@@ -2,10 +2,13 @@ use crate::prelude::*;
 
 use core::str::FromStr;
 use core::time::Duration;
-use core::{fmt, u64};
+use core::{
+    fmt::{Display, Error as FmtError, Formatter},
+    u64,
+};
 
+use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
-use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::connection::v1::{
     ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty,
@@ -366,8 +369,8 @@ impl State {
     }
 }
 
-impl fmt::Display for State {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for State {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}", self.as_str())
     }
 }

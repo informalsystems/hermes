@@ -26,13 +26,15 @@ pub struct TimeoutPacketResult {
 /// counterparty chain without the packet being committed, to prove that the
 /// packet can no longer be executed and to allow the calling module to safely
 /// perform appropriate state transitions.
-pub fn process(ctx: &dyn ChannelReader, msg: &MsgTimeout) -> HandlerResult<PacketResult, Error> {
+pub fn process<Ctx: ChannelReader>(
+    ctx: &Ctx,
+    msg: &MsgTimeout,
+) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let packet = &msg.packet;
 
-    let mut source_channel_end =
-        ctx.channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))?;
+    let mut source_channel_end = ctx.channel_end(&packet.source_port, &packet.source_channel)?;
 
     if !source_channel_end.state_matches(&State::Open) {
         return Err(Error::channel_closed(packet.source_channel.clone()));
@@ -77,11 +79,8 @@ pub fn process(ctx: &dyn ChannelReader, msg: &MsgTimeout) -> HandlerResult<Packe
     }
 
     //verify packet commitment
-    let packet_commitment = ctx.get_packet_commitment(&(
-        packet.source_port.clone(),
-        packet.source_channel.clone(),
-        packet.sequence,
-    ))?;
+    let packet_commitment =
+        ctx.get_packet_commitment(&packet.source_port, &packet.source_channel, packet.sequence)?;
 
     let expected_commitment = ctx.packet_commitment(
         packet.data.clone(),

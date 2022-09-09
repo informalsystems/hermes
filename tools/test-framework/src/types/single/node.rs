@@ -13,6 +13,7 @@ use ibc_relayer::keyring::Store;
 use std::sync::{Arc, RwLock};
 use tendermint_rpc::Url;
 
+use crate::chain::chain_type::ChainType as TestedChainType;
 use crate::chain::driver::ChainDriver;
 use crate::ibc::denom::Denom;
 use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
@@ -118,7 +119,10 @@ impl FullNode {
        Generate the relayer's chain config based on the configuration of
        the full node.
     */
-    pub fn generate_chain_config(&self) -> Result<config::ChainConfig, Error> {
+    pub fn generate_chain_config(
+        &self,
+        chain_type: &TestedChainType,
+    ) -> Result<config::ChainConfig, Error> {
         Ok(config::ChainConfig {
             id: self.chain_driver.chain_id.clone(),
             r#type: ChainType::CosmosSdk,
@@ -138,7 +142,7 @@ impl FullNode {
             default_gas: None,
             max_gas: Some(3000000),
             gas_adjustment: None,
-            gas_multiplier: Some(1.1),
+            gas_multiplier: Default::default(),
             fee_granter: None,
             max_msg_num: Default::default(),
             max_tx_size: Default::default(),
@@ -148,7 +152,7 @@ impl FullNode {
             trust_threshold: Default::default(),
             gas_price: config::GasPrice::new(0.001, "stake".to_string()),
             packet_filter: Default::default(),
-            address_type: Default::default(),
+            address_type: chain_type.address_type(),
             memo_prefix: Default::default(),
             proof_specs: Default::default(),
             extension_options: Default::default(),

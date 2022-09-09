@@ -80,11 +80,11 @@
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src"
       },
       "locked": {
-        "lastModified": 1660724476,
-        "narHash": "sha256-kGicJwpss+cIJKBH/iGdKGGtRTbelBh9LLivadWp/mI=",
+        "lastModified": 1662542782,
+        "narHash": "sha256-/uCdXQbWCqGc0iVL1PT7Fro6pKNi+G1iZ4Fu2g//l1Y=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "8fc379f4a2d2bfb5d7c8f51ac13d0ceb1b1a7e37",
+        "rev": "9fd90833d7a428eb4ac8aca9e98b62efe35177b0",
         "type": "github"
       },
       "original": {
@@ -311,16 +311,16 @@
     "ibc-go-v5-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1659384529,
-        "narHash": "sha256-tMV4Aesa9IY6TXxpLo9aIsRFKJDVSIlZqR8OlWP9/3g=",
+        "lastModified": 1661459211,
+        "narHash": "sha256-A/8BZj132RcZlEK5cb8/UJ5xqkmX8rabdnMbPKdVsx8=",
         "owner": "cosmos",
         "repo": "ibc-go",
-        "rev": "662a9a82735e1928ec914058589fe0f36b0283ae",
+        "rev": "37aa2ebec4f63a178659db2de2761f3cbafb583c",
         "type": "github"
       },
       "original": {
         "owner": "cosmos",
-        "ref": "v5.0.0-beta1",
+        "ref": "v5.0.0-rc1",
         "repo": "ibc-go",
         "type": "github"
       }
@@ -458,11 +458,11 @@
     },
     "nixpkgs_3": {
       "locked": {
-        "lastModified": 1660639432,
-        "narHash": "sha256-2WDiboOCfB0LhvnDVMXOAr8ZLDfm3WdO54CkoDPwN1A=",
+        "lastModified": 1662096612,
+        "narHash": "sha256-R+Q8l5JuyJryRPdiIaYpO5O3A55rT+/pItBrKcy7LM4=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "6c6409e965a6c883677be7b9d87a95fab6c3472e",
+        "rev": "21de2b973f9fee595a7a1ac4693efff791245c34",
         "type": "github"
       },
       "original": {

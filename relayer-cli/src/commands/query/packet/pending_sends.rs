@@ -5,6 +5,7 @@ use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer::chain::counterparty::unreceived_packets;
 use ibc_relayer::chain::handle::BaseChainHandle;
+use ibc_relayer::path::PathIdentifiers;
 
 use crate::cli_utils::spawn_chain_counterparty;
 use crate::conclude::Output;
@@ -49,7 +50,6 @@ pub struct QueryPendingSendsCmd {
 impl QueryPendingSendsCmd {
     fn execute(&self) -> Result<Vec<Sequence>, Error> {
         let config = app_config();
-        debug!("Options: {:?}", self);
 
         let (chains, chan_conn_cli) = spawn_chain_counterparty::<BaseChainHandle>(
             &config,
@@ -58,12 +58,17 @@ impl QueryPendingSendsCmd {
             &self.channel_id,
         )?;
 
+        let channel = chan_conn_cli.channel;
+
         debug!(
             "fetched from source chain {} the following channel {:?}",
-            self.chain_id, chan_conn_cli.channel
+            self.chain_id, channel
         );
 
-        unreceived_packets(&chains.src, &chains.dst, &(&chan_conn_cli.channel).into())
+        let path_identifiers = PathIdentifiers::from_channel_end(channel.clone())
+            .ok_or_else(|| Error::missing_counterparty_channel_id(channel))?;
+
+        unreceived_packets(&chains.src, &chains.dst, &path_identifiers)
             .map_err(Error::supervisor)
             .map(|(seq, _)| seq)
     }

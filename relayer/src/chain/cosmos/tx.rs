@@ -20,9 +20,9 @@ pub async fn estimate_fee_and_send_tx(
     key_entry: &KeyEntry,
     account: &Account,
     tx_memo: &Memo,
-    messages: Vec<Any>,
+    messages: &[Any],
 ) -> Result<Response, Error> {
-    let fee = estimate_tx_fees(config, key_entry, account, tx_memo, messages.clone()).await?;
+    let fee = estimate_tx_fees(config, key_entry, account, tx_memo, messages).await?;
 
     send_tx_with_fee(config, key_entry, account, tx_memo, messages, &fee).await
 }
@@ -32,7 +32,7 @@ async fn send_tx_with_fee(
     key_entry: &KeyEntry,
     account: &Account,
     tx_memo: &Memo,
-    messages: Vec<Any>,
+    messages: &[Any],
     fee: &Fee,
 ) -> Result<Response, Error> {
     let tx_bytes = sign_and_encode_tx(config, key_entry, account, tx_memo, messages, fee)?;
@@ -78,7 +78,7 @@ pub async fn simple_send_tx(
         .into();
 
     let response =
-        estimate_fee_and_send_tx(config, key_entry, &account, &Default::default(), messages)
+        estimate_fee_and_send_tx(config, key_entry, &account, &Default::default(), &messages)
             .await?;
 
     if response.code.is_err() {

@@ -20,7 +20,7 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     cmd_rx: Receiver<WorkerCmd>,
 ) -> TaskHandle {
     spawn_background_task(
-        error_span!("connection", connection = %connection.short_name()),
+        error_span!("worker.connection", connection = %connection.short_name()),
         Some(Duration::from_millis(200)),
         move || {
             if let Ok(cmd) = cmd_rx.try_recv() {
@@ -30,7 +30,7 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                         // process the last event, the one with highest "rank".
                         let last_event_with_height = batch.events.last();
 
-                        debug!("starts processing {:#?}", last_event_with_height);
+                        debug!("starts processing {:?}", last_event_with_height);
 
                         if let Some(event_with_height) = last_event_with_height {
                             let mut handshake_connection = RelayConnection::restore_from_event(

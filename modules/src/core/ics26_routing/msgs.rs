@@ -11,7 +11,7 @@ use crate::core::ics04_channel::msgs::{
     chan_open_init, chan_open_try, recv_packet, timeout, timeout_on_close, ChannelMsg, PacketMsg,
 };
 use crate::core::ics26_routing::error::Error;
-use tendermint_proto::Protobuf;
+use ibc_proto::protobuf::Protobuf;
 
 /// Enumeration of all messages that the local ICS26 module is capable of routing.
 #[derive(Clone, Debug)]
@@ -30,17 +30,17 @@ impl TryFrom<Any> for Ics26Envelope {
             // ICS2 messages
             create_client::TYPE_URL => {
                 // Pop out the message and then wrap it in the corresponding type.
-                let domain_msg = create_client::MsgCreateAnyClient::decode_vec(&any_msg.value)
+                let domain_msg = create_client::MsgCreateClient::decode_vec(&any_msg.value)
                     .map_err(Error::malformed_message_bytes)?;
                 Ok(Ics26Envelope::Ics2Msg(ClientMsg::CreateClient(domain_msg)))
             }
             update_client::TYPE_URL => {
-                let domain_msg = update_client::MsgUpdateAnyClient::decode_vec(&any_msg.value)
+                let domain_msg = update_client::MsgUpdateClient::decode_vec(&any_msg.value)
                     .map_err(Error::malformed_message_bytes)?;
                 Ok(Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(domain_msg)))
             }
             upgrade_client::TYPE_URL => {
-                let domain_msg = upgrade_client::MsgUpgradeAnyClient::decode_vec(&any_msg.value)
+                let domain_msg = upgrade_client::MsgUpgradeClient::decode_vec(&any_msg.value)
                     .map_err(Error::malformed_message_bytes)?;
                 Ok(Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(domain_msg)))
             }

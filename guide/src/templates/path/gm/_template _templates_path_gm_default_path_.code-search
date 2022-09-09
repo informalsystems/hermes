@@ -1,0 +1,34 @@
+# Query: {{#template ../../templates/path/gm/default_path}}
+# ContextLines: 1
+
+7 résultats - Fichiers 4
+
+src/templates/path/default_path:
+  1: {{#template ../../templates/path/gm/default_path}}
+
+src/tutorials/local-chains/start-local-chains.md:
+   15  
+   16: Make sure you have the `{{#template ../../templates/path/gm/default_path}}` that we configured in the previous section [Install Gaiad Manager](../pre-requisites/gaiad-manager.md). If this is not the first time you are running the script, you can manually stop the two gaia instances executing the following command to kill all `gaiad` processes:
+   17  
+
+  235  > __TROUBLESHOOTING__: 
+  236: > - If the command does not out output anything, make sure the path to Hermes' binary is set in `{{#template ../../templates/path/gm/default_path}}`.
+  237  
+
+src/tutorials/more-chains/start-local-chains.md:
+   37  
+   38: Copy and paste the configuration below to `{{#template ../../templates/path/gm/default_path}}` and set Hermes' binary path according to your setup. The following contains the configuration of 4 IBC-enabled chains.
+   39  
+
+  284  > __TROUBLESHOOTING__: 
+  285: > - If the command does not out output anything, make sure the path to Hermes' binary is set in `{{#template ../../templates/path/gm/default_path}}`.
+  286  
+
+src/tutorials/pre-requisites/gaiad-manager.md:
+  69  ### The configuration: `gm.toml`
+  70: **Where**: `{{#template ../../templates/path/gm/default_path}}`.
+  71  
+
+  75  
+  76: Copy and paste below to `{{#template ../../templates/path/gm/default_path}}` and set Hermes' binary path according to your setup.
+  77  

@@ -6,7 +6,7 @@ use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_relayer::chain::cosmos::gas::calculate_fee;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::cosmos::types::gas::GasConfig;
-use ibc_relayer::config::GasPrice;
+use ibc_relayer::config::{AddressType, GasPrice};
 use tendermint_rpc::{HttpClient, Url};
 
 use crate::error::{handle_generic_error, Error};
@@ -40,6 +40,7 @@ pub fn new_tx_config_for_test(
     chain_id: ChainId,
     raw_rpc_address: String,
     raw_grpc_address: String,
+    address_type: AddressType,
 ) -> Result<TxConfig, Error> {
     let rpc_address = Url::from_str(&raw_rpc_address).map_err(handle_generic_error)?;
 
@@ -50,8 +51,6 @@ pub fn new_tx_config_for_test(
     let gas_config = gas_config_for_test();
 
     let rpc_timeout = Duration::from_secs(30);
-
-    let address_type = Default::default();
 
     let extension_options = Default::default();
 

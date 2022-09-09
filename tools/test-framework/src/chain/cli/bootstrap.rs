@@ -121,6 +121,7 @@ pub fn start_chain(
     home_path: &str,
     rpc_listen_address: &str,
     grpc_listen_address: &str,
+    extra_start_args: &[&str],
 ) -> Result<ChildProcess, Error> {
     let base_args = [
         "--home",
@@ -134,7 +135,8 @@ pub fn start_chain(
         rpc_listen_address,
     ];
 
-    let args: Vec<&str> = base_args.to_vec();
+    let mut args: Vec<&str> = base_args.to_vec();
+    args.extend(extra_start_args.iter());
 
     let mut child = Command::new(&command_path)
         .args(&args)

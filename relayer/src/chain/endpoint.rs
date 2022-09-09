@@ -1,23 +1,18 @@
 use alloc::sync::Arc;
 use core::convert::TryFrom;
-use ibc::core::ics02_client::events::UpdateClient;
-use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
-use ibc::core::ics23_commitment::merkle::MerkleProof;
 
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::core::ics02_client::client_consensus::{
-    AnyConsensusState, AnyConsensusStateWithHeight, ConsensusState,
-};
-use ibc::core::ics02_client::client_state::{
-    AnyClientState, ClientState, IdentifiedAnyClientState,
-};
+use ibc::core::ics02_client::client_state::ClientState;
+use ibc::core::ics02_client::consensus_state::ConsensusState;
+use ibc::core::ics02_client::events::UpdateClient;
 use ibc::core::ics02_client::header::Header;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd, State};
 use ibc::core::ics03_connection::version::{get_compatible_versions, Version};
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
+use ibc::core::ics23_commitment::merkle::MerkleProof;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 use ibc::events::IbcEvent;
 use ibc::proofs::{ConsensusProof, Proofs};
@@ -38,13 +33,17 @@ use crate::chain::requests::{
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
+use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
+use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::denom::DenomTrace;
 use crate::error::{Error, QUERY_PROOF_EXPECT_MSG};
 use crate::event::monitor::{EventReceiver, TxMonitorCmd};
 use crate::event::IbcEventWithHeight;
 use crate::keyring::{KeyEntry, KeyRing};
+use crate::light_client::AnyHeader;
+use crate::misbehaviour::MisbehaviourEvidence;
 
 use super::requests::{
     IncludeProof, QueryBlockRequest, QueryHeight, QueryPacketAcknowledgementRequest,
@@ -71,13 +70,13 @@ pub trait ChainEndpoint: Sized {
     type LightBlock: Send + Sync;
 
     /// Type of headers for this chain
-    type Header: Header;
+    type Header: Header + Into<AnyHeader>;
 
     /// Type of consensus state for this chain
-    type ConsensusState: ConsensusState;
+    type ConsensusState: ConsensusState + Into<AnyConsensusState>;
 
     /// Type of the client state for this chain
-    type ClientState: ClientState;
+    type ClientState: ClientState + Into<AnyClientState>;
 
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId;

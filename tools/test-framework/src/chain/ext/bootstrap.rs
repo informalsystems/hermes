@@ -20,8 +20,6 @@ use crate::ibc::token::Token;
 use crate::types::process::ChildProcess;
 use crate::types::wallet::{Wallet, WalletAddress, WalletId};
 
-const COSMOS_HD_PATH: &str = "m/44'/118'/0'/0/0";
-
 pub trait ChainBootstrapMethodsExt {
     /**
        Read the content at a file path relative to the chain home
@@ -173,7 +171,7 @@ impl ChainBootstrapMethodsExt for ChainDriver {
         let seed_path = format!("{}-seed.json", wallet_id);
         self.write_file(&seed_path, &seed_content)?;
 
-        let hd_path = HDPath::from_str(COSMOS_HD_PATH)
+        let hd_path = HDPath::from_str(self.chain_type.hd_path())
             .map_err(|e| eyre!("failed to create HDPath: {:?}", e))?;
 
         let key_file: KeyFile = json::from_str(&seed_content).map_err(handle_generic_error)?;
@@ -210,11 +208,17 @@ impl ChainBootstrapMethodsExt for ChainDriver {
     }
 
     fn start(&self) -> Result<ChildProcess, Error> {
+        let extra_start_args = self.chain_type.extra_start_args();
+
         start_chain(
             &self.command_path,
             &self.home_path,
             &self.rpc_listen_address(),
             &self.grpc_listen_address(),
+            &extra_start_args
+                .iter()
+                .map(|s| s.as_ref())
+                .collect::<Vec<_>>(),
         )
     }
 }

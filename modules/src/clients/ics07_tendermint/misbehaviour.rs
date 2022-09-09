@@ -1,16 +1,17 @@
 use crate::prelude::*;
 
-use tendermint_proto::Protobuf;
-
 use ibc_proto::ibc::lightclients::tendermint::v1::Misbehaviour as RawMisbehaviour;
+use ibc_proto::protobuf::Protobuf;
+use serde::{Deserialize, Serialize};
 
 use crate::clients::ics07_tendermint::error::Error;
 use crate::clients::ics07_tendermint::header::Header;
-use crate::core::ics02_client::misbehaviour::AnyMisbehaviour;
 use crate::core::ics24_host::identifier::ClientId;
 use crate::Height;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+pub const TENDERMINT_MISBEHAVIOR_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Misbehaviour";
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Misbehaviour {
     pub client_id: ClientId,
     pub header1: Header,
@@ -24,10 +25,6 @@ impl crate::core::ics02_client::misbehaviour::Misbehaviour for Misbehaviour {
 
     fn height(&self) -> Height {
         self.header1.height()
-    }
-
-    fn wrap_any(self) -> AnyMisbehaviour {
-        AnyMisbehaviour::Tendermint(self)
     }
 }
 
@@ -65,7 +62,7 @@ impl core::fmt::Display for Misbehaviour {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(
             f,
-            "{:?} h1: {:?}-{:?} h2: {:?}-{:?}",
+            "{} h1: {}-{} h2: {}-{}",
             self.client_id,
             self.header1.height(),
             self.header1.trusted_height,

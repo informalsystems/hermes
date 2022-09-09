@@ -15,16 +15,15 @@ use crate::handler::{HandlerOutput, HandlerResult};
 use crate::prelude::*;
 use crate::proofs::{ProofError, Proofs};
 
-pub fn process(
-    ctx: &dyn ChannelReader,
+pub fn process<Ctx: ChannelReader>(
+    ctx: &Ctx,
     msg: &MsgTimeoutOnClose,
 ) -> HandlerResult<PacketResult, Error> {
     let mut output = HandlerOutput::builder();
 
     let packet = &msg.packet;
 
-    let source_channel_end =
-        ctx.channel_end(&(packet.source_port.clone(), packet.source_channel.clone()))?;
+    let source_channel_end = ctx.channel_end(&packet.source_port, &packet.source_channel)?;
 
     let counterparty = Counterparty::new(
         packet.destination_port.clone(),
@@ -41,11 +40,8 @@ pub fn process(
     let connection_end = ctx.connection_end(&source_channel_end.connection_hops()[0])?;
 
     //verify the packet was sent, check the store
-    let packet_commitment = ctx.get_packet_commitment(&(
-        packet.source_port.clone(),
-        packet.source_channel.clone(),
-        packet.sequence,
-    ))?;
+    let packet_commitment =
+        ctx.get_packet_commitment(&packet.source_port, &packet.source_channel, packet.sequence)?;
 
     let expected_commitment = ctx.packet_commitment(
         packet.data.clone(),

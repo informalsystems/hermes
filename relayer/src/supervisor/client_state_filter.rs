@@ -3,7 +3,7 @@ use alloc::collections::BTreeMap as HashMap;
 use flex_error::define_error;
 use tracing::{debug, trace};
 
-use ibc::core::ics02_client::client_state::{AnyClientState, ClientState};
+use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc::core::ics03_connection::connection::ConnectionEnd;
 use ibc::core::ics04_channel::error::Error as ChannelError;
@@ -13,6 +13,7 @@ use crate::chain::handle::ChainHandle;
 use crate::chain::requests::{
     IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
+use crate::client_state::AnyClientState;
 use crate::error::Error as RelayerError;
 use crate::object;
 use crate::registry::Registry;
@@ -93,15 +94,13 @@ impl FilterPolicy {
     ) -> Result<Permission, FilterError> {
         let identifier = CacheKey::Connection(chain_id.clone(), connection_id.clone());
 
-        trace!(
-            "[client filter] controlling permissions for {:?}",
-            identifier
-        );
+        trace!("controlling permissions");
 
         // Return if cache hit
-        if let Some(p) = self.permission_cache.get(&identifier) {
-            trace!("[client filter] cache hit {:?} for {:?}", p, identifier);
-            return Ok(*p);
+        if let Some(permission) = self.permission_cache.get(&identifier) {
+            trace!(?permission, "cache hit");
+
+            return Ok(*permission);
         }
 
         // Fetch the details of the client on counterparty chain.
@@ -109,6 +108,7 @@ impl FilterPolicy {
         let counterparty_chain = registry
             .get_or_spawn(&counterparty_chain_id)
             .map_err(FilterError::spawn)?;
+
         let counterparty_client_id = connection.counterparty().client_id();
         let (counterparty_client_state, _) = {
             counterparty_chain
@@ -129,12 +129,14 @@ impl FilterPolicy {
             counterparty_client_id,
             &counterparty_client_state,
         );
+
         let permission = client_permission.and(&counterparty_client_permission);
 
         debug!(
-            "[client filter] {:?}: relay for conn {:?}",
-            permission, identifier,
+            ?permission,
+            "computed permission for client and counterparty client"
         );
+
         // Save the connection id in the cache
         self.permission_cache
             .entry(identifier)
@@ -156,30 +158,31 @@ impl FilterPolicy {
     ) -> Permission {
         let identifier = CacheKey::Client(host_chain.clone(), client_id.clone());
 
-        trace!(
-            "[client filter] controlling permissions for {:?}",
-            identifier
-        );
+        let _span = tracing::error_span!("control.client", client = ?identifier);
+
+        trace!("controlling permissions");
 
         // Return if cache hit
-        if let Some(p) = self.permission_cache.get(&identifier) {
-            trace!("[client filter] cache hit {:?} for {:?}", p, identifier);
-            return *p;
+        if let Some(permission) = self.permission_cache.get(&identifier) {
+            trace!(?permission, "cache hit");
+
+            return *permission;
         }
 
         let permission = match state.trust_threshold() {
             Some(trust) if trust == TrustThreshold::ONE_THIRD => Permission::Allow,
             Some(_) => {
                 trace!(
-                    "[client filter] client {} on chain {} has a trust threshold different than 1/3",
-                    client_id, host_chain
+                    "client {} on chain {} has a trust threshold different than 1/3",
+                    client_id,
+                    host_chain
                 );
 
                 Permission::Deny
             }
             None => {
                 trace!(
-                    "[client filter] client {} on chain {} does not have a trust threshold set",
+                    "client {} on chain {} does not have a trust threshold set",
                     client_id,
                     host_chain
                 );
@@ -188,10 +191,7 @@ impl FilterPolicy {
             }
         };
 
-        debug!(
-            "[client filter] {:?}: relay for client {:?}",
-            permission, identifier
-        );
+        debug!(?permission, "computed permission");
 
         self.permission_cache
             .entry(identifier)
@@ -207,26 +207,22 @@ impl FilterPolicy {
     ) -> Result<Permission, FilterError> {
         let identifier = CacheKey::Client(obj.dst_chain_id.clone(), obj.dst_client_id.clone());
 
-        trace!(
-            "[client filter] controlling permissions for {:?}",
-            identifier
-        );
+        let _span = tracing::error_span!("control.client", client = ?identifier);
+
+        trace!("controlling permissions");
 
         // Return if cache hit
-        if let Some(p) = self.permission_cache.get(&identifier) {
-            trace!("[client filter] cache hit {:?} for {:?}", p, identifier);
-            return Ok(*p);
+        if let Some(permission) = self.permission_cache.get(&identifier) {
+            trace!(?permission, "cache hit");
+
+            return Ok(*permission);
         }
 
         let chain = registry
             .get_or_spawn(&obj.dst_chain_id)
             .map_err(FilterError::spawn)?;
 
-        trace!(
-            "[client filter] deciding if to relay on {:?} hosted chain {}",
-            obj.dst_client_id,
-            obj.dst_chain_id
-        );
+        trace!("deciding whether to relay on client");
 
         let (client_state, _) = chain
             .query_client_state(
@@ -249,26 +245,22 @@ impl FilterPolicy {
         let identifier =
             CacheKey::Connection(obj.src_chain_id.clone(), obj.src_connection_id.clone());
 
-        trace!(
-            "[client filter] controlling permissions for {:?}",
-            identifier
-        );
+        let _span = tracing::error_span!("control.connection", connection = ?identifier).entered();
+
+        trace!("controlling permissions");
 
         // Return if cache hit
-        if let Some(p) = self.permission_cache.get(&identifier) {
-            trace!("[client filter] cache hit {:?} for {:?}", p, identifier);
-            return Ok(*p);
+        if let Some(permission) = self.permission_cache.get(&identifier) {
+            trace!(?permission, "cache hit");
+
+            return Ok(*permission);
         }
 
         let src_chain = registry
             .get_or_spawn(&obj.src_chain_id)
             .map_err(FilterError::spawn)?;
 
-        trace!(
-            "[client filter] deciding if to relay on {:?} hosted on chain {}",
-            obj,
-            obj.src_chain_id
-        );
+        trace!("deciding whether to relay on connection");
 
         let (connection_end, _) = src_chain
             .query_connection(
@@ -308,15 +300,14 @@ impl FilterPolicy {
     ) -> Result<Permission, FilterError> {
         let identifier = CacheKey::Channel(chain_id.clone(), port_id.clone(), channel_id.clone());
 
-        trace!(
-            "[client filter] controlling permissions for {:?}",
-            identifier
-        );
+        let _span = tracing::error_span!("control.channel", channel = ?identifier).entered();
+
+        trace!("controlling permissions");
 
         // Return if cache hit
-        if let Some(p) = self.permission_cache.get(&identifier) {
-            trace!("[client filter] cache hit {:?} for {:?}", p, identifier);
-            return Ok(*p);
+        if let Some(permission) = self.permission_cache.get(&identifier) {
+            trace!(?permission, "cache hit");
+            return Ok(*permission);
         }
 
         let src_chain = registry
@@ -369,14 +360,11 @@ impl FilterPolicy {
             conn_id,
         )?;
 
-        let key = CacheKey::Channel(chain_id.clone(), port_id.clone(), channel_id.clone());
+        debug!(?permission, "computed permission",);
 
-        debug!(
-            "[client filter] {:?}: relay for channel {:?}: ",
-            permission, key
-        );
-
-        self.permission_cache.entry(key).or_insert(permission);
+        self.permission_cache
+            .entry(identifier)
+            .or_insert(permission);
 
         Ok(permission)
     }

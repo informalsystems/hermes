@@ -1,15 +1,20 @@
 use alloc::sync::Arc;
-use core::{fmt, ops::Deref, str::FromStr};
+use core::{
+    fmt::{Display, Error as FmtError, Formatter},
+    ops::Deref,
+    str::FromStr,
+};
 use std::thread;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{application::fatal_error, Runnable};
 use itertools::Itertools;
 use tokio::runtime::Runtime as TokioRuntime;
-use tracing::{error, info};
+use tracing::{error, info, instrument};
 
 use ibc::{core::ics24_host::identifier::ChainId, events::IbcEvent};
 
+use eyre::eyre;
 use ibc_relayer::{
     config::ChainConfig,
     event::monitor::{EventMonitor, EventReceiver},
@@ -32,8 +37,8 @@ impl EventFilter {
     }
 }
 
-impl fmt::Display for EventFilter {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for EventFilter {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
             Self::NewBlock => write!(f, "NewBlock"),
             Self::Tx => write!(f, "Tx"),
@@ -71,12 +76,12 @@ pub struct ListenCmd {
 }
 
 impl ListenCmd {
-    fn cmd(&self) -> Result<(), Box<dyn std::error::Error>> {
+    fn cmd(&self) -> eyre::Result<()> {
         let config = app_config();
 
         let chain_config = config
             .find_chain(&self.chain_id)
-            .ok_or_else(|| format!("chain '{}' not found in configuration", self.chain_id))?;
+            .ok_or_else(|| eyre!("chain '{}' not found in configuration", self.chain_id))?;
 
         let events = if self.events.is_empty() {
             &[EventFilter::Tx, EventFilter::NewBlock]
@@ -96,16 +101,14 @@ impl Runnable for ListenCmd {
 }
 
 /// Listen to events
-pub fn listen(
-    config: &ChainConfig,
-    filters: &[EventFilter],
-) -> Result<(), Box<dyn std::error::Error>> {
+
+#[instrument(skip_all, level = "error", fields(chain = %config.id))]
+pub fn listen(config: &ChainConfig, filters: &[EventFilter]) -> eyre::Result<()> {
     let rt = Arc::new(TokioRuntime::new()?);
     let (event_monitor, rx) = subscribe(config, rt)?;
 
     info!(
-        "[{}] listening for queries {}",
-        config.id,
+        "listening for queries: {}",
         event_monitor.queries().iter().format(", "),
     );
 
@@ -114,6 +117,9 @@ pub fn listen(
     while let Ok(event_batch) = rx.recv() {
         match event_batch {
             Ok(batch) => {
+                let _span =
+                    tracing::error_span!("event_batch", batch_height = %batch.height).entered();
+
                 let matching_events = batch
                     .events
                     .into_iter()
@@ -124,13 +130,9 @@ pub fn listen(
                     continue;
                 }
 
-                info!("- event batch at height {}", batch.height);
-
                 for event in matching_events {
-                    info!("+ {:#?}", event);
+                    info!("{}", event);
                 }
-
-                info!("");
             }
             Err(e) => error!("- error: {}", e),
         }
@@ -146,17 +148,17 @@ fn event_match(event: &IbcEvent, filters: &[EventFilter]) -> bool {
 fn subscribe(
     chain_config: &ChainConfig,
     rt: Arc<TokioRuntime>,
-) -> Result<(EventMonitor, EventReceiver), Box<dyn std::error::Error>> {
+) -> eyre::Result<(EventMonitor, EventReceiver)> {
     let (mut event_monitor, rx, _) = EventMonitor::new(
         chain_config.id.clone(),
         chain_config.websocket_addr.clone(),
         rt,
     )
-    .map_err(|e| format!("could not initialize event monitor: {}", e))?;
+    .map_err(|e| eyre!("could not initialize event monitor: {}", e))?;
 
     event_monitor
         .subscribe()
-        .map_err(|e| format!("could not initialize subscriptions: {}", e))?;
+        .map_err(|e| eyre!("could not initialize subscriptions: {}", e))?;
 
     Ok((event_monitor, rx))
 }

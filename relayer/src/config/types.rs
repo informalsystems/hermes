@@ -199,7 +199,8 @@ pub mod memo {
     impl Memo {
         const MAX_LEN: usize = 50;
 
-        pub fn new(memo: String) -> Result<Self, Error> {
+        pub fn new(memo: impl Into<String>) -> Result<Self, Error> {
+            let memo = memo.into();
             if memo.len() > Self::MAX_LEN {
                 return Err(Error::too_long(memo.len()));
             }
@@ -249,10 +250,10 @@ pub mod memo {
         }
     }
 
-    use core::fmt;
+    use core::fmt::{Display, Error as FmtError, Formatter};
 
-    impl fmt::Display for Memo {
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    impl Display for Memo {
+        fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
             write!(f, "{}", self.as_str())
         }
     }

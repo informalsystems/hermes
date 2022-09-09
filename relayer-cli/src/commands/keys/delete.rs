@@ -1,6 +1,7 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
+use eyre::eyre;
 use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::{
     config::{ChainConfig, Config},
@@ -47,13 +48,10 @@ pub struct KeysDeleteCmd {
 }
 
 impl KeysDeleteCmd {
-    fn options(
-        &self,
-        config: &Config,
-    ) -> Result<KeysDeleteOptions<'_>, Box<dyn std::error::Error>> {
+    fn options(&self, config: &Config) -> eyre::Result<KeysDeleteOptions<'_>> {
         let chain_config = config
             .find_chain(&self.chain_id)
-            .ok_or_else(|| format!("chain '{}' not found in configuration file", self.chain_id))?;
+            .ok_or_else(|| eyre!("chain '{}' not found in configuration file", self.chain_id))?;
 
         let id = match (self.all, &self.key_name) {
             (true, None) => KeysDeleteId::All,
@@ -113,13 +111,13 @@ impl Runnable for KeysDeleteCmd {
     }
 }
 
-pub fn delete_key(config: &ChainConfig, key_name: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub fn delete_key(config: &ChainConfig, key_name: &str) -> eyre::Result<()> {
     let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
     keyring.remove_key(key_name)?;
     Ok(())
 }
 
-pub fn delete_all_keys(config: &ChainConfig) -> Result<(), Box<dyn std::error::Error>> {
+pub fn delete_all_keys(config: &ChainConfig) -> eyre::Result<()> {
     let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
     let keys = keyring.keys()?;
     for key in keys {

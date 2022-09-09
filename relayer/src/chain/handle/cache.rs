@@ -1,14 +1,13 @@
+use core::fmt::{Display, Error as FmtError, Formatter};
 use crossbeam_channel as channel;
-use ibc::core::ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight};
-use ibc::core::ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState};
+use tracing::Span;
+
 use ibc::core::ics02_client::events::UpdateClient;
-use ibc::core::ics02_client::misbehaviour::MisbehaviourEvidence;
 use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::merkle::MerkleProof;
 use ibc::{
-    core::ics02_client::header::AnyHeader,
     core::ics03_connection::connection::ConnectionEnd,
     core::ics03_connection::version::Version,
     core::ics04_channel::channel::ChannelEnd,
@@ -21,31 +20,24 @@ use ibc::{
     signer::Signer,
     Height,
 };
-use serde::{Serialize, Serializer};
 
 use crate::account::Balance;
 use crate::cache::{Cache, CacheStatus};
 use crate::chain::client::ClientSettings;
 use crate::chain::endpoint::{ChainStatus, HealthCheck};
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
-use crate::chain::requests::{
-    IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
-    QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
-    QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
-    QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHeight,
-    QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
-    QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
-    QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
-};
+use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
+use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;
+use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
 use crate::keyring::KeyEntry;
+use crate::light_client::AnyHeader;
+use crate::misbehaviour::MisbehaviourEvidence;
 use crate::telemetry;
 
 /// A chain handle with support for caching.
@@ -69,17 +61,18 @@ impl<Handle> CachingChainHandle<Handle> {
     }
 }
 
-impl<Handle: Serialize> Serialize for CachingChainHandle<Handle> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        self.inner.serialize(serializer)
+impl<Handle: ChainHandle> Display for CachingChainHandle<Handle> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(
+            f,
+            "CachingChainHandle {{ chain_id: {} }}",
+            self.inner().id()
+        )
     }
 }
 
 impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
-    fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self {
+    fn new(chain_id: ChainId, sender: channel::Sender<(Span, ChainRequest)>) -> Self {
         Self::new(Handle::new(chain_id, sender))
     }
 

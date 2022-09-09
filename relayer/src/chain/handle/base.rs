@@ -1,15 +1,11 @@
-use core::fmt::Debug;
+use core::fmt::{Debug, Display, Error as FmtError, Formatter};
 
 use crossbeam_channel as channel;
-use serde::{Serialize, Serializer};
+use tracing::Span;
 
 use ibc::{
     core::{
-        ics02_client::client_consensus::{AnyConsensusState, AnyConsensusStateWithHeight},
-        ics02_client::client_state::{AnyClientState, IdentifiedAnyClientState},
         ics02_client::events::UpdateClient,
-        ics02_client::header::AnyHeader,
-        ics02_client::misbehaviour::MisbehaviourEvidence,
         ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
         ics03_connection::version::Version,
         ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd},
@@ -27,28 +23,17 @@ use ibc::{
 
 use crate::{
     account::Balance,
-    chain::{
-        client::ClientSettings,
-        endpoint::ChainStatus,
-        requests::{
-            IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
-            QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
-            QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
-            QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
-            QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
-            QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
-            QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
-            QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-            QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
-        },
-        tracking::TrackedMsgs,
-    },
+    chain::{client::ClientSettings, endpoint::ChainStatus, requests::*, tracking::TrackedMsgs},
+    client_state::{AnyClientState, IdentifiedAnyClientState},
     config::ChainConfig,
     connection::ConnectionMsgType,
+    consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight},
     denom::DenomTrace,
     error::Error,
     event::IbcEventWithHeight,
     keyring::KeyEntry,
+    light_client::AnyHeader,
+    misbehaviour::MisbehaviourEvidence,
 };
 
 use super::{reply_channel, ChainHandle, ChainRequest, HealthCheck, ReplyTo, Subscription};
@@ -61,11 +46,11 @@ pub struct BaseChainHandle {
     chain_id: ChainId,
 
     /// The handle's channel for sending requests to the runtime
-    runtime_sender: channel::Sender<ChainRequest>,
+    runtime_sender: channel::Sender<(Span, ChainRequest)>,
 }
 
 impl BaseChainHandle {
-    pub fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self {
+    pub fn new(chain_id: ChainId, sender: channel::Sender<(Span, ChainRequest)>) -> Self {
         Self {
             chain_id,
             runtime_sender: sender,
@@ -78,16 +63,26 @@ impl BaseChainHandle {
         O: Debug,
     {
         let (sender, receiver) = reply_channel();
+
+        let span = Span::current();
         let input = f(sender);
 
-        self.runtime_sender.send(input).map_err(Error::send)?;
+        self.runtime_sender
+            .send((span, input))
+            .map_err(Error::send)?;
 
         receiver.recv().map_err(Error::channel_receive)?
     }
 }
 
+impl Display for BaseChainHandle {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "BaseChainHandle {{ chain_id: {} }}", self.chain_id)
+    }
+}
+
 impl ChainHandle for BaseChainHandle {
-    fn new(chain_id: ChainId, sender: channel::Sender<ChainRequest>) -> Self {
+    fn new(chain_id: ChainId, sender: channel::Sender<(Span, ChainRequest)>) -> Self {
         Self::new(chain_id, sender)
     }
 
@@ -490,14 +485,5 @@ impl ChainHandle for BaseChainHandle {
             counterparty_payee,
             reply_to,
         })
-    }
-}
-
-impl Serialize for BaseChainHandle {
-    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
-    where
-        S: Serializer,
-    {
-        self.id().serialize(serializer)
     }
 }

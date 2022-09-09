@@ -1,10 +1,11 @@
 use core::fmt::Display;
 
 use crate::prelude::*;
+use crate::utils::pretty::PrettyVec;
 
 use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
+use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
-use tendermint_proto::Protobuf;
 
 use crate::core::ics03_connection::error::Error;
 use crate::core::ics04_channel::channel::Order;
@@ -68,7 +69,12 @@ impl Default for Version {
 
 impl Display for Version {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "{}", self.identifier)
+        write!(
+            f,
+            "Version {{ identifier: {}, features: {} }}",
+            self.identifier,
+            PrettyVec(&self.features)
+        )
     }
 }
 

@@ -3,6 +3,7 @@ use ibc_relayer::worker::client::spawn_refresh_client;
 
 use ibc_test_framework::bootstrap::binary::chain::bootstrap_foreign_client_pair;
 use ibc_test_framework::bootstrap::binary::connection::bootstrap_connection;
+use ibc_test_framework::chain::ext::transfer::ChainTransferMethodsExt;
 use ibc_test_framework::chain::tagged::TaggedChainDriverExt;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;

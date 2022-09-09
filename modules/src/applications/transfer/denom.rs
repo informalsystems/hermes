@@ -1,4 +1,4 @@
-use core::fmt::{self, Display};
+use core::fmt::{Display, Error as FmtError, Formatter};
 use core::str::FromStr;
 
 use derive_more::{Display, From};
@@ -43,7 +43,7 @@ impl TracePrefix {
 }
 
 impl Display for TracePrefix {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}/{}", self.port_id, self.channel_id)
     }
 }
@@ -121,7 +121,7 @@ impl FromStr for TracePath {
 }
 
 impl Display for TracePath {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         let path = self
             .0
             .iter()
@@ -260,7 +260,7 @@ impl From<BaseDenom> for PrefixedDenom {
 }
 
 impl Display for PrefixedDenom {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         if self.trace_path.0.is_empty() {
             write!(f, "{}", self.base_denom)
         } else {

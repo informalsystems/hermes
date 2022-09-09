@@ -2,10 +2,13 @@
 //! represented as a fraction with valid values in the
 //! range `[0, 1)`.
 
-use core::{convert::TryFrom, fmt};
+use core::{
+    convert::TryFrom,
+    fmt::{Display, Error as FmtError, Formatter},
+};
 
+use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
-use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::lightclients::tendermint::v1::Fraction;
 use tendermint::trust_threshold::TrustThresholdFraction;
@@ -94,7 +97,7 @@ impl TryFrom<TrustThreshold> for TrustThresholdFraction {
 
     fn try_from(t: TrustThreshold) -> Result<TrustThresholdFraction, Error> {
         Self::new(t.numerator, t.denominator)
-            .map_err(|e| Error::failed_trust_threshold_conversion(t.numerator, t.denominator, e))
+            .map_err(|_| Error::failed_trust_threshold_conversion(t.numerator, t.denominator))
     }
 }
 
@@ -123,8 +126,8 @@ impl Default for TrustThreshold {
     }
 }
 
-impl fmt::Display for TrustThreshold {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for TrustThreshold {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}/{}", self.numerator, self.denominator)
     }
 }

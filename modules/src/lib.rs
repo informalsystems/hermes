@@ -55,6 +55,7 @@ pub mod applications;
 pub mod bigint;
 pub mod clients;
 pub mod core;
+pub mod dynamic_typing;
 pub mod events;
 pub mod handler;
 pub mod keys;
@@ -64,6 +65,7 @@ pub mod relayer;
 pub mod signer;
 pub mod timestamp;
 pub mod tx_msg;
+pub mod utils;
 
 mod serializers;
 

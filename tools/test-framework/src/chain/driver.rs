@@ -21,6 +21,8 @@ use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::wallet::WalletAddress;
 use crate::util::retry::assert_eventually_succeed;
 
+use super::chain_type::ChainType;
+
 /**
    Number of times (seconds) to try and query a wallet to reach the
    target amount, as used by [`assert_eventual_wallet_amount`].
@@ -51,6 +53,7 @@ const WAIT_WALLET_AMOUNT_ATTEMPTS: u16 = 90;
 
 #[derive(Debug, Clone)]
 pub struct ChainDriver {
+    pub chain_type: ChainType,
     /**
        The filesystem path to the Gaia CLI. Defaults to `gaiad`.
     */
@@ -102,6 +105,7 @@ impl ExportEnv for ChainDriver {
 impl ChainDriver {
     /// Create a new [`ChainDriver`]
     pub fn create(
+        chain_type: ChainType,
         command_path: String,
         chain_id: ChainId,
         home_path: String,
@@ -116,9 +120,11 @@ impl ChainDriver {
             chain_id.clone(),
             format!("http://localhost:{}", rpc_port),
             format!("http://localhost:{}", grpc_port),
+            chain_type.address_type(),
         )?;
 
         Ok(Self {
+            chain_type,
             command_path,
             chain_id,
             home_path,

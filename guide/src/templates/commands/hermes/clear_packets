@@ -1,0 +1,1 @@
+[[#binary hermes]] clear packets --chain [[#chain]] --port [[#port]] --channel [[#channel]]

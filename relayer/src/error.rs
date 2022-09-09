@@ -5,6 +5,7 @@ use core::time::Duration;
 use flex_error::{define_error, DisplayOnly, TraceError};
 use http::uri::InvalidUri;
 use humantime::format_duration;
+use ibc_proto::protobuf::Error as TendermintProtoError;
 use prost::{DecodeError, EncodeError};
 use regex::Regex;
 use tendermint::Error as TendermintError;
@@ -12,7 +13,6 @@ use tendermint_light_client::components::io::IoError as LightClientIoError;
 use tendermint_light_client::errors::{
     Error as LightClientError, ErrorDetail as LightClientErrorDetail,
 };
-use tendermint_proto::Error as TendermintProtoError;
 use tendermint_rpc::endpoint::abci_query::AbciQuery;
 use tendermint_rpc::endpoint::broadcast::tx_commit::TxResult;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxSyncResponse;
@@ -468,6 +468,15 @@ define_error! {
                     e.chain_id, e.default_gas, e.max_gas)
             },
 
+        ConfigValidationGasMultiplierLow
+            {
+                chain_id: ChainId,
+                gas_multiplier: f64,
+            }
+            |e| {
+                format!("semantic config validation failed for option `gas_multiplier` of chain '{}', reason: gas multiplier ({}) is smaller than `1.1`, which could trigger gas fee errors in production", e.chain_id, e.gas_multiplier)
+            },
+
         SdkModuleVersion
             {
                 chain_id: ChainId,
@@ -484,7 +493,7 @@ define_error! {
                 type_url: String
             }
             |e| {
-                format!("Failed to deserialize account of an unknown protobuf type: {0}", e.type_url)
+                format!("failed to deserialize account of an unknown protobuf type: {0}", e.type_url)
             },
 
         EmptyBaseAccount
@@ -521,10 +530,10 @@ define_error! {
                     "Query/DenomTrace RPC returned an empty denom trace for trace hash: {}", e.hash)
             },
 
-        MessageExceedsMaxTxSize
+        MessageTooBigForTx
             { len: usize }
-            | e | {
-                format_args!("message length {} exceeds maximum transaction size", e.len)
+            |e| {
+                format_args!("message with length {} is too large for a transaction", e.len)
             },
     }
 }

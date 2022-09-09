@@ -1,6 +1,5 @@
-use core::fmt::{self, Display};
-use core::str::from_utf8;
-use core::str::FromStr;
+use core::fmt::{Display, Error as FmtError, Formatter};
+use core::str::{from_utf8, FromStr};
 use ibc_proto::cosmos::base::v1beta1::Coin as ProtoCoin;
 use safe_regex::regex;
 use serde::{Deserialize, Serialize};
@@ -48,6 +47,15 @@ impl<D> Coin<D> {
     }
 }
 
+impl<D: FromStr> Coin<D>
+where
+    D::Err: Into<Error>,
+{
+    pub fn from_string_list(coin_str: &str) -> Result<Vec<Self>, Error> {
+        coin_str.split(',').map(FromStr::from_str).collect()
+    }
+}
+
 impl<D: FromStr> FromStr for Coin<D>
 where
     D::Err: Into<Error>,
@@ -74,15 +82,6 @@ where
             .map_err(Into::into)?;
 
         Ok(Coin { amount, denom })
-    }
-}
-
-impl<D: FromStr> Coin<D>
-where
-    D::Err: Into<Error>,
-{
-    pub fn from_string_list(coin_str: &str) -> Result<Vec<Self>, Error> {
-        coin_str.split(',').map(FromStr::from_str).collect()
     }
 }
 
@@ -118,7 +117,7 @@ impl From<BaseCoin> for PrefixedCoin {
 }
 
 impl<D: Display> Display for Coin<D> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}{}", self.amount, self.denom)
     }
 }

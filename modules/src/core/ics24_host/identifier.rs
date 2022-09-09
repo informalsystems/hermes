@@ -1,5 +1,5 @@
 use core::convert::{From, Infallible};
-use core::fmt::{self, Debug, Display, Formatter};
+use core::fmt::{Debug, Display, Error as FmtError, Formatter};
 use core::str::FromStr;
 
 use serde::{Deserialize, Serialize};
@@ -110,7 +110,7 @@ impl FromStr for ChainId {
 }
 
 impl Display for ChainId {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}", self.id)
     }
 }
@@ -185,7 +185,7 @@ impl ClientId {
 
 /// This implementation provides a `to_string` method.
 impl Display for ClientId {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}", self.0)
     }
 }
@@ -255,7 +255,7 @@ impl ConnectionId {
 
 /// This implementation provides a `to_string` method.
 impl Display for ConnectionId {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}", self.0)
     }
 }
@@ -310,7 +310,7 @@ impl PortId {
 
 /// This implementation provides a `to_string` method.
 impl Display for PortId {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}", self.0)
     }
 }
@@ -370,7 +370,7 @@ impl ChannelId {
 
 /// This implementation provides a `to_string` method.
 impl Display for ChannelId {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}", self.0)
     }
 }
@@ -426,7 +426,7 @@ impl PortChannelId {
 }
 
 impl Display for PortChannelId {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}/{}", self.port_id, self.channel_id)
     }
 }
