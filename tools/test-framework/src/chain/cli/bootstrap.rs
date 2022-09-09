@@ -173,10 +173,13 @@ pub fn start_chain(
     match status {
         None => Ok(ChildProcess::new(child)),
         Some(status) => {
+            let stdout_output = fs::read_to_string(stdout_path)?;
             let stderr_output = fs::read_to_string(stderr_path)?;
+
             Err(eyre!(
-                "expected full node process to be running, but it exited immediately with exit status {} and STDERR: {}",
+                "expected full node process to be running, but it exited immediately with exit status {} and output: {}\n{}",
                 status,
+                stdout_output,
                 stderr_output,
             ).into())
         }
