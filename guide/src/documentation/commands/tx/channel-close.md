@@ -17,7 +17,7 @@ Use the `chan-close-init` command to initialize the closure of a channel.
 __Example__
 
 ```shell
-hermes tx chan-close-init --dst-chain ibc-0 --src-chain ibc-1 --dst-connection connection-0 --dst-port transfer --src-port transfer --dst-channel channel-0 --src-channel channel-1
+{{#template ../../../templates/commands/hermes/tx/chan-close-init_1.md DST_CHAIN_ID=ibc-0 SRC_CHAIN_ID=ibc-1 DST_CONNECTION_ID=connection-0 DST_PORT_ID=transfer SRC_PORT_ID=transfer DST_CHANNEL_ID=channel-0 SRC_CHANNEL_ID=channel-1}}
 ```
 
 ```json
@@ -63,7 +63,7 @@ Use the `chan-close-confirm` command to confirm the closure of a channel.
 __Example__
 
 ```shell
-hermes tx chan-close-confirm --dst-chain ibc-1 --src-chain ibc-0 --dst-connection connection-1 --src-port transfer --dst-port transfer --dst-channel channel-1 --src-channel channel-0
+{{#template ../../../templates/commands/hermes/tx/chan-close-confirm_1.md DST_CHAIN_ID=ibc-1 SRC_CHAIN_ID=ibc-0 DST_CONNECTION_ID=connection-1 DST_PORT_ID=transfer SRC_PORT_ID=transfer DST_CHANNEL_ID=channel-1 SRC_CHANNEL_ID=channel-0}}
 ```
 
 ```json

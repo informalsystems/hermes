@@ -2,7 +2,7 @@ DESCRIPTION:
 Send an IBC upgrade plan
 
 USAGE:
-    hermes tx upgrade-chain [OPTIONS] --reference-chain <REFERENCE_CHAIN_ID> --host-chain <HOST_CHAIN_ID> --host-client <HOST_CLIENT_ID> --amount <AMOUNT> --height-offset <HEIGHT_OFFSET>
+    hermes tx upgrade-chain [OPTIONS] --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --src-client <SRC_CLIENT_ID> --amount <AMOUNT> --height-offset <HEIGHT_OFFSET>
 
 OPTIONS:
         --denom <DENOM>
@@ -24,14 +24,14 @@ REQUIRED:
         --amount <AMOUNT>
             Amount of stake
 
+        --dst-chain <DST_CHAIN_ID>
+            Identifier of the chain to upgrade
+
         --height-offset <HEIGHT_OFFSET>
             Upgrade height offset in number of blocks since current
 
-        --host-chain <HOST_CHAIN_ID>
+        --src-chain <SRC_CHAIN_ID>
             Identifier of the host chain
 
-        --host-client <HOST_CLIENT_ID>
+        --src-client <SRC_CLIENT_ID>
             Identifier of the client on the host chain from which the plan is created
-
-        --reference-chain <REFERENCE_CHAIN_ID>
-            Identifier of the chain to upgrade

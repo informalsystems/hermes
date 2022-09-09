@@ -33,7 +33,7 @@ enabled = true
 Then start hermes using the start command:
 
 ```shell
-hermes start
+{{#template ../../../templates/commands/hermes/start_1.md}}
 ```
 
 The relayer sends packet transactions triggered by IBC packet events for all open channels between the configured chains.

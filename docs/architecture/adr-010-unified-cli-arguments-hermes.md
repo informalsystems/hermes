@@ -224,7 +224,7 @@ __chan-close-confirm__
 
 __upgrade-chain__
 
-* `tx upgrade-chain [OPTIONS] --reference-chain <REFERENCE_CHAIN_ID> --host-chain <HOST_CHAIN_ID> --host-client <HOST_CLIENT_ID> --amount <AMOUNT> --height-offset <HEIGHT_OFFSET>`
+* `tx upgrade-chain [OPTIONS] --dst-chain <DST_CHAIN_ID> --src-chain <SRC_CHAIN_ID> --src-client <SRC_CLIENT_ID> --amount <AMOUNT> --height-offset <HEIGHT_OFFSET>`
     * Optional: `[--denom <DENOM>] [--new-chain <CHAIN_ID>] [--new-unbonding <UNBONDING_PERIOD>] [--upgrade-name <UPGRADE_NAME>]`
 
 __packet-recv__

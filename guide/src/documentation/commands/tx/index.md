@@ -26,7 +26,7 @@ The main purpose of these commands is to support development and testing, and co
 At a high level, most commands follow this template:
 
 ```shell
-hermes tx <ibc-message> <dst-chain-id> <src-chain-id> [-d <dst-obj-id> -s <src-obj-id>]*
+{{#template ../../../templates/commands/hermes/tx_1.md SUBCOMMAND=<IBC-MESSAGE> --dst-chain-id <CHAIN-ID> --src-chain-id <CHAIN-id> --dst-obj-id <OBJ-ID> --src-obj-id <SRC-OBJ-ID>}}
 ```
 
 In the command template above:

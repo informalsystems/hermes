@@ -23,7 +23,7 @@ __Example__
 Query chain `ibc-1` for the path and base denomination of the trace hash `27A6394C3F9FF9C9DCF5DFFADF9BB5FE9A37C7E92B006199894CF1824DF9AC7C`:
 
 ```shell
-hermes query transfer denom-trace --chain ibc-1 --hash 27A6394C3F9FF9C9DCF5DFFADF9BB5FE9A37C7E92B006199894CF1824DF9AC7C
+{{#template ../../../templates/commands/hermes/query/transfer/denom-trace_1.md CHAIN_ID=ibc-1 HASH=27A6394C3F9FF9C9DCF5DFFADF9BB5FE9A37C7E92B006199894CF1824DF9AC7C}}
 ```
 
 ```shell
@@ -34,7 +34,7 @@ Success: base_denom: samoleans
 Or with a JSON output:
 
 ```shell
-hermes query transfer denom-trace --chain ibc-1 --hash 27A6394C3F9FF9C9DCF5DFFADF9BB5FE9A37C7E92B006199894CF1824DF9AC7C
+{{#template ../../../templates/commands/hermes/query/transfer/denom-trace_1.md CHAIN_ID=ibc-1 HASH=27A6394C3F9FF9C9DCF5DFFADF9BB5FE9A37C7E92B006199894CF1824DF9AC7C GLOBALOPTIONS=--json}}
 ```
 
 ```json

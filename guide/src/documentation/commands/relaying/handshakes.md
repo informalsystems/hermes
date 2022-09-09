@@ -30,7 +30,7 @@ enabled = true
 Then start hermes using the start command:
 
 ```shell
-hermes start
+{{#template ../../../templates/commands/hermes/start_1.md}}
 ```
 
 The relayer sends handshake and packet transactions triggered by IBC events.

@@ -42,7 +42,7 @@ __Example__
 First, let's initialize the channel on `ibc-0` using an existing connection identified by `connection-0`:
 
 ```shell
-hermes tx chan-open-init --dst-chain ibc-0 --src-chain ibc-1 --dst-connection connection-0 --dst-port transfer --src-port transfer
+{{#template ../../../templates/commands/hermes/tx/chan-open-init_1.md DST_CHAIN_ID=ibc-0 SRC_CHAIN_ID=ibc-1 DST_CONNECTION_ID=connection-0 DST_PORT_ID=transfer SRC_PORT_ID=transfer}}
 ```
 
 ```json
@@ -91,7 +91,7 @@ __Example__
 Let's now create the counterparty to `channel-0` on chain `ibc-1`:
 
 ```shell
-hermes tx chan-open-try --dst-chain ibc-1 --src-chain ibc-0 --dst-connection connection-1 --dst-port transfer --src-port transfer --src-channel channel-0
+{{#template ../../../templates/commands/hermes/tx/chan-open-try_1.md DST_CHAIN_ID=ibc-1 SRC_CHAIN_ID=ibc-0 DST_CONNECTION_ID=connection-1 DST_PORT_ID=transfer SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-0}}
 ```
 
 ```json
@@ -144,7 +144,7 @@ __Example__
 We can now acknowledge on `ibc-0` that `ibc-1` has accepted the opening of the channel:
 
 ```shell
-hermes tx chan-open-ack --dst-chain ibc-0 --src-chain ibc-1 --dst-connection connection-0 --dst-port transfer --src-port transfer --dst-channel channel-0 --src-channel channel-1
+{{#template ../../../templates/commands/hermes/tx/chan-open-ack_1.md DST_CHAIN_ID=ibc-0 SRC_CHAIN_ID=ibc-1 DST_CONNECTION_ID=connection-0 DST_PORT_ID=transfer SRC_PORT_ID=transfer DST_CHANNEL_ID=channel-0 SRC_CHANNEL_ID=channel-1}}
 ```
 
 ```json
@@ -197,7 +197,7 @@ Confirm on `ibc-1` that `ibc-0` has accepted the opening of the channel,
 after which the channel is open on both chains.
 
 ```shell
-hermes tx chan-open-confirm --dst-chain ibc-1 --src-chain ibc-0 --dst-connection connection-1 --dst-port transfer --src-port transfer --dst-channel channel-1 --src-channel channel-0
+{{#template ../../../templates/commands/hermes/tx/chan-open-confirm_1.md DST_CHAIN_ID=ibc-1 SRC_CHAIN_ID=ibc-0 DST_CONNECTION_ID=connection-1 DST_PORT_ID=transfer SRC_PORT_ID=transfer DST_CHANNEL_ID=channel-1 SRC_CHANNEL_ID=channel-0}}
 ```
 
 ```json
