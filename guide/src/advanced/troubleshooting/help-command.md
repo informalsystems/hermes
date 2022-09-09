@@ -8,7 +8,7 @@ The CLI comprises a special `help` command, which accepts as parameter other com
 For instance,
 
 ```shell
-{{#template ../../templates/commands/hermes/help_1.md SUBCOMMAND=help crate}}
+hermes help create
 ```
 
 will provide details about all the valid invocations of the `create` CLI command.
@@ -20,7 +20,7 @@ will provide details about all the valid invocations of the `create` CLI command
 This can provide further specific guidance if we add additional parameters, e.g., 
 
 ```shell
-{{#template ../../templates/commands/hermes/help_1.md SUBCOMMAND=help create channel}}
+hermes help create channel
 ```
 
 ```shell

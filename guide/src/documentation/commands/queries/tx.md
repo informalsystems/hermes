@@ -28,7 +28,6 @@ Query chain `ibc-0` for the events emitted due to transaction with hash
 
 ```shell
 {{#template ../../../templates/commands/hermes/query/tx/events_1.md CHAIN_ID=ibc-0 HASH=6EDBBCBCB779F9FC9D6884ACDC4350E69720C4B362E4ACE6C576DE792F837490}}
-hermes query tx events --chain ibc-0 --hash 6EDBBCBCB779F9FC9D6884ACDC4350E69720C4B362E4ACE6C576DE792F837490
 ```
 
 ```json

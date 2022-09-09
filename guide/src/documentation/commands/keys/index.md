@@ -16,7 +16,7 @@ Using the `keys` command you can add and list keys.
 To see the available sub-commands for the `keys` command run:
 
 ```shell
-{{#template ../../../templates/commands/hermes/help_1.md SUBCOMMAND=help keys}}
+hermes help keys
 ```
 
 The available sub-commands are the following:
@@ -49,7 +49,7 @@ The command outputs a JSON similar to the one below.
 }
 ```
 
-You can save this to a file (e.g. `key_seed.json`) and use it to add to Hermes with `hermes keys add --chain <chain_id> --key-file key_seed.json`. See the `Adding Keys` section for more details.
+You can save this to a file (e.g. `key_seed.json`) and use it to add to Hermes with `{{#template ../../../templates/commands/hermes/keys/add_1.md CHAIN_ID=<CHAIN_ID> KEY_FILE=key_seed.json}}`. See the `Adding Keys` section for more details.
 
 ### Adding and restoring Keys
 

@@ -18,7 +18,7 @@ The global options must be specified right after the `hermes` command and _befor
 The non-global options have to be specified _after_ the sub-command.
 
 ```shell
-{{#template ../../templates/commands/hermes/help_1.md GLOBALOPTIONS=<GLOBAL_OPTIONS> subcommand <OPTIONS>}}
+hermes [GLOBAL_OPTIONS] <SUBCOMMAND> [OPTIONS]
 ```
 
 __Example__

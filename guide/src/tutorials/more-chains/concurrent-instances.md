@@ -61,7 +61,7 @@ Let's find the packet that was lost in the first step of the [previous section](
 
 >__NOTE__: You do not need to specify the configuration file as long as `ibc-1` and `ibc-3` are in the default config file.
 
-If the command runs succesfully, it should output:
+If the command runs successfully, it should output:
 
 ```
 SUCCESS Summary {
@@ -88,7 +88,7 @@ Now that we have retrieved this packet, let's clear it manually with the command
 ```
 >__NOTE__: We are using the second config to avoid using the same wallets as the running instance of the relayer. You could also simply use the `key-name` and `counterparty-key-name` flags to set another wallet. If you do not use it, you will observe a few `account_sequence_mismatch` errors on the terminal running `hermes start` but hermes will automatically recover.
 
-If the command runs succesfully, it should output:
+If the command runs successfully, it should output:
 
 ```
 SUCCESS [
