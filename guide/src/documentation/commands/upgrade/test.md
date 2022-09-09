@@ -71,7 +71,7 @@ gaiad version --log_level error --long | head -n4
     The proposal includes the upgraded client state constructed from the state of `07-tendermint-0` client on `ibc-1` that was created in the previous step.
 
     ```shell
-    {{#template ../../../templates/commands/hermes/tx/upgrade-chain_1.md DST_CHAIN_ID=ibc-0 SRC_CHAIN_ID=ibc-1 SRC_CLIENT_ID=07-tendermint-0 AMOUNT=10000000 HEIGHT_OFFSET=60}}
+    {{#template ../../../templates/commands/hermes/tx/upgrade-chain_1.md REFERENCE_CHAIN_ID=ibc-0 HOST_CHAIN_ID=ibc-1 HOST_CLIENT_ID=07-tendermint-0 AMOUNT=10000000 HEIGHT_OFFSET=60}}
     ```
 
     ```text
