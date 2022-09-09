@@ -1,0 +1,381 @@
+# ADR 012: Handlers validation and execution separation
+
+## Status
+Proposed
+
+## Changelog
+* 9/9/2022: initial proposal
+
+## Context
+
+The main purpose of this ADR is to split each IBC handler (e.g. `UpdateClient`, `ConnOpenTry`, etc.) into a "validation" and an "execution" phase in order to accomodate a larger class of host architectures such as Namada. We call "validation" the part of a handler that does all the checks necessary for correctness. We call "execution" the part of the handler that applies the state modifications, assuming that validation passed. 
+
+Our current `deliver()` entrypoint can then be split into 2 entrypoints: `validate()` and `execute()`. More specifically, we replace the current `Ics26Context` and all its supertraits with 2 traits: `ValidationContext` and `ExecutionContext`. `ValidationContext` exposes and implements the `validate()` entrypoint, while the `ExecutionContext` exposes and implements the `execute()` entrypoint.
+
+This ADR will only concern itself with the external-facing API.
+
+The following are out of scope for this ADR:
++ Exposing an `async` API
++ Enabling light clients to define and require the host to implement a set of traits
+
+
+## Decision
+
+### "validation" and "execution" clarification
+We first clarify what is meant by "validation" and "execution" with an example. Consider the [`UpdateClient` handler](https://github.com/cosmos/ibc/blob/main/spec/core/ics-002-client-semantics/README.md#update). The validation and execution blocks are:
+
+```javascript
+function updateClient(
+  id: Identifier,
+  clientMessage: ClientMessage) {
+    // Validation START
+    clientState = provableStore.get(clientStatePath(id))
+    abortTransactionUnless(clientState !== null)
+
+    clientState.VerifyClientMessage(clientMessage)
+    // Validation END
+    
+    // Execution START
+    foundMisbehaviour := clientState.CheckForMisbehaviour(clientMessage)
+    if foundMisbehaviour {
+        clientState.UpdateStateOnMisbehaviour(clientMessage)
+    }
+    else {    
+        clientState.UpdateState(clientMessage) 
+    }
+    // Execution END
+}
+```
+
+### `ValidationContext` and `ExecutionContext`
+Below, we define the `ValidationContext` and `ExecutionContext`.
+
+```rust
+trait ValidationContext {
+    /// Validation entrypoint.
+    fn validate(&self, message: Any) -> Result<(), Error> {
+        /* implemented by us */
+    }
+
+    /// Returns the ClientState for the given identifier `client_id`.
+    fn client_state(&self, client_id: &ClientId) -> Result<Box<dyn ClientState>, Error>;
+
+    /// Tries to decode the given `client_state` into a concrete light client state.
+    fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, Error>;
+
+    /// Retrieve the consensus state for the given client ID at the specified
+    /// height.
+    ///
+    /// Returns an error if no such state exists.
+    fn consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<Box<dyn ConsensusState>, Error>;
+
+        /// Search for the lowest consensus state higher than `height`.
+    fn next_consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<Option<Box<dyn ConsensusState>>, Error>;
+
+    /// Search for the highest consensus state lower than `height`.
+    fn prev_consensus_state(
+        &self,
+        client_id: &ClientId,
+        height: Height,
+    ) -> Result<Option<Box<dyn ConsensusState>>, Error>;
+
+    /// Returns the current height of the local chain.
+    fn host_height(&self) -> Height;
+
+    /// Returns the current timestamp of the local chain.
+    fn host_timestamp(&self) -> Timestamp {
+        let pending_consensus_state = self
+            .pending_host_consensus_state()
+            .expect("host must have pending consensus state");
+        pending_consensus_state.timestamp()
+    }
+
+    /// Returns the `ConsensusState` of the host (local) chain at a specific height.
+    fn host_consensus_state(&self, height: Height) -> Result<Box<dyn ConsensusState>, Error>;
+
+    /// Returns a natural number, counting how many clients have been created thus far.
+    /// The value of this counter should increase only via method `ClientKeeper::increase_client_counter`.
+    fn client_counter(&self) -> Result<u64, Error>;
+
+    /// Returns the ConnectionEnd for the given identifier `conn_id`.
+    fn connection_end(&self, conn_id: &ConnectionId) -> Result<ConnectionEnd, Error>;
+
+    /// Returns the oldest height available on the local chain.
+    fn host_oldest_height(&self) -> Height;
+
+    /// Returns the prefix that the local chain uses in the KV store.
+    fn commitment_prefix(&self) -> CommitmentPrefix;
+
+    /// Returns a counter on how many connections have been created thus far.
+    fn connection_counter(&self) -> Result<u64, Error>;
+
+        /// Function required by ICS 03. Returns the list of all possible versions that the connection
+    /// handshake protocol supports.
+    fn get_compatible_versions(&self) -> Vec<Version> {
+        get_compatible_versions()
+    }
+
+    /// Function required by ICS 03. Returns one version out of the supplied list of versions, which the
+    /// connection handshake protocol prefers.
+    fn pick_version(
+        &self,
+        supported_versions: Vec<Version>,
+        counterparty_candidate_versions: Vec<Version>,
+    ) -> Result<Version, Error> {
+        pick_version(supported_versions, counterparty_candidate_versions)
+    }
+
+    /// Returns the ChannelEnd for the given `port_id` and `chan_id`.
+    fn channel_end(&self, port_channel_id: &(PortId, ChannelId)) -> Result<ChannelEnd, Error>;
+
+    fn connection_channels(&self, cid: &ConnectionId) -> Result<Vec<(PortId, ChannelId)>, Error>;
+
+    fn get_next_sequence_send(
+        &self,
+        port_channel_id: &(PortId, ChannelId),
+    ) -> Result<Sequence, Error>;
+
+    fn get_next_sequence_recv(
+        &self,
+        port_channel_id: &(PortId, ChannelId),
+    ) -> Result<Sequence, Error>;
+
+    fn get_next_sequence_ack(
+        &self,
+        port_channel_id: &(PortId, ChannelId),
+    ) -> Result<Sequence, Error>;
+
+    fn get_packet_commitment(
+        &self,
+        key: &(PortId, ChannelId, Sequence),
+    ) -> Result<PacketCommitment, Error>;
+
+    fn get_packet_receipt(&self, key: &(PortId, ChannelId, Sequence)) -> Result<Receipt, Error>;
+
+    fn get_packet_acknowledgement(
+        &self,
+        key: &(PortId, ChannelId, Sequence),
+    ) -> Result<AcknowledgementCommitment, Error>;
+
+    /// Compute the commitment for a packet.
+    /// Note that the absence of `timeout_height` is treated as
+    /// `{revision_number: 0, revision_height: 0}` to be consistent with ibc-go,
+    /// where this value is used to mean "no timeout height":
+    /// <https://github.com/cosmos/ibc-go/blob/04791984b3d6c83f704c4f058e6ca0038d155d91/modules/core/04-channel/keeper/packet.go#L206>
+    fn packet_commitment(
+        &self,
+        packet_data: Vec<u8>,
+        timeout_height: TimeoutHeight,
+        timeout_timestamp: Timestamp,
+    ) -> PacketCommitment {
+        let mut hash_input = timeout_timestamp.nanoseconds().to_be_bytes().to_vec();
+
+        let revision_number = timeout_height.commitment_revision_number().to_be_bytes();
+        hash_input.append(&mut revision_number.to_vec());
+
+        let revision_height = timeout_height.commitment_revision_height().to_be_bytes();
+        hash_input.append(&mut revision_height.to_vec());
+
+        let packet_data_hash = self.hash(packet_data);
+        hash_input.append(&mut packet_data_hash.to_vec());
+
+        self.hash(hash_input).into()
+    }
+
+    fn ack_commitment(&self, ack: Acknowledgement) -> AcknowledgementCommitment {
+        self.hash(ack.into()).into()
+    }
+
+    /// A hashing function for packet commitments
+    fn hash(&self, value: Vec<u8>) -> Vec<u8>;
+
+    /// Returns the time when the client state for the given [`ClientId`] was updated with a header for the given [`Height`]
+    fn client_update_time(&self, client_id: &ClientId, height: Height) -> Result<Timestamp, Error>;
+
+    /// Returns the height when the client state for the given [`ClientId`] was updated with a header for the given [`Height`]
+    fn client_update_height(&self, client_id: &ClientId, height: Height) -> Result<Height, Error>;
+
+    /// Returns a counter on the number of channel ids have been created thus far.
+    /// The value of this counter should increase only via method
+    /// `ChannelKeeper::increase_channel_counter`.
+    fn channel_counter(&self) -> Result<u64, Error>;
+
+    /// Calculates the block delay period using the connection's delay period and the maximum
+    /// expected time per block.
+    fn block_delay(&self, delay_period_time: Duration) -> u64 {
+        calculate_block_delay(delay_period_time, self.max_expected_time_per_block())
+    }
+
+}
+```
+
+```rust
+trait ExecutionContext {
+    /// Execution entrypoint
+    fn execute(&mut self, message: Any) -> Result<(), Error> {
+        /* implemented by us */
+    }
+
+    /// Called upon successful client creation
+    fn store_client_type(
+        &mut self,
+        client_type_path: ClientTypePath,
+        client_type: ClientType,
+    ) -> Result<(), Error>;
+
+    /// Called upon successful client creation and update
+    fn store_client_state(
+        &mut self,
+        client_state_path: ClientStatePath,
+        client_state: Box<dyn ClientState>,
+    ) -> Result<(), Error>;
+
+    /// Called upon successful client creation and update
+    fn store_consensus_state(
+        &mut self,
+        consensus_state_path: ClientConsensusStatePath,
+        consensus_state: Box<dyn ConsensusState>,
+    ) -> Result<(), Error>;
+
+    /// Called upon client creation.
+    /// Increases the counter which keeps track of how many clients have been created.
+    /// Should never fail.
+    fn increase_client_counter(&mut self);
+
+    /// Called upon successful client update.
+    /// Implementations are expected to use this to record the specified time as the time at which
+    /// this update (or header) was processed.
+    fn store_update_time(
+        &mut self,
+        client_id: ClientId,
+        height: Height,
+        timestamp: Timestamp,
+    ) -> Result<(), Error>;
+
+    /// Called upon successful client update.
+    /// Implementations are expected to use this to record the specified height as the height at
+    /// at which this update (or header) was processed.
+    fn store_update_height(
+        &mut self,
+        client_id: ClientId,
+        height: Height,
+        host_height: Height,
+    ) -> Result<(), Error>;
+
+    /// Stores the given connection_end at path
+    fn store_connection(
+        &mut self,
+        connections_path: ConnectionsPath,
+        connection_end: &ConnectionEnd,
+    ) -> Result<(), Error>;
+
+    /// Stores the given connection_id at a path associated with the client_id.
+    fn store_connection_to_client(
+        &mut self,
+        client_connections_path: ClientConnectionsPath,
+        client_id: &ClientId,
+    ) -> Result<(), Error>;
+
+    /// Called upon connection identifier creation (Init or Try process).
+    /// Increases the counter which keeps track of how many connections have been created.
+    /// Should never fail.
+    fn increase_connection_counter(&mut self);
+
+    fn store_packet_commitment(
+        &mut self,
+        commitments_path: CommitmentsPath,
+        commitment: PacketCommitment,
+    ) -> Result<(), Error>;
+
+    fn delete_packet_commitment(&mut self, key: CommitmentsPath)
+        -> Result<(), Error>;
+
+    fn store_packet_receipt(
+        &mut self,
+        path: ReceiptsPath,
+        receipt: Receipt,
+    ) -> Result<(), Error>;
+
+    fn store_packet_acknowledgement(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+        ack_commitment: AcknowledgementCommitment,
+    ) -> Result<(), Error>;
+
+    fn delete_packet_acknowledgement(
+        &mut self,
+        key: (PortId, ChannelId, Sequence),
+    ) -> Result<(), Error>;
+
+    fn store_connection_channels(
+        &mut self,
+        conn_id: ConnectionId,
+        port_channel_id: &(PortId, ChannelId),
+    ) -> Result<(), Error>;
+
+    /// Stores the given channel_end at a path associated with the port_id and channel_id.
+    fn store_channel(
+        &mut self,
+        port_channel_id: (PortId, ChannelId),
+        channel_end: &ChannelEnd,
+    ) -> Result<(), Error>;
+
+    fn store_next_sequence_send(
+        &mut self,
+        port_channel_id: (PortId, ChannelId),
+        seq: Sequence,
+    ) -> Result<(), Error>;
+
+    fn store_next_sequence_recv(
+        &mut self,
+        port_channel_id: (PortId, ChannelId),
+        seq: Sequence,
+    ) -> Result<(), Error>;
+
+    fn store_next_sequence_ack(
+        &mut self,
+        port_channel_id: (PortId, ChannelId),
+        seq: Sequence,
+    ) -> Result<(), Error>;
+
+    /// Called upon channel identifier creation (Init or Try message processing).
+    /// Increases the counter which keeps track of how many channels have been created.
+    /// Should never fail.
+    fn increase_channel_counter(&mut self);
+
+    /// Ibc events
+    fn emit_ibc_event(event: IbcEvent);
+
+    ////////////////////////////////////////////////////////
+    /* All "read" methods necessary in execution handlers */
+    ////////////////////////////////////////////////////////
+}
+```
+
+### TODO
++ Add `Store`/`TypedStore` API
++ Talk about `Host` trait and blanket implementations for `ValidationContext` and `ExecutionContext`
++ Specify what `deliver()` will look like
+
+## Consequences
+
+### Positive
++ Architectures that run "validation" separately from "execution" will now be able to use the handlers
+
+### Negative
++ Still no async support
++ Light clients still cannot specify new requirements on the host `Context`
+
+### Neutral
+
+## References
+
+* [Issue #2582: ADR for redesigning the modules' API](https://github.com/informalsystems/ibc-rs/issues/2582)

@@ -38,3 +38,4 @@ To suggest an ADR, please make use of the [ADR template](./adr-template.md) prov
 | [009](./adr-009-chain-endpoint-handle-standardization.md) | ChainEndpoint and ChainHandle methods standardization | Accepted |
 | [010](./adr-010-unified-cli-arguments-hermes.md)          | Unified approach for CLI arguments for Hermes v1.0.0  | Proposed |
 | [011](./adr-011-light-client-crates-extraction.md)        | Light client crates extraction                        | Proposed |
+| [012](./adr-012-handlers-redesign.md)                     | Handlers validation and execution separation          | Proposed |
