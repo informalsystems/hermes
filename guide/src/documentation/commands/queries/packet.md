@@ -26,7 +26,7 @@ __Example__
 Query the sequence numbers of all packets that either not yet been received or not yet been acknowledged, at both ends of the channel `channel-1`.
 
 ```shell
-$ hermes query packet pending --chain ibc-0 --port transfer --channel channel-1
+{{#template ../../../templates/commands/hermes/query/packet/pending_1.md CHAIN_ID=ibc-0 PORT_ID=transfer CHANNEL_ID=channel-1}}
 ```
 
 ```json
@@ -72,7 +72,7 @@ __Example__
 Query `ibc-0` for the sequence numbers of packets that still have commitments on `ibc-0` and that were sent on `transfer` port and `channel-0`:
 
 ```shell
-hermes query packet commitments --chain ibc-0 --port transfer --channel channel-0
+{{#template ../../../templates/commands/hermes/query/packet/commitments_1.md CHAIN_ID=ibc-0 PORT_ID=transfer CHANNEL_ID=channel-0}}
 ```
 
 ```json
@@ -102,7 +102,7 @@ __Example__
 Query `ibc-0` for the commitment of packet with sequence `3` sent on `transfer` port and `channel-0`:
 
 ```shell
-hermes query packet commitment --chain ibc-0 --port transfer --channel channel-0 --sequence 3
+{{#template ../../../templates/commands/hermes/query/packet/commitment_1.md CHAIN_ID=ibc-0 PORT_ID=transfer CHANNEL_ID=channel-0 SEQUENCE=3}}
 ```
 
 ```json
@@ -122,7 +122,7 @@ __Example__
 Query `ibc-1` for the sequence numbers of packets acknowledged that were received on `transfer` port and `channel-1`:
 
 ```shell
-hermes query packet acks --chain ibc-1 --port transfer --channel channel-1
+{{#template ../../../templates/commands/hermes/query/packet/acks_1.md CHAIN_ID=ibc-1 PORT_ID=transfer CHANNEL_ID=channel-1}}
 ```
 
 ```json
@@ -152,7 +152,7 @@ __Example__
 Query `ibc-1` for the acknowledgment of packet with sequence `2` received on `transfer` port and `channel-1`:
 
 ```shell
-hermes query packet ack --chain ibc-1 --port transfer --channel channel-1 --sequence 2
+{{#template ../../../templates/commands/hermes/query/packet/ack_1.md CHAIN_ID=ibc-1 PORT_ID=transfer CHANNEL_ID=channel-1 SEQUENCE=2}}
 ```
 
 ```json
@@ -172,7 +172,7 @@ __Example__
 Query `transfer` port and `channel-1` on `ibc-1` for the sequence numbers of packets sent on `ibc-0` but not yet received:
 
 ```shell
-hermes query packet pending-sends --chain ibc-1 --port transfer --channel channel-1
+{{#template ../../../templates/commands/hermes/query/packet/pending-sends_1.md CHAIN_ID=ibc-1 PORT_ID=transfer CHANNEL_ID=channel-1}}
 ```
 
 ```json
@@ -196,7 +196,7 @@ __Example__
 Query `transfer` port and `channel-0` on `ibc-0` for the sequence numbers of packets received by `ibc-1` but not yet acknowledged on `ibc-0`:
 
 ```shell
-hermes query packet pending-acks --chain ibc-0 --port transfer --channel channel-0
+{{#template ../../../templates/commands/hermes/query/packet/pending-acks_1.md CHAIN_ID=ibc-0 PORT_ID=transfer CHANNEL_ID=channel-0}}
 ```
 
 ```json
