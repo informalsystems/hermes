@@ -504,3 +504,95 @@ pub trait IbcSerde {
 ## References
 
 * [Issue #2582: ADR for redesigning the modules' API](https://github.com/informalsystems/ibc-rs/issues/2582)
+* [ICS24 spec](https://github.com/cosmos/ibc/blob/1b73c158dcd3b08c6af3917618dce259e30bc21b/spec/core/ics-024-host-requirements/README.md)
+
+## Appendices
+
+### Appendix A: List of `Host` methods that cannot be obtained from the `Store`
+
+Here's an exhaustive list of methods whose implementation cannot be derived from the host's key-value `Store` and
+therefore must be part of the `Host` trait.
+
+```rust
+pub trait Host {
+    /// Methods currently in `ClientReader`
+    fn decode_client_state(&self, client_state: Any) -> Result<Box<dyn ClientState>, Error>;
+    fn host_height(&self) -> Height;
+    fn host_timestamp(&self) -> Timestamp;
+    fn host_consensus_state(&self, height: Height) -> Result<Box<dyn ConsensusState>, Error>;
+    fn client_counter(&self) -> Result<u64, Error>;
+
+    /// Methods currently in `ClientKeeper`
+    fn increase_client_counter(&mut self);
+    fn store_update_time(
+        &mut self,
+        client_id: ClientId,
+        height: Height,
+        timestamp: Timestamp,
+    ) -> Result<(), Error>;
+    fn store_update_height(
+        &mut self,
+        client_id: ClientId,
+        height: Height,
+        host_height: Height,
+    ) -> Result<(), Error>;
+
+    /// Methods currently in `ConnectionReader`
+    fn host_oldest_height(&self) -> Height;
+    fn commitment_prefix(&self) -> CommitmentPrefix;
+    fn connection_counter(&self) -> Result<u64, Error>;
+
+    /// Methods currently in `ConnectionKeeper`
+    fn increase_connection_counter(&mut self);
+
+    /// Methods currently in `ChannelReader`
+    fn connection_channels(&self, cid: &ConnectionId) -> Result<Vec<(PortId, ChannelId)>, Error>;
+    fn hash(&self, value: Vec<u8>) -> Vec<u8>;
+    fn client_update_time(&self, client_id: &ClientId, height: Height) -> Result<Timestamp, Error>;
+    fn client_update_height(&self, client_id: &ClientId, height: Height) -> Result<Height, Error>;
+    fn channel_counter(&self) -> Result<u64, Error>;
+    fn max_expected_time_per_block(&self) -> Duration;
+    fn block_delay(&self, delay_period_time: Duration) -> u64;
+
+    /// Methods currently in `ChannelKeeper`
+    fn increase_channel_counter(&mut self);
+}
+```
+
+### Appendix B: Typical host store implementation
+
+A typical host store implementation based on the suggestions above would like the following ->
+
+```rust
+struct HostStore(BTreeMap<Path, Vec<u8>>);
+
+impl<K, V> TypedStore<K, V> for HostStore
+    where
+        K: Into<Path> + IbcValueForPath<Value=V>,
+        V: IbcSerde,
+{
+    type Error = Ics02Error;
+
+    fn set(&mut self, key: K, value: V) -> Result<(), Self::Error> {
+        let key = key.into();
+        let value = <<K as IbcValueForPath>::Value as IbcSerde>::serialize(value);
+        self.0.insert(key, value).map(|_| ()).unwrap();
+        Ok(())
+    }
+
+    fn get(&self, key: K) -> Result<Option<V>, Self::Error> {
+        let key = key.into();
+        Ok(self
+            .0
+            .get(&key)
+            .map(|bytes| <<K as IbcValueForPath>::Value as IbcSerde>::deserialize(bytes)))
+    }
+
+    fn delete(&mut self, key: K) -> Result<(), Self::Error> {
+        let key = key.into();
+        self.0.remove(&key).map(|_| ()).unwrap();
+        Ok(())
+    }
+}
+```
+
