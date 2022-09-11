@@ -360,10 +360,135 @@ trait ExecutionContext {
 }
 ```
 
-### TODO
-+ Add `Store`/`TypedStore` API
-+ Talk about `Host` trait and blanket implementations for `ValidationContext` and `ExecutionContext`
-+ Specify what `deliver()` will look like
+### Host based API
+
+ICS24 defines the minimal set of interfaces which must be provided by an IBC enabled blockchain. We therefore define a
+`Host` trait that formalizes and encapsulates these interfaces.
+
+```rust
+pub trait Host {
+    /// An error type that can represent all host errors.
+    type Error;
+
+    /// The Host's key-value store that must provide access to IBC paths. 
+    type KvStore: IbcStore<Self::Error>;
+
+    /// An event logging facility.
+    type EventEmitter: EventEmitter<Event=Event<DefaultIbcTypes>>;
+
+    /// Methods to access the store (ro & rw). 
+    fn store(&self) -> &Self::KvStore;
+    fn store_mut(&mut self) -> &mut Self::KvStore;
+
+    /// Methods to access the event logger (ro & rw).
+    fn event_emitter(&self) -> &Self::EventEmitter;
+    fn event_emitter_mut(&mut self) -> &mut Self::EventEmitter;
+
+    /// Host system data (that is not required to be stored on the KV store)
+    fn current_timestamp(&self) -> IbcTimestamp;
+    fn current_height(&self) -> IbcHeight;
+
+    /* Other methods that cannot be derived from the Store... */
+}
+```
+
+See the Appendix A below for an exhaustive list of all `Host` methods.
+
+This `Host` trait implementation may then be used to derive blanket implementations for all other contexts such as
+`ValidationContext`, `ExecutionContext`, `Ics26Context`, etc. For e.g. ->
+
+```rust
+pub struct HostValidationContext<H> {
+    host: H,
+}
+
+impl<H: Host> HostValidationContext<H> {
+    pub fn new(host: Host) -> Self {
+        Self { host }
+    }
+}
+
+impl<H: Host> ValidationContext for HostValidationContext<H> { /* ... */ }
+```
+
+#### Store
+
+Hosts are expected to implement the `IbcStore` trait that provides access to all IBC paths as defined
+by `ibc::core::ics24_host::path::Path`.
+
+```rust
+pub trait IbcStore<Error>:
+TypedStore<ClientTypePath, ClientType, Error>
++ TypedStore<ClientStatePath, Box<dyn ClientState>, Error>
++ TypedStore<ClientConsensusStatePath, Box<dyn ConsensusState>, Error>
+/* + other IbcTypedStore */
+{}
+```
+
+The generic `TypedStore` trait is defined as follows ->
+
+```rust
+pub trait TypedStore<K, V> {
+    type Error;
+
+    fn set(&mut self, key: K, value: V) -> Result<(), Self::Error>;
+
+    fn get(&self, key: K) -> Result<Option<V>, Self::Error>;
+
+    fn delete(&mut self, key: K) -> Result<(), Self::Error>;
+}
+```
+
+Note that depending on data-availability requirements some clients may need access to earlier state, so we might need
+a `get_at_height()` in the future.
+
+Hosts may choose to implement the `TypedStore` trait individually for every IBC path-value combination or generically as
+a blanket implementation.
+
+##### Paths with associated values
+
+The library could pair IBC paths with their respective values at the type level using the following technique ->
+
+```rust
+pub trait IbcValueForPath: private::Sealed {
+    type Value;
+}
+
+impl IbcValueForPath for ClientTypePath {
+    type Value = IbcClientType;
+}
+
+impl IbcValueForPath for ClientStatePath {
+    type Value = Box<dyn ClientState>;
+}
+
+impl IbcValueForPath for ClientConsensusStatePath {
+    type Value = Box<dyn ConsensusState>;
+}
+
+/* ... */
+```
+
+This will make it easier for hosts to implement their generic `TypedStore` using these trait bounds. It also allows for
+a more ergonomic Store API.  
+Note also that this code can later be moved to a derive macro on the `Path`s themselves.
+
+##### Serialization and Deserialization
+
+Although the `TypedStore` design is agnostic to serde on purpose, the library could optionally provide a `IbcSerde`
+trait for better UX. This trait could provide canonical serde for IBC values if such a scheme exists.
+This trait maybe leveraged by hosts to implement their generic `TypedStore`. See Appendix B for Typical host store
+implementation.
+
+```rust
+pub trait IbcSerde {
+    /// Serialize to canonical binary representation
+    fn serialize(self) -> Vec<u8>;
+
+    /// Deserialize from bytes 
+    fn deserialize(value: &[u8]) -> Self;
+}
+```
 
 ## Consequences
 
