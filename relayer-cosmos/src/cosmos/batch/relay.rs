@@ -5,7 +5,7 @@ use ibc_relayer_framework::addons::batch::config::BatchConfig;
 use ibc_relayer_framework::addons::batch::spawn::{
     BatchMessageWorkerSpawner, CanSpawnBatchMessageWorker,
 };
-use ibc_relayer_framework::core::traits::contexts::filter::PacketFilter;
+
 use ibc_relayer_framework::core::traits::target::{DestinationTarget, SourceTarget};
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
 

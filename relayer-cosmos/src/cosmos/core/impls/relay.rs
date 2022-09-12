@@ -10,14 +10,15 @@ use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer_framework::core::traits::contexts::filter::HasPacketFilter;
-use ibc_relayer_framework::core::traits::contexts::filter::PacketFilter;
+
 use ibc_relayer_framework::one_for_all::traits::chain::{OfaChain, OfaChainContext};
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelay;
-use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
+
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
 use ibc_relayer_framework::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 
 use crate::cosmos::core::error::Error;
+use crate::cosmos::core::impls::filters::CosmosChannelFilter;
 use crate::cosmos::core::traits::chain::CosmosChain;
 use crate::cosmos::core::traits::relay::CosmosRelay;
 use crate::cosmos::core::types::chain::CosmosChainContext;
@@ -25,8 +26,6 @@ use crate::cosmos::core::types::message::CosmosIbcMessage;
 use crate::cosmos::core::types::relay::CosmosRelayContext;
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
 use crate::cosmos::core::types::telemetry::CosmosTelemetry;
-
-use super::filters::CosmosChannelFilter;
 
 #[async_trait]
 impl<Relay> OfaRelay for CosmosRelayContext<Relay>

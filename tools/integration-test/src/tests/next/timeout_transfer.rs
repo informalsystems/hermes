@@ -3,7 +3,7 @@
 
 use ibc_relayer::config::PacketFilter;
 use ibc_relayer_cosmos::cosmos::core::impls::filters::CosmosChannelFilter;
-use ibc_relayer_framework::core::impls::filters::trivial_filters::AllowFilter;
+
 use ibc_relayer_framework::core::impls::packet_relayers::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
 use ibc_relayer_framework::core::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer;
 use ibc_test_framework::prelude::*;

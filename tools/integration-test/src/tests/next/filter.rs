@@ -1,5 +1,6 @@
 use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer_cosmos::cosmos::core::impls::filters::CosmosChannelFilter;
+use ibc_relayer_framework::core::impls::packet_relayers::filter_relayer::FilterRelayer;
 use ibc_relayer_framework::core::impls::packet_relayers::top::TopRelayer;
 use ibc_relayer_framework::core::traits::packet_relayer::PacketRelayer;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
@@ -75,7 +76,7 @@ impl BinaryChannelTest for ChannelFilterTest {
         info!("running relayer");
 
         runtime.block_on(async {
-            TopRelayer::relay_packet(&relay_context, &packet)
+            FilterRelayer::<TopRelayer>::relay_packet(&relay_context, &packet)
                 .await
                 .unwrap()
         });

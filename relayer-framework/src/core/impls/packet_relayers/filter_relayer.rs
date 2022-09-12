@@ -12,12 +12,6 @@ pub struct FilterRelayer<InRelay> {
     pub phantom: PhantomData<InRelay>,
 }
 
-impl<InRelay> FilterRelayer<InRelay> {
-    pub fn new(phantom: PhantomData<InRelay>) -> Self {
-        Self { phantom }
-    }
-}
-
 #[async_trait]
 impl<Context, InRelay, Filter> PacketRelayer<Context> for FilterRelayer<InRelay>
 where

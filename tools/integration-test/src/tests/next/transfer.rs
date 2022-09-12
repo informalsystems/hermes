@@ -1,6 +1,6 @@
 use ibc_relayer::config::PacketFilter;
 use ibc_relayer_cosmos::cosmos::core::impls::filters::CosmosChannelFilter;
-use ibc_relayer_framework::core::impls::filters::trivial_filters::AllowFilter;
+
 use ibc_relayer_framework::core::impls::packet_relayers::top::TopRelayer;
 use ibc_relayer_framework::core::traits::packet_relayer::PacketRelayer;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
