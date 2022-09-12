@@ -8,6 +8,14 @@ use crate::std_prelude::*;
 //     fn should_relay(&self, packet: &Self::Packet) -> bool;
 // }
 
+pub trait HasPacketFilter<Relay>: Async
+where
+Relay: RelayContext,
+{
+    type Filter: Async;
+    fn filter(&self) -> &Self::Filter;
+}
+
 #[async_trait]
 pub trait PacketFilter<Relay>: Async
 where

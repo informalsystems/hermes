@@ -1,36 +1,38 @@
+use core::marker::PhantomData;
+
 use async_trait::async_trait;
 
-use crate::core::traits::contexts::filter::PacketFilter;
+use crate::core::traits::contexts::filter::{PacketFilter, HasPacketFilter};
 use crate::core::traits::contexts::relay::RelayContext;
 use crate::core::traits::packet_relayer::PacketRelayer;
 use crate::core::types::aliases::Packet;
 use crate::std_prelude::*;
 
-pub struct FilterRelayer<Filter, InRelay> {
-    pub in_relayer: InRelay,
-    pub filter: Filter,
+pub struct FilterRelayer<InRelay> {
+    pub phantom : PhantomData<InRelay>,
 }
 
-impl<Filter, InRelay> FilterRelayer<Filter, InRelay> {
-    pub fn new(filter: Filter, in_relayer: InRelay) -> Self {
-        Self { in_relayer, filter }
+impl<InRelay> FilterRelayer<InRelay> {
+    pub fn new(phantom: PhantomData<InRelay>) -> Self {
+        Self {
+            phantom,
+        }
     }
 }
 
 #[async_trait]
-impl<Context, InRelay, Filter> PacketRelayer<Context> for FilterRelayer<Filter, InRelay>
+impl<Context, InRelay, Filter> PacketRelayer<Context> for FilterRelayer<InRelay>
 where
-    Context: RelayContext,
+    Context: RelayContext + HasPacketFilter<Context, Filter=Filter>,
     Filter: PacketFilter<Context>,
     InRelay: PacketRelayer<Context>,
 {
     async fn relay_packet(
-        &self,
         context: &Context,
         packet: &Packet<Context>,
     ) -> Result<(), Context::Error> {
-        if self.filter.should_relay_packet(packet).await? {
-            self.in_relayer.relay_packet(context, packet).await?;
+        if context.filter().should_relay_packet(packet).await? {
+            InRelay::relay_packet(context, packet).await?;
         }
         Ok(())
     }

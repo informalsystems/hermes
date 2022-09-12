@@ -10,7 +10,6 @@ where
     Relay: RelayContext,
 {
     async fn relay_packet(
-        &self,
         context: &Relay,
         packet: &Relay::Packet,
     ) -> Result<(), Relay::Error>;

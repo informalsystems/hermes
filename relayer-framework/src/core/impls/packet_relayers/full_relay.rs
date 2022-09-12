@@ -25,15 +25,12 @@ where
     Context::DstChain: HasChainStatusQuerier,
 {
     async fn relay_packet(
-        &self,
         context: &Context,
         packet: &Packet<Context>,
     ) -> Result<(), Context::Error> {
         let source_status = context.source_chain().query_chain_status().await?;
 
-        let write_ack = self
-            .receive_relayer
-            .relay_receive_packet(
+        let write_ack = ReceiveRelay::relay_receive_packet(
                 context,
                 Context::SrcChain::chain_status_height(&source_status),
                 packet,
@@ -43,8 +40,7 @@ where
         if let Some(ack) = write_ack {
             let destination_status = context.destination_chain().query_chain_status().await?;
 
-            self.ack_relayer
-                .relay_ack_packet(
+            AckRelay::relay_ack_packet(
                     context,
                     Context::DstChain::chain_status_height(&destination_status),
                     packet,

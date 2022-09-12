@@ -31,7 +31,6 @@ where
     Message: Async,
 {
     async fn relay_receive_packet(
-        &self,
         context: &Context,
         source_height: &Height<Context::SrcChain>,
         packet: &Packet<Context>,

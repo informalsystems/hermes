@@ -26,7 +26,6 @@ where
     Relay::DstChain: HasReceivedPacketQuerier<Relay::SrcChain>,
 {
     async fn relay_receive_packet(
-        &self,
         relay: &Relay,
         source_height: &Height<Relay::SrcChain>,
         packet: &Relay::Packet,
@@ -42,9 +41,7 @@ where
             .await?;
 
         if !is_packet_received {
-            self.relayer
-                .relay_receive_packet(relay, source_height, packet)
-                .await
+            Relayer::relay_receive_packet(relay, source_height, packet).await
         } else {
             Ok(None)
         }

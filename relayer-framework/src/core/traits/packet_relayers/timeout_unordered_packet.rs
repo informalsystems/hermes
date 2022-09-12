@@ -20,7 +20,6 @@ where
     Relay: RelayContext,
 {
     async fn relay_timeout_unordered_packet(
-        &self,
         context: &Relay,
         destination_height: &Height<Relay::DstChain>,
         packet: &Relay::Packet,

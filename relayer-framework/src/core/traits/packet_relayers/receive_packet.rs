@@ -13,7 +13,6 @@ where
     Relay::DstChain: HasIbcEvents<Relay::SrcChain>,
 {
     async fn relay_receive_packet(
-        &self,
         context: &Relay,
         source_height: &Height<Relay::SrcChain>,
         packet: &Relay::Packet,
