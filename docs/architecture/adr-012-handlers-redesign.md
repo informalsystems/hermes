@@ -374,15 +374,15 @@ pub trait Host {
     type KvStore: IbcStore<Self::Error>;
 
     /// An event logging facility.
-    type EventEmitter: EventEmitter<Event=Event<DefaultIbcTypes>>;
+    type EventLogger: EventLogger<Event=Event<DefaultIbcTypes>>;
 
     /// Methods to access the store (ro & rw). 
     fn store(&self) -> &Self::KvStore;
     fn store_mut(&mut self) -> &mut Self::KvStore;
 
     /// Methods to access the event logger (ro & rw).
-    fn event_emitter(&self) -> &Self::EventEmitter;
-    fn event_emitter_mut(&mut self) -> &mut Self::EventEmitter;
+    fn event_emitter(&self) -> &Self::EventLogger;
+    fn event_emitter_mut(&mut self) -> &mut Self::EventLogger;
 
     /// Host system data (that is not required to be stored on the KV store)
     fn current_timestamp(&self) -> IbcTimestamp;
@@ -413,7 +413,7 @@ impl<H: Host> ValidationContext for HostValidationContext<H> { /* ... */ }
 
 #### Store
 
-Hosts are expected to implement the `IbcStore` trait that provides access to all IBC paths as defined
+Hosts are expected to provide an implementation of the `IbcStore` trait that provides access to all IBC paths as defined
 by `ibc::core::ics24_host::path::Path`.
 
 ```rust
@@ -487,6 +487,24 @@ pub trait IbcSerde {
 
     /// Deserialize from bytes 
     fn deserialize(value: &[u8]) -> Self;
+}
+```
+
+#### Event logging
+
+Hosts are expected to provide an implementation of the `EventLogger` trait that provides an event logging facility for
+the handlers ->
+
+```rust
+pub trait EventLogger: Into<Vec<Self::Event>> {
+    /// Event type
+    type Event;
+
+    /// Return the events emitted so-far
+    fn events(&self) -> &[Self::Event];
+
+    /// Emit an event
+    fn emit_event(&mut self, _event: Self::Event);
 }
 ```
 
