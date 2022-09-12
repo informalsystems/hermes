@@ -31,17 +31,19 @@ pub type TopRelayer_ = RetryRelayer<FullRelayer<TopReceivePacketRelayer, TopAckP
 
 pub type TopReceivePacketRelayer_ = SkipReceivedPacketRelayer<BaseReceivePacketRelayer>;
 
-impl TopRelayer {
-    pub fn new(max_retry: usize) -> Self {
-        let relayer = RetryRelayer::new(PhantomData::<FullRelayer::<TopReceivePacketRelayer, TopAckPacketRelayer>>);
+impl Default for TopRelayer {
+    fn default() -> Self {
+        let relayer =
+            RetryRelayer::<FullRelayer<TopReceivePacketRelayer, TopAckPacketRelayer>>::new(
+                PhantomData,
+            );
         TopRelayer { relayer }
     }
 }
 
 impl Default for TopReceivePacketRelayer {
     fn default() -> Self {
-        let relayer = SkipReceivedPacketRelayer::new(BaseReceivePacketRelayer);
-
+        let relayer = SkipReceivedPacketRelayer::<BaseReceivePacketRelayer>::new(PhantomData);
         TopReceivePacketRelayer { relayer }
     }
 }
@@ -60,10 +62,7 @@ where
     Relay: RelayContext,
     TopRelayer_: PacketRelayer<Relay>,
 {
-    async fn relay_packet(
-        relay: &Relay,
-        packet: &Relay::Packet,
-    ) -> Result<(), Relay::Error> {
+    async fn relay_packet(relay: &Relay, packet: &Relay::Packet) -> Result<(), Relay::Error> {
         TopRelayer_::relay_packet(relay, packet).await
     }
 }
@@ -98,7 +97,6 @@ where
         packet: &Relay::Packet,
         ack: &WriteAcknowledgementEvent<Relay::DstChain, Relay::SrcChain>,
     ) -> Result<(), Relay::Error> {
-        BaseAckPacketRelayer::relay_ack_packet(context, destination_height, packet, ack)
-            .await
+        BaseAckPacketRelayer::relay_ack_packet(context, destination_height, packet, ack).await
     }
 }

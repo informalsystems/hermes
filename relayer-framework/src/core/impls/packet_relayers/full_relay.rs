@@ -1,3 +1,5 @@
+use core::marker::PhantomData;
+
 use async_trait::async_trait;
 
 use crate::core::traits::contexts::ibc_event::HasIbcEvents;
@@ -10,8 +12,7 @@ use crate::core::types::aliases::Packet;
 use crate::std_prelude::*;
 
 pub struct FullRelayer<ReceiveRelay, AckRelay> {
-    pub receive_relayer: ReceiveRelay,
-    pub ack_relayer: AckRelay,
+    pub phantom: PhantomData<(ReceiveRelay, AckRelay)>,
 }
 
 #[async_trait]
@@ -31,22 +32,22 @@ where
         let source_status = context.source_chain().query_chain_status().await?;
 
         let write_ack = ReceiveRelay::relay_receive_packet(
-                context,
-                Context::SrcChain::chain_status_height(&source_status),
-                packet,
-            )
-            .await?;
+            context,
+            Context::SrcChain::chain_status_height(&source_status),
+            packet,
+        )
+        .await?;
 
         if let Some(ack) = write_ack {
             let destination_status = context.destination_chain().query_chain_status().await?;
 
             AckRelay::relay_ack_packet(
-                    context,
-                    Context::DstChain::chain_status_height(&destination_status),
-                    packet,
-                    &ack,
-                )
-                .await?;
+                context,
+                Context::DstChain::chain_status_height(&destination_status),
+                packet,
+                &ack,
+            )
+            .await?;
         }
 
         Ok(())

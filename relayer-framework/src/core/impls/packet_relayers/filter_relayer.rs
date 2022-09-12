@@ -2,28 +2,26 @@ use core::marker::PhantomData;
 
 use async_trait::async_trait;
 
-use crate::core::traits::contexts::filter::{PacketFilter, HasPacketFilter};
+use crate::core::traits::contexts::filter::{HasPacketFilter, PacketFilter};
 use crate::core::traits::contexts::relay::RelayContext;
 use crate::core::traits::packet_relayer::PacketRelayer;
 use crate::core::types::aliases::Packet;
 use crate::std_prelude::*;
 
 pub struct FilterRelayer<InRelay> {
-    pub phantom : PhantomData<InRelay>,
+    pub phantom: PhantomData<InRelay>,
 }
 
 impl<InRelay> FilterRelayer<InRelay> {
     pub fn new(phantom: PhantomData<InRelay>) -> Self {
-        Self {
-            phantom,
-        }
+        Self { phantom }
     }
 }
 
 #[async_trait]
 impl<Context, InRelay, Filter> PacketRelayer<Context> for FilterRelayer<InRelay>
 where
-    Context: RelayContext + HasPacketFilter<Context, Filter=Filter>,
+    Context: RelayContext + HasPacketFilter<Filter = Filter>,
     Filter: PacketFilter<Context>,
     InRelay: PacketRelayer<Context>,
 {

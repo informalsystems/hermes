@@ -3,6 +3,7 @@ use ibc_relayer_framework::one_for_all::traits::chain::OfaChainContext;
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
 use ibc_relayer_framework::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 
+use crate::cosmos::core::impls::filters::CosmosChannelFilter;
 use crate::cosmos::core::traits::relay::CosmosRelay;
 use crate::cosmos::core::types::chain::CosmosChainContext;
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
@@ -16,6 +17,7 @@ pub struct CosmosRelayContext<Relay: CosmosRelay> {
     pub dst_chain: OfaChainContext<CosmosChainContext<Relay::DstChain>>,
     pub runtime: OfaRuntimeContext<CosmosRuntimeContext>,
     pub telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
+    pub filter: CosmosChannelFilter,
 }
 
 impl<Relay: CosmosRelay> CosmosRelayContext<Relay> {
@@ -23,6 +25,7 @@ impl<Relay: CosmosRelay> CosmosRelayContext<Relay> {
         relay: Arc<Relay>,
         runtime: CosmosRuntimeContext,
         telemetry: CosmosTelemetry,
+        filter: CosmosChannelFilter,
     ) -> Self {
         let src_chain = OfaChainContext::new(CosmosChainContext::new(
             relay.src_chain().clone(),
@@ -44,6 +47,7 @@ impl<Relay: CosmosRelay> CosmosRelayContext<Relay> {
             dst_chain,
             runtime,
             telemetry: OfaTelemetryWrapper::new(telemetry),
+            filter,
         }
     }
 }

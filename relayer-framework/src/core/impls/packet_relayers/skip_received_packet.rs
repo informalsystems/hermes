@@ -1,3 +1,5 @@
+use core::marker::PhantomData;
+
 use async_trait::async_trait;
 
 use crate::core::traits::contexts::ibc_event::HasIbcEvents;
@@ -8,12 +10,12 @@ use crate::core::types::aliases::{Height, WriteAcknowledgementEvent};
 use crate::std_prelude::*;
 
 pub struct SkipReceivedPacketRelayer<Relayer> {
-    pub relayer: Relayer,
+    pub phantom: PhantomData<Relayer>,
 }
 
 impl<Relayer> SkipReceivedPacketRelayer<Relayer> {
-    pub fn new(relayer: Relayer) -> Self {
-        Self { relayer }
+    pub fn new(phantom: PhantomData<Relayer>) -> Self {
+        Self { phantom }
     }
 }
 

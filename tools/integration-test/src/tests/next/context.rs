@@ -2,6 +2,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_cosmos::cosmos::basic::relay::CosmosRelayEnv;
 use ibc_relayer_cosmos::cosmos::batch::chain::CosmosChainEnv;
 use ibc_relayer_cosmos::cosmos::batch::relay::new_relay_context_with_batch;
+use ibc_relayer_cosmos::cosmos::core::impls::filters::CosmosChannelFilter;
 use ibc_relayer_cosmos::cosmos::core::types::relay::CosmosRelayContext;
 use ibc_relayer_cosmos::cosmos::core::types::telemetry::{CosmosTelemetry, TelemetryState};
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
@@ -14,6 +15,7 @@ use std::sync::{Arc, Mutex};
 
 pub fn build_cosmos_relay_context<ChainA, ChainB>(
     chains: &ConnectedChains<ChainA, ChainB>,
+    filter: CosmosChannelFilter,
 ) -> OfaRelayContext<
     CosmosRelayContext<CosmosRelayEnv<CosmosChainEnv<ChainA>, CosmosChainEnv<ChainB>>>,
 >
@@ -69,6 +71,7 @@ where
         chains.foreign_clients.client_b_to_a.clone(),
         Default::default(),
         telemetry_state,
+        filter,
     );
 
     relay

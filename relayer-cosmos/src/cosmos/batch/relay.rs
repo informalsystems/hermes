@@ -5,11 +5,13 @@ use ibc_relayer_framework::addons::batch::config::BatchConfig;
 use ibc_relayer_framework::addons::batch::spawn::{
     BatchMessageWorkerSpawner, CanSpawnBatchMessageWorker,
 };
+use ibc_relayer_framework::core::traits::contexts::filter::PacketFilter;
 use ibc_relayer_framework::core::traits::target::{DestinationTarget, SourceTarget};
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
 
 use crate::cosmos::basic::relay::CosmosRelayEnv;
 use crate::cosmos::batch::chain::CosmosChainEnv;
+use crate::cosmos::core::impls::filters::CosmosChannelFilter;
 use crate::cosmos::core::types::relay::CosmosRelayContext;
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
 use crate::cosmos::core::types::telemetry::CosmosTelemetry;
@@ -22,6 +24,7 @@ pub fn new_relay_context_with_batch<SrcChain, DstChain>(
     dst_to_src_client: ForeignClient<SrcChain, DstChain>,
     batch_config: BatchConfig,
     telemetry: CosmosTelemetry,
+    filter: CosmosChannelFilter,
 ) -> OfaRelayContext<
     CosmosRelayContext<CosmosRelayEnv<CosmosChainEnv<SrcChain>, CosmosChainEnv<DstChain>>>,
 >
@@ -38,6 +41,7 @@ where
         )),
         runtime,
         telemetry,
+        filter,
     ));
 
     <BatchMessageWorkerSpawner<SourceTarget>>::spawn_batch_message_worker(

@@ -40,15 +40,15 @@ where
     }
 }
 
-pub struct EmptyFilter;
+pub struct BlockingFilter;
 
 #[async_trait]
-impl<Relay> PacketFilter<Relay> for EmptyFilter
+impl<Relay> PacketFilter<Relay> for BlockingFilter
 where
     Relay: RelayContext,
 {
     async fn should_relay_packet(&self, _packet: &Relay::Packet) -> Result<bool, Relay::Error> {
-        Ok(true)
+        Ok(false)
     }
 }
 

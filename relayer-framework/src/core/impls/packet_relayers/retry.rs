@@ -18,14 +18,12 @@ pub trait RetryableError {
 }
 
 pub struct RetryRelayer<InRelay> {
-    pub phantom : PhantomData<InRelay>,
+    pub phantom: PhantomData<InRelay>,
 }
 
 impl<InRelay> RetryRelayer<InRelay> {
     pub fn new(phantom: PhantomData<InRelay>) -> Self {
-        Self {
-            phantom,
-        }
+        Self { phantom }
     }
 }
 
@@ -56,9 +54,6 @@ where
             }
         }
 
-        Err(MaxRetryExceeded {
-            retries: MAX_RETRY,
-        }
-        .into())
+        Err(MaxRetryExceeded { retries: MAX_RETRY }.into())
     }
 }

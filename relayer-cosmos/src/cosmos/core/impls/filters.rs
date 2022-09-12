@@ -8,17 +8,18 @@ use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
 use crate::cosmos::core::traits::relay::CosmosRelay;
 use crate::cosmos::core::types::relay::CosmosRelayContext;
 
+#[derive(Clone)]
 pub struct CosmosChannelFilter {
-    pub filter: IbcChannelFilter,
+    pub inner_filter: IbcChannelFilter,
 }
 
 impl CosmosChannelFilter {
-    pub fn new(filter: IbcChannelFilter) -> Self {
-        Self { filter }
+    pub fn new(inner_filter: IbcChannelFilter) -> Self {
+        Self { inner_filter }
     }
 
-    pub fn channel_filter(&self) -> &IbcChannelFilter {
-        &self.filter
+    pub fn inner_filter(&self) -> &IbcChannelFilter {
+        &self.inner_filter
     }
 }
 
@@ -35,6 +36,6 @@ where
             <OfaRelayContext<CosmosRelayContext<Relay>>>::packet_src_channel_id(packet).clone();
         let src_port =
             <OfaRelayContext<CosmosRelayContext<Relay>>>::packet_src_port(packet).clone();
-        Ok(self.channel_filter().is_allowed(&src_port, &src_channel))
+        Ok(self.inner_filter().is_allowed(&src_port, &src_channel))
     }
 }

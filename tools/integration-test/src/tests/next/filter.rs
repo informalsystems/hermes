@@ -1,6 +1,6 @@
 use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer_cosmos::cosmos::core::impls::filters::CosmosChannelFilter;
-use ibc_relayer_cosmos::cosmos::instances::packet_relayers::full_packet_relayer;
+use ibc_relayer_framework::core::impls::packet_relayers::top::TopRelayer;
 use ibc_relayer_framework::core::traits::packet_relayer::PacketRelayer;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
@@ -38,8 +38,7 @@ impl BinaryChannelTest for ChannelFilterTest {
         let pf: PacketFilter = toml::from_str(toml_content).expect("could not parse filter policy");
         let cosmosfilter = CosmosChannelFilter::new(pf);
 
-        let relay_context = build_cosmos_relay_context(&chains);
-        let relayer = full_packet_relayer(1, cosmosfilter);
+        let relay_context = build_cosmos_relay_context(&chains, cosmosfilter);
 
         let runtime = chains.node_a.value().chain_driver.runtime.as_ref();
 
@@ -75,7 +74,11 @@ impl BinaryChannelTest for ChannelFilterTest {
 
         info!("running relayer");
 
-        runtime.block_on(async { relayer.relay_packet(&relay_context, &packet).await.unwrap() });
+        runtime.block_on(async {
+            TopRelayer::relay_packet(&relay_context, &packet)
+                .await
+                .unwrap()
+        });
 
         info!("finished running relayer");
 

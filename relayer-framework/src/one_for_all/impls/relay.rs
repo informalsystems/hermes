@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 
 use crate::core::traits::contexts::error::HasError;
+use crate::core::traits::contexts::filter::{HasPacketFilter, PacketFilter};
 use crate::core::traits::contexts::relay::RelayContext;
 use crate::core::traits::contexts::runtime::HasRuntime;
 use crate::core::traits::messages::ack_packet::{
@@ -211,4 +212,15 @@ where
 
 impl<Relay: OfaRelay> HasTimeoutUnorderedPacketMessageBuilder for OfaRelayContext<Relay> {
     type TimeoutUnorderedPacketMessageBuilder = OfaTimeoutUnorderedPacketMessageBuilder;
+}
+
+impl<Relay: OfaRelay + HasPacketFilter> HasPacketFilter for OfaRelayContext<Relay>
+where
+    Relay::Filter: PacketFilter<OfaRelayContext<Relay>>,
+{
+    type Filter = Relay::Filter;
+
+    fn filter(&self) -> &Self::Filter {
+        self.relay.filter()
+    }
 }

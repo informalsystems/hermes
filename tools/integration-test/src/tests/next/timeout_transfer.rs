@@ -1,6 +1,9 @@
 //! This test ensures that a source chain that initiates an IBC transfer is
 //! refunded the tokens that it sent in response to receiving a timeout packet.
 
+use ibc_relayer::config::PacketFilter;
+use ibc_relayer_cosmos::cosmos::core::impls::filters::CosmosChannelFilter;
+use ibc_relayer_framework::core::impls::filters::trivial_filters::AllowFilter;
 use ibc_relayer_framework::core::impls::packet_relayers::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
 use ibc_relayer_framework::core::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer;
 use ibc_test_framework::prelude::*;
@@ -29,8 +32,10 @@ impl BinaryChannelTest for IbcTransferTest {
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let relay_context = build_cosmos_relay_context(&chains);
-        let relayer = BaseTimeoutUnorderedPacketRelayer;
+        let pf: PacketFilter = PacketFilter::AllowAll;
+        let cosmosfilter = CosmosChannelFilter::new(pf);
+
+        let relay_context = build_cosmos_relay_context(&chains, cosmosfilter);
 
         let runtime = chains.node_a.value().chain_driver.runtime.as_ref();
 
@@ -72,10 +77,13 @@ impl BinaryChannelTest for IbcTransferTest {
         let chain_b_height = chain_b_height.decrement().unwrap();
 
         runtime.block_on(async {
-            relayer
-                .relay_timeout_unordered_packet(&relay_context, &chain_b_height, &packet)
-                .await
-                .unwrap()
+            BaseTimeoutUnorderedPacketRelayer::relay_timeout_unordered_packet(
+                &relay_context,
+                &chain_b_height,
+                &packet,
+            )
+            .await
+            .unwrap()
         });
 
         info!("finished running relayer");

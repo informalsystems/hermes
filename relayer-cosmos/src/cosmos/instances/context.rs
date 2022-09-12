@@ -1,5 +1,6 @@
 use core::marker::PhantomData;
 use ibc_relayer_framework::core::traits::contexts::chain::ChainContext;
+use ibc_relayer_framework::core::traits::contexts::filter::PacketFilter;
 use ibc_relayer_framework::one_for_all::traits::chain::OfaChainContext;
 use ibc_relayer_framework::one_for_all::traits::components::chain::OfaIbcChainComponents;
 use ibc_relayer_framework::one_for_all::traits::components::relay::OfaRelayComponents;
@@ -12,9 +13,10 @@ use crate::cosmos::core::traits::relay::CosmosRelay;
 use crate::cosmos::core::types::chain::CosmosChainContext;
 use crate::cosmos::core::types::relay::CosmosRelayContext;
 
-pub fn relay_context<Relay>() -> PhantomData<impl AfoCosmosRelayContext>
+pub fn relay_context<Relay, Filter>() -> PhantomData<impl AfoCosmosRelayContext>
 where
     Relay: CosmosRelay,
+    Filter: PacketFilter<OfaRelayContext<CosmosRelayContext<Relay>>>,
     Relay::Components: OfaRelayComponents<CosmosRelayContext<Relay>>,
 {
     PhantomData::<OfaRelayContext<CosmosRelayContext<Relay>>>
