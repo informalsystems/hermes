@@ -1,5 +1,4 @@
 use ibc_relayer::config::filter::PacketFilter;
-use ibc_relayer_cosmos::cosmos::core::impls::filters::CosmosChannelFilter;
 use ibc_relayer_framework::core::impls::packet_relayers::filter_relayer::FilterRelayer;
 use ibc_relayer_framework::core::impls::packet_relayers::top::TopRelayer;
 use ibc_relayer_framework::core::traits::packet_relayer::PacketRelayer;
@@ -37,9 +36,8 @@ impl BinaryChannelTest for ChannelFilterTest {
             ]
             "#;
         let pf: PacketFilter = toml::from_str(toml_content).expect("could not parse filter policy");
-        let cosmosfilter = CosmosChannelFilter::new(pf);
 
-        let relay_context = build_cosmos_relay_context(&chains, cosmosfilter);
+        let relay_context = build_cosmos_relay_context(&chains, pf);
 
         let runtime = chains.node_a.value().chain_driver.runtime.as_ref();
 

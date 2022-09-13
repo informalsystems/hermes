@@ -2,7 +2,6 @@
 //! refunded the tokens that it sent in response to receiving a timeout packet.
 
 use ibc_relayer::config::PacketFilter;
-use ibc_relayer_cosmos::cosmos::core::impls::filters::CosmosChannelFilter;
 
 use ibc_relayer_framework::core::impls::packet_relayers::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
 use ibc_relayer_framework::core::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer;
@@ -33,9 +32,8 @@ impl BinaryChannelTest for IbcTransferTest {
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let pf: PacketFilter = PacketFilter::AllowAll;
-        let cosmosfilter = CosmosChannelFilter::new(pf);
 
-        let relay_context = build_cosmos_relay_context(&chains, cosmosfilter);
+        let relay_context = build_cosmos_relay_context(&chains, pf);
 
         let runtime = chains.node_a.value().chain_driver.runtime.as_ref();
 

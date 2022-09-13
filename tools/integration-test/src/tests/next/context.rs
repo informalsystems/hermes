@@ -2,7 +2,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_cosmos::cosmos::basic::relay::CosmosRelayEnv;
 use ibc_relayer_cosmos::cosmos::batch::chain::CosmosChainEnv;
 use ibc_relayer_cosmos::cosmos::batch::relay::new_relay_context_with_batch;
-use ibc_relayer_cosmos::cosmos::core::impls::filters::CosmosChannelFilter;
+use ibc_relayer_cosmos::cosmos::core::traits::filter::CosmosFilter;
 use ibc_relayer_cosmos::cosmos::core::types::relay::CosmosRelayContext;
 use ibc_relayer_cosmos::cosmos::core::types::telemetry::{CosmosTelemetry, TelemetryState};
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
@@ -13,16 +13,17 @@ use opentelemetry::global;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-pub fn build_cosmos_relay_context<ChainA, ChainB>(
+pub fn build_cosmos_relay_context<ChainA, ChainB, Filter>(
     chains: &ConnectedChains<ChainA, ChainB>,
-    filter: CosmosChannelFilter,
+    filter: Filter,
 ) -> OfaRelayContext<
-    CosmosRelayContext<CosmosRelayEnv<CosmosChainEnv<ChainA>, CosmosChainEnv<ChainB>>>,
+    CosmosRelayContext<CosmosRelayEnv<CosmosChainEnv<ChainA>, CosmosChainEnv<ChainB>>, Filter>,
 >
 //TODO : impl AfoRelayContext
 where
     ChainA: ChainHandle,
     ChainB: ChainHandle,
+    Filter: CosmosFilter + Clone,
 {
     let telemetry_state = CosmosTelemetry::new(Arc::new(Mutex::new(TelemetryState {
         meter: global::meter("hermes"),

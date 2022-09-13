@@ -1,41 +1,47 @@
+use crate::cosmos::core::{
+    traits::{filter::CosmosFilter, relay::CosmosRelay},
+    types::relay::CosmosRelayContext,
+};
 use async_trait::async_trait;
+use ibc::core::ics04_channel::packet::Packet;
 use ibc_relayer::config::filter::PacketFilter as IbcChannelFilter;
-use ibc_relayer_framework::core::traits::contexts::error::HasError;
-use ibc_relayer_framework::core::traits::contexts::filter::PacketFilter;
-use ibc_relayer_framework::core::traits::contexts::relay::RelayContext;
-use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
+use ibc_relayer_framework::{
+    core::traits::contexts::{error::HasError, filter::PacketFilter},
+    one_for_all::traits::relay::OfaRelayContext,
+};
 
-use crate::cosmos::core::traits::relay::CosmosRelay;
-use crate::cosmos::core::types::relay::CosmosRelayContext;
-
-#[derive(Clone)]
-pub struct CosmosChannelFilter {
-    pub inner_filter: IbcChannelFilter,
+impl CosmosFilter for IbcChannelFilter {
+    fn should_relay_packet(&self, packet: &Packet) -> bool {
+        self.is_allowed(&packet.source_port, &packet.source_channel)
+    }
 }
 
-impl CosmosChannelFilter {
-    pub fn new(inner_filter: IbcChannelFilter) -> Self {
+#[derive(Clone)]
+pub struct FilterWrapper<Filter: CosmosFilter> {
+    pub inner_filter: Filter,
+}
+
+impl<Filter: CosmosFilter> FilterWrapper<Filter> {
+    pub fn new(inner_filter: Filter) -> Self {
         Self { inner_filter }
     }
 
-    pub fn inner_filter(&self) -> &IbcChannelFilter {
+    pub fn inner_filter(&self) -> &Filter {
         &self.inner_filter
     }
 }
 
 #[async_trait]
-impl<Relay> PacketFilter<OfaRelayContext<CosmosRelayContext<Relay>>> for CosmosChannelFilter
+impl<Relay, Filter> PacketFilter<OfaRelayContext<CosmosRelayContext<Relay, Filter>>>
+    for FilterWrapper<Filter>
 where
     Relay: CosmosRelay,
+    Filter: CosmosFilter + Clone,
 {
     async fn should_relay_packet(
         &self,
-        packet: &<OfaRelayContext<CosmosRelayContext<Relay>> as RelayContext>::Packet,
-    ) -> Result<bool, <OfaRelayContext<CosmosRelayContext<Relay>> as HasError>::Error> {
-        let src_channel =
-            <OfaRelayContext<CosmosRelayContext<Relay>>>::packet_src_channel_id(packet).clone();
-        let src_port =
-            <OfaRelayContext<CosmosRelayContext<Relay>>>::packet_src_port(packet).clone();
-        Ok(self.inner_filter().is_allowed(&src_port, &src_channel))
+        packet: &Packet,
+    ) -> Result<bool, <OfaRelayContext<CosmosRelayContext<Relay, Filter>> as HasError>::Error> {
+        Ok(self.inner_filter().should_relay_packet(packet))
     }
 }

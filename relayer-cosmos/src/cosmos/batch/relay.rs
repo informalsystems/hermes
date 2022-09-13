@@ -11,12 +11,12 @@ use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
 
 use crate::cosmos::basic::relay::CosmosRelayEnv;
 use crate::cosmos::batch::chain::CosmosChainEnv;
-use crate::cosmos::core::impls::filters::CosmosChannelFilter;
+use crate::cosmos::core::traits::filter::CosmosFilter;
 use crate::cosmos::core::types::relay::CosmosRelayContext;
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
 use crate::cosmos::core::types::telemetry::CosmosTelemetry;
 
-pub fn new_relay_context_with_batch<SrcChain, DstChain>(
+pub fn new_relay_context_with_batch<SrcChain, DstChain, Filter>(
     runtime: CosmosRuntimeContext,
     src_chain: CosmosChainEnv<SrcChain>,
     dst_chain: CosmosChainEnv<DstChain>,
@@ -24,13 +24,14 @@ pub fn new_relay_context_with_batch<SrcChain, DstChain>(
     dst_to_src_client: ForeignClient<SrcChain, DstChain>,
     batch_config: BatchConfig,
     telemetry: CosmosTelemetry,
-    filter: CosmosChannelFilter,
+    filter: Filter,
 ) -> OfaRelayContext<
-    CosmosRelayContext<CosmosRelayEnv<CosmosChainEnv<SrcChain>, CosmosChainEnv<DstChain>>>,
+    CosmosRelayContext<CosmosRelayEnv<CosmosChainEnv<SrcChain>, CosmosChainEnv<DstChain>>, Filter>,
 >
 where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
+    Filter: CosmosFilter + Clone,
 {
     let relay = OfaRelayContext::new(CosmosRelayContext::new(
         Arc::new(CosmosRelayEnv::new(
