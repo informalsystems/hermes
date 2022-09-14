@@ -9,6 +9,7 @@ on:
       - relayer-rest/**
       - telemetry/**
       - scripts/**
+      - tools/check-guide/**
 
   push:
     branches: master
@@ -20,6 +21,7 @@ on:
       - relayer-rest/**
       - telemetry/**
       - scripts/**
+      - tools/check-guide/**
 
 env:
   CARGO_INCREMENTAL: 0
@@ -41,3 +43,7 @@ jobs:
           override: true
       - name: check templates
         run: bash scripts/auto_gen_templates.sh --mode "check"
+      - uses: actions-rs/cargo@v1
+        with:
+          command: run
+          args: -p check-guide

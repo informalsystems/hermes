@@ -13,8 +13,8 @@ use std::{
 use walkdir::WalkDir;
 
 lazy_static! {
-    static ref GUIDE_PATH: PathBuf = PathBuf::from("../../guide/src/");
-    static ref TEMPLATES_PATH: PathBuf = PathBuf::from("../../guide/src/templates/commands/hermes/");
+    static ref GUIDE_PATH: PathBuf = PathBuf::from("guide/src/");
+    static ref TEMPLATES_PATH: PathBuf = PathBuf::from("guide/src/templates/commands/hermes/");
 
     // List of directories which should not be visited
     static ref EXCLUSIONS: HashSet<&'static str> = HashSet::from(["templates", "assets", "images", "theme"]);
