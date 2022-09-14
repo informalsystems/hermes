@@ -12,6 +12,7 @@ members = [
     "proto",
     "tools/integration-test",
     "tools/test-framework",
+    "tools/check-guide",
 ]
 
 exclude = [

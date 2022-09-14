@@ -217,7 +217,7 @@ Success: balance for key `KEY_NAME`: 100000000000 stake
 **JSON:**
 
 ```shell
-{{#template ../../../templates/commands/hermes/keys/balance_1.md CHAIN_ID=<CHAIN_ID> OPTIONS=[OPTIONS] GLOBALOPTIONS=--json}}
+{{#template ../../../templates/commands/hermes/keys/balance_1.md CHAIN_ID=<CHAIN_ID> GLOBALOPTIONS=--json}}
 ```
 
 If the command is successful a message with the following format will be displayed:

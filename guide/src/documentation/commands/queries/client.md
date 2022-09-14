@@ -210,7 +210,7 @@ __Example__
 Query for the header used in the `07-tendermint-0` client update at height 2724 on `ibc-0`:
 
 ```shell
-{{#template ../../../templates/commands/hermes/query/client/header_1.md CHAIN_ID=ibc-0 CLIENT_ID=07-tendermint-0 #CONSENSUS_HEIGHT=2724}}
+{{#template ../../../templates/commands/hermes/query/client/header_1.md CHAIN_ID=ibc-0 CLIENT_ID=07-tendermint-0 CONSENSUS_HEIGHT=2724}}
 ```
 
 ```json

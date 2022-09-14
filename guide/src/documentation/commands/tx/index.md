@@ -21,12 +21,12 @@ The `tx` command provides the following sub-commands:
 | `packet-ack`           | [Relay acknowledgment packets](./packet.md#relay-acknowledgment-packets)                                   |
 | `upgrade-chain`        | [Send an IBC upgrade plan](./upgrade.md)
 
-The main purpose of these commands is to support development and testing, and continuous integration. These CLIs take quite a few parameters and they are explained in the individual sub-sections.
+The main purpose of these commands is to support development and testing, and continuous integration. These CLIs take quite a few parameters, and they are explained in the individual subsections.
 
 At a high level, most commands follow this template:
 
 ```shell
-{{#template ../../../templates/commands/hermes/tx_1.md SUBCOMMAND=<IBC-MESSAGE> --dst-chain-id <CHAIN-ID> --src-chain-id <CHAIN-id> --dst-obj-id <OBJ-ID> --src-obj-id <SRC-OBJ-ID>}}
+hermes tx <IBC-MESSAGE> --dst-chain-id <CHAIN-ID> --src-chain-id <CHAIN-id> --dst-obj-id <OBJ-ID> --src-obj-id <SRC-OBJ-ID>
 ```
 
 In the command template above:

@@ -5,7 +5,7 @@
 To see the available sub-commands for the `config` command run:
 
 ```shell
-{{#template ../../templates/commands/hermes/help_1.md SUBCOMMAND=help config}}
+hermes help config
 ```
 
 The available sub-commands are the following:

@@ -308,7 +308,7 @@ Finally, after the connection has been established, you can now open a new chann
 ```
 >__NOTE__: Again, you do not need to specify the counterparty chain as a connection can only be established with a single counterparty. The `port` specifies the protocol which will be used on this channel. 
 
-If the command runs succesfully, it should output something similar to:
+If the command runs successfully, it should output something similar to:
 
 <details><summary style="font-weight:bold">Create channel output</summary>
 

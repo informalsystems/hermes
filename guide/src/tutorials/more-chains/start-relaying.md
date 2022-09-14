@@ -88,7 +88,7 @@ Now, let's exchange `samoleans` between chains.
 
     - In a separate terminal, use the `ft-transfer` command to send `1000000 samoleans` from ibc-1 to ibc-3 from channel-2:
     ```shell
-    {{#template ../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-3 SRC_CHAIN_ID=ibc-1 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-2 AMOUNT=1000000 OPTIONS=--timeout-seconds=10000}}
+    {{#template ../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-3 SRC_CHAIN_ID=ibc-1 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-2 AMOUNT=1000000 OPTIONS=--timeout-seconds 10000}}
     ``` 
     - Wait a few seconds then query balances on `ibc-1` and `ibc-3`. You should observe that `ibc-1` lost 1000000 samoleans but `ibc-3` did not receive any:
 
@@ -128,7 +128,7 @@ Now, let's exchange `samoleans` between chains.
 
 - In a separate terminal, use the `ft-transfer` command to send `1000000 samoleans` from ibc-1 to ibc-2 from channel-1:
     ```shell
-    {{#template ../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-2 SRC_CHAIN_ID=ibc-1 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-1 AMOUNT=1000000 OPTIONS=--timeout-seconds=10000}}
+    {{#template ../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-2 SRC_CHAIN_ID=ibc-1 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-1 AMOUNT=1000000 OPTIONS=--timeout-seconds 10000}}
     ```
 - Wait a few seconds then query balances on `ibc-1` and `ibc-2`. You should observe something similar to:
     - Balances on `ibc-1`:
@@ -159,7 +159,7 @@ Now, let's exchange `samoleans` between chains.
 
 - Transfer these tokens to `ibc-3`:
     ```shell
-    {{#template ../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-3 SRC_CHAIN_ID=ibc-2 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-2 AMOUNT=1000000 OPTIONS=--timeout-seconds=10000 --denom ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199}}
+    {{#template ../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-3 SRC_CHAIN_ID=ibc-2 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-2 AMOUNT=1000000 OPTIONS=--timeout-seconds 10000 --denom ibc/C1840BD16FCFA8F421DAA0DAAB08B9C323FC7685D0D7951DC37B3F9ECB08A199}}
     ```
 - Wait a few seconds then query balances on `ibc-2` and `ibc-3`. You should observe something similar to:
     - Balances on `ibc-2`:
