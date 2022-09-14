@@ -14,7 +14,7 @@ description  = """
 """
 
 [dependencies]
-ibc               = { version = "0.19.0", path = "../modules" }
+ibc               = "0.19.0"
 ibc-relayer       = { version = "0.19.0", path = "../relayer" }
 
 crossbeam-channel = "0.5"

@@ -4,19 +4,16 @@ resolver = "2"
 
 members = [
     "ibc-chain-registry",
-    "modules",
     "relayer",
     "relayer-cli",
     "relayer-rest",
     "telemetry",
-    "proto",
     "tools/integration-test",
     "tools/test-framework",
 ]
 
 exclude = [
     "ci/no-std-check",
-    "proto-compiler"
 ]
 
 # [patch.crates-io]
