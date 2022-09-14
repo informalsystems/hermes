@@ -124,6 +124,7 @@ impl From<MsgAcknowledgement> for RawMsgAcknowledgement {
 #[cfg(test)]
 pub mod test_util {
     use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
+    use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
     use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
     use crate::core::ics04_channel::packet::test_utils::get_dummy_raw_packet;
@@ -132,8 +133,15 @@ pub mod test_util {
     /// Returns a dummy `RawMsgAcknowledgement`, for testing only!
     /// The `height` parametrizes both the proof height as well as the timeout height.
     pub fn get_dummy_raw_msg_acknowledgement(height: u64) -> RawMsgAcknowledgement {
+        get_dummy_raw_msg_ack_with_packet(get_dummy_raw_packet(height, 1), height)
+    }
+
+    pub fn get_dummy_raw_msg_ack_with_packet(
+        packet: RawPacket,
+        height: u64,
+    ) -> RawMsgAcknowledgement {
         RawMsgAcknowledgement {
-            packet: Some(get_dummy_raw_packet(height, 1)),
+            packet: Some(packet),
             acknowledgement: get_dummy_proof(),
             proof_acked: get_dummy_proof(),
             proof_height: Some(RawHeight {
