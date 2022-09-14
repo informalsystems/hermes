@@ -16,7 +16,7 @@ services:
       - loki
 
   promtail:
-    image: grafana/promtail:2.6.0
+    image: grafana/promtail:2.6.1
     volumes:
       - /var/log:/var/log
     command: -config.file=/etc/promtail/config.yml
@@ -24,7 +24,7 @@ services:
       - loki
 
   grafana:
-    image: grafana/grafana:8.2.6
+    image: grafana/grafana:8.4.5
     ports:
       - "3000:3000"
     networks:

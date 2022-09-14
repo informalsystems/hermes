@@ -1,33 +1,72 @@
-/*!
-   Methods for querying transactions on a chain.
-*/
-
+use core::str::FromStr;
+use eyre::eyre;
 use serde_json as json;
 use serde_yaml as yaml;
 
+use crate::chain::exec::simple_exec;
 use crate::error::{handle_generic_error, Error};
-use crate::types::wallet::WalletAddress;
 
-use super::ChainDriver;
+pub fn query_balance(
+    chain_id: &str,
+    command_path: &str,
+    rpc_listen_address: &str,
+    wallet_id: &str,
+    denom: &str,
+) -> Result<u64, Error> {
+    let res = simple_exec(
+        chain_id,
+        command_path,
+        &[
+            "--node",
+            rpc_listen_address,
+            "query",
+            "bank",
+            "balances",
+            wallet_id,
+            "--denom",
+            denom,
+            "--output",
+            "json",
+        ],
+    )?
+    .stdout;
+
+    let amount_str = json::from_str::<json::Value>(&res)
+        .map_err(handle_generic_error)?
+        .get("amount")
+        .ok_or_else(|| eyre!("expected amount field"))?
+        .as_str()
+        .ok_or_else(|| eyre!("expected string field"))?
+        .to_string();
+
+    let amount = u64::from_str(&amount_str).map_err(handle_generic_error)?;
+
+    Ok(amount)
+}
 
 /**
     Query for the transactions related to a wallet on `Chain`
     receiving token transfer from others.
 */
 pub fn query_recipient_transactions(
-    driver: &ChainDriver,
-    recipient_address: &WalletAddress,
+    chain_id: &str,
+    command_path: &str,
+    rpc_listen_address: &str,
+    recipient_address: &str,
 ) -> Result<json::Value, Error> {
-    let res = driver
-        .exec(&[
+    let res = simple_exec(
+        chain_id,
+        command_path,
+        &[
             "--node",
-            &driver.rpc_listen_address(),
+            rpc_listen_address,
             "query",
             "txs",
             "--events",
             &format!("transfer.recipient={}", recipient_address),
-        ])?
-        .stdout;
+        ],
+    )?
+    .stdout;
 
     tracing::debug!("parsing tx result: {}", res);
 
