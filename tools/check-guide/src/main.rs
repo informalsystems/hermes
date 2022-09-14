@@ -2,6 +2,7 @@ use clap::Parser;
 use ibc_relayer_cli::entry::EntryPoint;
 use lazy_static::lazy_static;
 use regex::Regex;
+use std::process::exit;
 use std::{
     collections::{HashMap, HashSet},
     ffi::OsStr,
@@ -10,8 +11,6 @@ use std::{
     path::{Path, PathBuf},
 };
 use walkdir::WalkDir;
-use std::process::exit;
-
 
 lazy_static! {
     static ref GUIDE_PATH: PathBuf = PathBuf::from("../../guide/src/");
@@ -141,7 +140,7 @@ fn main() {
         .filter(|e| e.path().extension() == Some(OsStr::new("md")))
         .map(|e| verify_file(e.path(), &templates))
         .sum::<i32>();
-    
+
     exit(number_of_errors);
 }
 
@@ -163,16 +162,27 @@ mod tests {
     fn test_replace_args_without_options() {
         let line = "    [[#BINARY hermes]] [[#GLOBALOPTIONS]] assistant [[#OPTIONS]] --flag1 [[#FLAG1]] --flag2 [[#FLAG2]]";
         let expected = "    hermes  assistant  --flag1 flag1_value --flag2 flag2_value";
-        let map = HashMap::from([("FLAG1", "flag1_value"), ("FLAG2", "flag2_value")].map(|(k, v)| (k.to_string(), v.to_string())));
+        let map = HashMap::from(
+            [("FLAG1", "flag1_value"), ("FLAG2", "flag2_value")]
+                .map(|(k, v)| (k.to_string(), v.to_string())),
+        );
         let replaced = replace_args(line, &map);
         assert_eq!(replaced, expected);
     }
 
     #[test]
-    fn test_replace_args_with_options(){
+    fn test_replace_args_with_options() {
         let line = "    [[#BINARY hermes]] [[#GLOBALOPTIONS]] assistant [[#OPTIONS]] --flag1 [[#FLAG1]] --flag2 [[#FLAG2]]";
-        let expected = "    hermes  assistant --option1 --option2 --flag1 flag1_value --flag2 flag2_value";
-        let map = HashMap::from([("FLAG1", "flag1_value"), ("OPTIONS", "--option1 --option2"), ("FLAG2", "flag2_value")].map(|(k, v)| (k.to_string(), v.to_string())));
+        let expected =
+            "    hermes  assistant --option1 --option2 --flag1 flag1_value --flag2 flag2_value";
+        let map = HashMap::from(
+            [
+                ("FLAG1", "flag1_value"),
+                ("OPTIONS", "--option1 --option2"),
+                ("FLAG2", "flag2_value"),
+            ]
+            .map(|(k, v)| (k.to_string(), v.to_string())),
+        );
         let replaced = replace_args(line, &map);
         assert_eq!(replaced, expected);
     }
