@@ -7,8 +7,6 @@ on:
       - Cargo.lock
       - ci/**
       - e2e/**
-      - proto/**
-      - modules/**
       - relayer/**
       - relayer-cli/**
       - relayer-rest/**
@@ -22,8 +20,6 @@ on:
       - Cargo.lock
       - ci/**
       - e2e/**
-      - proto/**
-      - modules/**
       - relayer/**
       - relayer-cli/**
       - relayer-rest/**

@@ -9,8 +9,6 @@ on:
       - flake.lock
       - ci/**
       - e2e/**
-      - proto/**
-      - modules/**
       - relayer/**
       - relayer-cli/**
       - relayer-rest/**
@@ -26,8 +24,6 @@ on:
       - flake.lock
       - ci/**
       - e2e/**
-      - proto/**
-      - modules/**
       - relayer/**
       - relayer-cli/**
       - relayer-rest/**
