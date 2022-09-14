@@ -57,6 +57,6 @@ In the command template above:
 ## Usage
 
 ```shell
-{{#template ../../../templates/help_templates/tx.md}}
+{{#include ../../../templates/help_templates/tx.md}}
 
 ```

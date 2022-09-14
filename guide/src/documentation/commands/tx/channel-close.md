@@ -11,7 +11,7 @@ The channel close handshake involves two steps: init and confirm.
 Use the `chan-close-init` command to initialize the closure of a channel.
 
 ```shell
-{{#template ../../../templates/help_templates/tx/chan-close-init.md}}
+{{#include ../../../templates/help_templates/tx/chan-close-init.md}}
 ```
 
 __Example__
@@ -57,7 +57,7 @@ Success: CloseInitChannel(
 Use the `chan-close-confirm` command to confirm the closure of a channel.
 
 ```shell
-{{#template ../../../templates/help_templates/tx/chan-close-confirm.md}}
+{{#include ../../../templates/help_templates/tx/chan-close-confirm.md}}
 ```
 
 __Example__

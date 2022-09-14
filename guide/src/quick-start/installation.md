@@ -155,7 +155,7 @@ If you run the `hermes` without any additional parameters you should see the usa
 ```
 
 ```
-{{#template ../templates/help_templates/help.md}}
+{{#include ../templates/help_templates/help.md}}
 ```
 
 ### Creating an alias for the executable

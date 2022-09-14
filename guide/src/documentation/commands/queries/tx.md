@@ -4,7 +4,7 @@ Use the `query tx` command to query information about transaction(s).
 
 
 ```shell
-{{#template ../../../templates/help_templates/query/tx.md}}
+{{#include ../../../templates/help_templates/query/tx.md}}
 ```
 
 ## Table of Contents
@@ -18,7 +18,7 @@ Use the `query tx events` command to obtain a list of events that a chain genera
 delivering a transaction.
 
 ```shell
-{{#template ../../../templates/help_templates/query/tx/events.md}}
+{{#include ../../../templates/help_templates/query/tx/events.md}}
 ```
 
 __Example__

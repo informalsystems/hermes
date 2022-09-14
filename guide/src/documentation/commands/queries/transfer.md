@@ -3,7 +3,7 @@
 Use the `query transfer` command to query information about transfer(s).
 
 ```shell
-{{#template ../../../templates/help_templates/query/transfer.md}}
+{{#include ../../../templates/help_templates/query/transfer.md}}
 ```
 
 ## Table of Contents
@@ -15,7 +15,7 @@ Use the `query transfer` command to query information about transfer(s).
 Use the `query transfer denom-trace` command to obtain the path and base denomination of a given trace hash.
 
 ```shell
-{{#template ../../../templates/help_templates/query/transfer/denom-trace.md}}
+{{#include ../../../templates/help_templates/query/transfer/denom-trace.md}}
 ```
 
 __Example__

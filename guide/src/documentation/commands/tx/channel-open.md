@@ -34,7 +34,7 @@ sequenceDiagram
 Use the `chan-open-init` command to initialize a new channel.
 
 ```shell
-{{#template ../../../templates/help_templates/tx/chan-open-init.md}}
+{{#include ../../../templates/help_templates/tx/chan-open-init.md}}
 ```
 
 __Example__
@@ -83,7 +83,7 @@ A new channel has been initialized on `ibc-1` with identifier `channel-0`.
 Use the `chan-open-try` command to establish a counterparty to the channel on the other chain.
 
 ```shell
-{{#template ../../../templates/help_templates/tx/chan-open-try.md}}
+{{#include ../../../templates/help_templates/tx/chan-open-try.md}}
 ```
 
 __Example__
@@ -136,7 +136,7 @@ A new channel has been created on `ibc-1` with identifier `channel-1`.
 Use the `chan-open-ack` command to acknowledge the channel on the initial chain.
 
 ```shell
-{{#template ../../../templates/help_templates/tx/chan-open-ack.md}}
+{{#include ../../../templates/help_templates/tx/chan-open-ack.md}}
 ```
 
 __Example__
@@ -188,7 +188,7 @@ Use the `chan-open-confirm` command to confirm that the channel has been acknowl
 and finish the handshake, after which the channel is open on both chains.
 
 ```shell
-{{#template ../../../templates/help_templates/tx/chan-open-confirm.md}}
+{{#include ../../../templates/help_templates/tx/chan-open-confirm.md}}
 ```
 
 __Example__

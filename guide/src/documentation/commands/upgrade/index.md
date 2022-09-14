@@ -5,7 +5,7 @@
 Use the `upgrade client` command to upgrade a client after a chain upgrade.
 
 ```shell
-{{#template ../../../templates/help_templates/upgrade/client.md}}
+{{#include ../../../templates/help_templates/upgrade/client.md}}
 ```
 
 __Example__

@@ -10,7 +10,7 @@ Use the `create client` command to create a new client on a destination chain,
 tracking the state of the source chain.
 
 ```shell
-{{#template ../../../templates/help_templates/create/client.md}}
+{{#include ../../../templates/help_templates/create/client.md}}
 ```
 
 __Example__
@@ -49,7 +49,7 @@ Use the `update client` command to update an existing client with a new consensu
 Specific update and trusted heights can be specified.
 
 ```shell
-{{#template ../../../templates/help_templates/update/client.md}}
+{{#include ../../../templates/help_templates/update/client.md}}
 ```
 
 __Update client with latest header__

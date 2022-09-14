@@ -9,7 +9,7 @@ and [packet-acks](../tx/packet.md#relay-acknowledgment-packets).
 ### Usage
 
 ```
-{{#template ../../../templates/help_templates/clear/packets.md}}
+{{#include ../../../templates/help_templates/clear/packets.md}}
 ```
 
 ### Example

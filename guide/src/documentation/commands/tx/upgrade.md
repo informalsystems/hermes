@@ -9,7 +9,7 @@
 Use this to make an upgrade proposal.
 
 ```shell
-{{#template ../../../templates/help_templates/tx/upgrade-chain.md}}
+{{#include ../../../templates/help_templates/tx/upgrade-chain.md}}
 ```
 
 __Example__

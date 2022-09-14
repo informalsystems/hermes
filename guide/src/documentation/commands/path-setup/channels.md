@@ -9,7 +9,7 @@
 Use the `create channel` command to establish a new channel.
 
 ```shell
-{{#template ../../../templates/help_templates/create/channel.md}}
+{{#include ../../../templates/help_templates/create/channel.md}}
 ```
 
 ## Examples

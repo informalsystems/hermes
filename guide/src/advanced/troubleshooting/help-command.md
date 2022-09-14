@@ -14,7 +14,7 @@ hermes help create
 will provide details about all the valid invocations of the `create` CLI command.
 
 ```
-{{#template ../../templates/help_templates/create.md}}
+{{#include ../../templates/help_templates/create.md}}
 ```
 
 This can provide further specific guidance if we add additional parameters, e.g., 
@@ -24,7 +24,7 @@ hermes help create channel
 ```
 
 ```shell
-{{#template ../../templates/help_templates/create/channel.md}}
+{{#include ../../templates/help_templates/create/channel.md}}
 ```
 
 Additionally, the `-h`/`--help` flags typical for CLI applications work on

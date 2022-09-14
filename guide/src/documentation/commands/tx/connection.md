@@ -34,7 +34,7 @@ sequenceDiagram
 Use the `conn-init` command to initialize a new connection on a chain.
 
 ```shell
-{{#template ../../../templates/help_templates/tx/conn-init.md}}
+{{#include ../../../templates/help_templates/tx/conn-init.md}}
 ```
 
 __Example__
@@ -83,7 +83,7 @@ A new connection has been initialized on `ibc-0` with identifier `connection-0`.
 Use the `conn-try` command to establish a counterparty to the connection on the other chain.
 
 ```shell
-{{#template ../../../templates/help_templates/tx/conn-try.md}}
+{{#include ../../../templates/help_templates/tx/conn-try.md}}
 ```
 
 __Example__
@@ -133,7 +133,7 @@ A new connection has been created on `ibc-1` with identifier `connection-1`.
 Use the `conn-ack` command to acknowledge the connection on the initial chain.
 
 ```shell
-{{#template ../../../templates/help_templates/tx/conn-ack.md}}
+{{#include ../../../templates/help_templates/tx/conn-ack.md}}
 ```
 
 __Example__
@@ -182,7 +182,7 @@ Use the `conn-confirm` command to confirm that the connection has been acknowled
 and finish the handshake, after which the connection is open on both chains.
 
 ```shell
-{{#template ../../../templates/help_templates/tx/conn-confirm.md}}
+{{#include ../../../templates/help_templates/tx/conn-confirm.md}}
 ```
 
 __Example__

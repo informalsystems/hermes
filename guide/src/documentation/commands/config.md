@@ -11,7 +11,7 @@ hermes help config
 The available sub-commands are the following:
 
 ```shell
-{{#template ../../templates/help_templates/config.md}}
+{{#include ../../templates/help_templates/config.md}}
 ```
 
 ### Automatically generate configuration
@@ -20,7 +20,7 @@ Use `config auto` to automatically generate a configuration file from the [chain
 > __WARNING__: Currently, gas parameters are set to default value and require to be set manually.
 
 ```
-{{#template ../../templates/help_templates/config/auto.md}}
+{{#include ../../templates/help_templates/config/auto.md}}
 ```
 
 __Example__
@@ -55,7 +55,7 @@ Use `config validate` to perform a quick syntactic validation of
 your configuration file.
 
 ```shell
-{{#template ../../templates/help_templates/config/validate.md}}
+{{#include ../../templates/help_templates/config/validate.md}}
 ```
 
 __Example__
