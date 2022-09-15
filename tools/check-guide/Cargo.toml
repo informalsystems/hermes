@@ -9,5 +9,6 @@ edition = "2021"
 ibc-relayer-cli = { version = "1.0.0", path = "../../relayer-cli" }
 clap            = "3.2"
 lazy_static     = "1.4.0"
+mdbook-template = { version = "1.0.0", path = "../../../mdbook-template" }
 regex           = "1"
 walkdir         = "2.3.2"
