@@ -48,11 +48,8 @@ fn build_map_from_macro(line: &str) -> HashMap<String, String> {
     KEY_VALUE
         .find_iter(line)
         .map(|m| {
-            let key_value: Vec<&str> = m.as_str().trim_end_matches("}").split('=').collect();
-            (
-                key_value[0].to_string(),
-                key_value[1..].join("").to_string(),
-            )
+            let key_value: Vec<&str> = m.as_str().trim_end_matches('}').split('=').collect();
+            (key_value[0].to_string(), key_value[1..].join(""))
         })
         .collect()
 }
@@ -80,7 +77,7 @@ fn verify_file(path: &Path, template_map: &HashMap<PathBuf, String>) -> i32 {
     // Check that all templates are used in the guide can be replaced by a correct command
     let file = File::open(path);
     let reader =
-        BufReader::new(file.expect(format!("File not found: {}", path.display()).as_str()));
+        BufReader::new(file.unwrap_or_else(|_| panic!("File not found: {}", path.display())));
     let mut line_number = 1;
 
     for line in reader.lines() {
@@ -98,7 +95,7 @@ fn verify_file(path: &Path, template_map: &HashMap<PathBuf, String>) -> i32 {
                 let map = build_map_from_macro(&line);
                 let template_replaced = replace_args(template_content, &map);
 
-                if let Err(_) = EntryPoint::try_parse_from(template_replaced.split_whitespace()) {
+                if EntryPoint::try_parse_from(template_replaced.split_whitespace()).is_err() {
                     eprintln!(
                         "{} : Line {} - Failed to parse command {}",
                         path.display(),
