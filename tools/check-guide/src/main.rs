@@ -145,7 +145,8 @@ fn verify_file(path: &Path) -> i32 {
     let mut line_number = 1;
 
     for line in reader.lines() {
-        let line = line.unwrap_or_else( |_| panic!("{} : Failed to read line {}", path.display(), line_number));
+        let line = line
+            .unwrap_or_else(|_| panic!("{} : Failed to read line {}", path.display(), line_number));
         if let Err(e) = verify_line(&line) {
             eprintln!("{}:{}: {:?}", path.display(), line_number, e);
             error_founds += 1;
