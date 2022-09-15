@@ -9,7 +9,6 @@ use lazy_static::lazy_static;
 use mdbook_template::replace_template;
 use mdbook_template::utils::SystemFileReader;
 use regex::Regex;
-use std::process::exit;
 use std::{
     collections::HashSet,
     ffi::OsStr,
@@ -21,18 +20,12 @@ use walkdir::WalkDir;
 
 #[derive(Debug)]
 enum ParseError {
-    PathDoesNotExist(std::io::Error),
     IncorrectHermesCommand(clap::Error),
 }
 
 impl From<clap::Error> for ParseError {
     fn from(e: clap::Error) -> Self {
         ParseError::IncorrectHermesCommand(e)
-    }
-}
-impl From<std::io::Error> for ParseError {
-    fn from(e: std::io::Error) -> Self {
-        ParseError::PathDoesNotExist(e)
     }
 }
 
@@ -113,5 +106,5 @@ fn main() {
         .map(|e| verify_file(e.path())) // Verify that all command templates can be parsed to a Hermes command and return the number of errors
         .sum::<i32>(); // Sum the number of errors
 
-    exit(number_of_errors);
+    assert_eq!(number_of_errors, 0);
 }
