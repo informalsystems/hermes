@@ -43,7 +43,7 @@ Create the following configuration file at `$HOME/hermes_second_instance.toml`:
 __hermes_second_instance.toml__
 
 ```toml
-{{#template ../../templates/files/hermes/more-chains/hermes_second_instance.toml}}
+{{#include ../../templates/files/hermes/more-chains/hermes_second_instance.toml}}
 ```
 
 In order to make use of this config, specify it with the `--config` flag:

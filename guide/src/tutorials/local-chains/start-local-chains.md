@@ -13,7 +13,7 @@ To spawn the chains and configure Hermes accordingly, we will make use of Gaiad 
 
 ### Reset your configuration and start the chains
 
-Make sure you have the `{{#template ../../templates/path/gm/default_path.md}}` that we configured in the previous section [Install Gaiad Manager](../pre-requisites/gaiad-manager.md). If this is not the first time you are running the script, you can manually stop the two gaia instances executing the following command to kill all `gaiad` processes:
+Make sure you have the `$HOME/.gm/gm.toml` that we configured in the previous section [Install Gaiad Manager](../pre-requisites/gaiad-manager.md). If this is not the first time you are running the script, you can manually stop the two gaia instances executing the following command to kill all `gaiad` processes:
 
 ```shell
 {{#template ../../templates/commands/gm/stop.md}}
@@ -87,7 +87,7 @@ Based on the `gm.toml` we created in the previous section [Install Gaiad Manager
 __config.toml__
 
 ```toml
-{{#template ../../templates/files/hermes/local-chains/config.toml}}
+{{#include ../../templates/files/hermes/local-chains/config.toml}}
 ```
 
 ### Adding private keys to the chains
@@ -176,7 +176,7 @@ SUCCESS Added key 'wallet1' (cosmos1dsrj2uqjvtssenkwperuvfkgkg2xvmydvpzswy) on c
 ```
 
 > __TROUBLESHOOTING__: 
-> - If the command does not out output anything, make sure the path to Hermes' binary is set in `{{#template ../../templates/path/gm/default_path.md}}`.
+> - If the command does not out output anything, make sure the path to Hermes' binary is set in `$HOME/.gm/gm.toml`.
 
 ### The `$HOME/.gm` directory
 

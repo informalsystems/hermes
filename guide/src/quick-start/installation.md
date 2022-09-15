@@ -14,8 +14,8 @@ There are two main approaches for obtaining Hermes:
 
 Simply head to the GitHub [Releases][releases] page and download the latest
 version of Hermes binary matching your platform:
-- macOS: `hermes-{{#template ../templates/version.md}}-x86_64-apple-darwin.tar.gz` (or .zip),
-- Linux: `hermes-{{#template ../templates/version.md}}-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
+- macOS: `hermes-{{#include ../templates/version.md}}-x86_64-apple-darwin.tar.gz` (or .zip),
+- Linux: `hermes-{{#include ../templates/version.md}}-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
 
 The step-by-step instruction below should carry you through the whole process:
 
@@ -49,7 +49,7 @@ You should now be able to run Hermes by invoking the `hermes` executable.
 Which should be:
 
 ```
-hermes {{#template ../templates/version.md}}
+hermes {{#include ../templates/version.md}}
 ```
 
 ## Install via Cargo
@@ -85,7 +85,7 @@ You should now be able to run Hermes by invoking the `hermes` executable.
 Which should be:
 
 ```
-hermes {{#template ../templates/version.md}}
+hermes {{#include ../templates/version.md}}
 ```
 
 ## Build from source
@@ -110,7 +110,7 @@ Go to the [ibc-rs releases](https://github.com/informalsystems/ibc-rs/releases) 
 Then checkout the release, for example if the most recent release is `{{#template ../templates/version.md}}` then execute the command:
 
 ```shell
-git checkout {{#template ../templates/version.md}}
+git checkout {{#include ../templates/version.md}}
 ```
 
 ### Building with `cargo build`

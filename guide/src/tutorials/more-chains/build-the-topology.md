@@ -180,7 +180,7 @@ At this point, your config file should look like this:
 <details><summary style="font-weight:bold">config.toml</summary>
 
 ```
-{{#template ../../templates/files/hermes/more-chains/config_with_filters.toml}}
+{{#include ../../templates/files/hermes/more-chains/config_with_filters.toml}}
 ```
 
 </details>

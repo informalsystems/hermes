@@ -53,7 +53,7 @@ And generate the following configuration :
 
 __config.toml__
 ```toml
-{{#template ../../templates/files/hermes/production/config.toml}}
+{{#include ../../templates/files/hermes/production/config.toml}}
 ```
 >__NOTE__: You might not have the same RPC and gRPC endpoints in your configuration file as they are randomly selected in the chain-registry.
 
@@ -70,12 +70,12 @@ For the tutorial, we will follow the [example of Crypto Crew](https://github.com
 
 - For Cosmoshub:
 ```toml
-{{#template ../../templates/files/hermes/production/default_gas_cosmoshub.toml}}
+{{#include ../../templates/files/hermes/production/default_gas_cosmoshub.toml}}
 ```
 
 - For Osmosis:
 ```toml
-{{#template ../../templates/files/hermes/production/default_gas_osmosis.toml}}
+{{#include ../../templates/files/hermes/production/default_gas_osmosis.toml}}
 ```
 
 >__NOTE__: `max_msg_nums` defines the number of messages that can be sent in the same transaction. 

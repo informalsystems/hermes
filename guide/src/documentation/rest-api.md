@@ -37,7 +37,7 @@ as the version of the REST server itself (under the `ibc-relayer-rest` key).
 [
   {
     "name": "ibc-relayer",
-    "version": "{{#template ../templates/version.md}}"
+    "version": "{{#include ../templates/version.md}}"
   },
   {
     "name": "ibc-relayer-rest",

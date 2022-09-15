@@ -35,12 +35,12 @@ rm -r $HOME/.gm/node-*
 rm -r $HOME/.gm/ibc-*
 ```
 
-Copy and paste the configuration below to `{{#template ../../templates/path/gm/default_path.md}}` and set Hermes' binary path according to your setup. The following contains the configuration of 4 IBC-enabled chains.
+Copy and paste the configuration below to `$HOME/.gm/gm.toml` and set Hermes' binary path according to your setup. The following contains the configuration of 4 IBC-enabled chains.
 
 __gm.toml__
 
 ```toml
-{{#template ../../templates/files/gm/more-chains/gm.toml}}
+{{#include ../../templates/files/gm/more-chains/gm.toml}}
 ```
 
 > __NOTE__: If you have any `Docker` containers running that might be using the same ports as `gaiad` (e.g. port 27010-27012), please ensure you stop them first before proceeding to the next step.
@@ -119,7 +119,7 @@ Based on the `gm.toml` above, your `$HOME/.hermes/config.toml` file should look 
 __config.toml__
 
 ```toml
-{{#template ../../templates/files/hermes/more-chains/config_without_filters.toml}}
+{{#include ../../templates/files/hermes/more-chains/config_without_filters.toml}}
 ```
 
 ### Adding private keys to the chains
@@ -148,7 +148,7 @@ SUCCESS Added key 'wallet1' (cosmos15jxyjskrx7s8yqpfn3xddlrx7qcq0f8r69mp4g) on c
 ```
 
 > __TROUBLESHOOTING__: 
-> - If the command does not out output anything, make sure the path to Hermes' binary is set in `{{#template ../../templates/path/gm/default_path.md}}`.
+> - If the command does not out output anything, make sure the path to Hermes' binary is set in `$HOME/.gm/gm.toml`.
 
 ### The `$HOME/.gm` directory
 
