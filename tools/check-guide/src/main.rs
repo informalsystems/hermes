@@ -69,9 +69,6 @@ fn verify_line(line: &str, path: &Path) -> Result<(), ParseError> {
         let template = captures.name("template").unwrap().as_str();
         let parent = path.parent().unwrap_or(Path::new(&*GUIDE_PATH));
         let template_replaced = replace_template(template, &*FILEREADER, &parent, "", 0);
-        //println!("Parent : {}", parent.display());
-        //println!("Before : {}", template);
-        //println!("After : {}", template_replaced);
         check_correctness(template_replaced.split_whitespace())?;
     }
     Ok(())
