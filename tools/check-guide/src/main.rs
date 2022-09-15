@@ -100,7 +100,7 @@ fn replace_args(line: &str, args: &HashMap<String, String>) -> String {
 }
 
 fn get_template_path(line: &str) -> Result<Option<PathBuf>, ParseError> {
-    // Returns the template path if the line contains a macro call.
+    // Checks if the line contains a macro call, if it does then it extracts the template's path as an absolute path.
     // get_template_path("... {{#template my_template}} ...") -> Some(PathBuf("/home/user/ibc-rs/guide/src/templates/commands/hermes/my_template.md"))
     if let Some(captures) = TEMPLATE_RE.captures(line) {
         let template_name = captures
@@ -117,13 +117,15 @@ fn get_template_path(line: &str) -> Result<Option<PathBuf>, ParseError> {
 fn check_correctness<'a, T>(command: T) -> Result<(), ParseError>
 where
     T: IntoIterator<Item = &'a str>,
+    // Returns an error if the command cannot be parsed.
 {
     EntryPoint::try_parse_from(command)?;
     Ok(())
 }
 
 fn verify_line(line: &str) -> Result<(), ParseError> {
-    // Verify that the line contains a macro call and that the command is correct.
+    // If `line` contains a macro call, replace it with the content of the template and check that the command is correct.
+    // Returns an error if the command is incorrect.
     if let Some(template_path) = get_template_path(line)? {
         // Extract the absolute path from the macro call
         let template_content = TEMPLATE_MAP.get(template_path.as_path()).unwrap();
