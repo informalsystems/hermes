@@ -2155,6 +2155,7 @@ dependencies = [
 [[package]]
 name = "mdbook-template"
 version = "1.0.0"
+source = "git+https://github.com/AlianBenabdallah/mdbook-template-pub#ceedb839d0e48a40a609b61988ae759a36f96bf8"
 dependencies = [
  "anyhow",
  "clap",
