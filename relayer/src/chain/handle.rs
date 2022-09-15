@@ -68,7 +68,7 @@ pub use counting::CountingChainHandle;
 
 pub type CachingChainHandle = cache::CachingChainHandle<BaseChainHandle>;
 pub type CountingAndCachingChainHandle =
-cache::CachingChainHandle<CountingChainHandle<BaseChainHandle>>;
+    cache::CachingChainHandle<CountingChainHandle<BaseChainHandle>>;
 
 /// A pair of [`ChainHandle`]s.
 #[derive(Clone)]

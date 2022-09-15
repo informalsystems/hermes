@@ -217,6 +217,7 @@ impl OperationalData {
 
         let tm = TrackedMsgs::new(msgs, self.tracking_id);
 
+
         info!("assembled batch of {} message(s)", tm.messages().len());
 
         Ok(tm)

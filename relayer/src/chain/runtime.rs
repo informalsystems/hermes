@@ -148,8 +148,8 @@ pub struct ChainRuntime<Endpoint: ChainEndpoint> {
 }
 
 impl<Endpoint> ChainRuntime<Endpoint>
-    where
-        Endpoint: ChainEndpoint + Send + 'static,
+where
+    Endpoint: ChainEndpoint + Send + 'static,
 {
     /// Spawns a new runtime for a specific Chain implementation.
     pub fn spawn<Handle: ChainHandle>(

@@ -51,8 +51,8 @@ pub mod spawn;
 
 pub mod cmd;
 
+use crate::chain::cosmos::query::custom_query::to_cross_chain_query_event_or_default;
 use cmd::SupervisorCmd;
-use crate::chain::cosmos::query::custom_query::check_if_cross_chain_query_packet;
 
 use self::{scan::ChainScanner, spawn::SpawnContext};
 
@@ -149,7 +149,7 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
             ScanMode::Auto
         },
     )
-        .scan_chains();
+    .scan_chains();
 
     info!("Scanned chains:");
     info!("{}", scan);
@@ -691,17 +691,11 @@ fn process_batch<Chain: ChainHandle>(
             continue;
         }
 
-        let mut cross_chain_queries: Vec<IbcEventWithHeight> = vec![];
         let mut events_to_be_relayed: Vec<IbcEventWithHeight> = vec![];
 
         for event_with_height in events_with_heights {
-            if check_if_cross_chain_query_packet(event_with_height.event.packet()) {
-                cross_chain_queries.push(event_with_height);
-            } else {
-                events_to_be_relayed.push(event_with_height);
-            }
+            events_to_be_relayed.push(to_cross_chain_query_event_or_default(event_with_height))
         }
-
 
         let src = registry
             .get_or_spawn(object.src_chain_id())
@@ -712,8 +706,6 @@ fn process_batch<Chain: ChainHandle>(
             .map_err(Error::spawn)?;
 
         if let Object::Packet(_path) = object.clone() {
-            // TODO: cross chain handling
-            for _event_with_height in events_to_be_relayed.iter() {}
             // Update telemetry info
             telemetry!({
                 for event_with_height in events_to_be_relayed.iter() {
@@ -780,7 +772,7 @@ fn handle_batch<Chain: ChainHandle>(
     match batch.deref() {
         Ok(batch) => {
             if let Err(e) =
-            process_batch(config, registry, client_state_filter, workers, chain, batch)
+                process_batch(config, registry, client_state_filter, workers, chain, batch)
             {
                 error!("[{}] error during batch processing: {}", chain_id, e);
             }

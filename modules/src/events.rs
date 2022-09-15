@@ -126,6 +126,7 @@ const WRITE_ACK_EVENT: &str = "write_acknowledgement";
 const ACK_PACKET_EVENT: &str = "acknowledge_packet";
 const TIMEOUT_EVENT: &str = "timeout_packet";
 const TIMEOUT_ON_CLOSE_EVENT: &str = "timeout_packet_on_close";
+const CROSS_CHAIN_QUERY: &str = "cross_chain_query";
 
 /// Events types
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
@@ -151,6 +152,7 @@ pub enum IbcEventType {
     AckPacket,
     Timeout,
     TimeoutOnClose,
+    CrossChainQuery,
     AppModule,
     Empty,
     ChainError,
@@ -180,6 +182,7 @@ impl IbcEventType {
             IbcEventType::AckPacket => ACK_PACKET_EVENT,
             IbcEventType::Timeout => TIMEOUT_EVENT,
             IbcEventType::TimeoutOnClose => TIMEOUT_ON_CLOSE_EVENT,
+            IbcEventType::CrossChainQuery => CROSS_CHAIN_QUERY,
             IbcEventType::AppModule => APP_MODULE_EVENT,
             IbcEventType::Empty => EMPTY_EVENT,
             IbcEventType::ChainError => CHAIN_ERROR_EVENT,
@@ -213,6 +216,7 @@ impl FromStr for IbcEventType {
             ACK_PACKET_EVENT => Ok(IbcEventType::AckPacket),
             TIMEOUT_EVENT => Ok(IbcEventType::Timeout),
             TIMEOUT_ON_CLOSE_EVENT => Ok(IbcEventType::TimeoutOnClose),
+            CROSS_CHAIN_QUERY => Ok(IbcEventType::CrossChainQuery),
             EMPTY_EVENT => Ok(IbcEventType::Empty),
             CHAIN_ERROR_EVENT => Ok(IbcEventType::ChainError),
             // from_str() for `APP_MODULE_EVENT` MUST fail because a `ModuleEvent`'s type isn't constant
@@ -249,6 +253,7 @@ pub enum IbcEvent {
     AcknowledgePacket(ChannelEvents::AcknowledgePacket),
     TimeoutPacket(ChannelEvents::TimeoutPacket),
     TimeoutOnClosePacket(ChannelEvents::TimeoutOnClosePacket),
+    CrossChainQuery(ChannelEvents::SendPacket),
 
     AppModule(ModuleEvent),
 
@@ -283,6 +288,7 @@ impl fmt::Display for IbcEvent {
             IbcEvent::AcknowledgePacket(ev) => write!(f, "AcknowledgePacketEv({})", ev),
             IbcEvent::TimeoutPacket(ev) => write!(f, "TimeoutPacketEv({})", ev),
             IbcEvent::TimeoutOnClosePacket(ev) => write!(f, "TimeoutOnClosePacketEv({})", ev),
+            IbcEvent::CrossChainQuery(ev) => write!(f, "CrossChainQuery({})", ev),
 
             IbcEvent::AppModule(ev) => write!(f, "AppModuleEv({:?})", ev),
 
@@ -316,9 +322,10 @@ impl TryFrom<IbcEvent> for AbciEvent {
             IbcEvent::AcknowledgePacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::TimeoutPacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::TimeoutOnClosePacket(event) => event.try_into().map_err(Error::channel)?,
+            IbcEvent::CrossChainQuery(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::AppModule(event) => event.try_into()?,
             IbcEvent::NewBlock(_) | IbcEvent::ChainError(_) => {
-                return Err(Error::incorrect_event_type(event.to_string()))
+                return Err(Error::incorrect_event_type(event.to_string()));
             }
         })
     }
@@ -355,6 +362,7 @@ impl IbcEvent {
             IbcEvent::AcknowledgePacket(_) => IbcEventType::AckPacket,
             IbcEvent::TimeoutPacket(_) => IbcEventType::Timeout,
             IbcEvent::TimeoutOnClosePacket(_) => IbcEventType::TimeoutOnClose,
+            IbcEvent::CrossChainQuery(_) => IbcEventType::CrossChainQuery,
             IbcEvent::AppModule(_) => IbcEventType::AppModule,
             IbcEvent::ChainError(_) => IbcEventType::ChainError,
         }
@@ -388,6 +396,7 @@ impl IbcEvent {
             IbcEvent::AcknowledgePacket(ev) => Some(&ev.packet),
             IbcEvent::TimeoutPacket(ev) => Some(&ev.packet),
             IbcEvent::TimeoutOnClosePacket(ev) => Some(&ev.packet),
+            IbcEvent::CrossChainQuery(ev) => Some(&ev.packet),
             _ => None,
         }
     }

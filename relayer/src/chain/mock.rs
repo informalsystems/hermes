@@ -471,6 +471,10 @@ impl ChainEndpoint for MockChain {
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
         unimplemented!()
     }
+
+    fn cross_chain_query(&self, uri: String) -> Result<String, Error> {
+        Ok(format!("cross_chain_query: {}", uri))
+    }
 }
 
 pub fn consensus_states(

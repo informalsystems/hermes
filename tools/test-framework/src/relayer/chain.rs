@@ -1,24 +1,24 @@
 /*!
-   Definition for a proxy [`ChainHandle`] implementation for tagged
-   chain handles.
+Definition for a proxy [`ChainHandle`] implementation for tagged
+chain handles.
 
-   Since we use the chain handle type to distinguish the chain tags, we will
-   run into problem if we have the same concrete `ChainHandle` implementations
-   for two chains that are not encapsulated behind an `impl ChainHandle`.
+Since we use the chain handle type to distinguish the chain tags, we will
+run into problem if we have the same concrete `ChainHandle` implementations
+for two chains that are not encapsulated behind an `impl ChainHandle`.
 
-   This is the case for creating N-ary chains, because we cannot rely on the
-   existential type encapsulation of `impl ChainHandle` to turn the
-   [`CountingAndCachingChainHandle`](ibc_relayer::chain::handle::CountingAndCachingChainHandle) to turn
-   them into unqiue types.
+This is the case for creating N-ary chains, because we cannot rely on the
+existential type encapsulation of `impl ChainHandle` to turn the
+[`CountingAndCachingChainHandle`](ibc_relayer::chain::handle::CountingAndCachingChainHandle) to turn
+them into unqiue types.
 
-   A workaround for this is to add a unique tag to `CountingAndCachingChainHandle` itself,
-   so that the type `MonoTagged<Tag, CountingAndCachingChainHandle>` becomes a unique chain
-   handle type.
+A workaround for this is to add a unique tag to `CountingAndCachingChainHandle` itself,
+so that the type `MonoTagged<Tag, CountingAndCachingChainHandle>` becomes a unique chain
+handle type.
 
-   We implement [`ChainHandle`] for a `MonoTagged<Tag, Handle>`, since if the
-   underlying `Handle` type implements [`ChainHandle`], then a tagged handle
-   is still a [`ChainHandle`].
-*/
+We implement [`ChainHandle`] for a `MonoTagged<Tag, Handle>`, since if the
+underlying `Handle` type implements [`ChainHandle`], then a tagged handle
+is still a [`ChainHandle`].
+ */
 
 use crossbeam_channel as channel;
 use ibc::core::ics02_client::events::UpdateClient;
@@ -44,11 +44,11 @@ use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::endpoint::{ChainStatus, HealthCheck};
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use ibc_relayer::chain::requests::{
-    IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
-    QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
-    QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
-    QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
-    QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
+    CrossChainQueryRequest, IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest,
+    QueryChannelRequest, QueryChannelsRequest, QueryClientConnectionsRequest,
+    QueryClientStateRequest, QueryClientStatesRequest, QueryConnectionChannelsRequest,
+    QueryConnectionRequest, QueryConnectionsRequest, QueryConsensusStateRequest,
+    QueryConsensusStatesRequest, QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
     QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
     QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
@@ -69,10 +69,10 @@ use ibc_relayer::misbehaviour::MisbehaviourEvidence;
 use crate::types::tagged::*;
 
 /**
-   Implement `ChainHandle` for any existential type `Handle: ChainHandle`.
-   This allows us to tag values for chains that are tagged by position
-   in [N-ary chains](crate::types::nary).
-*/
+Implement `ChainHandle` for any existential type `Handle: ChainHandle`.
+This allows us to tag values for chains that are tagged by position
+in [N-ary chains](crate::types::nary).
+ */
 impl<Tag, Handle> ChainHandle for MonoTagged<Tag, Handle>
 where
     Tag: Send + Sync + 'static,
@@ -404,5 +404,9 @@ where
 
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
         self.value().query_denom_trace(hash)
+    }
+
+    fn cross_chain_query(&self, request: CrossChainQueryRequest) -> Result<String, Error> {
+        self.value().cross_chain_query(request)
     }
 }

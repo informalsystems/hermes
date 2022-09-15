@@ -1,9 +1,11 @@
-use ibc::core::ics04_channel::packet::Packet;
 use ibc_proto::ibc::applications::query::v1::CrossChainQuery;
 use prost::DecodeError;
 use reqwest;
 use reqwest::Error;
 // use ibc_proto::ibc::applications::transfer::v1::MsgTransfer;
+use crate::event::IbcEventWithHeight;
+use ibc::core::ics04_channel::events::SendPacket;
+use ibc::events::IbcEvent;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -18,23 +20,32 @@ pub async fn rest_query(uri: String) -> Result<String, Error> {
     reqwest::get(uri).await?.text().await
 }
 
-// Check if packet data is encoded byte-stream with CrossChainQuery msg
-pub fn check_if_cross_chain_query_packet(packet: Option<&Packet>) -> bool {
+// SendPacket to CrossChainQuery
+pub fn to_cross_chain_query_event_or_default(
+    event_with_height: IbcEventWithHeight,
+) -> IbcEventWithHeight {
+    let height = event_with_height.clone().height;
+    let event = event_with_height.clone().event;
+    let packet = event.packet();
+
     match packet {
-        Some(packet) => {
-            let packet_data = packet.data.as_slice();
+        Some(p) => {
+            let packet_data = p.data.as_slice();
             let decoded: Result<CrossChainQuery, DecodeError> = prost::Message::decode(packet_data);
             match decoded {
                 Ok(msg) => {
                     if msg.msg_type == "cross_chain_query" {
-                        true
+                        let cross_chain_query_event = IbcEvent::CrossChainQuery(SendPacket {
+                            packet: p.to_owned(),
+                        });
+                        IbcEventWithHeight::new(cross_chain_query_event, height)
                     } else {
-                        false
+                        event_with_height
                     }
                 }
-                Err(_) => false,
+                Err(_) => event_with_height,
             }
         }
-        None => false
+        None => event_with_height,
     }
 }

@@ -392,6 +392,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                         result.push(event_with_height);
                     }
                 }
+                IbcEvent::CrossChainQuery(query_packet) => {
+                    if src_channel_id == query_packet.src_channel_id()
+                        && self.src_port_id() == query_packet.src_port_id()
+                    {
+                        result.push(event_with_height);
+                    }
+                }
                 _ => {}
             }
         }
