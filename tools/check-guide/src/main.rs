@@ -41,8 +41,9 @@ lazy_static! {
     static ref EXCLUSIONS: HashSet<&'static str> = HashSet::from(["templates", "assets", "images", "theme"]);
 
     // Regex to match macro calls in the guide
-    static ref TEMPLATE_RE: Regex = Regex::new(r"\s*(?P<template>\{{2}#template.*templates/commands/hermes/.*\}\}).*").unwrap();
+    static ref TEMPLATE_RE: Regex = Regex::new(r"\{{2}#template.*templates/commands/hermes/.*\}\}").unwrap();
 
+    // FileReader for mdbook_template
     static ref FILEREADER: SystemFileReader = SystemFileReader::default();
 }
 
@@ -55,22 +56,26 @@ where
     Ok(())
 }
 
-fn verify_line(line: &str, path: &Path) -> Result<(), ParseError> {
-    // If `line` contains a macro call, extract it and replace it with the content of the template and check that the command is correct.
-    // Returns an error if the command is incorrect.
-    if let Some(captures) = TEMPLATE_RE.captures(line) {
-        let template = captures.name("template").unwrap().as_str();
-        let parent = path.parent().unwrap_or(Path::new(&*GUIDE_PATH));
+fn verify_line(line: &str, path: &Path, line_number: i32) -> i32 {
+    // Extracts macro calls from a command, replace them with the content of the template and check that the command is correct.
+    // Returns the number of errors encountered.
+    let parent = path.parent().unwrap_or_else(|| Path::new(&*GUIDE_PATH));
+    let mut error_founds = 0;
+
+    TEMPLATE_RE.find_iter(line).for_each(|m| {
+        let template = m.as_str();
         let template_replaced = replace_template(template, &*FILEREADER, &parent, "", 0);
-        check_correctness(template_replaced.split_whitespace())?;
-    }
-    Ok(())
+        if let Err(e) = check_correctness(template_replaced.split_whitespace()) {
+            eprintln!("{}:{}: {:?}", path.display(), line_number, e);
+            error_founds += 1;
+        }
+    });
+    error_founds
 }
 
 fn verify_file(path: &Path) -> i32 {
     // Verifies that every template macro call in the file can be replaced by a valid Hermes command.
     // Returns the number of invalid commands found.
-
     let mut error_founds = 0;
     let file = File::open(path);
     let reader =
@@ -80,10 +85,7 @@ fn verify_file(path: &Path) -> i32 {
     for line in reader.lines() {
         let line = line
             .unwrap_or_else(|_| panic!("{} : Failed to read line {}", path.display(), line_number));
-        if let Err(e) = verify_line(&line, path) {
-            eprintln!("{}:{}: {:?}", path.display(), line_number, e);
-            error_founds += 1;
-        }
+        error_founds += verify_line(&line, path, line_number);
         line_number += 1;
     }
     error_founds
@@ -105,6 +107,7 @@ fn main() {
         .filter(|e| e.path().extension() == Some(OsStr::new("md"))) // Keep only markdown files
         .map(|e| verify_file(e.path())) // Verify that all command templates can be parsed to a Hermes command and return the number of errors
         .sum::<i32>(); // Sum the number of errors
-
-    assert_eq!(number_of_errors, 0);
+    if number_of_errors > 0 {
+        panic!("{} errors found.", number_of_errors);
+    }
 }
