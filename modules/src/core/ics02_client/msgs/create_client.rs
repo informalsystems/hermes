@@ -1,125 +1,110 @@
 //! Definition of domain type message `MsgCreateAnyClient`.
 
 use crate::prelude::*;
+use core::fmt::Display;
 
+use ibc_proto::google::protobuf::Any;
 use tendermint_proto::Protobuf;
 
-use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
+use ibc_proto::ibc::core::client::v1::{MsgCreateClient as RawMsgCreateClient, MsgCreateClient};
 
-use crate::core::ics02_client::client_consensus::AnyConsensusState;
-use crate::core::ics02_client::client_state::AnyClientState;
-use crate::core::ics02_client::error::Error;
-use crate::signer::Signer;
-use crate::tx_msg::Msg;
+use crate::{
+	core::ics02_client::{context::ClientKeeper, error::Error},
+	signer::Signer,
+	tx_msg::Msg,
+};
 
 pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
 
 /// A type of message that triggers the creation of a new on-chain (IBC) client.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct MsgCreateAnyClient {
-    pub client_state: AnyClientState,
-    pub consensus_state: AnyConsensusState,
-    pub signer: Signer,
+pub struct MsgCreateAnyClient<C: ClientKeeper> {
+	pub client_state: C::AnyClientState,
+	pub consensus_state: C::AnyConsensusState,
+	pub signer: Signer,
 }
 
-impl MsgCreateAnyClient {
-    pub fn new(
-        client_state: AnyClientState,
-        consensus_state: AnyConsensusState,
-        signer: Signer,
-    ) -> Result<Self, Error> {
-        if client_state.client_type() != consensus_state.client_type() {
-            return Err(Error::raw_client_and_consensus_state_types_mismatch(
-                client_state.client_type(),
-                consensus_state.client_type(),
-            ));
-        }
+impl<C: ClientKeeper> MsgCreateAnyClient<C> {
+	pub fn new(
+		client_state: C::AnyClientState,
+		consensus_state: C::AnyConsensusState,
+		signer: Signer,
+	) -> Result<Self, Error> {
+		// if client_state.client_type() != consensus_state.client_type() {
+		//     return Err(Error::raw_client_and_consensus_state_types_mismatch(
+		//         client_state.client_type(),
+		//         consensus_state.client_type(),
+		//     ));
+		// }
 
-        Ok(MsgCreateAnyClient {
-            client_state,
-            consensus_state,
-            signer,
-        })
-    }
+		Ok(MsgCreateAnyClient { client_state, consensus_state, signer })
+	}
 }
 
-impl Msg for MsgCreateAnyClient {
-    type ValidationError = crate::core::ics24_host::error::ValidationError;
-    type Raw = RawMsgCreateClient;
+impl<C> Msg for MsgCreateAnyClient<C>
+where
+	C: ClientKeeper + Clone,
+	Any: From<C::AnyClientState>,
+	Any: From<C::AnyConsensusState>,
+{
+	type ValidationError = crate::core::ics24_host::error::ValidationError;
+	type Raw = RawMsgCreateClient;
 
-    fn route(&self) -> String {
-        crate::keys::ROUTER_KEY.to_string()
-    }
+	fn route(&self) -> String {
+		crate::keys::ROUTER_KEY.to_string()
+	}
 
-    fn type_url(&self) -> String {
-        TYPE_URL.to_string()
-    }
+	fn type_url(&self) -> String {
+		TYPE_URL.to_string()
+	}
 }
 
-impl Protobuf<RawMsgCreateClient> for MsgCreateAnyClient {}
-
-impl TryFrom<RawMsgCreateClient> for MsgCreateAnyClient {
-    type Error = Error;
-
-    fn try_from(raw: RawMsgCreateClient) -> Result<Self, Error> {
-        let raw_client_state = raw
-            .client_state
-            .ok_or_else(Error::missing_raw_client_state)?;
-
-        let consensus_state = raw
-            .consensus_state
-            .and_then(|cs| AnyConsensusState::try_from(cs).ok())
-            .ok_or_else(Error::missing_raw_consensus_state)?;
-
-        MsgCreateAnyClient::new(
-            AnyClientState::try_from(raw_client_state)?,
-            consensus_state,
-            raw.signer.parse().map_err(Error::signer)?,
-        )
-    }
+impl<C> Protobuf<RawMsgCreateClient> for MsgCreateAnyClient<C>
+where
+	C: ClientKeeper + Clone,
+	Any: From<C::AnyClientState>,
+	Any: From<C::AnyConsensusState>,
+	MsgCreateAnyClient<C>: TryFrom<MsgCreateClient>,
+	<MsgCreateAnyClient<C> as TryFrom<MsgCreateClient>>::Error: Display,
+{
 }
 
-impl From<MsgCreateAnyClient> for RawMsgCreateClient {
-    fn from(ics_msg: MsgCreateAnyClient) -> Self {
-        RawMsgCreateClient {
-            client_state: Some(ics_msg.client_state.into()),
-            consensus_state: Some(ics_msg.consensus_state.into()),
-            signer: ics_msg.signer.to_string(),
-        }
-    }
+impl<C> TryFrom<RawMsgCreateClient> for MsgCreateAnyClient<C>
+where
+	C: ClientKeeper,
+	C::AnyClientState: TryFrom<Any>,
+	C::AnyConsensusState: TryFrom<Any>,
+	Error: From<<C::AnyClientState as TryFrom<Any>>::Error>,
+{
+	type Error = Error;
+
+	fn try_from(raw: RawMsgCreateClient) -> Result<Self, Error> {
+		let raw_client_state = raw.client_state.ok_or_else(Error::missing_raw_client_state)?;
+
+		let consensus_state = raw
+			.consensus_state
+			.and_then(|cs| C::AnyConsensusState::try_from(cs).ok())
+			.ok_or_else(Error::missing_raw_consensus_state)?;
+
+		MsgCreateAnyClient::new(
+			C::AnyClientState::try_from(raw_client_state)?,
+			consensus_state,
+			raw.signer.parse().map_err(Error::signer)?,
+		)
+	}
 }
 
-#[cfg(test)]
-mod tests {
-
-    use test_log::test;
-
-    use ibc_proto::ibc::core::client::v1::MsgCreateClient;
-
-    use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
-    use crate::clients::ics07_tendermint::header::test_util::get_dummy_tendermint_header;
-    use crate::core::ics02_client::client_consensus::AnyConsensusState;
-    use crate::core::ics02_client::msgs::MsgCreateAnyClient;
-    use crate::test_utils::get_dummy_account_id;
-
-    #[test]
-    fn msg_create_client_serialization() {
-        let signer = get_dummy_account_id();
-
-        let tm_header = get_dummy_tendermint_header();
-        let tm_client_state = get_dummy_tendermint_client_state(tm_header.clone());
-
-        let msg = MsgCreateAnyClient::new(
-            tm_client_state,
-            AnyConsensusState::Tendermint(tm_header.try_into().unwrap()),
-            signer,
-        )
-        .unwrap();
-
-        let raw = MsgCreateClient::from(msg.clone());
-        let msg_back = MsgCreateAnyClient::try_from(raw.clone()).unwrap();
-        let raw_back = MsgCreateClient::from(msg_back.clone());
-        assert_eq!(msg, msg_back);
-        assert_eq!(raw, raw_back);
-    }
+impl<C> From<MsgCreateAnyClient<C>> for RawMsgCreateClient
+where
+	C: ClientKeeper,
+	Any: From<C::AnyClientState>,
+	Any: From<C::AnyConsensusState>,
+{
+	fn from(ics_msg: MsgCreateAnyClient<C>) -> Self {
+		RawMsgCreateClient {
+			client_state: Some(ics_msg.client_state.into()),
+			consensus_state: Some(ics_msg.consensus_state.into()),
+			signer: ics_msg.signer.to_string(),
+		}
+	}
 }

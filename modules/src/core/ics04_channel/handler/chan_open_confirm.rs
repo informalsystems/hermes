@@ -1,199 +1,206 @@
 //! Protocol logic specific to ICS4 messages of type `MsgChannelOpenConfirm`.
-use crate::clients::host_functions::HostFunctionsProvider;
-use crate::core::ics03_connection::connection::State as ConnectionState;
-use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, State};
-use crate::core::ics04_channel::error::Error;
-use crate::core::ics04_channel::events::Attributes;
-use crate::core::ics04_channel::handler::verify::verify_channel_proofs;
-use crate::core::ics04_channel::handler::{ChannelIdState, ChannelResult};
-use crate::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
-use crate::core::ics26_routing::context::ReaderContext;
-use crate::events::IbcEvent;
-use crate::handler::{HandlerOutput, HandlerResult};
-use crate::prelude::*;
 
-pub(crate) fn process<HostFunctions: HostFunctionsProvider>(
-    ctx: &dyn ReaderContext,
-    msg: &MsgChannelOpenConfirm,
-) -> HandlerResult<ChannelResult, Error> {
-    let mut output = HandlerOutput::builder();
+use crate::{
+	core::{
+		ics03_connection::connection::State as ConnectionState,
+		ics04_channel::{
+			channel::{ChannelEnd, Counterparty, State},
+			error::Error,
+			events::Attributes,
+			handler::{verify::verify_channel_proofs, ChannelIdState, ChannelResult},
+			msgs::chan_open_confirm::MsgChannelOpenConfirm,
+		},
+		ics26_routing::context::ReaderContext,
+	},
+	events::IbcEvent,
+	handler::{HandlerOutput, HandlerResult},
+	prelude::*,
+};
 
-    // Unwrap the old channel end and validate it against the message.
-    let mut channel_end = ctx.channel_end(&(msg.port_id.clone(), msg.channel_id))?;
+pub(crate) fn process<Ctx>(
+	ctx: &Ctx,
+	msg: &MsgChannelOpenConfirm,
+) -> HandlerResult<ChannelResult, Error>
+where
+	Ctx: ReaderContext,
+{
+	let mut output = HandlerOutput::builder();
 
-    // Validate that the channel end is in a state where it can be confirmed.
-    if !channel_end.state_matches(&State::TryOpen) {
-        return Err(Error::invalid_channel_state(
-            msg.channel_id,
-            channel_end.state,
-        ));
-    }
+	// Unwrap the old channel end and validate it against the message.
+	let mut channel_end = ctx.channel_end(&(msg.port_id.clone(), msg.channel_id))?;
 
-    // An OPEN IBC connection running on the local (host) chain should exist.
-    if channel_end.connection_hops().len() != 1 {
-        return Err(Error::invalid_connection_hops_length(
-            1,
-            channel_end.connection_hops().len(),
-        ));
-    }
+	// Validate that the channel end is in a state where it can be confirmed.
+	if !channel_end.state_matches(&State::TryOpen) {
+		return Err(Error::invalid_channel_state(msg.channel_id, channel_end.state))
+	}
 
-    let conn = ctx
-        .connection_end(&channel_end.connection_hops()[0])
-        .map_err(Error::ics03_connection)?;
+	// An OPEN IBC connection running on the local (host) chain should exist.
+	if channel_end.connection_hops().len() != 1 {
+		return Err(Error::invalid_connection_hops_length(1, channel_end.connection_hops().len()))
+	}
 
-    if !conn.state_matches(&ConnectionState::Open) {
-        return Err(Error::connection_not_open(
-            channel_end.connection_hops()[0].clone(),
-        ));
-    }
+	let conn = ctx
+		.connection_end(&channel_end.connection_hops()[0])
+		.map_err(Error::ics03_connection)?;
 
-    // Proof verification in two steps:
-    // 1. Setup: build the Channel as we expect to find it on the other party.
+	if !conn.state_matches(&ConnectionState::Open) {
+		return Err(Error::connection_not_open(channel_end.connection_hops()[0].clone()))
+	}
 
-    let expected_counterparty = Counterparty::new(msg.port_id.clone(), Some(msg.channel_id));
+	// Proof verification in two steps:
+	// 1. Setup: build the Channel as we expect to find it on the other party.
 
-    let connection_counterparty = conn.counterparty();
-    let ccid = connection_counterparty.connection_id().ok_or_else(|| {
-        Error::undefined_connection_counterparty(channel_end.connection_hops()[0].clone())
-    })?;
+	let expected_counterparty = Counterparty::new(msg.port_id.clone(), Some(msg.channel_id));
 
-    let expected_connection_hops = vec![ccid.clone()];
+	let connection_counterparty = conn.counterparty();
+	let ccid = connection_counterparty.connection_id().ok_or_else(|| {
+		Error::undefined_connection_counterparty(channel_end.connection_hops()[0].clone())
+	})?;
 
-    let expected_channel_end = ChannelEnd::new(
-        State::Open,
-        *channel_end.ordering(),
-        expected_counterparty,
-        expected_connection_hops,
-        channel_end.version().clone(),
-    );
-    //2. Verify proofs
-    verify_channel_proofs::<HostFunctions>(
-        ctx,
-        msg.proofs.height(),
-        &channel_end,
-        &conn,
-        &expected_channel_end,
-        &msg.proofs.object_proof(),
-    )
-    .map_err(Error::chan_open_confirm_proof_verification)?;
+	let expected_connection_hops = vec![ccid.clone()];
 
-    output.log("success: channel open confirm ");
+	let expected_channel_end = ChannelEnd::new(
+		State::Open,
+		*channel_end.ordering(),
+		expected_counterparty,
+		expected_connection_hops,
+		channel_end.version().clone(),
+	);
+	//2. Verify proofs
+	verify_channel_proofs::<Ctx>(
+		ctx,
+		msg.proofs.height(),
+		&channel_end,
+		&conn,
+		&expected_channel_end,
+		&msg.proofs.object_proof(),
+	)
+	.map_err(Error::chan_open_confirm_proof_verification)?;
 
-    // Transition the channel end to the new state.
-    channel_end.set_state(State::Open);
+	output.log("success: channel open confirm ");
 
-    let event_attributes = Attributes {
-        channel_id: Some(msg.channel_id),
-        height: ctx.host_height(),
-        port_id: msg.port_id.clone(),
-        connection_id: channel_end.connection_hops[0].clone(),
-        counterparty_port_id: channel_end.counterparty().port_id.clone(),
-        counterparty_channel_id: channel_end.counterparty().channel_id.clone(),
-    };
+	// Transition the channel end to the new state.
+	channel_end.set_state(State::Open);
 
-    let result = ChannelResult {
-        port_id: msg.port_id.clone(),
-        channel_id: msg.channel_id,
-        channel_id_state: ChannelIdState::Reused,
-        channel_end,
-    };
+	let event_attributes = Attributes {
+		channel_id: Some(msg.channel_id),
+		height: ctx.host_height(),
+		port_id: msg.port_id.clone(),
+		connection_id: channel_end.connection_hops[0].clone(),
+		counterparty_port_id: channel_end.counterparty().port_id.clone(),
+		counterparty_channel_id: channel_end.counterparty().channel_id.clone(),
+	};
 
-    output.emit(IbcEvent::OpenConfirmChannel(
-        event_attributes
-            .try_into()
-            .map_err(|_| Error::missing_channel_id())?,
-    ));
+	let result = ChannelResult {
+		port_id: msg.port_id.clone(),
+		channel_id: msg.channel_id,
+		channel_id_state: ChannelIdState::Reused,
+		channel_end,
+	};
 
-    Ok(output.with_result(result))
+	output.emit(IbcEvent::OpenConfirmChannel(
+		event_attributes.try_into().map_err(|_| Error::missing_channel_id())?,
+	));
+
+	Ok(output.with_result(result))
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+	use crate::prelude::*;
 
-    use test_log::test;
+	use test_log::test;
 
-    use crate::core::ics02_client::client_type::ClientType;
-    use crate::core::ics02_client::context::ClientReader;
-    use crate::core::ics03_connection::connection::ConnectionEnd;
-    use crate::core::ics03_connection::connection::Counterparty as ConnectionCounterparty;
-    use crate::core::ics03_connection::connection::State as ConnectionState;
-    use crate::core::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
-    use crate::core::ics03_connection::version::get_compatible_versions;
-    use crate::core::ics04_channel::channel::{ChannelEnd, Counterparty, Order, State};
-    use crate::core::ics04_channel::handler::channel_dispatch;
-    use crate::core::ics04_channel::msgs::chan_open_confirm::test_util::get_dummy_raw_msg_chan_open_confirm;
-    use crate::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
-    use crate::core::ics04_channel::msgs::ChannelMsg;
-    use crate::core::ics04_channel::Version;
-    use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
-    use crate::events::IbcEvent;
-    use crate::mock::context::MockContext;
-    use crate::test_utils::Crypto;
-    use crate::timestamp::ZERO_DURATION;
-    use crate::Height;
+	use crate::{
+		core::{
+			ics02_client::context::ClientReader,
+			ics03_connection::{
+				connection::{
+					ConnectionEnd, Counterparty as ConnectionCounterparty, State as ConnectionState,
+				},
+				msgs::test_util::get_dummy_raw_counterparty,
+				version::get_compatible_versions,
+			},
+			ics04_channel::{
+				channel::{ChannelEnd, Counterparty, Order, State},
+				handler::channel_dispatch,
+				msgs::{
+					chan_open_confirm::{
+						test_util::get_dummy_raw_msg_chan_open_confirm, MsgChannelOpenConfirm,
+					},
+					ChannelMsg,
+				},
+				Version,
+			},
+			ics24_host::identifier::{ClientId, ConnectionId},
+		},
+		events::IbcEvent,
+		mock::{
+			client_state::MockClientState,
+			context::{MockClientTypes, MockContext},
+		},
+		timestamp::ZERO_DURATION,
+		Height,
+	};
 
-    // TODO: The tests here should use the same structure as `handler::chan_open_try::tests`.
-    #[test]
-    fn chan_open_confirm_msg_processing() {
-        struct Test {
-            name: String,
-            ctx: MockContext,
-            msg: ChannelMsg,
-            want_pass: bool,
-        }
-        let client_id = ClientId::new(ClientType::Mock, 24).unwrap();
-        let conn_id = ConnectionId::new(2);
-        let context = MockContext::default();
-        let client_consensus_state_height = context.host_height().revision_height;
+	// TODO: The tests here should use the same structure as `handler::chan_open_try::tests`.
+	#[test]
+	fn chan_open_confirm_msg_processing() {
+		struct Test {
+			name: String,
+			ctx: MockContext<MockClientTypes>,
+			msg: ChannelMsg,
+			want_pass: bool,
+		}
+		let client_id = ClientId::new(MockClientState::client_type(), 24).unwrap();
+		let conn_id = ConnectionId::new(2);
+		let context = MockContext::default();
+		let client_consensus_state_height = context.host_height().revision_height;
 
-        // The connection underlying the channel we're trying to open.
-        let conn_end = ConnectionEnd::new(
-            ConnectionState::Open,
-            client_id.clone(),
-            ConnectionCounterparty::try_from(get_dummy_raw_counterparty()).unwrap(),
-            get_compatible_versions(),
-            ZERO_DURATION,
-        );
+		// The connection underlying the channel we're trying to open.
+		let conn_end = ConnectionEnd::new(
+			ConnectionState::Open,
+			client_id.clone(),
+			ConnectionCounterparty::try_from(get_dummy_raw_counterparty()).unwrap(),
+			get_compatible_versions(),
+			ZERO_DURATION,
+		);
 
-        let msg_chan_confirm = MsgChannelOpenConfirm::try_from(
-            get_dummy_raw_msg_chan_open_confirm(client_consensus_state_height),
-        )
-        .unwrap();
+		let msg_chan_confirm = MsgChannelOpenConfirm::try_from(
+			get_dummy_raw_msg_chan_open_confirm(client_consensus_state_height),
+		)
+		.unwrap();
 
-        let chan_end = ChannelEnd::new(
-            State::TryOpen,
-            Order::default(),
-            Counterparty::new(
-                msg_chan_confirm.port_id.clone(),
-                Some(msg_chan_confirm.channel_id),
-            ),
-            vec![conn_id.clone()],
-            Version::default(),
-        );
+		let chan_end = ChannelEnd::new(
+			State::TryOpen,
+			Order::default(),
+			Counterparty::new(msg_chan_confirm.port_id.clone(), Some(msg_chan_confirm.channel_id)),
+			vec![conn_id.clone()],
+			Version::default(),
+		);
 
-        let tests: Vec<Test> = vec![Test {
-            name: "Good parameters".to_string(),
-            ctx: context
-                .with_client(&client_id, Height::new(0, client_consensus_state_height))
-                .with_connection(conn_id, conn_end)
-                .with_channel(
-                    msg_chan_confirm.port_id.clone(),
-                    msg_chan_confirm.channel_id,
-                    chan_end,
-                ),
-            msg: ChannelMsg::ChannelOpenConfirm(msg_chan_confirm),
-            want_pass: true,
-        }]
-        .into_iter()
-        .collect();
+		let tests: Vec<Test> = vec![Test {
+			name: "Good parameters".to_string(),
+			ctx: context
+				.with_client(&client_id, Height::new(0, client_consensus_state_height))
+				.with_connection(conn_id, conn_end)
+				.with_channel(
+					msg_chan_confirm.port_id.clone(),
+					msg_chan_confirm.channel_id,
+					chan_end,
+				),
+			msg: ChannelMsg::ChannelOpenConfirm(msg_chan_confirm),
+			want_pass: true,
+		}]
+		.into_iter()
+		.collect();
 
-        for test in tests {
-            let res = channel_dispatch::<_, Crypto>(&test.ctx, &test.msg);
-            // Additionally check the events and the output objects in the result.
-            match res {
-                Ok((proto_output, res)) => {
-                    assert!(
+		for test in tests {
+			let res = channel_dispatch(&test.ctx, &test.msg);
+			// Additionally check the events and the output objects in the result.
+			match res {
+				Ok((proto_output, res)) => {
+					assert!(
                             test.want_pass,
                             "chan_open_confirm: test passed but was supposed to fail for test: {}, \nparams {:?} {:?}",
                             test.name,
@@ -201,29 +208,29 @@ mod tests {
                             test.ctx.clone()
                         );
 
-                    let proto_output = proto_output.with_result(());
-                    assert!(!proto_output.events.is_empty()); // Some events must exist.
+					let proto_output = proto_output.with_result(());
+					assert!(!proto_output.events.is_empty()); // Some events must exist.
 
-                    // The object in the output is a ConnectionEnd, should have init state.
-                    //assert_eq!(res.channel_id, msg_chan_init.channel_id().clone());
-                    assert_eq!(res.channel_end.state().clone(), State::Open);
+					// The object in the output is a ConnectionEnd, should have init state.
+					//assert_eq!(res.channel_id, msg_chan_init.channel_id().clone());
+					assert_eq!(res.channel_end.state().clone(), State::Open);
 
-                    for e in proto_output.events.iter() {
-                        assert!(matches!(e, &IbcEvent::OpenConfirmChannel(_)));
-                        assert_eq!(e.height(), test.ctx.host_height());
-                    }
-                }
-                Err(e) => {
-                    assert!(
-                        !test.want_pass,
-                        "chan_open_ack: did not pass test: {}, \nparams {:?} {:?}\nerror: {:?}",
-                        test.name,
-                        test.msg,
-                        test.ctx.clone(),
-                        e,
-                    );
-                }
-            }
-        }
-    }
+					for e in proto_output.events.iter() {
+						assert!(matches!(e, &IbcEvent::OpenConfirmChannel(_)));
+						assert_eq!(e.height(), test.ctx.host_height());
+					}
+				},
+				Err(e) => {
+					assert!(
+						!test.want_pass,
+						"chan_open_ack: did not pass test: {}, \nparams {:?} {:?}\nerror: {:?}",
+						test.name,
+						test.msg,
+						test.ctx.clone(),
+						e,
+					);
+				},
+			}
+		}
+	}
 }

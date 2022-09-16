@@ -1,7 +1,6 @@
 // TODO: disable unwraps:
 // https://github.com/informalsystems/ibc-rs/issues/987
 // #![cfg_attr(not(test), deny(clippy::unwrap_used))]
-
 #![cfg_attr(not(feature = "std"), no_std)]
 #![allow(clippy::large_enum_variant)]
 #![deny(
@@ -34,8 +33,9 @@
 //! `Applications` consists of various packet encoding and processing semantics which underpin the
 //! various types of transactions that users can perform on any IBC-compliant chain.
 //!
-//! `Relayer` contains utilities for testing the `ibc` crate against the [Hermes IBC relayer][relayer-repo]. It acts
-//! as scaffolding for gluing the `ibc` crate with Hermes for testing purposes.
+//! `Relayer` contains utilities for testing the `ibc` crate against the [Hermes IBC
+//! relayer][relayer-repo]. It acts as scaffolding for gluing the `ibc` crate with Hermes for
+//! testing purposes.
 //!
 //! [core]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core
 //! [clients]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/clients
@@ -45,38 +45,36 @@
 //! [relayer-repo]: https://github.com/informalsystems/ibc-rs/tree/master/relayer
 
 extern crate alloc;
-
+#[allow(unused_imports)]
+#[macro_use]
+extern crate derive;
 #[cfg(feature = "std")]
 extern crate std;
 
-mod prelude;
+pub mod prelude;
 
 pub mod applications;
 pub mod bigint;
-pub mod clients;
 pub mod core;
 pub mod events;
 pub mod handler;
 pub mod keys;
 pub mod macros;
 pub mod proofs;
-#[cfg(feature = "std")]
-pub mod query;
-pub mod relayer;
 pub mod signer;
 pub mod timestamp;
-pub mod tx_msg;
+pub mod tx_msg; // Context mock, the underlying host chain, and client types: for testing all handlers.
 
 mod serializers;
 
 /// Re-export of ICS 002 Height domain type
-pub type Height = crate::core::ics02_client::height::Height;
+pub type Height = core::ics02_client::height::Height;
 
-#[cfg(test)]
-mod test;
+#[cfg(any(test, feature = "mocks"))]
+pub mod test;
 
 #[cfg(any(test, feature = "mocks"))]
 pub mod test_utils;
 
 #[cfg(any(test, feature = "mocks"))]
-pub mod mock; // Context mock, the underlying host chain, and client types: for testing all handlers.
+pub mod mock;

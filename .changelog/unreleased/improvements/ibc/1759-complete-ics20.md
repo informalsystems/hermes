@@ -1,1 +1,0 @@
-- Complete ICS20 implementation ([#1759](https://github.com/informalsystems/ibc-rs/issues/1759))

@@ -12,11 +12,15 @@
 //! Another difference to ICS3 specs is that each message comprises an additional field called
 //! `signer` which is specific to Cosmos-SDK.
 
-use crate::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
-use crate::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
-use crate::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-use crate::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
+use crate::core::{
+	ics02_client::context::ClientKeeper,
+	ics03_connection::msgs::{
+		conn_open_ack::MsgConnectionOpenAck, conn_open_confirm::MsgConnectionOpenConfirm,
+		conn_open_init::MsgConnectionOpenInit, conn_open_try::MsgConnectionOpenTry,
+	},
+};
 use alloc::boxed::Box;
+use core::fmt::Debug;
 
 pub mod conn_open_ack;
 pub mod conn_open_confirm;
@@ -25,28 +29,32 @@ pub mod conn_open_try;
 
 /// Enumeration of all possible messages that the ICS3 protocol processes.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum ConnectionMsg {
-    ConnectionOpenInit(MsgConnectionOpenInit),
-    ConnectionOpenTry(Box<MsgConnectionOpenTry>),
-    ConnectionOpenAck(Box<MsgConnectionOpenAck>),
-    ConnectionOpenConfirm(MsgConnectionOpenConfirm),
+pub enum ConnectionMsg<C>
+where
+	C: ClientKeeper + Clone + Debug + PartialEq + Eq,
+{
+	ConnectionOpenInit(MsgConnectionOpenInit),
+	ConnectionOpenTry(Box<MsgConnectionOpenTry<C>>),
+	ConnectionOpenAck(Box<MsgConnectionOpenAck<C>>),
+	ConnectionOpenConfirm(MsgConnectionOpenConfirm),
 }
 
 #[cfg(test)]
 pub mod test_util {
 
-    use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
-    use crate::prelude::*;
-    use ibc_proto::ibc::core::commitment::v1::MerklePrefix;
-    use ibc_proto::ibc::core::connection::v1::Counterparty as RawCounterparty;
+	use crate::{
+		core::ics24_host::identifier::{ClientId, ConnectionId},
+		prelude::*,
+	};
+	use ibc_proto::ibc::core::{
+		commitment::v1::MerklePrefix, connection::v1::Counterparty as RawCounterparty,
+	};
 
-    pub fn get_dummy_raw_counterparty() -> RawCounterparty {
-        RawCounterparty {
-            client_id: ClientId::default().to_string(),
-            connection_id: ConnectionId::default().to_string(),
-            prefix: Some(MerklePrefix {
-                key_prefix: b"ibc".to_vec(),
-            }),
-        }
-    }
+	pub fn get_dummy_raw_counterparty() -> RawCounterparty {
+		RawCounterparty {
+			client_id: ClientId::default().to_string(),
+			connection_id: ConnectionId::default().to_string(),
+			prefix: Some(MerklePrefix { key_prefix: b"ibc".to_vec() }),
+		}
+	}
 }

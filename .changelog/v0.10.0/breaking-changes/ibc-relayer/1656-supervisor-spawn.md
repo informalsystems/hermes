@@ -1,3 +1,0 @@
--  Improve spawning of supervisor worker tasks ([#1656](https://github.com/informalsystems/ibc-rs/issues/1656))
-    - The `Supervisor` struct is removed.
-    - Supervisor is now spawned using the `spawn_supervisor` function.

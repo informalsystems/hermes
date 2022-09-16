@@ -1,3 +1,0 @@
-- Improve startup time of the relayer
-  - When scanning a chain with filtering enabled and an allow list, skip scanning all the clients and query the allowed channels directly. This results in much fewer queries and a faster start.
-  - Add a `--full-scan` option to `hermes start` to opt out of the fast start mechanism and do a full scan.

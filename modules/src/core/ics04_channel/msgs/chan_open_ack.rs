@@ -1,10 +1,13 @@
-use crate::core::ics04_channel::error::Error;
-use crate::core::ics04_channel::Version;
-use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::prelude::*;
-use crate::proofs::Proofs;
-use crate::signer::Signer;
-use crate::tx_msg::Msg;
+use crate::{
+	core::{
+		ics04_channel::{error::Error, Version},
+		ics24_host::identifier::{ChannelId, PortId},
+	},
+	prelude::*,
+	proofs::Proofs,
+	signer::Signer,
+	tx_msg::Msg,
+};
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
 use tendermint_proto::Protobuf;
@@ -13,145 +16,134 @@ pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenAck";
 
 ///
 /// Message definition for the third step in the channel open handshake (`ChanOpenAck` datagram).
-///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelOpenAck {
-    pub port_id: PortId,
-    pub channel_id: ChannelId,
-    pub counterparty_channel_id: ChannelId,
-    pub counterparty_version: Version,
-    pub proofs: Proofs,
-    pub signer: Signer,
+	pub port_id: PortId,
+	pub channel_id: ChannelId,
+	pub counterparty_channel_id: ChannelId,
+	pub counterparty_version: Version,
+	pub proofs: Proofs,
+	pub signer: Signer,
 }
 
 impl MsgChannelOpenAck {
-    pub fn new(
-        port_id: PortId,
-        channel_id: ChannelId,
-        counterparty_channel_id: ChannelId,
-        counterparty_version: Version,
-        proofs: Proofs,
-        signer: Signer,
-    ) -> Self {
-        Self {
-            port_id,
-            channel_id,
-            counterparty_channel_id,
-            counterparty_version,
-            proofs,
-            signer,
-        }
-    }
+	pub fn new(
+		port_id: PortId,
+		channel_id: ChannelId,
+		counterparty_channel_id: ChannelId,
+		counterparty_version: Version,
+		proofs: Proofs,
+		signer: Signer,
+	) -> Self {
+		Self { port_id, channel_id, counterparty_channel_id, counterparty_version, proofs, signer }
+	}
 }
 
 impl Msg for MsgChannelOpenAck {
-    type ValidationError = Error;
-    type Raw = RawMsgChannelOpenAck;
+	type ValidationError = Error;
+	type Raw = RawMsgChannelOpenAck;
 
-    fn route(&self) -> String {
-        crate::keys::ROUTER_KEY.to_string()
-    }
+	fn route(&self) -> String {
+		crate::keys::ROUTER_KEY.to_string()
+	}
 
-    fn type_url(&self) -> String {
-        TYPE_URL.to_string()
-    }
+	fn type_url(&self) -> String {
+		TYPE_URL.to_string()
+	}
 }
 
 impl Protobuf<RawMsgChannelOpenAck> for MsgChannelOpenAck {}
 
 impl TryFrom<RawMsgChannelOpenAck> for MsgChannelOpenAck {
-    type Error = Error;
+	type Error = Error;
 
-    fn try_from(raw_msg: RawMsgChannelOpenAck) -> Result<Self, Self::Error> {
-        let proofs = Proofs::new(
-            raw_msg.proof_try.try_into().map_err(Error::invalid_proof)?,
-            None,
-            None,
-            None,
-            raw_msg
-                .proof_height
-                .ok_or_else(Error::missing_height)?
-                .into(),
-        )
-        .map_err(Error::invalid_proof)?;
+	fn try_from(raw_msg: RawMsgChannelOpenAck) -> Result<Self, Self::Error> {
+		let proofs = Proofs::new(
+			raw_msg.proof_try.try_into().map_err(Error::invalid_proof)?,
+			None,
+			None,
+			None,
+			raw_msg.proof_height.ok_or_else(Error::missing_height)?.into(),
+		)
+		.map_err(Error::invalid_proof)?;
 
-        Ok(MsgChannelOpenAck {
-            port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
-            channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
-            counterparty_channel_id: raw_msg
-                .counterparty_channel_id
-                .parse()
-                .map_err(Error::identifier)?,
-            counterparty_version: raw_msg.counterparty_version.into(),
-            proofs,
-            signer: raw_msg.signer.parse().map_err(Error::signer)?,
-        })
-    }
+		Ok(MsgChannelOpenAck {
+			port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
+			channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
+			counterparty_channel_id: raw_msg
+				.counterparty_channel_id
+				.parse()
+				.map_err(Error::identifier)?,
+			counterparty_version: raw_msg.counterparty_version.into(),
+			proofs,
+			signer: raw_msg.signer.parse().map_err(Error::signer)?,
+		})
+	}
 }
 
 impl From<MsgChannelOpenAck> for RawMsgChannelOpenAck {
-    fn from(domain_msg: MsgChannelOpenAck) -> Self {
-        RawMsgChannelOpenAck {
-            port_id: domain_msg.port_id.to_string(),
-            channel_id: domain_msg.channel_id.to_string(),
-            counterparty_channel_id: domain_msg.counterparty_channel_id.to_string(),
-            counterparty_version: domain_msg.counterparty_version.to_string(),
-            proof_try: domain_msg.proofs.object_proof().clone().into(),
-            proof_height: Some(domain_msg.proofs.height().into()),
-            signer: domain_msg.signer.to_string(),
-        }
-    }
+	fn from(domain_msg: MsgChannelOpenAck) -> Self {
+		RawMsgChannelOpenAck {
+			port_id: domain_msg.port_id.to_string(),
+			channel_id: domain_msg.channel_id.to_string(),
+			counterparty_channel_id: domain_msg.counterparty_channel_id.to_string(),
+			counterparty_version: domain_msg.counterparty_version.to_string(),
+			proof_try: domain_msg.proofs.object_proof().clone().into(),
+			proof_height: Some(domain_msg.proofs.height().into()),
+			signer: domain_msg.signer.to_string(),
+		}
+	}
 }
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::prelude::*;
-    use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
+	use crate::prelude::*;
+	use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
 
-    use crate::core::ics24_host::identifier::{ChannelId, PortId};
-    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
-    use ibc_proto::ibc::core::client::v1::Height;
+	use crate::{
+		core::ics24_host::identifier::{ChannelId, PortId},
+		test_utils::{get_dummy_bech32_account, get_dummy_proof},
+	};
+	use ibc_proto::ibc::core::client::v1::Height;
 
-    /// Returns a dummy `RawMsgChannelOpenAck`, for testing only!
-    pub fn get_dummy_raw_msg_chan_open_ack(proof_height: u64) -> RawMsgChannelOpenAck {
-        RawMsgChannelOpenAck {
-            port_id: PortId::default().to_string(),
-            channel_id: ChannelId::default().to_string(),
-            counterparty_channel_id: ChannelId::default().to_string(),
-            counterparty_version: "".to_string(),
-            proof_try: get_dummy_proof(),
-            proof_height: Some(Height {
-                revision_number: 0,
-                revision_height: proof_height,
-            }),
-            signer: get_dummy_bech32_account(),
-        }
-    }
+	/// Returns a dummy `RawMsgChannelOpenAck`, for testing only!
+	pub fn get_dummy_raw_msg_chan_open_ack(proof_height: u64) -> RawMsgChannelOpenAck {
+		RawMsgChannelOpenAck {
+			port_id: PortId::default().to_string(),
+			channel_id: ChannelId::default().to_string(),
+			counterparty_channel_id: ChannelId::default().to_string(),
+			counterparty_version: "".to_string(),
+			proof_try: get_dummy_proof(),
+			proof_height: Some(Height { revision_number: 0, revision_height: proof_height }),
+			signer: get_dummy_bech32_account(),
+		}
+	}
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
-    use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
-    use test_log::test;
+	use crate::prelude::*;
+	use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
+	use test_log::test;
 
-    use crate::core::ics04_channel::msgs::chan_open_ack::test_util::get_dummy_raw_msg_chan_open_ack;
-    use crate::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
+	use crate::core::ics04_channel::msgs::chan_open_ack::{
+		test_util::get_dummy_raw_msg_chan_open_ack, MsgChannelOpenAck,
+	};
 
-    use ibc_proto::ibc::core::client::v1::Height;
+	use ibc_proto::ibc::core::client::v1::Height;
 
-    #[test]
-    fn parse_channel_open_ack_msg() {
-        struct Test {
-            name: String,
-            raw: RawMsgChannelOpenAck,
-            want_pass: bool,
-        }
+	#[test]
+	fn parse_channel_open_ack_msg() {
+		struct Test {
+			name: String,
+			raw: RawMsgChannelOpenAck,
+			want_pass: bool,
+		}
 
-        let proof_height = 20;
-        let default_raw_msg = get_dummy_raw_msg_chan_open_ack(proof_height);
+		let proof_height = 20;
+		let default_raw_msg = get_dummy_raw_msg_chan_open_ack(proof_height);
 
-        let tests: Vec<Test> = vec![
+		let tests: Vec<Test> = vec![
             Test {
                 name: "Good parameters".to_string(),
                 raw: default_raw_msg.clone(),
@@ -276,27 +268,27 @@ mod tests {
             .into_iter()
             .collect();
 
-        for test in tests {
-            let res_msg = MsgChannelOpenAck::try_from(test.raw.clone());
+		for test in tests {
+			let res_msg = MsgChannelOpenAck::try_from(test.raw.clone());
 
-            assert_eq!(
-                test.want_pass,
-                res_msg.is_ok(),
-                "MsgChanOpenAck::try_from raw failed for test {}, \nraw msg {:?} with error {:?}",
-                test.name,
-                test.raw,
-                res_msg.err(),
-            );
-        }
-    }
+			assert_eq!(
+				test.want_pass,
+				res_msg.is_ok(),
+				"MsgChanOpenAck::try_from raw failed for test {}, \nraw msg {:?} with error {:?}",
+				test.name,
+				test.raw,
+				res_msg.err(),
+			);
+		}
+	}
 
-    #[test]
-    fn to_and_from() {
-        let raw = get_dummy_raw_msg_chan_open_ack(100);
-        let msg = MsgChannelOpenAck::try_from(raw.clone()).unwrap();
-        let raw_back = RawMsgChannelOpenAck::from(msg.clone());
-        let msg_back = MsgChannelOpenAck::try_from(raw_back.clone()).unwrap();
-        assert_eq!(raw, raw_back);
-        assert_eq!(msg, msg_back);
-    }
+	#[test]
+	fn to_and_from() {
+		let raw = get_dummy_raw_msg_chan_open_ack(100);
+		let msg = MsgChannelOpenAck::try_from(raw.clone()).unwrap();
+		let raw_back = RawMsgChannelOpenAck::from(msg.clone());
+		let msg_back = MsgChannelOpenAck::try_from(raw_back.clone()).unwrap();
+		assert_eq!(raw, raw_back);
+		assert_eq!(msg, msg_back);
+	}
 }

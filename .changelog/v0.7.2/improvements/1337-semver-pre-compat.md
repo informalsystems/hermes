@@ -1,1 +1,0 @@
-- Treat pre-releases of the Cosmos SDK as their standard version in compatibility check ([#1337](https://github.com/informalsystems/ibc-rs/issues/1337))

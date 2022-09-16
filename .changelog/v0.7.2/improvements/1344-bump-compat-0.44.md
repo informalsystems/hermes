@@ -1,1 +1,0 @@
-- Bump Cosmos SDK compatibility to v0.44.0 ([#1344](https://github.com/informalsystems/ibc-rs/issues/1344))

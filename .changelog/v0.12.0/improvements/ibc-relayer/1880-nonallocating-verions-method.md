@@ -1,1 +1,0 @@
-- Changed `ConnectionEnd::versions` method to be non-allocating by having it return a `&[Version]` instead of `Vec<Version>`. ([#1880](https://github.com/informalsystems/ibc-rs/pull/1880))

@@ -1,1 +1,0 @@
-- Complete ICS26 implementation ([#1758](https://github.com/informalsystems/ibc-rs/issues/1758))

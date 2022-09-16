@@ -4,570 +4,279 @@ use flex_error::{define_error, TraceError};
 use tendermint::Error as TendermintError;
 use tendermint_proto::Error as TendermintProtoError;
 
-use crate::clients::ics07_tendermint::error::Error as Ics07Error;
-#[cfg(any(test, feature = "ics11_beefy"))]
-use crate::clients::ics11_beefy::error::Error as Ics11Error;
-#[cfg(any(test, feature = "ics11_beefy"))]
-use crate::clients::ics13_near::error::Error as Ics13Error;
-use crate::core::ics02_client::client_type::ClientType;
-use crate::core::ics02_client::height::HeightError;
-use crate::core::ics23_commitment::error::Error as Ics23Error;
-use crate::core::ics24_host::error::ValidationError;
-use crate::core::ics24_host::identifier::ClientId;
-use crate::signer::SignerError;
-use crate::timestamp::Timestamp;
-use crate::Height;
+use crate::{
+	core::{
+		ics02_client::{client_state::ClientType, height::HeightError},
+		ics23_commitment::error::Error as Ics23Error,
+		ics24_host::{error::ValidationError, identifier::ClientId},
+	},
+	signer::SignerError,
+	timestamp::Timestamp,
+	Height,
+};
 
-#[cfg(not(any(test, feature = "ics11_beefy")))]
 define_error! {
-    #[derive(Debug, PartialEq, Eq)]
-    Error {
-        UnknownClientType
-            { client_type: String }
-            | e | { format_args!("unknown client type: {0}", e.client_type) },
-
-        ClientIdentifierConstructor
-            { client_type: ClientType, counter: u64 }
-            [ ValidationError ]
-            | e | {
-                format_args!("Client identifier constructor failed for type {0} with counter {1}",
-                    e.client_type, e.counter)
-            },
-
-        ClientAlreadyExists
-            { client_id: ClientId }
-            | e | { format_args!("client already exists: {0}", e.client_id) },
-
-        ClientNotFound
-            { client_id: ClientId }
-            | e | { format_args!("client not found: {0}", e.client_id) },
-
-        ClientFrozen
-            { client_id: ClientId }
-            | e | { format_args!("client is frozen: {0}", e.client_id) },
-
-        ConsensusStateNotFound
-            { client_id: ClientId, height: Height }
-            | e | {
-                format_args!("consensus state not found at: {0} at height {1}",
-                    e.client_id, e.height)
-            },
-
-        ImplementationSpecific
-            { reason: String }
-            | e | { format_args!("implementation specific error: {}", e.reason) },
-
-        HeaderVerificationFailure
-            { reason: String }
-            | e | { format_args!("header verification failed with reason: {}", e.reason) },
-
-        InvalidTrustThreshold
-            { numerator: u64, denominator: u64 }
-            | e | { format_args!("failed to build trust threshold from fraction: {}/{}", e.numerator, e.denominator) },
-
-        FailedTrustThresholdConversion
-            { numerator: u64, denominator: u64 }
-            [ TendermintError ]
-            | e | { format_args!("failed to build Tendermint domain type trust threshold from fraction: {}/{}", e.numerator, e.denominator) },
-
-        UnknownClientStateType
-            { client_state_type: String }
-            | e | { format_args!("unknown client state type: {0}", e.client_state_type) },
-
-        EmptyClientStateResponse
-            | _ | { "the client state was not found" },
-
-        EmptyPrefix
-            | _ | { "empty prefix" },
-
-        UnknownConsensusStateType
-            { consensus_state_type: String }
-            | e | {
-                format_args!("unknown client consensus state type: {0}",
-                    e.consensus_state_type)
-            },
-
-        EmptyConsensusStateResponse
-            | _ | { "the client consensus state was not found" },
-
-        UnknownHeaderType
-            { header_type: String }
-            | e | {
-                format_args!("unknown header type: {0}",
-                    e.header_type)
-            },
-
-        UnknownMisbehaviourType
-            { misbehavior_type: String }
-            | e | {
-                format_args!("unknown misbehaviour type: {0}",
-                    e.misbehavior_type)
-            },
-
-        InvalidRawClientId
-            { client_id: String }
-            [ ValidationError ]
-            | e | {
-                format_args!("invalid raw client identifier {0}",
-                    e.client_id)
-            },
-
-        DecodeRawClientState
-            [ TraceError<TendermintProtoError> ]
-            | _ | { "error decoding raw client state" },
-
-        MissingRawClientState
-            | _ | { "missing raw client state" },
-
-        InvalidRawConsensusState
-            [ TraceError<TendermintProtoError> ]
-            | _ | { "invalid raw client consensus state" },
-
-        MissingRawConsensusState
-            | _ | { "missing raw client consensus state" },
-
-        InvalidMsgUpdateClientId
-            [ ValidationError ]
-            | _ | { "invalid client id in the update client message" },
-
-        Decode
-            [ TraceError<prost::DecodeError> ]
-            | _ | { "decode error" },
-
-        MissingHeight
-            | _ | { "invalid raw client consensus state: the height field is missing" },
-
-        InvalidClientIdentifier
-            [ ValidationError ]
-            | _ | { "invalid client identifier" },
-
-        InvalidRawHeader
-            [ TraceError<TendermintProtoError> ]
-            | _ | { "invalid raw header" },
-
-        MissingRawHeader
-            | _ | { "missing raw header" },
-
-        DecodeRawMisbehaviour
-            [ TraceError<TendermintProtoError> ]
-            | _ | { "invalid raw misbehaviour" },
-
-        InvalidRawMisbehaviour
-            [ ValidationError ]
-            | _ | { "invalid raw misbehaviour" },
-
-        MissingRawMisbehaviour
-            | _ | { "missing raw misbehaviour" },
-
-        InvalidStringAsHeight
-            { value: String }
-            [ HeightError ]
-            | e | { format_args!("String {0} cannnot be converted to height", e.value) },
-
-        InvalidHeightResult
-            | _ | { "height cannot end up zero or negative" },
-
-        InvalidAddress
-            | _ | { "invalid address" },
-
-        InvalidUpgradeClientProof
-            [ Ics23Error ]
-            | _ | { "invalid proof for the upgraded client state" },
-
-        InvalidUpgradeConsensusStateProof
-            [ Ics23Error ]
-            | _ | { "invalid proof for the upgraded consensus state" },
-
-        InvalidCommitmentProof
-            [ Ics23Error ]
-            | _ | { "invalid commitment proof bytes" },
-
-        Tendermint
-            [ Ics07Error ]
-            | _ | { "tendermint error" },
-
-        InvalidPacketTimestamp
-            [ crate::timestamp::ParseTimestampError ]
-            | _ | { "invalid packet timeout timestamp value" },
-
-        ClientArgsTypeMismatch
-            { client_type: ClientType }
-            | e | {
-                format_args!("mismatch between client and arguments types, expected: {0:?}",
-                    e.client_type)
-            },
-
-        InsufficientVotingPower
-            { reason: String }
-            | e | {
-                format_args!("Insufficient overlap {}", e.reason)
-            },
-
-        RawClientAndConsensusStateTypesMismatch
-            {
-                state_type: ClientType,
-                consensus_type: ClientType,
-            }
-            | e | {
-                format_args!("mismatch in raw client consensus state {} with expected state {}",
-                    e.state_type, e.consensus_type)
-            },
-
-        LowHeaderHeight
-            {
-                header_height: Height,
-                latest_height: Height
-            }
-            | e | {
-                format!("received header height ({:?}) is lower than (or equal to) client latest height ({:?})",
-                    e.header_height, e.latest_height)
-            },
-
-        LowUpgradeHeight
-            {
-                upgraded_height: Height,
-                client_height: Height,
-            }
-            | e | {
-                format_args!("upgraded client height {} must be at greater than current client height {}",
-                    e.upgraded_height, e.client_height)
-            },
-
-        InvalidConsensusStateTimestamp
-            {
-                time1: Timestamp,
-                time2: Timestamp,
-            }
-            | e | {
-                format_args!("timestamp is invalid or missing, timestamp={0},  now={1}", e.time1, e.time2)
-            },
-
-        HeaderNotWithinTrustPeriod
-            {
-                latest_time:Timestamp,
-                update_time: Timestamp,
-            }
-            | e | {
-                format_args!("header not withing trusting period: expires_at={0} now={1}", e.latest_time, e.update_time)
-            },
-
-        TendermintHandlerError
-            [ Ics07Error ]
-            | _ | { format_args!("Tendermint-specific handler error") },
-
-        MissingLocalConsensusState
-            { height: Height }
-            | e | { format_args!("the local consensus state could not be retrieved for height {}", e.height) },
-
-        InvalidConnectionEnd
-            [ TraceError<TendermintProtoError>]
-            | _ | { "invalid connection end" },
-
-        InvalidChannelEnd
-            [ TraceError<TendermintProtoError>]
-            | _ | { "invalid channel end" },
-
-        InvalidAnyClientState
-            [ TraceError<TendermintProtoError>]
-            | _ | { "invalid any client state" },
-
-        InvalidAnyConsensusState
-            [ TraceError<TendermintProtoError> ]
-            | _ | { "invalid any client consensus state" },
-
-        Signer
-            [ SignerError ]
-            | _ | { "failed to parse signer" },
-    }
-}
-
-#[cfg(any(test, feature = "ics11_beefy"))]
-define_error! {
-    #[derive(Debug, PartialEq, Eq)]
-    Error {
-        UnknownClientType
-            { client_type: String }
-            | e | { format_args!("unknown client type: {0}", e.client_type) },
-
-        ClientIdentifierConstructor
-            { client_type: ClientType, counter: u64 }
-            [ ValidationError ]
-            | e | {
-                format_args!("Client identifier constructor failed for type {0} with counter {1}",
-                    e.client_type, e.counter)
-            },
-
-        ClientAlreadyExists
-            { client_id: ClientId }
-            | e | { format_args!("client already exists: {0}", e.client_id) },
-
-        ClientNotFound
-            { client_id: ClientId }
-            | e | { format_args!("client not found: {0}", e.client_id) },
-
-        ClientFrozen
-            { client_id: ClientId }
-            | e | { format_args!("client is frozen: {0}", e.client_id) },
-
-        ConsensusStateNotFound
-            { client_id: ClientId, height: Height }
-            | e | {
-                format_args!("consensus state not found at: {0} at height {1}",
-                    e.client_id, e.height)
-            },
-
-        ImplementationSpecific
-            { reason: String }
-            | e | { format_args!("implementation specific error: {}", e.reason) },
-
-        HeaderVerificationFailure
-            { reason: String }
-            | e | { format_args!("header verification failed with reason: {}", e.reason) },
-
-        InvalidTrustThreshold
-            { numerator: u64, denominator: u64 }
-            | e | { format_args!("failed to build trust threshold from fraction: {}/{}", e.numerator, e.denominator) },
-
-        FailedTrustThresholdConversion
-            { numerator: u64, denominator: u64 }
-            [ TendermintError ]
-            | e | { format_args!("failed to build Tendermint domain type trust threshold from fraction: {}/{}", e.numerator, e.denominator) },
-
-        UnknownClientStateType
-            { client_state_type: String }
-            | e | { format_args!("unknown client state type: {0}", e.client_state_type) },
-
-        EmptyClientStateResponse
-            | _ | { "the client state was not found" },
-
-        EmptyPrefix
-            | _ | { "empty prefix" },
-
-        UnknownConsensusStateType
-            { consensus_state_type: String }
-            | e | {
-                format_args!("unknown client consensus state type: {0}",
-                    e.consensus_state_type)
-            },
-
-        EmptyConsensusStateResponse
-            | _ | { "the client consensus state was not found" },
-
-        UnknownHeaderType
-            { header_type: String }
-            | e | {
-                format_args!("unknown header type: {0}",
-                    e.header_type)
-            },
-
-        UnknownMisbehaviourType
-            { misbehavior_type: String }
-            | e | {
-                format_args!("unknown misbehaviour type: {0}",
-                    e.misbehavior_type)
-            },
-
-        InvalidRawClientId
-            { client_id: String }
-            [ ValidationError ]
-            | e | {
-                format_args!("invalid raw client identifier {0}",
-                    e.client_id)
-            },
-
-        DecodeRawClientState
-            [ TraceError<TendermintProtoError> ]
-            | _ | { "error decoding raw client state" },
-
-        MissingRawClientState
-            | _ | { "missing raw client state" },
-
-        InvalidRawConsensusState
-            [ TraceError<TendermintProtoError> ]
-            | _ | { "invalid raw client consensus state" },
-
-        MissingRawConsensusState
-            | _ | { "missing raw client consensus state" },
-
-        InvalidMsgUpdateClientId
-            [ ValidationError ]
-            | _ | { "invalid client id in the update client message" },
-
-        Decode
-            [ TraceError<prost::DecodeError> ]
-            | _ | { "decode error" },
-
-        MissingHeight
-            | _ | { "invalid raw client consensus state: the height field is missing" },
-
-        InvalidClientIdentifier
-            [ ValidationError ]
-            | _ | { "invalid client identifier" },
-
-        InvalidRawHeader
-            [ TraceError<TendermintProtoError> ]
-            | _ | { "invalid raw header" },
-
-        MissingRawHeader
-            | _ | { "missing raw header" },
-
-        DecodeRawMisbehaviour
-            [ TraceError<TendermintProtoError> ]
-            | _ | { "invalid raw misbehaviour" },
-
-        InvalidRawMisbehaviour
-            [ ValidationError ]
-            | _ | { "invalid raw misbehaviour" },
-
-        MissingRawMisbehaviour
-            | _ | { "missing raw misbehaviour" },
-
-        InvalidStringAsHeight
-            { value: String }
-            [ HeightError ]
-            | e | { format_args!("String {0} cannnot be converted to height", e.value) },
-
-        InvalidHeightResult
-            | _ | { "height cannot end up zero or negative" },
-
-        InvalidAddress
-            | _ | { "invalid address" },
-
-        InvalidUpgradeClientProof
-            [ Ics23Error ]
-            | _ | { "invalid proof for the upgraded client state" },
-
-        InvalidUpgradeConsensusStateProof
-            [ Ics23Error ]
-            | _ | { "invalid proof for the upgraded consensus state" },
-
-        InvalidCommitmentProof
-            [ Ics23Error ]
-            | _ | { "invalid commitment proof bytes" },
-
-        Tendermint
-            [ Ics07Error ]
-            | _ | { "tendermint error" },
-
-        Beefy
-            [ Ics11Error ]
-            | _ | { "Beefy error" },
-
-        Near
-            [ Ics13Error ]
-            | _ | { "Near error" },
-
-        InvalidPacketTimestamp
-            [ crate::timestamp::ParseTimestampError ]
-            | _ | { "invalid packet timeout timestamp value" },
-
-        ClientArgsTypeMismatch
-            { client_type: ClientType }
-            | e | {
-                format_args!("mismatch between client and arguments types, expected: {0:?}",
-                    e.client_type)
-            },
-
-        InsufficientVotingPower
-            { reason: String }
-            | e | {
-                format_args!("Insufficient overlap {}", e.reason)
-            },
-
-        RawClientAndConsensusStateTypesMismatch
-            {
-                state_type: ClientType,
-                consensus_type: ClientType,
-            }
-            | e | {
-                format_args!("mismatch in raw client consensus state {} with expected state {}",
-                    e.state_type, e.consensus_type)
-            },
-
-        LowHeaderHeight
-            {
-                header_height: Height,
-                latest_height: Height
-            }
-            | e | {
-                format!("received header height ({:?}) is lower than (or equal to) client latest height ({:?})",
-                    e.header_height, e.latest_height)
-            },
-
-        LowUpgradeHeight
-            {
-                upgraded_height: Height,
-                client_height: Height,
-            }
-            | e | {
-                format_args!("upgraded client height {} must be at greater than current client height {}",
-                    e.upgraded_height, e.client_height)
-            },
-
-        InvalidConsensusStateTimestamp
-            {
-                time1: Timestamp,
-                time2: Timestamp,
-            }
-            | e | {
-                format_args!("timestamp is invalid or missing, timestamp={0},  now={1}", e.time1, e.time2)
-            },
-
-        HeaderNotWithinTrustPeriod
-            {
-                latest_time:Timestamp,
-                update_time: Timestamp,
-            }
-            | e | {
-                format_args!("header not withing trusting period: expires_at={0} now={1}", e.latest_time, e.update_time)
-            },
-
-        TendermintHandlerError
-            [ Ics07Error ]
-            | _ | { format_args!("Tendermint-specific handler error") },
-
-        MissingLocalConsensusState
-            { height: Height }
-            | e | { format_args!("the local consensus state could not be retrieved for height {}", e.height) },
-
-        InvalidConnectionEnd
-            [ TraceError<TendermintProtoError>]
-            | _ | { "invalid connection end" },
-
-        InvalidChannelEnd
-            [ TraceError<TendermintProtoError>]
-            | _ | { "invalid channel end" },
-
-        InvalidAnyClientState
-            [ TraceError<TendermintProtoError>]
-            | _ | { "invalid any client state" },
-
-        InvalidAnyConsensusState
-            [ TraceError<TendermintProtoError> ]
-            | _ | { "invalid any client consensus state" },
-
-        Signer
-            [ SignerError ]
-            | _ | { "failed to parse signer" },
-    }
-}
-
-impl From<Ics07Error> for Error {
-    fn from(e: Ics07Error) -> Error {
-        Error::tendermint_handler_error(e)
-    }
-}
-
-#[cfg(any(test, feature = "ics11_beefy"))]
-impl From<Ics11Error> for Error {
-    fn from(e: Ics11Error) -> Error {
-        Error::beefy(e)
-    }
-}
-
-#[cfg(any(test, feature = "ics11_beefy"))]
-impl From<Ics13Error> for Error {
-    fn from(e: Ics13Error) -> Error {
-        Error::near(e)
-    }
+	#[derive(Debug, PartialEq, Eq)]
+	Error {
+		ClientError
+			{ client_type: String, inner: String }
+			|e| { format_args!("client '{}' error: {}", e.client_type, e.inner) },
+
+		UnknownClientType
+			{ client_type: String }
+			| e | { format_args!("unknown client type: {0}", e.client_type) },
+
+		ClientIdentifierConstructor
+			{ client_type: String, counter: u64 }
+			[ ValidationError ]
+			| e | {
+				format_args!("Client identifier constructor failed for type {0} with counter {1}",
+					e.client_type, e.counter)
+			},
+
+		ClientAlreadyExists
+			{ client_id: ClientId }
+			| e | { format_args!("client already exists: {0}", e.client_id) },
+
+		ClientNotFound
+			{ client_id: ClientId }
+			| e | { format_args!("client not found: {0}", e.client_id) },
+
+		ClientFrozen
+			{ client_id: ClientId }
+			| e | { format_args!("client is frozen: {0}", e.client_id) },
+
+		ConsensusStateNotFound
+			{ client_id: ClientId, height: Height }
+			| e | {
+				format_args!("consensus state not found at: {0} at height {1}",
+					e.client_id, e.height)
+			},
+
+		ImplementationSpecific
+			{ reason: String }
+			| e | { format_args!("implementation specific error: {}", e.reason) },
+
+		HeaderVerificationFailure
+			{ reason: String }
+			| e | { format_args!("header verification failed with reason: {}", e.reason) },
+
+		InvalidTrustThreshold
+			{ numerator: u64, denominator: u64 }
+			| e | { format_args!("failed to build trust threshold from fraction: {}/{}", e.numerator, e.denominator) },
+
+		FailedTrustThresholdConversion
+			{ numerator: u64, denominator: u64 }
+			[ TendermintError ]
+			| e | { format_args!("failed to build Tendermint domain type trust threshold from fraction: {}/{}", e.numerator, e.denominator) },
+
+		UnknownClientStateType
+			{ client_state_type: String }
+			| e | { format_args!("unknown client state type: {0}", e.client_state_type) },
+
+		EmptyClientStateResponse
+			| _ | { "the client state was not found" },
+
+		EmptyPrefix
+			| _ | { "empty prefix" },
+
+		UnknownConsensusStateType
+			{ consensus_state_type: String }
+			| e | {
+				format_args!("unknown client consensus state type: {0}",
+					e.consensus_state_type)
+			},
+
+		EmptyConsensusStateResponse
+			| _ | { "the client consensus state was not found" },
+
+		UnknownHeaderType
+			{ header_type: String }
+			| e | {
+				format_args!("unknown header type: {0}",
+					e.header_type)
+			},
+
+		UnknownMisbehaviourType
+			{ misbehavior_type: String }
+			| e | {
+				format_args!("unknown misbehaviour type: {0}",
+					e.misbehavior_type)
+			},
+
+		InvalidRawClientId
+			{ client_id: String }
+			[ ValidationError ]
+			| e | {
+				format_args!("invalid raw client identifier {0}",
+					e.client_id)
+			},
+
+		DecodeRawClientState
+			[ TraceError<TendermintProtoError> ]
+			| _ | { "error decoding raw client state" },
+
+		DecodeRawHeader
+			[ TraceError<TendermintProtoError> ]
+			| _ | { "error decoding raw header" },
+
+		DecodeRawConsensusState
+			[ TraceError<TendermintProtoError> ]
+			| _ | { "error decoding raw header" },
+
+		MissingRawClientState
+			| _ | { "missing raw client state" },
+
+		InvalidRawConsensusState
+			[ TraceError<TendermintProtoError> ]
+			| _ | { "invalid raw client consensus state" },
+
+		MissingRawConsensusState
+			| _ | { "missing raw client consensus state" },
+
+		InvalidMsgUpdateClientId
+			[ ValidationError ]
+			| _ | { "invalid client id in the update client message" },
+
+		Decode
+			[ TraceError<prost::DecodeError> ]
+			| _ | { "decode error" },
+
+		MissingHeight
+			| _ | { "invalid raw client consensus state: the height field is missing" },
+
+		InvalidClientIdentifier
+			[ ValidationError ]
+			| _ | { "invalid client identifier" },
+
+		InvalidRawHeader
+			[ TraceError<TendermintProtoError> ]
+			| _ | { "invalid raw header" },
+
+		MissingRawHeader
+			| _ | { "missing raw header" },
+
+		DecodeRawMisbehaviour
+			[ TraceError<TendermintProtoError> ]
+			| _ | { "invalid raw misbehaviour" },
+
+		InvalidRawMisbehaviour
+			[ ValidationError ]
+			| _ | { "invalid raw misbehaviour" },
+
+		MissingRawMisbehaviour
+			| _ | { "missing raw misbehaviour" },
+
+		InvalidStringAsHeight
+			{ value: String }
+			[ HeightError ]
+			| e | { format_args!("String {0} cannnot be converted to height", e.value) },
+
+		InvalidHeightResult
+			| _ | { "height cannot end up zero or negative" },
+
+		InvalidAddress
+			| _ | { "invalid address" },
+
+		InvalidUpgradeClientProof
+			[ Ics23Error ]
+			| _ | { "invalid proof for the upgraded client state" },
+
+		InvalidUpgradeConsensusStateProof
+			[ Ics23Error ]
+			| _ | { "invalid proof for the upgraded consensus state" },
+
+		InvalidCommitmentProof
+			[ Ics23Error ]
+			| _ | { "invalid commitment proof bytes" },
+
+		InvalidPacketTimestamp
+			[ crate::timestamp::ParseTimestampError ]
+			| _ | { "invalid packet timeout timestamp value" },
+
+		ClientArgsTypeMismatch
+			{ client_type: String }
+			| e | {
+				format_args!("mismatch between client and arguments types, expected: {0:?}",
+					e.client_type)
+			},
+
+		InsufficientVotingPower
+			{ reason: String }
+			| e | {
+				format_args!("Insufficient overlap {}", e.reason)
+			},
+
+		RawClientAndConsensusStateTypesMismatch
+			{
+				state_type: ClientType,
+				consensus_type: ClientType,
+			}
+			| e | {
+				format_args!("mismatch in raw client consensus state {} with expected state {}",
+					e.state_type, e.consensus_type)
+			},
+
+		LowHeaderHeight
+			{
+				header_height: Height,
+				latest_height: Height
+			}
+			| e | {
+				format!("received header height ({:?}) is lower than (or equal to) client latest height ({:?})",
+					e.header_height, e.latest_height)
+			},
+
+		LowUpgradeHeight
+			{
+				upgraded_height: Height,
+				client_height: Height,
+			}
+			| e | {
+				format_args!("upgraded client height {} must be at greater than current client height {}",
+					e.upgraded_height, e.client_height)
+			},
+
+		InvalidConsensusStateTimestamp
+			{
+				time1: Timestamp,
+				time2: Timestamp,
+			}
+			| e | {
+				format_args!("timestamp is invalid or missing, timestamp={0},  now={1}", e.time1, e.time2)
+			},
+
+		HeaderNotWithinTrustPeriod
+			{
+				latest_time:Timestamp,
+				update_time: Timestamp,
+			}
+			| e | {
+				format_args!("header not withing trusting period: expires_at={0} now={1}", e.latest_time, e.update_time)
+			},
+
+		MissingLocalConsensusState
+			{ height: Height }
+			| e | { format_args!("the local consensus state could not be retrieved for height {}", e.height) },
+
+		InvalidConnectionEnd
+			[ TraceError<TendermintProtoError>]
+			| _ | { "invalid connection end" },
+
+		InvalidChannelEnd
+			[ TraceError<TendermintProtoError>]
+			| _ | { "invalid channel end" },
+
+		InvalidAnyClientState
+			[ TraceError<TendermintProtoError>]
+			| _ | { "invalid any client state" },
+
+		InvalidAnyConsensusState
+			[ TraceError<TendermintProtoError> ]
+			| _ | { "invalid any client consensus state" },
+
+		Signer
+			[ SignerError ]
+			| _ | { "failed to parse signer" },
+	}
 }

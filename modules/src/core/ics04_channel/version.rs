@@ -1,14 +1,10 @@
 //! Data type definition and utilities for the
 //! version field of a channel end.
-//!
 
-use core::convert::Infallible;
-use core::fmt;
-use core::str::FromStr;
+use core::{convert::Infallible, fmt, str::FromStr};
 use serde_derive::{Deserialize, Serialize};
 
-use crate::applications::transfer;
-use crate::prelude::*;
+use crate::{applications::transfer, prelude::*};
 
 /// The version field for a `ChannelEnd`.
 ///
@@ -19,42 +15,42 @@ use crate::prelude::*;
 pub struct Version(String);
 
 impl Version {
-    pub fn new(v: String) -> Self {
-        Self(v)
-    }
+	pub fn new(v: String) -> Self {
+		Self(v)
+	}
 
-    pub fn ics20() -> Self {
-        Self::new(transfer::VERSION.to_string())
-    }
+	pub fn ics20() -> Self {
+		Self::new(transfer::VERSION.to_string())
+	}
 
-    pub fn empty() -> Self {
-        Self::new("".to_string())
-    }
+	pub fn empty() -> Self {
+		Self::new("".to_string())
+	}
 }
 
 impl From<String> for Version {
-    fn from(s: String) -> Self {
-        Self::new(s)
-    }
+	fn from(s: String) -> Self {
+		Self::new(s)
+	}
 }
 
 impl FromStr for Version {
-    type Err = Infallible;
+	type Err = Infallible;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self::new(s.to_string()))
-    }
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		Ok(Self::new(s.to_string()))
+	}
 }
 
 /// The default version is empty (unspecified).
 impl Default for Version {
-    fn default() -> Self {
-        Version::empty()
-    }
+	fn default() -> Self {
+		Version::empty()
+	}
 }
 
 impl fmt::Display for Version {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
+	fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+		write!(f, "{}", self.0)
+	}
 }

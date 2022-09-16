@@ -1,1 +1,0 @@
-- Verify the client consensus proof against the client's consensus state root and not the host's state root

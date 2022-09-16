@@ -4,138 +4,132 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
 
-use crate::core::ics04_channel::error::Error;
-use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::proofs::Proofs;
-use crate::signer::Signer;
-use crate::tx_msg::Msg;
+use crate::{
+	core::{
+		ics04_channel::error::Error,
+		ics24_host::identifier::{ChannelId, PortId},
+	},
+	proofs::Proofs,
+	signer::Signer,
+	tx_msg::Msg,
+};
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelCloseConfirm";
 
 ///
 /// Message definition for the second step in the channel close handshake (the `ChanCloseConfirm`
 /// datagram).
-///
 #[derive(Clone, Debug, PartialEq)]
 pub struct MsgChannelCloseConfirm {
-    pub port_id: PortId,
-    pub channel_id: ChannelId,
-    pub proofs: Proofs,
-    pub signer: Signer,
+	pub port_id: PortId,
+	pub channel_id: ChannelId,
+	pub proofs: Proofs,
+	pub signer: Signer,
 }
 
 impl MsgChannelCloseConfirm {
-    pub fn new(port_id: PortId, channel_id: ChannelId, proofs: Proofs, signer: Signer) -> Self {
-        Self {
-            port_id,
-            channel_id,
-            proofs,
-            signer,
-        }
-    }
+	pub fn new(port_id: PortId, channel_id: ChannelId, proofs: Proofs, signer: Signer) -> Self {
+		Self { port_id, channel_id, proofs, signer }
+	}
 }
 
 impl Msg for MsgChannelCloseConfirm {
-    type ValidationError = Error;
-    type Raw = RawMsgChannelCloseConfirm;
+	type ValidationError = Error;
+	type Raw = RawMsgChannelCloseConfirm;
 
-    fn route(&self) -> String {
-        crate::keys::ROUTER_KEY.to_string()
-    }
+	fn route(&self) -> String {
+		crate::keys::ROUTER_KEY.to_string()
+	}
 
-    fn type_url(&self) -> String {
-        TYPE_URL.to_string()
-    }
+	fn type_url(&self) -> String {
+		TYPE_URL.to_string()
+	}
 }
 
 impl Protobuf<RawMsgChannelCloseConfirm> for MsgChannelCloseConfirm {}
 
 impl TryFrom<RawMsgChannelCloseConfirm> for MsgChannelCloseConfirm {
-    type Error = Error;
+	type Error = Error;
 
-    fn try_from(raw_msg: RawMsgChannelCloseConfirm) -> Result<Self, Self::Error> {
-        let proofs = Proofs::new(
-            raw_msg
-                .proof_init
-                .try_into()
-                .map_err(Error::invalid_proof)?,
-            None,
-            None,
-            None,
-            raw_msg
-                .proof_height
-                .ok_or_else(Error::missing_height)?
-                .into(),
-        )
-        .map_err(Error::invalid_proof)?;
+	fn try_from(raw_msg: RawMsgChannelCloseConfirm) -> Result<Self, Self::Error> {
+		let proofs = Proofs::new(
+			raw_msg.proof_init.try_into().map_err(Error::invalid_proof)?,
+			None,
+			None,
+			None,
+			raw_msg.proof_height.ok_or_else(Error::missing_height)?.into(),
+		)
+		.map_err(Error::invalid_proof)?;
 
-        Ok(MsgChannelCloseConfirm {
-            port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
-            channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
-            proofs,
-            signer: raw_msg.signer.parse().map_err(Error::signer)?,
-        })
-    }
+		Ok(MsgChannelCloseConfirm {
+			port_id: raw_msg.port_id.parse().map_err(Error::identifier)?,
+			channel_id: raw_msg.channel_id.parse().map_err(Error::identifier)?,
+			proofs,
+			signer: raw_msg.signer.parse().map_err(Error::signer)?,
+		})
+	}
 }
 
 impl From<MsgChannelCloseConfirm> for RawMsgChannelCloseConfirm {
-    fn from(domain_msg: MsgChannelCloseConfirm) -> Self {
-        RawMsgChannelCloseConfirm {
-            port_id: domain_msg.port_id.to_string(),
-            channel_id: domain_msg.channel_id.to_string(),
-            proof_init: domain_msg.proofs.object_proof().clone().into(),
-            proof_height: Some(domain_msg.proofs.height().into()),
-            signer: domain_msg.signer.to_string(),
-        }
-    }
+	fn from(domain_msg: MsgChannelCloseConfirm) -> Self {
+		RawMsgChannelCloseConfirm {
+			port_id: domain_msg.port_id.to_string(),
+			channel_id: domain_msg.channel_id.to_string(),
+			proof_init: domain_msg.proofs.object_proof().clone().into(),
+			proof_height: Some(domain_msg.proofs.height().into()),
+			signer: domain_msg.signer.to_string(),
+		}
+	}
 }
 
 #[cfg(test)]
 pub mod test_util {
-    use crate::prelude::*;
-    use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
-    use ibc_proto::ibc::core::client::v1::Height;
+	use crate::prelude::*;
+	use ibc_proto::ibc::core::{
+		channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm, client::v1::Height,
+	};
 
-    use crate::core::ics24_host::identifier::{ChannelId, PortId};
-    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
+	use crate::{
+		core::ics24_host::identifier::{ChannelId, PortId},
+		test_utils::{get_dummy_bech32_account, get_dummy_proof},
+	};
 
-    /// Returns a dummy `RawMsgChannelCloseConfirm`, for testing only!
-    pub fn get_dummy_raw_msg_chan_close_confirm(proof_height: u64) -> RawMsgChannelCloseConfirm {
-        RawMsgChannelCloseConfirm {
-            port_id: PortId::default().to_string(),
-            channel_id: ChannelId::default().to_string(),
-            proof_init: get_dummy_proof(),
-            proof_height: Some(Height {
-                revision_number: 0,
-                revision_height: proof_height,
-            }),
-            signer: get_dummy_bech32_account(),
-        }
-    }
+	/// Returns a dummy `RawMsgChannelCloseConfirm`, for testing only!
+	pub fn get_dummy_raw_msg_chan_close_confirm(proof_height: u64) -> RawMsgChannelCloseConfirm {
+		RawMsgChannelCloseConfirm {
+			port_id: PortId::default().to_string(),
+			channel_id: ChannelId::default().to_string(),
+			proof_init: get_dummy_proof(),
+			proof_height: Some(Height { revision_number: 0, revision_height: proof_height }),
+			signer: get_dummy_bech32_account(),
+		}
+	}
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+	use crate::prelude::*;
 
-    use ibc_proto::ibc::core::channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm;
-    use ibc_proto::ibc::core::client::v1::Height;
+	use ibc_proto::ibc::core::{
+		channel::v1::MsgChannelCloseConfirm as RawMsgChannelCloseConfirm, client::v1::Height,
+	};
 
-    use crate::core::ics04_channel::msgs::chan_close_confirm::test_util::get_dummy_raw_msg_chan_close_confirm;
-    use crate::core::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
+	use crate::core::ics04_channel::msgs::chan_close_confirm::{
+		test_util::get_dummy_raw_msg_chan_close_confirm, MsgChannelCloseConfirm,
+	};
 
-    #[test]
-    fn parse_channel_close_confirm_msg() {
-        struct Test {
-            name: String,
-            raw: RawMsgChannelCloseConfirm,
-            want_pass: bool,
-        }
+	#[test]
+	fn parse_channel_close_confirm_msg() {
+		struct Test {
+			name: String,
+			raw: RawMsgChannelCloseConfirm,
+			want_pass: bool,
+		}
 
-        let proof_height = 10;
-        let default_raw_msg = get_dummy_raw_msg_chan_close_confirm(proof_height);
+		let proof_height = 10;
+		let default_raw_msg = get_dummy_raw_msg_chan_close_confirm(proof_height);
 
-        let tests: Vec<Test> = vec![
+		let tests: Vec<Test> = vec![
             Test {
                 name: "Good parameters".to_string(),
                 raw: default_raw_msg.clone(),
@@ -208,10 +202,10 @@ mod tests {
         .into_iter()
         .collect();
 
-        for test in tests {
-            let msg = MsgChannelCloseConfirm::try_from(test.raw.clone());
+		for test in tests {
+			let msg = MsgChannelCloseConfirm::try_from(test.raw.clone());
 
-            assert_eq!(
+			assert_eq!(
                 test.want_pass,
                 msg.is_ok(),
                 "MsgChanCloseConfirm::try_from raw failed for test {}, \nraw msg {:?} with error {:?}",
@@ -219,16 +213,16 @@ mod tests {
                 test.raw,
                 msg.err(),
             );
-        }
-    }
+		}
+	}
 
-    #[test]
-    fn to_and_from() {
-        let raw = get_dummy_raw_msg_chan_close_confirm(19);
-        let msg = MsgChannelCloseConfirm::try_from(raw.clone()).unwrap();
-        let raw_back = RawMsgChannelCloseConfirm::from(msg.clone());
-        let msg_back = MsgChannelCloseConfirm::try_from(raw_back.clone()).unwrap();
-        assert_eq!(raw, raw_back);
-        assert_eq!(msg, msg_back);
-    }
+	#[test]
+	fn to_and_from() {
+		let raw = get_dummy_raw_msg_chan_close_confirm(19);
+		let msg = MsgChannelCloseConfirm::try_from(raw.clone()).unwrap();
+		let raw_back = RawMsgChannelCloseConfirm::from(msg.clone());
+		let msg_back = MsgChannelCloseConfirm::try_from(raw_back.clone()).unwrap();
+		assert_eq!(raw, raw_back);
+		assert_eq!(msg, msg_back);
+	}
 }

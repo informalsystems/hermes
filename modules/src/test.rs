@@ -9,19 +9,19 @@ use serde::{de::DeserializeOwned, Serialize};
 /// - that the two parsed structs are equal according to their `PartialEq` impl
 pub fn test_serialization_roundtrip<T>(json_data: &str)
 where
-    T: Debug + Serialize + DeserializeOwned,
+	T: Debug + Serialize + DeserializeOwned,
 {
-    let parsed0 = serde_json::from_str::<T>(json_data);
-    assert!(parsed0.is_ok());
-    let parsed0 = parsed0.unwrap();
+	let parsed0 = serde_json::from_str::<T>(json_data);
+	assert!(parsed0.is_ok());
+	let parsed0 = parsed0.unwrap();
 
-    let serialized = serde_json::to_string(&parsed0);
-    assert!(serialized.is_ok());
-    let serialized = serialized.unwrap();
+	let serialized = serde_json::to_string(&parsed0);
+	assert!(serialized.is_ok());
+	let serialized = serialized.unwrap();
 
-    let parsed1 = serde_json::from_str::<T>(&serialized);
-    assert!(parsed1.is_ok());
+	let parsed1 = serde_json::from_str::<T>(&serialized);
+	assert!(parsed1.is_ok());
 
-    // TODO - fix PartialEq bound issue in AbciQuery
-    //assert_eq!(parsed0, parsed1);
+	// TODO - fix PartialEq bound issue in AbciQuery
+	//assert_eq!(parsed0, parsed1);
 }
