@@ -1,1 +1,1 @@
-[[#BINARY hermes]] [[#GLOBALOPTIONS]] config [[#SUBCOMMAND]]
+[[#BINARY hermes]][[#GLOBALOPTIONS]] config [[#SUBCOMMAND]]

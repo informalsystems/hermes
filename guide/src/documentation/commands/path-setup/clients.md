@@ -85,7 +85,7 @@ The client with identifier `07-tendermint-1` has been updated with the consensus
 __Update a client to a specific target height__
 
 ```shell
-{{#template ../../../templates/commands/hermes/update/client_1.md HOST_CHAIN_ID=ibc-0 CLIENT_ID=07-tendermint-1 OPTIONS=--height 320 --trusted-height 293}}
+{{#template ../../../templates/commands/hermes/update/client_1.md HOST_CHAIN_ID=ibc-0 CLIENT_ID=07-tendermint-1 OPTIONS= --height 320 --trusted-height 293}}
 ```
 
 ```json

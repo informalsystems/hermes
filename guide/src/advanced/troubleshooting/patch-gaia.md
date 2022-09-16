@@ -42,7 +42,7 @@ In order to test the correct operation during the channel close, perform the ste
   Make sure you're not relaying this packet (Hermes should not be running on this path).
 
   ```shell
-  {{#template ../../templates/commands/hermes/tx/ft-transfer_1.md SRC_CHAIN_ID=ibc-0 DST_CHAIN_ID=ibc-1 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-1 AMOUNT=5555 OPTIONS=--timeout-height-offset 1000 --denom samoleans}}
+  {{#template ../../templates/commands/hermes/tx/ft-transfer_1.md SRC_CHAIN_ID=ibc-0 DST_CHAIN_ID=ibc-1 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-1 AMOUNT=5555 OPTIONS= --timeout-height-offset 1000 --denom samoleans}}
   ```
 
 - Now do the first step of channel closing: the channel will transition

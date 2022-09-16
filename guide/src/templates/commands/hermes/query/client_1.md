@@ -1,1 +1,1 @@
-[[#BINARY hermes]] [[#GLOBALOPTIONS]] query client [[#SUBCOMMAND]]
+[[#BINARY hermes]][[#GLOBALOPTIONS]] query client [[#SUBCOMMAND]]

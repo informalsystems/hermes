@@ -24,7 +24,7 @@ specifically the one we just created in the example above, with port name
 `transfer` on both sides:
 
 ```shell
-{{#template ../../../templates/commands/hermes/create/channel_1.md A_CHAIN_ID=ibc-0 A_CONNECTION_ID=connection-0 A_PORT_ID= transfer B_PORT_ID=transfer OPTIONS=--order unordered}}
+{{#template ../../../templates/commands/hermes/create/channel_1.md A_CHAIN_ID=ibc-0 A_CONNECTION_ID=connection-0 A_PORT_ID= transfer B_PORT_ID=transfer OPTIONS= --order unordered}}
 ```
 
 Notice that one can omit the destination chain parameter, as Hermes will automatically
@@ -187,7 +187,7 @@ interactive prompt that pops up notifying you that a new client and a new
 connection will be initialized as part of the process:
 
 ```shell
-{{#template ../../../templates/commands/hermes/create/channel_2.md A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-1 A_PORT_ID= transfer B_PORT_ID=transfer OPTIONS=--order unordered}}
+{{#template ../../../templates/commands/hermes/create/channel_2.md A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-1 A_PORT_ID= transfer B_PORT_ID=transfer OPTIONS= --order unordered}}
 ```
 
 ```json

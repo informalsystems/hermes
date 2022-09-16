@@ -89,7 +89,7 @@ Success: Added key testkey (<ADDRESS>) on <CHAIN_ID> chain
 > To use a different key name, specify the `--key-name` option when invoking `keys add`.
 >
 > ```
-> {{#template ../../../templates/commands/hermes/keys/add_1.md CHAIN_ID=<CHAIN_ID> KEY_FILE=<PRIVATE_KEY_FILE> OPTIONS=--key-name [KEY_NAME]}}
+> {{#template ../../../templates/commands/hermes/keys/add_1.md CHAIN_ID=<CHAIN_ID> KEY_FILE=<PRIVATE_KEY_FILE> OPTIONS= --key-name [KEY_NAME]}}
 > ```
 
 #### Restore a private key to a chain from a mnemonic
@@ -103,7 +103,7 @@ an Ethereum coin type (used for Evmos, Injective, Umee, Cronos, and
 possibly other networks):
 
 ```shell
-{{#template ../../../templates/commands/hermes/keys/add_2.md CHAIN_ID=<CHAIN_ID> MNEMONIC_FILE=<MNEMONIC_FILE> OPTIONS=--hd-path "m/44'/60'/0'/0/0"}}
+{{#template ../../../templates/commands/hermes/keys/add_2.md CHAIN_ID=<CHAIN_ID> MNEMONIC_FILE=<MNEMONIC_FILE> OPTIONS= --hd-path "m/44'/60'/0'/0/0"}}
 ```
 
 The mnemonic file needs to have the 24 mnemonic words on the same line, separated by a white space. So the content should have the following format:
@@ -122,7 +122,7 @@ Success: Restore key testkey (<ADDRESS>) on <CHAIN_ID> chain
 > To use a different key name, specify the `--key-name` option when invoking `keys add`.
 >
 > ```
-> {{#template ../../../templates/commands/hermes/keys/add_2.md CHAIN_ID=<CHAIN_ID> MNEMONIC_FILE=<MNEMONIC_FILE> OPTIONS=--key-name <KEY_NAME>}}
+> {{#template ../../../templates/commands/hermes/keys/add_2.md CHAIN_ID=<CHAIN_ID> MNEMONIC_FILE=<MNEMONIC_FILE> OPTIONS= --key-name <KEY_NAME>}}
 > ```
 
 ### Delete keys
@@ -174,7 +174,7 @@ Success:
 **JSON:**
 
 ```shell
-{{#template ../../../templates/commands/hermes/keys/list_1.md CHAIN_ID=<CHAIN_ID> GLOBALOPTIONS=--json}} | jq
+{{#template ../../../templates/commands/hermes/keys/list_1.md CHAIN_ID=<CHAIN_ID> GLOBALOPTIONS=  --json}} | jq
 ```
 
 If the command is successful a message similar to the one below will be displayed:
@@ -217,7 +217,7 @@ Success: balance for key `KEY_NAME`: 100000000000 stake
 **JSON:**
 
 ```shell
-{{#template ../../../templates/commands/hermes/keys/balance_1.md CHAIN_ID=<CHAIN_ID> GLOBALOPTIONS=--json}}
+{{#template ../../../templates/commands/hermes/keys/balance_1.md CHAIN_ID=<CHAIN_ID> GLOBALOPTIONS=  --json}}
 ```
 
 If the command is successful a message with the following format will be displayed:

@@ -16,7 +16,7 @@ and [packet-acks](../tx/packet.md#relay-acknowledgment-packets).
 
 1. Without Hermes running, send 3 packets over a channel, here `channel-13`:
 ```shell
-{{#template ../../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-1 SRC_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-13 AMOUNT=9999 OPTIONS=--timeout-height-offset 1000 --number-msgs 3}}
+{{#template ../../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-1 SRC_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-13 AMOUNT=9999 OPTIONS= --timeout-height-offset 1000 --number-msgs 3}}
 ```
 
 Which should output something similar to:

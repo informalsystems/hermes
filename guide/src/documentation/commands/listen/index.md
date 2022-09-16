@@ -145,8 +145,8 @@ At the moment, two event types are available:
 
 The `--events` flag can be repeated to specify more than one event type.
 
-- To listen for only `NewBlock` events on `ibc-0`, invoke `{{#template ../../../templates/commands/hermes/listen_1.md CHAIN_ID=ibc-0 OPTIONS=--events NewBlock}}`
-- To listen for only `Tx` events on `ibc-0`, invoke `{{#template ../../../templates/commands/hermes/listen_1.md CHAIN_ID=ibc-0 OPTIONS=--events Tx}}`
-- To listen for both `NewBlock` and `Tx` events on `ibc-0`, invoke `{{#template ../../../templates/commands/hermes/listen_1.md CHAIN_ID=ibc-0 OPTIONS=--events NewBlock Tx}}`
+- To listen for only `NewBlock` events on `ibc-0`, invoke `{{#template ../../../templates/commands/hermes/listen_1.md CHAIN_ID=ibc-0 OPTIONS= --events NewBlock}}`
+- To listen for only `Tx` events on `ibc-0`, invoke `{{#template ../../../templates/commands/hermes/listen_1.md CHAIN_ID=ibc-0 OPTIONS= --events Tx}}`
+- To listen for both `NewBlock` and `Tx` events on `ibc-0`, invoke `{{#template ../../../templates/commands/hermes/listen_1.md CHAIN_ID=ibc-0 OPTIONS= --events NewBlock Tx}}`
 
 If the `--events` flag is omitted, Hermes will subscribe to all event types.

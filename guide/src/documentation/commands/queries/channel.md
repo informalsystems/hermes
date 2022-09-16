@@ -257,7 +257,7 @@ Success: Some(
 **JSON output:**
 
 ```shell
-{{#template ../../../templates/commands/hermes/query/channel/client_1.md CHAIN_ID=<CHAIN_ID> PORT_ID=<PORT_ID> CHANNEL_ID=<CHANNEL_ID> GLOBALOPTIONS=--json}}
+{{#template ../../../templates/commands/hermes/query/channel/client_1.md CHAIN_ID=<CHAIN_ID> PORT_ID=<PORT_ID> CHANNEL_ID=<CHANNEL_ID> GLOBALOPTIONS=  --json}}
 ```
 
 If the command is successful a message with the following format will be displayed:

@@ -84,7 +84,7 @@ SUCCESS Summary {
 Now that we have retrieved this packet, let's clear it manually with the command `hermes clear packets`:
 
 ```shell
-{{#template ../../templates/commands/hermes/clear/packets_1.md GLOBALOPTIONS=--config $HOME/hermes_second_instance.toml CHAIN_ID=ibc-1 PORT_ID=transfer CHANNEL_ID=channel-2}}
+{{#template ../../templates/commands/hermes/clear/packets_1.md GLOBALOPTIONS=  --config $HOME/hermes_second_instance.toml CHAIN_ID=ibc-1 PORT_ID=transfer CHANNEL_ID=channel-2}}
 ```
 >__NOTE__: We are using the second config to avoid using the same wallets as the running instance of Hermes. You could also simply use the `key-name` and `counterparty-key-name` flags to set another wallet. If you do not use it, you will observe a few `account_sequence_mismatch` errors on the terminal running `hermes start` but Hermes will automatically recover.
 
@@ -136,8 +136,8 @@ As you can see, there is currently no stuck packet between `ibc-1` and `ibc-3`.
 For the sake of learning, let's make new stuck packets on the `ibc-0<>ibc-2` channel and the `ibc-1<>ibc-3` channel.
 
 ```shell
-{{#template ../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-3 SRC_CHAIN_ID=ibc-1 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-2 AMOUNT=1000000 OPTIONS=--timeout-seconds 10000}}
-{{#template ../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-2 SRC_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-1 AMOUNT=1000000 OPTIONS=--timeout-seconds 10000}}
+{{#template ../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-3 SRC_CHAIN_ID=ibc-1 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-2 AMOUNT=1000000 OPTIONS= --timeout-seconds 10000}}
+{{#template ../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-2 SRC_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-1 AMOUNT=1000000 OPTIONS= --timeout-seconds 10000}}
 ```
 
 If both commands run successfully, they should output a `SUCCESS` message. 
@@ -198,7 +198,7 @@ You have pending packets on the two paths filtered out by our running instance.
 >__NOTE__: You can also verify that Hermes is still relaying on the other paths by sending a packet from `ibc-1` to `ibc-2`:
 >
 >```shell
->{{#template ../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-2 SRC_CHAIN_ID=ibc-1 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-1 AMOUNT=1000000 OPTIONS=--timeout-seconds 10000}}
+>{{#template ../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-2 SRC_CHAIN_ID=ibc-1 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-1 AMOUNT=1000000 OPTIONS= --timeout-seconds 10000}}
 >```
 >
 >Wait a few seconds then verify that no packet is pending with:
@@ -212,7 +212,7 @@ You have pending packets on the two paths filtered out by our running instance.
 Instead of clearing packets manually again, you can just start Hermes with the [new config file you created](#create-a-new-config-file) in a new terminal:
 
 ```shell
-{{#template ../../templates/commands/hermes/start_1.md GLOBALOPTIONS=--config $HOME/hermes_second_instance.toml}}
+{{#template ../../templates/commands/hermes/start_1.md GLOBALOPTIONS=  --config $HOME/hermes_second_instance.toml}}
 ```
 
 At launch, Hermes will clear pending packets before moving into passive mode.

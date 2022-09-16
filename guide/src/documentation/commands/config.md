@@ -75,7 +75,7 @@ SUCCESS: "validation passed successfully"
 Validate a config file at an arbitrary location:
 
 ```shell
-{{#template ../../templates/commands/hermes/config/validate_1.md GLOBALOPTIONS=--config $CONFIGPATH}}
+{{#template ../../templates/commands/hermes/config/validate_1.md GLOBALOPTIONS=  --config $CONFIGPATH}}
 ```
 
 This one should fail validation because we mistakenly added two separate sections for the same chain `ibc-1`:

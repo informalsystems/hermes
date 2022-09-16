@@ -108,10 +108,10 @@ flowchart TD
 You can verify that everything is correct with the commands:
 
 ```shell
-{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS=--show-counterparty CHAIN_ID=ibc-0}}
-{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS=--show-counterparty CHAIN_ID=ibc-1}}
-{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS=--show-counterparty CHAIN_ID=ibc-2}}
-{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS=--show-counterparty CHAIN_ID=ibc-3}}
+{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS= --show-counterparty CHAIN_ID=ibc-0}}
+{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS= --show-counterparty CHAIN_ID=ibc-1}}
+{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS= --show-counterparty CHAIN_ID=ibc-2}}
+{{#template ../../templates/commands/hermes/query/channels_1.md OPTIONS= --show-counterparty CHAIN_ID=ibc-3}}
 ```
 
 Which should normally output: 

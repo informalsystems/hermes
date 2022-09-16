@@ -1,1 +1,1 @@
-[[#BINARY hermes]] [[#GLOBALOPTIONS]] start [[#OPTIONS]]
+[[#BINARY hermes]][[#GLOBALOPTIONS]] start[[#OPTIONS]]

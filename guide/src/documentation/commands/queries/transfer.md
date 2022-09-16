@@ -34,7 +34,7 @@ Success: base_denom: samoleans
 Or with a JSON output:
 
 ```shell
-{{#template ../../../templates/commands/hermes/query/transfer/denom-trace_1.md CHAIN_ID=ibc-1 HASH=27A6394C3F9FF9C9DCF5DFFADF9BB5FE9A37C7E92B006199894CF1824DF9AC7C GLOBALOPTIONS=--json}}
+{{#template ../../../templates/commands/hermes/query/transfer/denom-trace_1.md CHAIN_ID=ibc-1 HASH=27A6394C3F9FF9C9DCF5DFFADF9BB5FE9A37C7E92B006199894CF1824DF9AC7C GLOBALOPTIONS=  --json}}
 ```
 
 ```json

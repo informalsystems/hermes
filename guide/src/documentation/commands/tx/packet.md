@@ -18,7 +18,7 @@ __Example__
 Send two transfer packets from the `transfer` module and `channel-0` of `ibc-0` to `ibc-1`. Each transfer if for `9999` `samoleans` (default denomination) and a timeout offset of `10` blocks. The transfer fee is paid by the associated account on `ibc-1`.
 
 ```shell
-{{#template ../../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-1 SRC_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-0 AMOUNT=9999 OPTIONS=--timeout-height-offset 1000 --number-msgs 2}}
+{{#template ../../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-1 SRC_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-0 AMOUNT=9999 OPTIONS= --timeout-height-offset 1000 --number-msgs 2}}
 ```
 
 ```json
@@ -49,7 +49,7 @@ The transfer packets are stored on `ibc-0` and can be relayed.
 > To send transfer packets with a custom receiver address use the `--receiver` flag.
 
 ```shell
-{{#template ../../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-1 SRC_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-0 AMOUNT=9999 OPTIONS=--timeout-height-offset 1000 --number-msgs 1 --receiver board:1938586739}}
+{{#template ../../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-1 SRC_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-0 AMOUNT=9999 OPTIONS= --timeout-height-offset 1000 --number-msgs 1 --receiver board:1938586739}}
 ```
 
 ```json

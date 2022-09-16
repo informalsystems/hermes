@@ -46,7 +46,7 @@ Success: [
 Query all clients on `ibc-1` having `ibc-2` as their reference chain:
 
 ```shell
-{{#template ../../../templates/commands/hermes/query/clients_1.md HOST_CHAIN_ID=ibc-1 OPTIONS=--reference-chain ibc-2}}
+{{#template ../../../templates/commands/hermes/query/clients_1.md HOST_CHAIN_ID=ibc-1 OPTIONS= --reference-chain ibc-2}}
 ```
 
 ```json
@@ -124,7 +124,7 @@ __Example__
 Query the states of client `07-tendermint-0` on `ibc-0`:
 
 ```shell
-{{#template ../../../templates/commands/hermes/query/client/consensus_1.md CHAIN_ID=ibc-0 CLIENT_ID=07-tendermint-0 OPTIONS=--heights-only}}
+{{#template ../../../templates/commands/hermes/query/client/consensus_1.md CHAIN_ID=ibc-0 CLIENT_ID=07-tendermint-0 OPTIONS= --heights-only}}
 ```
 
 ```json
@@ -159,7 +159,7 @@ Success: [
 Query `ibc-0` at height `2800` for the consensus state for height `2724`:
 
 ```shell
-{{#template ../../../templates/commands/hermes/query/client/consensus_1.md CHAIN_ID=ibc-0 CLIENT_ID=07-tendermint-0 OPTIONS=--consensus-height 2724 --height 2800}}
+{{#template ../../../templates/commands/hermes/query/client/consensus_1.md CHAIN_ID=ibc-0 CLIENT_ID=07-tendermint-0 OPTIONS= --consensus-height 2724 --height 2800}}
 ```
 
 ```json
