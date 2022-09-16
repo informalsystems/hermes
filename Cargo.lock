@@ -2154,8 +2154,9 @@ dependencies = [
 
 [[package]]
 name = "mdbook-template"
-version = "1.0.0"
-source = "git+https://github.com/AlianBenabdallah/mdbook-template-pub#ceedb839d0e48a40a609b61988ae759a36f96bf8"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "920f69694a682c1100d64ca342278fc289d7d89b905a60c39ca39e0ea04ce0f1"
 dependencies = [
  "anyhow",
  "clap",

@@ -9,6 +9,6 @@ edition = "2021"
 ibc-relayer-cli = { version = "1.0.0", path = "../../relayer-cli" }
 clap            = "3.2"
 lazy_static     = "1.4.0"
-mdbook-template = { git = "https://github.com/AlianBenabdallah/mdbook-template-pub" }
+mdbook-template = "1.1.0"
 regex           = "1"
 walkdir         = "2.3.2"
