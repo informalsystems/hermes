@@ -151,19 +151,19 @@ by `ibc::core::ics24_host::path::Path`.
 
 ```rust
 pub trait IbcStore<Error>:
-TypedStore<ClientTypePath, ClientType, Error=Error>
-+ TypedStore<ClientStatePath, Box<dyn ClientState>, Error=Error>
-+ TypedStore<ClientConsensusStatePath, Box<dyn ConsensusState>, Error=Error>
+SubStore<ClientTypePath, ClientType, Error=Error>
++ SubStore<ClientStatePath, Box<dyn ClientState>, Error=Error>
++ SubStore<ClientConsensusStatePath, Box<dyn ConsensusState>, Error=Error>
 /* ... */
 {}
 ```
 
-Note that we will provide a blanket implementation of `IbcStore` for all types that implement all the `TypedStore`s declared in the `IbcStore` supertraits.
+Note that we will provide a blanket implementation of `IbcStore` for all types that implement all the `SubStore`s declared in the `IbcStore` supertraits.
 
-The generic `TypedStore` trait is defined as follows.
+The generic `SubStore` trait is defined as follows.
 
 ```rust
-pub trait TypedStore<K, V> {
+pub trait SubStore<K, V> {
     type Error;
 
     fn set(&mut self, key: K, value: V) -> Result<(), Self::Error>;
@@ -174,11 +174,11 @@ pub trait TypedStore<K, V> {
 }
 ```
 
-Hosts may choose to implement the `TypedStore` trait individually for every IBC path-value combination or generically as a blanket implementation.
+Hosts may choose to implement the `SubStore` trait individually for every IBC path-value combination or generically as a blanket implementation.
 
 ##### Note: Path to value type mapping
 
-We will also provide a pairing of IBC paths to their respective value types. This will make it easier for hosts to implement their generic `TypedStore` using these trait bounds.
+We will also provide a pairing of IBC paths to their respective value types. This will make it easier for hosts to implement their generic `SubStore` using these trait bounds.
 
 ```rust
 pub trait ValueTypeAtStorePath: private::Sealed {
@@ -527,9 +527,7 @@ trait ExecutionContext {
     /// Ibc events
     fn emit_ibc_event(event: IbcEvent);
 
-    ////////////////////////////////////////////////////////
     /* All "read" methods necessary in execution handlers */
-    ////////////////////////////////////////////////////////
 }
 ```
 
@@ -591,7 +589,7 @@ Below is an example host store implementation, where raw bytes are stored.
 ```rust
 struct HostStore(BTreeMap<Path, Vec<u8>>);
 
-impl<K, V> TypedStore<K, V> for HostStore
+impl<K, V> SubStore<K, V> for HostStore
     where
         K: Into<Path> + ValueTypeAtStorePath<Value=V>,
         V: StoreSerde,
