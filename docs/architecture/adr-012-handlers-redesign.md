@@ -158,6 +158,8 @@ TypedStore<ClientTypePath, ClientType, Error=Error>
 {}
 ```
 
+Note that we will provide a blanket implementation of `IbcStore` for all types that implement all the `TypedStore`s declared in the `IbcStore` supertraits.
+
 The generic `TypedStore` trait is defined as follows.
 
 ```rust
@@ -635,4 +637,6 @@ impl<K, V> TypedStore<K, V> for HostStore
         Ok(())
     }
 }
+
+/* blanket implementation implements IbcStore for HostStore */
 ```
