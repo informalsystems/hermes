@@ -485,6 +485,10 @@ impl<C: ClientTypes> ClientReader for DummyTransferModule<C> {
 	fn client_counter(&self) -> Result<u64, Ics02Error> {
 		todo!()
 	}
+
+	fn host_client_type(&self) -> String {
+		unimplemented!()
+	}
 }
 
 impl<C: ClientTypes> ChannelReader for DummyTransferModule<C> {

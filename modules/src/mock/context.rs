@@ -343,7 +343,7 @@ impl<C: ClientTypes + Default> MockContext<C> {
 	pub fn validate(&self) -> Result<(), String> {
 		// Check that the number of entries is not higher than window size.
 		if self.history.len() > self.max_history_size {
-			return Err("too many entries".to_string())
+			return Err("too many entries".to_string());
 		}
 
 		// Check the content of the history.
@@ -352,7 +352,7 @@ impl<C: ClientTypes + Default> MockContext<C> {
 			let lh = &self.history[self.history.len() - 1];
 			// Check latest is properly updated with highest header height.
 			if lh.height() != self.latest_height() {
-				return Err("latest height is not updated".to_string())
+				return Err("latest height is not updated".to_string());
 			}
 		}
 
@@ -361,7 +361,7 @@ impl<C: ClientTypes + Default> MockContext<C> {
 			let ph = &self.history[i - 1];
 			let h = &self.history[i];
 			if ph.height().increment() != h.height() {
-				return Err("headers in history not sequential".to_string())
+				return Err("headers in history not sequential".to_string());
 			}
 		}
 		Ok(())
@@ -915,6 +915,10 @@ impl<C: ClientTypes + Default> ClientReader for MockContext<C> {
 		}
 	}
 
+	fn host_client_type(&self) -> String {
+		MockClientState::client_type().to_owned()
+	}
+
 	/// Search for the lowest consensus state higher than `height`.
 	fn next_consensus_state(
 		&self,
@@ -935,7 +939,7 @@ impl<C: ClientTypes + Default> ClientReader for MockContext<C> {
 		for h in heights {
 			if h > height {
 				// unwrap should never happen, as the consensus state for h must exist
-				return Ok(Some(client_record.consensus_states.get(&h).unwrap().clone()))
+				return Ok(Some(client_record.consensus_states.get(&h).unwrap().clone()));
 			}
 		}
 		Ok(None)
@@ -961,7 +965,7 @@ impl<C: ClientTypes + Default> ClientReader for MockContext<C> {
 		for h in heights {
 			if h < height {
 				// unwrap should never happen, as the consensus state for h must exist
-				return Ok(Some(client_record.consensus_states.get(&h).unwrap().clone()))
+				return Ok(Some(client_record.consensus_states.get(&h).unwrap().clone()));
 			}
 		}
 		Ok(None)
@@ -1353,8 +1357,9 @@ mod tests {
 		results
 			.into_iter()
 			.filter_map(|(mid, result)| match result {
-				OnRecvPacketAck::Nil(write_fn) | OnRecvPacketAck::Successful(_, write_fn) =>
-					Some((mid, write_fn)),
+				OnRecvPacketAck::Nil(write_fn) | OnRecvPacketAck::Successful(_, write_fn) => {
+					Some((mid, write_fn))
+				},
 				_ => None,
 			})
 			.for_each(|(mid, write_fn)| {

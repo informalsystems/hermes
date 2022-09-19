@@ -32,7 +32,7 @@ clock = ["tendermint/clock", "time/std"]
 
 # This feature grants access to development-time mocking libraries, such as `MockContext` or `MockHeader`.
 # Depends on the `testgen` suite for generating Tendermint light blocks.
-mocks = ["clock", "std"]
+mocks = ["clock", "std", "sha2"]
 
 [dependencies]
 # Proto definitions for all IBC-related interfaces, e.g., connections or channels.
@@ -55,6 +55,7 @@ derive_more = { version = "0.99.17", default-features = false, features = ["from
 uint = { version = "0.9", default-features = false }
 primitive-types = { version = "0.11.1", default-features = false, features = ["serde_no_std"] }
 codec = { package = "parity-scale-codec", version = "3.0.0", default-features = false, features = ["derive"] }
+sha2 = { version = "0.10.2", optional = true }
 
 [dependencies.tendermint]
 git = "https://github.com/composableFi/tendermint-rs"
