@@ -154,7 +154,7 @@ pub trait IbcStore<Error>:
 TypedStore<ClientTypePath, ClientType, Error=Error>
 + TypedStore<ClientStatePath, Box<dyn ClientState>, Error=Error>
 + TypedStore<ClientConsensusStatePath, Box<dyn ConsensusState>, Error=Error>
-/* + other TypedStore */
+/* ... */
 {}
 ```
 
@@ -175,23 +175,6 @@ pub trait TypedStore<K, V> {
 ```
 
 Hosts may choose to implement the `TypedStore` trait individually for every IBC path-value combination or generically as a blanket implementation.
-
-##### Serialization and Deserialization
-
-Although the `TypedStore` design is agnostic to serde on purpose, the library could optionally provide a `IbcSerde`
-trait for better UX. This trait could provide canonical serde for IBC values if such a scheme exists.
-This trait maybe leveraged by hosts to implement their generic `TypedStore`. See Appendix C for Typical host store
-implementation.
-
-```rust
-pub trait IbcSerde {
-    /// Serialize to canonical binary representation
-    fn serialize(self) -> Vec<u8>;
-
-    /// Deserialize from bytes 
-    fn deserialize(value: &[u8]) -> Self;
-}
-```
 
 ##### Note: Path to value type mapping
 
@@ -603,7 +586,7 @@ pub trait Host {
 
 ### Appendix C: Example host store implementation
 
-A typical host store implementation based on the suggestions above would like the following.
+Below is an example host store implementation, where raw bytes are stored.
 
 ```rust
 struct HostStore(BTreeMap<Path, Vec<u8>>);
@@ -611,13 +594,13 @@ struct HostStore(BTreeMap<Path, Vec<u8>>);
 impl<K, V> TypedStore<K, V> for HostStore
     where
         K: Into<Path> + ValueTypeAtStorePath<Value=V>,
-        V: IbcSerde,
+        V: StoreSerde,
 {
     type Error = Ics02Error;
 
     fn set(&mut self, key: K, value: V) -> Result<(), Self::Error> {
         let key = key.into();
-        let value = <<K as ValueTypeAtStorePath>::ValueType as IbcSerde>::serialize(value);
+        let value = <<K as ValueTypeAtStorePath>::ValueType as StoreSerde>::serialize(value);
         self.0.insert(key, value).map(|_| ()).unwrap();
         Ok(())
     }
@@ -627,7 +610,7 @@ impl<K, V> TypedStore<K, V> for HostStore
         Ok(self
             .0
             .get(&key)
-            .map(|bytes| <<K as ValueTypeAtStorePath>::ValueType as IbcSerde>::deserialize(bytes)))
+            .map(|bytes| <<K as ValueTypeAtStorePath>::ValueType as StoreSerde>::deserialize(bytes)))
     }
 
     fn delete(&mut self, key: K) -> Result<(), Self::Error> {
@@ -635,6 +618,15 @@ impl<K, V> TypedStore<K, V> for HostStore
         self.0.remove(&key).map(|_| ()).unwrap();
         Ok(())
     }
+}
+
+/// Abstracts away the serialization/deserialization scheme used by HostStore
+pub trait StoreSerde {
+    /// Serialize to canonical binary representation
+    fn serialize(self) -> Vec<u8>;
+
+    /// Deserialize from bytes 
+    fn deserialize(value: &[u8]) -> Self;
 }
 
 /* blanket implementation implements IbcStore for HostStore */
