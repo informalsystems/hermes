@@ -21,6 +21,10 @@ The following are out of scope for this ADR:
 
 ## Decision
 
+Below is a diagram of how the main components of this ADR fit together.
+
+![Main components](./assets/adr12.jpg)
+
 ### Validation vs Execution
 Each handler can be split into validation and execution. *Validation* is the set of statements which can make the transaction fail. It comprises all the "checks". Execution is the set of statements which mutate the state. In the IBC standard handlers, validation occurs before execution. Note that execution can fail in practice, if say a write operation fails.
 
@@ -201,7 +205,6 @@ impl ValueTypeAtStorePath for ClientConsensusStatePath {
 ```
 
 See appendix C for an example of how we intend this to be used.
-
 
 ## Consequences
 
