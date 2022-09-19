@@ -3,13 +3,13 @@
 resolver = "2"
 
 members = [
-    "ibc-chain-registry",
-    "relayer",
-    "relayer-cli",
-    "relayer-rest",
-    "telemetry",
-    "tools/integration-test",
-    "tools/test-framework",
+    "crates/ibc-chain-registry",
+    "crates/relayer",
+    "crates/relayer-cli",
+    "crates/relayer-rest",
+    "crates/telemetry",
+    "crates/tools/integration-test",
+    "crates/tools/test-framework",
 ]
 
 # [patch.crates-io]
