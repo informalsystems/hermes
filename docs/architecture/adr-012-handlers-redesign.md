@@ -108,21 +108,11 @@ pub trait Host {
 
 See the Appendix B below for an exhaustive list of all `Host` methods.
 
-This `Host` trait implementation may then be used to derive blanket implementations for all other contexts such as
-`ValidationContext`, `ExecutionContext`, `Ics26Context`, etc. For e.g. ->
+We will provide blanket implementations for `ValidationContext` and `ExecutionContext` for any type which implements `Host`.
 
 ```rust
-pub struct HostValidationContext<H> {
-    host: H,
-}
-
-impl<H: Host> HostValidationContext<H> {
-    pub fn new(host: Host) -> Self {
-        Self { host }
-    }
-}
-
-impl<H: Host> ValidationContext for HostValidationContext<H> { /* ... */ }
+impl<H: Host> ValidationContext for H { /* ... */ }
+impl<H: Host> ExecutionContext for H { /* ... */ }
 ```
 
 #### Store
