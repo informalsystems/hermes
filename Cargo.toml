@@ -8,8 +8,8 @@ members = [
     "crates/relayer-cli",
     "crates/relayer-rest",
     "crates/telemetry",
-    "crates/tools/integration-test",
-    "crates/tools/test-framework",
+    "tools/integration-test",
+    "tools/test-framework",
 ]
 
 # [patch.crates-io]

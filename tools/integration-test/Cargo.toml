@@ -15,8 +15,8 @@ description = """
 
 [dependencies]
 ibc             = "0.19.0"
-ibc-relayer     = { path = "../../relayer" }
-ibc-relayer-cli = { path = "../../relayer-cli" }
+ibc-relayer     = { path = "../../crates/relayer" }
+ibc-relayer-cli = { path = "../../crates/relayer-cli" }
 ibc-proto       = "0.20.1"
 ibc-test-framework = { path = "../test-framework" }
 tendermint      = { version = "=0.23.9" }
