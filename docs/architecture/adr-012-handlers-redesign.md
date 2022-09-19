@@ -418,9 +418,9 @@ by `ibc::core::ics24_host::path::Path`.
 
 ```rust
 pub trait IbcStore<Error>:
-TypedStore<ClientTypePath, ClientType, Error>
-+ TypedStore<ClientStatePath, Box<dyn ClientState>, Error>
-+ TypedStore<ClientConsensusStatePath, Box<dyn ConsensusState>, Error>
+TypedStore<ClientTypePath, ClientType, Error=Error>
++ TypedStore<ClientStatePath, Box<dyn ClientState>, Error=Error>
++ TypedStore<ClientConsensusStatePath, Box<dyn ConsensusState>, Error=Error>
 /* + other IbcTypedStore */
 {}
 ```
@@ -613,4 +613,3 @@ impl<K, V> TypedStore<K, V> for HostStore
     }
 }
 ```
-
