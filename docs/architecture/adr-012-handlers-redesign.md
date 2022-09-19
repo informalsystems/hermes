@@ -439,8 +439,7 @@ pub trait TypedStore<K, V> {
 }
 ```
 
-Note that depending on data-availability requirements some clients may need access to earlier state, so we might need
-a `get_at_height()` in the future.
+Note that some clients may require more additional methods from the `Host`, such as a `get_at_height()` method that allows access state at arbitrary heights. While the current API doesn't allow that, future versions will.
 
 Hosts may choose to implement the `TypedStore` trait individually for every IBC path-value combination or generically as
 a blanket implementation.
