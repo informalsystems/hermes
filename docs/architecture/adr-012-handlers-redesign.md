@@ -176,34 +176,6 @@ pub trait TypedStore<K, V> {
 
 Hosts may choose to implement the `TypedStore` trait individually for every IBC path-value combination or generically as a blanket implementation.
 
-##### Paths with associated values
-
-The library could pair IBC paths with their respective values at the type level as follows.
-
-```rust
-pub trait IbcValueForPath: private::Sealed {
-    type Value;
-}
-
-impl IbcValueForPath for ClientTypePath {
-    type Value = IbcClientType;
-}
-
-impl IbcValueForPath for ClientStatePath {
-    type Value = Box<dyn ClientState>;
-}
-
-impl IbcValueForPath for ClientConsensusStatePath {
-    type Value = Box<dyn ConsensusState>;
-}
-
-/* ... */
-```
-
-This will make it easier for hosts to implement their generic `TypedStore` using these trait bounds. It also allows for
-a more ergonomic Store API.  
-Note also that this code can later be moved to a derive macro on the `Path`s themselves.
-
 ##### Serialization and Deserialization
 
 Although the `TypedStore` design is agnostic to serde on purpose, the library could optionally provide a `IbcSerde`
@@ -220,6 +192,33 @@ pub trait IbcSerde {
     fn deserialize(value: &[u8]) -> Self;
 }
 ```
+
+##### Note: Path to value type mapping
+
+We will also provide a pairing of IBC paths to their respective value types. This will make it easier for hosts to implement their generic `TypedStore` using these trait bounds.
+
+```rust
+pub trait ValueTypeAtStorePath: private::Sealed {
+    type ValueType;
+}
+
+impl ValueTypeAtStorePath for ClientTypePath {
+    type ValueType = IbcClientType;
+}
+
+impl ValueTypeAtStorePath for ClientStatePath {
+    type ValueType = Box<dyn ClientState>;
+}
+
+impl ValueTypeAtStorePath for ClientConsensusStatePath {
+    type ValueType = Box<dyn ConsensusState>;
+}
+
+/* ... */
+```
+
+See appendix C for an example of how we intend this to be used.
+
 
 ## Consequences
 
@@ -611,14 +610,14 @@ struct HostStore(BTreeMap<Path, Vec<u8>>);
 
 impl<K, V> TypedStore<K, V> for HostStore
     where
-        K: Into<Path> + IbcValueForPath<Value=V>,
+        K: Into<Path> + ValueTypeAtStorePath<Value=V>,
         V: IbcSerde,
 {
     type Error = Ics02Error;
 
     fn set(&mut self, key: K, value: V) -> Result<(), Self::Error> {
         let key = key.into();
-        let value = <<K as IbcValueForPath>::Value as IbcSerde>::serialize(value);
+        let value = <<K as ValueTypeAtStorePath>::ValueType as IbcSerde>::serialize(value);
         self.0.insert(key, value).map(|_| ()).unwrap();
         Ok(())
     }
@@ -628,7 +627,7 @@ impl<K, V> TypedStore<K, V> for HostStore
         Ok(self
             .0
             .get(&key)
-            .map(|bytes| <<K as IbcValueForPath>::Value as IbcSerde>::deserialize(bytes)))
+            .map(|bytes| <<K as ValueTypeAtStorePath>::ValueType as IbcSerde>::deserialize(bytes)))
     }
 
     fn delete(&mut self, key: K) -> Result<(), Self::Error> {
