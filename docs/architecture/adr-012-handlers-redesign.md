@@ -126,6 +126,24 @@ impl<H: Host> ValidationContext for H { /* ... */ }
 impl<H: Host> ExecutionContext for H { /* ... */ }
 ```
 
+#### Event logging
+
+Hosts are expected to provide an implementation of the `EventLogger` trait that provides an event logging facility for
+the handlers.
+
+```rust
+pub trait EventLogger: Into<Vec<Self::Event>> {
+    /// Event type
+    type Event;
+
+    /// Return the events emitted so far in the block
+    fn events(&self) -> &[Self::Event];
+
+    /// Emit an event
+    fn emit_event(&mut self, event: Self::Event);
+}
+```
+
 #### Store
 
 Hosts are expected to provide an implementation of the `IbcStore` trait that provides access to all IBC paths as defined
@@ -156,12 +174,11 @@ pub trait TypedStore<K, V> {
 
 Note that some clients may require more additional methods from the `Host`, such as a `get_at_height()` method that allows access state at arbitrary heights. While the current API doesn't allow that, future versions will.
 
-Hosts may choose to implement the `TypedStore` trait individually for every IBC path-value combination or generically as
-a blanket implementation.
+Hosts may choose to implement the `TypedStore` trait individually for every IBC path-value combination or generically as a blanket implementation.
 
 ##### Paths with associated values
 
-The library could pair IBC paths with their respective values at the type level using the following technique ->
+The library could pair IBC paths with their respective values at the type level as follows.
 
 ```rust
 pub trait IbcValueForPath: private::Sealed {
@@ -201,24 +218,6 @@ pub trait IbcSerde {
 
     /// Deserialize from bytes 
     fn deserialize(value: &[u8]) -> Self;
-}
-```
-
-#### Event logging
-
-Hosts are expected to provide an implementation of the `EventLogger` trait that provides an event logging facility for
-the handlers ->
-
-```rust
-pub trait EventLogger: Into<Vec<Self::Event>> {
-    /// Event type
-    type Event;
-
-    /// Return the events emitted so-far
-    fn events(&self) -> &[Self::Event];
-
-    /// Emit an event
-    fn emit_event(&mut self, _event: Self::Event);
 }
 ```
 
@@ -603,9 +602,9 @@ pub trait Host {
 }
 ```
 
-### Appendix C: Typical host store implementation
+### Appendix C: Example host store implementation
 
-A typical host store implementation based on the suggestions above would like the following ->
+A typical host store implementation based on the suggestions above would like the following.
 
 ```rust
 struct HostStore(BTreeMap<Path, Vec<u8>>);
