@@ -158,7 +158,7 @@ TypedStore<ClientTypePath, ClientType, Error=Error>
 {}
 ```
 
-The generic `TypedStore` trait is defined as follows ->
+The generic `TypedStore` trait is defined as follows.
 
 ```rust
 pub trait TypedStore<K, V> {
@@ -171,8 +171,6 @@ pub trait TypedStore<K, V> {
     fn delete(&mut self, key: K) -> Result<(), Self::Error>;
 }
 ```
-
-Note that some clients may require more additional methods from the `Host`, such as a `get_at_height()` method that allows access state at arbitrary heights. While the current API doesn't allow that, future versions will.
 
 Hosts may choose to implement the `TypedStore` trait individually for every IBC path-value combination or generically as a blanket implementation.
 
