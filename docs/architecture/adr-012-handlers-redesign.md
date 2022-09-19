@@ -154,7 +154,7 @@ pub trait IbcStore<Error>:
 TypedStore<ClientTypePath, ClientType, Error=Error>
 + TypedStore<ClientStatePath, Box<dyn ClientState>, Error=Error>
 + TypedStore<ClientConsensusStatePath, Box<dyn ConsensusState>, Error=Error>
-/* + other IbcTypedStore */
+/* + other TypedStore */
 {}
 ```
 
