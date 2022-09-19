@@ -2,7 +2,6 @@ use ibc_proto::ibc::applications::query::v1::CrossChainQuery;
 use prost::DecodeError;
 use reqwest;
 use reqwest::Error;
-// use ibc_proto::ibc::applications::transfer::v1::MsgTransfer;
 use crate::event::IbcEventWithHeight;
 use ibc::core::ics04_channel::events::SendPacket;
 use ibc::events::IbcEvent;

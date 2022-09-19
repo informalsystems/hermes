@@ -64,6 +64,7 @@ use ibc::{
     tx_msg::Msg,
     Height,
 };
+use ibc::events::IbcEventType;
 
 const MAX_RETRIES: usize = 5;
 
@@ -102,6 +103,9 @@ pub struct RelayPath<ChainA: ChainHandle, ChainB: ChainHandle> {
     // comprises mostly RecvPacket and Ack msgs.
     pub src_operational_data: Queue<OperationalData>,
     pub dst_operational_data: Queue<OperationalData>,
+
+    // events with height only handled in local bound
+    pub local_bound_events: Queue<IbcEventWithHeight>,
 
     // Toggle for the transaction confirmation mechanism.
     confirm_txes: bool,
@@ -392,19 +396,27 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                         result.push(event_with_height);
                     }
                 }
-                IbcEvent::CrossChainQuery(query_packet) => {
-                    if src_channel_id == query_packet.src_channel_id()
-                        && self.src_port_id() == query_packet.src_port_id()
-                    {
-                        result.push(event_with_height);
-                    }
-                }
                 _ => {}
             }
         }
 
         // Transform into `TrackedEvents`
         TrackedEvents::new(result, tracking_id)
+    }
+
+    /// filters events handled only in local bound
+    /// not to be relayed to counterparty chain
+    fn filter_local_bound_events(
+        &self,
+        events: Vec<IbcEventWithHeight>,
+    ) -> Vec<IbcEventWithHeight> {
+        let mut result = vec![];
+        for event_with_height in events.into_iter() {
+            if &event_with_height.event.event_type() == &IbcEventType::CrossChainQuery {
+                result.push(event_with_height);
+            }
+        }
+        result
     }
 
     fn relay_pending_packets(&self, height: Option<Height>) -> Result<(), LinkError> {
@@ -447,7 +459,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Generate & schedule operational data from the input `batch` of IBC events.
     pub fn update_schedule(&self, batch: EventBatch) -> Result<(), LinkError> {
         // Collect relevant events from the incoming batch & adjust their height.
-        let events = self.filter_relaying_events(batch.events, batch.tracking_id);
+        let events = self.filter_relaying_events(batch.events.clone(), batch.tracking_id);
+
+        // events handled only in local bound
+        let local_bound_events = self.filter_local_bound_events(batch.events);
 
         // Update telemetry info
         telemetry!({
@@ -456,8 +471,22 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             }
         });
 
+        telemetry!({
+            for local_event_with_height in local_bound_events {
+                self.backlog_update(&local_event_with_height.event);
+            }
+        });
+
+        self.push_local_bound_events(local_bound_events);
+
         // Transform the events into operational data items
         self.events_to_operational_data(events)
+    }
+
+    fn push_local_bound_events(&self, events: Vec<IbcEventWithHeight>) {
+        for ev in events {
+            self.local_bound_events.push_back(ev)
+        }
     }
 
     /// Produces and schedules operational data for this relaying path based on the input events.
@@ -538,8 +567,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     // to the counterparty.
                     if self.ordered_channel()
                         && self
-                            .src_channel(QueryHeight::Specific(event_with_height.height))?
-                            .state_matches(&ChannelState::Closed)
+                        .src_channel(QueryHeight::Specific(event_with_height.height))?
+                        .state_matches(&ChannelState::Closed)
                     {
                         (
                             Some(self.build_chan_close_confirm_from_event(event_with_height)?),
@@ -1365,7 +1394,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     ///
     /// Note that pieces of operational data that have not elapsed yet are
     /// also placed in the 'unprocessed' bucket.
-    fn execute_schedule_for_target_chain<I: Iterator<Item = OperationalData>>(
+    fn execute_schedule_for_target_chain<I: Iterator<Item=OperationalData>>(
         &mut self,
         mut operations: I,
         target_chain: OperationalDataTarget,
@@ -1427,6 +1456,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok(unprocessed)
     }
 
+    fn execute_local_bound_event<I: Iterator<Item=IbcEventWithHeight>>(
+        &self,
+        mut events: I,
+    ) -> Result<VecDeque<IbcEventWithHeight>, (VecDeque<IbcEventWithHeight>, LinkError)> {
+        while let Some(ev) = events.next() {
+            self.src_chain().cross_chain_query()
+            self.src_chain().send_messages_and_wait_check_tx()
+        }
+    }
+
     /// While there are pending operational data items, this function
     /// performs the relaying of packets corresponding to those
     /// operational data items to both the source and destination chains.
@@ -1453,6 +1492,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             Ok(unprocessed_dst_data) => self.dst_operational_data = unprocessed_dst_data.into(),
             Err((unprocessed_dst_data, e)) => {
                 self.dst_operational_data = unprocessed_dst_data.into();
+                return Err(e);
+            }
+        }
+
+        let local_events_iter = self.local_bound_events.take().into_iter();
+
+        match self.execute_local_bound_event(local_events_iter) {
+            Ok(unprocessed_local_bound_data) => self.local_bound_events = unprocessed_local_bound_data.into(),
+            Err((unprocessed_local_bound_data, e)) => {
+                self.local_bound_events = unprocessed_local_bound_data.into();
                 return Err(e);
             }
         }
@@ -1558,7 +1607,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                         if self.send_packet_event_handled(e)? {
                             debug!("already handled send packet {}", e);
                         } else if let Some(new_msg) =
-                            self.build_timeout_from_send_packet_event(e, &dst_status)?
+                        self.build_timeout_from_send_packet_event(e, &dst_status)?
                         {
                             debug!("found a timed-out msg in the op data {}", odata.info(),);
                             timed_out
@@ -1821,7 +1870,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     #[cfg(feature = "telemetry")]
     fn record_cleared_acknowledgments<'a>(
         &self,
-        events_with_heights: impl Iterator<Item = &'a IbcEventWithHeight>,
+        events_with_heights: impl Iterator<Item=&'a IbcEventWithHeight>,
     ) {
         for event_with_height in events_with_heights {
             if let IbcEvent::WriteAcknowledgement(write_ack_ev) = &event_with_height.event {
