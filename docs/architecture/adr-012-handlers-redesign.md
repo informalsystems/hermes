@@ -74,6 +74,17 @@ trait ExecutionContext {
 }
 ```
 
+A useful way to understand how these traits work together is in seeing how *they could* be used to implement `deliver()`.
+
+```rust
+fn deliver<V, E>(val_ctx: &V, exec_ctx: &mut E, message: Any) -> Result<(), Error> {
+    // NOT how we will actually implement `deliver()`
+    let _ = val_ctx.validate(message)?;
+    exec_ctx.execute(message)
+}
+```
+Note however that we will not implement `deliver()` this way for efficiency reasons (see [discussion](https://github.com/informalsystems/ibc-rs/issues/2582#issuecomment-1229988512)).
+
 ### Host based API
 
 ICS24 defines the minimal set of interfaces which must be provided by an IBC enabled blockchain. We therefore define a
