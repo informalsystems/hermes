@@ -21,8 +21,10 @@ The following are out of scope for this ADR:
 
 ## Decision
 
-### "validation" and "execution" clarification
-We first clarify what is meant by "validation" and "execution" with an example. Consider the [`UpdateClient` handler](https://github.com/cosmos/ibc/blob/main/spec/core/ics-002-client-semantics/README.md#update). The validation and execution blocks are:
+### Validation vs Execution
+Each handler can be split into validation and execution. *Validation* is the set of statements which can make the transaction fail. It comprises all the "checks". Execution is the set of statements which mutate the state. In the IBC standard handlers, validation occurs before execution. Note that execution can fail in practice, if say a write operation fails.
+
+As an example, consider the [`UpdateClient` handler](https://github.com/cosmos/ibc/blob/main/spec/core/ics-002-client-semantics/README.md#update).
 
 ```javascript
 function updateClient(
