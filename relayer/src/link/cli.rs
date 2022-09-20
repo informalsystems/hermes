@@ -96,7 +96,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             return Ok(vec![]);
         }
 
-        info!("{} unreceived packets found: {} ", sequences.len(), PrettySlice(&sequences));
+        info!(
+            "{} unreceived packets found: {} ",
+            sequences.len(),
+            PrettySlice(&sequences)
+        );
 
         self.relay_packet_messages(
             sequences,
@@ -130,7 +134,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             return Ok(vec![]);
         }
 
-        info!("{} unreceived acknowledgements found: {} ", sequences.len(), PrettySlice(&sequences));
+        info!(
+            "{} unreceived acknowledgements found: {} ",
+            sequences.len(),
+            PrettySlice(&sequences)
+        );
         self.relay_packet_messages(
             sequences,
             src_response_height,
