@@ -908,9 +908,9 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.9.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b2cf0344971ee6c64c31be0d530793fba457d322dfec2810c453d0ef228f9c3"
+checksum = "c90bf5f19754d10198ccb95b70664fc925bd1fc090a0fd9a6ebc54acc8cd6272"
 dependencies = [
  "atty",
  "humantime",
@@ -2407,9 +2407,9 @@ dependencies = [
 
 [[package]]
 name = "prometheus"
-version = "0.13.1"
+version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cface98dfa6d645ea4c789839f176e4b072265d085bfcc48eaa8d137f58d3c39"
+checksum = "45c8babc29389186697fe5a2a4859d697825496b83db5d0b65271cdc0488e88c"
 dependencies = [
  "cfg-if 1.0.0",
  "fnv",
@@ -3108,9 +3108,9 @@ dependencies = [
 
 [[package]]
 name = "serde_yaml"
-version = "0.9.11"
+version = "0.9.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89f31df3f50926cdf2855da5fd8812295c34752cb20438dae42a67f79e021ac3"
+checksum = "8613d593412a0deb7bbd8de9d908efff5a0cb9ccd8f62c641e7b2ed2f57291d1"
 dependencies = [
  "indexmap",
  "itoa",
@@ -3786,9 +3786,9 @@ dependencies = [
 
 [[package]]
 name = "tonic"
-version = "0.8.0"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "498f271adc46acce75d66f639e4d35b31b2394c295c82496727dafa16d465dd2"
+checksum = "11cd56bdb54ef93935a6a79dbd1d91f1ebd4c64150fd61654031fd6b8b775c91"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -4099,13 +4099,12 @@ dependencies = [
 
 [[package]]
 name = "url"
-version = "2.2.2"
+version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a507c383b2d33b5fc35d1861e77e6b383d158b2da5e14fe51b83dfedf6fd578c"
+checksum = "22fe195a4f217c25b25cb5058ced57059824a678474874038dc88d211bf508d3"
 dependencies = [
  "form_urlencoded",
  "idna",
- "matches",
  "percent-encoding",
 ]
 
