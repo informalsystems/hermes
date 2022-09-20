@@ -11,7 +11,7 @@ use crate::chain::counterparty::unreceived_acknowledgements;
 use crate::chain::counterparty::unreceived_packets;
 use crate::chain::endpoint::ChainStatus;
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::IncludeProof;
+use crate::chain::requests::{CrossChainQueryRequest, IncludeProof};
 use crate::chain::requests::QueryChannelRequest;
 use crate::chain::requests::QueryClientEventRequest;
 use crate::chain::requests::QueryHeight;
@@ -43,6 +43,7 @@ use crate::link::{pending, relay_sender};
 use crate::path::PathIdentifiers;
 use crate::telemetry;
 use crate::util::queue::Queue;
+use ibc::events::IbcEventType;
 use ibc::{
     core::{
         ics02_client::events::ClientMisbehaviour as ClientMisbehaviourEvent,
@@ -64,7 +65,6 @@ use ibc::{
     tx_msg::Msg,
     Height,
 };
-use ibc::events::IbcEventType;
 
 const MAX_RETRIES: usize = 5;
 
@@ -156,6 +156,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             src_operational_data: Queue::new(),
             dst_operational_data: Queue::new(),
 
+            local_bound_events: Queue::new(),
             confirm_txes: with_tx_confirmation,
             pending_txs_src: PendingTxs::new(src_chain, src_channel_id, src_port_id, dst_chain_id),
             pending_txs_dst: PendingTxs::new(dst_chain, dst_channel_id, dst_port_id, src_chain_id),
@@ -461,6 +462,27 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // Collect relevant events from the incoming batch & adjust their height.
         let events = self.filter_relaying_events(batch.events.clone(), batch.tracking_id);
 
+        // CrossChainQuery Tests
+        let res = self.src_chain().cross_chain_query(
+            vec![
+                CrossChainQueryRequest {
+                    id: "1".to_string(),
+                    path: "http://localhost:27021/cosmos/bank/v1beta1/balances/cosmos1j9megzyl8kkq6nz0ym6ywu9y367pyr6c368857".to_string(),
+                },
+                CrossChainQueryRequest {
+                    id: "2".to_string(),
+                    path: "http://localhost:27021/cosmos/bank/v1beta1/balances/cosmos1j9megzyl8kkq6nz0ym6ywu9y367pyr6c368857".to_string(),
+                },
+                CrossChainQueryRequest {
+                    id: "3".to_string(),
+                    path: "http://localhost:27021/cosmos/bank/v1beta1/balances/cosmos1j9megzyl8kkq6nz0ym6ywu9y367pyr6c368857".to_string(),
+                },
+            ]
+        ).unwrap();
+
+        for r in res {
+            println!("{}", r);
+        }
         // events handled only in local bound
         let local_bound_events = self.filter_local_bound_events(batch.events);
 
@@ -472,7 +494,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         });
 
         telemetry!({
-            for local_event_with_height in local_bound_events {
+            for local_event_with_height in &local_bound_events {
                 self.backlog_update(&local_event_with_height.event);
             }
         });
@@ -1456,14 +1478,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         Ok(unprocessed)
     }
 
+    // TODO: handle cross-chain query
+    // Get response from query data, send tx to src chain
     fn execute_local_bound_event<I: Iterator<Item=IbcEventWithHeight>>(
         &self,
         mut events: I,
     ) -> Result<VecDeque<IbcEventWithHeight>, (VecDeque<IbcEventWithHeight>, LinkError)> {
-        while let Some(ev) = events.next() {
-            self.src_chain().cross_chain_query()
-            self.src_chain().send_messages_and_wait_check_tx()
+        while let Some(ibc_event_with_height) = events.next() {
+            println!("{:?}", ibc_event_with_height);
+            // let res = self.src_chain().cross_chain_query();
+            // if let Ok(r) = res {
+            //
+            // }
         }
+        let unprocessed = VecDeque::new();
+        Ok(unprocessed)
     }
 
     /// While there are pending operational data items, this function
@@ -1499,7 +1528,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let local_events_iter = self.local_bound_events.take().into_iter();
 
         match self.execute_local_bound_event(local_events_iter) {
-            Ok(unprocessed_local_bound_data) => self.local_bound_events = unprocessed_local_bound_data.into(),
+            Ok(unprocessed_local_bound_data) => {
+                self.local_bound_events = unprocessed_local_bound_data.into()
+            }
             Err((unprocessed_local_bound_data, e)) => {
                 self.local_bound_events = unprocessed_local_bound_data.into();
                 return Err(e);

@@ -16,15 +16,19 @@ use crate::{
 pub mod retry_strategy;
 
 mod error;
+
 pub use error::RunError;
 
 mod handle;
+
 pub use handle::{WorkerData, WorkerHandle};
 
 mod cmd;
+
 pub use cmd::WorkerCmd;
 
 mod map;
+
 pub use map::WorkerMap;
 
 pub mod channel;

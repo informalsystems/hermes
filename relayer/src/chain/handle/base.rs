@@ -22,6 +22,7 @@ use ibc::{
 };
 
 use crate::chain::requests::CrossChainQueryRequest;
+use crate::chain::responses::CrossChainQueryResponse;
 use crate::{
     account::Balance,
     chain::{
@@ -479,7 +480,10 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryHostConsensusState { request, reply_to })
     }
 
-    fn cross_chain_query(&self, request: CrossChainQueryRequest) -> Result<String, Error> {
+    fn cross_chain_query(
+        &self,
+        request: Vec<CrossChainQueryRequest>,
+    ) -> Result<Vec<CrossChainQueryResponse>, Error> {
         self.send(|reply_to| ChainRequest::CrossChainQuery { request, reply_to })
     }
 }

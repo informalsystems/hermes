@@ -1,10 +1,12 @@
+use crate::chain::requests::CrossChainQueryRequest;
+use crate::chain::responses::CrossChainQueryResponse;
+use crate::event::IbcEventWithHeight;
+use ibc::core::ics04_channel::events::SendPacket;
+use ibc::events::IbcEvent;
 use ibc_proto::ibc::applications::query::v1::CrossChainQuery;
 use prost::DecodeError;
 use reqwest;
 use reqwest::Error;
-use crate::event::IbcEventWithHeight;
-use ibc::core::ics04_channel::events::SendPacket;
-use ibc::events::IbcEvent;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -15,8 +17,13 @@ pub struct MsgTransfer {
     pub sender: String,
 }
 
-pub async fn rest_query(uri: String) -> Result<String, Error> {
-    reqwest::get(uri).await?.text().await
+pub async fn rest_query(request: CrossChainQueryRequest) -> Result<CrossChainQueryResponse, Error> {
+    let res = reqwest::get(request.path).await?.text().await;
+
+    match res {
+        Ok(data) => Ok(CrossChainQueryResponse::new(request.id, data, 0)),
+        Err(e) => Err(e),
+    }
 }
 
 // SendPacket to CrossChainQuery

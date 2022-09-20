@@ -35,6 +35,7 @@ use crate::chain::requests::{
     QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
+use crate::chain::responses::CrossChainQueryResponse;
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;
@@ -472,7 +473,10 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inner.query_host_consensus_state(request)
     }
 
-    fn cross_chain_query(&self, request: CrossChainQueryRequest) -> Result<String, Error> {
+    fn cross_chain_query(
+        &self,
+        request: Vec<CrossChainQueryRequest>,
+    ) -> Result<Vec<CrossChainQueryResponse>, Error> {
         self.inner.cross_chain_query(request)
     }
 }

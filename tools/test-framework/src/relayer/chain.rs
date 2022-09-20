@@ -54,6 +54,7 @@ use ibc_relayer::chain::requests::{
     QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
+use ibc_relayer::chain::responses::CrossChainQueryResponse;
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc_relayer::config::ChainConfig;
@@ -406,7 +407,10 @@ where
         self.value().query_denom_trace(hash)
     }
 
-    fn cross_chain_query(&self, request: CrossChainQueryRequest) -> Result<String, Error> {
+    fn cross_chain_query(
+        &self,
+        request: Vec<CrossChainQueryRequest>,
+    ) -> Result<Vec<CrossChainQueryResponse>, Error> {
         self.value().cross_chain_query(request)
     }
 }

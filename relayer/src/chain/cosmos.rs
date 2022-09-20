@@ -10,6 +10,7 @@ use num_bigint::BigInt;
 use std::thread;
 
 use bitcoin::hashes::hex::ToHex;
+use futures::future::join_all;
 use ibc_proto::protobuf::Protobuf;
 use tendermint::block::Height as TmHeight;
 use tendermint::{
@@ -71,6 +72,8 @@ use crate::chain::cosmos::types::gas::{
     default_gas_from_config, gas_multiplier_from_config, max_gas_from_config,
 };
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
+use crate::chain::requests::CrossChainQueryRequest;
+use crate::chain::responses::CrossChainQueryResponse;
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;
@@ -467,6 +470,7 @@ impl CosmosSdkChain {
         crate::time!("send_messages_and_wait_check_tx");
 
         let span = span!(Level::DEBUG, "send_tx_check", id = %tracked_msgs.tracking_id());
+
         let _enter = span.enter();
 
         let proto_msgs = tracked_msgs.msgs;
@@ -1581,12 +1585,26 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(response.block.header.into())
     }
 
-    fn cross_chain_query(&self, uri: String) -> Result<String, Error> {
-        let response = self
-            .block_on(rest_query(uri))
-            .map_err(|_| Error::query("cross chain query failed".to_owned()))?;
+    fn cross_chain_query(
+        &self,
+        requests: Vec<CrossChainQueryRequest>,
+    ) -> Result<Vec<CrossChainQueryResponse>, Error> {
+        let mut responses: Vec<CrossChainQueryResponse> = vec![];
 
-        Ok(response)
+        let tasks = requests
+            .into_iter()
+            .map(|req| rest_query(req))
+            .collect::<Vec<_>>();
+
+        let joined_tasks = join_all(tasks);
+        let results: Vec<_> = self.block_on(joined_tasks);
+        for result in results {
+            if let Ok(res) = result {
+                responses.push(res);
+            }
+        }
+
+        Ok(responses)
     }
 
     fn build_client_state(

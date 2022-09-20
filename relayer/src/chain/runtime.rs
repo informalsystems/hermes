@@ -26,6 +26,7 @@ use ibc::{
 };
 
 use crate::chain::requests::CrossChainQueryRequest;
+use crate::chain::responses::CrossChainQueryResponse;
 use crate::{
     account::Balance,
     client_state::{AnyClientState, IdentifiedAnyClientState},
@@ -882,11 +883,10 @@ where
 
     fn cross_chain_query(
         &self,
-        request: CrossChainQueryRequest,
-        reply_to: ReplyTo<String>,
+        request: Vec<CrossChainQueryRequest>,
+        reply_to: ReplyTo<Vec<CrossChainQueryResponse>>,
     ) -> Result<(), Error> {
-        let uri = request.uri;
-        let result = self.chain.cross_chain_query(uri);
+        let result = self.chain.cross_chain_query(request);
         reply_to.send(result).map_err(Error::send)?;
 
         Ok(())

@@ -63,6 +63,7 @@ mod cache;
 mod counting;
 
 use crate::chain::requests::CrossChainQueryRequest;
+use crate::chain::responses::CrossChainQueryResponse;
 pub use base::BaseChainHandle;
 pub use counting::CountingChainHandle;
 
@@ -354,8 +355,8 @@ pub enum ChainRequest {
     },
 
     CrossChainQuery {
-        request: CrossChainQueryRequest,
-        reply_to: ReplyTo<String>,
+        request: Vec<CrossChainQueryRequest>,
+        reply_to: ReplyTo<Vec<CrossChainQueryResponse>>,
     },
 }
 
@@ -645,5 +646,8 @@ pub trait ChainHandle: Clone + Send + Sync + Serialize + Debug + 'static {
         request: QueryHostConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error>;
 
-    fn cross_chain_query(&self, request: CrossChainQueryRequest) -> Result<String, Error>;
+    fn cross_chain_query(
+        &self,
+        request: Vec<CrossChainQueryRequest>,
+    ) -> Result<Vec<CrossChainQueryResponse>, Error>;
 }

@@ -29,8 +29,10 @@ use crate::account::Balance;
 use crate::chain::client::ClientSettings;
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
 use crate::chain::requests::{
-    QueryChannelClientStateRequest, QueryChannelRequest, QueryClientStatesRequest,
+    CrossChainQueryRequest, QueryChannelClientStateRequest, QueryChannelRequest,
+    QueryClientStatesRequest,
 };
+use crate::chain::responses::CrossChainQueryResponse;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;
 use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
@@ -472,8 +474,11 @@ impl ChainEndpoint for MockChain {
         unimplemented!()
     }
 
-    fn cross_chain_query(&self, uri: String) -> Result<String, Error> {
-        Ok(format!("cross_chain_query: {}", uri))
+    fn cross_chain_query(
+        &self,
+        requests: Vec<CrossChainQueryRequest>,
+    ) -> Result<Vec<CrossChainQueryResponse>, Error> {
+        Ok(format!("cross_chain_query: {}", requests))
     }
 }
 
