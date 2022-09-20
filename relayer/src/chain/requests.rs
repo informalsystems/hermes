@@ -4,7 +4,7 @@ use crate::error::Error;
 
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use ibc::events::WithBlockDataType;
+use ibc::events::{IbcEventType, WithBlockDataType};
 use ibc::Height;
 use ibc_proto::cosmos::base::query::v1beta1::PageRequest as RawPageRequest;
 use ibc_proto::ibc::core::channel::v1::{
@@ -26,6 +26,8 @@ use ibc_proto::ibc::core::connection::v1::{
     QueryConnectionsRequest as RawQueryConnectionsRequest,
 };
 
+use crate::event::IbcEventWithHeight;
+use ibc::applications::query::events::CrossChainQueryPacket;
 use serde::{Deserialize, Serialize};
 use tendermint::abci::transaction::Hash as TxHash;
 use tendermint::block::Height as TMBlockHeight;
@@ -392,6 +394,20 @@ pub struct QueryHostConsensusStateRequest {
 pub struct CrossChainQueryRequest {
     pub id: String,
     pub path: String,
+}
+
+impl TryFrom<IbcEventWithHeight> for CrossChainQueryRequest {
+    type Error = Error;
+
+    fn try_from(ibc_event_with_height: IbcEventWithHeight) -> Result<Self, Self::Error> {
+        match ibc_event_with_height.event.cross_chain_query_packet() {
+            Some(packet) => Ok(CrossChainQueryRequest {
+                id: packet.id.to_string(),
+                path: packet.path.to_string(),
+            }),
+            None => Err(Error::invalid_metadata),
+        }
+    }
 }
 
 /// Used for queries and not yet standardized in channel's query.proto

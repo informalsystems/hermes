@@ -11,7 +11,6 @@ use crate::chain::counterparty::unreceived_acknowledgements;
 use crate::chain::counterparty::unreceived_packets;
 use crate::chain::endpoint::ChainStatus;
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::{CrossChainQueryRequest, IncludeProof};
 use crate::chain::requests::QueryChannelRequest;
 use crate::chain::requests::QueryClientEventRequest;
 use crate::chain::requests::QueryHeight;
@@ -21,6 +20,7 @@ use crate::chain::requests::QueryPacketCommitmentRequest;
 use crate::chain::requests::QueryTxRequest;
 use crate::chain::requests::QueryUnreceivedAcksRequest;
 use crate::chain::requests::QueryUnreceivedPacketsRequest;
+use crate::chain::requests::{CrossChainQueryRequest, IncludeProof};
 use crate::chain::tracking::TrackedMsgs;
 use crate::chain::tracking::TrackingId;
 use crate::channel::error::ChannelError;
@@ -589,8 +589,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                     // to the counterparty.
                     if self.ordered_channel()
                         && self
-                        .src_channel(QueryHeight::Specific(event_with_height.height))?
-                        .state_matches(&ChannelState::Closed)
+                            .src_channel(QueryHeight::Specific(event_with_height.height))?
+                            .state_matches(&ChannelState::Closed)
                     {
                         (
                             Some(self.build_chan_close_confirm_from_event(event_with_height)?),
@@ -1416,7 +1416,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     ///
     /// Note that pieces of operational data that have not elapsed yet are
     /// also placed in the 'unprocessed' bucket.
-    fn execute_schedule_for_target_chain<I: Iterator<Item=OperationalData>>(
+    fn execute_schedule_for_target_chain<I: Iterator<Item = OperationalData>>(
         &mut self,
         mut operations: I,
         target_chain: OperationalDataTarget,
@@ -1480,12 +1480,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
     // TODO: handle cross-chain query
     // Get response from query data, send tx to src chain
-    fn execute_local_bound_event<I: Iterator<Item=IbcEventWithHeight>>(
+    fn execute_local_bound_event<I: Iterator<Item = IbcEventWithHeight>>(
         &self,
         mut events: I,
     ) -> Result<VecDeque<IbcEventWithHeight>, (VecDeque<IbcEventWithHeight>, LinkError)> {
         while let Some(ibc_event_with_height) = events.next() {
             println!("{:?}", ibc_event_with_height);
+            let test: Result<CrossChainQueryRequest, Error> = ibc_event_with_height.try_into();
+            if let Ok(a) = test {
+                println!("{:?}", a);
+            }
             // let res = self.src_chain().cross_chain_query();
             // if let Ok(r) = res {
             //
@@ -1638,7 +1642,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                         if self.send_packet_event_handled(e)? {
                             debug!("already handled send packet {}", e);
                         } else if let Some(new_msg) =
-                        self.build_timeout_from_send_packet_event(e, &dst_status)?
+                            self.build_timeout_from_send_packet_event(e, &dst_status)?
                         {
                             debug!("found a timed-out msg in the op data {}", odata.info(),);
                             timed_out
@@ -1901,7 +1905,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     #[cfg(feature = "telemetry")]
     fn record_cleared_acknowledgments<'a>(
         &self,
-        events_with_heights: impl Iterator<Item=&'a IbcEventWithHeight>,
+        events_with_heights: impl Iterator<Item = &'a IbcEventWithHeight>,
     ) {
         for event_with_height in events_with_heights {
             if let IbcEvent::WriteAcknowledgement(write_ack_ev) = &event_with_height.event {

@@ -9,6 +9,8 @@ use serde_derive::{Deserialize, Serialize};
 use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
+use crate::applications::query::events as ApplicationEvent;
+use crate::applications::query::events::CrossChainQueryPacket;
 use crate::core::ics02_client::error as client_error;
 use crate::core::ics02_client::events::NewBlock;
 use crate::core::ics02_client::events::{self as ClientEvents};
@@ -253,7 +255,7 @@ pub enum IbcEvent {
     AcknowledgePacket(ChannelEvents::AcknowledgePacket),
     TimeoutPacket(ChannelEvents::TimeoutPacket),
     TimeoutOnClosePacket(ChannelEvents::TimeoutOnClosePacket),
-    CrossChainQuery(ChannelEvents::SendPacket),
+    CrossChainQuery(ApplicationEvent::CrossChainQueryPacket),
 
     AppModule(ModuleEvent),
 
@@ -396,7 +398,16 @@ impl IbcEvent {
             IbcEvent::AcknowledgePacket(ev) => Some(&ev.packet),
             IbcEvent::TimeoutPacket(ev) => Some(&ev.packet),
             IbcEvent::TimeoutOnClosePacket(ev) => Some(&ev.packet),
-            IbcEvent::CrossChainQuery(ev) => Some(&ev.packet),
+            _ => None,
+        }
+    }
+
+    pub fn cross_chain_query_packet(&self) -> Option<&CrossChainQueryPacket> {
+        match self {
+            IbcEvent::CrossChainQuery(ev) => Some(&CrossChainQueryPacket {
+                id: ev.id.to_string(),
+                path: ev.path.to_string(),
+            }),
             _ => None,
         }
     }
