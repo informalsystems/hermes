@@ -24,7 +24,7 @@ use crate::{
     chain::tracking::TrackingId,
     telemetry,
     util::{
-        retry::{retry_count, retry_with_index, RetryResult},
+        retry::{retry_with_index, RetryResult},
         stream::try_group_while,
     },
 };
@@ -295,10 +295,9 @@ impl EventMonitor {
                 "successfully reconnected to WebSocket endpoint {}",
                 self.node_addr
             ),
-            Err(retries) => error!(
+            Err(e) => error!(
                 "failed to reconnect to {} after {} retries",
-                self.node_addr,
-                retry_count(&retries)
+                self.node_addr, e.tries
             ),
         }
     }

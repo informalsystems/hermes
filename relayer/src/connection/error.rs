@@ -176,7 +176,7 @@ define_error! {
                 total_delay: Duration,
             }
             | e | {
-                format_args!("Error after maximum retry of {} and total delay of {}s: {}",
+                format_args!("error after maximum retry of {} and total delay of {}s: {}",
                     e.tries, e.total_delay.as_secs(), e.description)
             },
 
