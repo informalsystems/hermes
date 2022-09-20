@@ -42,14 +42,14 @@ impl Display for PrettyValidatorSet<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         if let Some(proposer) = self.0.proposer() {
             match &proposer.name {
-                Some(name) => write!(f, "PrettyValidatorSet {{ validators: {}, proposer: {}, total_voting_power: {} }}", PrettyVec(&self.0.validators().iter().map(|validator| validator.address).collect()), name, self.0.total_voting_power()),
-                None =>  write!(f, "PrettyValidatorSet {{ validators: {}, proposer: None, total_voting_power: {} }}", PrettyVec(&self.0.validators().iter().map(|validator| validator.address).collect()), self.0.total_voting_power()),
+                Some(name) => write!(f, "PrettyValidatorSet {{ validators: {}, proposer: {}, total_voting_power: {} }}", PrettySlice(&self.0.validators().iter().map(|validator| validator.address).collect()), name, self.0.total_voting_power()),
+                None =>  write!(f, "PrettyValidatorSet {{ validators: {}, proposer: None, total_voting_power: {} }}", PrettySlice(&self.0.validators().iter().map(|validator| validator.address).collect()), self.0.total_voting_power()),
             }
         } else {
             write!(
                 f,
                 "PrettyValidatorSet {{ validators: {}, proposer: None, total_voting_power: {} }}",
-                PrettyVec(
+                PrettySlice(
                     &self
                         .0
                         .validators()
@@ -63,9 +63,9 @@ impl Display for PrettyValidatorSet<'_> {
     }
 }
 
-pub struct PrettyVec<'a, T>(pub &'a Vec<T>);
+pub struct PrettySlice<'a, T>(pub &'a Vec<T>);
 
-impl<'a, T: Display> Display for PrettyVec<'a, T> {
+impl<'a, T: Display> Display for PrettySlice<'a, T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "[ ")?;
         let mut vec_iterator = self.0.iter().peekable();
@@ -142,7 +142,7 @@ mod tests {
         let expected_output = "[ one, two, three ]";
 
         let string_vec = vec!["one", "two", "three"];
-        let pretty_vec = PrettyVec(&string_vec);
+        let pretty_vec = PrettySlice(&string_vec);
 
         assert_eq!(pretty_vec.to_string(), expected_output);
     }
@@ -152,7 +152,7 @@ mod tests {
         let expected_output = "[  ]";
 
         let string_vec: Vec<String> = vec![];
-        let pretty_vec = PrettyVec(&string_vec);
+        let pretty_vec = PrettySlice(&string_vec);
 
         assert_eq!(pretty_vec.to_string(), expected_output);
     }
@@ -162,7 +162,7 @@ mod tests {
         let expected_output = "[ one ]";
 
         let string_vec = vec!["one"];
-        let pretty_vec = PrettyVec(&string_vec);
+        let pretty_vec = PrettySlice(&string_vec);
 
         assert_eq!(pretty_vec.to_string(), expected_output);
     }

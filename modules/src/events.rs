@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::utils::pretty::PrettyVec;
+use crate::utils::pretty::PrettySlice;
 
 use core::convert::{TryFrom, TryInto};
 use core::fmt::{Display, Error as FmtError, Formatter};
@@ -414,7 +414,7 @@ impl Display for ModuleEvent {
             "ModuleEvent {{ kind: {}, module_name: {}, attributes: {} }}",
             self.kind,
             self.module_name,
-            PrettyVec(&self.attributes)
+            PrettySlice(&self.attributes)
         )
     }
 }

@@ -13,6 +13,7 @@ use crate::chain::requests::{
 use crate::event::IbcEventWithHeight;
 use crate::link::error::LinkError;
 use crate::path::PathIdentifiers;
+use crate::util::pretty::PrettySlice;
 
 /// Limit on how many query results should be expected.
 pub const QUERY_RESULT_LIMIT: usize = 50;
@@ -39,7 +40,7 @@ where
             match query_fn(src_chain, path, sequences_nrs_chunk, query_height) {
                 Ok(events) => {
                     events_left_count -= c.len();
-                    info!(events_total = %events_total_count, events_left = %events_left_count, "pulled packet data for {} events;", events.len());
+                    info!(events_total = %events_total_count, events_left = %events_left_count, "pulled packet data for {} events: {};", events.len(), PrettySlice(&c));
 
                     Some(events.into_iter().map(|ev| IbcEventWithHeight::new(ev, query_height)).collect())
                 },

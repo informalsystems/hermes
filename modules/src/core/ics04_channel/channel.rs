@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::utils::pretty::PrettyVec;
+use crate::utils::pretty::PrettySlice;
 
 use core::fmt::{Display, Error as FmtError, Formatter};
 use core::str::FromStr;
@@ -87,7 +87,7 @@ impl Display for ChannelEnd {
         write!(
             f,
             "ChannelEnd {{ state: {}, ordering: {}, remote: {}, connection_hops: {}, version: {} }}",
-            self.state, self.ordering, self.remote, PrettyVec(&self.connection_hops), self.version
+            self.state, self.ordering, self.remote, PrettySlice(&self.connection_hops), self.version
         )
     }
 }

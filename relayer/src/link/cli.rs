@@ -21,7 +21,7 @@ use crate::link::relay_path::RelayPath;
 use crate::link::relay_sender::SyncSender;
 use crate::link::Link;
 use crate::path::PathIdentifiers;
-use crate::util::pretty::PrettyDuration;
+use crate::util::pretty::{PrettyDuration, PrettySlice};
 
 impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Fetches an operational data that has fulfilled its predefined delay period. May _block_
@@ -96,7 +96,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             return Ok(vec![]);
         }
 
-        info!("unreceived packets found: {} ", sequences.len());
+        info!("{} unreceived packets found: {} ", sequences.len(), PrettySlice(&sequences));
 
         self.relay_packet_messages(
             sequences,
@@ -130,8 +130,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             return Ok(vec![]);
         }
 
-        info!("unreceived acknowledgements found: {} ", sequences.len());
-
+        info!("{} unreceived acknowledgements found: {} ", sequences.len(), PrettySlice(&sequences));
         self.relay_packet_messages(
             sequences,
             src_response_height,
