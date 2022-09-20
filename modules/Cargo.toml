@@ -39,7 +39,7 @@ prost = { version = "0.11", default-features = false }
 bytes = { version = "1.2.1", default-features = false }
 safe-regex = { version = "0.2.5", default-features = false }
 subtle-encoding = { version = "0.5", default-features = false }
-sha2 = { version = "0.10.5", default-features = false }
+sha2 = { version = "0.10.6", default-features = false }
 flex-error = { version = "0.4.4", default-features = false }
 num-traits = { version = "0.2.15", default-features = false }
 derive_more = { version = "0.99.17", default-features = false, features = ["from", "into", "display"] }
@@ -69,7 +69,7 @@ env_logger = "0.9.1"
 tracing-subscriber = { version = "0.3.14", features = ["fmt", "env-filter", "json"]}
 test-log = { version = "0.2.10", features = ["trace"] }
 modelator = "0.4.2"
-sha2 = { version = "0.10.5" }
+sha2 = { version = "0.10.6" }
 tendermint-rpc = { version = "=0.23.9", features = ["http-client", "websocket-client"] }
 tendermint-testgen = { version = "=0.23.9" } # Needed for generating (synthetic) light blocks.
 
