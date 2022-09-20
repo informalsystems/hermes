@@ -254,7 +254,7 @@ where
 {
     type Filter = FilterWrapper<Filter>;
 
-    fn filter(&self) -> &FilterWrapper<Filter> {
+    fn filter(&self) -> &Self::Filter {
         &self.filter
     }
 }
