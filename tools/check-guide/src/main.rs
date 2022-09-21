@@ -73,9 +73,9 @@ fn verify_line(line: &str, path: &Path, line_number: i32) -> i32 {
     errors_found
 }
 
+/// Verifies that every template macro call in the file can be replaced by a valid Hermes command.
+/// Returns the number of invalid commands found.
 fn verify_file(path: &Path) -> i32 {
-    // Verifies that every template macro call in the file can be replaced by a valid Hermes command.
-    // Returns the number of invalid commands found.
     let mut errors_found = 0;
     let file = File::open(path);
     let reader =
