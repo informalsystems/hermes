@@ -60,7 +60,7 @@ fn verify_line(line: &str, path: &Path, line_number: i32) -> i32 {
     // Extracts macro calls from a command, replace them with the content of the template and check that the command is correct.
     // Returns the number of errors encountered.
     let parent = path.parent().unwrap_or_else(|| Path::new(&*GUIDE_PATH));
-    let mut error_founds = 0;
+    let mut errors_found = 0;
 
     TEMPLATE_RE.find_iter(line).for_each(|m| {
         let template = m.as_str();
