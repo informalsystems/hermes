@@ -1,6 +1,6 @@
 //! This crate verifies the correctness of every Hermes command in the guide by:
 //! 1. Extracting every line in the guide with '{{#template *templates/commands/hermes*}}', a macro call for mdbook template.
-//! 2. Replace every template call with the content of the template. It will replace macro call by what should be an Hermes command.
+//! 2. Replace every template call with the content of the template. It will replace the macro call with what should be a Hermes command.
 //! 3. Check that an `EntryPoint` can be created from the command.
 
 use clap::Parser;
