@@ -30,7 +30,7 @@ fn find_key(chain_config: &ChainConfig) -> Option<String> {
 /// If a is specified then it will be used without verifying that it exists.
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 #[clap(
-    override_usage = "hermes config auto [OPTIONS] --output <PATH> --chains <CHAIN_NAME_1[:<KEY1>] CHAIN_NAME_2[:<KEY2>]> [--commit <COMMIT_HASH>]"
+    override_usage = "hermes config auto [OPTIONS] --output <PATH> --chains <CHAIN_NAME:OPTIONAL_KEY_NAME>"
 )]
 pub struct AutoCmd {
     #[clap(
@@ -46,7 +46,7 @@ pub struct AutoCmd {
         long = "chains",
         required = true,
         multiple = true,
-        value_name = "CHAIN_NAME_1 CHAIN_NAME_2...",
+        value_name = "CHAIN_NAME:OPTIONAL_KEY_NAME",
         help_heading = "REQUIRED",
         help = "Names of the chains to include in the config. Every chain must be in the chain registry."
     )]

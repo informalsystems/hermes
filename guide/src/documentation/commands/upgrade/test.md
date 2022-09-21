@@ -38,16 +38,16 @@ gaiad version --log_level error --long | head -n4
 [ibc-1]
   ports_start_at = 27010
 ```
-* Run the command `{{#template ../../../templates/commands/gm/start}}`
+* Run the command `{{#template ../../../templates/commands/gm/start.md}}`
 * Go to the file `$HOME/.gm/ibc-0/config/genesis.json` and change `max_deposit_period` and `voting_period` to a lower value, such as 120s
-* Run the commands: `{{#template ../../../templates/commands/gm/reset}}`, `{{#template ../../../templates/commands/gm/hermes_config}}` and `{{#template ../../../templates/commands/gm/hermes_keys}}`
+* Run the commands: `{{#template ../../../templates/commands/gm/reset.md}}`, `{{#template ../../../templates/commands/gm/hermes_config.md}}` and `{{#template ../../../templates/commands/gm/hermes_keys.md}}`
 
 ### Test upgrading chain and client
 
 1. Create one client on `ibc-1` for `ibc-0`:
 
     ```shell
-    hermes create client --host-chain ibc-1 --reference-chain ibc-0
+    {{#template ../../../templates/commands/hermes/create/client_1.md HOST_CHAIN_ID=ibc-1 REFERENCE_CHAIN_ID=ibc-0}}
     ```
 
     ```json
@@ -71,7 +71,7 @@ gaiad version --log_level error --long | head -n4
     The proposal includes the upgraded client state constructed from the state of `07-tendermint-0` client on `ibc-1` that was created in the previous step.
 
     ```shell
-    hermes tx upgrade-chain --receiver-chain ibc-0 --sender-chain ibc-1 --sender-client 07-tendermint-0 --amount 10000000 --height-offset 60
+    {{#template ../../../templates/commands/hermes/tx/upgrade-chain_1.md REFERENCE_CHAIN_ID=ibc-0 HOST_CHAIN_ID=ibc-1 HOST_CLIENT_ID=07-tendermint-0 AMOUNT=10000000 HEIGHT_OFFSET=60}}
     ```
 
     ```text
@@ -194,7 +194,7 @@ gaiad version --log_level error --long | head -n4
     The `--upgrade-height 65` value is taken from the `height` in the upgrade plan output.
 
     ```shell
-    hermes upgrade client --host-chain ibc-1 --client 07-tendermint-0 --upgrade-height 65
+    {{#template ../../../templates/commands/hermes/upgrade/client_1.md HOST_CHAIN_ID=ibc-1 CLIENT_ID=07-tendermint-0 REFERENCE_UPGRADE_HEIGHT=65}}
     ```
     ```json
     Success: [
