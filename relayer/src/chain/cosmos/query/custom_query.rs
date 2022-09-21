@@ -1,13 +1,13 @@
 use crate::chain::requests::CrossChainQueryRequest;
 use crate::chain::responses::CrossChainQueryResponse;
 use crate::event::IbcEventWithHeight;
+use ibc::applications::query::events::SendPacket;
 use ibc::events::IbcEvent;
 use ibc_proto::ibc::applications::query::v1::CrossChainQuery;
 use prost::DecodeError;
 use reqwest;
 use reqwest::Error;
 use serde::{Deserialize, Serialize};
-use ibc::applications::query::events::SendPacket;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MsgTransfer {

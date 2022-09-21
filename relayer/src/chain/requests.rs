@@ -1,5 +1,5 @@
-use core::fmt::Display;
 use crate::error::Error;
+use core::fmt::Display;
 
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};

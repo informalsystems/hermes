@@ -1,10 +1,10 @@
 use crate::applications::query::packet::CrossChainQueryPacket;
 use crate::core::ics04_channel::error::Error;
+use crate::events::IbcEventType;
 use crate::prelude::*;
 use core::fmt::{Display, Formatter};
 use serde::Serialize;
 use tendermint::abci::Event as AbciEvent;
-use crate::events::IbcEventType;
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 pub struct SendPacket {
@@ -14,10 +14,7 @@ pub struct SendPacket {
 impl SendPacket {
     pub fn new(id: String, path: String) -> SendPacket {
         Self {
-            packet: CrossChainQueryPacket {
-                id,
-                path,
-            }
+            packet: CrossChainQueryPacket { id, path },
         }
     }
 }
