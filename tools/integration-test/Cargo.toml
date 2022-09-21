@@ -14,10 +14,10 @@ description = """
 """
 
 [dependencies]
-ibc             = { path = "../../modules" }
-ibc-relayer     = { path = "../../relayer" }
-ibc-relayer-cli = { path = "../../relayer-cli" }
-ibc-proto       = { path = "../../proto" }
+ibc             = { path = "../../crates/modules" }
+ibc-relayer     = { path = "../../crates/relayer" }
+ibc-relayer-cli = { path = "../../crates/relayer-cli" }
+ibc-proto       = { path = "../../crates/proto" }
 ibc-test-framework = { path = "../test-framework" }
 tendermint      = { version = "=0.23.9" }
 tendermint-rpc  = { version = "=0.23.9", features = ["http-client", "websocket-client"] }
