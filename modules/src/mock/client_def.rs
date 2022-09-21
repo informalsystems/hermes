@@ -3,7 +3,6 @@ use crate::core::ics02_client::{
 	client_def::{ClientDef, ConsensusUpdateResult},
 };
 
-use crate::core::ics02_client::client_message::ClientMessage;
 use crate::mock::header::MockClientMessage;
 use crate::{
 	core::{

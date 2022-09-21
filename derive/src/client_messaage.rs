@@ -36,14 +36,12 @@ impl State {
 
 		let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
 
-		let fn_height = self.impl_fn_height();
 		let fn_downcast = self.impl_fn_downcast();
 		let fn_wrap = self.impl_fn_wrap();
 		let fn_encode_to_vec = self.impl_fn_encode_to_vec();
 
 		quote! {
 			impl #impl_generics #trait_ for #this #ty_generics #where_clause {
-				#fn_height
 				#fn_downcast
 				#fn_wrap
 				#fn_encode_to_vec

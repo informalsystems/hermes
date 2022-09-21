@@ -2,7 +2,7 @@ mod client_def;
 mod client_state;
 mod coercion;
 mod consensus_state;
-mod header;
+mod client_messaage;
 mod misbehaviour;
 mod protobuf;
 mod utils;

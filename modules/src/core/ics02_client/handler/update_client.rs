@@ -43,7 +43,7 @@ where
 {
 	let mut output = HandlerOutput::builder();
 
-	let MsgUpdateAnyClient { client_id, client_message: header, signer: _ } = msg;
+	let MsgUpdateAnyClient { client_id, client_message, signer: _ } = msg;
 
 	// Read client type from the host chain store. The client should already exist.
 	let client_type = ctx.client_type(&client_id)?;
@@ -75,11 +75,11 @@ where
 	}
 
 	client_def
-		.verify_client_message::<Ctx>(ctx, client_id.clone(), client_state.clone(), header.clone())
+		.verify_client_message::<Ctx>(ctx, client_id.clone(), client_state.clone(), client_message.clone())
 		.map_err(|e| Error::header_verification_failure(e.to_string()))?;
 
 	let found_misbehaviour = client_def
-		.check_for_misbehaviour(ctx, client_id.clone(), client_state.clone(), header.clone())
+		.check_for_misbehaviour(ctx, client_id.clone(), client_state.clone(), client_message.clone())
 		.map_err(|e| Error::header_verification_failure(e.to_string()))?;
 
 	let event_attributes = Attributes {
@@ -90,7 +90,7 @@ where
 	};
 
 	if found_misbehaviour {
-		let client_state = client_def.update_state_on_misbehaviour(client_state, header)?;
+		let client_state = client_def.update_state_on_misbehaviour(client_state, client_message)?;
 		let result = ClientResult::Update(Result {
 			client_id,
 			client_state,
@@ -105,7 +105,7 @@ where
 	// This function will return the new client_state (its latest_height changed) and a
 	// consensus_state obtained from header. These will be later persisted by the keeper.
 	let (new_client_state, new_consensus_state) = client_def
-		.update_state(ctx, client_id.clone(), client_state, header)
+		.update_state(ctx, client_id.clone(), client_state, client_message)
 		.map_err(|e| Error::header_verification_failure(e.to_string()))?;
 
 	let result = ClientResult::<Ctx>::Update(Result {
@@ -130,7 +130,6 @@ mod tests {
 	use crate::{
 		core::{
 			ics02_client::{
-				client_message::ClientMessage,
 				context::ClientReader,
 				error::{Error, ErrorDetail},
 				handler::{dispatch, ClientResult::Update},

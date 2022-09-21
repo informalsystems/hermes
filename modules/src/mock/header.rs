@@ -47,18 +47,18 @@ impl MockClientMessage {
 			MockClientMessage::Misbehaviour(misbehaviour) => misbehaviour.header1.clone(),
 		}
 	}
+
+	pub fn height(&self) -> Height {
+		match self {
+			MockClientMessage::Header(header) => header.height,
+			MockClientMessage::Misbehaviour(misbehaviour) => misbehaviour.header1.height,
+		}
+	}
 }
 
 impl ClientMessage for MockClientMessage {
 	fn encode_to_vec(&self) -> Vec<u8> {
 		unreachable!()
-	}
-
-	fn height(&self) -> Height {
-		match self {
-			MockClientMessage::Header(header) => header.height,
-			MockClientMessage::Misbehaviour(misbehaviour) => misbehaviour.header1.height,
-		}
 	}
 }
 

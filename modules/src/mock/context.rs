@@ -69,7 +69,7 @@ pub const DEFAULT_BLOCK_TIME_SECS: u64 = 3;
 
 /// A context implementing the dependencies necessary for testing any IBC module.
 #[derive(Debug)]
-pub struct MockContext<C: ClientTypes> {
+pub struct MockContext<C: ClientTypes = MockClientTypes> {
 	/// The type of host chain underlying this mock context.
 	pub host_chain_type: <C::HostBlock as HostBlock>::HostType,
 
