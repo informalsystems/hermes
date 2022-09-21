@@ -179,7 +179,7 @@ mod tests {
 		// Some general-purpose variable to parametrize the messages and the context.
 		let proof_height = 10;
 		let conn_id = ConnectionId::new(2);
-		let client_id = ClientId::new(MockClientState::client_type(), 45).unwrap();
+		let client_id = ClientId::new(&MockClientState::client_type(), 45).unwrap();
 
 		// The context. We'll reuse this same one across all tests.
 		let context = MockContext::default();
@@ -253,7 +253,7 @@ mod tests {
 							e.source,
 							ics02_error::ErrorDetail::ClientNotFound(
 								ics02_error::ClientNotFoundSubdetail {
-									client_id: ClientId::new(MockClientState::client_type(), 45)
+									client_id: ClientId::new(&MockClientState::client_type(), 45)
 										.unwrap()
 								}
 							)

@@ -149,7 +149,7 @@ impl MockClientState {
 	}
 
 	pub fn client_type() -> ClientType {
-		"9999-mock"
+		"9999-mock".to_string()
 	}
 
 	pub fn latest_height(&self) -> Height {

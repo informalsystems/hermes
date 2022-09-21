@@ -152,7 +152,7 @@ mod tests {
 			msg: ChannelMsg,
 			want_pass: bool,
 		}
-		let client_id = ClientId::new(MockClientState::client_type(), 24).unwrap();
+		let client_id = ClientId::new(&MockClientState::client_type(), 24).unwrap();
 		let conn_id = ConnectionId::new(2);
 		let context = MockContext::default();
 		let client_consensus_state_height = context.host_height().revision_height;

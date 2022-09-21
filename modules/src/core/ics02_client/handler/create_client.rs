@@ -112,7 +112,7 @@ mod tests {
 			Ok(HandlerOutput { result, mut events, .. }) => {
 				assert_eq!(events.len(), 1);
 				let event = events.pop().unwrap();
-				let expected_client_id = ClientId::new(MockClientState::client_type(), 0).unwrap();
+				let expected_client_id = ClientId::new(&MockClientState::client_type(), 0).unwrap();
 				assert!(
 					matches!(event, IbcEvent::CreateClient(ref e) if e.client_id() == &expected_client_id)
 				);
@@ -181,7 +181,7 @@ mod tests {
 		// The expected client id that will be generated will be identical to "9999-mock-0" for all
 		// tests. This is because we're not persisting any client results (which is done via the
 		// tests for `ics26_routing::dispatch`.
-		let expected_client_id = ClientId::new(MockClientState::client_type(), 0).unwrap();
+		let expected_client_id = ClientId::new(&MockClientState::client_type(), 0).unwrap();
 
 		for msg in create_client_msgs {
 			let output = dispatch(&ctx, ClientMsg::CreateClient(msg.clone()));

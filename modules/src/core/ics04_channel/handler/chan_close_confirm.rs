@@ -141,7 +141,7 @@ mod tests {
 
 	#[test]
 	fn chan_close_confirm_event_height() {
-		let client_id = ClientId::new(MockClientState::client_type(), 24).unwrap();
+		let client_id = ClientId::new(&MockClientState::client_type(), 24).unwrap();
 		let conn_id = ConnectionId::new(2);
 		let default_context = MockContext::<MockClientTypes>::default();
 		let client_consensus_state_height = default_context.host_height();

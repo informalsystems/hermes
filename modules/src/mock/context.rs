@@ -444,7 +444,7 @@ where
 		let cs_height = consensus_state_height.unwrap_or(client_state_height);
 
 		let client_type = client_type.unwrap_or(MockClientState::client_type());
-		let (client_state, consensus_state) = match client_type {
+		let (client_state, consensus_state) = match client_type.clone() {
 			// If it's a mock client, create the corresponding mock states.
 			client_type if client_type == MockClientState::client_type() => (
 				Some(MockClientState::new(MockHeader::new(client_state_height).into()).into()),
@@ -883,7 +883,7 @@ impl<C: ClientTypes> ConnectionKeeper for MockContext<C> {
 impl<C: ClientTypes + Default> ClientReader for MockContext<C> {
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, Ics02Error> {
 		match self.ibc_store.lock().unwrap().clients.get(client_id) {
-			Some(client_record) => Ok(client_record.client_type),
+			Some(client_record) => Ok(client_record.client_type.clone()),
 			None => Err(Ics02Error::client_not_found(client_id.clone())),
 		}
 	}
@@ -1047,7 +1047,7 @@ impl<C: ClientTypes> ClientKeeper for MockContext<C> {
 	) -> Result<(), Ics02Error> {
 		let mut ibc_store = self.ibc_store.lock().unwrap();
 		let client_record = ibc_store.clients.entry(client_id).or_insert(MockClientRecord {
-			client_type,
+			client_type: client_type.clone(),
 			consensus_states: Default::default(),
 			client_state: Default::default(),
 		});

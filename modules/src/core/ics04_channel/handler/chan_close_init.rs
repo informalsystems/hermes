@@ -109,7 +109,7 @@ mod tests {
 
 	#[test]
 	fn chan_close_init_event_height() {
-		let client_id = ClientId::new(MockClientState::client_type(), 24).unwrap();
+		let client_id = ClientId::new(&MockClientState::client_type(), 24).unwrap();
 		let conn_id = ConnectionId::new(2);
 
 		let conn_end = ConnectionEnd::new(
