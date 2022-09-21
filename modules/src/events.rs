@@ -10,7 +10,7 @@ use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
 use crate::applications::query::events as ApplicationEvent;
-use crate::applications::query::events::CrossChainQueryPacket;
+use crate::applications::query::packet::CrossChainQueryPacket;
 use crate::core::ics02_client::error as client_error;
 use crate::core::ics02_client::events::NewBlock;
 use crate::core::ics02_client::events::{self as ClientEvents};
@@ -128,6 +128,7 @@ const WRITE_ACK_EVENT: &str = "write_acknowledgement";
 const ACK_PACKET_EVENT: &str = "acknowledge_packet";
 const TIMEOUT_EVENT: &str = "timeout_packet";
 const TIMEOUT_ON_CLOSE_EVENT: &str = "timeout_packet_on_close";
+/// Application event types
 const CROSS_CHAIN_QUERY: &str = "cross_chain_query";
 
 /// Events types
@@ -255,7 +256,7 @@ pub enum IbcEvent {
     AcknowledgePacket(ChannelEvents::AcknowledgePacket),
     TimeoutPacket(ChannelEvents::TimeoutPacket),
     TimeoutOnClosePacket(ChannelEvents::TimeoutOnClosePacket),
-    CrossChainQuery(ApplicationEvent::CrossChainQueryPacket),
+    CrossChainQuery(ApplicationEvent::SendPacket),
 
     AppModule(ModuleEvent),
 
@@ -404,10 +405,7 @@ impl IbcEvent {
 
     pub fn cross_chain_query_packet(&self) -> Option<&CrossChainQueryPacket> {
         match self {
-            IbcEvent::CrossChainQuery(ev) => Some(&CrossChainQueryPacket {
-                id: ev.id.to_string(),
-                path: ev.path.to_string(),
-            }),
+            IbcEvent::CrossChainQuery(ev) => Some(&ev.packet),
             _ => None,
         }
     }
