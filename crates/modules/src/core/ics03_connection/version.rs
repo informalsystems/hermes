@@ -1,7 +1,7 @@
 use core::fmt::Display;
 
 use crate::prelude::*;
-use crate::utils::pretty::PrettyVec;
+use crate::utils::pretty::PrettySlice;
 
 use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
 use ibc_proto::protobuf::Protobuf;
@@ -73,7 +73,7 @@ impl Display for Version {
             f,
             "Version {{ identifier: {}, features: {} }}",
             self.identifier,
-            PrettyVec(&self.features)
+            PrettySlice(&self.features)
         )
     }
 }

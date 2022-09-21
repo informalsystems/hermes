@@ -7,7 +7,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::{ForeignClient, MisbehaviourResults};
-use ibc_relayer::util::pretty::PrettyVec;
+use ibc_relayer::util::pretty::PrettySlice;
 use std::ops::Deref;
 
 use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic};
@@ -132,7 +132,7 @@ fn misbehaviour_handling<Chain: ChainHandle>(
     let client = ForeignClient::restore(client_id, chain, counterparty_chain);
     let result = client.detect_misbehaviour_and_submit_evidence(update.as_ref());
     if let MisbehaviourResults::EvidenceSubmitted(events) = result {
-        info!("evidence submission result {}", PrettyVec(&events));
+        info!("evidence submission result {}", PrettySlice(&events));
     }
 
     Ok(())

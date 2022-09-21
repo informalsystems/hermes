@@ -10,7 +10,7 @@ use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 use crate::events::{Error as EventError, IbcEvent, IbcEventType};
 use crate::prelude::*;
-use crate::utils::pretty::PrettyVec;
+use crate::utils::pretty::PrettySlice;
 
 /// Channel event attribute keys
 pub const CONNECTION_ID_ATTRIBUTE_KEY: &str = "connection_id";
@@ -677,7 +677,7 @@ impl Display for WriteAcknowledgement {
             f,
             "WriteAcknowledgement {{ packet: {}, ack: {} }}",
             self.packet,
-            PrettyVec(&self.ack)
+            PrettySlice(&self.ack)
         )
     }
 }
