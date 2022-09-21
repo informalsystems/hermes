@@ -70,7 +70,7 @@ fn verify_line(line: &str, path: &Path, line_number: i32) -> i32 {
             error_founds += 1;
         }
     });
-    error_founds
+    errors_found
 }
 
 fn verify_file(path: &Path) -> i32 {
