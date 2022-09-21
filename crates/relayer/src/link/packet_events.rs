@@ -35,12 +35,12 @@ where
 
     sequence_nrs
         .chunks(QUERY_RESULT_LIMIT)
-        .map_while(move |c| {
-            let sequences_nrs_chunk = c.to_vec();
+        .map_while(move |chunk| {
+            let sequences_nrs_chunk = chunk.to_vec();
             match query_fn(src_chain, path, sequences_nrs_chunk, query_height) {
                 Ok(events) => {
-                    events_left_count -= c.len();
-                    info!(events_total = %events_total_count, events_left = %events_left_count, "pulled packet data for {} events: {};", events.len(), PrettySlice(c));
+                    events_left_count -= chunk.len();
+                    info!(events_total = %events_total_count, events_left = %events_left_count, "pulled packet data for {} events: {};", events.len(), PrettySlice(chunk));
 
                     Some(events.into_iter().map(|ev| IbcEventWithHeight::new(ev, query_height)).collect())
                 },
