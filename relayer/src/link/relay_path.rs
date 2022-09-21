@@ -28,6 +28,7 @@ use crate::channel::Channel;
 use crate::event::monitor::EventBatch;
 use crate::event::IbcEventWithHeight;
 use crate::event::PrettyEvents;
+use crate::error::Error;
 use crate::foreign_client::{ForeignClient, ForeignClientError};
 use crate::link::error::{self, LinkError};
 use crate::link::operational_data::{

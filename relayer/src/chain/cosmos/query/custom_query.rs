@@ -1,14 +1,13 @@
 use crate::chain::requests::CrossChainQueryRequest;
 use crate::chain::responses::CrossChainQueryResponse;
 use crate::event::IbcEventWithHeight;
-use ibc::applications::query::events::CrossChainQueryPacket;
-use ibc::core::ics04_channel::events::SendPacket;
 use ibc::events::IbcEvent;
 use ibc_proto::ibc::applications::query::v1::CrossChainQuery;
 use prost::DecodeError;
 use reqwest;
 use reqwest::Error;
 use serde::{Deserialize, Serialize};
+use ibc::applications::query::events::SendPacket;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MsgTransfer {
@@ -43,10 +42,7 @@ pub fn to_cross_chain_query_event_or_default(
                 Ok(msg) => {
                     if msg.msg_type == "cross_chain_query" {
                         let cross_chain_query_event =
-                            IbcEvent::CrossChainQuery(CrossChainQueryPacket {
-                                id: msg.id,
-                                path: msg.path,
-                            });
+                            IbcEvent::CrossChainQuery(SendPacket::new(msg.id, msg.path));
                         IbcEventWithHeight::new(cross_chain_query_event, height)
                     } else {
                         event_with_height

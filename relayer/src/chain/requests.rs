@@ -1,10 +1,9 @@
 use core::fmt::Display;
-
 use crate::error::Error;
 
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use ibc::events::{IbcEventType, WithBlockDataType};
+use ibc::events::WithBlockDataType;
 use ibc::Height;
 use ibc_proto::cosmos::base::query::v1beta1::PageRequest as RawPageRequest;
 use ibc_proto::ibc::core::channel::v1::{
@@ -27,7 +26,6 @@ use ibc_proto::ibc::core::connection::v1::{
 };
 
 use crate::event::IbcEventWithHeight;
-use ibc::applications::query::events::CrossChainQueryPacket;
 use serde::{Deserialize, Serialize};
 use tendermint::abci::transaction::Hash as TxHash;
 use tendermint::block::Height as TMBlockHeight;
@@ -405,7 +403,7 @@ impl TryFrom<IbcEventWithHeight> for CrossChainQueryRequest {
                 id: packet.id.to_string(),
                 path: packet.path.to_string(),
             }),
-            None => Err(Error::invalid_metadata),
+            None => Err(Error::invalid_type_conversion()),
         }
     }
 }

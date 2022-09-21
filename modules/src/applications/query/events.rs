@@ -11,6 +11,17 @@ pub struct SendPacket {
     pub packet: CrossChainQueryPacket,
 }
 
+impl SendPacket {
+    pub fn new(id: String, path: String) -> SendPacket {
+        Self {
+            packet: CrossChainQueryPacket {
+                id,
+                path,
+            }
+        }
+    }
+}
+
 impl Display for SendPacket {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", self.packet)

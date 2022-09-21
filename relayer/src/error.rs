@@ -153,6 +153,9 @@ define_error! {
         InvalidHeightNoSource
             |_| { "invalid height" },
 
+        InvalidTypeConversion
+            |_| { "invalid type conversion" },
+
         InvalidMetadata
             [ TraceError<InvalidMetadataValue> ]
             |_| { "invalid metadata" },
