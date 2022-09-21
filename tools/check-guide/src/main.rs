@@ -67,7 +67,7 @@ fn verify_line(line: &str, path: &Path, line_number: i32) -> i32 {
         let template_replaced = replace_template(template, &*FILEREADER, &parent, "", 0);
         if let Err(e) = check_correctness(template_replaced.split_whitespace()) {
             eprintln!("{}:{}: {:?}", path.display(), line_number, e);
-            error_founds += 1;
+            errors_found += 1;
         }
     });
     errors_found
