@@ -394,10 +394,10 @@ pub struct CrossChainQueryRequest {
     pub path: String,
 }
 
-impl TryFrom<IbcEventWithHeight> for CrossChainQueryRequest {
+impl TryFrom<&IbcEventWithHeight> for CrossChainQueryRequest {
     type Error = Error;
 
-    fn try_from(ibc_event_with_height: IbcEventWithHeight) -> Result<Self, Self::Error> {
+    fn try_from(ibc_event_with_height: &IbcEventWithHeight) -> Result<Self, Self::Error> {
         match ibc_event_with_height.event.cross_chain_query_packet() {
             Some(packet) => Ok(CrossChainQueryRequest {
                 id: packet.id.to_string(),

@@ -24,6 +24,7 @@ pub struct Registry<Chain: ChainHandle> {
     config: Config,
     handles: HashMap<ChainId, Chain>,
     rt: Arc<TokioRuntime>,
+    query_rt: Arc<TokioRuntime>,
 }
 
 #[derive(Clone)]
@@ -38,6 +39,7 @@ impl<Chain: ChainHandle> Registry<Chain> {
             config,
             handles: HashMap::new(),
             rt: Arc::new(TokioRuntime::new().unwrap()),
+            query_rt: Arc::new(TokioRuntime::new().unwrap()),
         }
     }
 
@@ -72,7 +74,12 @@ impl<Chain: ChainHandle> Registry<Chain> {
     /// Returns whether or not the runtime was actually spawned.
     pub fn spawn(&mut self, chain_id: &ChainId) -> Result<bool, SpawnError> {
         if !self.handles.contains_key(chain_id) {
-            let handle = spawn_chain_runtime(&self.config, chain_id, self.rt.clone())?;
+            let handle = spawn_chain_runtime(
+                &self.config,
+                chain_id,
+                self.rt.clone(),
+                self.query_rt.clone(),
+            )?;
             self.handles.insert(chain_id.clone(), handle);
             trace!(chain = %chain_id, "spawned chain runtime");
             Ok(true)

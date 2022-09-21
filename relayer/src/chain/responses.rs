@@ -3,9 +3,9 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct CrossChainQueryResponse {
-    id: String,
-    data: String,
-    height: u64,
+    pub id: String,
+    pub data: String,
+    pub height: u64,
 }
 
 impl CrossChainQueryResponse {

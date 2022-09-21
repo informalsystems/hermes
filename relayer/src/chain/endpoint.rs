@@ -89,7 +89,11 @@ pub trait ChainEndpoint: Sized {
     // Life cycle
 
     /// Constructs the chain
-    fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error>;
+    fn bootstrap(
+        config: ChainConfig,
+        rt: Arc<TokioRuntime>,
+        query_rt: Arc<TokioRuntime>,
+    ) -> Result<Self, Error>;
 
     /// Initializes and returns the event monitor (if any) associated with this chain.
     fn init_event_monitor(

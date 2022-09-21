@@ -32,6 +32,10 @@ define_error! {
                 format!("failed to construct packet proofs for chain {0}", e.chain_id)
             },
 
+        LocalBound
+            [ Error ]
+            |_| {" local bound error "},
+
         Query
             { chain_id: ChainId }
             [ Error ]

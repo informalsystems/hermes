@@ -49,6 +49,7 @@ pub fn spawn_chain_runtime<Handle: ChainHandle>(
     config: &Config,
     chain_id: &ChainId,
     rt: Arc<TokioRuntime>,
+    query_rt: Arc<TokioRuntime>,
 ) -> Result<Handle, SpawnError> {
     let chain_config = config
         .find_chain(chain_id)
@@ -56,10 +57,12 @@ pub fn spawn_chain_runtime<Handle: ChainHandle>(
         .ok_or_else(|| SpawnError::missing_chain_config(chain_id.clone()))?;
 
     let handle = match chain_config.r#type {
-        ChainType::CosmosSdk => ChainRuntime::<CosmosSdkChain>::spawn::<Handle>(chain_config, rt),
+        ChainType::CosmosSdk => {
+            ChainRuntime::<CosmosSdkChain>::spawn::<Handle>(chain_config, rt, query_rt)
+        }
 
         #[cfg(test)]
-        ChainType::Mock => ChainRuntime::<MockChain>::spawn::<Handle>(chain_config, rt),
+        ChainType::Mock => ChainRuntime::<MockChain>::spawn::<Handle>(chain_config, rt, query_rt),
     }
     .map_err(SpawnError::relayer)?;
 

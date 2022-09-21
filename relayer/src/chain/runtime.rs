@@ -156,9 +156,10 @@ where
     pub fn spawn<Handle: ChainHandle>(
         config: ChainConfig,
         rt: Arc<TokioRuntime>,
+        query_rt: Arc<TokioRuntime>,
     ) -> Result<Handle, Error> {
         // Similar to `from_config`.
-        let chain = Endpoint::bootstrap(config, rt.clone())?;
+        let chain = Endpoint::bootstrap(config, rt.clone(), query_rt.clone())?;
 
         // Instantiate & spawn the runtime
         let (handle, _) = Self::init(chain, rt);

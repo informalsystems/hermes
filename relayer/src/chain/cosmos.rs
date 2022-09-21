@@ -125,6 +125,7 @@ pub struct CosmosSdkChain {
     grpc_addr: Uri,
     light_client: TmLightClient,
     rt: Arc<TokioRuntime>,
+    query_rt: Arc<TokioRuntime>,
     keybase: KeyRing,
     /// A cached copy of the account information
     account: Option<Account>,
@@ -499,7 +500,20 @@ impl ChainEndpoint for CosmosSdkChain {
     type ConsensusState = TMConsensusState;
     type ClientState = TmClientState;
 
-    fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error> {
+    fn id(&self) -> &ChainId {
+        &self.config().id
+    }
+
+    /// Get the chain configuration
+    fn config(&self) -> ChainConfig {
+        self.config.clone()
+    }
+
+    fn bootstrap(
+        config: ChainConfig,
+        rt: Arc<TokioRuntime>,
+        query_rt: Arc<TokioRuntime>,
+    ) -> Result<Self, Error> {
         let rpc_client = HttpClient::new(config.rpc_addr.clone())
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
 
@@ -522,6 +536,7 @@ impl ChainEndpoint for CosmosSdkChain {
             grpc_addr,
             light_client,
             rt,
+            query_rt,
             keybase,
             account: None,
             tx_config,
@@ -552,18 +567,6 @@ impl ChainEndpoint for CosmosSdkChain {
 
     fn shutdown(self) -> Result<(), Error> {
         Ok(())
-    }
-
-    fn id(&self) -> &ChainId {
-        &self.config().id
-    }
-
-    fn keybase(&self) -> &KeyRing {
-        &self.keybase
-    }
-
-    fn keybase_mut(&mut self) -> &mut KeyRing {
-        &mut self.keybase
     }
 
     /// Does multiple RPC calls to the full node, to check for
@@ -597,29 +600,57 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(HealthCheck::Healthy)
     }
 
-    /// Fetch a header from the chain at the given height and verify it.
-    fn verify_header(
-        &mut self,
-        trusted: ICSHeight,
-        target: ICSHeight,
-        client_state: &AnyClientState,
-    ) -> Result<Self::LightBlock, Error> {
-        self.light_client
-            .verify(trusted, target, client_state)
-            .map(|v| v.target)
+    fn keybase(&self) -> &KeyRing {
+        &self.keybase
     }
 
-    /// Given a client update event that includes the header used in a client update,
-    /// look for misbehaviour by fetching a header at same or latest height.
-    fn check_misbehaviour(
-        &mut self,
-        update: &UpdateClient,
-        client_state: &AnyClientState,
-    ) -> Result<Option<MisbehaviourEvidence>, Error> {
-        self.light_client.check_misbehaviour(update, client_state)
+    fn keybase_mut(&mut self) -> &mut KeyRing {
+        &mut self.keybase
+    }
+
+    /// Get the account for the signer
+    fn get_signer(&mut self) -> Result<Signer, Error> {
+        crate::time!("get_signer");
+
+        // Get the key from key seed file
+        let key = self
+            .keybase()
+            .get_key(&self.config.key_name)
+            .map_err(|e| Error::key_not_found(self.config.key_name.clone(), e))?;
+
+        let bech32 = encode_to_bech32(&key.address.to_hex(), &self.config.account_prefix)?;
+        bech32
+            .parse()
+            .map_err(|e| Error::ics02(ClientError::signer(e)))
     }
 
     // Queries
+
+    /// Get the signing key
+    fn get_key(&mut self) -> Result<KeyEntry, Error> {
+        crate::time!("get_key");
+
+        // Get the key from key seed file
+        let key = self
+            .keybase()
+            .get_key(&self.config.key_name)
+            .map_err(|e| Error::key_not_found(self.config.key_name.clone(), e))?;
+
+        Ok(key)
+    }
+
+    fn add_key(&mut self, key_name: &str, key: KeyEntry) -> Result<(), Error> {
+        self.keybase_mut()
+            .add_key(key_name, key)
+            .map_err(Error::key_base)?;
+
+        Ok(())
+    }
+
+    fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
+        let version_specs = self.block_on(fetch_version_specs(self.id(), &self.grpc_addr))?;
+        Ok(version_specs.ibc_go_version)
+    }
 
     /// Send one or more transactions that include all the specified messages.
     /// The `proto_msgs` are split in transactions such they don't exceed the configured maximum
@@ -647,51 +678,26 @@ impl ChainEndpoint for CosmosSdkChain {
         runtime.block_on(self.do_send_messages_and_wait_check_tx(tracked_msgs))
     }
 
-    /// Get the account for the signer
-    fn get_signer(&mut self) -> Result<Signer, Error> {
-        crate::time!("get_signer");
-
-        // Get the key from key seed file
-        let key = self
-            .keybase()
-            .get_key(&self.config.key_name)
-            .map_err(|e| Error::key_not_found(self.config.key_name.clone(), e))?;
-
-        let bech32 = encode_to_bech32(&key.address.to_hex(), &self.config.account_prefix)?;
-        bech32
-            .parse()
-            .map_err(|e| Error::ics02(ClientError::signer(e)))
+    /// Fetch a header from the chain at the given height and verify it.
+    fn verify_header(
+        &mut self,
+        trusted: ICSHeight,
+        target: ICSHeight,
+        client_state: &AnyClientState,
+    ) -> Result<Self::LightBlock, Error> {
+        self.light_client
+            .verify(trusted, target, client_state)
+            .map(|v| v.target)
     }
 
-    /// Get the chain configuration
-    fn config(&self) -> ChainConfig {
-        self.config.clone()
-    }
-
-    /// Get the signing key
-    fn get_key(&mut self) -> Result<KeyEntry, Error> {
-        crate::time!("get_key");
-
-        // Get the key from key seed file
-        let key = self
-            .keybase()
-            .get_key(&self.config.key_name)
-            .map_err(|e| Error::key_not_found(self.config.key_name.clone(), e))?;
-
-        Ok(key)
-    }
-
-    fn add_key(&mut self, key_name: &str, key: KeyEntry) -> Result<(), Error> {
-        self.keybase_mut()
-            .add_key(key_name, key)
-            .map_err(Error::key_base)?;
-
-        Ok(())
-    }
-
-    fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
-        let version_specs = self.block_on(fetch_version_specs(self.id(), &self.grpc_addr))?;
-        Ok(version_specs.ibc_go_version)
+    /// Given a client update event that includes the header used in a client update,
+    /// look for misbehaviour by fetching a header at same or latest height.
+    fn check_misbehaviour(
+        &mut self,
+        update: &UpdateClient,
+        client_state: &AnyClientState,
+    ) -> Result<Option<MisbehaviourEvidence>, Error> {
+        self.light_client.check_misbehaviour(update, client_state)
     }
 
     fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
@@ -831,6 +837,74 @@ impl ChainEndpoint for CosmosSdkChain {
         }
     }
 
+    fn query_consensus_state(
+        &self,
+        request: QueryConsensusStateRequest,
+        include_proof: IncludeProof,
+    ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error> {
+        crate::time!("query_consensus_state");
+        crate::telemetry!(query, self.id(), "query_consensus_state");
+
+        let res = self.query(
+            ClientConsensusStatePath {
+                client_id: request.client_id.clone(),
+                epoch: request.consensus_height.revision_number(),
+                height: request.consensus_height.revision_height(),
+            },
+            request.query_height,
+            matches!(include_proof, IncludeProof::Yes),
+        )?;
+
+        let consensus_state = AnyConsensusState::decode_vec(&res.value).map_err(Error::decode)?;
+
+        if !matches!(consensus_state, AnyConsensusState::Tendermint(_)) {
+            return Err(Error::consensus_state_type_mismatch(
+                ClientType::Tendermint,
+                consensus_state.client_type(),
+            ));
+        }
+
+        match include_proof {
+            IncludeProof::Yes => {
+                let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
+                Ok((consensus_state, Some(proof)))
+            }
+            IncludeProof::No => Ok((consensus_state, None)),
+        }
+    }
+
+    /// Performs a query to retrieve the identifiers of all connections.
+    fn query_consensus_states(
+        &self,
+        request: QueryConsensusStatesRequest,
+    ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
+        crate::time!("query_consensus_states");
+        crate::telemetry!(query, self.id(), "query_consensus_states");
+
+        let mut client = self
+            .block_on(
+                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(
+                    self.grpc_addr.clone(),
+                ),
+            )
+            .map_err(Error::grpc_transport)?;
+
+        let request = tonic::Request::new(request.into());
+        let response = self
+            .block_on(client.consensus_states(request))
+            .map_err(Error::grpc_status)?
+            .into_inner();
+
+        let mut consensus_states: Vec<AnyConsensusStateWithHeight> = response
+            .consensus_states
+            .into_iter()
+            .filter_map(|cs| TryFrom::try_from(cs).ok())
+            .collect();
+        consensus_states.sort_by(|a, b| a.height.cmp(&b.height));
+        consensus_states.reverse();
+        Ok(consensus_states)
+    }
+
     fn query_upgraded_client_state(
         &self,
         request: QueryUpgradedClientStateRequest,
@@ -879,72 +953,38 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok((consensus_state, proof))
     }
 
-    /// Performs a query to retrieve the identifiers of all connections.
-    fn query_consensus_states(
+    fn query_connections(
         &self,
-        request: QueryConsensusStatesRequest,
-    ) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
-        crate::time!("query_consensus_states");
-        crate::telemetry!(query, self.id(), "query_consensus_states");
+        request: QueryConnectionsRequest,
+    ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
+        crate::time!("query_connections");
+        crate::telemetry!(query, self.id(), "query_connections");
 
         let mut client = self
             .block_on(
-                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(
+                ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
             .map_err(Error::grpc_transport)?;
 
         let request = tonic::Request::new(request.into());
+
         let response = self
-            .block_on(client.consensus_states(request))
+            .block_on(client.connections(request))
             .map_err(Error::grpc_status)?
             .into_inner();
 
-        let mut consensus_states: Vec<AnyConsensusStateWithHeight> = response
-            .consensus_states
+        // TODO: add warnings for any identifiers that fail to parse (below).
+        //      similar to the parsing in `query_connection_channels`.
+
+        let connections = response
+            .connections
             .into_iter()
-            .filter_map(|cs| TryFrom::try_from(cs).ok())
+            .filter_map(|co| IdentifiedConnectionEnd::try_from(co).ok())
             .collect();
-        consensus_states.sort_by(|a, b| a.height.cmp(&b.height));
-        consensus_states.reverse();
-        Ok(consensus_states)
-    }
 
-    fn query_consensus_state(
-        &self,
-        request: QueryConsensusStateRequest,
-        include_proof: IncludeProof,
-    ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error> {
-        crate::time!("query_consensus_state");
-        crate::telemetry!(query, self.id(), "query_consensus_state");
-
-        let res = self.query(
-            ClientConsensusStatePath {
-                client_id: request.client_id.clone(),
-                epoch: request.consensus_height.revision_number(),
-                height: request.consensus_height.revision_height(),
-            },
-            request.query_height,
-            matches!(include_proof, IncludeProof::Yes),
-        )?;
-
-        let consensus_state = AnyConsensusState::decode_vec(&res.value).map_err(Error::decode)?;
-
-        if !matches!(consensus_state, AnyConsensusState::Tendermint(_)) {
-            return Err(Error::consensus_state_type_mismatch(
-                ClientType::Tendermint,
-                consensus_state.client_type(),
-            ));
-        }
-
-        match include_proof {
-            IncludeProof::Yes => {
-                let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
-                Ok((consensus_state, Some(proof)))
-            }
-            IncludeProof::No => Ok((consensus_state, None)),
-        }
+        Ok(connections)
     }
 
     fn query_client_connections(
@@ -980,40 +1020,6 @@ impl ChainEndpoint for CosmosSdkChain {
             .collect();
 
         Ok(ids)
-    }
-
-    fn query_connections(
-        &self,
-        request: QueryConnectionsRequest,
-    ) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
-        crate::time!("query_connections");
-        crate::telemetry!(query, self.id(), "query_connections");
-
-        let mut client = self
-            .block_on(
-                ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(
-                    self.grpc_addr.clone(),
-                ),
-            )
-            .map_err(Error::grpc_transport)?;
-
-        let request = tonic::Request::new(request.into());
-
-        let response = self
-            .block_on(client.connections(request))
-            .map_err(Error::grpc_status)?
-            .into_inner();
-
-        // TODO: add warnings for any identifiers that fail to parse (below).
-        //      similar to the parsing in `query_connection_channels`.
-
-        let connections = response
-            .connections
-            .into_iter()
-            .filter_map(|co| IdentifiedConnectionEnd::try_from(co).ok())
-            .collect();
-
-        Ok(connections)
     }
 
     fn query_connection(
@@ -1597,7 +1603,7 @@ impl ChainEndpoint for CosmosSdkChain {
             .collect::<Vec<_>>();
 
         let joined_tasks = join_all(tasks);
-        let results: Vec<_> = self.block_on(joined_tasks);
+        let results: Vec<_> = self.query_rt.block_on(joined_tasks);
         for result in results {
             if let Ok(res) = result {
                 responses.push(res);

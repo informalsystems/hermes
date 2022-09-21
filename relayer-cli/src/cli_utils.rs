@@ -71,7 +71,8 @@ pub fn spawn_chain_runtime_generic<Handle: ChainHandle>(
     chain_id: &ChainId,
 ) -> Result<Handle, Error> {
     let rt = Arc::new(TokioRuntime::new().unwrap());
-    spawn::spawn_chain_runtime(config, chain_id, rt).map_err(Error::spawn)
+    let query_rt = Arc::new(TokioRuntime::new().unwrap());
+    spawn::spawn_chain_runtime(config, chain_id, rt, query_rt).map_err(Error::spawn)
 }
 
 /// Spawns a chain runtime for specified chain identifier, queries the counterparty chain associated

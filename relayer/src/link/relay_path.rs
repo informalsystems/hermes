@@ -25,7 +25,6 @@ use crate::chain::tracking::TrackedMsgs;
 use crate::chain::tracking::TrackingId;
 use crate::channel::error::ChannelError;
 use crate::channel::Channel;
-use crate::error::Error;
 use crate::event::monitor::EventBatch;
 use crate::event::IbcEventWithHeight;
 use crate::event::PrettyEvents;
@@ -468,15 +467,31 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             vec![
                 CrossChainQueryRequest {
                     id: "1".to_string(),
-                    path: "http://localhost:27021/cosmos/bank/v1beta1/balances/cosmos1j9megzyl8kkq6nz0ym6ywu9y367pyr6c368857".to_string(),
+                    path: "https://rest-cosmoshub.ecostake.com/cosmos/bank/v1beta1/balances/cosmos1ktecz4dr56j9tsfh7nwg8s9suvhfu70qpzrfcr".to_string(),
                 },
                 CrossChainQueryRequest {
                     id: "2".to_string(),
-                    path: "http://localhost:27021/cosmos/bank/v1beta1/balances/cosmos1j9megzyl8kkq6nz0ym6ywu9y367pyr6c368857".to_string(),
+                    path: "https://rest-cosmoshub.ecostake.com/cosmos/bank/v1beta1/balances/cosmos1ktecz4dr56j9tsfh7nwg8s9suvhfu70qpzrfcr".to_string(),
                 },
                 CrossChainQueryRequest {
                     id: "3".to_string(),
-                    path: "http://localhost:27021/cosmos/bank/v1beta1/balances/cosmos1j9megzyl8kkq6nz0ym6ywu9y367pyr6c368857".to_string(),
+                    path: "https://rest-cosmoshub.ecostake.com/cosmos/bank/v1beta1/balances/cosmos1ktecz4dr56j9tsfh7nwg8s9suvhfu70qpzrfcr".to_string(),
+                },
+                CrossChainQueryRequest {
+                    id: "4".to_string(),
+                    path: "https://rest-cosmoshub.ecostake.com/cosmos/bank/v1beta1/balances/cosmos1ktecz4dr56j9tsfh7nwg8s9suvhfu70qpzrfcr".to_string(),
+                },
+                CrossChainQueryRequest {
+                    id: "5".to_string(),
+                    path: "https://rest-cosmoshub.ecostake.com/cosmos/bank/v1beta1/balances/cosmos1ktecz4dr56j9tsfh7nwg8s9suvhfu70qpzrfcr".to_string(),
+                },
+                CrossChainQueryRequest {
+                    id: "6".to_string(),
+                    path: "https://rest-cosmoshub.ecostake.com/cosmos/bank/v1beta1/balances/cosmos1ktecz4dr56j9tsfh7nwg8s9suvhfu70qpzrfcr".to_string(),
+                },
+                CrossChainQueryRequest {
+                    id: "7".to_string(),
+                    path: "https://rest-cosmoshub.ecostake.com/cosmos/bank/v1beta1/balances/cosmos1ktecz4dr56j9tsfh7nwg8s9suvhfu70qpzrfcr".to_string(),
                 },
             ]
         ).unwrap();
@@ -1481,23 +1496,28 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
     // TODO: handle cross-chain query
     // Get response from query data, send tx to src chain
-    fn execute_local_bound_event<I: Iterator<Item = IbcEventWithHeight>>(
-        &self,
-        mut events: I,
-    ) -> Result<VecDeque<IbcEventWithHeight>, (VecDeque<IbcEventWithHeight>, LinkError)> {
-        while let Some(ibc_event_with_height) = events.next() {
-            println!("{:?}", ibc_event_with_height);
-            let test: Result<CrossChainQueryRequest, Error> = ibc_event_with_height.try_into();
-            if let Ok(a) = test {
-                println!("{:?}", a);
+    fn execute_local_bound_event(&self, events: Vec<IbcEventWithHeight>) {
+        let cross_chain_responses = self.src_chain().cross_chain_query(
+            events
+                .iter()
+                .filter_map(|ev| ev.try_into().ok())
+                .collect::<_>(),
+        );
+
+        if let Ok(responses) = cross_chain_responses {
+            let processed_ids = responses
+                .iter()
+                .map(|r| r.id.to_string())
+                .collect::<Vec<_>>();
+            let mut unprocessed_events = vec![];
+            for ev in events {
+                if let Some(packet) = ev.event.cross_chain_query_packet() {
+                    if !processed_ids.contains(&packet.id) {
+                        unprocessed_events.push(packet.id.to_string());
+                    }
+                }
             }
-            // let res = self.src_chain().cross_chain_query();
-            // if let Ok(r) = res {
-            //
-            // }
         }
-        let unprocessed = VecDeque::new();
-        Ok(unprocessed)
     }
 
     /// While there are pending operational data items, this function
@@ -1530,17 +1550,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             }
         }
 
-        let local_events_iter = self.local_bound_events.take().into_iter();
+        let local_events = self.local_bound_events.take().into_iter().collect();
 
-        match self.execute_local_bound_event(local_events_iter) {
-            Ok(unprocessed_local_bound_data) => {
-                self.local_bound_events = unprocessed_local_bound_data.into()
-            }
-            Err((unprocessed_local_bound_data, e)) => {
-                self.local_bound_events = unprocessed_local_bound_data.into();
-                return Err(e);
-            }
-        }
+        self.execute_local_bound_event(local_events);
 
         Ok(())
     }
