@@ -56,9 +56,9 @@ where
     Ok(())
 }
 
+/// Extracts macro calls from a command, replace them with the content of the template and check that the command is correct.
+/// Returns the number of errors encountered.
 fn verify_line(line: &str, path: &Path, line_number: i32) -> i32 {
-    // Extracts macro calls from a command, replace them with the content of the template and check that the command is correct.
-    // Returns the number of errors encountered.
     let parent = path.parent().unwrap_or_else(|| Path::new(&*GUIDE_PATH));
     let mut errors_found = 0;
 
