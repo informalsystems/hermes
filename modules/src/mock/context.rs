@@ -21,11 +21,10 @@ use crate::core::ics02_client::events::Attributes;
 use crate::{
 	core::{
 		ics02_client::{
+			client_message::ClientMessage,
 			client_state::{ClientState, ClientType},
 			context::{ClientKeeper, ClientReader},
 			error::Error as Ics02Error,
-			header::Header,
-			misbehaviour::Misbehaviour,
 		},
 		ics03_connection::{
 			connection::ConnectionEnd,
@@ -58,9 +57,8 @@ use crate::{
 			AnyClientState, AnyConsensusState, AnyConsensusStateWithHeight, MockClientRecord,
 			MockClientState, MockConsensusState,
 		},
-		header::{AnyHeader, MockHeader},
+		header::{AnyClientMessage, MockHeader},
 		host::{HostBlock, MockHostBlock},
-		misbehaviour::AnyMisbehaviour,
 	},
 	test_utils::Crypto,
 	timestamp::Timestamp,
@@ -450,7 +448,7 @@ where
 		let (client_state, consensus_state) = match client_type {
 			// If it's a mock client, create the corresponding mock states.
 			client_type if client_type == MockClientState::client_type() => (
-				Some(MockClientState::new(MockHeader::new(client_state_height)).into()),
+				Some(MockClientState::new(MockHeader::new(client_state_height).into()).into()),
 				MockConsensusState::new(MockHeader::new(cs_height)).into(),
 			),
 			_ => unimplemented!(),
@@ -1007,7 +1005,10 @@ pub trait ClientTypes
 where
 	Self: Clone + Debug + Eq,
 {
-	type AnyHeader: Header + TryFrom<Any, Error = Ics02Error> + Into<Any> + From<Self::HostBlock>;
+	type AnyClientMessage: ClientMessage
+		+ TryFrom<Any, Error = Ics02Error>
+		+ Into<Any>
+		+ From<Self::HostBlock>;
 	type AnyClientState: ClientState<ClientDef = Self::ClientDef>
 		+ Eq
 		+ TryFrom<Any, Error = Ics02Error>
@@ -1018,10 +1019,9 @@ where
 		+ Into<Any>
 		+ From<Self::HostBlock>
 		+ 'static;
-	type AnyMisbehaviour: Misbehaviour;
 	type HostFunctions: ics23::HostFunctionsProvider;
 	type ClientDef: ClientDef<
-		Header = Self::AnyHeader,
+		ClientMessage = Self::AnyClientMessage,
 		ClientState = Self::AnyClientState,
 		ConsensusState = Self::AnyConsensusState,
 	>;
@@ -1029,20 +1029,18 @@ where
 }
 
 impl ClientTypes for MockClientTypes {
-	type AnyHeader = AnyHeader;
+	type AnyClientMessage = AnyClientMessage;
 	type AnyClientState = AnyClientState;
 	type AnyConsensusState = AnyConsensusState;
-	type AnyMisbehaviour = AnyMisbehaviour;
 	type HostFunctions = Crypto;
 	type ClientDef = AnyClient;
 	type HostBlock = MockHostBlock;
 }
 
 impl<C: ClientTypes> ClientKeeper for MockContext<C> {
-	type AnyHeader = C::AnyHeader;
+	type AnyClientMessage = C::AnyClientMessage;
 	type AnyClientState = C::AnyClientState;
 	type AnyConsensusState = C::AnyConsensusState;
-	type AnyMisbehaviour = C::AnyMisbehaviour;
 	type ClientDef = C::ClientDef;
 
 	fn store_client_type(

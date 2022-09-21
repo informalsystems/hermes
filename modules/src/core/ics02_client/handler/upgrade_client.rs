@@ -43,7 +43,7 @@ where
 	let client_state = ctx.client_state(&client_id)?;
 
 	if client_state.is_frozen() {
-		return Err(Error::client_frozen(client_id))
+		return Err(Error::client_frozen(client_id));
 	}
 
 	let upgrade_client_state = msg.client_state.clone();
@@ -52,7 +52,7 @@ where
 		return Err(Error::low_upgrade_height(
 			client_state.latest_height(),
 			upgrade_client_state.latest_height(),
-		))
+		));
 	}
 
 	let client_type = ctx.client_type(&client_id)?;
@@ -124,7 +124,7 @@ mod tests {
 
 		let msg = MsgUpgradeAnyClient {
 			client_id: client_id.clone(),
-			client_state: MockClientState::new(MockHeader::new(Height::new(1, 26))).into(),
+			client_state: MockClientState::new(MockHeader::new(Height::new(1, 26)).into()).into(),
 			consensus_state: MockConsensusState::new(MockHeader::new(Height::new(1, 26))).into(),
 			proof_upgrade_client: Default::default(),
 			proof_upgrade_consensus_state: Default::default(),
@@ -167,7 +167,8 @@ mod tests {
 
 		let msg = MsgUpgradeAnyClient {
 			client_id: ClientId::from_str("nonexistingclient").unwrap(),
-			client_state: MockClientState::new(MockHeader::new(Height::new(1, 26))).into(),
+			client_state: MockClientState::new(MockHeader::new(Height::new(1, 26).into()).into())
+				.into(),
 			consensus_state: MockConsensusState::new(MockHeader::new(Height::new(1, 26))).into(),
 			proof_upgrade_client: Default::default(),
 			proof_upgrade_consensus_state: Default::default(),
@@ -196,7 +197,7 @@ mod tests {
 
 		let msg = MsgUpgradeAnyClient {
 			client_id,
-			client_state: MockClientState::new(MockHeader::new(Height::new(0, 26))).into(),
+			client_state: MockClientState::new(MockHeader::new(Height::new(0, 26)).into()).into(),
 			consensus_state: MockConsensusState::new(MockHeader::new(Height::new(0, 26))).into(),
 			proof_upgrade_client: Default::default(),
 			proof_upgrade_consensus_state: Default::default(),

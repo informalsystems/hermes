@@ -114,7 +114,7 @@ where
 			.collect::<Result<Vec<_>, _>>()?;
 
 		if counterparty_versions.is_empty() {
-			return Err(Error::empty_versions())
+			return Err(Error::empty_versions());
 		}
 
 		Ok(Self {
@@ -220,7 +220,7 @@ pub mod test_util {
 		RawMsgConnectionOpenTry {
 			client_id: ClientId::default().to_string(),
 			client_state: Some(
-				AnyClientState::Mock(MockClientState::new(MockHeader::default())).into(),
+				AnyClientState::Mock(MockClientState::new(MockHeader::default().into())).into(),
 			),
 			counterparty: Some(get_dummy_raw_counterparty()),
 			delay_period: 0,

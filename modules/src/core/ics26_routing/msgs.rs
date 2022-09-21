@@ -45,7 +45,7 @@ where
 	C: ClientKeeper + Clone + Debug + PartialEq + Eq,
 	Any: From<C::AnyClientState>,
 	Any: From<C::AnyConsensusState>,
-	Any: From<C::AnyHeader>,
+	Any: From<C::AnyClientMessage>,
 	MsgCreateAnyClient<C>: TryFrom<MsgCreateClient>,
 	<MsgCreateAnyClient<C> as TryFrom<MsgCreateClient>>::Error: Display,
 	MsgCreateAnyClient<C>: Protobuf<MsgCreateClient>,

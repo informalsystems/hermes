@@ -7,13 +7,12 @@
 use crate::core::ics02_client::{
 	context::ClientKeeper,
 	msgs::{
-		create_client::MsgCreateAnyClient, misbehavior::MsgSubmitAnyMisbehaviour,
-		update_client::MsgUpdateAnyClient, upgrade_client::MsgUpgradeAnyClient,
+		create_client::MsgCreateAnyClient, update_client::MsgUpdateAnyClient,
+		upgrade_client::MsgUpgradeAnyClient,
 	},
 };
 
 pub mod create_client;
-pub mod misbehavior;
 pub mod update_client;
 pub mod upgrade_client;
 
@@ -22,6 +21,5 @@ pub mod upgrade_client;
 pub enum ClientMsg<C: ClientKeeper> {
 	CreateClient(MsgCreateAnyClient<C>),
 	UpdateClient(MsgUpdateAnyClient<C>),
-	Misbehaviour(MsgSubmitAnyMisbehaviour<C>),
 	UpgradeClient(MsgUpgradeAnyClient<C>),
 }

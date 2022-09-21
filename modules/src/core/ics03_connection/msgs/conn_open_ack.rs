@@ -179,7 +179,7 @@ pub mod test_util {
 				revision_height: consensus_height,
 			}),
 			client_state: Some(
-				AnyClientState::Mock(MockClientState::new(MockHeader::default())).into(),
+				AnyClientState::Mock(MockClientState::new(MockHeader::default().into())).into(),
 			),
 			proof_client: get_dummy_proof(),
 			version: Some(Version::default().into()),

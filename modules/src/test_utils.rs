@@ -577,10 +577,9 @@ impl<C: ClientTypes> ChannelReader for DummyTransferModule<C> {
 }
 
 impl<C: ClientTypes> ClientKeeper for DummyTransferModule<C> {
-	type AnyHeader = C::AnyHeader;
+	type AnyClientMessage = C::AnyClientMessage;
 	type AnyClientState = C::AnyClientState;
 	type AnyConsensusState = C::AnyConsensusState;
-	type AnyMisbehaviour = C::AnyMisbehaviour;
 	type ClientDef = C::ClientDef;
 
 	fn store_client_type(

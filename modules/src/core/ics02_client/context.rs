@@ -7,11 +7,10 @@ use crate::{
 		ics02_client::{
 			client_consensus::ConsensusState,
 			client_def::{ClientDef, ConsensusUpdateResult},
+			client_message::ClientMessage,
 			client_state::{ClientState, ClientType},
 			error::{Error, ErrorDetail},
 			handler::ClientResult::{self, Create, Update, Upgrade},
-			header::Header,
-			misbehaviour::Misbehaviour,
 		},
 		ics24_host::identifier::ClientId,
 	},
@@ -95,14 +94,13 @@ pub trait ClientKeeper
 where
 	Self: Clone + Debug + Eq,
 {
-	type AnyHeader: Header;
+	type AnyClientMessage: ClientMessage;
 	type AnyClientState: ClientState<ClientDef = Self::ClientDef> + Eq;
 	type AnyConsensusState: ConsensusState + Eq + 'static;
-	type AnyMisbehaviour: Misbehaviour;
 
 	/// Client definition type (used for verification)
 	type ClientDef: ClientDef<
-		Header = Self::AnyHeader,
+		ClientMessage = Self::AnyClientMessage,
 		ClientState = Self::AnyClientState,
 		ConsensusState = Self::AnyConsensusState,
 	>;

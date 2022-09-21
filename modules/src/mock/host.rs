@@ -2,10 +2,7 @@
 
 use crate::{
 	core::ics24_host::identifier::ChainId,
-	mock::{
-		client_state::AnyConsensusState,
-		header::{AnyHeader, MockHeader},
-	},
+	mock::{client_state::AnyConsensusState, header::MockHeader},
 	prelude::*,
 	timestamp::Timestamp,
 	Height,
@@ -89,10 +86,10 @@ impl From<MockHostBlock> for AnyConsensusState {
 	}
 }
 
-impl From<MockHostBlock> for AnyHeader {
-	fn from(any_block: MockHostBlock) -> Self {
-		match any_block {
-			MockHostBlock::Mock(mock_header) => mock_header.into(),
-		}
-	}
-}
+// impl From<MockHostBlock> for AnyClientMessage {
+// 	fn from(any_block: MockHostBlock) -> Self {
+// 		match any_block {
+// 			MockHostBlock::Mock(mock_header) => mock_header.into(),
+// 		}
+// 	}
+// }

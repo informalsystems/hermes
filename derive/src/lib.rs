@@ -5,14 +5,17 @@ mod consensus_state;
 mod header;
 mod misbehaviour;
 mod protobuf;
+mod utils;
 
-use proc_macro::TokenStream;
+use proc_macro::{Span, TokenStream};
 use proc_macro2::Ident;
+use quote::quote;
 
-use syn::{parse_macro_input, Data, DeriveInput, Generics, Type, TypePath};
+use crate::utils::{generate_crate_access_2018, ident_path};
+use syn::{parse_macro_input, Data, DeriveInput, Generics, Path, Type, TypePath};
 
 struct AnyData {
-	pub header_ident: Ident,
+	pub client_message_ident: Ident,
 	pub client_state_ident: Ident,
 	pub consensus_state_ident: Ident,
 }
@@ -52,40 +55,44 @@ struct State {
 	pub clients: Vec<ClientData>,
 	pub self_ident: Ident,
 	pub generics: Generics,
+	pub crate_ident: Path,
+	pub current_impl_trait: TypePath,
+	pub current_impl_error: TypePath,
+	pub client_state_trait: TypePath,
 }
 
 #[proc_macro_derive(ClientDef, attributes(ibc))]
 pub fn derive_client_def(input: TokenStream) -> TokenStream {
 	let input = parse_macro_input!(input as DeriveInput);
-	let state = State::from_input(input, client_data_with_proto_attrs);
+	let mut state = State::from_input(input, client_data_with_proto_attrs);
 	state.impl_client_def().into()
 }
 
 #[proc_macro_derive(ClientState, attributes(ibc))]
 pub fn derive_client_state(input: TokenStream) -> TokenStream {
 	let input = parse_macro_input!(input as DeriveInput);
-	let state = State::from_input(input, client_data_with_proto_attrs);
+	let mut state = State::from_input(input, client_data_with_proto_attrs);
 	state.impl_client_state().into()
 }
 
 #[proc_macro_derive(ConsensusState, attributes(ibc))]
 pub fn derive_consensus_state(input: TokenStream) -> TokenStream {
 	let input = parse_macro_input!(input as DeriveInput);
-	let state = State::from_input(input, client_data_with_proto_attrs);
+	let mut state = State::from_input(input, client_data_with_proto_attrs);
 	state.impl_consensus_state().into()
 }
 
-#[proc_macro_derive(Header, attributes(ibc))]
-pub fn derive_header(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(ClientMessage, attributes(ibc))]
+pub fn derive_client_message(input: TokenStream) -> TokenStream {
 	let input = parse_macro_input!(input as DeriveInput);
-	let state = State::from_input(input, client_data_with_proto_attrs);
-	state.impl_header().into()
+	let mut state = State::from_input(input, client_data_with_proto_attrs);
+	state.impl_client_message().into()
 }
 
 #[proc_macro_derive(Misbehaviour, attributes(ibc))]
 pub fn derive_misbehaviour(input: TokenStream) -> TokenStream {
 	let input = parse_macro_input!(input as DeriveInput);
-	let state = State::from_input(input, client_data_with_proto_attrs);
+	let mut state = State::from_input(input, client_data_with_proto_attrs);
 	state.impl_misbehaviour().into()
 }
 
@@ -150,20 +157,22 @@ impl State {
 			_ => panic!("Only enums are supported"),
 		};
 		let span = input.ident.span();
+		let crate_ = generate_crate_access_2018("ibc").expect("ibc-rs crate not found");
+		let client_state_trait =
+			syn::parse2(quote! { #crate_::core::ics02_client::client_state::ClientState }).unwrap();
 		State {
 			self_ident: input.ident,
 			any_data: AnyData {
-				header_ident: Ident::new("AnyHeader", span),
+				client_message_ident: Ident::new("AnyClientMessage", span),
 				client_state_ident: Ident::new("AnyClientState", span),
 				consensus_state_ident: Ident::new("AnyConsensusState", span),
 			},
 			clients: data.variants.iter().map(client_fn).collect(),
 			generics: input.generics.clone(),
+			crate_ident: crate_,
+			current_impl_trait: ident_path(Ident::new("UNKNOWN_TRAIT", Span::mixed_site().into())),
+			current_impl_error: ident_path(Ident::new("UNKNOWN_ERROR", Span::mixed_site().into())),
+			client_state_trait,
 		}
 	}
-}
-
-fn ident_path(ident: Ident) -> TypePath {
-	let client_def_path = TypePath { qself: None, path: syn::Path::from(ident) };
-	client_def_path
 }

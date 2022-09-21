@@ -156,7 +156,7 @@ pub mod test_util {
 		RawMsgUpgradeClient {
 			client_id: "tendermint".parse().unwrap(),
 			client_state: Some(
-				AnyClientState::Mock(MockClientState::new(MockHeader::new(height))).into(),
+				AnyClientState::Mock(MockClientState::new(MockHeader::new(height).into())).into(),
 			),
 			consensus_state: Some(
 				AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(height))).into(),
@@ -197,7 +197,8 @@ mod tests {
 
 		let height = Height::new(1, 1);
 
-		let client_state = AnyClientState::Mock(MockClientState::new(MockHeader::new(height)));
+		let client_state =
+			AnyClientState::Mock(MockClientState::new(MockHeader::new(height).into()));
 		let consensus_state =
 			AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(height)));
 

@@ -32,8 +32,5 @@ where
 		ClientMsg::CreateClient(msg) => create_client::process::<_>(ctx, msg),
 		ClientMsg::UpdateClient(msg) => update_client::process::<_>(ctx, msg),
 		ClientMsg::UpgradeClient(msg) => upgrade_client::process::<_>(ctx, msg),
-		_ => {
-			unimplemented!()
-		},
 	}
 }

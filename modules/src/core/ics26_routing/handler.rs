@@ -120,7 +120,7 @@ where
 				ics4_packet_msg_dispatcher::<_>(ctx, &msg).map_err(Error::ics04_channel)?;
 
 			if matches!(packet_result, PacketResult::Recv(RecvPacketResult::NoOp)) {
-				return Ok(handler_builder.with_result(()))
+				return Ok(handler_builder.with_result(()));
 			}
 
 			let mut module_output = ModuleOutputBuilder::new();
@@ -185,6 +185,7 @@ mod tests {
 		mock::client_state::{AnyClientState, AnyConsensusState},
 	};
 
+	use crate::mock::header::MockClientMessage;
 	use crate::{
 		core::{
 			ics24_host::identifier::ConnectionId,
@@ -262,7 +263,9 @@ mod tests {
 		};
 
 		let create_client_msg = MsgCreateAnyClient::new(
-			AnyClientState::from(MockClientState::new(MockHeader::new(start_client_height))),
+			AnyClientState::from(MockClientState::new(MockClientMessage::Header(MockHeader::new(
+				start_client_height,
+			)))),
 			AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(start_client_height))),
 			default_signer.clone(),
 		)
@@ -367,7 +370,7 @@ mod tests {
 				name: "Client update successful".to_string(),
 				msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
 					client_id: client_id.clone(),
-					header: MockHeader::new(update_client_height)
+					client_message: MockHeader::new(update_client_height)
 						.with_timestamp(Timestamp::now())
 						.into(),
 					signer: default_signer.clone(),
@@ -379,7 +382,7 @@ mod tests {
 				name: "Client update fails due to stale header".to_string(),
 				msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
 					client_id: client_id.clone(),
-					header: MockHeader::new(update_client_height).into(),
+					client_message: MockHeader::new(update_client_height).into(),
 					signer: default_signer.clone(),
 				}))
 				.into(),
@@ -451,7 +454,7 @@ mod tests {
 				name: "Client update successful #2".to_string(),
 				msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
 					client_id: client_id.clone(),
-					header: MockHeader::new(update_client_height_after_send)
+					client_message: MockHeader::new(update_client_height_after_send)
 						.with_timestamp(Timestamp::now())
 						.into(),
 					signer: default_signer.clone(),
@@ -475,7 +478,7 @@ mod tests {
 				name: "Client update successful".to_string(),
 				msg: Ics26Envelope::Ics2Msg(ClientMsg::UpdateClient(MsgUpdateAnyClient {
 					client_id: client_id.clone(),
-					header: MockHeader::new(update_client_height_after_second_send).into(),
+					client_message: MockHeader::new(update_client_height_after_second_send).into(),
 					signer: default_signer.clone(),
 				}))
 				.into(),
@@ -508,8 +511,8 @@ mod tests {
 				name: "Client upgrade successful".to_string(),
 				msg: Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeAnyClient::new(
 					client_id.clone(),
-					AnyClientState::Mock(MockClientState::new(MockHeader::new(
-						upgrade_client_height,
+					AnyClientState::Mock(MockClientState::new(MockClientMessage::Header(
+						MockHeader::new(upgrade_client_height),
 					))),
 					AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(
 						upgrade_client_height,
@@ -525,8 +528,8 @@ mod tests {
 				name: "Client upgrade un-successful".to_string(),
 				msg: Ics26Envelope::Ics2Msg(ClientMsg::UpgradeClient(MsgUpgradeAnyClient::new(
 					client_id,
-					AnyClientState::Mock(MockClientState::new(MockHeader::new(
-						upgrade_client_height_second,
+					AnyClientState::Mock(MockClientState::new(MockClientMessage::Header(
+						MockHeader::new(upgrade_client_height_second),
 					))),
 					AnyConsensusState::Mock(MockConsensusState::new(MockHeader::new(
 						upgrade_client_height_second,

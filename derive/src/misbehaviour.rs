@@ -7,14 +7,16 @@ impl State {
 		let cases = self.clients.iter().map(|client| {
 			let variant_ident = &client.variant_ident;
 			let attrs = &client.attrs;
+			let trait_ = &self.current_impl_trait;
 			quote! {
 				#(#attrs)*
-				Self::#variant_ident(misbehaviour) => misbehaviour.client_id(),
+				Self::#variant_ident(misbehaviour) => #trait_::client_id(misbehaviour),
 			}
 		});
 
+		let crate_ = &self.crate_ident;
 		quote! {
-			fn client_id(&self) -> &ClientId {
+			fn client_id(&self) -> &#crate_::core::ics24_host::identifier::ClientId {
 				match self {
 					#(#cases)*
 				}
@@ -22,10 +24,16 @@ impl State {
 		}
 	}
 
-	pub fn impl_misbehaviour(&self) -> proc_macro2::TokenStream {
+	pub fn impl_misbehaviour(&mut self) -> proc_macro2::TokenStream {
+		let crate_ = &self.crate_ident;
+		self.current_impl_trait =
+			syn::parse2(quote! { #crate_::core::ics02_client::misbehaviour::Misbehaviour })
+				.unwrap();
+		self.current_impl_error =
+			syn::parse2(quote! { #crate_::core::ics02_client::error::Error }).unwrap();
 		let this = &self.self_ident;
-		let gens = &self.generics;
-		let gens_where = &self.generics.where_clause;
+		let trait_ = &self.current_impl_trait;
+		let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
 
 		let fn_client_id = self.impl_fn_client_id();
 		let fn_height = self.impl_fn_height();
@@ -34,7 +42,7 @@ impl State {
 		let fn_encode_to_vec = self.impl_fn_encode_to_vec();
 
 		quote! {
-			impl #gens Misbehaviour for #this #gens #gens_where {
+			impl #impl_generics #trait_ for #this #ty_generics #where_clause {
 				#fn_client_id
 				#fn_height
 				#fn_downcast

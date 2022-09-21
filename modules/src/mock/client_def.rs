@@ -1,9 +1,10 @@
 use crate::core::ics02_client::{
 	client_consensus::ConsensusState,
 	client_def::{ClientDef, ConsensusUpdateResult},
-	client_state::ClientState,
 };
 
+use crate::core::ics02_client::client_message::ClientMessage;
+use crate::mock::header::MockClientMessage;
 use crate::{
 	core::{
 		ics02_client::error::Error,
@@ -24,10 +25,9 @@ use crate::{
 		},
 		ics26_routing::context::ReaderContext,
 	},
-	downcast,
 	mock::{
 		client_state::{AnyClientState, AnyConsensusState, MockClientState, MockConsensusState},
-		header::{AnyHeader, MockHeader},
+		header::AnyClientMessage,
 	},
 	prelude::*,
 	Height,
@@ -49,7 +49,7 @@ impl Default for MockClient {
 }
 
 impl ClientDef for MockClient {
-	type Header = MockHeader;
+	type ClientMessage = MockClientMessage;
 	type ClientState = MockClientState;
 	type ConsensusState = MockConsensusState;
 
@@ -58,14 +58,18 @@ impl ClientDef for MockClient {
 		_ctx: &Ctx,
 		_client_id: ClientId,
 		client_state: Self::ClientState,
-		header: Self::Header,
+		client_message: Self::ClientMessage,
 	) -> Result<(Self::ClientState, ConsensusUpdateResult<Ctx>), Error> {
-		if client_state.latest_height() >= header.height() {
-			return Err(Error::low_header_height(header.height(), client_state.latest_height()))
+		if client_state.latest_height() >= client_message.height() {
+			return Err(Error::low_header_height(
+				client_message.height(),
+				client_state.latest_height(),
+			));
 		}
 
+		let header = client_message.header();
 		Ok((
-			MockClientState::new(header),
+			MockClientState::new(client_message),
 			ConsensusUpdateResult::Single(
 				Ctx::AnyConsensusState::wrap(&MockConsensusState::new(header)).unwrap(),
 			),
@@ -220,12 +224,12 @@ impl ClientDef for MockClient {
 		))
 	}
 
-	fn verify_header<Ctx: ReaderContext>(
+	fn verify_client_message<Ctx: ReaderContext>(
 		&self,
 		_ctx: &Ctx,
 		_client_id: ClientId,
 		_client_state: Self::ClientState,
-		_header: Self::Header,
+		_client_msg: Self::ClientMessage,
 	) -> Result<(), Error> {
 		Ok(())
 	}
@@ -233,7 +237,7 @@ impl ClientDef for MockClient {
 	fn update_state_on_misbehaviour(
 		&self,
 		client_state: Self::ClientState,
-		_header: Self::Header,
+		_client_msg: Self::ClientMessage,
 	) -> Result<Self::ClientState, Error> {
 		Ok(client_state)
 	}
@@ -243,7 +247,7 @@ impl ClientDef for MockClient {
 		_ctx: &Ctx,
 		_client_id: ClientId,
 		_client_state: Self::ClientState,
-		_header: Self::Header,
+		_client_msg: Self::ClientMessage,
 	) -> Result<bool, Error> {
 		Ok(false)
 	}

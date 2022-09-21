@@ -32,7 +32,7 @@
 #[macro_export]
 macro_rules! downcast {
     ( $e1:expr => $p1:path, $( $e:expr => $p:path ),+ $(,)? ) => {
-        downcast!($e1 => $p1).zip(downcast!($($e => $p),+))
+        $crate::downcast!($e1 => $p1).zip($crate::downcast!($($e => $p),+))
     };
 
     ($e:expr => $p:path) => {

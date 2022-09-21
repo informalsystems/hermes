@@ -5,40 +5,27 @@ use tendermint_proto::Protobuf;
 use ibc_proto::ibc::mock::Misbehaviour as RawMisbehaviour;
 
 use crate::{
-	core::{
-		ics02_client::{error::Error, misbehaviour::Misbehaviour},
-		ics24_host::identifier::ClientId,
-	},
+	core::{ics02_client::error::Error, ics24_host::identifier::ClientId},
 	mock::header::MockHeader,
-	Height,
 };
-use ibc_proto::google::protobuf::Any;
 
 pub const MOCK_MISBEHAVIOUR_TYPE_URL: &str = "/ibc.mock.Misbehavior";
 
-#[derive(Clone, Debug, PartialEq, Misbehaviour, Protobuf)]
+#[derive(Clone, Debug, PartialEq, Protobuf)]
 #[allow(clippy::large_enum_variant)]
 pub enum AnyMisbehaviour {
 	#[ibc(proto_url = "MOCK_MISBEHAVIOUR_TYPE_URL")]
 	Mock(MockMisbehaviour),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
 pub struct MockMisbehaviour {
 	pub client_id: ClientId,
 	pub header1: MockHeader,
 	pub header2: MockHeader,
 }
 
-impl Misbehaviour for MockMisbehaviour {
-	fn client_id(&self) -> &ClientId {
-		&self.client_id
-	}
-
-	fn height(&self) -> Height {
-		self.header1.height()
-	}
-
+impl MockMisbehaviour {
 	fn encode_to_vec(&self) -> Vec<u8> {
 		self.encode_vec()
 	}

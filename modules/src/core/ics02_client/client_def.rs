@@ -2,7 +2,7 @@ use crate::core::ics02_client::{client_consensus::ConsensusState, client_state::
 
 use crate::{
 	core::{
-		ics02_client::{context::ClientKeeper, error::Error, header::Header},
+		ics02_client::{client_message::ClientMessage, context::ClientKeeper, error::Error},
 		ics03_connection::connection::ConnectionEnd,
 		ics04_channel::{
 			channel::ChannelEnd,
@@ -31,23 +31,24 @@ impl<C: ClientKeeper> ConsensusUpdateResult<C> {
 	{
 		match self {
 			ConsensusUpdateResult::Single(cs) => ConsensusUpdateResult::Single(f(cs)),
-			ConsensusUpdateResult::Batch(cs) =>
-				ConsensusUpdateResult::Batch(cs.into_iter().map(|(h, s)| (h, f(s))).collect()),
+			ConsensusUpdateResult::Batch(cs) => {
+				ConsensusUpdateResult::Batch(cs.into_iter().map(|(h, s)| (h, f(s))).collect())
+			},
 		}
 	}
 }
 
 pub trait ClientDef: Clone {
-	type Header: Header;
+	type ClientMessage: ClientMessage;
 	type ClientState: ClientState<ClientDef = Self> + Eq;
 	type ConsensusState: ConsensusState + Eq;
 
-	fn verify_header<Ctx: ReaderContext>(
+	fn verify_client_message<Ctx: ReaderContext>(
 		&self,
 		ctx: &Ctx,
 		client_id: ClientId,
 		client_state: Self::ClientState,
-		header: Self::Header,
+		client_msg: Self::ClientMessage,
 	) -> Result<(), Error>;
 
 	fn update_state<Ctx: ReaderContext>(
@@ -55,13 +56,13 @@ pub trait ClientDef: Clone {
 		ctx: &Ctx,
 		client_id: ClientId,
 		client_state: Self::ClientState,
-		header: Self::Header,
+		client_msg: Self::ClientMessage,
 	) -> Result<(Self::ClientState, ConsensusUpdateResult<Ctx>), Error>;
 
 	fn update_state_on_misbehaviour(
 		&self,
 		client_state: Self::ClientState,
-		header: Self::Header,
+		client_msg: Self::ClientMessage,
 	) -> Result<Self::ClientState, Error>;
 
 	fn check_for_misbehaviour<Ctx: ReaderContext>(
@@ -69,7 +70,7 @@ pub trait ClientDef: Clone {
 		ctx: &Ctx,
 		client_id: ClientId,
 		client_state: Self::ClientState,
-		header: Self::Header,
+		client_msg: Self::ClientMessage,
 	) -> Result<bool, Error>;
 
 	/// TODO

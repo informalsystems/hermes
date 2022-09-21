@@ -100,7 +100,7 @@ mod tests {
 		let height = Height::new(0, 42);
 
 		let msg = MsgCreateAnyClient::new(
-			MockClientState::new(MockHeader::new(height)).into(),
+			MockClientState::new(MockHeader::new(height).into()).into(),
 			MockConsensusState::new(MockHeader::new(height)).into(),
 			signer,
 		)
@@ -145,24 +145,30 @@ mod tests {
 
 		let create_client_msgs: Vec<MsgCreateAnyClient<MockContext<MockClientTypes>>> = vec![
 			MsgCreateAnyClient::new(
-				MockClientState::new(MockHeader::new(Height { revision_height: 42, ..height }))
-					.into(),
+				MockClientState::new(
+					MockHeader::new(Height { revision_height: 42, ..height }).into(),
+				)
+				.into(),
 				MockConsensusState::new(MockHeader::new(Height { revision_height: 42, ..height }))
 					.into(),
 				signer.clone(),
 			)
 			.unwrap(),
 			MsgCreateAnyClient::new(
-				MockClientState::new(MockHeader::new(Height { revision_height: 42, ..height }))
-					.into(),
+				MockClientState::new(
+					MockHeader::new(Height { revision_height: 42, ..height }).into(),
+				)
+				.into(),
 				MockConsensusState::new(MockHeader::new(Height { revision_height: 42, ..height }))
 					.into(),
 				signer.clone(),
 			)
 			.unwrap(),
 			MsgCreateAnyClient::new(
-				MockClientState::new(MockHeader::new(Height { revision_height: 50, ..height }))
-					.into(),
+				MockClientState::new(
+					MockHeader::new(Height { revision_height: 50, ..height }).into(),
+				)
+				.into(),
 				MockConsensusState::new(MockHeader::new(Height { revision_height: 50, ..height }))
 					.into(),
 				signer,

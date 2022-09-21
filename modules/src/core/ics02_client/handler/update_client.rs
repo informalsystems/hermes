@@ -43,7 +43,7 @@ where
 {
 	let mut output = HandlerOutput::builder();
 
-	let MsgUpdateAnyClient { client_id, header, signer: _ } = msg;
+	let MsgUpdateAnyClient { client_id, client_message: header, signer: _ } = msg;
 
 	// Read client type from the host chain store. The client should already exist.
 	let client_type = ctx.client_type(&client_id)?;
@@ -54,7 +54,7 @@ where
 	let client_def = client_state.client_def();
 
 	if client_state.is_frozen() {
-		return Err(Error::client_frozen(client_id))
+		return Err(Error::client_frozen(client_id));
 	}
 
 	// Read consensus state from the host chain store.
@@ -71,11 +71,11 @@ where
 	})?;
 
 	if client_state.expired(duration) {
-		return Err(Error::header_not_within_trust_period(latest_consensus_state.timestamp(), now))
+		return Err(Error::header_not_within_trust_period(latest_consensus_state.timestamp(), now));
 	}
 
 	client_def
-		.verify_header::<Ctx>(ctx, client_id.clone(), client_state.clone(), header.clone())
+		.verify_client_message::<Ctx>(ctx, client_id.clone(), client_state.clone(), header.clone())
 		.map_err(|e| Error::header_verification_failure(e.to_string()))?;
 
 	let found_misbehaviour = client_def
@@ -99,7 +99,7 @@ where
 			processed_height: ctx.host_height(),
 		});
 		output.emit(IbcEvent::ClientMisbehaviour(event_attributes.into()));
-		return Ok(output.with_result(result))
+		return Ok(output.with_result(result));
 	}
 	// Use client_state to validate the new header against the latest consensus_state.
 	// This function will return the new client_state (its latest_height changed) and a
@@ -126,13 +126,14 @@ mod tests {
 	use core::str::FromStr;
 	use test_log::test;
 
+	use crate::mock::header::AnyClientMessage;
 	use crate::{
 		core::{
 			ics02_client::{
+				client_message::ClientMessage,
 				context::ClientReader,
 				error::{Error, ErrorDetail},
 				handler::{dispatch, ClientResult::Update},
-				header::Header,
 				msgs::{update_client::MsgUpdateAnyClient, ClientMsg},
 			},
 			ics24_host::identifier::ClientId,
@@ -161,7 +162,7 @@ mod tests {
 			MockContext::<MockClientTypes>::default().with_client(&client_id, Height::new(0, 42));
 		let msg = MsgUpdateAnyClient {
 			client_id: client_id.clone(),
-			header: MockHeader::new(Height::new(0, 46)).with_timestamp(timestamp).into(),
+			client_message: MockHeader::new(Height::new(0, 46)).with_timestamp(timestamp).into(),
 			signer,
 		};
 
@@ -183,7 +184,13 @@ mod tests {
 						assert_eq!(
 							upd_res.client_state,
 							AnyClientState::Mock(MockClientState::new(
-								MockHeader::new(msg.header.height()).with_timestamp(timestamp)
+								MockHeader::new(match msg.client_message {
+									AnyClientMessage::Mock(client_msg) => {
+										client_msg.height()
+									},
+								})
+								.with_timestamp(timestamp)
+								.into()
 							))
 						)
 					},
@@ -206,7 +213,7 @@ mod tests {
 
 		let msg = MsgUpdateAnyClient {
 			client_id: ClientId::from_str("nonexistingclient").unwrap(),
-			header: MockHeader::new(Height::new(0, 46)).into(),
+			client_message: MockHeader::new(Height::new(0, 46)).into(),
 			signer,
 		};
 
@@ -242,7 +249,7 @@ mod tests {
 		for cid in &client_ids {
 			let msg = MsgUpdateAnyClient {
 				client_id: cid.clone(),
-				header: MockHeader::new(update_height).into(),
+				client_message: MockHeader::new(update_height).into(),
 				signer: signer.clone(),
 			};
 

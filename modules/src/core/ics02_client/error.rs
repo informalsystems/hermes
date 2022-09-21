@@ -156,6 +156,9 @@ define_error! {
 		MissingRawHeader
 			| _ | { "missing raw header" },
 
+		MissingRawClientMessage
+			| _ | { "missing raw client message" },
+
 		DecodeRawMisbehaviour
 			[ TraceError<TendermintProtoError> ]
 			| _ | { "invalid raw misbehaviour" },

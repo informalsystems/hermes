@@ -23,7 +23,7 @@ pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpdateClient";
 #[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound when possible
 pub struct MsgUpdateAnyClient<C: ClientKeeper> {
 	pub client_id: ClientId,
-	pub header: C::AnyHeader,
+	pub client_message: C::AnyClientMessage,
 	pub signer: Signer,
 }
 
@@ -31,16 +31,16 @@ impl<C> MsgUpdateAnyClient<C>
 where
 	C: ClientKeeper,
 {
-	pub fn new(client_id: ClientId, header: C::AnyHeader, signer: Signer) -> Self {
-		MsgUpdateAnyClient { client_id, header, signer }
+	pub fn new(client_id: ClientId, client_message: C::AnyClientMessage, signer: Signer) -> Self {
+		MsgUpdateAnyClient { client_id, client_message, signer }
 	}
 }
 
 impl<C> Msg for MsgUpdateAnyClient<C>
 where
 	C: ClientKeeper + Clone,
-	C::AnyHeader: Clone,
-	Any: From<C::AnyHeader>,
+	C::AnyClientMessage: Clone,
+	Any: From<C::AnyClientMessage>,
 {
 	type ValidationError = ValidationError;
 	type Raw = RawMsgUpdateClient;
@@ -57,8 +57,8 @@ where
 impl<C> Protobuf<RawMsgUpdateClient> for MsgUpdateAnyClient<C>
 where
 	C: ClientKeeper + Clone,
-	C::AnyHeader: Clone,
-	Any: From<C::AnyHeader>,
+	C::AnyClientMessage: Clone,
+	Any: From<C::AnyClientMessage>,
 	MsgUpdateAnyClient<C>: TryFrom<MsgUpdateClient>,
 	<MsgUpdateAnyClient<C> as TryFrom<MsgUpdateClient>>::Error: Display,
 {
@@ -67,17 +67,18 @@ where
 impl<C> TryFrom<RawMsgUpdateClient> for MsgUpdateAnyClient<C>
 where
 	C: ClientKeeper,
-	C::AnyHeader: TryFrom<Any>,
-	Error: From<<C::AnyHeader as TryFrom<Any>>::Error>,
+	C::AnyClientMessage: TryFrom<Any>,
+	Error: From<<C::AnyClientMessage as TryFrom<Any>>::Error>,
 {
 	type Error = Error;
 
 	fn try_from(raw: RawMsgUpdateClient) -> Result<Self, Self::Error> {
-		let raw_header = raw.header.ok_or_else(Error::missing_raw_header)?;
+		let raw_client_message =
+			raw.client_message.ok_or_else(Error::missing_raw_client_message)?;
 
 		Ok(MsgUpdateAnyClient {
 			client_id: raw.client_id.parse().map_err(Error::invalid_msg_update_client_id)?,
-			header: C::AnyHeader::try_from(raw_header)?,
+			client_message: C::AnyClientMessage::try_from(raw_client_message)?,
 			signer: raw.signer.parse().map_err(Error::signer)?,
 		})
 	}
@@ -86,12 +87,12 @@ where
 impl<C> From<MsgUpdateAnyClient<C>> for RawMsgUpdateClient
 where
 	C: ClientKeeper,
-	Any: From<C::AnyHeader>,
+	Any: From<C::AnyClientMessage>,
 {
 	fn from(ics_msg: MsgUpdateAnyClient<C>) -> Self {
 		RawMsgUpdateClient {
 			client_id: ics_msg.client_id.to_string(),
-			header: Some(ics_msg.header.into()),
+			client_message: Some(ics_msg.client_message.into()),
 			signer: ics_msg.signer.to_string(),
 		}
 	}

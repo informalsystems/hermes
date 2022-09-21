@@ -1263,6 +1263,7 @@ name = "ibc-derive"
 version = "0.1.0"
 dependencies = [
  "convert_case",
+ "proc-macro-crate 1.2.1",
  "proc-macro2",
  "quote",
  "syn",

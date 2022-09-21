@@ -1,23 +1,98 @@
+use ibc_proto::google::protobuf::Any;
 use serde_derive::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::mock::Header as RawMockHeader;
 
+use crate::mock::host::{HostBlock, MockHostBlock};
+use crate::mock::misbehaviour::{MockMisbehaviour, MOCK_MISBEHAVIOUR_TYPE_URL};
 use crate::{
-	core::ics02_client::{error::Error, header::Header},
+	core::ics02_client::{client_message::ClientMessage, error::Error},
 	mock::client_state::{AnyConsensusState, MockConsensusState},
 	timestamp::Timestamp,
 	Height,
 };
-use ibc_proto::google::protobuf::Any;
 
 pub const MOCK_HEADER_TYPE_URL: &str = "/ibc.mock.Header";
 
-#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, Header, Protobuf)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize, ClientMessage)]
 #[allow(clippy::large_enum_variant)]
-pub enum AnyHeader {
+pub enum AnyClientMessage {
 	#[ibc(proto_url = "MOCK_HEADER_TYPE_URL")]
-	Mock(MockHeader),
+	Mock(MockClientMessage),
+}
+
+impl From<MockHostBlock> for AnyClientMessage {
+	fn from(block: MockHostBlock) -> Self {
+		Self::Mock(MockClientMessage::Header(MockHeader::new(block.height())))
+	}
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
+pub enum MockClientMessage {
+	Header(MockHeader),
+	Misbehaviour(MockMisbehaviour),
+}
+
+impl From<MockHeader> for MockClientMessage {
+	fn from(header: MockHeader) -> Self {
+		Self::Header(header)
+	}
+}
+
+impl MockClientMessage {
+	pub fn header(&self) -> MockHeader {
+		match self {
+			MockClientMessage::Header(header) => header.clone(),
+			MockClientMessage::Misbehaviour(misbehaviour) => misbehaviour.header1.clone(),
+		}
+	}
+}
+
+impl ClientMessage for MockClientMessage {
+	fn encode_to_vec(&self) -> Vec<u8> {
+		unreachable!()
+	}
+
+	fn height(&self) -> Height {
+		match self {
+			MockClientMessage::Header(header) => header.height,
+			MockClientMessage::Misbehaviour(misbehaviour) => misbehaviour.header1.height,
+		}
+	}
+}
+
+impl Protobuf<Any> for AnyClientMessage {}
+
+impl TryFrom<Any> for AnyClientMessage {
+	type Error = Error;
+
+	fn try_from(value: Any) -> Result<Self, Self::Error> {
+		match value.type_url.as_str() {
+			MOCK_HEADER_TYPE_URL => Ok(Self::Mock(MockClientMessage::Header(
+				MockHeader::decode_vec(&value.value).map_err(Error::decode_raw_header)?,
+			))),
+			MOCK_MISBEHAVIOUR_TYPE_URL => Ok(Self::Mock(MockClientMessage::Misbehaviour(
+				MockMisbehaviour::decode_vec(&value.value)
+					.map_err(Error::decode_raw_misbehaviour)?,
+			))),
+			_ => Err(Error::unknown_consensus_state_type(value.type_url)),
+		}
+	}
+}
+
+impl From<AnyClientMessage> for Any {
+	fn from(client_msg: AnyClientMessage) -> Self {
+		match client_msg {
+			AnyClientMessage::Mock(MockClientMessage::Header(header)) => {
+				Any { type_url: MOCK_HEADER_TYPE_URL.to_string(), value: header.encode_vec() }
+			},
+			AnyClientMessage::Mock(MockClientMessage::Misbehaviour(misbehaviour)) => Any {
+				type_url: MOCK_MISBEHAVIOUR_TYPE_URL.to_string(),
+				value: misbehaviour.encode_vec(),
+			},
+		}
+	}
 }
 
 #[derive(Copy, Clone, Default, Debug, Deserialize, PartialEq, Eq, Serialize)]
@@ -68,19 +143,21 @@ impl MockHeader {
 	}
 }
 
-impl From<MockHeader> for AnyHeader {
-	fn from(mh: MockHeader) -> Self {
-		Self::Mock(mh)
+impl From<MockClientMessage> for AnyClientMessage {
+	fn from(client_msg: MockClientMessage) -> Self {
+		Self::Mock(client_msg)
 	}
 }
 
-impl Header for MockHeader {
-	fn height(&self) -> Height {
-		self.height()
+impl From<MockHeader> for AnyClientMessage {
+	fn from(header: MockHeader) -> Self {
+		Self::Mock(MockClientMessage::Header(header))
 	}
+}
 
-	fn encode_to_vec(&self) -> Vec<u8> {
-		self.encode_vec()
+impl From<MockMisbehaviour> for AnyClientMessage {
+	fn from(misbehaviour: MockMisbehaviour) -> Self {
+		Self::Mock(MockClientMessage::Misbehaviour(misbehaviour))
 	}
 }
 
@@ -97,7 +174,7 @@ mod tests {
 	#[test]
 	fn encode_any() {
 		let header = MockHeader::new(Height::new(1, 10)).with_timestamp(Timestamp::none());
-		let bytes = AnyHeader::Mock(header).encode_vec();
+		let bytes = AnyClientMessage::from(header).encode_vec();
 
 		assert_eq!(
 			&bytes,

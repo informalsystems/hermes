@@ -13,7 +13,7 @@ impl State {
 		});
 
 		quote! {
-			fn downcast<T: Clone + core::any::Any>(self) -> Option<T> {
+			fn downcast<T: ::core::clone::Clone + ::core::any::Any>(self) -> ::core::option::Option<T> {
 				match self {
 					#(#cases)*
 				}
@@ -35,7 +35,7 @@ impl State {
 		});
 
 		quote! {
-			fn wrap(sub_state: &dyn core::any::Any) -> Option<Self> {
+			fn wrap(sub_state: &dyn ::core::any::Any) -> ::core::option::Option<Self> {
 				#(#cases)*
 				None
 			}
@@ -43,9 +43,10 @@ impl State {
 	}
 
 	pub(crate) fn impl_fn_encode_to_vec(&self) -> proc_macro2::TokenStream {
+		let crate_ = &self.crate_ident;
 		quote! {
-			fn encode_to_vec(&self) -> Vec<u8> {
-				Protobuf::encode_vec(self)
+			fn encode_to_vec(&self) -> ::alloc::vec::Vec<u8> {
+				#crate_::protobuf::Protobuf::encode_vec(self)
 			}
 		}
 	}

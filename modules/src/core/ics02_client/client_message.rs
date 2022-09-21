@@ -1,7 +1,7 @@
 use crate::{prelude::*, Height};
 
 /// Abstract of consensus state update information
-pub trait Header: Clone + core::fmt::Debug + Send + Sync {
+pub trait ClientMessage: Clone + core::fmt::Debug + Send + Sync {
 	fn downcast<T: Clone + 'static>(self) -> Option<T>
 	where
 		Self: 'static,

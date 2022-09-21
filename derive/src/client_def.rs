@@ -2,40 +2,43 @@ use crate::State;
 use quote::quote;
 
 impl State {
-	fn impl_fn_verify_header(&self) -> proc_macro2::TokenStream {
+	fn impl_fn_verify_client_message(&self) -> proc_macro2::TokenStream {
 		let any_client_state = &self.any_data.client_state_ident;
-		let any_header = &self.any_data.header_ident;
+		let any_client_message = &self.any_data.client_message_ident;
 		let gen_params = &self.generics.params;
-
+		let error = &self.current_impl_error;
+		let crate_ = &self.crate_ident;
+		let trait_ = &self.current_impl_trait;
+		let client_state_trait = &self.client_state_trait;
 		let cases = self.clients.iter().map(|client| {
 			let variant_ident = &client.variant_ident;
 			let attrs = &client.attrs;
 			quote! {
 				#(#attrs)*
 				Self::#variant_ident(client) => {
-					let client_type = client_state.client_type().to_owned();
-					let (client_state, header) = downcast!(
+					let client_type = #client_state_trait::client_type(&client_state).to_owned();
+					let (client_state, client_message) = #crate_::downcast!(
 						client_state => #any_client_state::<#gen_params>::#variant_ident,
-						header => #any_header::#variant_ident,
+						client_message => #any_client_message::#variant_ident,
 					)
-					.ok_or_else(|| Error::client_args_type_mismatch(client_type))?;
+					.ok_or_else(|| #error::client_args_type_mismatch(client_type))?;
 
-					client.verify_header::<Ctx>(ctx, client_id, client_state, header)
+					#trait_::verify_client_message::<Ctx>(client, ctx, client_id, client_state, client_message)
 				}
 			}
 		});
 
 		quote! {
-			#[doc = "Validate an incoming header"]
-			fn verify_header<Ctx>(
+			#[doc = "Validate an incoming client message"]
+			fn verify_client_message<Ctx>(
 				&self,
 				ctx: &Ctx,
-				client_id: ClientId,
+				client_id: #crate_::core::ics24_host::identifier::ClientId,
 				client_state: Self::ClientState,
-				header: Self::Header,
-			) -> Result<(), Error>
+				client_message: Self::ClientMessage,
+			) -> ::core::result::Result<(), #error>
 			where
-				Ctx: ReaderContext,
+				Ctx: #crate_::core::ics26_routing::context::ReaderContext,
 			{
 				match self {
 					#(#cases)*
@@ -45,8 +48,12 @@ impl State {
 	}
 
 	fn impl_fn_update_state(&self) -> proc_macro2::TokenStream {
+		let crate_ = &self.crate_ident;
+		let error = &self.current_impl_error;
+		let trait_ = &self.current_impl_trait;
+		let client_state_trait = &self.client_state_trait;
 		let any_client_state = &self.any_data.client_state_ident;
-		let any_header = &self.any_data.header_ident;
+		let any_client_message = &self.any_data.client_message_ident;
 		let gen_params = &self.generics.params;
 		let cases = self.clients.iter().map(|client| {
 			let variant_ident = &client.variant_ident;
@@ -54,15 +61,15 @@ impl State {
 			quote! {
 				#(#attrs)*
 				Self::#variant_ident(client) => {
-					let client_type = client_state.client_type().to_owned();
-					let (client_state, header) = downcast!(
+					let client_type = #client_state_trait::client_type(&client_state).to_owned();
+					let (client_state, client_message) = #crate_::downcast!(
 						client_state => #any_client_state::<#gen_params>::#variant_ident,
-						header => #any_header::#variant_ident,
+						client_message => #any_client_message::#variant_ident,
 					)
-					.ok_or_else(|| Error::client_args_type_mismatch(client_type))?;
+					.ok_or_else(|| #error::client_args_type_mismatch(client_type))?;
 
 					let (new_state, new_consensus) =
-						client.update_state(ctx, client_id, client_state, header)?;
+						#trait_::update_state(client, ctx, client_id, client_state, client_message)?;
 
 					Ok((Self::ClientState::#variant_ident(new_state), new_consensus))
 				}
@@ -70,16 +77,16 @@ impl State {
 		});
 
 		quote! {
-			#[doc = "Validates an incoming `header` against the latest consensus state of this client."]
+			#[doc = "Validates an incoming `client_message` against the latest consensus state of this client."]
 			fn update_state<Ctx>(
 				&self,
 				ctx: &Ctx,
-				client_id: ClientId,
+				client_id: #crate_::core::ics24_host::identifier::ClientId,
 				client_state: Self::ClientState,
-				header: Self::Header,
-			) -> Result<(Self::ClientState, ConsensusUpdateResult<Ctx>), Error>
+				client_message: Self::ClientMessage,
+			) -> ::core::result::Result<(Self::ClientState, #crate_::core::ics02_client::client_def::ConsensusUpdateResult<Ctx>), #error>
 			where
-				Ctx: ReaderContext,
+				Ctx: #crate_::core::ics26_routing::context::ReaderContext,
 			{
 				match self {
 					#(#cases)*
@@ -89,23 +96,27 @@ impl State {
 	}
 
 	fn impl_fn_update_state_on_misbehaviour(&self) -> proc_macro2::TokenStream {
+		let crate_ = &self.crate_ident;
+		let trait_ = &self.current_impl_trait;
+		let error = &self.current_impl_error;
 		let any_client_state = &self.any_data.client_state_ident;
-		let any_header = &self.any_data.header_ident;
+		let any_client_message = &self.any_data.client_message_ident;
 		let gen_params = &self.generics.params;
+		let client_state_trait = &self.client_state_trait;
 		let cases = self.clients.iter().map(|client| {
 			let variant_ident = &client.variant_ident;
 			let attrs = &client.attrs;
 			quote! {
 				#(#attrs)*
 				Self::#variant_ident(client) => {
-					let client_type = client_state.client_type().to_owned();
-					let (client_state, header) = downcast!(
+					let client_type = #client_state_trait::client_type(&client_state).to_owned();
+					let (client_state, client_message) = #crate_::downcast!(
 						client_state => #any_client_state::<#gen_params>::#variant_ident,
-						header => #any_header::#variant_ident,
+						client_message => #any_client_message::#variant_ident,
 					)
-					.ok_or_else(|| Error::client_args_type_mismatch(client_type))?;
+					.ok_or_else(|| #error::client_args_type_mismatch(client_type))?;
 
-					let client_state = client.update_state_on_misbehaviour(client_state, header)?;
+					let client_state = #trait_::update_state_on_misbehaviour(client, client_state, client_message)?;
 					Ok(Self::ClientState::#variant_ident(client_state))
 				}
 			}
@@ -115,8 +126,8 @@ impl State {
 			fn update_state_on_misbehaviour(
 				&self,
 				client_state: Self::ClientState,
-				header: Self::Header,
-			) -> Result<Self::ClientState, Error> {
+				client_message: Self::ClientMessage,
+			) -> ::core::result::Result<Self::ClientState, #error> {
 				match self {
 					#(#cases)*
 				}
@@ -125,34 +136,38 @@ impl State {
 	}
 
 	fn impl_fn_check_for_misbehaviour(&self) -> proc_macro2::TokenStream {
+		let crate_ = &self.crate_ident;
+		let error = &self.current_impl_error;
+		let trait_ = &self.current_impl_trait;
+		let client_state_trait = &self.client_state_trait;
 		let cases = self.clients.iter().map(|client| {
 			let variant_ident = &client.variant_ident;
 			let attrs = &client.attrs;
 			quote! {
 				#(#attrs)*
 				Self::#variant_ident(client) => {
-					let client_type = client_state.client_type().to_owned();
-					let (client_state, header) = downcast!(
+					let client_type = #client_state_trait::client_type(&client_state).to_owned();
+					let (client_state, client_message) = #crate_::downcast!(
 						client_state => Self::ClientState::#variant_ident,
-						header => Self::Header::#variant_ident,
+						client_message => Self::ClientMessage::#variant_ident,
 					)
-					.ok_or_else(|| Error::client_args_type_mismatch(client_type))?;
-					client.check_for_misbehaviour(ctx, client_id, client_state, header)
+					.ok_or_else(|| #error::client_args_type_mismatch(client_type))?;
+					#trait_::check_for_misbehaviour(client, ctx, client_id, client_state, client_message)
 				}
 			}
 		});
 
 		quote! {
-			#[doc = "Checks for misbehaviour in an incoming header"]
+			#[doc = "Checks for misbehaviour in an incoming client_message"]
 			fn check_for_misbehaviour<Ctx>(
 				&self,
 				ctx: &Ctx,
-				client_id: ClientId,
+				client_id: #crate_::core::ics24_host::identifier::ClientId,
 				client_state: Self::ClientState,
-				header: Self::Header,
-			) -> Result<bool, Error>
+				client_message: Self::ClientMessage,
+			) -> ::core::result::Result<bool, #error>
 			where
-				Ctx: ReaderContext,
+				Ctx: #crate_::core::ics26_routing::context::ReaderContext,
 			{
 				match self {
 					#(#cases)*
@@ -162,20 +177,25 @@ impl State {
 	}
 
 	fn impl_fn_verify_upgrade_and_update_state(&self) -> proc_macro2::TokenStream {
+		let error = &self.current_impl_error;
+		let crate_ = &self.crate_ident;
+		let trait_ = &self.current_impl_trait;
+		let client_state_trait = &self.client_state_trait;
 		let cases = self.clients.iter().map(|client| {
 			let variant_ident = &client.variant_ident;
 			let attrs = &client.attrs;
 			quote! {
 				#(#attrs)*
 				Self::#variant_ident(client) => {
-					let client_type = client_state.client_type().to_owned();
-					let (client_state, consensus_state) = downcast!(
+					let client_type = #client_state_trait::client_type(client_state).to_owned();
+					let (client_state, consensus_state) = #crate_::downcast!(
 						client_state => Self::ClientState::#variant_ident,
 						consensus_state => Self::ConsensusState::#variant_ident,
 					)
-					.ok_or_else(|| Error::client_args_type_mismatch(client_type))?;
+					.ok_or_else(|| #error::client_args_type_mismatch(client_type))?;
 
-					let (new_state, new_consensus) = client.verify_upgrade_and_update_state::<Ctx>(
+					let (new_state, new_consensus) = #trait_::verify_upgrade_and_update_state::<Ctx>(
+						client,
 						client_state,
 						consensus_state,
 						proof_upgrade_client,
@@ -188,13 +208,13 @@ impl State {
 		});
 
 		quote! {
-			fn verify_upgrade_and_update_state<Ctx: ReaderContext>(
+			fn verify_upgrade_and_update_state<Ctx: #crate_::core::ics26_routing::context::ReaderContext>(
 				&self,
 				client_state: &Self::ClientState,
 				consensus_state: &Self::ConsensusState,
-				proof_upgrade_client: Vec<u8>,
-				proof_upgrade_consensus_state: Vec<u8>,
-			) -> Result<(Self::ClientState, ConsensusUpdateResult<Ctx>), Error> {
+				proof_upgrade_client: ::alloc::vec::Vec<u8>,
+				proof_upgrade_consensus_state: ::alloc::vec::Vec<u8>,
+			) -> ::core::result::Result<(Self::ClientState, #crate_::core::ics02_client::client_def::ConsensusUpdateResult<Ctx>), #error> {
 				match self {
 					#(#cases)*
 				}
@@ -203,19 +223,24 @@ impl State {
 	}
 
 	fn impl_fn_verify_client_consensus_state(&self) -> proc_macro2::TokenStream {
+		let crate_ = &self.crate_ident;
+		let trait_ = &self.current_impl_trait;
+		let error = &self.current_impl_error;
+		let client_state_trait = &self.client_state_trait;
 		let cases = self.clients.iter().map(|client| {
 			let variant_ident = &client.variant_ident;
 			let attrs = &client.attrs;
 			quote! {
 				#(#attrs)*
 				Self::#variant_ident(client) => {
-					let client_type = client_state.client_type().to_owned();
-					let client_state = downcast!(
+					let client_type = #client_state_trait::client_type(client_state).to_owned();
+					let client_state = #crate_::downcast!(
 						client_state => Self::ClientState::#variant_ident
 					)
-					.ok_or_else(|| Error::client_args_type_mismatch(client_type))?;
+					.ok_or_else(|| #error::client_args_type_mismatch(client_type))?;
 
-					client.verify_client_consensus_state(
+					#trait_::verify_client_consensus_state(
+						client,
 						ctx,
 						client_state,
 						height,
@@ -231,18 +256,18 @@ impl State {
 		});
 
 		quote! {
-			fn verify_client_consensus_state<Ctx: ReaderContext>(
+			fn verify_client_consensus_state<Ctx: #crate_::core::ics26_routing::context::ReaderContext>(
 				&self,
 				ctx: &Ctx,
 				client_state: &Self::ClientState,
-				height: Height,
-				prefix: &CommitmentPrefix,
-				proof: &CommitmentProofBytes,
-				root: &CommitmentRoot,
-				client_id: &ClientId,
-				consensus_height: Height,
+				height: #crate_::core::ics02_client::height::Height,
+				prefix: &#crate_::core::ics23_commitment::commitment::CommitmentPrefix,
+				proof: &#crate_::core::ics23_commitment::commitment::CommitmentProofBytes,
+				root: &#crate_::core::ics23_commitment::commitment::CommitmentRoot,
+				client_id: &#crate_::core::ics24_host::identifier::ClientId,
+				consensus_height: #crate_::core::ics02_client::height::Height,
 				expected_consensus_state: &Ctx::AnyConsensusState,
-			) -> Result<(), Error> {
+			) -> ::core::result::Result<(), #error> {
 				match self {
 					#(#cases)*
 				}
@@ -251,17 +276,22 @@ impl State {
 	}
 
 	fn impl_fn_verify_connection_state(&self) -> proc_macro2::TokenStream {
+		let crate_ = &self.crate_ident;
+		let trait_ = &self.current_impl_trait;
+		let error = &self.current_impl_error;
+		let client_state_trait = &self.client_state_trait;
 		let cases = self.clients.iter().map(|client| {
 			let variant_ident = &client.variant_ident;
 			let attrs = &client.attrs;
 			quote! {
 				#(#attrs)*
 				Self::#variant_ident(client) => {
-					let client_type = client_state.client_type().to_owned();
-					let client_state = downcast!(client_state => Self::ClientState::#variant_ident)
-						.ok_or_else(|| Error::client_args_type_mismatch(client_type))?;
+					let client_type = #client_state_trait::client_type(client_state).to_owned();
+					let client_state = #crate_::downcast!(client_state => Self::ClientState::#variant_ident)
+						.ok_or_else(|| #error::client_args_type_mismatch(client_type))?;
 
-					client.verify_connection_state(
+					#trait_::verify_connection_state(
+						client,
 						ctx,
 						client_id,
 						client_state,
@@ -277,18 +307,18 @@ impl State {
 		});
 
 		quote! {
-			fn verify_connection_state<Ctx: ReaderContext>(
+			fn verify_connection_state<Ctx: #crate_::core::ics26_routing::context::ReaderContext>(
 				&self,
 				ctx: &Ctx,
-				client_id: &ClientId,
+				client_id: &#crate_::core::ics24_host::identifier::ClientId,
 				client_state: &Self::ClientState,
-				height: Height,
-				prefix: &CommitmentPrefix,
-				proof: &CommitmentProofBytes,
-				root: &CommitmentRoot,
-				connection_id: &ConnectionId,
-				expected_connection_end: &ConnectionEnd,
-			) -> Result<(), Error> {
+				height: #crate_::core::ics02_client::height::Height,
+				prefix: &#crate_::core::ics23_commitment::commitment::CommitmentPrefix,
+				proof: &#crate_::core::ics23_commitment::commitment::CommitmentProofBytes,
+				root: &#crate_::core::ics23_commitment::commitment::CommitmentRoot,
+				connection_id: &#crate_::core::ics24_host::identifier::ConnectionId,
+				expected_connection_end: &#crate_::core::ics03_connection::connection::ConnectionEnd,
+			) -> ::core::result::Result<(), #error> {
 				match self {
 					#(#cases)*
 				}
@@ -297,17 +327,22 @@ impl State {
 	}
 
 	fn impl_fn_verify_channel_state(&self) -> proc_macro2::TokenStream {
+		let crate_ = &self.crate_ident;
+		let trait_ = &self.current_impl_trait;
+		let error = &self.current_impl_error;
+		let client_state_trait = &self.client_state_trait;
 		let cases = self.clients.iter().map(|client| {
 			let variant_ident = &client.variant_ident;
 			let attrs = &client.attrs;
 			quote! {
 				#(#attrs)*
 				Self::#variant_ident(client) => {
-					let client_type = client_state.client_type().to_owned();
-					let client_state = downcast!(client_state => Self::ClientState::#variant_ident)
-						.ok_or_else(|| Error::client_args_type_mismatch(client_type))?;
+					let client_type = #client_state_trait::client_type(client_state).to_owned();
+					let client_state = #crate_::downcast!(client_state => Self::ClientState::#variant_ident)
+						.ok_or_else(|| #error::client_args_type_mismatch(client_type))?;
 
-					client.verify_channel_state(
+					#trait_::verify_channel_state(
+						client,
 						ctx,
 						client_id,
 						client_state,
@@ -324,19 +359,19 @@ impl State {
 		});
 
 		quote! {
-			fn verify_channel_state<Ctx: ReaderContext>(
+			fn verify_channel_state<Ctx: #crate_::core::ics26_routing::context::ReaderContext>(
 				&self,
 				ctx: &Ctx,
-				client_id: &ClientId,
+				client_id: &#crate_::core::ics24_host::identifier::ClientId,
 				client_state: &Self::ClientState,
-				height: Height,
-				prefix: &CommitmentPrefix,
-				proof: &CommitmentProofBytes,
-				root: &CommitmentRoot,
-				port_id: &PortId,
-				channel_id: &ChannelId,
-				expected_channel_end: &ChannelEnd,
-			) -> Result<(), Error> {
+				height: #crate_::core::ics02_client::height::Height,
+				prefix: &#crate_::core::ics23_commitment::commitment::CommitmentPrefix,
+				proof: &#crate_::core::ics23_commitment::commitment::CommitmentProofBytes,
+				root: &#crate_::core::ics23_commitment::commitment::CommitmentRoot,
+				port_id: &#crate_::core::ics24_host::identifier::PortId,
+				channel_id: &#crate_::core::ics24_host::identifier::ChannelId,
+				expected_channel_end: &#crate_::core::ics04_channel::channel::ChannelEnd,
+			) -> ::core::result::Result<(), #error> {
 				match self {
 					#(#cases)*
 				}
@@ -345,19 +380,24 @@ impl State {
 	}
 
 	fn impl_fn_verify_client_full_state(&self) -> proc_macro2::TokenStream {
+		let crate_ = &self.crate_ident;
+		let trait_ = &self.current_impl_trait;
+		let error = &self.current_impl_error;
+		let client_state_trait = &self.client_state_trait;
 		let cases = self.clients.iter().map(|client| {
 			let variant_ident = &client.variant_ident;
 			let attrs = &client.attrs;
 			quote! {
 				#(#attrs)*
 				Self::#variant_ident(client) => {
-					let client_type = client_state.client_type().to_owned();
-					let client_state = downcast!(
+					let client_type = #client_state_trait::client_type(client_state).to_owned();
+					let client_state = #crate_::downcast!(
 						client_state => Self::ClientState::#variant_ident
 					)
-					.ok_or_else(|| Error::client_args_type_mismatch(client_type))?;
+					.ok_or_else(|| #error::client_args_type_mismatch(client_type))?;
 
-					client.verify_client_full_state(
+					#trait_::verify_client_full_state(
+						client,
 						ctx,
 						client_state,
 						height,
@@ -372,17 +412,17 @@ impl State {
 		});
 
 		quote! {
-			fn verify_client_full_state<Ctx: ReaderContext>(
+			fn verify_client_full_state<Ctx: #crate_::core::ics26_routing::context::ReaderContext>(
 				&self,
 				ctx: &Ctx,
 				client_state: &Self::ClientState,
-				height: Height,
-				prefix: &CommitmentPrefix,
-				proof: &CommitmentProofBytes,
-				root: &CommitmentRoot,
-				client_id: &ClientId,
+				height: #crate_::core::ics02_client::height::Height,
+				prefix: &#crate_::core::ics23_commitment::commitment::CommitmentPrefix,
+				proof: &#crate_::core::ics23_commitment::commitment::CommitmentProofBytes,
+				root: &#crate_::core::ics23_commitment::commitment::CommitmentRoot,
+				client_id: &#crate_::core::ics24_host::identifier::ClientId,
 				client_state_on_counterparty: &Ctx::AnyClientState,
-			) -> Result<(), Error> {
+			) -> ::core::result::Result<(), #error> {
 				match self {
 					#(#cases)*
 				}
@@ -391,19 +431,24 @@ impl State {
 	}
 
 	fn impl_fn_verify_packet_data(&self) -> proc_macro2::TokenStream {
+		let crate_ = &self.crate_ident;
+		let trait_ = &self.current_impl_trait;
+		let error = &self.current_impl_error;
+		let client_state_trait = &self.client_state_trait;
 		let cases = self.clients.iter().map(|client| {
 			let variant_ident = &client.variant_ident;
 			let attrs = &client.attrs;
 			quote! {
 				#(#attrs)*
 				Self::#variant_ident(client) => {
-					let client_type = client_state.client_type().to_owned();
-					let client_state = downcast!(
+					let client_type = #client_state_trait::client_type(client_state).to_owned();
+					let client_state = #crate_::downcast!(
 						client_state => Self::ClientState::#variant_ident
 					)
-					.ok_or_else(|| Error::client_args_type_mismatch(client_type))?;
+					.ok_or_else(|| #error::client_args_type_mismatch(client_type))?;
 
-					client.verify_packet_data(
+					#trait_::verify_packet_data(
+						client,
 						ctx,
 						client_id,
 						client_state,
@@ -421,20 +466,20 @@ impl State {
 		});
 
 		quote! {
-			fn verify_packet_data<Ctx: ReaderContext>(
+			fn verify_packet_data<Ctx: #crate_::core::ics26_routing::context::ReaderContext>(
 				&self,
 				ctx: &Ctx,
-				client_id: &ClientId,
+				client_id: &#crate_::core::ics24_host::identifier::ClientId,
 				client_state: &Self::ClientState,
-				height: Height,
-				connection_end: &ConnectionEnd,
-				proof: &CommitmentProofBytes,
-				root: &CommitmentRoot,
-				port_id: &PortId,
-				channel_id: &ChannelId,
-				sequence: Sequence,
-				commitment: PacketCommitment,
-			) -> Result<(), Error> {
+				height: #crate_::core::ics02_client::height::Height,
+				connection_end: &#crate_::core::ics03_connection::connection::ConnectionEnd,
+				proof: &#crate_::core::ics23_commitment::commitment::CommitmentProofBytes,
+				root: &#crate_::core::ics23_commitment::commitment::CommitmentRoot,
+				port_id: &#crate_::core::ics24_host::identifier::PortId,
+				channel_id: &#crate_::core::ics24_host::identifier::ChannelId,
+				sequence: #crate_::core::ics04_channel::packet::Sequence,
+				commitment: #crate_::core::ics04_channel::commitment::PacketCommitment,
+			) -> ::core::result::Result<(), #error> {
 				match self {
 					#(#cases)*
 				}
@@ -443,19 +488,24 @@ impl State {
 	}
 
 	fn impl_fn_verify_packet_acknowledgement(&self) -> proc_macro2::TokenStream {
+		let crate_ = &self.crate_ident;
+		let trait_ = &self.current_impl_trait;
+		let error = &self.current_impl_error;
+		let client_state_trait = &self.client_state_trait;
 		let cases = self.clients.iter().map(|client| {
 			let variant_ident = &client.variant_ident;
 			let attrs = &client.attrs;
 			quote! {
 				#(#attrs)*
 				Self::#variant_ident(client) => {
-					let client_type = client_state.client_type().to_owned();
-					let client_state = downcast!(
+					let client_type = #client_state_trait::client_type(client_state).to_owned();
+					let client_state = #crate_::downcast!(
 						client_state => Self::ClientState::#variant_ident
 					)
-					.ok_or_else(|| Error::client_args_type_mismatch(client_type))?;
+					.ok_or_else(|| #error::client_args_type_mismatch(client_type))?;
 
-					client.verify_packet_acknowledgement(
+					#trait_::verify_packet_acknowledgement(
+						client,
 						ctx,
 						client_id,
 						client_state,
@@ -473,20 +523,20 @@ impl State {
 		});
 
 		quote! {
-			fn verify_packet_acknowledgement<Ctx: ReaderContext>(
+			fn verify_packet_acknowledgement<Ctx: #crate_::core::ics26_routing::context::ReaderContext>(
 				&self,
 				ctx: &Ctx,
-				client_id: &ClientId,
+				client_id: &#crate_::core::ics24_host::identifier::ClientId,
 				client_state: &Self::ClientState,
-				height: Height,
-				connection_end: &ConnectionEnd,
-				proof: &CommitmentProofBytes,
-				root: &CommitmentRoot,
-				port_id: &PortId,
-				channel_id: &ChannelId,
-				sequence: Sequence,
-				ack_commitment: AcknowledgementCommitment,
-			) -> Result<(), Error> {
+				height: #crate_::core::ics02_client::height::Height,
+				connection_end: &#crate_::core::ics03_connection::connection::ConnectionEnd,
+				proof: &#crate_::core::ics23_commitment::commitment::CommitmentProofBytes,
+				root: &#crate_::core::ics23_commitment::commitment::CommitmentRoot,
+				port_id: &#crate_::core::ics24_host::identifier::PortId,
+				channel_id: &#crate_::core::ics24_host::identifier::ChannelId,
+				sequence: #crate_::core::ics04_channel::packet::Sequence,
+				ack_commitment: #crate_::core::ics04_channel::commitment::AcknowledgementCommitment,
+			) -> ::core::result::Result<(), #error> {
 				match self {
 					#(#cases)*
 				}
@@ -495,19 +545,24 @@ impl State {
 	}
 
 	fn impl_fn_verify_next_sequence_recv(&self) -> proc_macro2::TokenStream {
+		let crate_ = &self.crate_ident;
+		let trait_ = &self.current_impl_trait;
+		let error = &self.current_impl_error;
+		let client_state_trait = &self.client_state_trait;
 		let cases = self.clients.iter().map(|client| {
 			let variant_ident = &client.variant_ident;
 			let attrs = &client.attrs;
 			quote! {
 				#(#attrs)*
 				Self::#variant_ident(client) => {
-					let client_type = client_state.client_type().to_owned();
-					let client_state = downcast!(
+					let client_type = #client_state_trait::client_type(client_state).to_owned();
+					let client_state = #crate_::downcast!(
 						client_state => Self::ClientState::#variant_ident
 					)
-					.ok_or_else(|| Error::client_args_type_mismatch(client_type))?;
+					.ok_or_else(|| #error::client_args_type_mismatch(client_type))?;
 
-					client.verify_next_sequence_recv(
+					#trait_::verify_next_sequence_recv(
+						client,
 						ctx,
 						client_id,
 						client_state,
@@ -524,19 +579,19 @@ impl State {
 		});
 
 		quote! {
-			fn verify_next_sequence_recv<Ctx: ReaderContext>(
+			fn verify_next_sequence_recv<Ctx: #crate_::core::ics26_routing::context::ReaderContext>(
 				&self,
 				ctx: &Ctx,
-				client_id: &ClientId,
+				client_id: &#crate_::core::ics24_host::identifier::ClientId,
 				client_state: &Self::ClientState,
-				height: Height,
-				connection_end: &ConnectionEnd,
-				proof: &CommitmentProofBytes,
-				root: &CommitmentRoot,
-				port_id: &PortId,
-				channel_id: &ChannelId,
-				sequence: Sequence,
-			) -> Result<(), Error> {
+				height: #crate_::core::ics02_client::height::Height,
+				connection_end: &#crate_::core::ics03_connection::connection::ConnectionEnd,
+				proof: &#crate_::core::ics23_commitment::commitment::CommitmentProofBytes,
+				root: &#crate_::core::ics23_commitment::commitment::CommitmentRoot,
+				port_id: &#crate_::core::ics24_host::identifier::PortId,
+				channel_id: &#crate_::core::ics24_host::identifier::ChannelId,
+				sequence: #crate_::core::ics04_channel::packet::Sequence,
+			) -> ::core::result::Result<(), #error> {
 				match self {
 					#(#cases)*
 				}
@@ -545,6 +600,10 @@ impl State {
 	}
 
 	fn impl_fn_verify_packet_receipt_absence(&self) -> proc_macro2::TokenStream {
+		let crate_ = &self.crate_ident;
+		let trait_ = &self.current_impl_trait;
+		let error = &self.current_impl_error;
+		let client_state_trait = &self.client_state_trait;
 		let cases = self.clients.iter().map(|client| {
 			let variant_ident = &client.variant_ident;
 			let attrs = &client.attrs;
@@ -552,13 +611,14 @@ impl State {
 			quote! {
 				#(#attrs)*
 				Self::#variant_ident(client) => {
-					let client_type = client_state.client_type().to_owned();
-					let client_state = downcast!(
+					let client_type = #client_state_trait::client_type(client_state).to_owned();
+					let client_state = #crate_::downcast!(
 						client_state => Self::ClientState::#variant_ident
 					)
-					.ok_or_else(|| Error::client_args_type_mismatch(client_type))?;
+					.ok_or_else(|| #error::client_args_type_mismatch(client_type))?;
 
-					client.verify_packet_receipt_absence(
+					#trait_::verify_packet_receipt_absence(
+						client,
 						ctx,
 						client_id,
 						client_state,
@@ -575,19 +635,19 @@ impl State {
 		});
 
 		quote! {
-			fn verify_packet_receipt_absence<Ctx: ReaderContext>(
+			fn verify_packet_receipt_absence<Ctx: #crate_::core::ics26_routing::context::ReaderContext>(
 				&self,
 				ctx: &Ctx,
-				client_id: &ClientId,
+				client_id: &#crate_::core::ics24_host::identifier::ClientId,
 				client_state: &Self::ClientState,
-				height: Height,
-				connection_end: &ConnectionEnd,
-				proof: &CommitmentProofBytes,
-				root: &CommitmentRoot,
-				port_id: &PortId,
-				channel_id: &ChannelId,
-				sequence: Sequence,
-			) -> Result<(), Error> {
+				height: #crate_::core::ics02_client::height::Height,
+				connection_end: &#crate_::core::ics03_connection::connection::ConnectionEnd,
+				proof: &#crate_::core::ics23_commitment::commitment::CommitmentProofBytes,
+				root: &#crate_::core::ics23_commitment::commitment::CommitmentRoot,
+				port_id: &#crate_::core::ics24_host::identifier::PortId,
+				channel_id: &#crate_::core::ics24_host::identifier::ChannelId,
+				sequence: #crate_::core::ics04_channel::packet::Sequence,
+			) -> ::core::result::Result<(), #error> {
 				match self {
 					#(#cases)*
 				}
@@ -595,16 +655,21 @@ impl State {
 		}
 	}
 
-	pub fn impl_client_def(&self) -> proc_macro2::TokenStream {
+	pub fn impl_client_def(&mut self) -> proc_macro2::TokenStream {
+		let crate_ = &self.crate_ident;
+		self.current_impl_trait =
+			syn::parse2(quote! { #crate_::core::ics02_client::client_def::ClientDef }).unwrap();
+		self.current_impl_error =
+			syn::parse2(quote! { #crate_::core::ics02_client::error::Error }).unwrap();
+
 		let this = &self.self_ident;
-		let any_header = &self.any_data.header_ident;
+		let any_client_message = &self.any_data.client_message_ident;
 		let any_client_state = &self.any_data.client_state_ident;
 		let any_consensus_state = &self.any_data.consensus_state_ident;
-		let gens = &self.generics;
-		let gens_where = &self.generics.where_clause;
-		let gen_params = &self.generics.params;
+		let client_def_trait = &self.current_impl_trait;
+		let (impl_generics, ty_generics, where_clause) = self.generics.split_for_impl();
 
-		let fn_verify_header = self.impl_fn_verify_header();
+		let fn_verify_client_message = self.impl_fn_verify_client_message();
 		let fn_update_state = self.impl_fn_update_state();
 		let fn_update_state_on_misbehaviour = self.impl_fn_update_state_on_misbehaviour();
 		let fn_check_for_misbehaviour = self.impl_fn_check_for_misbehaviour();
@@ -619,12 +684,12 @@ impl State {
 		let fn_verify_packet_receipt_absence = self.impl_fn_verify_packet_receipt_absence();
 
 		quote! {
-			impl #gens ClientDef for #this #gens #gens_where {
-				type Header = #any_header;
-				type ClientState = #any_client_state::<#gen_params>;
+			impl #impl_generics #client_def_trait for #this #ty_generics #where_clause {
+				type ClientMessage = #any_client_message;
+				type ClientState = #any_client_state::<#ty_generics>;
 				type ConsensusState = #any_consensus_state;
 
-				#fn_verify_header
+				#fn_verify_client_message
 				#fn_update_state
 				#fn_update_state_on_misbehaviour
 				#fn_check_for_misbehaviour
