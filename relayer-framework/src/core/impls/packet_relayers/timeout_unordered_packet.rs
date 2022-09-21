@@ -30,7 +30,6 @@ where
     Context::Error: From<MismatchIbcEventsCountError>,
 {
     async fn relay_timeout_unordered_packet(
-        &self,
         context: &Context,
         destination_height: &Height<Context::DstChain>,
         packet: &Packet<Context>,

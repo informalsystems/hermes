@@ -1,5 +1,6 @@
-use ibc_relayer_cosmos::cosmos::instances::packet_relayers::full_packet_relayer;
-use ibc_relayer_framework::core::impls::filters::trivial_filters::AllowFilter;
+use ibc_relayer::config::PacketFilter;
+
+use ibc_relayer_framework::core::impls::packet_relayers::top::TopRelayer;
 use ibc_relayer_framework::core::traits::packet_relayer::PacketRelayer;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
@@ -28,8 +29,9 @@ impl BinaryChannelTest for IbcTransferTest {
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let relay_context = build_cosmos_relay_context(&chains);
-        let relayer = full_packet_relayer(1, AllowFilter {});
+        let pf: PacketFilter = PacketFilter::AllowAll;
+
+        let relay_context = build_cosmos_relay_context(&chains, pf);
 
         let runtime = chains.node_a.value().chain_driver.runtime.as_ref();
 
@@ -65,7 +67,11 @@ impl BinaryChannelTest for IbcTransferTest {
 
         info!("running relayer");
 
-        runtime.block_on(async { relayer.relay_packet(&relay_context, &packet).await.unwrap() });
+        runtime.block_on(async {
+            TopRelayer::relay_packet(&relay_context, &packet)
+                .await
+                .unwrap()
+        });
 
         info!("finished running relayer");
 

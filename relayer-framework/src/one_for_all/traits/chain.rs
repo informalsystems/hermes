@@ -10,7 +10,7 @@ use crate::one_for_all::traits::error::OfaError;
 use crate::one_for_all::traits::runtime::{OfaRuntime, OfaRuntimeContext};
 use crate::std_prelude::*;
 
-use super::telemetry::{OfaTelemetry, OfaTelemetryWrapper};
+use crate::one_for_all::traits::telemetry::{OfaTelemetry, OfaTelemetryWrapper};
 
 #[derive(Clone)]
 pub struct OfaChainContext<Chain> {

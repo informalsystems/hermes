@@ -20,7 +20,6 @@ where
     Context: HasIbcMessageSender<SourceTarget>,
 {
     async fn relay_ack_packet(
-        &self,
         context: &Context,
         destination_height: &Height<Context::DstChain>,
         packet: &Packet<Context>,

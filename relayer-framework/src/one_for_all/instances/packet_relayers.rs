@@ -1,3 +1,5 @@
+use core::marker::PhantomData;
+
 use crate::core::impls::packet_relayers::base_ack_packet::BaseAckPacketRelayer;
 use crate::core::impls::packet_relayers::base_receive_packet::BaseReceivePacketRelayer;
 use crate::core::impls::packet_relayers::full_relay::FullRelayer;
@@ -10,17 +12,14 @@ use crate::one_for_all::traits::components::relay::OfaRelayComponents;
 use crate::one_for_all::traits::relay::OfaRelay;
 use crate::one_for_all::traits::relay::OfaRelayContext;
 
-pub fn full_packet_relayer<Relay>(max_retry: usize) -> impl PacketRelayer<OfaRelayContext<Relay>>
+pub fn full_packet_relayer<Relay>() -> impl PacketRelayer<OfaRelayContext<Relay>>
 where
     Relay: OfaRelay,
     Relay::Components: OfaRelayComponents<Relay>,
 {
-    let relayer1 = FullRelayer {
-        receive_relayer: receive_packet_relayer(),
-        ack_relayer: ack_packet_relayer(),
-    };
-
-    RetryRelayer::new(max_retry, relayer1)
+    RetryRelayer::<
+        FullRelayer<SkipReceivedPacketRelayer<BaseReceivePacketRelayer>, BaseAckPacketRelayer>,
+    >::new(PhantomData)
 }
 
 pub fn receive_packet_relayer<Relay: OfaRelay>() -> impl ReceivePacketRelayer<OfaRelayContext<Relay>>
@@ -28,7 +27,7 @@ where
     Relay: OfaRelay,
     Relay::Components: OfaRelayComponents<Relay>,
 {
-    SkipReceivedPacketRelayer::new(BaseReceivePacketRelayer)
+    SkipReceivedPacketRelayer::<BaseReceivePacketRelayer>::new(PhantomData)
 }
 
 pub fn ack_packet_relayer<Relay>() -> impl AckPacketRelayer<OfaRelayContext<Relay>>

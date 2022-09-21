@@ -1,9 +1,13 @@
+use core::marker::PhantomData;
+
 use async_trait::async_trait;
 
 use crate::core::traits::contexts::relay::RelayContext;
 use crate::core::traits::packet_relayer::PacketRelayer;
 use crate::core::types::aliases::Packet;
 use crate::std_prelude::*;
+
+const MAX_RETRY: usize = 3;
 
 pub struct MaxRetryExceeded {
     pub retries: usize,
@@ -14,16 +18,12 @@ pub trait RetryableError {
 }
 
 pub struct RetryRelayer<InRelay> {
-    pub max_retry: usize,
-    pub in_relayer: InRelay,
+    pub phantom: PhantomData<InRelay>,
 }
 
 impl<InRelay> RetryRelayer<InRelay> {
-    pub fn new(max_retry: usize, in_relayer: InRelay) -> Self {
-        Self {
-            max_retry,
-            in_relayer,
-        }
+    pub fn new(phantom: PhantomData<InRelay>) -> Self {
+        Self { phantom }
     }
 }
 
@@ -36,12 +36,11 @@ where
     Context::Error: From<MaxRetryExceeded>,
 {
     async fn relay_packet(
-        &self,
         context: &Context,
         packet: &Packet<Context>,
     ) -> Result<(), Context::Error> {
-        for _ in 0..self.max_retry {
-            let res = self.in_relayer.relay_packet(context, packet).await;
+        for _ in 0..MAX_RETRY {
+            let res = InRelay::relay_packet(context, packet).await;
 
             match res {
                 Ok(()) => {
@@ -55,9 +54,6 @@ where
             }
         }
 
-        Err(MaxRetryExceeded {
-            retries: self.max_retry,
-        }
-        .into())
+        Err(MaxRetryExceeded { retries: MAX_RETRY }.into())
     }
 }

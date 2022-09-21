@@ -8,16 +8,18 @@ use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
 use crate::cosmos::all_for_one::chain::AfoCosmosChainContext;
 use crate::cosmos::all_for_one::relay::AfoCosmosRelayContext;
 use crate::cosmos::core::traits::chain::CosmosChain;
+use crate::cosmos::core::traits::filter::CosmosFilter;
 use crate::cosmos::core::traits::relay::CosmosRelay;
 use crate::cosmos::core::types::chain::CosmosChainContext;
 use crate::cosmos::core::types::relay::CosmosRelayContext;
 
-pub fn relay_context<Relay>() -> PhantomData<impl AfoCosmosRelayContext>
+pub fn relay_context<Relay, Filter>() -> PhantomData<impl AfoCosmosRelayContext>
 where
     Relay: CosmosRelay,
-    Relay::Components: OfaRelayComponents<CosmosRelayContext<Relay>>,
+    Relay::Components: OfaRelayComponents<CosmosRelayContext<Relay, Filter>>,
+    Filter: CosmosFilter + Clone,
 {
-    PhantomData::<OfaRelayContext<CosmosRelayContext<Relay>>>
+    PhantomData::<OfaRelayContext<CosmosRelayContext<Relay, Filter>>>
 }
 
 pub fn chain_context<Chain>() -> PhantomData<impl ChainContext>

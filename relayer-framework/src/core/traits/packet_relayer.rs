@@ -9,11 +9,7 @@ pub trait PacketRelayer<Relay>: Async
 where
     Relay: RelayContext,
 {
-    async fn relay_packet(
-        &self,
-        context: &Relay,
-        packet: &Relay::Packet,
-    ) -> Result<(), Relay::Error>;
+    async fn relay_packet(context: &Relay, packet: &Relay::Packet) -> Result<(), Relay::Error>;
 }
 
 pub trait HasPacketRelayer: RelayContext {

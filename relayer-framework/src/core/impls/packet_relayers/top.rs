@@ -1,3 +1,5 @@
+use core::marker::PhantomData;
+
 use async_trait::async_trait;
 
 use crate::core::impls::packet_relayers::base_ack_packet::BaseAckPacketRelayer;
@@ -29,23 +31,19 @@ pub type TopRelayer_ = RetryRelayer<FullRelayer<TopReceivePacketRelayer, TopAckP
 
 pub type TopReceivePacketRelayer_ = SkipReceivedPacketRelayer<BaseReceivePacketRelayer>;
 
-impl TopRelayer {
-    pub fn new(max_retry: usize) -> Self {
-        let relayer1 = FullRelayer {
-            receive_relayer: TopReceivePacketRelayer::default(),
-            ack_relayer: TopAckPacketRelayer::default(),
-        };
-
-        let relayer2 = RetryRelayer::new(max_retry, relayer1);
-
-        TopRelayer { relayer: relayer2 }
+impl Default for TopRelayer {
+    fn default() -> Self {
+        let relayer =
+            RetryRelayer::<FullRelayer<TopReceivePacketRelayer, TopAckPacketRelayer>>::new(
+                PhantomData,
+            );
+        TopRelayer { relayer }
     }
 }
 
 impl Default for TopReceivePacketRelayer {
     fn default() -> Self {
-        let relayer = SkipReceivedPacketRelayer::new(BaseReceivePacketRelayer);
-
+        let relayer = SkipReceivedPacketRelayer::<BaseReceivePacketRelayer>::new(PhantomData);
         TopReceivePacketRelayer { relayer }
     }
 }
@@ -64,12 +62,8 @@ where
     Relay: RelayContext,
     TopRelayer_: PacketRelayer<Relay>,
 {
-    async fn relay_packet(
-        &self,
-        relay: &Relay,
-        packet: &Relay::Packet,
-    ) -> Result<(), Relay::Error> {
-        self.relayer.relay_packet(relay, packet).await
+    async fn relay_packet(relay: &Relay, packet: &Relay::Packet) -> Result<(), Relay::Error> {
+        TopRelayer_::relay_packet(relay, packet).await
     }
 }
 
@@ -81,15 +75,12 @@ where
     TopReceivePacketRelayer_: ReceivePacketRelayer<Relay>,
 {
     async fn relay_receive_packet(
-        &self,
         context: &Relay,
         source_height: &Height<Relay::SrcChain>,
         packet: &Relay::Packet,
     ) -> Result<Option<WriteAcknowledgementEvent<Relay::DstChain, Relay::SrcChain>>, Relay::Error>
     {
-        self.relayer
-            .relay_receive_packet(context, source_height, packet)
-            .await
+        TopReceivePacketRelayer_::relay_receive_packet(context, source_height, packet).await
     }
 }
 
@@ -101,14 +92,11 @@ where
     BaseAckPacketRelayer: AckPacketRelayer<Relay>,
 {
     async fn relay_ack_packet(
-        &self,
         context: &Relay,
         destination_height: &Height<Relay::DstChain>,
         packet: &Relay::Packet,
         ack: &WriteAcknowledgementEvent<Relay::DstChain, Relay::SrcChain>,
     ) -> Result<(), Relay::Error> {
-        self.relayer
-            .relay_ack_packet(context, destination_height, packet, ack)
-            .await
+        BaseAckPacketRelayer::relay_ack_packet(context, destination_height, packet, ack).await
     }
 }

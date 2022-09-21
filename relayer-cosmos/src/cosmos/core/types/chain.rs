@@ -4,8 +4,7 @@ use ibc_relayer_framework::one_for_all::traits::{
 };
 
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
-
-use super::telemetry::CosmosTelemetry;
+use crate::cosmos::core::types::telemetry::CosmosTelemetry;
 
 #[derive(Clone)]
 pub struct CosmosChainContext<Chain> {
