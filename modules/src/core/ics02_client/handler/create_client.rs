@@ -3,7 +3,7 @@
 use crate::{core::ics26_routing::context::ReaderContext, prelude::*};
 use core::fmt::Debug;
 
-use crate::core::ics02_client::client_state::ClientState;
+use crate::core::ics02_client::client_state::{ClientState, ClientType};
 
 use crate::{
 	core::{
@@ -23,7 +23,7 @@ use crate::{
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Result<C: ClientKeeper> {
 	pub client_id: ClientId,
-	pub client_type: &'static str,
+	pub client_type:  ClientType,
 	pub client_state: C::AnyClientState,
 	pub consensus_state: C::AnyConsensusState,
 	pub processed_time: Timestamp,
@@ -42,7 +42,7 @@ where
 	// Construct this client's identifier
 	let id_counter = ctx.client_counter()?;
 	let client_type = msg.client_state.client_type();
-	let client_id = ClientId::new(client_type, id_counter)
+	let client_id = ClientId::new(&client_type, id_counter)
 		.map_err(|e| Error::client_identifier_constructor(client_type.to_owned(), id_counter, e))?;
 
 	output.log(format!("success: generated new client identifier: {}", client_id));

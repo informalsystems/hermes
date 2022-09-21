@@ -8,6 +8,7 @@ use core::{
 	marker::{Send, Sync},
 	time::Duration,
 };
+use alloc::string::String;
 
 pub trait ClientState: Clone + Debug + Send + Sync {
 	/// Client-specific options for upgrading the client
@@ -24,7 +25,7 @@ pub trait ClientState: Clone + Debug + Send + Sync {
 	/// Returns one of the prefixes that should be present in any client identifiers.
 	/// The prefix is deterministic for a given chain type, hence all clients for a Tendermint-type
 	/// chain, for example, will have the prefix '07-tendermint'.
-	fn client_type(&self) -> &'static str;
+	fn client_type(&self) -> ClientType;
 
 	/// Latest height of consensus state
 	fn latest_height(&self) -> Height;
@@ -70,4 +71,4 @@ pub trait ClientState: Clone + Debug + Send + Sync {
 }
 
 /// Type of the client, depending on the specific consensus algorithm.
-pub type ClientType = &'static str;
+pub type ClientType = String;
