@@ -160,8 +160,8 @@ pub struct PrettyIdentifiedChannel<'a>(pub &'a IdentifiedChannel);
 impl Display for PrettyIdentifiedChannel<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match &self.0.counterparty {
-            Some(counterparty) => write!(f, "IdentifiedChannel {{ state: {}, ordering: {}, counterparty: {}, connection_hops: {}, version: {}, port_id: {}, channel_id: {} }}", self.0.state, self.0.ordering, PrettyChannelCounterparty(counterparty), PrettyVec(&self.0.connection_hops), self.0.version, self.0.port_id, self.0.channel_id),
-            None => write!(f, "IdentifiedChannel {{ state: {}, ordering: {}, counterparty: None, connection_hops: {}, version: {}, port_id: {}, channel_id: {} }}", self.0.state, self.0.ordering, PrettyVec(&self.0.connection_hops), self.0.version, self.0.port_id, self.0.channel_id),
+            Some(counterparty) => write!(f, "IdentifiedChannel {{ state: {}, ordering: {}, counterparty: {}, connection_hops: {}, version: {}, port_id: {}, channel_id: {} }}", self.0.state, self.0.ordering, PrettyChannelCounterparty(counterparty), PrettySlice(&self.0.connection_hops), self.0.version, self.0.port_id, self.0.channel_id),
+            None => write!(f, "IdentifiedChannel {{ state: {}, ordering: {}, counterparty: None, connection_hops: {}, version: {}, port_id: {}, channel_id: {} }}", self.0.state, self.0.ordering, PrettySlice(&self.0.connection_hops), self.0.version, self.0.port_id, self.0.channel_id),
         }
     }
 }
@@ -170,9 +170,10 @@ pub struct PrettyIdentifiedConnection<'a>(pub &'a IdentifiedConnection);
 
 impl Display for PrettyIdentifiedConnection<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        let versions: Vec<PrettyVersion<'_>> = self.0.versions.iter().map(PrettyVersion).collect();
         match &self.0.counterparty {
-            Some(counterparty) => write!(f, "IdentifiedConnection {{ id: {}, client_id: {}, versions: {}, state: {}, counterparty: {}, delay_period: {} }}", self.0.id, self.0.client_id, PrettyVec(&self.0.versions.iter().map(PrettyVersion).collect()), self.0.state, PrettyConnectionCounterparty(counterparty), self.0.delay_period),
-            None => write!(f, "IdentifiedConnection {{ id: {}, client_id: {}, versions: {}, state: {}, counterparty: None, delay_period: {} }}", self.0.id, self.0.client_id, PrettyVec(&self.0.versions.iter().map(PrettyVersion).collect()), self.0.state, self.0.delay_period),
+            Some(counterparty) => write!(f, "IdentifiedConnection {{ id: {}, client_id: {}, versions: {}, state: {}, counterparty: {}, delay_period: {} }}", self.0.id, self.0.client_id, PrettySlice(&versions), self.0.state, PrettyConnectionCounterparty(counterparty), self.0.delay_period),
+            None => write!(f, "IdentifiedConnection {{ id: {}, client_id: {}, versions: {}, state: {}, counterparty: None, delay_period: {} }}", self.0.id, self.0.client_id, PrettySlice(&versions), self.0.state, self.0.delay_period),
         }
     }
 }
@@ -188,9 +189,9 @@ impl<'a, T: Display> Display for PrettyOption<'a, T> {
     }
 }
 
-pub struct PrettyVec<'a, T>(pub &'a Vec<T>);
+pub struct PrettySlice<'a, T>(pub &'a [T]);
 
-impl<'a, T: Display> Display for PrettyVec<'a, T> {
+impl<'a, T: Display> Display for PrettySlice<'a, T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "[ ")?;
         let mut vec_iterator = self.0.iter().peekable();
@@ -292,7 +293,7 @@ mod tests {
         let expected_output = "[ one, two, three ]";
 
         let string_vec = vec!["one", "two", "three"];
-        let pretty_vec = PrettyVec(&string_vec);
+        let pretty_vec = PrettySlice(&string_vec);
 
         assert_eq!(pretty_vec.to_string(), expected_output);
     }
@@ -302,7 +303,7 @@ mod tests {
         let expected_output = "[  ]";
 
         let string_vec: Vec<String> = vec![];
-        let pretty_vec = PrettyVec(&string_vec);
+        let pretty_vec = PrettySlice(&string_vec);
 
         assert_eq!(pretty_vec.to_string(), expected_output);
     }
@@ -312,7 +313,7 @@ mod tests {
         let expected_output = "[ one ]";
 
         let string_vec = vec!["one"];
-        let pretty_vec = PrettyVec(&string_vec);
+        let pretty_vec = PrettySlice(&string_vec);
 
         assert_eq!(pretty_vec.to_string(), expected_output);
     }

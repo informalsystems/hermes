@@ -44,7 +44,7 @@ use crate::event::IbcEventWithHeight;
 use crate::light_client::AnyHeader;
 use crate::misbehaviour::MisbehaviourEvidence;
 use crate::telemetry;
-use crate::util::pretty::{PrettyDuration, PrettyVec};
+use crate::util::pretty::{PrettyDuration, PrettySlice};
 
 const MAX_MISBEHAVIOUR_CHECK_DURATION: Duration = Duration::from_secs(120);
 
@@ -1711,12 +1711,12 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             Ok(misbehaviour_detection_result) => {
                 info!(
                     "evidence submission result: {}",
-                    PrettyVec(&misbehaviour_detection_result)
+                    PrettySlice(&misbehaviour_detection_result)
                 );
                 if !misbehaviour_detection_result.is_empty() {
                     info!(
                         "evidence submission result: {}",
-                        PrettyVec(&misbehaviour_detection_result)
+                        PrettySlice(&misbehaviour_detection_result)
                     );
 
                     MisbehaviourResults::EvidenceSubmitted(misbehaviour_detection_result)
