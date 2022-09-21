@@ -103,8 +103,7 @@ fn main() {
             )
         }) // Filter out the excluded directories
         .map(|e| e.expect("Failed to get an entry."))
-        .filter(|e| e.file_type().is_file()) // Keep only files
-        .filter(|e| e.path().extension() == Some(OsStr::new("md"))) // Keep only markdown files
+        .filter(|e| e.file_type().is_file() && e.path().extension() == Some(OsStr::new("md"))) // Keep only markdown files
         .map(|e| verify_file(e.path())) // Verify that all command templates can be parsed to a Hermes command and return the number of errors
         .sum::<i32>(); // Sum the number of errors
     if number_of_errors > 0 {
