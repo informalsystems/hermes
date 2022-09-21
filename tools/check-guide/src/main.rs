@@ -88,7 +88,7 @@ fn verify_file(path: &Path) -> i32 {
         error_founds += verify_line(&line, path, line_number);
         line_number += 1;
     }
-    error_founds
+    errors_found
 }
 
 fn main() {
