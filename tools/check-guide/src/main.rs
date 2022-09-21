@@ -85,7 +85,7 @@ fn verify_file(path: &Path) -> i32 {
     for line in reader.lines() {
         let line = line
             .unwrap_or_else(|_| panic!("{} : Failed to read line {}", path.display(), line_number));
-        error_founds += verify_line(&line, path, line_number);
+        errors_found += verify_line(&line, path, line_number);
         line_number += 1;
     }
     errors_found
