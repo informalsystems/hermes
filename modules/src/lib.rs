@@ -85,6 +85,3 @@ pub mod test_utils;
 
 #[cfg(any(test, feature = "mocks"))]
 pub mod mock;
-
-// #[derive(ClientDef)]
-// enum AnyClient {}

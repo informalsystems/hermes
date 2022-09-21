@@ -60,7 +60,6 @@ use crate::{
 		header::{AnyClientMessage, MockHeader},
 		host::{HostBlock, MockHostBlock},
 	},
-	test_utils::Crypto,
 	timestamp::Timestamp,
 	Height,
 };
@@ -1019,7 +1018,6 @@ where
 		+ Into<Any>
 		+ From<Self::HostBlock>
 		+ 'static;
-	type HostFunctions: ics23::HostFunctionsProvider;
 	type ClientDef: ClientDef<
 		ClientMessage = Self::AnyClientMessage,
 		ClientState = Self::AnyClientState,
@@ -1032,7 +1030,6 @@ impl ClientTypes for MockClientTypes {
 	type AnyClientMessage = AnyClientMessage;
 	type AnyClientState = AnyClientState;
 	type AnyConsensusState = AnyConsensusState;
-	type HostFunctions = Crypto;
 	type ClientDef = AnyClient;
 	type HostBlock = MockHostBlock;
 }

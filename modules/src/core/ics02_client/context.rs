@@ -105,7 +105,7 @@ where
 		ConsensusState = Self::AnyConsensusState,
 	>;
 
-	fn store_client_result<Ctx: ClientKeeper>(
+	fn store_client_result(
 		&mut self,
 		handler_res: ClientResult<Self>,
 	) -> Result<(), Error> {
