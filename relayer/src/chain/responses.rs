@@ -5,11 +5,11 @@ use serde::{Deserialize, Serialize};
 pub struct CrossChainQueryResponse {
     pub id: String,
     pub data: String,
-    pub height: u64,
+    pub height: String,
 }
 
 impl CrossChainQueryResponse {
-    pub fn new(id: String, data: String, height: u64) -> Self {
+    pub fn new(id: String, data: String, height: String) -> Self {
         Self { id, data, height }
     }
 }

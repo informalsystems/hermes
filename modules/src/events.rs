@@ -9,8 +9,9 @@ use serde_derive::{Deserialize, Serialize};
 use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
-use crate::applications::query::events as ApplicationEvent;
-use crate::applications::query::packet::CrossChainQueryPacket;
+use crate::applications::ics31_cross_chain_query::error as crosschain_query_error;
+use crate::applications::ics31_cross_chain_query::events as ApplicationEvent;
+use crate::applications::ics31_cross_chain_query::packet::CrossChainQueryPacket;
 use crate::core::ics02_client::error as client_error;
 use crate::core::ics02_client::events::NewBlock;
 use crate::core::ics02_client::events::{self as ClientEvents};
@@ -45,6 +46,10 @@ define_error! {
         Channel
             [ channel_error::Error ]
             | _ | { "channel error" },
+
+        CrossChainQuery
+            [ crosschain_query_error::Error ]
+            | _ | { "cross chain query error" },
 
         Timestamp
             [ ParseTimestampError ]
@@ -325,7 +330,7 @@ impl TryFrom<IbcEvent> for AbciEvent {
             IbcEvent::AcknowledgePacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::TimeoutPacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::TimeoutOnClosePacket(event) => event.try_into().map_err(Error::channel)?,
-            IbcEvent::CrossChainQuery(event) => event.try_into().map_err(Error::channel)?,
+            IbcEvent::CrossChainQuery(event) => event.try_into().map_err(Error::cross_chain_query)?,
             IbcEvent::AppModule(event) => event.try_into()?,
             IbcEvent::NewBlock(_) | IbcEvent::ChainError(_) => {
                 return Err(Error::incorrect_event_type(event.to_string()));

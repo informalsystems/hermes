@@ -1,6 +1,11 @@
 use core::fmt::{self, Display, Formatter};
 
 use ibc::{
+    applications::ics31_cross_chain_query::{
+        error::Error as CrossChainQueryError,
+        events::{self as application_events},
+        packet::CrossChainQueryPacket,
+    },
     core::ics02_client::{
         error::Error as ClientError,
         events::{self as client_events, Attributes as ClientAttributes, HEADER_ATTRIBUTE_KEY},
@@ -49,6 +54,7 @@ impl Display for IbcEventWithHeight {
 
 /// For use in debug messages
 pub struct PrettyEvents<'a>(pub &'a [IbcEventWithHeight]);
+
 impl<'a> Display for PrettyEvents<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f, "events:")?;
@@ -125,6 +131,10 @@ pub fn ibc_event_try_from_abci_event(abci_event: &AbciEvent) -> Result<IbcEvent,
         )),
         Ok(IbcEventType::Timeout) => Ok(IbcEvent::TimeoutPacket(
             timeout_packet_try_from_abci_event(abci_event).map_err(IbcEventError::channel)?,
+        )),
+        Ok(IbcEventType::CrossChainQuery) => Ok(IbcEvent::CrossChainQuery(
+            cross_chain_query_packet_try_from_abci_event(abci_event)
+                .map_err(IbcEventError::cross_chain_query)?,
         )),
         _ => Err(IbcEventError::unsupported_abci_event(
             abci_event.type_str.to_owned(),
@@ -253,6 +263,15 @@ pub fn send_packet_try_from_abci_event(
             channel_events::SendPacket { packet }
         })
         .map_err(|_| ChannelError::abci_conversion_failed(abci_event.type_str.to_owned()))
+}
+
+pub fn cross_chain_query_packet_try_from_abci_event(
+    abci_event: &AbciEvent,
+) -> Result<application_events::SendPacket, CrossChainQueryError> {
+    match extract_cross_chain_query_packet_from_tx(abci_event) {
+        Ok(packet) => Ok(application_events::SendPacket::from_packet(packet)),
+        Err(e) => Err(e),
+    }
 }
 
 pub fn write_acknowledgement_try_from_abci_event(
@@ -434,6 +453,35 @@ fn extract_packet_and_write_ack_from_tx(
     }
 
     Ok((packet, write_ack))
+}
+
+fn extract_cross_chain_query_packet_from_tx(
+    event: &AbciEvent,
+) -> Result<CrossChainQueryPacket, CrossChainQueryError> {
+    let mut cross_chain_query_packet = CrossChainQueryPacket::default();
+    for tag in &event.attributes {
+        let key = tag.key.as_ref();
+        let value = tag.value.as_ref();
+        match key {
+            application_events::ATTRIBUTE_QUERY_ID_KEY => {
+                cross_chain_query_packet.id = value.to_string()
+            }
+            application_events::ATTRIBUTE_QUERY_PATH_KEY => {
+                cross_chain_query_packet.path = value.to_string()
+            }
+            application_events::ATTRIBUTE_QUERY_HEIGHT_KEY => {
+                cross_chain_query_packet.height = value.to_string()
+            }
+            application_events::ATTRIBUTE_TIMEOUT_HEIGHT_KEY => {
+                cross_chain_query_packet.timeout_height = value.to_string()
+            }
+            application_events::ATTRIBUTE_TIMEOUT_TIMESTAMP_KEY => {
+                cross_chain_query_packet.timeout_timestamp = value.to_string()
+            },
+            _ => {}
+        }
+    }
+    Ok(cross_chain_query_packet)
 }
 
 /// Parse a string into a timeout height expected to be stored in

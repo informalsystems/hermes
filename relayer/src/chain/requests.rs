@@ -392,7 +392,7 @@ pub struct QueryHostConsensusStateRequest {
 pub struct CrossChainQueryRequest {
     pub id: String,
     pub path: String,
-    pub height: u64,
+    pub height: String,
 }
 
 impl TryFrom<&IbcEventWithHeight> for CrossChainQueryRequest {
@@ -403,7 +403,7 @@ impl TryFrom<&IbcEventWithHeight> for CrossChainQueryRequest {
             Some(packet) => Ok(CrossChainQueryRequest {
                 id: packet.id.to_string(),
                 path: packet.path.to_string(),
-                height: packet.height,
+                height: packet.height.to_string(),
             }),
             None => Err(Error::invalid_type_conversion()),
         }

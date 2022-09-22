@@ -468,32 +468,32 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 CrossChainQueryRequest {
                     id: "1".to_string(),
                     path: "https://rest-cosmoshub.ecostake.com/cosmos/auth/v1beta1/accounts/cosmos18zfp9u7zxg3gel4r3txa2jqxme7jkw7dnvfjc8".to_string(),
-                    height: 12153000
+                    height: 12153000.to_string()
                 },
                 CrossChainQueryRequest {
                     id: "2".to_string(),
                     path: "https://rest-cosmoshub.ecostake.com/cosmos/auth/v1beta1/accounts/cosmos18zfp9u7zxg3gel4r3txa2jqxme7jkw7dnvfjc8".to_string(),
-                    height: 12153010
+                    height: 12153010.to_string()
                 },
                 CrossChainQueryRequest {
                     id: "3".to_string(),
                     path: "https://rest-cosmoshub.ecostake.com/cosmos/auth/v1beta1/accounts/cosmos18zfp9u7zxg3gel4r3txa2jqxme7jkw7dnvfjc8".to_string(),
-                    height: 12153020
+                    height: 12153020.to_string()
                 },
                 CrossChainQueryRequest {
                     id: "4".to_string(),
                     path: "https://rest-cosmoshub.ecostake.com/cosmos/auth/v1beta1/accounts/cosmos18zfp9u7zxg3gel4r3txa2jqxme7jkw7dnvfjc8".to_string(),
-                    height: 12153030
+                    height: 12153030.to_string()
                 },
                 CrossChainQueryRequest {
                     id: "5".to_string(),
                     path: "https://rest-cosmoshub.ecostake.com/cosmos/auth/v1beta1/accounts/cosmos18zfp9u7zxg3gel4r3txa2jqxme7jkw7dnvfjc8".to_string(),
-                    height: 12153040
+                    height: 12153040.to_string()
                 },
                 CrossChainQueryRequest {
                     id: "6".to_string(),
                     path: "https://rest-cosmoshub.ecostake.com/cosmos/auth/v1beta1/accounts/cosmos18zfp9u7zxg3gel4r3txa2jqxme7jkw7dnvfjc8".to_string(),
-                    height: 12153050
+                    height: 12153050.to_string()
                 },
 
             ]

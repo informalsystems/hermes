@@ -1,7 +1,7 @@
 use crate::chain::requests::CrossChainQueryRequest;
 use crate::chain::responses::CrossChainQueryResponse;
 use crate::event::IbcEventWithHeight;
-use ibc::applications::query::events::SendPacket;
+use ibc::applications::ics31_cross_chain_query::events::SendPacket;
 use ibc::events::IbcEvent;
 use ibc_proto::ibc::applications::query::v1::CrossChainQuery;
 use prost::DecodeError;
@@ -54,7 +54,9 @@ pub fn to_cross_chain_query_event_or_default(
                         let cross_chain_query_event = IbcEvent::CrossChainQuery(SendPacket::new(
                             msg.id,
                             msg.path,
-                            msg.query_height,
+                            msg.query_height.to_string(),
+                            msg.local_timeout_height.to_string(),
+                            msg.local_timeout_timestamp.to_string(),
                         ));
                         IbcEventWithHeight::new(cross_chain_query_event, height)
                     } else {
