@@ -112,7 +112,7 @@ pub mod max_tx_size {
     pub struct MaxTxSize(usize);
 
     impl MaxTxSize {
-        const DEFAULT: usize = 2 * 1048576; // 2 MBytes
+        const DEFAULT: usize = 180000;
         const MAX_BOUND: usize = 8 * 1048576; // 8 MBytes
 
         pub fn new(value: usize) -> Result<Self, Error> {
