@@ -9,7 +9,6 @@ members = [
     "crates/relayer-cli",
     "crates/relayer-rest",
     "crates/telemetry",
-    "crates/proto",
     "tools/integration-test",
     "tools/test-framework",
     "tools/check-guide",
@@ -17,7 +16,6 @@ members = [
 
 exclude = [
     "ci/no-std-check",
-    "tools/proto-compiler"
 ]
 
 [patch.crates-io]
