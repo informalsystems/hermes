@@ -20,9 +20,6 @@ This project comprises primarily seven crates:
 - The [`ibc-relayer-cli`][relayer-cli-crate-link] crate is a CLI (a wrapper
   over the `ibc-relayer` library), comprising the
   [`hermes`](https://hermes.informal.systems) binary.
-- The [`ibc-proto`][ibc-proto-crate-link] crate is a library with Rust types generated from .proto definitions
-  necessary for interacting with [Cosmos SDK](https://github.com/cosmos/cosmos-sdk/tree/master/proto/cosmos)
-  and its [IBC structs](https://github.com/cosmos/ibc-go/tree/main/proto/ibc).
 - The [`ibc-telemetry`][ibc-telemetry-crate-link] crate is a library for use in the `hermes` CLI,
   for gathering telemetry data and exposing that in a Prometheus endpoint.
 - The [`ibc-test-framework`][ibc-test-framework-crate-link] crate provides the infrastructure and framework for writing end-to-end (E2E) tests that include the spawning of the relayer together with Cosmos full nodes.
@@ -38,7 +35,6 @@ Includes [TLA+ specifications](docs/spec).
 | [ibc-relayer](crates/relayer)                     | lib                         | [![IBC Relayer Crate][relayer-crate-image]][relayer-crate-link]                              | [![IBC Relayer Docs][relayer-docs-image]][relayer-docs-link]                              |
 | [ibc-relayer-cli](crates/relayer-cli)             | bin: [hermes](crates/relayer-cli/) | [![IBC Relayer CLI Crate][relayer-cli-crate-image]][relayer-cli-crate-link]                  | [![IBC Relayer CLI Docs][relayer-cli-docs-image]][relayer-cli-docs-link]                  |
 | [ibc-relayer-rest](crates/relayer-rest)           | lib                         | [![IBC Relayer REST Crate][relayer-rest-crate-image]][relayer-rest-crate-link]               | [![IBC Relayer REST Docs][relayer-rest-docs-image]][relayer-rest-docs-link]               |
-| [ibc-proto](crates/proto)                         | lib                         | [![IBC Proto Crate][ibc-proto-crate-image]][ibc-proto-crate-link]                            | [![IBC Proto Docs][ibc-proto-docs-image]][ibc-proto-docs-link]                            |
 | [ibc-telemetry](crates/telemetry)                 | lib                         | [![IBC Telemetry Crate][ibc-telemetry-crate-image]][ibc-telemetry-crate-link]                | [![IBC Telemetry Docs][ibc-telemetry-docs-image]][ibc-telemetry-docs-link]                |
 | [ibc-test-framework](./tools/test-framework) | lib                         | [![IBC Test Framework Crate][ibc-test-framework-crate-image]][ibc-test-framework-crate-link] | [![IBC Test Framework Docs][ibc-test-framework-docs-image]][ibc-test-framework-docs-link] |
 | [ibc-chain-registry](crates/ibc-chain-registry)                             | lib                         | [![Chain Registry Crate][ibc-chain-registry-crate-image]][ibc-chain-registry-crate-link]                                              | [![Chain Registry Docs][ibc-chain-registry-docs-image]][ibc-chain-registry-docs-link]                                              |
@@ -103,10 +99,6 @@ Unless required by applicable law or agreed to in writing, software distributed 
 [relayer-rest-crate-link]: https://crates.io/crates/ibc-relayer-rest
 [relayer-rest-docs-image]: https://docs.rs/ibc-relayer-rest/badge.svg
 [relayer-rest-docs-link]: https://docs.rs/ibc-relayer-rest/
-[ibc-proto-crate-image]: https://img.shields.io/crates/v/ibc-proto.svg
-[ibc-proto-crate-link]: https://crates.io/crates/ibc-proto
-[ibc-proto-docs-image]: https://docs.rs/ibc-proto/badge.svg
-[ibc-proto-docs-link]: https://docs.rs/ibc-proto/
 [ibc-telemetry-crate-image]: https://img.shields.io/crates/v/ibc-telemetry.svg
 [ibc-telemetry-crate-link]: https://crates.io/crates/ibc-telemetry
 [ibc-telemetry-docs-image]: https://docs.rs/ibc-telemetry/badge.svg
