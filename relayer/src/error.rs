@@ -76,6 +76,9 @@ define_error! {
             [ monitor::Error ]
             |_| { "event monitor error" },
 
+        RestClient
+            |_| { "rest client error" },
+
         Grpc
             |_| { "gRPC error" },
 

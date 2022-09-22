@@ -12,9 +12,9 @@ pub struct SendPacket {
 }
 
 impl SendPacket {
-    pub fn new(id: String, path: String) -> SendPacket {
+    pub fn new(id: String, path: String, height: u64) -> SendPacket {
         Self {
-            packet: CrossChainQueryPacket { id, path },
+            packet: CrossChainQueryPacket { id, path, height},
         }
     }
 }

@@ -9,6 +9,7 @@ use core::{
 use num_bigint::BigInt;
 use std::thread;
 
+use reqwest::Client as RestClient;
 use bitcoin::hashes::hex::ToHex;
 use futures::future::join_all;
 use ibc_proto::protobuf::Protobuf;
@@ -122,6 +123,7 @@ pub struct CosmosSdkChain {
     config: ChainConfig,
     tx_config: TxConfig,
     rpc_client: HttpClient,
+    rest_client: RestClient,
     grpc_addr: Uri,
     light_client: TmLightClient,
     rt: Arc<TokioRuntime>,
@@ -449,7 +451,7 @@ impl CosmosSdkChain {
                 &self.config.memo_prefix,
                 proto_msgs,
             )
-            .await
+                .await
         } else {
             send_batched_messages_and_wait_commit(
                 &self.tx_config,
@@ -460,7 +462,7 @@ impl CosmosSdkChain {
                 &self.config.memo_prefix,
                 proto_msgs,
             )
-            .await
+                .await
         }
     }
 
@@ -490,7 +492,7 @@ impl CosmosSdkChain {
             &self.config.memo_prefix,
             proto_msgs,
         )
-        .await
+            .await
     }
 }
 
@@ -517,6 +519,8 @@ impl ChainEndpoint for CosmosSdkChain {
         let rpc_client = HttpClient::new(config.rpc_addr.clone())
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
 
+        let rest_client = RestClient::builder().build().map_err(|_| Error::rest_client())?;
+
         let light_client = rt.block_on(init_light_client(&rpc_client, &config))?;
 
         // Initialize key store and load key
@@ -533,6 +537,7 @@ impl ChainEndpoint for CosmosSdkChain {
         let chain = Self {
             config,
             rpc_client,
+            rest_client,
             grpc_addr,
             light_client,
             rt,
@@ -556,7 +561,7 @@ impl ChainEndpoint for CosmosSdkChain {
             self.config.websocket_addr.clone(),
             rt,
         )
-        .map_err(Error::event_monitor)?;
+            .map_err(Error::event_monitor)?;
 
         event_monitor.subscribe().map_err(Error::event_monitor)?;
 
@@ -767,7 +772,7 @@ impl ChainEndpoint for CosmosSdkChain {
                 ChainId::chain_version(latest_app_block.header.chain_id.as_str()),
                 u64::from(abci_info.last_block_height),
             )
-            .map_err(|_| Error::invalid_height_no_source())?;
+                .map_err(|_| Error::invalid_height_no_source())?;
             let timestamp = latest_app_block.header.time.into();
 
             Ok(ChainStatus { height, timestamp })
@@ -1046,7 +1051,7 @@ impl ChainEndpoint for CosmosSdkChain {
             let mut request = connection::QueryConnectionRequest {
                 connection_id: connection_id.to_string(),
             }
-            .into_request();
+                .into_request();
 
             let height_param = AsciiMetadataValue::try_from(height_query)?;
 
@@ -1599,7 +1604,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let tasks = requests
             .into_iter()
-            .map(|req| rest_query(req))
+            .map(|req| rest_query(&self.rest_client, req))
             .collect::<Vec<_>>();
 
         let joined_tasks = join_all(tasks);
@@ -1641,7 +1646,7 @@ impl ChainEndpoint for CosmosSdkChain {
                 after_misbehaviour: true,
             },
         )
-        .map_err(Error::ics07)
+            .map_err(Error::ics07)
     }
 
     fn build_consensus_state(
@@ -1720,10 +1725,10 @@ fn filter_matching_event(
             Some(ibc_event)
         }
         IbcEvent::WriteAcknowledgement(ref ack_ev)
-            if matches_packet(request, seq, &ack_ev.packet) =>
-        {
-            Some(ibc_event)
-        }
+        if matches_packet(request, seq, &ack_ev.packet) =>
+            {
+                Some(ibc_event)
+            }
         _ => None,
     }
 }

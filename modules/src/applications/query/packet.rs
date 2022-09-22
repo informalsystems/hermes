@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 pub struct CrossChainQueryPacket {
     pub id: String,
     pub path: String,
+    pub height: u64,
 }
 
 impl Display for CrossChainQueryPacket {

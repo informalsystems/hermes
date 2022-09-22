@@ -467,32 +467,35 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             vec![
                 CrossChainQueryRequest {
                     id: "1".to_string(),
-                    path: "https://rest-cosmoshub.ecostake.com/cosmos/bank/v1beta1/balances/cosmos1ktecz4dr56j9tsfh7nwg8s9suvhfu70qpzrfcr".to_string(),
+                    path: "https://rest-cosmoshub.ecostake.com/cosmos/auth/v1beta1/accounts/cosmos18zfp9u7zxg3gel4r3txa2jqxme7jkw7dnvfjc8".to_string(),
+                    height: 12153000
                 },
                 CrossChainQueryRequest {
                     id: "2".to_string(),
-                    path: "https://rest-cosmoshub.ecostake.com/cosmos/bank/v1beta1/balances/cosmos1ktecz4dr56j9tsfh7nwg8s9suvhfu70qpzrfcr".to_string(),
+                    path: "https://rest-cosmoshub.ecostake.com/cosmos/auth/v1beta1/accounts/cosmos18zfp9u7zxg3gel4r3txa2jqxme7jkw7dnvfjc8".to_string(),
+                    height: 12153010
                 },
                 CrossChainQueryRequest {
                     id: "3".to_string(),
-                    path: "https://rest-cosmoshub.ecostake.com/cosmos/bank/v1beta1/balances/cosmos1ktecz4dr56j9tsfh7nwg8s9suvhfu70qpzrfcr".to_string(),
+                    path: "https://rest-cosmoshub.ecostake.com/cosmos/auth/v1beta1/accounts/cosmos18zfp9u7zxg3gel4r3txa2jqxme7jkw7dnvfjc8".to_string(),
+                    height: 12153020
                 },
                 CrossChainQueryRequest {
                     id: "4".to_string(),
-                    path: "https://rest-cosmoshub.ecostake.com/cosmos/bank/v1beta1/balances/cosmos1ktecz4dr56j9tsfh7nwg8s9suvhfu70qpzrfcr".to_string(),
+                    path: "https://rest-cosmoshub.ecostake.com/cosmos/auth/v1beta1/accounts/cosmos18zfp9u7zxg3gel4r3txa2jqxme7jkw7dnvfjc8".to_string(),
+                    height: 12153030
                 },
                 CrossChainQueryRequest {
                     id: "5".to_string(),
-                    path: "https://rest-cosmoshub.ecostake.com/cosmos/bank/v1beta1/balances/cosmos1ktecz4dr56j9tsfh7nwg8s9suvhfu70qpzrfcr".to_string(),
+                    path: "https://rest-cosmoshub.ecostake.com/cosmos/auth/v1beta1/accounts/cosmos18zfp9u7zxg3gel4r3txa2jqxme7jkw7dnvfjc8".to_string(),
+                    height: 12153040
                 },
                 CrossChainQueryRequest {
                     id: "6".to_string(),
-                    path: "https://rest-cosmoshub.ecostake.com/cosmos/bank/v1beta1/balances/cosmos1ktecz4dr56j9tsfh7nwg8s9suvhfu70qpzrfcr".to_string(),
+                    path: "https://rest-cosmoshub.ecostake.com/cosmos/auth/v1beta1/accounts/cosmos18zfp9u7zxg3gel4r3txa2jqxme7jkw7dnvfjc8".to_string(),
+                    height: 12153050
                 },
-                CrossChainQueryRequest {
-                    id: "7".to_string(),
-                    path: "https://rest-cosmoshub.ecostake.com/cosmos/bank/v1beta1/balances/cosmos1ktecz4dr56j9tsfh7nwg8s9suvhfu70qpzrfcr".to_string(),
-                },
+
             ]
         ).unwrap();
 
@@ -506,12 +509,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         telemetry!({
             for event_with_height in events.events() {
                 self.backlog_update(&event_with_height.event);
-            }
-        });
-
-        telemetry!({
-            for local_event_with_height in &local_bound_events {
-                self.backlog_update(&local_event_with_height.event);
             }
         });
 
