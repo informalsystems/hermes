@@ -5,7 +5,7 @@ use ibc::applications::query::events::SendPacket;
 use ibc::events::IbcEvent;
 use ibc_proto::ibc::applications::query::v1::CrossChainQuery;
 use prost::DecodeError;
-use reqwest::{Error, Client};
+use reqwest::{Client, Error};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -16,18 +16,27 @@ pub struct MsgTransfer {
     pub sender: String,
 }
 
-pub async fn rest_query(client: &Client, request: CrossChainQueryRequest) -> Result<CrossChainQueryResponse, Error> {
+pub async fn rest_query(
+    client: &Client,
+    request: CrossChainQueryRequest,
+) -> Result<CrossChainQueryResponse, Error> {
     let response = client
         .get(request.path)
         .header("x-cosmos-block-height", request.height.to_string())
-        .send().await?;
+        .send()
+        .await?;
 
     let data = response.text().await?;
 
-    Ok(CrossChainQueryResponse::new(request.id, data, request.height))
+    Ok(CrossChainQueryResponse::new(
+        request.id,
+        data,
+        request.height,
+    ))
 }
 
 // SendPacket to CrossChainQuery
+// TODO: consensus proto spec with module
 pub fn to_cross_chain_query_event_or_default(
     event_with_height: IbcEventWithHeight,
 ) -> IbcEventWithHeight {
@@ -42,8 +51,11 @@ pub fn to_cross_chain_query_event_or_default(
             match decoded {
                 Ok(msg) => {
                     if msg.msg_type == "cross_chain_query" {
-                        let cross_chain_query_event =
-                            IbcEvent::CrossChainQuery(SendPacket::new(msg.id, msg.path, msg.query_height));
+                        let cross_chain_query_event = IbcEvent::CrossChainQuery(SendPacket::new(
+                            msg.id,
+                            msg.path,
+                            msg.query_height,
+                        ));
                         IbcEventWithHeight::new(cross_chain_query_event, height)
                     } else {
                         event_with_height
