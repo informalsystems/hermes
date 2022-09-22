@@ -12,17 +12,17 @@ updates:
       interval: "weekly"
 
   - package-ecosystem: "cargo"
-    directory: "modules"
+    directory: "crates/modules"
     schedule:
       interval: "weekly"
 
   - package-ecosystem: "cargo"
-    directory: "relayer"
+    directory: "crates/relayer"
     schedule:
       interval: "weekly"
 
   - package-ecosystem: "cargo"
-    directory: "relayer-cli"
+    directory: "crates/relayer-cli"
     schedule:
       interval: "weekly"
 

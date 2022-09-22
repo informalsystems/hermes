@@ -7,11 +7,7 @@ on:
       - Cargo.lock
       - ci/**
       - e2e/**
-      - modules/**
-      - relayer/**
-      - relayer-cli/**
-      - relayer-rest/**
-      - telemetry/**
+      - crates/**
       - tools/**
   push:
     branches: master
@@ -21,11 +17,7 @@ on:
       - Cargo.lock
       - ci/**
       - e2e/**
-      - modules/**
-      - relayer/**
-      - relayer-cli/**
-      - relayer-rest/**
-      - telemetry/**
+      - crates/**
       - tools/**
 
 env:

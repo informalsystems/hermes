@@ -6,7 +6,7 @@ on:
       - Cargo.toml
       - Cargo.lock
       - ci/**
-      - modules/**
+      - crates/modules/**
   push:
     branches: master
     paths:
@@ -14,7 +14,7 @@ on:
       - Cargo.toml
       - Cargo.lock
       - ci/**
-      - modules/**
+      - crates/modules/**
 
 jobs:
   check-no-std-panic-conflict:
