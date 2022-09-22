@@ -1616,7 +1616,7 @@ dependencies = [
  "env_logger",
  "erased-serde",
  "flex-error",
- "ibc-proto",
+ "ibc-proto 0.20.1 (git+https://github.com/hu55a1n1/ibc-proto)",
  "ics23",
  "modelator",
  "num-traits",
@@ -1649,7 +1649,7 @@ dependencies = [
  "futures",
  "http",
  "ibc",
- "ibc-proto",
+ "ibc-proto 0.20.1",
  "reqwest",
  "serde",
  "serde_json",
@@ -1665,7 +1665,7 @@ name = "ibc-integration-test"
 version = "0.19.0"
 dependencies = [
  "ibc",
- "ibc-proto",
+ "ibc-proto 0.20.1 (git+https://github.com/hu55a1n1/ibc-proto)",
  "ibc-relayer",
  "ibc-relayer-cli",
  "ibc-test-framework",
@@ -1694,6 +1694,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "ibc-proto"
+version = "0.20.1"
+source = "git+https://github.com/hu55a1n1/ibc-proto#655cb2f3c2c58bd2816726dfef57d21299904d48"
+dependencies = [
+ "base64",
+ "bytes",
+ "flex-error",
+ "prost",
+ "serde",
+ "subtle-encoding",
+ "tendermint-proto",
+ "tonic",
+]
+
+[[package]]
 name = "ibc-relayer"
 version = "0.19.0"
 dependencies = [
@@ -1713,7 +1728,7 @@ dependencies = [
  "humantime",
  "humantime-serde",
  "ibc",
- "ibc-proto",
+ "ibc-proto 0.20.1 (git+https://github.com/hu55a1n1/ibc-proto)",
  "ibc-telemetry",
  "itertools",
  "k256",
@@ -1771,7 +1786,7 @@ dependencies = [
  "humantime",
  "ibc",
  "ibc-chain-registry",
- "ibc-proto",
+ "ibc-proto 0.20.1 (git+https://github.com/hu55a1n1/ibc-proto)",
  "ibc-relayer",
  "ibc-relayer-rest",
  "ibc-telemetry",
@@ -1839,7 +1854,7 @@ dependencies = [
  "hex",
  "http",
  "ibc",
- "ibc-proto",
+ "ibc-proto 0.20.1 (git+https://github.com/hu55a1n1/ibc-proto)",
  "ibc-relayer",
  "ibc-relayer-cli",
  "itertools",

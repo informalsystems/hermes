@@ -6,7 +6,7 @@ resolver = "2"
 
 [dependencies]
 ibc = { path = "../../crates/modules", default-features = false }
-ibc-proto = { path = "../../crates/proto", default-features = false }
+ibc-proto = { version = "0.20.1", default-features = false }
 tendermint = { version = "0.25.0", default-features = false }
 tendermint-proto = { version = "0.25.0", default-features = false }
 tendermint-light-client-verifier = { version = "0.25.0", default-features = false }

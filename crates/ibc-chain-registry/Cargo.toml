@@ -15,7 +15,7 @@ description  = """
 [dependencies]
 
 ibc              = { version = "0.19.0", path = "../modules", features = ["std"] }
-ibc-proto        = { version = "0.20.0", path = "../proto" }
+ibc-proto        = { version = "0.20.1", path = "../proto" }
 
 async-trait = "0.1.57"
 flex-error  = { version = "0.4.4", default-features = false }
