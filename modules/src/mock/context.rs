@@ -11,17 +11,16 @@ use core::{
 };
 use std::{marker::PhantomData, sync::Mutex};
 
-use crate::core::ics02_client::{client_consensus::ConsensusState, client_def::ClientDef};
 use ibc_proto::google::protobuf::Any;
 use sha2::Digest;
 use tracing::debug;
 
+use crate::core::ics02_client::context::ClientTypes;
 #[cfg(test)]
 use crate::core::ics02_client::events::Attributes;
 use crate::{
 	core::{
 		ics02_client::{
-			client_message::ClientMessage,
 			client_state::{ClientState, ClientType},
 			context::{ClientKeeper, ClientReader},
 			error::Error as Ics02Error,
@@ -68,7 +67,7 @@ pub const DEFAULT_BLOCK_TIME_SECS: u64 = 3;
 
 /// A context implementing the dependencies necessary for testing any IBC module.
 #[derive(Debug)]
-pub struct MockContext<C: ClientTypes = MockClientTypes> {
+pub struct MockContext<C: HostBlockType = MockClientTypes> {
 	/// The type of host chain underlying this mock context.
 	pub host_chain_type: <C::HostBlock as HostBlock>::HostType,
 
@@ -94,18 +93,24 @@ pub struct MockContext<C: ClientTypes = MockClientTypes> {
 	pub _phantom: PhantomData<C>,
 }
 
-impl<C: ClientTypes> PartialEq for MockContext<C> {
+impl<C: HostBlockType> PartialEq for MockContext<C> {
 	fn eq(&self, _other: &Self) -> bool {
 		unimplemented!()
 	}
 }
 
-impl<C: ClientTypes> Eq for MockContext<C> {}
+impl<C: HostBlockType> Eq for MockContext<C> {}
 
 /// Returns a MockContext with bare minimum initialization: no clients, no connections and no
 /// channels are present, and the chain has Height(5). This should be used sparingly, mostly for
 /// testing the creation of new domain objects.
-impl<C: ClientTypes + Default> Default for MockContext<C> {
+impl<C: HostBlockType + Default> Default for MockContext<C>
+where
+	C::AnyClientMessage: TryFrom<Any, Error = Ics02Error> + Into<Any> + From<C::HostBlock>,
+	C::AnyClientState: Eq + TryFrom<Any, Error = Ics02Error> + Into<Any>,
+	C::AnyConsensusState:
+		Eq + TryFrom<Any, Error = Ics02Error> + Into<Any> + From<C::HostBlock> + 'static,
+{
 	fn default() -> Self {
 		Self::new(
 			ChainId::new("mockgaia".to_string(), 0),
@@ -118,7 +123,7 @@ impl<C: ClientTypes + Default> Default for MockContext<C> {
 
 /// A manual clone impl is provided because the tests are oblivious to the fact that the `ibc_store`
 /// is a shared ptr.
-impl<C: ClientTypes> Clone for MockContext<C> {
+impl<C: HostBlockType> Clone for MockContext<C> {
 	fn clone(&self) -> Self {
 		let ibc_store = {
 			let ibc_store = self.ibc_store.lock().unwrap().clone();
@@ -139,7 +144,13 @@ impl<C: ClientTypes> Clone for MockContext<C> {
 
 /// Implementation of internal interface for use in testing. The methods in this interface should
 /// _not_ be accessible to any Ics handler.
-impl<C: ClientTypes + Default> MockContext<C> {
+impl<C: ClientTypes + HostBlockType + Default> MockContext<C>
+where
+	C::AnyClientMessage: TryFrom<Any, Error = Ics02Error> + Into<Any> + From<C::HostBlock>,
+	C::AnyClientState: Eq + TryFrom<Any, Error = Ics02Error> + Into<Any>,
+	C::AnyConsensusState:
+		Eq + TryFrom<Any, Error = Ics02Error> + Into<Any> + From<C::HostBlock> + 'static,
+{
 	/// Creates a mock context. Parameter `max_history_size` determines how many blocks will
 	/// the chain maintain in its history, which also determines the pruning window. Parameter
 	/// `latest_height` determines the current height of the chain. This context
@@ -308,7 +319,7 @@ impl<C: ClientTypes + Default> MockContext<C> {
 	/// Triggers the advancing of the host chain, by extending the history of blocks (or headers).
 	pub fn advance_host_chain_height(&mut self) {
 		let latest_block = self.history.last().expect("history cannot be empty");
-		let new_block = <C as ClientTypes>::HostBlock::generate_block(
+		let new_block = <C as HostBlockType>::HostBlock::generate_block(
 			self.host_chain_id.clone(),
 			self.host_chain_type,
 			latest_block.height().increment().revision_height,
@@ -411,7 +422,7 @@ impl<C: ClientTypes + Default> MockContext<C> {
 	}
 }
 
-impl<C: ClientTypes + Default> MockContext<C>
+impl<C: HostBlockType + Default> MockContext<C>
 where
 	C::AnyClientState: From<MockClientState>,
 	C::AnyConsensusState: From<MockConsensusState>,
@@ -464,7 +475,7 @@ where
 
 /// An object that stores all IBC related data.
 #[derive(Clone, Debug, Default)]
-pub struct MockIbcStore<C: ClientTypes> {
+pub struct MockIbcStore<C: HostBlockType> {
 	/// The set of all clients, indexed by their id.
 	pub clients: BTreeMap<ClientId, MockClientRecord<C>>,
 
@@ -554,9 +565,22 @@ impl Router for MockRouter {
 	}
 }
 
-impl<C: ClientTypes + Default> ReaderContext for MockContext<C> {}
+impl<C: HostBlockType + Default> ReaderContext for MockContext<C>
+where
+	C::AnyClientMessage: TryFrom<Any, Error = Ics02Error> + Into<Any> + From<C::HostBlock>,
+	C::AnyClientState: Eq + TryFrom<Any, Error = Ics02Error> + Into<Any>,
+	C::AnyConsensusState:
+		Eq + TryFrom<Any, Error = Ics02Error> + Into<Any> + From<C::HostBlock> + 'static,
+{
+}
 
-impl<C: ClientTypes + Default> Ics26Context for MockContext<C> {
+impl<C: HostBlockType + Default> Ics26Context for MockContext<C>
+where
+	C::AnyClientMessage: TryFrom<Any, Error = Ics02Error> + Into<Any> + From<C::HostBlock>,
+	C::AnyClientState: Eq + TryFrom<Any, Error = Ics02Error> + Into<Any>,
+	C::AnyConsensusState:
+		Eq + TryFrom<Any, Error = Ics02Error> + Into<Any> + From<C::HostBlock> + 'static,
+{
 	type Router = MockRouter;
 
 	fn router(&self) -> &Self::Router {
@@ -568,7 +592,7 @@ impl<C: ClientTypes + Default> Ics26Context for MockContext<C> {
 	}
 }
 
-impl<C: ClientTypes> PortReader for MockContext<C> {
+impl<C: HostBlockType> PortReader for MockContext<C> {
 	fn lookup_module_by_port(&self, port_id: &PortId) -> Result<ModuleId, Error> {
 		match self.ibc_store.lock().unwrap().port_to_module.get(port_id) {
 			Some(mod_id) => Ok(mod_id.clone()),
@@ -577,7 +601,7 @@ impl<C: ClientTypes> PortReader for MockContext<C> {
 	}
 }
 
-impl<C: ClientTypes> ChannelReader for MockContext<C> {
+impl<C: HostBlockType> ChannelReader for MockContext<C> {
 	fn channel_end(&self, pcid: &(PortId, ChannelId)) -> Result<ChannelEnd, Ics04Error> {
 		match self.ibc_store.lock().unwrap().channels.get(pcid) {
 			Some(channel_end) => Ok(channel_end.clone()),
@@ -702,7 +726,7 @@ impl<C: ClientTypes> ChannelReader for MockContext<C> {
 	}
 }
 
-impl<C: ClientTypes> ChannelKeeper for MockContext<C> {
+impl<C: HostBlockType> ChannelKeeper for MockContext<C> {
 	fn store_packet_commitment(
 		&mut self,
 		key: (PortId, ChannelId, Sequence),
@@ -826,7 +850,13 @@ impl<C: ClientTypes> ChannelKeeper for MockContext<C> {
 	}
 }
 
-impl<C: ClientTypes> ConnectionReader for MockContext<C> {
+impl<C: HostBlockType> ConnectionReader for MockContext<C>
+where
+	C::AnyClientMessage: TryFrom<Any, Error = Ics02Error> + Into<Any> + From<C::HostBlock>,
+	C::AnyClientState: Eq + TryFrom<Any, Error = Ics02Error> + Into<Any>,
+	C::AnyConsensusState:
+		Eq + TryFrom<Any, Error = Ics02Error> + Into<Any> + From<C::HostBlock> + 'static,
+{
 	fn connection_end(&self, cid: &ConnectionId) -> Result<ConnectionEnd, Ics03Error> {
 		match self.ibc_store.lock().unwrap().connections.get(cid) {
 			Some(connection_end) => Ok(connection_end.clone()),
@@ -848,7 +878,7 @@ impl<C: ClientTypes> ConnectionReader for MockContext<C> {
 	}
 }
 
-impl<C: ClientTypes> ConnectionKeeper for MockContext<C> {
+impl<C: HostBlockType> ConnectionKeeper for MockContext<C> {
 	fn store_connection(
 		&mut self,
 		connection_id: ConnectionId,
@@ -880,7 +910,13 @@ impl<C: ClientTypes> ConnectionKeeper for MockContext<C> {
 	}
 }
 
-impl<C: ClientTypes + Default> ClientReader for MockContext<C> {
+impl<C: HostBlockType + Default> ClientReader for MockContext<C>
+where
+	C::AnyClientMessage: TryFrom<Any, Error = Ics02Error> + Into<Any> + From<C::HostBlock>,
+	C::AnyClientState: Eq + TryFrom<Any, Error = Ics02Error> + Into<Any>,
+	C::AnyConsensusState:
+		Eq + TryFrom<Any, Error = Ics02Error> + Into<Any> + From<C::HostBlock> + 'static,
+{
 	fn client_type(&self, client_id: &ClientId) -> Result<ClientType, Ics02Error> {
 		match self.ibc_store.lock().unwrap().clients.get(client_id) {
 			Some(client_record) => Ok(client_record.client_type.clone()),
@@ -1000,29 +1036,10 @@ impl<C: ClientTypes + Default> ClientReader for MockContext<C> {
 #[derive(Debug, Eq, PartialEq, Clone, Default)]
 pub struct MockClientTypes;
 
-pub trait ClientTypes
+pub trait HostBlockType: ClientTypes
 where
 	Self: Clone + Debug + Eq,
 {
-	type AnyClientMessage: ClientMessage
-		+ TryFrom<Any, Error = Ics02Error>
-		+ Into<Any>
-		+ From<Self::HostBlock>;
-	type AnyClientState: ClientState<ClientDef = Self::ClientDef>
-		+ Eq
-		+ TryFrom<Any, Error = Ics02Error>
-		+ Into<Any>;
-	type AnyConsensusState: ConsensusState
-		+ Eq
-		+ TryFrom<Any, Error = Ics02Error>
-		+ Into<Any>
-		+ From<Self::HostBlock>
-		+ 'static;
-	type ClientDef: ClientDef<
-		ClientMessage = Self::AnyClientMessage,
-		ClientState = Self::AnyClientState,
-		ConsensusState = Self::AnyConsensusState,
-	>;
 	type HostBlock: HostBlock + Debug + Clone;
 }
 
@@ -1031,15 +1048,20 @@ impl ClientTypes for MockClientTypes {
 	type AnyClientState = AnyClientState;
 	type AnyConsensusState = AnyConsensusState;
 	type ClientDef = AnyClient;
+}
+
+impl HostBlockType for MockClientTypes {
 	type HostBlock = MockHostBlock;
 }
 
-impl<C: ClientTypes> ClientKeeper for MockContext<C> {
+impl<C: HostBlockType> ClientTypes for MockContext<C> {
 	type AnyClientMessage = C::AnyClientMessage;
 	type AnyClientState = C::AnyClientState;
 	type AnyConsensusState = C::AnyConsensusState;
 	type ClientDef = C::ClientDef;
+}
 
+impl<C: HostBlockType> ClientKeeper for MockContext<C> {
 	fn store_client_type(
 		&mut self,
 		client_id: ClientId,

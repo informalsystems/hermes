@@ -1,13 +1,13 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpdateAnyClient`.
 use core::fmt::Debug;
 
+use crate::core::ics02_client::context::ClientTypes;
 use crate::{
 	core::{
 		ics02_client::{
 			client_consensus::ConsensusState,
 			client_def::{ClientDef, ConsensusUpdateResult},
 			client_state::ClientState,
-			context::ClientKeeper,
 			error::Error,
 			events::Attributes,
 			handler::ClientResult,
@@ -26,7 +26,7 @@ use crate::{
 /// The result following the successful processing of a `MsgUpdateAnyClient` message. Preferably
 /// this data type should be used with a qualified name `update_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Result<C: ClientKeeper> {
+pub struct Result<C: ClientTypes> {
 	pub client_id: ClientId,
 	pub client_state: C::AnyClientState,
 	pub consensus_state: Option<ConsensusUpdateResult<C>>,
@@ -75,11 +75,21 @@ where
 	}
 
 	client_def
-		.verify_client_message::<Ctx>(ctx, client_id.clone(), client_state.clone(), client_message.clone())
+		.verify_client_message::<Ctx>(
+			ctx,
+			client_id.clone(),
+			client_state.clone(),
+			client_message.clone(),
+		)
 		.map_err(|e| Error::header_verification_failure(e.to_string()))?;
 
 	let found_misbehaviour = client_def
-		.check_for_misbehaviour(ctx, client_id.clone(), client_state.clone(), client_message.clone())
+		.check_for_misbehaviour(
+			ctx,
+			client_id.clone(),
+			client_state.clone(),
+			client_message.clone(),
+		)
 		.map_err(|e| Error::header_verification_failure(e.to_string()))?;
 
 	let event_attributes = Attributes {

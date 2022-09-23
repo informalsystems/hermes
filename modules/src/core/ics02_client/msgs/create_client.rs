@@ -8,23 +8,20 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::{MsgCreateClient as RawMsgCreateClient, MsgCreateClient};
 
-use crate::{
-	core::ics02_client::{context::ClientKeeper, error::Error},
-	signer::Signer,
-	tx_msg::Msg,
-};
+use crate::core::ics02_client::context::ClientTypes;
+use crate::{core::ics02_client::error::Error, signer::Signer, tx_msg::Msg};
 
 pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgCreateClient";
 
 /// A type of message that triggers the creation of a new on-chain (IBC) client.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct MsgCreateAnyClient<C: ClientKeeper> {
+pub struct MsgCreateAnyClient<C: ClientTypes> {
 	pub client_state: C::AnyClientState,
 	pub consensus_state: C::AnyConsensusState,
 	pub signer: Signer,
 }
 
-impl<C: ClientKeeper> MsgCreateAnyClient<C> {
+impl<C: ClientTypes> MsgCreateAnyClient<C> {
 	pub fn new(
 		client_state: C::AnyClientState,
 		consensus_state: C::AnyConsensusState,
@@ -43,7 +40,7 @@ impl<C: ClientKeeper> MsgCreateAnyClient<C> {
 
 impl<C> Msg for MsgCreateAnyClient<C>
 where
-	C: ClientKeeper + Clone,
+	C: ClientTypes + Clone,
 	Any: From<C::AnyClientState>,
 	Any: From<C::AnyConsensusState>,
 {
@@ -61,7 +58,7 @@ where
 
 impl<C> Protobuf<RawMsgCreateClient> for MsgCreateAnyClient<C>
 where
-	C: ClientKeeper + Clone,
+	C: ClientTypes + Clone,
 	Any: From<C::AnyClientState>,
 	Any: From<C::AnyConsensusState>,
 	MsgCreateAnyClient<C>: TryFrom<MsgCreateClient>,
@@ -71,7 +68,7 @@ where
 
 impl<C> TryFrom<RawMsgCreateClient> for MsgCreateAnyClient<C>
 where
-	C: ClientKeeper,
+	C: ClientTypes,
 	C::AnyClientState: TryFrom<Any>,
 	C::AnyConsensusState: TryFrom<Any>,
 	Error: From<<C::AnyClientState as TryFrom<Any>>::Error>,
@@ -96,7 +93,7 @@ where
 
 impl<C> From<MsgCreateAnyClient<C>> for RawMsgCreateClient
 where
-	C: ClientKeeper,
+	C: ClientTypes,
 	Any: From<C::AnyClientState>,
 	Any: From<C::AnyConsensusState>,
 {

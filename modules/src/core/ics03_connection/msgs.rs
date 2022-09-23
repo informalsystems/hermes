@@ -12,12 +12,10 @@
 //! Another difference to ICS3 specs is that each message comprises an additional field called
 //! `signer` which is specific to Cosmos-SDK.
 
-use crate::core::{
-	ics02_client::context::ClientKeeper,
-	ics03_connection::msgs::{
-		conn_open_ack::MsgConnectionOpenAck, conn_open_confirm::MsgConnectionOpenConfirm,
-		conn_open_init::MsgConnectionOpenInit, conn_open_try::MsgConnectionOpenTry,
-	},
+use crate::core::ics02_client::context::ClientTypes;
+use crate::core::ics03_connection::msgs::{
+	conn_open_ack::MsgConnectionOpenAck, conn_open_confirm::MsgConnectionOpenConfirm,
+	conn_open_init::MsgConnectionOpenInit, conn_open_try::MsgConnectionOpenTry,
 };
 use alloc::boxed::Box;
 use core::fmt::Debug;
@@ -31,7 +29,7 @@ pub mod conn_open_try;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ConnectionMsg<C>
 where
-	C: ClientKeeper + Clone + Debug + PartialEq + Eq,
+	C: ClientTypes + Clone + Debug + PartialEq + Eq,
 {
 	ConnectionOpenInit(MsgConnectionOpenInit),
 	ConnectionOpenTry(Box<MsgConnectionOpenTry<C>>),

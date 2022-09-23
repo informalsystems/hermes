@@ -11,9 +11,9 @@ use tendermint_proto::Protobuf;
 use crate::core::ics02_client;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
+use crate::core::ics02_client::context::ClientTypes;
 use crate::{
 	core::{
-		ics02_client::context::ClientKeeper,
 		ics03_connection::{connection::Counterparty, error::Error, version::Version},
 		ics23_commitment::commitment::CommitmentProofBytes,
 		ics24_host::identifier::ClientId,
@@ -29,7 +29,7 @@ pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenTry";
 ///
 /// Message definition `MsgConnectionOpenTry`  (i.e., `ConnOpenTry` datagram).
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct MsgConnectionOpenTry<C: ClientKeeper + Clone + Debug + PartialEq + Eq> {
+pub struct MsgConnectionOpenTry<C: ClientTypes + Clone + Debug + PartialEq + Eq> {
 	pub client_id: ClientId,
 	pub client_state: Option<C::AnyClientState>,
 	pub counterparty: Counterparty,
@@ -41,7 +41,7 @@ pub struct MsgConnectionOpenTry<C: ClientKeeper + Clone + Debug + PartialEq + Eq
 
 impl<C> MsgConnectionOpenTry<C>
 where
-	C: ClientKeeper + Clone + Debug + PartialEq + Eq,
+	C: ClientTypes + Clone + Debug + PartialEq + Eq,
 {
 	/// Getter for accessing the `consensus_height` field from this message. Returns the special
 	/// value `0` if this field is not set.
@@ -55,7 +55,7 @@ where
 
 impl<C> Msg for MsgConnectionOpenTry<C>
 where
-	C: ClientKeeper + Clone + Debug + PartialEq + Eq,
+	C: ClientTypes + Clone + Debug + PartialEq + Eq,
 	Any: From<C::AnyClientState>,
 {
 	type ValidationError = Error;
@@ -72,7 +72,7 @@ where
 
 impl<C> Protobuf<RawMsgConnectionOpenTry> for MsgConnectionOpenTry<C>
 where
-	C: ClientKeeper + Clone + Debug + PartialEq + Eq,
+	C: ClientTypes + Clone + Debug + PartialEq + Eq,
 	Any: From<C::AnyClientState>,
 	MsgConnectionOpenTry<C>: TryFrom<v1::MsgConnectionOpenTry>,
 	<MsgConnectionOpenTry<C> as TryFrom<v1::MsgConnectionOpenTry>>::Error: Display,
@@ -81,7 +81,7 @@ where
 
 impl<C> TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry<C>
 where
-	C: ClientKeeper + Clone + Debug + PartialEq + Eq,
+	C: ClientTypes + Clone + Debug + PartialEq + Eq,
 	C::AnyClientState: TryFrom<Any, Error = ics02_client::error::Error>,
 {
 	type Error = Error;
@@ -142,7 +142,7 @@ where
 
 impl<C> From<MsgConnectionOpenTry<C>> for RawMsgConnectionOpenTry
 where
-	C: ClientKeeper + Clone + Debug + PartialEq + Eq,
+	C: ClientTypes + Clone + Debug + PartialEq + Eq,
 	Any: From<C::AnyClientState>,
 {
 	fn from(ics_msg: MsgConnectionOpenTry<C>) -> Self {
@@ -175,9 +175,9 @@ where
 
 #[cfg(test)]
 pub mod test_util {
+	use crate::core::ics02_client::context::ClientTypes;
 	use crate::{
 		core::{
-			ics02_client::context::ClientKeeper,
 			ics03_connection::{
 				msgs::{
 					conn_open_try::MsgConnectionOpenTry, test_util::get_dummy_raw_counterparty,
@@ -201,7 +201,7 @@ pub mod test_util {
 	/// Testing-specific helper methods.
 	impl<C> MsgConnectionOpenTry<C>
 	where
-		C: ClientKeeper + Clone + Debug + Eq,
+		C: ClientTypes + Clone + Debug + Eq,
 	{
 		/// Setter for `client_id`.
 		pub fn with_client_id(self, client_id: ClientId) -> MsgConnectionOpenTry<C> {

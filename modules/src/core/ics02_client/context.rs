@@ -89,11 +89,7 @@ pub trait ClientReader: ClientKeeper {
 	fn client_counter(&self) -> Result<u64, Error>;
 }
 
-/// Defines the write-only part of ICS2 (client functions) context.
-pub trait ClientKeeper
-where
-	Self: Clone + Debug + Eq,
-{
+pub trait ClientTypes {
 	type AnyClientMessage: ClientMessage;
 	type AnyClientState: ClientState<ClientDef = Self::ClientDef> + Eq;
 	type AnyConsensusState: ConsensusState + Eq + 'static;
@@ -104,11 +100,14 @@ where
 		ClientState = Self::AnyClientState,
 		ConsensusState = Self::AnyConsensusState,
 	>;
+}
 
-	fn store_client_result(
-		&mut self,
-		handler_res: ClientResult<Self>,
-	) -> Result<(), Error> {
+/// Defines the write-only part of ICS2 (client functions) context.
+pub trait ClientKeeper: ClientTypes
+where
+	Self: Clone + Debug + Eq,
+{
+	fn store_client_result(&mut self, handler_res: ClientResult<Self>) -> Result<(), Error> {
 		match handler_res {
 			Create(res) => {
 				let client_id = res.client_id.clone();

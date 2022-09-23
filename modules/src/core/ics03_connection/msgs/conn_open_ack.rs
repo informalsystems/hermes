@@ -8,9 +8,9 @@ use ibc_proto::{
 };
 use tendermint_proto::Protobuf;
 
+use crate::core::ics02_client::context::ClientTypes;
 use crate::{
 	core::{
-		ics02_client::context::ClientKeeper,
 		ics03_connection::{error::Error, version::Version},
 		ics23_commitment::commitment::CommitmentProofBytes,
 		ics24_host::identifier::ConnectionId,
@@ -25,7 +25,7 @@ pub const TYPE_URL: &str = "/ibc.core.connection.v1.MsgConnectionOpenAck";
 
 /// Message definition `MsgConnectionOpenAck`  (i.e., `ConnOpenAck` datagram).
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct MsgConnectionOpenAck<C: ClientKeeper> {
+pub struct MsgConnectionOpenAck<C: ClientTypes> {
 	pub connection_id: ConnectionId,
 	pub counterparty_connection_id: ConnectionId,
 	pub client_state: Option<C::AnyClientState>,
@@ -34,7 +34,7 @@ pub struct MsgConnectionOpenAck<C: ClientKeeper> {
 	pub signer: Signer,
 }
 
-impl<C: ClientKeeper> MsgConnectionOpenAck<C> {
+impl<C: ClientTypes> MsgConnectionOpenAck<C> {
 	/// Getter for accessing the `consensus_height` field from this message. Returns the special
 	/// value `Height(0)` if this field is not set.
 	pub fn consensus_height(&self) -> Height {
@@ -47,7 +47,7 @@ impl<C: ClientKeeper> MsgConnectionOpenAck<C> {
 
 impl<C> Msg for MsgConnectionOpenAck<C>
 where
-	C: ClientKeeper + Clone,
+	C: ClientTypes + Clone,
 	Any: From<C::AnyClientState>,
 {
 	type ValidationError = Error;
@@ -64,7 +64,7 @@ where
 
 impl<C> Protobuf<RawMsgConnectionOpenAck> for MsgConnectionOpenAck<C>
 where
-	C: ClientKeeper + Clone,
+	C: ClientTypes + Clone,
 	Any: From<C::AnyClientState>,
 	MsgConnectionOpenAck<C>: TryFrom<v1::MsgConnectionOpenAck>,
 	<MsgConnectionOpenAck<C> as TryFrom<v1::MsgConnectionOpenAck>>::Error: Display,
@@ -73,7 +73,7 @@ where
 
 impl<C> TryFrom<RawMsgConnectionOpenAck> for MsgConnectionOpenAck<C>
 where
-	C: ClientKeeper,
+	C: ClientTypes,
 	C::AnyClientState: TryFrom<Any, Error = ics02_client::error::Error>,
 {
 	type Error = Error;
@@ -126,7 +126,7 @@ where
 
 impl<C> From<MsgConnectionOpenAck<C>> for RawMsgConnectionOpenAck
 where
-	C: ClientKeeper,
+	C: ClientTypes,
 	Any: From<C::AnyClientState>,
 {
 	fn from(ics_msg: MsgConnectionOpenAck<C>) -> Self {

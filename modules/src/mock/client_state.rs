@@ -4,10 +4,13 @@ use alloc::collections::btree_map::BTreeMap as HashMap;
 
 use core::{convert::Infallible, fmt::Debug, time::Duration};
 
+use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::ConsensusStateWithHeight;
 use serde::{Deserialize, Serialize};
 use tendermint_proto::Protobuf;
 
+use crate::core::ics02_client::context::ClientTypes;
+use crate::core::ics02_client::error::Error as Ics02Error;
 use crate::mock::header::MockClientMessage;
 use crate::{
 	core::{
@@ -22,7 +25,7 @@ use crate::{
 	downcast,
 	mock::{
 		client_def::{AnyClient, MockClient},
-		context::ClientTypes,
+		context::HostBlockType,
 		header::MockHeader,
 	},
 	timestamp::Timestamp,
@@ -195,9 +198,22 @@ pub struct AnyConsensusStateWithHeight<C: ClientTypes> {
 	pub consensus_state: C::AnyConsensusState,
 }
 
-impl<C: ClientTypes> Protobuf<ConsensusStateWithHeight> for AnyConsensusStateWithHeight<C> {}
+impl<C: HostBlockType> Protobuf<ConsensusStateWithHeight> for AnyConsensusStateWithHeight<C>
+where
+	C::AnyClientMessage: TryFrom<Any, Error = Ics02Error> + Into<Any> + From<C::HostBlock>,
+	C::AnyClientState: Eq + TryFrom<Any, Error = Ics02Error> + Into<Any>,
+	C::AnyConsensusState:
+		Eq + TryFrom<Any, Error = Ics02Error> + Into<Any> + From<C::HostBlock> + 'static,
+{
+}
 
-impl<C: ClientTypes> TryFrom<ConsensusStateWithHeight> for AnyConsensusStateWithHeight<C> {
+impl<C: HostBlockType> TryFrom<ConsensusStateWithHeight> for AnyConsensusStateWithHeight<C>
+where
+	C::AnyClientMessage: TryFrom<Any, Error = Ics02Error> + Into<Any> + From<C::HostBlock>,
+	C::AnyClientState: Eq + TryFrom<Any, Error = Ics02Error> + Into<Any>,
+	C::AnyConsensusState:
+		Eq + TryFrom<Any, Error = Ics02Error> + Into<Any> + From<C::HostBlock> + 'static,
+{
 	type Error = Error;
 
 	fn try_from(value: ConsensusStateWithHeight) -> Result<Self, Self::Error> {
@@ -214,7 +230,13 @@ impl<C: ClientTypes> TryFrom<ConsensusStateWithHeight> for AnyConsensusStateWith
 	}
 }
 
-impl<C: ClientTypes> From<AnyConsensusStateWithHeight<C>> for ConsensusStateWithHeight {
+impl<C: HostBlockType> From<AnyConsensusStateWithHeight<C>> for ConsensusStateWithHeight
+where
+	C::AnyClientMessage: TryFrom<Any, Error = Ics02Error> + Into<Any> + From<C::HostBlock>,
+	C::AnyClientState: Eq + TryFrom<Any, Error = Ics02Error> + Into<Any>,
+	C::AnyConsensusState:
+		Eq + TryFrom<Any, Error = Ics02Error> + Into<Any> + From<C::HostBlock> + 'static,
+{
 	fn from(value: AnyConsensusStateWithHeight<C>) -> Self {
 		ConsensusStateWithHeight {
 			height: Some(value.height.into()),

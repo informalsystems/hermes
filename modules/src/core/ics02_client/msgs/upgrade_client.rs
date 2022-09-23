@@ -9,11 +9,9 @@ use tendermint_proto::Protobuf;
 
 use ibc_proto::ibc::core::client::v1::{MsgUpgradeClient as RawMsgUpgradeClient, MsgUpgradeClient};
 
+use crate::core::ics02_client::context::ClientTypes;
 use crate::{
-	core::{
-		ics02_client::{context::ClientKeeper, error::Error},
-		ics24_host::identifier::ClientId,
-	},
+	core::{ics02_client::error::Error, ics24_host::identifier::ClientId},
 	signer::Signer,
 	tx_msg::Msg,
 };
@@ -22,7 +20,7 @@ pub(crate) const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpgradeClient";
 
 /// A type of message that triggers the upgrade of an on-chain (IBC) client.
 #[derive(Clone, Debug, PartialEq)]
-pub struct MsgUpgradeAnyClient<C: ClientKeeper> {
+pub struct MsgUpgradeAnyClient<C: ClientTypes> {
 	pub client_id: ClientId,
 	pub client_state: C::AnyClientState,
 	pub consensus_state: C::AnyConsensusState,
@@ -30,7 +28,7 @@ pub struct MsgUpgradeAnyClient<C: ClientKeeper> {
 	pub proof_upgrade_consensus_state: Vec<u8>,
 	pub signer: Signer,
 }
-impl<C: ClientKeeper> MsgUpgradeAnyClient<C> {
+impl<C: ClientTypes> MsgUpgradeAnyClient<C> {
 	pub fn new(
 		client_id: ClientId,
 		client_state: C::AnyClientState,
@@ -52,7 +50,7 @@ impl<C: ClientKeeper> MsgUpgradeAnyClient<C> {
 
 impl<C> Msg for MsgUpgradeAnyClient<C>
 where
-	C: ClientKeeper + Clone,
+	C: ClientTypes + Clone,
 	Any: From<C::AnyClientState>,
 	Any: From<C::AnyConsensusState>,
 {
@@ -70,7 +68,7 @@ where
 
 impl<C> Protobuf<RawMsgUpgradeClient> for MsgUpgradeAnyClient<C>
 where
-	C: ClientKeeper + Clone,
+	C: ClientTypes + Clone,
 	Any: From<C::AnyClientState>,
 	Any: From<C::AnyConsensusState>,
 	MsgUpgradeAnyClient<C>: TryFrom<MsgUpgradeClient>,
@@ -80,7 +78,7 @@ where
 
 impl<C> From<MsgUpgradeAnyClient<C>> for RawMsgUpgradeClient
 where
-	C: ClientKeeper,
+	C: ClientTypes,
 	Any: From<C::AnyClientState>,
 	Any: From<C::AnyConsensusState>,
 {
@@ -98,7 +96,7 @@ where
 
 impl<C> TryFrom<RawMsgUpgradeClient> for MsgUpgradeAnyClient<C>
 where
-	C: ClientKeeper,
+	C: ClientTypes,
 	C::AnyClientState: TryFrom<Any>,
 	C::AnyConsensusState: TryFrom<Any>,
 	Error: From<<C::AnyClientState as TryFrom<Any>>::Error>,

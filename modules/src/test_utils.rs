@@ -30,13 +30,14 @@ use crate::{
 		ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
 		ics26_routing::context::{Module, ModuleId, ModuleOutputBuilder, ReaderContext},
 	},
-	mock::context::{ClientTypes, MockIbcStore},
+	mock::context::{HostBlockType, MockIbcStore},
 	prelude::*,
 	signer::Signer,
 	timestamp::Timestamp,
 	Height,
 };
 
+use crate::core::ics02_client::context::ClientTypes;
 use tendermint::{block, consensus, evidence, public_key::Algorithm};
 
 // Needed in mocks.
@@ -66,25 +67,25 @@ pub fn get_dummy_bech32_account() -> String {
 }
 
 #[derive(Debug, Clone)]
-pub struct DummyTransferModule<C: ClientTypes> {
+pub struct DummyTransferModule<C: HostBlockType> {
 	ibc_store: Arc<Mutex<MockIbcStore<C>>>,
 }
 
-impl<C: ClientTypes> PartialEq for DummyTransferModule<C> {
+impl<C: HostBlockType> PartialEq for DummyTransferModule<C> {
 	fn eq(&self, _other: &Self) -> bool {
 		false
 	}
 }
 
-impl<C: ClientTypes> Eq for DummyTransferModule<C> {}
+impl<C: HostBlockType> Eq for DummyTransferModule<C> {}
 
-impl<C: ClientTypes> DummyTransferModule<C> {
+impl<C: HostBlockType> DummyTransferModule<C> {
 	pub fn new(ibc_store: Arc<Mutex<MockIbcStore<C>>>) -> Self {
 		Self { ibc_store }
 	}
 }
 
-impl<C: ClientTypes + 'static> Module for DummyTransferModule<C> {
+impl<C: HostBlockType + 'static> Module for DummyTransferModule<C> {
 	fn on_chan_open_try(
 		&mut self,
 		_output: &mut ModuleOutputBuilder,
@@ -243,11 +244,11 @@ impl ics23::HostFunctionsProvider for Crypto {
 	}
 }
 
-impl<C: ClientTypes> Ics20Keeper for DummyTransferModule<C> {
+impl<C: HostBlockType> Ics20Keeper for DummyTransferModule<C> {
 	type AccountId = Signer;
 }
 
-impl<C: ClientTypes> ChannelKeeper for DummyTransferModule<C> {
+impl<C: HostBlockType> ChannelKeeper for DummyTransferModule<C> {
 	fn store_packet_commitment(
 		&mut self,
 		key: (PortId, ChannelId, Sequence),
@@ -349,13 +350,13 @@ impl<C: ClientTypes> ChannelKeeper for DummyTransferModule<C> {
 	}
 }
 
-impl<C: ClientTypes> PortReader for DummyTransferModule<C> {
+impl<C: HostBlockType> PortReader for DummyTransferModule<C> {
 	fn lookup_module_by_port(&self, _port_id: &PortId) -> Result<ModuleId, PortError> {
 		unimplemented!()
 	}
 }
 
-impl<C: ClientTypes> BankKeeper for DummyTransferModule<C> {
+impl<C: HostBlockType> BankKeeper for DummyTransferModule<C> {
 	type AccountId = Signer;
 
 	fn send_coins(
@@ -384,7 +385,7 @@ impl<C: ClientTypes> BankKeeper for DummyTransferModule<C> {
 	}
 }
 
-impl<C: ClientTypes> Ics20Reader for DummyTransferModule<C> {
+impl<C: HostBlockType> Ics20Reader for DummyTransferModule<C> {
 	type AccountId = Signer;
 
 	fn get_port(&self) -> Result<PortId, Ics20Error> {
@@ -400,7 +401,7 @@ impl<C: ClientTypes> Ics20Reader for DummyTransferModule<C> {
 	}
 }
 
-impl<C: ClientTypes> ConnectionReader for DummyTransferModule<C> {
+impl<C: HostBlockType> ConnectionReader for DummyTransferModule<C> {
 	fn connection_end(&self, cid: &ConnectionId) -> Result<ConnectionEnd, Ics03Error> {
 		match self.ibc_store.lock().unwrap().connections.get(cid) {
 			Some(connection_end) => Ok(connection_end.clone()),
@@ -421,7 +422,7 @@ impl<C: ClientTypes> ConnectionReader for DummyTransferModule<C> {
 	}
 }
 
-impl<C: ClientTypes> ClientReader for DummyTransferModule<C> {
+impl<C: HostBlockType> ClientReader for DummyTransferModule<C> {
 	fn client_state(&self, client_id: &ClientId) -> Result<Self::AnyClientState, Ics02Error> {
 		match self.ibc_store.lock().unwrap().clients.get(client_id) {
 			Some(client_record) => client_record
@@ -491,7 +492,7 @@ impl<C: ClientTypes> ClientReader for DummyTransferModule<C> {
 	}
 }
 
-impl<C: ClientTypes> ChannelReader for DummyTransferModule<C> {
+impl<C: HostBlockType> ChannelReader for DummyTransferModule<C> {
 	fn channel_end(&self, pcid: &(PortId, ChannelId)) -> Result<ChannelEnd, Error> {
 		match self.ibc_store.lock().unwrap().channels.get(pcid) {
 			Some(channel_end) => Ok(channel_end.clone()),
@@ -576,12 +577,18 @@ impl<C: ClientTypes> ChannelReader for DummyTransferModule<C> {
 	}
 }
 
-impl<C: ClientTypes> ClientKeeper for DummyTransferModule<C> {
+impl<C: HostBlockType> ClientTypes for DummyTransferModule<C> {
 	type AnyClientMessage = C::AnyClientMessage;
 	type AnyClientState = C::AnyClientState;
 	type AnyConsensusState = C::AnyConsensusState;
 	type ClientDef = C::ClientDef;
+}
 
+impl<C: HostBlockType> HostBlockType for DummyTransferModule<C> {
+	type HostBlock = C::HostBlock;
+}
+
+impl<C: HostBlockType> ClientKeeper for DummyTransferModule<C> {
 	fn store_client_type(
 		&mut self,
 		_client_id: ClientId,
@@ -634,8 +641,8 @@ impl<C: ClientTypes> ClientKeeper for DummyTransferModule<C> {
 	}
 }
 
-impl<C: ClientTypes> Ics20Context for DummyTransferModule<C> {
+impl<C: HostBlockType> Ics20Context for DummyTransferModule<C> {
 	type AccountId = Signer;
 }
 
-impl<C: ClientTypes> ReaderContext for DummyTransferModule<C> {}
+impl<C: HostBlockType> ReaderContext for DummyTransferModule<C> {}

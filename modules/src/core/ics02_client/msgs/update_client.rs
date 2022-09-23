@@ -6,7 +6,7 @@ use core::fmt::Display;
 use ibc_proto::google::protobuf::Any;
 use tendermint_proto::Protobuf;
 
-use crate::core::ics02_client::context::ClientKeeper;
+use crate::core::ics02_client::context::ClientTypes;
 use ibc_proto::ibc::core::client::v1::{MsgUpdateClient as RawMsgUpdateClient, MsgUpdateClient};
 
 use crate::core::ics02_client::error::Error;
@@ -21,7 +21,7 @@ pub const TYPE_URL: &str = "/ibc.core.client.v1.MsgUpdateClient";
 
 /// A type of message that triggers the update of an on-chain (IBC) client with new headers.
 #[derive(Clone, Debug, PartialEq)] // TODO: Add Eq bound when possible
-pub struct MsgUpdateAnyClient<C: ClientKeeper> {
+pub struct MsgUpdateAnyClient<C: ClientTypes> {
 	pub client_id: ClientId,
 	pub client_message: C::AnyClientMessage,
 	pub signer: Signer,
@@ -29,7 +29,7 @@ pub struct MsgUpdateAnyClient<C: ClientKeeper> {
 
 impl<C> MsgUpdateAnyClient<C>
 where
-	C: ClientKeeper,
+	C: ClientTypes,
 {
 	pub fn new(client_id: ClientId, client_message: C::AnyClientMessage, signer: Signer) -> Self {
 		MsgUpdateAnyClient { client_id, client_message, signer }
@@ -38,7 +38,7 @@ where
 
 impl<C> Msg for MsgUpdateAnyClient<C>
 where
-	C: ClientKeeper + Clone,
+	C: ClientTypes + Clone,
 	C::AnyClientMessage: Clone,
 	Any: From<C::AnyClientMessage>,
 {
@@ -56,7 +56,7 @@ where
 
 impl<C> Protobuf<RawMsgUpdateClient> for MsgUpdateAnyClient<C>
 where
-	C: ClientKeeper + Clone,
+	C: ClientTypes + Clone,
 	C::AnyClientMessage: Clone,
 	Any: From<C::AnyClientMessage>,
 	MsgUpdateAnyClient<C>: TryFrom<MsgUpdateClient>,
@@ -66,7 +66,7 @@ where
 
 impl<C> TryFrom<RawMsgUpdateClient> for MsgUpdateAnyClient<C>
 where
-	C: ClientKeeper,
+	C: ClientTypes,
 	C::AnyClientMessage: TryFrom<Any>,
 	Error: From<<C::AnyClientMessage as TryFrom<Any>>::Error>,
 {
@@ -86,7 +86,7 @@ where
 
 impl<C> From<MsgUpdateAnyClient<C>> for RawMsgUpdateClient
 where
-	C: ClientKeeper,
+	C: ClientTypes,
 	Any: From<C::AnyClientMessage>,
 {
 	fn from(ics_msg: MsgUpdateAnyClient<C>) -> Self {
@@ -97,4 +97,3 @@ where
 		}
 	}
 }
-

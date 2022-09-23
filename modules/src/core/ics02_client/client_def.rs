@@ -1,8 +1,9 @@
 use crate::core::ics02_client::{client_consensus::ConsensusState, client_state::ClientState};
 
+use crate::core::ics02_client::context::ClientTypes;
 use crate::{
 	core::{
-		ics02_client::{client_message::ClientMessage, context::ClientKeeper, error::Error},
+		ics02_client::{client_message::ClientMessage, error::Error},
 		ics03_connection::connection::ConnectionEnd,
 		ics04_channel::{
 			channel::ChannelEnd,
@@ -19,13 +20,13 @@ use crate::{
 use core::fmt::Debug;
 
 #[derive(PartialEq, Eq, Clone, Debug)]
-pub enum ConsensusUpdateResult<C: ClientKeeper> {
+pub enum ConsensusUpdateResult<C: ClientTypes> {
 	Single(C::AnyConsensusState),
 	Batch(Vec<(Height, C::AnyConsensusState)>),
 }
 
-impl<C: ClientKeeper> ConsensusUpdateResult<C> {
-	pub fn map_state<F, D: ClientKeeper>(self, f: F) -> ConsensusUpdateResult<D>
+impl<C: ClientTypes> ConsensusUpdateResult<C> {
+	pub fn map_state<F, D: ClientTypes>(self, f: F) -> ConsensusUpdateResult<D>
 	where
 		F: Fn(C::AnyConsensusState) -> D::AnyConsensusState,
 	{

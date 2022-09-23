@@ -1,11 +1,11 @@
 //! Protocol logic specific to processing ICS2 messages of type `MsgUpgradeAnyClient`.
 
+use crate::core::ics02_client::context::ClientTypes;
 use crate::{
 	core::{
 		ics02_client::{
 			client_def::{ClientDef, ConsensusUpdateResult},
 			client_state::ClientState,
-			context::ClientKeeper,
 			error::Error,
 			events::Attributes,
 			handler::ClientResult,
@@ -23,7 +23,7 @@ use core::fmt::Debug;
 /// The result following the successful processing of a `MsgUpgradeAnyClient` message.
 /// This data type should be used with a qualified name `upgrade_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Result<C: ClientKeeper> {
+pub struct Result<C: ClientTypes> {
 	pub client_id: ClientId,
 	pub client_state: C::AnyClientState,
 	pub consensus_state: Option<ConsensusUpdateResult<C>>,

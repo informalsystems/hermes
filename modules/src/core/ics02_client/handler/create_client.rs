@@ -5,11 +5,12 @@ use core::fmt::Debug;
 
 use crate::core::ics02_client::client_state::{ClientState, ClientType};
 
+use crate::core::ics02_client::context::ClientTypes;
 use crate::{
 	core::{
 		ics02_client::{
-			context::ClientKeeper, error::Error, events::Attributes, handler::ClientResult,
-			height::Height, msgs::create_client::MsgCreateAnyClient,
+			error::Error, events::Attributes, handler::ClientResult, height::Height,
+			msgs::create_client::MsgCreateAnyClient,
 		},
 		ics24_host::identifier::ClientId,
 	},
@@ -21,9 +22,9 @@ use crate::{
 /// The result following the successful processing of a `MsgCreateAnyClient` message. Preferably
 /// this data type should be used with a qualified name `create_client::Result` to avoid ambiguity.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Result<C: ClientKeeper> {
+pub struct Result<C: ClientTypes> {
 	pub client_id: ClientId,
-	pub client_type:  ClientType,
+	pub client_type: ClientType,
 	pub client_state: C::AnyClientState,
 	pub consensus_state: C::AnyConsensusState,
 	pub processed_time: Timestamp,

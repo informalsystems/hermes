@@ -1,3 +1,4 @@
+use crate::core::ics02_client::context::ClientTypes;
 use crate::{
 	core::{
 		ics02_client::{context::ClientKeeper, handler::dispatch as ics2_msg_dispatcher},
@@ -52,7 +53,7 @@ where
 /// Attempts to convert a message into a [Ics26Envelope] message
 pub fn decode<C>(message: Any) -> Result<Ics26Envelope<C>, Error>
 where
-	C: ClientKeeper + Clone + Debug + PartialEq + Eq,
+	C: ClientTypes + Clone + Debug + PartialEq + Eq,
 	Ics26Envelope<C>: TryFrom<Any>,
 	Error: From<<Ics26Envelope<C> as TryFrom<Any>>::Error>,
 {
@@ -74,8 +75,7 @@ where
 				ics2_msg_dispatcher::<Ctx>(ctx, msg).map_err(Error::ics02_client)?;
 
 			// Apply the result to the context (host chain store).
-			ctx.store_client_result(handler_output.result)
-				.map_err(Error::ics02_client)?;
+			ctx.store_client_result(handler_output.result).map_err(Error::ics02_client)?;
 
 			HandlerOutput::builder()
 				.with_log(handler_output.log)

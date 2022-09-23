@@ -1,8 +1,9 @@
 //! This module implements the processing logic for ICS2 (client abstractions and functions) msgs.
 
+use crate::core::ics02_client::context::ClientTypes;
 use crate::{
 	core::{
-		ics02_client::{context::ClientKeeper, error::Error, msgs::ClientMsg},
+		ics02_client::{error::Error, msgs::ClientMsg},
 		ics26_routing::context::ReaderContext,
 	},
 	handler::HandlerOutput,
@@ -14,7 +15,7 @@ pub mod update_client;
 pub mod upgrade_client;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum ClientResult<C: ClientKeeper> {
+pub enum ClientResult<C: ClientTypes> {
 	Create(create_client::Result<C>),
 	Update(update_client::Result<C>),
 	Upgrade(upgrade_client::Result<C>),

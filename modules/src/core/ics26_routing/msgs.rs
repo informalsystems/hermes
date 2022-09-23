@@ -21,7 +21,7 @@ use crate::core::{
 	ics26_routing::error::Error,
 };
 
-use crate::core::ics02_client::context::ClientKeeper;
+use crate::core::ics02_client::context::ClientTypes;
 use ibc_proto::ibc::core::{
 	client::v1::{MsgCreateClient, MsgUpdateClient, MsgUpgradeClient},
 	connection,
@@ -32,7 +32,7 @@ use tendermint_proto::Protobuf;
 #[derive(Clone, Debug)]
 pub enum Ics26Envelope<C>
 where
-	C: ClientKeeper + Eq + Clone + Debug,
+	C: ClientTypes + Eq + Clone + Debug,
 {
 	Ics2Msg(ClientMsg<C>),
 	Ics3Msg(ConnectionMsg<C>),
@@ -42,7 +42,7 @@ where
 
 impl<C> TryFrom<Any> for Ics26Envelope<C>
 where
-	C: ClientKeeper + Clone + Debug + PartialEq + Eq,
+	C: ClientTypes + Clone + Debug + PartialEq + Eq,
 	Any: From<C::AnyClientState>,
 	Any: From<C::AnyConsensusState>,
 	Any: From<C::AnyClientMessage>,
