@@ -78,7 +78,7 @@ trait ExecutionContext {
 }
 ```
 
-A useful way to understand how these traits work together is in seeing how *they could* be used to implement `deliver()`.
+A useful way to understand how these traits work together is in seeing how they *could* be used to implement `deliver()`.
 
 ```rust
 fn deliver<V, E>(val_ctx: &V, exec_ctx: &mut E, message: Any) -> Result<(), Error> {
