@@ -8,7 +8,7 @@ Proposed
 
 ## Context
 
-The main purpose of this ADR is to split each IBC handler (e.g. `UpdateClient`, `ConnOpenTry`, etc.) into a "validation" and an "execution" phase in order to accomodate a larger class of host architectures such as Namada. We call "validation" the part of a handler that does all the checks necessary for correctness. We call "execution" the part of the handler that applies the state modifications, assuming that validation passed. 
+The main purpose of this ADR is to split each IBC handler (e.g. `UpdateClient`, `ConnOpenTry`, etc.) into a "validation" and an "execution" phase in order to accomodate a larger class of host architectures such as Namada. We call "validation" the part of a handler that does all the checks necessary for correctness. We call "execution" the part of the handler that applies the state modifications, assuming that validation passed. This is a necessary change for architectures like Namada. For example, for each transaction in a block, Namada first runs execution followed by validation. If validation fails, the changes are reverted. The current architecture of the IBC handlers doesn't allow for that.
 
 Our current `deliver()` entrypoint can then be split into 2 entrypoints: `validate()` and `execute()`. More specifically, we replace the current `Ics26Context` and all its supertraits with 2 traits: `ValidationContext` and `ExecutionContext`. `ValidationContext` exposes and implements the `validate()` entrypoint, while the `ExecutionContext` exposes and implements the `execute()` entrypoint. Note that we will still expose `deliver()` (perhaps slightly modified) for convenience.
 
