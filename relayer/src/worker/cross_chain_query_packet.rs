@@ -1,11 +1,11 @@
 use super::error::RunError;
 use crate::chain::handle::ChainHandle;
+use crate::object::CrossChainQueryPacket;
 use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
 use crate::worker::WorkerCmd;
 use crossbeam_channel::Receiver;
 use std::time::Duration;
 use tracing::info_span;
-use crate::object::CrossChainQueryPacket;
 
 pub fn spawn_cross_chain_query_packet_worker<ChainA: ChainHandle>(
     handle: ChainA,
@@ -30,11 +30,13 @@ fn handle_cross_chain_query_packet<ChainA: ChainHandle>(
     _cross_chain_query_packet: &CrossChainQueryPacket,
 ) -> Result<(), TaskError<RunError>> {
     if let WorkerCmd::IbcEvents { batch } = &cmd {
-        let queries = batch.events
+        let queries = batch
+            .events
             .iter()
             .filter_map(|ev| ev.try_into().ok())
             .collect();
 
+        // TODO: send async tx to src chain in order to store query results
         let res = handle.cross_chain_query(queries);
         println!("{:?}", res);
         Ok(())

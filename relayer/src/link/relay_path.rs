@@ -11,6 +11,7 @@ use crate::chain::counterparty::unreceived_acknowledgements;
 use crate::chain::counterparty::unreceived_packets;
 use crate::chain::endpoint::ChainStatus;
 use crate::chain::handle::ChainHandle;
+use crate::chain::requests::IncludeProof;
 use crate::chain::requests::QueryChannelRequest;
 use crate::chain::requests::QueryClientEventRequest;
 use crate::chain::requests::QueryHeight;
@@ -20,7 +21,6 @@ use crate::chain::requests::QueryPacketCommitmentRequest;
 use crate::chain::requests::QueryTxRequest;
 use crate::chain::requests::QueryUnreceivedAcksRequest;
 use crate::chain::requests::QueryUnreceivedPacketsRequest;
-use crate::chain::requests::{CrossChainQueryRequest, IncludeProof};
 use crate::chain::tracking::TrackedMsgs;
 use crate::chain::tracking::TrackingId;
 use crate::channel::error::ChannelError;
@@ -43,7 +43,6 @@ use crate::link::{pending, relay_sender};
 use crate::path::PathIdentifiers;
 use crate::telemetry;
 use crate::util::queue::Queue;
-use ibc::events::IbcEventType;
 use ibc::{
     core::{
         ics02_client::events::ClientMisbehaviour as ClientMisbehaviourEvent,
@@ -405,21 +404,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         TrackedEvents::new(result, tracking_id)
     }
 
-    /// filters events handled only in local bound
-    /// not to be relayed to counterparty chain
-    fn filter_local_bound_events(
-        &self,
-        events: Vec<IbcEventWithHeight>,
-    ) -> Vec<IbcEventWithHeight> {
-        let mut result = vec![];
-        for event_with_height in events.into_iter() {
-            if &event_with_height.event.event_type() == &IbcEventType::CrossChainQuery {
-                result.push(event_with_height);
-            }
-        }
-        result
-    }
-
     fn relay_pending_packets(&self, height: Option<Height>) -> Result<(), LinkError> {
         let tracking_id = TrackingId::new_cleared_uuid();
         telemetry!(received_event_batch, tracking_id);
@@ -462,49 +446,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // Collect relevant events from the incoming batch & adjust their height.
         let events = self.filter_relaying_events(batch.events.clone(), batch.tracking_id);
 
-        // CrossChainQuery Tests
-        let res = self.src_chain().cross_chain_query(
-            vec![
-                CrossChainQueryRequest {
-                    id: "1".to_string(),
-                    path: "https://rest-cosmoshub.ecostake.com/cosmos/auth/v1beta1/accounts/cosmos18zfp9u7zxg3gel4r3txa2jqxme7jkw7dnvfjc8".to_string(),
-                    height: 12153000.to_string()
-                },
-                CrossChainQueryRequest {
-                    id: "2".to_string(),
-                    path: "https://rest-cosmoshub.ecostake.com/cosmos/auth/v1beta1/accounts/cosmos18zfp9u7zxg3gel4r3txa2jqxme7jkw7dnvfjc8".to_string(),
-                    height: 12153010.to_string()
-                },
-                CrossChainQueryRequest {
-                    id: "3".to_string(),
-                    path: "https://rest-cosmoshub.ecostake.com/cosmos/auth/v1beta1/accounts/cosmos18zfp9u7zxg3gel4r3txa2jqxme7jkw7dnvfjc8".to_string(),
-                    height: 12153020.to_string()
-                },
-                CrossChainQueryRequest {
-                    id: "4".to_string(),
-                    path: "https://rest-cosmoshub.ecostake.com/cosmos/auth/v1beta1/accounts/cosmos18zfp9u7zxg3gel4r3txa2jqxme7jkw7dnvfjc8".to_string(),
-                    height: 12153030.to_string()
-                },
-                CrossChainQueryRequest {
-                    id: "5".to_string(),
-                    path: "https://rest-cosmoshub.ecostake.com/cosmos/auth/v1beta1/accounts/cosmos18zfp9u7zxg3gel4r3txa2jqxme7jkw7dnvfjc8".to_string(),
-                    height: 12153040.to_string()
-                },
-                CrossChainQueryRequest {
-                    id: "6".to_string(),
-                    path: "https://rest-cosmoshub.ecostake.com/cosmos/auth/v1beta1/accounts/cosmos18zfp9u7zxg3gel4r3txa2jqxme7jkw7dnvfjc8".to_string(),
-                    height: 12153050.to_string()
-                },
-
-            ]
-        ).unwrap();
-
-        for r in res {
-            println!("{}", r);
-        }
-        // events handled only in local bound
-        let local_bound_events = self.filter_local_bound_events(batch.events);
-
         // Update telemetry info
         telemetry!({
             for event_with_height in events.events() {
@@ -512,16 +453,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             }
         });
 
-        self.push_local_bound_events(local_bound_events);
-
         // Transform the events into operational data items
         self.events_to_operational_data(events)
-    }
-
-    fn push_local_bound_events(&self, events: Vec<IbcEventWithHeight>) {
-        for ev in events {
-            self.local_bound_events.push_back(ev)
-        }
     }
 
     /// Produces and schedules operational data for this relaying path based on the input events.

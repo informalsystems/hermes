@@ -171,7 +171,7 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                 cross_chain_query_packet::spawn_cross_chain_query_packet_worker(
                     chains.a.clone(),
                     cmd_rx,
-                    cross_chain_query_packet.clone()
+                    cross_chain_query_packet.clone(),
                 );
             task_handles.push(cross_chain_query_task);
 

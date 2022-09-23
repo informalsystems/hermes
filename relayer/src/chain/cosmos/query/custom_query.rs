@@ -1,10 +1,5 @@
 use crate::chain::requests::CrossChainQueryRequest;
 use crate::chain::responses::CrossChainQueryResponse;
-use crate::event::IbcEventWithHeight;
-use ibc::applications::ics31_cross_chain_query::events::SendPacket;
-use ibc::events::IbcEvent;
-use ibc_proto::ibc::applications::query::v1::CrossChainQuery;
-use prost::DecodeError;
 use reqwest::{Client, Error};
 use serde::{Deserialize, Serialize};
 
@@ -33,39 +28,4 @@ pub async fn rest_query(
         data,
         request.height,
     ))
-}
-
-// SendPacket to CrossChainQuery
-// TODO: consensus proto spec with module
-pub fn to_cross_chain_query_event_or_default(
-    event_with_height: IbcEventWithHeight,
-) -> IbcEventWithHeight {
-    let height = event_with_height.clone().height;
-    let event = event_with_height.clone().event;
-    let packet = event.packet();
-
-    match packet {
-        Some(p) => {
-            let packet_data = p.data.as_slice();
-            let decoded: Result<CrossChainQuery, DecodeError> = prost::Message::decode(packet_data);
-            match decoded {
-                Ok(msg) => {
-                    if msg.msg_type == "cross_chain_query" {
-                        let cross_chain_query_event = IbcEvent::CrossChainQuery(SendPacket::new(
-                            msg.id,
-                            msg.path,
-                            msg.query_height.to_string(),
-                            msg.local_timeout_height.to_string(),
-                            msg.local_timeout_timestamp.to_string(),
-                        ));
-                        IbcEventWithHeight::new(cross_chain_query_event, height)
-                    } else {
-                        event_with_height
-                    }
-                }
-                Err(_) => event_with_height,
-            }
-        }
-        None => event_with_height,
-    }
 }
