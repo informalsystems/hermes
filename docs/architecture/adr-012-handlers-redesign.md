@@ -249,7 +249,7 @@ trait ValidationContext {
         height: Height,
     ) -> Result<Box<dyn ConsensusState>, Error>;
 
-        /// Search for the lowest consensus state higher than `height`.
+    /// Search for the lowest consensus state higher than `height`.
     fn next_consensus_state(
         &self,
         client_id: &ClientId,
