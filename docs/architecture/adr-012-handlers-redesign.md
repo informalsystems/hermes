@@ -81,7 +81,7 @@ trait ExecutionContext {
 A useful way to understand how these traits work together is in seeing how they *could* be used to implement `deliver()`.
 
 ```rust
-fn deliver<V, E>(val_ctx: &V, exec_ctx: &mut E, message: Any) -> Result<(), Error> {
+fn deliver<V: ValidationContext, E: ExecutionContext>(val_ctx: &V, exec_ctx: &mut E, message: Any) -> Result<(), Error> {
     // NOT how we will actually implement `deliver()`
     let _ = val_ctx.validate(message)?;
     exec_ctx.execute(message)
