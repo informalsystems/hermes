@@ -293,7 +293,7 @@ trait ValidationContext {
     /// Returns a counter on how many connections have been created thus far.
     fn connection_counter(&self) -> Result<u64, Error>;
 
-        /// Function required by ICS 03. Returns the list of all possible versions that the connection
+    /// Function required by ICS 03. Returns the list of all possible versions that the connection
     /// handshake protocol supports.
     fn get_compatible_versions(&self) -> Vec<Version> {
         get_compatible_versions()
