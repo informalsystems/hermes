@@ -477,7 +477,7 @@ fn extract_cross_chain_query_packet_from_tx(
             }
             application_events::ATTRIBUTE_TIMEOUT_TIMESTAMP_KEY => {
                 cross_chain_query_packet.timeout_timestamp = value.to_string()
-            },
+            }
             _ => {}
         }
     }

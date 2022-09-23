@@ -51,7 +51,6 @@ pub mod spawn;
 
 pub mod cmd;
 
-use crate::chain::cosmos::query::custom_query::to_cross_chain_query_event_or_default;
 use cmd::SupervisorCmd;
 
 use self::{scan::ChainScanner, spawn::SpawnContext};
@@ -327,6 +326,7 @@ fn relay_on_object<Chain: ChainHandle>(
         Object::Channel(chan) => client_state_filter.control_chan_object(registry, chan),
         Object::Packet(packet) => client_state_filter.control_packet_object(registry, packet),
         Object::Wallet(_wallet) => Ok(Permission::Allow),
+        Object::CrossChainQueryPacket(_) => Ok(Permission::Allow),
     };
 
     match client_filter_outcome {
@@ -503,6 +503,14 @@ pub fn collect_events(
                     event_with_height.clone(),
                     mode.packets.enabled,
                     || Object::for_close_init_channel(packet, src_chain).ok(),
+                );
+            }
+            IbcEvent::CrossChainQuery(ref packet) => {
+                collect_event(
+                    &mut collected,
+                    event_with_height.clone(),
+                    mode.packets.enabled,
+                    || Object::for_cross_chain_query_packet(packet, src_chain).ok(),
                 );
             }
             _ => (),
@@ -691,12 +699,6 @@ fn process_batch<Chain: ChainHandle>(
             continue;
         }
 
-        let mut events_to_be_relayed: Vec<IbcEventWithHeight> = vec![];
-
-        for event_with_height in events_with_heights {
-            events_to_be_relayed.push(to_cross_chain_query_event_or_default(event_with_height))
-        }
-
         let src = registry
             .get_or_spawn(object.src_chain_id())
             .map_err(Error::spawn)?;
@@ -708,7 +710,7 @@ fn process_batch<Chain: ChainHandle>(
         if let Object::Packet(_path) = object.clone() {
             // Update telemetry info
             telemetry!({
-                for event_with_height in events_to_be_relayed.iter() {
+                for event_with_height in events_with_heights.iter() {
                     match &event_with_height.event {
                         IbcEvent::SendPacket(send_packet_ev) => {
                             ibc_telemetry::global().send_packet_events(
@@ -748,7 +750,7 @@ fn process_batch<Chain: ChainHandle>(
 
         worker.send_events(
             batch.height,
-            events_to_be_relayed,
+            events_with_heights,
             batch.chain_id.clone(),
             batch.tracking_id,
         );

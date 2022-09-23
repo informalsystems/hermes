@@ -34,6 +34,7 @@ pub use map::WorkerMap;
 pub mod channel;
 pub mod client;
 pub mod connection;
+pub mod cross_chain_query_packet;
 pub mod packet;
 pub mod wallet;
 
@@ -162,6 +163,19 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
             task_handles.push(wallet_task);
 
             (None, None)
+        }
+
+        Object::CrossChainQueryPacket(cross_chain_query_packet) => {
+            let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
+            let cross_chain_query_task =
+                cross_chain_query_packet::spawn_cross_chain_query_packet_worker(
+                    chains.a.clone(),
+                    cmd_rx,
+                    cross_chain_query_packet.clone()
+                );
+            task_handles.push(cross_chain_query_task);
+
+            (Some(cmd_tx), None)
         }
     };
 

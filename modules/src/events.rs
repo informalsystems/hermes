@@ -330,7 +330,9 @@ impl TryFrom<IbcEvent> for AbciEvent {
             IbcEvent::AcknowledgePacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::TimeoutPacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::TimeoutOnClosePacket(event) => event.try_into().map_err(Error::channel)?,
-            IbcEvent::CrossChainQuery(event) => event.try_into().map_err(Error::cross_chain_query)?,
+            IbcEvent::CrossChainQuery(event) => {
+                event.try_into().map_err(Error::cross_chain_query)?
+            }
             IbcEvent::AppModule(event) => event.try_into()?,
             IbcEvent::NewBlock(_) | IbcEvent::ChainError(_) => {
                 return Err(Error::incorrect_event_type(event.to_string()));

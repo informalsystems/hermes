@@ -61,6 +61,7 @@ pub enum WorkerType {
     Channel,
     Packet,
     Wallet,
+    CrossChainQueryPacket,
 }
 
 impl fmt::Display for WorkerType {
@@ -71,6 +72,7 @@ impl fmt::Display for WorkerType {
             Self::Channel => write!(f, "channel"),
             Self::Packet => write!(f, "packet"),
             Self::Wallet => write!(f, "wallet"),
+            Self::CrossChainQueryPacket => write!(f, "cross_chain_query_packet"),
         }
     }
 }
