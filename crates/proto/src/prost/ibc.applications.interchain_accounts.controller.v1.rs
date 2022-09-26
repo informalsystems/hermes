@@ -7,6 +7,22 @@ pub struct Params {
     #[prost(bool, tag="1")]
     pub controller_enabled: bool,
 }
+/// QueryInterchainAccountRequest is the request type for the Query/InterchainAccount RPC method.
+#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryInterchainAccountRequest {
+    #[prost(string, tag="1")]
+    pub owner: ::prost::alloc::string::String,
+    #[prost(string, tag="2")]
+    pub connection_id: ::prost::alloc::string::String,
+}
+/// QueryInterchainAccountResponse the response type for the Query/InterchainAccount RPC method.
+#[derive(::serde::Serialize, ::serde::Deserialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryInterchainAccountResponse {
+    #[prost(string, tag="1")]
+    pub address: ::prost::alloc::string::String,
+}
 /// QueryParamsRequest is the request type for the Query/Params RPC method.
 #[derive(::serde::Serialize, ::serde::Deserialize)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -91,6 +107,29 @@ pub mod query_client {
             self.inner = self.inner.accept_compressed(encoding);
             self
         }
+        /// InterchainAccount returns the interchain account address for a given owner address on a given connection
+        pub async fn interchain_account(
+            &mut self,
+            request: impl tonic::IntoRequest<super::QueryInterchainAccountRequest>,
+        ) -> Result<
+            tonic::Response<super::QueryInterchainAccountResponse>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/ibc.applications.interchain_accounts.controller.v1.Query/InterchainAccount",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
         /// Params queries all parameters of the ICA controller submodule.
         pub async fn params(
             &mut self,
@@ -121,6 +160,14 @@ pub mod query_server {
     ///Generated trait containing gRPC methods that should be implemented for use with QueryServer.
     #[async_trait]
     pub trait Query: Send + Sync + 'static {
+        /// InterchainAccount returns the interchain account address for a given owner address on a given connection
+        async fn interchain_account(
+            &self,
+            request: tonic::Request<super::QueryInterchainAccountRequest>,
+        ) -> Result<
+            tonic::Response<super::QueryInterchainAccountResponse>,
+            tonic::Status,
+        >;
         /// Params queries all parameters of the ICA controller submodule.
         async fn params(
             &self,
@@ -187,6 +234,46 @@ pub mod query_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
+                "/ibc.applications.interchain_accounts.controller.v1.Query/InterchainAccount" => {
+                    #[allow(non_camel_case_types)]
+                    struct InterchainAccountSvc<T: Query>(pub Arc<T>);
+                    impl<
+                        T: Query,
+                    > tonic::server::UnaryService<super::QueryInterchainAccountRequest>
+                    for InterchainAccountSvc<T> {
+                        type Response = super::QueryInterchainAccountResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::QueryInterchainAccountRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).interchain_account(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = InterchainAccountSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
                 "/ibc.applications.interchain_accounts.controller.v1.Query/Params" => {
                     #[allow(non_camel_case_types)]
                     struct ParamsSvc<T: Query>(pub Arc<T>);
