@@ -26,8 +26,8 @@ COSMOS_SDK_GIT="${COSMOS_SDK_GIT:-$CACHE_PATH/cosmos/cosmos-sdk.git}"
 IBC_GO_GIT="${IBC_GO_GIT:-$CACHE_PATH/ibc-go.git}"
 
 
-COSMOS_SDK_COMMIT="$(cat proto/src/COSMOS_SDK_COMMIT)"
-IBC_GO_COMMIT="$(cat proto/src/IBC_GO_COMMIT)"
+COSMOS_SDK_COMMIT="$(cat crates/proto/src/COSMOS_SDK_COMMIT)"
+IBC_GO_COMMIT="$(cat crates/proto/src/IBC_GO_COMMIT)"
 
 echo "COSMOS_SDK_COMMIT: $COSMOS_SDK_COMMIT"
 echo "IBC_GO_COMMIT: $IBC_GO_COMMIT"
@@ -107,10 +107,10 @@ popd
 # so that the newly generated code does not
 # contain removed files.
 
-rm -rf proto/src/prost
-mkdir -p proto/src/prost
+rm -rf crates/proto/src/prost
+mkdir -p crates/proto/src/prost
 
-cd proto-compiler
+cd tools/proto-compiler
 
 cargo build --locked
 
@@ -121,7 +121,7 @@ cargo build --locked
 cargo run --locked -- compile \
   --sdk "$COSMOS_SDK_DIR/proto-include" \
   --ibc "$IBC_GO_DIR/proto-include" \
-  --out ../proto/src/prost
+  --out ../../crates/proto/src/prost
 
 # Remove the temporary checkouts of the repositories
 
