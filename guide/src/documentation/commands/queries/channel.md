@@ -7,28 +7,7 @@
 Use the `query channels` command to query the identifiers of all channels on a given chain.
 
 ```shell
-USAGE:
-    hermes query channels [OPTIONS] --chain <CHAIN_ID>
-
-DESCRIPTION:
-    Query the identifiers of all channels on a given chain
-
-OPTIONS:
-        --counterparty-chain <COUNTERPARTY_CHAIN_ID>
-            Filter the query response by the this counterparty chain
-
-    -h, --help
-            Print help information
-
-        --show-counterparty
-            Show the counterparty chain, port, and channel
-
-        --verbose
-            Enable verbose output, displaying the client and connection ids for each channel in the
-            response
-
-REQUIRED:
-        --chain <CHAIN_ID>    Identifier of the chain to query
+{{#include ../../../templates/help_templates/query/channels.md}}
 ```
 
 __Example__
@@ -36,7 +15,7 @@ __Example__
 Query all channels on `ibc-1`:
 
 ```shell
-hermes query channels --chain ibc-1
+{{#template ../../../templates/commands/hermes/query/channels_1.md CHAIN_ID=ibc-1}}
 ```
 
 ```json
@@ -65,16 +44,7 @@ Success: [
 Use the `query channel` commands to query the information about a specific channel.
 
 ```shell
-USAGE:
-    hermes query channel <SUBCOMMAND>
-
-DESCRIPTION:
-    Query information about channels
-
-SUBCOMMANDS:
-    client     Query channel's client state
-    end        Query channel end
-    ends       Query channel ends and underlying connection and client objects
+{{#include ../../../templates/help_templates/query/channel.md}}
 ```
 
 ## Query the channel end data
@@ -82,19 +52,7 @@ SUBCOMMANDS:
 Use the `query channel end` command to query the channel end:
 
 ```shell
-USAGE:
-    hermes query channel end [OPTIONS] --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
-
-DESCRIPTION:
-    Query channel end
-
-OPTIONS:
-        --height <HEIGHT>    Height of the state to query
-
-REQUIRED:
-        --chain <CHAIN_ID>        Identifier of the chain to query
-        --channel <CHANNEL_ID>    Identifier of the channel to query [aliases: chan]
-        --port <PORT_ID>          Identifier of the port to query
+{{#include ../../../templates/help_templates/query/channel/end.md}}
 ```
 
 __Example__
@@ -102,7 +60,7 @@ __Example__
 Query the channel end of channel `channel-1` on port `transfer` on `ibc-1`:
 
 ```shell
-hermes query channel end --chain ibc-1 --port transfer --channel channel-1
+{{#template ../../../templates/commands/hermes/query/channel/end_1.md CHAIN_ID=ibc-1 PORT_ID=transfer CHANNEL_ID=channel-1}}
 ```
 
 ```json
@@ -134,21 +92,7 @@ Success: ChannelEnd {
 Use the `query channel ends` command to obtain both ends of a channel:
 
 ```shell
-USAGE:
-    hermes query channel ends [OPTIONS] --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
-
-DESCRIPTION:
-    Query channel ends and underlying connection and client objects
-
-OPTIONS:
-        --height <HEIGHT>    Height of the state to query
-        --verbose            Enable verbose output, displaying all details of channels, connections
-                             & clients
-
-REQUIRED:
-        --chain <CHAIN_ID>        Identifier of the chain to query
-        --channel <CHANNEL_ID>    Identifier of the channel to query [aliases: chan]
-        --port <PORT_ID>          Identifier of the port to query
+{{#include ../../../templates/help_templates/query/channel/ends.md}}
 ```
 
 __Example__
@@ -156,7 +100,7 @@ __Example__
 Query the channel end of channel `channel-1` on port `transfer` on `ibc-0`:
 
 ```shell
-hermes query channel ends --chain ibc-0 --port transfer --channel channel-1
+{{#template ../../../templates/commands/hermes/query/channel/ends_1.md CHAIN_ID=ibc-0 PORT_ID=transfer CHANNEL_ID=channel-1}}
 ```
 
 ```json
@@ -204,16 +148,7 @@ channel, connection, and client on both ends.
 Use the `query channel client` command to obtain the channel's client state:
 
 ```shell
-USAGE:
-    hermes query channel client --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
-
-DESCRIPTION:
-    Query channel's client state
-
-REQUIRED:
-        --chain <CHAIN_ID>        Identifier of the chain to query
-        --channel <CHANNEL_ID>    Identifier of the channel to query [aliases: chan]
-        --port <PORT_ID>          Identifier of the port to query
+{{#include ../../../templates/help_templates/query/channel/client.md}}
 ```
 
 If the command is successful a message with the following format will be displayed:
@@ -319,10 +254,10 @@ Success: Some(
 )
 ```
 
-**JSON:**
+**JSON output:**
 
 ```shell
-    hermes --json query channel client --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
+{{#template ../../../templates/commands/hermes/query/channel/client_1.md CHAIN_ID=<CHAIN_ID> PORT_ID=<PORT_ID> CHANNEL_ID=<CHANNEL_ID> GLOBALOPTIONS=  --json}}
 ```
 
 If the command is successful a message with the following format will be displayed:
