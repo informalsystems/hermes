@@ -3,7 +3,7 @@
 Hermes accepts _global_ options which affect all commands.
 
 ```shell
-hermes {{#template ../../templates/version}}
+hermes {{#include ../../templates/version.md}}
 Informal Systems <hello@informal.systems>
 Implementation of `hermes`, an IBC Relayer developed in Rust.
 
@@ -18,26 +18,26 @@ The global options must be specified right after the `hermes` command and _befor
 The non-global options have to be specified _after_ the sub-command.
 
 ```shell
-hermes <GLOBAL_OPTIONS> subcommand <OPTIONS>
+hermes [GLOBAL_OPTIONS] <SUBCOMMAND> [OPTIONS]
 ```
 
 __Example__
 
-To `start` the relayer using the configuration file at `/home/my_chain.toml` and enable JSON output:
+To `start` Hermes using the configuration file at `/home/my_chain.toml` and enable JSON output:
 
 ```shell
-hermes --config /home/my_chain.toml --json start
+{{#template ../../templates/commands/hermes/start_1.md GLOBALOPTIONS=  --config $HOME/my_chain.toml --json}}
 ```
 
 To `query` all clients on a chain while enabling JSON output:
 
 ```shell
-hermes --json query clients --host-chain ibc-1
+{{#template ../../templates/commands/hermes/query/clients_1.md HOST_CHAIN_ID=ibc-1 GLOBALOPTIONS=  --json}}
 ```
 
 ## JSON output
 
-If the `--json` option is supplied, all relayer commands will output single-line JSON values instead of plain text.
+If the `--json` option is supplied, all commands will output single-line JSON values instead of plain text.
 
 Log messages will be written to `stderr`, while the final result will be written to `stdout`, and everything
 will be formatted as JSON.
@@ -47,7 +47,7 @@ To process all the output using `jq`, one can redirect `stderr` to `stdout` with
 __Example__
 
 ```shell
-hermes --config /home/my_chain.toml --json create client --host-chain ibc-0 --reference-chain ibc-1
+{{#template ../../templates/commands/hermes/create/client_1.md HOST_CHAIN_ID=ibc-0 REFERENCE_CHAIN_ID=ibc-1 GLOBALOPTIONS=  --json}}
 ```
 
 ```json
@@ -64,7 +64,7 @@ __Example__
 To improve the readability, pipe all the output to `jq`:
 
 ```
-hermes --config /home/my_chain.toml --json create client --host-chain ibc-0 --reference-chain ibc-1 2>&1 | jq
+{{#template ../../templates/commands/hermes/create/client_1.md HOST_CHAIN_ID=ibc-0 REFERENCE_CHAIN_ID=ibc-1 GLOBALOPTIONS=  --json}} 2>&1 | jq
 ```
 
 ```json
@@ -118,7 +118,7 @@ __Example__
 To extract the identifier of the newly created client above:
 
 ```
-hermes --config /home/my_chain.toml --json create client --host-chain ibc-0 --reference-chain ibc-1 | jq '.result.CreateClient.client_id'
+{{#template ../../templates/commands/hermes/create/client_1.md HOST_CHAIN_ID=ibc-0 REFERENCE_CHAIN_ID=ibc-1 GLOBALOPTIONS=  --json}} | jq '.result.CreateClient.client_id'
 ```
 
 Which should output:

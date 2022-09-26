@@ -1,1 +1,0 @@
-[[#binary hermes]] keys add --chain [[#chain]] --mnemonic-file [[#mnemonic-file]] --key-name [[#key-name]]
