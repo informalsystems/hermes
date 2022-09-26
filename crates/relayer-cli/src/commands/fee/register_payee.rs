@@ -9,6 +9,7 @@ use ibc_relayer::chain::tracking::TrackedMsgs;
 
 use crate::application::app_config;
 use crate::cli_utils::spawn_chain_runtime;
+use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
@@ -22,10 +23,10 @@ pub struct RegisterPayeeCmd {
     chain_id: ChainId,
 
     #[clap(
-        long = "channel-id",
+        long = "channel",
         required = true,
         help_heading = "FLAGS",
-        help = "Channel ID"
+        help = "Identifier of the channel"
     )]
     channel_id: ChannelId,
 
@@ -33,15 +34,15 @@ pub struct RegisterPayeeCmd {
         long = "port",
         required = true,
         help_heading = "FLAGS",
-        help = "Port ID"
+        help = "Identifier of the port"
     )]
     port_id: PortId,
 
     #[clap(
-        long = "payee-address",
+        long = "payee",
         required = true,
         help_heading = "FLAGS",
-        help = "Payee address"
+        help = "Address of the payee"
     )]
     payee_address: String,
 }
@@ -54,7 +55,9 @@ impl Runnable for RegisterPayeeCmd {
             &self.port_id,
             &self.payee_address,
         )
-        .unwrap()
+        .unwrap_or_else(exit_with_unrecoverable_error);
+
+        Output::success_msg("Successfully registered payee").exit()
     }
 }
 
@@ -80,8 +83,6 @@ fn run_register_payee_command(
     chain_handle
         .send_messages_and_wait_commit(messages)
         .map_err(Error::relayer)?;
-
-    println!("Successfully registered payee.");
 
     Ok(())
 }

@@ -18,7 +18,7 @@ mod version;
 
 use self::{
     clear::ClearCmds, completions::CompletionsCmd, config::ConfigCmd, create::CreateCmds,
-    fee::command::FeeCmd, health::HealthCheckCmd, keys::KeysCmd, listen::ListenCmd,
+    fee::FeeCmd, health::HealthCheckCmd, keys::KeysCmd, listen::ListenCmd,
     misbehaviour::MisbehaviourCmd, query::QueryCmd, start::StartCmd, tx::TxCmd, update::UpdateCmds,
     upgrade::UpgradeCmds, version::VersionCmd,
 };
@@ -78,6 +78,7 @@ pub enum CliCmd {
     #[clap(subcommand)]
     Tx(TxCmd),
 
+    /// Interact with the fee middleware
     #[clap(subcommand)]
     Fee(FeeCmd),
 
