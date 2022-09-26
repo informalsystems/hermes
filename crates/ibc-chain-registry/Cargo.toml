@@ -30,6 +30,6 @@ url         = "2.3.1"
 tracing     = "0.1.36"
 
 [dependencies.tendermint-rpc]
-version = "=0.23.9"
+version = "=0.25.0"
 features = ["http-client", "websocket-client"]
 
