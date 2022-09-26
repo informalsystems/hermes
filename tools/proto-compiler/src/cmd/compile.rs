@@ -1,9 +1,6 @@
-use std::fs::remove_dir_all;
-use std::fs::{copy, create_dir_all};
 use std::path::{Path, PathBuf};
 use std::process;
 
-use tempdir::TempDir;
 use walkdir::WalkDir;
 
 use argh::FromArgs;
@@ -103,8 +100,11 @@ impl CompileCmd {
             .out_dir(out_dir)
             .extern_path(".tendermint", "::tendermint_proto")
             .type_attribute(".google.protobuf.Any", attrs_serde)
+            .type_attribute(".google.protobuf.Any", attrs_eq)
             .type_attribute(".google.protobuf.Timestamp", attrs_serde)
+            .type_attribute(".google.protobuf.Timestamp", attrs_eq)
             .type_attribute(".google.protobuf.Duration", attrs_serde)
+            .type_attribute(".google.protobuf.Duration", attrs_eq)
             .type_attribute(".ibc.core.client.v1", attrs_serde)
             .type_attribute(".ibc.core.client.v1.Height", attrs_ord)
             .type_attribute(".ibc.core.client.v1.Height", attrs_jsonschema)
