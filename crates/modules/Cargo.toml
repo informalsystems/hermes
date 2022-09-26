@@ -48,7 +48,7 @@ primitive-types = { version = "0.12.0", default-features = false, features = ["s
 dyn-clone = "1.0.8"
 
 [dependencies.tendermint]
-version = "=0.23.9"
+version = "=0.25.0"
 default-features = false
 
 [dependencies.tendermint-proto]
