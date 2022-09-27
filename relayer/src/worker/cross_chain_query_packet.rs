@@ -37,8 +37,17 @@ fn handle_cross_chain_query_packet<ChainA: ChainHandle>(
             .collect();
 
         // TODO: send async tx to src chain in order to store query results
-        let res = handle.cross_chain_query(queries);
-        println!("{:?}", res);
+        // TODO: encode tx message into proto message
+        let response = handle.cross_chain_query(queries);
+        if let Ok(res) = response {
+            for i in res {
+                println!("{}", i);
+            }
+        }
+
+        let key = handle.get_key().unwrap();
+        println!("{:?}", key);
+
         Ok(())
     } else {
         Ok(())
