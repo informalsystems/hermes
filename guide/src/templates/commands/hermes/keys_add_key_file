@@ -1,1 +1,0 @@
-[[#binary hermes]] keys add --chain [[#chain]] --key-file [[#key-file]]

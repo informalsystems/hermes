@@ -1151,7 +1151,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "Indicates how many `receive_packets` were processed by the relayer. It can be used with `send_packet_events` as every `send_packet_event` should trigger the processing of a `receive_packet`.",
+      "description": "Indicates how many `receive_packets` were processed by Hermes. It can be used with `send_packet_events` as every `send_packet_event` should trigger the processing of a `receive_packet`.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1241,7 +1241,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "Indicates how many `timeout_packets` were processed by the relayer. It can be used with `timeout_packet_events` as every `timeout_event` should be processed by the relayer.",
+      "description": "Indicates how many `timeout_packets` were processed by the relayer. It can be used with `timeout_packet_events` as every `timeout_event` should be processed by Hermes.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1331,7 +1331,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "Indicates how many acknowledgements were processed by the relayer. It can be used with `acknowledgment_events` as every event should be processed by the relayer.",
+      "description": "Indicates how many acknowledgements were processed by the relayer. It can be used with `acknowledgment_events` as every event should be processed by Hermes.",
       "fieldConfig": {
         "defaults": {
           "color": {

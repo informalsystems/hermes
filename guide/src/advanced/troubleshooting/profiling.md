@@ -60,13 +60,13 @@ and it's often not clear which of these are the culprit for low performance.
 With profiling enabled, `hermes` will output timing information for individual
 methods involved in a command.
 
-__NOTE__: To be able to see the profiling output, the realyer needs to be compiled with
+__NOTE__: To be able to see the profiling output, Hermes needs to be compiled with
 the `profiling` feature and the [log level][log-level] should be `info` level or lower.
 
 #### Example output for `tx conn-init` command
 
 ```
-hermes --config config.toml tx conn-init --b-chain ibc-0 --a-chain ibc-1 --b-client 07-tendermint-0 --a-client 07-tendermint-0
+{{#template ../../templates/commands/hermes/tx/conn-init_1.md DST_CHAIN_ID=ibc-0 SRC_CHAIN_ID=ibc-1 DST_CLIENT_ID=07-tendermint-0 SRC_CLIENT_ID=07-tendermint-0}}
 ```
 
 ```

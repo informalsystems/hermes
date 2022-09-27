@@ -15,7 +15,7 @@ Follow the instructions below to install `Gaia`.
 Clone the repository from GitHub:
 
 ```shell
-{{#template ../../templates/commands/git/gaia}} ~/go/src/github.com/cosmos/gaia
+{{#template ../../templates/commands/git/gaia.md}} ~/go/src/github.com/cosmos/gaia
 ```
 
 #### Build and Install
@@ -34,7 +34,7 @@ make install
 If the command is successful, you can run the following command to ensure it was properly installed:
 
 ```shell
-{{#template ../../templates/commands/gaia/version}}
+{{#template ../../templates/commands/gaia/version.md}}
 ```
 
 Output:
