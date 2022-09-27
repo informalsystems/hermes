@@ -5,22 +5,16 @@ use core::time::Duration;
 use eyre::eyre;
 use ibc::{
     applications::transfer::Amount,
-    core::{
-        ics02_client::client_state::ClientState,
-        ics24_host::identifier::{ChainId, ChannelId, PortId},
-    },
+    core::ics24_host::identifier::{ChainId, ChannelId, PortId},
     events::IbcEvent,
 };
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer::chain::requests::{
-    IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
-};
 use ibc_relayer::{
     config::Config,
     transfer::{build_and_send_transfer_messages, TransferOptions},
 };
 
-use crate::cli_utils::ChainHandlePair;
+use crate::cli_utils::{check_can_send_on_channel, ChainHandlePair};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::*;
@@ -160,8 +154,8 @@ impl TxIcs20MsgTransferCmd {
         }
 
         let opts = TransferOptions {
-            packet_src_port_id: self.src_port_id.clone(),
-            packet_src_channel_id: self.src_channel_id.clone(),
+            src_port_id: self.src_port_id.clone(),
+            src_channel_id: self.src_channel_id.clone(),
             amount: self.amount,
             denom,
             receiver: self.receiver.clone(),
@@ -186,80 +180,13 @@ impl Runnable for TxIcs20MsgTransferCmd {
         let chains = ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        // Double check that channels and chain identifiers match.
-        // To do this, fetch from the source chain the channel end, then the associated connection
-        // end, and then the underlying client state; finally, check that this client is verifying
-        // headers for the destination chain.
-        let (channel_end_src, _) = chains
-            .src
-            .query_channel(
-                QueryChannelRequest {
-                    port_id: opts.packet_src_port_id.clone(),
-                    channel_id: opts.packet_src_channel_id.clone(),
-                    height: QueryHeight::Latest,
-                },
-                IncludeProof::No,
-            )
-            .unwrap_or_else(exit_with_unrecoverable_error);
-        if !channel_end_src.is_open() {
-            Output::error(format!(
-                "the requested port/channel ('{}'/'{}') on chain id '{}' is in state '{}'; expected 'open' state",
-                opts.packet_src_port_id,
-                opts.packet_src_channel_id,
-                self.src_chain_id,
-                channel_end_src.state
-            ))
-                .exit();
-        }
-
-        let conn_id = match channel_end_src.connection_hops.first() {
-            None => {
-                Output::error(format!(
-                    "could not retrieve the connection hop underlying port/channel '{}'/'{}' on chain '{}'",
-                    opts.packet_src_port_id, opts.packet_src_channel_id, self.src_chain_id
-                ))
-                    .exit();
-            }
-            Some(cid) => cid,
-        };
-
-        let (conn_end, _) = chains
-            .src
-            .query_connection(
-                QueryConnectionRequest {
-                    connection_id: conn_id.clone(),
-                    height: QueryHeight::Latest,
-                },
-                IncludeProof::No,
-            )
-            .unwrap_or_else(exit_with_unrecoverable_error);
-
-        debug!("connection hop underlying the channel: {:?}", conn_end);
-
-        let (src_chain_client_state, _) = chains
-            .src
-            .query_client_state(
-                QueryClientStateRequest {
-                    client_id: conn_end.client_id().clone(),
-                    height: QueryHeight::Latest,
-                },
-                IncludeProof::No,
-            )
-            .unwrap_or_else(exit_with_unrecoverable_error);
-
-        debug!(
-            "client state underlying the channel: {:?}",
-            src_chain_client_state
-        );
-
-        if src_chain_client_state.chain_id() != self.dst_chain_id {
-            Output::error(
-                format!("the requested port/channel ('{}'/'{}') provides a path from chain '{}' to \
-                 chain '{}' (not to the destination chain '{}'). Bailing due to mismatching arguments.",
-                        opts.packet_src_port_id, opts.packet_src_channel_id,
-                        self.src_chain_id,
-                        src_chain_client_state.chain_id(), self.dst_chain_id)).exit();
-        }
+        check_can_send_on_channel(
+            &chains.src,
+            &opts.src_channel_id,
+            &opts.src_port_id,
+            &chains.dst.id(),
+        )
+        .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Checks pass, build and send the tx
         let res: Result<Vec<IbcEvent>, Error> =

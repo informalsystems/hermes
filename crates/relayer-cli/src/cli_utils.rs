@@ -102,3 +102,88 @@ pub fn spawn_chain_counterparty<Chain: ChainHandle>(
         channel_connection_client,
     ))
 }
+
+/// Check that the relayer can send on the given channel and ensure that channels and chain identifiers match.
+/// To do this, fetch from the source chain the channel end, then the associated connection
+/// end, and then the underlying client state; finally, check that this client is verifying
+/// headers for the destination chain.
+pub fn check_can_send_on_channel<Chain: ChainHandle>(
+    src_chain: &Chain,
+    src_channel_id: &ChannelId,
+    src_port_id: &PortId,
+    dst_chain_id: &ChainId,
+) -> Result<(), eyre::Report> {
+    use eyre::eyre;
+    use tracing::debug;
+
+    use ibc_relayer::chain::requests::{
+        IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest,
+        QueryHeight,
+    };
+
+    let (channel_end_src, _) = src_chain.query_channel(
+        QueryChannelRequest {
+            port_id: src_port_id.clone(),
+            channel_id: src_channel_id.clone(),
+            height: QueryHeight::Latest,
+        },
+        IncludeProof::No,
+    )?;
+
+    if !channel_end_src.is_open() {
+        return Err(eyre!(
+            "the requested port/channel ('{}'/'{}') on chain id '{}' is in state '{}'; expected 'open' state",
+            src_port_id,
+            src_channel_id,
+            src_chain.id(),
+            channel_end_src.state
+        ));
+    }
+
+    let conn_id = match channel_end_src.connection_hops.first() {
+        Some(cid) => cid,
+        None => {
+            return Err(eyre!(
+                "could not retrieve the connection hop underlying port/channel '{}'/'{}' on chain '{}'",
+                src_port_id, src_channel_id, src_chain.id()
+            ));
+        }
+    };
+
+    let (conn_end, _) = src_chain.query_connection(
+        QueryConnectionRequest {
+            connection_id: conn_id.clone(),
+            height: QueryHeight::Latest,
+        },
+        IncludeProof::No,
+    )?;
+
+    debug!("connection hop underlying the channel: {:?}", conn_end);
+
+    let (src_chain_client_state, _) = src_chain.query_client_state(
+        QueryClientStateRequest {
+            client_id: conn_end.client_id().clone(),
+            height: QueryHeight::Latest,
+        },
+        IncludeProof::No,
+    )?;
+
+    debug!(
+        "client state underlying the channel: {:?}",
+        src_chain_client_state
+    );
+
+    if &src_chain_client_state.chain_id() != dst_chain_id {
+        return Err(eyre!(
+            "the requested port/channel ('{}'/'{}') provides a path from chain '{}' to \
+             chain '{}' (not to the destination chain '{}'). Bailing due to mismatching arguments.",
+            src_port_id,
+            src_channel_id,
+            src_chain.id(),
+            src_chain_client_state.chain_id(),
+            dst_chain_id
+        ));
+    }
+
+    Ok(())
+}
