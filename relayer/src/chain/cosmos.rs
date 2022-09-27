@@ -520,6 +520,7 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
 
         let rest_client = RestClient::builder()
+            .timeout(Duration::from_secs(10))
             .build()
             .map_err(|_| Error::rest_client())?;
 

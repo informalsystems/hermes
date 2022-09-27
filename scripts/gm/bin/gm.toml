@@ -1,0 +1,6 @@
+[global]
+gaiad_binary="/Users/sangyun/go/bin/gaiad"
+
+[global.hermes]
+binary="/Users/sangyun/.cargo/bin/hermes"
+

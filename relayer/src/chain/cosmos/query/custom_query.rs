@@ -21,11 +21,20 @@ pub async fn rest_query(
         .send()
         .await?;
 
-    let data = response.text().await?;
+    let data = response.text().await;
 
-    Ok(CrossChainQueryResponse::new(
-        request.id,
-        data,
-        request.height,
-    ))
+    match data {
+        Ok(res) => Ok(CrossChainQueryResponse::new(
+            request.id,
+            1,
+            res,
+            request.height,
+        )),
+        Err(e) => Ok(CrossChainQueryResponse::new(
+            request.id,
+            2,
+            e.to_string(),
+            request.height,
+        )),
+    }
 }

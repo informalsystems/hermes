@@ -1,11 +1,13 @@
 use super::error::RunError;
 use crate::chain::handle::ChainHandle;
+use crate::chain::tracking::TrackedMsgs;
 use crate::object::CrossChainQueryPacket;
 use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
 use crate::worker::WorkerCmd;
 use crossbeam_channel::Receiver;
 use std::time::Duration;
 use tracing::info_span;
+use uuid::Uuid;
 
 pub fn spawn_cross_chain_query_packet_worker<ChainA: ChainHandle>(
     handle: ChainA,
@@ -40,15 +42,15 @@ fn handle_cross_chain_query_packet<ChainA: ChainHandle>(
         // TODO: encode tx message into proto message
         let response = handle.cross_chain_query(queries);
         if let Ok(res) = response {
-            for i in res {
-                println!("{}", i);
-            }
+            let any_msgs = res
+                .into_iter()
+                .map(|r| r.to_any(&handle))
+                .collect::<Vec<_>>();
+
+            handle.send_messages_and_wait_check_tx(TrackedMsgs::new_uuid(any_msgs, Uuid::new_v4())).map_err(|_|TaskError::Ignore(RunError::query()))?;
         }
-
-        let key = handle.get_key().unwrap();
-        println!("{:?}", key);
-
         Ok(())
+
     } else {
         Ok(())
     }

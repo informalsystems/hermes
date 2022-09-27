@@ -31,5 +31,9 @@ define_error! {
         Recv
             [ DisplayOnly<RecvError> ]
             | _ | { "error receiving from channel: sender end has been closed" },
+
+        Query
+            | _ | { "error during qeuring" }
+
     }
 }
