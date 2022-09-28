@@ -89,6 +89,7 @@ git checkout "$COSMOS_SDK_COMMIT"
 git checkout -b "$COSMOS_SDK_COMMIT"
 
 cd proto
+buf mod update
 buf export -v -o ../proto-include
 popd
 
