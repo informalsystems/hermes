@@ -19,7 +19,7 @@ exclude = [
 ]
 
 [patch.crates-io]
-ibc-proto = { git = "https://github.com/hu55a1n1/ibc-proto" }
+ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs" }
 # tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
 # tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
 # tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
