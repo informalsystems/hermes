@@ -3,8 +3,11 @@ use core::ops::Add;
 use core::time::Duration;
 
 use crossbeam_channel as channel;
+use futures::future::join_all;
 use tendermint_testgen::light_block::TmLightBlock;
 use tokio::runtime::Runtime;
+use reqwest::Client as RestClient;
+use tendermint::abci::transaction::Hash;
 
 use ibc::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState as TmClientState};
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
@@ -27,6 +30,7 @@ use ibc::Height;
 
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;
+use crate::chain::cosmos::query::custom_query::rest_query;
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
 use crate::chain::requests::{
     CrossChainQueryRequest, QueryChannelClientStateRequest, QueryChannelRequest,
@@ -69,7 +73,6 @@ pub struct MockChain {
     // keep a reference to event sender to prevent it from being dropped
     #[allow(dead_code)]
     event_sender: EventSender,
-
     event_receiver: EventReceiver,
 }
 
@@ -178,7 +181,12 @@ impl ChainEndpoint for MockChain {
         &mut self,
         _tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error> {
-        todo!()
+        Ok(vec![tendermint_rpc::endpoint::broadcast::tx_sync::Response {
+            code: Default::default(),
+            data: Default::default(),
+            log: Default::default(),
+            hash: Hash::new([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]),
+        }])
     }
 
     fn get_signer(&mut self) -> Result<Signer, Error> {
@@ -403,7 +411,7 @@ impl ChainEndpoint for MockChain {
                 after_misbehaviour: false,
             },
         )
-        .map_err(Error::ics07)?;
+            .map_err(Error::ics07)?;
 
         Ok(client_state)
     }
@@ -480,9 +488,30 @@ impl ChainEndpoint for MockChain {
 
     fn cross_chain_query(
         &self,
-        _requests: Vec<CrossChainQueryRequest>,
+        requests: Vec<CrossChainQueryRequest>,
     ) -> Result<Vec<CrossChainQueryResponse>, Error> {
-        unimplemented!()
+        let rest_client = RestClient::builder()
+            .timeout(Duration::from_secs(10))
+            .build()
+            .map_err(|_| Error::rest_client())?;
+
+        let query_rt = Runtime::new().unwrap();
+
+        let mut responses: Vec<CrossChainQueryResponse> = vec![];
+        let tasks = requests
+            .into_iter()
+            .map(|req| rest_query(&rest_client, req))
+            .collect::<Vec<_>>();
+
+        let joined_tasks = join_all(tasks);
+        let results: Vec<_> = query_rt.block_on(joined_tasks);
+        for result in results {
+            if let Ok(res) = result {
+                responses.push(res);
+            }
+        }
+
+        Ok(responses)
     }
 }
 

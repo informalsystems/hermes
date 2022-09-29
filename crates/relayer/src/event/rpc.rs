@@ -299,7 +299,7 @@ fn extract_block_events(
 }
 
 #[cfg(test)]
-mod custom_test {
+mod get_all_events_test {
     use crate::event::rpc::get_all_events;
     use core::str::FromStr;
     use ibc::core::ics24_host::identifier::ChainId;
@@ -310,7 +310,7 @@ mod custom_test {
     use tendermint_rpc::{event::Event as RpcEvent, event::EventData as RpcEventData};
 
     #[test]
-    fn test_get_events() {
+    fn get_cross_chain_query_test() {
         let rpc_event = RpcEvent {
             query: "message.module = 'ibc_channel'".to_string(),
             data: RpcEventData::Tx {

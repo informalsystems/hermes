@@ -6,7 +6,7 @@ use k256::pkcs8::der::Encode;
 use prost;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct CrossChainQueryResponse {
     pub id: String,
     pub result: i32,
