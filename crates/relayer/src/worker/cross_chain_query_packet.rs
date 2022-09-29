@@ -47,10 +47,11 @@ fn handle_cross_chain_query_packet<ChainA: ChainHandle>(
                 .map(|r| r.to_any(&handle))
                 .collect::<Vec<_>>();
 
-            handle.send_messages_and_wait_check_tx(TrackedMsgs::new_uuid(any_msgs, Uuid::new_v4())).map_err(|_|TaskError::Ignore(RunError::query()))?;
+            handle
+                .send_messages_and_wait_check_tx(TrackedMsgs::new_uuid(any_msgs, Uuid::new_v4()))
+                .map_err(|_| TaskError::Ignore(RunError::query()))?;
         }
         Ok(())
-
     } else {
         Ok(())
     }

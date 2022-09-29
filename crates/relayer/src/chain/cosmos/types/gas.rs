@@ -1,5 +1,5 @@
-use ibc_proto::cosmos::tx::v1beta1::Fee;
 use crate::chain::cosmos::gas::calculate_fee;
+use ibc_proto::cosmos::tx::v1beta1::Fee;
 
 use crate::config::{ChainConfig, GasPrice};
 

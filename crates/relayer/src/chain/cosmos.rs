@@ -54,6 +54,8 @@ use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;
+use crate::chain::cosmos::batch::sequential_send_batched_messages_and_wait_commit;
+use crate::chain::cosmos::gas::mul_ceil;
 use crate::chain::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::query::balance::query_balance;
 use crate::chain::cosmos::query::custom_query::rest_query;
@@ -91,8 +93,6 @@ use crate::{
     chain::cosmos::encode::encode_to_bech32,
     util::pretty::{PrettyConsensusStateWithHeight, PrettyIdentifiedChannel},
 };
-use crate::chain::cosmos::batch::sequential_send_batched_messages_and_wait_commit;
-use crate::chain::cosmos::gas::mul_ceil;
 
 use super::requests::{
     IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
@@ -534,7 +534,11 @@ impl ChainEndpoint for CosmosSdkChain {
         self.config.clone()
     }
 
-    fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>, query_rt: Arc<TokioRuntime>) -> Result<Self, Error> {
+    fn bootstrap(
+        config: ChainConfig,
+        rt: Arc<TokioRuntime>,
+        query_rt: Arc<TokioRuntime>,
+    ) -> Result<Self, Error> {
         let rpc_client = HttpClient::new(config.rpc_addr.clone())
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
 
@@ -1873,9 +1877,9 @@ mod tests {
         Height,
     };
 
+    use crate::chain::cosmos::gas::calculate_fee;
     use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
     use crate::{chain::cosmos::client_id_suffix, config::GasPrice};
-    use crate::chain::cosmos::gas::calculate_fee;
 
     #[test]
     fn mul_ceil() {

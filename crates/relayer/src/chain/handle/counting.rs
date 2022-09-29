@@ -10,6 +10,7 @@ use crate::chain::client::ClientSettings;
 use crate::chain::endpoint::{ChainStatus, HealthCheck};
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::requests::*;
+use crate::chain::responses::CrossChainQueryResponse;
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;
@@ -38,7 +39,6 @@ use ibc::{
     signer::Signer,
     Height,
 };
-use crate::chain::responses::CrossChainQueryResponse;
 
 #[derive(Debug, Clone)]
 pub struct CountingChainHandle<Handle> {
@@ -466,7 +466,10 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inner.query_host_consensus_state(request)
     }
 
-    fn cross_chain_query(&self, request: Vec<CrossChainQueryRequest>) -> Result<Vec<CrossChainQueryResponse>, Error> {
+    fn cross_chain_query(
+        &self,
+        request: Vec<CrossChainQueryRequest>,
+    ) -> Result<Vec<CrossChainQueryResponse>, Error> {
         self.inner.cross_chain_query(request)
     }
 }
