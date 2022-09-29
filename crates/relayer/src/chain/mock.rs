@@ -87,7 +87,7 @@ impl ChainEndpoint for MockChain {
     type ConsensusState = TendermintConsensusState;
     type ClientState = TmClientState;
 
-    fn bootstrap(config: ChainConfig, _rt: Arc<Runtime>) -> Result<Self, Error> {
+    fn bootstrap(config: ChainConfig, _rt: Arc<Runtime>, _query_rt: Arc<Runtime>) -> Result<Self, Error> {
         let (event_sender, event_receiver) = channel::unbounded();
 
         let context = MockContext::new(
@@ -476,9 +476,9 @@ impl ChainEndpoint for MockChain {
 
     fn cross_chain_query(
         &self,
-        requests: Vec<CrossChainQueryRequest>,
+        _requests: Vec<CrossChainQueryRequest>,
     ) -> Result<Vec<CrossChainQueryResponse>, Error> {
-        Ok(format!("cross_chain_query: {}", requests))
+        unimplemented!()
     }
 }
 

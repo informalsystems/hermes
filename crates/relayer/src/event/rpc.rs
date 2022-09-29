@@ -131,7 +131,7 @@ pub fn get_all_events(
                 ChainId::chain_version(chain_id.to_string().as_str()),
                 u64::from(block.as_ref().ok_or("tx.height")?.header.height),
             )
-            .map_err(|_| String::from("tx.height: invalid header height of 0"))?;
+                .map_err(|_| String::from("tx.height: invalid header height of 0"))?;
 
             events_with_height.push(IbcEventWithHeight::new(
                 ClientEvents::NewBlock::new(height).into(),
@@ -144,7 +144,7 @@ pub fn get_all_events(
                 ChainId::chain_version(chain_id.to_string().as_str()),
                 tx_result.height as u64,
             )
-            .map_err(|_| String::from("tx_result.height: invalid header height of 0"))?;
+                .map_err(|_| String::from("tx_result.height: invalid header height of 0"))?;
 
             for abci_event in &tx_result.result.events {
                 if let Ok(ibc_event) = ibc_event_try_from_abci_event(abci_event) {
@@ -166,7 +166,7 @@ pub fn get_all_events(
                         if matches!(ibc_event, IbcEvent::SendPacket(_)) {
                             // Should be the same as the hash of tx_result.tx?
                             if let Some(hash) =
-                                events.get("tx.hash").and_then(|values| values.get(0))
+                            events.get("tx.hash").and_then(|values| values.get(0))
                             {
                                 tracing::trace!(event = "SendPacket", "tx hash: {}", hash);
                             }
@@ -218,6 +218,7 @@ fn event_is_type_channel(ev: &IbcEvent) -> bool {
             | IbcEvent::AcknowledgePacket(_)
             | IbcEvent::TimeoutPacket(_)
             | IbcEvent::TimeoutOnClosePacket(_)
+            | IbcEvent::CrossChainQuery(_)
     )
 }
 
@@ -295,4 +296,71 @@ fn extract_block_events(
         height,
     );
     events
+}
+
+#[cfg(test)]
+mod custom_test {
+    use core::str::FromStr;
+    use std::collections::BTreeMap;
+    use tendermint_rpc::{event::Event as RpcEvent, event::EventData as RpcEventData};
+    use tendermint_rpc::event::{TxInfo, TxResult};
+    use tendermint::abci::Event as TendermintEvent;
+    use tendermint::abci::tag::{Tag, Key, Value};
+    use ibc::core::ics24_host::identifier::ChainId;
+    use crate::event::rpc::get_all_events;
+
+    #[test]
+    fn test_get_events() {
+        let rpc_event = RpcEvent {
+            query: "message.module = 'ibc_channel'".to_string(),
+            data: RpcEventData::Tx {
+                tx_result: TxInfo {
+                    height: 123,
+                    index: None,
+                    tx: vec![],
+                    result: TxResult {
+                        log: None,
+                        gas_wanted: None,
+                        gas_used: None,
+                        events: vec![
+                            TendermintEvent {
+                                type_str: "cross_chain_query".to_string(),
+                                attributes: vec![
+                                    Tag {
+                                        key: Key::from_str("query_id").unwrap(),
+                                        value: Value::from_str("1").unwrap(),
+                                    },
+                                    Tag {
+                                        key: Key::from_str("query_path").unwrap(),
+                                        value: Value::from_str("https://api.cosmoshub.pupmos.network/cosmos/bank/v1beta1/denoms_metadata/uatom").unwrap(),
+                                    },
+                                    Tag {
+                                        key: Key::from_str("query_height").unwrap(),
+                                        value: Value::from_str("123").unwrap(),
+                                    },
+                                    Tag {
+                                        key: Key::from_str("query_timeout_height").unwrap(),
+                                        value: Value::from_str("130").unwrap(),
+                                    },
+                                    Tag {
+                                        key: Key::from_str("query_timeout_timestamp").unwrap(),
+                                        value: Value::from_str("123456789").unwrap(),
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                }
+            },
+            events: Some(BTreeMap::new()),
+        };
+        let res = get_all_events(
+            &ChainId::new("chain-0".to_string(), 1),
+            rpc_event,
+        ).unwrap();
+        assert_eq!(1, res.len());
+        for i in res {
+            assert_eq!(i.event.event_type().as_str(), "cross_chain_query");
+        }
+    }
 }

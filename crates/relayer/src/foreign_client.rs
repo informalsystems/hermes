@@ -1967,9 +1967,10 @@ mod test {
         let b_cfg = get_basic_chain_config("chain_b");
 
         let rt = Arc::new(TokioRuntime::new().unwrap());
+        let query_rt = Arc::new(TokioRuntime::new().unwrap());
         let a_chain =
-            ChainRuntime::<MockChain>::spawn::<BaseChainHandle>(a_cfg, rt.clone()).unwrap();
-        let b_chain = ChainRuntime::<MockChain>::spawn::<BaseChainHandle>(b_cfg, rt).unwrap();
+            ChainRuntime::<MockChain>::spawn::<BaseChainHandle>(a_cfg, rt.clone(), query_rt.clone()).unwrap();
+        let b_chain = ChainRuntime::<MockChain>::spawn::<BaseChainHandle>(b_cfg, rt, query_rt.clone()).unwrap();
 
         // Instantiate the foreign clients on the two chains.
         let res_client_on_a = ForeignClient::new(a_chain.clone(), b_chain.clone());

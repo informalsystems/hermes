@@ -1877,8 +1877,6 @@ mod tests {
     use crate::{chain::cosmos::client_id_suffix, config::GasPrice};
     use crate::chain::cosmos::gas::calculate_fee;
 
-    use super::calculate_fee;
-
     #[test]
     fn mul_ceil() {
         // Because 0.001 cannot be expressed precisely
