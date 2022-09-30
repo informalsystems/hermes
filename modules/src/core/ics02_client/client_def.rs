@@ -74,11 +74,13 @@ pub trait ClientDef: Clone {
 		client_msg: Self::ClientMessage,
 	) -> Result<bool, Error>;
 
-	/// TODO
 	fn verify_upgrade_and_update_state<Ctx: ReaderContext>(
 		&self,
-		client_state: &Self::ClientState,
-		consensus_state: &Self::ConsensusState,
+		ctx: &Ctx,
+		client_id: ClientId,
+		old_client_state: &Self::ClientState,
+		upgrade_client_state: &Self::ClientState,
+		upgrade_consensus_state: &Self::ConsensusState,
 		proof_upgrade_client: Vec<u8>,
 		proof_upgrade_consensus_state: Vec<u8>,
 	) -> Result<(Self::ClientState, ConsensusUpdateResult<Ctx>), Error>;

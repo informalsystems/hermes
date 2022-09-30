@@ -212,14 +212,17 @@ impl ClientDef for MockClient {
 
 	fn verify_upgrade_and_update_state<Ctx: ReaderContext>(
 		&self,
-		client_state: &Self::ClientState,
-		consensus_state: &Self::ConsensusState,
+		_ctx: &Ctx,
+		_client_id: ClientId,
+		_old_client_state: &Self::ClientState,
+		upgrade_client_state: &Self::ClientState,
+		upgrade_consensus_state: &Self::ConsensusState,
 		_proof_upgrade_client: Vec<u8>,
 		_proof_upgrade_consensus_state: Vec<u8>,
 	) -> Result<(Self::ClientState, ConsensusUpdateResult<Ctx>), Error> {
 		Ok((
-			*client_state,
-			ConsensusUpdateResult::Single(Ctx::AnyConsensusState::wrap(consensus_state).unwrap()),
+			*upgrade_client_state,
+			ConsensusUpdateResult::Single(Ctx::AnyConsensusState::wrap(upgrade_consensus_state).unwrap()),
 		))
 	}
 

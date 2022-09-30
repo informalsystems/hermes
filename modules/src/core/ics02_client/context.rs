@@ -89,7 +89,7 @@ pub trait ClientReader: ClientKeeper {
 	fn client_counter(&self) -> Result<u64, Error>;
 }
 
-pub trait ClientTypes {
+pub trait ClientTypes: 'static {
 	type AnyClientMessage: ClientMessage;
 	type AnyClientState: ClientState<ClientDef = Self::ClientDef> + Eq;
 	type AnyConsensusState: ConsensusState + Eq + 'static;

@@ -187,17 +187,25 @@ impl State {
 			quote! {
 				#(#attrs)*
 				Self::#variant_ident(client) => {
-					let client_type = #client_state_trait::client_type(client_state).to_owned();
-					let (client_state, consensus_state) = #crate_::downcast!(
-						client_state => Self::ClientState::#variant_ident,
-						consensus_state => Self::ConsensusState::#variant_ident,
+					let client_type = #client_state_trait::client_type(old_client_state).to_owned();
+					let (upgrade_client_state, upgrade_consensus_state) = #crate_::downcast!(
+						upgrade_client_state => Self::ClientState::#variant_ident,
+						upgrade_consensus_state => Self::ConsensusState::#variant_ident,
+					)
+					.ok_or_else(|| #error::client_args_type_mismatch(client_type.clone()))?;
+
+					let old_client_state = #crate_::downcast!(
+						old_client_state => Self::ClientState::#variant_ident
 					)
 					.ok_or_else(|| #error::client_args_type_mismatch(client_type))?;
 
 					let (new_state, new_consensus) = #trait_::verify_upgrade_and_update_state::<Ctx>(
 						client,
-						client_state,
-						consensus_state,
+						ctx,
+						client_id,
+						old_client_state,
+						upgrade_client_state,
+						upgrade_consensus_state,
 						proof_upgrade_client,
 						proof_upgrade_consensus_state,
 					)?;
@@ -210,8 +218,11 @@ impl State {
 		quote! {
 			fn verify_upgrade_and_update_state<Ctx: #crate_::core::ics26_routing::context::ReaderContext>(
 				&self,
-				client_state: &Self::ClientState,
-				consensus_state: &Self::ConsensusState,
+				ctx: &Ctx,
+				client_id: #crate_::core::ics24_host::identifier::ClientId,
+				old_client_state: &Self::ClientState,
+				upgrade_client_state: &Self::ClientState,
+				upgrade_consensus_state: &Self::ConsensusState,
 				proof_upgrade_client: ::alloc::vec::Vec<u8>,
 				proof_upgrade_consensus_state: ::alloc::vec::Vec<u8>,
 			) -> ::core::result::Result<(Self::ClientState, #crate_::core::ics02_client::client_def::ConsensusUpdateResult<Ctx>), #error> {

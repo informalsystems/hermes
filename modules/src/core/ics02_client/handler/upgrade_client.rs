@@ -61,14 +61,15 @@ where
 
 	let (new_client_state, new_consensus_state) = client_def
 		.verify_upgrade_and_update_state::<Ctx>(
+			&ctx,
+			client_id.clone(),
+			&client_state,
 			&upgrade_client_state,
 			&msg.consensus_state,
 			msg.proof_upgrade_client.clone(),
 			msg.proof_upgrade_consensus_state,
 		)?;
 
-	// Not implemented yet: https://github.com/informalsystems/ibc-rs/issues/722
-	// todo!()
 	let event_attributes = Attributes {
 		client_id: client_id.clone(),
 		height: ctx.host_height(),
