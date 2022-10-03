@@ -560,7 +560,7 @@ impl GrpcStatusSubdetail {
         msg.contains("verification failed") && msg.contains("client state height < proof height")
     }
 
-    /// Check whether this gRPC error message starts with "account sequence mismatch".
+    /// Check whether this gRPC error message contains the string "account sequence mismatch".
     ///
     /// # Note:
     /// This predicate is tested and validated against errors
@@ -581,6 +581,20 @@ impl GrpcStatusSubdetail {
     /// then this predicate will catch all "account sequence mismatch" errors
     pub fn is_account_sequence_mismatch_that_requires_refresh(&self) -> bool {
         self.status.message().contains("account sequence mismatch")
+    }
+
+    /// Check whether this gRPC error message contains the string "packet sequence out of order".
+    ///
+    /// # Note:
+    /// This error may happen even when packets are submitted in order when the `simulate_tx`
+    /// gRPC endpoint is allowed to be called after a block is created and before Tendermint/mempool
+    /// finishes `recheck_tx`, similary to the issue described in https://github.com/informalsystems/hermes/issues/2249.
+    ///
+    /// See https://github.com/informalsystems/hermes/issues/2670 for more info.
+    pub fn is_out_of_order_packet_sequence_error(&self) -> bool {
+        self.status
+            .message()
+            .contains("packet sequence is out of order")
     }
 
     /// Check whether this gRPC error matches:
