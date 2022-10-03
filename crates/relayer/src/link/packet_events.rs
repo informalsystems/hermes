@@ -80,11 +80,7 @@ pub fn query_send_packet_events<ChainA: ChainHandle>(
 
     let recvd_sequences: Vec<_> = tx_events
         .iter()
-        .filter_map(|ev| match ev.event {
-            IbcEvent::SendPacket(ref send_ev) => Some(send_ev.packet.sequence),
-            IbcEvent::WriteAcknowledgement(ref ack_ev) => Some(ack_ev.packet.sequence),
-            _ => None,
-        })
+        .filter_map(|eh| eh.event.packet().map(|p| p.sequence))
         .collect();
 
     query.sequences.retain(|seq| !recvd_sequences.contains(seq));
