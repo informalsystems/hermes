@@ -23,19 +23,15 @@
 use crossbeam_channel as channel;
 use tracing::Span;
 
-use ibc::core::ics02_client::events::UpdateClient;
-use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::core::ics23_commitment::merkle::MerkleProof;
 use ibc::{
-    core::ics03_connection::connection::ConnectionEnd,
+    core::ics02_client::events::UpdateClient,
+    core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
     core::ics03_connection::version::Version,
-    core::ics04_channel::channel::ChannelEnd,
+    core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd},
+    core::ics04_channel::packet::{PacketMsgType, Sequence},
     core::ics23_commitment::commitment::CommitmentPrefix,
-    core::ics24_host::identifier::ChainId,
-    core::ics24_host::identifier::ChannelId,
-    core::ics24_host::identifier::{ClientId, ConnectionId, PortId},
+    core::ics23_commitment::merkle::MerkleProof,
+    core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     proofs::Proofs,
     signer::Signer,
     Height,
