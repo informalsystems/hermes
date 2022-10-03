@@ -76,7 +76,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         packet_data_query_height: Option<Height>,
     ) -> Result<Vec<IbcEvent>, LinkError> {
         let _span = error_span!(
-            "PacketRecvCmd",
+            "relay_recv_packet_and_timeout_messages",
             src_chain = %self.a_to_b.src_chain().id(),
             src_port = %self.a_to_b.src_port_id(),
             src_channel = %self.a_to_b.src_channel_id(),
@@ -114,7 +114,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
     /// Implements the `packet-ack` CLI
     pub fn relay_ack_packet_messages(&self) -> Result<Vec<IbcEvent>, LinkError> {
         let _span = error_span!(
-            "PacketAckCmd",
+            "relay_ack_packet_messages",
             src_chain = %self.a_to_b.src_chain().id(),
             src_port = %self.a_to_b.src_port_id(),
             src_channel = %self.a_to_b.src_channel_id(),
