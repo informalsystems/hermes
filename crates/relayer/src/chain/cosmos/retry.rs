@@ -89,19 +89,6 @@ async fn do_send_tx_with_account_sequence_retry(
             .await
         }
 
-        // Gas estimation failed with out of order packet sequence during gas estimation.
-        // It may indicate that `simulate_tx` after a block was created but before Tendermint
-        // had finished `recheck_tx`. We retry once to see if the tx eventually goes through.
-        Err(ref e) if is_out_of_order_packet_sequence_error(e) => {
-            warn!(
-                error = %e,
-                "failed to estimate gas because of out of order packet sequence error, \
-                retrying once"
-            );
-
-            estimate_fee_and_send_tx(config, key_entry, account, tx_memo, messages).await
-        }
-
         // Gas estimation succeeded but broadcast_tx_sync failed with a retry-able error.
         Ok(ref response) if response.code == Code::Err(INCORRECT_ACCOUNT_SEQUENCE_ERR) => {
             warn!(
@@ -171,9 +158,10 @@ async fn refresh_account_and_retry_send_tx_with_account_sequence(
     tx_memo: &Memo,
     messages: &[Any],
 ) -> Result<Response, Error> {
-    // Re-fetch the account s.n.
+    // Re-fetch the account sequence number
     refresh_account(&config.grpc_address, &key_entry.account, account).await?;
-    // Retry after delay.
+
+    // Retry after delay
     thread::sleep(Duration::from_millis(ACCOUNT_SEQUENCE_RETRY_DELAY));
 
     estimate_fee_and_send_tx(config, key_entry, account, tx_memo, messages).await
@@ -188,19 +176,6 @@ fn mismatch_account_sequence_number_error_requires_refresh(e: &Error) -> bool {
 
     match e.detail() {
         GrpcStatus(detail) => detail.is_account_sequence_mismatch_that_requires_refresh(),
-        _ => false,
-    }
-}
-
-/// Determine whether the given error yielded by `tx_simulate`
-/// indicates that the current sequence number cached in Hermes
-/// is smaller than the full node's version of the s.n. and therefore
-/// account needs to be refreshed.
-fn is_out_of_order_packet_sequence_error(e: &Error) -> bool {
-    use crate::error::ErrorDetail::*;
-
-    match e.detail() {
-        GrpcStatus(detail) => detail.is_out_of_order_packet_sequence_error(),
         _ => false,
     }
 }
