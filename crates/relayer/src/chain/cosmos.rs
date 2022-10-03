@@ -1564,7 +1564,7 @@ impl ChainEndpoint for CosmosSdkChain {
     fn query_blocks(
         &self,
         request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
+    ) -> Result<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>), Error> {
         crate::time!("query_blocks");
         crate::telemetry!(query, self.id(), "query_blocks");
 
@@ -1572,8 +1572,8 @@ impl ChainEndpoint for CosmosSdkChain {
             QueryBlockRequest::Packet(request) => {
                 crate::time!("query_blocks: query block packet events");
 
-                let mut begin_block_events: Vec<IbcEvent> = vec![];
-                let mut end_block_events: Vec<IbcEvent> = vec![];
+                let mut begin_block_events = vec![];
+                let mut end_block_events = vec![];
 
                 for seq in &request.sequences {
                     let response = self
@@ -1611,6 +1611,7 @@ impl ChainEndpoint for CosmosSdkChain {
                                 .unwrap_or_default()
                                 .into_iter()
                                 .filter_map(|ev| filter_matching_event(ev, &request, *seq))
+                                .map(|ev| IbcEventWithHeight::new(ev, response_height))
                                 .collect(),
                         );
 
@@ -1620,10 +1621,12 @@ impl ChainEndpoint for CosmosSdkChain {
                                 .unwrap_or_default()
                                 .into_iter()
                                 .filter_map(|ev| filter_matching_event(ev, &request, *seq))
+                                .map(|ev| IbcEventWithHeight::new(ev, response_height))
                                 .collect(),
                         );
                     }
                 }
+
                 Ok((begin_block_events, end_block_events))
             }
         }

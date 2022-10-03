@@ -19,7 +19,6 @@ use ibc::{
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
         ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     },
-    events::IbcEvent,
     proofs::Proofs,
     signer::Signer,
     Height,
@@ -859,7 +858,7 @@ where
     fn query_blocks(
         &self,
         request: QueryBlockRequest,
-        reply_to: ReplyTo<(Vec<IbcEvent>, Vec<IbcEvent>)>,
+        reply_to: ReplyTo<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>)>,
     ) -> Result<(), Error> {
         let result = self.chain.query_blocks(request);
 

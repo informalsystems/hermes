@@ -14,7 +14,6 @@ use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
 use ibc::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
 use ibc::core::ics23_commitment::merkle::MerkleProof;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use ibc::events::IbcEvent;
 use ibc::proofs::{ConsensusProof, Proofs};
 use ibc::signer::Signer;
 use ibc::timestamp::Timestamp;
@@ -340,7 +339,7 @@ pub trait ChainEndpoint: Sized {
     fn query_blocks(
         &self,
         request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
+    ) -> Result<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>), Error>;
 
     fn query_host_consensus_state(
         &self,

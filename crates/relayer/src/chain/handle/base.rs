@@ -15,7 +15,6 @@ use ibc::{
         ics24_host::identifier::ChannelId,
         ics24_host::identifier::{ClientId, ConnectionId, PortId},
     },
-    events::IbcEvent,
     proofs::Proofs,
     signer::Signer,
     Height,
@@ -462,7 +461,7 @@ impl ChainHandle for BaseChainHandle {
     fn query_blocks(
         &self,
         request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
+    ) -> Result<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>), Error> {
         self.send(|reply_to| ChainRequest::QueryPacketEventDataFromBlocks { request, reply_to })
     }
 

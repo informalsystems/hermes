@@ -17,7 +17,6 @@ use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics23_commitment::merkle::MerkleProof;
 use ibc::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
 use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
-use ibc::events::IbcEvent;
 use ibc::mock::context::MockContext;
 use ibc::mock::host::HostType;
 use ibc::relayer::ics18_relayer::context::Ics18Context;
@@ -362,7 +361,7 @@ impl ChainEndpoint for MockChain {
     fn query_blocks(
         &self,
         _request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
+    ) -> Result<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>), Error> {
         unimplemented!()
     }
 

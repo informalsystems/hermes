@@ -36,7 +36,6 @@ use ibc::{
     core::ics24_host::identifier::ChainId,
     core::ics24_host::identifier::ChannelId,
     core::ics24_host::identifier::{ClientId, ConnectionId, PortId},
-    events::IbcEvent,
     proofs::Proofs,
     signer::Signer,
     Height,
@@ -389,7 +388,7 @@ where
     fn query_blocks(
         &self,
         request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
+    ) -> Result<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>), Error> {
         self.value().query_blocks(request)
     }
 

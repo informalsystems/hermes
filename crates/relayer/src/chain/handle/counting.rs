@@ -33,7 +33,6 @@ use ibc::{
     core::ics04_channel::channel::ChannelEnd,
     core::ics23_commitment::commitment::CommitmentPrefix,
     core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
-    events::IbcEvent,
     proofs::Proofs,
     signer::Signer,
     Height,
@@ -452,7 +451,7 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     fn query_blocks(
         &self,
         request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
+    ) -> Result<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>), Error> {
         self.inc_metric("query_blocks");
         self.inner().query_blocks(request)
     }

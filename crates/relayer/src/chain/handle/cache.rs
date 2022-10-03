@@ -15,7 +15,6 @@ use ibc::{
     core::ics24_host::identifier::{
         ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
     },
-    events::IbcEvent,
     proofs::Proofs,
     signer::Signer,
     Height,
@@ -468,7 +467,7 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     fn query_blocks(
         &self,
         request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
+    ) -> Result<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>), Error> {
         self.inner().query_blocks(request)
     }
 

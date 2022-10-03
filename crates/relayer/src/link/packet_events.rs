@@ -73,16 +73,13 @@ pub fn query_send_packet_events<ChainA: ChainHandle>(
         height: QueryHeight::Specific(src_query_height),
     };
 
-    let tx_events: Vec<IbcEvent> = src_chain
+    let tx_events = src_chain
         .query_txs(QueryTxRequest::Packet(query.clone()))
-        .map_err(LinkError::relayer)?
-        .into_iter()
-        .map(|ev_with_height| ev_with_height.event)
-        .collect();
+        .map_err(LinkError::relayer)?;
 
-    let recvd_sequences: Vec<Sequence> = tx_events
+    let recvd_sequences: Vec<_> = tx_events
         .iter()
-        .filter_map(|ev| match ev {
+        .filter_map(|ev| match ev.event {
             IbcEvent::SendPacket(ref send_ev) => Some(send_ev.packet.sequence),
             IbcEvent::WriteAcknowledgement(ref ack_ev) => Some(ack_ev.packet.sequence),
             _ => None,
@@ -109,7 +106,7 @@ pub fn query_send_packet_events<ChainA: ChainHandle>(
     events_result.extend(tx_events);
     events_result.extend(end_block_events);
 
-    Ok(events_result)
+    Ok(events_result.into_iter().map(|e| e.event).collect())
 }
 
 /// Returns packet event data for building ack messages for the

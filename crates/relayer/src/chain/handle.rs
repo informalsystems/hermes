@@ -18,7 +18,6 @@ use ibc::{
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
         ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     },
-    events::IbcEvent,
     proofs::Proofs,
     signer::Signer,
     Height,
@@ -334,7 +333,7 @@ pub enum ChainRequest {
 
     QueryPacketEventDataFromBlocks {
         request: QueryBlockRequest,
-        reply_to: ReplyTo<(Vec<IbcEvent>, Vec<IbcEvent>)>,
+        reply_to: ReplyTo<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>)>,
     },
 
     QueryHostConsensusState {
@@ -622,7 +621,7 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
     fn query_blocks(
         &self,
         request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
+    ) -> Result<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>), Error>;
 
     fn query_host_consensus_state(
         &self,
