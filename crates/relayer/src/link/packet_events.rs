@@ -1,5 +1,7 @@
 //! Utility methods for querying packet event data.
 
+use std::cmp::Ordering;
+
 use tracing::{info, span, trace, warn, Level};
 
 use ibc::core::ics04_channel::packet::Sequence;
@@ -60,7 +62,6 @@ pub fn query_send_packet_events<ChainA: ChainHandle>(
     sequences: Vec<Sequence>,
     src_query_height: Height,
 ) -> Result<Vec<IbcEvent>, LinkError> {
-    let mut events_result = vec![];
     let _span = span!(Level::DEBUG, "query_send_packet_events", h = %src_query_height).entered();
 
     let mut query = QueryPacketEventDataRequest {
@@ -100,13 +101,32 @@ pub fn query_send_packet_events<ChainA: ChainHandle>(
     trace!("tx_events {:?}", tx_events);
     trace!("end_block_events {:?}", end_block_events);
 
-    // events must be ordered in the following fashion -
-    // start-block events followed by tx-events followed by end-block events
-    events_result.extend(start_block_events);
-    events_result.extend(tx_events);
-    events_result.extend(end_block_events);
+    // Events should be ordered in the following fashion,
+    // for any two blocks b1, b2 at height h1, h2 with h1 < h2:
+    // b1.start_block_events
+    // b1.tx_events
+    // b1.end_block_events
+    // b2.start_block_events
+    // b2.tx_events
+    // b2.end_block_events
+    //
+    // As of now, we just sort them by sequence number which should
+    // yield a similar result and will revisit this approach in the future.
+    let mut events = vec![];
 
-    Ok(events_result.into_iter().map(|e| e.event).collect())
+    events.extend(start_block_events);
+    events.extend(tx_events);
+    events.extend(end_block_events);
+
+    events.sort_by(|a, b| {
+        a.event
+            .packet()
+            .zip(b.event.packet())
+            .map(|(pa, pb)| pa.sequence.cmp(&pb.sequence))
+            .unwrap_or(Ordering::Equal)
+    });
+
+    Ok(events.into_iter().map(|e| e.event).collect())
 }
 
 /// Returns packet event data for building ack messages for the
