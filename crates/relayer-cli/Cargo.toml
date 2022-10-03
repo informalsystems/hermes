@@ -37,7 +37,7 @@ atty                     = "0.2.14"
 clap                     = { version = "3.2", features = ["cargo"] }
 clap_complete            = "3.2"
 color-eyre               = "0.6"
-console                  = "0.15.1"
+console                  = "0.15.2"
 crossbeam-channel        = "0.5.5"
 dialoguer                = "0.10.2"
 dirs-next                = "2.0.0"
