@@ -766,7 +766,7 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.20.1"
-source = "git+https://github.com/cosmos/ibc-proto-rs#7238ae61a9aa4581a543f74f368ab0ede4613076"
+source = "git+https://github.com/cosmos/ibc-proto-rs#3fac7ce93c80126cc690d565c85be042e384b31c"
 dependencies = [
  "base64",
  "bytes",
@@ -892,9 +892,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.133"
+version = "0.2.134"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c0f80d65747a3e43d1596c7c5492d95d5edddaabd45a7fcdb02b95f644164966"
+checksum = "329c933548736bc49fd575ee68c89e8be4d260064184389a5b77517cddd99ffb"
 
 [[package]]
 name = "libsecp256k1"
@@ -1308,9 +1308,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.44"
+version = "1.0.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7bd7356a8122b6c4a24a82b278680c73357984ca2fc79a0f9fa6dea7dced7c58"
+checksum = "94e2ef8dbfc347b10c094890f778ee2e36ca9bb4262e86dc99cd217e35f3470b"
 dependencies = [
  "unicode-ident",
 ]
@@ -1760,9 +1760,9 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.9.0"
+version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fd0db749597d91ff862fd1d55ea87f7855a744a8425a64695b6fca237d1dad1"
+checksum = "a507befe795404456341dfab10cef66ead4c041f62b8b11bbb92bffe5d0953e0"
 
 [[package]]
 name = "sp-application-crypto"
@@ -2075,9 +2075,9 @@ dependencies = [
 
 [[package]]
 name = "ss58-registry"
-version = "1.29.1"
+version = "1.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e4f0cb475a8e58d9ed8a963010108768d79e397f7aff79f9a3972ef490f97de"
+checksum = "1de151faef619cb7b5c26b32d42bc7ddccac0d202beb7a84344b44e9232b92f7"
 dependencies = [
  "Inflector",
  "num-format",
