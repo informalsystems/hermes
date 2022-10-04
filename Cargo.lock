@@ -12,7 +12,7 @@ dependencies = [
  "arc-swap",
  "backtrace",
  "canonical-path",
- "clap",
+ "clap 3.2.22",
  "color-eyre",
  "fs-err",
  "once_cell",
@@ -469,7 +469,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 name = "check-guide"
 version = "0.1.0"
 dependencies = [
- "clap",
+ "clap 3.2.22",
  "ibc-relayer-cli",
  "lazy_static",
  "mdbook-template",
@@ -507,7 +507,7 @@ dependencies = [
  "atty",
  "bitflags",
  "clap_derive",
- "clap_lex",
+ "clap_lex 0.2.4",
  "indexmap",
  "once_cell",
  "strsim",
@@ -516,12 +516,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "clap"
+version = "4.0.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30607dd93c420c6f1f80b544be522a0238a7db35e6a12968d28910983fee0df0"
+dependencies = [
+ "bitflags",
+ "clap_lex 0.3.0",
+]
+
+[[package]]
 name = "clap_complete"
 version = "3.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3f7a2e0a962c45ce25afce14220bc24f9dade0a1787f185cecf96bfba7847cd8"
 dependencies = [
- "clap",
+ "clap 3.2.22",
+]
+
+[[package]]
+name = "clap_complete"
+version = "4.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11cba7abac9b56dfe2f035098cdb3a43946f276e6db83b72c4e692343f9aab9a"
+dependencies = [
+ "clap 4.0.9",
 ]
 
 [[package]]
@@ -542,6 +561,15 @@ name = "clap_lex"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2850f2f5a82cbf437dd5af4d49848fbdfc27c157c3d010345776f952765261c5"
+dependencies = [
+ "os_str_bytes",
+]
+
+[[package]]
+name = "clap_lex"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0d4198f73e42b4936b35b5bb248d81d2b595ecb170da0bac7655c54eedfa8da8"
 dependencies = [
  "os_str_bytes",
 ]
@@ -1754,8 +1782,8 @@ version = "1.0.0"
 dependencies = [
  "abscissa_core",
  "atty",
- "clap",
- "clap_complete",
+ "clap 3.2.22",
+ "clap_complete 4.0.2",
  "color-eyre",
  "console",
  "crossbeam-channel 0.5.6",
@@ -2110,8 +2138,8 @@ dependencies = [
  "ammonia",
  "anyhow",
  "chrono",
- "clap",
- "clap_complete",
+ "clap 3.2.22",
+ "clap_complete 3.2.5",
  "elasticlunr-rs",
  "env_logger",
  "futures-util",
@@ -2141,7 +2169,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "920f69694a682c1100d64ca342278fc289d7d89b905a60c39ca39e0ea04ce0f1"
 dependencies = [
  "anyhow",
- "clap",
+ "clap 3.2.22",
  "env_logger",
  "fancy-regex",
  "lazy_static",
@@ -2258,8 +2286,8 @@ version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "698fbc4b1fd2af323ed1711664a873b332faa4dc740e0f810f40210573ba36fd"
 dependencies = [
- "clap",
- "clap_complete",
+ "clap 3.2.22",
+ "clap_complete 3.2.5",
  "directories",
  "hex",
  "lazy_static",
