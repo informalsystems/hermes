@@ -156,7 +156,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         query_fn: impl Fn(
             &ChainA,
             &PathIdentifiers,
-            Vec<Sequence>,
+            &[Sequence],
             Height,
         ) -> Result<Vec<IbcEvent>, LinkError>,
         tracking_id: TrackingId,
