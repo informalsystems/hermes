@@ -28,6 +28,7 @@ jobs:
           override: true
       - run: |
           cd ci/no-std-check
+          make setup
           make check-panic-conflict
 
   check-substrate:
@@ -42,4 +43,5 @@ jobs:
           override: true
       - run: |
           cd ci/no-std-check
+          make setup
           make check-substrate
