@@ -66,6 +66,10 @@ jobs:
           - package: evmos
             command: evmosd
             account_prefix: evmos
+          - package: osmosis
+            command: osmosisd
+            account_prefix: osmo
+
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v15
