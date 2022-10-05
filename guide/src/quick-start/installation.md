@@ -14,8 +14,8 @@ There are two main approaches for obtaining Hermes:
 
 Simply head to the GitHub [Releases][releases] page and download the latest
 version of Hermes binary matching your platform:
-- macOS: `hermes-{{#template ../templates/version}}-x86_64-apple-darwin.tar.gz` (or .zip),
-- Linux: `hermes-{{#template ../templates/version}}-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
+- macOS: `hermes-{{#include ../templates/version.md}}-x86_64-apple-darwin.tar.gz` (or .zip),
+- Linux: `hermes-{{#include ../templates/version.md}}-x86_64-unknown-linux-gnu.tar.gz` (or .zip).
 
 The step-by-step instruction below should carry you through the whole process:
 
@@ -43,13 +43,13 @@ The step-by-step instruction below should carry you through the whole process:
 You should now be able to run Hermes by invoking the `hermes` executable.
 
 ```shell
-{{#template ../templates/commands/hermes/version}}
+{{#template ../templates/commands/hermes/version_1.md}}
 ```
 
 Which should be:
 
 ```
-hermes {{#template ../templates/version}}
+hermes {{#include ../templates/version.md}}
 ```
 
 ## Install via Cargo
@@ -79,13 +79,13 @@ This will download and build the crate `ibc-relayer-cli`, and install the
 You should now be able to run Hermes by invoking the `hermes` executable.
 
 ```shell
-{{#template ../templates/commands/hermes/version}}
+{{#template ../templates/commands/hermes/version_1.md}}
 ```
 
 Which should be:
 
 ```
-hermes {{#template ../templates/version}}
+hermes {{#include ../templates/version.md}}
 ```
 
 ## Build from source
@@ -95,7 +95,7 @@ hermes {{#template ../templates/version}}
 Open a terminal and clone the `ibc-rs` repository:
 
 ```shell
-{{#template ../templates/commands/git/clone_ibc_rs}}
+{{#template ../templates/commands/git/clone_ibc_rs.md}}
 ```
 
 Change to the repository directory
@@ -107,15 +107,15 @@ cd ibc-rs
 
 Go to the [ibc-rs releases](https://github.com/informalsystems/ibc-rs/releases) page to see what is the most recent release.
 
-Then checkout the release, for example if the most recent release is `{{#template ../templates/version}}` then execute the command:
+Then checkout the release, for example if the most recent release is `{{#template ../templates/version.md}}` then execute the command:
 
 ```shell
-git checkout {{#template ../templates/version}}
+git checkout {{#include ../templates/version.md}}
 ```
 
 ### Building with `cargo build`
 
-This command builds all the crates from the [__`ibc-rs`__](https://github.com/informalsystems/ibc-rs) repository, namely: the [__`ibc`__](https://github.com/informalsystems/ibc-rs/tree/master/modules) modules crate, [__`ibc-relayer`__](https://github.com/informalsystems/ibc-rs/tree/master/relayer) crate, [__`ibc-proto`__](https://github.com/informalsystems/ibc-rs/tree/master/proto) crate, and the [__`ibc-relayer-cli`__](https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli) crate.
+This command builds all the crates from the [__`ibc-rs`__](https://github.com/informalsystems/ibc-rs) repository, namely: the [__`ibc`__](https://github.com/informalsystems/ibc-rs/tree/master/modules) modules crate, [__`ibc-relayer`__](https://github.com/informalsystems/ibc-rs/tree/master/relayer) crate, and the [__`ibc-relayer-cli`__](https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli) crate.
 The last of these crates contains the `hermes` binary.
 
 ```shell
@@ -155,33 +155,7 @@ If you run the `hermes` without any additional parameters you should see the usa
 ```
 
 ```
-hermes {{#template ../templates/version}}
-Informal Systems <hello@informal.systems>
-
-USAGE:
-    hermes [OPTIONS] <SUBCOMMAND>
-
-OPTIONS:
-        --config <CONFIG>    Path to configuration file
-    -h, --help               Print help information
-        --json               Enable JSON output
-    -V, --version            Print version information
-
-SUBCOMMANDS:
-    clear           Clear objects, such as outstanding packets on a channel
-    config          Validate Hermes configuration file
-    create          Create objects (client, connection, or channel) on chains
-    health-check    Performs a health check of all chains in the the config
-    help            Print this message or the help of the given subcommand(s)
-    keys            Manage keys in the relayer for each chain
-    listen          Listen to and display IBC events emitted by a chain
-    misbehaviour    Listen to client update IBC events and handles misbehaviour
-    query           Query objects from the chain
-    start           Start the relayer in multi-chain mode
-    tx              Create and send IBC transactions
-    update          Update objects (clients) on chains
-    upgrade         Upgrade objects (clients) after chain upgrade
-    completions     Generate auto-complete scripts for different shells
+{{#include ../templates/help_templates/help.md}}
 ```
 
 ### Creating an alias for the executable
@@ -189,7 +163,7 @@ SUBCOMMANDS:
 It might be easier to create an alias for `hermes`, so you can just run it by specifying the executable name instead of the whole path. In order to create an alias execute the following command:
 
 ```shell
-alias hermes='cargo run --manifest-path $IBCRSPATH/Cargo.toml --release --bin hermes --'
+alias hermes='cargo run --manifest-path $IBCFOLDER/Cargo.toml --release --bin hermes --'
 ```
 
 ## Shell auto-completions
@@ -204,19 +178,19 @@ and any further necessary modifications to the shell's startup files.
 ### Bash
 
 ```sh
-{{#template ../templates/commands/hermes/completions shell=bash}} > ~/.local/share/bash-completion/completions/hermes
+{{#template ../templates/commands/hermes/completions_1.md SHELL=bash}} > ~/.local/share/bash-completion/completions/hermes
 ```
 
 On a macOS installation with Homebrew `bash-completion` formula installed, use 
 
 ```sh
-{{#template ../templates/commands/hermes/completions shell=bash}} > $(brew --prefix)/etc/bash_completion.d/hermes.bash-completion
+{{#template ../templates/commands/hermes/completions_1.md SHELL=bash}} > $(brew --prefix)/etc/bash_completion.d/hermes.bash-completion
 ```
 
 ### Zsh
 
 ```sh
-{{#template ../templates/commands/hermes/completions shell=zsh}} > ~/.zfunc/_hermes
+{{#template ../templates/commands/hermes/completions_1.md SHELL=zsh}} > ~/.zfunc/_hermes
 ```
 
 To make the shell load the script on initialization, add the directory to `fpath`

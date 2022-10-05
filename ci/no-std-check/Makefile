@@ -1,4 +1,4 @@
-NIGHTLY_VERSION=nightly
+NIGHTLY_VERSION=nightly-2022-09-22
 
 .DEFAULT_GOAL := help
 

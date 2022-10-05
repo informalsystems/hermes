@@ -25,7 +25,7 @@ As for the [Local chains tutorial](../local-chains/index.md), we will make use o
 First, make sure that no chain is currently running by killing all `gaiad` processes.
 
 ```shell
-{{#template ../../templates/commands/gm/stop}}
+{{#template ../../templates/commands/gm/stop.md}}
 ```
 
 Then, make sure that your folder `$HOME/.gm` does not contain any `ibc-*` or `node-*` file. You can remove them with
@@ -35,12 +35,12 @@ rm -r $HOME/.gm/node-*
 rm -r $HOME/.gm/ibc-*
 ```
 
-Copy and paste the configuration below to `{{#template ../../templates/path/gm/default_path}}` and set Hermes' binary path according to your setup. The following contains the configuration of 4 IBC-enabled chains.
+Copy and paste the configuration below to `$HOME/.gm/gm.toml` and set Hermes' binary path according to your setup. The following contains the configuration of 4 IBC-enabled chains.
 
 __gm.toml__
 
 ```toml
-{{#template ../../templates/files/gm/more-chains/gm.toml}}
+{{#include ../../templates/files/gm/more-chains/gm.toml}}
 ```
 
 > __NOTE__: If you have any `Docker` containers running that might be using the same ports as `gaiad` (e.g. port 27010-27012), please ensure you stop them first before proceeding to the next step.
@@ -48,7 +48,7 @@ __gm.toml__
 Finally, start the chains with the `start` command.
 
 ```bash
-{{#template ../../templates/commands/gm/start}}
+{{#template ../../templates/commands/gm/start.md}}
 ```
 
 This configures and starts four __`gaiad`__ instances.
@@ -87,7 +87,7 @@ node-3 started, PID: 25194, LOG: $HOME/.gm/node-3/log
 Run the following command to check the status of the chains:
 
 ```bash
-{{#template ../../templates/commands/gm/status}}
+{{#template ../../templates/commands/gm/status.md}}
 ```
 
 If the command is successful, you should see a message similar to:
@@ -110,7 +110,7 @@ ibc-3            22999  27040 27041 27042  $HOME/.gm/ibc-3
 Gaiad Manager `gm` takes care of creating the configuration file. Run the command below to create the `$HOME/.hermes/config.toml` file:
 
 ```bash
-{{#template ../../templates/commands/gm/hermes_config}}
+{{#template ../../templates/commands/gm/hermes_config.md}}
 ```
 >__NOTE__: You can visit the [`Configuration`](../../documentation/configuration/index.md) section for more information about the configuration file.
 
@@ -119,7 +119,7 @@ Based on the `gm.toml` above, your `$HOME/.hermes/config.toml` file should look 
 __config.toml__
 
 ```toml
-{{#template ../../templates/files/hermes/more-chains/config_without_filters.toml}}
+{{#include ../../templates/files/hermes/more-chains/config_without_filters.toml}}
 ```
 
 ### Adding private keys to the chains
@@ -127,7 +127,7 @@ __config.toml__
 Next, we will need to associate a private key to every chain which `hermes` will use to sign transactions. `gm` will automatically generate and associate them with:
 
 ```bash
-{{#template ../../templates/commands/gm/hermes_keys}}
+{{#template ../../templates/commands/gm/hermes_keys.md}}
 ```
 
 If successful, the command should show an output similar to:
@@ -148,7 +148,7 @@ SUCCESS Added key 'wallet1' (cosmos15jxyjskrx7s8yqpfn3xddlrx7qcq0f8r69mp4g) on c
 ```
 
 > __TROUBLESHOOTING__: 
-> - If the command does not out output anything, make sure the path to Hermes' binary is set in `{{#template ../../templates/path/gm/default_path}}`.
+> - If the command does not out output anything, make sure the path to Hermes' binary is set in `$HOME/.gm/gm.toml`.
 
 ### The `$HOME/.gm` directory
 
@@ -242,7 +242,7 @@ By default, `hermes` expects the configuration file to be in the __`$HOME/.herme
 
 It also stores the private keys for each chain in this folder as outlined in the [Keys](../../commands/keys/index.md) section.
 
-After executing `{{#template ../../templates/commands/gm/start}}`, this is how the folder should look like:
+After executing `{{#template ../../templates/commands/gm/start.md}}`, this is how the folder should look like:
 
 ```shell
 $HOME/.hermes/

@@ -115,6 +115,12 @@ impl Wallet {
     }
 }
 
+impl WalletAddress {
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
 impl<Chain> TaggedWallet<Chain> for MonoTagged<Chain, Wallet> {
     fn id(&self) -> MonoTagged<Chain, &WalletId> {
         self.map_ref(|w| &w.id)

@@ -14,23 +14,23 @@ description = """
 """
 
 [dependencies]
-ibc             = { path = "../../modules" }
-ibc-relayer     = { path = "../../relayer" }
-ibc-relayer-framework     = { path = "../../relayer-framework" }
-ibc-relayer-runtime     = { path = "../../relayer-runtime" }
-ibc-relayer-cosmos     = { path = "../../relayer-cosmos" }
-ibc-relayer-cli = { path = "../../relayer-cli" }
-ibc-proto       = { path = "../../proto" }
+ibc             = { path = "../../crates/modules" }
+ibc-relayer     = { path = "../../crates/relayer" }
+ibc-relayer-cli = { path = "../../crates/relayer-cli" }
+ibc-relayer-framework     = { path = "../../crates/relayer-framework" }
+ibc-relayer-runtime     = { path = "../../crates/relayer-runtime" }
+ibc-relayer-cosmos     = { path = "../../crates/relayer-cosmos" }
+ibc-proto       = { version = "0.20.1" }
 ibc-test-framework = { path = "../test-framework" }
-tendermint      = { version = "=0.23.9" }
-tendermint-rpc  = { version = "=0.23.9", features = ["http-client", "websocket-client"] }
-opentelemetry = "0.17.0"
+tendermint      = { version = "=0.25.0" }
+tendermint-rpc  = { version = "=0.25.0", features = ["http-client", "websocket-client"] }
 
 serde_json = "1"
 time = "0.3"
 tokio = "1.19.2"
 toml = "0.5"
-serde = "1.0.144"
+serde = "1.0.145"
+opentelemetry = { version = "0.17.0", features = ["metrics"] }
 
 [features]
 default = []
