@@ -7,15 +7,15 @@
 
 pub mod clear_packet;
 pub mod client_expiration;
-mod client_refresh;
-mod client_settings;
+pub mod client_refresh;
+pub mod client_settings;
 pub mod connection_delay;
 pub mod denom_trace;
 pub mod error_events;
 pub mod execute_schedule;
 pub mod memo;
 pub mod python;
-mod query_packet;
+pub mod query_packet;
 pub mod supervisor;
 pub mod tendermint;
 pub mod ternary_transfer;
@@ -23,6 +23,9 @@ pub mod transfer;
 
 #[cfg(any(doc, feature = "ordered"))]
 pub mod ordered_channel;
+
+#[cfg(any(doc, feature = "ordered"))]
+pub mod ordered_channel_clear;
 
 #[cfg(any(doc, feature = "ica"))]
 pub mod ica;
