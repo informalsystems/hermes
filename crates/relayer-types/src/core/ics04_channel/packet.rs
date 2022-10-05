@@ -4,12 +4,8 @@ use core::str::FromStr;
 
 use serde_derive::{Deserialize, Serialize};
 
-use  ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
+use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 
-use super::handler::{
-    acknowledgement::AckPacketResult, recv_packet::RecvPacketResult, send_packet::SendPacketResult,
-    timeout::TimeoutPacketResult, write_acknowledgement::WriteAckPacketResult,
-};
 use super::timeout::TimeoutHeight;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
@@ -24,15 +20,6 @@ pub enum PacketMsgType {
     TimeoutUnordered,
     TimeoutOrdered,
     TimeoutOnClose,
-}
-
-#[derive(Clone, Debug)]
-pub enum PacketResult {
-    Send(SendPacketResult),
-    Recv(RecvPacketResult),
-    WriteAck(WriteAckPacketResult),
-    Ack(AckPacketResult),
-    Timeout(TimeoutPacketResult),
 }
 
 #[derive(Clone, Debug)]
@@ -255,8 +242,8 @@ impl From<Packet> for RawPacket {
 #[cfg(test)]
 pub mod test_utils {
     use crate::prelude::*;
-    use  ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
-    use  ibc_proto::ibc::core::client::v1::Height as RawHeight;
+    use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
+    use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
     use crate::core::ics24_host::identifier::{ChannelId, PortId};
 
@@ -284,8 +271,8 @@ mod tests {
 
     use test_log::test;
 
-    use  ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
-    use  ibc_proto::ibc::core::client::v1::Height as RawHeight;
+    use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
+    use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
     use crate::core::ics04_channel::packet::test_utils::get_dummy_raw_packet;
     use crate::core::ics04_channel::packet::Packet;

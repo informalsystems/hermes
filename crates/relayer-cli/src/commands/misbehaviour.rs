@@ -1,13 +1,13 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use ibc_relayer_types::core::ics02_client::events::UpdateClient;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
-use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::{ForeignClient, MisbehaviourResults};
 use ibc_relayer::util::pretty::PrettySlice;
+use ibc_relayer_types::core::ics02_client::events::UpdateClient;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
+use ibc_relayer_types::events::IbcEvent;
 use std::ops::Deref;
 
 use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic};

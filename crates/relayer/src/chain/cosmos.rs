@@ -24,10 +24,13 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tonic::{codegen::http::Uri, metadata::AsciiMetadataValue};
 use tracing::{error, instrument, warn};
 
+use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
 use ibc_relayer_types::core::ics02_client::client_type::ClientType;
 use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
-use ibc_relayer_types::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
+use ibc_relayer_types::core::ics03_connection::connection::{
+    ConnectionEnd, IdentifiedConnectionEnd,
+};
 use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc_relayer_types::core::ics04_channel::packet::{Packet, Sequence};
 use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
@@ -36,7 +39,9 @@ use ibc_relayer_types::core::ics24_host::path::{
     AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
     ConnectionsPath, ReceiptsPath, SeqRecvsPath,
 };
-use ibc_relayer_types::core::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
+use ibc_relayer_types::core::ics24_host::{
+    ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH,
+};
 use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
@@ -48,7 +53,6 @@ use ibc_relayer_types::{
     clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState,
     core::ics02_client::events::UpdateClient,
 };
-use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;
@@ -803,7 +807,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                 ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(
+                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -920,7 +924,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                 ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(
+                ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -997,7 +1001,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                 ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(
+                ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -1033,7 +1037,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                 ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(
+                ibc_proto::ibc::core::connection::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -1078,7 +1082,7 @@ impl ChainEndpoint for CosmosSdkChain {
             connection_id: &ConnectionId,
             height_query: QueryHeight,
         ) -> Result<ConnectionEnd, Error> {
-            use  ibc_proto::ibc::core::connection::v1 as connection;
+            use ibc_proto::ibc::core::connection::v1 as connection;
             use tonic::IntoRequest;
 
             let mut client =
@@ -1153,7 +1157,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                 ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -1193,7 +1197,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                 ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -1258,7 +1262,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                 ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -1313,7 +1317,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                 ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -1376,7 +1380,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                 ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -1432,7 +1436,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                 ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -1469,7 +1473,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let mut client = self
             .block_on(
-                 ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
                     self.grpc_addr.clone(),
                 ),
             )
@@ -1520,7 +1524,7 @@ impl ChainEndpoint for CosmosSdkChain {
             IncludeProof::No => {
                 let mut client = self
                     .block_on(
-                         ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
+                        ibc_proto::ibc::core::channel::v1::query_client::QueryClient::connect(
                             self.grpc_addr.clone(),
                         ),
                     )

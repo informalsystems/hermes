@@ -4,7 +4,6 @@
 */
 
 use eyre::Report as Error;
-use ibc_relayer_types::core::ics24_host::identifier::ClientId;
 use ibc_relayer::chain::handle::{ChainHandle, CountingAndCachingChainHandle};
 use ibc_relayer::config::Config;
 use ibc_relayer::error::ErrorDetail as RelayerErrorDetail;
@@ -13,6 +12,7 @@ use ibc_relayer::foreign_client::{
 };
 use ibc_relayer::keyring::errors::ErrorDetail as KeyringErrorDetail;
 use ibc_relayer::registry::SharedRegistry;
+use ibc_relayer_types::core::ics24_host::identifier::ClientId;
 use std::fs;
 use std::path::Path;
 use tracing::{debug, info};

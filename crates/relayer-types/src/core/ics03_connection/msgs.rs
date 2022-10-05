@@ -37,8 +37,8 @@ pub mod test_util {
 
     use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
     use crate::prelude::*;
-    use  ibc_proto::ibc::core::commitment::v1::MerklePrefix;
-    use  ibc_proto::ibc::core::connection::v1::Counterparty as RawCounterparty;
+    use ibc_proto::ibc::core::commitment::v1::MerklePrefix;
+    use ibc_proto::ibc::core::connection::v1::Counterparty as RawCounterparty;
 
     pub fn get_dummy_raw_counterparty() -> RawCounterparty {
         RawCounterparty {

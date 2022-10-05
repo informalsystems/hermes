@@ -4,11 +4,12 @@
    connected IBC channels with completed handshakes.
 */
 
-use ibc_relayer_types::core::ics04_channel::channel::Order;
-use ibc_relayer_types::core::ics04_channel::Version;
-use ibc_relayer_types::core::ics24_host::identifier::PortId;
-use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
+
+use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer_types::core::ics04_channel::channel::Order;
+use ibc_relayer_types::core::ics04_channel::version::Version;
+use ibc_relayer_types::core::ics24_host::identifier::PortId;
 
 use crate::bootstrap::binary::channel::{
     bootstrap_channel_with_connection, BootstrapChannelOptions,

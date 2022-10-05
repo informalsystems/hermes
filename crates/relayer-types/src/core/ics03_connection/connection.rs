@@ -10,7 +10,7 @@ use core::{
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 
-use  ibc_proto::ibc::core::connection::v1::{
+use ibc_proto::ibc::core::connection::v1::{
     ConnectionEnd as RawConnectionEnd, Counterparty as RawCounterparty,
     IdentifiedConnection as RawIdentifiedConnection,
 };
@@ -281,7 +281,7 @@ impl From<Counterparty> for RawCounterparty {
             connection_id: value
                 .connection_id
                 .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
-            prefix: Some( ibc_proto::ibc::core::commitment::v1::MerklePrefix {
+            prefix: Some(ibc_proto::ibc::core::commitment::v1::MerklePrefix {
                 key_prefix: value.prefix.into_vec(),
             }),
         }

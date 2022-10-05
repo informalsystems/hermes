@@ -5,7 +5,7 @@ use crate::prelude::*;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
-use  ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
+use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
 use ibc_proto::protobuf::Protobuf;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenInit";
@@ -73,7 +73,7 @@ impl From<MsgChannelOpenInit> for RawMsgChannelOpenInit {
 #[cfg(test)]
 pub mod test_util {
     use crate::prelude::*;
-    use  ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
+    use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
 
     use crate::core::ics04_channel::channel::test_util::get_dummy_raw_channel_end;
     use crate::core::ics24_host::identifier::PortId;
@@ -95,7 +95,7 @@ mod tests {
     use crate::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
     use crate::prelude::*;
 
-    use  ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
+    use ibc_proto::ibc::core::channel::v1::MsgChannelOpenInit as RawMsgChannelOpenInit;
     use test_log::test;
 
     #[test]

@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 use ibc_proto::protobuf::Protobuf;
 
-use  ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
+use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 
 use crate::core::ics03_connection::error::Error;
 use crate::core::ics24_host::identifier::ConnectionId;
@@ -78,8 +78,8 @@ impl From<MsgConnectionOpenConfirm> for RawMsgConnectionOpenConfirm {
 #[cfg(test)]
 pub mod test_util {
     use crate::prelude::*;
-    use  ibc_proto::ibc::core::client::v1::Height;
-    use  ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
 
@@ -102,8 +102,8 @@ mod tests {
 
     use test_log::test;
 
-    use  ibc_proto::ibc::core::client::v1::Height;
-    use  ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenConfirm as RawMsgConnectionOpenConfirm;
 
     use crate::core::ics03_connection::msgs::conn_open_confirm::test_util::get_dummy_raw_msg_conn_open_confirm;
     use crate::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;

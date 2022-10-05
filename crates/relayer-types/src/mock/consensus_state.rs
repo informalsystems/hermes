@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 use ibc_proto::google::protobuf::Any;
-use  ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
+use ibc_proto::ibc::mock::ConsensusState as RawMockConsensusState;
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 
@@ -51,7 +51,7 @@ impl TryFrom<RawMockConsensusState> for MockConsensusState {
 impl From<MockConsensusState> for RawMockConsensusState {
     fn from(value: MockConsensusState) -> Self {
         RawMockConsensusState {
-            header: Some( ibc_proto::ibc::mock::Header {
+            header: Some(ibc_proto::ibc::mock::Header {
                 height: Some(value.header.height().into()),
                 timestamp: value.header.timestamp.nanoseconds(),
             }),

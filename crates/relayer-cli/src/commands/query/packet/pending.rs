@@ -2,11 +2,11 @@ use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 use serde::Serialize;
 
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer::chain::counterparty::{
     channel_on_destination, pending_packet_summary, PendingPackets,
 };
 use ibc_relayer::chain::handle::BaseChainHandle;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
 use crate::cli_utils::spawn_chain_counterparty;
 use crate::conclude::Output;

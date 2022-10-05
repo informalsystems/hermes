@@ -1,6 +1,7 @@
 use crate::prelude::*;
 use crate::utils::pretty::PrettySlice;
 
+use alloc::borrow::Cow;
 use core::convert::{TryFrom, TryInto};
 use core::fmt::{Display, Error as FmtError, Formatter};
 use core::str::FromStr;
@@ -10,8 +11,8 @@ use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
 use crate::core::ics02_client::error as client_error;
+use crate::core::ics02_client::events as ClientEvents;
 use crate::core::ics02_client::events::NewBlock;
-use crate::core::ics02_client::events::{self as ClientEvents};
 use crate::core::ics03_connection::error as connection_error;
 use crate::core::ics03_connection::events as ConnectionEvents;
 use crate::core::ics03_connection::events::Attributes as ConnectionAttributes;
@@ -20,7 +21,6 @@ use crate::core::ics04_channel::events as ChannelEvents;
 use crate::core::ics04_channel::events::Attributes as ChannelAttributes;
 use crate::core::ics04_channel::packet::Packet;
 use crate::core::ics24_host::error::ValidationError;
-use crate::core::ics26_routing::context::ModuleId;
 use crate::timestamp::ParseTimestampError;
 
 define_error! {
@@ -397,6 +397,36 @@ impl IbcEvent {
             IbcEvent::WriteAcknowledgement(ev) => Some(&ev.ack),
             _ => None,
         }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct InvalidModuleId;
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+pub struct ModuleId(String);
+
+impl ModuleId {
+    pub fn new(s: Cow<'_, str>) -> Result<Self, InvalidModuleId> {
+        if !s.trim().is_empty() && s.chars().all(char::is_alphanumeric) {
+            Ok(Self(s.into_owned()))
+        } else {
+            Err(InvalidModuleId)
+        }
+    }
+}
+
+impl Display for ModuleId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl FromStr for ModuleId {
+    type Err = InvalidModuleId;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::new(Cow::Borrowed(s))
     }
 }
 

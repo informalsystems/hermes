@@ -2,7 +2,7 @@ use alloc::string::ToString;
 use core::convert::TryFrom;
 use core::str::FromStr;
 
-use  ibc_proto::ibc::applications::transfer::v2::FungibleTokenPacketData as RawPacketData;
+use ibc_proto::ibc::applications::transfer::v2::FungibleTokenPacketData as RawPacketData;
 use serde::{Deserialize, Serialize};
 
 use super::error::Error;

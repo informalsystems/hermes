@@ -1,3 +1,4 @@
+use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 use ibc_relayer_types::clients::ics07_tendermint::misbehaviour::{
     Misbehaviour as TmMisbehaviour, TENDERMINT_MISBEHAVIOR_TYPE_URL,
 };
@@ -10,7 +11,6 @@ use ibc_relayer_types::mock::misbehaviour::Misbehaviour as MockMisbehaviour;
 #[cfg(test)]
 use ibc_relayer_types::mock::misbehaviour::MOCK_MISBEHAVIOUR_TYPE_URL;
 use ibc_relayer_types::Height;
-use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 use serde::{Deserialize, Serialize};
 
 use crate::light_client::AnyHeader;

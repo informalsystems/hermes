@@ -1,7 +1,7 @@
 //! Host chain types and methods, used by context mock.
 
 use ibc_proto::google::protobuf::Any;
-use  ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
+use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
 use ibc_proto::protobuf::Protobuf as ErasedProtobuf;
 use serde::Serialize;
 use tendermint::block::Header as TmHeader;

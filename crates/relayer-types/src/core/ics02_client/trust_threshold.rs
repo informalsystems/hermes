@@ -10,7 +10,7 @@ use core::{
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 
-use  ibc_proto::ibc::lightclients::tendermint::v1::Fraction;
+use ibc_proto::ibc::lightclients::tendermint::v1::Fraction;
 use tendermint::trust_threshold::TrustThresholdFraction;
 
 use crate::core::ics02_client::error::Error;

@@ -139,8 +139,9 @@ impl Runnable for QueryClientConsensusCmd {
 
         match self.consensus_height {
             Some(cs_height) => {
-                let consensus_height = ibc_relayer_types::Height::new(counterparty_chain.version(), cs_height)
-                    .unwrap_or_else(exit_with_unrecoverable_error);
+                let consensus_height =
+                    ibc_relayer_types::Height::new(counterparty_chain.version(), cs_height)
+                        .unwrap_or_else(exit_with_unrecoverable_error);
 
                 let res = chain
                     .query_consensus_state(
@@ -151,8 +152,11 @@ impl Runnable for QueryClientConsensusCmd {
                                 QueryHeight::Latest,
                                 |revision_height| {
                                     QueryHeight::Specific(
-                                        ibc_relayer_types::Height::new(chain.id().version(), revision_height)
-                                            .unwrap_or_else(exit_with_unrecoverable_error),
+                                        ibc_relayer_types::Height::new(
+                                            chain.id().version(),
+                                            revision_height,
+                                        )
+                                        .unwrap_or_else(exit_with_unrecoverable_error),
                                     )
                                 },
                             ),

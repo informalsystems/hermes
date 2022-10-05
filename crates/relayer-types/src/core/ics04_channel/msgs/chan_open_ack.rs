@@ -1,12 +1,12 @@
 use crate::core::ics04_channel::error::Error;
-use crate::core::ics04_channel::Version;
+use crate::core::ics04_channel::version::Version;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;
 use crate::proofs::Proofs;
 use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
-use  ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
+use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
 use ibc_proto::protobuf::Protobuf;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelOpenAck";
@@ -106,11 +106,11 @@ impl From<MsgChannelOpenAck> for RawMsgChannelOpenAck {
 #[cfg(test)]
 pub mod test_util {
     use crate::prelude::*;
-    use  ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
+    use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
 
     use crate::core::ics24_host::identifier::{ChannelId, PortId};
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
-    use  ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::client::v1::Height;
 
     /// Returns a dummy `RawMsgChannelOpenAck`, for testing only!
     pub fn get_dummy_raw_msg_chan_open_ack(proof_height: u64) -> RawMsgChannelOpenAck {
@@ -132,13 +132,13 @@ pub mod test_util {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use  ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
+    use ibc_proto::ibc::core::channel::v1::MsgChannelOpenAck as RawMsgChannelOpenAck;
     use test_log::test;
 
     use crate::core::ics04_channel::msgs::chan_open_ack::test_util::get_dummy_raw_msg_chan_open_ack;
     use crate::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
 
-    use  ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::client::v1::Height;
 
     #[test]
     fn parse_channel_open_ack_msg() {

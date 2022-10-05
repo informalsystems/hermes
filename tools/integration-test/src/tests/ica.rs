@@ -2,11 +2,11 @@ use std::str::FromStr;
 
 use serde::Serialize;
 
-use ibc_relayer_types::core::ics04_channel::channel::State;
 use ibc_relayer::config::{
     filter::{ChannelFilters, FilterPattern},
     PacketFilter,
 };
+use ibc_relayer_types::core::ics04_channel::channel::State;
 
 use ibc_test_framework::{
     ibc::denom::Denom,

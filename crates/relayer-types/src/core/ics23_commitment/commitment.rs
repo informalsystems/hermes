@@ -3,7 +3,7 @@ use crate::prelude::*;
 use crate::proofs::ProofError;
 
 use core::{convert::TryFrom, fmt};
-use  ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
+use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 use serde::{Deserialize, Serialize};
 use subtle_encoding::{Encoding, Hex};
 
@@ -158,7 +158,7 @@ impl Serialize for CommitmentPrefix {
 #[cfg(test)]
 pub mod test_util {
     use crate::prelude::*;
-    use  ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
+    use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
     use ibc_proto::ics23::CommitmentProof;
 
     /// Returns a dummy `RawMerkleProof`, for testing only!

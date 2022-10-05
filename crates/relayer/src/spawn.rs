@@ -11,9 +11,6 @@ use crate::{
     error::Error as RelayerError,
 };
 
-#[cfg(test)]
-use crate::chain::mock::MockChain;
-
 define_error! {
     SpawnError {
         Relayer
@@ -57,9 +54,6 @@ pub fn spawn_chain_runtime<Handle: ChainHandle>(
 
     let handle = match chain_config.r#type {
         ChainType::CosmosSdk => ChainRuntime::<CosmosSdkChain>::spawn::<Handle>(chain_config, rt),
-
-        #[cfg(test)]
-        ChainType::Mock => ChainRuntime::<MockChain>::spawn::<Handle>(chain_config, rt),
     }
     .map_err(SpawnError::relayer)?;
 

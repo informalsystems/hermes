@@ -8,7 +8,7 @@ use flex_error::{define_error, TraceError};
 use ibc_proto::protobuf::Protobuf;
 use serde_derive::{Deserialize, Serialize};
 
-use  ibc_proto::ibc::core::client::v1::Height as RawHeight;
+use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
 use crate::core::ics02_client::error::Error;
 

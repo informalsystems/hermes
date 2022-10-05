@@ -2,9 +2,9 @@ use core::fmt::{Display, Error as FmtError, Formatter};
 
 use serde::{Deserialize, Serialize};
 
-use super::error::Error;
-use crate::core::ics26_routing::context::Acknowledgement as AckTrait;
 use crate::prelude::*;
+
+use super::error::Error;
 
 /// A string constant included in error acknowledgements.
 /// NOTE: Changing this const is state machine breaking as acknowledgements are written into state
@@ -58,8 +58,6 @@ impl Display for Acknowledgement {
         }
     }
 }
-
-impl AckTrait for Acknowledgement {}
 
 #[cfg(test)]
 mod test {

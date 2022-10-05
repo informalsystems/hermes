@@ -5,7 +5,6 @@ use ibc_proto::google::protobuf::Any;
 use tracing::{debug, info};
 
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
-use ibc_relayer_types::core::ics04_channel::context::calculate_block_delay;
 use ibc_relayer_types::Height;
 
 use crate::chain::handle::ChainHandle;
@@ -372,6 +371,17 @@ impl ConnectionDelay {
     fn conn_block_delay(&self, max_expected_time_per_block: Duration) -> u64 {
         calculate_block_delay(self.delay, max_expected_time_per_block)
     }
+}
+
+fn calculate_block_delay(
+    delay_period_time: Duration,
+    max_expected_time_per_block: Duration,
+) -> u64 {
+    if max_expected_time_per_block.is_zero() {
+        return 0;
+    }
+
+    (delay_period_time.as_secs_f64() / max_expected_time_per_block.as_secs_f64()).ceil() as u64
 }
 
 /// A lightweight informational data structure that can be extracted

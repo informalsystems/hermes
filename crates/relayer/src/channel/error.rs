@@ -4,7 +4,9 @@ use flex_error::{define_error, ErrorMessageTracer};
 
 use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
 use ibc_relayer_types::core::ics04_channel::channel::State;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortChannelId, PortId};
+use ibc_relayer_types::core::ics24_host::identifier::{
+    ChainId, ChannelId, ClientId, PortChannelId, PortId,
+};
 use ibc_relayer_types::events::IbcEvent;
 
 use crate::error::Error as RelayerError;

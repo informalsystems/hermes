@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 use ibc_proto::google::protobuf::Any;
-use  ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
+use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 use tendermint::{hash::Algorithm, time::Time, Hash};
@@ -88,7 +88,7 @@ impl From<ConsensusState> for RawConsensusState {
 
         RawConsensusState {
             timestamp: Some(timestamp),
-            root: Some( ibc_proto::ibc::core::commitment::v1::MerkleRoot {
+            root: Some(ibc_proto::ibc::core::commitment::v1::MerkleRoot {
                 hash: value.root.into_vec(),
             }),
             next_validators_hash: value.next_validators_hash.as_bytes().to_vec(),

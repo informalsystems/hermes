@@ -3,7 +3,7 @@
 use crate::prelude::*;
 
 use ibc_proto::google::protobuf::Any;
-use  ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
+use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 use ibc_proto::protobuf::Protobuf;
 
 use crate::core::ics02_client::error::Error;
@@ -80,7 +80,7 @@ mod tests {
 
     use test_log::test;
 
-    use  ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
+    use ibc_proto::ibc::core::client::v1::MsgCreateClient as RawMsgCreateClient;
 
     use crate::clients::ics07_tendermint::client_state::test_util::get_dummy_tendermint_client_state;
     use crate::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;

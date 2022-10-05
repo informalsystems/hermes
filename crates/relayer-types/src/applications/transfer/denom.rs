@@ -2,7 +2,7 @@ use core::fmt::{Display, Error as FmtError, Formatter};
 use core::str::FromStr;
 
 use derive_more::{Display, From};
-use  ibc_proto::ibc::applications::transfer::v1::DenomTrace as RawDenomTrace;
+use ibc_proto::ibc::applications::transfer::v1::DenomTrace as RawDenomTrace;
 use serde::{Deserialize, Serialize};
 
 use super::error::Error;

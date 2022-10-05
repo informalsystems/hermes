@@ -441,48 +441,47 @@ pub fn parse_timeout_height(s: &str) -> Result<TimeoutHeight, ChannelError> {
 mod tests {
     use super::*;
 
-    use ibc_relayer_types::core::ics02_client::client_type::ClientType;
-    use ibc_relayer_types::core::ics02_client::header::Header;
+    // use ibc_relayer_types::core::ics02_client::client_type::ClientType;
+    // use ibc_relayer_types::core::ics02_client::header::Header;
     use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-    use ibc_relayer_types::mock::header::MockHeader;
     use ibc_relayer_types::timestamp::Timestamp;
 
-    #[test]
-    fn client_event_to_abci_event() {
-        let consensus_height = Height::new(1, 1).unwrap();
-        let attributes = ClientAttributes {
-            client_id: "test_client".parse().unwrap(),
-            client_type: ClientType::Tendermint,
-            consensus_height,
-        };
-        let mut abci_events = vec![];
-        let create_client = client_events::CreateClient::from(attributes.clone());
-        abci_events.push(AbciEvent::from(create_client.clone()));
-        let client_misbehaviour = client_events::ClientMisbehaviour::from(attributes.clone());
-        abci_events.push(AbciEvent::from(client_misbehaviour.clone()));
-        let upgrade_client = client_events::UpgradeClient::from(attributes.clone());
-        abci_events.push(AbciEvent::from(upgrade_client.clone()));
-        let mut update_client = client_events::UpdateClient::from(attributes);
-        let header = AnyHeader::Mock(MockHeader::new(consensus_height));
-        update_client.header = Some(header.into_box());
-        abci_events.push(AbciEvent::from(update_client.clone()));
+    // #[test]
+    // fn client_event_to_abci_event() {
+    //     let consensus_height = Height::new(1, 1).unwrap();
+    //     let attributes = ClientAttributes {
+    //         client_id: "test_client".parse().unwrap(),
+    //         client_type: ClientType::Tendermint,
+    //         consensus_height,
+    //     };
+    //     let mut abci_events = vec![];
+    //     let create_client = client_events::CreateClient::from(attributes.clone());
+    //     abci_events.push(AbciEvent::from(create_client.clone()));
+    //     let client_misbehaviour = client_events::ClientMisbehaviour::from(attributes.clone());
+    //     abci_events.push(AbciEvent::from(client_misbehaviour.clone()));
+    //     let upgrade_client = client_events::UpgradeClient::from(attributes.clone());
+    //     abci_events.push(AbciEvent::from(upgrade_client.clone()));
+    //     let mut update_client = client_events::UpdateClient::from(attributes);
+    //     let header = AnyHeader::Mock(MockHeader::new(consensus_height));
+    //     update_client.header = Some(header.into_box());
+    //     abci_events.push(AbciEvent::from(update_client.clone()));
 
-        for abci_event in abci_events {
-            match ibc_event_try_from_abci_event(&abci_event).ok() {
-                Some(ibc_event) => match ibc_event {
-                    IbcEvent::CreateClient(e) => assert_eq!(e.0, create_client.0),
-                    IbcEvent::ClientMisbehaviour(e) => assert_eq!(e.0, client_misbehaviour.0),
-                    IbcEvent::UpgradeClient(e) => assert_eq!(e.0, upgrade_client.0),
-                    IbcEvent::UpdateClient(e) => {
-                        assert_eq!(e.common, update_client.common);
-                        assert_eq!(e.header, update_client.header);
-                    }
-                    _ => panic!("unexpected event type"),
-                },
-                None => panic!("converted event was wrong"),
-            }
-        }
-    }
+    //     for abci_event in abci_events {
+    //         match ibc_event_try_from_abci_event(&abci_event).ok() {
+    //             Some(ibc_event) => match ibc_event {
+    //                 IbcEvent::CreateClient(e) => assert_eq!(e.0, create_client.0),
+    //                 IbcEvent::ClientMisbehaviour(e) => assert_eq!(e.0, client_misbehaviour.0),
+    //                 IbcEvent::UpgradeClient(e) => assert_eq!(e.0, upgrade_client.0),
+    //                 IbcEvent::UpdateClient(e) => {
+    //                     assert_eq!(e.common, update_client.common);
+    //                     assert_eq!(e.header, update_client.header);
+    //                 }
+    //                 _ => panic!("unexpected event type"),
+    //             },
+    //             None => panic!("converted event was wrong"),
+    //         }
+    //     }
+    // }
 
     #[test]
     fn connection_event_to_abci_event() {

@@ -3,7 +3,7 @@ use core::fmt::Display;
 use crate::prelude::*;
 use crate::utils::pretty::PrettySlice;
 
-use  ibc_proto::ibc::core::connection::v1::Version as RawVersion;
+use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 
@@ -115,7 +115,7 @@ mod tests {
 
     use test_log::test;
 
-    use  ibc_proto::ibc::core::connection::v1::Version as RawVersion;
+    use ibc_proto::ibc::core::connection::v1::Version as RawVersion;
 
     use crate::core::ics03_connection::error::Error;
     use crate::core::ics03_connection::version::{get_compatible_versions, pick_version, Version};

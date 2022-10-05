@@ -5,8 +5,8 @@ use crate::prelude::*;
 use core::str::FromStr;
 
 use ibc_proto::google::protobuf::Any;
-use  ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
-use  ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
+use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
+use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 use ibc_proto::protobuf::Protobuf;
 
 use crate::core::ics02_client::error::Error;
@@ -117,7 +117,7 @@ impl TryFrom<RawMsgUpgradeClient> for MsgUpgradeClient {
 
 #[cfg(test)]
 pub mod test_util {
-    use  ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
+    use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
 
     use crate::{
         core::{ics02_client::height::Height, ics24_host::identifier::ClientId},
@@ -153,7 +153,7 @@ pub mod test_util {
 #[cfg(test)]
 mod tests {
 
-    use  ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
+    use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
 
     use crate::{
         core::{

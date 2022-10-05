@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 use core::time::Duration;
 
-use  ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 use ibc_proto::protobuf::Protobuf;
 
 use crate::core::ics03_connection::connection::Counterparty;
@@ -73,7 +73,7 @@ impl From<MsgConnectionOpenInit> for RawMsgConnectionOpenInit {
 #[cfg(test)]
 pub mod test_util {
     use crate::prelude::*;
-    use  ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
     use crate::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
     use crate::core::ics03_connection::msgs::test_util::get_dummy_raw_counterparty;
@@ -108,8 +108,8 @@ mod tests {
 
     use test_log::test;
 
-    use  ibc_proto::ibc::core::connection::v1::Counterparty as RawCounterparty;
-    use  ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
+    use ibc_proto::ibc::core::connection::v1::Counterparty as RawCounterparty;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
     use super::MsgConnectionOpenInit;
     use crate::core::ics03_connection::msgs::conn_open_init::test_util::get_dummy_raw_msg_conn_open_init;

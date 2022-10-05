@@ -2,10 +2,10 @@ use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 use ibc_relayer_types::core::ics02_client::height::Height;
 
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::link::{Link, LinkParameters};
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc_relayer_types::events::IbcEvent;
 
 use crate::cli_utils::ChainHandlePair;
 use crate::conclude::Output;

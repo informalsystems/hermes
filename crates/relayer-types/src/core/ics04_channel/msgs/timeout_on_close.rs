@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use  ibc_proto::ibc::core::channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose;
+use ibc_proto::ibc::core::channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose;
 use ibc_proto::protobuf::Protobuf;
 
 use crate::core::ics04_channel::error::Error;
@@ -111,7 +111,7 @@ impl From<MsgTimeoutOnClose> for RawMsgTimeoutOnClose {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use  ibc_proto::ibc::core::channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose;
+    use ibc_proto::ibc::core::channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose;
     use test_log::test;
 
     use crate::core::ics04_channel::msgs::timeout_on_close::test_util::get_dummy_raw_msg_timeout_on_close;
@@ -197,8 +197,8 @@ mod tests {
 
 #[cfg(test)]
 pub mod test_util {
-    use  ibc_proto::ibc::core::channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose;
-    use  ibc_proto::ibc::core::client::v1::Height as RawHeight;
+    use ibc_proto::ibc::core::channel::v1::MsgTimeoutOnClose as RawMsgTimeoutOnClose;
+    use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
     use crate::core::ics04_channel::packet::test_utils::get_dummy_raw_packet;
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};

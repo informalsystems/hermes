@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 use ibc_proto::google::protobuf::Any;
-use  ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 use ibc_proto::protobuf::Protobuf;
 
 use crate::core::ics03_connection::error::Error;
@@ -127,8 +127,8 @@ impl From<MsgConnectionOpenAck> for RawMsgConnectionOpenAck {
 #[cfg(test)]
 pub mod test_util {
     use crate::prelude::*;
-    use  ibc_proto::ibc::core::client::v1::Height;
-    use  ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
     use crate::core::ics03_connection::version::Version;
     use crate::core::ics24_host::identifier::ConnectionId;
@@ -165,8 +165,8 @@ mod tests {
 
     use test_log::test;
 
-    use  ibc_proto::ibc::core::client::v1::Height;
-    use  ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
+    use ibc_proto::ibc::core::client::v1::Height;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenAck as RawMsgConnectionOpenAck;
 
     use crate::core::ics03_connection::msgs::conn_open_ack::test_util::get_dummy_raw_msg_conn_open_ack;
     use crate::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;

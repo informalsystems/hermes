@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 use ibc_proto::protobuf::Protobuf;
 
-use  ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
+use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
 
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::Packet;
@@ -90,8 +90,8 @@ impl From<MsgRecvPacket> for RawMsgRecvPacket {
 
 #[cfg(test)]
 pub mod test_util {
-    use  ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
-    use  ibc_proto::ibc::core::client::v1::Height as RawHeight;
+    use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
+    use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
     use crate::core::ics04_channel::packet::test_utils::get_dummy_raw_packet;
     use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
@@ -124,7 +124,7 @@ mod test {
 
     use test_log::test;
 
-    use  ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
+    use ibc_proto::ibc::core::channel::v1::MsgRecvPacket as RawMsgRecvPacket;
 
     use crate::core::ics04_channel::error::Error;
     use crate::core::ics04_channel::msgs::recv_packet::test_util::get_dummy_raw_msg_recv_packet;

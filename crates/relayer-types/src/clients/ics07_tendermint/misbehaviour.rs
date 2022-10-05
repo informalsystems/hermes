@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-use  ibc_proto::ibc::lightclients::tendermint::v1::Misbehaviour as RawMisbehaviour;
+use ibc_proto::ibc::lightclients::tendermint::v1::Misbehaviour as RawMisbehaviour;
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
 

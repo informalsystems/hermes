@@ -3,9 +3,9 @@ use abscissa_core::{Command, Runnable};
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use serde::Serialize;
 
+use ibc_relayer::chain::handle::BaseChainHandle;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::Height;
-use ibc_relayer::chain::handle::BaseChainHandle;
 
 use crate::cli_utils::spawn_chain_counterparty;
 use crate::conclude::Output;

@@ -4,6 +4,8 @@ use std::str::FromStr;
 use core::time::Duration;
 
 use flex_error::{define_error, DetailOnly};
+use ibc_proto::cosmos::base::v1beta1::Coin;
+use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::applications::transfer::error::Error as Ics20Error;
 use ibc_relayer_types::applications::transfer::msgs::transfer::MsgTransfer;
 use ibc_relayer_types::applications::transfer::Amount;
@@ -13,8 +15,6 @@ use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::{Timestamp, TimestampOverflowError};
 use ibc_relayer_types::tx_msg::Msg;
-use ibc_proto::cosmos::base::v1beta1::Coin;
-use ibc_proto::google::protobuf::Any;
 
 use crate::chain::endpoint::ChainStatus;
 use crate::chain::handle::ChainHandle;

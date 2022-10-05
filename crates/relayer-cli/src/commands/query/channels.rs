@@ -5,15 +5,17 @@ use abscissa_core::Runnable;
 use serde::Serialize;
 
 use eyre::eyre;
-use ibc_relayer_types::core::ics02_client::client_state::ClientState;
-use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, State};
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId};
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{
     IncludeProof, PageRequest, QueryChannelRequest, QueryChannelsRequest, QueryClientStateRequest,
     QueryConnectionRequest, QueryHeight,
 };
 use ibc_relayer::registry::Registry;
+use ibc_relayer_types::core::ics02_client::client_state::ClientState;
+use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, State};
+use ibc_relayer_types::core::ics24_host::identifier::{
+    ChainId, ChannelId, ConnectionId, PortChannelId, PortId,
+};
 
 use crate::commands::query::channel_ends::ChannelEnds;
 use crate::conclude::Output;

@@ -9,7 +9,7 @@ use uint::FromDecStrErr;
 
 use crate::core::ics04_channel::channel::Order;
 use crate::core::ics04_channel::error as channel_error;
-use crate::core::ics04_channel::Version;
+use crate::core::ics04_channel::version::Version;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
 use crate::prelude::*;

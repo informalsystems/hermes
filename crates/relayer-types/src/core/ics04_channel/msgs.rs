@@ -1,7 +1,6 @@
 //! Message definitions for all ICS4 domain types: channel open & close handshake datagrams, as well
 //! as packets.
 
-use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use crate::core::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
 use crate::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
@@ -12,7 +11,6 @@ use crate::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
 use crate::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use crate::core::ics04_channel::msgs::timeout::MsgTimeout;
 use crate::core::ics04_channel::msgs::timeout_on_close::MsgTimeoutOnClose;
-use crate::core::ics26_routing::context::{Ics26Context, ModuleId};
 
 // Opening handshake messages.
 pub mod chan_open_ack;
@@ -39,32 +37,6 @@ pub enum ChannelMsg {
     ChannelOpenConfirm(MsgChannelOpenConfirm),
     ChannelCloseInit(MsgChannelCloseInit),
     ChannelCloseConfirm(MsgChannelCloseConfirm),
-}
-
-impl ChannelMsg {
-    pub(super) fn lookup_module(&self, ctx: &impl Ics26Context) -> Result<ModuleId, Error> {
-        let module_id = match self {
-            ChannelMsg::ChannelOpenInit(msg) => ctx
-                .lookup_module_by_port(&msg.port_id)
-                .map_err(Error::ics05_port)?,
-            ChannelMsg::ChannelOpenTry(msg) => ctx
-                .lookup_module_by_port(&msg.port_id)
-                .map_err(Error::ics05_port)?,
-            ChannelMsg::ChannelOpenAck(msg) => ctx
-                .lookup_module_by_port(&msg.port_id)
-                .map_err(Error::ics05_port)?,
-            ChannelMsg::ChannelOpenConfirm(msg) => ctx
-                .lookup_module_by_port(&msg.port_id)
-                .map_err(Error::ics05_port)?,
-            ChannelMsg::ChannelCloseInit(msg) => ctx
-                .lookup_module_by_port(&msg.port_id)
-                .map_err(Error::ics05_port)?,
-            ChannelMsg::ChannelCloseConfirm(msg) => ctx
-                .lookup_module_by_port(&msg.port_id)
-                .map_err(Error::ics05_port)?,
-        };
-        Ok(module_id)
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

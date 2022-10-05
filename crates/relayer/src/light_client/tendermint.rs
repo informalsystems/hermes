@@ -119,9 +119,11 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             })?;
 
         let latest_chain_block = self.fetch_light_block(AtHeight::Highest)?;
-        let latest_chain_height =
-            ibc_relayer_types::Height::new(self.chain_id.version(), latest_chain_block.height().into())
-                .map_err(|_| Error::invalid_height_no_source())?;
+        let latest_chain_height = ibc_relayer_types::Height::new(
+            self.chain_id.version(),
+            latest_chain_block.height().into(),
+        )
+        .map_err(|_| Error::invalid_height_no_source())?;
 
         // set the target height to the minimum between the update height and latest chain height
         let target_height = core::cmp::min(update.consensus_height(), latest_chain_height);

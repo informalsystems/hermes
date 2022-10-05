@@ -1,9 +1,11 @@
 use http::uri::Uri;
-use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-use ibc_relayer_types::core::ics23_commitment::merkle::{convert_tm_to_ics_merkle_proof, MerkleProof};
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
 use ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics23_commitment::merkle::{
+    convert_tm_to_ics_merkle_proof, MerkleProof,
+};
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tendermint::abci::Path as TendermintABCIPath;
 use tendermint::block::Height;
 use tendermint_rpc::query::Query;

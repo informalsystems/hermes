@@ -73,7 +73,3 @@ sha2 = { version = "0.10.6" }
 tendermint-rpc = { version = "=0.25.0", features = ["http-client", "websocket-client"] }
 tendermint-testgen = { version = "=0.25.0" } # Needed for generating (synthetic) light blocks.
 
-[[test]]
-name = "mbt"
-path = "tests/mbt.rs"
-required-features = ["mocks"]
