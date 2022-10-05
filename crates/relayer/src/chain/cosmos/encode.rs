@@ -1,6 +1,6 @@
 use bech32::{ToBase32, Variant};
 use core::str::FromStr;
-use ibc::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
 use ibc_proto::google::protobuf::Any;

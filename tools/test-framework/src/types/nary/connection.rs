@@ -4,7 +4,7 @@
 
 use core::convert::TryFrom;
 use eyre::eyre;
-use ibc::core::ics24_host::identifier::ConnectionId;
+use ibc_relayer_types::core::ics24_host::identifier::ConnectionId;
 use ibc_relayer::chain::handle::ChainHandle;
 
 use super::aliases::NthChainHandle;

@@ -13,21 +13,21 @@ use itertools::Itertools;
 use tracing::{debug, error, info, instrument, trace, warn};
 
 use flex_error::define_error;
-use ibc::core::ics02_client::client_state::ClientState;
-use ibc::core::ics02_client::error::Error as ClientError;
-use ibc::core::ics02_client::events::UpdateClient;
-use ibc::core::ics02_client::header::Header;
-use ibc::core::ics02_client::msgs::create_client::MsgCreateClient;
-use ibc::core::ics02_client::msgs::misbehaviour::MsgSubmitMisbehaviour;
-use ibc::core::ics02_client::msgs::update_client::MsgUpdateClient;
-use ibc::core::ics02_client::msgs::upgrade_client::MsgUpgradeClient;
-use ibc::core::ics02_client::trust_threshold::TrustThreshold;
-use ibc::core::ics24_host::identifier::{ChainId, ClientId};
-use ibc::downcast;
-use ibc::events::{IbcEvent, IbcEventType, WithBlockDataType};
-use ibc::timestamp::{Timestamp, TimestampOverflowError};
-use ibc::tx_msg::Msg;
-use ibc::Height;
+use ibc_relayer_types::core::ics02_client::client_state::ClientState;
+use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
+use ibc_relayer_types::core::ics02_client::events::UpdateClient;
+use ibc_relayer_types::core::ics02_client::header::Header;
+use ibc_relayer_types::core::ics02_client::msgs::create_client::MsgCreateClient;
+use ibc_relayer_types::core::ics02_client::msgs::misbehaviour::MsgSubmitMisbehaviour;
+use ibc_relayer_types::core::ics02_client::msgs::update_client::MsgUpdateClient;
+use ibc_relayer_types::core::ics02_client::msgs::upgrade_client::MsgUpgradeClient;
+use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
+use ibc_relayer_types::downcast;
+use ibc_relayer_types::events::{IbcEvent, IbcEventType, WithBlockDataType};
+use ibc_relayer_types::timestamp::{Timestamp, TimestampOverflowError};
+use ibc_relayer_types::tx_msg::Msg;
+use ibc_relayer_types::Height;
 
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::ChainHandle;
@@ -1792,8 +1792,8 @@ mod test {
     use test_log::test;
     use tokio::runtime::Runtime as TokioRuntime;
 
-    use ibc::core::ics24_host::identifier::ClientId;
-    use ibc::events::IbcEvent;
+    use ibc_relayer_types::core::ics24_host::identifier::ClientId;
+    use ibc_relayer_types::events::IbcEvent;
 
     use crate::chain::handle::{BaseChainHandle, ChainHandle};
     use crate::chain::mock::test_utils::get_basic_chain_config;

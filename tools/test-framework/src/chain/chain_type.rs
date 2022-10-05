@@ -1,5 +1,5 @@
 use core::str::FromStr;
-use ibc::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer::config::AddressType;
 
 use crate::error::Error;

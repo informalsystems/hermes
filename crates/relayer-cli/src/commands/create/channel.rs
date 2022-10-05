@@ -4,11 +4,11 @@ use abscissa_core::{Command, Runnable};
 use console::style;
 use dialoguer::Confirm;
 
-use ibc::core::ics02_client::client_state::ClientState;
-use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc::core::ics04_channel::channel::Order;
-use ibc::core::ics04_channel::Version;
-use ibc::core::ics24_host::identifier::{ChainId, ConnectionId, PortId};
+use ibc_relayer_types::core::ics02_client::client_state::ClientState;
+use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
+use ibc_relayer_types::core::ics04_channel::channel::Order;
+use ibc_relayer_types::core::ics04_channel::Version;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ConnectionId, PortId};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     IncludeProof, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
@@ -276,9 +276,9 @@ mod tests {
     use super::CreateChannelCommand;
     use abscissa_core::clap::Parser;
 
-    use ibc::core::ics04_channel::channel::Order;
-    use ibc::core::ics04_channel::Version;
-    use ibc::core::ics24_host::identifier::{ChainId, ConnectionId, PortId};
+    use ibc_relayer_types::core::ics04_channel::channel::Order;
+    use ibc_relayer_types::core::ics04_channel::Version;
+    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ConnectionId, PortId};
 
     #[test]
     fn test_create_channel_a_conn_required() {

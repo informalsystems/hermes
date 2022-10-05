@@ -1,11 +1,11 @@
-use ibc::core::ics02_client::error::Error;
-use ibc::core::ics02_client::events::{
+use ibc_relayer_types::core::ics02_client::error::Error;
+use ibc_relayer_types::core::ics02_client::events::{
     Attributes, ClientMisbehaviour, CreateClient, UpdateClient, UpgradeClient,
     CLIENT_ID_ATTRIBUTE_KEY, CLIENT_TYPE_ATTRIBUTE_KEY, CONSENSUS_HEIGHT_ATTRIBUTE_KEY,
     HEADER_ATTRIBUTE_KEY, HEIGHT_ATTRIBUTE_KEY,
 };
-use ibc::core::ics02_client::header::Header;
-use ibc::events::{IbcEvent, IbcEventType};
+use ibc_relayer_types::core::ics02_client::header::Header;
+use ibc_relayer_types::events::{IbcEvent, IbcEventType};
 use tendermint::abci::Event as AbciEvent;
 
 use crate::light_client::AnyHeader;
@@ -80,9 +80,9 @@ pub fn extract_header_from_tx(event: &AbciEvent) -> Result<Box<dyn Header>, Erro
 
 #[cfg(test)]
 mod tests {
-    use ibc::core::ics02_client::client_type::ClientType;
-    use ibc::mock::header::MockHeader;
-    use ibc::Height;
+    use ibc_relayer_types::core::ics02_client::client_type::ClientType;
+    use ibc_relayer_types::mock::header::MockHeader;
+    use ibc_relayer_types::Height;
 
     use super::*;
 

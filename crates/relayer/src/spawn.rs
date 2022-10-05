@@ -3,7 +3,7 @@ use alloc::sync::Arc;
 use flex_error::define_error;
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 use crate::{
     chain::{cosmos::CosmosSdkChain, handle::ChainHandle, runtime::ChainRuntime, ChainType},

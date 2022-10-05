@@ -4,9 +4,9 @@ use std::time::{Duration, Instant};
 use ibc_proto::google::protobuf::Any;
 use tracing::{debug, info};
 
-use ibc::core::ics02_client::client_state::ClientState;
-use ibc::core::ics04_channel::context::calculate_block_delay;
-use ibc::Height;
+use ibc_relayer_types::core::ics02_client::client_state::ClientState;
+use ibc_relayer_types::core::ics04_channel::context::calculate_block_delay;
+use ibc_relayer_types::Height;
 
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::IncludeProof;

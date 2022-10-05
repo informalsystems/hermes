@@ -1,8 +1,8 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
-use ibc::core::ics04_channel::packet::Sequence;
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer::chain::counterparty::unreceived_packets;
 use ibc_relayer::chain::handle::BaseChainHandle;
 use ibc_relayer::path::PathIdentifiers;
@@ -90,7 +90,7 @@ mod tests {
     use std::str::FromStr;
 
     use abscissa_core::clap::Parser;
-    use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
     #[test]
     fn test_query_packet_unreceived_packets() {

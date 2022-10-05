@@ -1,6 +1,6 @@
 /// Models for serializing and deserializing IBC path JSON data found in the `_IBC/` directory of the registry repository
 use crate::fetchable::Fetchable;
-use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 use serde::Deserialize;
 use serde::Serialize;
 use std::path::PathBuf;
@@ -96,7 +96,7 @@ mod tests {
 
     #[test]
     fn paths_deserialize() {
-        use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+        use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
         use std::str::FromStr;
 
         let path = r#"{

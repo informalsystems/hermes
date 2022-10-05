@@ -1,5 +1,5 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
-use ibc::{
+use ibc_relayer_types::{
     core::ics02_client::{
         error::Error as ClientError,
         events::{self as client_events, Attributes as ClientAttributes, HEADER_ATTRIBUTE_KEY},
@@ -441,11 +441,11 @@ pub fn parse_timeout_height(s: &str) -> Result<TimeoutHeight, ChannelError> {
 mod tests {
     use super::*;
 
-    use ibc::core::ics02_client::client_type::ClientType;
-    use ibc::core::ics02_client::header::Header;
-    use ibc::core::ics04_channel::packet::Sequence;
-    use ibc::mock::header::MockHeader;
-    use ibc::timestamp::Timestamp;
+    use ibc_relayer_types::core::ics02_client::client_type::ClientType;
+    use ibc_relayer_types::core::ics02_client::header::Header;
+    use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+    use ibc_relayer_types::mock::header::MockHeader;
+    use ibc_relayer_types::timestamp::Timestamp;
 
     #[test]
     fn client_event_to_abci_event() {

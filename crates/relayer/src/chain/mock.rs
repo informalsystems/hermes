@@ -6,24 +6,24 @@ use crossbeam_channel as channel;
 use tendermint_testgen::light_block::TmLightBlock;
 use tokio::runtime::Runtime;
 
-use ibc::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState as TmClientState};
-use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
-use ibc::clients::ics07_tendermint::header::Header as TendermintHeader;
-use ibc::core::ics02_client::events::UpdateClient;
-use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
-use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
-use ibc::core::ics04_channel::context::ChannelReader;
-use ibc::core::ics04_channel::packet::Sequence;
-use ibc::core::ics23_commitment::merkle::MerkleProof;
-use ibc::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
-use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
-use ibc::events::IbcEvent;
-use ibc::mock::context::MockContext;
-use ibc::mock::host::HostType;
-use ibc::relayer::ics18_relayer::context::Ics18Context;
-use ibc::signer::Signer;
-use ibc::test_utils::get_dummy_account_id;
-use ibc::Height;
+use ibc_relayer_types::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState as TmClientState};
+use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
+use ibc_relayer_types::clients::ics07_tendermint::header::Header as TendermintHeader;
+use ibc_relayer_types::core::ics02_client::events::UpdateClient;
+use ibc_relayer_types::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
+use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
+use ibc_relayer_types::core::ics04_channel::context::ChannelReader;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
+use ibc_relayer_types::core::ics23_commitment::{commitment::CommitmentPrefix, specs::ProofSpecs};
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer_types::mock::context::MockContext;
+use ibc_relayer_types::mock::host::HostType;
+use ibc_relayer_types::relayer::ics18_relayer::context::Ics18Context;
+use ibc_relayer_types::signer::Signer;
+use ibc_relayer_types::test_utils::get_dummy_account_id;
+use ibc_relayer_types::Height;
 
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;
@@ -497,7 +497,7 @@ pub mod test_utils {
     use core::str::FromStr;
     use core::time::Duration;
 
-    use ibc::core::ics24_host::identifier::ChainId;
+    use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
     use crate::{
         chain::ChainType,

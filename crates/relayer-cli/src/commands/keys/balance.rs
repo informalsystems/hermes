@@ -1,7 +1,7 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
-use ibc::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer::chain::handle::ChainHandle;
 
 use crate::application::app_config;
@@ -77,7 +77,7 @@ mod tests {
     use super::KeyBalanceCmd;
 
     use abscissa_core::clap::Parser;
-    use ibc::core::ics24_host::identifier::ChainId;
+    use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
     #[test]
     fn test_keys_balance_required_only() {

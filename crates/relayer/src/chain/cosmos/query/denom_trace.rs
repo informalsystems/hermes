@@ -1,6 +1,6 @@
 use http::uri::Uri;
 
-use ibc_proto::ibc::applications::transfer::v1::{
+use  ibc_proto::ibc::applications::transfer::v1::{
     query_client::QueryClient, QueryDenomTraceRequest,
 };
 

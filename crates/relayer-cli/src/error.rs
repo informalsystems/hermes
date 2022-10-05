@@ -4,8 +4,8 @@ use flex_error::define_error;
 
 use tendermint::Error as TendermintError;
 
-use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 use ibc_relayer::channel::ChannelError;
 use ibc_relayer::connection::ConnectionError;

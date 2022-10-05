@@ -3,9 +3,9 @@
 */
 
 use core::time::Duration;
-use ibc::core::ics04_channel::channel::Order;
-use ibc::core::ics04_channel::Version;
-use ibc::core::ics24_host::identifier::PortId;
+use ibc_relayer_types::core::ics04_channel::channel::Order;
+use ibc_relayer_types::core::ics04_channel::Version;
+use ibc_relayer_types::core::ics24_host::identifier::PortId;
 use ibc_relayer::config::default::connection_delay as default_connection_delay;
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::CreateOptions as ClientOptions;

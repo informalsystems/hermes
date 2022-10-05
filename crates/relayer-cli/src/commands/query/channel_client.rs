@@ -1,7 +1,7 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::QueryChannelClientStateRequest;
 
@@ -69,7 +69,7 @@ mod tests {
     use std::str::FromStr;
 
     use abscissa_core::clap::Parser;
-    use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
     #[test]
     fn test_query_channel_client() {

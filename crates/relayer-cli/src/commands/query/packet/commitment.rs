@@ -4,9 +4,9 @@ use ibc_relayer::chain::requests::{IncludeProof, QueryHeight, QueryPacketCommitm
 use serde::Serialize;
 use subtle_encoding::{Encoding, Hex};
 
-use ibc::core::ics04_channel::packet::Sequence;
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc::Height;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc_relayer_types::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 
 use crate::cli_utils::spawn_chain_runtime;
@@ -82,7 +82,7 @@ impl QueryPacketCommitmentCmd {
                     sequence: self.sequence,
                     height: self.height.map_or(QueryHeight::Latest, |revision_height| {
                         QueryHeight::Specific(
-                            ibc::Height::new(chain.id().version(), revision_height)
+                            ibc_relayer_types::Height::new(chain.id().version(), revision_height)
                                 .unwrap_or_else(exit_with_unrecoverable_error),
                         )
                     }),
@@ -117,7 +117,7 @@ mod tests {
     use std::str::FromStr;
 
     use abscissa_core::clap::Parser;
-    use ibc::core::{
+    use ibc_relayer_types::core::{
         ics04_channel::packet::Sequence,
         ics24_host::identifier::{ChainId, ChannelId, PortId},
     };

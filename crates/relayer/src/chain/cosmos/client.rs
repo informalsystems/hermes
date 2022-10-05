@@ -4,7 +4,7 @@ use core::time::Duration;
 
 use tracing::warn;
 
-use ibc::core::ics02_client::trust_threshold::TrustThreshold;
+use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
 
 use crate::config::ChainConfig;
 use crate::foreign_client::CreateOptions;

@@ -1,10 +1,10 @@
 use tendermint_testgen::light_block::TmLightBlock;
 
-use ibc::clients::ics07_tendermint::header::Header as TmHeader;
-use ibc::core::ics02_client::events::UpdateClient;
-use ibc::core::ics24_host::identifier::ChainId;
-use ibc::mock::host::HostBlock;
-use ibc::Height;
+use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
+use ibc_relayer_types::core::ics02_client::events::UpdateClient;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::mock::host::HostBlock;
+use ibc_relayer_types::Height;
 
 use crate::chain::mock::MockChain;
 use crate::client_state::AnyClientState;
@@ -12,7 +12,7 @@ use crate::error::Error;
 use crate::misbehaviour::MisbehaviourEvidence;
 
 use super::Verified;
-use ibc::timestamp::Timestamp;
+use ibc_relayer_types::timestamp::Timestamp;
 
 /// A light client serving a mock chain.
 pub struct LightClient {

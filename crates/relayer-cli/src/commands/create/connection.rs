@@ -3,8 +3,8 @@ use core::time::Duration;
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
-use ibc::core::ics02_client::client_state::ClientState;
-use ibc::core::ics24_host::identifier::{ChainId, ClientId};
+use ibc_relayer_types::core::ics02_client::client_state::ClientState;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use ibc_relayer::connection::Connection;
@@ -180,7 +180,7 @@ mod tests {
     use super::CreateConnectionCommand;
 
     use abscissa_core::clap::Parser;
-    use ibc::core::ics24_host::identifier::{ChainId, ClientId};
+    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 
     use std::str::FromStr;
 

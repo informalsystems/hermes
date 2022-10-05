@@ -2,7 +2,7 @@ use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
 use eyre::eyre;
-use ibc::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer::{
     config::{ChainConfig, Config},
     keyring::{KeyRing, Store},
@@ -131,7 +131,7 @@ mod tests {
     use super::KeysDeleteCmd;
 
     use abscissa_core::clap::Parser;
-    use ibc::core::ics24_host::identifier::ChainId;
+    use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
     #[test]
     fn test_keys_delete_key_name() {

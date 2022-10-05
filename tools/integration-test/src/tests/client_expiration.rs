@@ -1,8 +1,8 @@
 use core::time::Duration;
 use std::thread::sleep;
 
-use ibc::core::ics03_connection::connection::State as ConnectionState;
-use ibc::core::ics04_channel::channel::State as ChannelState;
+use ibc_relayer_types::core::ics03_connection::connection::State as ConnectionState;
+use ibc_relayer_types::core::ics04_channel::channel::State as ChannelState;
 use ibc_relayer::config::{self, Config, ModeConfig};
 
 use ibc_test_framework::bootstrap::binary::chain::bootstrap_foreign_client_pair;

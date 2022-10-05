@@ -1,8 +1,8 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::Runnable;
 
-use ibc::core::ics02_client::client_state::ClientState;
-use ibc::core::ics24_host::identifier::{ChainId, ConnectionId};
+use ibc_relayer_types::core::ics02_client::client_state::ClientState;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ConnectionId};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     IncludeProof, PageRequest, QueryClientStateRequest, QueryConnectionsRequest, QueryHeight,
@@ -103,7 +103,7 @@ mod tests {
     use super::QueryConnectionsCmd;
 
     use abscissa_core::clap::Parser;
-    use ibc::core::ics24_host::identifier::ChainId;
+    use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
     #[test]
     fn test_query_connections_required_only() {

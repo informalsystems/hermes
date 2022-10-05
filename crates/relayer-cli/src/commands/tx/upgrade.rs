@@ -3,7 +3,7 @@ use core::time::Duration;
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
-use ibc::core::ics24_host::identifier::{ChainId, ClientId};
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer::config::Config;
 use ibc_relayer::upgrade_chain::{build_and_send_ibc_upgrade_proposal, UpgradePlanOptions};
 
@@ -157,7 +157,7 @@ mod tests {
     use super::TxIbcUpgradeChainCmd;
 
     use abscissa_core::clap::Parser;
-    use ibc::core::ics24_host::identifier::{ChainId, ClientId};
+    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
     use std::str::FromStr;
 
     #[test]

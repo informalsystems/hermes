@@ -1,8 +1,8 @@
 use core::mem;
 
-use ibc::core::ics24_host::identifier::ChainId;
-use ibc::events::IbcEvent;
-use ibc::Height;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer_types::Height;
 use ibc_proto::google::protobuf::Any;
 use prost::Message;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
@@ -355,7 +355,7 @@ mod tests {
     use crate::config;
     use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
     use crate::keyring::{self, KeyEntry, KeyRing};
-    use ibc::core::ics24_host::identifier::ChainId;
+    use ibc_relayer_types::core::ics24_host::identifier::ChainId;
     use ibc_proto::google::protobuf::Any;
     use std::fs;
 

@@ -4,8 +4,8 @@
 
 pub use core::time::Duration;
 pub use eyre::eyre;
-pub use ibc::core::ics04_channel::channel::Order;
-pub use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
+pub use ibc_relayer_types::core::ics04_channel::channel::Order;
+pub use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
 pub use ibc_relayer::chain::handle::ChainHandle;
 pub use ibc_relayer::config::Config;
 pub use ibc_relayer::foreign_client::ForeignClient;

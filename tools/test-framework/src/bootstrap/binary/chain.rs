@@ -4,7 +4,7 @@
 */
 
 use eyre::Report as Error;
-use ibc::core::ics24_host::identifier::ClientId;
+use ibc_relayer_types::core::ics24_host::identifier::ClientId;
 use ibc_relayer::chain::handle::{ChainHandle, CountingAndCachingChainHandle};
 use ibc_relayer::config::Config;
 use ibc_relayer::error::ErrorDetail as RelayerErrorDetail;

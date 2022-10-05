@@ -1,15 +1,15 @@
-use ibc::clients::ics07_tendermint::misbehaviour::{
+use ibc_relayer_types::clients::ics07_tendermint::misbehaviour::{
     Misbehaviour as TmMisbehaviour, TENDERMINT_MISBEHAVIOR_TYPE_URL,
 };
-use ibc::core::{
+use ibc_relayer_types::core::{
     ics02_client::{error::Error, misbehaviour::Misbehaviour},
     ics24_host::identifier::ClientId,
 };
 #[cfg(test)]
-use ibc::mock::misbehaviour::Misbehaviour as MockMisbehaviour;
+use ibc_relayer_types::mock::misbehaviour::Misbehaviour as MockMisbehaviour;
 #[cfg(test)]
-use ibc::mock::misbehaviour::MOCK_MISBEHAVIOUR_TYPE_URL;
-use ibc::Height;
+use ibc_relayer_types::mock::misbehaviour::MOCK_MISBEHAVIOUR_TYPE_URL;
+use ibc_relayer_types::Height;
 use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
 use serde::{Deserialize, Serialize};
 

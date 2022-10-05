@@ -5,9 +5,9 @@ use abscissa_core::Runnable;
 use serde::Serialize;
 
 use eyre::eyre;
-use ibc::core::ics02_client::client_state::ClientState;
-use ibc::core::ics04_channel::channel::{ChannelEnd, State};
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId};
+use ibc_relayer_types::core::ics02_client::client_state::ClientState;
+use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, State};
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortChannelId, PortId};
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{
     IncludeProof, PageRequest, QueryChannelRequest, QueryChannelsRequest, QueryClientStateRequest,
@@ -385,7 +385,7 @@ mod tests {
     use super::QueryChannelsCmd;
 
     use abscissa_core::clap::Parser;
-    use ibc::core::ics24_host::identifier::ChainId;
+    use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
     #[test]
     fn test_query_channels_required_only() {

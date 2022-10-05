@@ -2,12 +2,12 @@ use core::fmt::Display;
 
 use crate::error::Error;
 
-use ibc::core::ics04_channel::packet::Sequence;
-use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use ibc::events::WithBlockDataType;
-use ibc::Height;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use ibc_relayer_types::events::WithBlockDataType;
+use ibc_relayer_types::Height;
 use ibc_proto::cosmos::base::query::v1beta1::PageRequest as RawPageRequest;
-use ibc_proto::ibc::core::channel::v1::{
+use  ibc_proto::ibc::core::channel::v1::{
     QueryChannelClientStateRequest as RawQueryChannelClientStateRequest,
     QueryChannelsRequest as RawQueryChannelsRequest,
     QueryConnectionChannelsRequest as RawQueryConnectionChannelsRequest,
@@ -17,11 +17,11 @@ use ibc_proto::ibc::core::channel::v1::{
     QueryUnreceivedAcksRequest as RawQueryUnreceivedAcksRequest,
     QueryUnreceivedPacketsRequest as RawQueryUnreceivedPacketsRequest,
 };
-use ibc_proto::ibc::core::client::v1::{
+use  ibc_proto::ibc::core::client::v1::{
     QueryClientStatesRequest as RawQueryClientStatesRequest,
     QueryConsensusStatesRequest as RawQueryConsensusStatesRequest,
 };
-use ibc_proto::ibc::core::connection::v1::{
+use  ibc_proto::ibc::core::connection::v1::{
     QueryClientConnectionsRequest as RawQueryClientConnectionsRequest,
     QueryConnectionsRequest as RawQueryConnectionsRequest,
 };

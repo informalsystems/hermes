@@ -4,7 +4,7 @@
    as well as connected IBC channels with completed handshakes.
 */
 
-use ibc::core::ics24_host::identifier::PortId;
+use ibc_relayer_types::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 

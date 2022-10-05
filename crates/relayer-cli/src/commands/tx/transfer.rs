@@ -3,7 +3,7 @@ use abscissa_core::{config::Override, Command, FrameworkErrorKind, Runnable};
 
 use core::time::Duration;
 use eyre::eyre;
-use ibc::{
+use ibc_relayer_types::{
     applications::transfer::Amount,
     core::{
         ics02_client::client_state::ClientState,
@@ -275,7 +275,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
 
 #[cfg(test)]
 mod tests {
-    use ibc::{
+    use ibc_relayer_types::{
         applications::transfer::Amount,
         core::ics24_host::identifier::{ChainId, ChannelId, PortId},
     };

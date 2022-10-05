@@ -1,7 +1,7 @@
 use std::thread::sleep;
 use std::time::Duration;
 
-use ibc::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer::chain::requests::{
     QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
     QueryUnreceivedPacketsRequest,

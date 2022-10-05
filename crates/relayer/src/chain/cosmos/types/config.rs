@@ -1,7 +1,7 @@
 use core::str::FromStr;
 use core::time::Duration;
 use http::Uri;
-use ibc::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_proto::google::protobuf::Any;
 use tendermint_rpc::{HttpClient, Url};
 
