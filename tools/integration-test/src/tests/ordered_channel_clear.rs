@@ -71,8 +71,20 @@ impl BinaryChannelTest for OrderedChannelClearTest {
             true,
         )?;
 
-        let mut relay_path_a_to_b = chain_a_link.a_to_b;
+        let chain_b_link_opts = LinkParameters {
+            src_port_id: channel.port_b.clone().into_value(),
+            src_channel_id: channel.channel_id_b.clone().into_value(),
+        };
 
+        let chain_b_link = Link::new_from_opts(
+            chains.handle_b().clone(),
+            chains.handle_a().clone(),
+            chain_b_link_opts,
+            true,
+        )?;
+
+        // Send the transfer (recv) packets from A to B over the channel.
+        let mut relay_path_a_to_b = chain_a_link.a_to_b;
         relay_path_a_to_b.schedule_packet_clearing(None)?;
         relay_path_a_to_b.execute_schedule()?;
 
@@ -84,18 +96,25 @@ impl BinaryChannelTest for OrderedChannelClearTest {
             &denom_a,
         )?;
 
-        // Wallet on chain A should have sum of amounts deducted
+        // Wallet on chain B should have received IBC transfers with the ibc denomination.
+        chains.node_b.chain_driver().assert_eventual_wallet_amount(
+            &wallet_b.address(),
+            total_amount,
+            &denom_b.as_ref(),
+        )?;
+
+        // Send the packet acknowledgments from B to A.
+        let mut relay_path_b_to_a = chain_b_link.a_to_b;
+        relay_path_b_to_a.schedule_packet_clearing(None)?;
+        relay_path_b_to_a.execute_schedule()?;
+
+        sleep(Duration::from_secs(10));
+
+        // Wallet on chain A should have sum of amounts deducted.
         chains.node_a.chain_driver().assert_eventual_wallet_amount(
             &wallet_a.address(),
             balance_a - total_amount,
             &denom_a,
-        )?;
-
-        // Wallet on chain B should received IBC transfers
-        chains.node_b.chain_driver().assert_eventual_wallet_amount(
-            &wallet_b.address(),
-            amount + total_amount,
-            &denom_b.as_ref(),
         )?;
 
         Ok(())
