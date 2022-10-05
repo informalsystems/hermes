@@ -1,5 +1,6 @@
 use super::error::RunError;
 use crate::chain::handle::ChainHandle;
+use crate::chain::requests::CrossChainQueryRequest;
 use crate::chain::tracking::TrackedMsgs;
 use crate::object::CrossChainQueryPacket;
 use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
@@ -8,7 +9,6 @@ use crossbeam_channel::Receiver;
 use std::time::Duration;
 use tracing::{info, info_span};
 use uuid::Uuid;
-use crate::chain::requests::CrossChainQueryRequest;
 
 pub fn spawn_cross_chain_query_packet_worker<ChainA: ChainHandle>(
     handle: ChainA,
@@ -41,8 +41,10 @@ fn handle_cross_chain_query_packet<ChainA: ChainHandle>(
 
         let response = handle.cross_chain_query(queries);
         if let Ok(res) = response {
-            res.iter().for_each(|r| info!("response arrived: query_id: {}", r.id));
-            let any_msgs = res.clone()
+            res.iter()
+                .for_each(|r| info!("response arrived: query_id: {}", r.id));
+            let any_msgs = res
+                .clone()
                 .into_iter()
                 .map(|r| r.to_any(&handle))
                 .collect::<Vec<_>>();
@@ -89,7 +91,7 @@ mod test_cross_chain_query_packet {
             rt.clone(),
             query_rt.clone(),
         )
-            .unwrap();
+        .unwrap();
 
         let worker_cmd = WorkerCmd::IbcEvents {
             batch: EventBatch {
@@ -118,6 +120,6 @@ mod test_cross_chain_query_packet {
                 id: "1".to_string(),
             },
         )
-            .join();
+        .join();
     }
 }

@@ -309,7 +309,7 @@ impl Object {
             Self::Packet(ref path) => &path.dst_chain_id,
             Self::Wallet(ref wallet) => &wallet.chain_id,
             // TODO: set to dst chain id when needed
-            Self::CrossChainQueryPacket(ref path) => &path.src_chain_id
+            Self::CrossChainQueryPacket(ref path) => &path.src_chain_id,
         }
     }
 
@@ -513,7 +513,6 @@ impl Object {
         p: &CrossChainQuerySendPacket,
         src_chain: &impl ChainHandle,
     ) -> Result<Self, ObjectError> {
-
         Ok(CrossChainQueryPacket {
             id: p.packet.id.to_string(),
             src_chain_id: src_chain.id(),

@@ -23,7 +23,12 @@ pub struct SendPacket {
 impl SendPacket {
     pub fn new(chain_id: String, id: String, path: String, height: String) -> SendPacket {
         Self {
-            packet: CrossChainQueryPacket { chain_id, id, path, height },
+            packet: CrossChainQueryPacket {
+                chain_id,
+                id,
+                path,
+                height,
+            },
         }
     }
 
