@@ -12,10 +12,7 @@ use std::thread;
 use bitcoin::hashes::hex::ToHex;
 use ibc_proto::protobuf::Protobuf;
 use tendermint::block::Height as TmHeight;
-use tendermint::{
-    abci::{Event, Path as TendermintABCIPath},
-    node::info::TxIndexStatus,
-};
+use tendermint::{abci::Path as TendermintABCIPath, node::info::TxIndexStatus};
 use tendermint_light_client_verifier::types::LightBlock as TmLightBlock;
 use tendermint_rpc::{
     endpoint::broadcast::tx_sync::Response, endpoint::status, Client, HttpClient, Order,
@@ -27,9 +24,10 @@ use tracing::{error, instrument, warn};
 use ibc::clients::ics07_tendermint::header::Header as TmHeader;
 use ibc::core::ics02_client::client_type::ClientType;
 use ibc::core::ics02_client::error::Error as ClientError;
+use ibc::core::ics02_client::height::Height;
 use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
 use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
-use ibc::core::ics04_channel::packet::{Packet, Sequence};
+use ibc::core::ics04_channel::packet::Sequence;
 use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
 use ibc::core::ics24_host::path::{
@@ -37,7 +35,6 @@ use ibc::core::ics24_host::path::{
     ConnectionsPath, ReceiptsPath, SeqRecvsPath,
 };
 use ibc::core::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
-use ibc::events::IbcEvent;
 use ibc::signer::Signer;
 use ibc::Height as ICSHeight;
 use ibc::{
@@ -56,7 +53,7 @@ use crate::chain::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::query::balance::query_balance;
 use crate::chain::cosmos::query::denom_trace::query_denom_trace;
 use crate::chain::cosmos::query::status::query_status;
-use crate::chain::cosmos::query::tx::query_txs;
+use crate::chain::cosmos::query::tx::{filter_matching_event, query_txs};
 use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query, QueryResponse};
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
@@ -75,7 +72,7 @@ use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::monitor::{EventMonitor, EventReceiver, TxMonitorCmd};
-use crate::event::{ibc_event_try_from_abci_event, IbcEventWithHeight};
+use crate::event::IbcEventWithHeight;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
@@ -98,10 +95,9 @@ use super::requests::{
     QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHeight,
     QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
     QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketEventDataRequest,
-    QueryPacketReceiptRequest, QueryTxRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
-    QueryUpgradedConsensusStateRequest,
+    QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
+    QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 
 pub mod batch;
@@ -511,6 +507,109 @@ impl CosmosSdkChain {
             proto_msgs,
         )
         .await
+    }
+
+    fn query_block(
+        &self,
+        request: &QueryBlockRequest,
+        seqs: &[Sequence],
+        block_height: &Height,
+    ) -> Result<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>), Error> {
+        crate::time!("query_block");
+        crate::telemetry!(query, self.id(), "query_block");
+
+        match request {
+            QueryBlockRequest::Packet(request) => {
+                crate::time!("query_blocks: query block packet events");
+                let mut begin_block_events = vec![];
+                let mut end_block_events = vec![];
+
+                let tm_height =
+                    tendermint::block::Height::try_from(block_height.revision_height()).unwrap();
+
+                let response = self
+                    .block_on(self.rpc_client.block_results(tm_height))
+                    .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+
+                let response_height =
+                    ICSHeight::new(self.id().version(), u64::from(response.height))
+                        .map_err(|_| Error::invalid_height_no_source())?;
+
+                begin_block_events.append(
+                    &mut response
+                        .begin_block_events
+                        .unwrap_or_default()
+                        .into_iter()
+                        .filter_map(|ev| filter_matching_event(ev, &request, seqs))
+                        .map(|ev| IbcEventWithHeight::new(ev, response_height))
+                        .collect(),
+                );
+
+                end_block_events.append(
+                    &mut response
+                        .end_block_events
+                        .unwrap_or_default()
+                        .into_iter()
+                        .filter_map(|ev| filter_matching_event(ev, &request, seqs))
+                        .map(|ev| IbcEventWithHeight::new(ev, response_height))
+                        .collect(),
+                );
+                Ok((begin_block_events, end_block_events))
+            }
+        }
+    }
+
+    fn query_blocks(
+        &self,
+        request: &QueryBlockRequest,
+    ) -> Result<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>), Error> {
+        crate::time!("query_blocks");
+        crate::telemetry!(query, self.id(), "query_blocks");
+
+        match request {
+            QueryBlockRequest::Packet(block_request) => {
+                crate::time!("query_blocks: query block packet events");
+
+                let mut begin_block_events = vec![];
+                let mut end_block_events = vec![];
+
+                for seq in block_request.sequences.iter() {
+                    let response = self
+                        .block_on(self.rpc_client.block_search(
+                            packet_query(&block_request, *seq),
+                            1,
+                            1, // there should only be a single match for this query
+                            Order::Ascending,
+                        ))
+                        .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+
+                    assert!(
+                        response.blocks.len() <= 1,
+                        "block_results: unexpected number of blocks"
+                    );
+
+                    if let Some(block) = response.blocks.first().map(|first| &first.block) {
+                        let response_height =
+                            ICSHeight::new(self.id().version(), u64::from(block.header.height))
+                                .map_err(|_| Error::invalid_height_no_source())?;
+
+                        if let QueryHeight::Specific(query_height) = block_request.height {
+                            if response_height > query_height {
+                                continue;
+                            }
+                        }
+
+                        let (new_begin_block_events, new_end_block_events) =
+                            self.query_block(request, &[*seq], &response_height)?;
+
+                        begin_block_events.extend(new_begin_block_events);
+                        end_block_events.extend(new_end_block_events);
+                    }
+                }
+
+                Ok((begin_block_events, end_block_events))
+            }
+        }
     }
 }
 
@@ -1569,65 +1668,16 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_blocks");
 
         match request {
-            QueryBlockRequest::Packet(request) => {
-                crate::time!("query_blocks: query block packet events");
-
-                let mut begin_block_events = vec![];
-                let mut end_block_events = vec![];
-
-                for seq in &request.sequences {
-                    let response = self
-                        .block_on(self.rpc_client.block_search(
-                            packet_query(&request, *seq),
-                            1,
-                            1, // there should only be a single match for this query
-                            Order::Ascending,
-                        ))
-                        .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
-
-                    assert!(
-                        response.blocks.len() <= 1,
-                        "block_results: unexpected number of blocks"
-                    );
-
-                    if let Some(block) = response.blocks.first().map(|first| &first.block) {
-                        let response_height =
-                            ICSHeight::new(self.id().version(), u64::from(block.header.height))
-                                .map_err(|_| Error::invalid_height_no_source())?;
-
-                        if let QueryHeight::Specific(query_height) = request.height {
-                            if response_height > query_height {
-                                continue;
-                            }
-                        }
-
-                        let response = self
-                            .block_on(self.rpc_client.block_results(block.header.height))
-                            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
-
-                        begin_block_events.append(
-                            &mut response
-                                .begin_block_events
-                                .unwrap_or_default()
-                                .into_iter()
-                                .filter_map(|ev| filter_matching_event(ev, &request, *seq))
-                                .map(|ev| IbcEventWithHeight::new(ev, response_height))
-                                .collect(),
-                        );
-
-                        end_block_events.append(
-                            &mut response
-                                .end_block_events
-                                .unwrap_or_default()
-                                .into_iter()
-                                .filter_map(|ev| filter_matching_event(ev, &request, *seq))
-                                .map(|ev| IbcEventWithHeight::new(ev, response_height))
-                                .collect(),
-                        );
+            QueryBlockRequest::Packet(ref packet_request) => {
+                if packet_request.strict_query_height {
+                    if let QueryHeight::Specific(block_height) = packet_request.height {
+                        self.query_block(&request, &packet_request.sequences, &block_height)
+                    } else {
+                        Ok((vec![], vec![]))
                     }
+                } else {
+                    self.query_blocks(&request)
                 }
-
-                Ok((begin_block_events, end_block_events))
             }
         }
     }
@@ -1732,41 +1782,6 @@ async fn init_light_client(
     let light_client = TmLightClient::from_config(config, peer_id)?;
 
     Ok(light_client)
-}
-
-fn filter_matching_event(
-    event: Event,
-    request: &QueryPacketEventDataRequest,
-    seq: Sequence,
-) -> Option<IbcEvent> {
-    fn matches_packet(
-        request: &QueryPacketEventDataRequest,
-        seq: Sequence,
-        packet: &Packet,
-    ) -> bool {
-        packet.source_port == request.source_port_id
-            && packet.source_channel == request.source_channel_id
-            && packet.destination_port == request.destination_port_id
-            && packet.destination_channel == request.destination_channel_id
-            && packet.sequence == seq
-    }
-
-    if event.type_str != request.event_id.as_str() {
-        return None;
-    }
-
-    let ibc_event = ibc_event_try_from_abci_event(&event).ok()?;
-    match ibc_event {
-        IbcEvent::SendPacket(ref send_ev) if matches_packet(request, seq, &send_ev.packet) => {
-            Some(ibc_event)
-        }
-        IbcEvent::WriteAcknowledgement(ref ack_ev)
-            if matches_packet(request, seq, &ack_ev.packet) =>
-        {
-            Some(ibc_event)
-        }
-        _ => None,
-    }
 }
 
 /// Returns the suffix counter for a CosmosSDK client id.

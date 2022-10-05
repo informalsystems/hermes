@@ -1117,6 +1117,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         for events_chunk in query_packet_events_with(
             &sequences,
             query_height,
+            false,
             self.src_chain(),
             &self.path_id,
             query_send_packet_events,
@@ -1174,6 +1175,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         for events_chunk in query_packet_events_with(
             &sequences,
             query_height,
+            false,
             self.src_chain(),
             &self.path_id,
             query_write_ack_events,

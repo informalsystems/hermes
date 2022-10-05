@@ -42,37 +42,37 @@ pub async fn query_txs(
 
             let mut result: Vec<IbcEventWithHeight> = vec![];
 
-            let tm_height = match request.height {
-                QueryHeight::Latest => tendermint::block::Height::default(),
-                QueryHeight::Specific(h) => {
-                    tendermint::block::Height::try_from(h.revision_height()).unwrap()
-                }
-            };
-            let height = Height::new(chain_id.version(), u64::from(tm_height))
-                .map_err(|_| Error::invalid_height_no_source())?;
-            let exact_block_results = rpc_client
-                .block_results(tm_height)
-                .await
-                .map_err(|e| Error::rpc(rpc_address.clone(), e))?
-                .txs_results;
+            if request.strict_query_height {
+                let tm_height = match request.height {
+                    QueryHeight::Latest => tendermint::block::Height::default(),
+                    QueryHeight::Specific(h) => {
+                        tendermint::block::Height::try_from(h.revision_height()).unwrap()
+                    }
+                };
+                let height = Height::new(chain_id.version(), u64::from(tm_height))
+                    .map_err(|_| Error::invalid_height_no_source())?;
+                let exact_tx_block_results = rpc_client
+                    .block_results(tm_height)
+                    .await
+                    .map_err(|e| Error::rpc(rpc_address.clone(), e))?
+                    .txs_results;
 
-            if let Some(txs) = exact_block_results {
-                for tx in txs.iter() {
-                    let tx_copy = tx.clone();
-                    result.append(
-                        &mut tx_copy
-                            .events
-                            .into_iter()
-                            .filter_map(|e| filter_matching_event(e, &request, &request.sequences))
-                            .map(|e| IbcEventWithHeight::new(e, height))
-                            .collect(),
-                    )
+                if let Some(txs) = exact_tx_block_results {
+                    for tx in txs.iter() {
+                        let tx_copy = tx.clone();
+                        result.append(
+                            &mut tx_copy
+                                .events
+                                .into_iter()
+                                .filter_map(|e| {
+                                    filter_matching_event(e, &request, &request.sequences)
+                                })
+                                .map(|e| IbcEventWithHeight::new(e, height))
+                                .collect(),
+                        )
+                    }
                 }
-            }
-
-            // Call to /block_results doesn't get SendPacket events, so an additional tx_search is required.
-            // Without this check, WriteAcknowledgment will be sent twice.
-            if result.len() < request.sequences.len() {
+            } else {
                 for seq in &request.sequences {
                     // query first (and only) Tx that includes the event specified in the query request
                     let mut response = rpc_client
@@ -234,7 +234,7 @@ fn packet_from_tx_search_response(
         .map(|ibc_event| IbcEventWithHeight::new(ibc_event, height)))
 }
 
-fn filter_matching_event(
+pub fn filter_matching_event(
     event: Event,
     request: &QueryPacketEventDataRequest,
     seqs: &[Sequence],

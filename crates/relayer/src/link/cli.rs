@@ -111,8 +111,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         )
     }
 
-    /// Implements the `packet-ack` CLI
     pub fn relay_ack_packet_messages(&self) -> Result<Vec<IbcEvent>, LinkError> {
+        self.relay_ack_packet_messages_with_packet_data_query_height(None)
+    }
+
+    /// Implements the `packet-ack` CLI
+    pub fn relay_ack_packet_messages_with_packet_data_query_height(
+        &self,
+        packet_data_query_height: Option<Height>,
+    ) -> Result<Vec<IbcEvent>, LinkError> {
         let _span = error_span!(
             "relay_ack_packet_messages",
             src_chain = %self.a_to_b.src_chain().id(),
@@ -142,7 +149,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         self.relay_packet_messages(
             sequences,
             src_response_height,
-            Some(src_response_height),
+            packet_data_query_height,
             query_write_ack_events,
             TrackingId::new_static("packet-ack"),
         )
@@ -158,6 +165,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             &PathIdentifiers,
             &[Sequence],
             Height,
+            bool,
         ) -> Result<Vec<IbcEvent>, LinkError>,
         tracking_id: TrackingId,
     ) -> Result<Vec<IbcEvent>, LinkError> {
@@ -170,6 +178,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         for events_chunk in query_packet_events_with(
             &sequences,
             solved_query_height,
+            packet_data_query_height.is_some(),
             self.a_to_b.src_chain(),
             &self.a_to_b.path_id,
             query_fn,
