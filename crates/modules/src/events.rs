@@ -134,7 +134,7 @@ const ACK_PACKET_EVENT: &str = "acknowledge_packet";
 const TIMEOUT_EVENT: &str = "timeout_packet";
 const TIMEOUT_ON_CLOSE_EVENT: &str = "timeout_packet_on_close";
 /// Application event types
-const CROSS_CHAIN_QUERY: &str = "cross_chain_query";
+const CROSS_CHAIN_QUERY: &str = "send_query";
 
 /// Events types
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]

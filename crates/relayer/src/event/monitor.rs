@@ -30,6 +30,7 @@ use crate::{
 };
 
 mod error;
+
 pub use error::*;
 
 use super::IbcEventWithHeight;
@@ -42,8 +43,10 @@ mod retry_strategy {
     use retry::delay::Fibonacci;
 
     // Default parameters for the retrying mechanism
-    const MAX_DELAY: Duration = Duration::from_secs(60); // 1 minute
-    const MAX_TOTAL_DELAY: Duration = Duration::from_secs(10 * 60); // 10 minutes
+    const MAX_DELAY: Duration = Duration::from_secs(60);
+    // 1 minute
+    const MAX_TOTAL_DELAY: Duration = Duration::from_secs(10 * 60);
+    // 10 minutes
     const INITIAL_DELAY: Duration = Duration::from_secs(1); // 1 second
 
     pub fn default() -> impl Iterator<Item = Duration> {
@@ -114,6 +117,7 @@ pub mod queries {
             ibc_client(),
             ibc_connection(),
             ibc_channel(),
+            ibc_query(),
             // This will be needed when we send misbehavior evidence to full node
             // Query::eq("message.module", "evidence"),
         ]
@@ -134,15 +138,19 @@ pub mod queries {
     pub fn ibc_channel() -> Query {
         Query::eq("message.module", "ibc_channel")
     }
+
+    pub fn ibc_query() -> Query {
+        Query::eq("message.module", "ibc_queryibc")
+    }
 }
 
 impl EventMonitor {
     /// Create an event monitor, and connect to a node
     #[instrument(
-        name = "event_monitor.create",
-        level = "error",
-        skip_all,
-        fields(chain = %chain_id, addr = %node_addr)
+    name = "event_monitor.create",
+    level = "error",
+    skip_all,
+    fields(chain = % chain_id, addr = % node_addr)
     )]
     pub fn new(
         chain_id: ChainId,
@@ -186,7 +194,7 @@ impl EventMonitor {
     }
 
     /// Clear the current subscriptions, and subscribe again to all queries.
-    #[instrument(name = "event_monitor.subscribe", skip_all, fields(chain = %self.chain_id))]
+    #[instrument(name = "event_monitor.subscribe", skip_all, fields(chain = % self.chain_id))]
     pub fn subscribe(&mut self) -> Result<()> {
         let mut subscriptions = vec![];
 
@@ -209,10 +217,10 @@ impl EventMonitor {
     }
 
     #[instrument(
-        name = "event_monitor.try_reconnect",
-        level = "error",
-        skip_all,
-        fields(chain = %self.chain_id)
+    name = "event_monitor.try_reconnect",
+    level = "error",
+    skip_all,
+    fields(chain = % self.chain_id)
     )]
     fn try_reconnect(&mut self) -> Result<()> {
         trace!(
@@ -253,10 +261,10 @@ impl EventMonitor {
 
     /// Try to resubscribe to events
     #[instrument(
-        name = "event_monitor.try_resubscribe",
-        level = "error",
-        skip_all,
-        fields(chain = %self.chain_id)
+    name = "event_monitor.try_resubscribe",
+    level = "error",
+    skip_all,
+    fields(chain = % self.chain_id)
     )]
     fn try_resubscribe(&mut self) -> Result<()> {
         trace!("trying to resubscribe to events");
@@ -268,10 +276,10 @@ impl EventMonitor {
     /// See the [`retry`](https://docs.rs/retry) crate and the
     /// [`crate::util::retry`] module for more information.
     #[instrument(
-        name = "event_monitor.reconnect",
-        level = "error",
-        skip_all,
-        fields(chain = %self.chain_id)
+    name = "event_monitor.reconnect",
+    level = "error",
+    skip_all,
+    fields(chain = % self.chain_id)
     )]
     fn reconnect(&mut self) {
         let result = retry_with_index(retry_strategy::default(), |_| {
@@ -306,10 +314,10 @@ impl EventMonitor {
     /// Event monitor loop
     #[allow(clippy::while_let_loop)]
     #[instrument(
-        name = "event_monitor",
-        level = "error",
-        skip_all,
-        fields(chain = %self.chain_id)
+    name = "event_monitor",
+    level = "error",
+    skip_all,
+    fields(chain = % self.chain_id)
     )]
     pub fn run(mut self) {
         debug!("starting event monitor");

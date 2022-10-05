@@ -388,8 +388,9 @@ pub struct QueryHostConsensusStateRequest {
     pub height: QueryHeight,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
 pub struct CrossChainQueryRequest {
+    pub chain_id: String,
     pub id: String,
     pub path: String,
     pub height: String,
@@ -401,11 +402,21 @@ impl TryFrom<&IbcEventWithHeight> for CrossChainQueryRequest {
     fn try_from(ibc_event_with_height: &IbcEventWithHeight) -> Result<Self, Self::Error> {
         match ibc_event_with_height.event.cross_chain_query_packet() {
             Some(packet) => Ok(CrossChainQueryRequest {
+                chain_id: packet.chain_id.to_string(),
                 id: packet.id.to_string(),
                 path: packet.path.to_string(),
                 height: packet.height.to_string(),
             }),
             None => Err(Error::invalid_type_conversion()),
+        }
+    }
+}
+
+impl CrossChainQueryRequest {
+    pub fn decode_path_or_none(&self) -> Option<String> {
+        match hex::decode(&self.path) {
+            Ok(path) => Some(String::from_utf8_lossy(path.as_slice()).to_string()),
+            Err(_) => None,
         }
     }
 }

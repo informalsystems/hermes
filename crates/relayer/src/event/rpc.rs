@@ -173,6 +173,11 @@ pub fn get_all_events(
                         }
 
                         events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
+                    } else if query == queries::ibc_query().to_string()
+                        && event_is_type_cross_chain_query(&ibc_event)
+                    {
+                        tracing::trace!("extracted cross chain queries {}", ibc_event);
+                        events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
                     }
                 }
             }
@@ -219,6 +224,10 @@ fn event_is_type_channel(ev: &IbcEvent) -> bool {
             | IbcEvent::TimeoutPacket(_)
             | IbcEvent::TimeoutOnClosePacket(_)
     )
+}
+
+fn event_is_type_cross_chain_query(ev: &IbcEvent) -> bool {
+    matches!(ev, IbcEvent::CrossChainQuery(_))
 }
 
 fn extract_block_events(
@@ -295,4 +304,68 @@ fn extract_block_events(
         height,
     );
     events
+}
+
+#[cfg(test)]
+mod get_all_events_test {
+    use crate::event::rpc::get_all_events;
+    use core::str::FromStr;
+    use ibc::core::ics24_host::identifier::ChainId;
+    use std::collections::BTreeMap;
+    use tendermint::abci::tag::{Key, Tag, Value};
+    use tendermint::abci::Event as TendermintEvent;
+    use tendermint_rpc::event::{TxInfo, TxResult};
+    use tendermint_rpc::{event::Event as RpcEvent, event::EventData as RpcEventData};
+
+    #[test]
+    fn get_cross_chain_query_test() {
+        let rpc_event = RpcEvent {
+            query: "message.module = 'ibc_channel'".to_string(),
+            data: RpcEventData::Tx {
+                tx_result: TxInfo {
+                    height: 123,
+                    index: None,
+                    tx: vec![],
+                    result: TxResult {
+                        log: None,
+                        gas_wanted: None,
+                        gas_used: None,
+                        events: vec![
+                            TendermintEvent {
+                                type_str: "cross_chain_query".to_string(),
+                                attributes: vec![
+                                    Tag {
+                                        key: Key::from_str("query_id").unwrap(),
+                                        value: Value::from_str("1").unwrap(),
+                                    },
+                                    Tag {
+                                        key: Key::from_str("query_path").unwrap(),
+                                        value: Value::from_str("https://api.cosmoshub.pupmos.network/cosmos/bank/v1beta1/denoms_metadata/uatom").unwrap(),
+                                    },
+                                    Tag {
+                                        key: Key::from_str("query_height").unwrap(),
+                                        value: Value::from_str("123").unwrap(),
+                                    },
+                                    Tag {
+                                        key: Key::from_str("query_timeout_height").unwrap(),
+                                        value: Value::from_str("130").unwrap(),
+                                    },
+                                    Tag {
+                                        key: Key::from_str("query_timeout_timestamp").unwrap(),
+                                        value: Value::from_str("123456789").unwrap(),
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                }
+            },
+            events: Some(BTreeMap::new()),
+        };
+        let res = get_all_events(&ChainId::new("chain-0".to_string(), 1), rpc_event).unwrap();
+        assert_eq!(1, res.len());
+        for i in res {
+            assert_eq!(i.event.event_type().as_str(), "cross_chain_query");
+        }
+    }
 }

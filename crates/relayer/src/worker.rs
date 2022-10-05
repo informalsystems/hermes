@@ -117,7 +117,7 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
             let packets_config = config.mode.packets;
             let link_res = Link::new_from_opts(
                 chains.a.clone(),
-                chains.b,
+                chains.b.clone(),
                 LinkParameters {
                     src_port_id: path.src_port_id.clone(),
                     src_channel_id: path.src_channel_id.clone(),

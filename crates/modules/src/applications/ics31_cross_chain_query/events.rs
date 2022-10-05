@@ -10,8 +10,7 @@ use tendermint::abci::Event as AbciEvent;
 
 /// Types for the IBC events emitted from Tendermint Websocket by the cross-chain-query module.
 
-pub const ATTRIBUTE_TIMEOUT_HEIGHT_KEY: &str = "query_timeout_height";
-pub const ATTRIBUTE_TIMEOUT_TIMESTAMP_KEY: &str = "query_timeout_timestamp";
+pub const ATTRIBUTE_CHAIN_ID_KEY: &str = "chain_id";
 pub const ATTRIBUTE_QUERY_HEIGHT_KEY: &str = "query_height";
 pub const ATTRIBUTE_QUERY_ID_KEY: &str = "query_id";
 pub const ATTRIBUTE_QUERY_PATH_KEY: &str = "query_path";
@@ -22,20 +21,13 @@ pub struct SendPacket {
 }
 
 impl SendPacket {
-    pub fn new(
-        id: String,
-        path: String,
-        height: String,
-        timeout_height: String,
-        timeout_timestamp: String,
-    ) -> SendPacket {
+    pub fn new(chain_id: String, id: String, path: String, height: String) -> SendPacket {
         Self {
             packet: CrossChainQueryPacket {
+                chain_id,
                 id,
                 path,
                 height,
-                timeout_height,
-                timeout_timestamp,
             },
         }
     }
@@ -59,6 +51,10 @@ impl TryFrom<SendPacket> for AbciEvent {
             type_str: IbcEventType::CrossChainQuery.as_str().to_string(),
             attributes: vec![
                 Tag {
+                    key: Key::from_str(ATTRIBUTE_CHAIN_ID_KEY).unwrap(),
+                    value: Value::from_str(&value.packet.id).unwrap(),
+                },
+                Tag {
                     key: Key::from_str(ATTRIBUTE_QUERY_ID_KEY).unwrap(),
                     value: Value::from_str(&value.packet.id).unwrap(),
                 },
@@ -69,14 +65,6 @@ impl TryFrom<SendPacket> for AbciEvent {
                 Tag {
                     key: Key::from_str(ATTRIBUTE_QUERY_HEIGHT_KEY).unwrap(),
                     value: Value::from_str(&value.packet.height).unwrap(),
-                },
-                Tag {
-                    key: Key::from_str(ATTRIBUTE_TIMEOUT_HEIGHT_KEY).unwrap(),
-                    value: Value::from_str(&value.packet.timeout_height).unwrap(),
-                },
-                Tag {
-                    key: Key::from_str(ATTRIBUTE_TIMEOUT_TIMESTAMP_KEY).unwrap(),
-                    value: Value::from_str(&value.packet.timeout_timestamp).unwrap(),
                 },
             ],
         })
