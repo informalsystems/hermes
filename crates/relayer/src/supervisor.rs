@@ -400,7 +400,7 @@ pub fn collect_events(
                     || {
                         // Collect update client events only if the worker exists
                         if let Ok(object) = Object::for_update_client(update, src_chain) {
-                            workers.contains(&object).then(|| object)
+                            workers.contains(&object).then_some(object)
                         } else {
                             None
                         }
