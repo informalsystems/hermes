@@ -6,6 +6,7 @@ use ibc::core::ics24_host::identifier::ChainId;
 use ibc::events::IbcEvent;
 use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_proto::google::protobuf::Any;
+use ibc_relayer::chain::cosmos::batch::send_batched_messages_and_wait_commit;
 use ibc_relayer::chain::cosmos::gas::calculate_fee;
 use ibc_relayer::chain::cosmos::query::account::query_account;
 use ibc_relayer::chain::cosmos::tx::estimate_fee_and_send_tx;
@@ -53,13 +54,11 @@ pub fn new_tx_config_for_test(
     let rpc_address = Url::from_str(&raw_rpc_address).map_err(handle_generic_error)?;
 
     let rpc_client = HttpClient::new(rpc_address.clone()).map_err(handle_generic_error)?;
-
     let grpc_address = Uri::from_str(&raw_grpc_address).map_err(handle_generic_error)?;
-
     let gas_config = gas_config_for_test();
-
     let rpc_timeout = Duration::from_secs(30);
-
+    let max_msg_num = Default::default();
+    let max_tx_size = Default::default();
     let extension_options = Default::default();
 
     Ok(TxConfig {
@@ -70,6 +69,8 @@ pub fn new_tx_config_for_test(
         grpc_address,
         rpc_timeout,
         address_type,
+        max_msg_num,
+        max_tx_size,
         extension_options,
     })
 }
@@ -123,6 +124,35 @@ pub async fn simple_send_tx(
             if let IbcEvent::ChainError(ref e) = event.event {
                 return Err(Error::generic(eyre!("send_tx result in error: {}", e)));
             }
+        }
+    }
+
+    Ok(())
+}
+
+pub async fn batched_send_tx(
+    config: &TxConfig,
+    key_entry: &KeyEntry,
+    messages: Vec<Any>,
+) -> Result<(), Error> {
+    let mut account = query_account(&config.grpc_address, &key_entry.account)
+        .await?
+        .into();
+
+    let events = send_batched_messages_and_wait_commit(
+        config,
+        config.max_msg_num,
+        config.max_tx_size,
+        key_entry,
+        &mut account,
+        &Default::default(),
+        messages,
+    )
+    .await?;
+
+    for event in events {
+        if let IbcEvent::ChainError(ref e) = event.event {
+            return Err(Error::generic(eyre!("send_tx result in error: {}", e)));
         }
     }
 

@@ -39,6 +39,17 @@ pub trait ChainTransferMethodsExt<Chain> {
         amount: u64,
     ) -> Result<(), Error>;
 
+    fn ibc_transfer_token_multiple<Counterparty>(
+        &self,
+        port_id: &TaggedPortIdRef<Chain, Counterparty>,
+        channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
+        sender: &MonoTagged<Chain, &Wallet>,
+        recipient: &MonoTagged<Counterparty, &WalletAddress>,
+        denom: &MonoTagged<Chain, &Denom>,
+        amount: u64,
+        num_msgs: usize,
+    ) -> Result<(), Error>;
+
     fn local_transfer_token(
         &self,
         sender: &MonoTagged<Chain, &Wallet>,
@@ -66,6 +77,29 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
             recipient,
             denom,
             amount,
+            1,
+        ))
+    }
+
+    fn ibc_transfer_token_multiple<Counterparty>(
+        &self,
+        port_id: &TaggedPortIdRef<Chain, Counterparty>,
+        channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
+        sender: &MonoTagged<Chain, &Wallet>,
+        recipient: &MonoTagged<Counterparty, &WalletAddress>,
+        denom: &MonoTagged<Chain, &Denom>,
+        amount: u64,
+        num_msgs: usize,
+    ) -> Result<(), Error> {
+        self.value().runtime.block_on(ibc_token_transfer(
+            &self.tx_config(),
+            port_id,
+            channel_id,
+            sender,
+            recipient,
+            denom,
+            amount,
+            num_msgs,
         ))
     }
 

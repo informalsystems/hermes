@@ -21,6 +21,8 @@ use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress};
 
+use super::tx::batched_send_tx;
+
 pub fn build_transfer_message<SrcChain, DstChain>(
     port_id: &TaggedPortIdRef<'_, SrcChain, DstChain>,
     channel_id: &TaggedChannelIdRef<'_, SrcChain, DstChain>,
@@ -83,10 +85,19 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
     recipient: &MonoTagged<DstChain, &WalletAddress>,
     denom: &MonoTagged<SrcChain, &Denom>,
     amount: u64,
+    num_msgs: usize,
 ) -> Result<(), Error> {
-    let message = build_transfer_message(port_id, channel_id, sender, recipient, denom, amount)?;
+    let messages = std::iter::repeat_with(|| {
+        build_transfer_message(port_id, channel_id, sender, recipient, denom, amount)
+    })
+    .take(num_msgs)
+    .collect::<Result<Vec<_>, _>>()?;
 
-    simple_send_tx(tx_config.value(), &sender.value().key, vec![message]).await?;
+    if num_msgs > 1 {
+        batched_send_tx(tx_config.value(), &sender.value().key, messages).await?;
+    } else {
+        simple_send_tx(tx_config.value(), &sender.value().key, messages).await?;
+    };
 
     Ok(())
 }
