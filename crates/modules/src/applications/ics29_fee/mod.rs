@@ -1,6 +1,6 @@
 //! The implementation of the ICS 29 fee payment [spec](https://github.com/cosmos/ibc/blob/main/spec/app/ics-029-fee-payment/README.md).
 //! Enables an incentivization layer for relayers such that relayer operators are rewarded
-//! for successfully relaying packets. 
+//! for successfully relaying packets.
 //!
 //! The documentation for this module makes use of some terminology, which is defined below:
 //! 1. Forward relayer: The relayer that submits the `recv_packet` message for a given packet.

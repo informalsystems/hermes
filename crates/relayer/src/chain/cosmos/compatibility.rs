@@ -20,7 +20,7 @@ const SDK_MODULE_VERSION_REQ: &str = ">=0.41, <0.46";
 /// # Note: Should be consistent with [features] guide page.
 ///
 /// [features]: https://hermes.informal.systems/features.html
-const IBC_GO_MODULE_VERSION_REQ: &str = ">=1.1, <=3";
+const IBC_GO_MODULE_VERSION_REQ: &str = ">=1.1, <6";
 
 #[derive(Error, Debug)]
 pub enum Diagnostic {

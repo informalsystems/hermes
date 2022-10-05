@@ -11,7 +11,7 @@ use crate::core::ics04_channel::packet_id::PacketId;
 use crate::prelude::*;
 use crate::signer::Signer;
 
-/// The core type that encodes the different fees that are redeemable by relayers for relaying 
+/// The core type that encodes the different fees that are redeemable by relayers for relaying
 /// different types of packets.
 #[derive(Debug, Clone)]
 pub struct Fee {
