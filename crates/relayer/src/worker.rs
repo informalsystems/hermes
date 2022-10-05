@@ -170,7 +170,6 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
             let cross_chain_query_task =
                 cross_chain_query_packet::spawn_cross_chain_query_packet_worker(
                     chains.a.clone(),
-                    chains.b.clone(),
                     cmd_rx,
                     cross_chain_query_packet.clone(),
                 );

@@ -365,7 +365,6 @@ pub struct ChainConfig {
     #[serde(default = "default::chain_type")]
     pub r#type: ChainType,
     pub rpc_addr: tendermint_rpc::Url,
-    pub rest_addr: tendermint_rpc::Url,
     pub websocket_addr: tendermint_rpc::Url,
     pub grpc_addr: tendermint_rpc::Url,
     #[serde(default = "default::rpc_timeout", with = "humantime_serde")]
