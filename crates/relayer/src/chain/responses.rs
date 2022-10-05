@@ -2,7 +2,6 @@ use crate::chain::handle::ChainHandle;
 use core::fmt::{Display, Formatter};
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::applications::query::v1::MsgSubmitCrossChainQueryResult;
-use k256::pkcs8::der::Encode;
 use prost;
 use serde::{Deserialize, Serialize};
 
@@ -24,8 +23,10 @@ impl CrossChainQueryResponse {
         }
     }
 
-    pub fn to_any<ChainA: ChainHandle>(&self, handle: &ChainA) -> Any {
+    pub fn to_any<QueryingChain: ChainHandle>(&self, handle: &QueryingChain) -> Any {
         let hex_data = hex::encode(self.data.as_bytes());
+        println!("{:?}", hex_data);
+
         let mut encoded = Vec::new();
 
         let msg_submit_cross_chain_query_result = MsgSubmitCrossChainQueryResult {
@@ -33,13 +34,13 @@ impl CrossChainQueryResponse {
             path: "".to_string(),
             query_height: self.height.parse().unwrap(),
             result: self.result,
-            data: hex_data.to_vec().unwrap(),
+            data: self.data.as_bytes().to_vec(),
             sender: handle.get_signer().unwrap().to_string(),
             proof_specs: vec![],
         };
         prost::Message::encode(&msg_submit_cross_chain_query_result, &mut encoded).unwrap();
         Any {
-            type_url: "/ibc.applications.ibc_query.v1.MsgSubmitCrossChainQueryResult".to_string(),
+            type_url: "/ibc_query.v1.MsgSubmitCrossChainQueryResult".to_string(),
             value: encoded,
         }
     }

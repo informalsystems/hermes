@@ -4,10 +4,10 @@ use core::time::Duration;
 
 use crossbeam_channel as channel;
 use futures::future::join_all;
-use tendermint_testgen::light_block::TmLightBlock;
-use tokio::runtime::Runtime;
 use reqwest::Client as RestClient;
 use tendermint::abci::transaction::Hash;
+use tendermint_testgen::light_block::TmLightBlock;
+use tokio::runtime::Runtime;
 
 use ibc::clients::ics07_tendermint::client_state::{AllowUpdate, ClientState as TmClientState};
 use ibc::clients::ics07_tendermint::consensus_state::ConsensusState as TendermintConsensusState;
@@ -181,12 +181,17 @@ impl ChainEndpoint for MockChain {
         &mut self,
         _tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error> {
-        Ok(vec![tendermint_rpc::endpoint::broadcast::tx_sync::Response {
-            code: Default::default(),
-            data: Default::default(),
-            log: Default::default(),
-            hash: Hash::new([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]),
-        }])
+        Ok(vec![
+            tendermint_rpc::endpoint::broadcast::tx_sync::Response {
+                code: Default::default(),
+                data: Default::default(),
+                log: Default::default(),
+                hash: Hash::new([
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                    1, 1, 1, 1, 1, 1,
+                ]),
+            },
+        ])
     }
 
     fn get_signer(&mut self) -> Result<Signer, Error> {
@@ -411,7 +416,7 @@ impl ChainEndpoint for MockChain {
                 after_misbehaviour: false,
             },
         )
-            .map_err(Error::ics07)?;
+        .map_err(Error::ics07)?;
 
         Ok(client_state)
     }

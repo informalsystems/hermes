@@ -122,6 +122,7 @@ pub fn ibc_event_try_from_abci_event(abci_event: &AbciEvent) -> Result<IbcEvent,
             cross_chain_query_packet_try_from_abci_event(abci_event)
                 .map_err(IbcEventError::cross_chain_query)?,
         )),
+
         _ => Err(IbcEventError::unsupported_abci_event(
             abci_event.type_str.to_owned(),
         )),
@@ -449,6 +450,9 @@ fn extract_cross_chain_query_packet_from_tx(
         let key = tag.key.as_ref();
         let value = tag.value.as_ref();
         match key {
+            application_events::ATTRIBUTE_CHAIN_ID_KEY => {
+                cross_chain_query_packet.chain_id = value.to_string()
+            }
             application_events::ATTRIBUTE_QUERY_ID_KEY => {
                 cross_chain_query_packet.id = value.to_string()
             }
@@ -457,12 +461,6 @@ fn extract_cross_chain_query_packet_from_tx(
             }
             application_events::ATTRIBUTE_QUERY_HEIGHT_KEY => {
                 cross_chain_query_packet.height = value.to_string()
-            }
-            application_events::ATTRIBUTE_TIMEOUT_HEIGHT_KEY => {
-                cross_chain_query_packet.timeout_height = value.to_string()
-            }
-            application_events::ATTRIBUTE_TIMEOUT_TIMESTAMP_KEY => {
-                cross_chain_query_packet.timeout_timestamp = value.to_string()
             }
             _ => {}
         }

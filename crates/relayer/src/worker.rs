@@ -117,7 +117,7 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
             let packets_config = config.mode.packets;
             let link_res = Link::new_from_opts(
                 chains.a.clone(),
-                chains.b,
+                chains.b.clone(),
                 LinkParameters {
                     src_port_id: path.src_port_id.clone(),
                     src_channel_id: path.src_channel_id.clone(),
@@ -170,6 +170,7 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
             let cross_chain_query_task =
                 cross_chain_query_packet::spawn_cross_chain_query_packet_worker(
                     chains.a.clone(),
+                    chains.b.clone(),
                     cmd_rx,
                     cross_chain_query_packet.clone(),
                 );

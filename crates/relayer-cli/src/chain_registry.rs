@@ -103,7 +103,9 @@ where
     Ok(ChainConfig {
         id: chain_data.chain_id,
         r#type: default::chain_type(),
-        rpc_addr: rpc_data.rpc_address,
+        rpc_addr: rpc_data.rpc_address.clone(),
+        // TODO: replace to rest address
+        rest_addr: rpc_data.rpc_address,
         websocket_addr: rpc_data.websocket,
         grpc_addr: grpc_address,
         rpc_timeout: default::rpc_timeout(),
