@@ -11,10 +11,19 @@ use crate::core::ics04_channel::packet_id::PacketId;
 use crate::prelude::*;
 use crate::signer::Signer;
 
+/// The core type that encodes the different fees that are redeemable by relayers for relaying 
+/// different types of packets.
 #[derive(Debug, Clone)]
 pub struct Fee {
+    /// The amount that the forward relayer redeems for submitting a recv packet.
+    /// This fee is refunded to the payer in the case that the recv packet is not successfully relayed, i.e.,
+    /// a timeout packet is relayed instead of the recv packet.
     pub recv_fee: Vec<RawCoin>,
+    /// The amount that the reverse relayer redeems for relaying an acknowledgement packet.
     pub ack_fee: Vec<RawCoin>,
+    /// The amount that the timeout relayer redeems for relaying a timeout packet.
+    /// This fee is refunded to the payer in the case that a timeout packet is not relayed, i.e., a
+    /// recv packet was successfully relayed instead.
     pub timeout_fee: Vec<RawCoin>,
 }
 

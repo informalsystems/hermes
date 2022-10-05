@@ -24,12 +24,10 @@ pub fn build_register_counterparty_payee_message(
 
     let encoded = encode_message(&message).map_err(Error::encode)?;
 
-    let wrapped = Any {
+    Ok(Any {
         type_url: TYPE_URL.to_string(),
         value: encoded,
-    };
-
-    Ok(wrapped)
+    })
 }
 
 pub fn build_register_payee_message(
@@ -49,10 +47,8 @@ pub fn build_register_payee_message(
 
     let encoded = encode_message(&message).map_err(Error::encode)?;
 
-    let wrapped = Any {
+    Ok(Any {
         type_url: TYPE_URL.to_string(),
         value: encoded,
-    };
-
-    Ok(wrapped)
+    })
 }
