@@ -74,8 +74,7 @@ mod handshake_retry {
         e: retry::Error<ConnectionError>,
         description: String,
     ) -> ConnectionError {
-        let description = format!("{description}: {e}");
-        ConnectionError::max_retry(description, e.tries, e.total_delay)
+        ConnectionError::max_retry(description, e.tries, e.total_delay, e.error)
     }
 }
 

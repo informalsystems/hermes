@@ -74,8 +74,7 @@ mod handshake_retry {
     /// Translates from an error type that the `retry` mechanism threw into
     /// a crate specific error of [`ChannelError`] type.
     pub fn from_retry_error(e: retry::Error<ChannelError>, description: String) -> ChannelError {
-        let description = format!("{description}: {e}");
-        ChannelError::max_retry(description, e.tries, e.total_delay)
+        ChannelError::max_retry(description, e.tries, e.total_delay, e.error)
     }
 }
 
