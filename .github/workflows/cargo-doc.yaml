@@ -23,5 +23,5 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           deploy_key: ${{ secrets.IBC_RS_DOC_PRIVATE_KEY }}
-          external_repository: informalsystems/ibc-rs-doc
+          external_repository: informalsystems/hermes-doc
           publish_dir: ./target/doc

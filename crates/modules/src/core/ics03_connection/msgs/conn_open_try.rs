@@ -63,6 +63,7 @@ impl Protobuf<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {}
 impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
     type Error = Error;
 
+    #[allow(deprecated)]
     fn try_from(msg: RawMsgConnectionOpenTry) -> Result<Self, Self::Error> {
         let previous_connection_id = Some(msg.previous_connection_id)
             .filter(|x| !x.is_empty())
@@ -125,6 +126,7 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
 }
 
 impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
+    #[allow(deprecated)]
     fn from(ics_msg: MsgConnectionOpenTry) -> Self {
         RawMsgConnectionOpenTry {
             client_id: ics_msg.client_id.as_str().to_string(),
@@ -194,6 +196,7 @@ pub mod test_util {
     /// `proof_height` represents the height, on the source chain, at which this chain produced the
     /// proof. Parameter `consensus_height` represents the height of destination chain which a
     /// client on the source chain stores.
+    #[allow(deprecated)]
     pub fn get_dummy_raw_msg_conn_open_try(
         proof_height: u64,
         consensus_height: u64,

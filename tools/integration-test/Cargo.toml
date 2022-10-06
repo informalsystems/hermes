@@ -17,7 +17,7 @@ description = """
 ibc             = { path = "../../crates/modules" }
 ibc-relayer     = { path = "../../crates/relayer" }
 ibc-relayer-cli = { path = "../../crates/relayer-cli" }
-ibc-proto       = { path = "../../crates/proto" }
+ibc-proto       = { version = "0.20.1" }
 ibc-test-framework = { path = "../test-framework" }
 tendermint      = { version = "=0.25.0" }
 tendermint-rpc  = { version = "=0.25.0", features = ["http-client", "websocket-client"] }

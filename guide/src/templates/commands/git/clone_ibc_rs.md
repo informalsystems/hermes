@@ -1,1 +1,1 @@
-git clone https://github.com/informalsystems/ibc-rs.git
+git clone https://github.com/informalsystems/hermes.git

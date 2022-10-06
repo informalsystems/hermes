@@ -10,15 +10,15 @@
 #   # Release all packages, prompting for each package as to whether to publish
 #   ./scripts/release.sh
 #
-#   # Just release the ibc-proto and ibc crates, but nothing else
-#   ./scripts/release.sh ibc-proto ibc
+#   # Just release the ibc-telemetry crate, but nothing else
+#   ./scripts/release.sh ibc-telemetry
 
 set -e
 
 # A space-separated list of all the crates we want to publish, in the order in
 # which they must be published. It's important to respect this order, since
 # each subsequent crate depends on one or more of the preceding ones.
-DEFAULT_CRATES="ibc-proto ibc ibc-telemetry ibc-relayer ibc-relayer-rest ibc-relayer-cli ibc-test-framework"
+DEFAULT_CRATES="ibc-telemetry ibc-relayer ibc-relayer-rest ibc-relayer-cli ibc-test-framework"
 
 # Allows us to override the crates we want to publish.
 CRATES=${*:-${DEFAULT_CRATES}}
