@@ -7,7 +7,9 @@ use ibc::events::{IbcEvent, WithBlockDataType};
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::{QueryHeight, QueryPacketEventDataRequest};
+use crate::chain::requests::{
+    PacketQueryHeightQualifier, QueryHeight, QueryPacketEventDataRequest,
+};
 use crate::event::IbcEventWithHeight;
 use crate::link::error::LinkError;
 use crate::path::PathIdentifiers;
@@ -20,10 +22,16 @@ pub const QUERY_RESULT_LIMIT: usize = 50;
 pub fn query_packet_events_with<'a, ChainA>(
     sequence_nrs: &'a [Sequence],
     query_height: Height,
-    strict_query_height: bool,
+    height_qualifier: PacketQueryHeightQualifier,
     src_chain: &'a ChainA,
     path: &'a PathIdentifiers,
-    query_fn: impl Fn(&ChainA, &PathIdentifiers, &[Sequence], Height, bool) -> Result<Vec<IbcEvent>, LinkError>
+    query_fn: impl Fn(
+            &ChainA,
+            &PathIdentifiers,
+            &[Sequence],
+            Height,
+            PacketQueryHeightQualifier,
+        ) -> Result<Vec<IbcEvent>, LinkError>
         + 'a,
 ) -> impl Iterator<Item = Vec<IbcEventWithHeight>> + 'a
 where
@@ -35,7 +43,7 @@ where
     sequence_nrs
         .chunks(QUERY_RESULT_LIMIT)
         .map_while(move |chunk| {
-            match query_fn(src_chain, path, chunk, query_height, strict_query_height) {
+            match query_fn(src_chain, path, chunk, query_height, height_qualifier) {
                 Ok(events) => {
                     events_left_count -= chunk.len();
 
@@ -81,7 +89,7 @@ pub fn query_send_packet_events<ChainA: ChainHandle>(
     path: &PathIdentifiers,
     sequences: &[Sequence],
     src_query_height: Height,
-    strict_query_height: bool,
+    event_height_qualifier: PacketQueryHeightQualifier,
 ) -> Result<Vec<IbcEvent>, LinkError> {
     let _span = span!(
         Level::DEBUG,
@@ -100,7 +108,7 @@ pub fn query_send_packet_events<ChainA: ChainHandle>(
         destination_channel_id: path.channel_id.clone(),
         sequences: sequences.to_vec(),
         height: QueryHeight::Specific(src_query_height),
-        strict_query_height,
+        event_height_qualifier,
     };
 
     query_packet_events(src_chain, query)
@@ -113,7 +121,7 @@ pub fn query_write_ack_events<ChainA: ChainHandle>(
     path: &PathIdentifiers,
     sequences: &[Sequence],
     src_query_height: Height,
-    strict_query_height: bool,
+    event_height_qualifier: PacketQueryHeightQualifier,
 ) -> Result<Vec<IbcEvent>, LinkError> {
     let _span = span!(
         Level::DEBUG,
@@ -132,7 +140,7 @@ pub fn query_write_ack_events<ChainA: ChainHandle>(
         destination_channel_id: path.counterparty_channel_id.clone(),
         sequences: sequences.to_vec(),
         height: QueryHeight::Specific(src_query_height),
-        strict_query_height,
+        event_height_qualifier,
     };
 
     query_packet_events(src_chain, query)

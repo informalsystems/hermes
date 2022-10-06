@@ -398,8 +398,12 @@ pub enum QueryTxRequest {
 #[derive(Clone, Debug)]
 pub struct QueryTxHash(pub TxHash);
 
-/// Used to query a packet event, identified by `event_id`, for specific channel and sequences.
-/// The query is preformed for the chain context at `height`.
+/// Used to query packet events:
+/// - for events of type `event_id`,
+/// - for a specific channel
+/// - with sequences in `sequences`
+/// - that occurred at a height either smaller or equal to `height` or exactly at `height`,
+///   as specified by `event_height_qualifier`
 #[derive(Clone, Debug)]
 pub struct QueryPacketEventDataRequest {
     pub event_id: WithBlockDataType,
@@ -409,7 +413,13 @@ pub struct QueryPacketEventDataRequest {
     pub destination_port_id: PortId,
     pub sequences: Vec<Sequence>,
     pub height: QueryHeight,
-    pub strict_query_height: bool,
+    pub event_height_qualifier: PacketQueryHeightQualifier,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum PacketQueryHeightQualifier {
+    SmallerEqual,
+    Equal,
 }
 
 /// Query request for a single client event, identified by `event_id`, for `client_id`.
