@@ -12,6 +12,7 @@ use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::PacketQueryHeightQualifier;
 use crate::chain::tracking::TrackingId;
+use crate::error::Error;
 use crate::event::IbcEventWithHeight;
 use crate::link::error::LinkError;
 use crate::link::operational_data::{OperationalData, TrackedEvents};

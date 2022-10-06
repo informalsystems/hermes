@@ -1705,18 +1705,11 @@ impl ChainEndpoint for CosmosSdkChain {
                 // As of now, we just sort them by sequence number which should
                 // yield a similar result and will revisit this approach in the future.
                 let mut events = vec![];
-
                 events.extend(start_block_events);
                 events.extend(tx_events);
                 events.extend(end_block_events);
 
-                events.sort_by(|a, b| {
-                    a.event
-                        .packet()
-                        .zip(b.event.packet())
-                        .map(|(pa, pb)| pa.sequence.cmp(&pb.sequence))
-                        .unwrap_or(Ordering::Equal)
-                });
+                sort_events_by_sequence(&mut events);
 
                 Ok(events)
             }
@@ -1802,6 +1795,16 @@ impl ChainEndpoint for CosmosSdkChain {
 
         Ok((target, supporting))
     }
+}
+
+fn sort_events_by_sequence(events: &mut [IbcEventWithHeight]) {
+    events.sort_by(|a, b| {
+        a.event
+            .packet()
+            .zip(b.event.packet())
+            .map(|(pa, pb)| pa.sequence.cmp(&pb.sequence))
+            .unwrap_or(Ordering::Equal)
+    });
 }
 
 /// Initialize the light client for the given chain using the given HTTP client
