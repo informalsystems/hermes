@@ -6,8 +6,7 @@ on:
       - Cargo.toml
       - Cargo.lock
       - ci/**
-      - proto/**
-      - modules/**
+      - crates/modules/**
   push:
     branches: master
     paths:
@@ -15,8 +14,7 @@ on:
       - Cargo.toml
       - Cargo.lock
       - ci/**
-      - proto/**
-      - modules/**
+      - crates/modules/**
 
 jobs:
   check-no-std-panic-conflict:
@@ -30,6 +28,7 @@ jobs:
           override: true
       - run: |
           cd ci/no-std-check
+          make setup
           make check-panic-conflict
 
   check-substrate:
@@ -44,4 +43,5 @@ jobs:
           override: true
       - run: |
           cd ci/no-std-check
+          make setup
           make check-substrate
