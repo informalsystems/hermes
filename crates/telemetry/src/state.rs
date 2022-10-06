@@ -733,30 +733,26 @@ impl TelemetryState {
         ];
 
         if let Some(path_backlog) = self.backlogs.get(&path_uid) {
-            match path_backlog.remove(&seq_nr) {
-                Some(_) => {
-                    // The oldest pending sequence number is the minimum key in the inner (path) backlog.
-                    if let Some(min_key) = path_backlog.iter().map(|v| *v.key()).min() {
-                        if let Some(oldest) = path_backlog.get(&min_key) {
-                            self.backlog_oldest_timestamp
-                                .observe(&cx, *oldest.value(), labels);
-                        } else {
-                            self.backlog_oldest_timestamp.observe(&cx, 0, labels);
-                        }
-                        self.backlog_oldest_sequence.observe(&cx, min_key, labels);
-                        self.backlog_size
-                            .observe(&cx, path_backlog.len() as u64, labels);
-                    } else {
-                        // No mimimum found, update the metrics to reflect an empty backlog
-                        self.backlog_oldest_sequence
-                            .observe(&cx, EMPTY_BACKLOG_SYMBOL, labels);
+            if path_backlog.remove(&seq_nr).is_some() {
+                // The oldest pending sequence number is the minimum key in the inner (path) backlog.
+                if let Some(min_key) = path_backlog.iter().map(|v| *v.key()).min() {
+                    if let Some(oldest) = path_backlog.get(&min_key) {
                         self.backlog_oldest_timestamp
-                            .observe(&cx, EMPTY_BACKLOG_SYMBOL, labels);
-                        self.backlog_size.observe(&cx, EMPTY_BACKLOG_SYMBOL, labels);
+                            .observe(&cx, *oldest.value(), labels);
+                    } else {
+                        self.backlog_oldest_timestamp.observe(&cx, 0, labels);
                     }
+                    self.backlog_oldest_sequence.observe(&cx, min_key, labels);
+                    self.backlog_size
+                        .observe(&cx, path_backlog.len() as u64, labels);
+                } else {
+                    // No mimimum found, update the metrics to reflect an empty backlog
+                    self.backlog_oldest_sequence
+                        .observe(&cx, EMPTY_BACKLOG_SYMBOL, labels);
+                    self.backlog_oldest_timestamp
+                        .observe(&cx, EMPTY_BACKLOG_SYMBOL, labels);
+                    self.backlog_size.observe(&cx, EMPTY_BACKLOG_SYMBOL, labels);
                 }
-                // No change performed to the backlog, no need to update the metrics.
-                None => {}
             }
         }
     }
