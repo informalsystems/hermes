@@ -30,7 +30,7 @@ pub struct FeeTransferCmd {
         long = "dst-chain",
         required = true,
         value_name = "DST_CHAIN_ID",
-        help_heading = "REQUIRED",
+        help_heading = "FLAGS",
         help = "Identifier of the destination chain"
     )]
     dst_chain_id: ChainId,
@@ -39,7 +39,7 @@ pub struct FeeTransferCmd {
         long = "src-chain",
         required = true,
         value_name = "SRC_CHAIN_ID",
-        help_heading = "REQUIRED",
+        help_heading = "FLAGS",
         help = "Identifier of the source chain"
     )]
     src_chain_id: ChainId,
@@ -48,7 +48,7 @@ pub struct FeeTransferCmd {
         long = "src-port",
         required = true,
         value_name = "SRC_PORT_ID",
-        help_heading = "REQUIRED",
+        help_heading = "FLAGS",
         help = "Identifier of the source port"
     )]
     src_port_id: PortId,
@@ -58,7 +58,7 @@ pub struct FeeTransferCmd {
         visible_alias = "src-chan",
         required = true,
         value_name = "SRC_CHANNEL_ID",
-        help_heading = "REQUIRED",
+        help_heading = "FLAGS",
         help = "Identifier of the source channel"
     )]
     src_channel_id: ChannelId,
@@ -67,7 +67,7 @@ pub struct FeeTransferCmd {
         long = "amount",
         required = true,
         value_name = "AMOUNT",
-        help_heading = "REQUIRED",
+        help_heading = "FLAGS",
         help = "Amount of coins (samoleans, by default) to send (e.g. `100000`)"
     )]
     amount: Amount,
@@ -75,7 +75,7 @@ pub struct FeeTransferCmd {
     #[clap(
         long = "denom",
         value_name = "DENOM",
-        help = "Denomination of the coins to send",
+        help = "Denomination of the coins to send. Default: samoleans",
         default_value = "samoleans"
     )]
     denom: String,
@@ -105,7 +105,7 @@ pub struct FeeTransferCmd {
         long = "timeout-height-offset",
         default_value = "0",
         value_name = "TIMEOUT_HEIGHT_OFFSET",
-        help = "Timeout in number of blocks since current"
+        help = "Timeout in number of blocks since current. Default: 0"
     )]
     timeout_height_offset: u64,
 
@@ -113,28 +113,31 @@ pub struct FeeTransferCmd {
         long = "timeout-seconds",
         default_value = "0",
         value_name = "TIMEOUT_SECONDS",
-        help = "Timeout in seconds since current"
+        help = "Timeout in seconds since current. Default: 0"
     )]
     timeout_seconds: u64,
 
     #[clap(
         long = "receive-fee",
         value_name = "RECEIVE_FEE",
-        help = "Fee to pay for the Recv message"
+        help = "Fee to pay for the Recv message. Default: 0",
+        default_value = "0"
     )]
     receive_fee: Amount,
 
     #[clap(
         long = "ack-fee",
         value_name = "ACK_FEE",
-        help = "Fee to pay for the Ack message"
+        help = "Fee to pay for the Ack message. Default: 0",
+        default_value = "0"
     )]
     ack_fee: Amount,
 
     #[clap(
         long = "timeout-fee",
         value_name = "TIMEOUT_FEE",
-        help = "Fee to pay for the Timeout message"
+        help = "Fee to pay for the Timeout message. Default: 0",
+        default_value = "0"
     )]
     timeout_fee: Amount,
 }
@@ -277,5 +280,306 @@ fn fee_transfer(chains: ChainHandlePair, opts: FeeTransferOptions) -> Result<(),
     match res {
         Ok(ev) => Output::success(ev).exit(),
         Err(e) => Output::error(format!("{}", e)).exit(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::FeeTransferCmd;
+
+    use abscissa_core::clap::Parser;
+    use std::str::FromStr;
+
+    use ibc::{core::ics24_host::identifier::{ChainId, PortId, ChannelId}, applications::transfer::Amount};
+
+    #[test]
+    fn test_fee_transfer_required_only() {
+        assert_eq!(
+            FeeTransferCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                src_port_id: PortId::from_str("port_a").unwrap(),
+                src_channel_id: ChannelId::from_str("channel_a").unwrap(),
+                amount: Amount::from(1000u64),
+                denom: "samoleans".to_owned(),
+                recipient: None,
+                number_msgs: None,
+                key_name: None,
+                timeout_height_offset: 0,
+                timeout_seconds: 0,
+                receive_fee: Amount::from(0u64),
+                ack_fee: Amount::from(0u64),
+                timeout_fee: Amount::from(0u64),
+            },
+            FeeTransferCmd::parse_from(&["test", "--dst-chain", "chain_b", "--src-chain", "chain_a", "--src-port", "port_a", "--src-channel", "channel_a", "--amount", "1000"])
+        )
+    }
+
+    #[test]
+    fn test_fee_transfer_channel_alias() {
+        assert_eq!(
+            FeeTransferCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                src_port_id: PortId::from_str("port_a").unwrap(),
+                src_channel_id: ChannelId::from_str("channel_a").unwrap(),
+                amount: Amount::from(1000u64),
+                denom: "samoleans".to_owned(),
+                recipient: None,
+                number_msgs: None,
+                key_name: None,
+                timeout_height_offset: 0,
+                timeout_seconds: 0,
+                receive_fee: Amount::from(0u64),
+                ack_fee: Amount::from(0u64),
+                timeout_fee: Amount::from(0u64),
+            },
+            FeeTransferCmd::parse_from(&["test", "--dst-chain", "chain_b", "--src-chain", "chain_a", "--src-port", "port_a", "--src-chan", "channel_a", "--amount", "1000"])
+        )
+    }
+
+    #[test]
+    fn test_fee_transfer_denom() {
+        assert_eq!(
+            FeeTransferCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                src_port_id: PortId::from_str("port_a").unwrap(),
+                src_channel_id: ChannelId::from_str("channel_a").unwrap(),
+                amount: Amount::from(1000u64),
+                denom: "stake".to_owned(),
+                recipient: None,
+                number_msgs: None,
+                key_name: None,
+                timeout_height_offset: 0,
+                timeout_seconds: 0,
+                receive_fee: Amount::from(0u64),
+                ack_fee: Amount::from(0u64),
+                timeout_fee: Amount::from(0u64),
+            },
+            FeeTransferCmd::parse_from(&["test", "--dst-chain", "chain_b", "--src-chain", "chain_a", "--src-port", "port_a", "--src-channel", "channel_a", "--amount", "1000", "--denom", "stake"])
+        )
+    }
+
+    #[test]
+    fn test_fee_transfer_recipient() {
+        assert_eq!(
+            FeeTransferCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                src_port_id: PortId::from_str("port_a").unwrap(),
+                src_channel_id: ChannelId::from_str("channel_a").unwrap(),
+                amount: Amount::from(1000u64),
+                denom: "samoleans".to_owned(),
+                recipient: Some("other_recipient".to_owned()),
+                number_msgs: None,
+                key_name: None,
+                timeout_height_offset: 0,
+                timeout_seconds: 0,
+                receive_fee: Amount::from(0u64),
+                ack_fee: Amount::from(0u64),
+                timeout_fee: Amount::from(0u64),
+            },
+            FeeTransferCmd::parse_from(&["test", "--dst-chain", "chain_b", "--src-chain", "chain_a", "--src-port", "port_a", "--src-channel", "channel_a", "--amount", "1000", "--recipient", "other_recipient"])
+        )
+    }
+
+    #[test]
+    fn test_fee_transfer_number_msgs() {
+        assert_eq!(
+            FeeTransferCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                src_port_id: PortId::from_str("port_a").unwrap(),
+                src_channel_id: ChannelId::from_str("channel_a").unwrap(),
+                amount: Amount::from(1000u64),
+                denom: "samoleans".to_owned(),
+                recipient: None,
+                number_msgs: Some(10),
+                key_name: None,
+                timeout_height_offset: 0,
+                timeout_seconds: 0,
+                receive_fee: Amount::from(0u64),
+                ack_fee: Amount::from(0u64),
+                timeout_fee: Amount::from(0u64),
+            },
+            FeeTransferCmd::parse_from(&["test", "--dst-chain", "chain_b", "--src-chain", "chain_a", "--src-port", "port_a", "--src-channel", "channel_a", "--amount", "1000", "--number-msgs", "10"])
+        )
+    }
+
+    #[test]
+    fn test_fee_transfer_key_name() {
+        assert_eq!(
+            FeeTransferCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                src_port_id: PortId::from_str("port_a").unwrap(),
+                src_channel_id: ChannelId::from_str("channel_a").unwrap(),
+                amount: Amount::from(1000u64),
+                denom: "samoleans".to_owned(),
+                recipient: None,
+                number_msgs: None,
+                key_name: Some("other_wallet".to_owned()),
+                timeout_height_offset: 0,
+                timeout_seconds: 0,
+                receive_fee: Amount::from(0u64),
+                ack_fee: Amount::from(0u64),
+                timeout_fee: Amount::from(0u64),
+            },
+            FeeTransferCmd::parse_from(&["test", "--dst-chain", "chain_b", "--src-chain", "chain_a", "--src-port", "port_a", "--src-channel", "channel_a", "--amount", "1000", "--key-name", "other_wallet"])
+        )
+    }
+
+    #[test]
+    fn test_fee_transfer_timeout_heightoffset() {
+        assert_eq!(
+            FeeTransferCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                src_port_id: PortId::from_str("port_a").unwrap(),
+                src_channel_id: ChannelId::from_str("channel_a").unwrap(),
+                amount: Amount::from(1000u64),
+                denom: "samoleans".to_owned(),
+                recipient: None,
+                number_msgs: None,
+                key_name: None,
+                timeout_height_offset: 42,
+                timeout_seconds: 0,
+                receive_fee: Amount::from(0u64),
+                ack_fee: Amount::from(0u64),
+                timeout_fee: Amount::from(0u64),
+            },
+            FeeTransferCmd::parse_from(&["test", "--dst-chain", "chain_b", "--src-chain", "chain_a", "--src-port", "port_a", "--src-channel", "channel_a", "--amount", "1000", "--timeout-height-offset", "42"])
+        )
+    }
+
+    #[test]
+    fn test_fee_transfer_timeout_seconds() {
+        assert_eq!(
+            FeeTransferCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                src_port_id: PortId::from_str("port_a").unwrap(),
+                src_channel_id: ChannelId::from_str("channel_a").unwrap(),
+                amount: Amount::from(1000u64),
+                denom: "samoleans".to_owned(),
+                recipient: None,
+                number_msgs: None,
+                key_name: None,
+                timeout_height_offset: 0,
+                timeout_seconds: 21,
+                receive_fee: Amount::from(0u64),
+                ack_fee: Amount::from(0u64),
+                timeout_fee: Amount::from(0u64),
+            },
+            FeeTransferCmd::parse_from(&["test", "--dst-chain", "chain_b", "--src-chain", "chain_a", "--src-port", "port_a", "--src-channel", "channel_a", "--amount", "1000", "--timeout-seconds", "21"])
+        )
+    }
+
+    #[test]
+    fn test_fee_transfer_receive_fee() {
+        assert_eq!(
+            FeeTransferCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                src_port_id: PortId::from_str("port_a").unwrap(),
+                src_channel_id: ChannelId::from_str("channel_a").unwrap(),
+                amount: Amount::from(1000u64),
+                denom: "samoleans".to_owned(),
+                recipient: None,
+                number_msgs: None,
+                key_name: None,
+                timeout_height_offset: 0,
+                timeout_seconds: 0,
+                receive_fee: Amount::from(51u64),
+                ack_fee: Amount::from(0u64),
+                timeout_fee: Amount::from(0u64),
+            },
+            FeeTransferCmd::parse_from(&["test", "--dst-chain", "chain_b", "--src-chain", "chain_a", "--src-port", "port_a", "--src-channel", "channel_a", "--amount", "1000", "--receive-fee", "51"])
+        )
+    }
+    #[test]
+    fn test_fee_transfer_ack_fee() {
+        assert_eq!(
+            FeeTransferCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                src_port_id: PortId::from_str("port_a").unwrap(),
+                src_channel_id: ChannelId::from_str("channel_a").unwrap(),
+                amount: Amount::from(1000u64),
+                denom: "samoleans".to_owned(),
+                recipient: None,
+                number_msgs: None,
+                key_name: None,
+                timeout_height_offset: 0,
+                timeout_seconds: 0,
+                receive_fee: Amount::from(0u64),
+                ack_fee: Amount::from(52u64),
+                timeout_fee: Amount::from(0u64),
+            },
+            FeeTransferCmd::parse_from(&["test", "--dst-chain", "chain_b", "--src-chain", "chain_a", "--src-port", "port_a", "--src-channel", "channel_a", "--amount", "1000", "--ack-fee", "52"])
+        )
+    }
+
+    #[test]
+    fn test_fee_transfer_timeout_fee() {
+        assert_eq!(
+            FeeTransferCmd {
+                dst_chain_id: ChainId::from_string("chain_b"),
+                src_chain_id: ChainId::from_string("chain_a"),
+                src_port_id: PortId::from_str("port_a").unwrap(),
+                src_channel_id: ChannelId::from_str("channel_a").unwrap(),
+                amount: Amount::from(1000u64),
+                denom: "samoleans".to_owned(),
+                recipient: None,
+                number_msgs: None,
+                key_name: None,
+                timeout_height_offset: 0,
+                timeout_seconds: 0,
+                receive_fee: Amount::from(0u64),
+                ack_fee: Amount::from(0u64),
+                timeout_fee: Amount::from(53u64),
+            },
+            FeeTransferCmd::parse_from(&["test", "--dst-chain", "chain_b", "--src-chain", "chain_a", "--src-port", "port_a", "--src-channel", "channel_a", "--amount", "1000", "--timeout-fee", "53"])
+        )
+    }
+
+    #[test]
+    fn test_fee_transfer_no_amount() {
+        assert!(
+            FeeTransferCmd::try_parse_from(&["test", "--dst-chain", "chain_b", "--src-chain", "chain_a", "--src-port", "port_a", "--src-channel", "channel_a"]).is_err()
+        )
+    }
+
+
+    #[test]
+    fn test_fee_transfer_no_src_channel() {
+        assert!(
+            FeeTransferCmd::try_parse_from(&["test", "--dst-chain", "chain_b", "--src-chain", "chain_a", "--src-port", "port_a", "--amount", "1000"]).is_err()
+        )
+    }
+
+
+    #[test]
+    fn test_fee_transfer_no_src_port() {
+        assert!(
+            FeeTransferCmd::try_parse_from(&["test", "--dst-chain", "chain_b", "--src-chain", "chain_a", "--src-channel", "channel_a", "--amount", "1000"]).is_err()
+        )
+    }
+
+
+    #[test]
+    fn test_fee_transfer_no_src_chain() {
+        assert!(
+            FeeTransferCmd::try_parse_from(&["test", "--dst-chain", "chain_b", "--src-port", "port_a", "--src-channel", "channel_a", "--amount", "1000"]).is_err()
+        )
+    }
+
+    #[test]
+    fn test_fee_transfer_no_dst_chain() {
+        assert!(
+            FeeTransferCmd::try_parse_from(&["test", "--src-chain", "chain_a", "--src-port", "port_a", "--src-channel", "channel_a", "--amount", "1000"]).is_err()
+        )
     }
 }
