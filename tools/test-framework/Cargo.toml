@@ -16,10 +16,10 @@ description = """
 [dependencies]
 ibc             = { version = "=0.19.0",     path = "../../crates/modules" }
 ibc-relayer     = { version = "=0.19.0",     path = "../../crates/relayer" }
-ibc-relayer-cli = { version = "=1.0.0", path = "../../crates/relayer-cli" }
-ibc-proto       = { version = "=0.20.1",     path = "../../crates/proto" }
-tendermint      = { version = "=0.23.9" }
-tendermint-rpc  = { version = "=0.23.9", features = ["http-client", "websocket-client"] }
+ibc-relayer-cli = { version = "=1.0.0",      path = "../../crates/relayer-cli" }
+ibc-proto       = { version = "=0.20.1" }
+tendermint      = { version = "=0.25.0" }
+tendermint-rpc  = { version = "=0.25.0", features = ["http-client", "websocket-client"] }
 
 async-trait = "0.1.57"
 http = "0.2.8"

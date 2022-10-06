@@ -6,10 +6,10 @@ resolver = "2"
 
 [dependencies]
 ibc = { path = "../../crates/modules", default-features = false }
-ibc-proto = { path = "../../crates/proto", default-features = false }
-tendermint = { version = "0.23.9", default-features = false }
-tendermint-proto = { version = "0.23.9", default-features = false }
-tendermint-light-client-verifier = { version = "0.23.9", default-features = false }
+ibc-proto = { version = "0.20.1", default-features = false }
+tendermint = { version = "0.25.0", default-features = false }
+tendermint-proto = { version = "0.25.0", default-features = false }
+tendermint-light-client-verifier = { version = "0.25.0", default-features = false }
 
 sp-core = { version = "5.0.0", default-features = false, optional = true }
 sp-io = { version = "5.0.0", default-features = false, optional = true }
@@ -31,7 +31,8 @@ substrate-std = [
   "sp-std/std",
 ]
 
-# [patch.crates-io]
+[patch.crates-io]
+ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs", branch = "romac/ibc-v5" }
 # tendermint                        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
 # tendermint-proto                  = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
 # tendermint-light-client-verifier  = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }

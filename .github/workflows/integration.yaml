@@ -9,12 +9,7 @@ on:
       - flake.lock
       - ci/**
       - e2e/**
-      - proto/**
-      - modules/**
-      - relayer/**
-      - relayer-cli/**
-      - relayer-rest/**
-      - telemetry/**
+      - crates/**
       - tools/**
   push:
     branches: master
@@ -26,12 +21,7 @@ on:
       - flake.lock
       - ci/**
       - e2e/**
-      - proto/**
-      - modules/**
-      - relayer/**
-      - relayer-cli/**
-      - relayer-rest/**
-      - telemetry/**
+      - crates/**
       - tools/**
 
 env:
@@ -70,12 +60,19 @@ jobs:
           - package: ibc-go-v5-simapp
             command: simd
             account_prefix: cosmos
+          - package: ibc-go-v6-simapp
+            command: simd
+            account_prefix: cosmos
           - package: wasmd
             command: wasmd
             account_prefix: wasm
           - package: evmos
             command: evmosd
             account_prefix: evmos
+          - package: osmosis
+            command: osmosisd
+            account_prefix: osmo
+
     steps:
       - uses: actions/checkout@v2
       - uses: cachix/install-nix-action@v15
