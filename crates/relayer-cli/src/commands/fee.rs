@@ -1,7 +1,8 @@
 //! `fee` subcommand
 
 use abscissa_core::clap::Parser;
-use abscissa_core::{Command, Runnable};
+use abscissa_core::{config::Override, Command, Runnable};
+use ibc_relayer::config::Config;
 
 use self::register_counterparty_payee::RegisterCounterpartyPayeeCmd;
 use self::register_payee::RegisterPayeeCmd;
@@ -22,4 +23,13 @@ pub enum FeeCmd {
 
     /// Perform a token transfer supported with a fee
     Transfer(FeeTransferCmd),
+}
+
+impl Override<Config> for FeeCmd {
+    fn override_config(&self, config: Config) -> Result<Config, abscissa_core::FrameworkError> {
+        match self {
+            Self::Transfer(cmd) => cmd.override_config(config),
+            _ => Ok(config),
+        }
+    }
 }
