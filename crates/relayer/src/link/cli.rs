@@ -10,7 +10,7 @@ use ibc::Height;
 
 use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::PacketQueryHeightQualifier;
+use crate::chain::requests::Qualified;
 use crate::chain::tracking::TrackingId;
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
@@ -104,18 +104,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             PrettySlice(&sequences)
         );
 
-        let (query_height, height_qualifier) = match packet_data_query_height {
-            Some(h) => (h, PacketQueryHeightQualifier::Equal),
-            None => (
-                src_response_height,
-                PacketQueryHeightQualifier::SmallerEqual,
-            ),
+        let query_height = match packet_data_query_height {
+            Some(height) => Qualified::Equal(height),
+            None => Qualified::SmallerEqual(src_response_height),
         };
 
         self.relay_packet_messages(
             sequences,
             query_height,
-            height_qualifier,
             query_send_packet_events,
             TrackingId::new_static("packet-recv"),
         )
@@ -157,50 +153,48 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             PrettySlice(&sequences)
         );
 
-        let (query_height, height_qualifier) = match packet_data_query_height {
-            Some(h) => (h, PacketQueryHeightQualifier::Equal),
-            None => (
-                src_response_height,
-                PacketQueryHeightQualifier::SmallerEqual,
-            ),
+        let query_height = match packet_data_query_height {
+            Some(height) => Qualified::Equal(height),
+            None => Qualified::SmallerEqual(src_response_height),
         };
 
         self.relay_packet_messages(
             sequences,
             query_height,
-            height_qualifier,
             query_write_ack_events,
             TrackingId::new_static("packet-ack"),
         )
     }
 
-    fn relay_packet_messages(
+    fn relay_packet_messages<QueryFn>(
         &self,
         sequences: Vec<Sequence>,
-        query_height: Height,
-        height_qualifier: PacketQueryHeightQualifier,
-        query_fn: impl Fn(
+        query_height: Qualified<Height>,
+        query_fn: QueryFn,
+        tracking_id: TrackingId,
+    ) -> Result<Vec<IbcEvent>, LinkError>
+    where
+        QueryFn: Fn(
             &ChainA,
             &PathIdentifiers,
             &[Sequence],
-            Height,
-            PacketQueryHeightQualifier,
-        ) -> Result<Vec<IbcEvent>, LinkError>,
-        tracking_id: TrackingId,
-    ) -> Result<Vec<IbcEvent>, LinkError> {
-        let mut results = vec![];
-
-        for events_chunk in query_packet_events_with(
+            Qualified<Height>,
+        ) -> Result<Vec<IbcEventWithHeight>, Error>,
+    {
+        let event_chunks = query_packet_events_with(
             &sequences,
             query_height,
-            height_qualifier,
             self.a_to_b.src_chain(),
             &self.a_to_b.path_id,
             query_fn,
-        ) {
+        );
+
+        let mut results = vec![];
+
+        for events_chunk in event_chunks {
             let updated_event_chunk = events_chunk
                 .iter()
-                .map(|e| IbcEventWithHeight::new(e.event.clone(), query_height))
+                .map(|e| IbcEventWithHeight::new(e.event.clone(), query_height.get()))
                 .collect();
 
             let tracked_events = TrackedEvents::new(updated_event_chunk, tracking_id);

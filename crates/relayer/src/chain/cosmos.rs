@@ -68,7 +68,7 @@ use crate::chain::cosmos::{
     gas::{calculate_fee, mul_ceil},
 };
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
-use crate::chain::requests::{PacketQueryHeightQualifier, QueryPacketEventDataRequest};
+use crate::chain::requests::{Qualified, QueryPacketEventDataRequest};
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;
@@ -587,7 +587,7 @@ impl CosmosSdkChain {
                     ICSHeight::new(self.id().version(), u64::from(block.header.height))
                         .map_err(|_| Error::invalid_height_no_source())?;
 
-                if let QueryHeight::Specific(query_height) = request.height {
+                if let QueryHeight::Specific(query_height) = request.height.get() {
                     if response_height > query_height {
                         continue;
                     }
@@ -1659,14 +1659,14 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::time!("query_packet_events");
         crate::telemetry!(query, self.id(), "query_packet_events");
 
-        match request.event_height_qualifier {
-            PacketQueryHeightQualifier::Equal => self.block_on(query_packets_from_block(
+        match request.height {
+            Qualified::Equal(_) => self.block_on(query_packets_from_block(
                 self.id(),
                 &self.rpc_client,
                 &self.config.rpc_addr,
                 &request,
             )),
-            PacketQueryHeightQualifier::SmallerEqual => {
+            Qualified::SmallerEqual(_) => {
                 let tx_events = self.block_on(query_packets_from_txs(
                     self.id(),
                     &self.rpc_client,

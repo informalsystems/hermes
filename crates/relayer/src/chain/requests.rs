@@ -1,4 +1,4 @@
-use core::fmt::Display;
+use core::fmt::{self, Display};
 
 use crate::error::Error;
 
@@ -412,14 +412,38 @@ pub struct QueryPacketEventDataRequest {
     pub destination_channel_id: ChannelId,
     pub destination_port_id: PortId,
     pub sequences: Vec<Sequence>,
-    pub height: QueryHeight,
-    pub event_height_qualifier: PacketQueryHeightQualifier,
+    pub height: Qualified<QueryHeight>,
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum PacketQueryHeightQualifier {
-    SmallerEqual,
-    Equal,
+pub enum Qualified<T> {
+    SmallerEqual(T),
+    Equal(T),
+}
+
+impl<T> Qualified<T> {
+    pub fn get(self) -> T {
+        match self {
+            Qualified::SmallerEqual(t) => t,
+            Qualified::Equal(t) => t,
+        }
+    }
+
+    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Qualified<U> {
+        match self {
+            Qualified::SmallerEqual(t) => Qualified::SmallerEqual(f(t)),
+            Qualified::Equal(t) => Qualified::Equal(f(t)),
+        }
+    }
+}
+
+impl<T: Display> Display for Qualified<T> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Qualified::SmallerEqual(a) => write!(f, "<={a}"),
+            Qualified::Equal(a) => write!(f, "=={a}"),
+        }
+    }
 }
 
 /// Query request for a single client event, identified by `event_id`, for `client_id`.

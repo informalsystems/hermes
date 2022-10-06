@@ -152,14 +152,16 @@ pub async fn query_packets_from_block(
 
     let mut result: Vec<IbcEventWithHeight> = vec![];
 
-    let tm_height = match request.height {
+    let tm_height = match request.height.get() {
         QueryHeight::Latest => tendermint::block::Height::default(),
         QueryHeight::Specific(h) => {
             tendermint::block::Height::try_from(h.revision_height()).unwrap()
         }
     };
+
     let height = Height::new(chain_id.version(), u64::from(tm_height))
         .map_err(|_| Error::invalid_height_no_source())?;
+
     let exact_tx_block_results = rpc_client
         .block_results(tm_height)
         .await
@@ -238,7 +240,7 @@ fn packet_from_tx_search_response(
     let height = ICSHeight::new(chain_id.version(), u64::from(response.height))
         .map_err(|_| Error::invalid_height_no_source())?;
 
-    if let QueryHeight::Specific(query_height) = request.height {
+    if let QueryHeight::Specific(query_height) = request.height.get() {
         if height > query_height {
             return Ok(None);
         }

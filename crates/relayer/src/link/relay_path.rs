@@ -20,7 +20,7 @@ use crate::chain::requests::QueryPacketCommitmentRequest;
 use crate::chain::requests::QueryTxRequest;
 use crate::chain::requests::QueryUnreceivedAcksRequest;
 use crate::chain::requests::QueryUnreceivedPacketsRequest;
-use crate::chain::requests::{IncludeProof, PacketQueryHeightQualifier};
+use crate::chain::requests::{IncludeProof, Qualified};
 use crate::chain::tracking::TrackedMsgs;
 use crate::chain::tracking::TrackingId;
 use crate::channel::error::ChannelError;
@@ -1116,8 +1116,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // and schedule operational data incrementally across each chunk.
         for events_chunk in query_packet_events_with(
             &sequences,
-            query_height,
-            PacketQueryHeightQualifier::SmallerEqual,
+            Qualified::SmallerEqual(query_height),
             self.src_chain(),
             &self.path_id,
             query_send_packet_events,
@@ -1174,8 +1173,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // Incrementally process all the available sequence numbers in chunks
         for events_chunk in query_packet_events_with(
             &sequences,
-            query_height,
-            PacketQueryHeightQualifier::SmallerEqual,
+            Qualified::SmallerEqual(query_height),
             self.src_chain(),
             &self.path_id,
             query_write_ack_events,
