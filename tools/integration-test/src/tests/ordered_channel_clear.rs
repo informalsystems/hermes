@@ -4,13 +4,50 @@ use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
 
 #[test]
-fn test_ordered_channel_clear() -> Result<(), Error> {
-    run_binary_channel_test(&OrderedChannelClearTest)
+fn test_ordered_channel_clear_no_conf_parallel() -> Result<(), Error> {
+    run_binary_channel_test(&OrderedChannelClearTest::new(false, false))
 }
 
-pub struct OrderedChannelClearTest;
+#[test]
+fn test_ordered_channel_clear_no_conf_sequential() -> Result<(), Error> {
+    run_binary_channel_test(&OrderedChannelClearTest::new(false, true))
+}
+
+#[test]
+fn test_ordered_channel_clear_conf_parallel() -> Result<(), Error> {
+    run_binary_channel_test(&OrderedChannelClearTest::new(true, false))
+}
+
+#[test]
+fn test_ordered_channel_clear_conf_sequential() -> Result<(), Error> {
+    run_binary_channel_test(&OrderedChannelClearTest::new(true, true))
+}
+
+pub struct OrderedChannelClearTest {
+    tx_confirmation: bool,
+    sequential_batch_tx: bool,
+}
+
+impl OrderedChannelClearTest {
+    pub fn new(tx_confirmation: bool, sequential_batch_tx: bool) -> Self {
+        Self {
+            tx_confirmation,
+            sequential_batch_tx,
+        }
+    }
+}
 
 impl TestOverrides for OrderedChannelClearTest {
+    fn modify_test_config(&self, config: &mut TestConfig) {
+        config.bootstrap_with_random_ids = false;
+    }
+
+    fn modify_relayer_config(&self, config: &mut Config) {
+        config.mode.packets.tx_confirmation = self.tx_confirmation;
+        config.chains[0].sequential_batch_tx = self.sequential_batch_tx;
+        config.chains[1].sequential_batch_tx = self.sequential_batch_tx;
+    }
+
     fn should_spawn_supervisor(&self) -> bool {
         false
     }
@@ -39,7 +76,7 @@ impl BinaryChannelTest for OrderedChannelClearTest {
             .query_balance(&wallet_a.address(), &denom_a)?;
 
         let amount = random_u64_range(1000, 5000);
-        let num_msgs = 300_usize;
+        let num_msgs = 150_usize;
         let total_amount = amount * u64::try_from(num_msgs).unwrap();
 
         info!(
