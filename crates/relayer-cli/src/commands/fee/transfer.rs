@@ -272,8 +272,17 @@ fn fee_transfer(chains: ChainHandlePair, opts: FeeTransferOptions) -> Result<(),
         vec![timeout_fee],
     )?;
 
-    let mut msgs = build_transfer_messages(&chains.src, &chains.dst, &opts.into())?;
-    msgs.push(pay_message);
+    // Recommended by ICS29 https://github.com/cosmos/ibc/blob/main/spec/app/ics-029-fee-payment/README.md:
+    // "it is recommended that fee middleware require their messages to be placed before the send packet message and escrow
+    // fees for the next sequence on the given channel."
+    // In addition, a fee message is sent for every transfer message.
+    let mut msgs = vec![];
+
+    let transfer = build_transfer_messages(&chains.src, &chains.dst, &opts.into())?;
+    for t in transfer {
+        msgs.push(pay_message.clone());
+        msgs.push(t);
+    }
 
     let res = send_messages(&chains.src, msgs);
 
