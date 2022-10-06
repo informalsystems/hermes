@@ -331,9 +331,9 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     },
 
-    QueryPacketEventDataFromBlocks {
-        request: QueryBlockRequest,
-        reply_to: ReplyTo<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>)>,
+    QueryPacketEventData {
+        request: QueryPacketEventDataRequest,
+        reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     },
 
     QueryHostConsensusState {
@@ -618,10 +618,10 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error>;
 
-    fn query_blocks(
+    fn query_packet_events(
         &self,
-        request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>), Error>;
+        request: QueryPacketEventDataRequest,
+    ) -> Result<Vec<IbcEventWithHeight>, Error>;
 
     fn query_host_consensus_state(
         &self,

@@ -458,11 +458,11 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryPacketEventDataFromTxs { request, reply_to })
     }
 
-    fn query_blocks(
+    fn query_packet_events(
         &self,
-        request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>), Error> {
-        self.send(|reply_to| ChainRequest::QueryPacketEventDataFromBlocks { request, reply_to })
+        request: QueryPacketEventDataRequest,
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
+        self.send(|reply_to| ChainRequest::QueryPacketEventData { request, reply_to })
     }
 
     fn query_host_consensus_state(

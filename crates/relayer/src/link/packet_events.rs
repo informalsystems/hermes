@@ -1,17 +1,13 @@
 //! Utility methods for querying packet event data.
 
-use std::cmp::Ordering;
-
-use tracing::{info, span, trace, warn, Level};
+use tracing::{info, span, warn, Level};
 
 use ibc::core::ics04_channel::packet::Sequence;
 use ibc::events::{IbcEvent, WithBlockDataType};
 use ibc::Height;
 
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::{
-    QueryBlockRequest, QueryHeight, QueryPacketEventDataRequest, QueryTxRequest,
-};
+use crate::chain::requests::{QueryHeight, QueryPacketEventDataRequest};
 use crate::event::IbcEventWithHeight;
 use crate::link::error::LinkError;
 use crate::path::PathIdentifiers;
@@ -69,55 +65,11 @@ where
 
 fn query_packet_events<ChainA: ChainHandle>(
     src_chain: &ChainA,
-    mut query: QueryPacketEventDataRequest,
+    query: QueryPacketEventDataRequest,
 ) -> Result<Vec<IbcEvent>, LinkError> {
-    let tx_events = src_chain
-        .query_txs(QueryTxRequest::Packet(query.clone()))
+    let events = src_chain
+        .query_packet_events(query)
         .map_err(LinkError::relayer)?;
-
-    let recvd_sequences: Vec<_> = tx_events
-        .iter()
-        .filter_map(|eh| eh.event.packet().map(|p| p.sequence))
-        .collect();
-
-    query.sequences.retain(|seq| !recvd_sequences.contains(seq));
-
-    let (start_block_events, end_block_events) = if !query.sequences.is_empty() {
-        src_chain
-            .query_blocks(QueryBlockRequest::Packet(query))
-            .map_err(LinkError::relayer)?
-    } else {
-        Default::default()
-    };
-
-    trace!("start_block_events {:?}", start_block_events);
-    trace!("tx_events {:?}", tx_events);
-    trace!("end_block_events {:?}", end_block_events);
-
-    // Events should be ordered in the following fashion,
-    // for any two blocks b1, b2 at height h1, h2 with h1 < h2:
-    // b1.start_block_events
-    // b1.tx_events
-    // b1.end_block_events
-    // b2.start_block_events
-    // b2.tx_events
-    // b2.end_block_events
-    //
-    // As of now, we just sort them by sequence number which should
-    // yield a similar result and will revisit this approach in the future.
-    let mut events = vec![];
-
-    events.extend(start_block_events);
-    events.extend(tx_events);
-    events.extend(end_block_events);
-
-    events.sort_by(|a, b| {
-        a.event
-            .packet()
-            .zip(b.event.packet())
-            .map(|(pa, pb)| pa.sequence.cmp(&pb.sequence))
-            .unwrap_or(Ordering::Equal)
-    });
 
     Ok(events.into_iter().map(|e| e.event).collect())
 }

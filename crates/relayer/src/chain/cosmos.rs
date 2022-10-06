@@ -7,6 +7,7 @@ use core::{
     time::Duration,
 };
 use num_bigint::BigInt;
+use std::cmp::Ordering;
 use std::thread;
 
 use bitcoin::hashes::hex::ToHex;
@@ -19,7 +20,7 @@ use tendermint_rpc::{
 };
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::{codegen::http::Uri, metadata::AsciiMetadataValue};
-use tracing::{error, instrument, warn};
+use tracing::{error, instrument, trace, warn};
 
 use ibc::clients::ics07_tendermint::header::Header as TmHeader;
 use ibc::core::ics02_client::client_type::ClientType;
@@ -53,7 +54,7 @@ use crate::chain::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::query::balance::query_balance;
 use crate::chain::cosmos::query::denom_trace::query_denom_trace;
 use crate::chain::cosmos::query::status::query_status;
-use crate::chain::cosmos::query::tx::{filter_matching_event, query_txs};
+use crate::chain::cosmos::query::tx::{filter_matching_event, query_packets_from_txs, query_txs};
 use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query, QueryResponse};
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
@@ -65,6 +66,7 @@ use crate::chain::cosmos::{
     gas::{calculate_fee, mul_ceil},
 };
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
+use crate::chain::requests::QueryPacketEventDataRequest;
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;
@@ -89,10 +91,10 @@ use crate::{
 };
 
 use super::requests::{
-    IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
-    QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
-    QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
-    QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHeight,
+    IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+    QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
+    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
+    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHeight,
     QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
     QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
     QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
@@ -509,107 +511,94 @@ impl CosmosSdkChain {
         .await
     }
 
-    fn query_block(
+    fn query_packet_from_block(
         &self,
-        request: &QueryBlockRequest,
+        request: &QueryPacketEventDataRequest,
         seqs: &[Sequence],
         block_height: &Height,
     ) -> Result<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>), Error> {
-        crate::time!("query_block");
+        crate::time!("query_block: query block packet events");
         crate::telemetry!(query, self.id(), "query_block");
 
-        match request {
-            QueryBlockRequest::Packet(request) => {
-                crate::time!("query_blocks: query block packet events");
-                let mut begin_block_events = vec![];
-                let mut end_block_events = vec![];
+        let mut begin_block_events = vec![];
+        let mut end_block_events = vec![];
 
-                let tm_height =
-                    tendermint::block::Height::try_from(block_height.revision_height()).unwrap();
+        let tm_height =
+            tendermint::block::Height::try_from(block_height.revision_height()).unwrap();
 
-                let response = self
-                    .block_on(self.rpc_client.block_results(tm_height))
-                    .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+        let response = self
+            .block_on(self.rpc_client.block_results(tm_height))
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
-                let response_height =
-                    ICSHeight::new(self.id().version(), u64::from(response.height))
-                        .map_err(|_| Error::invalid_height_no_source())?;
+        let response_height = ICSHeight::new(self.id().version(), u64::from(response.height))
+            .map_err(|_| Error::invalid_height_no_source())?;
 
-                begin_block_events.append(
-                    &mut response
-                        .begin_block_events
-                        .unwrap_or_default()
-                        .into_iter()
-                        .filter_map(|ev| filter_matching_event(ev, &request, seqs))
-                        .map(|ev| IbcEventWithHeight::new(ev, response_height))
-                        .collect(),
-                );
+        begin_block_events.append(
+            &mut response
+                .begin_block_events
+                .unwrap_or_default()
+                .into_iter()
+                .filter_map(|ev| filter_matching_event(ev, &request, seqs))
+                .map(|ev| IbcEventWithHeight::new(ev, response_height))
+                .collect(),
+        );
 
-                end_block_events.append(
-                    &mut response
-                        .end_block_events
-                        .unwrap_or_default()
-                        .into_iter()
-                        .filter_map(|ev| filter_matching_event(ev, &request, seqs))
-                        .map(|ev| IbcEventWithHeight::new(ev, response_height))
-                        .collect(),
-                );
-                Ok((begin_block_events, end_block_events))
-            }
-        }
+        end_block_events.append(
+            &mut response
+                .end_block_events
+                .unwrap_or_default()
+                .into_iter()
+                .filter_map(|ev| filter_matching_event(ev, &request, seqs))
+                .map(|ev| IbcEventWithHeight::new(ev, response_height))
+                .collect(),
+        );
+        Ok((begin_block_events, end_block_events))
     }
 
-    fn query_blocks(
+    fn query_packets_from_blocks(
         &self,
-        request: &QueryBlockRequest,
+        request: &QueryPacketEventDataRequest,
     ) -> Result<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>), Error> {
-        crate::time!("query_blocks");
+        crate::time!("query_blocks: query block packet events");
         crate::telemetry!(query, self.id(), "query_blocks");
 
-        match request {
-            QueryBlockRequest::Packet(block_request) => {
-                crate::time!("query_blocks: query block packet events");
+        let mut begin_block_events = vec![];
+        let mut end_block_events = vec![];
 
-                let mut begin_block_events = vec![];
-                let mut end_block_events = vec![];
+        for seq in request.sequences.iter() {
+            let response = self
+                .block_on(self.rpc_client.block_search(
+                    packet_query(&request, *seq),
+                    1,
+                    1, // there should only be a single match for this query
+                    Order::Ascending,
+                ))
+                .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
-                for seq in block_request.sequences.iter() {
-                    let response = self
-                        .block_on(self.rpc_client.block_search(
-                            packet_query(&block_request, *seq),
-                            1,
-                            1, // there should only be a single match for this query
-                            Order::Ascending,
-                        ))
-                        .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+            assert!(
+                response.blocks.len() <= 1,
+                "block_results: unexpected number of blocks"
+            );
 
-                    assert!(
-                        response.blocks.len() <= 1,
-                        "block_results: unexpected number of blocks"
-                    );
+            if let Some(block) = response.blocks.first().map(|first| &first.block) {
+                let response_height =
+                    ICSHeight::new(self.id().version(), u64::from(block.header.height))
+                        .map_err(|_| Error::invalid_height_no_source())?;
 
-                    if let Some(block) = response.blocks.first().map(|first| &first.block) {
-                        let response_height =
-                            ICSHeight::new(self.id().version(), u64::from(block.header.height))
-                                .map_err(|_| Error::invalid_height_no_source())?;
-
-                        if let QueryHeight::Specific(query_height) = block_request.height {
-                            if response_height > query_height {
-                                continue;
-                            }
-                        }
-
-                        let (new_begin_block_events, new_end_block_events) =
-                            self.query_block(request, &[*seq], &response_height)?;
-
-                        begin_block_events.extend(new_begin_block_events);
-                        end_block_events.extend(new_end_block_events);
+                if let QueryHeight::Specific(query_height) = request.height {
+                    if response_height > query_height {
+                        continue;
                     }
                 }
 
-                Ok((begin_block_events, end_block_events))
+                let (new_begin_block_events, new_end_block_events) =
+                    self.query_packet_from_block(request, &[*seq], &response_height)?;
+
+                begin_block_events.extend(new_begin_block_events);
+                end_block_events.extend(new_end_block_events);
             }
         }
+        Ok((begin_block_events, end_block_events))
     }
 }
 
@@ -1639,15 +1628,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
     /// This function queries transactions for events matching certain criteria.
     /// 1. Client Update request - returns a vector with at most one update client event
-    /// 2. Packet event request - returns at most one packet event for each sequence specified
-    ///    in the request.
-    ///    Note - there is no way to format the packet query such that it asks for Tx-es with either
-    ///    sequence (the query conditions can only be AND-ed).
-    ///    There is a possibility to include "<=" and ">=" conditions but it doesn't work with
-    ///    string attributes (sequence is emmitted as a string).
-    ///    Therefore, for packets we perform one tx_search for each sequence.
-    ///    Alternatively, a single query for all packets could be performed but it would return all
-    ///    packets ever sent.
+    /// 2. Transaction event request - returns all IBC events resulted from a Tx execution
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error> {
         crate::time!("query_txs");
         crate::telemetry!(query, self.id(), "query_txs");
@@ -1660,26 +1641,74 @@ impl ChainEndpoint for CosmosSdkChain {
         ))
     }
 
-    fn query_blocks(
+    /// This function queries transactions for packet events matching certain criteria.
+    /// It returns at most one packet event for each sequence specified in the request.
+    ///    Note - there is no way to format the packet query such that it asks for Tx-es with either
+    ///    sequence (the query conditions can only be AND-ed).
+    ///    There is a possibility to include "<=" and ">=" conditions but it doesn't work with
+    ///    string attributes (sequence is emmitted as a string).
+    ///    Therefore, for packets we perform one tx_search for each sequence.
+    ///    Alternatively, a single query for all packets could be performed but it would return all
+    ///    packets ever sent.
+    fn query_packet_events(
         &self,
-        request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>), Error> {
-        crate::time!("query_blocks");
-        crate::telemetry!(query, self.id(), "query_blocks");
+        mut request: QueryPacketEventDataRequest,
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
+        crate::time!("query_packet_events");
+        crate::telemetry!(query, self.id(), "query_packet_events");
 
-        match request {
-            QueryBlockRequest::Packet(ref packet_request) => {
-                if packet_request.strict_query_height {
-                    if let QueryHeight::Specific(block_height) = packet_request.height {
-                        self.query_block(&request, &packet_request.sequences, &block_height)
-                    } else {
-                        Ok((vec![], vec![]))
-                    }
-                } else {
-                    self.query_blocks(&request)
-                }
-            }
-        }
+        let tx_events = self.block_on(query_packets_from_txs(
+            self.id(),
+            &self.rpc_client,
+            &self.config.rpc_addr,
+            request.clone(),
+        ))?;
+
+        let recvd_sequences: Vec<_> = tx_events
+            .iter()
+            .filter_map(|eh| eh.event.packet().map(|p| p.sequence))
+            .collect();
+
+        request
+            .sequences
+            .retain(|seq| !recvd_sequences.contains(seq));
+
+        let (start_block_events, end_block_events) = if !request.sequences.is_empty() {
+            self.query_packets_from_blocks(&request)?
+        } else {
+            Default::default()
+        };
+
+        trace!("start_block_events {:?}", start_block_events);
+        trace!("tx_events {:?}", tx_events);
+        trace!("end_block_events {:?}", end_block_events);
+
+        // Events should be ordered in the following fashion,
+        // for any two blocks b1, b2 at height h1, h2 with h1 < h2:
+        // b1.start_block_events
+        // b1.tx_events
+        // b1.end_block_events
+        // b2.start_block_events
+        // b2.tx_events
+        // b2.end_block_events
+        //
+        // As of now, we just sort them by sequence number which should
+        // yield a similar result and will revisit this approach in the future.
+        let mut events = vec![];
+
+        events.extend(start_block_events);
+        events.extend(tx_events);
+        events.extend(end_block_events);
+
+        events.sort_by(|a, b| {
+            a.event
+                .packet()
+                .zip(b.event.packet())
+                .map(|(pa, pb)| pa.sequence.cmp(&pb.sequence))
+                .unwrap_or(Ordering::Equal)
+        });
+
+        Ok(events)
     }
 
     fn query_host_consensus_state(

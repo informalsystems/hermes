@@ -28,8 +28,9 @@ use crate::chain::requests::{
     QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
     QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
     QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+    QueryPacketCommitmentsRequest, QueryPacketEventDataRequest, QueryUnreceivedAcksRequest,
+    QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
+    QueryUpgradedConsensusStateRequest,
 };
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
@@ -45,8 +46,8 @@ use crate::light_client::AnyHeader;
 use crate::misbehaviour::MisbehaviourEvidence;
 
 use super::requests::{
-    IncludeProof, QueryBlockRequest, QueryHeight, QueryPacketAcknowledgementRequest,
-    QueryPacketCommitmentRequest, QueryPacketReceiptRequest, QueryTxRequest,
+    IncludeProof, QueryHeight, QueryPacketAcknowledgementRequest, QueryPacketCommitmentRequest,
+    QueryPacketReceiptRequest, QueryTxRequest,
 };
 
 /// The result of a health check.
@@ -336,10 +337,10 @@ pub trait ChainEndpoint: Sized {
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error>;
 
-    fn query_blocks(
+    fn query_packet_events(
         &self,
-        request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>), Error>;
+        request: QueryPacketEventDataRequest,
+    ) -> Result<Vec<IbcEventWithHeight>, Error>;
 
     fn query_host_consensus_state(
         &self,

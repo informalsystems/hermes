@@ -41,13 +41,13 @@ use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::endpoint::{ChainStatus, HealthCheck};
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use ibc_relayer::chain::requests::{
-    IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
-    QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
-    QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
-    QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
-    QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
-    QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
+    IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+    QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
+    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
+    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
+    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementRequest,
+    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest,
+    QueryPacketCommitmentsRequest, QueryPacketEventDataRequest, QueryPacketReceiptRequest,
     QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
     QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
@@ -381,11 +381,11 @@ where
         self.value().query_txs(request)
     }
 
-    fn query_blocks(
+    fn query_packet_events(
         &self,
-        request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>), Error> {
-        self.value().query_blocks(request)
+        request: QueryPacketEventDataRequest,
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
+        self.value().query_packet_events(request)
     }
 
     fn query_host_consensus_state(

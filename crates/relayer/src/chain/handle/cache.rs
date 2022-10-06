@@ -464,11 +464,11 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().query_txs(request)
     }
 
-    fn query_blocks(
+    fn query_packet_events(
         &self,
-        request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>), Error> {
-        self.inner().query_blocks(request)
+        request: QueryPacketEventDataRequest,
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
+        self.inner().query_packet_events(request)
     }
 
     fn query_host_consensus_state(
