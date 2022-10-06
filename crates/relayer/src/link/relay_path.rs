@@ -454,7 +454,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         .entered();
 
         // Collect relevant events from the incoming batch & adjust their height.
-        let events = self.filter_relaying_events(batch.events.clone(), batch.tracking_id);
+        let events = self.filter_relaying_events(batch.events, batch.tracking_id);
 
         // Update telemetry info
         telemetry!({

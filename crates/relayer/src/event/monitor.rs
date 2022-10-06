@@ -279,7 +279,7 @@ impl EventMonitor {
     name = "event_monitor.reconnect",
     level = "error",
     skip_all,
-    fields(chain = % self.chain_id)
+    fields(chain = %self.chain_id)
     )]
     fn reconnect(&mut self) {
         let result = retry_with_index(retry_strategy::default(), |_| {
@@ -317,7 +317,7 @@ impl EventMonitor {
     name = "event_monitor",
     level = "error",
     skip_all,
-    fields(chain = % self.chain_id)
+    fields(chain = %self.chain_id)
     )]
     pub fn run(mut self) {
         debug!("starting event monitor");
