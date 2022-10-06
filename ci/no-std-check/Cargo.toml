@@ -32,7 +32,7 @@ substrate-std = [
 ]
 
 [patch.crates-io]
-ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs" }
+ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs", branch = "romac/ibc-v5" }
 # tendermint                        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
 # tendermint-proto                  = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
 # tendermint-light-client-verifier  = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }

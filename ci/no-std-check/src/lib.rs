@@ -9,8 +9,8 @@ extern crate alloc;
 use ibc;
 use ibc_proto;
 use tendermint;
-use tendermint_proto;
 use tendermint_light_client_verifier;
+use tendermint_proto;
 
 #[cfg(feature = "sp-core")]
 use sp_core;
