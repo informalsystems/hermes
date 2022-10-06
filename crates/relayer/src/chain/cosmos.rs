@@ -538,7 +538,7 @@ impl CosmosSdkChain {
                 .begin_block_events
                 .unwrap_or_default()
                 .into_iter()
-                .filter_map(|ev| filter_matching_event(ev, &request, seqs))
+                .filter_map(|ev| filter_matching_event(ev, request, seqs))
                 .map(|ev| IbcEventWithHeight::new(ev, response_height))
                 .collect(),
         );
@@ -548,7 +548,7 @@ impl CosmosSdkChain {
                 .end_block_events
                 .unwrap_or_default()
                 .into_iter()
-                .filter_map(|ev| filter_matching_event(ev, &request, seqs))
+                .filter_map(|ev| filter_matching_event(ev, request, seqs))
                 .map(|ev| IbcEventWithHeight::new(ev, response_height))
                 .collect(),
         );
@@ -568,7 +568,7 @@ impl CosmosSdkChain {
         for seq in request.sequences.iter() {
             let response = self
                 .block_on(self.rpc_client.block_search(
-                    packet_query(&request, *seq),
+                    packet_query(request, *seq),
                     1,
                     1, // there should only be a single match for this query
                     Order::Ascending,
