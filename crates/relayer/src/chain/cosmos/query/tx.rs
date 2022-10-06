@@ -100,72 +100,86 @@ pub async fn query_packets_from_txs(
     chain_id: &ChainId,
     rpc_client: &HttpClient,
     rpc_address: &Url,
-    request: QueryPacketEventDataRequest,
+    request: &QueryPacketEventDataRequest,
 ) -> Result<Vec<IbcEventWithHeight>, Error> {
     crate::time!("query_packets_from_txs");
     crate::telemetry!(query, chain_id, "query_packets_from_txs");
 
     let mut result: Vec<IbcEventWithHeight> = vec![];
 
-    if request.strict_query_height {
-        let tm_height = match request.height {
-            QueryHeight::Latest => tendermint::block::Height::default(),
-            QueryHeight::Specific(h) => {
-                tendermint::block::Height::try_from(h.revision_height()).unwrap()
-            }
-        };
-        let height = Height::new(chain_id.version(), u64::from(tm_height))
-            .map_err(|_| Error::invalid_height_no_source())?;
-        let exact_tx_block_results = rpc_client
-            .block_results(tm_height)
+    for seq in &request.sequences {
+        // query first (and only) Tx that includes the event specified in the query request
+        let mut response = rpc_client
+            .tx_search(
+                packet_query(request, *seq),
+                false,
+                1,
+                1, // get only the first Tx matching the query
+                Order::Ascending,
+            )
             .await
-            .map_err(|e| Error::rpc(rpc_address.clone(), e))?
-            .txs_results;
+            .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
 
-        if let Some(txs) = exact_tx_block_results {
-            for tx in txs.iter() {
-                let tx_copy = tx.clone();
-                result.append(
-                    &mut tx_copy
-                        .events
-                        .into_iter()
-                        .filter_map(|e| filter_matching_event(e, &request, &request.sequences))
-                        .map(|e| IbcEventWithHeight::new(e, height))
-                        .collect(),
-                )
-            }
+        debug_assert!(
+            response.txs.len() <= 1,
+            "packet_from_tx_search_response: unexpected number of txs"
+        );
+
+        if response.txs.is_empty() {
+            continue;
         }
-    } else {
-        for seq in &request.sequences {
-            // query first (and only) Tx that includes the event specified in the query request
-            let mut response = rpc_client
-                .tx_search(
-                    packet_query(&request, *seq),
-                    false,
-                    1,
-                    1, // get only the first Tx matching the query
-                    Order::Ascending,
-                )
-                .await
-                .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
 
-            debug_assert!(
-                response.txs.len() <= 1,
-                "packet_from_tx_search_response: unexpected number of txs"
-            );
+        let tx = response.txs.remove(0);
+        let event = packet_from_tx_search_response(chain_id, request, *seq, tx)?;
 
-            if response.txs.is_empty() {
-                continue;
-            }
-
-            let tx = response.txs.remove(0);
-            let event = packet_from_tx_search_response(chain_id, &request, *seq, tx)?;
-
-            if let Some(event) = event {
-                result.push(event);
-            }
+        if let Some(event) = event {
+            result.push(event);
         }
     }
+    Ok(result)
+}
+
+/// This function queries packet events from a given block, events matching certain criteria.
+/// It returns at most one packet event for each sequence specified in the request.
+pub async fn query_packets_from_block(
+    chain_id: &ChainId,
+    rpc_client: &HttpClient,
+    rpc_address: &Url,
+    request: &QueryPacketEventDataRequest,
+) -> Result<Vec<IbcEventWithHeight>, Error> {
+    crate::time!("query_packets_from_txs");
+    crate::telemetry!(query, chain_id, "query_packets_from_txs");
+
+    let mut result: Vec<IbcEventWithHeight> = vec![];
+
+    let tm_height = match request.height {
+        QueryHeight::Latest => tendermint::block::Height::default(),
+        QueryHeight::Specific(h) => {
+            tendermint::block::Height::try_from(h.revision_height()).unwrap()
+        }
+    };
+    let height = Height::new(chain_id.version(), u64::from(tm_height))
+        .map_err(|_| Error::invalid_height_no_source())?;
+    let exact_tx_block_results = rpc_client
+        .block_results(tm_height)
+        .await
+        .map_err(|e| Error::rpc(rpc_address.clone(), e))?
+        .txs_results;
+
+    if let Some(txs) = exact_tx_block_results {
+        for tx in txs.iter() {
+            let tx_copy = tx.clone();
+            result.append(
+                &mut tx_copy
+                    .events
+                    .into_iter()
+                    .filter_map(|e| filter_matching_event(e, request, &request.sequences))
+                    .map(|e| IbcEventWithHeight::new(e, height))
+                    .collect(),
+            )
+        }
+    }
+
     Ok(result)
 }
 
