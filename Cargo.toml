@@ -11,11 +11,11 @@ members = [
     "crates/ibc-chain-registry",
     "tools/integration-test",
     "tools/test-framework",
+    "tools/check-guide",
 ]
 
 exclude = [
     "ci/no-std-check",
-    "tools/check-guide",
 ]
 
 [patch.crates-io]
