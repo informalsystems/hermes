@@ -28,7 +28,7 @@ use crate::chain::tracking::TrackedMsgs;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Connection as WorkerConnectionObject;
 use crate::util::pretty::{PrettyDuration, PrettyOption};
-use crate::util::retry::{retry_count, retry_with_index, RetryResult};
+use crate::util::retry::{retry_with_index, RetryResult};
 use crate::util::task::Next;
 
 mod error;
@@ -74,14 +74,7 @@ mod handshake_retry {
         e: retry::Error<ConnectionError>,
         description: String,
     ) -> ConnectionError {
-        match e {
-            retry::Error::Operation {
-                error: _,
-                total_delay,
-                tries,
-            } => ConnectionError::max_retry(description, tries, total_delay),
-            retry::Error::Internal(reason) => ConnectionError::retry_internal(reason),
-        }
+        ConnectionError::max_retry(description, e.tries, e.total_delay, e.error)
     }
 }
 
@@ -677,10 +670,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             }
         })
         .map_err(|err| {
-            error!(
-                "failed to open connection after {} retries",
-                retry_count(&err)
-            );
+            error!("failed to open connection after {} retries", err.tries);
+
             handshake_retry::from_retry_error(
                 err,
                 format!("failed to finish connection handshake for {:?}", self),
