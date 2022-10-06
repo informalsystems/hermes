@@ -1,1 +1,0 @@
-$HOME/.gm/gm.toml

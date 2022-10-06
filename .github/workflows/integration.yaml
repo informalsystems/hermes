@@ -9,12 +9,7 @@ on:
       - flake.lock
       - ci/**
       - e2e/**
-      - proto/**
-      - modules/**
-      - relayer/**
-      - relayer-cli/**
-      - relayer-rest/**
-      - telemetry/**
+      - crates/**
       - tools/**
   push:
     branches: master
@@ -26,12 +21,7 @@ on:
       - flake.lock
       - ci/**
       - e2e/**
-      - proto/**
-      - modules/**
-      - relayer/**
-      - relayer-cli/**
-      - relayer-rest/**
-      - telemetry/**
+      - crates/**
       - tools/**
 
 env:

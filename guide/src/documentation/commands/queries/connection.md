@@ -7,21 +7,7 @@
 Use the `query connections` command to query the identifiers of all connections on a given chain.
 
 ```shell
-USAGE:
-    hermes query connections --chain <CHAIN_ID>
-
-DESCRIPTION:
-    Query the identifiers of all connections on a chain
-
-OPTIONS:
-        --counterparty-chain <COUNTERPARTY_CHAIN_ID>
-            Filter the query response by the counterparty chain
-
-        --verbose
-            Enable verbose output, displaying the client for each connection in the response
-
-REQUIRED:
-        --chain <CHAIN_ID>    Identifier of the chain to query
+{{#include ../../../templates/help_templates/query/connections.md}}
 ```
 
 __Example__
@@ -29,7 +15,7 @@ __Example__
 Query all connections on `ibc-1`:
 
 ```shell
-hermes query connections --chain ibc-1
+{{#template ../../../templates/commands/hermes/query/connections_1.md CHAIN_ID=ibc-1}}
 ```
 
 ```json
@@ -48,15 +34,7 @@ Success: [
 Use the `query connection` commands to query a specific connection.
 
 ```shell
-USAGE:
-    hermes query connection <SUBCOMMAND>
-
-DESCRIPTION:
-    Query information about connection(s)
-
-SUBCOMMANDS:
-    end        query connection end
-    channels   query connection channels
+{{#include ../../../templates/help_templates/query/connection.md}}
 ```
 
 ## Query the connection end data
@@ -64,18 +42,7 @@ SUBCOMMANDS:
 Use the `query connection end` command to query the connection end:
 
 ```shell
-USAGE:
-    hermes query connection end [OPTIONS] --chain <CHAIN_ID> --connection <CONNECTION_ID>
-
-DESCRIPTION:
-    Query connection end
-
-OPTIONS:
-        --height <HEIGHT>    Height of the state to query. Leave unspecified for latest height.
-
-REQUIRED:
-        --chain <CHAIN_ID>              Identifier of the chain to query
-        --connection <CONNECTION_ID>    Identifier of the connection to query [aliases: conn]
+{{#include ../../../templates/help_templates/query/connection/end.md}}
 ```
 
 __Example__
@@ -83,7 +50,7 @@ __Example__
 Query the connection end of connection `connection-1` on `ibc-1`:
 
 ```shell
-hermes query connection end --chain ibc-1 --connection connection-1
+{{#template ../../../templates/commands/hermes/query/connection/end_1.md CHAIN_ID=ibc-1 CONNECTION_ID=connection-1}}
 ```
 
 ```json
@@ -121,15 +88,7 @@ Success: ConnectionEnd {
 Use the `query connection channels` command to query the identifiers of the channels associated with a given connection:
 
 ```shell
-USAGE:
-    hermes query connection channels --chain <CHAIN_ID> --connection <CONNECTION_ID>
-
-DESCRIPTION:
-    Query connection channels
-
-REQUIRED:
-        --chain <CHAIN_ID>              Identifier of the chain to query
-        --connection <CONNECTION_ID>    Identifier of the connection to query [aliases: conn]
+{{#include ../../../templates/help_templates/query/connection/channels.md}}
 ```
 
 __Example__
@@ -137,7 +96,7 @@ __Example__
 Query the channels associated with connection `connection-1` on `ibc-1`:
 
 ```shell
-hermes query connection channels --chain ibc-1 --connection connection-1
+{{#template ../../../templates/commands/hermes/query/connection/channels_1.md CHAIN_ID=ibc-1 CONNECTION_ID=connection-1}}
 ```
 
 ```json

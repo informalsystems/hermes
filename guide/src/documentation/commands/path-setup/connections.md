@@ -8,24 +8,7 @@
 Use the `create connection` command to create a new connection.
 
 ```shell
-USAGE:
-    hermes create connection [OPTIONS] --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID>
-
-    hermes create connection [OPTIONS] --a-chain <A_CHAIN_ID> --a-client <A_CLIENT_ID> --b-client <B_CLIENT_ID>
-
-DESCRIPTION:
-    Create a new connection between two chains
-
-OPTIONS:
-        --delay <DELAY>    Delay period parameter for the new connection (seconds) [default: 0]
-
-FLAGS:
-        --a-chain <A_CHAIN_ID>      Identifier of the side `a` chain for the new connection
-        --a-client <A_CLIENT_ID>    Identifier of client hosted on chain `a`; default: None (creates
-                                    a new client)
-        --b-chain <B_CHAIN_ID>      Identifier of the side `b` chain for the new connection
-        --b-client <B_CLIENT_ID>    Identifier of client hosted on chain `b`; default: None (creates
-                                    a new client)
+{{#include ../../../templates/help_templates/create/connection.md}}
 ```
 
 ## Examples
@@ -35,7 +18,7 @@ FLAGS:
 Create a new connection between `ibc-0` and `ibc-1` over new clients:
 
 ```shell
-hermes create connection --a-chain ibc-0 --b-chain ibc-1
+{{#template ../../../templates/commands/hermes/create/connection_1.md A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-1}}
 ```
 
 ```json
@@ -206,7 +189,7 @@ Create a new connection between `ibc-0` and `ibc-1` over existing clients,
 both with client id `07-tendermint-0`:
 
 ```shell
-hermes create connection --a-chain ibc-0 --a-client 07-tendermint-0 --b-client 07-tendermint-0
+{{#template ../../../templates/commands/hermes/create/connection_2.md A_CHAIN_ID=ibc-0 A_CLIENT_ID=07-tendermint-0 B_CLIENT_ID=07-tendermint-0}}
 ```
 
 Notice that one can omit the destination chain parameter, as Hermes will automatically

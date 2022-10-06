@@ -1,1 +1,0 @@
-[[#binary hermes]] --config [[#config]] clear packets --chain [[#chain]] --port [[#port]] --channel [[#channel]]

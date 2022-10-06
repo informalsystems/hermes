@@ -236,9 +236,6 @@ Our release process is as follows:
       parameters must point to the new version.
    3. Every reference to Hermes version in the [guide](./guide).
 
-   **Important:** The `ibc-proto` crate version must only be bumped if it has
-   changed since the last release. All other crates are bumped together.
-
 4. Run `cargo doc --all-features --open` locally to double-check that all the
    documentation compiles and seems up-to-date and coherent. Fix any potential
    issues here and push them to the release PR.
