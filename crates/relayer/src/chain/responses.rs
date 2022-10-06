@@ -24,8 +24,6 @@ impl CrossChainQueryResponse {
     }
 
     pub fn to_any<QueryingChain: ChainHandle>(&self, handle: &QueryingChain) -> Any {
-        let _hex_data = hex::encode(self.data.as_bytes());
-
         let mut encoded = Vec::new();
 
         let msg_submit_cross_chain_query_result = MsgSubmitCrossChainQueryResult {
