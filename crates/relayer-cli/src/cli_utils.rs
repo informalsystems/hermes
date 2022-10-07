@@ -1,12 +1,15 @@
 //! Various utilities for the Hermes CLI
 
 use alloc::sync::Arc;
-
+use eyre::eyre;
 use tokio::runtime::Runtime as TokioRuntime;
+use tracing::debug;
 
 use ibc::core::ics02_client::client_state::ClientState;
 use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-
+use ibc_relayer::chain::requests::{
+    IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
+};
 use ibc_relayer::{
     chain::{
         counterparty::{channel_connection_client, ChannelConnectionClient},
@@ -113,14 +116,6 @@ pub fn check_can_send_on_channel<Chain: ChainHandle>(
     src_port_id: &PortId,
     dst_chain_id: &ChainId,
 ) -> Result<(), eyre::Report> {
-    use eyre::eyre;
-    use tracing::debug;
-
-    use ibc_relayer::chain::requests::{
-        IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest,
-        QueryHeight,
-    };
-
     // Fetch from the source chain the channel end and check that it is open.
     let (channel_end_src, _) = src_chain.query_channel(
         QueryChannelRequest {
