@@ -36,7 +36,7 @@ impl CrossChainQueryResponse {
         };
         prost::Message::encode(&msg_submit_cross_chain_query_result, &mut encoded).unwrap();
         Any {
-            type_url: "/ibc_query.v1.MsgSubmitCrossChainQueryResult".to_string(),
+            type_url: "/ibc.applications.ibc_query.v1.MsgSubmitCrossChainQueryResult".to_string(),
             value: encoded,
         }
     }

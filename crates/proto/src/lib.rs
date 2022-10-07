@@ -140,7 +140,7 @@ pub mod ibc {
         }
         pub mod query {
             pub mod v1 {
-                include_proto!("ibc_query.v1.rs");
+                include_proto!("ibc.applications.ibc_query.v1.rs");
             }
         }
         pub mod interchain_accounts {

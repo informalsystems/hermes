@@ -12,7 +12,7 @@ pub struct CrossChainQuery {
     #[prost(uint64, tag="5")]
     pub query_height: u64,
     #[prost(string, tag="6")]
-    pub client_id: ::prost::alloc::string::String,
+    pub chain_id: ::prost::alloc::string::String,
 }
 /// CrossChainQueryResult
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -55,24 +55,17 @@ impl QueryResult {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSubmitCrossChainQuery {
     #[prost(string, tag="1")]
-    pub id: ::prost::alloc::string::String,
-    #[prost(string, tag="2")]
     pub path: ::prost::alloc::string::String,
-    #[prost(message, optional, tag="3")]
+    #[prost(message, optional, tag="2")]
     pub local_timeout_height: ::core::option::Option<super::super::super::core::client::v1::Height>,
-    #[prost(uint64, tag="4")]
+    #[prost(uint64, tag="3")]
     pub local_timeout_stamp: u64,
-    #[prost(uint64, tag="5")]
+    #[prost(uint64, tag="4")]
     pub query_height: u64,
+    #[prost(string, tag="5")]
+    pub chain_id: ::prost::alloc::string::String,
     #[prost(string, tag="6")]
-    pub client_id: ::prost::alloc::string::String,
-    /// sender address
-    #[prost(string, tag="7")]
     pub sender: ::prost::alloc::string::String,
-    #[prost(string, tag="8")]
-    pub source_port: ::prost::alloc::string::String,
-    #[prost(string, tag="9")]
-    pub source_channel: ::prost::alloc::string::String,
 }
 /// MsgSubmitCrossChainQueryResponse
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -87,18 +80,16 @@ pub struct MsgSubmitCrossChainQueryResponse {
 pub struct MsgSubmitCrossChainQueryResult {
     #[prost(string, tag="1")]
     pub id: ::prost::alloc::string::String,
-    #[prost(string, tag="2")]
-    pub path: ::prost::alloc::string::String,
-    #[prost(uint64, tag="3")]
+    #[prost(uint64, tag="2")]
     pub query_height: u64,
-    #[prost(enumeration="QueryResult", tag="4")]
+    #[prost(enumeration="QueryResult", tag="3")]
     pub result: i32,
-    #[prost(bytes="vec", tag="5")]
+    #[prost(bytes="vec", tag="4")]
     pub data: ::prost::alloc::vec::Vec<u8>,
-    #[prost(string, tag="6")]
+    #[prost(string, tag="5")]
     pub sender: ::prost::alloc::string::String,
     /// TODO: Proof specifications used in verifying counterparty state
-    #[prost(message, repeated, tag="7")]
+    #[prost(message, repeated, tag="6")]
     pub proof_specs: ::prost::alloc::vec::Vec<super::super::super::super::ics23::ProofSpec>,
 }
 /// MsgSubmitCrossChainQueryResultResponse
@@ -117,12 +108,25 @@ pub struct IbcQueryPacketData {
 }
 /// QueryCrossChainQuery
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryCrossChainQueryResult {
+pub struct QueryCrossChainQuery {
     /// query id
     #[prost(string, tag="1")]
     pub id: ::prost::alloc::string::String,
 }
 /// QueryCrossChainQueryResponse
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryCrossChainQueryResponse {
+    #[prost(message, optional, tag="1")]
+    pub result: ::core::option::Option<CrossChainQuery>,
+}
+/// QueryCrossChainQueryResult
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryCrossChainQueryResult {
+    /// query id
+    #[prost(string, tag="1")]
+    pub id: ::prost::alloc::string::String,
+}
+/// QueryCrossChainQueryResultResponse
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryCrossChainQueryResultResponse {
     #[prost(string, tag="1")]
@@ -131,20 +135,6 @@ pub struct QueryCrossChainQueryResultResponse {
     pub result: i32,
     #[prost(bytes="vec", tag="3")]
     pub data: ::prost::alloc::vec::Vec<u8>,
-}
-/// EventQuerySubmitted emitted when process MsgSubmitCrossChainQuery tx
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventQuerySubmitted {
-    #[prost(string, tag="1")]
-    pub id: ::prost::alloc::string::String,
-    #[prost(string, tag="2")]
-    pub path: ::prost::alloc::string::String,
-    #[prost(message, optional, tag="3")]
-    pub local_timeout_height: ::core::option::Option<super::super::super::core::client::v1::Height>,
-    #[prost(uint64, tag="4")]
-    pub local_timeout_stamp: u64,
-    #[prost(uint64, tag="5")]
-    pub query_height: u64,
 }
 /// GenesisState defines the ICS31 ibc-query genesis state
 #[derive(Clone, PartialEq, ::prost::Message)]
