@@ -34,7 +34,7 @@ use crate::object::Channel as WorkerChannelObject;
 use crate::supervisor::error::Error as SupervisorError;
 use crate::util::pretty::{PrettyDuration, PrettyOption};
 use crate::util::retry::retry_with_index;
-use crate::util::retry::{retry_count, RetryResult};
+use crate::util::retry::RetryResult;
 use crate::util::task::Next;
 
 pub mod error;
@@ -74,14 +74,7 @@ mod handshake_retry {
     /// Translates from an error type that the `retry` mechanism threw into
     /// a crate specific error of [`ChannelError`] type.
     pub fn from_retry_error(e: retry::Error<ChannelError>, description: String) -> ChannelError {
-        match e {
-            retry::Error::Operation {
-                error: _,
-                total_delay,
-                tries,
-            } => ChannelError::max_retry(description, tries, total_delay),
-            retry::Error::Internal(reason) => ChannelError::retry_internal(reason),
-        }
+        ChannelError::max_retry(description, e.tries, e.total_delay, e.error)
     }
 }
 
@@ -719,7 +712,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             }
         })
         .map_err(|err| {
-            error!("failed to open channel after {} retries", retry_count(&err));
+            error!("failed to open channel after {} retries", err.tries);
+
             handshake_retry::from_retry_error(
                 err,
                 format!("failed to finish channel handshake for {:?}", self),

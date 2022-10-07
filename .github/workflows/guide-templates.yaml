@@ -3,11 +3,7 @@ on:
   pull_request:
     paths:
       - .github/workflows/guide-templates.yaml
-      - modules/**
-      - relayer/**
-      - relayer-cli/**
-      - relayer-rest/**
-      - telemetry/**
+      - crates/**
       - scripts/**
       - tools/check-guide/**
 
@@ -15,11 +11,7 @@ on:
     branches: master
     paths:
       - .github/workflows/guide-templates.yaml
-      - modules/**
-      - relayer/**
-      - relayer-cli/**
-      - relayer-rest/**
-      - telemetry/**
+      - crates/**
       - scripts/**
       - tools/check-guide/**
       
