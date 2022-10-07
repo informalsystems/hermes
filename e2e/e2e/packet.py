@@ -18,6 +18,7 @@ class Packet:
 
 @dataclass
 class TxPacketSendRes:
+    height: BlockHeight
     packet: Packet
 
 
