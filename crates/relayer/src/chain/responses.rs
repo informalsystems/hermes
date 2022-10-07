@@ -28,7 +28,6 @@ impl CrossChainQueryResponse {
 
         let msg_submit_cross_chain_query_result = MsgSubmitCrossChainQueryResult {
             id: self.id.to_string(),
-            path: "".to_string(),
             query_height: self.height.parse().unwrap(),
             result: self.result,
             data: self.data.as_bytes().to_vec(),
