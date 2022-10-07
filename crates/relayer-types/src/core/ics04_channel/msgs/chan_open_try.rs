@@ -89,8 +89,6 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
         )
         .map_err(ChannelError::invalid_proof)?;
 
-        // NOTE: The `previous_channel_id` field is deprecated since IBC-Go v5
-        #[allow(deprecated)]
         let previous_channel_id = Some(raw_msg.previous_channel_id)
             .filter(|x| !x.is_empty())
             .map(|v| FromStr::from_str(v.as_str()))
@@ -117,20 +115,17 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
 }
 
 impl From<MsgChannelOpenTry> for RawMsgChannelOpenTry {
-    #[allow(deprecated)]
     fn from(domain_msg: MsgChannelOpenTry) -> Self {
         RawMsgChannelOpenTry {
             port_id: domain_msg.port_id.to_string(),
+            previous_channel_id: domain_msg
+                .previous_channel_id
+                .map_or_else(|| "".to_string(), |v| v.to_string()),
             channel: Some(domain_msg.channel.into()),
             counterparty_version: domain_msg.counterparty_version.to_string(),
             proof_init: domain_msg.proofs.object_proof().clone().into(),
             proof_height: Some(domain_msg.proofs.height().into()),
             signer: domain_msg.signer.to_string(),
-
-            // NOTE: The `previous_channel_id` field is deprecated since IBC-Go v5
-            previous_channel_id: domain_msg
-                .previous_channel_id
-                .map_or_else(|| "".to_string(), |v| v.to_string()),
         }
     }
 }
@@ -146,7 +141,6 @@ pub mod test_util {
     use ibc_proto::ibc::core::client::v1::Height;
 
     /// Returns a dummy `RawMsgChannelOpenTry`, for testing only!
-    #[allow(deprecated)]
     pub fn get_dummy_raw_msg_chan_open_try(proof_height: u64) -> RawMsgChannelOpenTry {
         RawMsgChannelOpenTry {
             port_id: PortId::default().to_string(),
@@ -210,6 +204,30 @@ mod tests {
                 name: "Bad port, name too long".to_string(),
                 raw: RawMsgChannelOpenTry {
                     port_id: "abcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfasdfaabcdefghijasdfasdfasdfasdfasdfasdfasdfasdfasdfasdfadgasgasdfasdfa".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Correct channel identifier".to_string(),
+                raw: RawMsgChannelOpenTry {
+                    previous_channel_id: "channel-34".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: true,
+            },
+            Test {
+                name: "Bad channel, name too short".to_string(),
+                raw: RawMsgChannelOpenTry {
+                    previous_channel_id: "chshort".to_string(),
+                    ..default_raw_msg.clone()
+                },
+                want_pass: false,
+            },
+            Test {
+                name: "Bad channel, name too long".to_string(),
+                raw: RawMsgChannelOpenTry {
+                    previous_channel_id: "channel-128391283791827398127398791283912837918273981273987912839".to_string(),
                     ..default_raw_msg.clone()
                 },
                 want_pass: false,

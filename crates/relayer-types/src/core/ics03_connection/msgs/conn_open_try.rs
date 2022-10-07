@@ -64,8 +64,6 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
     type Error = Error;
 
     fn try_from(msg: RawMsgConnectionOpenTry) -> Result<Self, Self::Error> {
-        // NOTE: The `previous_connection_id` field is deprecated since IBC-Go v5
-        #[allow(deprecated)]
         let previous_connection_id = Some(msg.previous_connection_id)
             .filter(|x| !x.is_empty())
             .map(|v| FromStr::from_str(v.as_str()))
@@ -127,10 +125,12 @@ impl TryFrom<RawMsgConnectionOpenTry> for MsgConnectionOpenTry {
 }
 
 impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
-    #[allow(deprecated)]
     fn from(ics_msg: MsgConnectionOpenTry) -> Self {
         RawMsgConnectionOpenTry {
             client_id: ics_msg.client_id.as_str().to_string(),
+            previous_connection_id: ics_msg
+                .previous_connection_id
+                .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
             client_state: ics_msg.client_state,
             counterparty: Some(ics_msg.counterparty.into()),
             delay_period: ics_msg.delay_period.as_nanos() as u64,
@@ -155,11 +155,6 @@ impl From<MsgConnectionOpenTry> for RawMsgConnectionOpenTry {
                 .consensus_proof()
                 .map_or_else(|| None, |h| Some(h.height().into())),
             signer: ics_msg.signer.to_string(),
-
-            // NOTE: The `previous_connection_id` field is deprecated since IBC-Go v5
-            previous_connection_id: ics_msg
-                .previous_connection_id
-                .map_or_else(|| "".to_string(), |v| v.as_str().to_string()),
         }
     }
 }
@@ -199,7 +194,6 @@ pub mod test_util {
     /// `proof_height` represents the height, on the source chain, at which this chain produced the
     /// proof. Parameter `consensus_height` represents the height of destination chain which a
     /// client on the source chain stores.
-    #[allow(deprecated)]
     pub fn get_dummy_raw_msg_conn_open_try(
         proof_height: u64,
         consensus_height: u64,
