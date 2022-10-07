@@ -1596,40 +1596,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ibc"
-version = "0.19.0"
-dependencies = [
- "bytes",
- "derive_more",
- "dyn-clone",
- "env_logger",
- "erased-serde",
- "flex-error",
- "ibc-proto",
- "ics23",
- "modelator",
- "num-traits",
- "primitive-types",
- "prost",
- "safe-regex",
- "serde",
- "serde_derive",
- "serde_json",
- "sha2 0.10.6",
- "subtle-encoding",
- "tendermint",
- "tendermint-light-client-verifier",
- "tendermint-proto",
- "tendermint-rpc",
- "tendermint-testgen",
- "test-log",
- "time 0.3.15",
- "tracing",
- "tracing-subscriber",
- "uint",
-]
-
-[[package]]
 name = "ibc-chain-registry"
 version = "0.1.0"
 dependencies = [
@@ -1637,8 +1603,8 @@ dependencies = [
  "flex-error",
  "futures",
  "http",
- "ibc",
  "ibc-proto",
+ "ibc-relayer-types",
  "reqwest",
  "serde",
  "serde_json",
@@ -1653,10 +1619,10 @@ dependencies = [
 name = "ibc-integration-test"
 version = "0.19.0"
 dependencies = [
- "ibc",
  "ibc-proto",
  "ibc-relayer",
  "ibc-relayer-cli",
+ "ibc-relayer-types",
  "ibc-test-framework",
  "serde",
  "serde_json",
@@ -1701,8 +1667,8 @@ dependencies = [
  "http",
  "humantime",
  "humantime-serde",
- "ibc",
  "ibc-proto",
+ "ibc-relayer-types",
  "ibc-telemetry",
  "itertools",
  "k256",
@@ -1758,11 +1724,11 @@ dependencies = [
  "hex",
  "http",
  "humantime",
- "ibc",
  "ibc-chain-registry",
  "ibc-proto",
  "ibc-relayer",
  "ibc-relayer-rest",
+ "ibc-relayer-types",
  "ibc-telemetry",
  "itertools",
  "once_cell",
@@ -1789,8 +1755,8 @@ name = "ibc-relayer-rest"
 version = "0.19.0"
 dependencies = [
  "crossbeam-channel 0.5.6",
- "ibc",
  "ibc-relayer",
+ "ibc-relayer-types",
  "rouille",
  "serde",
  "serde_json",
@@ -1800,12 +1766,46 @@ dependencies = [
 ]
 
 [[package]]
+name = "ibc-relayer-types"
+version = "0.19.0"
+dependencies = [
+ "bytes",
+ "derive_more",
+ "dyn-clone",
+ "env_logger",
+ "erased-serde",
+ "flex-error",
+ "ibc-proto",
+ "ics23",
+ "modelator",
+ "num-traits",
+ "primitive-types",
+ "prost",
+ "safe-regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "sha2 0.10.6",
+ "subtle-encoding",
+ "tendermint",
+ "tendermint-light-client-verifier",
+ "tendermint-proto",
+ "tendermint-rpc",
+ "tendermint-testgen",
+ "test-log",
+ "time 0.3.15",
+ "tracing",
+ "tracing-subscriber",
+ "uint",
+]
+
+[[package]]
 name = "ibc-telemetry"
 version = "0.19.0"
 dependencies = [
  "crossbeam-channel 0.5.6",
  "dashmap",
- "ibc",
+ "ibc-relayer-types",
  "moka",
  "once_cell",
  "opentelemetry",
@@ -1827,10 +1827,10 @@ dependencies = [
  "flex-error",
  "hex",
  "http",
- "ibc",
  "ibc-proto",
  "ibc-relayer",
  "ibc-relayer-cli",
+ "ibc-relayer-types",
  "itertools",
  "rand",
  "semver",

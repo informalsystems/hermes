@@ -6,20 +6,21 @@ use serde::Serialize;
 use tracing::{debug, error, info, warn};
 
 pub use error::ChannelError;
-use ibc::core::ics04_channel::channel::{
+use ibc_relayer_types::core::ics04_channel::channel::{
     ChannelEnd, Counterparty, IdentifiedChannelEnd, Order, State,
 };
-use ibc::core::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
-use ibc::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
-use ibc::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
-use ibc::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
-use ibc::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
-use ibc::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
-use ibc::core::ics04_channel::Version;
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use ibc::events::IbcEvent;
-use ibc::tx_msg::Msg;
-use ibc::Height;
+use ibc_relayer_types::core::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
+use ibc_relayer_types::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
+use ibc_relayer_types::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenAck;
+use ibc_relayer_types::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
+use ibc_relayer_types::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
+use ibc_relayer_types::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
+use ibc_relayer_types::core::ics24_host::identifier::{
+    ChainId, ChannelId, ClientId, ConnectionId, PortId,
+};
+use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer_types::tx_msg::Msg;
+use ibc_relayer_types::Height;
 
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
@@ -39,6 +40,7 @@ use crate::util::task::Next;
 
 pub mod error;
 pub mod version;
+use version::Version;
 
 mod handshake_retry {
     //! Provides utility methods and constants to configure the retry behavior

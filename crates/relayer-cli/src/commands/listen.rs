@@ -12,7 +12,7 @@ use itertools::Itertools;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, info, instrument};
 
-use ibc::{core::ics24_host::identifier::ChainId, events::IbcEvent};
+use ibc_relayer_types::{core::ics24_host::identifier::ChainId, events::IbcEvent};
 
 use eyre::eyre;
 use ibc_relayer::{
@@ -170,7 +170,7 @@ mod tests {
     use std::str::FromStr;
 
     use abscissa_core::clap::Parser;
-    use ibc::core::ics24_host::identifier::ChainId;
+    use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
     #[test]
     fn test_listen_required_only() {

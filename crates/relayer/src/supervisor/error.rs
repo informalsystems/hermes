@@ -1,7 +1,7 @@
 use flex_error::define_error;
 
-use ibc::core::ics03_connection::connection::Counterparty;
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortId};
+use ibc_relayer_types::core::ics03_connection::connection::Counterparty;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortId};
 
 use crate::error::Error as RelayerError;
 use crate::spawn::SpawnError;

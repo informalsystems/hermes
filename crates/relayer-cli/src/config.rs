@@ -8,8 +8,8 @@ use alloc::collections::BTreeSet;
 use std::path::PathBuf;
 
 use flex_error::{define_error, TraceError};
-use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::config::{ChainConfig, Config, ModeConfig};
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tendermint_light_client_verifier::types::TrustThreshold;
 use tracing_subscriber::filter::ParseError;
 

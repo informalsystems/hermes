@@ -1,7 +1,7 @@
-use ibc::events::IbcEvent;
 use ibc_relayer::config::types::MaxMsgNum;
 use ibc_relayer::link::{Link, LinkParameters};
 use ibc_relayer::transfer::{build_and_send_transfer_messages, TransferOptions};
+use ibc_relayer_types::events::IbcEvent;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;

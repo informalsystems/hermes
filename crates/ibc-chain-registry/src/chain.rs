@@ -1,7 +1,7 @@
 //! Contains models for serializing and deserializing `chain.json` for a given chain
 //! Taken from https://github.com/PeggyJV/ocular/blob/main/ocular/src/registry/chain.rs
 use crate::fetchable::Fetchable;
-use ibc::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -186,7 +186,7 @@ mod tests {
 
     #[test]
     fn chain_data_deserialize() {
-        use ibc::core::ics24_host::identifier::ChainId;
+        use ibc_relayer_types::core::ics24_host::identifier::ChainId;
         use std::str::FromStr;
         let json = r#"{
             "$schema": "https://github.com/cosmos/chain-registry/blob/master/chain.schema.json",

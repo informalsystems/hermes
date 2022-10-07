@@ -1,5 +1,5 @@
-use ibc::core::ics24_host::identifier::ChainId;
-use ibc::Height;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::Height;
 use tendermint_rpc::{Client, HttpClient, Url};
 
 use crate::chain::endpoint::ChainStatus;

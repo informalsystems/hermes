@@ -2,11 +2,11 @@ use std::convert::TryInto;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use ibc::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use tracing::{error_span, info};
 
-use ibc::events::IbcEvent;
-use ibc::Height;
+use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer_types::Height;
 
 use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
 use crate::chain::handle::ChainHandle;

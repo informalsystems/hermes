@@ -43,7 +43,7 @@ use crate::path::PathIdentifiers;
 use crate::telemetry;
 use crate::util::pretty::PrettyEvents;
 use crate::util::queue::Queue;
-use ibc::{
+use ibc_relayer_types::{
     core::{
         ics02_client::events::ClientMisbehaviour as ClientMisbehaviourEvent,
         ics04_channel::{
@@ -1745,8 +1745,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         &self,
         target: OperationalDataTarget,
     ) -> (
-        ibc::core::ics24_host::identifier::ChainId, // source chain
-        ibc::core::ics24_host::identifier::ChainId, // destination chain
+        ibc_relayer_types::core::ics24_host::identifier::ChainId, // source chain
+        ibc_relayer_types::core::ics24_host::identifier::ChainId, // destination chain
         &ChannelId,
         &PortId,
     ) {

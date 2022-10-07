@@ -3,7 +3,7 @@ use core::fmt::{Debug, Display, Error as FmtError, Formatter};
 use crossbeam_channel as channel;
 use tracing::Span;
 
-use ibc::{
+use ibc_relayer_types::{
     core::{
         ics02_client::events::UpdateClient,
         ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
