@@ -241,7 +241,7 @@ impl BinaryChannelTest for OrderedChannelClearEqualCLITest {
 
         let chain_a_link_opts = LinkParameters {
             src_port_id: channel.port_a.clone().into_value(),
-            src_channel_id: channel.channel_id_a.clone().into_value(),
+            src_channel_id: channel.channel_id_a.into_value(),
         };
 
         let chain_a_link = Link::new_from_opts(
