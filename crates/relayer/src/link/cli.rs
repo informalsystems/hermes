@@ -191,13 +191,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
 
         let mut results = vec![];
 
-        for events_chunk in event_chunks {
-            let updated_event_chunk = events_chunk
-                .iter()
-                .map(|e| IbcEventWithHeight::new(e.event.clone(), query_height.get()))
-                .collect();
-
-            let tracked_events = TrackedEvents::new(updated_event_chunk, tracking_id);
+        for event_chunk in event_chunks {
+            let tracked_events = TrackedEvents::new(event_chunk, tracking_id);
             self.a_to_b.events_to_operational_data(tracked_events)?;
 
             // In case of zero connection delay, the op. data will already be ready

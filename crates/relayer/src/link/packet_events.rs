@@ -53,7 +53,12 @@ where
                         PrettySlice(chunk)
                     );
 
-                    Some(events)
+                    Some(
+                        events
+                            .into_iter()
+                            .map(|ev| IbcEventWithHeight::new(ev.event, query_height.get()))
+                            .collect(),
+                    )
                 }
                 Err(e) => {
                     warn!("encountered query failure while pulling packet data: {}", e);
