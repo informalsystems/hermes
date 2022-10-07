@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use crossbeam_channel::Receiver;
 use tracing::{error, error_span, trace};
 
-use ibc::Height;
+use ibc_relayer_types::Height;
 
 use crate::chain::handle::ChainHandle;
 use crate::event::monitor::EventBatch;
@@ -227,7 +227,7 @@ fn packet_metrics(path: &Packet, summary: &RelaySummary) {
 
 #[cfg(feature = "telemetry")]
 fn receive_packet_metrics(path: &Packet, summary: &RelaySummary) {
-    use ibc::events::IbcEvent::WriteAcknowledgement;
+    use ibc_relayer_types::events::IbcEvent::WriteAcknowledgement;
 
     let count = summary
         .events
@@ -246,7 +246,7 @@ fn receive_packet_metrics(path: &Packet, summary: &RelaySummary) {
 
 #[cfg(feature = "telemetry")]
 fn acknowledgment_metrics(path: &Packet, summary: &RelaySummary) {
-    use ibc::events::IbcEvent::AcknowledgePacket;
+    use ibc_relayer_types::events::IbcEvent::AcknowledgePacket;
 
     let count = summary
         .events
@@ -265,7 +265,7 @@ fn acknowledgment_metrics(path: &Packet, summary: &RelaySummary) {
 
 #[cfg(feature = "telemetry")]
 fn timeout_metrics(path: &Packet, summary: &RelaySummary) {
-    use ibc::events::IbcEvent::TimeoutPacket;
+    use ibc_relayer_types::events::IbcEvent::TimeoutPacket;
     let count = summary
         .events
         .iter()

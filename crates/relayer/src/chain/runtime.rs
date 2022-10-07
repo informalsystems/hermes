@@ -5,7 +5,7 @@ use crossbeam_channel as channel;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, Span};
 
-use ibc::{
+use ibc_relayer_types::{
     core::{
         ics02_client::events::UpdateClient,
         ics03_connection::{

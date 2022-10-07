@@ -7,9 +7,6 @@ pub mod requests;
 pub mod runtime;
 pub mod tracking;
 
-#[cfg(test)]
-pub mod mock;
-
 use serde::{de::Error, Deserialize, Serialize};
 
 // NOTE(new): When adding a variant to `ChainType`, make sure to update
@@ -21,10 +18,6 @@ use serde::{de::Error, Deserialize, Serialize};
 pub enum ChainType {
     /// Chains based on the Cosmos SDK
     CosmosSdk,
-
-    /// Mock chain used for testing
-    #[cfg(test)]
-    Mock,
 }
 
 impl<'de> Deserialize<'de> for ChainType {
@@ -37,9 +30,6 @@ impl<'de> Deserialize<'de> for ChainType {
 
         match s.as_str() {
             "cosmossdk" => Ok(Self::CosmosSdk),
-
-            #[cfg(test)]
-            "mock" => Ok(Self::Mock),
 
             // NOTE(new): Add a case here
             _ => Err(D::Error::unknown_variant(&original, &["cosmos-sdk"])), // NOTE(new): mention the new variant here
@@ -67,7 +57,6 @@ mod tests {
         assert!(matches!(parse("CosmosSdk"), Ok(CosmosSdk)));
         assert!(matches!(parse("cosmossdk"), Ok(CosmosSdk)));
         assert!(matches!(parse("cosmos-sdk"), Ok(CosmosSdk)));
-        assert!(matches!(parse("mock"), Ok(Mock)));
 
         // NOTE(new): Add tests here
 

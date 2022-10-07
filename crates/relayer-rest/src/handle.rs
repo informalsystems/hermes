@@ -4,7 +4,6 @@ use tracing::error;
 
 use crossbeam_channel as channel;
 
-use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::supervisor::dump_state::SupervisorState;
 use ibc_relayer::{
     config::ChainConfig,
@@ -13,6 +12,7 @@ use ibc_relayer::{
         RestApiError,
     },
 };
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 pub const NAME: &str = env!(
     "CARGO_PKG_NAME",

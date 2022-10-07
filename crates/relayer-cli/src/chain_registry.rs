@@ -240,7 +240,7 @@ pub async fn get_configs(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ibc::core::ics24_host::identifier::{ChannelId, PortId};
+    use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
     use std::str::FromStr;
 
     // Helper function for configs without filter

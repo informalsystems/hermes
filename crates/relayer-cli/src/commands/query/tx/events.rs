@@ -5,7 +5,7 @@ use abscissa_core::{Command, Runnable};
 
 use tendermint::abci::transaction::Hash;
 
-use ibc::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{QueryTxHash, QueryTxRequest};
@@ -65,7 +65,7 @@ mod tests {
     use super::QueryTxEventsCmd;
 
     use abscissa_core::clap::Parser;
-    use ibc::core::ics24_host::identifier::ChainId;
+    use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
     #[test]
     fn test_query_tx_events() {

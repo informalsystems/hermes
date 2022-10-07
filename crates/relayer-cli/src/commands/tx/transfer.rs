@@ -3,14 +3,6 @@ use abscissa_core::{config::Override, Command, FrameworkErrorKind, Runnable};
 
 use core::time::Duration;
 use eyre::eyre;
-use ibc::{
-    applications::transfer::Amount,
-    core::{
-        ics02_client::client_state::ClientState,
-        ics24_host::identifier::{ChainId, ChannelId, PortId},
-    },
-    events::IbcEvent,
-};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
@@ -18,6 +10,14 @@ use ibc_relayer::chain::requests::{
 use ibc_relayer::{
     config::Config,
     transfer::{build_and_send_transfer_messages, TransferOptions},
+};
+use ibc_relayer_types::{
+    applications::transfer::Amount,
+    core::{
+        ics02_client::client_state::ClientState,
+        ics24_host::identifier::{ChainId, ChannelId, PortId},
+    },
+    events::IbcEvent,
 };
 
 use crate::cli_utils::ChainHandlePair;
@@ -275,7 +275,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
 
 #[cfg(test)]
 mod tests {
-    use ibc::{
+    use ibc_relayer_types::{
         applications::transfer::Amount,
         core::ics24_host::identifier::{ChainId, ChannelId, PortId},
     };

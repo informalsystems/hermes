@@ -7,7 +7,7 @@ use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{trace, warn};
 
-use ibc::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 use crate::{
     chain::handle::ChainHandle,

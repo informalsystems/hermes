@@ -1,9 +1,9 @@
 use alloc::collections::btree_map::BTreeMap as HashMap;
 use core::mem;
 
-use ibc::core::ics02_client::events::NewBlock;
-use ibc::core::ics24_host::identifier::ChainId;
-use ibc::Height;
+use ibc_relayer_types::core::ics02_client::events::NewBlock;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::Height;
 use tracing::{debug, trace};
 
 use crate::{

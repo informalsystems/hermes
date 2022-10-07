@@ -6,18 +6,18 @@ use ibc_proto::google::protobuf::Any;
 use serde::Serialize;
 use tracing::{debug, error, info, warn};
 
-use ibc::core::ics02_client::height::Height;
-use ibc::core::ics03_connection::connection::{
+use ibc_relayer_types::core::ics02_client::height::Height;
+use ibc_relayer_types::core::ics03_connection::connection::{
     ConnectionEnd, Counterparty, IdentifiedConnectionEnd, State,
 };
-use ibc::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
-use ibc::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
-use ibc::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
-use ibc::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
-use ibc::core::ics24_host::identifier::{ClientId, ConnectionId};
-use ibc::events::IbcEvent;
-use ibc::timestamp::ZERO_DURATION;
-use ibc::tx_msg::Msg;
+use ibc_relayer_types::core::ics03_connection::msgs::conn_open_ack::MsgConnectionOpenAck;
+use ibc_relayer_types::core::ics03_connection::msgs::conn_open_confirm::MsgConnectionOpenConfirm;
+use ibc_relayer_types::core::ics03_connection::msgs::conn_open_init::MsgConnectionOpenInit;
+use ibc_relayer_types::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;
+use ibc_relayer_types::core::ics24_host::identifier::{ClientId, ConnectionId};
+use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer_types::timestamp::ZERO_DURATION;
+use ibc_relayer_types::tx_msg::Msg;
 
 use crate::chain::counterparty::connection_state_on_destination;
 use crate::chain::handle::ChainHandle;

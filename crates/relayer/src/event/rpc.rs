@@ -3,10 +3,10 @@ use core::convert::TryFrom;
 
 use tendermint_rpc::{event::Event as RpcEvent, event::EventData as RpcEventData};
 
-use ibc::core::ics02_client::{events as ClientEvents, height::Height};
-use ibc::core::ics04_channel::events as ChannelEvents;
-use ibc::core::ics24_host::identifier::ChainId;
-use ibc::events::IbcEvent;
+use ibc_relayer_types::core::ics02_client::{events as ClientEvents, height::Height};
+use ibc_relayer_types::core::ics04_channel::events as ChannelEvents;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::events::IbcEvent;
 
 use crate::chain::cosmos::types::events::channel::RawObject;
 use crate::event::monitor::queries;

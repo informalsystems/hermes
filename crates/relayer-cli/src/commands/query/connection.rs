@@ -5,11 +5,12 @@ use ibc_relayer::chain::requests::{
     IncludeProof, PageRequest, QueryConnectionChannelsRequest, QueryConnectionRequest, QueryHeight,
 };
 
-use ibc::core::{
+use ibc_relayer_types::core::{
     ics03_connection::connection::State,
     ics24_host::identifier::ConnectionId,
     ics24_host::identifier::{ChainId, PortChannelId},
 };
+use ibc_relayer_types::Height;
 
 use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
@@ -58,7 +59,7 @@ impl Runnable for QueryConnectionEndCmd {
                 connection_id: self.connection_id.clone(),
                 height: self.height.map_or(QueryHeight::Latest, |revision_height| {
                     QueryHeight::Specific(
-                        ibc::Height::new(chain.id().version(), revision_height)
+                        Height::new(chain.id().version(), revision_height)
                             .unwrap_or_else(exit_with_unrecoverable_error),
                     )
                 }),
@@ -144,7 +145,7 @@ mod tests {
     use std::str::FromStr;
 
     use abscissa_core::clap::Parser;
-    use ibc::core::ics24_host::identifier::{ChainId, ConnectionId};
+    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ConnectionId};
 
     #[test]
     fn test_query_connection_channels() {
