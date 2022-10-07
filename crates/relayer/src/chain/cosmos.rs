@@ -380,7 +380,7 @@ impl CosmosSdkChain {
     fn query_client_upgrade_state(
         &self,
         query_data: ClientUpgradePath,
-        query_height: ibc_relayer_types::Height,
+        query_height: ICSHeight,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
         // SAFETY: Creating a Path from a constant; this should never fail
         let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH)

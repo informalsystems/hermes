@@ -6,6 +6,7 @@ use subtle_encoding::{Encoding, Hex};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc_relayer_types::Height;
 
 use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
@@ -74,7 +75,7 @@ impl QueryPacketAcknowledgmentCmd {
                     sequence: self.sequence,
                     height: self.height.map_or(QueryHeight::Latest, |revision_height| {
                         QueryHeight::Specific(
-                            ibc_relayer_types::Height::new(chain.id().version(), revision_height)
+                            Height::new(chain.id().version(), revision_height)
                                 .unwrap_or_else(exit_with_unrecoverable_error),
                         )
                     }),

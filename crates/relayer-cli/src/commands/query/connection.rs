@@ -10,6 +10,7 @@ use ibc_relayer_types::core::{
     ics24_host::identifier::ConnectionId,
     ics24_host::identifier::{ChainId, PortChannelId},
 };
+use ibc_relayer_types::Height;
 
 use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
@@ -58,7 +59,7 @@ impl Runnable for QueryConnectionEndCmd {
                 connection_id: self.connection_id.clone(),
                 height: self.height.map_or(QueryHeight::Latest, |revision_height| {
                     QueryHeight::Specific(
-                        ibc_relayer_types::Height::new(chain.id().version(), revision_height)
+                        Height::new(chain.id().version(), revision_height)
                             .unwrap_or_else(exit_with_unrecoverable_error),
                     )
                 }),

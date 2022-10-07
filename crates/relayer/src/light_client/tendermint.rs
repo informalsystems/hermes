@@ -21,7 +21,7 @@ use ibc_relayer_types::{
         ics02_client::{client_type::ClientType, events::UpdateClient, header::downcast_header},
         ics24_host::identifier::ChainId,
     },
-    downcast,
+    downcast, Height as ICSHeight,
 };
 use tracing::trace;
 
@@ -41,8 +41,8 @@ pub struct LightClient {
 impl super::LightClient<CosmosSdkChain> for LightClient {
     fn header_and_minimal_set(
         &mut self,
-        trusted: ibc_relayer_types::Height,
-        target: ibc_relayer_types::Height,
+        trusted: ICSHeight,
+        target: ICSHeight,
         client_state: &AnyClientState,
     ) -> Result<Verified<TmHeader>, Error> {
         let Verified { target, supporting } = self.verify(trusted, target, client_state)?;
@@ -52,8 +52,8 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
     fn verify(
         &mut self,
-        trusted: ibc_relayer_types::Height,
-        target: ibc_relayer_types::Height,
+        trusted: ICSHeight,
+        target: ICSHeight,
         client_state: &AnyClientState,
     ) -> Result<Verified<LightBlock>, Error> {
         trace!(%trusted, %target, "light client verification");
@@ -83,7 +83,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         Ok(Verified { target, supporting })
     }
 
-    fn fetch(&mut self, height: ibc_relayer_types::Height) -> Result<LightBlock, Error> {
+    fn fetch(&mut self, height: ICSHeight) -> Result<LightBlock, Error> {
         trace!(%height, "fetching header");
 
         let height = TMHeight::try_from(height.revision_height()).map_err(Error::invalid_height)?;
@@ -119,11 +119,9 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             })?;
 
         let latest_chain_block = self.fetch_light_block(AtHeight::Highest)?;
-        let latest_chain_height = ibc_relayer_types::Height::new(
-            self.chain_id.version(),
-            latest_chain_block.height().into(),
-        )
-        .map_err(|_| Error::invalid_height_no_source())?;
+        let latest_chain_height =
+            ICSHeight::new(self.chain_id.version(), latest_chain_block.height().into())
+                .map_err(|_| Error::invalid_height_no_source())?;
 
         // set the target height to the minimum between the update height and latest chain height
         let target_height = core::cmp::min(update.consensus_height(), latest_chain_height);
@@ -210,7 +208,7 @@ impl LightClient {
         ))
     }
 
-    fn prepare_state(&self, trusted: ibc_relayer_types::Height) -> Result<LightClientState, Error> {
+    fn prepare_state(&self, trusted: ICSHeight) -> Result<LightClientState, Error> {
         let trusted_height =
             TMHeight::try_from(trusted.revision_height()).map_err(Error::invalid_height)?;
 
@@ -232,7 +230,7 @@ impl LightClient {
 
     fn adjust_headers(
         &mut self,
-        trusted_height: ibc_relayer_types::Height,
+        trusted_height: ICSHeight,
         target: LightBlock,
         supporting: Vec<LightBlock>,
     ) -> Result<(TmHeader, Vec<TmHeader>), Error> {

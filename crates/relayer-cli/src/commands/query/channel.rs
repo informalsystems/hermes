@@ -10,6 +10,7 @@ use crate::cli_utils::spawn_chain_runtime;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::prelude::*;
 use ibc_relayer_types::core::ics04_channel::channel::State;
+use ibc_relayer_types::Height;
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryChannelEndCmd {
@@ -62,7 +63,7 @@ impl Runnable for QueryChannelEndCmd {
                 channel_id: self.channel_id.clone(),
                 height: self.height.map_or(QueryHeight::Latest, |revision_height| {
                     QueryHeight::Specific(
-                        ibc_relayer_types::Height::new(chain.id().version(), revision_height)
+                        Height::new(chain.id().version(), revision_height)
                             .unwrap_or_else(exit_with_unrecoverable_error),
                     )
                 }),
