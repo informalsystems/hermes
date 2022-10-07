@@ -121,6 +121,7 @@ pub fn check_can_send_on_channel<Chain: ChainHandle>(
         QueryHeight,
     };
 
+    // Fetch from the source chain the channel end and check that it is open.
     let (channel_end_src, _) = src_chain.query_channel(
         QueryChannelRequest {
             port_id: src_port_id.clone(),
@@ -150,6 +151,7 @@ pub fn check_can_send_on_channel<Chain: ChainHandle>(
         }
     };
 
+    // Fetch the associated connection end.
     let (conn_end, _) = src_chain.query_connection(
         QueryConnectionRequest {
             connection_id: conn_id.clone(),
@@ -160,6 +162,7 @@ pub fn check_can_send_on_channel<Chain: ChainHandle>(
 
     debug!("connection hop underlying the channel: {:?}", conn_end);
 
+    // Fetch the underlying client state.
     let (src_chain_client_state, _) = src_chain.query_client_state(
         QueryClientStateRequest {
             client_id: conn_end.client_id().clone(),
@@ -173,6 +176,7 @@ pub fn check_can_send_on_channel<Chain: ChainHandle>(
         src_chain_client_state
     );
 
+    // Check that this client is verifying headers for the destination chain.
     if &src_chain_client_state.chain_id() != dst_chain_id {
         return Err(eyre!(
             "the requested port/channel ('{}'/'{}') provides a path from chain '{}' to \
