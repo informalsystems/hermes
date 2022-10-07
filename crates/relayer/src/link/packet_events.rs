@@ -53,12 +53,16 @@ where
                         PrettySlice(chunk)
                     );
 
-                    Some(
-                        events
-                            .into_iter()
-                            .map(|ev| IbcEventWithHeight::new(ev.event, query_height.get()))
-                            .collect(),
-                    )
+                    // Because we use the first event height to do the client update,
+                    // if the heights of the events differ, we get proof verification failures.
+                    // Therefore we overwrite the events height with the query height,
+                    // ie. the height of the first event.
+                    let events = events
+                        .into_iter()
+                        .map(|ev| ev.with_height(query_height.get()))
+                        .collect();
+
+                    Some(events)
                 }
                 Err(e) => {
                     warn!("encountered query failure while pulling packet data: {}", e);
