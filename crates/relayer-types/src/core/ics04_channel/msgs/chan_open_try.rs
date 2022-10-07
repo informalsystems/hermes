@@ -73,6 +73,7 @@ impl Protobuf<RawMsgChannelOpenTry> for MsgChannelOpenTry {}
 impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
     type Error = ChannelError;
 
+    #[allow(deprecated)]
     fn try_from(raw_msg: RawMsgChannelOpenTry) -> Result<Self, Self::Error> {
         let proofs = Proofs::new(
             raw_msg
@@ -115,6 +116,7 @@ impl TryFrom<RawMsgChannelOpenTry> for MsgChannelOpenTry {
 }
 
 impl From<MsgChannelOpenTry> for RawMsgChannelOpenTry {
+    #[allow(deprecated)]
     fn from(domain_msg: MsgChannelOpenTry) -> Self {
         RawMsgChannelOpenTry {
             port_id: domain_msg.port_id.to_string(),
@@ -141,6 +143,7 @@ pub mod test_util {
     use ibc_proto::ibc::core::client::v1::Height;
 
     /// Returns a dummy `RawMsgChannelOpenTry`, for testing only!
+    #[allow(deprecated)]
     pub fn get_dummy_raw_msg_chan_open_try(proof_height: u64) -> RawMsgChannelOpenTry {
         RawMsgChannelOpenTry {
             port_id: PortId::default().to_string(),
@@ -168,6 +171,7 @@ mod tests {
     use test_log::test;
 
     #[test]
+    #[allow(deprecated)]
     fn channel_open_try_from_raw() {
         struct Test {
             name: String,
