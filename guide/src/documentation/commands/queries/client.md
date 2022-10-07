@@ -9,21 +9,7 @@ Use the `query clients` command to query the identifiers of all clients on a giv
 the _host_ chain.
 
 ```shell
-USAGE:
-    hermes query clients [OPTIONS] --host-chain <HOST_CHAIN_ID>
-
-DESCRIPTION:
-    Query the identifiers of all clients on a chain
-
-OPTIONS:
-        --omit-chain-ids
-            Omit printing the reference (or target) chain for each client
-
-        --reference-chain <REFERENCE_CHAIN_ID>
-            Filter for clients which target a specific chain id (implies '--omit-chain-ids')
-
-REQUIRED:
-        --host-chain <HOST_CHAIN_ID>    Identifier of the chain to query
+{{#include ../../../templates/help_templates/query/clients.md}}
 ```
 
 __Example__
@@ -31,7 +17,7 @@ __Example__
 Query all clients on `ibc-1`:
 
 ```shell
-hermes query clients --host-chain ibc-1
+{{#template ../../../templates/commands/hermes/query/clients_1.md HOST_CHAIN_ID=ibc-1}}
 ```
 
 ```json
@@ -60,7 +46,7 @@ Success: [
 Query all clients on `ibc-1` having `ibc-2` as their reference chain:
 
 ```shell
-hermes query clients --host-chain ibc-1 --reference-chain ibc-2
+{{#template ../../../templates/commands/hermes/query/clients_1.md HOST_CHAIN_ID=ibc-1 OPTIONS= --reference-chain ibc-2}}
 ```
 
 ```json
@@ -76,17 +62,7 @@ Success: [
 Use the `query client` command to query the information about a specific client.
 
 ```shell
-USAGE:
-    hermes query client <SUBCOMMAND>
-
-DESCRIPTION:
-    Query information about clients
-
-SUBCOMMANDS:
-    connections    Query the client connections
-    consensus      Query the client consensus state
-    header         Query for the header used in a client update at a certain height
-    state          Query the client full state
+{{#include ../../../templates/help_templates/query/client.md}}
 ```
 
 ## Query the client state
@@ -94,18 +70,7 @@ SUBCOMMANDS:
 Use the `query client state` command to query the client state of a client:
 
 ```shell
-USAGE:
-    hermes query client state [OPTIONS] --chain <CHAIN_ID> --client <CLIENT_ID>
-
-DESCRIPTION:
-    Query the client state
-
-OPTIONS:
-        --height <HEIGHT>    The chain height context for the query
-
-REQUIRED:
-        --chain <CHAIN_ID>      Identifier of the chain to query
-        --client <CLIENT_ID>    Identifier of the client to query
+{{#include ../../../templates/help_templates/query/client/state.md}}
 ```
 
 __Example__
@@ -113,7 +78,7 @@ __Example__
 Query the state of client `07-tendermint-2` on `ibc-1`:
 
 ```shell
-hermes query client state --chain ibc-1 --client 07-tendermint-1
+{{#template ../../../templates/commands/hermes/query/client/state_1.md CHAIN_ID=ibc-1 CLIENT_ID=07-tendermint-1}}
 ```
 
 ```json
@@ -151,25 +116,7 @@ Success: ClientState {
 Use the `query client consensus` command to query the consensus states of a given client, or the state at a specified height:
 
 ```shell
-USAGE:
-    hermes query client consensus [OPTIONS] --chain <CHAIN_ID> --client <CLIENT_ID>
-
-DESCRIPTION:
-    Query client consensus state
-
-OPTIONS:
-        --consensus-height <CONSENSUS_HEIGHT>
-            Height of the client's consensus state to query
-
-        --height <HEIGHT>
-            The chain height context to be used, applicable only to a specific height
-
-        --heights-only
-            Show only consensus heights
-
-REQUIRED:
-        --chain <CHAIN_ID>      Identifier of the chain to query
-        --client <CLIENT_ID>    Identifier of the client to query
+{{#include ../../../templates/help_templates/query/client/consensus.md}}
 ```
 
 __Example__
@@ -177,7 +124,7 @@ __Example__
 Query the states of client `07-tendermint-0` on `ibc-0`:
 
 ```shell
-hermes query client consensus --chain ibc-0 --client 07-tendermint-0 --heights-only
+{{#template ../../../templates/commands/hermes/query/client/consensus_1.md CHAIN_ID=ibc-0 CLIENT_ID=07-tendermint-0 OPTIONS= --heights-only}}
 ```
 
 ```json
@@ -212,7 +159,7 @@ Success: [
 Query `ibc-0` at height `2800` for the consensus state for height `2724`:
 
 ```shell
-hermes query client consensus --chain ibc-0 --client 07-tendermint-0 --consensus-height 2724 --height 2800
+{{#template ../../../templates/commands/hermes/query/client/consensus_1.md CHAIN_ID=ibc-0 CLIENT_ID=07-tendermint-0 OPTIONS= --consensus-height 2724 --height 2800}}
 ```
 
 ```json
@@ -234,18 +181,7 @@ Success: ConsensusState {
 Use the `query client connections` command to query the connections associated with a given client:
 
 ```shell
-USAGE:
-    hermes query client connections [OPTIONS] --chain <CHAIN_ID> --client <CLIENT_ID>
-
-DESCRIPTION:
-    Query client connections
-
-OPTIONS:
-        --height <HEIGHT>    The chain height which this query should reflect
-
-REQUIRED:
-        --chain <CHAIN_ID>      Identifier of the chain to query
-        --client <CLIENT_ID>    Identifier of the client to query
+{{#include ../../../templates/help_templates/query/client/connections.md}}
 ```
 
 __Example__
@@ -253,7 +189,7 @@ __Example__
 Query the connections of client `07-tendermint-0` on `ibc-0`:
 
 ```shell
-hermes query client connections --chain ibc-0 --client 07-tendermint-0
+{{#template ../../../templates/commands/hermes/query/client/connections_1.md CHAIN_ID=ibc-0 CLIENT_ID=07-tendermint-0}}
 ```
 
 ```json
@@ -266,20 +202,7 @@ Success: [
 ## Query for the header used in a client update at a certain height
 
 ```
-USAGE:
-    hermes query client header [OPTIONS] --chain <CHAIN_ID> --client <CLIENT_ID> --consensus-height <CONSENSUS_HEIGHT>
-
-DESCRIPTION:
-    Query for the header used in a client update at a certain height
-
-OPTIONS:
-        --height <HEIGHT>    The chain height context for the query. Leave unspecified for latest
-                             height.
-
-REQUIRED:
-        --chain <CHAIN_ID>                       Identifier of the chain to query
-        --client <CLIENT_ID>                     Identifier of the client to query
-        --consensus-height <CONSENSUS_HEIGHT>    Height of header to query
+{{#include ../../../templates/help_templates/query/client/header.md}}
 ```
 
 __Example__
@@ -287,7 +210,7 @@ __Example__
 Query for the header used in the `07-tendermint-0` client update at height 2724 on `ibc-0`:
 
 ```shell
-hermes query client header --chain ibc-0 --client 07-tendermint-0 --consensus-height 2724
+{{#template ../../../templates/commands/hermes/query/client/header_1.md CHAIN_ID=ibc-0 CLIENT_ID=07-tendermint-0 CONSENSUS_HEIGHT=2724}}
 ```
 
 ```json

@@ -37,7 +37,7 @@ Follow the instructions below to install and configure `gm`.
 2. Install `gm`
 
     ```bash
-    {{#template ../../templates/commands/git/clone_ibc_rs}}
+    {{#template ../../templates/commands/git/clone_ibc_rs.md}}
     ibc-rs/scripts/gm/bin/gm install
     ```
     Alternatively, you can create the folder `$HOME/.gm/bin` and copy the files from `scripts/gm/bin` in there.
@@ -67,18 +67,18 @@ entries to your PATH environment variable. If you don't want to use this, you ca
 your path.
 
 ### The configuration: `gm.toml`
-**Where**: `{{#template ../../templates/path/gm/default_path}}`.
+**Where**: `$HOME/.gm/gm.toml`.
 
 **Description**: This file contains all the high-level node configuration that `gm` is aware of. Note that all entries under `[global]` are also valid entries under any `[node]` header, and can be used to override the global entries for specific nodes/validators.
 
 **Entries**: All entries are defined and documented in the `scripts/gm/gm.toml` example configuration file.
 
-Copy and paste below to `{{#template ../../templates/path/gm/default_path}}` and set Hermes' binary path according to your setup.
+Copy and paste below to `$HOME/.gm/gm.toml` and set Hermes' binary path according to your setup.
 
 The following configuration you need to specify 2 `gaiad` chains. `hermes` will know about these chains.
 
 ```toml
-{{#template ../../templates/files/gm/default_gm.toml}}
+{{#include ../../templates/files/gm/default_gm.toml}}
 ```
 
 > __NOTE:__ Go to this page for more details about [Gaiad Manager](https://github.com/informalsystems/ibc-rs/tree/master/scripts/gm)

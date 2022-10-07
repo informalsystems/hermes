@@ -9,34 +9,19 @@ and [packet-acks](../tx/packet.md#relay-acknowledgment-packets).
 ### Usage
 
 ```
-USAGE:
-    hermes clear packets [OPTIONS] --chain <CHAIN_ID> --port <PORT_ID> --channel <CHANNEL_ID>
-
-DESCRIPTION:
-    Clear outstanding packets (i.e., packet-recv and packet-ack) on a given channel in both directions.
-    The channel is identified by the chain, port, and channel IDs at one of its ends
-
-OPTIONS:
-        --counterparty-key-name <COUNTERPARTY_KEY_NAME>
-            use the given signing key for the counterparty chain (default: `counterparty_key_name`
-            config)
-
-        --key-name <KEY_NAME>
-            use the given signing key for the specified chain (default: `key_name` config)
-
-REQUIRED:
-        --chain <CHAIN_ID>        Identifier of the chain
-        --channel <CHANNEL_ID>    Identifier of the channel
-        --port <PORT_ID>          Identifier of the port
+{{#include ../../../templates/help_templates/clear/packets.md}}
 ```
 
 ### Example
 
 1. Without Hermes running, send 3 packets over a channel, here `channel-13`:
-
+```shell
+{{#template ../../../templates/commands/hermes/tx/ft-transfer_1.md DST_CHAIN_ID=ibc-1 SRC_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-13 AMOUNT=9999 OPTIONS= --timeout-height-offset 1000 --number-msgs 3}}
 ```
-❯ hermes tx ft-transfer --receiver-chain ibc1 --sender-chain ibc0 --sender-port transfer --sender-channel channel-13 --amount 9999 --timeout-height-offset 1000 --number-msgs 3
-2022-02-24T14:16:28.295526Z  INFO ThreadId(01) using default configuration from '/Users/coromac/.hermes/config.toml'
+
+Which should output something similar to:
+```
+2022-02-24T14:16:28.295526Z  INFO ThreadId(01) using default configuration from '$HOME/.hermes/config.toml'
 2022-02-24T14:16:28.330860Z  INFO ThreadId(15) send_tx{id=ibc0}: refresh: retrieved account sequence=61 number=1
 2022-02-24T14:16:28.350022Z  INFO ThreadId(15) wait_for_block_commits: waiting for commit of tx hashes(s) AE4C3186778488E45670EB7303FA77E69B39F4E7C7494B05EC51E55136A373D6 id=ibc0
 Success: [
@@ -142,12 +127,16 @@ Success: [
 ]
 ```
 
-2. Because the relayer is not running these packets won't be relayed,
+2. Because Hermes is not running these packets won't be relayed,
 as can be seen with the `query packet pending-sends` command:
 
 ```
-❯ hermes query packet pending-sends --chain ibc1 --port transfer --channel channel-13
-2022-02-24T14:21:28.874190Z  INFO ThreadId(01) using default configuration from '/Users/coromac/.hermes/config.toml'
+{{#template ../../../templates/commands/hermes/query/packet/pending-sends_1.md CHAIN_ID=ibc-1 PORT_ID=transfer CHANNEL_ID=channel-13}}
+```
+
+Which should output something similar to:
+
+```2022-02-24T14:21:28.874190Z  INFO ThreadId(01) using default configuration from '$HOME/.hermes/config.toml'
 Success: [
     14,
     15,
@@ -158,8 +147,12 @@ Success: [
 3. We can clear them manually using the `clear packets` command:
 
 ```
-❯ hermes clear packets --chain ibc0 --port transfer --channel channel-13
-2022-02-24T14:17:25.748422Z  INFO ThreadId(01) using default configuration from '/Users/coromac/.hermes/config.toml'
+{{#template ../../../templates/commands/hermes/clear/packets_1.md CHAIN_ID=ibc-0 PORT_ID=transfer CHANNEL_ID=channel-13}}
+```
+
+Which should output something similar to:
+```
+2022-02-24T14:17:25.748422Z  INFO ThreadId(01) using default configuration from '$HOME/.hermes/config.toml'
 2022-02-24T14:17:25.799704Z  INFO ThreadId(01) PacketRecvCmd{src_chain=ibc0 src_port=transfer src_channel=channel-13 dst_chain=ibc1}: found unprocessed SendPacket events for [Sequence(14), Sequence(15), Sequence(16)] (first 10 shown here; total=3)
 2022-02-24T14:17:25.827177Z  INFO ThreadId(01) PacketRecvCmd{src_chain=ibc0 src_port=transfer src_channel=channel-13 dst_chain=ibc1}: ready to fetch a scheduled op. data with batch of size 3 targeting Destination
 2022-02-24T14:17:26.504798Z  INFO ThreadId(01) PacketRecvCmd{src_chain=ibc0 src_port=transfer src_channel=channel-13 dst_chain=ibc1}:relay{odata=E96CV_cA5P ->Destination @0-86218; len=3}: assembled batch of 4 message(s)
@@ -440,7 +433,13 @@ Success: [
 4. The packets have now been successfully relayed:
 
 ```
-❯ hermes query packet pending-sends --chain ibc1 --port transfer --channel channel-13
-2022-02-24T14:21:28.874190Z  INFO ThreadId(01) using default configuration from '/Users/coromac/.hermes/config.toml'
+{{#template ../../../templates/commands/hermes/query/packet/pending-sends_1.md CHAIN_ID=ibc-1 PORT_ID=transfer CHANNEL_ID=channel-13}}
+```
+
+
+Which should output something similar to:
+
+```
+2022-02-24T14:21:28.874190Z  INFO ThreadId(01) using default configuration from '$HOME/.hermes/config.toml'
 Success: []
 ```

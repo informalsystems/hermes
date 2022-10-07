@@ -9,53 +9,7 @@
 Use the `create channel` command to establish a new channel.
 
 ```shell
-USAGE:
-    hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --a-connection <A_CONNECTION_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>
-
-    hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID> --new-client-connection
-
-DESCRIPTION:
-    Create a new channel between two chains.
-
-    Can create a new channel using a pre-existing connection or alternatively, create a new client and a
-    new connection underlying the new channel if a pre-existing connection is not provided.
-
-OPTIONS:
-        --channel-version <VERSION>
-            The version for the new channel
-
-            [aliases: chan-version]
-
-        --new-client-connection
-            Indicates that a new client and connection will be created underlying the new channel
-
-            [aliases: new-client-conn]
-
-        --order <ORDER>
-            The channel ordering, valid options 'unordered' (default) and 'ordered'
-
-            [default: ORDER_UNORDERED]
-
-        --yes
-            Skip new_client_connection confirmation
-
-FLAGS:
-        --a-chain <A_CHAIN_ID>
-            Identifier of the side `a` chain for the new channel
-
-        --a-connection <A_CONNECTION_ID>
-            Identifier of the connection on chain `a` to use in creating the new channel
-
-            [aliases: a-conn]
-
-        --a-port <A_PORT_ID>
-            Identifier of the side `a` port for the new channel
-
-        --b-chain <B_CHAIN_ID>
-            Identifier of the side `b` chain for the new channel
-
-        --b-port <B_PORT_ID>
-            Identifier of the side `b` port for the new channel
+{{#include ../../../templates/help_templates/create/channel.md}}
 ```
 
 ## Examples
@@ -70,7 +24,7 @@ specifically the one we just created in the example above, with port name
 `transfer` on both sides:
 
 ```shell
-hermes create channel --a-chain ibc-0 --a-connection connection-0 --a-port transfer --b-port transfer --order unordered
+{{#template ../../../templates/commands/hermes/create/channel_1.md A_CHAIN_ID=ibc-0 A_CONNECTION_ID=connection-0 A_PORT_ID= transfer B_PORT_ID=transfer OPTIONS= --order unordered}}
 ```
 
 Notice that one can omit the destination chain parameter, as Hermes will automatically
@@ -233,7 +187,7 @@ interactive prompt that pops up notifying you that a new client and a new
 connection will be initialized as part of the process:
 
 ```shell
-hermes create channel --a-chain ibc-0 --b-chain ibc-1 --a-port transfer --b-port transfer --order unordered --new-client-connection
+{{#template ../../../templates/commands/hermes/create/channel_2.md A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-1 A_PORT_ID= transfer B_PORT_ID=transfer OPTIONS= --order unordered}}
 ```
 
 ```json

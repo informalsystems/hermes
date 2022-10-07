@@ -1,1 +1,0 @@
-[[#binary hermes]] create connection --a-chain [[#a-chain]] --a-client [[#a-client]] --b-client [[#b-client]]

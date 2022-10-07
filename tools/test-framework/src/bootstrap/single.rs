@@ -9,6 +9,7 @@ use tracing::info;
 use crate::chain::builder::ChainBuilder;
 use crate::chain::config;
 use crate::chain::driver::ChainDriver;
+use crate::chain::ext::bootstrap::ChainBootstrapMethodsExt;
 use crate::error::Error;
 use crate::ibc::denom::Denom;
 use crate::types::single::node::FullNode;
@@ -49,7 +50,10 @@ pub fn bootstrap_single_node(
         Denom::base("samoleans")
     };
 
-    let initial_amount = random_u64_range(1_000_000_000_000, 9_000_000_000_000);
+    // Evmos requires of at least 1_000_000_000_000_000_000 or else there will be the
+    // error `error during handshake: error on replay: validator set is nil in genesis and still empty after InitChain`
+    // when running `evmosd start`.
+    let initial_amount = random_u64_range(1_000_000_000_000_000_000, 2_000_000_000_000_000_000);
 
     let chain_driver = builder.new_chain(prefix, use_random_id)?;
 

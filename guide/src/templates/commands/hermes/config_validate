@@ -1,1 +1,0 @@
-[[#binary hermes]] config validate

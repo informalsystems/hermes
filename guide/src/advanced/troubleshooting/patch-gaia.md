@@ -27,49 +27,48 @@ We also describe how to test the channel closing feature.
     ```
 
 - Append the line below (watch for the placeholder `<your>`) as the last line
-  in your `go.mod` in the gaia clone:
+  in your `go.mod` in the `gaia` clone:
 
 ```replace github.com/cosmos/cosmos-sdk => /Users/<your>/go/src/github.com/cosmos/cosmos-sdk```
 
-- Now `make build` and `make install` your local copy of gaia
+- Now `make build` and `make install` your local copy of `gaia`
 
 In order to test the correct operation during the channel close, perform the steps below.
 
 - The channel should be in state open-open:
 
-- Transfer of 5555 samoleans from `ibc-1` to `ibc-0`. This results in a
+- Transfer of 5555 `samoleans` from `ibc-1` to `ibc-0`. This results in a
   Tx to `ibc-1` for a `MsgTransfer` packet.
-  Make sure you're not relaying this packet (the relayer should not be running on
-  this path).
+  Make sure you're not relaying this packet (Hermes should not be running on this path).
 
   ```shell
-  hermes tx ft-transfer --receiver-chain ibc-0 --sender-chain ibc-1 --sender-port transfer --sender-channel channel-1 --amount 5555 --timeout-height-offset 1000 --number-msgs 1 --denom samoleans
+  {{#template ../../templates/commands/hermes/tx/ft-transfer_1.md SRC_CHAIN_ID=ibc-0 DST_CHAIN_ID=ibc-1 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-1 AMOUNT=5555 OPTIONS= --timeout-height-offset 1000 --denom samoleans}}
   ```
 
 - Now do the first step of channel closing: the channel will transition
 to close-open:
 
     ```shell
-    hermes --config config.toml tx chan-close-init --receiver-chain ibc-0 --sender-chain ibc-1 --receiver-connection connection-0 --receiver-port transfer --sender-port transfer --receiver-channel channel-0 --sender-channel channel-1
+    {{#template ../../templates/commands/hermes/tx/chan-close-init_1.md SRC_CHAIN_ID=ibc-1 DST_CHAIN_ID=ibc-0 DST_CONNECTION_ID=connection-0 DST_PORT_ID=transfer SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-1 DST_CHANNEL_ID=channel-0}}
     ```
 
 - Trigger timeout on close to ibc-1
 
     ```shell
-    hermes --config config.toml tx packet-recv --receiver-chain ibc-0 --sender-chain ibc-1 --sender-port transfer --sender-channel channel-1
+    {{#template ../../templates/commands/hermes/tx/packet-recv_1.md SRC_CHAIN_ID=ibc-1 DST_CHAIN_ID=ibc-0 SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-1}}
     ```
 
 - Close the channel
 
     ```shell
-    hermes --config config.toml tx chan-close-confirm --receiver-chain ibc-1 --sender-chain ibc-0 --receiver-connection connection-1 --receiver-port transfer --sender-port transfer --receiver-channel channel-1 --sender-channel channel-0
+    {{#template ../../templates/commands/hermes/tx/chan-close-confirm_1.md SRC_CHAIN_ID=ibc-0 DST_CHAIN_ID=ibc-1 DST_CONNECTION_ID=connection-1 DST_PORT_ID=transfer SRC_PORT_ID=transfer SRC_CHANNEL_ID=channel-0 DST_CHANNEL_ID=channel-1}}
     ```
 
 - Verify that the two ends are in Close state:
 
   ```shell
-  hermes --config config.toml query channel end --chain ibc-0 --port transfer --channel channel-0
-  hermes --config config.toml query channel end --chain ibc-1 --port transfer --channel channel-1
+  {{#template ../../templates/commands/hermes/query/channel/end_1.md CHAIN_ID=ibc-0 PORT_ID=transfer CHANNEL_ID=channel-0}}
+  {{#template ../../templates/commands/hermes/query/channel/end_1.md CHAIN_ID=ibc-1 PORT_ID=transfer CHANNEL_ID=channel-1}}
   ```
 
 [chan-close]: ../../documentation/commands/tx/channel-close.md#channel-close-init

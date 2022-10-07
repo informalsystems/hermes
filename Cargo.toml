@@ -3,15 +3,15 @@
 resolver = "2"
 
 members = [
-    "ibc-chain-registry",
-    "modules",
-    "relayer",
-    "relayer-cli",
-    "relayer-rest",
-    "telemetry",
-    "proto",
+    "crates/ibc-chain-registry",
+    "crates/modules",
+    "crates/relayer",
+    "crates/relayer-cli",
+    "crates/relayer-rest",
+    "crates/telemetry",
     "tools/integration-test",
     "tools/test-framework",
+    "tools/check-guide",
 ]
 
 exclude = [
@@ -21,6 +21,7 @@ exclude = [
 ]
 
 [patch.crates-io]
+ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs", rev = "3fac7ce93c80126cc690d565c85be042e384b31c" }
 tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibc-proxy" }
 tendermint-rpc                   = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibc-proxy" }
 tendermint-proto                 = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibc-proxy" }
