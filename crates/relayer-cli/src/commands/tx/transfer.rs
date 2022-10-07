@@ -9,12 +9,12 @@ use ibc::{
         ics02_client::client_state::ClientState,
         ics24_host::identifier::{ChainId, ChannelId, PortId},
     },
-    events::IbcEvent,
 };
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
+use ibc_relayer::event::IbcEventWithHeight;
 use ibc_relayer::{
     config::Config,
     transfer::{build_and_send_transfer_messages, TransferOptions},
@@ -262,7 +262,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
         }
 
         // Checks pass, build and send the tx
-        let res: Result<Vec<IbcEvent>, Error> =
+        let res: Result<Vec<IbcEventWithHeight>, Error> =
             build_and_send_transfer_messages(&chains.src, &chains.dst, &opts)
                 .map_err(Error::transfer);
 

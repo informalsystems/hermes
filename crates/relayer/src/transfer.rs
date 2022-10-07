@@ -20,6 +20,7 @@ use crate::chain::endpoint::ChainStatus;
 use crate::chain::handle::ChainHandle;
 use crate::chain::tracking::TrackedMsgs;
 use crate::error::Error;
+use crate::event::IbcEventWithHeight;
 
 define_error! {
     TransferError {
@@ -156,7 +157,7 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
     packet_src_chain: &SrcChain, // the chain whose account is debited
     packet_dst_chain: &DstChain, // the chain whose account eventually gets credited
     opts: &TransferOptions,
-) -> Result<Vec<IbcEvent>, TransferError> {
+) -> Result<Vec<IbcEventWithHeight>, TransferError> {
     let receiver = match &opts.receiver {
         Some(receiver) => Signer::from_str(receiver).map_err(TransferError::receiver_address)?,
         None => packet_dst_chain.get_signer().map_err(TransferError::key)?,
@@ -200,7 +201,7 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
         .find(|event| matches!(event.event, IbcEvent::ChainError(_)));
 
     match result {
-        None => Ok(events_with_heights.into_iter().map(|ev| ev.event).collect()),
+        None => Ok(events_with_heights),
         Some(err) => {
             if let IbcEvent::ChainError(ref err) = err.event {
                 Err(TransferError::tx_response(err.clone()))

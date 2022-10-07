@@ -1,4 +1,7 @@
+use ibc::events::IbcEvent;
+use ibc_relayer::config::types::MaxMsgNum;
 use ibc_relayer::link::{Link, LinkParameters};
+use ibc_relayer::transfer::{build_and_send_transfer_messages, TransferOptions};
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
@@ -21,6 +24,11 @@ fn test_ordered_channel_clear_conf_parallel() -> Result<(), Error> {
 #[test]
 fn test_ordered_channel_clear_conf_sequential() -> Result<(), Error> {
     run_binary_channel_test(&OrderedChannelClearTest::new(true, true))
+}
+
+#[test]
+fn test_ordered_channel_clear_cli_equal() -> Result<(), Error> {
+    run_binary_channel_test(&OrderedChannelClearEqualCLITest)
 }
 
 pub struct OrderedChannelClearTest {
@@ -154,6 +162,102 @@ impl BinaryChannelTest for OrderedChannelClearTest {
             &denom_a,
         )?;
 
+        Ok(())
+    }
+}
+
+pub struct OrderedChannelClearEqualCLITest;
+
+impl TestOverrides for OrderedChannelClearEqualCLITest {
+    fn modify_test_config(&self, config: &mut TestConfig) {
+        config.bootstrap_with_random_ids = false;
+    }
+
+    fn modify_relayer_config(&self, config: &mut Config) {
+        config.mode.packets.tx_confirmation = true;
+
+        config.chains[0].sequential_batch_tx = true;
+        config.chains[0].max_msg_num = MaxMsgNum::new(3).unwrap();
+
+        config.chains[1].sequential_batch_tx = true;
+        config.chains[1].max_msg_num = MaxMsgNum::new(3).unwrap();
+    }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
+
+    fn channel_order(&self) -> Order {
+        Order::Ordered
+    }
+}
+
+// Tests the `packet_data_query_height` option for `hermes tx packet-recv` CLI option.
+// Starts two chains A and B with `sequential_batch_tx` set to true and `max_msg_num` set to 3.
+// Creates an ordered channels between A and B.
+// Sends 5 ft transfers to chain A that will be included in 2 transactions:
+//  - tx1: (1, 2, 3) sequences at some height `clear_height` on chain A
+//  - tx2: (4, 5) sequences at `clear_height + 1` on chain A
+// Sends to B all packets found on chain A in the block at `clear_height`, prepending an update_client message
+// The test expects to get 4 IBC events from chain B, one for the update_client and 3 for the write_acknowledgment events
+impl BinaryChannelTest for OrderedChannelClearEqualCLITest {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        _config: &TestConfig,
+        _relayer: RelayerDriver,
+        chains: ConnectedChains<ChainA, ChainB>,
+        channel: ConnectedChannel<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        let num_msgs = 5_usize;
+
+        info!(
+            "Performing {} IBC transfers on an ordered channel",
+            num_msgs
+        );
+
+        let transfer_options = TransferOptions {
+            packet_src_port_id: channel.port_a.value().clone(),
+            packet_src_channel_id: channel.channel_id_a.value().clone(),
+            amount: random_u64_range(1000, 5000).into(),
+            denom: chains.node_a.denom().value().to_string(),
+            receiver: Some(chains.node_b.wallets().user1().address().value().0.clone()),
+            timeout_height_offset: 1000,
+            timeout_duration: Duration::from_secs(0),
+            number_msgs: num_msgs,
+        };
+
+        let events_with_heights = build_and_send_transfer_messages(
+            chains.handle_a(),
+            chains.handle_b(),
+            &transfer_options,
+        )?;
+
+        let clear_height = events_with_heights.first().unwrap().height;
+        let num_packets_at_clear_height = events_with_heights
+            .iter()
+            .filter(|&ev| ev.height == clear_height)
+            .count();
+        let expected_num_events = num_packets_at_clear_height + 1; // account for the update client
+
+        let chain_a_link_opts = LinkParameters {
+            src_port_id: channel.port_a.clone().into_value(),
+            src_channel_id: channel.channel_id_a.clone().into_value(),
+        };
+
+        let chain_a_link = Link::new_from_opts(
+            chains.handle_a().clone(),
+            chains.handle_b().clone(),
+            chain_a_link_opts,
+            true,
+        )?;
+        let events_returned: Vec<IbcEvent> = chain_a_link
+            .relay_recv_packet_and_timeout_messages_with_packet_data_query_height(Some(
+                clear_height,
+            ))
+            .unwrap();
+        info!("recv packets sent, chain events: {:?}", events_returned);
+
+        assert_eq!(expected_num_events, events_returned.len());
         Ok(())
     }
 }
