@@ -1632,7 +1632,7 @@ dependencies = [
  "tendermint-rpc",
  "tendermint-testgen",
  "test-log",
- "time 0.3.11",
+ "time 0.3.15",
  "tracing",
  "tracing-subscriber",
  "uint",
@@ -1672,7 +1672,7 @@ dependencies = [
  "tempfile",
  "tendermint",
  "tendermint-rpc",
- "time 0.3.11",
+ "time 0.3.15",
  "toml",
 ]
 
@@ -3194,7 +3194,7 @@ dependencies = [
  "serde_json",
  "sha1 0.6.1",
  "threadpool",
- "time 0.3.11",
+ "time 0.3.15",
  "tiny_http",
  "url",
 ]
@@ -3897,7 +3897,7 @@ dependencies = [
  "subtle",
  "subtle-encoding",
  "tendermint-proto",
- "time 0.3.11",
+ "time 0.3.15",
  "zeroize",
 ]
 
@@ -3933,7 +3933,7 @@ dependencies = [
  "tendermint",
  "tendermint-light-client-verifier",
  "tendermint-rpc",
- "time 0.3.11",
+ "time 0.3.15",
  "tokio",
 ]
 
@@ -3947,7 +3947,7 @@ dependencies = [
  "flex-error",
  "serde",
  "tendermint",
- "time 0.3.11",
+ "time 0.3.15",
 ]
 
 [[package]]
@@ -3965,7 +3965,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "subtle-encoding",
- "time 0.3.11",
+ "time 0.3.15",
 ]
 
 [[package]]
@@ -3994,7 +3994,7 @@ dependencies = [
  "tendermint-config",
  "tendermint-proto",
  "thiserror",
- "time 0.3.11",
+ "time 0.3.15",
  "tokio",
  "tracing",
  "url",
@@ -4015,7 +4015,7 @@ dependencies = [
  "simple-error",
  "tempfile",
  "tendermint",
- "time 0.3.11",
+ "time 0.3.15",
 ]
 
 [[package]]
@@ -4115,9 +4115,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.11"
+version = "0.3.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72c91f41dcb2f096c05f0873d667dceec1087ce5bcf984ec8ffb19acddbb3217"
+checksum = "d634a985c4d4238ec39cacaed2e7ae552fbd3c476b552c1deac3021b7d7eaf0c"
 dependencies = [
  "libc",
  "num_threads",
