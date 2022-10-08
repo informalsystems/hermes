@@ -1667,28 +1667,6 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(response.block.header.into())
     }
 
-    fn cross_chain_query(
-        &self,
-        requests: Vec<CrossChainQueryRequest>,
-    ) -> Result<Vec<CrossChainQueryResponse>, Error> {
-        let mut responses: Vec<CrossChainQueryResponse> = vec![];
-
-        let tasks = requests
-            .into_iter()
-            .map(|req| rest_query(&self.rest_client, req))
-            .collect::<Vec<_>>();
-
-        let joined_tasks = join_all(tasks);
-        let results: Vec<_> = self.query_rt.block_on(joined_tasks);
-        for result in results {
-            if let Ok(res) = result {
-                responses.push(res);
-            }
-        }
-
-        Ok(responses)
-    }
-
     fn build_client_state(
         &self,
         height: ICSHeight,
@@ -1745,6 +1723,28 @@ impl ChainEndpoint for CosmosSdkChain {
         )?;
 
         Ok((target, supporting))
+    }
+
+    fn cross_chain_query(
+        &self,
+        requests: Vec<CrossChainQueryRequest>,
+    ) -> Result<Vec<CrossChainQueryResponse>, Error> {
+        let mut responses: Vec<CrossChainQueryResponse> = vec![];
+
+        let tasks = requests
+            .into_iter()
+            .map(|req| rest_query(&self.rest_client, req))
+            .collect::<Vec<_>>();
+
+        let joined_tasks = join_all(tasks);
+        let results: Vec<_> = self.query_rt.block_on(joined_tasks);
+        for result in results {
+            if let Ok(res) = result {
+                responses.push(res);
+            }
+        }
+
+        Ok(responses)
     }
 }
 
