@@ -1,3 +1,4 @@
+use crate::cosmos::core::types::batch::CosmosBatchChannel;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::keyring::KeyEntry;
@@ -16,4 +17,8 @@ pub trait CosmosChain: Async {
     fn tx_config(&self) -> &TxConfig;
 
     fn key_entry(&self) -> &KeyEntry;
+}
+
+pub trait CosmosFullChain: CosmosChain {
+    fn batch_channel(&self) -> &CosmosBatchChannel;
 }

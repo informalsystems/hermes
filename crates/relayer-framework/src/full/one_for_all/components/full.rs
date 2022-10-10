@@ -3,8 +3,6 @@ use crate::base::impls::message_senders::update_client::SendIbcMessagesWithUpdat
 use crate::base::impls::messages::skip_update_client::SkipUpdateClient;
 use crate::base::impls::messages::wait_update_client::WaitUpdateClient;
 use crate::base::impls::packet_relayers::top::TopRelayer;
-use crate::base::impls::queries::consensus_state::ConsensusStateTelemetryQuerier;
-use crate::base::impls::queries::status::ChainStatusTelemetryQuerier;
 use crate::base::one_for_all::impls::chain::OfaConsensusStateQuerier;
 use crate::base::one_for_all::impls::relay::OfaUpdateClientMessageBuilder;
 use crate::base::one_for_all::impls::status::OfaChainStatusQuerier;
@@ -17,6 +15,8 @@ use crate::base::one_for_all::traits::relay::OfaRelay;
 use crate::full::batch::message_sender::SendMessagetoBatchWorker;
 use crate::full::one_for_all::traits::chain::OfaFullChain;
 use crate::full::one_for_all::traits::components::batch::OfaBatchComponents;
+use crate::full::telemetry::impls::consensus_state::ConsensusStateTelemetryQuerier;
+use crate::full::telemetry::impls::status::ChainStatusTelemetryQuerier;
 
 pub struct FullComponents;
 

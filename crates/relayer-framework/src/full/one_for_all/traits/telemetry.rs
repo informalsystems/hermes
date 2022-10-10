@@ -1,4 +1,5 @@
-use crate::base::traits::{core::Async, runtime::telemetry::HasLabel};
+use crate::base::traits::core::Async;
+use crate::full::telemetry::traits::telemetry::HasLabel;
 
 pub trait OfaTelemetry: HasLabel {
     type CounterType: Async + From<u64>;

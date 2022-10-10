@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::base::traits::contexts::telemetry::HasTelemetry;
 use crate::base::traits::queries::status::*;
-use crate::base::traits::runtime::telemetry::{HasMetric, TelemetryCounter};
+use crate::full::telemetry::traits::telemetry::{HasMetric, TelemetryCounter};
 
 use crate::std_prelude::*;
 

@@ -6,8 +6,7 @@ use ibc_relayer_framework::full::one_for_all::components::full::FullComponents;
 use ibc_relayer_framework::full::one_for_all::traits::batch::OfaBatchContext;
 use ibc_relayer_types::signer::Signer;
 
-use crate::cosmos::core::traits::batch::CosmosChainWithBatch;
-use crate::cosmos::core::traits::chain::CosmosChain;
+use crate::cosmos::core::traits::chain::{CosmosChain, CosmosFullChain};
 use crate::cosmos::core::types::batch::CosmosBatchChannel;
 use crate::cosmos::core::types::chain::CosmosChainWrapper;
 
@@ -61,7 +60,7 @@ where
     }
 }
 
-impl<Handle> CosmosChainWithBatch for CosmosChainEnv<Handle>
+impl<Handle> CosmosFullChain for CosmosChainEnv<Handle>
 where
     Handle: ChainHandle,
 {
