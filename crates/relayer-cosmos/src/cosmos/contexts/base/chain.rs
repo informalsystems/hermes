@@ -1,7 +1,7 @@
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::keyring::KeyEntry;
-use ibc_relayer_framework::base::one_for_all::components::default::DefaultComponents;
+use ibc_relayer_framework::base::one_for_all::components::base::BaseComponents;
 use ibc_relayer_types::signer::Signer;
 
 use crate::cosmos::base::traits::chain::CosmosChain;
@@ -29,7 +29,7 @@ impl<Handle> CosmosChain for CosmosChainContext<Handle>
 where
     Handle: ChainHandle,
 {
-    type Components = DefaultComponents;
+    type Components = BaseComponents;
 
     type ChainHandle = Handle;
 

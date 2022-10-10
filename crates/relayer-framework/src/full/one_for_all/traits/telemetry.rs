@@ -15,6 +15,7 @@ pub trait OfaTelemetry: HasLabel {
         description: Option<&str>,
         unit: Option<Self::Unit>,
     );
+
     fn update_value_recorder_metric(
         &self,
         name: &str,
@@ -23,6 +24,7 @@ pub trait OfaTelemetry: HasLabel {
         description: Option<&str>,
         unit: Option<Self::Unit>,
     );
+
     fn update_up_down_counter_metric(
         &self,
         name: &str,

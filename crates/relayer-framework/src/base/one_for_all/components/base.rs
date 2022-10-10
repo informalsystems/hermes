@@ -17,16 +17,16 @@ use crate::base::one_for_all::traits::components::chain::{
 use crate::base::one_for_all::traits::components::relay::OfaRelayComponents;
 use crate::base::one_for_all::traits::relay::OfaRelay;
 
-pub struct DefaultComponents;
+pub struct BaseComponents;
 
-impl<Chain> OfaChainComponents<Chain> for DefaultComponents
+impl<Chain> OfaChainComponents<Chain> for BaseComponents
 where
     Chain: OfaChain,
 {
     type ChainStatusQuerier = OfaChainStatusQuerier;
 }
 
-impl<Chain, Counterparty> OfaIbcChainComponents<Chain, Counterparty> for DefaultComponents
+impl<Chain, Counterparty> OfaIbcChainComponents<Chain, Counterparty> for BaseComponents
 where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaIbcChain<Chain>,
@@ -34,9 +34,9 @@ where
     type ConsensusStateQuerier = OfaConsensusStateQuerier;
 }
 
-impl<Relay> OfaRelayComponents<Relay> for DefaultComponents
+impl<Relay> OfaRelayComponents<Relay> for BaseComponents
 where
-    Relay: OfaRelay<Components = DefaultComponents>,
+    Relay: OfaRelay<Components = BaseComponents>,
 {
     type PacketRelayer = RetryRelayer<FullRelayer>;
 

@@ -15,10 +15,11 @@ use crate::base::one_for_all::traits::components::chain::{
     OfaChainComponents, OfaIbcChainComponents,
 };
 use crate::base::one_for_all::traits::components::relay::OfaRelayComponents;
-use crate::base::one_for_all::traits::relay::OfaRelay;
 use crate::full::batch::message_sender::SendMessagetoBatchWorker;
+use crate::full::filter::impls::filter_relayer::FilterRelayer;
 use crate::full::one_for_all::traits::chain::OfaFullChain;
 use crate::full::one_for_all::traits::components::batch::OfaBatchComponents;
+use crate::full::one_for_all::traits::relay::OfaFullRelay;
 use crate::full::telemetry::impls::consensus_state::ConsensusStateTelemetryQuerier;
 use crate::full::telemetry::impls::status::ChainStatusTelemetryQuerier;
 
@@ -42,11 +43,11 @@ where
 
 impl<Relay> OfaRelayComponents<Relay> for FullComponents
 where
-    Relay: OfaRelay<Components = FullComponents>,
+    Relay: OfaFullRelay<Components = FullComponents>,
     Relay::SrcChain: OfaFullChain,
     Relay::DstChain: OfaFullChain,
 {
-    type PacketRelayer = RetryRelayer<FullRelayer>;
+    type PacketRelayer = FilterRelayer<RetryRelayer<FullRelayer>>;
 
     type ReceivePacketRelayer = SkipReceivedPacketRelayer<BaseReceivePacketRelayer>;
 
@@ -60,7 +61,7 @@ where
 
 impl<Relay> OfaBatchComponents<Relay> for FullComponents
 where
-    Relay: OfaRelay<Components = FullComponents>,
+    Relay: OfaFullRelay<Components = FullComponents>,
     Relay::SrcChain: OfaFullChain,
     Relay::DstChain: OfaFullChain,
 {
