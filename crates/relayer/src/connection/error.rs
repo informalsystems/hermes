@@ -1,8 +1,10 @@
 use core::time::Duration;
-use flex_error::define_error;
-use ibc::core::ics03_connection::connection::{Counterparty, State};
-use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
-use ibc::events::IbcEvent;
+
+use flex_error::{define_error, ErrorMessageTracer};
+
+use ibc_relayer_types::core::ics03_connection::connection::{Counterparty, State};
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use ibc_relayer_types::events::IbcEvent;
 
 use crate::error::Error as RelayerError;
 use crate::foreign_client::{ForeignClientError, HasExpiredOrFrozenError};
@@ -175,8 +177,9 @@ define_error! {
                 tries: u64,
                 total_delay: Duration,
             }
+            [ Self ]
             | e | {
-                format_args!("Error after maximum retry of {} and total delay of {}s: {}",
+                format_args!("error after maximum retry of {} and total delay of {}s: {}",
                     e.tries, e.total_delay.as_secs(), e.description)
             },
 

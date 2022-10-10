@@ -1,6 +1,6 @@
 use alloc::sync::Arc;
 use core::fmt::{Display, Error as FmtError, Formatter};
-use ibc::core::ics04_channel::channel::Order;
+use ibc_relayer_types::core::ics04_channel::channel::Order;
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tracing::error;

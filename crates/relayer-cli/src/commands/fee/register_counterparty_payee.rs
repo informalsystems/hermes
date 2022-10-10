@@ -1,11 +1,11 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 use core::str::FromStr;
-use ibc::applications::ics29_fee::msgs::register_payee::build_register_counterparty_payee_message;
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc::signer::Signer;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::tracking::TrackedMsgs;
+use ibc_relayer_types::applications::ics29_fee::msgs::register_payee::build_register_counterparty_payee_message;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc_relayer_types::signer::Signer;
 
 use crate::application::app_config;
 use crate::cli_utils::spawn_chain_runtime;
@@ -105,7 +105,7 @@ mod tests {
     use abscissa_core::clap::Parser;
     use std::str::FromStr;
 
-    use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
     #[test]
     fn test_register_counterparty_payee() {

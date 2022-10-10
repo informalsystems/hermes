@@ -3,7 +3,7 @@ use core::fmt::{Display, Error as FmtError, Formatter};
 use tendermint_rpc::endpoint::broadcast::tx_sync;
 use tracing::info;
 
-use ibc::events::IbcEvent;
+use ibc_relayer_types::events::IbcEvent;
 
 use crate::chain::handle::ChainHandle;
 use crate::chain::tracking::TrackedMsgs;

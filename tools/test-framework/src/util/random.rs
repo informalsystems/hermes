@@ -2,7 +2,7 @@
    Utilities for random value generation.
 */
 
-use ibc::applications::transfer::amount::Amount;
+use ibc_relayer_types::applications::transfer::amount::Amount;
 use rand::Rng;
 use std::net::{Ipv4Addr, SocketAddrV4, TcpListener};
 

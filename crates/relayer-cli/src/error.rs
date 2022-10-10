@@ -5,10 +5,10 @@ use std::io::Error as IoError;
 
 use tendermint::Error as TendermintError;
 
-use ibc::applications::ics29_fee::error::Error as FeeError;
-use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc::core::ics24_host::identifier::ChainId;
-use ibc::signer::SignerError;
+use ibc_relayer_types::applications::ics29_fee::error::Error as FeeError;
+use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::signer::SignerError;
 
 use ibc_relayer::channel::ChannelError;
 use ibc_relayer::connection::ConnectionError;

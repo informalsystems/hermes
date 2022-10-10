@@ -2,7 +2,7 @@ use flex_error::{define_error, TraceError};
 
 use tendermint_rpc::{Error as RpcError, Url};
 
-use ibc::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 define_error! {
     #[derive(Debug, Clone)]

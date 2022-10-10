@@ -22,7 +22,7 @@ use tonic::{
     Status as GrpcStatus,
 };
 
-use ibc::{
+use ibc_relayer_types::{
     applications::ics29_fee::error::Error as FeeError,
     clients::ics07_tendermint::error as tendermint_error,
     core::{
@@ -525,7 +525,7 @@ define_error! {
 
         EmptyDenomTrace
             { hash: String }
-            | e | {
+            |e| {
                 format_args!(
                     "Query/DenomTrace RPC returned an empty denom trace for trace hash: {}", e.hash)
             },

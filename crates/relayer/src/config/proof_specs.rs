@@ -1,7 +1,7 @@
 //! Custom `serde` deserializer for `ProofSpecs`
 
 use core::fmt;
-use ibc::core::ics23_commitment::specs::ProofSpecs;
+use ibc_relayer_types::core::ics23_commitment::specs::ProofSpecs;
 use serde::{de, ser, Deserializer, Serializer};
 
 pub fn serialize<S: Serializer>(

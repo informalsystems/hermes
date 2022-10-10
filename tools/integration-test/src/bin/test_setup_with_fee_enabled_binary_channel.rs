@@ -25,8 +25,8 @@
     ```
 */
 
-use ibc::core::ics04_channel::Version;
 use ibc_relayer::keyring::Store;
+use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_test_framework::prelude::*;
 use std::env;
 use std::path::PathBuf;

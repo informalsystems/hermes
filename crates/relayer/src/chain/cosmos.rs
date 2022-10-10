@@ -23,31 +23,37 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tonic::{codegen::http::Uri, metadata::AsciiMetadataValue};
 use tracing::{error, instrument, warn};
 
-use ibc::clients::ics07_tendermint::header::Header as TmHeader;
-use ibc::core::ics02_client::client_type::ClientType;
-use ibc::core::ics02_client::error::Error as ClientError;
-use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
-use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
-use ibc::core::ics04_channel::packet::{Packet, Sequence};
-use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use ibc::core::ics24_host::path::{
+use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
+use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
+use ibc_relayer_types::core::ics02_client::client_type::ClientType;
+use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
+use ibc_relayer_types::core::ics03_connection::connection::{
+    ConnectionEnd, IdentifiedConnectionEnd,
+};
+use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
+use ibc_relayer_types::core::ics04_channel::packet::{Packet, Sequence};
+use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
+use ibc_relayer_types::core::ics24_host::identifier::{
+    ChainId, ChannelId, ClientId, ConnectionId, PortId,
+};
+use ibc_relayer_types::core::ics24_host::path::{
     AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
     ConnectionsPath, ReceiptsPath, SeqRecvsPath,
 };
-use ibc::core::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
-use ibc::events::IbcEvent;
-use ibc::signer::Signer;
-use ibc::Height as ICSHeight;
-use ibc::{
+use ibc_relayer_types::core::ics24_host::{
+    ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH,
+};
+use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer_types::signer::Signer;
+use ibc_relayer_types::Height as ICSHeight;
+use ibc_relayer_types::{
     clients::ics07_tendermint::client_state::{AllowUpdate, ClientState as TmClientState},
     core::ics23_commitment::merkle::MerkleProof,
 };
-use ibc::{
+use ibc_relayer_types::{
     clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState,
     core::ics02_client::events::UpdateClient,
 };
-use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;
@@ -375,7 +381,7 @@ impl CosmosSdkChain {
     fn query_client_upgrade_state(
         &self,
         query_data: ClientUpgradePath,
-        query_height: ibc::Height,
+        query_height: ICSHeight,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
         // SAFETY: Creating a Path from a constant; this should never fail
         let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH)
@@ -1848,7 +1854,7 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
 
 #[cfg(test)]
 mod tests {
-    use ibc::{
+    use ibc_relayer_types::{
         core::{ics02_client::client_type::ClientType, ics24_host::identifier::ClientId},
         mock::client_state::MockClientState,
         mock::header::MockHeader,

@@ -11,20 +11,20 @@ use bitcoin::{
     util::bip32::{DerivationPath, ExtendedPrivKey, ExtendedPubKey},
 };
 use hdpath::StandardHDPath;
-use ibc::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use k256::ecdsa::{signature::Signer as _, Signature, SigningKey};
 use ripemd::Ripemd160;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use tiny_keccak::{Hasher, Keccak};
 
+use crate::config::AddressType;
+
 use errors::Error;
 pub use pub_key::EncodedPubKey;
 
 pub mod errors;
 mod pub_key;
-
-use crate::config::AddressType;
 
 pub type HDPath = StandardHDPath;
 

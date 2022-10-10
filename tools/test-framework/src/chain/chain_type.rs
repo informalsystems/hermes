@@ -1,6 +1,6 @@
 use core::str::FromStr;
-use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::config::AddressType;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 use crate::error::Error;
 use crate::util::random::{random_u32, random_unused_tcp_port};

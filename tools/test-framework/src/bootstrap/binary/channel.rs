@@ -3,11 +3,11 @@
 */
 
 use eyre::{eyre, Report as Error};
-use ibc::core::ics04_channel::channel::Order;
-use ibc::core::ics04_channel::Version;
-use ibc::core::ics24_host::identifier::PortId;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::channel::{Channel, ChannelSide};
+use ibc_relayer_types::core::ics04_channel::channel::Order;
+use ibc_relayer_types::core::ics04_channel::version::Version;
+use ibc_relayer_types::core::ics24_host::identifier::PortId;
 use tracing::{debug, info};
 
 use super::connection::{bootstrap_connection, BootstrapConnectionOptions};

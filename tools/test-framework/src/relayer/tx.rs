@@ -1,12 +1,12 @@
 use core::str::FromStr;
 use core::time::Duration;
 use http::uri::Uri;
-use ibc::core::ics24_host::identifier::ChainId;
 use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_relayer::chain::cosmos::gas::calculate_fee;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::cosmos::types::gas::GasConfig;
 use ibc_relayer::config::{AddressType, GasPrice};
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tendermint_rpc::{HttpClient, Url};
 
 use crate::error::{handle_generic_error, Error};

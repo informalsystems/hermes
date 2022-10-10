@@ -1,11 +1,11 @@
 use http::uri::Uri;
-use ibc::applications::ics29_fee::packet_fee::IdentifiedPacketFees;
-use ibc::core::ics24_host::identifier::{ChannelId, PortId};
-use ibc::signer::Signer;
 use ibc_proto::ibc::applications::fee::v1::query_client::QueryClient;
 use ibc_proto::ibc::applications::fee::v1::{
     QueryCounterpartyPayeeRequest, QueryIncentivizedPacketsForChannelRequest,
 };
+use ibc_relayer_types::applications::ics29_fee::packet_fee::IdentifiedPacketFees;
+use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
+use ibc_relayer_types::signer::Signer;
 use tonic::Code;
 
 use crate::error::Error;

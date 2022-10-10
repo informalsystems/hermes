@@ -5,17 +5,17 @@ use abscissa_core::{
 };
 use eyre::eyre;
 
-use ibc::{
+use ibc_relayer::{
+    chain::handle::ChainHandle,
+    config::Config,
+    transfer::{build_transfer_messages, send_messages, TransferOptions},
+};
+use ibc_relayer_types::{
     applications::{
         ics29_fee::msgs::pay_packet::build_pay_packet_message,
         transfer::{Amount, Coin},
     },
     core::ics24_host::identifier::{ChainId, ChannelId, PortId},
-};
-use ibc_relayer::{
-    chain::handle::ChainHandle,
-    config::Config,
-    transfer::{build_transfer_messages, send_messages, TransferOptions},
 };
 
 use crate::{
@@ -300,7 +300,7 @@ mod tests {
     use abscissa_core::clap::Parser;
     use std::str::FromStr;
 
-    use ibc::{
+    use ibc_relayer_types::{
         applications::transfer::Amount,
         core::ics24_host::identifier::{ChainId, ChannelId, PortId},
     };

@@ -4,7 +4,7 @@ use crossbeam_channel::Receiver;
 use std::time::Instant;
 use tracing::{debug, span, trace, warn};
 
-use ibc::events::IbcEvent;
+use ibc_relayer_types::events::IbcEvent;
 use retry::delay::Fibonacci;
 use retry::retry_with_index;
 

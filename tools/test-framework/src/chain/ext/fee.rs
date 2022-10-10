@@ -1,7 +1,7 @@
 use core::time::Duration;
-use ibc::applications::ics29_fee::packet_fee::IdentifiedPacketFees;
-use ibc::core::ics04_channel::packet::Sequence;
 use ibc_relayer::event::IbcEventWithHeight;
+use ibc_relayer_types::applications::ics29_fee::packet_fee::IdentifiedPacketFees;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 
 use crate::chain::driver::ChainDriver;
 use crate::chain::tagged::TaggedChainDriverExt;
