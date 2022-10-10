@@ -1,4 +1,4 @@
-//! The `OfaChainContext` trait specifies what a chain context needs to provide
+//! The `OfaChainWrapper` trait specifies what a chain context needs to provide
 //! in order to gain access to the APIs provided by the [`AfoChainContext`]
 //! trait.
 
@@ -10,11 +10,11 @@ use crate::base::traits::core::Async;
 use crate::std_prelude::*;
 
 #[derive(Clone)]
-pub struct OfaChainContext<Chain> {
+pub struct OfaChainWrapper<Chain> {
     pub chain: Chain,
 }
 
-impl<Chain> OfaChainContext<Chain> {
+impl<Chain> OfaChainWrapper<Chain> {
     pub fn new(chain: Chain) -> Self {
         Self { chain }
     }

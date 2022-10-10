@@ -9,7 +9,7 @@ use ibc_relayer_types::signer::Signer;
 use crate::cosmos::core::traits::batch::CosmosChainWithBatch;
 use crate::cosmos::core::traits::chain::CosmosChain;
 use crate::cosmos::core::types::batch::CosmosBatchChannel;
-use crate::cosmos::core::types::chain::CosmosChainContext;
+use crate::cosmos::core::types::chain::CosmosChainWrapper;
 
 #[derive(Clone)]
 pub struct CosmosChainEnv<Handle: ChainHandle> {
@@ -22,7 +22,7 @@ pub struct CosmosChainEnv<Handle: ChainHandle> {
 
 impl<Handle: ChainHandle> CosmosChainEnv<Handle> {
     pub fn new(handle: Handle, signer: Signer, tx_config: TxConfig, key_entry: KeyEntry) -> Self {
-        let batch_channel = new_batch_channel::<OfaBatchContext<CosmosChainContext<Self>>>();
+        let batch_channel = new_batch_channel::<OfaBatchContext<CosmosChainWrapper<Self>>>();
 
         let chain = Self {
             handle,

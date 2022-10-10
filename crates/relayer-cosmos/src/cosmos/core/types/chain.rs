@@ -6,13 +6,13 @@ use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
 use crate::cosmos::core::types::telemetry::CosmosTelemetry;
 
 #[derive(Clone)]
-pub struct CosmosChainContext<Chain> {
+pub struct CosmosChainWrapper<Chain> {
     pub chain: Arc<Chain>,
     pub runtime: OfaRuntimeContext<CosmosRuntimeContext>,
     pub telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
 }
 
-impl<Chain> CosmosChainContext<Chain> {
+impl<Chain> CosmosChainWrapper<Chain> {
     pub fn new(
         chain: Arc<Chain>,
         runtime: CosmosRuntimeContext,

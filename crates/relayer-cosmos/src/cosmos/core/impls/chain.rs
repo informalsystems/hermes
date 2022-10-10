@@ -25,11 +25,11 @@ use tendermint::abci::responses::Event;
 
 use crate::cosmos::core::error::Error;
 use crate::cosmos::core::traits::chain::CosmosChain;
-use crate::cosmos::core::types::chain::CosmosChainContext;
+use crate::cosmos::core::types::chain::CosmosChainWrapper;
 use crate::cosmos::core::types::message::CosmosIbcMessage;
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
 
-impl<Chain> OfaChainTypes for CosmosChainContext<Chain>
+impl<Chain> OfaChainTypes for CosmosChainWrapper<Chain>
 where
     Chain: CosmosChain,
 {
@@ -67,7 +67,7 @@ where
 }
 
 #[async_trait]
-impl<Chain> OfaChain for CosmosChainContext<Chain>
+impl<Chain> OfaChain for CosmosChainWrapper<Chain>
 where
     Chain: CosmosChain,
 {
@@ -142,8 +142,8 @@ where
 }
 
 #[async_trait]
-impl<Chain, Counterparty> OfaIbcChain<CosmosChainContext<Counterparty>>
-    for CosmosChainContext<Chain>
+impl<Chain, Counterparty> OfaIbcChain<CosmosChainWrapper<Counterparty>>
+    for CosmosChainWrapper<Chain>
 where
     Chain: CosmosChain,
     Counterparty: CosmosChain,

@@ -11,7 +11,7 @@ use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
-use ibc_relayer_framework::base::one_for_all::traits::chain::{OfaChainContext, OfaChainTypes};
+use ibc_relayer_framework::base::one_for_all::traits::chain::{OfaChainTypes, OfaChainWrapper};
 use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelay;
 
 use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
@@ -23,14 +23,14 @@ use crate::cosmos::core::impls::filters::FilterWrapper;
 use crate::cosmos::core::traits::chain::CosmosChain;
 use crate::cosmos::core::traits::filter::CosmosFilter;
 use crate::cosmos::core::traits::relay::CosmosRelay;
-use crate::cosmos::core::types::chain::CosmosChainContext;
+use crate::cosmos::core::types::chain::CosmosChainWrapper;
 use crate::cosmos::core::types::message::CosmosIbcMessage;
-use crate::cosmos::core::types::relay::CosmosRelayContext;
+use crate::cosmos::core::types::relay::CosmosRelayWrapper;
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
 use crate::cosmos::core::types::telemetry::CosmosTelemetry;
 
 #[async_trait]
-impl<Relay, Filter> OfaRelay for CosmosRelayContext<Relay, Filter>
+impl<Relay, Filter> OfaRelay for CosmosRelayWrapper<Relay, Filter>
 where
     Relay: CosmosRelay,
     Filter: CosmosFilter + Clone,
@@ -41,9 +41,9 @@ where
 
     type Runtime = CosmosRuntimeContext;
 
-    type SrcChain = CosmosChainContext<Relay::SrcChain>;
+    type SrcChain = CosmosChainWrapper<Relay::SrcChain>;
 
-    type DstChain = CosmosChainContext<Relay::DstChain>;
+    type DstChain = CosmosChainWrapper<Relay::DstChain>;
 
     type Packet = Packet;
 
@@ -100,11 +100,11 @@ where
         &self.relay.src_to_dst_client().id
     }
 
-    fn src_chain(&self) -> &OfaChainContext<Self::SrcChain> {
+    fn src_chain(&self) -> &OfaChainWrapper<Self::SrcChain> {
         &self.src_chain
     }
 
-    fn dst_chain(&self) -> &OfaChainContext<Self::DstChain> {
+    fn dst_chain(&self) -> &OfaChainWrapper<Self::DstChain> {
         &self.dst_chain
     }
 
@@ -253,7 +253,7 @@ where
     Ok(ibc_messages)
 }
 
-impl<Relay, Filter> HasPacketFilter for CosmosRelayContext<Relay, Filter>
+impl<Relay, Filter> HasPacketFilter for CosmosRelayWrapper<Relay, Filter>
 where
     Relay: CosmosRelay,
     Filter: CosmosFilter + Clone,

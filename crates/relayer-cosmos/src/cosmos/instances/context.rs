@@ -1,41 +1,41 @@
 use core::marker::PhantomData;
-use ibc_relayer_framework::base::one_for_all::traits::chain::OfaChainContext;
+use ibc_relayer_framework::base::one_for_all::traits::chain::OfaChainWrapper;
 use ibc_relayer_framework::base::one_for_all::traits::components::chain::OfaIbcChainComponents;
 use ibc_relayer_framework::base::one_for_all::traits::components::relay::OfaRelayComponents;
-use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelayContext;
+use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelayWrapper;
 use ibc_relayer_framework::base::traits::contexts::chain::ChainContext;
 
-use crate::cosmos::all_for_one::chain::AfoCosmosChainContext;
-use crate::cosmos::all_for_one::relay::AfoCosmosRelayContext;
+use crate::cosmos::all_for_one::chain::AfoCosmosChainWrapper;
+use crate::cosmos::all_for_one::relay::AfoCosmosRelayWrapper;
 use crate::cosmos::core::traits::chain::CosmosChain;
 use crate::cosmos::core::traits::filter::CosmosFilter;
 use crate::cosmos::core::traits::relay::CosmosRelay;
-use crate::cosmos::core::types::chain::CosmosChainContext;
-use crate::cosmos::core::types::relay::CosmosRelayContext;
+use crate::cosmos::core::types::chain::CosmosChainWrapper;
+use crate::cosmos::core::types::relay::CosmosRelayWrapper;
 
-pub fn relay_context<Relay, Filter>() -> PhantomData<impl AfoCosmosRelayContext>
+pub fn relay_context<Relay, Filter>() -> PhantomData<impl AfoCosmosRelayWrapper>
 where
     Relay: CosmosRelay,
-    Relay::Components: OfaRelayComponents<CosmosRelayContext<Relay, Filter>>,
+    Relay::Components: OfaRelayComponents<CosmosRelayWrapper<Relay, Filter>>,
     Filter: CosmosFilter + Clone,
 {
-    PhantomData::<OfaRelayContext<CosmosRelayContext<Relay, Filter>>>
+    PhantomData::<OfaRelayWrapper<CosmosRelayWrapper<Relay, Filter>>>
 }
 
 pub fn chain_context<Chain>() -> PhantomData<impl ChainContext>
 where
     Chain: CosmosChain,
 {
-    PhantomData::<OfaChainContext<CosmosChainContext<Chain>>>
+    PhantomData::<OfaChainWrapper<CosmosChainWrapper<Chain>>>
 }
 
 pub fn ibc_chain_context<Chain, Counterparty>(
-) -> PhantomData<impl AfoCosmosChainContext<OfaChainContext<CosmosChainContext<Counterparty>>>>
+) -> PhantomData<impl AfoCosmosChainWrapper<OfaChainWrapper<CosmosChainWrapper<Counterparty>>>>
 where
     Chain: CosmosChain,
     Chain::Components:
-        OfaIbcChainComponents<CosmosChainContext<Chain>, CosmosChainContext<Counterparty>>,
+        OfaIbcChainComponents<CosmosChainWrapper<Chain>, CosmosChainWrapper<Counterparty>>,
     Counterparty: CosmosChain,
 {
-    PhantomData::<OfaChainContext<CosmosChainContext<Chain>>>
+    PhantomData::<OfaChainWrapper<CosmosChainWrapper<Chain>>>
 }

@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::base::one_for_all::traits::chain::{OfaChain, OfaChainContext, OfaIbcChain};
+use crate::base::one_for_all::traits::chain::{OfaChain, OfaChainWrapper, OfaIbcChain};
 use crate::base::one_for_all::traits::error::OfaErrorContext;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::base::traits::contexts::chain::{ChainContext, IbcChainContext};
@@ -13,11 +13,11 @@ use crate::base::traits::queries::received_packet::{
 };
 use crate::std_prelude::*;
 
-impl<Chain: OfaChain> HasError for OfaChainContext<Chain> {
+impl<Chain: OfaChain> HasError for OfaChainWrapper<Chain> {
     type Error = OfaErrorContext<Chain::Error>;
 }
 
-impl<Chain: OfaChain> HasRuntime for OfaChainContext<Chain> {
+impl<Chain: OfaChain> HasRuntime for OfaChainWrapper<Chain> {
     type Runtime = OfaRuntimeContext<Chain::Runtime>;
 
     fn runtime(&self) -> &Self::Runtime {
@@ -25,7 +25,7 @@ impl<Chain: OfaChain> HasRuntime for OfaChainContext<Chain> {
     }
 }
 
-impl<Chain: OfaChain> ChainContext for OfaChainContext<Chain> {
+impl<Chain: OfaChain> ChainContext for OfaChainWrapper<Chain> {
     type Height = Chain::Height;
 
     type Timestamp = Chain::Timestamp;
@@ -50,7 +50,7 @@ impl<Chain: OfaChain> ChainContext for OfaChainContext<Chain> {
     }
 }
 
-impl<Chain, Counterparty> IbcChainContext<OfaChainContext<Counterparty>> for OfaChainContext<Chain>
+impl<Chain, Counterparty> IbcChainContext<OfaChainWrapper<Counterparty>> for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaChain,
@@ -70,7 +70,7 @@ where
     }
 }
 
-impl<Chain, Counterparty> HasIbcEvents<OfaChainContext<Counterparty>> for OfaChainContext<Chain>
+impl<Chain, Counterparty> HasIbcEvents<OfaChainWrapper<Counterparty>> for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaChain,
@@ -84,8 +84,8 @@ where
     }
 }
 
-impl<Chain, Counterparty> HasConsensusState<OfaChainContext<Counterparty>>
-    for OfaChainContext<Chain>
+impl<Chain, Counterparty> HasConsensusState<OfaChainWrapper<Counterparty>>
+    for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaChain,
@@ -97,14 +97,14 @@ pub struct OfaConsensusStateQuerier;
 
 #[async_trait]
 impl<Chain, Counterparty>
-    ConsensusStateQuerier<OfaChainContext<Chain>, OfaChainContext<Counterparty>>
+    ConsensusStateQuerier<OfaChainWrapper<Chain>, OfaChainWrapper<Counterparty>>
     for OfaConsensusStateQuerier
 where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaIbcChain<Chain>,
 {
     async fn query_consensus_state(
-        chain: &OfaChainContext<Chain>,
+        chain: &OfaChainWrapper<Chain>,
         client_id: &Chain::ClientId,
         height: &Counterparty::Height,
     ) -> Result<Counterparty::ConsensusState, OfaErrorContext<Chain::Error>> {
@@ -118,14 +118,14 @@ pub struct OfaReceivedPacketQuerier;
 
 #[async_trait]
 impl<Chain, Counterparty>
-    ReceivedPacketQuerier<OfaChainContext<Chain>, OfaChainContext<Counterparty>>
+    ReceivedPacketQuerier<OfaChainWrapper<Chain>, OfaChainWrapper<Counterparty>>
     for OfaReceivedPacketQuerier
 where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaIbcChain<Chain>,
 {
     async fn is_packet_received(
-        chain: &OfaChainContext<Chain>,
+        chain: &OfaChainWrapper<Chain>,
         port_id: &Chain::PortId,
         channel_id: &Chain::ChannelId,
         sequence: &Counterparty::Sequence,
@@ -140,8 +140,8 @@ where
 }
 
 #[async_trait]
-impl<Chain, Counterparty> HasReceivedPacketQuerier<OfaChainContext<Counterparty>>
-    for OfaChainContext<Chain>
+impl<Chain, Counterparty> HasReceivedPacketQuerier<OfaChainWrapper<Counterparty>>
+    for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaIbcChain<Chain>,

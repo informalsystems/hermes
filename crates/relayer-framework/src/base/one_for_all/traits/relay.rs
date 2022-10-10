@@ -1,10 +1,10 @@
-//! The `OfaRelayContext` trait specifies what a relay context needs to provide
+//! The `OfaRelayWrapper` trait specifies what a relay context needs to provide
 //! in order to gain access to the APIs provided by the [`AfoRelayContext`]
 //! trait.
 
 use async_trait::async_trait;
 
-use crate::base::one_for_all::traits::chain::{OfaChainContext, OfaChainTypes, OfaIbcChain};
+use crate::base::one_for_all::traits::chain::{OfaChainTypes, OfaChainWrapper, OfaIbcChain};
 use crate::base::one_for_all::traits::error::OfaError;
 use crate::base::one_for_all::traits::runtime::OfaRuntime;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
@@ -12,11 +12,11 @@ use crate::base::traits::core::Async;
 use crate::std_prelude::*;
 
 #[derive(Clone)]
-pub struct OfaRelayContext<Relay> {
+pub struct OfaRelayWrapper<Relay> {
     pub relay: Relay,
 }
 
-impl<Relay: OfaRelay> OfaRelayContext<Relay> {
+impl<Relay: OfaRelay> OfaRelayWrapper<Relay> {
     pub fn new(relay: Relay) -> Self {
         Self { relay }
     }
@@ -76,9 +76,9 @@ pub trait OfaRelay: Async {
 
     fn dst_client_id(&self) -> &<Self::DstChain as OfaChainTypes>::ClientId;
 
-    fn src_chain(&self) -> &OfaChainContext<Self::SrcChain>;
+    fn src_chain(&self) -> &OfaChainWrapper<Self::SrcChain>;
 
-    fn dst_chain(&self) -> &OfaChainContext<Self::DstChain>;
+    fn dst_chain(&self) -> &OfaChainWrapper<Self::DstChain>;
 
     fn telemetry(&self) -> &Self::Telemetry;
 

@@ -1,10 +1,10 @@
 use crate::cosmos::core::{
     traits::{filter::CosmosFilter, relay::CosmosRelay},
-    types::relay::CosmosRelayContext,
+    types::relay::CosmosRelayWrapper,
 };
 use async_trait::async_trait;
 use ibc_relayer::config::filter::PacketFilter as IbcChannelFilter;
-use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelayContext;
+use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelayWrapper;
 use ibc_relayer_framework::base::traits::contexts::error::HasError;
 use ibc_relayer_framework::base::traits::contexts::filter::PacketFilter;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
@@ -31,7 +31,7 @@ impl<Filter: CosmosFilter> FilterWrapper<Filter> {
 }
 
 #[async_trait]
-impl<Relay, Filter> PacketFilter<OfaRelayContext<CosmosRelayContext<Relay, Filter>>>
+impl<Relay, Filter> PacketFilter<OfaRelayWrapper<CosmosRelayWrapper<Relay, Filter>>>
     for FilterWrapper<Filter>
 where
     Relay: CosmosRelay,
@@ -40,7 +40,7 @@ where
     async fn should_relay_packet(
         &self,
         packet: &Packet,
-    ) -> Result<bool, <OfaRelayContext<CosmosRelayContext<Relay, Filter>> as HasError>::Error> {
+    ) -> Result<bool, <OfaRelayWrapper<CosmosRelayWrapper<Relay, Filter>> as HasError>::Error> {
         Ok(self.inner_filter().should_relay_packet(packet))
     }
 }

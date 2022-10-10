@@ -3,11 +3,11 @@ use ibc_relayer_framework::full::one_for_all::traits::telemetry::OfaTelemetryWra
 
 use crate::cosmos::core::traits::batch::CosmosChainWithBatch;
 use crate::cosmos::core::types::batch::CosmosBatchChannel;
-use crate::cosmos::core::types::chain::CosmosChainContext;
+use crate::cosmos::core::types::chain::CosmosChainWrapper;
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
 use crate::cosmos::core::types::telemetry::CosmosTelemetry;
 
-impl<Chain> OfaFullChain for CosmosChainContext<Chain>
+impl<Chain> OfaFullChain for CosmosChainWrapper<Chain>
 where
     Chain: CosmosChainWithBatch,
 {

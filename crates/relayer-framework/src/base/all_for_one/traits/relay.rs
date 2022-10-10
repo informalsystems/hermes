@@ -9,7 +9,7 @@ use crate::base::traits::messages::update_client::HasUpdateClientMessageBuilder;
 use crate::base::traits::target::{DestinationTarget, SourceTarget};
 
 /// The functionality that a relay context gains access to once that relay
-/// context implements the [`OfaRelayContext`] trait.
+/// context implements the [`OfaRelayWrapper`] trait.
 pub trait AfoRelayContext:
     RelayContext<SrcChain = Self::AfoSrcChain, DstChain = Self::AfoDstChain, Error = Self::AfoError>
     + HasUpdateClientMessageBuilder<SourceTarget>

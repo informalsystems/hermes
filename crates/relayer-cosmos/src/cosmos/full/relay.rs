@@ -6,12 +6,12 @@ use ibc_relayer_framework::full::batch::spawn::{
     BatchMessageWorkerSpawner, CanSpawnBatchMessageWorker,
 };
 
-use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelayContext;
+use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelayWrapper;
 use ibc_relayer_framework::base::traits::target::{DestinationTarget, SourceTarget};
 
 use crate::cosmos::basic::relay::CosmosRelayEnv;
 use crate::cosmos::core::traits::filter::CosmosFilter;
-use crate::cosmos::core::types::relay::CosmosRelayContext;
+use crate::cosmos::core::types::relay::CosmosRelayWrapper;
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
 use crate::cosmos::core::types::telemetry::CosmosTelemetry;
 use crate::cosmos::full::chain::CosmosChainEnv;
@@ -25,15 +25,15 @@ pub fn new_relay_context_with_batch<SrcChain, DstChain, Filter>(
     batch_config: BatchConfig,
     telemetry: CosmosTelemetry,
     filter: Filter,
-) -> OfaRelayContext<
-    CosmosRelayContext<CosmosRelayEnv<CosmosChainEnv<SrcChain>, CosmosChainEnv<DstChain>>, Filter>,
+) -> OfaRelayWrapper<
+    CosmosRelayWrapper<CosmosRelayEnv<CosmosChainEnv<SrcChain>, CosmosChainEnv<DstChain>>, Filter>,
 >
 where
     SrcChain: ChainHandle,
     DstChain: ChainHandle,
     Filter: CosmosFilter + Clone,
 {
-    let relay = OfaRelayContext::new(CosmosRelayContext::new(
+    let relay = OfaRelayWrapper::new(CosmosRelayWrapper::new(
         Arc::new(CosmosRelayEnv::new(
             Arc::new(src_chain),
             Arc::new(dst_chain),

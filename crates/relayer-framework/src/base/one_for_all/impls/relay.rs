@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
-use crate::base::one_for_all::traits::chain::{OfaChain, OfaChainContext, OfaChainTypes};
+use crate::base::one_for_all::traits::chain::{OfaChain, OfaChainTypes, OfaChainWrapper};
 use crate::base::one_for_all::traits::error::OfaErrorContext;
 use crate::base::one_for_all::traits::relay::OfaRelay;
-use crate::base::one_for_all::traits::relay::OfaRelayContext;
+use crate::base::one_for_all::traits::relay::OfaRelayWrapper;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::base::traits::contexts::error::HasError;
 use crate::base::traits::contexts::filter::{HasPacketFilter, PacketFilter};
@@ -23,11 +23,11 @@ use crate::base::traits::target::{DestinationTarget, SourceTarget};
 use crate::base::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
 use crate::std_prelude::*;
 
-impl<Relay: OfaRelay> HasError for OfaRelayContext<Relay> {
+impl<Relay: OfaRelay> HasError for OfaRelayWrapper<Relay> {
     type Error = OfaErrorContext<Relay::Error>;
 }
 
-impl<Relay: OfaRelay> HasRuntime for OfaRelayContext<Relay> {
+impl<Relay: OfaRelay> HasRuntime for OfaRelayWrapper<Relay> {
     type Runtime = OfaRuntimeContext<Relay::Runtime>;
 
     fn runtime(&self) -> &Self::Runtime {
@@ -35,10 +35,10 @@ impl<Relay: OfaRelay> HasRuntime for OfaRelayContext<Relay> {
     }
 }
 
-impl<Relay: OfaRelay> RelayContext for OfaRelayContext<Relay> {
-    type SrcChain = OfaChainContext<Relay::SrcChain>;
+impl<Relay: OfaRelay> RelayContext for OfaRelayWrapper<Relay> {
+    type SrcChain = OfaChainWrapper<Relay::SrcChain>;
 
-    type DstChain = OfaChainContext<Relay::DstChain>;
+    type DstChain = OfaChainWrapper<Relay::DstChain>;
 
     type Packet = Relay::Packet;
 
@@ -90,14 +90,14 @@ impl<Relay: OfaRelay> RelayContext for OfaRelayContext<Relay> {
 pub struct OfaUpdateClientMessageBuilder;
 
 #[async_trait]
-impl<Relay, SrcChain> UpdateClientMessageBuilder<OfaRelayContext<Relay>, SourceTarget>
+impl<Relay, SrcChain> UpdateClientMessageBuilder<OfaRelayWrapper<Relay>, SourceTarget>
     for OfaUpdateClientMessageBuilder
 where
     Relay: OfaRelay<SrcChain = SrcChain>,
     SrcChain: OfaChain,
 {
     async fn build_update_client_messages(
-        context: &OfaRelayContext<Relay>,
+        context: &OfaRelayWrapper<Relay>,
         height: &<Relay::DstChain as OfaChainTypes>::Height,
     ) -> Result<Vec<SrcChain::Message>, OfaErrorContext<Relay::Error>> {
         let messages = context
@@ -110,14 +110,14 @@ where
 }
 
 #[async_trait]
-impl<Relay, DstChain> UpdateClientMessageBuilder<OfaRelayContext<Relay>, DestinationTarget>
+impl<Relay, DstChain> UpdateClientMessageBuilder<OfaRelayWrapper<Relay>, DestinationTarget>
     for OfaUpdateClientMessageBuilder
 where
     Relay: OfaRelay<DstChain = DstChain>,
     DstChain: OfaChain,
 {
     async fn build_update_client_messages(
-        context: &OfaRelayContext<Relay>,
+        context: &OfaRelayWrapper<Relay>,
         height: &<Relay::SrcChain as OfaChainTypes>::Height,
     ) -> Result<Vec<DstChain::Message>, OfaErrorContext<Relay::Error>> {
         let messages = context
@@ -132,14 +132,14 @@ where
 pub struct OfaReceivePacketMessageBuilder;
 
 #[async_trait]
-impl<Relay, DstChain> ReceivePacketMessageBuilder<OfaRelayContext<Relay>>
+impl<Relay, DstChain> ReceivePacketMessageBuilder<OfaRelayWrapper<Relay>>
     for OfaReceivePacketMessageBuilder
 where
     Relay: OfaRelay<DstChain = DstChain>,
     DstChain: OfaChain,
 {
     async fn build_receive_packet_message(
-        relay: &OfaRelayContext<Relay>,
+        relay: &OfaRelayWrapper<Relay>,
         height: &<Relay::SrcChain as OfaChainTypes>::Height,
         packet: &Relay::Packet,
     ) -> Result<DstChain::Message, OfaErrorContext<Relay::Error>> {
@@ -152,20 +152,20 @@ where
     }
 }
 
-impl<Relay: OfaRelay> HasReceivePacketMessageBuilder for OfaRelayContext<Relay> {
+impl<Relay: OfaRelay> HasReceivePacketMessageBuilder for OfaRelayWrapper<Relay> {
     type ReceivePacketMessageBuilder = OfaReceivePacketMessageBuilder;
 }
 
 pub struct OfaAckPacketMessageBuilder;
 
 #[async_trait]
-impl<Relay, SrcChain> AckPacketMessageBuilder<OfaRelayContext<Relay>> for OfaAckPacketMessageBuilder
+impl<Relay, SrcChain> AckPacketMessageBuilder<OfaRelayWrapper<Relay>> for OfaAckPacketMessageBuilder
 where
     Relay: OfaRelay<SrcChain = SrcChain>,
     SrcChain: OfaChain,
 {
     async fn build_ack_packet_message(
-        relay: &OfaRelayContext<Relay>,
+        relay: &OfaRelayWrapper<Relay>,
         destination_height: &<Relay::DstChain as OfaChainTypes>::Height,
         packet: &Relay::Packet,
         ack: &<Relay::DstChain as OfaChainTypes>::WriteAcknowledgementEvent,
@@ -179,7 +179,7 @@ where
     }
 }
 
-impl<Relay: OfaRelay> HasAckPacketMessageBuilder for OfaRelayContext<Relay> {
+impl<Relay: OfaRelay> HasAckPacketMessageBuilder for OfaRelayWrapper<Relay> {
     type AckPacketMessageBuilder = OfaAckPacketMessageBuilder;
 }
 
@@ -189,7 +189,7 @@ impl<Relay: OfaRelay> HasAckPacketMessageBuilder for OfaRelayContext<Relay> {
 pub struct OfaTimeoutUnorderedPacketMessageBuilder;
 
 #[async_trait]
-impl<Relay, DstChain, SrcChain> TimeoutUnorderedPacketMessageBuilder<OfaRelayContext<Relay>>
+impl<Relay, DstChain, SrcChain> TimeoutUnorderedPacketMessageBuilder<OfaRelayWrapper<Relay>>
     for OfaTimeoutUnorderedPacketMessageBuilder
 where
     Relay: OfaRelay<DstChain = DstChain, SrcChain = SrcChain>,
@@ -197,7 +197,7 @@ where
     SrcChain: OfaChain,
 {
     async fn build_timeout_unordered_packet_message(
-        relay: &OfaRelayContext<Relay>,
+        relay: &OfaRelayWrapper<Relay>,
         destination_height: &<Relay::DstChain as OfaChainTypes>::Height,
         packet: &Relay::Packet,
     ) -> Result<SrcChain::Message, OfaErrorContext<Relay::Error>> {
@@ -210,13 +210,13 @@ where
     }
 }
 
-impl<Relay: OfaRelay> HasTimeoutUnorderedPacketMessageBuilder for OfaRelayContext<Relay> {
+impl<Relay: OfaRelay> HasTimeoutUnorderedPacketMessageBuilder for OfaRelayWrapper<Relay> {
     type TimeoutUnorderedPacketMessageBuilder = OfaTimeoutUnorderedPacketMessageBuilder;
 }
 
-impl<Relay: OfaRelay + HasPacketFilter> HasPacketFilter for OfaRelayContext<Relay>
+impl<Relay: OfaRelay + HasPacketFilter> HasPacketFilter for OfaRelayWrapper<Relay>
 where
-    Relay::Filter: PacketFilter<OfaRelayContext<Relay>>,
+    Relay::Filter: PacketFilter<OfaRelayWrapper<Relay>>,
 {
     type Filter = Relay::Filter;
 
