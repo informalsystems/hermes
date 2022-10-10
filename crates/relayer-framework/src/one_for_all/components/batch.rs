@@ -7,8 +7,7 @@ use crate::core::impls::packet_relayers::top::TopRelayer;
 use crate::one_for_all::impls::chain::OfaConsensusStateQuerier;
 use crate::one_for_all::impls::relay::OfaUpdateClientMessageBuilder;
 use crate::one_for_all::impls::status::OfaChainStatusQuerier;
-use crate::one_for_all::traits::batch::OfaChainWithBatch;
-use crate::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
+use crate::one_for_all::traits::chain::{OfaChain, OfaFullChain, OfaIbcChain};
 use crate::one_for_all::traits::components::batch::OfaBatchComponents;
 use crate::one_for_all::traits::components::chain::{OfaChainComponents, OfaIbcChainComponents};
 use crate::one_for_all::traits::components::relay::OfaRelayComponents;
@@ -34,8 +33,8 @@ where
 impl<Relay> OfaRelayComponents<Relay> for BatchComponents
 where
     Relay: OfaRelay<Components = BatchComponents>,
-    Relay::SrcChain: OfaChainWithBatch,
-    Relay::DstChain: OfaChainWithBatch,
+    Relay::SrcChain: OfaFullChain,
+    Relay::DstChain: OfaFullChain,
 {
     type PacketRelayer = TopRelayer;
 
@@ -48,8 +47,8 @@ where
 impl<Relay> OfaBatchComponents<Relay> for BatchComponents
 where
     Relay: OfaRelay<Components = BatchComponents>,
-    Relay::SrcChain: OfaChainWithBatch,
-    Relay::DstChain: OfaChainWithBatch,
+    Relay::SrcChain: OfaFullChain,
+    Relay::DstChain: OfaFullChain,
 {
     type IbcMessageSenderForBatchWorker = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
 }

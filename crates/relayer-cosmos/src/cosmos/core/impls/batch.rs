@@ -1,11 +1,11 @@
-use ibc_relayer_framework::one_for_all::traits::batch::OfaChainWithBatch;
+use ibc_relayer_framework::one_for_all::traits::chain::OfaFullChain;
 
 use crate::cosmos::core::traits::batch::CosmosChainWithBatch;
 use crate::cosmos::core::types::batch::CosmosBatchChannel;
 use crate::cosmos::core::types::chain::CosmosChainContext;
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
 
-impl<Chain> OfaChainWithBatch for CosmosChainContext<Chain>
+impl<Chain> OfaFullChain for CosmosChainContext<Chain>
 where
     Chain: CosmosChainWithBatch,
 {

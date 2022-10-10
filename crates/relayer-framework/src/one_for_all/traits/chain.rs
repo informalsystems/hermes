@@ -4,12 +4,13 @@
 
 use async_trait::async_trait;
 
+use crate::addons::batch::context::BatchChannel;
 use crate::core::traits::core::Async;
+use crate::one_for_all::traits::batch::OfaBatch;
 use crate::one_for_all::traits::error::OfaError;
 use crate::one_for_all::traits::runtime::{OfaRuntime, OfaRuntimeContext};
-use crate::std_prelude::*;
-
 use crate::one_for_all::traits::telemetry::{OfaTelemetry, OfaTelemetryWrapper};
+use crate::std_prelude::*;
 
 #[derive(Clone)]
 pub struct OfaChainContext<Chain> {
@@ -108,4 +109,15 @@ where
         channel_id: &Self::ChannelId,
         sequence: &Counterparty::Sequence,
     ) -> Result<bool, Self::Error>;
+}
+
+pub trait OfaFullChain: OfaChainTypes {
+    type BatchContext: OfaBatch<Self>;
+
+    fn batch_channel(
+        &self,
+    ) -> &BatchChannel<
+        <Self::BatchContext as OfaBatch<Self>>::BatchSender,
+        <Self::BatchContext as OfaBatch<Self>>::BatchReceiver,
+    >;
 }
