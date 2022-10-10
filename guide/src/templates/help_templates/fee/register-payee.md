@@ -9,6 +9,6 @@ OPTIONS:
 
 FLAGS:
         --chain <CHAIN_ID>         Identifier of the chain
-        --channel <CHANNEL_ID>     Identifier of the channel
+        --channel <CHANNEL_ID>     Identifier of the channel [aliases: chan]
         --payee <PAYEE_ADDRESS>    Address of the payee
         --port <PORT_ID>           Identifier of the port
