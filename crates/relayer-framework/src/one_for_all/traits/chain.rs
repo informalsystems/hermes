@@ -22,10 +22,7 @@ impl<Chain> OfaChainContext<Chain> {
     }
 }
 
-#[async_trait]
-pub trait OfaChain: Async {
-    type Components;
-
+pub trait OfaChainTypes: Async {
     type Error: OfaError;
 
     type Runtime: OfaRuntime<Error = Self::Error>;
@@ -57,6 +54,11 @@ pub trait OfaChain: Async {
     type ConsensusState: Async;
 
     type WriteAcknowledgementEvent: Async;
+}
+
+#[async_trait]
+pub trait OfaChain: OfaChainTypes {
+    type Components;
 
     type Telemetry: OfaTelemetry;
 
@@ -90,7 +92,7 @@ pub trait OfaChain: Async {
 #[async_trait]
 pub trait OfaIbcChain<Counterparty>: OfaChain
 where
-    Counterparty: OfaChain,
+    Counterparty: OfaChainTypes,
 {
     fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
 

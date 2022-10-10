@@ -16,7 +16,7 @@ use crate::core::traits::messages::timeout_packet::{
 use crate::core::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::core::traits::target::{DestinationTarget, SourceTarget};
 use crate::core::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
-use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext};
+use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext, OfaChainTypes};
 use crate::one_for_all::traits::error::OfaErrorContext;
 use crate::one_for_all::traits::relay::OfaRelay;
 use crate::one_for_all::traits::relay::OfaRelayContext;
@@ -78,11 +78,11 @@ impl<Relay: OfaRelay> RelayContext for OfaRelayContext<Relay> {
         self.relay.dst_chain()
     }
 
-    fn source_client_id(&self) -> &<Relay::SrcChain as OfaChain>::ClientId {
+    fn source_client_id(&self) -> &<Relay::SrcChain as OfaChainTypes>::ClientId {
         self.relay.src_client_id()
     }
 
-    fn destination_client_id(&self) -> &<Relay::DstChain as OfaChain>::ClientId {
+    fn destination_client_id(&self) -> &<Relay::DstChain as OfaChainTypes>::ClientId {
         self.relay.dst_client_id()
     }
 }
@@ -98,7 +98,7 @@ where
 {
     async fn build_update_client_messages(
         context: &OfaRelayContext<Relay>,
-        height: &<Relay::DstChain as OfaChain>::Height,
+        height: &<Relay::DstChain as OfaChainTypes>::Height,
     ) -> Result<Vec<SrcChain::Message>, OfaErrorContext<Relay::Error>> {
         let messages = context
             .relay
@@ -118,7 +118,7 @@ where
 {
     async fn build_update_client_messages(
         context: &OfaRelayContext<Relay>,
-        height: &<Relay::SrcChain as OfaChain>::Height,
+        height: &<Relay::SrcChain as OfaChainTypes>::Height,
     ) -> Result<Vec<DstChain::Message>, OfaErrorContext<Relay::Error>> {
         let messages = context
             .relay
@@ -140,7 +140,7 @@ where
 {
     async fn build_receive_packet_message(
         relay: &OfaRelayContext<Relay>,
-        height: &<Relay::SrcChain as OfaChain>::Height,
+        height: &<Relay::SrcChain as OfaChainTypes>::Height,
         packet: &Relay::Packet,
     ) -> Result<DstChain::Message, OfaErrorContext<Relay::Error>> {
         let message = relay
@@ -166,9 +166,9 @@ where
 {
     async fn build_ack_packet_message(
         relay: &OfaRelayContext<Relay>,
-        destination_height: &<Relay::DstChain as OfaChain>::Height,
+        destination_height: &<Relay::DstChain as OfaChainTypes>::Height,
         packet: &Relay::Packet,
-        ack: &<Relay::DstChain as OfaChain>::WriteAcknowledgementEvent,
+        ack: &<Relay::DstChain as OfaChainTypes>::WriteAcknowledgementEvent,
     ) -> Result<SrcChain::Message, OfaErrorContext<Relay::Error>> {
         let message = relay
             .relay
@@ -198,7 +198,7 @@ where
 {
     async fn build_timeout_unordered_packet_message(
         relay: &OfaRelayContext<Relay>,
-        destination_height: &<Relay::DstChain as OfaChain>::Height,
+        destination_height: &<Relay::DstChain as OfaChainTypes>::Height,
         packet: &Relay::Packet,
     ) -> Result<SrcChain::Message, OfaErrorContext<Relay::Error>> {
         let message = relay

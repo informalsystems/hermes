@@ -8,7 +8,7 @@ use ibc_relayer::chain::requests::{
 };
 use ibc_relayer::consensus_state::AnyConsensusState;
 use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
-use ibc_relayer_framework::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
+use ibc_relayer_framework::one_for_all::traits::chain::{OfaChain, OfaChainTypes, OfaIbcChain};
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
 use ibc_relayer_framework::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
@@ -29,18 +29,13 @@ use crate::cosmos::core::types::message::CosmosIbcMessage;
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
 use crate::cosmos::core::types::telemetry::CosmosTelemetry;
 
-#[async_trait]
-impl<Chain> OfaChain for CosmosChainContext<Chain>
+impl<Chain> OfaChainTypes for CosmosChainContext<Chain>
 where
     Chain: CosmosChain,
 {
-    type Components = Chain::Components;
-
     type Error = Error;
 
     type Runtime = CosmosRuntimeContext;
-
-    type Telemetry = CosmosTelemetry;
 
     type Height = Height;
 
@@ -69,6 +64,16 @@ where
     type ConsensusState = ConsensusState;
 
     type ChainStatus = ChainStatus;
+}
+
+#[async_trait]
+impl<Chain> OfaChain for CosmosChainContext<Chain>
+where
+    Chain: CosmosChain,
+{
+    type Components = Chain::Components;
+
+    type Telemetry = CosmosTelemetry;
 
     fn encode_raw_message(message: &CosmosIbcMessage, signer: &Signer) -> Result<Any, Error> {
         (message.to_protobuf_fn)(signer).map_err(Error::encode)

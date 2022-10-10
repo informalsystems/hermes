@@ -4,7 +4,7 @@ use core::marker::PhantomData;
 use crate::addons::batch::context::{BatchChannel, BatchContext, HasBatchContext};
 use crate::core::traits::core::Async;
 use crate::core::traits::target::{DestinationTarget, SourceTarget};
-use crate::one_for_all::traits::chain::OfaChain;
+use crate::one_for_all::traits::chain::OfaChainTypes;
 use crate::one_for_all::traits::error::OfaErrorContext;
 use crate::one_for_all::traits::relay::{OfaRelay, OfaRelayContext};
 use crate::std_prelude::*;
@@ -15,7 +15,7 @@ pub struct OfaBatchContext<Chain> {
 }
 
 #[async_trait]
-pub trait OfaBatch<Chain: OfaChain>: Async {
+pub trait OfaBatch<Chain: OfaChainTypes>: Async {
     type BatchSender: Async;
     type BatchReceiver: Async;
 
@@ -46,7 +46,7 @@ pub trait OfaBatch<Chain: OfaChain>: Async {
     ) -> Result<(), Chain::Error>;
 }
 
-pub trait OfaChainWithBatch: OfaChain {
+pub trait OfaChainWithBatch: OfaChainTypes {
     type BatchContext: OfaBatch<Self>;
 
     fn batch_channel(
