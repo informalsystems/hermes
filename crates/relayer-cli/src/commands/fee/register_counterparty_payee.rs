@@ -17,6 +17,7 @@ pub struct RegisterCounterpartyPayeeCmd {
     #[clap(
         long = "chain",
         required = true,
+        value_name = "CHAIN_ID",
         help_heading = "FLAGS",
         help = "Identifier of the chain"
     )]
@@ -24,7 +25,9 @@ pub struct RegisterCounterpartyPayeeCmd {
 
     #[clap(
         long = "channel",
+        visible_alias = "chan",
         required = true,
+        value_name = "CHANNEL_ID",
         help_heading = "FLAGS",
         help = "Identifier of the channel"
     )]
@@ -33,6 +36,7 @@ pub struct RegisterCounterpartyPayeeCmd {
     #[clap(
         long = "port",
         required = true,
+        value_name = "PORT_ID",
         help_heading = "FLAGS",
         help = "Identifier of the port"
     )]
@@ -41,6 +45,7 @@ pub struct RegisterCounterpartyPayeeCmd {
     #[clap(
         long = "counterparty-payee",
         required = true,
+        value_name = "COUNTERPARTY_PAYEE_ADDRESS",
         help_heading = "FLAGS",
         help = "Address of the counterparty payee"
     )]
@@ -90,4 +95,117 @@ fn run_register_counterparty_payee_command(
         .map_err(Error::relayer)?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::RegisterCounterpartyPayeeCmd;
+
+    use abscissa_core::clap::Parser;
+    use std::str::FromStr;
+
+    use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+
+    #[test]
+    fn test_register_counterparty_payee() {
+        assert_eq!(
+            RegisterCounterpartyPayeeCmd {
+                chain_id: ChainId::from_string("chain_a"),
+                channel_id: ChannelId::from_str("channel_a").unwrap(),
+                port_id: PortId::from_str("port_a").unwrap(),
+                counterparty_payee_address: "counterparty_address_hash".to_owned(),
+            },
+            RegisterCounterpartyPayeeCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_a",
+                "--channel",
+                "channel_a",
+                "--port",
+                "port_a",
+                "--counterparty-payee",
+                "counterparty_address_hash"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_register_counterparty_payee_alias() {
+        assert_eq!(
+            RegisterCounterpartyPayeeCmd {
+                chain_id: ChainId::from_string("chain_a"),
+                channel_id: ChannelId::from_str("channel_a").unwrap(),
+                port_id: PortId::from_str("port_a").unwrap(),
+                counterparty_payee_address: "counterparty_address_hash".to_owned(),
+            },
+            RegisterCounterpartyPayeeCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_a",
+                "--chan",
+                "channel_a",
+                "--port",
+                "port_a",
+                "--counterparty-payee",
+                "counterparty_address_hash"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_register_counterparty_payee_no_counterparty_payee() {
+        assert!(RegisterCounterpartyPayeeCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_a",
+            "--channel",
+            "channel_a",
+            "--port",
+            "port_a"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_register_counterparty_payee_no_port() {
+        assert!(RegisterCounterpartyPayeeCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_a",
+            "--channel",
+            "channel_a",
+            "--counterparty-payee",
+            "counterparty_address_hash"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_register_counterparty_payee_no_channel() {
+        assert!(RegisterCounterpartyPayeeCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_a",
+            "--port",
+            "port_a",
+            "--counterparty-payee",
+            "counterparty_address_hash"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_register_counterparty_payee_no_chain() {
+        assert!(RegisterCounterpartyPayeeCmd::try_parse_from(&[
+            "test",
+            "--channel",
+            "channel_a",
+            "--port",
+            "port_a",
+            "--counterparty-payee",
+            "counterparty_address_hash"
+        ])
+        .is_err())
+    }
 }

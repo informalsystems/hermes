@@ -17,6 +17,7 @@ pub struct RegisterPayeeCmd {
     #[clap(
         long = "chain",
         required = true,
+        value_name = "CHAIN_ID",
         help_heading = "FLAGS",
         help = "Identifier of the chain"
     )]
@@ -24,7 +25,9 @@ pub struct RegisterPayeeCmd {
 
     #[clap(
         long = "channel",
+        visible_alias = "chan",
         required = true,
+        value_name = "CHANNEL_ID",
         help_heading = "FLAGS",
         help = "Identifier of the channel"
     )]
@@ -33,6 +36,7 @@ pub struct RegisterPayeeCmd {
     #[clap(
         long = "port",
         required = true,
+        value_name = "PORT_ID",
         help_heading = "FLAGS",
         help = "Identifier of the port"
     )]
@@ -41,6 +45,7 @@ pub struct RegisterPayeeCmd {
     #[clap(
         long = "payee",
         required = true,
+        value_name = "PAYEE_ADDRESS",
         help_heading = "FLAGS",
         help = "Address of the payee"
     )]
@@ -85,4 +90,116 @@ fn run_register_payee_command(
         .map_err(Error::relayer)?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::RegisterPayeeCmd;
+
+    use abscissa_core::clap::Parser;
+    use std::str::FromStr;
+
+    use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+
+    #[test]
+    fn test_regiser_payee() {
+        assert_eq!(
+            RegisterPayeeCmd {
+                chain_id: ChainId::from_string("chain_a"),
+                channel_id: ChannelId::from_str("channel_a").unwrap(),
+                port_id: PortId::from_str("port_a").unwrap(),
+                payee_address: "payee_address_hash".to_owned(),
+            },
+            RegisterPayeeCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_a",
+                "--channel",
+                "channel_a",
+                "--port",
+                "port_a",
+                "--payee",
+                "payee_address_hash"
+            ])
+        )
+    }
+    #[test]
+    fn test_regiser_payee_alias() {
+        assert_eq!(
+            RegisterPayeeCmd {
+                chain_id: ChainId::from_string("chain_a"),
+                channel_id: ChannelId::from_str("channel_a").unwrap(),
+                port_id: PortId::from_str("port_a").unwrap(),
+                payee_address: "payee_address_hash".to_owned(),
+            },
+            RegisterPayeeCmd::parse_from(&[
+                "test",
+                "--chain",
+                "chain_a",
+                "--chan",
+                "channel_a",
+                "--port",
+                "port_a",
+                "--payee",
+                "payee_address_hash"
+            ])
+        )
+    }
+
+    #[test]
+    fn test_register_payee_no_payee() {
+        assert!(RegisterPayeeCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_a",
+            "--channel",
+            "channel_a",
+            "--port",
+            "port_a"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_register_payee_no_port() {
+        assert!(RegisterPayeeCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_a",
+            "--channel",
+            "channel_a",
+            "--payee",
+            "payee_address_hash"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_register_payee_no_channel() {
+        assert!(RegisterPayeeCmd::try_parse_from(&[
+            "test",
+            "--chain",
+            "chain_a",
+            "--port",
+            "port_a",
+            "--payee",
+            "payee_address_hash"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_register_payee_no_chain() {
+        assert!(RegisterPayeeCmd::try_parse_from(&[
+            "test",
+            "--channel",
+            "channel_a",
+            "--port",
+            "port_a",
+            "--payee",
+            "payee_address_hash"
+        ])
+        .is_err())
+    }
 }
