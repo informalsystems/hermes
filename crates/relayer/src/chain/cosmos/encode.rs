@@ -188,6 +188,9 @@ fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, V
     let auth_info = AuthInfo {
         signer_infos: vec![signer_info],
         fee: Some(fee),
+
+        // Since Cosmos SDK v0.46.0
+        tip: None,
     };
 
     // A protobuf serialization of a AuthInfo
