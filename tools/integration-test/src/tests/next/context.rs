@@ -1,9 +1,9 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::filter::PacketFilter;
-use ibc_relayer_cosmos::cosmos::contexts::full::chain::CosmosChainContext;
-use ibc_relayer_cosmos::cosmos::contexts::full::relay::new_relay_context_with_batch;
-use ibc_relayer_cosmos::cosmos::full::all_for_one::relay::AfoCosmosFullRelayContext;
-use ibc_relayer_cosmos::cosmos::full::types::telemetry::{CosmosTelemetry, TelemetryState};
+use ibc_relayer_cosmos::contexts::full::chain::CosmosChainContext;
+use ibc_relayer_cosmos::contexts::full::relay::new_relay_context_with_batch;
+use ibc_relayer_cosmos::full::all_for_one::relay::AfoCosmosFullRelayContext;
+use ibc_relayer_cosmos::full::types::telemetry::{CosmosTelemetry, TelemetryState};
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_test_framework::types::binary::chains::ConnectedChains;
 

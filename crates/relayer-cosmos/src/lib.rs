@@ -6,7 +6,9 @@
 
 extern crate alloc;
 
-pub mod cosmos;
+pub mod base;
+pub mod contexts;
+pub mod full;
 
 #[cfg(test)]
 pub mod tests;
