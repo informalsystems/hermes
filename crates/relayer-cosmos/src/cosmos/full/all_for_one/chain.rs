@@ -1,4 +1,4 @@
-use ibc_relayer_framework::base::all_for_one::traits::chain::AfoCounterpartyContext;
+use ibc_relayer_framework::base::all_for_one::chain::AfoCounterpartyContext;
 use ibc_relayer_framework::full::all_for_one::chain::AfoFullChainContext;
 
 use crate::cosmos::base::all_for_one::chain::AfoCosmosChainContext;

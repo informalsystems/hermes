@@ -1,5 +1,5 @@
-use crate::base::all_for_one::traits::chain::AfoChainContext;
-use crate::base::all_for_one::traits::error::AfoError;
+use crate::base::all_for_one::chain::AfoChainContext;
+use crate::base::all_for_one::error::AfoError;
 use crate::base::traits::contexts::relay::RelayContext;
 use crate::base::traits::ibc_message_sender::HasIbcMessageSender;
 use crate::base::traits::messages::ack_packet::HasAckPacketMessageBuilder;

@@ -3,9 +3,9 @@
 //! functionality implement the required trait bounds, i.e. `OfaRelayWrapper` or
 //! `OfaChainWrapper`, etc.
 
-use crate::base::all_for_one::traits::chain::AfoChainContext;
-use crate::base::all_for_one::traits::error::AfoError;
-use crate::base::all_for_one::traits::relay::AfoRelayContext;
+use crate::base::all_for_one::chain::AfoChainContext;
+use crate::base::all_for_one::error::AfoError;
+use crate::base::all_for_one::relay::AfoRelayContext;
 use crate::base::one_for_all::traits::chain::{OfaChain, OfaChainWrapper, OfaIbcChain};
 use crate::base::one_for_all::traits::components::chain::OfaIbcChainComponents;
 use crate::base::one_for_all::traits::components::relay::OfaRelayComponents;
