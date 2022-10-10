@@ -153,6 +153,7 @@ impl Configurable<Config> for CliCmd {
 
         match self {
             CliCmd::Tx(cmd) => cmd.override_config(config),
+            CliCmd::Fee(cmd) => cmd.override_config(config),
             // CliCmd::Help(cmd) => cmd.override_config(config),
             // CliCmd::Keys(cmd) => cmd.override_config(config),
             // CliCmd::Create(cmd) => cmd.override_config(config),

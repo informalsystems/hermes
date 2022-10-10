@@ -1353,9 +1353,9 @@ checksum = "eabb4a44450da02c90444cf74558da904edde8fb4e9035a9a6a4e15445af0bd7"
 
 [[package]]
 name = "handlebars"
-version = "4.3.4"
+version = "4.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "56b224eaa4987c03c30b251de7ef0c15a6a59f34222905850dbc3026dfb24d5f"
+checksum = "433e4ab33f1213cdc25b5fa45c76881240cfe79284cf2b395e8b9e312a30a2fd"
 dependencies = [
  "log",
  "pest",
@@ -1680,7 +1680,7 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.20.1"
-source = "git+https://github.com/cosmos/ibc-proto-rs?branch=romac/ibc-v5#a4c4e17bcbb020bbecf1257729aa6ecb95519a48"
+source = "git+https://github.com/cosmos/ibc-proto-rs#65c050e3a20e3a1ef3c1247788b5013112e207d7"
 dependencies = [
  "base64",
  "bytes",
@@ -3718,9 +3718,9 @@ dependencies = [
 
 [[package]]
 name = "signature"
-version = "1.6.3"
+version = "1.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "deb766570a2825fa972bceff0d195727876a9cdf2460ab2e52d455dc2de47fd9"
+checksum = "74233d3b3b2f6d4b006dc19dee745e73e2a6bfb6f93607cd3b02bd5b00797d7c"
 dependencies = [
  "digest 0.10.5",
  "rand_core 0.6.4",
