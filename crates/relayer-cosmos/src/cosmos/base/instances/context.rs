@@ -5,13 +5,13 @@ use ibc_relayer_framework::base::one_for_all::traits::components::relay::OfaRela
 use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelayWrapper;
 use ibc_relayer_framework::base::traits::contexts::chain::ChainContext;
 
-use crate::cosmos::all_for_one::chain::AfoCosmosChainWrapper;
-use crate::cosmos::all_for_one::relay::AfoCosmosRelayWrapper;
-use crate::cosmos::core::traits::chain::CosmosChain;
-use crate::cosmos::core::traits::filter::CosmosFilter;
-use crate::cosmos::core::traits::relay::CosmosRelay;
-use crate::cosmos::core::types::chain::CosmosChainWrapper;
-use crate::cosmos::core::types::relay::CosmosRelayWrapper;
+use crate::cosmos::base::all_for_one::chain::AfoCosmosChainWrapper;
+use crate::cosmos::base::all_for_one::relay::AfoCosmosRelayWrapper;
+use crate::cosmos::base::traits::chain::CosmosChain;
+use crate::cosmos::base::traits::filter::CosmosFilter;
+use crate::cosmos::base::traits::relay::CosmosRelay;
+use crate::cosmos::base::types::chain::CosmosChainWrapper;
+use crate::cosmos::base::types::relay::CosmosRelayWrapper;
 
 pub fn relay_context<Relay, Filter>() -> PhantomData<impl AfoCosmosRelayWrapper>
 where

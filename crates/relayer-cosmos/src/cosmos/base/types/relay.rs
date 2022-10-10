@@ -2,11 +2,11 @@ use alloc::sync::Arc;
 use ibc_relayer_framework::base::one_for_all::traits::chain::OfaChainWrapper;
 use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
 
-use crate::cosmos::core::impls::filters::FilterWrapper;
-use crate::cosmos::core::traits::filter::CosmosFilter;
-use crate::cosmos::core::traits::relay::CosmosRelay;
-use crate::cosmos::core::types::chain::CosmosChainWrapper;
-use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
+use crate::cosmos::base::impls::filters::FilterWrapper;
+use crate::cosmos::base::traits::filter::CosmosFilter;
+use crate::cosmos::base::traits::relay::CosmosRelay;
+use crate::cosmos::base::types::chain::CosmosChainWrapper;
+use crate::cosmos::base::types::runtime::CosmosRuntimeContext;
 
 #[derive(Clone)]
 pub struct CosmosRelayWrapper<Relay: CosmosRelay, Filter: CosmosFilter + Clone> {

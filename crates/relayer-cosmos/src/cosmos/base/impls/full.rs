@@ -1,11 +1,11 @@
 use ibc_relayer_framework::full::one_for_all::traits::chain::OfaFullChain;
 use ibc_relayer_framework::full::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 
-use crate::cosmos::core::traits::chain::CosmosFullChain;
-use crate::cosmos::core::types::batch::CosmosBatchChannel;
-use crate::cosmos::core::types::chain::CosmosChainWrapper;
-use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
-use crate::cosmos::core::types::telemetry::CosmosTelemetry;
+use crate::cosmos::base::traits::chain::CosmosFullChain;
+use crate::cosmos::base::types::batch::CosmosBatchChannel;
+use crate::cosmos::base::types::chain::CosmosChainWrapper;
+use crate::cosmos::base::types::runtime::CosmosRuntimeContext;
+use crate::cosmos::base::types::telemetry::CosmosTelemetry;
 
 impl<Chain> OfaFullChain for CosmosChainWrapper<Chain>
 where

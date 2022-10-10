@@ -4,7 +4,7 @@ use ibc_relayer::keyring::KeyEntry;
 use ibc_relayer_framework::base::one_for_all::components::default::DefaultComponents;
 use ibc_relayer_types::signer::Signer;
 
-use crate::cosmos::core::traits::chain::CosmosChain;
+use crate::cosmos::base::traits::chain::CosmosChain;
 
 #[derive(Clone)]
 pub struct CosmosChainContext<Handle: ChainHandle> {

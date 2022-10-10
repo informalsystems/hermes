@@ -1,4 +1,4 @@
-use crate::cosmos::core::{
+use crate::cosmos::base::{
     traits::{filter::CosmosFilter, relay::CosmosRelay},
     types::relay::CosmosRelayWrapper,
 };

@@ -1,4 +1,4 @@
-use crate::cosmos::core::error::Error;
+use crate::cosmos::base::error::Error;
 use ibc_relayer_framework::base::one_for_all::traits::error::OfaError;
 
 impl OfaError for Error {

@@ -7,10 +7,10 @@ use ibc_relayer_framework::full::one_for_all::traits::batch::OfaBatchContext;
 use ibc_relayer_framework::full::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_types::signer::Signer;
 
-use crate::cosmos::core::traits::chain::{CosmosChain, CosmosFullChain};
-use crate::cosmos::core::types::batch::CosmosBatchChannel;
-use crate::cosmos::core::types::chain::CosmosChainWrapper;
-use crate::cosmos::core::types::telemetry::CosmosTelemetry;
+use crate::cosmos::base::traits::chain::{CosmosChain, CosmosFullChain};
+use crate::cosmos::base::types::batch::CosmosBatchChannel;
+use crate::cosmos::base::types::chain::CosmosChainWrapper;
+use crate::cosmos::base::types::telemetry::CosmosTelemetry;
 
 #[derive(Clone)]
 pub struct CosmosChainContext<Handle: ChainHandle> {

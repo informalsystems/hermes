@@ -3,8 +3,8 @@ use std::sync::{Arc, Mutex};
 use tendermint::abci::responses::Event;
 use tokio::sync::{mpsc, oneshot};
 
-use crate::cosmos::core::error::Error;
-use crate::cosmos::core::types::message::CosmosIbcMessage;
+use crate::cosmos::base::error::Error;
+use crate::cosmos::base::types::message::CosmosIbcMessage;
 
 pub type CosmosBatchPayload = (
     Vec<CosmosIbcMessage>,

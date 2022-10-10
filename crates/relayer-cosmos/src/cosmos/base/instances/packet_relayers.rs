@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::cosmos::all_for_one::relay::AfoCosmosRelayWrapper;
+use crate::cosmos::base::all_for_one::relay::AfoCosmosRelayWrapper;
 use ibc_relayer_framework::base::impls::packet_relayers::filter_relayer::FilterRelayer;
 use ibc_relayer_framework::base::impls::packet_relayers::top::TopRelayer;
 use ibc_relayer_framework::base::traits::contexts::filter::{HasPacketFilter, PacketFilter};

@@ -9,11 +9,11 @@ use ibc_relayer_framework::full::batch::spawn::{
 use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelayWrapper;
 use ibc_relayer_framework::base::traits::target::{DestinationTarget, SourceTarget};
 
+use crate::cosmos::base::traits::filter::CosmosFilter;
+use crate::cosmos::base::types::relay::CosmosRelayWrapper;
+use crate::cosmos::base::types::runtime::CosmosRuntimeContext;
 use crate::cosmos::contexts::base::relay::CosmosRelayContext;
 use crate::cosmos::contexts::full::chain::CosmosChainContext;
-use crate::cosmos::core::traits::filter::CosmosFilter;
-use crate::cosmos::core::types::relay::CosmosRelayWrapper;
-use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
 
 pub fn new_relay_context_with_batch<SrcChain, DstChain, Filter>(
     runtime: CosmosRuntimeContext,

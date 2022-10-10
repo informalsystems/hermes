@@ -16,16 +16,16 @@ use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelay;
 
 use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
 
-use crate::cosmos::core::error::Error;
-use crate::cosmos::core::impls::filters::FilterWrapper;
+use crate::cosmos::base::error::Error;
+use crate::cosmos::base::impls::filters::FilterWrapper;
 
-use crate::cosmos::core::traits::chain::CosmosChain;
-use crate::cosmos::core::traits::filter::CosmosFilter;
-use crate::cosmos::core::traits::relay::CosmosRelay;
-use crate::cosmos::core::types::chain::CosmosChainWrapper;
-use crate::cosmos::core::types::message::CosmosIbcMessage;
-use crate::cosmos::core::types::relay::CosmosRelayWrapper;
-use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
+use crate::cosmos::base::traits::chain::CosmosChain;
+use crate::cosmos::base::traits::filter::CosmosFilter;
+use crate::cosmos::base::traits::relay::CosmosRelay;
+use crate::cosmos::base::types::chain::CosmosChainWrapper;
+use crate::cosmos::base::types::message::CosmosIbcMessage;
+use crate::cosmos::base::types::relay::CosmosRelayWrapper;
+use crate::cosmos::base::types::runtime::CosmosRuntimeContext;
 
 #[async_trait]
 impl<Relay, Filter> OfaRelay for CosmosRelayWrapper<Relay, Filter>

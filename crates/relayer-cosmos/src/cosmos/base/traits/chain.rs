@@ -5,8 +5,8 @@ use ibc_relayer_framework::base::traits::core::Async;
 use ibc_relayer_framework::full::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_types::signer::Signer;
 
-use crate::cosmos::core::types::batch::CosmosBatchChannel;
-use crate::cosmos::core::types::telemetry::CosmosTelemetry;
+use crate::cosmos::base::types::batch::CosmosBatchChannel;
+use crate::cosmos::base::types::telemetry::CosmosTelemetry;
 
 pub trait CosmosChain: Async {
     type Components;

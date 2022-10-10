@@ -13,8 +13,8 @@ use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::Height;
 use tendermint::abci::responses::Event;
 
-use crate::cosmos::core::error::Error;
-use crate::cosmos::core::types::message::CosmosIbcMessage;
+use crate::cosmos::base::error::Error;
+use crate::cosmos::base::types::message::CosmosIbcMessage;
 
 pub trait AfoCosmosChainWrapper<Counterparty>:
     AfoChainContext<

@@ -23,11 +23,11 @@ use ibc_relayer_types::Height;
 use prost::Message as _;
 use tendermint::abci::responses::Event;
 
-use crate::cosmos::core::error::Error;
-use crate::cosmos::core::traits::chain::CosmosChain;
-use crate::cosmos::core::types::chain::CosmosChainWrapper;
-use crate::cosmos::core::types::message::CosmosIbcMessage;
-use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
+use crate::cosmos::base::error::Error;
+use crate::cosmos::base::traits::chain::CosmosChain;
+use crate::cosmos::base::types::chain::CosmosChainWrapper;
+use crate::cosmos::base::types::message::CosmosIbcMessage;
+use crate::cosmos::base::types::runtime::CosmosRuntimeContext;
 
 impl<Chain> OfaChainTypes for CosmosChainWrapper<Chain>
 where

@@ -2,8 +2,8 @@ use ibc_relayer_framework::base::all_for_one::traits::relay::AfoRelayContext;
 use ibc_relayer_framework::base::one_for_all::traits::error::OfaErrorContext;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 
-use crate::cosmos::all_for_one::chain::AfoCosmosChainWrapper;
-use crate::cosmos::core::error::Error;
+use crate::cosmos::base::all_for_one::chain::AfoCosmosChainWrapper;
+use crate::cosmos::base::error::Error;
 
 pub trait AfoCosmosRelayWrapper:
     AfoRelayContext<
