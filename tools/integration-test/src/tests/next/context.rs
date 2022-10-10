@@ -1,10 +1,10 @@
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_cosmos::cosmos::base::traits::filter::CosmosFilter;
 use ibc_relayer_cosmos::cosmos::base::types::relay::CosmosRelayWrapper;
-use ibc_relayer_cosmos::cosmos::base::types::telemetry::{CosmosTelemetry, TelemetryState};
 use ibc_relayer_cosmos::cosmos::contexts::base::relay::CosmosRelayContext;
 use ibc_relayer_cosmos::cosmos::contexts::full::chain::CosmosChainContext;
 use ibc_relayer_cosmos::cosmos::contexts::full::relay::new_relay_context_with_batch;
+use ibc_relayer_cosmos::cosmos::full::types::telemetry::{CosmosTelemetry, TelemetryState};
 use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelayWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_test_framework::types::binary::chains::ConnectedChains;
