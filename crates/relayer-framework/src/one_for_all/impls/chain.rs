@@ -9,7 +9,7 @@ use crate::core::traits::queries::consensus_state::{ConsensusStateQuerier, HasCo
 use crate::core::traits::queries::received_packet::{
     HasReceivedPacketQuerier, ReceivedPacketQuerier,
 };
-use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext, OfaIbcChain};
+use crate::one_for_all::traits::chain::{OfaChain, OfaChainContext, OfaFullChain, OfaIbcChain};
 use crate::one_for_all::traits::error::OfaErrorContext;
 use crate::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::one_for_all::traits::telemetry::OfaTelemetryWrapper;
@@ -27,7 +27,7 @@ impl<Chain: OfaChain> HasRuntime for OfaChainContext<Chain> {
     }
 }
 
-impl<Chain: OfaChain> HasTelemetry for OfaChainContext<Chain> {
+impl<Chain: OfaFullChain> HasTelemetry for OfaChainContext<Chain> {
     type Telemetry = OfaTelemetryWrapper<Chain::Telemetry>;
 
     fn telemetry(&self) -> &Self::Telemetry {

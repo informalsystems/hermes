@@ -1,6 +1,5 @@
 use crate::core::traits::contexts::chain::{ChainContext, IbcChainContext};
 use crate::core::traits::contexts::ibc_event::HasIbcEvents;
-use crate::core::traits::contexts::telemetry::HasTelemetry;
 use crate::core::traits::queries::consensus_state::{HasConsensusState, HasConsensusStateQuerier};
 use crate::core::traits::queries::received_packet::HasReceivedPacketQuerier;
 use crate::core::traits::queries::status::HasChainStatusQuerier;
@@ -12,7 +11,6 @@ pub trait AfoChainContext<Counterparty>:
     + HasConsensusStateQuerier<Counterparty>
     + HasReceivedPacketQuerier<Counterparty>
     + HasChainStatusQuerier
-    + HasTelemetry
 where
     Counterparty: AfoCounterpartyContext<Self>,
 {
@@ -32,8 +30,7 @@ where
         + HasConsensusState<Counterparty>
         + HasConsensusStateQuerier<Counterparty>
         + HasReceivedPacketQuerier<Counterparty>
-        + HasChainStatusQuerier
-        + HasTelemetry,
+        + HasChainStatusQuerier,
 {
 }
 

@@ -10,11 +10,11 @@ use ibc_relayer_framework::core::traits::target::{DestinationTarget, SourceTarge
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
 
 use crate::cosmos::basic::relay::CosmosRelayEnv;
-use crate::cosmos::batch::chain::CosmosChainEnv;
 use crate::cosmos::core::traits::filter::CosmosFilter;
 use crate::cosmos::core::types::relay::CosmosRelayContext;
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
 use crate::cosmos::core::types::telemetry::CosmosTelemetry;
+use crate::cosmos::full::chain::CosmosChainEnv;
 
 pub fn new_relay_context_with_batch<SrcChain, DstChain, Filter>(
     runtime: CosmosRuntimeContext,

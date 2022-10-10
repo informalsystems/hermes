@@ -10,7 +10,6 @@ use ibc_relayer::consensus_state::AnyConsensusState;
 use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
 use ibc_relayer_framework::one_for_all::traits::chain::{OfaChain, OfaChainTypes, OfaIbcChain};
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
-use ibc_relayer_framework::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
@@ -27,7 +26,6 @@ use crate::cosmos::core::traits::chain::CosmosChain;
 use crate::cosmos::core::types::chain::CosmosChainContext;
 use crate::cosmos::core::types::message::CosmosIbcMessage;
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
-use crate::cosmos::core::types::telemetry::CosmosTelemetry;
 
 impl<Chain> OfaChainTypes for CosmosChainContext<Chain>
 where
@@ -72,8 +70,6 @@ where
     Chain: CosmosChain,
 {
     type Components = Chain::Components;
-
-    type Telemetry = CosmosTelemetry;
 
     fn encode_raw_message(message: &CosmosIbcMessage, signer: &Signer) -> Result<Any, Error> {
         (message.to_protobuf_fn)(signer).map_err(Error::encode)
@@ -140,10 +136,6 @@ where
             .map_err(Error::relayer)?;
 
         Ok(status)
-    }
-
-    fn telemetry(&self) -> &OfaTelemetryWrapper<CosmosTelemetry> {
-        &self.telemetry
     }
 }
 

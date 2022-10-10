@@ -2,7 +2,7 @@ use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::keyring::KeyEntry;
 use ibc_relayer_framework::addons::batch::context::new_batch_channel;
-use ibc_relayer_framework::one_for_all::components::batch::BatchComponents;
+use ibc_relayer_framework::one_for_all::components::full::FullComponents;
 use ibc_relayer_framework::one_for_all::traits::batch::OfaBatchContext;
 use ibc_relayer_types::signer::Signer;
 
@@ -40,7 +40,7 @@ impl<Handle> CosmosChain for CosmosChainEnv<Handle>
 where
     Handle: ChainHandle,
 {
-    type Components = BatchComponents;
+    type Components = FullComponents;
 
     type ChainHandle = Handle;
 

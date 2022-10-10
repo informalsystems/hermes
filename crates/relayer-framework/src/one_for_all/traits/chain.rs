@@ -61,8 +61,6 @@ pub trait OfaChainTypes: Async {
 pub trait OfaChain: OfaChainTypes {
     type Components;
 
-    type Telemetry: OfaTelemetry;
-
     fn encode_raw_message(
         message: &Self::Message,
         signer: &Self::Signer,
@@ -84,8 +82,6 @@ pub trait OfaChain: OfaChainTypes {
         &self,
         messages: Vec<Self::Message>,
     ) -> Result<Vec<Vec<Self::Event>>, Self::Error>;
-
-    fn telemetry(&self) -> &OfaTelemetryWrapper<Self::Telemetry>;
 
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error>;
 }
@@ -111,8 +107,10 @@ where
     ) -> Result<bool, Self::Error>;
 }
 
-pub trait OfaFullChain: OfaChainTypes {
+pub trait OfaFullChain: OfaChain {
     type BatchContext: OfaBatch<Self>;
+
+    type Telemetry: OfaTelemetry;
 
     fn batch_channel(
         &self,
@@ -120,4 +118,6 @@ pub trait OfaFullChain: OfaChainTypes {
         <Self::BatchContext as OfaBatch<Self>>::BatchSender,
         <Self::BatchContext as OfaBatch<Self>>::BatchReceiver,
     >;
+
+    fn telemetry(&self) -> &OfaTelemetryWrapper<Self::Telemetry>;
 }

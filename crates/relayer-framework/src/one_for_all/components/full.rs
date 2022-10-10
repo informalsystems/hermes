@@ -4,35 +4,38 @@ use crate::core::impls::message_senders::update_client::SendIbcMessagesWithUpdat
 use crate::core::impls::messages::skip_update_client::SkipUpdateClient;
 use crate::core::impls::messages::wait_update_client::WaitUpdateClient;
 use crate::core::impls::packet_relayers::top::TopRelayer;
+use crate::core::impls::queries::consensus_state::ConsensusStateTelemetryQuerier;
+use crate::core::impls::queries::status::ChainStatusTelemetryQuerier;
 use crate::one_for_all::impls::chain::OfaConsensusStateQuerier;
 use crate::one_for_all::impls::relay::OfaUpdateClientMessageBuilder;
 use crate::one_for_all::impls::status::OfaChainStatusQuerier;
-use crate::one_for_all::traits::chain::{OfaChain, OfaFullChain, OfaIbcChain};
+use crate::one_for_all::traits::chain::{OfaFullChain, OfaIbcChain};
 use crate::one_for_all::traits::components::batch::OfaBatchComponents;
 use crate::one_for_all::traits::components::chain::{OfaChainComponents, OfaIbcChainComponents};
 use crate::one_for_all::traits::components::relay::OfaRelayComponents;
 use crate::one_for_all::traits::relay::OfaRelay;
 
-pub struct BatchComponents;
+pub struct FullComponents;
 
-impl<Chain> OfaChainComponents<Chain> for BatchComponents
+impl<Chain> OfaChainComponents<Chain> for FullComponents
 where
-    Chain: OfaChain,
+    Chain: OfaFullChain,
 {
-    type ChainStatusQuerier = OfaChainStatusQuerier;
+    type ChainStatusQuerier = ChainStatusTelemetryQuerier<OfaChainStatusQuerier>;
 }
 
-impl<Chain, Counterparty> OfaIbcChainComponents<Chain, Counterparty> for BatchComponents
+impl<Chain, Counterparty> OfaIbcChainComponents<Chain, Counterparty> for FullComponents
 where
+    Chain: OfaFullChain,
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaIbcChain<Chain>,
 {
-    type ConsensusStateQuerier = OfaConsensusStateQuerier;
+    type ConsensusStateQuerier = ConsensusStateTelemetryQuerier<OfaConsensusStateQuerier>;
 }
 
-impl<Relay> OfaRelayComponents<Relay> for BatchComponents
+impl<Relay> OfaRelayComponents<Relay> for FullComponents
 where
-    Relay: OfaRelay<Components = BatchComponents>,
+    Relay: OfaRelay<Components = FullComponents>,
     Relay::SrcChain: OfaFullChain,
     Relay::DstChain: OfaFullChain,
 {
@@ -44,9 +47,9 @@ where
     type IbcMessageSender = SendMessagetoBatchWorker;
 }
 
-impl<Relay> OfaBatchComponents<Relay> for BatchComponents
+impl<Relay> OfaBatchComponents<Relay> for FullComponents
 where
-    Relay: OfaRelay<Components = BatchComponents>,
+    Relay: OfaRelay<Components = FullComponents>,
     Relay::SrcChain: OfaFullChain,
     Relay::DstChain: OfaFullChain,
 {
