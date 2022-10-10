@@ -1,7 +1,6 @@
 use ibc_relayer::config::PacketFilter;
 
-use ibc_relayer_framework::base::impls::packet_relayers::top::TopRelayer;
-use ibc_relayer_framework::base::traits::packet_relayer::PacketRelayer;
+use ibc_relayer_framework::base::traits::packet_relayer::HasPacketRelayer;
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
@@ -67,11 +66,7 @@ impl BinaryChannelTest for IbcTransferTest {
 
         info!("running relayer");
 
-        runtime.block_on(async {
-            TopRelayer::relay_packet(&relay_context, &packet)
-                .await
-                .unwrap()
-        });
+        runtime.block_on(async { relay_context.relay_packet(&packet).await.unwrap() });
 
         info!("finished running relayer");
 

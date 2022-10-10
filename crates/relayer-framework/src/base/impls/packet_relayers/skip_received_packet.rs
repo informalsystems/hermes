@@ -13,12 +13,6 @@ pub struct SkipReceivedPacketRelayer<Relayer> {
     pub phantom: PhantomData<Relayer>,
 }
 
-impl<Relayer> SkipReceivedPacketRelayer<Relayer> {
-    pub fn new(phantom: PhantomData<Relayer>) -> Self {
-        Self { phantom }
-    }
-}
-
 #[async_trait]
 impl<Relay, Relayer> ReceivePacketRelayer<Relay> for SkipReceivedPacketRelayer<Relayer>
 where

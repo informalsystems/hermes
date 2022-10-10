@@ -6,6 +6,7 @@ use crate::base::traits::messages::ack_packet::HasAckPacketMessageBuilder;
 use crate::base::traits::messages::receive_packet::HasReceivePacketMessageBuilder;
 use crate::base::traits::messages::timeout_packet::HasTimeoutUnorderedPacketMessageBuilder;
 use crate::base::traits::messages::update_client::HasUpdateClientMessageBuilder;
+use crate::base::traits::packet_relayer::HasPacketRelayer;
 use crate::base::traits::target::{DestinationTarget, SourceTarget};
 
 /// The functionality that a relay context gains access to once that relay
@@ -19,6 +20,7 @@ pub trait AfoRelayContext:
     + HasReceivePacketMessageBuilder
     + HasAckPacketMessageBuilder
     + HasTimeoutUnorderedPacketMessageBuilder
+    + HasPacketRelayer
 {
     type AfoError: AfoError;
 
@@ -39,6 +41,7 @@ where
         + HasIbcMessageSender<DestinationTarget>
         + HasReceivePacketMessageBuilder
         + HasAckPacketMessageBuilder
+        + HasPacketRelayer
         + HasTimeoutUnorderedPacketMessageBuilder,
 {
     type AfoError = Error;

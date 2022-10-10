@@ -2,9 +2,11 @@ use crate::base::impls::message_senders::chain_sender::SendIbcMessagesToChain;
 use crate::base::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
 use crate::base::impls::messages::skip_update_client::SkipUpdateClient;
 use crate::base::impls::messages::wait_update_client::WaitUpdateClient;
+use crate::base::impls::packet_relayers::base_ack_packet::BaseAckPacketRelayer;
 use crate::base::impls::packet_relayers::base_receive_packet::BaseReceivePacketRelayer;
+use crate::base::impls::packet_relayers::full_relay::FullRelayer;
+use crate::base::impls::packet_relayers::retry::RetryRelayer;
 use crate::base::impls::packet_relayers::skip_received_packet::SkipReceivedPacketRelayer;
-use crate::base::impls::packet_relayers::top::TopRelayer;
 use crate::base::one_for_all::impls::chain::OfaConsensusStateQuerier;
 use crate::base::one_for_all::impls::relay::OfaUpdateClientMessageBuilder;
 use crate::base::one_for_all::impls::status::OfaChainStatusQuerier;
@@ -36,9 +38,11 @@ impl<Relay> OfaRelayComponents<Relay> for DefaultComponents
 where
     Relay: OfaRelay<Components = DefaultComponents>,
 {
-    type PacketRelayer = TopRelayer;
+    type PacketRelayer = RetryRelayer<FullRelayer>;
 
     type ReceivePacketRelayer = SkipReceivedPacketRelayer<BaseReceivePacketRelayer>;
+
+    type AckPacketRelayer = BaseAckPacketRelayer;
 
     type UpdateClientMessageBuilder =
         SkipUpdateClient<WaitUpdateClient<OfaUpdateClientMessageBuilder>>;

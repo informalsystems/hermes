@@ -16,7 +16,7 @@ use tendermint::abci::responses::Event;
 use crate::cosmos::base::error::Error;
 use crate::cosmos::base::types::message::CosmosIbcMessage;
 
-pub trait AfoCosmosChainWrapper<Counterparty>:
+pub trait AfoCosmosChainContext<Counterparty>:
     AfoChainContext<
     Counterparty,
     Error = OfaErrorContext<Error>,
@@ -40,7 +40,7 @@ where
 {
 }
 
-impl<Chain, Counterparty> AfoCosmosChainWrapper<Counterparty> for Chain
+impl<Chain, Counterparty> AfoCosmosChainContext<Counterparty> for Chain
 where
     Chain: AfoChainContext<
         Counterparty,

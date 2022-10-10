@@ -12,28 +12,27 @@ use crate::base::traits::packet_relayer::PacketRelayer;
 use crate::base::traits::packet_relayers::ack_packet::AckPacketRelayer;
 use crate::base::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
 
-pub fn full_packet_relayer<Relay>() -> impl PacketRelayer<OfaRelayWrapper<Relay>>
+pub fn full_packet_relayer<Relay>() -> PhantomData<impl PacketRelayer<OfaRelayWrapper<Relay>>>
 where
     Relay: OfaRelay,
     Relay::Components: OfaRelayComponents<Relay>,
 {
-    RetryRelayer::<
-        FullRelayer<SkipReceivedPacketRelayer<BaseReceivePacketRelayer>, BaseAckPacketRelayer>,
-    >::new(PhantomData)
+    PhantomData::<RetryRelayer<FullRelayer>>
 }
 
-pub fn receive_packet_relayer<Relay: OfaRelay>() -> impl ReceivePacketRelayer<OfaRelayWrapper<Relay>>
+pub fn receive_packet_relayer<Relay: OfaRelay>(
+) -> PhantomData<impl ReceivePacketRelayer<OfaRelayWrapper<Relay>>>
 where
     Relay: OfaRelay,
     Relay::Components: OfaRelayComponents<Relay>,
 {
-    SkipReceivedPacketRelayer::<BaseReceivePacketRelayer>::new(PhantomData)
+    PhantomData::<SkipReceivedPacketRelayer<BaseReceivePacketRelayer>>
 }
 
-pub fn ack_packet_relayer<Relay>() -> impl AckPacketRelayer<OfaRelayWrapper<Relay>>
+pub fn ack_packet_relayer<Relay>() -> PhantomData<impl AckPacketRelayer<OfaRelayWrapper<Relay>>>
 where
     Relay: OfaRelay,
     Relay::Components: OfaRelayComponents<Relay>,
 {
-    BaseAckPacketRelayer
+    PhantomData::<BaseAckPacketRelayer>
 }

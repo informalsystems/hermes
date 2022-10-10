@@ -2,10 +2,10 @@ use ibc_relayer_framework::base::all_for_one::traits::relay::AfoRelayContext;
 use ibc_relayer_framework::base::one_for_all::traits::error::OfaErrorContext;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 
-use crate::cosmos::base::all_for_one::chain::AfoCosmosChainWrapper;
+use crate::cosmos::base::all_for_one::chain::AfoCosmosChainContext;
 use crate::cosmos::base::error::Error;
 
-pub trait AfoCosmosRelayWrapper:
+pub trait AfoCosmosRelayContext:
     AfoRelayContext<
     AfoError = OfaErrorContext<Error>,
     AfoSrcChain = Self::CosmosSrcChain,
@@ -13,12 +13,12 @@ pub trait AfoCosmosRelayWrapper:
     Packet = Packet,
 >
 {
-    type CosmosSrcChain: AfoCosmosChainWrapper<Self::CosmosDstChain>;
+    type CosmosSrcChain: AfoCosmosChainContext<Self::CosmosDstChain>;
 
-    type CosmosDstChain: AfoCosmosChainWrapper<Self::CosmosSrcChain>;
+    type CosmosDstChain: AfoCosmosChainContext<Self::CosmosSrcChain>;
 }
 
-impl<Relay, SrcChain, DstChain> AfoCosmosRelayWrapper for Relay
+impl<Relay, SrcChain, DstChain> AfoCosmosRelayContext for Relay
 where
     Relay: AfoRelayContext<
         AfoError = OfaErrorContext<Error>,
@@ -26,8 +26,8 @@ where
         AfoDstChain = DstChain,
         Packet = Packet,
     >,
-    SrcChain: AfoCosmosChainWrapper<DstChain>,
-    DstChain: AfoCosmosChainWrapper<SrcChain>,
+    SrcChain: AfoCosmosChainContext<DstChain>,
+    DstChain: AfoCosmosChainContext<SrcChain>,
 {
     type CosmosSrcChain = SrcChain;
     type CosmosDstChain = DstChain;
