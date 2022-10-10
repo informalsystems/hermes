@@ -190,7 +190,7 @@ impl WorkerMap {
     pub fn workers_for_chain(&self, chain_id: &ChainId) -> Vec<&WorkerHandle> {
         self.workers
             .iter()
-            .filter_map(|(o, h)| o.for_chain(chain_id).then(|| h))
+            .filter_map(|(o, h)| o.for_chain(chain_id).then_some(h))
             .collect()
     }
 
