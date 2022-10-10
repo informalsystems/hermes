@@ -1,5 +1,5 @@
-use ibc::core::ics04_channel::Version;
-use ibc::events::IbcEvent;
+use ibc_relayer_types::core::ics04_channel::version::Version;
+use ibc_relayer_types::events::IbcEvent;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
 
