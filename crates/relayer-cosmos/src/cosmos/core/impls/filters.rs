@@ -3,12 +3,12 @@ use crate::cosmos::core::{
     types::relay::CosmosRelayContext,
 };
 use async_trait::async_trait;
-use ibc::core::ics04_channel::packet::Packet;
 use ibc_relayer::config::filter::PacketFilter as IbcChannelFilter;
 use ibc_relayer_framework::{
     core::traits::contexts::{error::HasError, filter::PacketFilter},
     one_for_all::traits::relay::OfaRelayContext,
 };
+use ibc_relayer_types::core::ics04_channel::packet::Packet;
 
 impl CosmosFilter for IbcChannelFilter {
     fn should_relay_packet(&self, packet: &Packet) -> bool {

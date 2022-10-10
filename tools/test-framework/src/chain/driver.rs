@@ -8,10 +8,10 @@ use alloc::sync::Arc;
 use eyre::eyre;
 use tokio::runtime::Runtime;
 
-use ibc::core::ics24_host::identifier::ChainId;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tendermint::abci::responses::Event;
 
 use crate::chain::cli::query::query_balance;

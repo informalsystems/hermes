@@ -3,7 +3,7 @@
 use core::fmt;
 use core::str::FromStr;
 
-use ibc::core::ics24_host::identifier::{ChannelId, PortId};
+use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 use itertools::Itertools;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
@@ -279,7 +279,7 @@ impl<'de> Deserialize<'de> for ChannelFilterMatch {
 
 pub(crate) mod port {
     use super::*;
-    use ibc::core::ics24_host::identifier::PortId;
+    use ibc_relayer_types::core::ics24_host::identifier::PortId;
 
     pub struct PortFilterMatchVisitor;
 
@@ -307,7 +307,7 @@ pub(crate) mod port {
 
 pub(crate) mod channel {
     use super::*;
-    use ibc::core::ics24_host::identifier::ChannelId;
+    use ibc_relayer_types::core::ics24_host::identifier::ChannelId;
 
     pub struct ChannelFilterMatchVisitor;
 
@@ -358,7 +358,7 @@ mod tests {
     fn serialize_packet_filter_policy() {
         use std::str::FromStr;
 
-        use ibc::core::ics24_host::identifier::{ChannelId, PortId};
+        use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 
         let filter_policy = ChannelFilters(vec![
             (

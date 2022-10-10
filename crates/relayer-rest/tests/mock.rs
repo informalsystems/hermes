@@ -2,12 +2,12 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
-use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::{
     config::ChainConfig,
     rest::request::{Request, VersionInfo},
     supervisor::dump_state::SupervisorState,
 };
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 use ibc_relayer_rest::{server::spawn, Config};
 

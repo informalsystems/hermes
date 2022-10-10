@@ -1,10 +1,10 @@
-use ibc::signer::Signer;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::keyring::KeyEntry;
 use ibc_relayer_framework::addons::batch::context::new_batch_channel;
 use ibc_relayer_framework::one_for_all::components::batch::BatchComponents;
 use ibc_relayer_framework::one_for_all::traits::batch::OfaBatchContext;
+use ibc_relayer_types::signer::Signer;
 
 use crate::cosmos::core::traits::batch::CosmosChainWithBatch;
 use crate::cosmos::core::traits::chain::CosmosChain;

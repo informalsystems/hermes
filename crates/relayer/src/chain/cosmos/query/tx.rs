@@ -1,8 +1,8 @@
-use ibc::core::ics02_client::height::Height;
-use ibc::core::ics04_channel::packet::{Packet, Sequence};
-use ibc::core::ics24_host::identifier::ChainId;
-use ibc::events::IbcEvent;
-use ibc::Height as ICSHeight;
+use ibc_relayer_types::core::ics02_client::height::Height;
+use ibc_relayer_types::core::ics04_channel::packet::{Packet, Sequence};
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer_types::Height as ICSHeight;
 use tendermint::abci::transaction::Hash as TxHash;
 use tendermint::abci::Event;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;

@@ -1,5 +1,5 @@
 use core::time::Duration;
-use ibc::core::ics04_channel::packet::Packet;
+use ibc_relayer_types::core::ics04_channel::packet::Packet;
 
 use crate::chain::cli::transfer::local_transfer_token;
 use crate::chain::driver::ChainDriver;

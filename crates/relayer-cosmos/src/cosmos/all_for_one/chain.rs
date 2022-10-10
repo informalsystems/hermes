@@ -1,14 +1,14 @@
-use ibc::clients::ics07_tendermint::consensus_state::ConsensusState;
-use ibc::core::ics04_channel::events::WriteAcknowledgement;
-use ibc::core::ics04_channel::packet::Sequence;
-use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use ibc::signer::Signer;
-use ibc::timestamp::Timestamp;
-use ibc::Height;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer_framework::all_for_one::traits::chain::{AfoChainContext, AfoCounterpartyContext};
 use ibc_relayer_framework::one_for_all::traits::error::OfaErrorContext;
+use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
+use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use ibc_relayer_types::signer::Signer;
+use ibc_relayer_types::timestamp::Timestamp;
+use ibc_relayer_types::Height;
 use tendermint::abci::responses::Event;
 
 use crate::cosmos::core::error::Error;

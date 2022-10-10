@@ -1,7 +1,7 @@
 use flex_error::define_error;
 use serde::{Deserialize, Serialize};
 
-use ibc::core::{
+use ibc_relayer_types::core::{
     ics02_client::{client_state::ClientState, events::UpdateClient},
     ics03_connection::events::Attributes as ConnectionAttributes,
     ics04_channel::events::{
@@ -131,9 +131,9 @@ impl Wallet {
 }
 
 /// An object determines the amount of parallelism that can
-/// be exercised when processing [`IbcEvent`](ibc::events::IbcEvent)
+/// be exercised when processing [`IbcEvent`](ibc_relayer_types::events::IbcEvent)
 /// between two chains. For each [`Object`], a corresponding
-/// [`WorkerHandle`](crate::worker::WorkerHandle) is spawned and all [`IbcEvent`](ibc::events::IbcEvent)s mapped
+/// [`WorkerHandle`](crate::worker::WorkerHandle) is spawned and all [`IbcEvent`](ibc_relayer_types::events::IbcEvent)s mapped
 /// to an [`Object`] are sent to the associated [`WorkerHandle`](crate::worker::WorkerHandle)
 /// for processing.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -355,7 +355,7 @@ impl Object {
     }
 
     /// Build the Connection object associated with the given
-    /// [`Open`](ibc::core::ics03_connection::connection::State::Open)
+    /// [`Open`](ibc_relayer_types::core::ics03_connection::connection::State::Open)
     /// connection event.
     pub fn connection_from_conn_open_events(
         e: &ConnectionAttributes,
@@ -378,7 +378,7 @@ impl Object {
     }
 
     /// Build the Channel object associated with the given
-    /// [`Open`](ibc::core::ics04_channel::channel::State::Open) channel event.
+    /// [`Open`](ibc_relayer_types::core::ics04_channel::channel::State::Open) channel event.
     pub fn channel_from_chan_open_events(
         attributes: &Attributes,
         src_chain: &impl ChainHandle,

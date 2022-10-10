@@ -1,6 +1,6 @@
-use ibc::core::ics04_channel::packet::Packet;
 use ibc_relayer_framework::all_for_one::traits::relay::AfoRelayContext;
 use ibc_relayer_framework::one_for_all::traits::error::OfaErrorContext;
+use ibc_relayer_types::core::ics04_channel::packet::Packet;
 
 use crate::cosmos::all_for_one::chain::AfoCosmosChainContext;
 use crate::cosmos::core::error::Error;

@@ -4,8 +4,8 @@ use std::time::Instant;
 
 use tracing::{debug, error, trace, trace_span};
 
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc::events::IbcEvent;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc_relayer_types::events::IbcEvent;
 
 use crate::chain::requests::{QueryTxHash, QueryTxRequest};
 use crate::chain::tracking::TrackingId;

@@ -1,5 +1,5 @@
-use ibc::events::IbcEvent;
 use ibc_relayer::chain::tracking::TrackedMsgs;
+use ibc_relayer_types::events::IbcEvent;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::transfer::build_transfer_message;
 

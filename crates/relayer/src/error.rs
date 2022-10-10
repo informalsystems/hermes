@@ -22,7 +22,7 @@ use tonic::{
     Status as GrpcStatus,
 };
 
-use ibc::{
+use ibc_relayer_types::{
     clients::ics07_tendermint::error as tendermint_error,
     core::{
         ics02_client::{client_type::ClientType, error as client_error},

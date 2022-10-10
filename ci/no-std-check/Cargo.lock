@@ -736,7 +736,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "ibc"
+name = "ibc-proto"
+version = "0.20.1"
+source = "git+https://github.com/cosmos/ibc-proto-rs#3fac7ce93c80126cc690d565c85be042e384b31c"
+dependencies = [
+ "base64",
+ "bytes",
+ "flex-error",
+ "prost",
+ "serde",
+ "subtle-encoding",
+ "tendermint-proto",
+]
+
+[[package]]
+name = "ibc-relayer-types"
 version = "0.19.0"
 dependencies = [
  "bytes",
@@ -761,20 +775,6 @@ dependencies = [
  "time",
  "tracing",
  "uint",
-]
-
-[[package]]
-name = "ibc-proto"
-version = "0.20.1"
-source = "git+https://github.com/cosmos/ibc-proto-rs#3fac7ce93c80126cc690d565c85be042e384b31c"
-dependencies = [
- "base64",
- "bytes",
- "flex-error",
- "prost",
- "serde",
- "subtle-encoding",
- "tendermint-proto",
 ]
 
 [[package]]
@@ -1020,8 +1020,8 @@ dependencies = [
 name = "no-std-check"
 version = "0.1.0"
 dependencies = [
- "ibc",
  "ibc-proto",
+ "ibc-relayer-types",
  "sp-core",
  "sp-io",
  "sp-runtime",

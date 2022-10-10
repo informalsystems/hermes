@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use ibc::{
+use ibc_relayer_types::{
     core::{
         ics02_client::client_state::ClientState,
         ics03_connection::connection::{

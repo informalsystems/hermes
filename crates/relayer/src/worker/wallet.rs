@@ -44,7 +44,7 @@ pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
 
 #[cfg(test)]
 mod tests {
-    use ibc::bigint::U256;
+    use ibc_relayer_types::bigint::U256;
 
     // Test to confirm that any u256 fits in f64
     #[test]

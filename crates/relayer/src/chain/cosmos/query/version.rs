@@ -1,7 +1,7 @@
 use http::uri::Uri;
-use ibc::core::ics24_host::identifier::ChainId;
 use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
 use ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 use crate::chain::cosmos::version::Specs;
 use crate::error::Error;

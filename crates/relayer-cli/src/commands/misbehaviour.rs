@@ -1,20 +1,20 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use ibc::core::ics02_client::events::UpdateClient;
-use ibc::core::ics24_host::identifier::{ChainId, ClientId};
-use ibc::events::IbcEvent;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use ibc_relayer::config::Config;
 use ibc_relayer::foreign_client::{ForeignClient, MisbehaviourResults};
 use ibc_relayer::util::pretty::PrettySlice;
+use ibc_relayer_types::core::ics02_client::events::UpdateClient;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
+use ibc_relayer_types::events::IbcEvent;
 use std::ops::Deref;
 
 use crate::cli_utils::{spawn_chain_runtime, spawn_chain_runtime_generic};
 use crate::conclude::Output;
 use crate::prelude::*;
 use eyre::eyre;
-use ibc::core::ics02_client::client_state::ClientState;
+use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct MisbehaviourCmd {
@@ -145,7 +145,7 @@ mod tests {
     use std::str::FromStr;
 
     use abscissa_core::clap::Parser;
-    use ibc::core::ics24_host::identifier::{ChainId, ClientId};
+    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 
     #[test]
     fn test_misbehaviour() {

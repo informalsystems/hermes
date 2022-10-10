@@ -1,12 +1,4 @@
 use async_trait::async_trait;
-use ibc::clients::ics07_tendermint::consensus_state::ConsensusState;
-use ibc::core::ics04_channel::events::WriteAcknowledgement;
-use ibc::core::ics04_channel::packet::Sequence;
-use ibc::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use ibc::events::IbcEventType;
-use ibc::signer::Signer;
-use ibc::timestamp::Timestamp;
-use ibc::Height;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::endpoint::ChainStatus;
@@ -19,6 +11,14 @@ use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
 use ibc_relayer_framework::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
 use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
 use ibc_relayer_framework::one_for_all::traits::telemetry::OfaTelemetryWrapper;
+use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
+use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use ibc_relayer_types::events::IbcEventType;
+use ibc_relayer_types::signer::Signer;
+use ibc_relayer_types::timestamp::Timestamp;
+use ibc_relayer_types::Height;
 use prost::Message as _;
 use tendermint::abci::responses::Event;
 

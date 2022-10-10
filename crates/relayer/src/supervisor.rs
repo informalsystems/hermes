@@ -9,7 +9,7 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 use itertools::Itertools;
 use tracing::{debug, error, error_span, info, instrument, trace, warn};
 
-use ibc::{
+use ibc_relayer_types::{
     core::ics24_host::identifier::{ChainId, ChannelId, PortId},
     events::IbcEvent,
     Height,
@@ -744,37 +744,39 @@ where
     Src: ChainHandle,
     Dst: ChainHandle,
 {
-    for e in events {
-        match e.event.clone() {
-            IbcEvent::SendPacket(send_packet_ev) => {
-                ibc_telemetry::global().send_packet_events(
-                    send_packet_ev.packet.sequence.into(),
-                    e.height.revision_height(),
-                    &src.id(),
-                    &path.src_channel_id,
-                    &path.src_port_id,
-                    &dst.id(),
-                );
+    telemetry! {
+        for e in events {
+            match e.event.clone() {
+                IbcEvent::SendPacket(send_packet_ev) => {
+                    ibc_telemetry::global().send_packet_events(
+                        send_packet_ev.packet.sequence.into(),
+                        e.height.revision_height(),
+                        &src.id(),
+                        &path.src_channel_id,
+                        &path.src_port_id,
+                        &dst.id(),
+                    );
+                }
+                IbcEvent::WriteAcknowledgement(write_ack_ev) => {
+                    ibc_telemetry::global().acknowledgement_events(
+                        write_ack_ev.packet.sequence.into(),
+                        e.height.revision_height(),
+                        &src.id(),
+                        &path.src_channel_id,
+                        &path.src_port_id,
+                        &dst.id(),
+                    );
+                }
+                IbcEvent::TimeoutPacket(_) => {
+                    ibc_telemetry::global().timeout_events(
+                        &src.id(),
+                        &path.src_channel_id,
+                        &path.src_port_id,
+                        &dst.id(),
+                    );
+                }
+                _ => {}
             }
-            IbcEvent::WriteAcknowledgement(write_ack_ev) => {
-                ibc_telemetry::global().acknowledgement_events(
-                    write_ack_ev.packet.sequence.into(),
-                    e.height.revision_height(),
-                    &src.id(),
-                    &path.src_channel_id,
-                    &path.src_port_id,
-                    &dst.id(),
-                );
-            }
-            IbcEvent::TimeoutPacket(_) => {
-                ibc_telemetry::global().timeout_events(
-                    &src.id(),
-                    &path.src_channel_id,
-                    &path.src_port_id,
-                    &dst.id(),
-                );
-            }
-            _ => {}
         }
     }
 }
@@ -824,7 +826,7 @@ pub struct CollectedEvents {
     pub height: Height,
     /// The chain from which the events were emitted.
     pub chain_id: ChainId,
-    /// [`NewBlock`](ibc::events::IbcEventType::NewBlock) event
+    /// [`NewBlock`](ibc_relayer_types::events::IbcEventType::NewBlock) event
     /// collected from the [`EventBatch`].
     pub new_block: Option<IbcEvent>,
     /// Mapping between [`Object`]s and their associated [`IbcEvent`]s.
@@ -845,7 +847,7 @@ impl CollectedEvents {
     }
 
     /// Whether the collected events include a
-    /// [`NewBlock`](ibc::events::IbcEventType::NewBlock) event.
+    /// [`NewBlock`](ibc_relayer_types::events::IbcEventType::NewBlock) event.
     pub fn has_new_block(&self) -> bool {
         self.new_block.is_some()
     }

@@ -1,20 +1,20 @@
-use ibc::signer::SignerError;
+use ibc_relayer_types::signer::SignerError;
 use std::str::FromStr;
 
 use core::time::Duration;
 
 use flex_error::{define_error, DetailOnly};
-use ibc::applications::transfer::error::Error as Ics20Error;
-use ibc::applications::transfer::msgs::transfer::MsgTransfer;
-use ibc::applications::transfer::Amount;
-use ibc::core::ics04_channel::timeout::TimeoutHeight;
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc::events::IbcEvent;
-use ibc::signer::Signer;
-use ibc::timestamp::{Timestamp, TimestampOverflowError};
-use ibc::tx_msg::Msg;
 use ibc_proto::cosmos::base::v1beta1::Coin;
 use ibc_proto::google::protobuf::Any;
+use ibc_relayer_types::applications::transfer::error::Error as Ics20Error;
+use ibc_relayer_types::applications::transfer::msgs::transfer::MsgTransfer;
+use ibc_relayer_types::applications::transfer::Amount;
+use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer_types::signer::Signer;
+use ibc_relayer_types::timestamp::{Timestamp, TimestampOverflowError};
+use ibc_relayer_types::tx_msg::Msg;
 
 use crate::chain::endpoint::ChainStatus;
 use crate::chain::handle::ChainHandle;

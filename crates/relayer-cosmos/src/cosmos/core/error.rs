@@ -1,8 +1,8 @@
 use eyre::Report;
 use flex_error::{define_error, DisplayOnly, ErrorMessageTracer, TraceError};
-use ibc::core::ics04_channel::error::Error as ChannelError;
 use ibc_relayer::error::Error as RelayerError;
 use ibc_relayer::foreign_client::ForeignClientError;
+use ibc_relayer_types::core::ics04_channel::error::Error as ChannelError;
 use prost::EncodeError;
 
 use ibc_relayer_runtime::tokio::error::Error as TokioError;

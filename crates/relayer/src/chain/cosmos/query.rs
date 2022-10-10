@@ -1,7 +1,7 @@
-use ibc::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use tendermint_rpc::query::Query;
 
 use crate::chain::requests::{QueryClientEventRequest, QueryPacketEventDataRequest, QueryTxHash};
-use tendermint_rpc::query::Query;
 
 pub mod abci;
 pub mod account;

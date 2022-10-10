@@ -1,6 +1,6 @@
-use ibc::signer::Signer;
-use ibc::Height;
 use ibc_proto::google::protobuf::Any;
+use ibc_relayer_types::signer::Signer;
+use ibc_relayer_types::Height;
 use prost::EncodeError;
 
 pub struct CosmosIbcMessage {

@@ -18,7 +18,7 @@ all-features = true
 [features]
 
 [dependencies]
-ibc           = { version = "0.19.0", path = "../modules" }
+ibc-relayer-types = { version = "0.19.0", path = "../relayer-types" }
 ibc-proto     = { version = "0.20.1" }
 ibc-relayer     = { version = "0.19.0", path = "../relayer" }
 ibc-relayer-runtime = { version = "0.1.0", path = "../relayer-runtime" }

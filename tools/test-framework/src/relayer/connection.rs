@@ -4,12 +4,14 @@
 
 use core::time::Duration;
 use eyre::eyre;
-use ibc::core::ics03_connection::connection::State as ConnectionState;
-use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
-use ibc::timestamp::ZERO_DURATION;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryConnectionRequest, QueryHeight};
 use ibc_relayer::connection::{extract_connection_id, Connection, ConnectionSide};
+use ibc_relayer_types::core::ics03_connection::connection::State as ConnectionState;
+use ibc_relayer_types::core::ics03_connection::connection::{
+    ConnectionEnd, IdentifiedConnectionEnd,
+};
+use ibc_relayer_types::timestamp::ZERO_DURATION;
 
 use crate::error::Error;
 use crate::types::id::{TaggedClientIdRef, TaggedConnectionId, TaggedConnectionIdRef};

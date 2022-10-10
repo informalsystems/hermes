@@ -5,17 +5,6 @@ pub use retry::{
     retry_with_index, Error as RetryError, OperationResult as RetryResult,
 };
 
-pub fn retry_count<E>(err: &RetryError<E>) -> u64 {
-    match err {
-        RetryError::Operation {
-            tries,
-            total_delay: _,
-            error: _,
-        } => *tries,
-        _ => 0,
-    }
-}
-
 #[derive(Copy, Clone, Debug)]
 pub struct ConstantGrowth {
     delay: Duration,

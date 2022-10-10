@@ -4,7 +4,7 @@
 
 use core::fmt::{self, Display};
 use eyre::Report as Error;
-use ibc::core::ics24_host::identifier::{ChannelId, PortId};
+use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 use sha2::{Digest, Sha256};
 use subtle_encoding::hex;
 

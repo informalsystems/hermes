@@ -1,15 +1,15 @@
 use async_trait::async_trait;
-use ibc::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
-use ibc::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
-use ibc::core::ics04_channel::msgs::timeout::MsgTimeout;
-use ibc::core::ics04_channel::packet::Packet;
-use ibc::core::ics04_channel::packet::PacketMsgType;
-use ibc::core::ics04_channel::timeout::TimeoutHeight;
-use ibc::tx_msg::Msg;
-use ibc::Height;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer_framework::core::traits::contexts::filter::HasPacketFilter;
+use ibc_relayer_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
+use ibc_relayer_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
+use ibc_relayer_types::core::ics04_channel::msgs::timeout::MsgTimeout;
+use ibc_relayer_types::core::ics04_channel::packet::Packet;
+use ibc_relayer_types::core::ics04_channel::packet::PacketMsgType;
+use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
+use ibc_relayer_types::tx_msg::Msg;
+use ibc_relayer_types::Height;
 
 use ibc_relayer_framework::one_for_all::traits::chain::{OfaChain, OfaChainContext};
 use ibc_relayer_framework::one_for_all::traits::relay::OfaRelay;
