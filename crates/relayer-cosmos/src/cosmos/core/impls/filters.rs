@@ -4,10 +4,9 @@ use crate::cosmos::core::{
 };
 use async_trait::async_trait;
 use ibc_relayer::config::filter::PacketFilter as IbcChannelFilter;
-use ibc_relayer_framework::{
-    core::traits::contexts::{error::HasError, filter::PacketFilter},
-    one_for_all::traits::relay::OfaRelayContext,
-};
+use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelayContext;
+use ibc_relayer_framework::base::traits::contexts::error::HasError;
+use ibc_relayer_framework::base::traits::contexts::filter::PacketFilter;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 
 impl CosmosFilter for IbcChannelFilter {

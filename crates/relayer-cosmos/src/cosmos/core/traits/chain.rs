@@ -1,7 +1,7 @@
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::keyring::KeyEntry;
-use ibc_relayer_framework::core::traits::core::Async;
+use ibc_relayer_framework::base::traits::core::Async;
 use ibc_relayer_types::signer::Signer;
 
 pub trait CosmosChain: Async {

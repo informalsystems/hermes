@@ -10,7 +10,5 @@ pub mod docs;
 
 mod std_prelude;
 
-pub mod addons;
-pub mod all_for_one;
-pub mod core;
-pub mod one_for_all;
+pub mod base;
+pub mod full;

@@ -1,7 +1,9 @@
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::endpoint::ChainStatus;
-use ibc_relayer_framework::all_for_one::traits::chain::{AfoChainContext, AfoCounterpartyContext};
-use ibc_relayer_framework::one_for_all::traits::error::OfaErrorContext;
+use ibc_relayer_framework::base::all_for_one::traits::chain::{
+    AfoChainContext, AfoCounterpartyContext,
+};
+use ibc_relayer_framework::base::one_for_all::traits::error::OfaErrorContext;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;

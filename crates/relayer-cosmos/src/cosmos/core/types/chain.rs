@@ -1,5 +1,5 @@
 use alloc::sync::Arc;
-use ibc_relayer_framework::one_for_all::traits::{
+use ibc_relayer_framework::base::one_for_all::traits::{
     runtime::OfaRuntimeContext, telemetry::OfaTelemetryWrapper,
 };
 

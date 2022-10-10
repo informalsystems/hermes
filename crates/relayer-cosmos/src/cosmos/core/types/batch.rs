@@ -1,4 +1,4 @@
-use ibc_relayer_framework::addons::batch::context::BatchChannel;
+use ibc_relayer_framework::full::batch::context::BatchChannel;
 use std::sync::{Arc, Mutex};
 use tendermint::abci::responses::Event;
 use tokio::sync::{mpsc, oneshot};

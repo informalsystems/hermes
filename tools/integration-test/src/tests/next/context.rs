@@ -5,7 +5,7 @@ use ibc_relayer_cosmos::cosmos::core::types::relay::CosmosRelayContext;
 use ibc_relayer_cosmos::cosmos::core::types::telemetry::{CosmosTelemetry, TelemetryState};
 use ibc_relayer_cosmos::cosmos::full::chain::CosmosChainEnv;
 use ibc_relayer_cosmos::cosmos::full::relay::new_relay_context_with_batch;
-use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
+use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelayContext;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_test_framework::types::binary::chains::ConnectedChains;
 

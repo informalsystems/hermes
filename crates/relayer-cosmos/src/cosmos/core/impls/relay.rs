@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
-use ibc_relayer_framework::core::traits::contexts::filter::HasPacketFilter;
+use ibc_relayer_framework::base::traits::contexts::filter::HasPacketFilter;
 use ibc_relayer_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use ibc_relayer_types::core::ics04_channel::msgs::timeout::MsgTimeout;
@@ -11,11 +11,11 @@ use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
-use ibc_relayer_framework::one_for_all::traits::chain::{OfaChainContext, OfaChainTypes};
-use ibc_relayer_framework::one_for_all::traits::relay::OfaRelay;
+use ibc_relayer_framework::base::one_for_all::traits::chain::{OfaChainContext, OfaChainTypes};
+use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelay;
 
-use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
-use ibc_relayer_framework::one_for_all::traits::telemetry::OfaTelemetryWrapper;
+use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
+use ibc_relayer_framework::base::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 
 use crate::cosmos::core::error::Error;
 use crate::cosmos::core::impls::filters::FilterWrapper;

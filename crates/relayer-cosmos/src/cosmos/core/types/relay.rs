@@ -1,7 +1,7 @@
 use alloc::sync::Arc;
-use ibc_relayer_framework::one_for_all::traits::chain::OfaChainContext;
-use ibc_relayer_framework::one_for_all::traits::runtime::OfaRuntimeContext;
-use ibc_relayer_framework::one_for_all::traits::telemetry::OfaTelemetryWrapper;
+use ibc_relayer_framework::base::one_for_all::traits::chain::OfaChainContext;
+use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
+use ibc_relayer_framework::base::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 
 use crate::cosmos::core::impls::filters::FilterWrapper;
 use crate::cosmos::core::traits::filter::CosmosFilter;

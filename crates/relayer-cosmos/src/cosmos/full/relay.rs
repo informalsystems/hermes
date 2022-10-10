@@ -1,13 +1,13 @@
 use alloc::sync::Arc;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
-use ibc_relayer_framework::addons::batch::config::BatchConfig;
-use ibc_relayer_framework::addons::batch::spawn::{
+use ibc_relayer_framework::full::batch::config::BatchConfig;
+use ibc_relayer_framework::full::batch::spawn::{
     BatchMessageWorkerSpawner, CanSpawnBatchMessageWorker,
 };
 
-use ibc_relayer_framework::core::traits::target::{DestinationTarget, SourceTarget};
-use ibc_relayer_framework::one_for_all::traits::relay::OfaRelayContext;
+use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelayContext;
+use ibc_relayer_framework::base::traits::target::{DestinationTarget, SourceTarget};
 
 use crate::cosmos::basic::relay::CosmosRelayEnv;
 use crate::cosmos::core::traits::filter::CosmosFilter;
