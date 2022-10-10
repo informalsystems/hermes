@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# This script is u$SED to generate the templates for the guide
+# This script is used to generate the templates for the guide
 SCRIPT_NAME="$0"
 SED=$(command -v gsed || command -v sed)
 
@@ -204,6 +204,16 @@ function generate_templates(){
             done
     done
 }
+
+function is_gnu_sed() {
+    $SED --version > /dev/null 2>&1
+}
+
+# BSD sed does not have a --version option: https://www.freebsd.org/cgi/man.cgi?query=sed&sektion=&n=1
+# GNU sed has a --version option: https://www.gnu.org/software/sed/manual/sed.pdf
+if ! is_gnu_sed ; then
+    echo "WARNING: gsed unavailable, using not GNU sed"
+fi
 
 commands=$(generate_commands)
 generate_help $commands
