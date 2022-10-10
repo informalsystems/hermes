@@ -1,5 +1,5 @@
-use ibc_relayer_framework::base::one_for_all::traits::chain::OfaFullChain;
 use ibc_relayer_framework::base::one_for_all::traits::telemetry::OfaTelemetryWrapper;
+use ibc_relayer_framework::full::one_for_all::traits::chain::OfaFullChain;
 
 use crate::cosmos::core::traits::batch::CosmosChainWithBatch;
 use crate::cosmos::core::types::batch::CosmosBatchChannel;
