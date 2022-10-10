@@ -13,7 +13,7 @@ use crate::cosmos::core::types::chain::CosmosChainWrapper;
 use crate::cosmos::core::types::telemetry::CosmosTelemetry;
 
 #[derive(Clone)]
-pub struct CosmosChainEnv<Handle: ChainHandle> {
+pub struct CosmosChainContext<Handle: ChainHandle> {
     pub handle: Handle,
     pub signer: Signer,
     pub tx_config: TxConfig,
@@ -22,7 +22,7 @@ pub struct CosmosChainEnv<Handle: ChainHandle> {
     pub telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
 }
 
-impl<Handle: ChainHandle> CosmosChainEnv<Handle> {
+impl<Handle: ChainHandle> CosmosChainContext<Handle> {
     pub fn new(
         handle: Handle,
         signer: Signer,
@@ -45,7 +45,7 @@ impl<Handle: ChainHandle> CosmosChainEnv<Handle> {
     }
 }
 
-impl<Handle> CosmosChain for CosmosChainEnv<Handle>
+impl<Handle> CosmosChain for CosmosChainContext<Handle>
 where
     Handle: ChainHandle,
 {
@@ -70,7 +70,7 @@ where
     }
 }
 
-impl<Handle> CosmosFullChain for CosmosChainEnv<Handle>
+impl<Handle> CosmosFullChain for CosmosChainContext<Handle>
 where
     Handle: ChainHandle,
 {

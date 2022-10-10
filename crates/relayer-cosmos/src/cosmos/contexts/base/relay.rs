@@ -4,7 +4,7 @@ use alloc::sync::Arc;
 use ibc_relayer::foreign_client::ForeignClient;
 
 #[derive(Clone)]
-pub struct CosmosRelayEnv<SrcChain, DstChain>
+pub struct CosmosRelayContext<SrcChain, DstChain>
 where
     SrcChain: CosmosChain,
     DstChain: CosmosChain,
@@ -21,7 +21,7 @@ where
     >,
 }
 
-impl<SrcChain, DstChain> CosmosRelayEnv<SrcChain, DstChain>
+impl<SrcChain, DstChain> CosmosRelayContext<SrcChain, DstChain>
 where
     SrcChain: CosmosChain,
     DstChain: CosmosChain,
@@ -49,7 +49,7 @@ where
     }
 }
 
-impl<SrcChain, DstChain, Components> CosmosRelay for CosmosRelayEnv<SrcChain, DstChain>
+impl<SrcChain, DstChain, Components> CosmosRelay for CosmosRelayContext<SrcChain, DstChain>
 where
     SrcChain: CosmosChain<Components = Components>,
     DstChain: CosmosChain<Components = Components>,

@@ -1,10 +1,10 @@
 use ibc_relayer::chain::handle::ChainHandle;
-use ibc_relayer_cosmos::cosmos::basic::relay::CosmosRelayEnv;
+use ibc_relayer_cosmos::cosmos::contexts::base::relay::CosmosRelayContext;
+use ibc_relayer_cosmos::cosmos::contexts::full::chain::CosmosChainContext;
+use ibc_relayer_cosmos::cosmos::contexts::full::relay::new_relay_context_with_batch;
 use ibc_relayer_cosmos::cosmos::core::traits::filter::CosmosFilter;
 use ibc_relayer_cosmos::cosmos::core::types::relay::CosmosRelayWrapper;
 use ibc_relayer_cosmos::cosmos::core::types::telemetry::{CosmosTelemetry, TelemetryState};
-use ibc_relayer_cosmos::cosmos::full::chain::CosmosChainEnv;
-use ibc_relayer_cosmos::cosmos::full::relay::new_relay_context_with_batch;
 use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelayWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 use ibc_test_framework::types::binary::chains::ConnectedChains;
@@ -17,7 +17,10 @@ pub fn build_cosmos_relay_context<ChainA, ChainB, Filter>(
     chains: &ConnectedChains<ChainA, ChainB>,
     filter: Filter,
 ) -> OfaRelayWrapper<
-    CosmosRelayWrapper<CosmosRelayEnv<CosmosChainEnv<ChainA>, CosmosChainEnv<ChainB>>, Filter>,
+    CosmosRelayWrapper<
+        CosmosRelayContext<CosmosChainContext<ChainA>, CosmosChainContext<ChainB>>,
+        Filter,
+    >,
 >
 //TODO : impl AfoRelayContext
 where
@@ -34,7 +37,7 @@ where
 
     let runtime = TokioRuntimeContext::new(chains.node_a.value().chain_driver.runtime.clone());
 
-    let chain_a = CosmosChainEnv::new(
+    let chain_a = CosmosChainContext::new(
         chains.handle_a.clone(),
         chains
             .node_a
@@ -50,7 +53,7 @@ where
         telemetry.clone(),
     );
 
-    let chain_b = CosmosChainEnv::new(
+    let chain_b = CosmosChainContext::new(
         chains.handle_b.clone(),
         chains
             .node_b

@@ -7,14 +7,14 @@ use ibc_relayer_types::signer::Signer;
 use crate::cosmos::core::traits::chain::CosmosChain;
 
 #[derive(Clone)]
-pub struct CosmosChainEnv<Handle: ChainHandle> {
+pub struct CosmosChainContext<Handle: ChainHandle> {
     pub handle: Handle,
     pub signer: Signer,
     pub tx_config: TxConfig,
     pub key_entry: KeyEntry,
 }
 
-impl<Handle: ChainHandle> CosmosChainEnv<Handle> {
+impl<Handle: ChainHandle> CosmosChainContext<Handle> {
     pub fn new(handle: Handle, signer: Signer, tx_config: TxConfig, key_entry: KeyEntry) -> Self {
         Self {
             handle,
@@ -25,7 +25,7 @@ impl<Handle: ChainHandle> CosmosChainEnv<Handle> {
     }
 }
 
-impl<Handle> CosmosChain for CosmosChainEnv<Handle>
+impl<Handle> CosmosChain for CosmosChainContext<Handle>
 where
     Handle: ChainHandle,
 {
