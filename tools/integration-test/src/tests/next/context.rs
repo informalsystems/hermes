@@ -4,6 +4,7 @@ use ibc_relayer_cosmos::cosmos::base::types::relay::CosmosRelayWrapper;
 use ibc_relayer_cosmos::cosmos::contexts::full::chain::CosmosChainContext;
 use ibc_relayer_cosmos::cosmos::contexts::full::relay::new_relay_context_with_batch;
 use ibc_relayer_cosmos::cosmos::contexts::full::relay::CosmosRelayContext;
+// use ibc_relayer_cosmos::cosmos::base::all_for_one::relay::AfoCosmosRelayContext;
 use ibc_relayer_cosmos::cosmos::full::types::telemetry::{CosmosTelemetry, TelemetryState};
 use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelayWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
@@ -19,7 +20,6 @@ pub fn build_cosmos_relay_context<ChainA, ChainB>(
 ) -> OfaRelayWrapper<
     CosmosRelayWrapper<CosmosRelayContext<CosmosChainContext<ChainA>, CosmosChainContext<ChainB>>>,
 >
-//TODO : impl AfoRelayContext
 where
     ChainA: ChainHandle,
     ChainB: ChainHandle,

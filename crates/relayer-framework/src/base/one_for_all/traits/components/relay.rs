@@ -9,6 +9,9 @@ use crate::base::traits::packet_relayers::ack_packet::{AckPacketRelayer, HasAckP
 use crate::base::traits::packet_relayers::receive_packet::{
     HasReceivePacketRelayer, ReceivePacketRelayer,
 };
+use crate::base::traits::packet_relayers::timeout_unordered_packet::{
+    HasTimeoutUnorderedPacketRelayer, TimeoutUnorderedPacketRelayer,
+};
 use crate::base::traits::target::{DestinationTarget, SourceTarget};
 
 pub trait OfaRelayComponents<Relay>:
@@ -22,6 +25,8 @@ where
     type ReceivePacketRelayer: ReceivePacketRelayer<OfaRelayWrapper<Relay>>;
 
     type AckPacketRelayer: AckPacketRelayer<OfaRelayWrapper<Relay>>;
+
+    type TimeoutUnorderedPacketRelayer: TimeoutUnorderedPacketRelayer<OfaRelayWrapper<Relay>>;
 
     type UpdateClientMessageBuilder: UpdateClientMessageBuilder<OfaRelayWrapper<Relay>, SourceTarget>
         + UpdateClientMessageBuilder<OfaRelayWrapper<Relay>, DestinationTarget>;
@@ -76,6 +81,14 @@ where
     Components: OfaRelayComponents<Relay>,
 {
     type AckPacketRelayer = Components::AckPacketRelayer;
+}
+
+impl<Relay, Components> HasTimeoutUnorderedPacketRelayer for OfaRelayWrapper<Relay>
+where
+    Relay: OfaRelay<Components = Components>,
+    Components: OfaRelayComponents<Relay>,
+{
+    type TimeoutUnorderedPacketRelayer = Components::TimeoutUnorderedPacketRelayer;
 }
 
 impl<Relay, Components> HasPacketRelayer for OfaRelayWrapper<Relay>

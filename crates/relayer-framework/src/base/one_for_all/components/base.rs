@@ -7,6 +7,7 @@ use crate::base::impls::packet_relayers::base_receive_packet::BaseReceivePacketR
 use crate::base::impls::packet_relayers::full_relay::FullRelayer;
 use crate::base::impls::packet_relayers::retry::RetryRelayer;
 use crate::base::impls::packet_relayers::skip_received_packet::SkipReceivedPacketRelayer;
+use crate::base::impls::packet_relayers::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
 use crate::base::one_for_all::impls::chain::OfaConsensusStateQuerier;
 use crate::base::one_for_all::impls::relay::OfaUpdateClientMessageBuilder;
 use crate::base::one_for_all::impls::status::OfaChainStatusQuerier;
@@ -43,6 +44,8 @@ where
     type ReceivePacketRelayer = SkipReceivedPacketRelayer<BaseReceivePacketRelayer>;
 
     type AckPacketRelayer = BaseAckPacketRelayer;
+
+    type TimeoutUnorderedPacketRelayer = BaseTimeoutUnorderedPacketRelayer;
 
     type UpdateClientMessageBuilder =
         SkipUpdateClient<WaitUpdateClient<OfaUpdateClientMessageBuilder>>;
