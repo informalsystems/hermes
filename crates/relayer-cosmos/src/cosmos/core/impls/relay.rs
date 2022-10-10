@@ -15,7 +15,7 @@ use ibc_relayer_framework::base::one_for_all::traits::chain::{OfaChainContext, O
 use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelay;
 
 use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
-use ibc_relayer_framework::base::one_for_all::traits::telemetry::OfaTelemetryWrapper;
+use ibc_relayer_framework::full::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 
 use crate::cosmos::core::error::Error;
 use crate::cosmos::core::impls::filters::FilterWrapper;

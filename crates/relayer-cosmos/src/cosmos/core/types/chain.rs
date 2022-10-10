@@ -1,7 +1,6 @@
 use alloc::sync::Arc;
-use ibc_relayer_framework::base::one_for_all::traits::{
-    runtime::OfaRuntimeContext, telemetry::OfaTelemetryWrapper,
-};
+use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
+use ibc_relayer_framework::full::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
 use crate::cosmos::core::types::telemetry::CosmosTelemetry;

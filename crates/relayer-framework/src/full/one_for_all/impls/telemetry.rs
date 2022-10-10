@@ -1,8 +1,8 @@
-use crate::base::one_for_all::traits::telemetry::{OfaTelemetry, OfaTelemetryWrapper};
 use crate::base::traits::runtime::telemetry::{
     BasicTelemetryContext, HasLabel, HasMetric, TelemetryCounter, TelemetryUpDownCounter,
     TelemetryValueRecorder,
 };
+use crate::full::one_for_all::traits::telemetry::{OfaTelemetry, OfaTelemetryWrapper};
 
 impl<Telemetry: HasLabel> HasLabel for OfaTelemetryWrapper<Telemetry> {
     type Label = Telemetry::Label;

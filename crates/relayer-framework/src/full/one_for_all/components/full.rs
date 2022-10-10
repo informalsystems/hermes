@@ -9,7 +9,6 @@ use crate::base::one_for_all::impls::chain::OfaConsensusStateQuerier;
 use crate::base::one_for_all::impls::relay::OfaUpdateClientMessageBuilder;
 use crate::base::one_for_all::impls::status::OfaChainStatusQuerier;
 use crate::base::one_for_all::traits::chain::OfaIbcChain;
-use crate::base::one_for_all::traits::components::batch::OfaBatchComponents;
 use crate::base::one_for_all::traits::components::chain::{
     OfaChainComponents, OfaIbcChainComponents,
 };
@@ -17,6 +16,7 @@ use crate::base::one_for_all::traits::components::relay::OfaRelayComponents;
 use crate::base::one_for_all::traits::relay::OfaRelay;
 use crate::full::batch::message_sender::SendMessagetoBatchWorker;
 use crate::full::one_for_all::traits::chain::OfaFullChain;
+use crate::full::one_for_all::traits::components::batch::OfaBatchComponents;
 
 pub struct FullComponents;
 
