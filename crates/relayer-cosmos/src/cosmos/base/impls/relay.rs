@@ -1,7 +1,6 @@
 use async_trait::async_trait;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
-use ibc_relayer_framework::base::traits::contexts::filter::HasPacketFilter;
 use ibc_relayer_types::core::ics04_channel::msgs::acknowledgement::MsgAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::msgs::recv_packet::MsgRecvPacket;
 use ibc_relayer_types::core::ics04_channel::msgs::timeout::MsgTimeout;
@@ -17,10 +16,8 @@ use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelay;
 use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
 
 use crate::cosmos::base::error::Error;
-use crate::cosmos::base::impls::filters::FilterWrapper;
 
 use crate::cosmos::base::traits::chain::CosmosChain;
-use crate::cosmos::base::traits::filter::CosmosFilter;
 use crate::cosmos::base::traits::relay::CosmosRelay;
 use crate::cosmos::base::types::chain::CosmosChainWrapper;
 use crate::cosmos::base::types::message::CosmosIbcMessage;
@@ -28,10 +25,9 @@ use crate::cosmos::base::types::relay::CosmosRelayWrapper;
 use crate::cosmos::base::types::runtime::CosmosRuntimeContext;
 
 #[async_trait]
-impl<Relay, Filter> OfaRelay for CosmosRelayWrapper<Relay, Filter>
+impl<Relay> OfaRelay for CosmosRelayWrapper<Relay>
 where
     Relay: CosmosRelay,
-    Filter: CosmosFilter + Clone,
 {
     type Components = Relay::Components;
 
@@ -243,16 +239,4 @@ where
         .collect();
 
     Ok(ibc_messages)
-}
-
-impl<Relay, Filter> HasPacketFilter for CosmosRelayWrapper<Relay, Filter>
-where
-    Relay: CosmosRelay,
-    Filter: CosmosFilter + Clone,
-{
-    type Filter = FilterWrapper<Filter>;
-
-    fn filter(&self) -> &Self::Filter {
-        &self.filter
-    }
 }
