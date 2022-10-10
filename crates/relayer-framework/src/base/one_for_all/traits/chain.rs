@@ -58,6 +58,8 @@ pub trait OfaChainTypes: Async {
 pub trait OfaChain: OfaChainTypes {
     type Components;
 
+    fn runtime(&self) -> &OfaRuntimeContext<Self::Runtime>;
+
     fn encode_raw_message(
         message: &Self::Message,
         signer: &Self::Signer,
@@ -72,8 +74,6 @@ pub trait OfaChain: OfaChainTypes {
     fn try_extract_write_acknowledgement_event(
         event: Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent>;
-
-    fn runtime(&self) -> &OfaRuntimeContext<Self::Runtime>;
 
     async fn send_messages(
         &self,

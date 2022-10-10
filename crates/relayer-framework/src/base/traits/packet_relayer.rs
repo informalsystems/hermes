@@ -12,6 +12,11 @@ where
     async fn relay_packet(context: &Relay, packet: &Relay::Packet) -> Result<(), Relay::Error>;
 }
 
+#[async_trait]
 pub trait HasPacketRelayer: RelayContext {
     type PacketRelayer: PacketRelayer<Self>;
+
+    async fn relay_packet(&self, packet: &Self::Packet) -> Result<(), Self::Error> {
+        Self::PacketRelayer::relay_packet(self, packet).await
+    }
 }

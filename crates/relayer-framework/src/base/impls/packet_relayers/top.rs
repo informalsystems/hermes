@@ -1,5 +1,3 @@
-use core::marker::PhantomData;
-
 use async_trait::async_trait;
 
 use crate::base::impls::packet_relayers::base_ack_packet::BaseAckPacketRelayer;
@@ -30,31 +28,6 @@ pub struct TopAckPacketRelayer {
 pub type TopRelayer_ = RetryRelayer<FullRelayer<TopReceivePacketRelayer, TopAckPacketRelayer>>;
 
 pub type TopReceivePacketRelayer_ = SkipReceivedPacketRelayer<BaseReceivePacketRelayer>;
-
-impl Default for TopRelayer {
-    fn default() -> Self {
-        let relayer =
-            RetryRelayer::<FullRelayer<TopReceivePacketRelayer, TopAckPacketRelayer>>::new(
-                PhantomData,
-            );
-        TopRelayer { relayer }
-    }
-}
-
-impl Default for TopReceivePacketRelayer {
-    fn default() -> Self {
-        let relayer = SkipReceivedPacketRelayer::<BaseReceivePacketRelayer>::new(PhantomData);
-        TopReceivePacketRelayer { relayer }
-    }
-}
-
-impl Default for TopAckPacketRelayer {
-    fn default() -> Self {
-        TopAckPacketRelayer {
-            relayer: BaseAckPacketRelayer,
-        }
-    }
-}
 
 #[async_trait]
 impl<Relay> PacketRelayer<Relay> for TopRelayer

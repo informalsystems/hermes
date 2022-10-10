@@ -18,3 +18,20 @@ where
         packet: &Relay::Packet,
     ) -> Result<Option<WriteAcknowledgementEvent<Relay::DstChain, Relay::SrcChain>>, Relay::Error>;
 }
+
+#[async_trait]
+pub trait HasReceivePacketRelayer: RelayContext
+where
+    Self::DstChain: HasIbcEvents<Self::SrcChain>,
+{
+    type ReceivePacketRelayer: ReceivePacketRelayer<Self>;
+
+    async fn relay_receive_packet(
+        &self,
+        source_height: &Height<Self::SrcChain>,
+        packet: &Self::Packet,
+    ) -> Result<Option<WriteAcknowledgementEvent<Self::DstChain, Self::SrcChain>>, Self::Error>
+    {
+        Self::ReceivePacketRelayer::relay_receive_packet(self, source_height, packet).await
+    }
+}

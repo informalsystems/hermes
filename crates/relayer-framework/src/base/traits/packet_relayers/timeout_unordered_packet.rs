@@ -26,3 +26,21 @@ where
         packet: &Relay::Packet,
     ) -> Result<(), Relay::Error>;
 }
+
+#[async_trait]
+pub trait HasTimeoutUnorderedPacketRelayer: RelayContext {
+    type TimeoutUnorderedPacketRelayer: TimeoutUnorderedPacketRelayer<Self>;
+
+    async fn relay_timeout_unordered_packet(
+        &self,
+        destination_height: &Height<Self::DstChain>,
+        packet: &Self::Packet,
+    ) -> Result<(), Self::Error> {
+        Self::TimeoutUnorderedPacketRelayer::relay_timeout_unordered_packet(
+            self,
+            destination_height,
+            packet,
+        )
+        .await
+    }
+}

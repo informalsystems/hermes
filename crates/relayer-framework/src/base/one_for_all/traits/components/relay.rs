@@ -5,6 +5,9 @@ use crate::base::traits::messages::update_client::{
     HasUpdateClientMessageBuilder, UpdateClientMessageBuilder,
 };
 use crate::base::traits::packet_relayer::PacketRelayer;
+use crate::base::traits::packet_relayers::receive_packet::{
+    HasReceivePacketRelayer, ReceivePacketRelayer,
+};
 use crate::base::traits::target::{DestinationTarget, SourceTarget};
 
 pub trait OfaRelayComponents<Relay>:
@@ -14,6 +17,8 @@ where
     Relay: OfaRelay,
 {
     type PacketRelayer: PacketRelayer<OfaRelayWrapper<Relay>>;
+
+    type ReceivePacketRelayer: ReceivePacketRelayer<OfaRelayWrapper<Relay>>;
 
     type UpdateClientMessageBuilder: UpdateClientMessageBuilder<OfaRelayWrapper<Relay>, SourceTarget>
         + UpdateClientMessageBuilder<OfaRelayWrapper<Relay>, DestinationTarget>;
@@ -52,4 +57,12 @@ where
     Components: OfaRelayComponents<Relay>,
 {
     type IbcMessageSender = Components::IbcMessageSender;
+}
+
+impl<Relay, Components> HasReceivePacketRelayer for OfaRelayWrapper<Relay>
+where
+    Relay: OfaRelay<Components = Components>,
+    Components: OfaRelayComponents<Relay>,
+{
+    type ReceivePacketRelayer = Components::ReceivePacketRelayer;
 }
