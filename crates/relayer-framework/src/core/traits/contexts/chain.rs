@@ -1,9 +1,8 @@
-//! The base chain contexts upon which higher level chain
-//! contexts such as [`OfaChain`] are composed from.
+//! The base chain contexts upon which higher level chain contexts such as
+//! [`OfaChain`] are composed from.
 //!
-//! These traits can be implemented over the default
-//! `OfaChain` trait if the default behavior is not
-//! suitable.
+//! These traits can be implemented over the default `OfaChain` trait if the
+//! behavior exposed by that trait and the `AfoChain` trait are not desired.
 
 use crate::core::traits::contexts::runtime::HasRuntime;
 use crate::core::traits::core::Async;
@@ -30,11 +29,11 @@ pub trait ChainContext: HasRuntime {
     fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error>;
 }
 
-/// The datatypes that IBC chains need to expose in addition
-/// to the datatypes exposed by the base [`ChainContext`].
+/// The datatypes that IBC chains need to expose in addition to the datatypes
+/// exposed by the base [`ChainContext`].
 ///
-/// Each [`IbcChainContext`] is parameterized by a [`Counterparty`]
-/// chain.
+/// Each [`IbcChainContext`] is parameterized by a [`Counterparty`] chain
+/// which must also implement the `ChainContext` trait.
 pub trait IbcChainContext<Counterparty>: ChainContext
 where
     Counterparty: ChainContext,

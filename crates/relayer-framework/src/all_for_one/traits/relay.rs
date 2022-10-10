@@ -8,6 +8,8 @@ use crate::core::traits::messages::timeout_packet::HasTimeoutUnorderedPacketMess
 use crate::core::traits::messages::update_client::HasUpdateClientMessageBuilder;
 use crate::core::traits::target::{DestinationTarget, SourceTarget};
 
+/// The functionality that a relay context gains access to once that relay
+/// context implements the [`OfaRelayContext`] trait.
 pub trait AfoRelayContext:
     RelayContext<SrcChain = Self::AfoSrcChain, DstChain = Self::AfoDstChain, Error = Self::AfoError>
     + HasUpdateClientMessageBuilder<SourceTarget>

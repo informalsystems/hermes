@@ -1,3 +1,7 @@
+//! The `OfaRelayContext` trait specifies what a relay context needs to provide
+//! in order to gain access to the APIs provided by the [`AfoRelayContext`]
+//! trait.
+
 use async_trait::async_trait;
 
 use crate::core::traits::core::Async;

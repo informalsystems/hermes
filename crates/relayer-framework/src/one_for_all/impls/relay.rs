@@ -184,8 +184,8 @@ impl<Relay: OfaRelay> HasAckPacketMessageBuilder for OfaRelayContext<Relay> {
 }
 
 /// Implements the timeout packet message builder that constructs timeout packets
-/// to be sent over unordered channels between chains that implement the One For
-/// All trait.
+/// to be sent over unordered channels between chains that implement the
+/// [`one_for_all`] trait.
 pub struct OfaTimeoutUnorderedPacketMessageBuilder;
 
 #[async_trait]
