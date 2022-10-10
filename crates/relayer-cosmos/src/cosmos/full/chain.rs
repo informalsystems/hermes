@@ -4,11 +4,13 @@ use ibc_relayer::keyring::KeyEntry;
 use ibc_relayer_framework::full::batch::context::new_batch_channel;
 use ibc_relayer_framework::full::one_for_all::components::full::FullComponents;
 use ibc_relayer_framework::full::one_for_all::traits::batch::OfaBatchContext;
+use ibc_relayer_framework::full::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_types::signer::Signer;
 
 use crate::cosmos::core::traits::chain::{CosmosChain, CosmosFullChain};
 use crate::cosmos::core::types::batch::CosmosBatchChannel;
 use crate::cosmos::core::types::chain::CosmosChainWrapper;
+use crate::cosmos::core::types::telemetry::CosmosTelemetry;
 
 #[derive(Clone)]
 pub struct CosmosChainEnv<Handle: ChainHandle> {
@@ -17,10 +19,17 @@ pub struct CosmosChainEnv<Handle: ChainHandle> {
     pub tx_config: TxConfig,
     pub key_entry: KeyEntry,
     pub batch_channel: CosmosBatchChannel,
+    pub telemetry: OfaTelemetryWrapper<CosmosTelemetry>,
 }
 
 impl<Handle: ChainHandle> CosmosChainEnv<Handle> {
-    pub fn new(handle: Handle, signer: Signer, tx_config: TxConfig, key_entry: KeyEntry) -> Self {
+    pub fn new(
+        handle: Handle,
+        signer: Signer,
+        tx_config: TxConfig,
+        key_entry: KeyEntry,
+        telemetry: CosmosTelemetry,
+    ) -> Self {
         let batch_channel = new_batch_channel::<OfaBatchContext<CosmosChainWrapper<Self>>>();
 
         let chain = Self {
@@ -29,6 +38,7 @@ impl<Handle: ChainHandle> CosmosChainEnv<Handle> {
             tx_config,
             key_entry,
             batch_channel,
+            telemetry: OfaTelemetryWrapper::new(telemetry),
         };
 
         chain
@@ -66,5 +76,9 @@ where
 {
     fn batch_channel(&self) -> &CosmosBatchChannel {
         &self.batch_channel
+    }
+
+    fn telemetry(&self) -> &OfaTelemetryWrapper<CosmosTelemetry> {
+        &self.telemetry
     }
 }

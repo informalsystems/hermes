@@ -13,7 +13,6 @@ use crate::cosmos::basic::relay::CosmosRelayEnv;
 use crate::cosmos::core::traits::filter::CosmosFilter;
 use crate::cosmos::core::types::relay::CosmosRelayWrapper;
 use crate::cosmos::core::types::runtime::CosmosRuntimeContext;
-use crate::cosmos::core::types::telemetry::CosmosTelemetry;
 use crate::cosmos::full::chain::CosmosChainEnv;
 
 pub fn new_relay_context_with_batch<SrcChain, DstChain, Filter>(
@@ -23,7 +22,6 @@ pub fn new_relay_context_with_batch<SrcChain, DstChain, Filter>(
     src_to_dst_client: ForeignClient<DstChain, SrcChain>,
     dst_to_src_client: ForeignClient<SrcChain, DstChain>,
     batch_config: BatchConfig,
-    telemetry: CosmosTelemetry,
     filter: Filter,
 ) -> OfaRelayWrapper<
     CosmosRelayWrapper<CosmosRelayEnv<CosmosChainEnv<SrcChain>, CosmosChainEnv<DstChain>>, Filter>,
@@ -41,7 +39,6 @@ where
             dst_to_src_client,
         )),
         runtime,
-        telemetry,
         filter,
     ));
 

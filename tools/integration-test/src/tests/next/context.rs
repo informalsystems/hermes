@@ -25,7 +25,7 @@ where
     ChainB: ChainHandle,
     Filter: CosmosFilter + Clone,
 {
-    let telemetry_state = CosmosTelemetry::new(Arc::new(Mutex::new(TelemetryState {
+    let telemetry = CosmosTelemetry::new(Arc::new(Mutex::new(TelemetryState {
         meter: global::meter("hermes"),
         counters: HashMap::new(),
         value_recorders: HashMap::new(),
@@ -47,6 +47,7 @@ where
             .unwrap(),
         chains.node_a.value().chain_driver.tx_config.clone(),
         chains.node_a.value().wallets.relayer.key.clone(),
+        telemetry.clone(),
     );
 
     let chain_b = CosmosChainEnv::new(
@@ -62,6 +63,7 @@ where
             .unwrap(),
         chains.node_b.value().chain_driver.tx_config.clone(),
         chains.node_b.value().wallets.relayer.key.clone(),
+        telemetry,
     );
 
     let relay = new_relay_context_with_batch(
@@ -71,7 +73,6 @@ where
         chains.foreign_clients.client_a_to_b.clone(),
         chains.foreign_clients.client_b_to_a.clone(),
         Default::default(),
-        telemetry_state,
         filter,
     );
 

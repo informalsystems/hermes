@@ -1,9 +1,12 @@
-use crate::cosmos::core::types::batch::CosmosBatchChannel;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::keyring::KeyEntry;
 use ibc_relayer_framework::base::traits::core::Async;
+use ibc_relayer_framework::full::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_types::signer::Signer;
+
+use crate::cosmos::core::types::batch::CosmosBatchChannel;
+use crate::cosmos::core::types::telemetry::CosmosTelemetry;
 
 pub trait CosmosChain: Async {
     type Components;
@@ -21,4 +24,6 @@ pub trait CosmosChain: Async {
 
 pub trait CosmosFullChain: CosmosChain {
     fn batch_channel(&self) -> &CosmosBatchChannel;
+
+    fn telemetry(&self) -> &OfaTelemetryWrapper<CosmosTelemetry>;
 }
