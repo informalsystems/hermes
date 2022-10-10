@@ -1,6 +1,6 @@
 use alloc::sync::Arc;
 use ibc_relayer_framework::full::one_for_all::traits::telemetry::OfaTelemetry;
-use ibc_relayer_framework::full::telemetry::traits::telemetry::HasLabel;
+use ibc_relayer_framework::full::telemetry::traits::metrics::HasLabel;
 use opentelemetry::metrics::Unit;
 use opentelemetry::{
     metrics::{Counter, Meter, UpDownCounter, ValueRecorder},

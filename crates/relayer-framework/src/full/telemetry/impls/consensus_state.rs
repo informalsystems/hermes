@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
 use crate::base::traits::contexts::chain::IbcChainContext;
-use crate::base::traits::contexts::telemetry::HasTelemetry;
 use crate::base::traits::queries::consensus_state::*;
-use crate::full::telemetry::traits::telemetry::{HasMetric, TelemetryCounter};
+use crate::full::telemetry::traits::metrics::{HasMetric, TelemetryCounter};
+use crate::full::telemetry::traits::telemetry::HasTelemetry;
 
 use crate::std_prelude::*;
 

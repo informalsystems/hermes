@@ -8,14 +8,14 @@ use crate::cosmos::base::error::Error;
 pub trait AfoCosmosRelayContext:
     AfoRelayContext<
     AfoError = OfaErrorContext<Error>,
-    AfoSrcChain = Self::CosmosSrcChain,
-    AfoDstChain = Self::CosmosDstChain,
+    AfoSrcChain = Self::SrcCosmosChain,
+    AfoDstChain = Self::DstCosmosChain,
     Packet = Packet,
 >
 {
-    type CosmosSrcChain: AfoCosmosChainContext<Self::CosmosDstChain>;
+    type SrcCosmosChain: AfoCosmosChainContext<Self::DstCosmosChain>;
 
-    type CosmosDstChain: AfoCosmosChainContext<Self::CosmosSrcChain>;
+    type DstCosmosChain: AfoCosmosChainContext<Self::SrcCosmosChain>;
 }
 
 impl<Relay, SrcChain, DstChain> AfoCosmosRelayContext for Relay
@@ -29,6 +29,6 @@ where
     SrcChain: AfoCosmosChainContext<DstChain>,
     DstChain: AfoCosmosChainContext<SrcChain>,
 {
-    type CosmosSrcChain = SrcChain;
-    type CosmosDstChain = DstChain;
+    type SrcCosmosChain = SrcChain;
+    type DstCosmosChain = DstChain;
 }

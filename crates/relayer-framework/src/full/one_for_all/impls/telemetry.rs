@@ -1,7 +1,6 @@
 use crate::full::one_for_all::traits::telemetry::{OfaTelemetry, OfaTelemetryWrapper};
-use crate::full::telemetry::traits::telemetry::{
-    BasicTelemetryContext, HasLabel, HasMetric, TelemetryCounter, TelemetryUpDownCounter,
-    TelemetryValueRecorder,
+use crate::full::telemetry::traits::metrics::{
+    HasLabel, HasMetric, TelemetryCounter, TelemetryUpDownCounter, TelemetryValueRecorder,
 };
 
 impl<Telemetry: HasLabel> HasLabel for OfaTelemetryWrapper<Telemetry> {
@@ -69,9 +68,4 @@ where
         self.telemetry
             .update_up_down_counter_metric(name, labels, value, description, unit);
     }
-}
-
-impl<Telemetry> BasicTelemetryContext for OfaTelemetryWrapper<Telemetry> where
-    Telemetry: OfaTelemetry<UpDownCounterType = i64, CounterType = u64, ValueRecorderType = u64>
-{
 }
