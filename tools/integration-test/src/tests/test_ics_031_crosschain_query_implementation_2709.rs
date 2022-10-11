@@ -74,9 +74,9 @@ impl NaryChainTest<1> for Ics31Test {
             path: format!("{}/{}", fullnode.chain_driver.rpc_address(), "abci_info?"),
             local_timeout_height: Some(Height {
                 revision_number: 0,
-                revision_height: 12_399_459
+                revision_height: 10000
             }),
-            local_timeout_stamp: 1700000000000000000,
+            local_timeout_stamp: 5000000000000000000,
             query_height: 1,
             chain_id: fullnode.clone().chain_driver.chain_id.to_string(),
             sender: wallet.clone().address.0,
