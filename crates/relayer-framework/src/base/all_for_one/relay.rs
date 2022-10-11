@@ -1,4 +1,4 @@
-use crate::base::all_for_one::chain::AfoChainContext;
+use crate::base::all_for_one::chain::AfoBaseChain;
 use crate::base::all_for_one::error::AfoError;
 use crate::base::relay::traits::context::RelayContext;
 use crate::base::relay::traits::ibc_message_sender::HasIbcMessageSender;
@@ -14,7 +14,7 @@ use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 
 /// The functionality that a relay context gains access to once that relay
 /// context implements the [`OfaRelayWrapper`] trait.
-pub trait AfoRelayContext:
+pub trait AfoBaseRelay:
     RelayContext<SrcChain = Self::AfoSrcChain, DstChain = Self::AfoDstChain, Error = Self::AfoError>
     + HasUpdateClientMessageBuilder<SourceTarget>
     + HasUpdateClientMessageBuilder<DestinationTarget>
@@ -30,16 +30,16 @@ pub trait AfoRelayContext:
 {
     type AfoError: AfoError;
 
-    type AfoSrcChain: AfoChainContext<Self::AfoDstChain>;
+    type AfoSrcChain: AfoBaseChain<Self::AfoDstChain>;
 
-    type AfoDstChain: AfoChainContext<Self::AfoSrcChain>;
+    type AfoDstChain: AfoBaseChain<Self::AfoSrcChain>;
 }
 
-impl<Relay, SrcChain, DstChain, Error> AfoRelayContext for Relay
+impl<Relay, SrcChain, DstChain, Error> AfoBaseRelay for Relay
 where
     Error: AfoError,
-    SrcChain: AfoChainContext<DstChain>,
-    DstChain: AfoChainContext<SrcChain>,
+    SrcChain: AfoBaseChain<DstChain>,
+    DstChain: AfoBaseChain<SrcChain>,
     Relay: RelayContext<SrcChain = SrcChain, DstChain = DstChain, Error = Error>
         + HasUpdateClientMessageBuilder<SourceTarget>
         + HasUpdateClientMessageBuilder<DestinationTarget>

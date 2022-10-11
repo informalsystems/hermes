@@ -2,16 +2,16 @@ use crate::base::chain::traits::queries::consensus_state::{
     ConsensusStateQuerier, HasConsensusStateQuerier,
 };
 use crate::base::chain::traits::queries::status::{ChainStatusQuerier, HasChainStatusQuerier};
-use crate::base::one_for_all::traits::chain::{OfaChain, OfaChainWrapper, OfaIbcChain};
+use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaChainWrapper, OfaIbcChain};
 
-pub trait OfaChainComponents<Chain>
+pub trait OfaBaseChainComponents<Chain>
 where
-    Chain: OfaChain,
+    Chain: OfaBaseChain,
 {
     type ChainStatusQuerier: ChainStatusQuerier<OfaChainWrapper<Chain>>;
 }
 
-pub trait OfaIbcChainComponents<Chain, Counterparty>: OfaChainComponents<Chain>
+pub trait OfaIbcChainComponents<Chain, Counterparty>: OfaBaseChainComponents<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaIbcChain<Chain>,
@@ -24,8 +24,8 @@ where
 
 impl<Chain, Components> HasChainStatusQuerier for OfaChainWrapper<Chain>
 where
-    Chain: OfaChain<Components = Components>,
-    Components: OfaChainComponents<Chain>,
+    Chain: OfaBaseChain<Components = Components>,
+    Components: OfaBaseChainComponents<Chain>,
 {
     type ChainStatusQuerier = Components::ChainStatusQuerier;
 }

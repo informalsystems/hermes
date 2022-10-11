@@ -1,12 +1,12 @@
 use crate::base::one_for_all::impls::chain::OfaConsensusStateQuerier;
 use crate::base::one_for_all::impls::relay::OfaUpdateClientMessageBuilder;
-use crate::base::one_for_all::impls::status::OfaChainStatusQuerier;
-use crate::base::one_for_all::traits::chain::{OfaChain, OfaIbcChain};
+use crate::base::one_for_all::impls::status::OfaBaseChainStatusQuerier;
+use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
 use crate::base::one_for_all::traits::components::chain::{
-    OfaChainComponents, OfaIbcChainComponents,
+    OfaBaseChainComponents, OfaIbcChainComponents,
 };
-use crate::base::one_for_all::traits::components::relay::OfaRelayComponents;
-use crate::base::one_for_all::traits::relay::OfaRelay;
+use crate::base::one_for_all::traits::components::relay::OfaBaseRelayComponents;
+use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::relay::impls::message_senders::chain_sender::SendIbcMessagesToChain;
 use crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
 use crate::base::relay::impls::messages::skip_update_client::SkipUpdateClient;
@@ -20,11 +20,11 @@ use crate::base::relay::impls::packet_relayers::timeout_unordered_packet::BaseTi
 
 pub struct BaseComponents;
 
-impl<Chain> OfaChainComponents<Chain> for BaseComponents
+impl<Chain> OfaBaseChainComponents<Chain> for BaseComponents
 where
-    Chain: OfaChain,
+    Chain: OfaBaseChain,
 {
-    type ChainStatusQuerier = OfaChainStatusQuerier;
+    type ChainStatusQuerier = OfaBaseChainStatusQuerier;
 }
 
 impl<Chain, Counterparty> OfaIbcChainComponents<Chain, Counterparty> for BaseComponents
@@ -35,9 +35,9 @@ where
     type ConsensusStateQuerier = OfaConsensusStateQuerier;
 }
 
-impl<Relay> OfaRelayComponents<Relay> for BaseComponents
+impl<Relay> OfaBaseRelayComponents<Relay> for BaseComponents
 where
-    Relay: OfaRelay<Components = BaseComponents>,
+    Relay: OfaBaseRelay<Components = BaseComponents>,
 {
     type PacketRelayer = RetryRelayer<FullRelayer>;
 

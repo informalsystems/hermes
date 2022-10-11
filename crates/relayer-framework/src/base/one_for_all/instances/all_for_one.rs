@@ -3,36 +3,36 @@
 //! functionality implement the required trait bounds, i.e. `OfaRelayWrapper` or
 //! `OfaChainWrapper`, etc.
 
-use crate::base::all_for_one::chain::AfoChainContext;
+use crate::base::all_for_one::chain::AfoBaseChain;
 use crate::base::all_for_one::error::AfoError;
-use crate::base::all_for_one::relay::AfoRelayContext;
-use crate::base::one_for_all::traits::chain::{OfaChain, OfaChainWrapper, OfaIbcChain};
+use crate::base::all_for_one::relay::AfoBaseRelay;
+use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaChainWrapper, OfaIbcChain};
 use crate::base::one_for_all::traits::components::chain::OfaIbcChainComponents;
-use crate::base::one_for_all::traits::components::relay::OfaRelayComponents;
+use crate::base::one_for_all::traits::components::relay::OfaBaseRelayComponents;
 use crate::base::one_for_all::traits::error::OfaError;
 use crate::base::one_for_all::traits::error::OfaErrorContext;
-use crate::base::one_for_all::traits::relay::{OfaRelay, OfaRelayWrapper};
+use crate::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayWrapper};
 
-/// Given a relay context `Relay` that implements the `OfaRelay` trait, returns a type
-/// that implements the `AfoRelayContext`, meaning that this type exposes concrete APIs
+/// Given a relay context `Relay` that implements the `OfaBaseRelay` trait, returns a type
+/// that implements the `AfoBaseRelay`, meaning that this type exposes concrete APIs
 /// that are used to construct custom relayer instances (i.e. relayer-cosmos).
-pub fn afo_relay_context<Relay>(relay: OfaRelayWrapper<Relay>) -> impl AfoRelayContext
+pub fn afo_relay_context<Relay>(relay: OfaRelayWrapper<Relay>) -> impl AfoBaseRelay
 where
-    Relay: OfaRelay,
-    Relay::Components: OfaRelayComponents<Relay>,
+    Relay: OfaBaseRelay,
+    Relay::Components: OfaBaseRelayComponents<Relay>,
 {
     relay
 }
 
 /// Given a chain context `Chain` that implements the `OfaIbcChain` trait, returns a type
-/// that implements the `AfoChainContext`, which is necessary for a relay context that
+/// that implements the `AfoBaseChain`, which is necessary for a relay context that
 /// wants to relay between this IBC-enabled chain context and an IBC-enabled counterparty
 /// chain context can do so.
 pub fn afo_chain_context<Chain, Counterparty, Components>(
     chain: OfaChainWrapper<Chain>,
-) -> impl AfoChainContext<OfaChainWrapper<Counterparty>>
+) -> impl AfoBaseChain<OfaChainWrapper<Counterparty>>
 where
-    Chain: OfaChain<Components = Components>,
+    Chain: OfaBaseChain<Components = Components>,
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaIbcChain<Chain>,
     Components: OfaIbcChainComponents<Chain, Counterparty>,

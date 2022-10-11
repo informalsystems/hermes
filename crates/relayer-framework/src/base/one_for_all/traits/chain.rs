@@ -1,5 +1,5 @@
 //! The `OfaChainWrapper` trait specifies what a chain context needs to provide
-//! in order to gain access to the APIs provided by the [`AfoChainContext`]
+//! in order to gain access to the APIs provided by the [`AfoBaseChain`]
 //! trait.
 
 use async_trait::async_trait;
@@ -20,7 +20,7 @@ impl<Chain> OfaChainWrapper<Chain> {
     }
 }
 
-pub trait OfaChainTypes: Async {
+pub trait OfaBaseChainTypes: Async {
     type Error: OfaError;
 
     type Runtime: OfaRuntime<Error = Self::Error>;
@@ -55,7 +55,7 @@ pub trait OfaChainTypes: Async {
 }
 
 #[async_trait]
-pub trait OfaChain: OfaChainTypes {
+pub trait OfaBaseChain: OfaBaseChainTypes {
     type Components;
 
     fn runtime(&self) -> &OfaRuntimeContext<Self::Runtime>;
@@ -84,9 +84,9 @@ pub trait OfaChain: OfaChainTypes {
 }
 
 #[async_trait]
-pub trait OfaIbcChain<Counterparty>: OfaChain
+pub trait OfaIbcChain<Counterparty>: OfaBaseChain
 where
-    Counterparty: OfaChainTypes,
+    Counterparty: OfaBaseChainTypes,
 {
     fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
 

@@ -10,16 +10,16 @@ use crate::base::chain::traits::queries::received_packet::{
 };
 use crate::base::core::traits::error::HasError;
 use crate::base::core::traits::runtime::context::HasRuntime;
-use crate::base::one_for_all::traits::chain::{OfaChain, OfaChainWrapper, OfaIbcChain};
+use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaChainWrapper, OfaIbcChain};
 use crate::base::one_for_all::traits::error::OfaErrorContext;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::std_prelude::*;
 
-impl<Chain: OfaChain> HasError for OfaChainWrapper<Chain> {
+impl<Chain: OfaBaseChain> HasError for OfaChainWrapper<Chain> {
     type Error = OfaErrorContext<Chain::Error>;
 }
 
-impl<Chain: OfaChain> HasRuntime for OfaChainWrapper<Chain> {
+impl<Chain: OfaBaseChain> HasRuntime for OfaChainWrapper<Chain> {
     type Runtime = OfaRuntimeContext<Chain::Runtime>;
 
     fn runtime(&self) -> &Self::Runtime {
@@ -27,7 +27,7 @@ impl<Chain: OfaChain> HasRuntime for OfaChainWrapper<Chain> {
     }
 }
 
-impl<Chain: OfaChain> ChainContext for OfaChainWrapper<Chain> {
+impl<Chain: OfaBaseChain> ChainContext for OfaChainWrapper<Chain> {
     type Height = Chain::Height;
 
     type Timestamp = Chain::Timestamp;
@@ -55,7 +55,7 @@ impl<Chain: OfaChain> ChainContext for OfaChainWrapper<Chain> {
 impl<Chain, Counterparty> IbcChainContext<OfaChainWrapper<Counterparty>> for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaChain,
+    Counterparty: OfaBaseChain,
 {
     type ClientId = Chain::ClientId;
 
@@ -75,7 +75,7 @@ where
 impl<Chain, Counterparty> HasIbcEvents<OfaChainWrapper<Counterparty>> for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaChain,
+    Counterparty: OfaBaseChain,
 {
     type WriteAcknowledgementEvent = Chain::WriteAcknowledgementEvent;
 
@@ -90,7 +90,7 @@ impl<Chain, Counterparty> HasConsensusState<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaChain,
+    Counterparty: OfaBaseChain,
 {
     type ConsensusState = Chain::ConsensusState;
 }

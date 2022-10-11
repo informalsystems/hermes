@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::base::one_for_all::traits::error::OfaErrorContext;
-use crate::base::one_for_all::traits::relay::{OfaRelay, OfaRelayWrapper};
+use crate::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayWrapper};
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::full::batch::context::{BatchChannel, BatchContext, HasBatchContext};
 use crate::full::one_for_all::traits::batch::{OfaBatch, OfaBatchContext};
@@ -80,7 +80,7 @@ where
 
 impl<Relay> HasBatchContext<SourceTarget> for OfaRelayWrapper<Relay>
 where
-    Relay: OfaRelay,
+    Relay: OfaBaseRelay,
     Relay::SrcChain: OfaFullChain,
 {
     type BatchContext = OfaBatchContext<Relay::SrcChain>;
@@ -97,7 +97,7 @@ where
 
 impl<Relay> HasBatchContext<DestinationTarget> for OfaRelayWrapper<Relay>
 where
-    Relay: OfaRelay,
+    Relay: OfaBaseRelay,
     Relay::DstChain: OfaFullChain,
 {
     type BatchContext = OfaBatchContext<Relay::DstChain>;

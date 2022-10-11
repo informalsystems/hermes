@@ -1,8 +1,8 @@
 //! The base chain contexts upon which higher level chain contexts such as
-//! [`OfaChain`] are composed from.
+//! [`OfaBaseChain`] are composed from.
 //!
-//! These traits can be implemented over the default `OfaChain` trait if the
-//! behavior exposed by that trait and the `AfoChain` trait are not desired.
+//! These traits can be implemented over the default `OfaBaseChain` trait if the
+//! behavior exposed by that trait and the `AfoBaseChain` trait are not desired.
 
 use crate::base::core::traits::runtime::context::HasRuntime;
 use crate::base::core::traits::sync::Async;
