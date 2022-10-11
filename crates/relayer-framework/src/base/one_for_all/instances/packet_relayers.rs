@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use crate::base::one_for_all::traits::components::relay::OfaBaseRelayComponents;
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
-use crate::base::one_for_all::traits::relay::OfaRelayWrapper;
+use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::base::relay::impls::packet_relayers::base_ack_packet::BaseAckPacketRelayer;
 use crate::base::relay::impls::packet_relayers::base_receive_packet::BaseReceivePacketRelayer;
 use crate::base::relay::impls::packet_relayers::full_relay::FullRelayer;

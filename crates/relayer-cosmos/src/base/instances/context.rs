@@ -1,9 +1,9 @@
 use core::marker::PhantomData;
 use ibc_relayer_framework::base::chain::traits::context::ChainContext;
-use ibc_relayer_framework::base::one_for_all::traits::chain::OfaChainWrapper;
 use ibc_relayer_framework::base::one_for_all::traits::components::chain::OfaIbcChainComponents;
 use ibc_relayer_framework::base::one_for_all::traits::components::relay::OfaBaseRelayComponents;
-use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelayWrapper;
+use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
+use ibc_relayer_framework::base::one_for_all::types::relay::OfaRelayWrapper;
 
 use crate::base::all_for_one::chain::AfoCosmosBaseChain;
 use crate::base::all_for_one::relay::AfoCosmosBaseRelay;

@@ -10,9 +10,10 @@ use crate::base::chain::traits::queries::received_packet::{
 };
 use crate::base::core::traits::error::HasError;
 use crate::base::core::traits::runtime::context::HasRuntime;
-use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaChainWrapper, OfaIbcChain};
+use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
 use crate::base::one_for_all::traits::error::OfaErrorContext;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
+use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
 impl<Chain: OfaBaseChain> HasError for OfaChainWrapper<Chain> {

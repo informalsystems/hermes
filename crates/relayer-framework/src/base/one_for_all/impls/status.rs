@@ -1,8 +1,9 @@
 use async_trait::async_trait;
 
 use crate::base::chain::traits::queries::status::{ChainStatusQuerier, HasChainStatus};
-use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaChainWrapper};
+use crate::base::one_for_all::traits::chain::OfaBaseChain;
 use crate::base::one_for_all::traits::error::OfaErrorContext;
+use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
 pub struct OfaBaseChainStatusQuerier;

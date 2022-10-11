@@ -10,8 +10,9 @@ use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
-use ibc_relayer_framework::base::one_for_all::traits::chain::{OfaBaseChainTypes, OfaChainWrapper};
-use ibc_relayer_framework::base::one_for_all::traits::relay::OfaBaseRelay;
+use ibc_relayer_framework::base::one_for_all::traits::chain::OfaBaseChainTypes;
+use ibc_relayer_framework::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayTypes};
+use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
 
 use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
 
@@ -24,8 +25,7 @@ use crate::base::types::message::CosmosIbcMessage;
 use crate::base::types::relay::CosmosRelayWrapper;
 use crate::base::types::runtime::CosmosRuntimeContext;
 
-#[async_trait]
-impl<Relay> OfaBaseRelay for CosmosRelayWrapper<Relay>
+impl<Relay> OfaRelayTypes for CosmosRelayWrapper<Relay>
 where
     Relay: CosmosRelay,
 {
@@ -35,12 +35,18 @@ where
 
     type Runtime = CosmosRuntimeContext;
 
+    type Packet = Packet;
+
     type SrcChain = CosmosChainWrapper<Relay::SrcChain>;
 
     type DstChain = CosmosChainWrapper<Relay::DstChain>;
+}
 
-    type Packet = Packet;
-
+#[async_trait]
+impl<Relay> OfaBaseRelay for CosmosRelayWrapper<Relay>
+where
+    Relay: CosmosRelay,
+{
     fn packet_src_port(packet: &Self::Packet) -> &<Self::SrcChain as OfaBaseChainTypes>::PortId {
         &packet.source_port
     }

@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::base::one_for_all::traits::error::OfaErrorContext;
-use crate::base::one_for_all::traits::relay::OfaRelayWrapper;
+use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::full::filter::traits::filter::{HasPacketFilter, PacketFilter};
 use crate::full::one_for_all::traits::relay::OfaFullRelay;
 use crate::std_prelude::*;

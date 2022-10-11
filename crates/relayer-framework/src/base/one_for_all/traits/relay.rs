@@ -5,30 +5,21 @@
 use async_trait::async_trait;
 
 use crate::base::core::traits::sync::Async;
-use crate::base::one_for_all::traits::chain::{OfaBaseChainTypes, OfaChainWrapper, OfaIbcChain};
+use crate::base::one_for_all::traits::chain::{OfaBaseChainTypes, OfaIbcChain};
 use crate::base::one_for_all::traits::error::OfaError;
 use crate::base::one_for_all::traits::runtime::OfaRuntime;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
+use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
-#[derive(Clone)]
-pub struct OfaRelayWrapper<Relay> {
-    pub relay: Relay,
-}
-
-impl<Relay: OfaBaseRelay> OfaRelayWrapper<Relay> {
-    pub fn new(relay: Relay) -> Self {
-        Self { relay }
-    }
-}
-
-#[async_trait]
-pub trait OfaBaseRelay: Async {
+pub trait OfaRelayTypes: Async {
     type Components;
 
     type Error: OfaError;
 
     type Runtime: OfaRuntime<Error = Self::Error>;
+
+    type Packet: Async;
 
     type SrcChain: OfaIbcChain<
         Self::DstChain,
@@ -43,9 +34,10 @@ pub trait OfaBaseRelay: Async {
         Runtime = Self::Runtime,
         Components = Self::Components,
     >;
+}
 
-    type Packet: Async;
-
+#[async_trait]
+pub trait OfaBaseRelay: OfaRelayTypes {
     fn packet_src_port(packet: &Self::Packet) -> &<Self::SrcChain as OfaBaseChainTypes>::PortId;
 
     fn packet_src_channel_id(

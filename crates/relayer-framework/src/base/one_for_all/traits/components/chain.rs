@@ -2,7 +2,8 @@ use crate::base::chain::traits::queries::consensus_state::{
     ConsensusStateQuerier, HasConsensusStateQuerier,
 };
 use crate::base::chain::traits::queries::status::{ChainStatusQuerier, HasChainStatusQuerier};
-use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaChainWrapper, OfaIbcChain};
+use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
+use crate::base::one_for_all::types::chain::OfaChainWrapper;
 
 pub trait OfaBaseChainComponents<Chain>
 where

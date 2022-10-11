@@ -33,6 +33,8 @@ impl<Chain> OfaBaseChainTypes for CosmosChainWrapper<Chain>
 where
     Chain: CosmosChain,
 {
+    type Components = Chain::Components;
+
     type Error = Error;
 
     type Runtime = CosmosRuntimeContext;
@@ -71,8 +73,6 @@ impl<Chain> OfaBaseChain for CosmosChainWrapper<Chain>
 where
     Chain: CosmosChain,
 {
-    type Components = Chain::Components;
-
     fn encode_raw_message(message: &CosmosIbcMessage, signer: &Signer) -> Result<Any, Error> {
         (message.to_protobuf_fn)(signer).map_err(Error::encode)
     }

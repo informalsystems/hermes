@@ -9,18 +9,9 @@ use crate::base::one_for_all::traits::error::OfaError;
 use crate::base::one_for_all::traits::runtime::{OfaRuntime, OfaRuntimeContext};
 use crate::std_prelude::*;
 
-#[derive(Clone)]
-pub struct OfaChainWrapper<Chain> {
-    pub chain: Chain,
-}
-
-impl<Chain> OfaChainWrapper<Chain> {
-    pub fn new(chain: Chain) -> Self {
-        Self { chain }
-    }
-}
-
 pub trait OfaBaseChainTypes: Async {
+    type Components;
+
     type Error: OfaError;
 
     type Runtime: OfaRuntime<Error = Self::Error>;
@@ -56,8 +47,6 @@ pub trait OfaBaseChainTypes: Async {
 
 #[async_trait]
 pub trait OfaBaseChain: OfaBaseChainTypes {
-    type Components;
-
     fn runtime(&self) -> &OfaRuntimeContext<Self::Runtime>;
 
     fn encode_raw_message(
