@@ -4,10 +4,10 @@ use core::marker::PhantomData;
 use crate::base::chain::traits::queries::consensus_state::{
     HasConsensusState, HasConsensusStateQuerier,
 };
+use crate::base::chain::types::aliases::Height;
 use crate::base::relay::traits::context::RelayContext;
 use crate::base::relay::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::base::relay::traits::target::ChainTarget;
-use crate::base::types::aliases::Height;
 use crate::std_prelude::*;
 
 pub struct SkipUpdateClient<InUpdateClient>(PhantomData<InUpdateClient>);

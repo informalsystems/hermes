@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
+use crate::base::chain::types::aliases::{Event, Message};
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::context::RelayContext;
 use crate::base::relay::traits::target::ChainTarget;
-use crate::base::types::aliases::{Event, Message};
 use crate::std_prelude::*;
 
 #[derive(Clone)]

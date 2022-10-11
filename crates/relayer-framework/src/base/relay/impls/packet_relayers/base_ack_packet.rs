@@ -1,12 +1,13 @@
 use async_trait::async_trait;
 
 use crate::base::chain::traits::ibc_event::HasIbcEvents;
+use crate::base::chain::types::aliases::{Height, WriteAcknowledgementEvent};
 use crate::base::relay::traits::context::RelayContext;
 use crate::base::relay::traits::ibc_message_sender::{HasIbcMessageSender, IbcMessageSenderExt};
 use crate::base::relay::traits::messages::ack_packet::HasAckPacketMessageBuilder;
 use crate::base::relay::traits::packet_relayers::ack_packet::AckPacketRelayer;
 use crate::base::relay::traits::target::SourceTarget;
-use crate::base::types::aliases::{Height, Packet, WriteAcknowledgementEvent};
+use crate::base::relay::types::aliases::Packet;
 use crate::std_prelude::*;
 
 pub struct BaseAckPacketRelayer;

@@ -1,13 +1,3 @@
-use crate::base::impls::message_senders::chain_sender::SendIbcMessagesToChain;
-use crate::base::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
-use crate::base::impls::messages::skip_update_client::SkipUpdateClient;
-use crate::base::impls::messages::wait_update_client::WaitUpdateClient;
-use crate::base::impls::packet_relayers::base_ack_packet::BaseAckPacketRelayer;
-use crate::base::impls::packet_relayers::base_receive_packet::BaseReceivePacketRelayer;
-use crate::base::impls::packet_relayers::full_relay::FullRelayer;
-use crate::base::impls::packet_relayers::retry::RetryRelayer;
-use crate::base::impls::packet_relayers::skip_received_packet::SkipReceivedPacketRelayer;
-use crate::base::impls::packet_relayers::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
 use crate::base::one_for_all::impls::chain::OfaConsensusStateQuerier;
 use crate::base::one_for_all::impls::relay::OfaUpdateClientMessageBuilder;
 use crate::base::one_for_all::impls::status::OfaChainStatusQuerier;
@@ -17,6 +7,16 @@ use crate::base::one_for_all::traits::components::chain::{
 };
 use crate::base::one_for_all::traits::components::relay::OfaRelayComponents;
 use crate::base::one_for_all::traits::relay::OfaRelay;
+use crate::base::relay::impls::message_senders::chain_sender::SendIbcMessagesToChain;
+use crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
+use crate::base::relay::impls::messages::skip_update_client::SkipUpdateClient;
+use crate::base::relay::impls::messages::wait_update_client::WaitUpdateClient;
+use crate::base::relay::impls::packet_relayers::base_ack_packet::BaseAckPacketRelayer;
+use crate::base::relay::impls::packet_relayers::base_receive_packet::BaseReceivePacketRelayer;
+use crate::base::relay::impls::packet_relayers::full_relay::FullRelayer;
+use crate::base::relay::impls::packet_relayers::retry::RetryRelayer;
+use crate::base::relay::impls::packet_relayers::skip_received_packet::SkipReceivedPacketRelayer;
+use crate::base::relay::impls::packet_relayers::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
 
 pub struct BaseComponents;
 

@@ -1,6 +1,5 @@
 use crate::base::chain::traits::context::{ChainContext, IbcChainContext};
 use crate::base::chain::traits::ibc_event::HasIbcEvents;
-use crate::base::relay::traits::context::RelayContext;
 
 pub type ClientId<Chain, Counterparty> = <Chain as IbcChainContext<Counterparty>>::ClientId;
 
@@ -19,12 +18,6 @@ pub type Event<Chain> = <Chain as ChainContext>::Event;
 pub type Height<Chain> = <Chain as ChainContext>::Height;
 
 pub type Timestamp<Chain> = <Chain as ChainContext>::Timestamp;
-
-pub type SrcChain<Context> = <Context as RelayContext>::SrcChain;
-
-pub type DstChain<Context> = <Context as RelayContext>::DstChain;
-
-pub type Packet<Context> = <Context as RelayContext>::Packet;
 
 pub type WriteAcknowledgementEvent<Chain, Counterparty> =
     <Chain as HasIbcEvents<Counterparty>>::WriteAcknowledgementEvent;

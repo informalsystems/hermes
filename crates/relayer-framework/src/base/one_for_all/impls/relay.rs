@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 
+use crate::base::chain::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
 use crate::base::core::traits::error::HasError;
 use crate::base::core::traits::runtime::context::HasRuntime;
 use crate::base::one_for_all::traits::chain::{OfaChain, OfaChainTypes, OfaChainWrapper};
@@ -19,7 +20,6 @@ use crate::base::relay::traits::messages::timeout_packet::{
 };
 use crate::base::relay::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
-use crate::base::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
 use crate::std_prelude::*;
 
 impl<Relay: OfaRelay> HasError for OfaRelayWrapper<Relay> {

@@ -6,7 +6,7 @@ use crate::base::relay::traits::context::RelayContext;
 use crate::base::relay::traits::packet_relayer::PacketRelayer;
 use crate::base::relay::traits::packet_relayers::ack_packet::HasAckPacketRelayer;
 use crate::base::relay::traits::packet_relayers::receive_packet::HasReceivePacketRelayer;
-use crate::base::types::aliases::Packet;
+use crate::base::relay::types::aliases::Packet;
 use crate::std_prelude::*;
 
 pub struct FullRelayer;

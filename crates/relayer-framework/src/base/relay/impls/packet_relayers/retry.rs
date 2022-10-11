@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::base::relay::traits::context::RelayContext;
 use crate::base::relay::traits::packet_relayer::PacketRelayer;
-use crate::base::types::aliases::Packet;
+use crate::base::relay::types::aliases::Packet;
 use crate::std_prelude::*;
 
 const MAX_RETRY: usize = 3;
