@@ -14,7 +14,7 @@ use std::process::Command;
 struct Ics31Test;
 
 #[test]
-fn test() -> Result<(), Error> {
+fn test_ics_031_crosschain_query() -> Result<(), Error> {
     run_self_connected_nary_chain_test(&Ics31Test)
 }
 
