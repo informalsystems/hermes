@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use async_trait::async_trait;
 
-use crate::base::relay::traits::context::RelayContext;
+use crate::base::relay::traits::context::HasRelayTypes;
 use crate::base::relay::traits::packet_relayer::PacketRelayer;
 use crate::base::relay::types::aliases::Packet;
 use crate::std_prelude::*;
@@ -30,7 +30,7 @@ impl<InRelay> RetryRelayer<InRelay> {
 #[async_trait]
 impl<Context, InRelay> PacketRelayer<Context> for RetryRelayer<InRelay>
 where
-    Context: RelayContext,
+    Context: HasRelayTypes,
     InRelay: PacketRelayer<Context>,
     Context::Error: RetryableError,
     Context::Error: From<MaxRetryExceeded>,

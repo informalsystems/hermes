@@ -1,12 +1,12 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::context::{ChainContext, IbcChainContext};
+use crate::base::chain::traits::context::{HasChainTypes, HasIbcChainTypes};
 use crate::base::core::traits::sync::Async;
 use crate::std_prelude::*;
 
-pub trait HasConsensusState<Counterparty>: IbcChainContext<Counterparty>
+pub trait HasConsensusState<Counterparty>: HasIbcChainTypes<Counterparty>
 where
-    Counterparty: ChainContext,
+    Counterparty: HasChainTypes,
 {
     type ConsensusState: Async;
 }
@@ -14,7 +14,7 @@ where
 #[async_trait]
 pub trait ConsensusStateQuerier<Chain, Counterparty>
 where
-    Chain: IbcChainContext<Counterparty>,
+    Chain: HasIbcChainTypes<Counterparty>,
     Counterparty: HasConsensusState<Chain>,
 {
     async fn query_consensus_state(
@@ -25,7 +25,7 @@ where
 }
 
 #[async_trait]
-pub trait HasConsensusStateQuerier<Counterparty>: IbcChainContext<Counterparty>
+pub trait HasConsensusStateQuerier<Counterparty>: HasIbcChainTypes<Counterparty>
 where
     Counterparty: HasConsensusState<Self>,
 {

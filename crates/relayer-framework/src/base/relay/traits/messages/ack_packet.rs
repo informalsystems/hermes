@@ -2,11 +2,11 @@ use async_trait::async_trait;
 
 use crate::base::chain::traits::ibc_event::HasIbcEvents;
 use crate::base::chain::types::aliases::{Height, Message, WriteAcknowledgementEvent};
-use crate::base::relay::traits::context::RelayContext;
+use crate::base::relay::traits::context::HasRelayTypes;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait AckPacketMessageBuilder<Relay: RelayContext>
+pub trait AckPacketMessageBuilder<Relay: HasRelayTypes>
 where
     Relay::DstChain: HasIbcEvents<Relay::SrcChain>,
 {
@@ -19,7 +19,7 @@ where
 }
 
 #[async_trait]
-pub trait HasAckPacketMessageBuilder: RelayContext
+pub trait HasAckPacketMessageBuilder: HasRelayTypes
 where
     Self::DstChain: HasIbcEvents<Self::SrcChain>,
 {

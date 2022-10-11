@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 
 use crate::base::chain::types::aliases::{Height, Message};
-use crate::base::relay::traits::context::RelayContext;
+use crate::base::relay::traits::context::HasRelayTypes;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait ReceivePacketMessageBuilder<Relay: RelayContext> {
+pub trait ReceivePacketMessageBuilder<Relay: HasRelayTypes> {
     async fn build_receive_packet_message(
         relay: &Relay,
         height: &Height<Relay::SrcChain>,
@@ -14,7 +14,7 @@ pub trait ReceivePacketMessageBuilder<Relay: RelayContext> {
 }
 
 #[async_trait]
-pub trait HasReceivePacketMessageBuilder: RelayContext {
+pub trait HasReceivePacketMessageBuilder: HasRelayTypes {
     type ReceivePacketMessageBuilder: ReceivePacketMessageBuilder<Self>;
 
     async fn build_receive_packet_message(

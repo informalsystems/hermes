@@ -1,9 +1,9 @@
 use alloc::collections::BTreeSet;
 use async_trait::async_trait;
 
-use crate::base::chain::traits::context::IbcChainContext;
+use crate::base::chain::traits::context::HasIbcChainTypes;
 use crate::base::core::traits::sync::Async;
-use crate::base::relay::traits::context::RelayContext;
+use crate::base::relay::traits::context::HasRelayTypes;
 use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
 use crate::base::relay::traits::messages::update_client::HasUpdateClientMessageBuilder;
 use crate::base::relay::traits::target::ChainTarget;
@@ -15,11 +15,11 @@ pub struct SendIbcMessagesWithUpdateClient<Sender>(pub Sender);
 impl<Sender, Context, Target, Height, TargetChain, CounterpartyChain, Message, Event>
     IbcMessageSender<Context, Target> for SendIbcMessagesWithUpdateClient<Sender>
 where
-    Context: RelayContext,
+    Context: HasRelayTypes,
     Target: ChainTarget<Context, TargetChain = TargetChain, CounterpartyChain = CounterpartyChain>,
     Sender: IbcMessageSender<Context, Target>,
-    TargetChain: IbcChainContext<CounterpartyChain, Message = Message, Event = Event>,
-    CounterpartyChain: IbcChainContext<TargetChain, Height = Height>,
+    TargetChain: HasIbcChainTypes<CounterpartyChain, Message = Message, Event = Event>,
+    CounterpartyChain: HasIbcChainTypes<TargetChain, Height = Height>,
     Context: HasUpdateClientMessageBuilder<Target>,
     Height: Ord + Async,
     Message: Async,

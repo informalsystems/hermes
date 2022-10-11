@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::base::chain::types::aliases::Height;
 use crate::base::core::traits::sync::Async;
-use crate::base::relay::traits::context::RelayContext;
+use crate::base::relay::traits::context::HasRelayTypes;
 use crate::std_prelude::*;
 
 /// Encapsulates the capability of a relayer to send timeout packets over
@@ -18,7 +18,7 @@ use crate::std_prelude::*;
 #[async_trait]
 pub trait TimeoutUnorderedPacketRelayer<Relay>: Async
 where
-    Relay: RelayContext,
+    Relay: HasRelayTypes,
 {
     async fn relay_timeout_unordered_packet(
         context: &Relay,
@@ -28,7 +28,7 @@ where
 }
 
 #[async_trait]
-pub trait HasTimeoutUnorderedPacketRelayer: RelayContext {
+pub trait HasTimeoutUnorderedPacketRelayer: HasRelayTypes {
     type TimeoutUnorderedPacketRelayer: TimeoutUnorderedPacketRelayer<Self>;
 
     async fn relay_timeout_unordered_packet(

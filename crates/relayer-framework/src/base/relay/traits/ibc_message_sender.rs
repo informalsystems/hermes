@@ -1,14 +1,14 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::context::IbcChainContext;
+use crate::base::chain::traits::context::HasIbcChainTypes;
 use crate::base::chain::types::aliases::{Event, Message};
 use crate::base::core::traits::sync::Async;
-use crate::base::relay::traits::context::RelayContext;
+use crate::base::relay::traits::context::HasRelayTypes;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait HasIbcMessageSender<Target>: RelayContext
+pub trait HasIbcMessageSender<Target>: HasRelayTypes
 where
     Target: ChainTarget<Self>,
 {
@@ -18,7 +18,7 @@ where
 #[async_trait]
 pub trait IbcMessageSender<Context, Target>: Async
 where
-    Context: RelayContext,
+    Context: HasRelayTypes,
     Target: ChainTarget<Context>,
 {
     async fn send_messages(
@@ -35,7 +35,7 @@ pub struct MismatchIbcEventsCountError {
 #[async_trait]
 pub trait IbcMessageSenderExt<Context, Target>
 where
-    Context: RelayContext,
+    Context: HasRelayTypes,
     Target: ChainTarget<Context>,
 {
     async fn send_messages(
@@ -61,7 +61,7 @@ impl<Context, Target, TargetChain, Event, Message> IbcMessageSenderExt<Context, 
 where
     Context: HasIbcMessageSender<Target>,
     Target: ChainTarget<Context, TargetChain = TargetChain>,
-    TargetChain: IbcChainContext<Target::CounterpartyChain, Event = Event, Message = Message>,
+    TargetChain: HasIbcChainTypes<Target::CounterpartyChain, Event = Event, Message = Message>,
     Message: Async,
 {
     async fn send_messages(

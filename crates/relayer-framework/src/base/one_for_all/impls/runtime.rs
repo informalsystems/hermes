@@ -3,12 +3,12 @@ use core::future::Future;
 use core::time::Duration;
 
 use crate::base::core::traits::error::HasError;
-use crate::base::core::traits::runtime::log::{
+use crate::base::core::traits::runtimes::log::{
     HasLogger, LevelDebug, LevelError, LevelInfo, LevelTrace, LevelWarn,
 };
-use crate::base::core::traits::runtime::sleep::CanSleep;
-use crate::base::core::traits::runtime::spawn::{HasSpawner, Spawner};
-use crate::base::core::traits::runtime::time::{HasTime, Time};
+use crate::base::core::traits::runtimes::sleep::CanSleep;
+use crate::base::core::traits::runtimes::spawn::{HasSpawner, Spawner};
+use crate::base::core::traits::runtimes::time::{HasTime, Time};
 use crate::base::one_for_all::traits::error::OfaErrorContext;
 use crate::base::one_for_all::traits::runtime::{LogLevel, OfaRuntime, OfaRuntimeContext};
 use crate::std_prelude::*;

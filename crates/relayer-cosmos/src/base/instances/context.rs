@@ -1,5 +1,5 @@
 use core::marker::PhantomData;
-use ibc_relayer_framework::base::chain::traits::context::ChainContext;
+use ibc_relayer_framework::base::chain::traits::context::HasChainTypes;
 use ibc_relayer_framework::base::one_for_all::traits::components::chain::OfaIbcChainComponents;
 use ibc_relayer_framework::base::one_for_all::traits::components::relay::OfaBaseRelayComponents;
 use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
@@ -20,7 +20,7 @@ where
     PhantomData::<OfaRelayWrapper<CosmosRelayWrapper<Relay>>>
 }
 
-pub fn chain_context<Chain>() -> PhantomData<impl ChainContext>
+pub fn chain_context<Chain>() -> PhantomData<impl HasChainTypes>
 where
     Chain: CosmosChain,
 {

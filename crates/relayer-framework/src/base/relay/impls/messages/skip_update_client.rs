@@ -5,7 +5,7 @@ use crate::base::chain::traits::queries::consensus_state::{
     HasConsensusState, HasConsensusStateQuerier,
 };
 use crate::base::chain::types::aliases::Height;
-use crate::base::relay::traits::context::RelayContext;
+use crate::base::relay::traits::context::HasRelayTypes;
 use crate::base::relay::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::std_prelude::*;
@@ -16,7 +16,7 @@ pub struct SkipUpdateClient<InUpdateClient>(PhantomData<InUpdateClient>);
 impl<Relay, Target, InUpdateClient, TargetChain, CounterpartyChain>
     UpdateClientMessageBuilder<Relay, Target> for SkipUpdateClient<InUpdateClient>
 where
-    Relay: RelayContext,
+    Relay: HasRelayTypes,
     Target: ChainTarget<Relay, TargetChain = TargetChain, CounterpartyChain = CounterpartyChain>,
     InUpdateClient: UpdateClientMessageBuilder<Relay, Target>,
     CounterpartyChain: HasConsensusState<TargetChain>,

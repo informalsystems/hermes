@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use crate::base::chain::traits::ibc_event::HasIbcEvents;
 use crate::base::chain::traits::queries::received_packet::HasReceivedPacketQuerier;
 use crate::base::chain::types::aliases::{Height, WriteAcknowledgementEvent};
-use crate::base::relay::traits::context::RelayContext;
+use crate::base::relay::traits::context::HasRelayTypes;
 use crate::base::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
 use crate::std_prelude::*;
 
@@ -16,7 +16,7 @@ pub struct SkipReceivedPacketRelayer<Relayer> {
 #[async_trait]
 impl<Relay, Relayer> ReceivePacketRelayer<Relay> for SkipReceivedPacketRelayer<Relayer>
 where
-    Relay: RelayContext,
+    Relay: HasRelayTypes,
     Relayer: ReceivePacketRelayer<Relay>,
     Relay::DstChain: HasIbcEvents<Relay::SrcChain>,
     Relay::DstChain: HasReceivedPacketQuerier<Relay::SrcChain>,

@@ -1,9 +1,9 @@
-use crate::base::chain::traits::context::{ChainContext, IbcChainContext};
+use crate::base::chain::traits::context::{HasChainTypes, HasIbcChainTypes};
 use crate::base::core::traits::sync::Async;
 
-pub trait HasIbcEvents<Counterparty>: IbcChainContext<Counterparty>
+pub trait HasIbcEvents<Counterparty>: HasIbcChainTypes<Counterparty>
 where
-    Counterparty: ChainContext,
+    Counterparty: HasChainTypes,
 {
     type WriteAcknowledgementEvent: Async;
 

@@ -4,11 +4,11 @@
 //! These traits can be implemented over the default `OfaBaseChain` trait if the
 //! behavior exposed by that trait and the `AfoBaseChain` trait are not desired.
 
-use crate::base::core::traits::runtime::context::HasRuntime;
+use crate::base::core::traits::error::HasError;
 use crate::base::core::traits::sync::Async;
 
 /// The minimal datatypes that any chain needs to expose.
-pub trait ChainContext: HasRuntime {
+pub trait HasChainTypes: HasError {
     type Height: Async;
 
     type Timestamp: Async;
@@ -32,11 +32,11 @@ pub trait ChainContext: HasRuntime {
 /// The datatypes that IBC chains need to expose in addition to the datatypes
 /// exposed by the base [`ChainContext`].
 ///
-/// Each [`IbcChainContext`] is parameterized by a [`Counterparty`] chain
+/// Each [`HasIbcChainTypes`] is parameterized by a [`Counterparty`] chain
 /// which must also implement the `ChainContext` trait.
-pub trait IbcChainContext<Counterparty>: ChainContext
+pub trait HasIbcChainTypes<Counterparty>: HasChainTypes
 where
-    Counterparty: ChainContext,
+    Counterparty: HasChainTypes,
 {
     type ClientId: Async;
 

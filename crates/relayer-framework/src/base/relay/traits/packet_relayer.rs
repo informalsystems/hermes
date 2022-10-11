@@ -1,19 +1,19 @@
 use async_trait::async_trait;
 
 use crate::base::core::traits::sync::Async;
-use crate::base::relay::traits::context::RelayContext;
+use crate::base::relay::traits::context::HasRelayTypes;
 use crate::std_prelude::*;
 
 #[async_trait]
 pub trait PacketRelayer<Relay>: Async
 where
-    Relay: RelayContext,
+    Relay: HasRelayTypes,
 {
     async fn relay_packet(context: &Relay, packet: &Relay::Packet) -> Result<(), Relay::Error>;
 }
 
 #[async_trait]
-pub trait HasPacketRelayer: RelayContext {
+pub trait HasPacketRelayer: HasRelayTypes {
     type PacketRelayer: PacketRelayer<Self>;
 
     async fn relay_packet(&self, packet: &Self::Packet) -> Result<(), Self::Error> {

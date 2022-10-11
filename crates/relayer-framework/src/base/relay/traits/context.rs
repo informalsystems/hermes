@@ -1,14 +1,14 @@
-use crate::base::chain::traits::context::IbcChainContext;
+use crate::base::chain::traits::context::HasIbcChainTypes;
 use crate::base::chain::types::aliases::{
     ChannelId, ClientId, Height, PortId, Sequence, Timestamp,
 };
-use crate::base::core::traits::runtime::context::HasRuntime;
+use crate::base::core::traits::error::HasError;
 use crate::base::core::traits::sync::Async;
 
-pub trait RelayContext: HasRuntime {
-    type SrcChain: IbcChainContext<Self::DstChain, Error = Self::Error, Runtime = Self::Runtime>;
+pub trait HasRelayTypes: HasError {
+    type SrcChain: HasIbcChainTypes<Self::DstChain, Error = Self::Error>;
 
-    type DstChain: IbcChainContext<Self::SrcChain, Error = Self::Error, Runtime = Self::Runtime>;
+    type DstChain: HasIbcChainTypes<Self::SrcChain, Error = Self::Error>;
 
     type Packet: Async;
 

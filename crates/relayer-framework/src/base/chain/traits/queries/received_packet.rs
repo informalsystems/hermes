@@ -1,13 +1,13 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::context::IbcChainContext;
+use crate::base::chain::traits::context::HasIbcChainTypes;
 use crate::std_prelude::*;
 
 #[async_trait]
 pub trait ReceivedPacketQuerier<Chain, Counterparty>
 where
-    Chain: IbcChainContext<Counterparty>,
-    Counterparty: IbcChainContext<Chain>,
+    Chain: HasIbcChainTypes<Counterparty>,
+    Counterparty: HasIbcChainTypes<Chain>,
 {
     async fn is_packet_received(
         chain: &Chain,
@@ -18,9 +18,9 @@ where
 }
 
 #[async_trait]
-pub trait HasReceivedPacketQuerier<Counterparty>: IbcChainContext<Counterparty>
+pub trait HasReceivedPacketQuerier<Counterparty>: HasIbcChainTypes<Counterparty>
 where
-    Counterparty: IbcChainContext<Self>,
+    Counterparty: HasIbcChainTypes<Self>,
 {
     type ReceivedPacketQuerier: ReceivedPacketQuerier<Self, Counterparty>;
 

@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::context::ChainContext;
+use crate::base::chain::traits::context::HasChainTypes;
 use crate::base::core::traits::sync::Async;
 use crate::std_prelude::*;
 
-pub trait HasChainStatus: ChainContext {
+pub trait HasChainStatus: HasChainTypes {
     type ChainStatus: Async;
 
     fn chain_status_height(status: &Self::ChainStatus) -> &Self::Height;

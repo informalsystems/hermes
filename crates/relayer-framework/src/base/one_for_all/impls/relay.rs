@@ -2,14 +2,14 @@ use async_trait::async_trait;
 
 use crate::base::chain::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
 use crate::base::core::traits::error::HasError;
-use crate::base::core::traits::runtime::context::HasRuntime;
+use crate::base::core::traits::runtime::HasRuntime;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaBaseChainTypes};
 use crate::base::one_for_all::traits::error::OfaErrorContext;
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
-use crate::base::relay::traits::context::RelayContext;
+use crate::base::relay::traits::context::HasRelayTypes;
 use crate::base::relay::traits::messages::ack_packet::{
     AckPacketMessageBuilder, HasAckPacketMessageBuilder,
 };
@@ -35,7 +35,7 @@ impl<Relay: OfaBaseRelay> HasRuntime for OfaRelayWrapper<Relay> {
     }
 }
 
-impl<Relay: OfaBaseRelay> RelayContext for OfaRelayWrapper<Relay> {
+impl<Relay: OfaBaseRelay> HasRelayTypes for OfaRelayWrapper<Relay> {
     type SrcChain = OfaChainWrapper<Relay::SrcChain>;
 
     type DstChain = OfaChainWrapper<Relay::DstChain>;
