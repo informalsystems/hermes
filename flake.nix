@@ -32,6 +32,7 @@
               gaia5
               gaia6
               gaia7
+              gaia-main
               ica
               osmosis
               wasmd
