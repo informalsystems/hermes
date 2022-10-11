@@ -1,6 +1,6 @@
+use crate::base::chain::traits::context::IbcChainContext;
 use crate::base::core::traits::runtime::context::HasRuntime;
 use crate::base::core::traits::sync::Async;
-use crate::base::traits::contexts::chain::IbcChainContext;
 use crate::base::types::aliases::{ChannelId, ClientId, Height, PortId, Sequence, Timestamp};
 
 pub trait RelayContext: HasRuntime {

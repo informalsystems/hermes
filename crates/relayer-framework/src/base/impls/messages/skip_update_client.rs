@@ -1,10 +1,12 @@
 use async_trait::async_trait;
 use core::marker::PhantomData;
 
-use crate::base::traits::contexts::relay::RelayContext;
-use crate::base::traits::messages::update_client::UpdateClientMessageBuilder;
-use crate::base::traits::queries::consensus_state::{HasConsensusState, HasConsensusStateQuerier};
-use crate::base::traits::target::ChainTarget;
+use crate::base::chain::traits::queries::consensus_state::{
+    HasConsensusState, HasConsensusStateQuerier,
+};
+use crate::base::relay::traits::context::RelayContext;
+use crate::base::relay::traits::messages::update_client::UpdateClientMessageBuilder;
+use crate::base::relay::traits::target::ChainTarget;
 use crate::base::types::aliases::Height;
 use crate::std_prelude::*;
 

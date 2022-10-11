@@ -7,18 +7,18 @@ use crate::base::one_for_all::traits::error::OfaErrorContext;
 use crate::base::one_for_all::traits::relay::OfaRelay;
 use crate::base::one_for_all::traits::relay::OfaRelayWrapper;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
-use crate::base::traits::contexts::relay::RelayContext;
-use crate::base::traits::messages::ack_packet::{
+use crate::base::relay::traits::context::RelayContext;
+use crate::base::relay::traits::messages::ack_packet::{
     AckPacketMessageBuilder, HasAckPacketMessageBuilder,
 };
-use crate::base::traits::messages::receive_packet::{
+use crate::base::relay::traits::messages::receive_packet::{
     HasReceivePacketMessageBuilder, ReceivePacketMessageBuilder,
 };
-use crate::base::traits::messages::timeout_packet::{
+use crate::base::relay::traits::messages::timeout_packet::{
     HasTimeoutUnorderedPacketMessageBuilder, TimeoutUnorderedPacketMessageBuilder,
 };
-use crate::base::traits::messages::update_client::UpdateClientMessageBuilder;
-use crate::base::traits::target::{DestinationTarget, SourceTarget};
+use crate::base::relay::traits::messages::update_client::UpdateClientMessageBuilder;
+use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::base::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
 use crate::std_prelude::*;
 

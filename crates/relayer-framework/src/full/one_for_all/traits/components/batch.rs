@@ -1,6 +1,6 @@
 use crate::base::one_for_all::traits::relay::{OfaRelay, OfaRelayWrapper};
-use crate::base::traits::ibc_message_sender::IbcMessageSender;
-use crate::base::traits::target::{DestinationTarget, SourceTarget};
+use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
+use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::full::batch::message_sender::HasIbcMessageSenderForBatchWorker;
 
 pub trait OfaBatchComponents<Relay>

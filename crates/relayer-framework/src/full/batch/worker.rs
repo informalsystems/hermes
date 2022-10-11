@@ -2,15 +2,15 @@ use alloc::collections::VecDeque;
 use core::marker::PhantomData;
 use core::mem;
 
+use crate::base::chain::traits::context::IbcChainContext;
 use crate::base::core::traits::runtime::log::{HasLogger, LevelDebug};
 use crate::base::core::traits::runtime::sleep::CanSleep;
 use crate::base::core::traits::runtime::spawn::{HasSpawner, Spawner};
 use crate::base::core::traits::runtime::time::{HasTime, Time};
 use crate::base::core::traits::sync::Async;
-use crate::base::traits::contexts::chain::IbcChainContext;
-use crate::base::traits::contexts::relay::RelayContext;
-use crate::base::traits::ibc_message_sender::IbcMessageSender;
-use crate::base::traits::target::ChainTarget;
+use crate::base::relay::traits::context::RelayContext;
+use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
+use crate::base::relay::traits::target::ChainTarget;
 use crate::base::types::aliases::Message;
 use crate::std_prelude::*;
 

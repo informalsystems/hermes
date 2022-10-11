@@ -8,9 +8,9 @@ use crate::base::impls::packet_relayers::skip_received_packet::SkipReceivedPacke
 use crate::base::one_for_all::traits::components::relay::OfaRelayComponents;
 use crate::base::one_for_all::traits::relay::OfaRelay;
 use crate::base::one_for_all::traits::relay::OfaRelayWrapper;
-use crate::base::traits::packet_relayer::PacketRelayer;
-use crate::base::traits::packet_relayers::ack_packet::AckPacketRelayer;
-use crate::base::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
+use crate::base::relay::traits::packet_relayer::PacketRelayer;
+use crate::base::relay::traits::packet_relayers::ack_packet::AckPacketRelayer;
+use crate::base::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
 
 pub fn full_packet_relayer<Relay>() -> PhantomData<impl PacketRelayer<OfaRelayWrapper<Relay>>>
 where

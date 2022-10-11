@@ -1,12 +1,12 @@
 use core::marker::PhantomData;
 
+use crate::base::chain::traits::context::IbcChainContext;
 use crate::base::core::traits::runtime::log::{HasLogger, LevelDebug};
 use crate::base::core::traits::runtime::sleep::CanSleep;
 use crate::base::core::traits::runtime::spawn::HasSpawner;
 use crate::base::core::traits::runtime::time::HasTime;
-use crate::base::traits::contexts::chain::IbcChainContext;
-use crate::base::traits::contexts::relay::RelayContext;
-use crate::base::traits::target::ChainTarget;
+use crate::base::relay::traits::context::RelayContext;
+use crate::base::relay::traits::target::ChainTarget;
 use crate::std_prelude::*;
 
 use super::config::BatchConfig;

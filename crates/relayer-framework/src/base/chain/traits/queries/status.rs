@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
+use crate::base::chain::traits::context::ChainContext;
 use crate::base::core::traits::sync::Async;
-use crate::base::traits::contexts::chain::ChainContext;
 use crate::std_prelude::*;
 
 pub trait HasChainStatus: ChainContext {

@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::base::traits::queries::status::*;
+use crate::base::chain::traits::queries::status::*;
 use crate::full::telemetry::traits::metrics::{HasMetric, TelemetryCounter};
 use crate::full::telemetry::traits::telemetry::HasTelemetry;
 

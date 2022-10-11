@@ -2,7 +2,7 @@ use core::marker::PhantomData;
 
 use async_trait::async_trait;
 
-use crate::base::traits::packet_relayer::PacketRelayer;
+use crate::base::relay::traits::packet_relayer::PacketRelayer;
 use crate::base::types::aliases::Packet;
 use crate::full::filter::traits::filter::HasPacketFilter;
 use crate::std_prelude::*;

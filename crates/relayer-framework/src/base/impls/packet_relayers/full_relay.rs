@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 
-use crate::base::traits::contexts::ibc_event::HasIbcEvents;
-use crate::base::traits::contexts::relay::RelayContext;
-use crate::base::traits::packet_relayer::PacketRelayer;
-use crate::base::traits::packet_relayers::ack_packet::HasAckPacketRelayer;
-use crate::base::traits::packet_relayers::receive_packet::HasReceivePacketRelayer;
-use crate::base::traits::queries::status::{HasChainStatus, HasChainStatusQuerier};
+use crate::base::chain::traits::ibc_event::HasIbcEvents;
+use crate::base::chain::traits::queries::status::{HasChainStatus, HasChainStatusQuerier};
+use crate::base::relay::traits::context::RelayContext;
+use crate::base::relay::traits::packet_relayer::PacketRelayer;
+use crate::base::relay::traits::packet_relayers::ack_packet::HasAckPacketRelayer;
+use crate::base::relay::traits::packet_relayers::receive_packet::HasReceivePacketRelayer;
 use crate::base::types::aliases::Packet;
 use crate::std_prelude::*;
 

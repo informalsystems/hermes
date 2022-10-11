@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 
+use crate::base::chain::traits::message_sender::{HasMessageSender, MessageSender};
 use crate::base::one_for_all::traits::chain::{OfaChain, OfaChainWrapper};
 use crate::base::one_for_all::traits::error::OfaErrorContext;
-use crate::base::traits::message_sender::{HasMessageSender, MessageSender};
 use crate::std_prelude::*;
 
 pub struct OfaMessageSender;

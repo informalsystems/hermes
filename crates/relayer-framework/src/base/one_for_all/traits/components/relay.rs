@@ -1,18 +1,20 @@
 use crate::base::one_for_all::traits::components::chain::OfaIbcChainComponents;
 use crate::base::one_for_all::traits::relay::{OfaRelay, OfaRelayWrapper};
-use crate::base::traits::ibc_message_sender::{HasIbcMessageSender, IbcMessageSender};
-use crate::base::traits::messages::update_client::{
+use crate::base::relay::traits::ibc_message_sender::{HasIbcMessageSender, IbcMessageSender};
+use crate::base::relay::traits::messages::update_client::{
     HasUpdateClientMessageBuilder, UpdateClientMessageBuilder,
 };
-use crate::base::traits::packet_relayer::{HasPacketRelayer, PacketRelayer};
-use crate::base::traits::packet_relayers::ack_packet::{AckPacketRelayer, HasAckPacketRelayer};
-use crate::base::traits::packet_relayers::receive_packet::{
+use crate::base::relay::traits::packet_relayer::{HasPacketRelayer, PacketRelayer};
+use crate::base::relay::traits::packet_relayers::ack_packet::{
+    AckPacketRelayer, HasAckPacketRelayer,
+};
+use crate::base::relay::traits::packet_relayers::receive_packet::{
     HasReceivePacketRelayer, ReceivePacketRelayer,
 };
-use crate::base::traits::packet_relayers::timeout_unordered_packet::{
+use crate::base::relay::traits::packet_relayers::timeout_unordered_packet::{
     HasTimeoutUnorderedPacketRelayer, TimeoutUnorderedPacketRelayer,
 };
-use crate::base::traits::target::{DestinationTarget, SourceTarget};
+use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 
 pub trait OfaRelayComponents<Relay>:
     OfaIbcChainComponents<Relay::SrcChain, Relay::DstChain>

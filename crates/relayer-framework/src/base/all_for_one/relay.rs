@@ -1,16 +1,16 @@
 use crate::base::all_for_one::chain::AfoChainContext;
 use crate::base::all_for_one::error::AfoError;
-use crate::base::traits::contexts::relay::RelayContext;
-use crate::base::traits::ibc_message_sender::HasIbcMessageSender;
-use crate::base::traits::messages::ack_packet::HasAckPacketMessageBuilder;
-use crate::base::traits::messages::receive_packet::HasReceivePacketMessageBuilder;
-use crate::base::traits::messages::timeout_packet::HasTimeoutUnorderedPacketMessageBuilder;
-use crate::base::traits::messages::update_client::HasUpdateClientMessageBuilder;
-use crate::base::traits::packet_relayer::HasPacketRelayer;
-use crate::base::traits::packet_relayers::ack_packet::HasAckPacketRelayer;
-use crate::base::traits::packet_relayers::receive_packet::HasReceivePacketRelayer;
-use crate::base::traits::packet_relayers::timeout_unordered_packet::HasTimeoutUnorderedPacketRelayer;
-use crate::base::traits::target::{DestinationTarget, SourceTarget};
+use crate::base::relay::traits::context::RelayContext;
+use crate::base::relay::traits::ibc_message_sender::HasIbcMessageSender;
+use crate::base::relay::traits::messages::ack_packet::HasAckPacketMessageBuilder;
+use crate::base::relay::traits::messages::receive_packet::HasReceivePacketMessageBuilder;
+use crate::base::relay::traits::messages::timeout_packet::HasTimeoutUnorderedPacketMessageBuilder;
+use crate::base::relay::traits::messages::update_client::HasUpdateClientMessageBuilder;
+use crate::base::relay::traits::packet_relayer::HasPacketRelayer;
+use crate::base::relay::traits::packet_relayers::ack_packet::HasAckPacketRelayer;
+use crate::base::relay::traits::packet_relayers::receive_packet::HasReceivePacketRelayer;
+use crate::base::relay::traits::packet_relayers::timeout_unordered_packet::HasTimeoutUnorderedPacketRelayer;
+use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 
 /// The functionality that a relay context gains access to once that relay
 /// context implements the [`OfaRelayWrapper`] trait.

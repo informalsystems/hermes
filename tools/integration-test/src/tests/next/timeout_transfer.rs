@@ -4,7 +4,7 @@
 use ibc_relayer::config::PacketFilter;
 
 use ibc_relayer_framework::base::impls::packet_relayers::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
-use ibc_relayer_framework::base::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer;
+use ibc_relayer_framework::base::relay::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
 

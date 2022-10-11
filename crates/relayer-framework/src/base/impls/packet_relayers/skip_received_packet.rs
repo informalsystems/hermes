@@ -2,10 +2,10 @@ use core::marker::PhantomData;
 
 use async_trait::async_trait;
 
-use crate::base::traits::contexts::ibc_event::HasIbcEvents;
-use crate::base::traits::contexts::relay::RelayContext;
-use crate::base::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
-use crate::base::traits::queries::received_packet::HasReceivedPacketQuerier;
+use crate::base::chain::traits::ibc_event::HasIbcEvents;
+use crate::base::chain::traits::queries::received_packet::HasReceivedPacketQuerier;
+use crate::base::relay::traits::context::RelayContext;
+use crate::base::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
 use crate::base::types::aliases::{Height, WriteAcknowledgementEvent};
 use crate::std_prelude::*;
 

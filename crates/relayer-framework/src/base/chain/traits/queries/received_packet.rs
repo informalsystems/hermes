@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::base::traits::contexts::chain::IbcChainContext;
+use crate::base::chain::traits::context::IbcChainContext;
 use crate::std_prelude::*;
 
 #[async_trait]

@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
-use crate::base::traits::contexts::ibc_event::HasIbcEvents;
-use crate::base::traits::contexts::relay::RelayContext;
+use crate::base::chain::traits::ibc_event::HasIbcEvents;
+use crate::base::relay::traits::context::RelayContext;
 use crate::base::types::aliases::{Height, Message, WriteAcknowledgementEvent};
 use crate::std_prelude::*;
 

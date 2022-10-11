@@ -1,10 +1,10 @@
 use async_trait::async_trait;
 
 use super::context::{BatchContext, HasBatchContext};
-use crate::base::traits::contexts::chain::IbcChainContext;
-use crate::base::traits::contexts::relay::RelayContext;
-use crate::base::traits::ibc_message_sender::IbcMessageSender;
-use crate::base::traits::target::ChainTarget;
+use crate::base::chain::traits::context::IbcChainContext;
+use crate::base::relay::traits::context::RelayContext;
+use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
+use crate::base::relay::traits::target::ChainTarget;
 use crate::std_prelude::*;
 
 pub struct SendMessagetoBatchWorker;
