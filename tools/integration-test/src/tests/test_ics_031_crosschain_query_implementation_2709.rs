@@ -1,15 +1,17 @@
+use base64;
 use ibc_proto::google::protobuf::Any;
-use ibc_relayer::chain::handle::ChainHandle;
-use ibc_test_framework::prelude::*;
-use ibc_proto::ibc::applications::query::v1::{MsgSubmitCrossChainQuery, QueryCrossChainQueryResult};
-use prost;
+use ibc_proto::ibc::applications::query::v1::{
+    MsgSubmitCrossChainQuery, QueryCrossChainQueryResult,
+};
 use ibc_proto::ibc::core::client::v1::Height;
+use ibc_relayer::chain::handle::ChainHandle;
 use ibc_test_framework::chain::exec::simple_exec;
 use ibc_test_framework::error::Error;
-use std::time::Duration;
-use base64;
+use ibc_test_framework::prelude::*;
+use prost;
 use std::env;
 use std::process::Command;
+use std::time::Duration;
 
 struct Ics31Test;
 
@@ -18,16 +20,21 @@ fn test_ics_031_crosschain_query() -> Result<(), Error> {
     run_self_connected_nary_chain_test(&Ics31Test)
 }
 
-impl TestOverrides for Ics31Test{
+impl TestOverrides for Ics31Test {
     fn modify_test_config(&self, config: &mut TestConfig) {
-        let arch = String::from_utf8_lossy(&Command::new("uname").arg("-a").output().unwrap().stdout).to_string();
-        let base_dir = format!("{}/{}", env::current_dir().unwrap().to_string_lossy().to_string(), "chain-binaries");
+        let arch =
+            String::from_utf8_lossy(&Command::new("uname").arg("-a").output().unwrap().stdout)
+                .to_string();
+        let base_dir = format!(
+            "{}/{}",
+            env::current_dir().unwrap().to_string_lossy().to_string(),
+            "chain-binaries"
+        );
 
         if arch.contains("GNU/Linux") {
             config.chain_command_path = format!("{}/{}", base_dir, "interchain-queriesd-amd64");
         } else if arch.contains("arm64") {
             config.chain_command_path = format!("{}/{}", base_dir, "interchain-queriesd-arm64");
-
         }
     }
 }
@@ -58,7 +65,6 @@ impl ChainMessage for QueryCrossChainQueryResult {
     }
 }
 
-
 impl NaryChainTest<1> for Ics31Test {
     fn run<Handle: ChainHandle>(
         &self,
@@ -74,7 +80,7 @@ impl NaryChainTest<1> for Ics31Test {
             path: format!("{}/{}", fullnode.chain_driver.rpc_address(), "abci_info?"),
             local_timeout_height: Some(Height {
                 revision_number: 0,
-                revision_height: 10000
+                revision_height: 10000,
             }),
             local_timeout_stamp: 5000000000000000000,
             query_height: 1,
@@ -82,7 +88,10 @@ impl NaryChainTest<1> for Ics31Test {
             sender: wallet.clone().address.0,
         };
 
-        fullnode.clone().chain_driver.send_tx(&wallet, vec![msg_cross_chain_query_tx.to_any()])?;
+        fullnode
+            .clone()
+            .chain_driver
+            .send_tx(&wallet, vec![msg_cross_chain_query_tx.to_any()])?;
 
         // wait until the relayer fetches data from chain
         sleep(Duration::from_secs(5));
@@ -100,10 +109,11 @@ impl NaryChainTest<1> for Ics31Test {
                 "--chain-id",
                 fullnode.clone().chain_driver.chain_id.as_str(),
             ],
-        )?.stdout;
+        )?
+        .stdout;
 
         // decode query result as base64 format
-        let res_data_raw= res.split("\n").nth(0).unwrap();
+        let res_data_raw = res.split("\n").nth(0).unwrap();
         let data_base64 = res_data_raw.split(" ").nth(1).unwrap();
         let data = String::from_utf8_lossy(&base64::decode(data_base64).unwrap()).to_string();
 
@@ -113,6 +123,3 @@ impl NaryChainTest<1> for Ics31Test {
         Ok(())
     }
 }
-
-
-
