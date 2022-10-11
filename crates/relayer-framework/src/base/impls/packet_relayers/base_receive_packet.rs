@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 
+use crate::base::core::traits::sync::Async;
 use crate::base::traits::contexts::ibc_event::HasIbcEvents;
 use crate::base::traits::contexts::relay::RelayContext;
-use crate::base::traits::core::Async;
 use crate::base::traits::ibc_message_sender::{
     HasIbcMessageSender, IbcMessageSenderExt, MismatchIbcEventsCountError,
 };

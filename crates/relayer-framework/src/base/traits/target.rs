@@ -1,6 +1,6 @@
+use crate::base::core::traits::sync::Async;
 use crate::base::traits::contexts::chain::IbcChainContext;
 use crate::base::traits::contexts::relay::RelayContext;
-use crate::base::traits::core::Async;
 use crate::base::types::aliases::ClientId;
 
 #[derive(Default)]

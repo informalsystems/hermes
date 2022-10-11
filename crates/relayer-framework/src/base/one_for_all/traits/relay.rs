@@ -4,11 +4,11 @@
 
 use async_trait::async_trait;
 
+use crate::base::core::traits::sync::Async;
 use crate::base::one_for_all::traits::chain::{OfaChainTypes, OfaChainWrapper, OfaIbcChain};
 use crate::base::one_for_all::traits::error::OfaError;
 use crate::base::one_for_all::traits::runtime::OfaRuntime;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
-use crate::base::traits::core::Async;
 use crate::std_prelude::*;
 
 #[derive(Clone)]

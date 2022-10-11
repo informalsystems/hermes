@@ -1,5 +1,5 @@
+use crate::base::core::traits::sync::Async;
 use crate::base::traits::contexts::chain::{ChainContext, IbcChainContext};
-use crate::base::traits::core::Async;
 
 pub trait HasIbcEvents<Counterparty>: IbcChainContext<Counterparty>
 where

@@ -1,12 +1,12 @@
 use async_trait::async_trait;
 
+use crate::base::core::traits::error::HasError;
+use crate::base::core::traits::runtime::context::HasRuntime;
 use crate::base::one_for_all::traits::chain::{OfaChain, OfaChainWrapper, OfaIbcChain};
 use crate::base::one_for_all::traits::error::OfaErrorContext;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::base::traits::contexts::chain::{ChainContext, IbcChainContext};
-use crate::base::traits::contexts::error::HasError;
 use crate::base::traits::contexts::ibc_event::HasIbcEvents;
-use crate::base::traits::contexts::runtime::HasRuntime;
 use crate::base::traits::queries::consensus_state::{ConsensusStateQuerier, HasConsensusState};
 use crate::base::traits::queries::received_packet::{
     HasReceivedPacketQuerier, ReceivedPacketQuerier,

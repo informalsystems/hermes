@@ -4,8 +4,8 @@
 //! These traits can be implemented over the default `OfaChain` trait if the
 //! behavior exposed by that trait and the `AfoChain` trait are not desired.
 
-use crate::base::traits::contexts::runtime::HasRuntime;
-use crate::base::traits::core::Async;
+use crate::base::core::traits::runtime::context::HasRuntime;
+use crate::base::core::traits::sync::Async;
 
 /// The minimal datatypes that any chain needs to expose.
 pub trait ChainContext: HasRuntime {

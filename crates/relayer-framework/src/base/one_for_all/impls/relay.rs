@@ -1,13 +1,13 @@
 use async_trait::async_trait;
 
+use crate::base::core::traits::error::HasError;
+use crate::base::core::traits::runtime::context::HasRuntime;
 use crate::base::one_for_all::traits::chain::{OfaChain, OfaChainTypes, OfaChainWrapper};
 use crate::base::one_for_all::traits::error::OfaErrorContext;
 use crate::base::one_for_all::traits::relay::OfaRelay;
 use crate::base::one_for_all::traits::relay::OfaRelayWrapper;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
-use crate::base::traits::contexts::error::HasError;
 use crate::base::traits::contexts::relay::RelayContext;
-use crate::base::traits::contexts::runtime::HasRuntime;
 use crate::base::traits::messages::ack_packet::{
     AckPacketMessageBuilder, HasAckPacketMessageBuilder,
 };

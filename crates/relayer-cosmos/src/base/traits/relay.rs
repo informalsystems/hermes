@@ -1,6 +1,6 @@
 use alloc::sync::Arc;
 use ibc_relayer::foreign_client::ForeignClient;
-use ibc_relayer_framework::base::traits::core::Async;
+use ibc_relayer_framework::base::core::traits::sync::Async;
 
 use crate::base::traits::chain::CosmosChain;
 

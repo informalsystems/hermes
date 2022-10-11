@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use core::marker::PhantomData;
 
+use crate::base::core::traits::sync::Async;
 use crate::base::one_for_all::traits::chain::OfaChainTypes;
-use crate::base::traits::core::Async;
 use crate::std_prelude::*;
 
 #[derive(Clone)]

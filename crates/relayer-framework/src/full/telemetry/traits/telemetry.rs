@@ -1,4 +1,4 @@
-use crate::base::traits::core::Async;
+use crate::base::core::traits::sync::Async;
 
 pub trait HasTelemetry {
     type Telemetry: Async;

@@ -1,6 +1,6 @@
 use core::future::Future;
 
-use crate::base::traits::core::Async;
+use crate::base::core::traits::sync::Async;
 
 pub trait HasSpawner: Async {
     type Spawner: Spawner;

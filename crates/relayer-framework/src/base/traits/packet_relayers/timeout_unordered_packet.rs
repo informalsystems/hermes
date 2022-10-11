@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
+use crate::base::core::traits::sync::Async;
 use crate::base::traits::contexts::relay::RelayContext;
-use crate::base::traits::core::Async;
 use crate::base::types::aliases::Height;
 use crate::std_prelude::*;
 

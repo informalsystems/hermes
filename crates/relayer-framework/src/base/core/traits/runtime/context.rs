@@ -1,4 +1,4 @@
-use crate::base::traits::contexts::error::HasError;
+use crate::base::core::traits::error::HasError;
 
 pub trait HasRuntime: HasError {
     type Runtime: HasError<Error = Self::Error>;

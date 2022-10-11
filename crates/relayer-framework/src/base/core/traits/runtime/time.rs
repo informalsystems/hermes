@@ -1,6 +1,6 @@
 use core::time::Duration;
 
-use crate::base::traits::core::Async;
+use crate::base::core::traits::sync::Async;
 
 pub trait Time: Async {
     fn duration_since(&self, other: &Self) -> Duration;

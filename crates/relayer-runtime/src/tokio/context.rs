@@ -10,10 +10,10 @@ use tokio::sync::{mpsc, oneshot};
 use tokio::time::sleep;
 use tracing;
 
+use ibc_relayer_framework::base::core::traits::sync::Async;
 use ibc_relayer_framework::base::one_for_all::traits::chain::OfaChain;
 use ibc_relayer_framework::base::one_for_all::traits::error::OfaError;
 use ibc_relayer_framework::base::one_for_all::traits::runtime::{LogLevel, OfaRuntime};
-use ibc_relayer_framework::base::traits::core::Async;
 use ibc_relayer_framework::full::one_for_all::traits::batch::OfaBatch;
 
 use super::error::Error as TokioError;
