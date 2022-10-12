@@ -29,8 +29,8 @@ where
     Relay: RelayContext<Error = Error, Runtime = Runtime>,
     Target: ChainTarget<Relay, TargetChain = TargetChain, CounterpartyChain = CounterpartyChain>,
     TargetChain: IbcChainContext<CounterpartyChain>,
-    CounterpartyChain:
-        IbcChainContext<TargetChain, Height = Height, Error = Error> + HasChainStatusQuerier,
+    CounterpartyChain: IbcChainContext<TargetChain, Height = Height, Error = Error>,
+    CounterpartyChain: HasChainStatusQuerier,
     Relay::DstChain: ChainContext<Height = Height>,
     InMessageBuilder: TimeoutUnorderedPacketMessageBuilder<Relay>,
     Runtime: CanSleep,
