@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use core::cmp::Ord;
 use core::marker::PhantomData;
 
+use crate::base::traits::contexts::chain::ChainContext;
 use crate::base::traits::{
     contexts::relay::RelayContext, core::Async,
     messages::timeout_packet::TimeoutUnorderedPacketMessageBuilder, runtime::sleep::CanSleep,
@@ -20,6 +21,7 @@ impl<Relay, InMessageBuilder, Height, Error, Runtime> TimeoutUnorderedPacketMess
     for WaitTimeoutUnorderedPacketMessageBuilder<InMessageBuilder>
 where
     Relay: RelayContext<Error = Error, Runtime = Runtime>,
+    Relay::DstChain: ChainContext<Height = Height>,
     InMessageBuilder: TimeoutUnorderedPacketMessageBuilder<Relay>,
     Runtime: CanSleep,
     Height: Ord + Async,
