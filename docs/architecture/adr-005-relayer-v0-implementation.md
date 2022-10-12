@@ -228,7 +228,7 @@ Accepted
 [ids]: https://github.com/cosmos/cosmos-sdk/pull/7993
 [link]: https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/adr-004-relayer-domain-decomposition.md#link
 [chain-req]: https://github.com/informalsystems/ibc-rs/blob/379dd9812f6e7a42b9428f64eb52fe292d417476/relayer/src/chain/handle.rs#L51
-[ibc-relayer]: https://github.com/informalsystems/ibc-rs/tree/master/relayer/
-[ibc-relayer-cli]: https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli/
+[ibc-relayer]: https://github.com/informalsystems/ibc-rs/tree/master/crates/relayer/
+[ibc-relayer-cli]: https://github.com/informalsystems/ibc-rs/tree/master/crates/relayer-cli/
 [hermes]: https://hermes.informal.systems
 [features]: https://github.com/informalsystems/ibc-rs/blob/v0.1.0/guide/src/feature_matrix.md

@@ -64,7 +64,7 @@ The command created packet filters so Hermes will only relay on `channel-0` for 
 > - The transaction's size. Bigger transactions need more gas. 
 > - The volume of IBC messages to relay.
 > 
-> We cannot provide a way to precisely set those parameters. However, you can refer to [other operators' configuration](https://github.com/informalsystems/ibc-rs/discussions/2472#discussioncomment-3331695). You can also find IBC transfers on [mintscan.io](https://www.mintscan.io/cosmos/txs) to observe how much other operators are spending. But remember that if the gas wanted is too low, the transactions will fail. If the gas price is too high gas will be wasted, but the transactions will have a higher priority. 
+> We cannot provide a way to precisely set those parameters. However, you can refer to [other operators' configuration](https://github.com/informalsystems/hermes/discussions/2472#discussioncomment-3331695). You can also find IBC transfers on [mintscan.io](https://www.mintscan.io/cosmos/txs) to observe how much other operators are spending. But remember that if the gas wanted is too low, the transactions will fail. If the gas price is too high gas will be wasted, but the transactions will have a higher priority. 
 
 For the tutorial, we will follow the [example of Crypto Crew](https://github.com/notional-labs/notional/blob/master/relaying/hermes/all-ibc.toml) and set the gas parameters as follows.
 

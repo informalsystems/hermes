@@ -51,7 +51,7 @@ impl Settings {
 
 /// The client state clock drift must account for destination
 /// chain block frequency and clock drift on source and dest.
-/// https://github.com/informalsystems/ibc-rs/issues/1445
+/// https://github.com/informalsystems/hermes/issues/1445
 fn calculate_client_state_drift(
     src_chain_config: &ChainConfig,
     dst_chain_config: &ChainConfig,
