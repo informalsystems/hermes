@@ -7,7 +7,7 @@ use crate::base::all_for_one::chain::AfoBaseChain;
 use crate::base::all_for_one::relay::AfoBaseRelay;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
 use crate::base::one_for_all::traits::components::chain::OfaIbcChainComponents;
-use crate::base::one_for_all::traits::components::relay::OfaBaseRelayComponents;
+use crate::base::one_for_all::traits::components::relay::OfaRelayComponents;
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
@@ -18,7 +18,7 @@ use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 pub fn afo_relay_context<Relay>(relay: OfaRelayWrapper<Relay>) -> impl AfoBaseRelay
 where
     Relay: OfaBaseRelay,
-    Relay::Components: OfaBaseRelayComponents<Relay>,
+    Relay::Components: OfaRelayComponents<Relay>,
 {
     relay
 }

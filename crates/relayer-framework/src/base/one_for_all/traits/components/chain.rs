@@ -5,14 +5,14 @@ use crate::base::chain::traits::queries::status::{ChainStatusQuerier, HasChainSt
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 
-pub trait OfaBaseChainComponents<Chain>
+pub trait OfaChainComponents<Chain>
 where
     Chain: OfaBaseChain,
 {
     type ChainStatusQuerier: ChainStatusQuerier<OfaChainWrapper<Chain>>;
 }
 
-pub trait OfaIbcChainComponents<Chain, Counterparty>: OfaBaseChainComponents<Chain>
+pub trait OfaIbcChainComponents<Chain, Counterparty>: OfaChainComponents<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaIbcChain<Chain>,
@@ -26,7 +26,7 @@ where
 impl<Chain, Components> HasChainStatusQuerier for OfaChainWrapper<Chain>
 where
     Chain: OfaBaseChain<Components = Components>,
-    Components: OfaBaseChainComponents<Chain>,
+    Components: OfaChainComponents<Chain>,
 {
     type ChainStatusQuerier = Components::ChainStatusQuerier;
 }

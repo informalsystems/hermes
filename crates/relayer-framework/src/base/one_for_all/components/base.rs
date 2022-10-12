@@ -3,9 +3,9 @@ use crate::base::one_for_all::impls::relay::OfaUpdateClientMessageBuilder;
 use crate::base::one_for_all::impls::status::OfaBaseChainStatusQuerier;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
 use crate::base::one_for_all::traits::components::chain::{
-    OfaBaseChainComponents, OfaIbcChainComponents,
+    OfaChainComponents, OfaIbcChainComponents,
 };
-use crate::base::one_for_all::traits::components::relay::OfaBaseRelayComponents;
+use crate::base::one_for_all::traits::components::relay::OfaRelayComponents;
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::relay::impls::message_senders::chain_sender::SendIbcMessagesToChain;
 use crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
@@ -20,7 +20,7 @@ use crate::base::relay::impls::packet_relayers::timeout_unordered_packet::BaseTi
 
 pub struct BaseComponents;
 
-impl<Chain> OfaBaseChainComponents<Chain> for BaseComponents
+impl<Chain> OfaChainComponents<Chain> for BaseComponents
 where
     Chain: OfaBaseChain,
 {
@@ -35,7 +35,7 @@ where
     type ConsensusStateQuerier = OfaConsensusStateQuerier;
 }
 
-impl<Relay> OfaBaseRelayComponents<Relay> for BaseComponents
+impl<Relay> OfaRelayComponents<Relay> for BaseComponents
 where
     Relay: OfaBaseRelay<Components = BaseComponents>,
 {
