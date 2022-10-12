@@ -1,5 +1,12 @@
 //! This test ensures that a source chain that initiates an IBC transfer is
 //! refunded the tokens that it sent in response to receiving a timeout packet.
+//!
+//! It sets up a Cosmos relay context, a [`BaseTimeoutUnorderedPacketRelayer`],
+//! a chain runtime, and two wallets, `wallet_a` and `wallet_b`. An IBC token
+//! transfer is initiated. Afterwards, a timeout packet is sent from the chain
+//! that received the token transfer to the chain that initiated it. Finally,
+//! it checks that the source chain's wallet balance has been restored to its
+//! original amount before the transfer was initiated.
 
 use ibc_relayer::config::PacketFilter;
 
