@@ -144,7 +144,13 @@ pub enum ChainRequest {
 
     QueryBalance {
         key_name: Option<String>,
+        denom: Option<String>,
         reply_to: ReplyTo<Balance>,
+    },
+
+    QueryAllBalances {
+        key_name: Option<String>,
+        reply_to: ReplyTo<Vec<Balance>>,
     },
 
     QueryDenomTrace {
@@ -385,9 +391,18 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
     /// Return the version of the IBC protocol that this chain is running, if known.
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
 
-    /// Query the balance of the given account for the denom used to pay tx fees.
+    /// Query the balance of the given account for the given denom.
     /// If no account is given, behavior must be specified, e.g. retrieve it from configuration file.
-    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error>;
+    /// If no denom is given, behavior must be specified, e.g. using the denom used to pay tx fees
+    fn query_balance(
+        &self,
+        key_name: Option<String>,
+        denom: Option<String>,
+    ) -> Result<Balance, Error>;
+
+    /// Query the balances from all denom of the given account.
+    /// If no account is given, behavior must be specified, e.g. retrieve it from configuration file.
+    fn query_all_balances(&self, key_name: Option<String>) -> Result<Vec<Balance>, Error>;
 
     /// Query the denomination trace given a trace hash.
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error>;

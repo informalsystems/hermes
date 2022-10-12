@@ -34,6 +34,13 @@ pub struct KeyBalanceCmd {
         help = "(optional) name of the key (defaults to the `key_name` defined in the config)"
     )]
     key_name: Option<String>,
+
+    #[clap(
+        long = "denom",
+        value_name = "DENOM",
+        help = "(optional) query the balance for the given denom (defaults to the `denom` defined in the config for the gas price)"
+    )]
+    denom: Option<String>,
 }
 
 impl Runnable for KeyBalanceCmd {
@@ -43,31 +50,69 @@ impl Runnable for KeyBalanceCmd {
         let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
         let key_name = self.key_name.clone();
-
-        match chain.query_balance(key_name.clone()) {
-            Ok(balance) if json() => Output::success(balance).exit(),
-            Ok(balance) => {
-                // Retrieve the key name string to output.
-                let key_name_str = match key_name {
-                    Some(name) => name,
-                    None => {
-                        let chain_config =
-                            chain.config().unwrap_or_else(exit_with_unrecoverable_error);
-                        chain_config.key_name
-                    }
-                };
-                Output::success_msg(format!(
-                    "balance for key `{}`: {} {}",
-                    key_name_str, balance.amount, balance.denom
-                ))
-                .exit()
+        match self.denom.clone() {
+            Some(denom) => {
+                if denom == "all" {
+                    get_balances(chain, key_name);
+                } else {
+                    get_balance(chain, key_name, Some(denom));
+                }
             }
-            Err(e) => Output::error(format!(
-                "there was a problem querying the chain balance: {}",
-                e
-            ))
-            .exit(),
+            None => get_balance(chain, key_name, None),
         }
+    }
+}
+
+fn get_balance(chain: impl ChainHandle, key_name: Option<String>, denom: Option<String>) {
+    match chain.query_balance(key_name.clone(), denom) {
+        Ok(balance) if json() => Output::success(balance).exit(),
+        Ok(balance) => {
+            // Retrieve the key name string to output.
+            let key_name_str = match key_name {
+                Some(name) => name,
+                None => {
+                    let chain_config = chain.config().unwrap_or_else(exit_with_unrecoverable_error);
+                    chain_config.key_name
+                }
+            };
+            Output::success_msg(format!(
+                "balance for key `{}`: {} {}",
+                key_name_str, balance.amount, balance.denom
+            ))
+            .exit()
+        }
+        Err(e) => Output::error(format!(
+            "there was a problem querying the chain balance: {}",
+            e
+        ))
+        .exit(),
+    }
+}
+
+fn get_balances(chain: impl ChainHandle, key_name: Option<String>) {
+    match chain.query_all_balances(key_name.clone()) {
+        Ok(balances) if json() => Output::success(balances).exit(),
+        Ok(balances) => {
+            // Retrieve the key name string to output.
+            let key_name_str = match key_name {
+                Some(name) => name,
+                None => {
+                    let chain_config = chain.config().unwrap_or_else(exit_with_unrecoverable_error);
+                    chain_config.key_name
+                }
+            };
+            let mut pretty_output = format!("balances for key `{}` :", key_name_str);
+            for balance in balances {
+                pretty_output =
+                    format!("{}\n\t{} {}", pretty_output, balance.amount, balance.denom);
+            }
+            Output::success_msg(pretty_output).exit()
+        }
+        Err(e) => Output::error(format!(
+            "there was a problem querying the chain balance: {}",
+            e
+        ))
+        .exit(),
     }
 }
 
@@ -84,7 +129,8 @@ mod tests {
         assert_eq!(
             KeyBalanceCmd {
                 chain_id: ChainId::from_string("chain_id"),
-                key_name: None
+                key_name: None,
+                denom: None,
             },
             KeyBalanceCmd::parse_from(&["test", "--chain", "chain_id"])
         )
@@ -95,7 +141,8 @@ mod tests {
         assert_eq!(
             KeyBalanceCmd {
                 chain_id: ChainId::from_string("chain_id"),
-                key_name: Some("kname".to_owned())
+                key_name: Some("kname".to_owned()),
+                denom: None,
             },
             KeyBalanceCmd::parse_from(&["test", "--chain", "chain_id", "--key-name", "kname"])
         )

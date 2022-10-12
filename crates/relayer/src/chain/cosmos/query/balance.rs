@@ -1,6 +1,8 @@
 use http::uri::Uri;
 
-use ibc_proto::cosmos::bank::v1beta1::{query_client::QueryClient, QueryBalanceRequest};
+use ibc_proto::cosmos::bank::v1beta1::{
+    query_client::QueryClient, QueryAllBalancesRequest, QueryBalanceRequest,
+};
 
 use crate::{account::Balance, error::Error};
 
@@ -34,4 +36,37 @@ pub async fn query_balance(
         amount: balance.amount,
         denom: balance.denom,
     })
+}
+
+/// Uses the GRPC client to retrieve the account balance for all denom
+pub async fn query_all_balances(
+    grpc_address: &Uri,
+    account_address: &str,
+) -> Result<Vec<Balance>, Error> {
+    let mut client = QueryClient::connect(grpc_address.clone())
+        .await
+        .map_err(Error::grpc_transport)?;
+
+    let request = tonic::Request::new(QueryAllBalancesRequest {
+        address: account_address.to_string(),
+        pagination: None,
+    });
+
+    let response = client
+        .all_balances(request)
+        .await
+        .map(|r| r.into_inner())
+        .map_err(Error::grpc_status)?;
+
+    // Querying for a balance might fail, i.e. if the account doesn't actually exist
+    let balances = response.balances;
+
+    let balances = balances
+        .iter()
+        .map(|balance| Balance {
+            amount: balance.amount.clone(),
+            denom: balance.denom.clone(),
+        })
+        .collect();
+    Ok(balances)
 }

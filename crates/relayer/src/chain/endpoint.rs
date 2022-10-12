@@ -162,9 +162,18 @@ pub trait ChainEndpoint: Sized {
 
     // Queries
 
-    /// Query the balance of the given account for the denom used to pay tx fees.
+    /// Query the balance of the given account for the given denom.
     /// If no account is given, behavior must be specified, e.g. retrieve it from configuration file.
-    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error>;
+    /// If no denom is given, behavior must be specified, e.g. retrieve the denom used to pay tx fees.
+    fn query_balance(
+        &self,
+        key_name: Option<String>,
+        denom: Option<String>,
+    ) -> Result<Balance, Error>;
+
+    /// Query the balances of the given account for all the denom.
+    /// If no account is given, behavior must be specified, e.g. retrieve it from configuration file.
+    fn query_all_balances(&self, key_name: Option<String>) -> Result<Vec<Balance>, Error>;
 
     /// Query the denomination trace given a trace hash.
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error>;

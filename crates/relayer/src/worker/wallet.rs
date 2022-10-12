@@ -16,7 +16,7 @@ pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
             TaskError::Fatal(format!("failed to get key in use by the relayer: {e}"))
         })?;
 
-        let balance = chain.query_balance(None).map_err(|e| {
+        let balance = chain.query_balance(None, None).map_err(|e| {
             TaskError::Ignore(format!("failed to query balance for the account: {e}"))
         })?;
 

@@ -303,8 +303,12 @@ where
                             self.build_channel_proofs(port_id, channel_id, height, reply_to)?
                         },
 
-                        ChainRequest::QueryBalance { key_name, reply_to } => {
-                            self.query_balance(key_name, reply_to)?
+                        ChainRequest::QueryBalance { key_name, denom, reply_to } => {
+                            self.query_balance(key_name, denom, reply_to)?
+                        },
+
+                        ChainRequest::QueryAllBalances { key_name, reply_to } => {
+                            self.query_all_balances(key_name, reply_to)?
                         },
 
                         ChainRequest::QueryDenomTrace { hash, reply_to } => {
@@ -474,10 +478,20 @@ where
     fn query_balance(
         &self,
         key_name: Option<String>,
+        denom: Option<String>,
         reply_to: ReplyTo<Balance>,
     ) -> Result<(), Error> {
-        let balance = self.chain.query_balance(key_name);
+        let balance = self.chain.query_balance(key_name, denom);
         reply_to.send(balance).map_err(Error::send)
+    }
+
+    fn query_all_balances(
+        &self,
+        key_name: Option<String>,
+        reply_to: ReplyTo<Vec<Balance>>,
+    ) -> Result<(), Error> {
+        let balances = self.chain.query_all_balances(key_name);
+        reply_to.send(balances).map_err(Error::send)
     }
 
     fn query_denom_trace(&self, hash: String, reply_to: ReplyTo<DenomTrace>) -> Result<(), Error> {
