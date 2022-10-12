@@ -31,7 +31,7 @@ This can be done over a new path or over existing paths.
 >__NOTE__: The following steps decompose every step from the creation of the clients to the channel handshake for educational purposes. 
 > More realistically, you'd use the command `{{#template ../../templates/commands/hermes/create/channel_2.md A_CHAIN_ID=ibc-0 B_CHAIN_ID=ibc-1 A_PORT_ID=transfer B_PORT_ID=transfer}}` in order to create a new client on each chain, establish a connection, and open a channel, all with a single command.
 
-You will need to first create a client on both chains and then establish a connection between them. It is possible to have multiple connections between clients, which can be useful in order to support multiple versions of IBC. Finally, you need to create channels over a connection to identify the source and destination modules. You can learn more in the [cosmos academy tutorial](https://tutorials.cosmos.network/tutorials/5-ibc-dev/).
+You will need to first create a client on both chains and then establish a connection between them. It is possible to have multiple connections between clients, which can be useful in order to support multiple versions of IBC. Finally, you need to create channels over a connection to identify the source and destination modules. You can learn more in the [cosmos academy tutorial](https://tutorials.cosmos.network/academy/3-ibc/1-what-is-ibc.html).
 
 ### Create clients
 

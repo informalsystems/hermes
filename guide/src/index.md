@@ -60,7 +60,7 @@ Hermes is actively developed and maintained by [Informal Systems](https://inform
 * Educational resources
   - [About IBC](https://ibc.cosmos.network/)
       - The official IBC-Go documentation. 
-  - [Cosmos network tutorial](https://tutorials.cosmos.network/tutorials/5-ibc-dev/)
+  - [Cosmos network tutorial](https://tutorials.cosmos.network/academy/3-ibc/1-what-is-ibc.html)
       - Learn the basics of IBC in the official tutorial. 
   - [Connect IBC enabled chains with Hermes](https://www.youtube.com/watch?v=_xQDTj1PcEw&t=4289s)
       - Video demonstration of Hermes at Hackatom 2021.
