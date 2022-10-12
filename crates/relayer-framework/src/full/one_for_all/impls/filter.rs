@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 
-use crate::base::one_for_all::traits::error::OfaErrorContext;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::full::filter::traits::filter::{HasPacketFilter, PacketFilter};
 use crate::full::one_for_all::traits::relay::OfaFullRelay;
@@ -16,12 +15,8 @@ where
     async fn should_relay_packet(
         relay: &OfaRelayWrapper<Relay>,
         packet: &Relay::Packet,
-    ) -> Result<bool, OfaErrorContext<Relay::Error>> {
-        relay
-            .relay
-            .should_relay_packet(packet)
-            .await
-            .map_err(OfaErrorContext::new)
+    ) -> Result<bool, Relay::Error> {
+        relay.relay.should_relay_packet(packet).await
     }
 }
 

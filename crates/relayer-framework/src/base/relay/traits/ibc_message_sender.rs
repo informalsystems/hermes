@@ -2,6 +2,7 @@ use async_trait::async_trait;
 
 use crate::base::chain::traits::context::HasIbcChainTypes;
 use crate::base::chain::types::aliases::{Event, Message};
+use crate::base::core::traits::error::HasError;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::context::HasRelayTypes;
 use crate::base::relay::traits::target::ChainTarget;
@@ -27,9 +28,8 @@ where
     ) -> Result<Vec<Vec<Event<Target::TargetChain>>>, Context::Error>;
 }
 
-pub struct MismatchIbcEventsCountError {
-    pub expected: usize,
-    pub actual: usize,
+pub trait InjectMismatchIbcEventsCountError: HasError {
+    fn mismatch_ibc_events_count_error(expected: usize, actual: usize) -> Self::Error;
 }
 
 #[async_trait]
@@ -48,7 +48,7 @@ where
         messages: [Message<Target::TargetChain>; COUNT],
     ) -> Result<[Vec<Event<Target::TargetChain>>; COUNT], Context::Error>
     where
-        Context::Error: From<MismatchIbcEventsCountError>;
+        Context: InjectMismatchIbcEventsCountError;
 
     async fn send_message(
         &self,
@@ -76,16 +76,13 @@ where
         messages: [Message; COUNT],
     ) -> Result<[Vec<Event>; COUNT], Context::Error>
     where
-        Context::Error: From<MismatchIbcEventsCountError>,
+        Context: InjectMismatchIbcEventsCountError,
     {
         let events = self
             .send_messages(messages.into())
             .await?
             .try_into()
-            .map_err(|e: Vec<_>| MismatchIbcEventsCountError {
-                expected: COUNT,
-                actual: e.len(),
-            })?;
+            .map_err(|e: Vec<_>| Context::mismatch_ibc_events_count_error(COUNT, e.len()))?;
 
         Ok(events)
     }

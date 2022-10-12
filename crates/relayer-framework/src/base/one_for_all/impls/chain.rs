@@ -11,13 +11,12 @@ use crate::base::chain::traits::queries::received_packet::{
 use crate::base::core::traits::error::HasError;
 use crate::base::core::traits::runtime::HasRuntime;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
-use crate::base::one_for_all::traits::error::OfaErrorContext;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
 impl<Chain: OfaBaseChain> HasError for OfaChainWrapper<Chain> {
-    type Error = OfaErrorContext<Chain::Error>;
+    type Error = Chain::Error;
 }
 
 impl<Chain: OfaBaseChain> HasRuntime for OfaChainWrapper<Chain> {
@@ -45,11 +44,11 @@ impl<Chain: OfaBaseChain> HasChainTypes for OfaChainWrapper<Chain> {
         message: &Self::Message,
         signer: &Self::Signer,
     ) -> Result<Self::RawMessage, Self::Error> {
-        Chain::encode_raw_message(message, signer).map_err(OfaErrorContext::new)
+        Chain::encode_raw_message(message, signer)
     }
 
     fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error> {
-        Chain::estimate_message_len(message).map_err(OfaErrorContext::new)
+        Chain::estimate_message_len(message)
     }
 }
 
@@ -110,7 +109,7 @@ where
         chain: &OfaChainWrapper<Chain>,
         client_id: &Chain::ClientId,
         height: &Counterparty::Height,
-    ) -> Result<Counterparty::ConsensusState, OfaErrorContext<Chain::Error>> {
+    ) -> Result<Counterparty::ConsensusState, Chain::Error> {
         let consensus_state = chain.chain.query_consensus_state(client_id, height).await?;
 
         Ok(consensus_state)
@@ -132,7 +131,7 @@ where
         port_id: &Chain::PortId,
         channel_id: &Chain::ChannelId,
         sequence: &Counterparty::Sequence,
-    ) -> Result<bool, OfaErrorContext<Chain::Error>> {
+    ) -> Result<bool, Chain::Error> {
         let is_received = chain
             .chain
             .is_packet_received(port_id, channel_id, sequence)

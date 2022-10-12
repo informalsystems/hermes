@@ -2,58 +2,52 @@ use core::marker::PhantomData;
 
 use async_trait::async_trait;
 
+use crate::base::core::traits::error::HasError;
 use crate::base::relay::traits::context::HasRelayTypes;
 use crate::base::relay::traits::packet_relayer::PacketRelayer;
 use crate::base::relay::types::aliases::Packet;
 use crate::std_prelude::*;
 
-const MAX_RETRY: usize = 3;
-
-pub struct MaxRetryExceeded {
-    pub retries: usize,
-}
-
-pub trait RetryableError {
-    fn is_retryable(&self) -> bool;
-}
-
 pub struct RetryRelayer<InRelay> {
     pub phantom: PhantomData<InRelay>,
 }
 
-impl<InRelay> RetryRelayer<InRelay> {
-    pub fn new(phantom: PhantomData<InRelay>) -> Self {
-        Self { phantom }
-    }
+pub trait SupportsPacketRetry: HasError {
+    const MAX_RETRY: usize;
+
+    fn is_retryable_error(e: &Self::Error) -> bool;
+
+    fn max_retry_exceeded_error(e: Self::Error) -> Self::Error;
 }
 
 #[async_trait]
-impl<Context, InRelay> PacketRelayer<Context> for RetryRelayer<InRelay>
+impl<Relay, InRelayer> PacketRelayer<Relay> for RetryRelayer<InRelayer>
 where
-    Context: HasRelayTypes,
-    InRelay: PacketRelayer<Context>,
-    Context::Error: RetryableError,
-    Context::Error: From<MaxRetryExceeded>,
+    Relay: HasRelayTypes,
+    InRelayer: PacketRelayer<Relay>,
+    Relay: SupportsPacketRetry,
 {
-    async fn relay_packet(
-        context: &Context,
-        packet: &Packet<Context>,
-    ) -> Result<(), Context::Error> {
-        for _ in 0..MAX_RETRY {
-            let res = InRelay::relay_packet(context, packet).await;
+    async fn relay_packet(context: &Relay, packet: &Packet<Relay>) -> Result<(), Relay::Error> {
+        let mut retries_made: usize = 0;
+        loop {
+            let res = InRelayer::relay_packet(context, packet).await;
 
             match res {
                 Ok(()) => {
                     return Ok(());
                 }
                 Err(e) => {
-                    if !e.is_retryable() {
+                    if Relay::is_retryable_error(&e) {
+                        retries_made += 1;
+
+                        if retries_made > Relay::MAX_RETRY {
+                            return Err(Relay::max_retry_exceeded_error(e));
+                        }
+                    } else {
                         return Err(e);
                     }
                 }
             }
         }
-
-        Err(MaxRetryExceeded { retries: MAX_RETRY }.into())
     }
 }

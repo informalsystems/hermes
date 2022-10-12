@@ -1,6 +1,5 @@
 use async_trait::async_trait;
 
-use crate::base::one_for_all::traits::error::OfaErrorContext;
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
@@ -15,7 +14,7 @@ where
     Chain: OfaFullChain<BatchContext = Batch>,
     Batch: OfaBatch<Chain>,
 {
-    type Error = OfaErrorContext<Chain::Error>;
+    type Error = Chain::Error;
 
     type Message = Chain::Message;
 
@@ -42,17 +41,13 @@ where
         messages: Vec<Self::Message>,
         result_sender: Self::ResultSender,
     ) -> Result<(), Self::Error> {
-        Batch::send_batch(sender, messages, result_sender)
-            .await
-            .map_err(OfaErrorContext::new)
+        Batch::send_batch(sender, messages, result_sender).await
     }
 
     async fn try_receive_batch(
         receiver: &Self::BatchReceiver,
     ) -> Result<Option<(Vec<Self::Message>, Self::ResultSender)>, Self::Error> {
-        let result = Batch::try_receive_batch(receiver)
-            .await
-            .map_err(OfaErrorContext::new)?;
+        let result = Batch::try_receive_batch(receiver).await?;
 
         Ok(result)
     }
@@ -60,22 +55,14 @@ where
     async fn receive_result(
         result_receiver: Self::ResultReceiver,
     ) -> Result<Result<Vec<Vec<Self::Event>>, Self::Error>, Self::Error> {
-        let result = Batch::receive_result(result_receiver).await;
-
-        match result {
-            Ok(Ok(events)) => Ok(Ok(events)),
-            Ok(Err(e)) => Ok(Err(OfaErrorContext::new(e))),
-            Err(e) => Err(OfaErrorContext::new(e)),
-        }
+        Batch::receive_result(result_receiver).await
     }
 
     fn send_result(
         result_sender: Self::ResultSender,
         result: Result<Vec<Vec<Chain::Event>>, Self::Error>,
     ) -> Result<(), Self::Error> {
-        let in_result = result.map_err(|e| e.error);
-
-        Batch::send_result(result_sender, in_result).map_err(OfaErrorContext::new)
+        Batch::send_result(result_sender, result)
     }
 }
 

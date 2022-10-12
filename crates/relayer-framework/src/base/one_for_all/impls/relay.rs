@@ -4,12 +4,13 @@ use crate::base::chain::types::aliases::{ChannelId, Height, PortId, Sequence, Ti
 use crate::base::core::traits::error::HasError;
 use crate::base::core::traits::runtime::HasRuntime;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaBaseChainTypes};
-use crate::base::one_for_all::traits::error::OfaErrorContext;
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
+use crate::base::relay::impls::packet_relayers::retry::SupportsPacketRetry;
 use crate::base::relay::traits::context::HasRelayTypes;
+use crate::base::relay::traits::ibc_message_sender::InjectMismatchIbcEventsCountError;
 use crate::base::relay::traits::messages::ack_packet::{
     AckPacketMessageBuilder, HasAckPacketMessageBuilder,
 };
@@ -24,7 +25,7 @@ use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::std_prelude::*;
 
 impl<Relay: OfaBaseRelay> HasError for OfaRelayWrapper<Relay> {
-    type Error = OfaErrorContext<Relay::Error>;
+    type Error = Relay::Error;
 }
 
 impl<Relay: OfaBaseRelay> HasRuntime for OfaRelayWrapper<Relay> {
@@ -99,7 +100,7 @@ where
     async fn build_update_client_messages(
         context: &OfaRelayWrapper<Relay>,
         height: &<Relay::DstChain as OfaBaseChainTypes>::Height,
-    ) -> Result<Vec<SrcChain::Message>, OfaErrorContext<Relay::Error>> {
+    ) -> Result<Vec<SrcChain::Message>, Relay::Error> {
         let messages = context
             .relay
             .build_src_update_client_messages(height)
@@ -119,7 +120,7 @@ where
     async fn build_update_client_messages(
         context: &OfaRelayWrapper<Relay>,
         height: &<Relay::SrcChain as OfaBaseChainTypes>::Height,
-    ) -> Result<Vec<DstChain::Message>, OfaErrorContext<Relay::Error>> {
+    ) -> Result<Vec<DstChain::Message>, Relay::Error> {
         let messages = context
             .relay
             .build_dst_update_client_messages(height)
@@ -142,7 +143,7 @@ where
         relay: &OfaRelayWrapper<Relay>,
         height: &<Relay::SrcChain as OfaBaseChainTypes>::Height,
         packet: &Relay::Packet,
-    ) -> Result<DstChain::Message, OfaErrorContext<Relay::Error>> {
+    ) -> Result<DstChain::Message, Relay::Error> {
         let message = relay
             .relay
             .build_receive_packet_message(height, packet)
@@ -169,7 +170,7 @@ where
         destination_height: &<Relay::DstChain as OfaBaseChainTypes>::Height,
         packet: &Relay::Packet,
         ack: &<Relay::DstChain as OfaBaseChainTypes>::WriteAcknowledgementEvent,
-    ) -> Result<SrcChain::Message, OfaErrorContext<Relay::Error>> {
+    ) -> Result<SrcChain::Message, Relay::Error> {
         let message = relay
             .relay
             .build_ack_packet_message(destination_height, packet, ack)
@@ -200,7 +201,7 @@ where
         relay: &OfaRelayWrapper<Relay>,
         destination_height: &<Relay::DstChain as OfaBaseChainTypes>::Height,
         packet: &Relay::Packet,
-    ) -> Result<SrcChain::Message, OfaErrorContext<Relay::Error>> {
+    ) -> Result<SrcChain::Message, Relay::Error> {
         let message = relay
             .relay
             .build_timeout_unordered_packet_message(destination_height, packet)
@@ -212,4 +213,22 @@ where
 
 impl<Relay: OfaBaseRelay> HasTimeoutUnorderedPacketMessageBuilder for OfaRelayWrapper<Relay> {
     type TimeoutUnorderedPacketMessageBuilder = OfaTimeoutUnorderedPacketMessageBuilder;
+}
+
+impl<Relay: OfaBaseRelay> SupportsPacketRetry for OfaRelayWrapper<Relay> {
+    const MAX_RETRY: usize = 3;
+
+    fn is_retryable_error(e: &Self::Error) -> bool {
+        Relay::is_retryable_error(e)
+    }
+
+    fn max_retry_exceeded_error(e: Self::Error) -> Self::Error {
+        Relay::max_retry_exceeded_error(e)
+    }
+}
+
+impl<Relay: OfaBaseRelay> InjectMismatchIbcEventsCountError for OfaRelayWrapper<Relay> {
+    fn mismatch_ibc_events_count_error(expected: usize, actual: usize) -> Self::Error {
+        Relay::mismatch_ibc_events_count_error(expected, actual)
+    }
 }

@@ -4,13 +4,10 @@
 //! `OfaChainWrapper`, etc.
 
 use crate::base::all_for_one::chain::AfoBaseChain;
-use crate::base::all_for_one::error::AfoError;
 use crate::base::all_for_one::relay::AfoBaseRelay;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
 use crate::base::one_for_all::traits::components::chain::OfaIbcChainComponents;
 use crate::base::one_for_all::traits::components::relay::OfaBaseRelayComponents;
-use crate::base::one_for_all::traits::error::OfaError;
-use crate::base::one_for_all::traits::error::OfaErrorContext;
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
@@ -40,11 +37,4 @@ where
     Components: OfaIbcChainComponents<Chain, Counterparty>,
 {
     chain
-}
-
-pub fn afo_error<Error>(error: OfaErrorContext<Error>) -> impl AfoError
-where
-    Error: OfaError,
-{
-    error
 }

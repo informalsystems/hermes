@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 use async_trait::async_trait;
+use core::fmt::Debug;
 use core::future::Future;
 use core::marker::PhantomData;
 use core::time::Duration;
@@ -12,7 +13,6 @@ use tracing;
 
 use ibc_relayer_framework::base::core::traits::sync::Async;
 use ibc_relayer_framework::base::one_for_all::traits::chain::OfaBaseChain;
-use ibc_relayer_framework::base::one_for_all::traits::error::OfaError;
 use ibc_relayer_framework::base::one_for_all::traits::runtime::{LogLevel, OfaRuntime};
 use ibc_relayer_framework::full::one_for_all::traits::batch::OfaBatch;
 
@@ -41,7 +41,7 @@ impl<Error> Clone for TokioRuntimeContext<Error> {
 #[async_trait]
 impl<Error> OfaRuntime for TokioRuntimeContext<Error>
 where
-    Error: OfaError + From<TokioError>,
+    Error: From<TokioError> + Debug + Async,
 {
     type Error = Error;
 

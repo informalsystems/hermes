@@ -1,7 +1,8 @@
 use crate::base::all_for_one::chain::AfoBaseChain;
-use crate::base::all_for_one::error::AfoError;
+use crate::base::relay::impls::packet_relayers::retry::SupportsPacketRetry;
 use crate::base::relay::traits::context::HasRelayTypes;
 use crate::base::relay::traits::ibc_message_sender::HasIbcMessageSender;
+use crate::base::relay::traits::ibc_message_sender::InjectMismatchIbcEventsCountError;
 use crate::base::relay::traits::messages::ack_packet::HasAckPacketMessageBuilder;
 use crate::base::relay::traits::messages::receive_packet::HasReceivePacketMessageBuilder;
 use crate::base::relay::traits::messages::timeout_packet::HasTimeoutUnorderedPacketMessageBuilder;
@@ -15,11 +16,8 @@ use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 /// The functionality that a relay context gains access to once that relay
 /// context implements the [`OfaRelayWrapper`] trait.
 pub trait AfoBaseRelay:
-    HasRelayTypes<
-        SrcChain = Self::AfoSrcChain,
-        DstChain = Self::AfoDstChain,
-        Error = Self::AfoError,
-    > + HasUpdateClientMessageBuilder<SourceTarget>
+    HasRelayTypes<SrcChain = Self::AfoSrcChain, DstChain = Self::AfoDstChain>
+    + HasUpdateClientMessageBuilder<SourceTarget>
     + HasUpdateClientMessageBuilder<DestinationTarget>
     + HasIbcMessageSender<SourceTarget>
     + HasIbcMessageSender<DestinationTarget>
@@ -30,20 +28,19 @@ pub trait AfoBaseRelay:
     + HasPacketRelayer
     + HasAckPacketRelayer
     + HasTimeoutUnorderedPacketRelayer
+    + SupportsPacketRetry
+    + InjectMismatchIbcEventsCountError
 {
-    type AfoError: AfoError;
-
     type AfoSrcChain: AfoBaseChain<Self::AfoDstChain>;
 
     type AfoDstChain: AfoBaseChain<Self::AfoSrcChain>;
 }
 
-impl<Relay, SrcChain, DstChain, Error> AfoBaseRelay for Relay
+impl<Relay, SrcChain, DstChain> AfoBaseRelay for Relay
 where
-    Error: AfoError,
     SrcChain: AfoBaseChain<DstChain>,
     DstChain: AfoBaseChain<SrcChain>,
-    Relay: HasRelayTypes<SrcChain = SrcChain, DstChain = DstChain, Error = Error>
+    Relay: HasRelayTypes<SrcChain = SrcChain, DstChain = DstChain>
         + HasUpdateClientMessageBuilder<SourceTarget>
         + HasUpdateClientMessageBuilder<DestinationTarget>
         + HasIbcMessageSender<SourceTarget>
@@ -54,10 +51,10 @@ where
         + HasPacketRelayer
         + HasAckPacketRelayer
         + HasTimeoutUnorderedPacketRelayer
-        + HasTimeoutUnorderedPacketMessageBuilder,
+        + HasTimeoutUnorderedPacketMessageBuilder
+        + SupportsPacketRetry
+        + InjectMismatchIbcEventsCountError,
 {
-    type AfoError = Error;
-
     type AfoSrcChain = SrcChain;
 
     type AfoDstChain = DstChain;

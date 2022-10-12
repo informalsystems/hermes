@@ -1,7 +1,6 @@
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer_framework::base::all_for_one::chain::{AfoBaseChain, AfoCounterpartyChain};
-use ibc_relayer_framework::base::one_for_all::traits::error::OfaErrorContext;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
 use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
@@ -17,7 +16,7 @@ use crate::base::types::message::CosmosIbcMessage;
 pub trait AfoCosmosBaseChain<Counterparty>:
     AfoBaseChain<
     Counterparty,
-    Error = OfaErrorContext<Error>,
+    Error = Error,
     Height = Height,
     Timestamp = Timestamp,
     Message = CosmosIbcMessage,
@@ -42,7 +41,7 @@ impl<Chain, Counterparty> AfoCosmosBaseChain<Counterparty> for Chain
 where
     Chain: AfoBaseChain<
         Counterparty,
-        Error = OfaErrorContext<Error>,
+        Error = Error,
         Height = Height,
         Timestamp = Timestamp,
         Message = CosmosIbcMessage,

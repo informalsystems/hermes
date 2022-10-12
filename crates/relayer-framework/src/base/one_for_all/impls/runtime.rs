@@ -9,7 +9,6 @@ use crate::base::core::traits::runtimes::log::{
 use crate::base::core::traits::runtimes::sleep::CanSleep;
 use crate::base::core::traits::runtimes::spawn::{HasSpawner, Spawner};
 use crate::base::core::traits::runtimes::time::{HasTime, Time};
-use crate::base::one_for_all::traits::error::OfaErrorContext;
 use crate::base::one_for_all::traits::runtime::{LogLevel, OfaRuntime, OfaRuntimeContext};
 use crate::std_prelude::*;
 
@@ -18,7 +17,7 @@ pub struct OfaTime<Runtime: OfaRuntime> {
 }
 
 impl<Runtime: OfaRuntime> HasError for OfaRuntimeContext<Runtime> {
-    type Error = OfaErrorContext<Runtime::Error>;
+    type Error = Runtime::Error;
 }
 
 #[async_trait]

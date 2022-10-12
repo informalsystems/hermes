@@ -1,9 +1,9 @@
 use async_trait::async_trait;
+use core::fmt::Debug;
 use core::future::Future;
 use core::time::Duration;
 
 use crate::base::core::traits::sync::Async;
-use crate::base::one_for_all::traits::error::OfaError;
 use crate::std_prelude::*;
 
 #[derive(Clone)]
@@ -27,7 +27,7 @@ pub enum LogLevel {
 
 #[async_trait]
 pub trait OfaRuntime: Clone + Async {
-    type Error: OfaError;
+    type Error: Async + Debug;
 
     type Time: Async;
 

@@ -3,16 +3,16 @@
 //! trait.
 
 use async_trait::async_trait;
+use core::fmt::Debug;
 
 use crate::base::core::traits::sync::Async;
-use crate::base::one_for_all::traits::error::OfaError;
 use crate::base::one_for_all::traits::runtime::{OfaRuntime, OfaRuntimeContext};
 use crate::std_prelude::*;
 
 pub trait OfaBaseChainTypes: Async {
     type Components;
 
-    type Error: OfaError;
+    type Error: Async + Debug;
 
     type Runtime: OfaRuntime<Error = Self::Error>;
 
