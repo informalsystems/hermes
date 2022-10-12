@@ -13,8 +13,9 @@ use crate::base::traits::{
 use crate::base::types::aliases::Message;
 use crate::std_prelude::*;
 
-/// Wait for the chain to reach a height that is greater than the required
-/// height so that the timeout packet proof can be built.
+/// An unordered packet message builder variant that waits for the counterparty
+/// chain's height to exceed the source chain's height so that the timeout
+/// packet proof can be constructed before broadcasting the timeout packet.
 pub struct WaitTimeoutUnorderedPacketMessageBuilder<InMessageBuilder, Target>(
     PhantomData<InMessageBuilder>,
     PhantomData<Target>,
