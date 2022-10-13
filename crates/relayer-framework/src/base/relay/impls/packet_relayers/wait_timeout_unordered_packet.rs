@@ -42,18 +42,20 @@ where
 {
     async fn build_timeout_unordered_packet_message(
         context: &Relay,
-        height: &Height,
+        destination_height: &Height,
         packet: &Relay::Packet,
     ) -> Result<Message<Relay::SrcChain>, Relay::Error> {
         let chain = Target::counterparty_chain(context);
 
         loop {
-            let current_status = chain.query_chain_status().await?;
-            let current_height = CounterpartyChain::chain_status_height(&current_status);
+            let counterparty_status = chain.query_chain_status().await?;
+            let counterparty_height = CounterpartyChain::chain_status_height(&counterparty_status);
 
-            if current_height > height {
+            if counterparty_height > destination_height {
                 return InMessageBuilder::build_timeout_unordered_packet_message(
-                    context, height, packet,
+                    context,
+                    destination_height,
+                    packet,
                 )
                 .await;
             } else {
