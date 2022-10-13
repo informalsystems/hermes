@@ -284,7 +284,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 ## Status
 
-- Accepted (first implementation in [#335](https://github.com/informalsystems/ibc-rs/pull/335)).
+- Accepted (first implementation in [#335](https://github.com/informalsystems/hermes/pull/335)).
 
 ## Consequences
 
@@ -300,4 +300,4 @@ fn main() -> Result<(), Box<dyn Error>> {
 ## References
 
 [specs]: https://github.com/cosmos/ibc/tree/master/spec
-[#158]: https://github.com/informalsystems/ibc-rs/issues/158
+[#158]: https://github.com/informalsystems/hermes/issues/158

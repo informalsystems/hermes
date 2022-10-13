@@ -26,7 +26,7 @@ Note that the consumer of these events in production would not be the relayer di
 (instead the consumer is the node/SDK where the IBC module executes),
 but nevertheless handlers will reuse these event definitions.
 
-[events]: https://github.com/informalsystems/ibc-rs/blob/bf84a73ef7b3d5e9a434c9af96165997382dcc9d/modules/src/events.rs#L15-L43
+[events]: https://github.com/informalsystems/hermes/blob/bf84a73ef7b3d5e9a434c9af96165997382dcc9d/modules/src/events.rs#L15-L43
 
 ```rust
 pub enum IBCEvent {

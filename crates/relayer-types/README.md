@@ -72,5 +72,5 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 [//]: # (general links)
 
-[ibc-rs]: https://github.com/informalsystems/ibc-rs
+[ibc-rs]: https://github.com/informalsystems/hermes
 [IBC]: https://github.com/cosmos/ibc

@@ -115,7 +115,7 @@ git checkout {{#include ../templates/version.md}}
 
 ### Building with `cargo build`
 
-This command builds all the crates from the [__`ibc-rs`__](https://github.com/informalsystems/ibc-rs) repository, namely: the [__`ibc-relayer`__](https://github.com/informalsystems/hermes/tree/master/crates/relayer) crate, and the [__`ibc-relayer-cli`__](https://github.com/informalsystems/hermes/tree/master/crates/relayer-cli) crate.
+This command builds all the crates from the [__`ibc-rs`__](https://github.com/informalsystems/hermes) repository, namely: the [__`ibc-relayer`__](https://github.com/informalsystems/hermes/tree/master/crates/relayer) crate, and the [__`ibc-relayer-cli`__](https://github.com/informalsystems/hermes/tree/master/crates/relayer-cli) crate.
 The last of these crates contains the `hermes` binary.
 
 ```shell

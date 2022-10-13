@@ -26,7 +26,7 @@ frontend application of the relayer) as well as crate **`relayer`** (the core re
 3. English and TLA+ specs reside under `docs/spec`, classified by the component they target, e.g., relayer or connection
 handshake.
 
-Following the work in [#142](https://github.com/informalsystems/ibc-rs/issues/142), the crate
+Following the work in [#23](https://github.com/cosmos/ibc-proto-rs/issues/23), the crate
 **`ibc-proto`**(originally in a [separate repo](https://github.com/informalsystems/ibc-proto) and [documented here](https://docs.rs/ibc-proto/))
 shall also become absorbed into the present repo.
 
@@ -145,7 +145,7 @@ impl From<ChannelEnd> for RawChannel {
 }
 ```
 
-This issue [#130](https://github.com/informalsystems/ibc-rs/issues/130) is a good starting place for more context
+This issue [#130](https://github.com/informalsystems/hermes/issues/130) is a good starting place for more context
 on `ibc-proto`.
 
 ### References
