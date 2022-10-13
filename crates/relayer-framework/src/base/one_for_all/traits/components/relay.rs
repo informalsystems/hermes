@@ -1,24 +1,27 @@
 use crate::base::one_for_all::traits::components::chain::OfaIbcChainComponents;
-use crate::base::one_for_all::traits::relay::{OfaRelay, OfaRelayWrapper};
-use crate::base::traits::ibc_message_sender::{HasIbcMessageSender, IbcMessageSender};
-use crate::base::traits::messages::update_client::{
+use crate::base::one_for_all::traits::relay::OfaBaseRelay;
+use crate::base::one_for_all::types::relay::OfaRelayWrapper;
+use crate::base::relay::traits::ibc_message_sender::{HasIbcMessageSender, IbcMessageSender};
+use crate::base::relay::traits::messages::update_client::{
     HasUpdateClientMessageBuilder, UpdateClientMessageBuilder,
 };
-use crate::base::traits::packet_relayer::{HasPacketRelayer, PacketRelayer};
-use crate::base::traits::packet_relayers::ack_packet::{AckPacketRelayer, HasAckPacketRelayer};
-use crate::base::traits::packet_relayers::receive_packet::{
+use crate::base::relay::traits::packet_relayer::{HasPacketRelayer, PacketRelayer};
+use crate::base::relay::traits::packet_relayers::ack_packet::{
+    AckPacketRelayer, HasAckPacketRelayer,
+};
+use crate::base::relay::traits::packet_relayers::receive_packet::{
     HasReceivePacketRelayer, ReceivePacketRelayer,
 };
-use crate::base::traits::packet_relayers::timeout_unordered_packet::{
+use crate::base::relay::traits::packet_relayers::timeout_unordered_packet::{
     HasTimeoutUnorderedPacketRelayer, TimeoutUnorderedPacketRelayer,
 };
-use crate::base::traits::target::{DestinationTarget, SourceTarget};
+use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 
 pub trait OfaRelayComponents<Relay>:
     OfaIbcChainComponents<Relay::SrcChain, Relay::DstChain>
     + OfaIbcChainComponents<Relay::DstChain, Relay::SrcChain>
 where
-    Relay: OfaRelay,
+    Relay: OfaBaseRelay,
 {
     type PacketRelayer: PacketRelayer<OfaRelayWrapper<Relay>>;
 
@@ -37,7 +40,7 @@ where
 
 impl<Relay, Components> HasUpdateClientMessageBuilder<SourceTarget> for OfaRelayWrapper<Relay>
 where
-    Relay: OfaRelay<Components = Components>,
+    Relay: OfaBaseRelay<Components = Components>,
     Components: OfaRelayComponents<Relay>,
 {
     type UpdateClientMessageBuilder = Components::UpdateClientMessageBuilder;
@@ -45,7 +48,7 @@ where
 
 impl<Relay, Components> HasUpdateClientMessageBuilder<DestinationTarget> for OfaRelayWrapper<Relay>
 where
-    Relay: OfaRelay<Components = Components>,
+    Relay: OfaBaseRelay<Components = Components>,
     Components: OfaRelayComponents<Relay>,
 {
     type UpdateClientMessageBuilder = Components::UpdateClientMessageBuilder;
@@ -53,7 +56,7 @@ where
 
 impl<Relay, Components> HasIbcMessageSender<SourceTarget> for OfaRelayWrapper<Relay>
 where
-    Relay: OfaRelay<Components = Components>,
+    Relay: OfaBaseRelay<Components = Components>,
     Components: OfaRelayComponents<Relay>,
 {
     type IbcMessageSender = Components::IbcMessageSender;
@@ -61,7 +64,7 @@ where
 
 impl<Relay, Components> HasIbcMessageSender<DestinationTarget> for OfaRelayWrapper<Relay>
 where
-    Relay: OfaRelay<Components = Components>,
+    Relay: OfaBaseRelay<Components = Components>,
     Components: OfaRelayComponents<Relay>,
 {
     type IbcMessageSender = Components::IbcMessageSender;
@@ -69,7 +72,7 @@ where
 
 impl<Relay, Components> HasReceivePacketRelayer for OfaRelayWrapper<Relay>
 where
-    Relay: OfaRelay<Components = Components>,
+    Relay: OfaBaseRelay<Components = Components>,
     Components: OfaRelayComponents<Relay>,
 {
     type ReceivePacketRelayer = Components::ReceivePacketRelayer;
@@ -77,7 +80,7 @@ where
 
 impl<Relay, Components> HasAckPacketRelayer for OfaRelayWrapper<Relay>
 where
-    Relay: OfaRelay<Components = Components>,
+    Relay: OfaBaseRelay<Components = Components>,
     Components: OfaRelayComponents<Relay>,
 {
     type AckPacketRelayer = Components::AckPacketRelayer;
@@ -85,7 +88,7 @@ where
 
 impl<Relay, Components> HasTimeoutUnorderedPacketRelayer for OfaRelayWrapper<Relay>
 where
-    Relay: OfaRelay<Components = Components>,
+    Relay: OfaBaseRelay<Components = Components>,
     Components: OfaRelayComponents<Relay>,
 {
     type TimeoutUnorderedPacketRelayer = Components::TimeoutUnorderedPacketRelayer;
@@ -93,7 +96,7 @@ where
 
 impl<Relay, Components> HasPacketRelayer for OfaRelayWrapper<Relay>
 where
-    Relay: OfaRelay<Components = Components>,
+    Relay: OfaBaseRelay<Components = Components>,
     Components: OfaRelayComponents<Relay>,
 {
     type PacketRelayer = Components::PacketRelayer;

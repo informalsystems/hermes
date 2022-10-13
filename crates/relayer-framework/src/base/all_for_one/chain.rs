@@ -1,31 +1,33 @@
-use crate::base::traits::contexts::chain::{ChainContext, IbcChainContext};
-use crate::base::traits::contexts::ibc_event::HasIbcEvents;
-use crate::base::traits::queries::consensus_state::{HasConsensusState, HasConsensusStateQuerier};
-use crate::base::traits::queries::received_packet::HasReceivedPacketQuerier;
-use crate::base::traits::queries::status::HasChainStatusQuerier;
+use crate::base::chain::traits::context::{HasChainTypes, HasIbcChainTypes};
+use crate::base::chain::traits::ibc_event::HasIbcEvents;
+use crate::base::chain::traits::queries::consensus_state::{
+    HasConsensusState, HasConsensusStateQuerier,
+};
+use crate::base::chain::traits::queries::received_packet::HasReceivedPacketQuerier;
+use crate::base::chain::traits::queries::status::HasChainStatusQuerier;
 
-pub trait AfoChainContext<Counterparty>:
-    IbcChainContext<Counterparty>
+pub trait AfoBaseChain<Counterparty>:
+    HasIbcChainTypes<Counterparty>
     + HasIbcEvents<Counterparty>
     + HasConsensusState<Counterparty>
     + HasConsensusStateQuerier<Counterparty>
     + HasReceivedPacketQuerier<Counterparty>
     + HasChainStatusQuerier
 where
-    Counterparty: AfoCounterpartyContext<Self>,
+    Counterparty: AfoCounterpartyChain<Self>,
 {
 }
 
-pub trait AfoCounterpartyContext<Chain>: ChainContext + HasConsensusState<Chain>
+pub trait AfoCounterpartyChain<Chain>: HasChainTypes + HasConsensusState<Chain>
 where
-    Chain: ChainContext,
+    Chain: HasChainTypes,
 {
 }
 
-impl<Chain, Counterparty> AfoChainContext<Counterparty> for Chain
+impl<Chain, Counterparty> AfoBaseChain<Counterparty> for Chain
 where
-    Counterparty: ChainContext + HasConsensusState<Self>,
-    Chain: IbcChainContext<Counterparty>
+    Counterparty: HasChainTypes + HasConsensusState<Self>,
+    Chain: HasIbcChainTypes<Counterparty>
         + HasIbcEvents<Counterparty>
         + HasConsensusState<Counterparty>
         + HasConsensusStateQuerier<Counterparty>
@@ -34,9 +36,9 @@ where
 {
 }
 
-impl<Chain, Counterparty> AfoCounterpartyContext<Chain> for Counterparty
+impl<Chain, Counterparty> AfoCounterpartyChain<Chain> for Counterparty
 where
-    Chain: ChainContext,
-    Counterparty: ChainContext + HasConsensusState<Chain>,
+    Chain: HasChainTypes,
+    Counterparty: HasChainTypes + HasConsensusState<Chain>,
 {
 }

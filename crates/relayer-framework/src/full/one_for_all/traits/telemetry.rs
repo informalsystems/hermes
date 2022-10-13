@@ -1,4 +1,4 @@
-use crate::base::traits::core::Async;
+use crate::base::core::traits::sync::Async;
 use crate::full::telemetry::traits::metrics::HasLabel;
 
 pub trait OfaTelemetry: HasLabel {

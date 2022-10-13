@@ -1,22 +1,24 @@
-use crate::base::one_for_all::traits::chain::{OfaChain, OfaChainWrapper, OfaIbcChain};
-use crate::base::one_for_all::traits::relay::{OfaRelay, OfaRelayWrapper};
-use crate::base::traits::contexts::chain::{ChainContext, IbcChainContext};
-use crate::base::traits::contexts::relay::RelayContext;
+use crate::base::chain::traits::context::{HasChainTypes, HasIbcChainTypes};
+use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
+use crate::base::one_for_all::traits::relay::OfaBaseRelay;
+use crate::base::one_for_all::types::chain::OfaChainWrapper;
+use crate::base::one_for_all::types::relay::OfaRelayWrapper;
+use crate::base::relay::traits::context::HasRelayTypes;
 
-pub fn relay_context<Relay: OfaRelay>(relay: Relay) -> impl RelayContext {
+pub fn relay_context<Relay: OfaBaseRelay>(relay: Relay) -> impl HasRelayTypes {
     OfaRelayWrapper::new(relay)
 }
 
-pub fn chain_context<Chain: OfaChain>(chain: Chain) -> impl ChainContext {
+pub fn chain_context<Chain: OfaBaseChain>(chain: Chain) -> impl HasChainTypes {
     OfaChainWrapper::new(chain)
 }
 
 pub fn ibc_chain_context<Chain, Counterparty>(
     chain: Chain,
-) -> impl IbcChainContext<OfaChainWrapper<Counterparty>>
+) -> impl HasIbcChainTypes<OfaChainWrapper<Counterparty>>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaChain,
+    Counterparty: OfaBaseChain,
 {
     OfaChainWrapper::new(chain)
 }

@@ -8,7 +8,7 @@ use prost::EncodeError;
 use ibc_relayer_runtime::tokio::error::Error as TokioError;
 
 define_error! {
-    #[derive(Clone)]
+    #[derive(Clone, Debug)]
     Error {
         Generic
             [ TraceError<Report> ]
@@ -43,10 +43,6 @@ define_error! {
 
         MismatchConsensusState
             | _ | { "consensus state of a cosmos chain on the counterparty chain must be a tendermint consensus state" },
-
-        MaxRetry
-            { retries: usize }
-            | e | { format_args!("max retries exceeded after trying for {} time", e.retries) },
 
         MismatchEventType
             { expected: String, actual: String }

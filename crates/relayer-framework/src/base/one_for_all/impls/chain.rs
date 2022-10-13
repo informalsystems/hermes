@@ -1,23 +1,25 @@
 use async_trait::async_trait;
 
-use crate::base::one_for_all::traits::chain::{OfaChain, OfaChainWrapper, OfaIbcChain};
-use crate::base::one_for_all::traits::error::OfaErrorContext;
-use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
-use crate::base::traits::contexts::chain::{ChainContext, IbcChainContext};
-use crate::base::traits::contexts::error::HasError;
-use crate::base::traits::contexts::ibc_event::HasIbcEvents;
-use crate::base::traits::contexts::runtime::HasRuntime;
-use crate::base::traits::queries::consensus_state::{ConsensusStateQuerier, HasConsensusState};
-use crate::base::traits::queries::received_packet::{
+use crate::base::chain::traits::context::{HasChainTypes, HasIbcChainTypes};
+use crate::base::chain::traits::ibc_event::HasIbcEvents;
+use crate::base::chain::traits::queries::consensus_state::{
+    ConsensusStateQuerier, HasConsensusState,
+};
+use crate::base::chain::traits::queries::received_packet::{
     HasReceivedPacketQuerier, ReceivedPacketQuerier,
 };
+use crate::base::core::traits::error::HasError;
+use crate::base::core::traits::runtime::HasRuntime;
+use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
+use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
+use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
-impl<Chain: OfaChain> HasError for OfaChainWrapper<Chain> {
-    type Error = OfaErrorContext<Chain::Error>;
+impl<Chain: OfaBaseChain> HasError for OfaChainWrapper<Chain> {
+    type Error = Chain::Error;
 }
 
-impl<Chain: OfaChain> HasRuntime for OfaChainWrapper<Chain> {
+impl<Chain: OfaBaseChain> HasRuntime for OfaChainWrapper<Chain> {
     type Runtime = OfaRuntimeContext<Chain::Runtime>;
 
     fn runtime(&self) -> &Self::Runtime {
@@ -25,7 +27,7 @@ impl<Chain: OfaChain> HasRuntime for OfaChainWrapper<Chain> {
     }
 }
 
-impl<Chain: OfaChain> ChainContext for OfaChainWrapper<Chain> {
+impl<Chain: OfaBaseChain> HasChainTypes for OfaChainWrapper<Chain> {
     type Height = Chain::Height;
 
     type Timestamp = Chain::Timestamp;
@@ -42,18 +44,18 @@ impl<Chain: OfaChain> ChainContext for OfaChainWrapper<Chain> {
         message: &Self::Message,
         signer: &Self::Signer,
     ) -> Result<Self::RawMessage, Self::Error> {
-        Chain::encode_raw_message(message, signer).map_err(OfaErrorContext::new)
+        Chain::encode_raw_message(message, signer)
     }
 
     fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error> {
-        Chain::estimate_message_len(message).map_err(OfaErrorContext::new)
+        Chain::estimate_message_len(message)
     }
 }
 
-impl<Chain, Counterparty> IbcChainContext<OfaChainWrapper<Counterparty>> for OfaChainWrapper<Chain>
+impl<Chain, Counterparty> HasIbcChainTypes<OfaChainWrapper<Counterparty>> for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaChain,
+    Counterparty: OfaBaseChain,
 {
     type ClientId = Chain::ClientId;
 
@@ -73,7 +75,7 @@ where
 impl<Chain, Counterparty> HasIbcEvents<OfaChainWrapper<Counterparty>> for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaChain,
+    Counterparty: OfaBaseChain,
 {
     type WriteAcknowledgementEvent = Chain::WriteAcknowledgementEvent;
 
@@ -88,7 +90,7 @@ impl<Chain, Counterparty> HasConsensusState<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
-    Counterparty: OfaChain,
+    Counterparty: OfaBaseChain,
 {
     type ConsensusState = Chain::ConsensusState;
 }
@@ -107,7 +109,7 @@ where
         chain: &OfaChainWrapper<Chain>,
         client_id: &Chain::ClientId,
         height: &Counterparty::Height,
-    ) -> Result<Counterparty::ConsensusState, OfaErrorContext<Chain::Error>> {
+    ) -> Result<Counterparty::ConsensusState, Chain::Error> {
         let consensus_state = chain.chain.query_consensus_state(client_id, height).await?;
 
         Ok(consensus_state)
@@ -129,7 +131,7 @@ where
         port_id: &Chain::PortId,
         channel_id: &Chain::ChannelId,
         sequence: &Counterparty::Sequence,
-    ) -> Result<bool, OfaErrorContext<Chain::Error>> {
+    ) -> Result<bool, Chain::Error> {
         let is_received = chain
             .chain
             .is_packet_received(port_id, channel_id, sequence)

@@ -1,21 +1,22 @@
-use crate::base::all_for_one::chain::AfoChainContext;
-use crate::base::all_for_one::error::AfoError;
-use crate::base::traits::contexts::relay::RelayContext;
-use crate::base::traits::ibc_message_sender::HasIbcMessageSender;
-use crate::base::traits::messages::ack_packet::HasAckPacketMessageBuilder;
-use crate::base::traits::messages::receive_packet::HasReceivePacketMessageBuilder;
-use crate::base::traits::messages::timeout_packet::HasTimeoutUnorderedPacketMessageBuilder;
-use crate::base::traits::messages::update_client::HasUpdateClientMessageBuilder;
-use crate::base::traits::packet_relayer::HasPacketRelayer;
-use crate::base::traits::packet_relayers::ack_packet::HasAckPacketRelayer;
-use crate::base::traits::packet_relayers::receive_packet::HasReceivePacketRelayer;
-use crate::base::traits::packet_relayers::timeout_unordered_packet::HasTimeoutUnorderedPacketRelayer;
-use crate::base::traits::target::{DestinationTarget, SourceTarget};
+use crate::base::all_for_one::chain::AfoBaseChain;
+use crate::base::relay::impls::packet_relayers::retry::SupportsPacketRetry;
+use crate::base::relay::traits::context::HasRelayTypes;
+use crate::base::relay::traits::ibc_message_sender::HasIbcMessageSender;
+use crate::base::relay::traits::ibc_message_sender::InjectMismatchIbcEventsCountError;
+use crate::base::relay::traits::messages::ack_packet::HasAckPacketMessageBuilder;
+use crate::base::relay::traits::messages::receive_packet::HasReceivePacketMessageBuilder;
+use crate::base::relay::traits::messages::timeout_packet::HasTimeoutUnorderedPacketMessageBuilder;
+use crate::base::relay::traits::messages::update_client::HasUpdateClientMessageBuilder;
+use crate::base::relay::traits::packet_relayer::HasPacketRelayer;
+use crate::base::relay::traits::packet_relayers::ack_packet::HasAckPacketRelayer;
+use crate::base::relay::traits::packet_relayers::receive_packet::HasReceivePacketRelayer;
+use crate::base::relay::traits::packet_relayers::timeout_unordered_packet::HasTimeoutUnorderedPacketRelayer;
+use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 
 /// The functionality that a relay context gains access to once that relay
 /// context implements the [`OfaRelayWrapper`] trait.
-pub trait AfoRelayContext:
-    RelayContext<SrcChain = Self::AfoSrcChain, DstChain = Self::AfoDstChain, Error = Self::AfoError>
+pub trait AfoBaseRelay:
+    HasRelayTypes<SrcChain = Self::AfoSrcChain, DstChain = Self::AfoDstChain>
     + HasUpdateClientMessageBuilder<SourceTarget>
     + HasUpdateClientMessageBuilder<DestinationTarget>
     + HasIbcMessageSender<SourceTarget>
@@ -27,20 +28,19 @@ pub trait AfoRelayContext:
     + HasPacketRelayer
     + HasAckPacketRelayer
     + HasTimeoutUnorderedPacketRelayer
+    + SupportsPacketRetry
+    + InjectMismatchIbcEventsCountError
 {
-    type AfoError: AfoError;
+    type AfoSrcChain: AfoBaseChain<Self::AfoDstChain>;
 
-    type AfoSrcChain: AfoChainContext<Self::AfoDstChain>;
-
-    type AfoDstChain: AfoChainContext<Self::AfoSrcChain>;
+    type AfoDstChain: AfoBaseChain<Self::AfoSrcChain>;
 }
 
-impl<Relay, SrcChain, DstChain, Error> AfoRelayContext for Relay
+impl<Relay, SrcChain, DstChain> AfoBaseRelay for Relay
 where
-    Error: AfoError,
-    SrcChain: AfoChainContext<DstChain>,
-    DstChain: AfoChainContext<SrcChain>,
-    Relay: RelayContext<SrcChain = SrcChain, DstChain = DstChain, Error = Error>
+    SrcChain: AfoBaseChain<DstChain>,
+    DstChain: AfoBaseChain<SrcChain>,
+    Relay: HasRelayTypes<SrcChain = SrcChain, DstChain = DstChain>
         + HasUpdateClientMessageBuilder<SourceTarget>
         + HasUpdateClientMessageBuilder<DestinationTarget>
         + HasIbcMessageSender<SourceTarget>
@@ -51,10 +51,10 @@ where
         + HasPacketRelayer
         + HasAckPacketRelayer
         + HasTimeoutUnorderedPacketRelayer
-        + HasTimeoutUnorderedPacketMessageBuilder,
+        + HasTimeoutUnorderedPacketMessageBuilder
+        + SupportsPacketRetry
+        + InjectMismatchIbcEventsCountError,
 {
-    type AfoError = Error;
-
     type AfoSrcChain = SrcChain;
 
     type AfoDstChain = DstChain;

@@ -1,27 +1,18 @@
 //! The `OfaChainWrapper` trait specifies what a chain context needs to provide
-//! in order to gain access to the APIs provided by the [`AfoChainContext`]
+//! in order to gain access to the APIs provided by the [`AfoBaseChain`]
 //! trait.
 
 use async_trait::async_trait;
+use core::fmt::Debug;
 
-use crate::base::one_for_all::traits::error::OfaError;
+use crate::base::core::traits::sync::Async;
 use crate::base::one_for_all::traits::runtime::{OfaRuntime, OfaRuntimeContext};
-use crate::base::traits::core::Async;
 use crate::std_prelude::*;
 
-#[derive(Clone)]
-pub struct OfaChainWrapper<Chain> {
-    pub chain: Chain,
-}
+pub trait OfaBaseChainTypes: Async {
+    type Components;
 
-impl<Chain> OfaChainWrapper<Chain> {
-    pub fn new(chain: Chain) -> Self {
-        Self { chain }
-    }
-}
-
-pub trait OfaChainTypes: Async {
-    type Error: OfaError;
+    type Error: Async + Debug;
 
     type Runtime: OfaRuntime<Error = Self::Error>;
 
@@ -55,9 +46,7 @@ pub trait OfaChainTypes: Async {
 }
 
 #[async_trait]
-pub trait OfaChain: OfaChainTypes {
-    type Components;
-
+pub trait OfaBaseChain: OfaBaseChainTypes {
     fn runtime(&self) -> &OfaRuntimeContext<Self::Runtime>;
 
     fn encode_raw_message(
@@ -84,9 +73,9 @@ pub trait OfaChain: OfaChainTypes {
 }
 
 #[async_trait]
-pub trait OfaIbcChain<Counterparty>: OfaChain
+pub trait OfaIbcChain<Counterparty>: OfaBaseChain
 where
-    Counterparty: OfaChainTypes,
+    Counterparty: OfaBaseChainTypes,
 {
     fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
 

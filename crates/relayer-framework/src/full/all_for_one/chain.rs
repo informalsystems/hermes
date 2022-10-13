@@ -1,15 +1,15 @@
-use crate::base::all_for_one::chain::{AfoChainContext, AfoCounterpartyContext};
+use crate::base::all_for_one::chain::{AfoBaseChain, AfoCounterpartyChain};
 use crate::full::telemetry::traits::telemetry::HasTelemetry;
 
-pub trait AfoFullChainContext<Counterparty>: AfoChainContext<Counterparty> + HasTelemetry
+pub trait AfoFullChain<Counterparty>: AfoBaseChain<Counterparty> + HasTelemetry
 where
-    Counterparty: AfoCounterpartyContext<Self>,
+    Counterparty: AfoCounterpartyChain<Self>,
 {
 }
 
-impl<Chain, Counterparty> AfoFullChainContext<Counterparty> for Chain
+impl<Chain, Counterparty> AfoFullChain<Counterparty> for Chain
 where
-    Chain: AfoChainContext<Counterparty> + HasTelemetry,
-    Counterparty: AfoCounterpartyContext<Self>,
+    Chain: AfoBaseChain<Counterparty> + HasTelemetry,
+    Counterparty: AfoCounterpartyChain<Self>,
 {
 }

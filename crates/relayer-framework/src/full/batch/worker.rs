@@ -2,16 +2,17 @@ use alloc::collections::VecDeque;
 use core::marker::PhantomData;
 use core::mem;
 
-use crate::base::traits::contexts::chain::IbcChainContext;
-use crate::base::traits::contexts::relay::RelayContext;
-use crate::base::traits::core::Async;
-use crate::base::traits::ibc_message_sender::IbcMessageSender;
-use crate::base::traits::runtime::log::{HasLogger, LevelDebug};
-use crate::base::traits::runtime::sleep::CanSleep;
-use crate::base::traits::runtime::spawn::{HasSpawner, Spawner};
-use crate::base::traits::runtime::time::{HasTime, Time};
-use crate::base::traits::target::ChainTarget;
-use crate::base::types::aliases::Message;
+use crate::base::chain::traits::context::HasIbcChainTypes;
+use crate::base::chain::types::aliases::Message;
+use crate::base::core::traits::runtime::HasRuntime;
+use crate::base::core::traits::runtimes::log::{HasLogger, LevelDebug};
+use crate::base::core::traits::runtimes::sleep::CanSleep;
+use crate::base::core::traits::runtimes::spawn::{HasSpawner, Spawner};
+use crate::base::core::traits::runtimes::time::{HasTime, Time};
+use crate::base::core::traits::sync::Async;
+use crate::base::relay::traits::context::HasRelayTypes;
+use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
+use crate::base::relay::traits::target::ChainTarget;
 use crate::std_prelude::*;
 
 use super::config::BatchConfig;
@@ -19,7 +20,7 @@ use super::context::{BatchContext, HasBatchContext};
 
 pub struct BatchMessageWorker<Relay, Target, Sender>
 where
-    Relay: RelayContext,
+    Relay: HasRelayTypes,
     Relay: HasBatchContext<Target>,
     Target: ChainTarget<Relay>,
     Sender: IbcMessageSender<Relay, Target>,
@@ -36,13 +37,14 @@ where
 impl<Relay, Target, Sender, Batch, TargetChain, Message, Event, Runtime, Error>
     BatchMessageWorker<Relay, Target, Sender>
 where
-    Relay: RelayContext<Runtime = Runtime, Error = Error>,
+    Relay: HasRelayTypes<Error = Error>,
+    Relay: HasRuntime<Runtime = Runtime>,
     Runtime: HasTime + CanSleep + HasSpawner + HasLogger<LevelDebug>,
     Relay: HasBatchContext<Target, BatchContext = Batch>,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
     Sender: IbcMessageSender<Relay, Target>,
     Batch: BatchContext<Message = Message, Event = Event, Error = Error>,
-    TargetChain: IbcChainContext<Target::CounterpartyChain, Message = Message, Event = Event>,
+    TargetChain: HasIbcChainTypes<Target::CounterpartyChain, Message = Message, Event = Event>,
     Event: Async,
     Error: Clone + Async,
     Message: Async,

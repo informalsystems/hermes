@@ -1,9 +1,9 @@
-use crate::base::one_for_all::traits::chain::OfaChain;
+use crate::base::one_for_all::traits::chain::OfaBaseChain;
 use crate::full::batch::context::BatchChannel;
 use crate::full::one_for_all::traits::batch::OfaBatch;
 use crate::full::one_for_all::traits::telemetry::{OfaTelemetry, OfaTelemetryWrapper};
 
-pub trait OfaFullChain: OfaChain {
+pub trait OfaFullChain: OfaBaseChain {
     type BatchContext: OfaBatch<Self>;
 
     type Telemetry: OfaTelemetry;

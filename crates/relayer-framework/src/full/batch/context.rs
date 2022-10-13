@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 
-use crate::base::traits::contexts::relay::RelayContext;
-use crate::base::traits::core::Async;
-use crate::base::traits::target::ChainTarget;
-use crate::base::types::aliases::{Event, Message};
+use crate::base::chain::types::aliases::{Event, Message};
+use crate::base::core::traits::sync::Async;
+use crate::base::relay::traits::context::HasRelayTypes;
+use crate::base::relay::traits::target::ChainTarget;
 use crate::std_prelude::*;
 
 #[derive(Clone)]
@@ -65,7 +65,7 @@ pub trait BatchContext: Async {
     ) -> Result<(), Self::Error>;
 }
 
-pub trait HasBatchContext<Target>: RelayContext
+pub trait HasBatchContext<Target>: HasRelayTypes
 where
     Target: ChainTarget<Self>,
 {

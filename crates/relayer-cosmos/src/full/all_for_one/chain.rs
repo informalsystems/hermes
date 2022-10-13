@@ -1,18 +1,18 @@
-use ibc_relayer_framework::base::all_for_one::chain::AfoCounterpartyContext;
-use ibc_relayer_framework::full::all_for_one::chain::AfoFullChainContext;
+use ibc_relayer_framework::base::all_for_one::chain::AfoCounterpartyChain;
+use ibc_relayer_framework::full::all_for_one::chain::AfoFullChain;
 
-use crate::base::all_for_one::chain::AfoCosmosChainContext;
+use crate::base::all_for_one::chain::AfoCosmosBaseChain;
 
-pub trait AfoCosmosFullChainContext<Counterparty>:
-    AfoCosmosChainContext<Counterparty> + AfoFullChainContext<Counterparty>
+pub trait AfoCosmosFullChain<Counterparty>:
+    AfoCosmosBaseChain<Counterparty> + AfoFullChain<Counterparty>
 where
-    Counterparty: AfoCounterpartyContext<Self>,
+    Counterparty: AfoCounterpartyChain<Self>,
 {
 }
 
-impl<Chain, Counterparty> AfoCosmosFullChainContext<Counterparty> for Chain
+impl<Chain, Counterparty> AfoCosmosFullChain<Counterparty> for Chain
 where
-    Chain: AfoCosmosChainContext<Counterparty> + AfoFullChainContext<Counterparty>,
-    Counterparty: AfoCounterpartyContext<Self>,
+    Chain: AfoCosmosBaseChain<Counterparty> + AfoFullChain<Counterparty>,
+    Counterparty: AfoCounterpartyChain<Self>,
 {
 }
