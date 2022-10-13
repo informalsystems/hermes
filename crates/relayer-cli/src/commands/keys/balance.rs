@@ -41,6 +41,12 @@ pub struct KeyBalanceCmd {
         help = "(optional) query the balance for the given denom (defaults to the `denom` defined in the config for the gas price)"
     )]
     denom: Option<String>,
+
+    #[clap(
+        long = "all",
+        help = "(optional) query the balance for all denom. This flag overwrites the `--denom` flag (defaults to false)"
+    )]
+    all: bool,
 }
 
 impl Runnable for KeyBalanceCmd {
@@ -50,15 +56,12 @@ impl Runnable for KeyBalanceCmd {
         let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
         let key_name = self.key_name.clone();
-        match self.denom.clone() {
-            Some(denom) => {
-                if denom == "all" {
-                    get_balances(chain, key_name);
-                } else {
-                    get_balance(chain, key_name, Some(denom));
-                }
-            }
-            None => get_balance(chain, key_name, None),
+
+        if self.all {
+            get_balances(chain, key_name)
+        } else {
+            let denom = self.denom.clone();
+            get_balance(chain, key_name, denom);
         }
     }
 }
@@ -131,6 +134,7 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 key_name: None,
                 denom: None,
+                all: false,
             },
             KeyBalanceCmd::parse_from(&["test", "--chain", "chain_id"])
         )
@@ -143,13 +147,40 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 key_name: Some("kname".to_owned()),
                 denom: None,
+                all: false,
             },
             KeyBalanceCmd::parse_from(&["test", "--chain", "chain_id", "--key-name", "kname"])
         )
     }
 
     #[test]
+    fn test_keys_balance_denom() {
+        assert_eq!(
+            KeyBalanceCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                key_name: None,
+                denom: Some("samoleans".to_owned()),
+                all: false,
+            },
+            KeyBalanceCmd::parse_from(&["test", "--chain", "chain_id", "--denom", "samoleans"])
+        )
+    }
+
+    #[test]
+    fn test_keys_balance_all_denom() {
+        assert_eq!(
+            KeyBalanceCmd {
+                chain_id: ChainId::from_string("chain_id"),
+                key_name: None,
+                denom: None,
+                all: true,
+            },
+            KeyBalanceCmd::parse_from(&["test", "--chain", "chain_id", "--all"])
+        )
+    }
+
+    #[test]
     fn test_keys_balance_no_chain() {
-        assert!(KeyBalanceCmd::try_parse_from(&["test", "--key-name", "kname"]).is_err())
+        assert!(KeyBalanceCmd::try_parse_from(&["test"]).is_err())
     }
 }
