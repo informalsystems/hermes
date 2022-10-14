@@ -7,8 +7,26 @@ use tendermint_rpc::error::Error as RpcError;
 use tendermint_rpc::Client;
 
 use crate::transaction::impls::encode::CanSignAndEncodeTx;
+use crate::transaction::impls::estimate::CanEstimateTxFees;
 use crate::transaction::impls::keys;
 use crate::transaction::traits::field::{FieldGetter, HasField};
+
+#[async_trait]
+pub trait CanEstimateFeeAndSendTx: HasError {
+    async fn estimate_fee_and_send_tx(&self, messages: &[Any]) -> Result<Response, Self::Error>;
+}
+
+#[async_trait]
+impl<Context> CanEstimateFeeAndSendTx for Context
+where
+    Context: HasError + CanEstimateTxFees + CanSendTxWithFee,
+{
+    async fn estimate_fee_and_send_tx(&self, messages: &[Any]) -> Result<Response, Self::Error> {
+        let fee = self.estimate_tx_fees(messages).await?;
+
+        self.send_tx_with_fee(messages, &fee).await
+    }
+}
 
 #[async_trait]
 pub trait CanSendTxWithFee: HasError {

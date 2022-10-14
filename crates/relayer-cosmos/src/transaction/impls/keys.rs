@@ -1,5 +1,7 @@
+use http::uri;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::account;
+use ibc_relayer::chain::cosmos::types::gas;
 use ibc_relayer::config;
 use ibc_relayer::config::types;
 use ibc_relayer::keyring;
@@ -60,4 +62,28 @@ pub struct RpcAddress;
 
 impl FieldKey for RpcAddress {
     type Value = tendermint_rpc::Url;
+}
+
+pub struct GasConfig;
+
+impl FieldKey for GasConfig {
+    type Value = gas::GasConfig;
+}
+
+pub struct DefaultGas;
+
+impl FieldKey for DefaultGas {
+    type Value = u64;
+}
+
+pub struct MaxGas;
+
+impl FieldKey for MaxGas {
+    type Value = u64;
+}
+
+pub struct GrpcAddress;
+
+impl FieldKey for GrpcAddress {
+    type Value = uri::Uri;
 }
