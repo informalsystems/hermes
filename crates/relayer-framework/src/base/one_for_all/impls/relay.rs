@@ -21,6 +21,7 @@ use crate::base::relay::traits::messages::timeout_packet::{
     HasTimeoutUnorderedPacketMessageBuilder, TimeoutUnorderedPacketMessageBuilder,
 };
 use crate::base::relay::traits::messages::update_client::UpdateClientMessageBuilder;
+use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::std_prelude::*;
 
@@ -211,8 +212,15 @@ where
     }
 }
 
-impl<Relay: OfaBaseRelay> HasTimeoutUnorderedPacketMessageBuilder for OfaRelayWrapper<Relay> {
-    type TimeoutUnorderedPacketMessageBuilder = OfaTimeoutUnorderedPacketMessageBuilder;
+impl<Relay, InMessageBuilder, Target> HasTimeoutUnorderedPacketMessageBuilder
+    for OfaRelayWrapper<Relay>
+where
+    Relay: OfaBaseRelay,
+    InMessageBuilder: TimeoutUnorderedPacketMessageBuilder<Relay>,
+    Target: ChainTarget<Relay, TargetChain = TargetChain, CounterpartyChain = CounterpartyChain>,
+{
+    type TimeoutUnorderedPacketMessageBuilder =
+        WaitTimeoutUnorderedTimeoutPacketMessageBuilder<InMessageBuilder, Target>;
 }
 
 impl<Relay: OfaBaseRelay> SupportsPacketRetry for OfaRelayWrapper<Relay> {
