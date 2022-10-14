@@ -15,16 +15,9 @@ pub trait HasChainTypes: HasError {
 
     type Message: Async;
 
-    type RawMessage: Async;
-
     type Signer: Async;
 
     type Event: Async;
-
-    fn encode_message(
-        message: &Self::Message,
-        signer: &Self::Signer,
-    ) -> Result<Self::RawMessage, Self::Error>;
 
     fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error>;
 }
