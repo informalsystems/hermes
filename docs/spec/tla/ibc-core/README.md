@@ -169,7 +169,7 @@ Similar to Channel handshake, we have formalized that the connection handshake d
 We formalize [these properties](https://github.com/cosmos/ibc/tree/5877197dc03e844542cb8628dd52674a37ca6ff9/spec/ics-003-connection-semantics#properties--invariants) as follows:
 > Connection identifiers are first-come-first-serve: once a connection has been negotiated, a unique identifier pair exists between two chains.
 
-[ICS3-Proto-1-ConnectionUniqueness](https://github.com/informalsystems/ibc-rs/blob/master/docs/spec/connection-handshake/L1_2.md#guarantees) A module accepts (i.e., initializes on) a connection end at most once.
+[ICS3-Proto-1-ConnectionUniqueness](https://github.com/informalsystems/hermes/blob/master/docs/spec/connection-handshake/L1_2.md#guarantees) A module accepts (i.e., initializes on) a connection end at most once.
 
 >  The connection handshake cannot be man-in-the-middled by another blockchain's IBC handler.
 

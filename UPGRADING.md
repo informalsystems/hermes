@@ -176,5 +176,5 @@ Please [refer to the guide][create-channel] for more information.
 
 Please refer to the [CHANGELOG](CHANGELOG.md) for older versions.
 
-[adr-010]: https://github.com/informalsystems/ibc-rs/blob/v1.0.0-rc.1/docs/architecture/adr-010-unified-cli-arguments-hermes.md
+[adr-010]: https://github.com/informalsystems/hermes/blob/v1.0.0-rc.1/docs/architecture/adr-010-unified-cli-arguments-hermes.md
 

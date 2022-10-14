@@ -30,7 +30,7 @@ problem you're trying to solve. Starting off with an issue allows for early
 feedback. Once the issue is created, maintainers may request that more detailed
 documentation be written in the form of a Request for Comment (RFC) or an
 Architectural Decision Record
-([ADR](https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/README.md)).
+([ADR](https://github.com/informalsystems/hermes/blob/master/docs/architecture/README.md)).
 
 Discussion at the RFC stage will build collective understanding of the dimensions
 of the problem and help structure conversations around trade-offs.
@@ -151,7 +151,7 @@ specific release number in Changelog.
 Changelog entries should be formatted as follows:
 
 ```
-- [pkg] Some description about the change ([#xxx](https://github.com/informalsystems/ibc-rs/issues/xxx)) (optional @contributor)
+- [pkg] Some description about the change ([#xxx](https://github.com/informalsystems/hermes/issues/xxx)) (optional @contributor)
 ```
 
 Here, `pkg` is the part of the code that changed (typically a
@@ -253,7 +253,7 @@ Our release process is as follows:
    GitHub: `git tag -s -a vX.Y.Z`. In the tag message, write the version and the link
    to the corresponding section of the changelog.
 9. Once the tag is pushed, wait for the CI bot to create a GitHub release, and update
-   the release description to `[📖 CHANGELOG](https://github.com/informalsystems/ibc-rs/blob/master/CHANGELOG.md#vXYZ)`.
+   the release description to `[📖 CHANGELOG](https://github.com/informalsystems/hermes/blob/master/CHANGELOG.md#vXYZ)`.
 10. Wait an hour or so, and check that the CI job has uploaded the Hermes binaries to the release.
 11. All done! 🎉
 
