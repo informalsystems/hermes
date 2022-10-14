@@ -34,18 +34,9 @@ impl<Chain: OfaBaseChain> HasChainTypes for OfaChainWrapper<Chain> {
 
     type Message = Chain::Message;
 
-    type RawMessage = Chain::RawMessage;
-
     type Signer = Chain::Signer;
 
     type Event = Chain::Event;
-
-    fn encode_message(
-        message: &Self::Message,
-        signer: &Self::Signer,
-    ) -> Result<Self::RawMessage, Self::Error> {
-        Chain::encode_raw_message(message, signer)
-    }
 
     fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error> {
         Chain::estimate_message_len(message)

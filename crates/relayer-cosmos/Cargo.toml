@@ -35,8 +35,9 @@ eyre = "0.6.8"
 tokio = "1.19.2"
 itertools = "0.10.3"
 tracing = "0.1.36"
+http = "0.2.8"
 opentelemetry = { version = "0.17.0", features = ["metrics"] }
-
+tonic = { version = "0.8", features = ["tls", "tls-roots"] }
 
 [dependencies.tendermint]
 version = "=0.25.0"

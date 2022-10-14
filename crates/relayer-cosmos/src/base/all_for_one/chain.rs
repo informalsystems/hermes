@@ -1,4 +1,3 @@
-use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::endpoint::ChainStatus;
 use ibc_relayer_framework::base::all_for_one::chain::{AfoBaseChain, AfoCounterpartyChain};
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
@@ -21,7 +20,6 @@ pub trait AfoCosmosBaseChain<Counterparty>:
     Timestamp = Timestamp,
     Message = CosmosIbcMessage,
     Signer = Signer,
-    RawMessage = Any,
     Event = Event,
     ClientId = ClientId,
     ConnectionId = ConnectionId,
@@ -46,7 +44,6 @@ where
         Timestamp = Timestamp,
         Message = CosmosIbcMessage,
         Signer = Signer,
-        RawMessage = Any,
         Event = Event,
         ClientId = ClientId,
         ConnectionId = ConnectionId,
