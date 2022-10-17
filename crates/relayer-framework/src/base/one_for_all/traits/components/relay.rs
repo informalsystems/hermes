@@ -7,9 +7,7 @@ use crate::base::relay::traits::packet_relayer::PacketRelayer;
 use crate::base::relay::traits::packet_relayers::ack_packet::{
     AckPacketRelayer, HasAckPacketRelayer,
 };
-use crate::base::relay::traits::packet_relayers::receive_packet::{
-    HasReceivePacketRelayer, ReceivePacketRelayer,
-};
+use crate::base::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
 use crate::base::relay::traits::packet_relayers::timeout_unordered_packet::{
     HasTimeoutUnorderedPacketRelayer, TimeoutUnorderedPacketRelayer,
 };
@@ -34,14 +32,6 @@ where
 
     type IbcMessageSender: IbcMessageSender<OfaRelayWrapper<Relay>, SourceTarget>
         + IbcMessageSender<OfaRelayWrapper<Relay>, DestinationTarget>;
-}
-
-impl<Relay, Components> HasReceivePacketRelayer for OfaRelayWrapper<Relay>
-where
-    Relay: OfaBaseRelay<Components = Components>,
-    Components: OfaRelayComponents<Relay>,
-{
-    type ReceivePacketRelayer = Components::ReceivePacketRelayer;
 }
 
 impl<Relay, Components> HasAckPacketRelayer for OfaRelayWrapper<Relay>

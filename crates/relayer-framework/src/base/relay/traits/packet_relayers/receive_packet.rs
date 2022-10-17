@@ -7,6 +7,18 @@ use crate::base::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
 #[async_trait]
+pub trait CanRelayReceivePacket: HasRelayTypes
+where
+    Self::DstChain: HasIbcEvents<Self::SrcChain>,
+{
+    async fn relay_receive_packet(
+        &self,
+        source_height: &Height<Self::SrcChain>,
+        packet: &Self::Packet,
+    ) -> Result<Option<WriteAcknowledgementEvent<Self::DstChain, Self::SrcChain>>, Self::Error>;
+}
+
+#[async_trait]
 pub trait ReceivePacketRelayer<Relay>: Async
 where
     Relay: HasRelayTypes,
@@ -17,21 +29,4 @@ where
         source_height: &Height<Relay::SrcChain>,
         packet: &Relay::Packet,
     ) -> Result<Option<WriteAcknowledgementEvent<Relay::DstChain, Relay::SrcChain>>, Relay::Error>;
-}
-
-#[async_trait]
-pub trait HasReceivePacketRelayer: HasRelayTypes
-where
-    Self::DstChain: HasIbcEvents<Self::SrcChain>,
-{
-    type ReceivePacketRelayer: ReceivePacketRelayer<Self>;
-
-    async fn relay_receive_packet(
-        &self,
-        source_height: &Height<Self::SrcChain>,
-        packet: &Self::Packet,
-    ) -> Result<Option<WriteAcknowledgementEvent<Self::DstChain, Self::SrcChain>>, Self::Error>
-    {
-        Self::ReceivePacketRelayer::relay_receive_packet(self, source_height, packet).await
-    }
 }

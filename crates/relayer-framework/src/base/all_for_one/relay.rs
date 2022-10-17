@@ -8,7 +8,7 @@ use crate::base::relay::traits::messages::timeout_unordered_packet::CanBuildTime
 use crate::base::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
 use crate::base::relay::traits::packet_relayer::CanRelayPacket;
 use crate::base::relay::traits::packet_relayers::ack_packet::HasAckPacketRelayer;
-use crate::base::relay::traits::packet_relayers::receive_packet::HasReceivePacketRelayer;
+use crate::base::relay::traits::packet_relayers::receive_packet::CanRelayReceivePacket;
 use crate::base::relay::traits::packet_relayers::timeout_unordered_packet::HasTimeoutUnorderedPacketRelayer;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::base::relay::traits::types::HasRelayTypes;
@@ -24,7 +24,7 @@ pub trait AfoBaseRelay:
     + CanBuildReceivePacketMessage
     + CanBuildAckPacketMessage
     + CanBuildTimeoutUnorderedPacketMessage
-    + HasReceivePacketRelayer
+    + CanRelayReceivePacket
     + CanRelayPacket
     + HasAckPacketRelayer
     + HasTimeoutUnorderedPacketRelayer
@@ -47,7 +47,7 @@ where
         + CanSendIbcMessages<DestinationTarget>
         + CanBuildReceivePacketMessage
         + CanBuildAckPacketMessage
-        + HasReceivePacketRelayer
+        + CanRelayReceivePacket
         + CanRelayPacket
         + HasAckPacketRelayer
         + HasTimeoutUnorderedPacketRelayer
