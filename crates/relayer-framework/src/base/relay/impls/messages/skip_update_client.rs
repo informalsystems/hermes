@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use core::marker::PhantomData;
 
 use crate::base::chain::traits::queries::consensus_state::{
-    HasConsensusState, HasConsensusStateQuerier,
+    CanQueryConsensusState, HasConsensusState,
 };
 use crate::base::chain::types::aliases::Height;
 use crate::base::relay::traits::context::HasRelayTypes;
@@ -20,7 +20,7 @@ where
     Target: ChainTarget<Relay, TargetChain = TargetChain, CounterpartyChain = CounterpartyChain>,
     InUpdateClient: UpdateClientMessageBuilder<Relay, Target>,
     CounterpartyChain: HasConsensusState<TargetChain>,
-    TargetChain: HasConsensusStateQuerier<CounterpartyChain>,
+    TargetChain: CanQueryConsensusState<CounterpartyChain>,
 {
     async fn build_update_client_messages(
         context: &Relay,

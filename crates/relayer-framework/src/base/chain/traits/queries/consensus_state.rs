@@ -25,17 +25,13 @@ where
 }
 
 #[async_trait]
-pub trait HasConsensusStateQuerier<Counterparty>: HasIbcChainTypes<Counterparty>
+pub trait CanQueryConsensusState<Counterparty>: HasIbcChainTypes<Counterparty>
 where
     Counterparty: HasConsensusState<Self>,
 {
-    type ConsensusStateQuerier: ConsensusStateQuerier<Self, Counterparty>;
-
     async fn query_consensus_state(
         &self,
         client_id: &Self::ClientId,
         height: &Counterparty::Height,
-    ) -> Result<Counterparty::ConsensusState, Self::Error> {
-        Self::ConsensusStateQuerier::query_consensus_state(self, client_id, height).await
-    }
+    ) -> Result<Counterparty::ConsensusState, Self::Error>;
 }
