@@ -6,10 +6,19 @@ use async_trait::async_trait;
 use core::fmt::Debug;
 
 use crate::base::core::traits::sync::Async;
+use crate::base::one_for_all::traits::chain::OfaIbcChainComponents;
 use crate::base::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
 use crate::base::one_for_all::traits::runtime::OfaRuntime;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
+use crate::base::one_for_all::types::relay::OfaRelayWrapper;
+use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
+use crate::base::relay::traits::messages::update_client::UpdateClientMessageBuilder;
+use crate::base::relay::traits::packet_relayer::PacketRelayer;
+use crate::base::relay::traits::packet_relayers::ack_packet::AckPacketRelayer;
+use crate::base::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
+use crate::base::relay::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer;
+use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::std_prelude::*;
 
 pub trait OfaRelayTypes: Async {
@@ -104,4 +113,25 @@ pub trait OfaBaseRelay: OfaRelayTypes {
         destination_height: &<Self::DstChain as OfaChainTypes>::Height,
         packet: &Self::Packet,
     ) -> Result<<Self::SrcChain as OfaChainTypes>::Message, Self::Error>;
+}
+
+pub trait OfaRelayComponents<Relay>:
+    OfaIbcChainComponents<Relay::SrcChain, Relay::DstChain>
+    + OfaIbcChainComponents<Relay::DstChain, Relay::SrcChain>
+where
+    Relay: OfaBaseRelay,
+{
+    type PacketRelayer: PacketRelayer<OfaRelayWrapper<Relay>>;
+
+    type ReceivePacketRelayer: ReceivePacketRelayer<OfaRelayWrapper<Relay>>;
+
+    type AckPacketRelayer: AckPacketRelayer<OfaRelayWrapper<Relay>>;
+
+    type TimeoutUnorderedPacketRelayer: TimeoutUnorderedPacketRelayer<OfaRelayWrapper<Relay>>;
+
+    type UpdateClientMessageBuilder: UpdateClientMessageBuilder<OfaRelayWrapper<Relay>, SourceTarget>
+        + UpdateClientMessageBuilder<OfaRelayWrapper<Relay>, DestinationTarget>;
+
+    type IbcMessageSender: IbcMessageSender<OfaRelayWrapper<Relay>, SourceTarget>
+        + IbcMessageSender<OfaRelayWrapper<Relay>, DestinationTarget>;
 }

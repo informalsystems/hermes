@@ -3,8 +3,8 @@ use crate::base::one_for_all::impls::chain::queries::status::SendChainStatusQuer
 use crate::base::one_for_all::impls::relay::message_builders::update_client::BuildUpdateClientMessageFromOfa;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
 use crate::base::one_for_all::traits::chain::{OfaChainComponents, OfaIbcChainComponents};
-use crate::base::one_for_all::traits::components::relay::OfaRelayComponents;
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
+use crate::base::one_for_all::traits::relay::OfaRelayComponents;
 use crate::base::relay::impls::message_senders::chain_sender::SendIbcMessagesToChain;
 use crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
 use crate::base::relay::impls::messages::skip_update_client::SkipUpdateClient;

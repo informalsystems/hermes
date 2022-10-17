@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaChainTypes};
-use crate::base::one_for_all::traits::components::relay::OfaRelayComponents;
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
+use crate::base::one_for_all::traits::relay::OfaRelayComponents;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::base::relay::traits::messages::update_client::{
     CanBuildUpdateClientMessage, UpdateClientMessageBuilder,
