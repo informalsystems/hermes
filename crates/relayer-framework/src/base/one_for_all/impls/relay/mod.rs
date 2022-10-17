@@ -4,7 +4,7 @@ pub mod types;
 
 use async_trait::async_trait;
 
-use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaBaseChainTypes};
+use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaChainTypes};
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::base::relay::impls::packet_relayers::general::retry::SupportsPacketRetry;
@@ -31,7 +31,7 @@ where
 {
     async fn build_receive_packet_message(
         relay: &OfaRelayWrapper<Relay>,
-        height: &<Relay::SrcChain as OfaBaseChainTypes>::Height,
+        height: &<Relay::SrcChain as OfaChainTypes>::Height,
         packet: &Relay::Packet,
     ) -> Result<DstChain::Message, Relay::Error> {
         let message = relay
@@ -57,9 +57,9 @@ where
 {
     async fn build_ack_packet_message(
         relay: &OfaRelayWrapper<Relay>,
-        destination_height: &<Relay::DstChain as OfaBaseChainTypes>::Height,
+        destination_height: &<Relay::DstChain as OfaChainTypes>::Height,
         packet: &Relay::Packet,
-        ack: &<Relay::DstChain as OfaBaseChainTypes>::WriteAcknowledgementEvent,
+        ack: &<Relay::DstChain as OfaChainTypes>::WriteAcknowledgementEvent,
     ) -> Result<SrcChain::Message, Relay::Error> {
         let message = relay
             .relay
@@ -89,7 +89,7 @@ where
 {
     async fn build_timeout_unordered_packet_message(
         relay: &OfaRelayWrapper<Relay>,
-        destination_height: &<Relay::DstChain as OfaBaseChainTypes>::Height,
+        destination_height: &<Relay::DstChain as OfaChainTypes>::Height,
         packet: &Relay::Packet,
     ) -> Result<SrcChain::Message, Relay::Error> {
         let message = relay

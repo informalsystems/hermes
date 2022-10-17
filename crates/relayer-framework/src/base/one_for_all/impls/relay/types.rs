@@ -1,7 +1,7 @@
 use crate::base::chain::types::aliases::{ChannelId, Height, PortId, Sequence, Timestamp};
 use crate::base::core::traits::error::HasError;
 use crate::base::core::traits::runtime::HasRuntime;
-use crate::base::one_for_all::traits::chain::OfaBaseChainTypes;
+use crate::base::one_for_all::traits::chain::OfaChainTypes;
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
@@ -64,11 +64,11 @@ impl<Relay: OfaBaseRelay> HasRelayTypes for OfaRelayWrapper<Relay> {
         self.relay.dst_chain()
     }
 
-    fn source_client_id(&self) -> &<Relay::SrcChain as OfaBaseChainTypes>::ClientId {
+    fn source_client_id(&self) -> &<Relay::SrcChain as OfaChainTypes>::ClientId {
         self.relay.src_client_id()
     }
 
-    fn destination_client_id(&self) -> &<Relay::DstChain as OfaBaseChainTypes>::ClientId {
+    fn destination_client_id(&self) -> &<Relay::DstChain as OfaChainTypes>::ClientId {
         self.relay.dst_client_id()
     }
 }

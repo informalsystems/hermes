@@ -9,7 +9,7 @@ use ibc_relayer::chain::requests::{
 use ibc_relayer::consensus_state::AnyConsensusState;
 use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
 use ibc_relayer_framework::base::one_for_all::traits::chain::{
-    OfaBaseChain, OfaBaseChainTypes, OfaIbcChain,
+    OfaBaseChain, OfaChainTypes, OfaIbcChain,
 };
 use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState;
@@ -29,7 +29,7 @@ use crate::base::types::chain::CosmosChainWrapper;
 use crate::base::types::message::CosmosIbcMessage;
 use crate::base::types::runtime::CosmosRuntimeContext;
 
-impl<Chain> OfaBaseChainTypes for CosmosChainWrapper<Chain>
+impl<Chain> OfaChainTypes for CosmosChainWrapper<Chain>
 where
     Chain: CosmosChain,
 {

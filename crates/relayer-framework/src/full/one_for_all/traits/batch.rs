@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use core::marker::PhantomData;
 
 use crate::base::core::traits::sync::Async;
-use crate::base::one_for_all::traits::chain::OfaBaseChainTypes;
+use crate::base::one_for_all::traits::chain::OfaChainTypes;
 use crate::std_prelude::*;
 
 #[derive(Clone)]
@@ -11,7 +11,7 @@ pub struct OfaBatchContext<Chain> {
 }
 
 #[async_trait]
-pub trait OfaBatch<Chain: OfaBaseChainTypes>: Async {
+pub trait OfaBatch<Chain: OfaChainTypes>: Async {
     type BatchSender: Async;
     type BatchReceiver: Async;
 

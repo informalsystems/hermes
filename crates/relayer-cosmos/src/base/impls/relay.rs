@@ -10,7 +10,7 @@ use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
-use ibc_relayer_framework::base::one_for_all::traits::chain::OfaBaseChainTypes;
+use ibc_relayer_framework::base::one_for_all::traits::chain::OfaChainTypes;
 use ibc_relayer_framework::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayTypes};
 use ibc_relayer_framework::base::one_for_all::types::chain::OfaChainWrapper;
 
@@ -59,33 +59,33 @@ where
         Error::mismatch_ibc_events_count(expected, actual)
     }
 
-    fn packet_src_port(packet: &Self::Packet) -> &<Self::SrcChain as OfaBaseChainTypes>::PortId {
+    fn packet_src_port(packet: &Self::Packet) -> &<Self::SrcChain as OfaChainTypes>::PortId {
         &packet.source_port
     }
 
     fn packet_src_channel_id(
         packet: &Self::Packet,
-    ) -> &<Self::SrcChain as OfaBaseChainTypes>::ChannelId {
+    ) -> &<Self::SrcChain as OfaChainTypes>::ChannelId {
         &packet.source_channel
     }
 
-    fn packet_dst_port(packet: &Self::Packet) -> &<Self::DstChain as OfaBaseChainTypes>::PortId {
+    fn packet_dst_port(packet: &Self::Packet) -> &<Self::DstChain as OfaChainTypes>::PortId {
         &packet.destination_port
     }
 
     fn packet_dst_channel_id(
         packet: &Self::Packet,
-    ) -> &<Self::DstChain as OfaBaseChainTypes>::ChannelId {
+    ) -> &<Self::DstChain as OfaChainTypes>::ChannelId {
         &packet.destination_channel
     }
 
-    fn packet_sequence(packet: &Self::Packet) -> &<Self::SrcChain as OfaBaseChainTypes>::Sequence {
+    fn packet_sequence(packet: &Self::Packet) -> &<Self::SrcChain as OfaChainTypes>::Sequence {
         &packet.sequence
     }
 
     fn packet_timeout_height(
         packet: &Self::Packet,
-    ) -> Option<&<Self::DstChain as OfaBaseChainTypes>::Height> {
+    ) -> Option<&<Self::DstChain as OfaChainTypes>::Height> {
         match &packet.timeout_height {
             TimeoutHeight::Never => None,
             TimeoutHeight::At(h) => Some(h),
@@ -94,7 +94,7 @@ where
 
     fn packet_timeout_timestamp(
         packet: &Self::Packet,
-    ) -> &<Self::DstChain as OfaBaseChainTypes>::Timestamp {
+    ) -> &<Self::DstChain as OfaChainTypes>::Timestamp {
         &packet.timeout_timestamp
     }
 
@@ -102,11 +102,11 @@ where
         &self.runtime
     }
 
-    fn src_client_id(&self) -> &<Self::SrcChain as OfaBaseChainTypes>::ClientId {
+    fn src_client_id(&self) -> &<Self::SrcChain as OfaChainTypes>::ClientId {
         &self.relay.dst_to_src_client().id
     }
 
-    fn dst_client_id(&self) -> &<Self::DstChain as OfaBaseChainTypes>::ClientId {
+    fn dst_client_id(&self) -> &<Self::DstChain as OfaChainTypes>::ClientId {
         &self.relay.src_to_dst_client().id
     }
 
@@ -120,23 +120,23 @@ where
 
     async fn build_src_update_client_messages(
         &self,
-        height: &<Self::DstChain as OfaBaseChainTypes>::Height,
-    ) -> Result<Vec<<Self::SrcChain as OfaBaseChainTypes>::Message>, Self::Error> {
+        height: &<Self::DstChain as OfaChainTypes>::Height,
+    ) -> Result<Vec<<Self::SrcChain as OfaChainTypes>::Message>, Self::Error> {
         build_update_client_messages(self.relay.dst_to_src_client(), height)
     }
 
     async fn build_dst_update_client_messages(
         &self,
-        height: &<Self::SrcChain as OfaBaseChainTypes>::Height,
-    ) -> Result<Vec<<Self::DstChain as OfaBaseChainTypes>::Message>, Self::Error> {
+        height: &<Self::SrcChain as OfaChainTypes>::Height,
+    ) -> Result<Vec<<Self::DstChain as OfaChainTypes>::Message>, Self::Error> {
         build_update_client_messages(self.relay.src_to_dst_client(), height)
     }
 
     async fn build_receive_packet_message(
         &self,
-        height: &<Self::SrcChain as OfaBaseChainTypes>::Height,
+        height: &<Self::SrcChain as OfaChainTypes>::Height,
         packet: &Self::Packet,
-    ) -> Result<<Self::DstChain as OfaBaseChainTypes>::Message, Self::Error> {
+    ) -> Result<<Self::DstChain as OfaChainTypes>::Message, Self::Error> {
         let proofs = self
             .src_chain
             .chain
@@ -162,10 +162,10 @@ where
 
     async fn build_ack_packet_message(
         &self,
-        destination_height: &<Self::DstChain as OfaBaseChainTypes>::Height,
+        destination_height: &<Self::DstChain as OfaChainTypes>::Height,
         packet: &Self::Packet,
-        ack: &<Self::DstChain as OfaBaseChainTypes>::WriteAcknowledgementEvent,
-    ) -> Result<<Self::SrcChain as OfaBaseChainTypes>::Message, Self::Error> {
+        ack: &<Self::DstChain as OfaChainTypes>::WriteAcknowledgementEvent,
+    ) -> Result<<Self::SrcChain as OfaChainTypes>::Message, Self::Error> {
         let proofs = self
             .dst_chain
             .chain
@@ -200,9 +200,9 @@ where
     /// over an unordered Cosmos channel.
     async fn build_timeout_unordered_packet_message(
         &self,
-        destination_height: &<Self::DstChain as OfaBaseChainTypes>::Height,
+        destination_height: &<Self::DstChain as OfaChainTypes>::Height,
         packet: &Self::Packet,
-    ) -> Result<<Self::SrcChain as OfaBaseChainTypes>::Message, Self::Error> {
+    ) -> Result<<Self::SrcChain as OfaChainTypes>::Message, Self::Error> {
         let proofs = self
             .dst_chain
             .chain

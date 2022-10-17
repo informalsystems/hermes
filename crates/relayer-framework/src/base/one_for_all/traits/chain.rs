@@ -12,7 +12,7 @@ use crate::base::one_for_all::traits::runtime::{OfaRuntime, OfaRuntimeContext};
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
-pub trait OfaBaseChainTypes: Async {
+pub trait OfaChainTypes: Async {
     type Components;
 
     type Error: Async + Debug;
@@ -49,7 +49,7 @@ pub trait OfaBaseChainTypes: Async {
 }
 
 #[async_trait]
-pub trait OfaBaseChain: OfaBaseChainTypes {
+pub trait OfaBaseChain: OfaChainTypes {
     fn runtime(&self) -> &OfaRuntimeContext<Self::Runtime>;
 
     fn encode_raw_message(
@@ -78,7 +78,7 @@ pub trait OfaBaseChain: OfaBaseChainTypes {
 #[async_trait]
 pub trait OfaIbcChain<Counterparty>: OfaBaseChain
 where
-    Counterparty: OfaBaseChainTypes,
+    Counterparty: OfaChainTypes,
 {
     fn counterparty_message_height(message: &Self::Message) -> Option<Counterparty::Height>;
 

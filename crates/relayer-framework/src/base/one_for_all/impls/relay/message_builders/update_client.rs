@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaBaseChainTypes};
+use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaChainTypes};
 use crate::base::one_for_all::traits::components::relay::OfaRelayComponents;
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
@@ -22,7 +22,7 @@ where
     async fn build_update_client_messages(
         context: &OfaRelayWrapper<Relay>,
         _target: SourceTarget,
-        height: &<Relay::DstChain as OfaBaseChainTypes>::Height,
+        height: &<Relay::DstChain as OfaChainTypes>::Height,
     ) -> Result<Vec<SrcChain::Message>, Relay::Error> {
         let messages = context
             .relay
@@ -43,7 +43,7 @@ where
     async fn build_update_client_messages(
         context: &OfaRelayWrapper<Relay>,
         _target: DestinationTarget,
-        height: &<Relay::SrcChain as OfaBaseChainTypes>::Height,
+        height: &<Relay::SrcChain as OfaChainTypes>::Height,
     ) -> Result<Vec<DstChain::Message>, Relay::Error> {
         let messages = context
             .relay
@@ -63,8 +63,8 @@ where
     async fn build_update_client_messages(
         &self,
         target: SourceTarget,
-        height: &<Relay::DstChain as OfaBaseChainTypes>::Height,
-    ) -> Result<Vec<<Relay::SrcChain as OfaBaseChainTypes>::Message>, Self::Error> {
+        height: &<Relay::DstChain as OfaChainTypes>::Height,
+    ) -> Result<Vec<<Relay::SrcChain as OfaChainTypes>::Message>, Self::Error> {
         Components::UpdateClientMessageBuilder::build_update_client_messages(self, target, height)
             .await
     }
@@ -79,8 +79,8 @@ where
     async fn build_update_client_messages(
         &self,
         target: DestinationTarget,
-        height: &<Relay::SrcChain as OfaBaseChainTypes>::Height,
-    ) -> Result<Vec<<Relay::DstChain as OfaBaseChainTypes>::Message>, Self::Error> {
+        height: &<Relay::SrcChain as OfaChainTypes>::Height,
+    ) -> Result<Vec<<Relay::DstChain as OfaChainTypes>::Message>, Self::Error> {
         Components::UpdateClientMessageBuilder::build_update_client_messages(self, target, height)
             .await
     }

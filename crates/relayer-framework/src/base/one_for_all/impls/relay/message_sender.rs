@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::base::one_for_all::traits::chain::OfaBaseChainTypes;
+use crate::base::one_for_all::traits::chain::OfaChainTypes;
 use crate::base::one_for_all::traits::components::relay::OfaRelayComponents;
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
@@ -16,8 +16,8 @@ where
 {
     async fn send_messages(
         &self,
-        messages: Vec<<Relay::SrcChain as OfaBaseChainTypes>::Message>,
-    ) -> Result<Vec<Vec<<Relay::SrcChain as OfaBaseChainTypes>::Event>>, Self::Error> {
+        messages: Vec<<Relay::SrcChain as OfaChainTypes>::Message>,
+    ) -> Result<Vec<Vec<<Relay::SrcChain as OfaChainTypes>::Event>>, Self::Error> {
         <Components::IbcMessageSender as IbcMessageSender<Self, SourceTarget>>::send_messages(
             self, messages,
         )
@@ -33,8 +33,8 @@ where
 {
     async fn send_messages(
         &self,
-        messages: Vec<<Relay::DstChain as OfaBaseChainTypes>::Message>,
-    ) -> Result<Vec<Vec<<Relay::DstChain as OfaBaseChainTypes>::Event>>, Self::Error> {
+        messages: Vec<<Relay::DstChain as OfaChainTypes>::Message>,
+    ) -> Result<Vec<Vec<<Relay::DstChain as OfaChainTypes>::Event>>, Self::Error> {
         <Components::IbcMessageSender as IbcMessageSender<Self, DestinationTarget>>::send_messages(
             self, messages,
         )
