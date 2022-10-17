@@ -1,5 +1,6 @@
 pub mod message_builders;
 pub mod message_sender;
+pub mod packet_relayers;
 pub mod types;
 
 use async_trait::async_trait;
@@ -12,40 +13,10 @@ use crate::base::relay::traits::ibc_message_sender::InjectMismatchIbcEventsCount
 use crate::base::relay::traits::messages::ack_packet::{
     AckPacketMessageBuilder, HasAckPacketMessageBuilder,
 };
-use crate::base::relay::traits::messages::receive_packet::{
-    HasReceivePacketMessageBuilder, ReceivePacketMessageBuilder,
-};
 use crate::base::relay::traits::messages::timeout_packet::{
     HasTimeoutUnorderedPacketMessageBuilder, TimeoutUnorderedPacketMessageBuilder,
 };
 use crate::std_prelude::*;
-
-pub struct OfaReceivePacketMessageBuilder;
-
-#[async_trait]
-impl<Relay, DstChain> ReceivePacketMessageBuilder<OfaRelayWrapper<Relay>>
-    for OfaReceivePacketMessageBuilder
-where
-    Relay: OfaBaseRelay<DstChain = DstChain>,
-    DstChain: OfaBaseChain,
-{
-    async fn build_receive_packet_message(
-        relay: &OfaRelayWrapper<Relay>,
-        height: &<Relay::SrcChain as OfaChainTypes>::Height,
-        packet: &Relay::Packet,
-    ) -> Result<DstChain::Message, Relay::Error> {
-        let message = relay
-            .relay
-            .build_receive_packet_message(height, packet)
-            .await?;
-
-        Ok(message)
-    }
-}
-
-impl<Relay: OfaBaseRelay> HasReceivePacketMessageBuilder for OfaRelayWrapper<Relay> {
-    type ReceivePacketMessageBuilder = OfaReceivePacketMessageBuilder;
-}
 
 pub struct OfaAckPacketMessageBuilder;
 
