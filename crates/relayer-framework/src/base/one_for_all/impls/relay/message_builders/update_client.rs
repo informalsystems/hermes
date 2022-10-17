@@ -3,6 +3,8 @@ use async_trait::async_trait;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaChainTypes};
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::traits::relay::OfaRelayPreset;
+use crate::base::relay::impls::messages::skip_update_client::SkipUpdateClient;
+use crate::base::relay::impls::messages::wait_update_client::WaitUpdateClient;
 use crate::base::relay::traits::messages::update_client::{
     CanBuildUpdateClientMessage, UpdateClientMessageBuilder,
 };
@@ -65,7 +67,8 @@ where
         target: SourceTarget,
         height: &<Relay::DstChain as OfaChainTypes>::Height,
     ) -> Result<Vec<<Relay::SrcChain as OfaChainTypes>::Message>, Self::Error> {
-        Preset::UpdateClientMessageBuilder::build_update_client_messages(self, target, height).await
+        // Preset::UpdateClientMessageBuilder::build_update_client_messages(self, target, height).await
+        <SkipUpdateClient<WaitUpdateClient<BuildUpdateClientMessageFromOfa>>>::build_update_client_messages(self, target, height).await
     }
 }
 

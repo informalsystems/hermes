@@ -11,6 +11,7 @@ use crate::base::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
 use crate::base::one_for_all::traits::runtime::OfaRuntime;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
+use crate::base::relay::traits::messages::timeout_unordered_packet::TimeoutUnorderedPacketMessageBuilder;
 use crate::base::relay::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::base::relay::traits::packet_relayer::PacketRelayer;
 use crate::base::relay::traits::packet_relayers::ack_packet::AckPacketRelayer;
@@ -131,6 +132,10 @@ where
 
     type UpdateClientMessageBuilder: UpdateClientMessageBuilder<OfaRelayWrapper<Relay>, SourceTarget>
         + UpdateClientMessageBuilder<OfaRelayWrapper<Relay>, DestinationTarget>;
+
+    type TimeoutUnorderedPacketMessageBuilder: TimeoutUnorderedPacketMessageBuilder<
+        OfaRelayWrapper<Relay>,
+    >;
 
     type IbcMessageSender: IbcMessageSender<OfaRelayWrapper<Relay>, SourceTarget>
         + IbcMessageSender<OfaRelayWrapper<Relay>, DestinationTarget>;
