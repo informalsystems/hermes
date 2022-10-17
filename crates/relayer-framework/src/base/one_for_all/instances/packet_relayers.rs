@@ -2,7 +2,6 @@ use core::marker::PhantomData;
 
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::traits::relay::OfaRelayComponents;
-use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::base::relay::impls::packet_relayers::ack::base_ack_packet::BaseAckPacketRelayer;
 use crate::base::relay::impls::packet_relayers::general::full_relay::FullRelayer;
 use crate::base::relay::impls::packet_relayers::general::retry::RetryRelayer;
@@ -11,6 +10,7 @@ use crate::base::relay::impls::packet_relayers::receive::skip_received_packet::S
 use crate::base::relay::traits::packet_relayer::PacketRelayer;
 use crate::base::relay::traits::packet_relayers::ack_packet::AckPacketRelayer;
 use crate::base::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
+use crate::common::one_for_all::types::relay::OfaRelayWrapper;
 
 pub fn full_packet_relayer<Relay>() -> PhantomData<impl PacketRelayer<OfaRelayWrapper<Relay>>>
 where

@@ -1,9 +1,9 @@
 use crate::base::chain::traits::types::{HasChainTypes, HasIbcChainTypes};
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
-use crate::base::one_for_all::types::chain::OfaChainWrapper;
-use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::base::relay::traits::types::HasRelayTypes;
+use crate::common::one_for_all::types::chain::OfaChainWrapper;
+use crate::common::one_for_all::types::relay::OfaRelayWrapper;
 
 pub fn relay_context<Relay: OfaBaseRelay>(relay: Relay) -> impl HasRelayTypes {
     OfaRelayWrapper::new(relay)

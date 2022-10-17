@@ -2,8 +2,8 @@ use alloc::sync::Arc;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::filter::PacketFilter;
 use ibc_relayer::foreign_client::ForeignClient;
-use ibc_relayer_framework::base::one_for_all::types::relay::OfaRelayWrapper;
 use ibc_relayer_framework::base::relay::traits::target::{DestinationTarget, SourceTarget};
+use ibc_relayer_framework::common::one_for_all::types::relay::OfaRelayWrapper;
 use ibc_relayer_framework::full::batch::config::BatchConfig;
 use ibc_relayer_framework::full::batch::spawn::{
     BatchMessageWorkerSpawner, CanSpawnBatchMessageWorker,

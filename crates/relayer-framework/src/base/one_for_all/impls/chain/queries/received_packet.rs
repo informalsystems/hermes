@@ -4,7 +4,7 @@ use crate::base::chain::traits::queries::received_packet::{
     CanQueryReceivedPacket, ReceivedPacketQuerier,
 };
 use crate::base::one_for_all::traits::chain::OfaIbcChain;
-use crate::base::one_for_all::types::chain::OfaChainWrapper;
+use crate::common::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
 pub struct SendReceivedPacketQueryToOfa;

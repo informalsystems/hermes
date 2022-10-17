@@ -9,7 +9,7 @@ use crate::base::chain::traits::queries::consensus_state::ConsensusStateQuerier;
 use crate::base::chain::traits::queries::status::ChainStatusQuerier;
 use crate::base::core::traits::sync::Async;
 use crate::base::one_for_all::traits::runtime::{OfaRuntime, OfaRuntimeContext};
-use crate::base::one_for_all::types::chain::OfaChainWrapper;
+use crate::common::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
 pub trait OfaChainTypes: Async {

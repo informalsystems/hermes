@@ -4,9 +4,9 @@ use crate::base::core::traits::runtime::HasRuntime;
 use crate::base::one_for_all::traits::chain::OfaChainTypes;
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
-use crate::base::one_for_all::types::chain::OfaChainWrapper;
-use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::base::relay::traits::types::HasRelayTypes;
+use crate::common::one_for_all::types::chain::OfaChainWrapper;
+use crate::common::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
 
 impl<Relay: OfaBaseRelay> HasError for OfaRelayWrapper<Relay> {
