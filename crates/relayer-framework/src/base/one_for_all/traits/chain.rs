@@ -5,8 +5,11 @@
 use async_trait::async_trait;
 use core::fmt::Debug;
 
+use crate::base::chain::traits::queries::consensus_state::ConsensusStateQuerier;
+use crate::base::chain::traits::queries::status::ChainStatusQuerier;
 use crate::base::core::traits::sync::Async;
 use crate::base::one_for_all::traits::runtime::{OfaRuntime, OfaRuntimeContext};
+use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
 pub trait OfaBaseChainTypes: Async {
@@ -91,4 +94,22 @@ where
         channel_id: &Self::ChannelId,
         sequence: &Counterparty::Sequence,
     ) -> Result<bool, Self::Error>;
+}
+
+pub trait OfaChainComponents<Chain>
+where
+    Chain: OfaBaseChain,
+{
+    type ChainStatusQuerier: ChainStatusQuerier<OfaChainWrapper<Chain>>;
+}
+
+pub trait OfaIbcChainComponents<Chain, Counterparty>: OfaChainComponents<Chain>
+where
+    Chain: OfaIbcChain<Counterparty>,
+    Counterparty: OfaIbcChain<Chain>,
+{
+    type ConsensusStateQuerier: ConsensusStateQuerier<
+        OfaChainWrapper<Chain>,
+        OfaChainWrapper<Counterparty>,
+    >;
 }

@@ -1,4 +1,4 @@
-use crate::base::one_for_all::traits::components::chain::OfaIbcChainComponents;
+use crate::base::one_for_all::traits::chain::OfaIbcChainComponents;
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::base::relay::traits::ibc_message_sender::{HasIbcMessageSender, IbcMessageSender};
