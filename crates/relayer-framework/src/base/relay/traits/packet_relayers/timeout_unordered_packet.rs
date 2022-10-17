@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::base::chain::types::aliases::Height;
 use crate::base::core::traits::sync::Async;
-use crate::base::relay::traits::context::HasRelayTypes;
+use crate::base::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
 /// Encapsulates the capability of a relayer to send timeout packets over

@@ -1,5 +1,5 @@
-use crate::base::chain::traits::context::{HasChainTypes, HasIbcChainTypes};
 use crate::base::chain::traits::ibc_event::HasIbcEvents;
+use crate::base::chain::traits::types::{HasChainTypes, HasIbcChainTypes};
 
 pub type ClientId<Chain, Counterparty> = <Chain as HasIbcChainTypes<Counterparty>>::ClientId;
 

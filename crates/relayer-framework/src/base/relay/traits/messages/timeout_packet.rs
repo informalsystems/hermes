@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::base::chain::types::aliases::{ChannelId, Height, Message, PortId};
-use crate::base::relay::traits::context::HasRelayTypes;
+use crate::base::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
 /// Encapsulates the capability of the implementer to construct a timeout

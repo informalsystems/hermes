@@ -1,4 +1,4 @@
-use crate::base::chain::traits::context::{HasChainTypes, HasIbcChainTypes};
+use crate::base::chain::traits::types::{HasChainTypes, HasIbcChainTypes};
 use crate::base::core::traits::sync::Async;
 
 pub trait HasIbcEvents<Counterparty>: HasIbcChainTypes<Counterparty>

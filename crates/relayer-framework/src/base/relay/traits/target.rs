@@ -1,7 +1,7 @@
-use crate::base::chain::traits::context::HasIbcChainTypes;
+use crate::base::chain::traits::types::HasIbcChainTypes;
 use crate::base::chain::types::aliases::ClientId;
 use crate::base::core::traits::sync::Async;
-use crate::base::relay::traits::context::HasRelayTypes;
+use crate::base::relay::traits::types::HasRelayTypes;
 
 #[derive(Default)]
 pub struct SourceTarget;

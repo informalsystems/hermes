@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::context::{HasChainTypes, HasIbcChainTypes};
+use crate::base::chain::traits::types::{HasChainTypes, HasIbcChainTypes};
 use crate::base::core::traits::sync::Async;
 use crate::std_prelude::*;
 

@@ -1,6 +1,6 @@
 use crate::base::all_for_one::relay::AfoBaseRelay;
-use crate::base::relay::traits::context::HasRelayTypes;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
+use crate::base::relay::traits::types::HasRelayTypes;
 use crate::full::all_for_one::chain::AfoFullChain;
 use crate::full::batch::message_sender::HasIbcMessageSenderForBatchWorker;
 use crate::full::filter::traits::filter::HasPacketFilter;

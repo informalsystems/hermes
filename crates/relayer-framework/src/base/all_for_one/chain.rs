@@ -1,10 +1,10 @@
-use crate::base::chain::traits::context::{HasChainTypes, HasIbcChainTypes};
 use crate::base::chain::traits::ibc_event::HasIbcEvents;
 use crate::base::chain::traits::queries::consensus_state::{
     CanQueryConsensusState, HasConsensusState,
 };
 use crate::base::chain::traits::queries::received_packet::CanQueryReceivedPacket;
 use crate::base::chain::traits::queries::status::HasChainStatusQuerier;
+use crate::base::chain::traits::types::{HasChainTypes, HasIbcChainTypes};
 
 pub trait AfoBaseChain<Counterparty>:
     HasIbcChainTypes<Counterparty>

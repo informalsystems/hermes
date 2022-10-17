@@ -1,13 +1,13 @@
 use async_trait::async_trait;
 
 use crate::base::chain::types::aliases::Height;
-use crate::base::relay::traits::context::HasRelayTypes;
 use crate::base::relay::traits::ibc_message_sender::{
     HasIbcMessageSender, IbcMessageSenderExt, InjectMismatchIbcEventsCountError,
 };
 use crate::base::relay::traits::messages::timeout_packet::HasTimeoutUnorderedPacketMessageBuilder;
 use crate::base::relay::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer;
 use crate::base::relay::traits::target::SourceTarget;
+use crate::base::relay::traits::types::HasRelayTypes;
 use crate::base::relay::types::aliases::Packet;
 use crate::std_prelude::*;
 

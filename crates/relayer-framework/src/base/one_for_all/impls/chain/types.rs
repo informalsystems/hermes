@@ -1,5 +1,5 @@
-use crate::base::chain::traits::context::{HasChainTypes, HasIbcChainTypes};
 use crate::base::chain::traits::ibc_event::HasIbcEvents;
+use crate::base::chain::traits::types::{HasChainTypes, HasIbcChainTypes};
 use crate::base::core::traits::error::HasError;
 use crate::base::core::traits::runtime::HasRuntime;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};

@@ -9,7 +9,6 @@ use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::base::relay::impls::packet_relayers::retry::SupportsPacketRetry;
-use crate::base::relay::traits::context::HasRelayTypes;
 use crate::base::relay::traits::ibc_message_sender::InjectMismatchIbcEventsCountError;
 use crate::base::relay::traits::messages::ack_packet::{
     AckPacketMessageBuilder, HasAckPacketMessageBuilder,
@@ -22,6 +21,7 @@ use crate::base::relay::traits::messages::timeout_packet::{
 };
 use crate::base::relay::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
+use crate::base::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
 impl<Relay: OfaBaseRelay> HasError for OfaRelayWrapper<Relay> {
