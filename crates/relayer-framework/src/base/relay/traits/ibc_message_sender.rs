@@ -9,11 +9,14 @@ use crate::base::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait HasIbcMessageSender<Target>: HasRelayTypes
+pub trait CanSendIbcMessages<Target>: HasRelayTypes
 where
     Target: ChainTarget<Self>,
 {
-    type IbcMessageSender: IbcMessageSender<Self, Target>;
+    async fn send_messages(
+        &self,
+        messages: Vec<Message<Target::TargetChain>>,
+    ) -> Result<Vec<Vec<Event<Target::TargetChain>>>, Self::Error>;
 }
 
 #[async_trait]
@@ -38,11 +41,6 @@ where
     Context: HasRelayTypes,
     Target: ChainTarget<Context>,
 {
-    async fn send_messages(
-        &self,
-        messages: Vec<Message<Target::TargetChain>>,
-    ) -> Result<Vec<Vec<Event<Target::TargetChain>>>, Context::Error>;
-
     async fn send_messages_fixed<const COUNT: usize>(
         &self,
         messages: [Message<Target::TargetChain>; COUNT],
@@ -59,18 +57,11 @@ where
 #[async_trait]
 impl<Context, Target, TargetChain, Event, Message> IbcMessageSenderExt<Context, Target> for Context
 where
-    Context: HasIbcMessageSender<Target>,
+    Context: CanSendIbcMessages<Target>,
     Target: ChainTarget<Context, TargetChain = TargetChain>,
     TargetChain: HasIbcChainTypes<Target::CounterpartyChain, Event = Event, Message = Message>,
     Message: Async,
 {
-    async fn send_messages(
-        &self,
-        messages: Vec<Message>,
-    ) -> Result<Vec<Vec<Event>>, Context::Error> {
-        Context::IbcMessageSender::send_messages(self, messages).await
-    }
-
     async fn send_messages_fixed<const COUNT: usize>(
         &self,
         messages: [Message; COUNT],

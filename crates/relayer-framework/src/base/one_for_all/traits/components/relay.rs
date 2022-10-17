@@ -1,7 +1,7 @@
 use crate::base::one_for_all::traits::chain::OfaIbcChainComponents;
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
-use crate::base::relay::traits::ibc_message_sender::{HasIbcMessageSender, IbcMessageSender};
+use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
 use crate::base::relay::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::base::relay::traits::packet_relayer::{HasPacketRelayer, PacketRelayer};
 use crate::base::relay::traits::packet_relayers::ack_packet::{
@@ -34,22 +34,6 @@ where
 
     type IbcMessageSender: IbcMessageSender<OfaRelayWrapper<Relay>, SourceTarget>
         + IbcMessageSender<OfaRelayWrapper<Relay>, DestinationTarget>;
-}
-
-impl<Relay, Components> HasIbcMessageSender<SourceTarget> for OfaRelayWrapper<Relay>
-where
-    Relay: OfaBaseRelay<Components = Components>,
-    Components: OfaRelayComponents<Relay>,
-{
-    type IbcMessageSender = Components::IbcMessageSender;
-}
-
-impl<Relay, Components> HasIbcMessageSender<DestinationTarget> for OfaRelayWrapper<Relay>
-where
-    Relay: OfaBaseRelay<Components = Components>,
-    Components: OfaRelayComponents<Relay>,
-{
-    type IbcMessageSender = Components::IbcMessageSender;
 }
 
 impl<Relay, Components> HasReceivePacketRelayer for OfaRelayWrapper<Relay>

@@ -4,7 +4,7 @@ use crate::base::chain::traits::ibc_event::HasIbcEvents;
 use crate::base::chain::types::aliases::{Height, WriteAcknowledgementEvent};
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::ibc_message_sender::{
-    HasIbcMessageSender, IbcMessageSenderExt, InjectMismatchIbcEventsCountError,
+    CanSendIbcMessages, IbcMessageSenderExt, InjectMismatchIbcEventsCountError,
 };
 use crate::base::relay::traits::messages::receive_packet::HasReceivePacketMessageBuilder;
 use crate::base::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
@@ -20,7 +20,7 @@ impl<Context, Message, Event, AckEvent, DstChain> ReceivePacketRelayer<Context>
     for BaseReceivePacketRelayer
 where
     Context: HasReceivePacketMessageBuilder,
-    Context: HasIbcMessageSender<DestinationTarget>,
+    Context: CanSendIbcMessages<DestinationTarget>,
     Context: HasRelayTypes<DstChain = DstChain>,
     Context: InjectMismatchIbcEventsCountError,
     DstChain: HasIbcEvents<

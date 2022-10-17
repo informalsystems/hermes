@@ -1,4 +1,5 @@
 pub mod message_builders;
+pub mod message_sender;
 pub mod types;
 
 use async_trait::async_trait;
