@@ -8,7 +8,7 @@ use crate::base::one_for_all::traits::components::chain::OfaChainComponents;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
-pub struct OfaBaseChainStatusQuerier;
+pub struct SendChainStatusQueryToOfa;
 
 impl<Chain: OfaBaseChain> HasChainStatus for OfaChainWrapper<Chain> {
     type ChainStatus = Chain::ChainStatus;
@@ -23,7 +23,7 @@ impl<Chain: OfaBaseChain> HasChainStatus for OfaChainWrapper<Chain> {
 }
 
 #[async_trait]
-impl<Chain: OfaBaseChain> ChainStatusQuerier<OfaChainWrapper<Chain>> for OfaBaseChainStatusQuerier {
+impl<Chain: OfaBaseChain> ChainStatusQuerier<OfaChainWrapper<Chain>> for SendChainStatusQueryToOfa {
     async fn query_chain_status(
         context: &OfaChainWrapper<Chain>,
     ) -> Result<Chain::ChainStatus, Chain::Error> {

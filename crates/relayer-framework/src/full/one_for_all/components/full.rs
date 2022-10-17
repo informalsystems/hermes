@@ -1,5 +1,5 @@
 use crate::base::one_for_all::impls::chain::queries::consensus_state::SendConsensusStateQueryToOfa;
-use crate::base::one_for_all::impls::chain::queries::status::OfaBaseChainStatusQuerier;
+use crate::base::one_for_all::impls::chain::queries::status::SendChainStatusQueryToOfa;
 use crate::base::one_for_all::impls::relay::OfaUpdateClientMessageBuilder;
 use crate::base::one_for_all::traits::chain::OfaIbcChain;
 use crate::base::one_for_all::traits::components::chain::{
@@ -30,7 +30,7 @@ impl<Chain> OfaChainComponents<Chain> for FullComponents
 where
     Chain: OfaFullChain,
 {
-    type ChainStatusQuerier = ChainStatusTelemetryQuerier<OfaBaseChainStatusQuerier>;
+    type ChainStatusQuerier = ChainStatusTelemetryQuerier<SendChainStatusQueryToOfa>;
 }
 
 impl<Chain, Counterparty> OfaIbcChainComponents<Chain, Counterparty> for FullComponents
