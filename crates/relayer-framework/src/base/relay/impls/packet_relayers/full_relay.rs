@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 
 use crate::base::chain::traits::ibc_event::HasIbcEvents;
-use crate::base::chain::traits::queries::status::{HasChainStatus, HasChainStatusQuerier};
+use crate::base::chain::traits::queries::status::{CanQueryChainStatus, HasChainStatus};
 use crate::base::relay::traits::packet_relayer::PacketRelayer;
 use crate::base::relay::traits::packet_relayers::ack_packet::HasAckPacketRelayer;
 use crate::base::relay::traits::packet_relayers::receive_packet::HasReceivePacketRelayer;
@@ -18,8 +18,8 @@ where
     Relay: HasAckPacketRelayer,
     Relay: HasReceivePacketRelayer,
     Relay::DstChain: HasIbcEvents<Relay::SrcChain>,
-    Relay::SrcChain: HasChainStatusQuerier,
-    Relay::DstChain: HasChainStatusQuerier,
+    Relay::SrcChain: CanQueryChainStatus,
+    Relay::DstChain: CanQueryChainStatus,
 {
     async fn relay_packet(relay: &Relay, packet: &Packet<Relay>) -> Result<(), Relay::Error> {
         let source_status = relay.source_chain().query_chain_status().await?;

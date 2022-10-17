@@ -3,7 +3,7 @@ use crate::base::chain::traits::queries::consensus_state::{
     CanQueryConsensusState, HasConsensusState,
 };
 use crate::base::chain::traits::queries::received_packet::CanQueryReceivedPacket;
-use crate::base::chain::traits::queries::status::HasChainStatusQuerier;
+use crate::base::chain::traits::queries::status::CanQueryChainStatus;
 use crate::base::chain::traits::types::{HasChainTypes, HasIbcChainTypes};
 
 pub trait AfoBaseChain<Counterparty>:
@@ -12,7 +12,7 @@ pub trait AfoBaseChain<Counterparty>:
     + HasConsensusState<Counterparty>
     + CanQueryConsensusState<Counterparty>
     + CanQueryReceivedPacket<Counterparty>
-    + HasChainStatusQuerier
+    + CanQueryChainStatus
 where
     Counterparty: AfoCounterpartyChain<Self>,
 {
@@ -32,7 +32,7 @@ where
         + HasConsensusState<Counterparty>
         + CanQueryConsensusState<Counterparty>
         + CanQueryReceivedPacket<Counterparty>
-        + HasChainStatusQuerier,
+        + CanQueryChainStatus,
 {
 }
 

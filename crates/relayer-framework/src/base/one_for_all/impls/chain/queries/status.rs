@@ -1,7 +1,10 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::queries::status::{ChainStatusQuerier, HasChainStatus};
+use crate::base::chain::traits::queries::status::{
+    CanQueryChainStatus, ChainStatusQuerier, HasChainStatus,
+};
 use crate::base::one_for_all::traits::chain::OfaBaseChain;
+use crate::base::one_for_all::traits::components::chain::OfaChainComponents;
 use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
@@ -27,5 +30,16 @@ impl<Chain: OfaBaseChain> ChainStatusQuerier<OfaChainWrapper<Chain>> for OfaBase
         let status = context.chain.query_chain_status().await?;
 
         Ok(status)
+    }
+}
+
+#[async_trait]
+impl<Chain, Components> CanQueryChainStatus for OfaChainWrapper<Chain>
+where
+    Chain: OfaBaseChain<Components = Components>,
+    Components: OfaChainComponents<Chain>,
+{
+    async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error> {
+        Components::ChainStatusQuerier::query_chain_status(self).await
     }
 }

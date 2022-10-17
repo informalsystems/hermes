@@ -3,7 +3,7 @@ use core::cmp::Ord;
 use core::marker::PhantomData;
 use core::time::Duration;
 
-use crate::base::chain::traits::queries::status::HasChainStatusQuerier;
+use crate::base::chain::traits::queries::status::CanQueryChainStatus;
 use crate::base::chain::traits::types::HasIbcChainTypes;
 use crate::base::core::traits::runtime::HasRuntime;
 use crate::base::core::traits::runtimes::sleep::CanSleep;
@@ -29,7 +29,7 @@ where
     InUpdateClient: UpdateClientMessageBuilder<Relay, Target>,
     CounterpartyChain: HasIbcChainTypes<TargetChain, Height = Height, Error = Error>,
     TargetChain: HasIbcChainTypes<CounterpartyChain>,
-    CounterpartyChain: HasChainStatusQuerier,
+    CounterpartyChain: CanQueryChainStatus,
     Runtime: CanSleep,
     Height: Ord + Async,
 {
