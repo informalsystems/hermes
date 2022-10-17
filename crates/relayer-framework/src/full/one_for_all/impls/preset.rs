@@ -10,15 +10,12 @@ use crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWi
 use crate::base::relay::impls::messages::skip_update_client::SkipUpdateClient;
 use crate::base::relay::impls::messages::wait_update_client::WaitUpdateClient;
 use crate::base::relay::impls::packet_relayers::ack::base_ack_packet::BaseAckPacketRelayer;
-use crate::base::relay::impls::packet_relayers::general::full_relay::FullRelayer;
-use crate::base::relay::impls::packet_relayers::general::retry::RetryRelayer;
 use crate::base::relay::impls::packet_relayers::receive::base_receive_packet::BaseReceivePacketRelayer;
 use crate::base::relay::impls::packet_relayers::receive::skip_received_packet::SkipReceivedPacketRelayer;
 use crate::base::relay::impls::packet_relayers::timeout_unordered::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
 use crate::base::relay::impls::packet_relayers::timeout_unordered::wait_timeout::WaitTimeoutUnorderedPacketMessageBuilder;
 use crate::common::one_for_all::presets::FullPreset;
 use crate::full::batch::message_sender::SendMessagetoBatchWorker;
-use crate::full::filter::impls::filter_relayer::FilterRelayer;
 use crate::full::one_for_all::traits::chain::OfaFullChain;
 use crate::full::one_for_all::traits::components::batch::OfaBatchPreset;
 use crate::full::one_for_all::traits::relay::OfaFullRelay;
@@ -47,8 +44,6 @@ where
     Relay::SrcChain: OfaFullChain,
     Relay::DstChain: OfaFullChain,
 {
-    type PacketRelayer = FilterRelayer<RetryRelayer<FullRelayer>>;
-
     type ReceivePacketRelayer = SkipReceivedPacketRelayer<BaseReceivePacketRelayer>;
 
     type AckPacketRelayer = BaseAckPacketRelayer;

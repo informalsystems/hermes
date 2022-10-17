@@ -13,7 +13,6 @@ use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
 use crate::base::relay::traits::messages::timeout_unordered_packet::TimeoutUnorderedPacketMessageBuilder;
 use crate::base::relay::traits::messages::update_client::UpdateClientMessageBuilder;
-use crate::base::relay::traits::packet_relayer::PacketRelayer;
 use crate::base::relay::traits::packet_relayers::ack_packet::AckPacketRelayer;
 use crate::base::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
 use crate::base::relay::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer;
@@ -122,8 +121,6 @@ pub trait OfaRelayPreset<Relay>:
 where
     Relay: OfaBaseRelay,
 {
-    type PacketRelayer: PacketRelayer<OfaRelayWrapper<Relay>>;
-
     type ReceivePacketRelayer: ReceivePacketRelayer<OfaRelayWrapper<Relay>>;
 
     type AckPacketRelayer: AckPacketRelayer<OfaRelayWrapper<Relay>>;
