@@ -1,12 +1,26 @@
 use async_trait::async_trait;
 
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
+use crate::base::relay::impls::message_senders::chain_sender::SendIbcMessagesToChain;
+use crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
+use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
+use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::common::one_for_all::types::relay::OfaRelayWrapper;
 use crate::full::batch::context::{BatchChannel, BatchContext, HasBatchContext};
+use crate::full::batch::message_sender::HasIbcMessageSenderForBatchWorker;
 use crate::full::one_for_all::traits::batch::{OfaBatch, OfaBatchContext};
 use crate::full::one_for_all::traits::chain::OfaFullChain;
 use crate::std_prelude::*;
+
+impl<Relay, Target> HasIbcMessageSenderForBatchWorker<Target> for OfaRelayWrapper<Relay>
+where
+    Relay: OfaBaseRelay,
+    Target: ChainTarget<Self>,
+    SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>: IbcMessageSender<Self, Target>,
+{
+    type IbcMessageSenderForBatchWorker = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
+}
 
 #[async_trait]
 impl<Chain, Batch> BatchContext for OfaBatchContext<Chain>
