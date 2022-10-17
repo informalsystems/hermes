@@ -2,7 +2,7 @@ use crate::base::all_for_one::chain::AfoBaseChain;
 use crate::base::relay::impls::packet_relayers::general::retry::SupportsPacketRetry;
 use crate::base::relay::traits::ibc_message_sender::CanSendIbcMessages;
 use crate::base::relay::traits::ibc_message_sender::InjectMismatchIbcEventsCountError;
-use crate::base::relay::traits::messages::ack_packet::HasAckPacketMessageBuilder;
+use crate::base::relay::traits::messages::ack_packet::CanBuildAckPacketMessage;
 use crate::base::relay::traits::messages::receive_packet::CanBuildReceivePacketMessage;
 use crate::base::relay::traits::messages::timeout_packet::HasTimeoutUnorderedPacketMessageBuilder;
 use crate::base::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
@@ -22,7 +22,7 @@ pub trait AfoBaseRelay:
     + CanSendIbcMessages<SourceTarget>
     + CanSendIbcMessages<DestinationTarget>
     + CanBuildReceivePacketMessage
-    + HasAckPacketMessageBuilder
+    + CanBuildAckPacketMessage
     + HasTimeoutUnorderedPacketMessageBuilder
     + HasReceivePacketRelayer
     + HasPacketRelayer
@@ -46,7 +46,7 @@ where
         + CanSendIbcMessages<SourceTarget>
         + CanSendIbcMessages<DestinationTarget>
         + CanBuildReceivePacketMessage
-        + HasAckPacketMessageBuilder
+        + CanBuildAckPacketMessage
         + HasReceivePacketRelayer
         + HasPacketRelayer
         + HasAckPacketRelayer

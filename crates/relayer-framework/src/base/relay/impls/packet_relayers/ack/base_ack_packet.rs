@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::base::chain::traits::ibc_event::HasIbcEvents;
 use crate::base::chain::types::aliases::{Height, WriteAcknowledgementEvent};
 use crate::base::relay::traits::ibc_message_sender::{CanSendIbcMessages, IbcMessageSenderExt};
-use crate::base::relay::traits::messages::ack_packet::HasAckPacketMessageBuilder;
+use crate::base::relay::traits::messages::ack_packet::CanBuildAckPacketMessage;
 use crate::base::relay::traits::packet_relayers::ack_packet::AckPacketRelayer;
 use crate::base::relay::traits::target::SourceTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
@@ -17,7 +17,7 @@ impl<Context, Error> AckPacketRelayer<Context> for BaseAckPacketRelayer
 where
     Context::DstChain: HasIbcEvents<Context::SrcChain>,
     Context: HasRelayTypes<Error = Error>,
-    Context: HasAckPacketMessageBuilder,
+    Context: CanBuildAckPacketMessage,
     Context: CanSendIbcMessages<SourceTarget>,
 {
     async fn relay_ack_packet(
