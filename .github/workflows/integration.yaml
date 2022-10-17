@@ -175,9 +175,6 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia-main
-            command: gaiad
-            account_prefix: cosmos
           - package: ibc-go-v5-simapp
             command: simd
             account_prefix: cosmos
