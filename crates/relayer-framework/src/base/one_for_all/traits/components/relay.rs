@@ -6,9 +6,7 @@ use crate::base::relay::traits::messages::update_client::UpdateClientMessageBuil
 use crate::base::relay::traits::packet_relayer::PacketRelayer;
 use crate::base::relay::traits::packet_relayers::ack_packet::AckPacketRelayer;
 use crate::base::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
-use crate::base::relay::traits::packet_relayers::timeout_unordered_packet::{
-    HasTimeoutUnorderedPacketRelayer, TimeoutUnorderedPacketRelayer,
-};
+use crate::base::relay::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 
 pub trait OfaRelayComponents<Relay>:
@@ -30,12 +28,4 @@ where
 
     type IbcMessageSender: IbcMessageSender<OfaRelayWrapper<Relay>, SourceTarget>
         + IbcMessageSender<OfaRelayWrapper<Relay>, DestinationTarget>;
-}
-
-impl<Relay, Components> HasTimeoutUnorderedPacketRelayer for OfaRelayWrapper<Relay>
-where
-    Relay: OfaBaseRelay<Components = Components>,
-    Components: OfaRelayComponents<Relay>,
-{
-    type TimeoutUnorderedPacketRelayer = Components::TimeoutUnorderedPacketRelayer;
 }

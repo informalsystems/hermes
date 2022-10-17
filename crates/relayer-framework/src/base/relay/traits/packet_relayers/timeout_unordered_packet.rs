@@ -28,19 +28,10 @@ where
 }
 
 #[async_trait]
-pub trait HasTimeoutUnorderedPacketRelayer: HasRelayTypes {
-    type TimeoutUnorderedPacketRelayer: TimeoutUnorderedPacketRelayer<Self>;
-
+pub trait CanRelayTimeoutUnorderedPacket: HasRelayTypes {
     async fn relay_timeout_unordered_packet(
         &self,
         destination_height: &Height<Self::DstChain>,
         packet: &Self::Packet,
-    ) -> Result<(), Self::Error> {
-        Self::TimeoutUnorderedPacketRelayer::relay_timeout_unordered_packet(
-            self,
-            destination_height,
-            packet,
-        )
-        .await
-    }
+    ) -> Result<(), Self::Error>;
 }
