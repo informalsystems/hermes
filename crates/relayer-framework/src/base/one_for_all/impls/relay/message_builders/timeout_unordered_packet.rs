@@ -1,7 +1,8 @@
 use async_trait::async_trait;
 
 use crate::base::one_for_all::traits::chain::OfaChainTypes;
-use crate::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayPreset};
+use crate::base::one_for_all::traits::relay::OfaBaseRelay;
+use crate::base::relay::impls::packet_relayers::timeout_unordered::wait_timeout::WaitTimeoutUnorderedPacketMessageBuilder;
 use crate::base::relay::traits::messages::timeout_unordered_packet::{
     CanBuildTimeoutUnorderedPacketMessage, TimeoutUnorderedPacketMessageBuilder,
 };
@@ -29,17 +30,18 @@ impl<Relay: OfaBaseRelay> TimeoutUnorderedPacketMessageBuilder<OfaRelayWrapper<R
 }
 
 #[async_trait]
-impl<Relay, Preset> CanBuildTimeoutUnorderedPacketMessage for OfaRelayWrapper<Relay>
+impl<Relay> CanBuildTimeoutUnorderedPacketMessage for OfaRelayWrapper<Relay>
 where
-    Relay: OfaBaseRelay<Preset = Preset>,
-    Preset: OfaRelayPreset<Relay>,
+    Relay: OfaBaseRelay,
+    WaitTimeoutUnorderedPacketMessageBuilder<BuildTimeoutUnorderedPacketMessageFromOfa>:
+        TimeoutUnorderedPacketMessageBuilder<Self>,
 {
     async fn build_timeout_unordered_packet_message(
         &self,
         destination_height: &<Relay::DstChain as OfaChainTypes>::Height,
         packet: &Relay::Packet,
     ) -> Result<<Relay::SrcChain as OfaChainTypes>::Message, Relay::Error> {
-        Preset::TimeoutUnorderedPacketMessageBuilder::build_timeout_unordered_packet_message(
+        <WaitTimeoutUnorderedPacketMessageBuilder<BuildTimeoutUnorderedPacketMessageFromOfa>>::build_timeout_unordered_packet_message(
             self,
             destination_height,
             packet,
