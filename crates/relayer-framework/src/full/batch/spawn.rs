@@ -39,9 +39,6 @@ where
     Relay::Error: Clone,
 {
     fn spawn_batch_message_worker(relay: Relay, config: BatchConfig) {
-        <BatchMessageWorker<Relay, Target, Relay::IbcMessageSenderForBatchWorker>>::spawn_batch_message_worker(
-            relay,
-            config,
-        )
+        <BatchMessageWorker<Relay, Target>>::spawn_batch_message_worker(relay, config)
     }
 }

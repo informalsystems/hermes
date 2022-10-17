@@ -13,17 +13,17 @@ use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
+use crate::full::batch::config::BatchConfig;
+use crate::full::batch::context::{BatchContext, HasBatchContext};
+use crate::full::batch::message_sender::HasIbcMessageSenderForBatchWorker;
 use crate::std_prelude::*;
 
-use super::config::BatchConfig;
-use super::context::{BatchContext, HasBatchContext};
-
-pub struct BatchMessageWorker<Relay, Target, Sender>
+pub struct BatchMessageWorker<Relay, Target>
 where
     Relay: HasRelayTypes,
     Relay: HasBatchContext<Target>,
+    Relay: HasIbcMessageSenderForBatchWorker<Target>,
     Target: ChainTarget<Relay>,
-    Sender: IbcMessageSender<Relay, Target>,
 {
     pub relay: Relay,
     pub pending_batches: VecDeque<(
@@ -31,18 +31,18 @@ where
         <Relay::BatchContext as BatchContext>::ResultSender,
     )>,
     pub config: BatchConfig,
-    pub phantom: PhantomData<(Target, Sender)>,
+    pub phantom: PhantomData<Target>,
 }
 
-impl<Relay, Target, Sender, Batch, TargetChain, Message, Event, Runtime, Error>
-    BatchMessageWorker<Relay, Target, Sender>
+impl<Relay, Target, Batch, TargetChain, Message, Event, Runtime, Error>
+    BatchMessageWorker<Relay, Target>
 where
     Relay: HasRelayTypes<Error = Error>,
     Relay: HasRuntime<Runtime = Runtime>,
     Runtime: HasTime + CanSleep + HasSpawner + HasLogger<LevelDebug>,
     Relay: HasBatchContext<Target, BatchContext = Batch>,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
-    Sender: IbcMessageSender<Relay, Target>,
+    Relay: HasIbcMessageSenderForBatchWorker<Target>,
     Batch: BatchContext<Message = Message, Event = Event, Error = Error>,
     TargetChain: HasIbcChainTypes<Target::CounterpartyChain, Message = Message, Event = Event>,
     Event: Async,
@@ -190,7 +190,8 @@ where
             .log(LevelDebug, "sending batched messages to inner sender")
             .await;
 
-        let send_result = Sender::send_messages(relay, in_messages).await;
+        let send_result =
+            Relay::IbcMessageSenderForBatchWorker::send_messages(relay, in_messages).await;
 
         match send_result {
             Err(e) => {
