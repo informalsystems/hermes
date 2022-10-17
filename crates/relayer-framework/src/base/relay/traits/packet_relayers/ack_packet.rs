@@ -7,6 +7,19 @@ use crate::base::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
 #[async_trait]
+pub trait CanRelayAckPacket: HasRelayTypes
+where
+    Self::DstChain: HasIbcEvents<Self::SrcChain>,
+{
+    async fn relay_ack_packet(
+        &self,
+        destination_height: &Height<Self::DstChain>,
+        packet: &Self::Packet,
+        ack: &WriteAcknowledgementEvent<Self::DstChain, Self::SrcChain>,
+    ) -> Result<(), Self::Error>;
+}
+
+#[async_trait]
 pub trait AckPacketRelayer<Relay>: Async
 where
     Relay: HasRelayTypes,
@@ -18,21 +31,4 @@ where
         packet: &Relay::Packet,
         ack: &WriteAcknowledgementEvent<Relay::DstChain, Relay::SrcChain>,
     ) -> Result<(), Relay::Error>;
-}
-
-#[async_trait]
-pub trait HasAckPacketRelayer: HasRelayTypes
-where
-    Self::DstChain: HasIbcEvents<Self::SrcChain>,
-{
-    type AckPacketRelayer: AckPacketRelayer<Self>;
-
-    async fn relay_ack_packet(
-        &self,
-        destination_height: &Height<Self::DstChain>,
-        packet: &Self::Packet,
-        ack: &WriteAcknowledgementEvent<Self::DstChain, Self::SrcChain>,
-    ) -> Result<(), Self::Error> {
-        Self::AckPacketRelayer::relay_ack_packet(self, destination_height, packet, ack).await
-    }
 }

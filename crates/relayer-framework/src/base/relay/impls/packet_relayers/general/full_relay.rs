@@ -3,7 +3,7 @@ use async_trait::async_trait;
 use crate::base::chain::traits::ibc_event::HasIbcEvents;
 use crate::base::chain::traits::queries::status::{CanQueryChainStatus, HasChainStatus};
 use crate::base::relay::traits::packet_relayer::PacketRelayer;
-use crate::base::relay::traits::packet_relayers::ack_packet::HasAckPacketRelayer;
+use crate::base::relay::traits::packet_relayers::ack_packet::CanRelayAckPacket;
 use crate::base::relay::traits::packet_relayers::receive_packet::CanRelayReceivePacket;
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::base::relay::types::aliases::Packet;
@@ -15,7 +15,7 @@ pub struct FullRelayer;
 impl<Relay> PacketRelayer<Relay> for FullRelayer
 where
     Relay: HasRelayTypes,
-    Relay: HasAckPacketRelayer,
+    Relay: CanRelayAckPacket,
     Relay: CanRelayReceivePacket,
     Relay::DstChain: HasIbcEvents<Relay::SrcChain>,
     Relay::SrcChain: CanQueryChainStatus,

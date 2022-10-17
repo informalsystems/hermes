@@ -7,7 +7,7 @@ use crate::base::relay::traits::messages::receive_packet::CanBuildReceivePacketM
 use crate::base::relay::traits::messages::timeout_unordered_packet::CanBuildTimeoutUnorderedPacketMessage;
 use crate::base::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
 use crate::base::relay::traits::packet_relayer::CanRelayPacket;
-use crate::base::relay::traits::packet_relayers::ack_packet::HasAckPacketRelayer;
+use crate::base::relay::traits::packet_relayers::ack_packet::CanRelayAckPacket;
 use crate::base::relay::traits::packet_relayers::receive_packet::CanRelayReceivePacket;
 use crate::base::relay::traits::packet_relayers::timeout_unordered_packet::HasTimeoutUnorderedPacketRelayer;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
@@ -26,7 +26,7 @@ pub trait AfoBaseRelay:
     + CanBuildTimeoutUnorderedPacketMessage
     + CanRelayReceivePacket
     + CanRelayPacket
-    + HasAckPacketRelayer
+    + CanRelayAckPacket
     + HasTimeoutUnorderedPacketRelayer
     + SupportsPacketRetry
     + InjectMismatchIbcEventsCountError
@@ -49,7 +49,7 @@ where
         + CanBuildAckPacketMessage
         + CanRelayReceivePacket
         + CanRelayPacket
-        + HasAckPacketRelayer
+        + CanRelayAckPacket
         + HasTimeoutUnorderedPacketRelayer
         + CanBuildTimeoutUnorderedPacketMessage
         + SupportsPacketRetry
