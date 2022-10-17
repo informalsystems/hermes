@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::base::one_for_all::traits::chain::OfaChainTypes;
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
-use crate::base::one_for_all::traits::relay::OfaRelayComponents;
+use crate::base::one_for_all::traits::relay::OfaRelayPreset;
 use crate::base::relay::traits::packet_relayers::receive_packet::{
     CanRelayReceivePacket, ReceivePacketRelayer,
 };
@@ -10,10 +10,10 @@ use crate::common::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
 
 #[async_trait]
-impl<Relay, Components> CanRelayReceivePacket for OfaRelayWrapper<Relay>
+impl<Relay, Preset> CanRelayReceivePacket for OfaRelayWrapper<Relay>
 where
-    Relay: OfaBaseRelay<Components = Components>,
-    Components: OfaRelayComponents<Relay>,
+    Relay: OfaBaseRelay<Preset = Preset>,
+    Preset: OfaRelayPreset<Relay>,
 {
     async fn relay_receive_packet(
         &self,
@@ -21,6 +21,6 @@ where
         packet: &Relay::Packet,
     ) -> Result<Option<<Relay::DstChain as OfaChainTypes>::WriteAcknowledgementEvent>, Relay::Error>
     {
-        Components::ReceivePacketRelayer::relay_receive_packet(self, source_height, packet).await
+        Preset::ReceivePacketRelayer::relay_receive_packet(self, source_height, packet).await
     }
 }

@@ -50,12 +50,12 @@ where
     }
 }
 
-impl<SrcChain, DstChain, Components> CosmosRelay for CosmosRelayContext<SrcChain, DstChain>
+impl<SrcChain, DstChain, Preset> CosmosRelay for CosmosRelayContext<SrcChain, DstChain>
 where
-    SrcChain: CosmosChain<Components = Components>,
-    DstChain: CosmosChain<Components = Components>,
+    SrcChain: CosmosChain<Preset = Preset>,
+    DstChain: CosmosChain<Preset = Preset>,
 {
-    type Components = Components;
+    type Preset = Preset;
 
     type SrcChain = SrcChain;
 

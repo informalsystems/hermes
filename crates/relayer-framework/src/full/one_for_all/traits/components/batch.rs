@@ -4,7 +4,7 @@ use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::common::one_for_all::types::relay::OfaRelayWrapper;
 use crate::full::batch::message_sender::HasIbcMessageSenderForBatchWorker;
 
-pub trait OfaBatchComponents<Relay>
+pub trait OfaBatchPreset<Relay>
 where
     Relay: OfaBaseRelay,
 {
@@ -12,19 +12,18 @@ where
         + IbcMessageSender<OfaRelayWrapper<Relay>, DestinationTarget>;
 }
 
-impl<Relay, Components> HasIbcMessageSenderForBatchWorker<SourceTarget> for OfaRelayWrapper<Relay>
+impl<Relay, Preset> HasIbcMessageSenderForBatchWorker<SourceTarget> for OfaRelayWrapper<Relay>
 where
-    Relay: OfaBaseRelay<Components = Components>,
-    Components: OfaBatchComponents<Relay>,
+    Relay: OfaBaseRelay<Preset = Preset>,
+    Preset: OfaBatchPreset<Relay>,
 {
-    type IbcMessageSenderForBatchWorker = Components::IbcMessageSenderForBatchWorker;
+    type IbcMessageSenderForBatchWorker = Preset::IbcMessageSenderForBatchWorker;
 }
 
-impl<Relay, Components> HasIbcMessageSenderForBatchWorker<DestinationTarget>
-    for OfaRelayWrapper<Relay>
+impl<Relay, Preset> HasIbcMessageSenderForBatchWorker<DestinationTarget> for OfaRelayWrapper<Relay>
 where
-    Relay: OfaBaseRelay<Components = Components>,
-    Components: OfaBatchComponents<Relay>,
+    Relay: OfaBaseRelay<Preset = Preset>,
+    Preset: OfaBatchPreset<Relay>,
 {
-    type IbcMessageSenderForBatchWorker = Components::IbcMessageSenderForBatchWorker;
+    type IbcMessageSenderForBatchWorker = Preset::IbcMessageSenderForBatchWorker;
 }

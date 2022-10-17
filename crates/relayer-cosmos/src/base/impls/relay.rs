@@ -29,7 +29,7 @@ impl<Relay> OfaRelayTypes for CosmosRelayWrapper<Relay>
 where
     Relay: CosmosRelay,
 {
-    type Components = Relay::Components;
+    type Preset = Relay::Preset;
 
     type Error = Error;
 

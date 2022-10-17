@@ -13,7 +13,7 @@ use crate::common::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
 pub trait OfaChainTypes: Async {
-    type Components;
+    type Preset;
 
     type Error: Async + Debug;
 
@@ -96,14 +96,14 @@ where
     ) -> Result<bool, Self::Error>;
 }
 
-pub trait OfaChainComponents<Chain>
+pub trait OfaChainPreset<Chain>
 where
     Chain: OfaBaseChain,
 {
     type ChainStatusQuerier: ChainStatusQuerier<OfaChainWrapper<Chain>>;
 }
 
-pub trait OfaIbcChainComponents<Chain, Counterparty>: OfaChainComponents<Chain>
+pub trait OfaIbcChainPreset<Chain, Counterparty>: OfaChainPreset<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaIbcChain<Chain>,

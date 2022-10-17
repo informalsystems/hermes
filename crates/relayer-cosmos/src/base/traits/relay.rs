@@ -5,11 +5,11 @@ use ibc_relayer_framework::base::core::traits::sync::Async;
 use crate::base::traits::chain::CosmosChain;
 
 pub trait CosmosRelay: Async {
-    type Components;
+    type Preset;
 
-    type SrcChain: CosmosChain<Components = Self::Components>;
+    type SrcChain: CosmosChain<Preset = Self::Preset>;
 
-    type DstChain: CosmosChain<Components = Self::Components>;
+    type DstChain: CosmosChain<Preset = Self::Preset>;
 
     fn src_chain(&self) -> &Arc<Self::SrcChain>;
 

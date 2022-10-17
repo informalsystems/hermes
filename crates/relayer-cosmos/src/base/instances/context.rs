@@ -1,7 +1,7 @@
 use core::marker::PhantomData;
 use ibc_relayer_framework::base::chain::traits::types::HasChainTypes;
-use ibc_relayer_framework::base::one_for_all::traits::chain::OfaIbcChainComponents;
-use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelayComponents;
+use ibc_relayer_framework::base::one_for_all::traits::chain::OfaIbcChainPreset;
+use ibc_relayer_framework::base::one_for_all::traits::relay::OfaRelayPreset;
 use ibc_relayer_framework::common::one_for_all::types::chain::OfaChainWrapper;
 use ibc_relayer_framework::common::one_for_all::types::relay::OfaRelayWrapper;
 
@@ -15,7 +15,7 @@ use crate::base::types::relay::CosmosRelayWrapper;
 pub fn relay_context<Relay>() -> PhantomData<impl AfoCosmosBaseRelay>
 where
     Relay: CosmosRelay,
-    Relay::Components: OfaRelayComponents<CosmosRelayWrapper<Relay>>,
+    Relay::Preset: OfaRelayPreset<CosmosRelayWrapper<Relay>>,
 {
     PhantomData::<OfaRelayWrapper<CosmosRelayWrapper<Relay>>>
 }
@@ -31,8 +31,7 @@ pub fn ibc_chain_context<Chain, Counterparty>(
 ) -> PhantomData<impl AfoCosmosBaseChain<OfaChainWrapper<CosmosChainWrapper<Counterparty>>>>
 where
     Chain: CosmosChain,
-    Chain::Components:
-        OfaIbcChainComponents<CosmosChainWrapper<Chain>, CosmosChainWrapper<Counterparty>>,
+    Chain::Preset: OfaIbcChainPreset<CosmosChainWrapper<Chain>, CosmosChainWrapper<Counterparty>>,
     Counterparty: CosmosChain,
 {
     PhantomData::<OfaChainWrapper<CosmosChainWrapper<Chain>>>

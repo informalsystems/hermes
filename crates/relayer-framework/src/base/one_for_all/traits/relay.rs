@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use core::fmt::Debug;
 
 use crate::base::core::traits::sync::Async;
-use crate::base::one_for_all::traits::chain::OfaIbcChainComponents;
+use crate::base::one_for_all::traits::chain::OfaIbcChainPreset;
 use crate::base::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
 use crate::base::one_for_all::traits::runtime::OfaRuntime;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
@@ -22,7 +22,7 @@ use crate::common::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
 
 pub trait OfaRelayTypes: Async {
-    type Components;
+    type Preset;
 
     type Error: Async + Debug;
 
@@ -34,14 +34,14 @@ pub trait OfaRelayTypes: Async {
         Self::DstChain,
         Error = Self::Error,
         Runtime = Self::Runtime,
-        Components = Self::Components,
+        Preset = Self::Preset,
     >;
 
     type DstChain: OfaIbcChain<
         Self::SrcChain,
         Error = Self::Error,
         Runtime = Self::Runtime,
-        Components = Self::Components,
+        Preset = Self::Preset,
     >;
 }
 
@@ -115,9 +115,9 @@ pub trait OfaBaseRelay: OfaRelayTypes {
     ) -> Result<<Self::SrcChain as OfaChainTypes>::Message, Self::Error>;
 }
 
-pub trait OfaRelayComponents<Relay>:
-    OfaIbcChainComponents<Relay::SrcChain, Relay::DstChain>
-    + OfaIbcChainComponents<Relay::DstChain, Relay::SrcChain>
+pub trait OfaRelayPreset<Relay>:
+    OfaIbcChainPreset<Relay::SrcChain, Relay::DstChain>
+    + OfaIbcChainPreset<Relay::DstChain, Relay::SrcChain>
 where
     Relay: OfaBaseRelay,
 {

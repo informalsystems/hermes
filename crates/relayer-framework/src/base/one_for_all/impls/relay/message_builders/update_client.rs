@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaChainTypes};
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
-use crate::base::one_for_all::traits::relay::OfaRelayComponents;
+use crate::base::one_for_all::traits::relay::OfaRelayPreset;
 use crate::base::relay::traits::messages::update_client::{
     CanBuildUpdateClientMessage, UpdateClientMessageBuilder,
 };
@@ -55,33 +55,31 @@ where
 }
 
 #[async_trait]
-impl<Relay, Components> CanBuildUpdateClientMessage<SourceTarget> for OfaRelayWrapper<Relay>
+impl<Relay, Preset> CanBuildUpdateClientMessage<SourceTarget> for OfaRelayWrapper<Relay>
 where
-    Relay: OfaBaseRelay<Components = Components>,
-    Components: OfaRelayComponents<Relay>,
+    Relay: OfaBaseRelay<Preset = Preset>,
+    Preset: OfaRelayPreset<Relay>,
 {
     async fn build_update_client_messages(
         &self,
         target: SourceTarget,
         height: &<Relay::DstChain as OfaChainTypes>::Height,
     ) -> Result<Vec<<Relay::SrcChain as OfaChainTypes>::Message>, Self::Error> {
-        Components::UpdateClientMessageBuilder::build_update_client_messages(self, target, height)
-            .await
+        Preset::UpdateClientMessageBuilder::build_update_client_messages(self, target, height).await
     }
 }
 
 #[async_trait]
-impl<Relay, Components> CanBuildUpdateClientMessage<DestinationTarget> for OfaRelayWrapper<Relay>
+impl<Relay, Preset> CanBuildUpdateClientMessage<DestinationTarget> for OfaRelayWrapper<Relay>
 where
-    Relay: OfaBaseRelay<Components = Components>,
-    Components: OfaRelayComponents<Relay>,
+    Relay: OfaBaseRelay<Preset = Preset>,
+    Preset: OfaRelayPreset<Relay>,
 {
     async fn build_update_client_messages(
         &self,
         target: DestinationTarget,
         height: &<Relay::SrcChain as OfaChainTypes>::Height,
     ) -> Result<Vec<<Relay::DstChain as OfaChainTypes>::Message>, Self::Error> {
-        Components::UpdateClientMessageBuilder::build_update_client_messages(self, target, height)
-            .await
+        Preset::UpdateClientMessageBuilder::build_update_client_messages(self, target, height).await
     }
 }

@@ -106,12 +106,12 @@ where
     relay
 }
 
-impl<SrcChain, DstChain, Components> CosmosRelay for CosmosRelayContext<SrcChain, DstChain>
+impl<SrcChain, DstChain, Preset> CosmosRelay for CosmosRelayContext<SrcChain, DstChain>
 where
-    SrcChain: CosmosChain<Components = Components>,
-    DstChain: CosmosChain<Components = Components>,
+    SrcChain: CosmosChain<Preset = Preset>,
+    DstChain: CosmosChain<Preset = Preset>,
 {
-    type Components = Components;
+    type Preset = Preset;
 
     type SrcChain = SrcChain;
 
@@ -144,10 +144,10 @@ where
     }
 }
 
-impl<SrcChain, DstChain, Components> CosmosFullRelay for CosmosRelayContext<SrcChain, DstChain>
+impl<SrcChain, DstChain, Preset> CosmosFullRelay for CosmosRelayContext<SrcChain, DstChain>
 where
-    SrcChain: CosmosChain<Components = Components>,
-    DstChain: CosmosChain<Components = Components>,
+    SrcChain: CosmosChain<Preset = Preset>,
+    DstChain: CosmosChain<Preset = Preset>,
 {
     fn packet_filter(&self) -> &PacketFilter {
         &self.packet_filter

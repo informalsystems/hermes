@@ -5,7 +5,7 @@ use ibc_relayer_framework::base::core::traits::sync::Async;
 use ibc_relayer_types::signer::Signer;
 
 pub trait CosmosChain: Async {
-    type Components;
+    type Preset;
 
     type ChainHandle: ChainHandle;
 

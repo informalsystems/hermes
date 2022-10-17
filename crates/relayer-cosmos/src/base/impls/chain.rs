@@ -33,7 +33,7 @@ impl<Chain> OfaChainTypes for CosmosChainWrapper<Chain>
 where
     Chain: CosmosChain,
 {
-    type Components = Chain::Components;
+    type Preset = Chain::Preset;
 
     type Error = Error;
 
