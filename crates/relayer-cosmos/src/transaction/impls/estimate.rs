@@ -21,7 +21,7 @@ pub trait CanEstimateTxFees: HasError {
 #[async_trait]
 impl<Context> CanEstimateTxFees for Context
 where
-    Context: HasError + HasField<keys::GasConfig> + CanSignTx + HasTxGasEstimator,
+    Context: HasError + HasField<keys::GasConfig> + CanSignTx + CanEstimateTxGas,
 {
     async fn estimate_tx_fees(&self, messages: &[Any]) -> Result<Fee, Self::Error> {
         let gas_config = keys::GasConfig::get_from(self);
@@ -48,12 +48,8 @@ pub trait TxGasEstimator<Context: HasError> {
 }
 
 #[async_trait]
-pub trait HasTxGasEstimator: HasError {
-    type TxGasEstimator: TxGasEstimator<Self>;
-
-    async fn estimate_gas_with_tx(&self, tx: Tx) -> Result<u64, Self::Error> {
-        Self::TxGasEstimator::estimate_gas_with_tx(self, tx).await
-    }
+pub trait CanEstimateTxGas: HasError {
+    async fn estimate_gas_with_tx(&self, tx: Tx) -> Result<u64, Self::Error>;
 }
 
 pub struct BaseTxGasEstimator;

@@ -6,7 +6,7 @@ use crate::base::chain::traits::queries::consensus_state::{
     ConsensusStateQuerier, HasConsensusState,
 };
 use crate::base::chain::traits::queries::received_packet::{
-    HasReceivedPacketQuerier, ReceivedPacketQuerier,
+    CanQueryReceivedPacket, ReceivedPacketQuerier,
 };
 use crate::base::core::traits::error::HasError;
 use crate::base::core::traits::runtime::HasRuntime;
@@ -107,17 +107,17 @@ where
     }
 }
 
-pub struct OfaReceivedPacketQuerier;
+pub struct SendReceivedPacketQueryToOfa;
 
 #[async_trait]
 impl<Chain, Counterparty>
     ReceivedPacketQuerier<OfaChainWrapper<Chain>, OfaChainWrapper<Counterparty>>
-    for OfaReceivedPacketQuerier
+    for SendReceivedPacketQueryToOfa
 where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaIbcChain<Chain>,
 {
-    async fn is_packet_received(
+    async fn query_is_packet_received(
         chain: &OfaChainWrapper<Chain>,
         port_id: &Chain::PortId,
         channel_id: &Chain::ChannelId,
@@ -133,11 +133,19 @@ where
 }
 
 #[async_trait]
-impl<Chain, Counterparty> HasReceivedPacketQuerier<OfaChainWrapper<Counterparty>>
+impl<Chain, Counterparty> CanQueryReceivedPacket<OfaChainWrapper<Counterparty>>
     for OfaChainWrapper<Chain>
 where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaIbcChain<Chain>,
 {
-    type ReceivedPacketQuerier = OfaReceivedPacketQuerier;
+    async fn query_is_packet_received(
+        &self,
+        port_id: &Self::PortId,
+        channel_id: &Self::ChannelId,
+        sequence: &Counterparty::Sequence,
+    ) -> Result<bool, Self::Error> {
+        SendReceivedPacketQueryToOfa::query_is_packet_received(self, port_id, channel_id, sequence)
+            .await
+    }
 }

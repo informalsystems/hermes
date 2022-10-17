@@ -3,7 +3,7 @@ use core::marker::PhantomData;
 use async_trait::async_trait;
 
 use crate::base::chain::traits::ibc_event::HasIbcEvents;
-use crate::base::chain::traits::queries::received_packet::HasReceivedPacketQuerier;
+use crate::base::chain::traits::queries::received_packet::CanQueryReceivedPacket;
 use crate::base::chain::types::aliases::{Height, WriteAcknowledgementEvent};
 use crate::base::relay::traits::context::HasRelayTypes;
 use crate::base::relay::traits::packet_relayers::receive_packet::ReceivePacketRelayer;
@@ -19,7 +19,7 @@ where
     Relay: HasRelayTypes,
     Relayer: ReceivePacketRelayer<Relay>,
     Relay::DstChain: HasIbcEvents<Relay::SrcChain>,
-    Relay::DstChain: HasReceivedPacketQuerier<Relay::SrcChain>,
+    Relay::DstChain: CanQueryReceivedPacket<Relay::SrcChain>,
 {
     async fn relay_receive_packet(
         relay: &Relay,
@@ -29,7 +29,7 @@ where
     {
         let is_packet_received = relay
             .destination_chain()
-            .is_packet_received(
+            .query_is_packet_received(
                 Relay::packet_dst_port(packet),
                 Relay::packet_dst_channel_id(packet),
                 Relay::packet_sequence(packet),
