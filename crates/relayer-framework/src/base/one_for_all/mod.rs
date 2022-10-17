@@ -13,7 +13,6 @@
 //! implement in order to use the APIs provided by the framework, which are
 //! encapsulated in the `all_for_one` trait.
 
-pub mod components;
 pub mod impls;
 pub mod instances;
 pub mod traits;
