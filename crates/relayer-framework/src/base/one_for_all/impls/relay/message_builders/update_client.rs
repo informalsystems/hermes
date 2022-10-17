@@ -1,13 +1,14 @@
 use async_trait::async_trait;
 
+use crate::base::chain::types::aliases::{Height, Message};
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaChainTypes};
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
-use crate::base::one_for_all::traits::relay::OfaRelayPreset;
 use crate::base::relay::impls::messages::skip_update_client::SkipUpdateClient;
 use crate::base::relay::impls::messages::wait_update_client::WaitUpdateClient;
 use crate::base::relay::traits::messages::update_client::{
     CanBuildUpdateClientMessage, UpdateClientMessageBuilder,
 };
+use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::common::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
@@ -57,32 +58,18 @@ where
 }
 
 #[async_trait]
-impl<Relay, Preset> CanBuildUpdateClientMessage<SourceTarget> for OfaRelayWrapper<Relay>
+impl<Relay, Target> CanBuildUpdateClientMessage<Target> for OfaRelayWrapper<Relay>
 where
-    Relay: OfaBaseRelay<Preset = Preset>,
-    Preset: OfaRelayPreset<Relay>,
+    Relay: OfaBaseRelay,
+    Target: ChainTarget<Self>,
+    SkipUpdateClient<WaitUpdateClient<BuildUpdateClientMessageFromOfa>>:
+        UpdateClientMessageBuilder<Self, Target>,
 {
     async fn build_update_client_messages(
         &self,
-        target: SourceTarget,
-        height: &<Relay::DstChain as OfaChainTypes>::Height,
-    ) -> Result<Vec<<Relay::SrcChain as OfaChainTypes>::Message>, Self::Error> {
-        // Preset::UpdateClientMessageBuilder::build_update_client_messages(self, target, height).await
+        target: Target,
+        height: &Height<Target::CounterpartyChain>,
+    ) -> Result<Vec<Message<Target::TargetChain>>, Self::Error> {
         <SkipUpdateClient<WaitUpdateClient<BuildUpdateClientMessageFromOfa>>>::build_update_client_messages(self, target, height).await
-    }
-}
-
-#[async_trait]
-impl<Relay, Preset> CanBuildUpdateClientMessage<DestinationTarget> for OfaRelayWrapper<Relay>
-where
-    Relay: OfaBaseRelay<Preset = Preset>,
-    Preset: OfaRelayPreset<Relay>,
-{
-    async fn build_update_client_messages(
-        &self,
-        target: DestinationTarget,
-        height: &<Relay::SrcChain as OfaChainTypes>::Height,
-    ) -> Result<Vec<<Relay::DstChain as OfaChainTypes>::Message>, Self::Error> {
-        Preset::UpdateClientMessageBuilder::build_update_client_messages(self, target, height).await
     }
 }
