@@ -1,4 +1,4 @@
-use crate::base::one_for_all::impls::chain::OfaConsensusStateQuerier;
+use crate::base::one_for_all::impls::chain::queries::consensus_state::SendConsensusStateQueryToOfa;
 use crate::base::one_for_all::impls::relay::OfaUpdateClientMessageBuilder;
 use crate::base::one_for_all::impls::status::OfaBaseChainStatusQuerier;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
@@ -32,7 +32,7 @@ where
     Chain: OfaIbcChain<Counterparty>,
     Counterparty: OfaIbcChain<Chain>,
 {
-    type ConsensusStateQuerier = OfaConsensusStateQuerier;
+    type ConsensusStateQuerier = SendConsensusStateQueryToOfa;
 }
 
 impl<Relay> OfaRelayComponents<Relay> for BaseComponents
