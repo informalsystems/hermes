@@ -2,15 +2,15 @@ use crate::base::all_for_one::relay::AfoBaseRelay;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::full::all_for_one::chain::AfoFullChain;
-use crate::full::batch::message_sender::HasIbcMessageSenderForBatchWorker;
+use crate::full::batch::message_sender::CanSendIbcMessagesFromBatchWorker;
 use crate::full::filter::traits::filter::HasPacketFilter;
 
 pub trait AfoFullRelay:
     HasRelayTypes<SrcChain = Self::AfoSrcFullChain, DstChain = Self::AfoDstFullChain>
     + AfoBaseRelay<AfoSrcChain = Self::AfoSrcFullChain, AfoDstChain = Self::AfoDstFullChain>
     + HasPacketFilter
-    + HasIbcMessageSenderForBatchWorker<SourceTarget>
-    + HasIbcMessageSenderForBatchWorker<DestinationTarget>
+    + CanSendIbcMessagesFromBatchWorker<SourceTarget>
+    + CanSendIbcMessagesFromBatchWorker<DestinationTarget>
 {
     type AfoSrcFullChain: AfoFullChain<Self::AfoDstFullChain>;
     type AfoDstFullChain: AfoFullChain<Self::AfoSrcFullChain>;
@@ -21,8 +21,8 @@ where
     Relay: HasRelayTypes<SrcChain = SrcChain, DstChain = DstChain>
         + AfoBaseRelay<AfoSrcChain = SrcChain, AfoDstChain = DstChain>
         + HasPacketFilter
-        + HasIbcMessageSenderForBatchWorker<SourceTarget>
-        + HasIbcMessageSenderForBatchWorker<DestinationTarget>,
+        + CanSendIbcMessagesFromBatchWorker<SourceTarget>
+        + CanSendIbcMessagesFromBatchWorker<DestinationTarget>,
     SrcChain: AfoFullChain<DstChain>,
     DstChain: AfoFullChain<SrcChain>,
 {

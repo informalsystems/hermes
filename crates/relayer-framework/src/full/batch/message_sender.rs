@@ -2,6 +2,7 @@ use async_trait::async_trait;
 
 use super::context::{BatchContext, HasBatchContext};
 use crate::base::chain::traits::types::HasIbcChainTypes;
+use crate::base::chain::types::aliases::{Event, Message};
 use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
@@ -9,11 +10,15 @@ use crate::std_prelude::*;
 
 pub struct SendMessagetoBatchWorker;
 
-pub trait HasIbcMessageSenderForBatchWorker<Target>: HasRelayTypes
+#[async_trait]
+pub trait CanSendIbcMessagesFromBatchWorker<Target>: HasRelayTypes
 where
     Target: ChainTarget<Self>,
 {
-    type IbcMessageSenderForBatchWorker: IbcMessageSender<Self, Target>;
+    async fn send_messages_from_batch_worker(
+        &self,
+        messages: Vec<Message<Target::TargetChain>>,
+    ) -> Result<Vec<Vec<Event<Target::TargetChain>>>, Self::Error>;
 }
 
 #[async_trait]
@@ -21,7 +26,7 @@ impl<Relay, Target, TargetChain> IbcMessageSender<Relay, Target> for SendMessage
 where
     Relay: HasRelayTypes,
     Relay: HasBatchContext<Target>,
-    Relay: HasIbcMessageSenderForBatchWorker<Target>,
+    Relay: CanSendIbcMessagesFromBatchWorker<Target>,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
     TargetChain: HasIbcChainTypes<Target::CounterpartyChain>,
 {

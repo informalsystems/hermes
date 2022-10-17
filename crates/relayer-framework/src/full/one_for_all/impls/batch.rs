@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 
+use crate::base::chain::types::aliases::{Event, Message};
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::relay::impls::message_senders::chain_sender::SendIbcMessagesToChain;
 use crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
@@ -8,18 +9,25 @@ use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::common::one_for_all::types::relay::OfaRelayWrapper;
 use crate::full::batch::context::{BatchChannel, BatchContext, HasBatchContext};
-use crate::full::batch::message_sender::HasIbcMessageSenderForBatchWorker;
+use crate::full::batch::message_sender::CanSendIbcMessagesFromBatchWorker;
 use crate::full::one_for_all::traits::batch::{OfaBatch, OfaBatchContext};
 use crate::full::one_for_all::traits::chain::OfaFullChain;
 use crate::std_prelude::*;
 
-impl<Relay, Target> HasIbcMessageSenderForBatchWorker<Target> for OfaRelayWrapper<Relay>
+#[async_trait]
+impl<Relay, Target> CanSendIbcMessagesFromBatchWorker<Target> for OfaRelayWrapper<Relay>
 where
     Relay: OfaBaseRelay,
     Target: ChainTarget<Self>,
     SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>: IbcMessageSender<Self, Target>,
 {
-    type IbcMessageSenderForBatchWorker = SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
+    async fn send_messages_from_batch_worker(
+        &self,
+        messages: Vec<Message<Target::TargetChain>>,
+    ) -> Result<Vec<Vec<Event<Target::TargetChain>>>, Self::Error> {
+        <SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>>::send_messages(self, messages)
+            .await
+    }
 }
 
 #[async_trait]

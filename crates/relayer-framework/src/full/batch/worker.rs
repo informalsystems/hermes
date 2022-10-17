@@ -10,19 +10,18 @@ use crate::base::core::traits::runtimes::sleep::CanSleep;
 use crate::base::core::traits::runtimes::spawn::{HasSpawner, Spawner};
 use crate::base::core::traits::runtimes::time::{HasTime, Time};
 use crate::base::core::traits::sync::Async;
-use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::full::batch::config::BatchConfig;
 use crate::full::batch::context::{BatchContext, HasBatchContext};
-use crate::full::batch::message_sender::HasIbcMessageSenderForBatchWorker;
+use crate::full::batch::message_sender::CanSendIbcMessagesFromBatchWorker;
 use crate::std_prelude::*;
 
 pub struct BatchMessageWorker<Relay, Target>
 where
     Relay: HasRelayTypes,
     Relay: HasBatchContext<Target>,
-    Relay: HasIbcMessageSenderForBatchWorker<Target>,
+    Relay: CanSendIbcMessagesFromBatchWorker<Target>,
     Target: ChainTarget<Relay>,
 {
     pub relay: Relay,
@@ -42,7 +41,7 @@ where
     Runtime: HasTime + CanSleep + HasSpawner + HasLogger<LevelDebug>,
     Relay: HasBatchContext<Target, BatchContext = Batch>,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
-    Relay: HasIbcMessageSenderForBatchWorker<Target>,
+    Relay: CanSendIbcMessagesFromBatchWorker<Target>,
     Batch: BatchContext<Message = Message, Event = Event, Error = Error>,
     TargetChain: HasIbcChainTypes<Target::CounterpartyChain, Message = Message, Event = Event>,
     Event: Async,
@@ -190,8 +189,7 @@ where
             .log(LevelDebug, "sending batched messages to inner sender")
             .await;
 
-        let send_result =
-            Relay::IbcMessageSenderForBatchWorker::send_messages(relay, in_messages).await;
+        let send_result = relay.send_messages_from_batch_worker(in_messages).await;
 
         match send_result {
             Err(e) => {

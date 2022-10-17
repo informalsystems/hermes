@@ -12,7 +12,7 @@ use crate::std_prelude::*;
 
 use super::config::BatchConfig;
 use super::context::HasBatchContext;
-use super::message_sender::HasIbcMessageSenderForBatchWorker;
+use super::message_sender::CanSendIbcMessagesFromBatchWorker;
 use super::worker::BatchMessageWorker;
 
 pub struct BatchMessageWorkerSpawner<Target>(PhantomData<Target>);
@@ -31,7 +31,7 @@ impl<Relay, Target, TargetChain, Runtime> CanSpawnBatchMessageWorker<Relay, Targ
 where
     Relay: HasRelayTypes,
     Relay: HasRuntime<Runtime = Runtime>,
-    Relay: HasIbcMessageSenderForBatchWorker<Target>,
+    Relay: CanSendIbcMessagesFromBatchWorker<Target>,
     Runtime: HasTime + CanSleep + HasSpawner + HasLogger<LevelDebug>,
     Relay: HasBatchContext<Target>,
     Target: ChainTarget<Relay, TargetChain = TargetChain>,
