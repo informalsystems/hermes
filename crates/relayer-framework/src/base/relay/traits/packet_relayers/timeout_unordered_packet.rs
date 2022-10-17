@@ -16,6 +16,15 @@ use crate::std_prelude::*;
 /// receive back a `WriteAcknowledgementEvent` in response to the receive
 /// packet.
 #[async_trait]
+pub trait CanRelayTimeoutUnorderedPacket: HasRelayTypes {
+    async fn relay_timeout_unordered_packet(
+        &self,
+        destination_height: &Height<Self::DstChain>,
+        packet: &Self::Packet,
+    ) -> Result<(), Self::Error>;
+}
+
+#[async_trait]
 pub trait TimeoutUnorderedPacketRelayer<Relay>: Async
 where
     Relay: HasRelayTypes,
@@ -25,13 +34,4 @@ where
         destination_height: &Height<Relay::DstChain>,
         packet: &Relay::Packet,
     ) -> Result<(), Relay::Error>;
-}
-
-#[async_trait]
-pub trait CanRelayTimeoutUnorderedPacket: HasRelayTypes {
-    async fn relay_timeout_unordered_packet(
-        &self,
-        destination_height: &Height<Self::DstChain>,
-        packet: &Self::Packet,
-    ) -> Result<(), Self::Error>;
 }

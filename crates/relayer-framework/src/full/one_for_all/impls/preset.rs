@@ -9,7 +9,6 @@ use crate::base::relay::impls::message_senders::chain_sender::SendIbcMessagesToC
 use crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient;
 use crate::base::relay::impls::messages::skip_update_client::SkipUpdateClient;
 use crate::base::relay::impls::messages::wait_update_client::WaitUpdateClient;
-use crate::base::relay::impls::packet_relayers::timeout_unordered::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
 use crate::base::relay::impls::packet_relayers::timeout_unordered::wait_timeout::WaitTimeoutUnorderedPacketMessageBuilder;
 use crate::common::one_for_all::presets::FullPreset;
 use crate::full::batch::message_sender::SendMessagetoBatchWorker;
@@ -41,8 +40,6 @@ where
     Relay::SrcChain: OfaFullChain,
     Relay::DstChain: OfaFullChain,
 {
-    type TimeoutUnorderedPacketRelayer = BaseTimeoutUnorderedPacketRelayer;
-
     type UpdateClientMessageBuilder =
         SkipUpdateClient<WaitUpdateClient<BuildUpdateClientMessageFromOfa>>;
 
