@@ -35,6 +35,7 @@ where
 {
     async fn build_update_client_messages(
         context: &Relay,
+        target: Target,
         height: &Height,
     ) -> Result<Vec<TargetChain::Message>, Relay::Error> {
         let chain = Target::counterparty_chain(context);
@@ -44,7 +45,7 @@ where
             let current_height = CounterpartyChain::chain_status_height(&current_status);
 
             if current_height > height {
-                return InUpdateClient::build_update_client_messages(context, height).await;
+                return InUpdateClient::build_update_client_messages(context, target, height).await;
             } else {
                 context.runtime().sleep(Duration::from_millis(100)).await;
             }

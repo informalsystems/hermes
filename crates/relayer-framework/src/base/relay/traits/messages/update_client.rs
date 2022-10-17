@@ -6,19 +6,15 @@ use crate::base::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
 
 #[async_trait]
-pub trait HasUpdateClientMessageBuilder<Target>: HasRelayTypes
+pub trait CanBuildUpdateClientMessage<Target>: HasRelayTypes
 where
     Target: ChainTarget<Self>,
 {
-    type UpdateClientMessageBuilder: UpdateClientMessageBuilder<Self, Target>;
-
     async fn build_update_client_messages(
         &self,
         _target: Target,
         height: &Height<Target::CounterpartyChain>,
-    ) -> Result<Vec<Message<Target::TargetChain>>, Self::Error> {
-        Self::UpdateClientMessageBuilder::build_update_client_messages(self, height).await
-    }
+    ) -> Result<Vec<Message<Target::TargetChain>>, Self::Error>;
 }
 
 #[async_trait]
@@ -29,6 +25,7 @@ where
 {
     async fn build_update_client_messages(
         context: &Relay,
+        _target: Target,
         height: &Height<Target::CounterpartyChain>,
     ) -> Result<Vec<Message<Target::TargetChain>>, Relay::Error>;
 }

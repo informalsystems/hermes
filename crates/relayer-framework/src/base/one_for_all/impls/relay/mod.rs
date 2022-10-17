@@ -1,3 +1,4 @@
+pub mod message_builders;
 pub mod types;
 
 use async_trait::async_trait;
@@ -16,51 +17,7 @@ use crate::base::relay::traits::messages::receive_packet::{
 use crate::base::relay::traits::messages::timeout_packet::{
     HasTimeoutUnorderedPacketMessageBuilder, TimeoutUnorderedPacketMessageBuilder,
 };
-use crate::base::relay::traits::messages::update_client::UpdateClientMessageBuilder;
-use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::std_prelude::*;
-
-pub struct OfaUpdateClientMessageBuilder;
-
-#[async_trait]
-impl<Relay, SrcChain> UpdateClientMessageBuilder<OfaRelayWrapper<Relay>, SourceTarget>
-    for OfaUpdateClientMessageBuilder
-where
-    Relay: OfaBaseRelay<SrcChain = SrcChain>,
-    SrcChain: OfaBaseChain,
-{
-    async fn build_update_client_messages(
-        context: &OfaRelayWrapper<Relay>,
-        height: &<Relay::DstChain as OfaBaseChainTypes>::Height,
-    ) -> Result<Vec<SrcChain::Message>, Relay::Error> {
-        let messages = context
-            .relay
-            .build_src_update_client_messages(height)
-            .await?;
-
-        Ok(messages)
-    }
-}
-
-#[async_trait]
-impl<Relay, DstChain> UpdateClientMessageBuilder<OfaRelayWrapper<Relay>, DestinationTarget>
-    for OfaUpdateClientMessageBuilder
-where
-    Relay: OfaBaseRelay<DstChain = DstChain>,
-    DstChain: OfaBaseChain,
-{
-    async fn build_update_client_messages(
-        context: &OfaRelayWrapper<Relay>,
-        height: &<Relay::SrcChain as OfaBaseChainTypes>::Height,
-    ) -> Result<Vec<DstChain::Message>, Relay::Error> {
-        let messages = context
-            .relay
-            .build_dst_update_client_messages(height)
-            .await?;
-
-        Ok(messages)
-    }
-}
 
 pub struct OfaReceivePacketMessageBuilder;
 

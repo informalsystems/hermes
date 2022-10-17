@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use crate::base::chain::traits::types::HasIbcChainTypes;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
-use crate::base::relay::traits::messages::update_client::HasUpdateClientMessageBuilder;
+use crate::base::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
 use crate::std_prelude::*;
@@ -20,7 +20,7 @@ where
     Sender: IbcMessageSender<Context, Target>,
     TargetChain: HasIbcChainTypes<CounterpartyChain, Message = Message, Event = Event>,
     CounterpartyChain: HasIbcChainTypes<TargetChain, Height = Height>,
-    Context: HasUpdateClientMessageBuilder<Target>,
+    Context: CanBuildUpdateClientMessage<Target>,
     Height: Ord + Async,
     Message: Async,
 {

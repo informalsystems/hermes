@@ -24,6 +24,7 @@ where
 {
     async fn build_update_client_messages(
         context: &Relay,
+        target: Target,
         height: &Height<Target::CounterpartyChain>,
     ) -> Result<Vec<TargetChain::Message>, Relay::Error> {
         let target_chain = Target::target_chain(context);
@@ -35,7 +36,7 @@ where
 
         match consensus_state {
             Ok(_) => Ok(Vec::new()),
-            Err(_) => InUpdateClient::build_update_client_messages(context, height).await,
+            Err(_) => InUpdateClient::build_update_client_messages(context, target, height).await,
         }
     }
 }

@@ -1,6 +1,6 @@
 use crate::base::one_for_all::impls::chain::queries::consensus_state::SendConsensusStateQueryToOfa;
 use crate::base::one_for_all::impls::chain::queries::status::SendChainStatusQueryToOfa;
-use crate::base::one_for_all::impls::relay::OfaUpdateClientMessageBuilder;
+use crate::base::one_for_all::impls::relay::message_builders::update_client::BuildUpdateClientMessageFromOfa;
 use crate::base::one_for_all::traits::chain::OfaIbcChain;
 use crate::base::one_for_all::traits::chain::{OfaChainComponents, OfaIbcChainComponents};
 use crate::base::one_for_all::traits::components::relay::OfaRelayComponents;
@@ -55,7 +55,7 @@ where
     type TimeoutUnorderedPacketRelayer = BaseTimeoutUnorderedPacketRelayer;
 
     type UpdateClientMessageBuilder =
-        SkipUpdateClient<WaitUpdateClient<OfaUpdateClientMessageBuilder>>;
+        SkipUpdateClient<WaitUpdateClient<BuildUpdateClientMessageFromOfa>>;
 
     type IbcMessageSender = SendMessagetoBatchWorker;
 }
