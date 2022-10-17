@@ -13,10 +13,6 @@ where
 }
 
 #[async_trait]
-pub trait HasPacketRelayer: HasRelayTypes {
-    type PacketRelayer: PacketRelayer<Self>;
-
-    async fn relay_packet(&self, packet: &Self::Packet) -> Result<(), Self::Error> {
-        Self::PacketRelayer::relay_packet(self, packet).await
-    }
+pub trait CanRelayPacket: HasRelayTypes {
+    async fn relay_packet(&self, packet: &Self::Packet) -> Result<(), Self::Error>;
 }

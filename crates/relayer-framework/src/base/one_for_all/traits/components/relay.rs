@@ -3,7 +3,7 @@ use crate::base::one_for_all::traits::relay::OfaBaseRelay;
 use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
 use crate::base::relay::traits::messages::update_client::UpdateClientMessageBuilder;
-use crate::base::relay::traits::packet_relayer::{HasPacketRelayer, PacketRelayer};
+use crate::base::relay::traits::packet_relayer::PacketRelayer;
 use crate::base::relay::traits::packet_relayers::ack_packet::{
     AckPacketRelayer, HasAckPacketRelayer,
 };
@@ -58,12 +58,4 @@ where
     Components: OfaRelayComponents<Relay>,
 {
     type TimeoutUnorderedPacketRelayer = Components::TimeoutUnorderedPacketRelayer;
-}
-
-impl<Relay, Components> HasPacketRelayer for OfaRelayWrapper<Relay>
-where
-    Relay: OfaBaseRelay<Components = Components>,
-    Components: OfaRelayComponents<Relay>,
-{
-    type PacketRelayer = Components::PacketRelayer;
 }

@@ -6,7 +6,7 @@ use crate::base::relay::traits::messages::ack_packet::CanBuildAckPacketMessage;
 use crate::base::relay::traits::messages::receive_packet::CanBuildReceivePacketMessage;
 use crate::base::relay::traits::messages::timeout_unordered_packet::CanBuildTimeoutUnorderedPacketMessage;
 use crate::base::relay::traits::messages::update_client::CanBuildUpdateClientMessage;
-use crate::base::relay::traits::packet_relayer::HasPacketRelayer;
+use crate::base::relay::traits::packet_relayer::CanRelayPacket;
 use crate::base::relay::traits::packet_relayers::ack_packet::HasAckPacketRelayer;
 use crate::base::relay::traits::packet_relayers::receive_packet::HasReceivePacketRelayer;
 use crate::base::relay::traits::packet_relayers::timeout_unordered_packet::HasTimeoutUnorderedPacketRelayer;
@@ -25,7 +25,7 @@ pub trait AfoBaseRelay:
     + CanBuildAckPacketMessage
     + CanBuildTimeoutUnorderedPacketMessage
     + HasReceivePacketRelayer
-    + HasPacketRelayer
+    + CanRelayPacket
     + HasAckPacketRelayer
     + HasTimeoutUnorderedPacketRelayer
     + SupportsPacketRetry
@@ -48,7 +48,7 @@ where
         + CanBuildReceivePacketMessage
         + CanBuildAckPacketMessage
         + HasReceivePacketRelayer
-        + HasPacketRelayer
+        + CanRelayPacket
         + HasAckPacketRelayer
         + HasTimeoutUnorderedPacketRelayer
         + CanBuildTimeoutUnorderedPacketMessage
