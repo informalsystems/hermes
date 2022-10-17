@@ -105,7 +105,7 @@ cd ibc-rs
 
 ### Checkout the latest release
 
-Go to the [ibc-rs releases](https://github.com/informalsystems/ibc-rs/releases) page to see what is the most recent release.
+Go to the [ibc-rs releases](https://github.com/informalsystems/hermes/releases) page to see what is the most recent release.
 
 Then checkout the release, for example if the most recent release is `{{#template ../templates/version.md}}` then execute the command:
 
@@ -115,7 +115,7 @@ git checkout {{#include ../templates/version.md}}
 
 ### Building with `cargo build`
 
-This command builds all the crates from the [__`ibc-rs`__](https://github.com/informalsystems/ibc-rs) repository, namely: the [__`ibc`__](https://github.com/informalsystems/ibc-rs/tree/master/modules) modules crate, [__`ibc-relayer`__](https://github.com/informalsystems/ibc-rs/tree/master/relayer) crate, and the [__`ibc-relayer-cli`__](https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli) crate.
+This command builds all the crates from the [__`ibc-rs`__](https://github.com/informalsystems/hermes) repository, namely: the [__`ibc-relayer`__](https://github.com/informalsystems/hermes/tree/master/crates/relayer) crate, and the [__`ibc-relayer-cli`__](https://github.com/informalsystems/hermes/tree/master/crates/relayer-cli) crate.
 The last of these crates contains the `hermes` binary.
 
 ```shell
@@ -205,5 +205,5 @@ fpath+=~/.zfunc
 Go to the [`Tutorials`](../tutorials/index.md) section to learn the basics of Hermes.
 
 
-[releases]: https://github.com/informalsystems/ibc-rs/releases
+[releases]: https://github.com/informalsystems/hermes/releases
 [developer-app]: https://support.apple.com/HT202491

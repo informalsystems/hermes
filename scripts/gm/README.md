@@ -6,7 +6,7 @@
 * `gm start` to start the nodes specified in the configuration.
 * Config file is in `$HOME/.gm/gm.toml` play around and add more nodes.
 * Tab completion is pretty good, use it! Or run `gm` by itself for help.
-* Pre-1.0 warning: Got a shell error? [Raise an issue!](https://github.com/informalsystems/ibc-rs/issues/)
+* Pre-1.0 warning: Got a shell error? [Raise an issue!](https://github.com/informalsystems/hermes/issues)
 
 ## Overview
 Gaiad Manager (`gm` from now on) is an easily configurable command-line tool (CLI) that helps manage local `gaiad`

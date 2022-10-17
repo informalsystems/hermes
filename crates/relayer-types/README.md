@@ -36,7 +36,7 @@ ICS 5 (Port Allocation) requires the host system to support either object-capabi
 
 **This crate currently requires neither of the host system**. Since modules are assumed to be trusted, there is no need for this object capability system that protects resources for potentially malicious modules.
 
-For more background on this, see [this issue](https://github.com/informalsystems/ibc-rs/issues/2159).
+For more background on this, see [this issue](https://github.com/cosmos/ibc-rs/issues/45).
 
 ### Port system: transferring and releasing a port
 ICS 5 (Port Allocation) requires the IBC handler to permit [transferring ownership of a port](https://github.com/cosmos/ibc/tree/master/spec/core/ics-005-port-allocation#transferring-ownership-of-a-port) and [releasing a port](https://github.com/cosmos/ibc/tree/master/spec/core/ics-005-port-allocation#releasing-a-port).
@@ -60,17 +60,17 @@ Unless required by applicable law or agreed to in writing, software distributed 
 [docs-image]: https://docs.rs/ibc/badge.svg
 [docs-link]: https://docs.rs/ibc/
 
-[build-image]: https://github.com/informalsystems/ibc-rs/workflows/Rust/badge.svg
-[build-link]: https://github.com/informalsystems/ibc-rs/actions?query=workflow%3ARust
-[e2e-image]: https://github.com/informalsystems/ibc-rs/workflows/End%20to%20End%20testing/badge.svg
-[e2e-link]: https://github.com/informalsystems/ibc-rs/actions?query=workflow%3A%22End+to+End+testing%22
+[build-image]: https://github.com/informalsystems/hermes/workflows/Rust/badge.svg
+[build-link]: https://github.com/informalsystems/hermes/actions?query=workflow%3ARust
+[e2e-image]: https://github.com/informalsystems/hermes/workflows/End%20to%20End%20testing/badge.svg
+[e2e-link]: https://github.com/informalsystems/hermes/actions?query=workflow%3A%22End+to+End+testing%22
 
 [license-image]: https://img.shields.io/badge/license-Apache2.0-blue.svg
-[license-link]: https://github.com/informalsystems/ibc-rs/blob/master/LICENSE
+[license-link]: https://github.com/informalsystems/hermes/blob/master/LICENSE
 [rustc-image]: https://img.shields.io/badge/rustc-stable-blue.svg
 [rustc-version]: https://img.shields.io/badge/rustc-1.51+-blue.svg
 
 [//]: # (general links)
 
-[ibc-rs]: https://github.com/informalsystems/ibc-rs
+[ibc-rs]: https://github.com/informalsystems/hermes
 [IBC]: https://github.com/cosmos/ibc

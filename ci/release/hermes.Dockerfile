@@ -10,7 +10,7 @@ FROM rust:1.52-buster AS build-env
 ARG TAG
 WORKDIR /root
 
-RUN git clone https://github.com/informalsystems/ibc-rs
+RUN git clone https://github.com/informalsystems/hermes
 RUN cd ibc-rs && git checkout $TAG && cargo build --release
 
 

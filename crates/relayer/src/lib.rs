@@ -9,7 +9,7 @@
 )]
 #![allow(clippy::too_many_arguments)]
 // TODO: disable unwraps:
-//  https://github.com/informalsystems/ibc-rs/issues/987
+//  https://github.com/informalsystems/hermes/issues/987
 // #![cfg_attr(not(test), deny(clippy::unwrap_used))]
 
 //! IBC Relayer implementation as a library.

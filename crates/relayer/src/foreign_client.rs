@@ -955,7 +955,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     ///    not take into account the block time.
     /// - return error if header.timestamp < dst_timestamp + client_state.max_clock_drift
     ///
-    /// Ref: https://github.com/informalsystems/ibc-rs/issues/1445.
+    /// Ref: https://github.com/informalsystems/hermes/issues/1445.
     #[instrument(
         name = "foreign_client.wait_for_header_validation_delay",
         level = "error",
