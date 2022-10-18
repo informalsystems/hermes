@@ -3,8 +3,11 @@ use crate::base::one_for_all::impls::chain::queries::status::SendChainStatusQuer
 use crate::base::one_for_all::traits::chain::OfaIbcChain;
 use crate::base::one_for_all::traits::chain::{OfaChainPreset, OfaIbcChainPreset};
 use crate::base::one_for_all::traits::relay::OfaRelayPreset;
+use crate::base::relay::impls::packet_relayers::general::full_relay::FullRelayer;
+use crate::base::relay::impls::packet_relayers::general::retry::RetryRelayer;
 use crate::common::one_for_all::presets::FullPreset;
 use crate::full::batch::message_sender::SendMessagetoBatchWorker;
+use crate::full::filter::impls::filter_relayer::FilterRelayer;
 use crate::full::one_for_all::traits::chain::OfaFullChain;
 use crate::full::one_for_all::traits::relay::OfaFullRelay;
 use crate::full::telemetry::impls::consensus_state::ConsensusStateTelemetryQuerier;
@@ -32,5 +35,7 @@ where
     Relay::SrcChain: OfaFullChain,
     Relay::DstChain: OfaFullChain,
 {
+    type PacketRelayer = FilterRelayer<RetryRelayer<FullRelayer>>;
+
     type IbcMessageSender = SendMessagetoBatchWorker;
 }

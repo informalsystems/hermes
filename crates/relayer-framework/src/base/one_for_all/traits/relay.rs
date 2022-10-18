@@ -11,6 +11,7 @@ use crate::base::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
 use crate::base::one_for_all::traits::runtime::OfaRuntime;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
 use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
+use crate::base::relay::traits::packet_relayer::PacketRelayer;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::common::one_for_all::types::chain::OfaChainWrapper;
 use crate::common::one_for_all::types::relay::OfaRelayWrapper;
@@ -116,6 +117,8 @@ pub trait OfaRelayPreset<Relay>:
 where
     Relay: OfaBaseRelay,
 {
+    type PacketRelayer: PacketRelayer<OfaRelayWrapper<Relay>>;
+
     type IbcMessageSender: IbcMessageSender<OfaRelayWrapper<Relay>, SourceTarget>
         + IbcMessageSender<OfaRelayWrapper<Relay>, DestinationTarget>;
 }
