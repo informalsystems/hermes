@@ -623,8 +623,8 @@ involving packet acks in a 3-chain setup. More details below.
 [#671]: https://github.com/informalsystems/ibc-rs/pull/671
 [#682]: https://github.com/informalsystems/ibc-rs/issues/682
 
-[ibc]: https://github.com/informalsystems/ibc-rs/tree/master/modules
-[ibc-relayer-cli]: https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli
+[ibc]: https://github.com/cosmos/ibc-rs
+[ibc-relayer-cli]: https://github.com/informalsystems/hermes/tree/master/crates/relayer-cli
 
 ## v0.1.0
 *February 4, 2021*
@@ -864,7 +864,7 @@ Special thanks to external contributors for this release: @CharlyCst ([#347], [#
 [#415]: https://github.com/informalsystems/ibc-rs/issues/415
 [#428]: https://github.com/informalsystems/ibc-rs/issues/428
 [changelog]: https://github.com/informalsystems/ibc-rs/tree/master/CHANGELOG.md
-[proto-compiler]: https://github.com/informalsystems/ibc-rs/tree/master/proto-compiler
+[proto-compiler]: https://github.com/cosmos/ibc-proto-rs/tree/main/tools/proto-compiler
 
 ## v0.0.4
 *October 19, 2020*
@@ -959,10 +959,10 @@ Additional highlights:
 [#300]: https://github.com/informalsystems/ibc-rs/issues/300
 [#302]: https://github.com/informalsystems/ibc-rs/issues/302
 [#308]: https://github.com/informalsystems/ibc-rs/issues/308
-[ibc-proto]: https://github.com/informalsystems/ibc-rs/tree/master/proto
+[ibc-proto]: https://github.com/cosmos/ibc-proto-rs
 [disclosure-log]: https://github.com/informalsystems/ibc-rs/blob/master/docs/disclosure-log.md
 [spec/connection-handshake]: https://github.com/informalsystems/ibc-rs/tree/master/docs/spec/connection-handshake
-[ibc-relayer]: https://github.com/informalsystems/ibc-rs/tree/master/relayer
+[ibc-relayer]: https://github.com/informalsystems/hermes/tree/master/crates/relayer
 
 ## v0.0.3
 *September 1, 2020*
@@ -1001,23 +1001,23 @@ Other highlights:
 [#1]: https://github.com/informalsystems/ibc-rs/issues/1
 [contributing]: https://github.com/informalsystems/ibc-rs/blob/master/CONTRIBUTING.md
 [#195]: https://github.com/informalsystems/ibc-rs/pull/195
-[ibc]: https://github.com/informalsystems/ibc-rs/tree/master/modules
+[ibc]: https://github.com/cosmos/ibc-rs
 [#198]: https://github.com/informalsystems/ibc-rs/issues/198
-[ibc/ics02]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics02_client
+[ibc/ics02]: https://github.com/cosmos/ibc-rs/tree/main/crates/ibc/src/core/ics02_client
 [#185]: https://github.com/informalsystems/ibc-rs/issues/185
-[ibc/ics03]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics03_connection
+[ibc/ics03]: https://github.com/cosmos/ibc-rs/tree/main/crates/ibc/src/core/ics03_connection
 [#193]: https://github.com/informalsystems/ibc-rs/issues/193
-[ibc/ics04]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics04_channel
+[ibc/ics04]: https://github.com/cosmos/ibc-rs/tree/main/crates/ibc/src/core/ics04_channel
 [#192]: https://github.com/informalsystems/ibc-rs/issues/192
-[ibc-relayer-cli]: https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli
+[ibc-relayer-cli]: https://github.com/informalsystems/hermes/tree/master/crates/relayer-cli
 [architecture/FSM-1]: https://github.com/informalsystems/ibc-rs/blob/v0.1.0/docs/architecture/fsm-async-connection.md
 [#122]: https://github.com/informalsystems/ibc-rs/issues/122
 [architecture/ADR-003]: https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/adr-003-handler-implementation.md
 [#119]: https://github.com/informalsystems/ibc-rs/issues/119
 [#194]: https://github.com/informalsystems/ibc-rs/issues/194
-[ibc/ics24]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics24_host
+[ibc/ics24]: https://github.com/cosmos/ibc-rs/tree/main/crates/ibc/src/core/ics24_host
 [#168]: https://github.com/informalsystems/ibc-rs/issues/168
-[ibc/ics07]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/clients/ics07_tendermint
+[ibc/ics07]: https://github.com/cosmos/ibc-rs/tree/main/crates/ibc/src/clients/ics07_tendermint
 
 ## v0.0.2
 

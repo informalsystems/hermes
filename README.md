@@ -108,7 +108,9 @@ Unless required by applicable law or agreed to in writing, software distributed 
 [ibc-chain-registry-crate-image]: https://img.shields.io/crates/v/ibc-chain-registry.svg
 [ibc-chain-registry-crate-link]: https://crates.io/crates/ibc-chain-registry
 [ibc-chain-registry-docs-image]: https://docs.rs/ibc-chain-registry/badge.svg
+<!-- markdown-link-check-disable -->
 [ibc-chain-registry-docs-link]: https://docs.rs/ibc-chain-registry/
+<!-- markdown-link-check-enabled -->
 [ibc-rs-repo]: https://github.com/cosmos/ibc-rs
 [ibc-proto-rs-repo]: https://github.com/cosmos/ibc-proto-rs
 

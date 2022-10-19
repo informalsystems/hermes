@@ -235,7 +235,7 @@ The `$HOME/.gm` directory has a tree structure similar to the one below:
 
 By the default `hermes` expects the configuration file to be in the __`$HOME/.hermes`__ folder.
 
-It also stores the private keys for each chain in this folder as outlined in the [Keys](../../../documentation/commands/keys/index.md) section.
+It also stores the private keys for each chain in this folder as outlined in the [Keys](../../documentation/commands/keys/index.md) section.
 
 After executing `{{#template ../../templates/commands/gm/start.md}}`, this is how the folder should look like:
 
