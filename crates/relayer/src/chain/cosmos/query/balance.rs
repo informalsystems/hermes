@@ -58,15 +58,14 @@ pub async fn query_all_balances(
         .map(|r| r.into_inner())
         .map_err(Error::grpc_status)?;
 
-    // Querying for a balance might fail, i.e. if the account doesn't actually exist
-    let balances = response.balances;
-
-    let balances = balances
-        .iter()
+    let balances = response
+        .balances
+        .into_iter()
         .map(|balance| Balance {
-            amount: balance.amount.clone(),
-            denom: balance.denom.clone(),
+            amount: balance.amount,
+            denom: balance.denom,
         })
         .collect();
+
     Ok(balances)
 }
