@@ -719,46 +719,32 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(version_specs.ibc_go)
     }
 
-    fn query_balance(
-        &self,
-        key_name: Option<String>,
-        denom: Option<String>,
-    ) -> Result<Balance, Error> {
+    fn query_balance(&self, key_name: Option<&str>, denom: Option<&str>) -> Result<Balance, Error> {
         // If a key_name is given, extract the account hash.
         // Else retrieve the account from the configuration file.
         let account = match key_name {
-            Some(account) => {
-                let key = self.keybase().get_key(&account).map_err(Error::key_base)?;
+            Some(key_name) => {
+                let key = self.keybase().get_key(key_name).map_err(Error::key_base)?;
                 key.account
             }
-            _ => {
-                let key = self.key()?;
-                key.account
-            }
+            _ => self.key()?.account,
         };
 
-        let balance_denom = match denom {
-            Some(denom) => denom,
-            None => self.config.gas_price.denom.clone(),
-        };
-
-        let balance = self.block_on(query_balance(&self.grpc_addr, &account, &balance_denom))?;
+        let denom = denom.unwrap_or(&self.config.gas_price.denom);
+        let balance = self.block_on(query_balance(&self.grpc_addr, &account, denom))?;
 
         Ok(balance)
     }
 
-    fn query_all_balances(&self, key_name: Option<String>) -> Result<Vec<Balance>, Error> {
+    fn query_all_balances(&self, key_name: Option<&str>) -> Result<Vec<Balance>, Error> {
         // If a key_name is given, extract the account hash.
         // Else retrieve the account from the configuration file.
         let account = match key_name {
-            Some(account) => {
-                let key = self.keybase().get_key(&account).map_err(Error::key_base)?;
+            Some(key_name) => {
+                let key = self.keybase().get_key(key_name).map_err(Error::key_base)?;
                 key.account
             }
-            _ => {
-                let key = self.key()?;
-                key.account
-            }
+            _ => self.key()?.account,
         };
 
         let balance = self.block_on(query_all_balances(&self.grpc_addr, &account))?;

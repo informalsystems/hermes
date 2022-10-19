@@ -481,7 +481,10 @@ where
         denom: Option<String>,
         reply_to: ReplyTo<Balance>,
     ) -> Result<(), Error> {
-        let balance = self.chain.query_balance(key_name, denom);
+        let balance = self
+            .chain
+            .query_balance(key_name.as_deref(), denom.as_deref());
+
         reply_to.send(balance).map_err(Error::send)
     }
 
@@ -490,7 +493,7 @@ where
         key_name: Option<String>,
         reply_to: ReplyTo<Vec<Balance>>,
     ) -> Result<(), Error> {
-        let balances = self.chain.query_all_balances(key_name);
+        let balances = self.chain.query_all_balances(key_name.as_deref());
         reply_to.send(balances).map_err(Error::send)
     }
 

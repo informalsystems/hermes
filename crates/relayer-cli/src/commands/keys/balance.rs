@@ -1,3 +1,5 @@
+use std::fmt::Write;
+
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
@@ -55,13 +57,13 @@ impl Runnable for KeyBalanceCmd {
 
         let chain = spawn_chain_runtime(&config, &self.chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
+
         let key_name = self.key_name.clone();
 
         if self.all {
             get_balances(chain, key_name)
         } else {
-            let denom = self.denom.clone();
-            get_balance(chain, key_name, denom);
+            get_balance(chain, key_name, self.denom.clone());
         }
     }
 }
@@ -71,24 +73,18 @@ fn get_balance(chain: impl ChainHandle, key_name: Option<String>, denom: Option<
         Ok(balance) if json() => Output::success(balance).exit(),
         Ok(balance) => {
             // Retrieve the key name string to output.
-            let key_name_str = match key_name {
-                Some(name) => name,
-                None => {
-                    let chain_config = chain.config().unwrap_or_else(exit_with_unrecoverable_error);
-                    chain_config.key_name
-                }
-            };
+            let key_name = key_name.unwrap_or_else(|| {
+                let chain_config = chain.config().unwrap_or_else(exit_with_unrecoverable_error);
+                chain_config.key_name
+            });
+
             Output::success_msg(format!(
                 "balance for key `{}`: {} {}",
-                key_name_str, balance.amount, balance.denom
+                key_name, balance.amount, balance.denom
             ))
             .exit()
         }
-        Err(e) => Output::error(format!(
-            "there was a problem querying the chain balance: {}",
-            e
-        ))
-        .exit(),
+        Err(e) => Output::error(format!("there was a problem querying the balance: {}", e)).exit(),
     }
 }
 
@@ -97,25 +93,20 @@ fn get_balances(chain: impl ChainHandle, key_name: Option<String>) {
         Ok(balances) if json() => Output::success(balances).exit(),
         Ok(balances) => {
             // Retrieve the key name string to output.
-            let key_name_str = match key_name {
-                Some(name) => name,
-                None => {
-                    let chain_config = chain.config().unwrap_or_else(exit_with_unrecoverable_error);
-                    chain_config.key_name
-                }
-            };
-            let mut pretty_output = format!("balances for key `{}` :", key_name_str);
+            let key_name = key_name.unwrap_or_else(|| {
+                let chain_config = chain.config().unwrap_or_else(exit_with_unrecoverable_error);
+                chain_config.key_name
+            });
+
+            let mut pretty_output = format!("Balances for key `{}`:", key_name);
             for balance in balances {
-                pretty_output =
-                    format!("{}\n\t{} {}", pretty_output, balance.amount, balance.denom);
+                write!(pretty_output, "\n\t{} {}", balance.amount, balance.denom)
+                    .unwrap_or_else(exit_with_unrecoverable_error);
             }
+
             Output::success_msg(pretty_output).exit()
         }
-        Err(e) => Output::error(format!(
-            "there was a problem querying the chain balance: {}",
-            e
-        ))
-        .exit(),
+        Err(e) => Output::error(format!("there was a problem querying the balance: {}", e)).exit(),
     }
 }
 
