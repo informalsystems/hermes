@@ -57,7 +57,7 @@ use ibc_relayer_types::{
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;
 use crate::chain::cosmos::query::account::get_or_fetch_account;
-use crate::chain::cosmos::query::balance::query_balance;
+use crate::chain::cosmos::query::balance::{query_all_balances, query_balance};
 use crate::chain::cosmos::query::denom_trace::query_denom_trace;
 use crate::chain::cosmos::query::status::query_status;
 use crate::chain::cosmos::query::tx::query_txs;
@@ -719,25 +719,35 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(version_specs.ibc_go)
     }
 
-    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
+    fn query_balance(&self, key_name: Option<&str>, denom: Option<&str>) -> Result<Balance, Error> {
         // If a key_name is given, extract the account hash.
         // Else retrieve the account from the configuration file.
         let account = match key_name {
-            Some(account) => {
-                let key = self.keybase().get_key(&account).map_err(Error::key_base)?;
+            Some(key_name) => {
+                let key = self.keybase().get_key(key_name).map_err(Error::key_base)?;
                 key.account
             }
-            _ => {
-                let key = self.key()?;
-                key.account
-            }
+            _ => self.key()?.account,
         };
 
-        let balance = self.block_on(query_balance(
-            &self.grpc_addr,
-            &account,
-            &self.config.gas_price.denom,
-        ))?;
+        let denom = denom.unwrap_or(&self.config.gas_price.denom);
+        let balance = self.block_on(query_balance(&self.grpc_addr, &account, denom))?;
+
+        Ok(balance)
+    }
+
+    fn query_all_balances(&self, key_name: Option<&str>) -> Result<Vec<Balance>, Error> {
+        // If a key_name is given, extract the account hash.
+        // Else retrieve the account from the configuration file.
+        let account = match key_name {
+            Some(key_name) => {
+                let key = self.keybase().get_key(key_name).map_err(Error::key_base)?;
+                key.account
+            }
+            _ => self.key()?.account,
+        };
+
+        let balance = self.block_on(query_all_balances(&self.grpc_addr, &account))?;
 
         Ok(balance)
     }
