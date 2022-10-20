@@ -19,7 +19,7 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     chains: ChainHandlePair<ChainA, ChainB>,
     cmd_rx: Receiver<WorkerCmd>,
 ) -> TaskHandle {
-    let mut clear_pending = true;
+    let mut complete_handshake_on_new_block = true;
     spawn_background_task(
         error_span!("worker.connection", connection = %connection.short_name()),
         Some(Duration::from_millis(200)),
@@ -33,7 +33,7 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
 
                         debug!("starts processing {:?}", last_event_with_height);
 
-                        clear_pending = false;
+                        complete_handshake_on_new_block = false;
                         if let Some(event_with_height) = last_event_with_height {
                             let mut handshake_connection = RelayConnection::restore_from_event(
                                 chains.a.clone(),
@@ -54,7 +54,7 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                     WorkerCmd::NewBlock {
                         height: current_height,
                         new_block: _,
-                    } if clear_pending => {
+                    } if complete_handshake_on_new_block => {
                         debug!("starts processing block event at {}", current_height);
 
                         let height = current_height
@@ -70,7 +70,7 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                             )
                             .map_err(|e| TaskError::Fatal(RunError::connection(e)))?;
 
-                        clear_pending = false;
+                        complete_handshake_on_new_block = false;
 
                         retry_with_index(retry_strategy::worker_default_strategy(), |index| {
                             handshake_connection.step_state(state, index)

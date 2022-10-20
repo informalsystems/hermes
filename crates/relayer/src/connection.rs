@@ -726,6 +726,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
             _ => None,
         };
 
+        // Abort if the connection is at OpenAck or OpenConfirm stage, as there is nothing more for the worker to do
         match event {
             Some(IbcEvent::OpenConfirmConnection(_)) | Some(IbcEvent::OpenAckConnection(_)) => {
                 Ok((event, Next::Abort))

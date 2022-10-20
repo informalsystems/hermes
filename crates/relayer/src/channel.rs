@@ -762,6 +762,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             _ => None,
         };
 
+        // Abort if the channel is at OpenAck or OpenConfirm stage, as there is nothing more for the worker to do
         match event {
             Some(IbcEvent::OpenConfirmChannel(_)) | Some(IbcEvent::OpenAckChannel(_)) => {
                 Ok((event, Next::Abort))
