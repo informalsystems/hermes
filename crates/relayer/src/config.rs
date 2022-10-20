@@ -240,17 +240,6 @@ pub struct Packets {
     pub tx_confirmation: bool,
 }
 
-impl Default for Packets {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            clear_interval: default::clear_packets_interval(),
-            clear_on_start: false,
-            tx_confirmation: default::tx_confirmation(),
-        }
-    }
-}
-
 /// Log levels are wrappers over [`tracing_core::Level`].
 ///
 /// [`tracing_core::Level`]: https://docs.rs/tracing-core/0.1.17/tracing_core/struct.Level.html
