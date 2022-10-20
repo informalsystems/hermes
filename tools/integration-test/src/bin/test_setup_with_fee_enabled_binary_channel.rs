@@ -3,7 +3,7 @@
     an executable that can be used for manual testing with two test chains
     with connected channel with fee enabled.
 
-    When the command is executed, you should see log messages such as
+    When the command is executed, you should see log messages such as the
     following near the end:
 
     ```bash
