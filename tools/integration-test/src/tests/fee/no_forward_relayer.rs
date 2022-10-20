@@ -1,3 +1,13 @@
+//! This test tests two different cases. 
+//! 
+//! The `NoForwardRelayerTest` tests the case where the 
+//! `counterparty_payee`'s address is not registered. The 
+//! `InvalidForwardRelayerTest` tests the case where the 
+//! `counterparty_payee` address is invalidly registered. In both tests, the
+//! `auto_register_counterparty_payee` option is toggled off. The tests then
+//!  checks that the `receive_fee` and the `timeout_fee` are refunded to 
+//! the payer. 
+
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
