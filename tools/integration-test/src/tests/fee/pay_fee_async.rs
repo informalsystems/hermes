@@ -1,3 +1,23 @@
+//! Tests the capability of the fee module to pay packet fees for a packet that has already
+//! been sent.
+//!
+//! This test starts off by performing an `ibc_token_transfer_with_fee` with the relayer configured
+//! to not spawn a supervisor. The token transfer will thus be in a pending un-relayed state, with 
+//! the fees locked in escrow (i.e. they've been debited from the source chain's balance). 
+//! 
+//! A token transfer with fee operation consists of two separate events: the event itself, 
+//! in the form of an `IbcEvent::SendPacket`, as well as a separate event containing the fees,
+//! in the form of an `IbcEvent::IncentivizedPacket`. The test checks that these events' sequences
+//! match up.
+//! 
+//! The test then checks the behavior or the `pay_packet_fee` function, which pays some additional
+//! fees to the relayer of the `IbcEvent::SendPacket` after it has already been sent. In this case,
+//! calling `pay_packet_fee` doesn't construct a new `IbcEvent::IncentivizedPacket`; the additional
+//! fees are added to the initial fees contained in the incentivized packet. 
+//!
+//! Finally,  the test initializes the supervisor in order to relay the pending packets so that the 
+//! balances on the two chains can be asserted.
+
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::events::IbcEvent;
 use ibc_test_framework::prelude::*;
