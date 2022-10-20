@@ -22,7 +22,7 @@ use ibc_relayer_types::{
 use serde::Serialize;
 use tendermint::abci::Event as AbciEvent;
 
-use crate::light_client::AnyHeader;
+use crate::light_client::decode_header;
 
 pub mod bus;
 pub mod monitor;
@@ -311,7 +311,8 @@ pub fn extract_header_from_tx(event: &AbciEvent) -> Result<Box<dyn Header>, Clie
         let key = tag.key.as_ref();
         let value = tag.value.as_ref();
         if key == HEADER_ATTRIBUTE_KEY {
-            return AnyHeader::decode_from_string(value).map(AnyHeader::into_box);
+            let header_bytes = hex::decode(value).map_err(|_| ClientError::malformed_header())?;
+            return decode_header(&header_bytes);
         }
     }
     Err(ClientError::missing_raw_header())
