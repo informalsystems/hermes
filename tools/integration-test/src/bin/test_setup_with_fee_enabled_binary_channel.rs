@@ -13,7 +13,7 @@
     WARN ibc_integration_test::util::suspend: suspending the test indefinitely. you can still interact with any spawned chains and relayers
     ```
 
-    The `binary-channels.env` file generated contains the environment variables
+    The generated `binary-channels.env` file contains the environment variables
     that are essential for accessing the test chains. You can source it and
     run the relayer commands in a separate terminal such as:
 
