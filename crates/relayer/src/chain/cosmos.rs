@@ -388,6 +388,10 @@ impl CosmosSdkChain {
     pub fn unbonding_period(&self) -> Result<Duration, Error> {
         crate::time!("unbonding_period");
 
+        if let Some(unbonding_period) = self.config.unbonding_period {
+            return Ok(unbonding_period);
+        }
+
         let unbonding_time = self.query_staking_params()?.unbonding_time.ok_or_else(|| {
             Error::grpc_response_param("no unbonding time in staking params".to_string())
         })?;

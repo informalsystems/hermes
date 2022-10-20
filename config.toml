@@ -234,6 +234,10 @@ max_block_time = '30s'
 # Default: 2/3 of the `unbonding period` for Cosmos SDK chains
 trusting_period = '14days'
 
+# Required for CCV chains, as they currently do not expose the staking module
+# Default: Fetched via gRPC from the staking parameters.
+unbonding_period = '21days'
+
 # Specify the trust threshold for the light client, ie. the minimum fraction of validators
 # which must overlap across two blocks during light client verification.
 # Default: { numerator = '2', denominator = '3' }, ie. 2/3.
