@@ -1,5 +1,5 @@
 /*!
-    This is a simple wrapper around [`BinaryChannelTest`] and turn it into
+    This is a simple wrapper around [`BinaryChannelTest`] to turn it into
     an executable that can be used for manual testing with two test chains
     with connected channel with fee enabled.
 
