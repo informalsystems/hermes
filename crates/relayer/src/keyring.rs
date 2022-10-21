@@ -12,7 +12,7 @@ use bitcoin::{
     util::bip32::{DerivationPath, ExtendedPrivKey, ExtendedPubKey},
 };
 use hdpath::StandardHDPath;
-use ibc::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use k256::ecdsa::{signature::Signer, Signature, SigningKey};
 use ripemd::Ripemd160;
 use serde::{Deserialize, Serialize};

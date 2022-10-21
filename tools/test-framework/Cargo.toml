@@ -6,7 +6,7 @@ license    = "Apache-2.0"
 readme     = "README.md"
 keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 homepage   = "https://hermes.informal.systems/"
-repository = "https://github.com/informalsystems/ibc-rs"
+repository = "https://github.com/informalsystems/hermes"
 authors    = ["Informal Systems <hello@informal.systems>"]
 
 description = """
@@ -14,12 +14,12 @@ description = """
 """
 
 [dependencies]
-ibc             = { version = "=0.19.0",     path = "../../crates/modules" }
-ibc-relayer     = { version = "=0.19.0",     path = "../../crates/relayer" }
-ibc-relayer-cli = { version = "=1.0.0",      path = "../../crates/relayer-cli" }
-ibc-proto       = { version = "=0.20.1" }
-tendermint      = { version = "=0.25.0" }
-tendermint-rpc  = { version = "=0.25.0", features = ["http-client", "websocket-client"] }
+ibc-relayer-types = { version = "=0.19.0",     path = "../../crates/relayer-types" }
+ibc-relayer      = { version = "=0.19.0",     path = "../../crates/relayer" }
+ibc-relayer-cli  = { version = "=1.0.0",      path = "../../crates/relayer-cli" }
+ibc-proto        = { version = "=0.20.1" }
+tendermint       = { version = "=0.25.0" }
+tendermint-rpc   = { version = "=0.25.0", features = ["http-client", "websocket-client"] }
 
 async-trait = "0.1.57"
 http = "0.2.8"

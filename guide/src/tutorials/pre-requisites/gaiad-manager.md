@@ -81,7 +81,7 @@ The following configuration you need to specify 2 `gaiad` chains. `hermes` will 
 {{#include ../../templates/files/gm/default_gm.toml}}
 ```
 
-> __NOTE:__ Go to this page for more details about [Gaiad Manager](https://github.com/informalsystems/ibc-rs/tree/master/scripts/gm)
+> __NOTE:__ Go to this page for more details about [Gaiad Manager](https://github.com/informalsystems/hermes/tree/master/scripts/gm)
 
 ---
 

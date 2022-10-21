@@ -23,24 +23,6 @@
 use crossbeam_channel as channel;
 use tracing::Span;
 
-use ibc::core::ics02_client::events::UpdateClient;
-use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::core::ics23_commitment::merkle::MerkleProof;
-use ibc::{
-    core::ics03_connection::connection::ConnectionEnd,
-    core::ics03_connection::version::Version,
-    core::ics04_channel::channel::ChannelEnd,
-    core::ics23_commitment::commitment::CommitmentPrefix,
-    core::ics24_host::identifier::ChainId,
-    core::ics24_host::identifier::ChannelId,
-    core::ics24_host::identifier::{ClientId, ConnectionId, PortId},
-    events::IbcEvent,
-    proofs::Proofs,
-    signer::Signer,
-    Height,
-};
 use ibc_relayer::account::Balance;
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::endpoint::{ChainStatus, HealthCheck};
@@ -68,6 +50,24 @@ use ibc_relayer::event::IbcEventWithHeight;
 use ibc_relayer::keyring::KeyEntry;
 use ibc_relayer::light_client::AnyHeader;
 use ibc_relayer::misbehaviour::MisbehaviourEvidence;
+use ibc_relayer_types::core::ics02_client::events::UpdateClient;
+use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
+use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
+use ibc_relayer_types::core::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
+use ibc_relayer_types::{
+    core::ics03_connection::connection::ConnectionEnd,
+    core::ics03_connection::version::Version,
+    core::ics04_channel::channel::ChannelEnd,
+    core::ics23_commitment::commitment::CommitmentPrefix,
+    core::ics24_host::identifier::ChainId,
+    core::ics24_host::identifier::ChannelId,
+    core::ics24_host::identifier::{ClientId, ConnectionId, PortId},
+    events::IbcEvent,
+    proofs::Proofs,
+    signer::Signer,
+    Height,
+};
 
 use crate::types::tagged::*;
 
@@ -401,8 +401,16 @@ where
         self.value().query_host_consensus_state(request)
     }
 
-    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
-        self.value().query_balance(key_name)
+    fn query_balance(
+        &self,
+        key_name: Option<String>,
+        denom: Option<String>,
+    ) -> Result<Balance, Error> {
+        self.value().query_balance(key_name, denom)
+    }
+
+    fn query_all_balances(&self, key_name: Option<String>) -> Result<Vec<Balance>, Error> {
+        self.value().query_all_balances(key_name)
     }
 
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {

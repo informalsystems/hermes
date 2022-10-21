@@ -9,7 +9,7 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 use itertools::Itertools;
 use tracing::{debug, error, error_span, info, instrument, trace, warn};
 
-use ibc::{
+use ibc_relayer_types::{
     core::ics24_host::identifier::{ChainId, ChannelId, PortId},
     events::IbcEvent,
     Height,
@@ -839,7 +839,7 @@ pub struct CollectedEvents {
     pub height: Height,
     /// The chain from which the events were emitted.
     pub chain_id: ChainId,
-    /// [`NewBlock`](ibc::events::IbcEventType::NewBlock) event
+    /// [`NewBlock`](ibc_relayer_types::events::IbcEventType::NewBlock) event
     /// collected from the [`EventBatch`].
     pub new_block: Option<IbcEvent>,
     /// Mapping between [`Object`]s and their associated [`IbcEvent`]s.
@@ -860,7 +860,7 @@ impl CollectedEvents {
     }
 
     /// Whether the collected events include a
-    /// [`NewBlock`](ibc::events::IbcEventType::NewBlock) event.
+    /// [`NewBlock`](ibc_relayer_types::events::IbcEventType::NewBlock) event.
     pub fn has_new_block(&self) -> bool {
         self.new_block.is_some()
     }

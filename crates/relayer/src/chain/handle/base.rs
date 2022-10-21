@@ -3,7 +3,7 @@ use core::fmt::{Debug, Display, Error as FmtError, Formatter};
 use crossbeam_channel as channel;
 use tracing::Span;
 
-use ibc::{
+use ibc_relayer_types::{
     core::{
         ics02_client::events::UpdateClient,
         ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
@@ -147,8 +147,20 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::IbcVersion { reply_to })
     }
 
-    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
-        self.send(|reply_to| ChainRequest::QueryBalance { key_name, reply_to })
+    fn query_balance(
+        &self,
+        key_name: Option<String>,
+        denom: Option<String>,
+    ) -> Result<Balance, Error> {
+        self.send(|reply_to| ChainRequest::QueryBalance {
+            key_name,
+            denom,
+            reply_to,
+        })
+    }
+
+    fn query_all_balances(&self, key_name: Option<String>) -> Result<Vec<Balance>, Error> {
+        self.send(|reply_to| ChainRequest::QueryAllBalances { key_name, reply_to })
     }
 
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {

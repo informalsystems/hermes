@@ -24,35 +24,39 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tonic::{codegen::http::Uri, metadata::AsciiMetadataValue};
 use tracing::{error, instrument, warn};
 
-use ibc::clients::ics07_tendermint::header::Header as TmHeader;
-use ibc::core::ics02_client::client_type::ClientType;
-use ibc::core::ics02_client::error::Error as ClientError;
-use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd};
-use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
-use ibc::core::ics04_channel::packet::{Packet, Sequence};
-use ibc::core::ics23_commitment::commitment::CommitmentPrefix;
-use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
-use ibc::core::ics24_host::path::{
+use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
+use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
+use ibc_relayer_types::core::ics02_client::client_type::ClientType;
+use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
+use ibc_relayer_types::core::ics03_connection::connection::{
+    ConnectionEnd, IdentifiedConnectionEnd,
+};
+use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
+use ibc_relayer_types::core::ics04_channel::packet::{Packet, Sequence};
+use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use ibc_relayer_types::core::ics24_host::path::{
     AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
     ConnectionsPath, ReceiptsPath, SeqRecvsPath,
 };
-use ibc::core::ics24_host::{ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH};
-use ibc::events::IbcEvent;
-use ibc::signer::Signer;
-use ibc::Height as ICSHeight;
-use ibc::{
+use ibc_relayer_types::core::ics24_host::{
+    ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH,
+};
+use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer_types::signer::Signer;
+use ibc_relayer_types::Height as ICSHeight;
+use ibc_relayer_types::{
     clients::ics07_tendermint::client_state::{AllowUpdate, ClientState as TmClientState},
     core::ics23_commitment::merkle::MerkleProof,
 };
-use ibc::{
+use ibc_relayer_types::{
     clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState,
     core::ics02_client::events::UpdateClient,
 };
-use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 
 use crate::chain::client::ClientSettings;
 use crate::chain::cosmos::query::account::get_or_fetch_account;
-use crate::chain::cosmos::query::balance::query_balance;
+use crate::chain::cosmos::query::balance::{query_all_balances, query_balance};
 use crate::chain::cosmos::query::denom_trace::query_denom_trace;
 use crate::chain::cosmos::query::status::query_status;
 use crate::chain::cosmos::query::tx::query_txs;
@@ -377,7 +381,7 @@ impl CosmosSdkChain {
     fn query_client_upgrade_state(
         &self,
         query_data: ClientUpgradePath,
-        query_height: ibc::Height,
+        query_height: ICSHeight,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
         // SAFETY: Creating a Path from a constant; this should never fail
         let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH)
@@ -716,25 +720,35 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(version_specs.ibc_go)
     }
 
-    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
+    fn query_balance(&self, key_name: Option<&str>, denom: Option<&str>) -> Result<Balance, Error> {
         // If a key_name is given, extract the account hash.
         // Else retrieve the account from the configuration file.
         let account = match key_name {
-            Some(account) => {
-                let key = self.keybase().get_key(&account).map_err(Error::key_base)?;
+            Some(key_name) => {
+                let key = self.keybase().get_key(key_name).map_err(Error::key_base)?;
                 key.account
             }
-            _ => {
-                let key = self.key()?;
-                key.account
-            }
+            _ => self.key()?.account,
         };
 
-        let balance = self.block_on(query_balance(
-            &self.grpc_addr,
-            &account,
-            &self.config.gas_price.denom,
-        ))?;
+        let denom = denom.unwrap_or(&self.config.gas_price.denom);
+        let balance = self.block_on(query_balance(&self.grpc_addr, &account, denom))?;
+
+        Ok(balance)
+    }
+
+    fn query_all_balances(&self, key_name: Option<&str>) -> Result<Vec<Balance>, Error> {
+        // If a key_name is given, extract the account hash.
+        // Else retrieve the account from the configuration file.
+        let account = match key_name {
+            Some(key_name) => {
+                let key = self.keybase().get_key(key_name).map_err(Error::key_base)?;
+                key.account
+            }
+            _ => self.key()?.account,
+        };
+
+        let balance = self.block_on(query_all_balances(&self.grpc_addr, &account))?;
 
         Ok(balance)
     }
@@ -1837,7 +1851,7 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
 
 #[cfg(test)]
 mod tests {
-    use ibc::{
+    use ibc_relayer_types::{
         core::{ics02_client::client_type::ClientType, ics24_host::identifier::ClientId},
         mock::client_state::MockClientState,
         mock::header::MockHeader,
@@ -1870,7 +1884,7 @@ mod tests {
         assert_eq!(super::mul_ceil(340_001, 0.001), 341.into());
     }
 
-    /// Before https://github.com/informalsystems/ibc-rs/pull/1568,
+    /// Before https://github.com/informalsystems/hermes/pull/1568,
     /// this test would have panic'ed with:
     ///
     /// thread 'chain::cosmos::tests::fee_overflow' panicked at 'attempt to multiply with overflow'

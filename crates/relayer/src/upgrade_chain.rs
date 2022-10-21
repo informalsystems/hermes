@@ -8,14 +8,14 @@ use flex_error::define_error;
 
 use tendermint::abci::transaction::Hash as TxHash;
 
-use ibc::clients::ics07_tendermint::client_state::UpgradeOptions;
-use ibc::core::ics02_client::client_state::ClientState;
-use ibc::core::ics24_host::identifier::{ChainId, ClientId};
-use ibc::downcast;
 use ibc_proto::cosmos::gov::v1beta1::MsgSubmitProposal;
 use ibc_proto::cosmos::upgrade::v1beta1::Plan;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::client::v1::UpgradeProposal;
+use ibc_relayer_types::clients::ics07_tendermint::client_state::UpgradeOptions;
+use ibc_relayer_types::core::ics02_client::client_state::ClientState;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
+use ibc_relayer_types::downcast;
 
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
@@ -146,7 +146,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
     // Can't use send_messages_and_wait_commit because no IBC events
     // corresponding to the transaction can be recognized to confirm the
     // upgrade.
-    // https://github.com/informalsystems/ibc-rs/issues/1288#issuecomment-1066884163
+    // https://github.com/informalsystems/hermes/issues/1288#issuecomment-1066884163
 
     let responses = dst_chain
         .send_messages_and_wait_check_tx(TrackedMsgs::new_single(any_msg, "upgrade"))

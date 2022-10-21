@@ -1,6 +1,6 @@
 /*!
    Test for verifying the solution in
-   [#1542](https://github.com/informalsystems/ibc-rs/pull/1542)
+   [#1542](https://github.com/informalsystems/hermes/pull/1542)
 
    On running the test, the log should show messages like:
 
@@ -12,9 +12,9 @@
 */
 
 use core::time::Duration;
-use ibc::events::IbcEvent;
 use ibc_relayer::config::{types::MaxMsgNum, Config};
 use ibc_relayer::transfer::{build_and_send_transfer_messages, TransferOptions};
+use ibc_relayer_types::events::IbcEvent;
 use ibc_test_framework::prelude::*;
 
 #[test]

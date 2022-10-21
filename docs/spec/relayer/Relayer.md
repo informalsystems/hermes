@@ -95,7 +95,7 @@ succeed. The interface between stage 3 and stage 4 is an IBC datagram.
 We assume that the corresponding light client is correctly installed on each chain.
 
 Data structures and helper function definitions are provided 
-[here](https://github.com/informalsystems/ibc-rs/blob/master/docs/spec/relayer/Definitions.md). 
+[here](https://github.com/informalsystems/hermes/blob/master/docs/spec/relayer/Definitions.md). 
 
 ```golang
 func handleEvent(ev, chainA) Error {

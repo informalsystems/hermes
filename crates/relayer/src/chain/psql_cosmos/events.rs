@@ -1,6 +1,6 @@
 use core::time::Duration;
 
-use ibc::{
+use ibc_relayer_types::{
     core::{
         ics03_connection::connection::{
             ConnectionEnd, Counterparty as ConnectionCounterparty, IdentifiedConnectionEnd,
@@ -11,7 +11,7 @@ use ibc::{
                 ChannelEnd, Counterparty as ChannelCounterparty, IdentifiedChannelEnd, Order,
                 State as ChannelState,
             },
-            Version as ChannelVersion,
+            version::Version as ChannelVersion,
         },
         ics23_commitment::commitment::CommitmentPrefix,
     },

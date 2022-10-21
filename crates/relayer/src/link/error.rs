@@ -1,8 +1,8 @@
 use flex_error::define_error;
-use ibc::core::ics02_client::error::Error as Ics02Error;
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc::events::IbcEvent;
-use ibc::Height;
+use ibc_relayer_types::core::ics02_client::error::Error as Ics02Error;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer_types::Height;
 
 use crate::channel::ChannelError;
 use crate::connection::ConnectionError;

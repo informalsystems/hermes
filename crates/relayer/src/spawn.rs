@@ -3,7 +3,7 @@ use alloc::sync::Arc;
 use flex_error::define_error;
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 use crate::{
     chain::{cosmos::CosmosSdkChain, handle::ChainHandle, runtime::ChainRuntime, ChainType},
@@ -11,8 +11,6 @@ use crate::{
     error::Error as RelayerError,
 };
 
-#[cfg(test)]
-use crate::chain::mock::MockChain;
 use crate::chain::psql_cosmos::PsqlChain;
 
 define_error! {
@@ -60,9 +58,6 @@ pub fn spawn_chain_runtime<Handle: ChainHandle>(
         ChainType::CosmosSdk => ChainRuntime::<CosmosSdkChain>::spawn::<Handle>(chain_config, rt),
 
         ChainType::CosmosPsql => ChainRuntime::<PsqlChain>::spawn::<Handle>(chain_config, rt),
-
-        #[cfg(test)]
-        ChainType::Mock => ChainRuntime::<MockChain>::spawn::<Handle>(chain_config, rt),
     }
     .map_err(SpawnError::relayer)?;
 

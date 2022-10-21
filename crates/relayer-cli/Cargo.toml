@@ -6,7 +6,7 @@ license    = "Apache-2.0"
 readme     = "README.md"
 keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 homepage   = "https://hermes.informal.systems/"
-repository = "https://github.com/informalsystems/ibc-rs"
+repository = "https://github.com/informalsystems/hermes"
 authors    = ["Informal Systems <hello@informal.systems>"]
 rust-version = "1.60"
 description  = """
@@ -26,12 +26,12 @@ telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server = ["ibc-relayer-rest"]
 
 [dependencies]
-ibc              = { version = "0.19.0", path = "../modules", features = ["std", "clock"] }
-ibc-chain-registry       = { version = "0.1.0" , path = "../ibc-chain-registry" }
-ibc-relayer      = { version = "0.19.0", path = "../relayer" }
-ibc-proto        = { version = "0.20.1" }
-ibc-telemetry    = { version = "0.19.0", path = "../telemetry", optional = true }
-ibc-relayer-rest = { version = "0.19.0", path = "../relayer-rest", optional = true }
+ibc-relayer-types   = { version = "0.19.0", path = "../relayer-types", features = ["std", "clock"] }
+ibc-relayer        = { version = "0.19.0", path = "../relayer" }
+ibc-proto          = { version = "0.20.1" }
+ibc-telemetry      = { version = "0.19.0", path = "../telemetry", optional = true }
+ibc-relayer-rest   = { version = "0.19.0", path = "../relayer-rest", optional = true }
+ibc-chain-registry = { version = "0.1.0" , path = "../ibc-chain-registry" }
 
 atty                     = "0.2.14"
 clap                     = { version = "3.2", features = ["cargo"] }

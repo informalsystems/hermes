@@ -1,4 +1,4 @@
-use ibc::core::{
+use ibc_relayer_types::core::{
     ics03_connection::connection::State as ConnectionState,
     ics04_channel::channel::State as ChannelState,
     ics24_host::identifier::{ChannelId, PortChannelId, PortId},

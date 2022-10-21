@@ -3,12 +3,12 @@ use core::time::Duration;
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
-use ibc::core::ics02_client::client_state::ClientState;
-use ibc::core::ics24_host::identifier::{ChainId, ClientId};
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use ibc_relayer::connection::Connection;
 use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer_types::core::ics02_client::client_state::ClientState;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 
 use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
@@ -180,7 +180,7 @@ mod tests {
     use super::CreateConnectionCommand;
 
     use abscissa_core::clap::Parser;
-    use ibc::core::ics24_host::identifier::{ChainId, ClientId};
+    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
 
     use std::str::FromStr;
 

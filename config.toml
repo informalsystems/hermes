@@ -50,7 +50,7 @@ enabled = true
 # periodic packet clearing. [Default: 100]
 clear_interval = 100
 
-# Whether or not to clear packets on start. [Default: false]
+# Whether or not to clear packets on start. [Default: true]
 clear_on_start = true
 
 # Toggle the transaction confirmation mechanism.

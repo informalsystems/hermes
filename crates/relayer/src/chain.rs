@@ -8,9 +8,6 @@ pub mod requests;
 pub mod runtime;
 pub mod tracking;
 
-#[cfg(test)]
-pub mod mock;
-
 use serde::{de::Error, Deserialize, Serialize};
 
 // NOTE(new): When adding a variant to `ChainType`, make sure to update
@@ -25,10 +22,6 @@ pub enum ChainType {
 
     /// Cosmos chains using the PostgreSQL indexer to fullfill queries
     CosmosPsql,
-
-    /// Mock chain used for testing
-    #[cfg(test)]
-    Mock,
 }
 
 impl<'de> Deserialize<'de> for ChainType {
@@ -43,9 +36,6 @@ impl<'de> Deserialize<'de> for ChainType {
             "cosmossdk" => Ok(Self::CosmosSdk),
 
             "cosmospsql" => Ok(Self::CosmosPsql),
-
-            #[cfg(test)]
-            "mock" => Ok(Self::Mock),
 
             // NOTE(new): Add a case here
             _ => Err(D::Error::unknown_variant(&original, &["cosmos-sdk"])), // NOTE(new): mention the new variant here
@@ -73,7 +63,6 @@ mod tests {
         assert!(matches!(parse("CosmosSdk"), Ok(CosmosSdk)));
         assert!(matches!(parse("cosmossdk"), Ok(CosmosSdk)));
         assert!(matches!(parse("cosmos-sdk"), Ok(CosmosSdk)));
-        assert!(matches!(parse("mock"), Ok(Mock)));
 
         // NOTE(new): Add tests here
 

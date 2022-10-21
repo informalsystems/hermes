@@ -4,22 +4,28 @@ use serde::{Deserialize, Serialize};
 
 use tokio::runtime::Runtime as TokioRuntime;
 
-use ibc::core::ics02_client::client_state::ClientState;
-use ibc::core::ics02_client::consensus_state::ConsensusState;
-use ibc::core::ics02_client::events::UpdateClient;
-use ibc::core::ics02_client::header::Header;
-use ibc::core::ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd, State};
-use ibc::core::ics03_connection::version::{get_compatible_versions, Version};
-use ibc::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
-use ibc::core::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentProofBytes};
-use ibc::core::ics23_commitment::merkle::MerkleProof;
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId};
-use ibc::events::IbcEvent;
-use ibc::proofs::{ConsensusProof, Proofs};
-use ibc::signer::Signer;
-use ibc::timestamp::Timestamp;
-use ibc::Height as ICSHeight;
+use ibc_relayer_types::core::ics02_client::client_state::ClientState;
+use ibc_relayer_types::core::ics02_client::consensus_state::ConsensusState;
+use ibc_relayer_types::core::ics02_client::events::UpdateClient;
+use ibc_relayer_types::core::ics02_client::header::Header;
+use ibc_relayer_types::core::ics03_connection::connection::{
+    ConnectionEnd, IdentifiedConnectionEnd, State,
+};
+use ibc_relayer_types::core::ics03_connection::version::{get_compatible_versions, Version};
+use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
+use ibc_relayer_types::core::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc_relayer_types::core::ics23_commitment::commitment::{
+    CommitmentPrefix, CommitmentProofBytes,
+};
+use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
+use ibc_relayer_types::core::ics24_host::identifier::{
+    ChainId, ChannelId, ClientId, ConnectionId, PortId,
+};
+use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer_types::proofs::{ConsensusProof, Proofs};
+use ibc_relayer_types::signer::Signer;
+use ibc_relayer_types::timestamp::Timestamp;
+use ibc_relayer_types::Height as ICSHeight;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
 use crate::account::Balance;
@@ -157,9 +163,14 @@ pub trait ChainEndpoint: Sized {
 
     // Queries
 
-    /// Query the balance of the given account for the denom used to pay tx fees.
+    /// Query the balance of the given account for the given denom.
     /// If no account is given, behavior must be specified, e.g. retrieve it from configuration file.
-    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error>;
+    /// If no denom is given, behavior must be specified, e.g. retrieve the denom used to pay tx fees.
+    fn query_balance(&self, key_name: Option<&str>, denom: Option<&str>) -> Result<Balance, Error>;
+
+    /// Query the balances of the given account for all the denom.
+    /// If no account is given, behavior must be specified, e.g. retrieve it from configuration file.
+    fn query_all_balances(&self, key_name: Option<&str>) -> Result<Vec<Balance>, Error>;
 
     /// Query the denomination trace given a trace hash.
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error>;

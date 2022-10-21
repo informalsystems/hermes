@@ -10,14 +10,16 @@ use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::endpoint::tx_search::Response as TxSearchResponse;
 use tracing::{info, trace};
 
-use ibc::core::ics02_client::height::Height;
-use ibc::core::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc::core::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
-use ibc::core::ics04_channel::packet::Packet;
-use ibc::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId, PortChannelId};
-use ibc::events::{self, IbcEvent, WithBlockDataType};
-use ibc::Height as ICSHeight;
+use ibc_relayer_types::core::ics02_client::height::Height;
+use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
+use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
+use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
+use ibc_relayer_types::core::ics04_channel::packet::Packet;
+use ibc_relayer_types::core::ics24_host::identifier::{
+    ChainId, ClientId, ConnectionId, PortChannelId,
+};
+use ibc_relayer_types::events::{self, IbcEvent, WithBlockDataType};
+use ibc_relayer_types::Height as ICSHeight;
 
 use crate::chain::cosmos::types::events::channel::parse_timeout_height;
 use crate::chain::cosmos::types::events::from_tx_response_event;

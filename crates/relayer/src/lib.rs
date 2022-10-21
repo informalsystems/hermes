@@ -1,15 +1,15 @@
 #![forbid(unsafe_code)]
 #![deny(
-    warnings,
+    // warnings,
     trivial_casts,
     trivial_numeric_casts,
     unused_import_braces,
     unused_qualifications,
     rust_2018_idioms
 )]
-#![allow(clippy::large_enum_variant, clippy::derive_partial_eq_without_eq)]
+#![allow(clippy::too_many_arguments)]
 // TODO: disable unwraps:
-//  https://github.com/informalsystems/ibc-rs/issues/987
+//  https://github.com/informalsystems/hermes/issues/987
 // #![cfg_attr(not(test), deny(clippy::unwrap_used))]
 
 //! IBC Relayer implementation as a library.

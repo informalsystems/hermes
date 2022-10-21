@@ -2,9 +2,9 @@
 
 use tracing::{info, span, trace, warn, Level};
 
-use ibc::core::ics04_channel::packet::Sequence;
-use ibc::events::{IbcEvent, WithBlockDataType};
-use ibc::Height;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::events::{IbcEvent, WithBlockDataType};
+use ibc_relayer_types::Height;
 
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::{

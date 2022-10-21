@@ -12,7 +12,7 @@ use tracing::{debug, info, span, warn, Level};
 use tendermint::block;
 use tendermint_rpc::{endpoint::broadcast::tx_sync, Client};
 
-use ibc::{
+use ibc_relayer_types::{
     core::{
         ics02_client::events::{CreateClient, NewBlock, UpdateClient},
         ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
@@ -1006,7 +1006,7 @@ impl ChainEndpoint for PsqlChain {
         self.chain.send_messages_and_wait_check_tx(tracked_msgs)
     }
 
-    fn get_signer(&mut self) -> Result<ibc::signer::Signer, Error> {
+    fn get_signer(&mut self) -> Result<ibc_relayer_types::signer::Signer, Error> {
         self.chain.get_signer()
     }
 
@@ -1026,8 +1026,8 @@ impl ChainEndpoint for PsqlChain {
         self.chain.ibc_version()
     }
 
-    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
-        self.chain.query_balance(key_name)
+    fn query_balance(&self, key_name: Option<&str>, denom: Option<&str>) -> Result<Balance, Error> {
+        self.chain.query_balance(key_name, denom)
     }
 
     fn query_commitment_prefix(&self) -> Result<CommitmentPrefix, Error> {
@@ -1398,5 +1398,9 @@ impl ChainEndpoint for PsqlChain {
         client_state: &AnyClientState,
     ) -> Result<Option<MisbehaviourEvidence>, Error> {
         self.chain.check_misbehaviour(update, client_state)
+    }
+
+    fn query_all_balances(&self, key_name: Option<&str>) -> Result<Vec<Balance>, Error> {
+        self.chain.query_all_balances(key_name)
     }
 }

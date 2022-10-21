@@ -193,7 +193,7 @@ The full documentation for `flex-error` is available at [Docs.rs](https://docs.r
 
 ## Status
 
-Accepted - The PR has been merged in [#988](https://github.com/informalsystems/ibc-rs/pull/988)
+Accepted - The PR has been merged in [#988](https://github.com/informalsystems/hermes/pull/988)
 
 ## Consequences
 
@@ -220,9 +220,9 @@ All error definitions in the `ibc-rs` project will be defined using the
 
 ## References
 
-- [PR #988](https://github.com/informalsystems/ibc-rs/pull/988):
+- [PR #988](https://github.com/informalsystems/hermes/pull/988):
   Use flex-error to define errors
-- [Issue #712](https://github.com/informalsystems/ibc-rs/issues/712):
+- [Issue #712](https://github.com/informalsystems/hermes/issues/712):
   Relayer error handling specification
-- [Issue #11588](https://github.com/informalsystems/ibc-rs/issues/1158):
+- [Issue #11588](https://github.com/informalsystems/hermes/issues/1158):
   Tracking issue for no-std support

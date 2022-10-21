@@ -4,10 +4,10 @@
 
 use core::time::Duration;
 use eyre::{eyre, Report as Error};
-use ibc::timestamp::ZERO_DURATION;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::default::connection_delay as default_connection_delay;
 use ibc_relayer::connection::{Connection, ConnectionSide};
+use ibc_relayer_types::timestamp::ZERO_DURATION;
 use tracing::{debug, info};
 
 use crate::relayer::connection::TaggedConnectionExt;

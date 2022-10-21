@@ -8,10 +8,10 @@ use std::time::Duration;
 
 use moka::sync::Cache as MokaCache;
 
-use ibc::core::ics02_client::height::Height;
-use ibc::core::ics03_connection::connection::ConnectionEnd;
-use ibc::core::ics04_channel::channel::ChannelEnd;
-use ibc::core::ics24_host::identifier::{ClientId, ConnectionId, PortChannelId};
+use ibc_relayer_types::core::ics02_client::height::Height;
+use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
+use ibc_relayer_types::core::ics04_channel::channel::ChannelEnd;
+use ibc_relayer_types::core::ics24_host::identifier::{ClientId, ConnectionId, PortChannelId};
 
 use crate::client_state::AnyClientState;
 

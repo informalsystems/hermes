@@ -6,10 +6,10 @@ use core::str::FromStr;
 use core::time::Duration;
 use eyre::eyre;
 use eyre::Report as Error;
-use ibc::core::ics24_host::identifier::ChainId;
 use ibc_relayer::chain::ChainType;
 use ibc_relayer::config;
 use ibc_relayer::keyring::Store;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use std::sync::{Arc, RwLock};
 use tendermint_rpc::Url;
 
@@ -135,7 +135,7 @@ impl FullNode {
 
             // By default we use in-memory key store to avoid polluting
             // ~/.hermes/keys. See
-            // https://github.com/informalsystems/ibc-rs/issues/1541
+            // https://github.com/informalsystems/hermes/issues/1541
             key_store_type: Store::Memory,
 
             store_prefix: "ibc".to_string(),

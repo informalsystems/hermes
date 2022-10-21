@@ -17,9 +17,9 @@ use ibc_proto::google::protobuf::Any;
 use serde_derive::{Deserialize, Serialize};
 use tendermint_light_client_verifier::types::TrustThreshold;
 
-use ibc::core::ics23_commitment::specs::ProofSpecs;
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc::timestamp::ZERO_DURATION;
+use ibc_relayer_types::core::ics23_commitment::specs::ProofSpecs;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc_relayer_types::timestamp::ZERO_DURATION;
 
 use crate::chain::ChainType;
 use crate::config::gas_multiplier::GasMultiplier;
@@ -238,17 +238,6 @@ pub struct Packets {
     pub clear_on_start: bool,
     #[serde(default = "default::tx_confirmation")]
     pub tx_confirmation: bool,
-}
-
-impl Default for Packets {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            clear_interval: default::clear_packets_interval(),
-            clear_on_start: false,
-            tx_confirmation: default::tx_confirmation(),
-        }
-    }
 }
 
 /// Log levels are wrappers over [`tracing_core::Level`].

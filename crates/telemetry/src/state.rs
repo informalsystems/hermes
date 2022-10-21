@@ -10,7 +10,7 @@ use opentelemetry::{
 use opentelemetry_prometheus::PrometheusExporter;
 use prometheus::proto::MetricFamily;
 
-use ibc::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, ClientId, PortId};
 
 use tendermint::Time;
 

@@ -221,10 +221,10 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
         This is mainly useful for accessing IBC data structures that may contain
         information about the counterparty chain. For example, consider
         a tagged and simplified version of
-        [`ConnectionEnd`](ibc::core::ics03_connection::connection::ConnectionEnd):
+        [`ConnectionEnd`](ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd):
 
         ```rust
-        # use ibc::core::ics24_host::identifier::ConnectionId;
+        # use ibc_relayer_types::core::ics24_host::identifier::ConnectionId;
         # use ibc_test_framework::types::tagged::dual::Tagged;
         struct ConnectionEnd {
             connection_id: ConnectionId,

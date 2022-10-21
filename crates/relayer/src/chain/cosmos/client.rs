@@ -4,7 +4,7 @@ use core::time::Duration;
 
 use tracing::warn;
 
-use ibc::core::ics02_client::trust_threshold::TrustThreshold;
+use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
 
 use crate::config::ChainConfig;
 use crate::foreign_client::CreateOptions;
@@ -51,7 +51,7 @@ impl Settings {
 
 /// The client state clock drift must account for destination
 /// chain block frequency and clock drift on source and dest.
-/// https://github.com/informalsystems/ibc-rs/issues/1445
+/// https://github.com/informalsystems/hermes/issues/1445
 fn calculate_client_state_drift(
     src_chain_config: &ChainConfig,
     dst_chain_config: &ChainConfig,

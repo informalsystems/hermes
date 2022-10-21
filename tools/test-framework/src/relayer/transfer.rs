@@ -6,13 +6,13 @@
 use core::ops::Add;
 use core::time::Duration;
 
-use ibc::applications::transfer::error::Error as Ics20Error;
-use ibc::core::ics04_channel::timeout::TimeoutHeight;
-use ibc::timestamp::Timestamp;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::transfer::build_transfer_message as raw_build_transfer_message;
 use ibc_relayer::transfer::TransferError;
+use ibc_relayer_types::applications::transfer::error::Error as Ics20Error;
+use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
+use ibc_relayer_types::timestamp::Timestamp;
 
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::denom::Denom;

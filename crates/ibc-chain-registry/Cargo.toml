@@ -5,7 +5,7 @@ edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
 keywords     = ["cosmos", "ibc", "relayer", "chain", "registry", "hermes"]
-repository   = "https://github.com/informalsystems/ibc-rs"
+repository   = "https://github.com/informalsystems/hermes"
 authors      = ["Informal Systems <hello@informal.systems>"]
 rust-version = "1.60"
 description  = """
@@ -13,9 +13,8 @@ description  = """
 """
 
 [dependencies]
-
-ibc              = { version = "0.19.0", path = "../modules", features = ["std"] }
 ibc-proto        = { version = "0.20.1" }
+ibc-relayer-types = { version = "0.19.0", path = "../relayer-types", features = ["std"] }
 
 async-trait = "0.1.57"
 flex-error  = { version = "0.4.4", default-features = false }
