@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use semver::Version;
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use tonic::metadata::AsciiMetadataValue;
-use tracing::{debug, info, span, warn, Level};
+use tracing::{debug, info, span, trace, warn, Level};
 
 use tendermint::block;
 use tendermint_rpc::{endpoint::broadcast::tx_sync, Client};
@@ -92,7 +92,7 @@ flex_error::define_error! {
             |e| { format_args!("consensus state for client '{}' at height {} not found", e.client_id, e.consensus_height) },
     }
 }
-#[derive(PartialEq)]
+#[derive(Eq, PartialEq)]
 pub enum PsqlSyncStatus {
     Unknown,
     Synced,
@@ -549,6 +549,124 @@ impl PsqlChain {
         self.block_on(update_snapshot(&self.pool, &work_copy))
     }
 
+    fn try_update_with_create_client(
+        &mut self,
+        event: CreateClient,
+        result: &mut IbcSnapshot,
+    ) -> Result<(), Error> {
+        trace!("try_update_with_create_client {:?}", event);
+
+        let client_state = self
+            .chain
+            .query_client_state(
+                QueryClientStateRequest {
+                    client_id: event.client_id().clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map(|(client_state, _proof)| {
+                IdentifiedAnyClientState::new(event.client_id().clone(), client_state)
+            })?;
+
+        let consensus_states = self
+            .chain
+            .query_consensus_states(QueryConsensusStatesRequest {
+                client_id: event.client_id().clone(),
+                pagination: None,
+            })?;
+
+        debug!(
+            "psql chain {} - adding client {} due to event {}",
+            self.chain.id(),
+            client_state.client_id,
+            event
+        );
+
+        result
+            .data
+            .client_states
+            .insert(event.client_id().clone(), client_state);
+
+        result
+            .data
+            .consensus_states
+            .insert(event.client_id().clone(), consensus_states);
+
+        Ok(())
+    }
+
+    fn try_update_with_update_client(
+        &mut self,
+        event: UpdateClient,
+        result: &mut IbcSnapshot,
+    ) -> Result<(), Error> {
+        trace!("try_update_with_update_client {:?}", event);
+
+        // TODO - we should have everything in the UpdateClient event to build the consensus state
+        // Client state should also be already present in the snapshots. Maybe do the gRPC query only
+        // if somehow CreateClient was missed and therefore cannot be found in the snapshot.
+
+        let client_state = self
+            .chain
+            .query_client_state(
+                QueryClientStateRequest {
+                    client_id: event.client_id().clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map(|(client_state, _proof)| {
+                IdentifiedAnyClientState::new(event.client_id().clone(), client_state)
+            })?;
+
+        let consensus_state = self
+            .chain
+            .query_consensus_state(
+                QueryConsensusStateRequest {
+                    client_id: event.client_id().clone(),
+                    query_height: QueryHeight::Latest,
+                    consensus_height: event.consensus_height(),
+                },
+                IncludeProof::No,
+            )
+            .map(|(consensus_state, _proof)| {
+                AnyConsensusStateWithHeight::new(event.consensus_height(), consensus_state)
+            })?;
+
+        debug!(
+            "psql chain {} - updating client {} due to event {}",
+            self.chain.id(),
+            client_state.client_id,
+            event
+        );
+
+        result
+            .data
+            .client_states
+            .insert(event.client_id().clone(), client_state);
+
+        let entry = result
+            .data
+            .consensus_states
+            .entry(event.client_id().clone())
+            .or_insert_with(Vec::new);
+
+        entry.push(consensus_state);
+        entry.sort_by(|a, b| b.height.cmp(&a.height));
+        entry.dedup_by_key(|cs| cs.height);
+
+        Ok(())
+    }
+
+    fn try_update_with_client_event(&mut self, event: IbcEvent, result: &mut IbcSnapshot) {
+        let _ = match event {
+            IbcEvent::CreateClient(ev) => self.try_update_with_create_client(ev, result),
+            IbcEvent::UpdateClient(ev) => self.try_update_with_update_client(ev, result),
+            _ => Ok(()),
+        };
+    }
+
     #[tracing::instrument(skip(self))]
     fn maybe_chain_connection(
         &self,
@@ -570,117 +688,9 @@ impl PsqlChain {
         }
     }
 
-    fn try_update_with_create_client(
-        &mut self,
-        ev: CreateClient,
-        result: &mut IbcSnapshot,
-    ) -> Result<(), Error> {
-        let client_state = self
-            .chain
-            .query_client_state(
-                QueryClientStateRequest {
-                    client_id: ev.client_id().clone(),
-                    height: QueryHeight::Specific(ev.consensus_height()),
-                },
-                IncludeProof::No,
-            )
-            .map(|(client_state, _proof)| {
-                IdentifiedAnyClientState::new(ev.client_id().clone(), client_state)
-            })?;
-
-        let consensus_states = self
-            .chain
-            .query_consensus_states(QueryConsensusStatesRequest {
-                client_id: ev.client_id().clone(),
-                pagination: None,
-            })?;
-
-        debug!(
-            "psql chain {} - adding client {} due to event {}",
-            self.chain.id(),
-            client_state.client_id,
-            ev
-        );
-
-        result
-            .data
-            .client_states
-            .insert(ev.client_id().clone(), client_state);
-
-        result
-            .data
-            .consensus_states
-            .insert(ev.client_id().clone(), consensus_states);
-
-        Ok(())
-    }
-
-    fn try_update_with_update_client(
-        &mut self,
-        ev: UpdateClient,
-        result: &mut IbcSnapshot,
-    ) -> Result<(), Error> {
-        let client_state = self
-            .chain
-            .query_client_state(
-                QueryClientStateRequest {
-                    client_id: ev.client_id().clone(),
-                    height: QueryHeight::Specific(ev.consensus_height()),
-                },
-                IncludeProof::No,
-            )
-            .map(|(client_state, _proof)| {
-                IdentifiedAnyClientState::new(ev.client_id().clone(), client_state)
-            })?;
-
-        let consensus_state = self
-            .chain
-            .query_consensus_state(
-                QueryConsensusStateRequest {
-                    client_id: ev.client_id().clone(),
-                    query_height: QueryHeight::Specific(ev.consensus_height()),
-                    consensus_height: ev.consensus_height(),
-                },
-                IncludeProof::No,
-            )
-            .map(|(consensus_state, _proof)| {
-                AnyConsensusStateWithHeight::new(ev.consensus_height(), consensus_state)
-            })?;
-
-        debug!(
-            "psql chain {} - updating client {} due to event {}",
-            self.chain.id(),
-            client_state.client_id,
-            ev
-        );
-
-        result
-            .data
-            .client_states
-            .insert(ev.client_id().clone(), client_state);
-
-        let entry = result
-            .data
-            .consensus_states
-            .entry(ev.client_id().clone())
-            .or_insert_with(Vec::new);
-
-        entry.push(consensus_state);
-        entry.sort_by(|a, b| b.height.cmp(&a.height));
-        entry.dedup_by_key(|cs| cs.height);
-
-        Ok(())
-    }
-
-    fn try_update_with_client_event(&mut self, event: IbcEvent, result: &mut IbcSnapshot) {
-        let _ = match event {
-            IbcEvent::CreateClient(ev) => self.try_update_with_create_client(ev, result),
-            IbcEvent::UpdateClient(ev) => self.try_update_with_update_client(ev, result),
-            _ => Ok(()),
-        };
-    }
-
     fn try_update_with_connection_event(&mut self, event: IbcEvent, result: &mut IbcSnapshot) {
+        trace!("try_update_with_connection_event {:?}", event);
+
         // Connection events do not include the delay and version so a connection cannot be currently
         // fully constructed from an event. Because of this we need to query the chain directly for
         // Init and Try events.
@@ -769,6 +779,8 @@ impl PsqlChain {
     }
 
     fn try_update_with_channel_event(&mut self, event: IbcEvent, result: &mut IbcSnapshot) {
+        trace!("try_update_with_channel_event {:?}", event);
+
         // Channel events do not include the ordering and version so a channel cannot be currently
         // fully constructed from an event. Because of this we need to query the chain directly for
         // Init and Try events.
@@ -822,6 +834,8 @@ impl PsqlChain {
     }
 
     fn try_update_with_packet_event(&mut self, event: IbcEvent, snapshot: &mut IbcSnapshot) {
+        trace!("try_update_with_packet_event {:?}", event);
+
         match event {
             IbcEvent::SendPacket(sp) => {
                 let packet_id = PacketId {
