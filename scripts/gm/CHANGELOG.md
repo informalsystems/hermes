@@ -6,7 +6,7 @@
 
 - Fixed variable TM to reference the GAIAD_BINARY ([#2210]).
 
-[#2210]: https://github.com/informalsystems/ibc-rs/issues/2210
+[#2210]: https://github.com/informalsystems/hermes/issues/2210
 
 ## v0.1.2
 
@@ -18,7 +18,7 @@
 
 - Adjusted the `max_gas` and `gas_price.price` parameters used for `gm hermes config`.
 
-[#2262]: https://github.com/informalsystems/ibc-rs/issues/2262
+[#2262]: https://github.com/informalsystems/hermes/issues/2262
 
 
 ## v0.1.1
@@ -28,7 +28,7 @@
 - Added `unsafe-reset-all` support for SDK 0.44.8+ and 0.45.3+ ([#2162])
 
 
-[#2162]: https://github.com/informalsystems/ibc-rs/issues/2162
+[#2162]: https://github.com/informalsystems/hermes/issues/2162
 
 ## v0.1.0
 
@@ -57,15 +57,15 @@
 - Fixed gaiad 0.43 keys add printing key to stderr instead of stdout issue ([#1312])
 - Bumped default rpc_timeout in Hermes config to 5s ([#1312])
 
-[#1312]: https://github.com/informalsystems/ibc-rs/issues/1312
-[#1365]: https://github.com/informalsystems/ibc-rs/issues/1365
+[#1312]: https://github.com/informalsystems/hermes/issues/1312
+[#1365]: https://github.com/informalsystems/hermes/issues/1365
 
 ## v0.0.7
 
 ### BUGFIXES
 - Fixed gm not reporting missing dependencies ([#1261])
 
-[#1261]: https://github.com/informalsystems/ibc-rs/issues/1261
+[#1261]: https://github.com/informalsystems/hermes/issues/1261
 
 ## v0.0.6
 
@@ -74,9 +74,9 @@
 - Enabled swagger page on the gaiad APP port.
 
 ### BUGFIXES
-- Re-enable APP port in configuration ([comment](https://github.com/informalsystems/ibc-rs/pull/1051#issuecomment-856024919))
+- Re-enable APP port in configuration ([comment](https://github.com/informalsystems/hermes/pull/1051#issuecomment-856024919))
 
-[#1049]: https://github.com/informalsystems/ibc-rs/issues/1049
+[#1049]: https://github.com/informalsystems/hermes/issues/1049
 
 ## v0.0.5 (unreleased)
 
@@ -113,7 +113,7 @@
 ### Dependencies
 - Requires stoml 0.7.0 or above
 
-[#993]: https://github.com/informalsystems/ibc-rs/issues/993
+[#993]: https://github.com/informalsystems/hermes/issues/993
 
 ## v0.0.2
 
@@ -121,13 +121,13 @@
 - Import hermes keys properly even if hdpath is set ([#975])
 
 ### FEATURES
-- Introduced [CHANGELOG](https://github.com/informalsystems/ibc-rs/blob/master/scripts/gm/CHANGELOG.md) file.
+- Introduced [CHANGELOG](https://github.com/informalsystems/hermes/blob/master/scripts/gm/CHANGELOG.md) file.
 
-[#975]: https://github.com/informalsystems/ibc-rs/issues/975
+[#975]: https://github.com/informalsystems/hermes/issues/975
 
 ## v0.0.1
 
 ### FEATURES
 - Initial release ([#902])
 
-[#902]: https://github.com/informalsystems/ibc-rs/issues/902
+[#902]: https://github.com/informalsystems/hermes/issues/902

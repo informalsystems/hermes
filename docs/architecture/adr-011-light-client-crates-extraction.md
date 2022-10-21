@@ -24,7 +24,7 @@ pub enum AnyClientState {
 ```
 
 The rationale behind the `Any*` enum design choice is described
-in [ADR003 - Dealing with chain-specific datatypes](https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/adr-003-handler-implementation.md#dealing-with-chain-specific-datatypes)
+in [ADR003 - Dealing with chain-specific datatypes](https://github.com/informalsystems/hermes/blob/master/docs/architecture/adr-003-handler-implementation.md#dealing-with-chain-specific-datatypes)
 ->
 > We could alternatively model all chain-specific datatypes as boxed trait objects (`Box<dyn Trait>`), but this approach
 > runs into a lot of limitations of trait objects, such as the inability to easily require such trait objects to be
@@ -54,7 +54,7 @@ independently.
 It would be possible to break the circular dependencies by extracting all core code (types, traits, etc.) that a
 light client implementation would possibly need into a separate crate, say `ibc-base`, and then have both the `ibc`
 modules crate and light client implementation crates depend on that `ibc-base` crate. This was implemented in PR
-[#2327](https://github.com/informalsystems/ibc-rs/pull/2327), but the solution seems to be fragile and unmaintainable.
+[#2327](https://github.com/informalsystems/hermes/pull/2327), but the solution seems to be fragile and unmaintainable.
 
 This ADR proposes to break the circular dependency problem by removing the `Any*` enums completely and using
 trait-objects in their place.
@@ -476,9 +476,9 @@ Proposed
 
 * PRs for removing `Any*` enums:
     * Remove all occurences of Any* enums from light clients
-      ([PR #2332](https://github.com/informalsystems/ibc-rs/pull/2332))
-    * Remove Any* enums ([PR #2338](https://github.com/informalsystems/ibc-rs/pull/2338))
-* Experimental PR for extracting `ibc-base` crate ([PR #2327](https://github.com/informalsystems/ibc-rs/pull/2327))
+      ([PR #2332](https://github.com/informalsystems/hermes/pull/2332))
+    * Remove Any* enums ([PR #2338](https://github.com/informalsystems/hermes/pull/2338))
+* Experimental PR for extracting `ibc-base` crate ([PR #2327](https://github.com/informalsystems/hermes/pull/2327))
 * Rationale behind design choice for `Any*` enums
-  ([ADR003: Dealing with chain-specific datatypes](https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/adr-003-handler-implementation.md#dealing-with-chain-specific-datatypes))
+  ([ADR003: Dealing with chain-specific datatypes](https://github.com/informalsystems/hermes/blob/master/docs/architecture/adr-003-handler-implementation.md#dealing-with-chain-specific-datatypes))
 * `erased-serde`: [How it works?](https://github.com/dtolnay/erased-serde/blob/master/explanation/main.rs)

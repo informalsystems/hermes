@@ -1,5 +1,5 @@
 // TODO: disable unwraps:
-// https://github.com/informalsystems/ibc-rs/issues/987
+// https://github.com/informalsystems/hermes/issues/987
 // #![cfg_attr(not(test), deny(clippy::unwrap_used))]
 
 #![no_std]
@@ -37,12 +37,12 @@
 //! `Relayer` contains utilities for testing the `ibc` crate against the [Hermes IBC relayer][relayer-repo]. It acts
 //! as scaffolding for gluing the `ibc` crate with Hermes for testing purposes.
 //!
-//! [core]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core
-//! [clients]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/clients
-//! [applications]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/applications
+//! [core]: https://github.com/cosmos/ibc-rs/tree/main/crates/ibc/src/core
+//! [clients]: https://github.com/cosmos/ibc-rs/tree/main/crates/ibc/src/clients
+//! [applications]: https://github.com/cosmos/ibc-rs/tree/main/crates/ibc/src/applications
 //! [ics-standards]: https://github.com/cosmos/ibc#interchain-standards
-//! [relayer]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/relayer
-//! [relayer-repo]: https://github.com/informalsystems/ibc-rs/tree/master/relayer
+//! [relayer]: https://github.com/cosmos/ibc-rs/tree/main/crates/ibc/src/relayer
+//! [relayer-repo]: https://github.com/informalsystems/hermes/tree/master/crates/relayer
 
 extern crate alloc;
 

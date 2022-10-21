@@ -12,7 +12,7 @@ The current relayer algorithm in [ICS018](https://github.com/cosmos/ibc/tree/19f
     if (localEnd.state === INIT && remoteEnd === null)
 ```
 
-The correct code should include both the cases when a single chain is in state `INIT`, as well as the case when both chains are in state `INIT`, as specified here: [Relayer.tla](https://github.com/informalsystems/ibc-rs/blob/e1b78946529e39a5c709ccd6d11637993073164e/docs/spec/relayer/Relayer.tla#L174)
+The correct code should include both the cases when a single chain is in state `INIT`, as well as the case when both chains are in state `INIT`, as specified here: [Relayer.tla](https://github.com/informalsystems/hermes/blob/e1b78946529e39a5c709ccd6d11637993073164e/docs/spec/relayer/Relayer.tla#L174)
 This fix only concerns the relayer algorithm ICS018.
 
 ##### Channel handshake (ICS4) liveness problem
@@ -28,7 +28,7 @@ The TLA+ spec we have for depicting this liveness problem is for the ICS3 protoc
 
 ##### Problem statement
 
-Related issues: [#71](https://github.com/informalsystems/ibc-rs/issues/71) and [#61](https://github.com/informalsystems/ibc-rs/issues/61).
+Related issues: [#71](https://github.com/informalsystems/hermes/issues/71) and [#61](https://github.com/informalsystems/hermes/issues/61).
 The problem is more thoroughly described in #61, but for the sake of completenes we restated it here in a compact form.
 
 The liveness property that a correct relayer should provide is eventual delivery.
@@ -50,13 +50,13 @@ If the light client disallows updates with heights smaller than the current heig
 Consequently, the relayer will be unable to submit consensus state at height `h`.
 
 To ensure eventual delivery, relayer `r1` would need to retry submitting item `X`, that is: resubmit the consensus state at a larger height (e.g., at `h'`) followed by the message that includes the proof for `X` (e.g., at `h'-1`).
-This retry mechanism was adoped as a solution for the [current relayer implementation](https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/adr-002-ibc-relayer.md#ibc-client-consensus-state-vs-relayer-light-client-states-vs-chain-states).
+This retry mechanism was adoped as a solution for the [current relayer implementation](https://github.com/informalsystems/hermes/blob/master/docs/architecture/adr-002-ibc-relayer.md#ibc-client-consensus-state-vs-relayer-light-client-states-vs-chain-states).
 Note that it is also possible for relayer `r2` to have submitted the same item `X` successfully; in this case, the liveness problem does not actually surface.
 
 
 ##### TLA+ trace
 
-> Note that the TLA+ spec below may change in time. Here we refer to the spec as [existing at this commit](https://github.com/informalsystems/ibc-rs/tree/788c36be9e14725c542bd586b4fe4593edb3ca80/docs/spec/connection-handshake/L2-tla) (unchanged up to [release 0.0.2](https://github.com/informalsystems/ibc-rs/releases/tag/v0.0.2)).  
+> Note that the TLA+ spec below may change in time. Here we refer to the spec as [existing at this commit](https://github.com/informalsystems/hermes/tree/788c36be9e14725c542bd586b4fe4593edb3ca80/docs/spec/connection-handshake/L2-tla) (unchanged up to [release 0.0.2](https://github.com/informalsystems/hermes/releases/tag/v0.0.2)).  
 
 To obtain an execution in TLA+ that depicts the above liveness problem, it is sufficient to enable the `Concurrency` flag in the L2 default TLA+ spec for ICS3.
 This spec is located in [spec/connection-handshake/L2-tla/](spec/connection-handshake/L2-tla/).

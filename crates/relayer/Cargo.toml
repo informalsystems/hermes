@@ -5,7 +5,7 @@ edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
 keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
-repository   = "https://github.com/informalsystems/ibc-rs"
+repository   = "https://github.com/informalsystems/hermes"
 authors      = ["Informal Systems <hello@informal.systems>"]
 rust-version = "1.60"
 description  = """
@@ -60,7 +60,7 @@ semver = "1.0"
 humantime = "2.1.0"
 regex = "1.5.5"
 moka = "0.9.4"
-uuid = { version = "1.1.2", features = ["v4"] }
+uuid = { version = "1.2.1", features = ["v4"] }
 
 [dependencies.num-bigint]
 version = "0.4"

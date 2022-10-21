@@ -150,9 +150,18 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inner().ibc_version()
     }
 
-    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
+    fn query_balance(
+        &self,
+        key_name: Option<String>,
+        denom: Option<String>,
+    ) -> Result<Balance, Error> {
         self.inc_metric("query_balance");
-        self.inner().query_balance(key_name)
+        self.inner().query_balance(key_name, denom)
+    }
+
+    fn query_all_balances(&self, key_name: Option<String>) -> Result<Vec<Balance>, Error> {
+        self.inc_metric("query_all_balance");
+        self.inner().query_all_balances(key_name)
     }
 
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {

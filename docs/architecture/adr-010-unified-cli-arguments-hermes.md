@@ -247,11 +247,11 @@ Proposed.
 __17.06.22__
 
 The following are not yet implemented:
-* Optional flags for `upgrade clients`, issue [#2311](https://github.com/informalsystems/ibc-rs/issues/2311)
-* Optional flags for `query connections`, issue [#2310](https://github.com/informalsystems/ibc-rs/issues/2310)
+* Optional flags for `upgrade clients`, issue [#2311](https://github.com/informalsystems/hermes/issues/2311)
+* Optional flags for `query connections`, issue [#2310](https://github.com/informalsystems/hermes/issues/2310)
 * Updating `query channel ends` to `query channel full`
 
-The PR which updates the flags for all the commands as described in this ADR: [#2275](https://github.com/informalsystems/ibc-rs/pull/2275)
+The PR which updates the flags for all the commands as described in this ADR: [#2275](https://github.com/informalsystems/hermes/pull/2275)
 
 __07.07.22__
 
@@ -259,11 +259,11 @@ Added `tx raw` commands to the ADR
 
 __08.07.22__
 
-* Created a new PR, [#2384](https://github.com/informalsystems/ibc-rs/pull/2384), to add the optional flag for the `upgrade clients` command, issue [#2311](https://github.com/informalsystems/ibc-rs/issues/2311)
+* Created a new PR, [#2384](https://github.com/informalsystems/hermes/pull/2384), to add the optional flag for the `upgrade clients` command, issue [#2311](https://github.com/informalsystems/hermes/issues/2311)
 
 __11.07.22__
 
-* Created a new PR, [#2391](https://github.com/informalsystems/ibc-rs/pull/2391), to add the optional flags for the `query connections` command, issue [#2310](https://github.com/informalsystems/ibc-rs/issues/2310)
+* Created a new PR, [#2391](https://github.com/informalsystems/hermes/pull/2391), to add the optional flags for the `query connections` command, issue [#2310](https://github.com/informalsystems/hermes/issues/2310)
 
 ## Consequences
 
@@ -279,4 +279,4 @@ __11.07.22__
 
 ## References
 
-* Proposal in issue: [#2239](https://github.com/informalsystems/ibc-rs/issues/2239)
+* Proposal in issue: [#2239](https://github.com/informalsystems/hermes/issues/2239)

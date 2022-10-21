@@ -610,7 +610,7 @@ impl GrpcStatusSubdetail {
     /// If it evaluates to true then the error is ignored and the transaction that caused this
     /// simulation error is still sent to mempool with `broadcast_tx_sync` allowing for potential
     /// recovery after mempool's `recheckTxs` step.
-    /// More details in <https://github.com/informalsystems/ibc-rs/issues/2249>
+    /// More details in <https://github.com/informalsystems/hermes/issues/2249>
     pub fn is_account_sequence_mismatch_that_can_be_ignored(&self) -> bool {
         match parse_sequences_in_mismatch_error_message(self.status.message()) {
             None => false,

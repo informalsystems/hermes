@@ -38,7 +38,7 @@ For reaching this milestone, we thank the valuable contributions of over 50 indi
   can be used to observe both the current state of the relayer and the networks it is connected to
 - Added many new metrics to the telemetry. The full list can be found in new the guide section linked above
 
-[gas-mul]: https://github.com/informalsystems/ibc-rs/blob/v1.0.0/UPGRADING.md#the-gas_adjustment-setting-has-been-deprecated-in-favor-of-gas_multiplier
+[gas-mul]: https://github.com/informalsystems/hermes/blob/v1.0.0/UPGRADING.md#the-gas_adjustment-setting-has-been-deprecated-in-favor-of-gas_multiplier
 
 ### Change to the versioning scheme
 
@@ -73,23 +73,23 @@ v1.0.0-rc.2, v1.0.0-rc.1 and v1.0.0-rc.0.
 
 - Release version 1.0.0 of Hermes (`ibc-relayer-cli`)
 
-### IBC Proto - [`ibc-proto`](crates/proto) (v0.20.0)
+### IBC Proto - [`ibc-proto`](https://github.com/cosmos/ibc-proto-rs) (v0.20.0)
 
 - Release version 0.20.1 of `ibc-proto`
 
-### IBC Modules - [`ibc`](crates/modules) (v0.19.0)
+### IBC Modules - [`ibc`](https://github.com/cosmos/ibc-rs) (v0.19.0)
 
 - Release version 0.19.0 of `ibc`
 
 #### BREAKING CHANGES
 
 - Remove `height` attribute from `IbcEvent` and its variants
-  ([#2542](https://github.com/informalsystems/ibc-rs/issues/2542))
+  ([#2542](https://github.com/informalsystems/hermes/pull/2542))
 
 #### BUG FIXES
 
 - Fix `MsgTimeoutOnClose` to verify the channel proof
-  ([#2534](https://github.com/informalsystems/ibc-rs/issues/2534))
+  ([#2534](https://github.com/informalsystems/hermes/issues/2534))
 
 
 ### Relayer Library - [`ibc-relayer`](crates/relayer) (v0.19.0)
@@ -99,7 +99,7 @@ v1.0.0-rc.2, v1.0.0-rc.1 and v1.0.0-rc.0.
 #### FEATURES
 
 - Introduces discovery phase to initialize Prometheus metrics
-  ([#2479](https://github.com/informalsystems/ibc-rs/issues/2479))
+  ([#2479](https://github.com/informalsystems/hermes/issues/2479))
 
 #### IMPROVEMENTS
 
@@ -107,7 +107,7 @@ v1.0.0-rc.2, v1.0.0-rc.1 and v1.0.0-rc.0.
   functionality directly. Instead of exposing a getter for the
   `LightClient` trait, the `ChainEndpoint` trait now defines the
   two methods `verify_header` and `check_misbehaviour` directly.
-  ([#2548](https://github.com/informalsystems/ibc-rs/issues/2548))
+  ([#2548](https://github.com/informalsystems/hermes/issues/2548))
 
 
 ### Telemetry & Metrics - [`ibc-telemetry`](crates/telemetry) (v0.19.0)
@@ -116,7 +116,7 @@ v1.0.0-rc.2, v1.0.0-rc.1 and v1.0.0-rc.0.
 
 #### BREAKING CHANGES
 
-- Multiple fixes related to telemetry, detailed below ([#2479](https://github.com/informalsystems/ibc-rs/issues/2479))
+- Multiple fixes related to telemetry, detailed below ([#2479](https://github.com/informalsystems/hermes/issues/2479))
   - Renamed the following metrics:
     * `ibc_client_updates` to `client_updates_submitted`
     * `ibc_client_misbehaviours ` to `client_misbehaviours_submitted`
@@ -147,7 +147,7 @@ v1.0.0-rc.2, v1.0.0-rc.1 and v1.0.0-rc.0.
 
 - Document all metrics and [add a section][telemetry-guide] describing how Hermes metrics can be used to observe
   both the current state of the Hermes relayer and the networks it is connected to
- ([#2479](https://github.com/informalsystems/ibc-rs/issues/2479))
+ ([#2479](https://github.com/informalsystems/hermes/issues/2479))
 
 [telemetry-guide]: https://hermes.informal.systems/telemetry/operators.html
 
@@ -173,11 +173,11 @@ This is the third release candidate for Hermes v1.0.0 🎉
 
 - Release version 1.0.0-rc.2 of Hermes (`ibc-relayer-cli`)
 
-### IBC Proto - [`ibc-proto`](crates/proto) (v0.20.0)
+### IBC Proto - [`ibc-proto`](https://github.com/cosmos/ibc-proto-rs) (v0.20.0)
 
 - Release version 0.20.0 of `ibc-proto`
 
-### IBC Modules - [`ibc`](crates/modules) (v0.18.0)
+### IBC Modules - [`ibc`](https://github.com/cosmos/ibc-rs) (v0.18.0)
 
 - Release version 0.18.0 of `ibc`
 
@@ -190,14 +190,14 @@ This is the third release candidate for Hermes v1.0.0 🎉
 - For the `ConnOpenTry` and `ConnOpenAck` steps, wait for the destination
   app height to be higher than the consensus height, otherwise we fail to
   complete the handshake when the block times of the two chains involved differ
-  significantly ([#2433](https://github.com/informalsystems/ibc-rs/issues/2433))
+  significantly ([#2433](https://github.com/informalsystems/hermes/issues/2433))
 - Fix code that could result in message batch size growing above the transaction size limit
-  ([#2477](https://github.com/informalsystems/ibc-rs/issues/2477)).
+  ([#2477](https://github.com/informalsystems/hermes/issues/2477)).
 
 #### FEATURES
 
 - Enable connecting to full nodes over IPv6
-  ([#2380](https://github.com/informalsystems/ibc-rs/issues/2380))
+  ([#2380](https://github.com/informalsystems/hermes/issues/2380))
 
 ### Telemetry & Metrics - [`ibc-telemetry`](crates/telemetry) (v0.18.0)
 
@@ -212,14 +212,14 @@ This is the third release candidate for Hermes v1.0.0 🎉
     as a metric reporting how many packets are pending on a channel
   - Ensures the `backlog_oldest_sequence` and `backlog_oldest_timestamp` are correctly
     updated when a timeout occurs or when another relayer clears the channel
-    ([#2451](https://github.com/informalsystems/ibc-rs/issues/2451))
+    ([#2451](https://github.com/informalsystems/hermes/issues/2451))
   - Ensures `backlog_timestamp` is never updated by a packet with a higher `sequence` than the oldest pending packet
-    ([#2469](https://github.com/informalsystems/ibc-rs/issues/2469))
+    ([#2469](https://github.com/informalsystems/hermes/issues/2469))
 
 #### BUG FIXES
 
 - Fixed a bug with updating of Prometheus metrics in the presence of concurrent relayers
-  ([#2467](https://github.com/informalsystems/ibc-rs/issues/2467))
+  ([#2467](https://github.com/informalsystems/hermes/issues/2467))
 
 ### REST API - [`ibc-relayer-rest`](crates/relayer-rest) (v0.18.0)
 
@@ -230,9 +230,9 @@ This is the third release candidate for Hermes v1.0.0 🎉
 #### IMPROVEMENTS
 
 - Document how to use HTTP basic authentication in the guide
-  ([#2459](https://github.com/informalsystems/ibc-rs/issues/2459))
+  ([#2459](https://github.com/informalsystems/hermes/issues/2459))
 - Remove tutorial featuring raw commands from the guide
-  ([#2466](https://github.com/informalsystems/ibc-rs/issues/2466))
+  ([#2466](https://github.com/informalsystems/hermes/issues/2466))
 
 
 ## v1.0.0-rc.1
@@ -251,85 +251,85 @@ This is the second release candidate for Hermes v1.0.0 🎉
 - Bump `ibc-proto` crate to 0.19.1
 - Bump `ibc`, `ibc-relayer`, `ibc-telemetry`, `ibc-relayer-rest` crates to v0.17.0
 - Bump tendermint-rs dependencies to 0.23.8
-  ([#2455](https://github.com/informalsystems/ibc-rs/issues/2455))
+  ([#2455](https://github.com/informalsystems/hermes/issues/2455))
 
 ### Hermes - [`ibc-relayer-cli`](crates/relayer-cli) (v1.0.0-rc.1)
 
 #### BREAKING CHANGES
 
 - Drop the `raw` prefix from all the `tx raw` commands
-  ([#2315](https://github.com/informalsystems/ibc-rs/issues/2315)
+  ([#2315](https://github.com/informalsystems/hermes/issues/2315)
 - Remove the four duplicate commands:
   * `tx raw update-client`, which is the same as `update client`
   * `tx raw upgrade-client`, which is the same as `upgrade client`
   * `tx raw upgrade-clients`, which is the same as `upgrade clients`
   * `tx raw create-client`, which is the same as `create client`
-  * ([#2315](https://github.com/informalsystems/ibc-rs/issues/2376))
+  * ([#2315](https://github.com/informalsystems/hermes/issues/2376))
 - Rename `--a-` and `--b-` prefixes in `hermes tx` subcommands to `--src-` and `--dst-`
-  ([#2410](https://github.com/informalsystems/ibc-rs/issues/2410))
+  ([#2410](https://github.com/informalsystems/hermes/issues/2410))
 - Rename flags of `tx upgrade-chain` command from `--src`/`--dst` to `--reference`/`--host`
-  ([#2376](https://github.com/informalsystems/ibc-rs/issues/2376))
+  ([#2376](https://github.com/informalsystems/hermes/issues/2376))
 - The default value of the configuration `tx_confirmation`
   in Hermes `config.toml` has been changed from `true` to `false`.
-  ([#2408](https://github.com/informalsystems/ibc-rs/issues/2408))
+  ([#2408](https://github.com/informalsystems/hermes/issues/2408))
 
 #### BUG FIXES
 
 - Fixed filtering counterparty chain in Hermes command `query channels`
-  ([#1132](https://github.com/informalsystems/ibc-rs/issues/1132))
+  ([#1132](https://github.com/informalsystems/hermes/issues/1132))
 - Fixed command `tx raw ft-transfer` to correctly use the address given by the `--receiver` flag
-  ([#2405](https://github.com/informalsystems/ibc-rs/issues/2405))
+  ([#2405](https://github.com/informalsystems/hermes/issues/2405))
 
 #### FEATURES
 
 - Add an optional `--show-counterparty` flag to `hermes query channels` which outputs every channel
   along with its corresponding port, and the counterparty chain's id, in a pretty way
-  ([#2429](https://github.com/informalsystems/ibc-rs/issues/2429))
+  ([#2429](https://github.com/informalsystems/hermes/issues/2429))
 - New optional flags `--counterparty-chain` and `--verbose` for the command `query connections`
-  ([#2310](https://github.com/informalsystems/ibc-rs/issues/2310))
+  ([#2310](https://github.com/informalsystems/hermes/issues/2310))
 - Added new optional flag `--host-chain` to filter which clients are upgraded when running `upgrade clients` command
-  ([#2311](https://github.com/informalsystems/ibc-rs/issues/2311))
+  ([#2311](https://github.com/informalsystems/hermes/issues/2311))
 
 #### IMPROVEMENTS
 
 - Hermes command `keys add` now checks for existing key and overwrites only if the flag `--overwrite` is passed
-  ([#2375](https://github.com/informalsystems/ibc-rs/issues/2375))
+  ([#2375](https://github.com/informalsystems/hermes/issues/2375))
 - Rename `--a-` and `--b-` prefixes in `hermes tx` subcommands to `--src-` and `--dst-`
-  ([#2410](https://github.com/informalsystems/ibc-rs/issues/2410))
+  ([#2410](https://github.com/informalsystems/hermes/issues/2410))
 - Increase default value for `gas_multiplier` setting to 1.1
-  ([#2435](https://github.com/informalsystems/ibc-rs/issues/2435))
+  ([#2435](https://github.com/informalsystems/hermes/issues/2435))
 - Output status is now colored in green for success and red for error
-  ([#2431](https://github.com/informalsystems/ibc-rs/issues/2431))
+  ([#2431](https://github.com/informalsystems/hermes/issues/2431))
 
 
-### IBC Proto - [`ibc-proto`](crates/proto) (v0.19.1)
+### IBC Proto - [`ibc-proto`](https://github.com/cosmos/ibc-proto-rs) (v0.19.1)
 
 #### IMPROVEMENTS
 
 - Update Protobuf definitions for IBC-Go to v4.0.0-rc0 and Cosmos SDK to v0.45.6
-  ([#2403](https://github.com/informalsystems/ibc-rs/issues/2403))
+  ([#1](https://github.com/cosmos/ibc-proto-rs/issues/1))
 
 
-### IBC Modules - [`ibc`](crates/modules) (v0.17.0)
+### IBC Modules - [`ibc`](https://github.com/cosmos/ibc-rs) (v0.17.0)
 
 #### BREAKING CHANGES
 
 - Remove provided `Ics20Reader::get_channel_escrow_address()` implementation and make `cosmos_adr028_escrow_address()` public.
-  ([#2387](https://github.com/informalsystems/ibc-rs/issues/2387))
+  ([#37](https://github.com/cosmos/ibc-rs/issues/37))
 
 #### BUG FIXES
 
 - Fix serialization for ICS20 packet data structures
-  ([#2386](https://github.com/informalsystems/ibc-rs/issues/2386))
+  ([#38](https://github.com/cosmos/ibc-rs/issues/38))
 - Properly process `WriteAcknowledgement`s on packet callback
-  ([#2424](https://github.com/informalsystems/ibc-rs/issues/2424))
+  ([#36](https://github.com/cosmos/ibc-rs/issues/36))
 - Fix `write_acknowledgement` handler which incorrectly used packet's `source_{port, channel}` as key for storing acks
-  ([#2428](https://github.com/informalsystems/ibc-rs/issues/2428))
+  ([#35](https://github.com/cosmos/ibc-rs/issues/35))
 
 #### IMPROVEMENTS
 
 - Propose ADR011 for light client extraction
-  ([#2356](https://github.com/informalsystems/ibc-rs/pull/2356))
+  ([#2356](https://github.com/informalsystems/hermes/pull/2356))
 
 
 ### Relayer Library - [`ibc-relayer`](crates/relayer) (v0.17.0)
@@ -338,10 +338,10 @@ This is the second release candidate for Hermes v1.0.0 🎉
 
 - Fix a regression where Hermes would not retry relaying packet on account
   mismatch error when the sequence number used was smaller than the expected one
-  ([#2411](https://github.com/informalsystems/ibc-rs/issues/2411))
+  ([#2411](https://github.com/informalsystems/hermes/issues/2411))
 - Fix a bug where the relayer would fail to relay any packets when the
   `/acbi_info` endpoint of a chain did not include `data` and `version` fields
-  ([#2444](https://github.com/informalsystems/ibc-rs/issues/2444))
+  ([#2444](https://github.com/informalsystems/hermes/issues/2444))
 
 
 ### Telemetry & Metrics - [`ibc-telemetry`](crates/telemetry) (v0.17.0)
@@ -351,10 +351,10 @@ This is the second release candidate for Hermes v1.0.0 🎉
 - Updated telemetry metric `wallet_balance` to f64 and removed downscaling
   displayed value. Please note that when converting the balance to f64 a loss in
   precision might be introduced in the displayed value
-  ([#2381](https://github.com/informalsystems/ibc-rs/issues/2381))
+  ([#2381](https://github.com/informalsystems/hermes/issues/2381))
 - Improved naming and description of some telemetry metrics and added
   histogram buckets for `tx_latency` metrics
-  ([#2408](https://github.com/informalsystems/ibc-rs/issues/2408))
+  ([#2408](https://github.com/informalsystems/hermes/issues/2408))
 
 ## v1.0.0-rc.0
 
@@ -385,80 +385,80 @@ eg. feature, bug fix, etc.
 
 - New ADR which describes the changes to the Hermes commands, specifically
   the move to flags instead of positional arguments.
-  ([#594](https://github.com/informalsystems/ibc-rs/issues/594))
+  ([#594](https://github.com/informalsystems/hermes/issues/594))
 - Merged commands `keys add` and `keys restore` into single command `keys add`.
   The flag to specify the key name for the CLI command `keys add` has been changed
   from `-n` to `-k`. Restoring a key now takes a file containing the mnemonic as
   input instead of directly taking the mnemonic.
-  ([#1075](https://github.com/informalsystems/ibc-rs/issues/1075))
+  ([#1075](https://github.com/informalsystems/hermes/issues/1075))
 - Deprecate `gas_adjustment` setting in favor of new `gas_multiplier` setting
-  ([#2174](https://github.com/informalsystems/ibc-rs/issues/2174))
+  ([#2174](https://github.com/informalsystems/hermes/issues/2174))
 - Updated all CLI commands to take flags instead of positional arguments.
-  ([#2239](https://github.com/informalsystems/ibc-rs/issues/2239))
+  ([#2239](https://github.com/informalsystems/hermes/issues/2239))
 - Rename `query packet unreceived-packets` to `query packet pending-sends`
   and `query packet unreceived-acks` to `query packet pending-acks`
-  ([#2379](https://github.com/informalsystems/ibc-rs/issues/2379))
+  ([#2379](https://github.com/informalsystems/hermes/issues/2379))
 
 #### BUG FIXES
 
 - CLI command `config validate` now correctly outputs an error if the configuration file
-  does not exist or is empty. ([#2143](https://github.com/informalsystems/ibc-rs/issues/2143))
+  does not exist or is empty. ([#2143](https://github.com/informalsystems/hermes/issues/2143))
 - Fix the flow for crate connection to ensure success
   despite concurrent relayers racing to finish the handshake.
-  ([#2168](https://github.com/informalsystems/ibc-rs/issues/2168))
+  ([#2168](https://github.com/informalsystems/hermes/issues/2168))
 
 #### FEATURES
 
 - Added CLI command `keys balance` which outputs the balance of an account associated with a
-  key ([#912](https://github.com/informalsystems/ibc-rs/issues/912))
+  key ([#912](https://github.com/informalsystems/hermes/issues/912))
 - Added CLI command `query channel client` which outputs the channel's client state
-  ([#999](https://github.com/informalsystems/ibc-rs/issues/999))
+  ([#999](https://github.com/informalsystems/hermes/issues/999))
 - Added CLI command `query transfer denom-trace` which outputs the base denomination and path of a given
-  trace hash ([#2201](https://github.com/informalsystems/ibc-rs/issues/2201))
+  trace hash ([#43](https://github.com/cosmos/ibc-rs/issues/43))
 - Add unit tests for all Hermes commands with at least one argument
-  ([#2358](https://github.com/informalsystems/ibc-rs/issues/2358))
+  ([#2358](https://github.com/informalsystems/hermes/issues/2358))
 
 #### IMPROVEMENTS
 
-- Add support for selecting a specific wallet in the `clear packets` CLI flow ([#2111](https://github.com/informalsystems/ibc-rs/issues/2111))
+- Add support for selecting a specific wallet in the `clear packets` CLI flow ([#2111](https://github.com/informalsystems/hermes/issues/2111))
 - Added a required flag `--upgrade-height` that halts the reference chain at the
   specified height when performing a client upgrade
-  ([#2300](https://github.com/informalsystems/ibc-rs/issues/2300))
+  ([#2300](https://github.com/informalsystems/hermes/issues/2300))
 - Added `--yes` flag to the `create channel` flow to enable skipping the
-  `--new-client-connection` step ([#2317](https://github.com/informalsystems/ibc-rs/issues/2317))
+  `--new-client-connection` step ([#2317](https://github.com/informalsystems/hermes/issues/2317))
 
-### IBC Proto - [`ibc-proto`](crates/proto) (v0.19.0)
+### IBC Proto - [`ibc-proto`](https://github.com/cosmos/ibc-proto-rs) (v0.19.0)
 
 #### FEATURES
 
 - Generate gRPC server code under feature 'server'
-  ([#2277](https://github.com/informalsystems/ibc-rs/issues/2277))
+  ([#2277](https://github.com/informalsystems/hermes/issues/2277))
 
 
-### IBC Modules - [`ibc`](crates/modules) (v0.16.0)
+### IBC Modules - [`ibc`](https://github.com/cosmos/ibc-rs) (v0.16.0)
 
 #### BREAKING CHANGES
 
 - Change `ChannelId` representation to a string, allowing all IDs valid per ICS 024
-  ([#2330](https://github.com/informalsystems/ibc-rs/issues/2330)).
+  ([#39](https://github.com/cosmos/ibc-rs/issues/39)).
 
 #### BUG FIXES
 
 - Fix `recv_packet` handler incorrectly querying `packet_receipt` and `next_sequence_recv` using
   packet's `source_{port, channel}`.
-  ([#2293](https://github.com/informalsystems/ibc-rs/issues/2293))
+  ([#40](https://github.com/cosmos/ibc-rs/issues/40))
 - Permit channel identifiers with length up to 64 characters,
   as per the ICS 024 specification.
-  ([#2330](https://github.com/informalsystems/ibc-rs/issues/2330)).
+  ([#39](https://github.com/cosmos/ibc-rs/issues/39)).
 
 #### IMPROVEMENTS
 
 - Remove the concept of a zero Height
-  ([#1009](https://github.com/informalsystems/ibc-rs/issues/1009))
-- Complete ICS20 implementation ([#1759](https://github.com/informalsystems/ibc-rs/issues/1759))
-- Derive `serde::{Serialize, Deserialize}` for `U256`. ([#2279](https://github.com/informalsystems/ibc-rs/issues/2279))
+  ([#1009](https://github.com/informalsystems/hermes/issues/1009))
+- Complete ICS20 implementation ([#59](https://github.com/cosmos/ibc-rs/issues/59))
+- Derive `serde::{Serialize, Deserialize}` for `U256`. ([#41](https://github.com/cosmos/ibc-rs/issues/41))
 - Remove unnecessary supertraits requirements from ICS20 traits.
-  ([#2280](https://github.com/informalsystems/ibc-rs/pull/2280))
+  ([#2280](https://github.com/informalsystems/hermes/pull/2280))
 
 
 ### Relayer Library - [`ibc-relayer`](crates/relayer) (v0.16.0)
@@ -466,33 +466,33 @@ eg. feature, bug fix, etc.
 #### BUG FIXES
 
 - Fix `execute_schedule` method dropping operational data due to improper
-  handling of errors. ([#2118](https://github.com/informalsystems/ibc-rs/issues/1153))
-- Fix duplicate packets being generated on start. ([#2093](https://github.com/informalsystems/ibc-rs/issues/2093))
+  handling of errors. ([#2118](https://github.com/informalsystems/hermes/issues/1153))
+- Fix duplicate packets being generated on start. ([#2093](https://github.com/informalsystems/hermes/issues/2093))
 - Use appropriate height when querying for client upgrade state
-  ([#2185](https://github.com/informalsystems/ibc-rs/issues/2185))
+  ([#2185](https://github.com/informalsystems/hermes/issues/2185))
 - Fix the channel handshake issues that occur when concurrent relayers are
-  present ([#2254](https://github.com/informalsystems/ibc-rs/issues/2254))
+  present ([#2254](https://github.com/informalsystems/hermes/issues/2254))
 - When Hermes submits `N` messages to a chain, it will now always gets back `N` responses, even in the presence of errors.
-  ([#2333](https://github.com/informalsystems/ibc-rs/issues/2333))
+  ([#2333](https://github.com/informalsystems/hermes/issues/2333))
 
 #### FEATURES
 
 - Add preliminary support for multiple chain types, which can be specified in
   the chain configuration. At the moment only the `CosmosSdk` chain type is
-  supported. ([#2240](https://github.com/informalsystems/ibc-rs/issues/2240))
+  supported. ([#2240](https://github.com/informalsystems/hermes/issues/2240))
 - Add support for fetching & parsing the Tendermint version of a network that
-  Hermes is connected to. ([#2301](https://github.com/informalsystems/ibc-rs/issues/2301))
+  Hermes is connected to. ([#2301](https://github.com/informalsystems/hermes/issues/2301))
 
 #### IMPROVEMENTS
 
 - Added handler for SDK error 13 in order to output an understandable error
-  message. ([#1400](https://github.com/informalsystems/ibc-rs/issues/1400))
+  message. ([#1400](https://github.com/informalsystems/hermes/issues/1400))
 - Do not retry indefinitely on command handling failure in the packet worker
-  ([#2155](https://github.com/informalsystems/ibc-rs/issues/2155))
+  ([#2155](https://github.com/informalsystems/hermes/issues/2155))
 - Consolidate `ChainEndpoint::proven_*` methods with their corresponding `query_*` form
-  ([#2223](https://github.com/informalsystems/ibc-rs/issues/2223))
+  ([#2223](https://github.com/informalsystems/hermes/issues/2223))
 - Reduce relaying delay when some account mismatch errors occur during Tx
-  simulation ([#2249](https://github.com/informalsystems/ibc-rs/issues/2249))
+  simulation ([#2249](https://github.com/informalsystems/hermes/issues/2249))
 
 ### Telemetry & Metrics - [`ibc-telemetry`](crates/telemetry) (v0.16.0)
 
@@ -500,7 +500,7 @@ eg. feature, bug fix, etc.
 
 - Added new metrics to track the number of relayed `SendPacket` and `WriteAcknowledgement`
   messages, the sequence number and the timestamp of the oldest pending `SendPacket`
-  ([#2175](https://github.com/informalsystems/ibc-rs/issues/2175))
+  ([#2175](https://github.com/informalsystems/hermes/issues/2175))
 
 
 ## v0.15.0
@@ -508,49 +508,49 @@ eg. feature, bug fix, etc.
 *May 23rd, 2022*
 
 This release brings a number of bug fixes, some performance improvements,
-notably when [clearing packets](https://github.com/informalsystems/ibc-rs/issues/2087),
-as well as [new metrics](https://github.com/informalsystems/ibc-rs/issues/2112)
+notably when [clearing packets](https://github.com/informalsystems/hermes/issues/2087),
+as well as [new metrics](https://github.com/informalsystems/hermes/issues/2112)
 for better observability of the relayer's operations.
 
 ### BUG FIXES
 
-- [IBC Modules](crates/modules)
+- [IBC Modules](https://github.com/cosmos/ibc-rs)
   - Fix packet commitment calculation to match ibc-go
-    ([#2104](https://github.com/informalsystems/ibc-rs/issues/2104))
+    ([#47](https://github.com/cosmos/ibc-rs/issues/47))
   - Fix incorrect acknowledgement verification
-    ([#2114](https://github.com/informalsystems/ibc-rs/issues/2114))
+    ([#46](https://github.com/cosmos/ibc-rs/issues/46))
   - fix connection id mix-up in connection acknowledgement processing
-    ([#2178](https://github.com/informalsystems/ibc-rs/issues/2178))
+    ([#44](https://github.com/cosmos/ibc-rs/issues/44))
 - [Relayer Library](crates/relayer)
   - Fix a bug where connection and channel handshakes would fail with non-batching transactions
-    ([#1971](https://github.com/informalsystems/ibc-rs/issues/1971))
+    ([#1971](https://github.com/informalsystems/hermes/issues/1971))
   - Fixed client expiry computation to avoid using local time.
-    ([#2180](https://github.com/informalsystems/ibc-rs/issues/2180))
+    ([#2180](https://github.com/informalsystems/hermes/issues/2180))
 
 ### FEATURES
 
 - General
   - Replaced gaia v5 with v7 in E2E tests.
-    ([#1986](https://github.com/informalsystems/ibc-rs/issues/1986))
+    ([#1986](https://github.com/informalsystems/hermes/issues/1986))
 - [Relayer Library](crates/relayer)
   - Add six new metrics: `wallet_balance`, `ws_events`, `ws_reconnect`,
     `tx_latency_submitted`, `tx_latency_confirmed`, `msg_num`
-    ([#2112](https://github.com/informalsystems/ibc-rs/issues/2112))
+    ([#2112](https://github.com/informalsystems/hermes/issues/2112))
 
 ### IMPROVEMENTS
 
-- [IBC Modules](crates/modules)
+- [IBC Modules](https://github.com/cosmos/ibc-rs)
   - Remove object capabilities from the modules
-    ([#2159](https://github.com/informalsystems/ibc-rs/issues/2159))
+    ([#45](https://github.com/cosmos/ibc-rs/issues/45))
 - [Relayer Library](crates/relayer)
   - Ensure `max_msg_num` is between 1 and 100 with a default of 30
-    ([#1971](https://github.com/informalsystems/ibc-rs/issues/1971))
+    ([#1971](https://github.com/informalsystems/hermes/issues/1971))
   - Fixed misleading error message leaking from the misbehavior detection task.
-    ([#2031](https://github.com/informalsystems/ibc-rs/issues/2031))
+    ([#2031](https://github.com/informalsystems/hermes/issues/2031))
   - Added support for incremental processing of packet clearing commands.
-    ([#2087](https://github.com/informalsystems/ibc-rs/issues/2087))
+    ([#2087](https://github.com/informalsystems/hermes/issues/2087))
   - Implement ADR 9: add domain type for request messages that are passed to query
-    functions ([#2192](https://github.com/informalsystems/ibc-rs/issues/2192))
+    functions ([#2192](https://github.com/informalsystems/hermes/issues/2192))
 
 ## v0.14.1
 
@@ -563,7 +563,7 @@ some queries would fail if they reach a full node after a new block is committed
 
 - [Relayer Library](crates/relayer)
   - Fixed query for application status when application state lags behind blockchain state.
-    ([#1970](https://github.com/informalsystems/ibc-rs/issues/1970))
+    ([#1970](https://github.com/informalsystems/hermes/issues/1970))
 
 ## v0.14.0
 
@@ -583,63 +583,63 @@ The `create channel` command now requires an existing client and connection,
 unless the `--new-client-connection` flag is provided.
 Please [refer to the guide][create-channel] for more information.
 
-[ics-26]: https://github.com/cosmos/ibc/blob/master/spec/core/ics-026-routing-module/README.md
+[ics-26]: https://github.com/cosmos/ibc/blob/main/spec/core/ics-026-routing-module/README.md
 [pending]: https://hermes.informal.systems/commands/queries/packet.html#pending-packets
 [create-channel]: http://hermes.informal.systems/commands/path-setup/channels.html#establish-channel
 
 ### BREAKING CHANGES
 
 - `create channel` now requires a `--new-client-connection` flag to create a new client and connection for the channel
-  ([#1421](https://github.com/informalsystems/ibc-rs/issues/1421))
+  ([#1421](https://github.com/informalsystems/hermes/issues/1421))
 - Update MSRV to Rust 1.60
-  ([#2081](https://github.com/informalsystems/ibc-rs/issues/2081))
+  ([#2081](https://github.com/informalsystems/hermes/pull/2081))
 
 ### BUG FIXES
 
-- [IBC Modules](crates/modules)
+- [IBC Modules](https://github.com/cosmos/ibc-rs)
   - Make all handlers emit an IbcEvent with current host chain height as height parameter value.
-    ([#2035](https://github.com/informalsystems/ibc-rs/issues/2035))
+    ([#52](https://github.com/cosmos/ibc-rs/issues/52))
   - Use the version in the message when handling a MsgConnOpenInit
-    ([#2062](https://github.com/informalsystems/ibc-rs/issues/2062))
+    ([#51](https://github.com/cosmos/ibc-rs/issues/51))
 - [Relayer Library](crates/relayer)
   - Fix the connection delay logic to use the timestamp of the host block when the client update header was installed.
-    ([#1772](https://github.com/informalsystems/ibc-rs/issues/1772))
-  - Fixed Hermes retrying mechanism not regenerating operational data for messages ([#1792](https://github.com/informalsystems/ibc-rs/pull/1951))
+    ([#1772](https://github.com/informalsystems/hermes/issues/1772))
+  - Fixed Hermes retrying mechanism not regenerating operational data for messages ([#1792](https://github.com/informalsystems/hermes/pull/1951))
   - Adjusted max_block_time default value to 30s
-    ([#1998](https://github.com/informalsystems/ibc-rs/issues/1998))
+    ([#1998](https://github.com/informalsystems/hermes/issues/1998))
   - Fix a bug in the wildcard filter where pattern would match in the middle of a
-    string ([#2075](https://github.com/informalsystems/ibc-rs/issues/2075))
+    string ([#2075](https://github.com/informalsystems/hermes/issues/2075))
   - Fixed target height used in misbehavior detection.
-    ([#2097](https://github.com/informalsystems/ibc-rs/issues/2097))
+    ([#2097](https://github.com/informalsystems/hermes/issues/2097))
 - [Relayer CLI](crates/relayer-cli)
   - Skip waiting for confirmation events on tx raw upgrade-chain
-    ([#1288](https://github.com/informalsystems/ibc-rs/issues/1288))
+    ([#1288](https://github.com/informalsystems/hermes/issues/1288))
   - Apply client options specified with the `create client` command.
-    ([#1921](https://github.com/informalsystems/ibc-rs/issues/1921))
+    ([#1921](https://github.com/informalsystems/hermes/issues/1921))
 
 ### FEATURES
 
 - [Relayer Library](crates/relayer)
   - Add a metric for query cache hits
-    ([#2036](https://github.com/informalsystems/ibc-rs/issues/2036))
+    ([#2036](https://github.com/informalsystems/hermes/issues/2036))
 
 ### IMPROVEMENTS
 
 - General
   - Log `missing chain in configuration` errors emitted during event processing at
-    debug level ([#1936](https://github.com/informalsystems/ibc-rs/issues/1936))
+    debug level ([#1936](https://github.com/informalsystems/hermes/issues/1936))
   - Update tendermint-rs dependencies to v0.23.6
-    ([#2045](https://github.com/informalsystems/ibc-rs/issues/2045))
-- [IBC Modules](crates/modules)
-  - Complete ICS26 implementation ([#1758](https://github.com/informalsystems/ibc-rs/issues/1758))
-  - Improve `ChannelId` validation. ([#2068](https://github.com/informalsystems/ibc-rs/issues/2068))
+    ([#2045](https://github.com/informalsystems/hermes/issues/2045))
+- [IBC Modules](https://github.com/cosmos/ibc-rs)
+  - Complete ICS26 implementation ([#60](https://github.com/cosmos/ibc-rs/issues/60))
+  - Improve `ChannelId` validation. ([#50](https://github.com/cosmos/ibc-rs/issues/50))
 - [Relayer CLI](crates/relayer-cli)
   - Change `create channel` CLI command such that it is more difficult to create
-    clients / connections using it ([#1421](https://github.com/informalsystems/ibc-rs/issues/1421))
+    clients / connections using it ([#1421](https://github.com/informalsystems/hermes/issues/1421))
   - Added `query packet pending` command to list outstanding packet
     commitments that are either unreceived or pending acknowledgement
     at both ends of a channel.
-    ([#1862](https://github.com/informalsystems/ibc-rs/issues/1862))
+    ([#1862](https://github.com/informalsystems/hermes/issues/1862))
 
 ## v0.13.0
 *March 28th, 2022*
@@ -705,42 +705,42 @@ This information can also be found in the [Hermes guide][guide-ica].
 
 - [Relayer Library](crates/relayer)
   - Fixed relayer behavior on ordered channels
-    ([#1835](https://github.com/informalsystems/ibc-rs/issues/1835))
+    ([#1835](https://github.com/informalsystems/hermes/issues/1835))
   - Do not spawn packet worker on chan open ack/confirm events
-    ([#1991](https://github.com/informalsystems/ibc-rs/issues/1991))
+    ([#1991](https://github.com/informalsystems/hermes/issues/1991))
   - Fix a bug which would cause the relayer to slow down exponentially when either
     the average block time was low or when it was relaying on too many chains at
-    once ([#2008](https://github.com/informalsystems/ibc-rs/issues/2008))
+    once ([#2008](https://github.com/informalsystems/hermes/issues/2008))
 
 ### FEATURES
 
-- [IBC Proto](crates/proto)
-  - Add CosmWasm support to the generated Protobuf code ([#1913](https://github.com/informalsystems/ibc-rs/issues/1913))
+- [IBC Proto](https://github.com/cosmos/ibc-proto-rs)
+  - Add CosmWasm support to the generated Protobuf code ([#4](https://github.com/cosmos/ibc-proto-rs/issues/4))
     * Add a new `client` feature to gate the tonic client code, implies the `std` feature.
     * Add a new `json-schema` feature to derive `schemars::JsonSchema` on some proto types, implies the `std` feature.
     * Add `#[serde(default)]` to fields that might be omitted by Golang `omitempty` directive.
     * Change serialization of byte arrays to Base64 for compatibility with Go.
   - Derive `Serialize` and `Deserialize` for `ibc-proto::ibc::core` and `ibc_proto::ibc::applications` structs,
     and switch to Google's Protobuf standard types instead of Prost's types.
-    ([#1988](https://github.com/informalsystems/ibc-rs/issues/1988))
+    ([#3](https://github.com/cosmos/ibc-proto-rs/issues/3))
 - [Relayer Library](crates/relayer)
   - Added caching layer for hermes start command
-    ([#1908](https://github.com/informalsystems/ibc-rs/issues/1908))
+    ([#1908](https://github.com/informalsystems/hermes/issues/1908))
   - Add support for wildcards in port and channel identifiers in the packet filter configuration,
     which enable operators to filter ICA channels based on the port prefix
-    ([#1927](https://github.com/informalsystems/ibc-rs/issues/1927))
+    ([#1927](https://github.com/informalsystems/hermes/issues/1927))
 
 ### IMPROVEMENTS
 
-- [IBC Modules](crates/modules)
+- [IBC Modules](https://github.com/cosmos/ibc-rs)
   - Refactored channels events in ICS 04 module
-    ([#718](https://github.com/informalsystems/ibc-rs/issues/718))
+    ([#86](https://github.com/cosmos/ibc-rs/issues/86))
 - [Integration Test Framework](crates/relayer-cli)
-  - Split out test framework as new crate `ibc-test-framework` from `ibc-integration-test`. ([#1961](https://github.com/informalsystems/ibc-rs/pull/1961))
+  - Split out test framework as new crate `ibc-test-framework` from `ibc-integration-test`. ([#1961](https://github.com/informalsystems/hermes/pull/1961))
 - [Relayer Library](crates/relayer)
-  - Add documentation for the caching layer implemented in ([#1908](https://github.com/informalsystems/ibc-rs/issues/1908))
+  - Add documentation for the caching layer implemented in ([#1908](https://github.com/informalsystems/hermes/issues/1908))
 - [Relayer CLI](crates/relayer-cli)
-  - Print packet data on one line ([#1559](https://github.com/informalsystems/ibc-rs/issues/1559))
+  - Print packet data on one line ([#1559](https://github.com/informalsystems/hermes/issues/1559))
 
 ## v0.12.0
 *February 24th, 2022*
@@ -763,50 +763,50 @@ has been added for clearing packets in both direction on a given channel.
 
 ### BUG FIXES
 
-- [IBC Modules](crates/modules)
+- [IBC Modules](https://github.com/cosmos/ibc-rs)
   - Fixed the formatting of NotEnoughTimeElapsed and NotEnoughBlocksElapsed
-    in Tendermint errors ([#1706](https://github.com/informalsystems/ibc-rs/issues/1706))
+    in Tendermint errors ([#24](https://github.com/cosmos/ibc-rs/issues/24))
   - IBC handlers now retrieve the host timestamp from the latest host consensus
-    state ([#1770](https://github.com/informalsystems/ibc-rs/issues/1770))
+    state ([#57](https://github.com/cosmos/ibc-rs/issues/57))
 - [Relayer Library](crates/relayer)
   - Handle non-standard ports in channel handshake
-    ([#1837](https://github.com/informalsystems/ibc-rs/issues/1837))
+    ([#1837](https://github.com/informalsystems/hermes/issues/1837))
   - Fix duplicate SendPacket events emitted by EndBlock
-    ([#1844](https://github.com/informalsystems/ibc-rs/issues/1844))
+    ([#1844](https://github.com/informalsystems/hermes/issues/1844))
   - Fix support for non-standard ports in channel handshake
-    ([#1861](https://github.com/informalsystems/ibc-rs/issues/1861),
-    [#1837](https://github.com/informalsystems/ibc-rs/issues/1837))
+    ([#1861](https://github.com/informalsystems/hermes/issues/1861),
+    [#1837](https://github.com/informalsystems/hermes/issues/1837))
   - Fixed bug where Hermes cleared packets at startup, despite
-    `clear_on_start = false` ([#1872](https://github.com/informalsystems/ibc-rs/issues/1872))
+    `clear_on_start = false` ([#1872](https://github.com/informalsystems/hermes/issues/1872))
 - [Relayer CLI](crates/relayer-cli)
   - Disable reloading of configuration upon receiving a SIGHUP signal
-    ([#1885](https://github.com/informalsystems/ibc-rs/issues/1885))
+    ([#1885](https://github.com/informalsystems/hermes/issues/1885))
 
 ### FEATURES
 
 - General
   - Upgrade protos and compatibility to IBC v3.0.0-rc.0 and Cosmos SDK v0.45.1
-    ([#1797](https://github.com/informalsystems/ibc-rs/issues/1797))
+    ([#5](https://github.com/cosmos/ibc-proto-rs/issues/5))
 - [Relayer CLI](crates/relayer-cli)
   - Allow overriding the tracing filter with `RUST_LOG` environment variable
-    ([#1895](https://github.com/informalsystems/ibc-rs/issues/1895))
+    ([#1895](https://github.com/informalsystems/hermes/issues/1895))
 
 ### IMPROVEMENTS
 
-- [IBC Modules](crates/modules)
+- [IBC Modules](https://github.com/cosmos/ibc-rs)
   - Added more unit tests to verify Tendermint ClientState
-    ([#1706](https://github.com/informalsystems/ibc-rs/issues/1706))
+    ([#24](https://github.com/cosmos/ibc-rs/issues/24))
   - Define CapabilityReader and CapabilityKeeper traits
-    ([#1769](https://github.com/informalsystems/ibc-rs/issues/1769))
+    ([#58](https://github.com/cosmos/ibc-rs/issues/58))
 - [Relayer Library](crates/relayer)
   - Add two more health checks: tx indexing enabled and historical entries > 0
-    ([#1388](https://github.com/informalsystems/ibc-rs/issues/1388))
+    ([#1388](https://github.com/informalsystems/hermes/issues/1388))
   - Changed `ConnectionEnd::versions` method to be non-allocating by having it return a `&[Version]` instead of `Vec<Version>`
-    ([#1880](https://github.com/informalsystems/ibc-rs/pull/1880))
+    ([#55](https://github.com/cosmos/ibc-rs/issues/55))
 - [Relayer CLI](crates/relayer-cli)
   - Added `clear packets` command, combining the effects of
     `tx raw packet-recv` and `tx raw packet-ack`
-    ([#1834](https://github.com/informalsystems/ibc-rs/pull/1834))
+    ([#1834](https://github.com/informalsystems/hermes/pull/1834))
 
 ## v0.11.1
 *February 4th, 2022*
@@ -817,15 +817,15 @@ This release mainly adds support for channel events originating from Tendermint 
 
 - [Relayer CLI](crates/relayer-cli)
   - Do not require a config file to be present for the `completions` command.
-    ([#1822](https://github.com/informalsystems/ibc-rs/pull/1822))
+    ([#1822](https://github.com/informalsystems/hermes/pull/1822))
 
 ### IMPROVEMENTS
 
 - [Relayer Library](crates/relayer)
   - Increased tx confirmation timeout to 300s to prevent aggressive tx
-    resubmission ([#1663](https://github.com/informalsystems/ibc-rs/issues/1663))
+    resubmission ([#1663](https://github.com/informalsystems/hermes/issues/1663))
   - Handle channel events originating from Tendermint ABCI's BeginBlock and EndBlock methods
-    ([#1793](https://github.com/informalsystems/ibc-rs/issues/1793))
+    ([#1793](https://github.com/informalsystems/hermes/issues/1793))
 
 
 ## v0.11.0
@@ -871,54 +871,54 @@ Before running Hermes v0.11.0, make sure you remove the `mode.packets.filter` op
 ### BREAKING CHANGES
 
 - General
-  - Update MSRV to Rust 1.58 ([#1765](https://github.com/informalsystems/ibc-rs/issues/1765))
-  - Update tendermint-rs dependencies to 0.23.5 ([#1767](https://github.com/informalsystems/ibc-rs/issues/1767))
+  - Update MSRV to Rust 1.58 ([#1765](https://github.com/informalsystems/hermes/issues/1765))
+  - Update tendermint-rs dependencies to 0.23.5 ([#1767](https://github.com/informalsystems/hermes/issues/1767))
 - [Relayer Library](crates/relayer)
   - Added a `denom` member to `upgrade_chain::UpgradePlanOptions`
-    ([#1662](https://github.com/informalsystems/ibc-rs/issues/1662))
-- [IBC Modules](crates/modules)
-  - Hide `ibc::Timestamp::now()` behind `clock` feature flag ([#1612](https://github.com/informalsystems/ibc-rs/issues/1612))
+    ([#1662](https://github.com/informalsystems/hermes/issues/1662))
+- [IBC Modules](https://github.com/cosmos/ibc-rs)
+  - Hide `ibc::Timestamp::now()` behind `clock` feature flag ([#1612](https://github.com/informalsystems/hermes/issues/1612))
 
 ### BUG FIXES
 
-- [IBC Modules](crates/modules)
+- [IBC Modules](https://github.com/cosmos/ibc-rs)
   - Verify the client consensus proof against the client's consensus state root and not the host's state root
-    [#1745](https://github.com/informalsystems/ibc-rs/issues/1745)
+    [#61](https://github.com/cosmos/ibc-rs/issues/61)
   - Initialize consensus metadata on client creation
-    ([#1763](https://github.com/informalsystems/ibc-rs/issues/1763))
+    ([#1763](https://github.com/informalsystems/hermes/pull/1763))
 
 ### IMPROVEMENTS
 
 - General
-  - Improve startup time of the relayer ([#1705](https://github.com/informalsystems/ibc-rs/issues/1705))
+  - Improve startup time of the relayer ([#1705](https://github.com/informalsystems/hermes/pull/1705))
       * When scanning a chain with filtering enabled and an allow list, skip scanning all the clients and query the allowed channels directly. This results in much fewer queries and a faster start.
       * Add a `--full-scan` option to `hermes start` to opt out of the fast start mechanism and do a full scan.
   - Update `tendermint-rs` to v0.23.4 and harmonize the dependencies to use a single TLS stack.
     A system installation of OpenSSL is no longer required to build Hermes.
-    ([#1641](https://github.com/informalsystems/ibc-rs/issues/1641))
+    ([#1641](https://github.com/informalsystems/hermes/issues/1641))
   - Remove 1 second sleep in `generate_tm_block` during testing with mock context.
-    ([#1687](https://github.com/informalsystems/ibc-rs/issues/1687))
-- [IBC Modules](crates/modules)
+    ([#1687](https://github.com/informalsystems/hermes/issues/1687))
+- [IBC Modules](https://github.com/cosmos/ibc-rs)
   - Extract all `ics24_host::Path` variants into their separate types
-    ([#1760](https://github.com/informalsystems/ibc-rs/issues/1760))
+    ([#1760](https://github.com/informalsystems/hermes/pull/1760))
   - Disallow empty `CommitmentPrefix` and `CommitmentProofBytes`
-    ([#1761](https://github.com/informalsystems/ibc-rs/issues/1761))
+    ([#1761](https://github.com/informalsystems/hermes/pull/1761))
 - [Relayer Library](crates/relayer)
   - Allow `ChainEndpoint` implementations to fetch any types of clients
-    and consensus states ([#1481](https://github.com/informalsystems/ibc-rs/issues/1481))
+    and consensus states ([#1481](https://github.com/informalsystems/hermes/issues/1481))
   - More structural logging in relayer, using tracing spans and key-value pairs.
-    ([#1491](https://github.com/informalsystems/ibc-rs/pull/1491))
+    ([#1491](https://github.com/informalsystems/hermes/pull/1491))
   - Improved documention w.r.t. keys for Ethermint-based chains
-    ([#1785](https://github.com/informalsystems/ibc-rs/issues/1785))
+    ([#1785](https://github.com/informalsystems/hermes/issues/1785))
 - [Relayer CLI](crates/relayer-cli)
   - Add custom options to the `create client` command.
-    ([#836](https://github.com/informalsystems/ibc-rs/issues/836))
+    ([#836](https://github.com/informalsystems/hermes/issues/836))
   - Make the deposit denomination configurable in `tx raw upgrade-chain` via a new `--denom` flag.
-    ([#1662](https://github.com/informalsystems/ibc-rs/issues/1662))
+    ([#1662](https://github.com/informalsystems/hermes/issues/1662))
   - Update to abscissa_core 0.6.0-rc.0 and clap 3.x
-    ([#1777](https://github.com/informalsystems/ibc-rs/pull/1777))
+    ([#1777](https://github.com/informalsystems/hermes/pull/1777))
   - Add `completions` CLI command to generate shell auto-completion scripts.
-    ([#1789](https://github.com/informalsystems/ibc-rs/pull/1789))
+    ([#1789](https://github.com/informalsystems/hermes/pull/1789))
 
 ## v0.10.0
 *January 13th, 2021*
@@ -941,18 +941,18 @@ The relayer now also supports dynamic versions in channel open handshake (which 
 
 - General
   - Update MSRV to Rust 1.57
-    ([#1660](https://github.com/informalsystems/ibc-rs/issues/1660))
+    ([#1660](https://github.com/informalsystems/hermes/pull/1660))
   - Pin tendermint-rs dependencies to =0.23.2
-    ([#1665](https://github.com/informalsystems/ibc-rs/pull/1665))
-- [IBC Modules](crates/modules)
+    ([#1665](https://github.com/informalsystems/hermes/pull/1665))
+- [IBC Modules](https://github.com/cosmos/ibc-rs)
   - Add the `frozen_height()` method to the `ClientState` trait (includes breaking changes to the Tendermint `ClientState` API).
-    ([#1618](https://github.com/informalsystems/ibc-rs/issues/1618))
+    ([#65](https://github.com/cosmos/ibc-rs/issues/65))
   - Remove `Timestamp` API that depended on the `chrono` crate:
-    ([#1665](https://github.com/informalsystems/ibc-rs/pull/1665)):
+    ([#1665](https://github.com/informalsystems/hermes/pull/1665)):
     - `Timestamp::from_datetime`; use `From<tendermint::Time>`
     - `Timestamp::as_datetime`, superseded by `Timestamp::into_datetime`
 - [Relayer Library](crates/relayer)
-  - Improve spawning of supervisor worker tasks ([#1656](https://github.com/informalsystems/ibc-rs/issues/1656))
+  - Improve spawning of supervisor worker tasks ([#1656](https://github.com/informalsystems/hermes/pull/1656))
     - The `Supervisor` struct is removed.
     - Supervisor is now spawned using the `spawn_supervisor` function.
 - [Relayer CLI](crates/relayer-cli)
@@ -962,59 +962,59 @@ The relayer now also supports dynamic versions in channel open handshake (which 
     to `--channel-version`, with the old name still supported as an alias.
     Additionally, the `-h` short flag on many commands is now `-H` to avoid
     clashes with the clap-provided short flag for help.
-    ([#1576](https://github.com/informalsystems/ibc-rs/pull/1576),
-    [#1743](https://github.com/informalsystems/ibc-rs/pull/1743))
+    ([#1576](https://github.com/informalsystems/hermes/pull/1576),
+    [#1743](https://github.com/informalsystems/hermes/pull/1743))
 
 ### BUG FIXES
 
-- [IBC Modules](crates/modules)
+- [IBC Modules](https://github.com/cosmos/ibc-rs)
   - Delete packet commitment instead of acknowledgement in acknowledgePacket
-    [#1573](https://github.com/informalsystems/ibc-rs/issues/1573)
-  - Set the `counterparty_channel_id` correctly to fix ICS04 [`chanOpenAck` handler verification](https://github.com/informalsystems/ibc-rs/blob/master/modules/src/core/ics04_channel/handler/chan_open_ack.rs)
-    ([#1649](https://github.com/informalsystems/ibc-rs/issues/1649))
+    [#66](https://github.com/cosmos/ibc-rs/issues/66)
+  - Set the `counterparty_channel_id` correctly to fix ICS04 [`chanOpenAck` handler verification](https://github.com/cosmos/ibc-rs/blob/main/crates/ibc/src/core/ics04_channel/handler/chan_open_ack.rs)
+    ([#64](https://github.com/cosmos/ibc-rs/issues/64))
   - Add missing assertion for non-zero trust-level in Tendermint client initialization.
-    ([#1697](https://github.com/informalsystems/ibc-rs/issues/1697))
+    ([#63](https://github.com/cosmos/ibc-rs/issues/63))
   - Fix conversion to Protocol Buffers of `ClientState`'s `frozen_height` field.
-    ([#1710](https://github.com/informalsystems/ibc-rs/issues/1710))
+    ([#62](https://github.com/cosmos/ibc-rs/issues/62))
 - [Relayer Library](crates/relayer)
-  - Handle expired client errors in workers ([#1543](https://github.com/informalsystems/ibc-rs/issues/1543))
-  - Perform `execute_schedule` after handling packet commands in packet worker ([#1715](https://github.com/informalsystems/ibc-rs/issues/1715))
-  - Do not spawn detect misbehavior task if it is disabled in config [#1750](https://github.com/informalsystems/ibc-rs/issues/1750)
+  - Handle expired client errors in workers ([#1543](https://github.com/informalsystems/hermes/issues/1543))
+  - Perform `execute_schedule` after handling packet commands in packet worker ([#1715](https://github.com/informalsystems/hermes/issues/1715))
+  - Do not spawn detect misbehavior task if it is disabled in config [#1750](https://github.com/informalsystems/hermes/issues/1750)
 
 ### FEATURES
 
 - General
-  - Extend CI test suite to include E2E tests using Gaia v6.0.0 [#1550](https://github.com/informalsystems/ibc-rs/issues/1550)
+  - Extend CI test suite to include E2E tests using Gaia v6.0.0 [#1550](https://github.com/informalsystems/hermes/issues/1550)
   - Added the `extra_wallets` parameter to `gm` to create additional funded wallets.
   - Added the possibility of JSON output to `gm` by setting the environment variable `OUTPUT=json`.
   - Added support for fee granters through config file
-    ([#1633](https://github.com/informalsystems/ibc-rs/issues/1633))
-- [IBC Modules](crates/modules)
+    ([#1633](https://github.com/informalsystems/hermes/issues/1633))
+- [IBC Modules](https://github.com/cosmos/ibc-rs)
   - Implement proof verification for Tendermint client (ICS07).
-    ([#1583](https://github.com/informalsystems/ibc-rs/pull/1583))
+    ([#1583](https://github.com/informalsystems/hermes/pull/1583))
 - [Relayer Library](crates/relayer)
   - Added a recovery mechanism to automatically retry or drop tx upon account
-    sequence mismatch errors ([#1264](https://github.com/informalsystems/ibc-rs/issues/1264))
+    sequence mismatch errors ([#1264](https://github.com/informalsystems/hermes/issues/1264))
   - Support dynamic versions in channel open handshake & enable full support for
-    ibc-go v2 ([#1410](https://github.com/informalsystems/ibc-rs/issues/1410))
+    ibc-go v2 ([#1410](https://github.com/informalsystems/hermes/issues/1410))
   - Allow custom proof-specs in chain config
-    ([#1561](https://github.com/informalsystems/ibc-rs/issues/1561))
+    ([#67](https://github.com/cosmos/ibc-rs/issues/67))
 
 ### IMPROVEMENTS
 
 - General
   - Update `CONTRIBUTING.md` for latest version of unclog
-    ([#1634](https://github.com/informalsystems/ibc-rs/issues/1634))
-- [IBC Modules](crates/modules)
+    ([#1634](https://github.com/informalsystems/hermes/pull/1634))
+- [IBC Modules](https://github.com/cosmos/ibc-rs)
   - More conventional ad-hoc conversion methods on `Timestamp`
-    ([#1665](https://github.com/informalsystems/ibc-rs/pull/1665)):
+    ([#1665](https://github.com/informalsystems/hermes/pull/1665)):
   - `Timestamp::nanoseconds` replaces `Timestamp::as_nanoseconds`
   - `Timestamp::into_datetime` substitutes `Timestamp::as_datetime`
 - [Relayer CLI](crates/relayer-cli)
   - Improve performance of standalone commands by starting the event monitor on-demand
-    ([#1063](https://github.com/informalsystems/ibc-rs/issues/1063))
+    ([#1063](https://github.com/informalsystems/hermes/issues/1063))
   - Increase the default for `max_gas` from `300_000` to `400_000`
-    ([#1636](https://github.com/informalsystems/ibc-rs/pull/1636))
+    ([#1636](https://github.com/informalsystems/hermes/pull/1636))
 
 ## v0.9.0, the “Zamfir” release
 *November 23rd, 2021*
@@ -1067,48 +1067,48 @@ then on top of the changes above, `mode.connections.enabled` and `mode.channels.
 
 [See the relevant section][config-mode-toml] of the documented `config.toml` file in the repository for more details.
 
-[config-mode-toml]: https://github.com/informalsystems/ibc-rs/blob/v0.9.0/config.toml#L9-L59
+[config-mode-toml]: https://github.com/informalsystems/hermes/blob/v0.9.0/config.toml#L9-L59
 
 
 ### BUG FIXES
 
-- [IBC Modules](crates/modules)
+- [IBC Modules](https://github.com/cosmos/ibc-rs)
   - Set the connection counterparty in the ICS 003 [`connOpenAck` handler][conn-open-ack-handler]
-    ([#1532](https://github.com/informalsystems/ibc-rs/issues/1532))
+    ([#70](https://github.com/cosmos/ibc-rs/issues/70))
 
-[conn-open-ack-handler]: https://github.com/informalsystems/ibc-rs/blob/master/modules/src/core/ics03_connection/handler/conn_open_ack.rs
+[conn-open-ack-handler]: https://github.com/cosmos/ibc-rs/blob/main/crates/ibc/src/core/ics03_connection/handler/conn_open_ack.rs
 
 ### FEATURES
 
 - General
   - Support for compatibility with gaia Vega upgrade (protos matching ibc-go v1.2.2 and SDK v0.44.3)
-    ([#1408](https://github.com/informalsystems/ibc-rs/issues/1408))
+    ([#1408](https://github.com/informalsystems/hermes/issues/1408))
   - Optimize the WS client to subscribe to IBC events only (instead of all Tx
-    events) ([#1534](https://github.com/informalsystems/ibc-rs/issues/1534))
+    events) ([#1534](https://github.com/informalsystems/hermes/issues/1534))
 - [Relayer Library](crates/relayer)
   - Allow for more granular control of relaying modes. The `mode` configuration section replaces the `strategy` option.
-    ([#1518](https://github.com/informalsystems/ibc-rs/issues/1518))
+    ([#1518](https://github.com/informalsystems/hermes/issues/1518))
 
 ### IMPROVEMENTS
 
 - General
   - Upgrade IBC-rs TLA+ MBT models to modern Apalache type annotations
-    ([#1544](https://github.com/informalsystems/ibc-rs/issues/1544))
+    ([#69](https://github.com/cosmos/ibc-rs/issues/69))
   - Add `architecture.md` doc that gives a high-level overview of the structure of the codebase
-  - Add some module-level documentation ([#1556](https://github.com/informalsystems/ibc-rs/pulls/1556))
-- [IBC Modules](crates/modules)
+  - Add some module-level documentation ([#1556](https://github.com/informalsystems/hermes/pull/1556))
+- [IBC Modules](https://github.com/cosmos/ibc-rs)
   - Derive `PartialEq` and `Eq` on `IbcEvent` and inner types
-    ([#1546](https://github.com/informalsystems/ibc-rs/issues/1546))
+    ([#1546](https://github.com/cosmos/ibc-rs/issues/68))
 - [Relayer Library](crates/relayer)
   - The relayer will now avoid submitting a tx after the simulation failed
     (in all but one special case) to avoid wasting fees unnecessarily
-    ([#1479](https://github.com/informalsystems/ibc-rs/issues/1479))
+    ([#1479](https://github.com/informalsystems/hermes/issues/1479))
 - [Relayer CLI](crates/relayer-cli)
   - Output errors on a single line if ANSI output is disabled
-    ([#1529](https://github.com/informalsystems/ibc-rs/issues/1529))
+    ([#1529](https://github.com/informalsystems/hermes/issues/1529))
   - Compute fee amount using big integers to prevent overflow
     when using denominations with high decimal places
-    ([#1555](https://github.com/informalsystems/ibc-rs/issues/1555))
+    ([#1555](https://github.com/informalsystems/hermes/issues/1555))
 
 ## v0.8.0
 *October 29th, 2021*
@@ -1127,32 +1127,32 @@ For Cosmos-SDK chains a good approximation is `timeout_propose` + `timeout_commi
 ### BREAKING CHANGES
 
 - Update MSRV to Rust 1.56 and use the 2021 edition
-  ([#1519](https://github.com/informalsystems/ibc-rs/issues/1519))
+  ([#1519](https://github.com/informalsystems/hermes/issues/1519))
 
 ### BUG FIXES
 
-- Fix for "new header has a time from the future" chain error which would arise due to clock drift ([#1445](https://github.com/informalsystems/ibc-rs/issues/1445)):
+- Fix for "new header has a time from the future" chain error which would arise due to clock drift ([#1445](https://github.com/informalsystems/hermes/issues/1445)):
   * Added new config param `max_block_time` to prevent the problem for appearing in newly-created clients.
   * Added a synchronous waiting in client update logic to allow destination chain to reach a new height
     before submitting a client update message.
 - Ensure Hermes does not send timeouts for packets that have not expired yet
-    ([#1504](https://github.com/informalsystems/ibc-rs/issues/1504))
+    ([#1504](https://github.com/informalsystems/hermes/issues/1504))
 
 ### IMPROVEMENTS
 
 - General
   - Update to official releases of `prost` 0.9 and `tonic` 0.6
-    ([#1502](https://github.com/informalsystems/ibc-rs/issues/1502))
-- [IBC Modules](crates/modules)
+    ([#1502](https://github.com/informalsystems/hermes/issues/1502))
+- [IBC Modules](https://github.com/cosmos/ibc-rs)
   - Support for converting `ibc::events::IbcEvent` into `tendermint::abci::Event`
-    ([#838](https://github.com/informalsystems/ibc-rs/issues/838))
+    ([#81](https://github.com/cosmos/ibc-rs/issues/81))
   - Restructure the layout of the `ibc` crate to match `ibc-go`'s [layout](https://github.com/cosmos/ibc-go#contents)
-    ([#1436](https://github.com/informalsystems/ibc-rs/issues/1436))
+    ([#1436](https://github.com/informalsystems/hermes/issues/1436))
   - Implement `FromStr<Path>` to enable string-encoded paths to be converted into Path identifiers
-    ([#1460](https://github.com/informalsystems/ibc-rs/issues/1460))
+    ([#1460](https://github.com/informalsystems/hermes/issues/1460))
 - [Relayer Library](crates/relayer)
   - Improve performance of misbehaviour checks triggered by an `UpdateClient` event
-    ([#1417](https://github.com/informalsystems/ibc-rs/issues/1417))
+    ([#1417](https://github.com/informalsystems/hermes/issues/1417))
 
 ## v0.8.0-pre.1
 *October 22nd, 2021*
@@ -1169,39 +1169,39 @@ for specifying a prefix to be included in the memo of each transaction submitted
 by Hermes.
 
 Moreover, Hermes is now able to handle `SendPacket` events originating from Tendermint
-ABCI's `BeginBlock` and `EndBlock` methods ([#1231](https://github.com/informalsystems/ibc-rs/issues/1231)).
+ABCI's `BeginBlock` and `EndBlock` methods ([#1231](https://github.com/informalsystems/hermes/issues/1231)).
 
-[memo]: https://github.com/informalsystems/ibc-rs/blob/v0.8.0-pre.1/config.toml#L161-L165
+[memo]: https://github.com/informalsystems/hermes/blob/v0.8.0-pre.1/config.toml#L161-L165
 
 ### BREAKING CHANGES
 
-- [IBC Modules](crates/modules)
+- [IBC Modules](https://github.com/cosmos/ibc-rs)
   - The `check_header_and_update_state` method of the `ClientDef`
     trait (ICS02) has been expanded to facilitate ICS07
-    ([#1214](https://github.com/informalsystems/ibc-rs/issues/1214))
+    ([#71](https://github.com/cosmos/ibc-rs/issues/71))
 
 ### FEATURES
 
 - General
   - Add support for the `tx.memo` field
-    ([#1433](https://github.com/informalsystems/ibc-rs/issues/1433))
-- [IBC Modules](crates/modules)
+    ([#1433](https://github.com/informalsystems/hermes/issues/1433))
+- [IBC Modules](https://github.com/cosmos/ibc-rs)
   - Add ICS07 verification functionality by using `tendermint-light-client`
-    ([#1214](https://github.com/informalsystems/ibc-rs/issues/1214))
+    ([#71](https://github.com/cosmos/ibc-rs/issues/71))
 - [Relayer Library](crates/relayer)
   - Add a `default_gas` setting to be used for submitting a tx when tx simulation
-    fails ([#1457](https://github.com/informalsystems/ibc-rs/issues/1457))
+    fails ([#1457](https://github.com/informalsystems/hermes/issues/1457))
   - Update compatibility check for IBC-Go dependency
-    ([#1464](https://github.com/informalsystems/ibc-rs/issues/1464))
+    ([#1464](https://github.com/informalsystems/hermes/issues/1464))
 
 ### IMPROVEMENTS
 
 - [Relayer Library](crates/relayer)
   - Handle SendPacket events originating from Tendermint ABCI's BeginBlock
-    and EndBlock methods ([#1231](https://github.com/informalsystems/ibc-rs/issues/1231))
+    and EndBlock methods ([#1231](https://github.com/informalsystems/hermes/issues/1231))
   - Improve error message when `create client` fails and add a health
     check for the trusting period being smaller than the unbonding period
-    ([#1440](https://github.com/informalsystems/ibc-rs/issues/1440))
+    ([#1440](https://github.com/informalsystems/hermes/issues/1440))
 
 ## v0.7.3
 *October 4th, 2021*
@@ -1217,16 +1217,16 @@ It also improves the handling of account sequence numbers
   - Fix a bug introduced in Hermes v0.7.0 where tx simulations would fail on
     chains based on Cosmos SDK 0.42. This would cause Hermes to use the max
     gas specified in the config when submitted the tx, leading to high fees.
-    ([#1345](https://github.com/informalsystems/ibc-rs/issues/1345))
+    ([#1345](https://github.com/informalsystems/hermes/pull/1345))
   - Only increase cached account sequence number when `broadcast_tx_sync` fails,
     therefore ensuring that the cached sequence number stays in sync with the
-    node. ([#1402](https://github.com/informalsystems/ibc-rs/issues/1402))
+    node. ([#1402](https://github.com/informalsystems/hermes/issues/1402))
 
 ### IMPROVEMENTS
 
 - [Relayer Library](crates/relayer)
   - Set default trusting period to be 2/3 of unbonding period for Cosmos chains
-    ([#1392](https://github.com/informalsystems/ibc-rs/issues/1392))
+    ([#1392](https://github.com/informalsystems/hermes/pull/1392))
 
 ## v0.7.2
 *September 24th, 2021*
@@ -1238,23 +1238,23 @@ It also bumps the compatibility to Cosmos SDK 0.44.
 
 ### FEATURES
 
-- Support for chains which use Secp256k1 signatures in consensus votes ([#1155](https://github.com/informalsystems/ibc-rs/issues/1155))
-- Modified packet worker to use stubborn strategy ([#1290](https://github.com/informalsystems/ibc-rs/issues/1290))
-- Skip `consensus_heights` query in `update_client` when possible ([#1362](https://github.com/informalsystems/ibc-rs/issues/1362))
-- Support for disabling tx confirmation mechanism ([#1380](https://github.com/informalsystems/ibc-rs/issues/1380))
+- Support for chains which use Secp256k1 signatures in consensus votes ([#1155](https://github.com/informalsystems/hermes/issues/1155))
+- Modified packet worker to use stubborn strategy ([#1290](https://github.com/informalsystems/hermes/issues/1290))
+- Skip `consensus_heights` query in `update_client` when possible ([#1362](https://github.com/informalsystems/hermes/issues/1362))
+- Support for disabling tx confirmation mechanism ([#1380](https://github.com/informalsystems/hermes/issues/1380))
 
 - [gm](scripts/gm)
   - Binaries in the config can be defined as URLs now.
-  - Add the option to set gm-lib path via the `$GM_LIB` environment variable ([#1365](https://github.com/informalsystems/ibc-rs/issues/1365))
+  - Add the option to set gm-lib path via the `$GM_LIB` environment variable ([#1365](https://github.com/informalsystems/hermes/issues/1365))
 
 ### IMPROVEMENTS
 
-- Use `core` and `alloc` crates for `no_std` compatibility ([#1156](https://github.com/informalsystems/ibc-rs/issues/1156))
+- Use `core` and `alloc` crates for `no_std` compatibility ([#1156](https://github.com/informalsystems/hermes/pull/1156))
 - Improve performance of health check, and only perform it on `hermes start`.
-  Add a `hermes health-check` command. ([#1336](https://github.com/informalsystems/ibc-rs/issues/1336))
-- Treat pre-releases of the Cosmos SDK as their standard version in compatibility check ([#1337](https://github.com/informalsystems/ibc-rs/issues/1337))
-- Bump Cosmos SDK compatibility to v0.44.0 ([#1344](https://github.com/informalsystems/ibc-rs/issues/1344))
-- Improve reliability of health check ([#1382](https://github.com/informalsystems/ibc-rs/issues/1376))
+  Add a `hermes health-check` command. ([#1336](https://github.com/informalsystems/hermes/issues/1336))
+- Treat pre-releases of the Cosmos SDK as their standard version in compatibility check ([#1337](https://github.com/informalsystems/hermes/issues/1337))
+- Bump Cosmos SDK compatibility to v0.44.0 ([#1344](https://github.com/informalsystems/hermes/issues/1344))
+- Improve reliability of health check ([#1382](https://github.com/informalsystems/hermes/issues/1376))
 
 ## v0.7.1
 *September 14th, 2021*
@@ -1264,20 +1264,20 @@ This release also fixes a bug where the chain runtime within the relayer would c
 
 ### BUG FIXES
 
-- Fix header decoding error which resulted in killing the chain runtime ([#1342](https://github.com/informalsystems/ibc-rs/issues/1342))
+- Fix header decoding error which resulted in killing the chain runtime ([#1342](https://github.com/informalsystems/hermes/issues/1342))
 
 - [gm](scripts/gm)
   - Fix gaiad keys add prints to stderr instead of stdout in SDK 0.43 ([#1312])
   - Bumped default `rpc_timeout` in Hermes config to 5 seconds ([#1312])
 
-[#1312]: https://github.com/informalsystems/ibc-rs/issues/1312
+[#1312]: https://github.com/informalsystems/hermes/issues/1312
 
 ### FEATURES
 
 - Added post-Stargate (v0.5+) Ethermint support ([#1267] [#1071])
 
-[#1267]: https://github.com/informalsystems/ibc-rs/issues/1267
-[#1071]: https://github.com/informalsystems/ibc-rs/issues/1071
+[#1267]: https://github.com/informalsystems/hermes/issues/1267
+[#1071]: https://github.com/informalsystems/hermes/issues/1071
 
 ### IMPROVEMENTS
 
@@ -1286,15 +1286,15 @@ This release also fixes a bug where the chain runtime within the relayer would c
   - Add MBT tests for ICS 07 Client Upgrade ([#1311])
   - Add support for uint256 transfer amounts ([#1319])
 
-- [ibc](crates/modules)
-  - Change all `*Reader` traits to return `Result` instead of `Option` ([#1268])
-  - Clean up modules' errors ([#1333])
+- [ibc](https://github.com/cosmos/ibc-rs)
+  - Change all `*Reader` traits to return `Result` instead of `Option` ([#73])
+  - Clean up modules' errors ([#72])
 
-[#1268]: https://github.com/informalsystems/ibc-rs/issues/1268
-[#1281]: https://github.com/informalsystems/ibc-rs/issues/1281
-[#1311]: https://github.com/informalsystems/ibc-rs/issues/1311
-[#1319]: https://github.com/informalsystems/ibc-rs/issues/1319
-[#1333]: https://github.com/informalsystems/ibc-rs/issues/1333
+[#73]: https://github.com/cosmos/ibc-rs/issues/73
+[#1281]: https://github.com/informalsystems/hermes/issues/1281
+[#1311]: https://github.com/informalsystems/hermes/issues/1311
+[#1319]: https://github.com/informalsystems/hermes/issues/1319
+[#72]: https://github.com/cosmos/ibc-rs/issues/72
 
 ## v0.7.0
 *August 24th, 2021*
@@ -1305,14 +1305,14 @@ Additionnally, Hermes now includes a REST server which exposes the relayer's int
 
 ### BUG FIXES
 
-- [ibc](crates/modules)
-  - Set the index of `ibc::ics05_port::capabilities::Capability` ([#1257])
+- [ibc](https://github.com/cosmos/ibc-rs)
+  - Set the index of `ibc::ics05_port::capabilities::Capability` ([#74])
 
 - [gm](scripts/gm)
   - Fix silent exit when requirements are missing
 
-[#1257]: https://github.com/informalsystems/ibc-rs/issues/1257
-[#1261]: https://github.com/informalsystems/ibc-rs/issues/1261
+[#74]: https://github.com/cosmos/ibc-rs/issues/74
+[#1261]: https://github.com/informalsystems/hermes/issues/1261
 
 ### FEATURES
 
@@ -1328,12 +1328,12 @@ Additionnally, Hermes now includes a REST server which exposes the relayer's int
   - Spawn packet workers only when there are outstanding packets or acknowledgements to relay ([#901])
   - Upgrade to Cosmos SDK proto (v0.43.0) & ibc-go proto (v1.0.0) ([#948])
 
-[#843]: https://github.com/informalsystems/ibc-rs/issues/843
-[#901]: https://github.com/informalsystems/ibc-rs/issues/901
-[#948]: https://github.com/informalsystems/ibc-rs/pull/948
-[#1065]: https://github.com/informalsystems/ibc-rs/issues/1065
-[#1175]: https://github.com/informalsystems/ibc-rs/issues/1175
-[#1287]: https://github.com/informalsystems/ibc-rs/issues/1287
+[#843]: https://github.com/informalsystems/hermes/issues/843
+[#901]: https://github.com/informalsystems/hermes/issues/901
+[#948]: https://github.com/informalsystems/hermes/pull/948
+[#1065]: https://github.com/informalsystems/hermes/issues/1065
+[#1175]: https://github.com/informalsystems/hermes/issues/1175
+[#1287]: https://github.com/informalsystems/hermes/issues/1287
 
 ### IMPROVEMENTS
 
@@ -1347,15 +1347,15 @@ Additionnally, Hermes now includes a REST server which exposes the relayer's int
   - Improve support for Interchain Accounts (ICS 027) ([#1191])
   - Improve performance and reliability of the relayer by asynchronously waiting for tx confirmations ([#1124], [#1265])
 
-- [ibc](crates/modules)
+- [ibc](https://github.com/cosmos/ibc-rs)
   - Implement `ics02_client::client_consensus::ConsensusState` for `AnyConsensusState` ([#1297])
 
-[#1124]: https://github.com/informalsystems/ibc-rs/issues/1124
-[#1132]: https://github.com/informalsystems/ibc-rs/issues/1132
-[#1191]: https://github.com/informalsystems/ibc-rs/issues/1191
-[#1249]: https://github.com/informalsystems/ibc-rs/pull/1249
-[#1265]: https://github.com/informalsystems/ibc-rs/issues/1265
-[#1297]: https://github.com/informalsystems/ibc-rs/issues/1297
+[#1124]: https://github.com/informalsystems/hermes/issues/1124
+[#1132]: https://github.com/informalsystems/hermes/issues/1132
+[#1191]: https://github.com/informalsystems/hermes/issues/1191
+[#1249]: https://github.com/informalsystems/hermes/pull/1249
+[#1265]: https://github.com/informalsystems/hermes/issues/1265
+[#1297]: https://github.com/informalsystems/hermes/issues/1297
 
 ## v0.6.2
 *August 2nd, 2021*
@@ -1370,29 +1370,29 @@ Upgrading from version `0.6.1` to `0.6.2` requires no explicit steps.
 
 - Add missing `Protobuf` impl for `ics03_connection::connection::Counterparty` ([#1247])
 
-[#1247]: https://github.com/informalsystems/ibc-rs/issues/1247
+[#1247]: https://github.com/informalsystems/hermes/issues/1247
 
 ### FEATURES
 
 - Use the [`flex-error`](https://docs.rs/flex-error/) crate to define and
 handle errors ([#1158])
 
-[#1158]: https://github.com/informalsystems/ibc-rs/issues/1158
+[#1158]: https://github.com/informalsystems/hermes/issues/1158
 - Augment ClientCreationFailed error with chain id and WS address ([#1020])
 
-[#1020]: https://github.com/informalsystems/ibc-rs/issues/1020
+[#1020]: https://github.com/informalsystems/hermes/issues/1020
 - Improve the error message for config file parse errors ([#1021])
 
-[#1021]: https://github.com/informalsystems/ibc-rs/issues/1021
+[#1021]: https://github.com/informalsystems/hermes/issues/1021
 - Fix for upgrade CLI regression using new type ics02::TrustThreshold ([#1229])
 
-[#1229]: https://github.com/informalsystems/ibc-rs/issues/1229
+[#1229]: https://github.com/informalsystems/hermes/issues/1229
 
 ### IMPROVEMENTS
 
 - Add semantic validation of of `max_tx_size` and `max_num_msg` config options ([#1245])
 
-[#1245]: https://github.com/informalsystems/ibc-rs/issues/1245
+[#1245]: https://github.com/informalsystems/hermes/issues/1245
 
 ## v0.6.1
 *July 22nd, 2021*
@@ -1412,9 +1412,9 @@ Upgrading from version `0.6.0` to `0.6.1` requires no explicit steps.
 ### FEATURES
 
 - [ibc]
-  - Enable `pub` access to verification methods of ICS 03 & 04 ([#1198])
-  - Add `ics26_routing::handler::decode` function ([#1194])
-  - Add a pseudo root to `MockConsensusState` ([#1215])
+  - Enable `pub` access to verification methods of ICS 03 & 04 ([#77])
+  - Add `ics26_routing::handler::decode` function ([#78])
+  - Add a pseudo root to `MockConsensusState` ([#75])
 
 ### IMPROVEMENTS
 
@@ -1425,23 +1425,23 @@ Upgrading from version `0.6.0` to `0.6.1` requires no explicit steps.
 ### BUG FIXES
 
 - [ibc]
-  - Fix stack overflow in `MockHeader` implementation ([#1192])
-  - Align `as_str` and `from_str` behavior in `ClientType` ([#1192])
+  - Fix stack overflow in `MockHeader` implementation ([#79])
+  - Align `as_str` and `from_str` behavior in `ClientType` ([#79])
 
 - [ibc-relayer]
   - Ensure pending packets are cleared on start ([#1200])
   - Recover from missed RPC events after WebSocket subscription is closed by Tendermint ([#1196])
 
 
-[#1094]: https://github.com/informalsystems/ibc-rs/issues/1094
-[#1114]: https://github.com/informalsystems/ibc-rs/issues/1114
-[#1192]: https://github.com/informalsystems/ibc-rs/issues/1192
-[#1194]: https://github.com/informalsystems/ibc-rs/issues/1194
-[#1196]: https://github.com/informalsystems/ibc-rs/issues/1196
-[#1198]: https://github.com/informalsystems/ibc-rs/issues/1198
-[#1200]: https://github.com/informalsystems/ibc-rs/issues/1200
-[#1215]: https://github.com/informalsystems/ibc-rs/issues/1215
-[#1229]: https://github.com/informalsystems/ibc-rs/issues/1229
+[#1094]: https://github.com/informalsystems/hermes/issues/1094
+[#1114]: https://github.com/informalsystems/hermes/issues/1114
+[#79]: https://github.com/cosmos/ibc-rs/issues/79
+[#78]: https://github.com/cosmos/ibc-rs/issues/78
+[#1196]: https://github.com/informalsystems/hermes/issues/1196
+[#77]: https://github.com/cosmos/ibc-rs/issues/77
+[#1200]: https://github.com/informalsystems/hermes/issues/1200
+[#75]: https://github.com/cosmos/ibc-rs/issues/75
+[#1229]: https://github.com/informalsystems/hermes/issues/1229
 
 
 ## v0.6.0
@@ -1469,7 +1469,7 @@ with the changes described below.
 
 #### Added inline documentation for all options.
 
-Please have a look around the [config.toml](https://github.com/informalsystems/ibc-rs/blob/v0.6.0/config.toml) directly.
+Please have a look around the [config.toml](https://github.com/informalsystems/hermes/blob/v0.6.0/config.toml) directly.
 
 #### Added a packet filtering mechanism based on channel/port identifiers
 
@@ -1525,19 +1525,19 @@ The full list of changes is described below.
   - Fix for schedule refreshing bug ([#1143])
 
 
-[#69]: https://github.com/informalsystems/ibc-rs/issues/69
-[#600]: https://github.com/informalsystems/ibc-rs/issues/600
-[#697]: https://github.com/informalsystems/ibc-rs/issues/697
-[#1062]: https://github.com/informalsystems/ibc-rs/issues/1062
-[#1117]: https://github.com/informalsystems/ibc-rs/issues/1117
-[#1057]: https://github.com/informalsystems/ibc-rs/issues/1057
-[#1125]: https://github.com/informalsystems/ibc-rs/issues/1125
-[#1124]: https://github.com/informalsystems/ibc-rs/issues/1124
-[#1127]: https://github.com/informalsystems/ibc-rs/issues/1127
-[#1140]: https://github.com/informalsystems/ibc-rs/issues/1140
-[#1141]: https://github.com/informalsystems/ibc-rs/issues/1141
-[#1143]: https://github.com/informalsystems/ibc-rs/issues/1143
-[#1165]: https://github.com/informalsystems/ibc-rs/issues/1165
+[#69]: https://github.com/informalsystems/hermes/issues/69
+[#600]: https://github.com/informalsystems/hermes/issues/600
+[#697]: https://github.com/informalsystems/hermes/issues/697
+[#1062]: https://github.com/informalsystems/hermes/issues/1062
+[#1117]: https://github.com/informalsystems/hermes/issues/1117
+[#1057]: https://github.com/informalsystems/hermes/issues/1057
+[#1125]: https://github.com/informalsystems/hermes/issues/1125
+[#1124]: https://github.com/informalsystems/hermes/issues/1124
+[#1127]: https://github.com/informalsystems/hermes/issues/1127
+[#1140]: https://github.com/informalsystems/hermes/issues/1140
+[#1141]: https://github.com/informalsystems/hermes/issues/1141
+[#1143]: https://github.com/informalsystems/hermes/issues/1143
+[#1165]: https://github.com/informalsystems/hermes/issues/1165
 
 
 ## v0.5.0
@@ -1590,19 +1590,19 @@ substantially by switching over to `tx_broadcast_sync` for submitting transactio
 - [ibc-relayer-cli]
   - Removed `--coin-type` option from `keys restore` command. Use `--hd-path` instead ([#1049])
 
-[#673]: https://github.com/informalsystems/ibc-rs/issues/673
-[#821]: https://github.com/informalsystems/ibc-rs/issues/821
-[#877]: https://github.com/informalsystems/ibc-rs/issues/877
-[#919]: https://github.com/informalsystems/ibc-rs/issues/919
-[#930]: https://github.com/informalsystems/ibc-rs/issues/930
-[#977]: https://github.com/informalsystems/ibc-rs/issues/977
-[#978]: https://github.com/informalsystems/ibc-rs/issues/978
-[#986]: https://github.com/informalsystems/ibc-rs/issues/986
-[#1038]: https://github.com/informalsystems/ibc-rs/issues/1038
-[#1049]: https://github.com/informalsystems/ibc-rs/issues/1049
-[#1050]: https://github.com/informalsystems/ibc-rs/issues/1050
-[#1064]: https://github.com/informalsystems/ibc-rs/issues/1064
-[#1100]: https://github.com/informalsystems/ibc-rs/issues/1100
+[#673]: https://github.com/informalsystems/hermes/issues/673
+[#821]: https://github.com/informalsystems/hermes/issues/821
+[#877]: https://github.com/informalsystems/hermes/issues/877
+[#919]: https://github.com/informalsystems/hermes/issues/919
+[#930]: https://github.com/informalsystems/hermes/issues/930
+[#977]: https://github.com/informalsystems/hermes/issues/977
+[#978]: https://github.com/informalsystems/hermes/issues/978
+[#986]: https://github.com/informalsystems/hermes/issues/986
+[#1038]: https://github.com/informalsystems/hermes/issues/1038
+[#1049]: https://github.com/informalsystems/hermes/issues/1049
+[#1050]: https://github.com/informalsystems/hermes/issues/1050
+[#1064]: https://github.com/informalsystems/hermes/issues/1064
+[#1100]: https://github.com/informalsystems/hermes/issues/1100
 
 ## v0.4.0
 *June 3rd, 2021*
@@ -1660,23 +1660,23 @@ substantially by switching over to `tx_broadcast_sync` for submitting transactio
 - [ibc-relayer-cli]
   - Promote `start-multi` command to `start` ([#911])
 
-[#822]: https://github.com/informalsystems/ibc-rs/issues/822
-[#868]: https://github.com/informalsystems/ibc-rs/issues/868
-[#871]: https://github.com/informalsystems/ibc-rs/issues/871
-[#911]: https://github.com/informalsystems/ibc-rs/issues/911
-[#972]: https://github.com/informalsystems/ibc-rs/issues/972
-[#975]: https://github.com/informalsystems/ibc-rs/issues/975
-[#983]: https://github.com/informalsystems/ibc-rs/issues/983
-[#992]: https://github.com/informalsystems/ibc-rs/issues/992
-[#996]: https://github.com/informalsystems/ibc-rs/issues/996
-[#993]: https://github.com/informalsystems/ibc-rs/issues/993
-[#998]: https://github.com/informalsystems/ibc-rs/issues/998
-[#1003]: https://github.com/informalsystems/ibc-rs/issues/1003
-[#1022]: https://github.com/informalsystems/ibc-rs/issues/1022
-[#1026]: https://github.com/informalsystems/ibc-rs/issues/1026
-[#1032]: https://github.com/informalsystems/ibc-rs/issues/1032
-[gaiad-manager]: https://github.com/informalsystems/ibc-rs/blob/master/scripts/gm/README.md
-[#1039]: https://github.com/informalsystems/ibc-rs/issues/1039
+[#822]: https://github.com/informalsystems/hermes/issues/822
+[#868]: https://github.com/informalsystems/hermes/issues/868
+[#871]: https://github.com/informalsystems/hermes/issues/871
+[#911]: https://github.com/informalsystems/hermes/issues/911
+[#972]: https://github.com/informalsystems/hermes/issues/972
+[#975]: https://github.com/informalsystems/hermes/issues/975
+[#983]: https://github.com/informalsystems/hermes/issues/983
+[#992]: https://github.com/informalsystems/hermes/issues/992
+[#996]: https://github.com/informalsystems/hermes/issues/996
+[#993]: https://github.com/informalsystems/hermes/issues/993
+[#998]: https://github.com/informalsystems/hermes/issues/998
+[#1003]: https://github.com/informalsystems/hermes/issues/1003
+[#1022]: https://github.com/informalsystems/hermes/issues/1022
+[#1026]: https://github.com/informalsystems/hermes/issues/1026
+[#1032]: https://github.com/informalsystems/hermes/issues/1032
+[gaiad-manager]: https://github.com/informalsystems/hermes/blob/master/scripts/gm/README.md
+[#1039]: https://github.com/informalsystems/hermes/issues/1039
 
 ## v0.3.2
 *May 21st, 2021*
@@ -1712,12 +1712,12 @@ Docker images to Docker Hub.
 
 > Nothing
 
-[#868]: https://github.com/informalsystems/ibc-rs/issues/868
-[#894]: https://github.com/informalsystems/ibc-rs/pull/894
-[#957]: https://github.com/informalsystems/ibc-rs/issues/957
-[#960]: https://github.com/informalsystems/ibc-rs/issues/960
-[#963]: https://github.com/informalsystems/ibc-rs/issues/963
-[#967]: https://github.com/informalsystems/ibc-rs/issues/967
+[#868]: https://github.com/informalsystems/hermes/issues/868
+[#894]: https://github.com/informalsystems/hermes/pull/894
+[#957]: https://github.com/informalsystems/hermes/issues/957
+[#960]: https://github.com/informalsystems/hermes/issues/960
+[#963]: https://github.com/informalsystems/hermes/issues/963
+[#967]: https://github.com/informalsystems/hermes/issues/967
 
 [hermes-docker]: https://hub.docker.com/r/informalsystems/hermes
 
@@ -1755,22 +1755,22 @@ as well as support Protobuf-encoded keys.
 > Nothing
 
 
-[#875]: https://github.com/informalsystems/ibc-rs/issues/875
-[#920]: https://github.com/informalsystems/ibc-rs/issues/920
-[#902]: https://github.com/informalsystems/ibc-rs/issues/902
-[#921]: https://github.com/informalsystems/ibc-rs/issues/921
-[#925]: https://github.com/informalsystems/ibc-rs/issues/925
-[#927]: https://github.com/informalsystems/ibc-rs/issues/927
-[#932]: https://github.com/informalsystems/ibc-rs/issues/932
-[#934]: https://github.com/informalsystems/ibc-rs/issues/934
-[#937]: https://github.com/informalsystems/ibc-rs/issues/937
-[#943]: https://github.com/informalsystems/ibc-rs/issues/943
+[#875]: https://github.com/informalsystems/hermes/issues/875
+[#920]: https://github.com/informalsystems/hermes/issues/920
+[#902]: https://github.com/informalsystems/hermes/issues/902
+[#921]: https://github.com/informalsystems/hermes/issues/921
+[#925]: https://github.com/informalsystems/hermes/issues/925
+[#927]: https://github.com/informalsystems/hermes/issues/927
+[#932]: https://github.com/informalsystems/hermes/issues/932
+[#934]: https://github.com/informalsystems/hermes/issues/934
+[#937]: https://github.com/informalsystems/hermes/issues/937
+[#943]: https://github.com/informalsystems/hermes/issues/943
 
 
 ## v0.3.0
 *May 7h, 2021*
 
-Special thanks to Jongwhan Lee (@leejw51crypto) for his contributions ([#878]).
+Special thanks to Jongwhan Lee (@leejw51crypto) for his contributions ([#80]).
 
 This release mostly focuses on improving the UX and the experimental multi-paths relayer (`start-multi` command),
 which has been made more resilient against nodes going down, and is now able to clear pending packets
@@ -1781,7 +1781,7 @@ and periodically refresh IBC clients. The relayer now also supports [ICS 027 (In
 ### FEATURES
 
 - [ibc-relayer]
-  - Support for ICS27 ([#794])
+  - Support for ICS27 ([#82])
 
 - [ibc-relayer-cli]
   - Added packet clearing and client refresh capabilities for the `start-multi` command ([#784], [#786])
@@ -1789,8 +1789,8 @@ and periodically refresh IBC clients. The relayer now also supports [ICS 027 (In
 ### IMPROVEMENTS
 
 - [ibc]
-  - Reinstated `ics23` dependency ([#854])
-  - Use proper Timestamp type to track time ([#758])
+  - Reinstated `ics23` dependency ([#9])
+  - Use proper Timestamp type to track time ([#83])
 
 - [ibc-relayer]
   - Change the default for client creation to allow governance recovery in case of expiration or misbehaviour ([#785])
@@ -1800,7 +1800,7 @@ and periodically refresh IBC clients. The relayer now also supports [ICS 027 (In
 ### BUG FIXES
 
 - [ibc]
-  - Fix parsing in `chain_version` when chain identifier has multiple dashes ([#878])
+  - Fix parsing in `chain_version` when chain identifier has multiple dashes ([#80])
 
 - [ibc-relayer]
   - Fix pagination in gRPC query for clients ([#811])
@@ -1820,22 +1820,22 @@ and periodically refresh IBC clients. The relayer now also supports [ICS 027 (In
     `[{"channel_id":"channel-0","port_id":"transfer"}, ...]` instead of `["channel-0", ...]` ([#840])
 
 
-[#758]: https://github.com/informalsystems/ibc-rs/issues/758
-[#784]: https://github.com/informalsystems/ibc-rs/issues/784
-[#785]: https://github.com/informalsystems/ibc-rs/issues/785
-[#786]: https://github.com/informalsystems/ibc-rs/issues/786
-[#794]: https://github.com/informalsystems/ibc-rs/issues/794
-[#811]: https://github.com/informalsystems/ibc-rs/issues/811
-[#840]: https://github.com/informalsystems/ibc-rs/issues/840
-[#851]: https://github.com/informalsystems/ibc-rs/issues/851
-[#854]: https://github.com/informalsystems/ibc-rs/issues/854
-[#862]: https://github.com/informalsystems/ibc-rs/issues/862
-[#863]: https://github.com/informalsystems/ibc-rs/issues/863
-[#869]: https://github.com/informalsystems/ibc-rs/issues/869
-[#871]: https://github.com/informalsystems/ibc-rs/issues/871
-[#873]: https://github.com/informalsystems/ibc-rs/issues/873
-[#878]: https://github.com/informalsystems/ibc-rs/issues/878
-[#909]: https://github.com/informalsystems/ibc-rs/issues/909
+[#83]: https://github.com/cosmos/ibc-rs/issues/83
+[#784]: https://github.com/informalsystems/hermes/issues/784
+[#785]: https://github.com/informalsystems/hermes/issues/785
+[#786]: https://github.com/informalsystems/hermes/issues/786
+[#82]: https://github.com/cosmos/ibc-rs/issues/82
+[#811]: https://github.com/informalsystems/hermes/issues/811
+[#840]: https://github.com/informalsystems/hermes/issues/840
+[#851]: https://github.com/informalsystems/hermes/issues/851
+[#9]: https://github.com/cosmos/ibc-proto-rs/issues/9
+[#862]: https://github.com/informalsystems/hermes/issues/862
+[#863]: https://github.com/informalsystems/hermes/issues/863
+[#869]: https://github.com/informalsystems/hermes/issues/869
+[#871]: https://github.com/informalsystems/hermes/issues/871
+[#873]: https://github.com/informalsystems/hermes/issues/873
+[#80]: https://github.com/cosmos/ibc-rs/issues/80
+[#909]: https://github.com/informalsystems/hermes/issues/909
 
 ## v0.2.0
 *April 14th, 2021*
@@ -1854,7 +1854,7 @@ This release also finalizes the initial implementation of all the ICS 004 handle
 - Update to `tendermint-rs` v0.19.0 ([#798])
 
 - [ibc]
-  - Added handler(s) for sending packets ([#695]), recv. and ack. packets ([#736]), and timeouts ([#362])
+  - Added handler(s) for sending packets ([#87]), recv. and ack. packets ([#85]), and timeouts ([#101])
 
 - [ibc-relayer]
   - Support for relayer restart ([#561])
@@ -1881,7 +1881,7 @@ This release also finalizes the initial implementation of all the ICS 004 handle
   - MBT: use modelator crate ([#761])
 
 - [ibc-relayer]
-  - Consistent identifier handling across ICS 02, 03 and 04 ([#622])
+  - Consistent identifier handling across ICS 02, 03 and 04 ([#91])
 
 - [ibc-relayer-cli]
   - Clarified success path for updating a client that is already up-to-date ([#734])
@@ -1907,7 +1907,7 @@ This release also finalizes the initial implementation of all the ICS 004 handle
   - Make fee denom and amount configurable ([#754])
 
 - [ibc-proto]
-  - Fix for proto files re-compilation bug ([#801])
+  - Fix for proto files re-compilation bug ([#11])
 
 ### BREAKING CHANGES
 
@@ -1921,41 +1921,41 @@ This release also finalizes the initial implementation of all the ICS 004 handle
     - Remove the light add and light rm commands ([#793])
 
 
-[#352]: https://github.com/informalsystems/ibc-rs/issues/352
-[#362]: https://github.com/informalsystems/ibc-rs/issues/362
-[#357]: https://github.com/informalsystems/ibc-rs/issues/357
-[#416]: https://github.com/informalsystems/ibc-rs/issues/416
-[#561]: https://github.com/informalsystems/ibc-rs/issues/561
-[#550]: https://github.com/informalsystems/ibc-rs/issues/550
-[#599]: https://github.com/informalsystems/ibc-rs/issues/599
-[#630]: https://github.com/informalsystems/ibc-rs/issues/630
-[#632]: https://github.com/informalsystems/ibc-rs/issues/632
-[#640]: https://github.com/informalsystems/ibc-rs/issues/640
-[#672]: https://github.com/informalsystems/ibc-rs/issues/672
-[#673]: https://github.com/informalsystems/ibc-rs/issues/673
-[#675]: https://github.com/informalsystems/ibc-rs/issues/675
-[#685]: https://github.com/informalsystems/ibc-rs/issues/685
-[#689]: https://github.com/informalsystems/ibc-rs/issues/689
-[#695]: https://github.com/informalsystems/ibc-rs/issues/695
-[#699]: https://github.com/informalsystems/ibc-rs/issues/699
-[#700]: https://github.com/informalsystems/ibc-rs/pull/700
-[#715]: https://github.com/informalsystems/ibc-rs/issues/715
-[#734]: https://github.com/informalsystems/ibc-rs/issues/734
-[#736]: https://github.com/informalsystems/ibc-rs/issues/736
-[#740]: https://github.com/informalsystems/ibc-rs/issues/740
-[#748]: https://github.com/informalsystems/ibc-rs/issues/748
-[#751]: https://github.com/informalsystems/ibc-rs/issues/751
-[#752]: https://github.com/informalsystems/ibc-rs/issues/752
-[#754]: https://github.com/informalsystems/ibc-rs/issues/754
-[#761]: https://github.com/informalsystems/ibc-rs/issues/761
-[#772]: https://github.com/informalsystems/ibc-rs/issues/772
-[#770]: https://github.com/informalsystems/ibc-rs/issues/770
-[#793]: https://github.com/informalsystems/ibc-rs/pull/793
-[#798]: https://github.com/informalsystems/ibc-rs/issues/798
-[#801]: https://github.com/informalsystems/ibc-rs/issues/801
-[#805]: https://github.com/informalsystems/ibc-rs/issues/805
-[#806]: https://github.com/informalsystems/ibc-rs/issues/806
-[#809]: https://github.com/informalsystems/ibc-rs/issues/809
+[#352]: https://github.com/informalsystems/hermes/issues/352
+[#101]: https://github.com/cosmos/ibc-rs/issues/101
+[#357]: https://github.com/informalsystems/hermes/issues/357
+[#416]: https://github.com/informalsystems/hermes/issues/416
+[#561]: https://github.com/informalsystems/hermes/issues/561
+[#550]: https://github.com/informalsystems/hermes/issues/550
+[#599]: https://github.com/informalsystems/hermes/issues/599
+[#630]: https://github.com/informalsystems/hermes/issues/630
+[#632]: https://github.com/informalsystems/hermes/issues/632
+[#640]: https://github.com/informalsystems/hermes/issues/640
+[#672]: https://github.com/informalsystems/hermes/issues/672
+[#673]: https://github.com/informalsystems/hermes/issues/673
+[#675]: https://github.com/informalsystems/hermes/issues/675
+[#685]: https://github.com/informalsystems/hermes/issues/685
+[#689]: https://github.com/informalsystems/hermes/issues/689
+[#87]: https://github.com/cosmos/ibc-rs/issues/87
+[#699]: https://github.com/informalsystems/hermes/issues/699
+[#700]: https://github.com/informalsystems/hermes/pull/700
+[#715]: https://github.com/informalsystems/hermes/issues/715
+[#734]: https://github.com/informalsystems/hermes/issues/734
+[#85]: https://github.com/cosmos/ibc-rs/issues/85
+[#740]: https://github.com/informalsystems/hermes/issues/740
+[#748]: https://github.com/informalsystems/hermes/issues/748
+[#751]: https://github.com/informalsystems/hermes/issues/751
+[#752]: https://github.com/informalsystems/hermes/issues/752
+[#754]: https://github.com/informalsystems/hermes/issues/754
+[#761]: https://github.com/informalsystems/hermes/issues/761
+[#772]: https://github.com/informalsystems/hermes/issues/772
+[#770]: https://github.com/informalsystems/hermes/issues/770
+[#793]: https://github.com/informalsystems/hermes/pull/793
+[#798]: https://github.com/informalsystems/hermes/issues/798
+[#11]: https://github.com/cosmos/ibc-proto-rs/issues/11
+[#805]: https://github.com/informalsystems/hermes/issues/805
+[#806]: https://github.com/informalsystems/hermes/issues/806
+[#809]: https://github.com/informalsystems/hermes/issues/809
 
 
 ## v0.1.1
@@ -1999,28 +1999,28 @@ involving packet acks in a 3-chain setup. More details below.
 ### BREAKING CHANGES
 
 - [ibc]
-  - Implementation of the `ChanOpenAck`, `ChanOpenConfirm`, `ChanCloseInit`, and `ChanCloseConfirm` handlers ([#316])
-  - Remove dependency on `tendermint-rpc` ([#624])
+  - Implementation of the `ChanOpenAck`, `ChanOpenConfirm`, `ChanCloseInit`, and `ChanCloseConfirm` handlers ([#104])
+  - Remove dependency on `tendermint-rpc` ([#90])
 
 - [ibc-relayer-cli]
   - Remove the `proof` option from CLI ([#572])
 
-[#316]: https://github.com/informalsystems/ibc-rs/issues/316
-[#549]: https://github.com/informalsystems/ibc-rs/issues/549
-[#560]: https://github.com/informalsystems/ibc-rs/issues/560
-[#572]: https://github.com/informalsystems/ibc-rs/issues/572
-[#614]: https://github.com/informalsystems/ibc-rs/issues/614
-[#622]: https://github.com/informalsystems/ibc-rs/issues/622
-[#624]: https://github.com/informalsystems/ibc-rs/issues/624
-[#626]: https://github.com/informalsystems/ibc-rs/issues/626
-[#637]: https://github.com/informalsystems/ibc-rs/issues/637
-[#643]: https://github.com/informalsystems/ibc-rs/issues/643
-[#665]: https://github.com/informalsystems/ibc-rs/issues/665
-[#671]: https://github.com/informalsystems/ibc-rs/pull/671
-[#682]: https://github.com/informalsystems/ibc-rs/issues/682
+[#104]: https://github.com/cosmos/ibc-rs/issues/104
+[#549]: https://github.com/informalsystems/hermes/issues/549
+[#560]: https://github.com/informalsystems/hermes/issues/560
+[#572]: https://github.com/informalsystems/hermes/issues/572
+[#614]: https://github.com/informalsystems/hermes/issues/614
+[#91]: https://github.com/cosmos/ibc-rs/issues/91
+[#90]: https://github.com/cosmos/ibc-rs/issues/90
+[#626]: https://github.com/informalsystems/hermes/issues/626
+[#637]: https://github.com/informalsystems/hermes/issues/637
+[#643]: https://github.com/informalsystems/hermes/pull/643
+[#665]: https://github.com/informalsystems/hermes/issues/665
+[#671]: https://github.com/informalsystems/hermes/pull/671
+[#682]: https://github.com/informalsystems/hermes/issues/682
 
-[ibc]: https://github.com/informalsystems/ibc-rs/tree/master/modules
-[ibc-relayer-cli]: https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli
+[ibc]: https://github.com/cosmos/ibc-rs/tree/main/crates/ibc
+[ibc-relayer-cli]: https://github.com/informalsystems/hermes/tree/master/crates/relayer-cli
 
 ## v0.1.0
 *February 4, 2021*
@@ -2045,7 +2045,7 @@ Noteworthy changes in this release include:
   - Implement command to query the channels associated with a connection ([#505])
   - JSON output for queries and txs ([#500])
   - Added 'required' annotation for CLIs queries & txs; better error display ([#555])
-  - Implement commands for channel close init and confirm ([#538])
+  - Implement commands for channel close init and confirm ([#94])
   - Implement command to perform the handshake for a new channel ([#557])
   - Query all clients command ([#552])
   - Query all connections command ([#553])
@@ -2059,7 +2059,7 @@ Noteworthy changes in this release include:
 
 - [ibc]
   - Add `MsgTimeoutOnClose` message type ([#563])
-  - Implement `MsgChannelOpenTry` message handler ([#543])
+  - Implement `MsgChannelOpenTry` message handler ([#93])
 
 ### IMPROVEMENTS
 
@@ -2078,56 +2078,56 @@ Noteworthy changes in this release include:
   - Fix for mismatching `bitcoin` dep ([#525])
 
 - [ibc]
-  - Clean the `validate_basic` method ([#94])
-  - `MsgConnectionOpenAck` testing improvements ([#306])
+  - Clean the `validate_basic` method ([#135])
+  - `MsgConnectionOpenAck` testing improvements ([#107])
 
 ### BUG FIXES:
 - [ibc-relayer-cli]
   - Help and usage commands show 'hermes' for executable name ([#590])
 
 - [ibc]
-  - Fix for storing `ClientType` upon 'create-client' ([#513])
+  - Fix for storing `ClientType` upon 'create-client' ([#96])
 
 ### BREAKING CHANGES:
 
 - [ibc]
   - The `ibc::handler::Event` is removed and handlers now produce `ibc::events::IBCEvent`s ([#535])
 
-[#32]: https://github.com/informalsystems/ibc-rs/issues/32
-[#94]: https://github.com/informalsystems/ibc-rs/issues/94
-[#306]: https://github.com/informalsystems/ibc-rs/issues/306
-[#470]: https://github.com/informalsystems/ibc-rs/issues/470
-[#500]: https://github.com/informalsystems/ibc-rs/issues/500
-[#501]: https://github.com/informalsystems/ibc-rs/issues/501
-[#505]: https://github.com/informalsystems/ibc-rs/issues/505
-[#507]: https://github.com/informalsystems/ibc-rs/issues/507
-[#511]: https://github.com/informalsystems/ibc-rs/pull/511
-[#513]: https://github.com/informalsystems/ibc-rs/issues/513
-[#514]: https://github.com/informalsystems/ibc-rs/issues/514
-[#517]: https://github.com/informalsystems/ibc-rs/issues/517
-[#519]: https://github.com/informalsystems/ibc-rs/issues/519
-[#525]: https://github.com/informalsystems/ibc-rs/issues/525
-[#527]: https://github.com/informalsystems/ibc-rs/issues/527
-[#535]: https://github.com/informalsystems/ibc-rs/issues/535
-[#536]: https://github.com/informalsystems/ibc-rs/issues/536
-[#537]: https://github.com/informalsystems/ibc-rs/issues/537
-[#538]: https://github.com/informalsystems/ibc-rs/issues/538
-[#540]: https://github.com/informalsystems/ibc-rs/issues/540
-[#542]: https://github.com/informalsystems/ibc-rs/issues/542
-[#543]: https://github.com/informalsystems/ibc-rs/issues/543
-[#552]: https://github.com/informalsystems/ibc-rs/issues/553
-[#553]: https://github.com/informalsystems/ibc-rs/issues/553
-[#554]: https://github.com/informalsystems/ibc-rs/issues/554
-[#555]: https://github.com/informalsystems/ibc-rs/issues/555
-[#557]: https://github.com/informalsystems/ibc-rs/issues/557
-[#563]: https://github.com/informalsystems/ibc-rs/issues/563
-[#568]: https://github.com/informalsystems/ibc-rs/issues/568
-[#577]: https://github.com/informalsystems/ibc-rs/issues/577
-[#582]: https://github.com/informalsystems/ibc-rs/issues/582
-[#583]: https://github.com/informalsystems/ibc-rs/issues/583
-[#590]: https://github.com/informalsystems/ibc-rs/issues/590
-[#593]: https://github.com/informalsystems/ibc-rs/issues/593
-[#602]: https://github.com/informalsystems/ibc-rs/issues/602
+[#32]: https://github.com/informalsystems/hermes/issues/32
+[#135]: https://github.com/cosmos/ibc-rs/issues/135
+[#107]: https://github.com/cosmos/ibc-rs/issues/107
+[#470]: https://github.com/informalsystems/hermes/issues/470
+[#500]: https://github.com/informalsystems/hermes/issues/500
+[#501]: https://github.com/informalsystems/hermes/issues/501
+[#505]: https://github.com/informalsystems/hermes/issues/505
+[#507]: https://github.com/informalsystems/hermes/issues/507
+[#511]: https://github.com/informalsystems/hermes/pull/511
+[#96]: https://github.com/cosmos/ibc-rs/issues/96
+[#514]: https://github.com/informalsystems/hermes/issues/514
+[#517]: https://github.com/informalsystems/hermes/issues/517
+[#519]: https://github.com/informalsystems/hermes/issues/519
+[#525]: https://github.com/informalsystems/hermes/issues/525
+[#527]: https://github.com/informalsystems/hermes/issues/527
+[#535]: https://github.com/informalsystems/hermes/pull/535
+[#536]: https://github.com/informalsystems/hermes/issues/536
+[#537]: https://github.com/informalsystems/hermes/issues/537
+[#94]: https://github.com/cosmos/ibc-rs/issues/94
+[#540]: https://github.com/informalsystems/hermes/issues/540
+[#542]: https://github.com/informalsystems/hermes/issues/542
+[#93]: https://github.com/cosmos/ibc-rs/issues/93
+[#552]: https://github.com/informalsystems/hermes/issues/552
+[#553]: https://github.com/informalsystems/hermes/issues/553
+[#554]: https://github.com/informalsystems/hermes/pull/554
+[#555]: https://github.com/informalsystems/hermes/issues/555
+[#557]: https://github.com/informalsystems/hermes/issues/557
+[#563]: https://github.com/informalsystems/hermes/issues/563
+[#568]: https://github.com/informalsystems/hermes/issues/568
+[#577]: https://github.com/informalsystems/hermes/issues/577
+[#582]: https://github.com/informalsystems/hermes/issues/582
+[#583]: https://github.com/informalsystems/hermes/issues/583
+[#590]: https://github.com/informalsystems/hermes/issues/590
+[#593]: https://github.com/informalsystems/hermes/issues/593
+[#602]: https://github.com/informalsystems/hermes/issues/602
 
 ## v0.0.6
 *December 23, 2020*
@@ -2137,8 +2137,8 @@ tendermint-rs `v0.17`, which brings the protobuf changes from tendermint `v0.34.
 the latest cosmos proto versions from `v0.40.0-rc5` (sometimes called 'stargate-5').
 
 ### FEATURES
-- Update to tendermint-rs version `0.17` ([#451])
-- Update to cosmos-sdk IBC proto version `v0.40.0-rc5` ([#451])
+- Update to tendermint-rs version `0.17` ([#12])
+- Update to cosmos-sdk IBC proto version `v0.40.0-rc5` ([#12])
 
 - [ibc-relayer]
 
@@ -2152,13 +2152,13 @@ the latest cosmos proto versions from `v0.40.0-rc5` (sometimes called 'stargate-
   - Relayer tests for client update (ping pong) against MockChain ([#381])
   - Relayer refactor to improve testing and add semantic dependencies ([#447])
 
-[#158]: https://github.com/informalsystems/ibc-rs/issues/158
-[#379]: https://github.com/informalsystems/ibc-rs/issues/379
-[#381]: https://github.com/informalsystems/ibc-rs/issues/381
-[#443]: https://github.com/informalsystems/ibc-rs/issues/443
-[#447]: https://github.com/informalsystems/ibc-rs/issues/447
-[#451]: https://github.com/informalsystems/ibc-rs/issues/451
-[#468]: https://github.com/informalsystems/ibc-rs/issues/468
+[#158]: https://github.com/informalsystems/hermes/issues/158
+[#379]: https://github.com/informalsystems/hermes/issues/379
+[#381]: https://github.com/informalsystems/hermes/issues/381
+[#443]: https://github.com/informalsystems/hermes/issues/443
+[#447]: https://github.com/informalsystems/hermes/issues/447
+[#12]: https://github.com/cosmos/ibc-proto-rs/issues/12
+[#468]: https://github.com/informalsystems/hermes/issues/468
 
 
 ## v0.0.5
@@ -2168,12 +2168,12 @@ This release focuses on implementing relayer and relayer-cli functionality towar
 We now have the full-stack implementation for supporting client creation & updates, as well as connection- and channel handshakes.
 We also consolidated our TLA+ specs into an "IBC Core TLA+ specification," and added ICS 020 spec.
 
-Special thanks to external contributors for this release: @CharlyCst ([#347], [#419]).
+Special thanks to external contributors for this release: @CharlyCst ([#102], [#419]).
 
 - [ibc-relayer-cli]
   - Add `--all` option to `light rm` command to remove all peers for a given chain ([#431])
 
-[#431]: https://github.com/informalsystems/ibc-rs/issues/431
+[#431]: https://github.com/informalsystems/hermes/issues/431
 
 ### FEATURES
 
@@ -2181,10 +2181,10 @@ Special thanks to external contributors for this release: @CharlyCst ([#347], [#
 - [changelog] Added "unreleased" section in `CHANGELOG.MD` to help streamline releases ([#274])
 - [ibc]
     - Implement flexible connection id selection ([#332])
-    - ICS 4 Domain Types for channel handshakes and packets ([#315], [#95])
-    - Introduce LightBlock support for MockContext ([#389])
+    - ICS 4 Domain Types for channel handshakes and packets ([#105], [#134])
+    - Introduce LightBlock support for MockContext ([#100])
 - [ibc-relayer]
-    - Retrieve account sequence information from a chain using a GRPC client (#337)
+    - Retrieve account sequence information from a chain using a GRPC client (#18)
     - Implementation of chain runtime for v0 ([#330])
     - Integrate relayer spike into ibc-relayer crate ([#335])
     - Implement `query_header_at_height` via plain RPC queries (no light client verification) ([#336])
@@ -2199,7 +2199,7 @@ Special thanks to external contributors for this release: @CharlyCst ([#347], [#
     - Implement commands to add and list keys for a chain ([#363])
     - Allow overriding of peer_id, height and hash in light add command ([#428])
 - [proto-compiler]
-    - Refactor and allow specifying a commit at which the Cosmos SDK should be checked out ([#366])
+    - Refactor and allow specifying a commit at which the Cosmos SDK should be checked out ([#17])
     - Add a `--tag` option to the `clone-sdk` command to check out a tag instead of a commit ([#369])
     - Fix `--out` command line parameter (instead of `--path`) ([#419])
 - [ibc/relayer-spec]
@@ -2217,50 +2217,50 @@ Special thanks to external contributors for this release: @CharlyCst ([#347], [#
     - Split `msgs.rs` of ICS002 in separate modules ([#367])
     - Fixed inconsistent versioning for ICS003 and ICS004 ([#97])
     - Fixed `get_sign_bytes` method for messages ([#98])
-    - Homogenize ConnectionReader trait so that all functions return owned objects ([#347])
-    - Align with tendermint-rs in the domain type definition of `block::Id` ([#338])
+    - Homogenize ConnectionReader trait so that all functions return owned objects ([#102])
+    - Align with tendermint-rs in the domain type definition of `block::Id` ([#103])
 
 
-[#95]: https://github.com/informalsystems/ibc-rs/issues/95
-[#97]: https://github.com/informalsystems/ibc-rs/issues/97
-[#98]: https://github.com/informalsystems/ibc-rs/issues/98
-[#274]: https://github.com/informalsystems/ibc-rs/issues/274
-[#277]: https://github.com/informalsystems/ibc-rs/issues/277
-[#315]: https://github.com/informalsystems/ibc-rs/issues/315
-[#330]: https://github.com/informalsystems/ibc-rs/issues/330
-[#332]: https://github.com/informalsystems/ibc-rs/issues/332
-[#335]: https://github.com/informalsystems/ibc-rs/pull/335
-[#336]: https://github.com/informalsystems/ibc-rs/issues/336
-[#337]: https://github.com/informalsystems/ibc-rs/issues/337
-[#338]: https://github.com/informalsystems/ibc-rs/issues/338
-[#346]: https://github.com/informalsystems/ibc-rs/issues/346
-[#347]: https://github.com/informalsystems/ibc-rs/issues/347
-[#348]: https://github.com/informalsystems/ibc-rs/pull/348
-[#358]: https://github.com/informalsystems/ibc-rs/issues/358
-[#359]: https://github.com/informalsystems/ibc-rs/issues/359
-[#360]: https://github.com/informalsystems/ibc-rs/issues/360
-[#363]: https://github.com/informalsystems/ibc-rs/issues/363
-[#366]: https://github.com/informalsystems/ibc-rs/issues/366
-[#367]: https://github.com/informalsystems/ibc-rs/issues/367
-[#368]: https://github.com/informalsystems/ibc-rs/issues/368
-[#369]: https://github.com/informalsystems/ibc-rs/pull/369
-[#371]: https://github.com/informalsystems/ibc-rs/issues/371
-[#372]: https://github.com/informalsystems/ibc-rs/issues/372
-[#373]: https://github.com/informalsystems/ibc-rs/issues/373
-[#374]: https://github.com/informalsystems/ibc-rs/issues/374
-[#376]: https://github.com/informalsystems/ibc-rs/issues/376
-[#377]: https://github.com/informalsystems/ibc-rs/issues/377
-[#378]: https://github.com/informalsystems/ibc-rs/issues/378
-[#386]: https://github.com/informalsystems/ibc-rs/issues/386
-[#389]: https://github.com/informalsystems/ibc-rs/issues/389
-[#402]: https://github.com/informalsystems/ibc-rs/issues/402
-[#403]: https://github.com/informalsystems/ibc-rs/issues/403
-[#404]: https://github.com/informalsystems/ibc-rs/issues/404
-[#419]: https://github.com/informalsystems/ibc-rs/issues/419
-[#415]: https://github.com/informalsystems/ibc-rs/issues/415
-[#428]: https://github.com/informalsystems/ibc-rs/issues/428
-[changelog]: https://github.com/informalsystems/ibc-rs/tree/master/CHANGELOG.md
-[proto-compiler]: https://github.com/informalsystems/ibc-rs/tree/master/proto-compiler
+[#134]: https://github.com/cosmos/ibc-rs/issues/134
+[#97]: https://github.com/informalsystems/hermes/issues/97
+[#98]: https://github.com/informalsystems/hermes/issues/98
+[#274]: https://github.com/informalsystems/hermes/issues/274
+[#277]: https://github.com/informalsystems/hermes/issues/277
+[#105]: https://github.com/cosmos/ibc-rs/issues/105
+[#330]: https://github.com/informalsystems/hermes/issues/330
+[#332]: https://github.com/informalsystems/hermes/issues/332
+[#335]: https://github.com/informalsystems/hermes/pull/335
+[#336]: https://github.com/informalsystems/hermes/issues/336
+[#18]: https://github.com/cosmos/ibc-proto-rs/issues/18
+[#103]: https://github.com/cosmos/ibc-rs/issues/103
+[#346]: https://github.com/informalsystems/hermes/issues/346
+[#102]: https://github.com/cosmos/ibc-rs/issues/102
+[#348]: https://github.com/informalsystems/hermes/pull/348
+[#358]: https://github.com/informalsystems/hermes/issues/358
+[#359]: https://github.com/informalsystems/hermes/issues/359
+[#360]: https://github.com/informalsystems/hermes/issues/360
+[#363]: https://github.com/informalsystems/hermes/issues/363
+[#17]: https://github.com/cosmos/ibc-proto-rs/issues/17
+[#367]: https://github.com/informalsystems/hermes/issues/367
+[#368]: https://github.com/informalsystems/hermes/issues/368
+[#369]: https://github.com/informalsystems/hermes/pull/369
+[#371]: https://github.com/informalsystems/hermes/issues/371
+[#372]: https://github.com/informalsystems/hermes/issues/372
+[#373]: https://github.com/informalsystems/hermes/issues/373
+[#374]: https://github.com/informalsystems/hermes/issues/374
+[#376]: https://github.com/informalsystems/hermes/issues/376
+[#377]: https://github.com/informalsystems/hermes/issues/377
+[#378]: https://github.com/informalsystems/hermes/issues/378
+[#386]: https://github.com/informalsystems/hermes/issues/386
+[#100]: https://github.com/cosmos/ibc-rs/issues/100
+[#402]: https://github.com/informalsystems/hermes/issues/402
+[#403]: https://github.com/informalsystems/hermes/pull/403
+[#404]: https://github.com/informalsystems/hermes/issues/404
+[#419]: https://github.com/informalsystems/hermes/issues/419
+[#415]: https://github.com/informalsystems/hermes/issues/415
+[#428]: https://github.com/informalsystems/hermes/issues/428
+[changelog]: https://github.com/informalsystems/hermes/blob/master/CHANGELOG.md
+[proto-compiler]: https://github.com/cosmos/ibc-proto-rs/tree/main/tools/proto-compiler
 
 ## v0.0.4
 *October 19, 2020*
@@ -2275,8 +2275,8 @@ Additional highlights:
 
 ### BREAKING CHANGES:
 - [ibc-relayer] & [ibc] Alignment with ecosystem updates:
-    - Compatibility with the latest protobuf (Gaia stargate-3 and stargate-4) ([#191], [#272], [#273], [#278])
-    - Adaptations to tendermint 0.17 ([#286], [#293], [#300], [#302], [#308])
+    - Compatibility with the latest protobuf (Gaia stargate-3 and stargate-4) ([#121], [#110], [#273], [#278])
+    - Adaptations to tendermint 0.17 ([#286], [#293], [#300], [#108], [#106])
 - [ibc-relayer] UX improvement: Remove proof option from client connections command ([#205])
 
 ### FEATURES:
@@ -2284,24 +2284,24 @@ Additional highlights:
 - [ibc-relayer-cli]
     - Relayer CLIs for client messages ([#207])
     - Relayer CLIs for connection-open-init ([#206])
-    - Queries for consensus state and client state ([#149], [#150])
-- [ibc] Routing module minimal implementation for MVP ([#159], [#232])
+    - Queries for consensus state and client state ([#21], [#129])
+- [ibc] Routing module minimal implementation for MVP ([#128], [#113])
 - [ibc/relayer-spec] Relayer specification for packet handling ([#229], [#234], [#237])
 - [ibc/relayer-spec] Basic packet handling in TLA+([#124])
-- [ibc] Basic relayer functionality: a test with ClientUpdate ping-pong between two mocked chains ([#276])
+- [ibc] Basic relayer functionality: a test with ClientUpdate ping-pong between two mocked chains ([#109])
 
 ### IMPROVEMENTS:
 - [ibc] Implemented the `DomainType` trait for IBC proto structures ([#245], [#249]).
-- [ibc] & [ibc-proto] Several improvements to message processors, among which ([#218]):
-    - ICS03 connection handshake protocol initial implementation and tests ([#160])
+- [ibc] & [ibc-proto] Several improvements to message processors, among which ([#115]):
+    - ICS03 connection handshake protocol initial implementation and tests ([#127])
     - Add capability to decode from protobuf Any* type into Tendermint and Mock client states
     - Cleanup Any* client wrappers related code
     - Migrate handlers to newer protobuf definitions ([#226])
-    - Extend client context mock ([#221])
-    - Context mock simplifications and cleanup ([#269], [#295], [#296], [#297])
-- [ibc/ics03] Split `msgs.rs` in multiple files, implement `From` for all messages ([#253])
+    - Extend client context mock ([#114])
+    - Context mock simplifications and cleanup ([#111], [#295], [#296], [#297])
+- [ibc/ics03] Split `msgs.rs` in multiple files, implement `From` for all messages ([#112])
 - [ibc-proto]
-    - Move ibc-proto source code into ibc-rs ([#142]) and fixed code deduplication ([#282], [#284])
+    - Move ibc-proto source code into ibc-rs ([#23]) and fixed code deduplication ([#282], [#284])
     - Consolidate proto-compiler logic [#241]
 - [ibc/relayer-spec] Add support for APALACHE to the Relayer TLA+ spec ([#165])
 - [ibc-relayer] Update to tendermint v.0.16 and integrate with the new light client implementation ([#90], [#243])
@@ -2309,56 +2309,56 @@ Additional highlights:
 ### BUG FIXES:
 - [ibc] Removed "Uninitialized" state from connection ([#217])
 - [ibc-relayer-cli] Fix for client query subcommands ([#231])
-- [disclosure-log] & [spec/connection-handshake] Disclosed bugs in ICS3 version negotiation and proposed a fix ([#209], [#213])
+- [disclosure-log] & [spec/connection-handshake] Disclosed bugs in ICS3 version negotiation and proposed a fix ([#117], [#116])
 
-[#90]: https://github.com/informalsystems/ibc-rs/issues/90
-[#124]: https://github.com/informalsystems/ibc-rs/issues/124
-[#142]: https://github.com/informalsystems/ibc-rs/issues/142
-[#149]: https://github.com/informalsystems/ibc-rs/issues/149
-[#150]: https://github.com/informalsystems/ibc-rs/issues/150
-[#159]: https://github.com/informalsystems/ibc-rs/issues/159
-[#160]: https://github.com/informalsystems/ibc-rs/issues/160
-[#165]: https://github.com/informalsystems/ibc-rs/issues/165
-[#191]: https://github.com/informalsystems/ibc-rs/issues/191
-[#205]: https://github.com/informalsystems/ibc-rs/issues/205
-[#206]: https://github.com/informalsystems/ibc-rs/issues/206
-[#207]: https://github.com/informalsystems/ibc-rs/issues/207
-[#209]: https://github.com/informalsystems/ibc-rs/issues/209
-[#213]: https://github.com/informalsystems/ibc-rs/issues/213
-[#217]: https://github.com/informalsystems/ibc-rs/issues/217
-[#218]: https://github.com/informalsystems/ibc-rs/issues/218
-[#221]: https://github.com/informalsystems/ibc-rs/issues/221
-[#223]: https://github.com/informalsystems/ibc-rs/issues/223
-[#226]: https://github.com/informalsystems/ibc-rs/issues/226
-[#229]: https://github.com/informalsystems/ibc-rs/issues/229
-[#231]: https://github.com/informalsystems/ibc-rs/issues/231
-[#232]: https://github.com/informalsystems/ibc-rs/issues/232
-[#234]: https://github.com/informalsystems/ibc-rs/issues/234
-[#237]: https://github.com/informalsystems/ibc-rs/issues/237
-[#241]: https://github.com/informalsystems/ibc-rs/issues/241
-[#243]: https://github.com/informalsystems/ibc-rs/issues/243
-[#245]: https://github.com/informalsystems/ibc-rs/issues/245
-[#249]: https://github.com/informalsystems/ibc-rs/issues/249
-[#253]: https://github.com/informalsystems/ibc-rs/issues/253
-[#269]: https://github.com/informalsystems/ibc-rs/issues/269
-[#272]: https://github.com/informalsystems/ibc-rs/issues/272
-[#273]: https://github.com/informalsystems/ibc-rs/issues/273
-[#276]: https://github.com/informalsystems/ibc-rs/issues/276
-[#278]: https://github.com/informalsystems/ibc-rs/issues/278
-[#282]: https://github.com/informalsystems/ibc-rs/issues/282
-[#284]: https://github.com/informalsystems/ibc-rs/issues/284
-[#286]: https://github.com/informalsystems/ibc-rs/issues/286
-[#293]: https://github.com/informalsystems/ibc-rs/issues/293
-[#295]: https://github.com/informalsystems/ibc-rs/issues/295
-[#296]: https://github.com/informalsystems/ibc-rs/issues/296
-[#297]: https://github.com/informalsystems/ibc-rs/issues/297
-[#300]: https://github.com/informalsystems/ibc-rs/issues/300
-[#302]: https://github.com/informalsystems/ibc-rs/issues/302
-[#308]: https://github.com/informalsystems/ibc-rs/issues/308
-[ibc-proto]: https://github.com/informalsystems/ibc-rs/tree/master/proto
-[disclosure-log]: https://github.com/informalsystems/ibc-rs/blob/master/docs/disclosure-log.md
-[spec/connection-handshake]: https://github.com/informalsystems/ibc-rs/tree/master/docs/spec/connection-handshake
-[ibc-relayer]: https://github.com/informalsystems/ibc-rs/tree/master/relayer
+[#90]: https://github.com/informalsystems/hermes/issues/90
+[#124]: https://github.com/informalsystems/hermes/issues/124
+[#23]: https://github.com/cosmos/ibc-proto-rs/issues/23
+[#21]: https://github.com/cosmos/ibc-proto-rs/issues/21
+[#129]: https://github.com/cosmos/ibc-rs/issues/129
+[#128]: https://github.com/cosmos/ibc-rs/issues/128
+[#127]: https://github.com/cosmos/ibc-rs/issues/127
+[#165]: https://github.com/informalsystems/hermes/issues/165
+[#121]: https://github.com/cosmos/ibc-rs/issues/121
+[#205]: https://github.com/informalsystems/hermes/issues/205
+[#206]: https://github.com/informalsystems/hermes/issues/206
+[#207]: https://github.com/informalsystems/hermes/issues/207
+[#117]: https://github.com/cosmos/ibc-rs/issues/117
+[#116]: https://github.com/cosmos/ibc-rs/issues/116
+[#217]: https://github.com/informalsystems/hermes/issues/217
+[#115]: https://github.com/cosmos/ibc-rs/issues/115
+[#114]: https://github.com/cosmos/ibc-rs/issues/114
+[#223]: https://github.com/informalsystems/hermes/issues/223
+[#226]: https://github.com/informalsystems/hermes/issues/226
+[#229]: https://github.com/informalsystems/hermes/issues/229
+[#231]: https://github.com/informalsystems/hermes/issues/231
+[#113]: https://github.com/cosmos/ibc-rs/issues/113
+[#234]: https://github.com/informalsystems/hermes/issues/234
+[#237]: https://github.com/informalsystems/hermes/issues/237
+[#241]: https://github.com/informalsystems/hermes/issues/241
+[#243]: https://github.com/informalsystems/hermes/issues/243
+[#245]: https://github.com/informalsystems/hermes/issues/245
+[#249]: https://github.com/informalsystems/hermes/issues/249
+[#112]: https://github.com/cosmos/ibc-rs/issues/112
+[#111]: https://github.com/cosmos/ibc-rs/issues/111
+[#110]: https://github.com/cosmos/ibc-rs/issues/110
+[#273]: https://github.com/informalsystems/hermes/issues/273
+[#109]: https://github.com/cosmos/ibc-rs/issues/109
+[#278]: https://github.com/informalsystems/hermes/issues/278
+[#282]: https://github.com/informalsystems/hermes/issues/282
+[#284]: https://github.com/informalsystems/hermes/issues/284
+[#286]: https://github.com/informalsystems/hermes/issues/286
+[#293]: https://github.com/informalsystems/hermes/issues/293
+[#295]: https://github.com/informalsystems/hermes/issues/295
+[#296]: https://github.com/informalsystems/hermes/issues/296
+[#297]: https://github.com/informalsystems/hermes/issues/297
+[#300]: https://github.com/informalsystems/hermes/issues/300
+[#108]: https://github.com/cosmos/ibc-rs/issues/108
+[#106]: https://github.com/cosmos/ibc-rs/issues/106
+[ibc-proto]: https://github.com/cosmos/ibc-proto-rs
+[disclosure-log]: https://github.com/informalsystems/hermes/blob/master/docs/disclosure-log.md
+[spec/connection-handshake]: https://github.com/informalsystems/hermes/tree/master/docs/spec/connection-handshake
+[ibc-relayer]: https://github.com/informalsystems/hermes/tree/master/crates/relayer
 
 ## v0.0.3
 *September 1, 2020*
@@ -2372,48 +2372,48 @@ Other highlights:
 
 ### BREAKING CHANGES:
 - [ibc] Renamed `modules` crate to `ibc` crate. Version number for the new crate is not reset. ([#198])
-- [ibc/ics02] `ConnectionId`s are now decoded to `Vec<ConnectionId>` and validated instead of `Vec<String>` ([#185])
-- [ibc/ics03] Removed `Connection` and `ConnectionCounterparty` traits ([#193])
-- [ibc/ics04] Removed `Channel` and `ChannelCounterparty` traits ([#192])
+- [ibc/ics02] `ConnectionId`s are now decoded to `Vec<ConnectionId>` and validated instead of `Vec<String>` ([#123])
+- [ibc/ics03] Removed `Connection` and `ConnectionCounterparty` traits ([#119])
+- [ibc/ics04] Removed `Channel` and `ChannelCounterparty` traits ([#120])
 
 ### FEATURES:
-- [ibc/ics02] partial implementation of message handler ([#119], [#194])
-- [ibc/ics07] partial implementation of message handler ([#119], [#194])
-- [architecture/ADR-003] Proposal for IBC handler (message processor) architecture ([#119], [#194])
+- [ibc/ics02] partial implementation of message handler ([#119], [#118])
+- [ibc/ics07] partial implementation of message handler ([#119], [#118])
+- [architecture/ADR-003] Proposal for IBC handler (message processor) architecture ([#119], [#118])
 - [ibc/relayer-spec] Detailed technical specification of the relayer algorithm with focus on client update ([#84])
 - [architecture/ADR-001] Documentation for the repository structure ([#1])
 - [architecture/FSM-1] Connection Handshake FSM English description ([#122])
 
 ### IMPROVEMENTS:
 - [contributing] Updated CONTRIBUTING.md. Please read before opening PRs ([#195])
-- [ibc-relayer-cli] Refactor ConnectionId decoding in `query client` ([#185])
+- [ibc-relayer-cli] Refactor ConnectionId decoding in `query client` ([#123])
 
 ### BUG FIXES:
 - [ibc/ics24] Identifiers limit update according to ICS specs ([#168])
 
-[ibc/relayer-spec]: https://github.com/informalsystems/ibc-rs/blob/master/docs/spec/relayer/Relayer.md
-[#84]: https://github.com/informalsystems/ibc-rs/issues/84
-[architecture/ADR-001]: https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/adr-001-repo.md
-[#1]: https://github.com/informalsystems/ibc-rs/issues/1
-[contributing]: https://github.com/informalsystems/ibc-rs/blob/master/CONTRIBUTING.md
-[#195]: https://github.com/informalsystems/ibc-rs/pull/195
-[ibc]: https://github.com/informalsystems/ibc-rs/tree/master/modules
-[#198]: https://github.com/informalsystems/ibc-rs/issues/198
-[ibc/ics02]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics02_client
-[#185]: https://github.com/informalsystems/ibc-rs/issues/185
-[ibc/ics03]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics03_connection
-[#193]: https://github.com/informalsystems/ibc-rs/issues/193
-[ibc/ics04]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics04_channel
-[#192]: https://github.com/informalsystems/ibc-rs/issues/192
-[ibc-relayer-cli]: https://github.com/informalsystems/ibc-rs/tree/master/relayer-cli
-[architecture/FSM-1]: https://github.com/informalsystems/ibc-rs/blob/v0.1.0/docs/architecture/fsm-async-connection.md
-[#122]: https://github.com/informalsystems/ibc-rs/issues/122
-[architecture/ADR-003]: https://github.com/informalsystems/ibc-rs/blob/master/docs/architecture/adr-003-handler-implementation.md
-[#119]: https://github.com/informalsystems/ibc-rs/issues/119
-[#194]: https://github.com/informalsystems/ibc-rs/issues/194
-[ibc/ics24]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/core/ics24_host
-[#168]: https://github.com/informalsystems/ibc-rs/issues/168
-[ibc/ics07]: https://github.com/informalsystems/ibc-rs/tree/master/modules/src/clients/ics07_tendermint
+[ibc/relayer-spec]: https://github.com/informalsystems/hermes/blob/master/docs/spec/relayer/Relayer.md
+[#84]: https://github.com/informalsystems/hermes/issues/84
+[architecture/ADR-001]: https://github.com/informalsystems/hermes/blob/master/docs/architecture/adr-001-repo.md
+[#1]: https://github.com/informalsystems/hermes/issues/1
+[contributing]: https://github.com/informalsystems/hermes/blob/master/CONTRIBUTING.md
+[#195]: https://github.com/informalsystems/hermes/pull/195
+[ibc]: https://github.com/cosmos/ibc-rs/tree/main/crates/ibc
+[#198]: https://github.com/informalsystems/hermes/issues/198
+[ibc/ics02]: https://github.com/cosmos/ibc-rs/tree/main/crates/ibc/src/core/ics02_client
+[#123]: https://github.com/cosmos/ibc-rs/issues/123
+[ibc/ics03]: https://github.com/cosmos/ibc-rs/tree/main/crates/ibc/src/core/ics03_connection
+[#119]: https://github.com/cosmos/ibc-rs/issues/119
+[ibc/ics04]: https://github.com/cosmos/ibc-rs/tree/main/crates/ibc/src/core/ics04_channel
+[#120]: https://github.com/cosmos/ibc-rs/issues/120
+[ibc-relayer-cli]: https://github.com/informalsystems/hermes/tree/master/crates/relayer-cli
+[architecture/FSM-1]: https://github.com/informalsystems/hermes/blob/v0.1.0/docs/architecture/fsm-async-connection.md
+[#122]: https://github.com/informalsystems/hermes/issues/122
+[architecture/ADR-003]: https://github.com/informalsystems/hermes/blob/master/docs/architecture/adr-003-handler-implementation.md
+[#119]: https://github.com/informalsystems/hermes/issues/119
+[#118]: https://github.com/cosmos/ibc-rs/issues/118
+[ibc/ics24]: https://github.com/cosmos/ibc-rs/tree/main/crates/ibc/src/core/ics24_host
+[#168]: https://github.com/informalsystems/hermes/issues/168
+[ibc/ics07]: https://github.com/cosmos/ibc-rs/tree/main/crates/ibc/src/clients/ics07_tendermint
 
 ## v0.0.2
 
@@ -2430,33 +2430,33 @@ the latest state of development towards the Cosmos-SDK Stargate release.
 
 - [ibc|ibc-relayer] Refactor queries, paths, and Chain trait to reduce code and use
   protobuf instead of Amino.
-        [\#152](https://github.com/informalsystems/ibc-rs/pull/152),
-        [\#174](https://github.com/informalsystems/ibc-rs/pull/174),
-        [\#155](https://github.com/informalsystems/ibc-rs/pull/155)
-- [repo] Moved relayer/cli to relayer-cli, relayer/relay to relayer. [\#183](https://github.com/informalsystems/ibc-rs/pull/183)
+        [\#152](https://github.com/informalsystems/hermes/pull/152),
+        [\#174](https://github.com/informalsystems/hermes/pull/174),
+        [\#155](https://github.com/informalsystems/hermes/pull/155)
+- [repo] Moved relayer/cli to relayer-cli, relayer/relay to relayer. [\#183](https://github.com/informalsystems/hermes/pull/183)
 
 ### FEATURES:
 
-- [ibc-relayer] Query connections given client id. [\#169](https://github.com/informalsystems/ibc-rs/pull/169)
-- [ibc-relayer] Query connection given connection id. [\#136](https://github.com/informalsystems/ibc-rs/pull/136)
-- [ibc-relayer] Query channel given channel id and port [\#163](https://github.com/informalsystems/ibc-rs/pull/163)
-- [spec] Channel closing datagrams in TLA+ [\#141](https://github.com/informalsystems/ibc-rs/pull/141)
+- [ibc-relayer] Query connections given client id. [\#169](https://github.com/informalsystems/hermes/pull/169)
+- [ibc-relayer] Query connection given connection id. [\#136](https://github.com/informalsystems/hermes/pull/136)
+- [ibc-relayer] Query channel given channel id and port [\#163](https://github.com/informalsystems/hermes/pull/163)
+- [spec] Channel closing datagrams in TLA+ [\#141](https://github.com/informalsystems/hermes/pull/141)
 
 ### IMPROVEMENTS:
 
 - [ci] Framework (scripts and Github Actions) for integration testing the relayer queries against
     the Cosmos-SDK's `simd` binary with prepopulated IBC state in the genesis
-        [\#140](https://github.com/informalsystems/ibc-rs/pull/140),
-        [\#184](https://github.com/informalsystems/ibc-rs/pull/184)
-- [ibc-relayer|ibc] Implemented better Raw type handling. [\#156](https://github.com/informalsystems/ibc-rs/pull/156)
-- [repo] Add rust-toolchain file. [\#154](https://github.com/informalsystems/ibc-rs/pull/154)
+        [\#140](https://github.com/informalsystems/hermes/pull/140),
+        [\#184](https://github.com/informalsystems/hermes/pull/184)
+- [ibc-relayer|ibc] Implemented better Raw type handling. [\#156](https://github.com/informalsystems/hermes/pull/156)
+- [repo] Add rust-toolchain file. [\#154](https://github.com/informalsystems/hermes/pull/154)
 
 ### BUG FIXES:
 
-- [ibc] Fixed the identifiers limits according to updated ics spec. [\#189](https://github.com/informalsystems/ibc-rs/pull/189)
-- [ibc/relayer] Remove some warnings triggered during compilation due to dependency specification. [\#132](https://github.com/informalsystems/ibc-rs/pull/132)
-- [ibc] Fix nightly runs. [\#161](https://github.com/informalsystems/ibc-rs/pull/161)
-- [repo] Fix for incomplete licence terms. [\#153](https://github.com/informalsystems/ibc-rs/pull/153)
+- [ibc] Fixed the identifiers limits according to updated ics spec. [\#189](https://github.com/informalsystems/hermes/pull/189)
+- [ibc/relayer] Remove some warnings triggered during compilation due to dependency specification. [\#132](https://github.com/informalsystems/hermes/pull/132)
+- [ibc] Fix nightly runs. [\#161](https://github.com/informalsystems/hermes/pull/161)
+- [repo] Fix for incomplete licence terms. [\#153](https://github.com/informalsystems/hermes/pull/153)
 
 ## 0.0.1
 
