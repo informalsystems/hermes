@@ -70,7 +70,7 @@ pub fn decode_header(header_bytes: &[u8]) -> Result<Box<dyn Header>, Error> {
     // can try decoding into all the known types, and return an error only if
     // none work
     let header: TendermintHeader =
-        ErasedProtobuf::<Any>::decode(header_bytes.as_ref()).map_err(Error::invalid_raw_header)?;
+        ErasedProtobuf::<Any>::decode(header_bytes).map_err(Error::invalid_raw_header)?;
 
     Ok(Box::new(header))
 }
