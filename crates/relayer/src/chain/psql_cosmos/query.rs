@@ -801,6 +801,22 @@ pub async fn query_channels(
 }
 
 #[tracing::instrument(skip(pool))]
+pub async fn query_connection_channels(
+    pool: &PgPool,
+    connection_id: &ConnectionId,
+    query_height: &QueryHeight,
+) -> Result<Vec<IdentifiedChannelEnd>, Error> {
+    let result = query_ibc_data(pool, query_height).await?;
+    Ok(result
+        .data
+        .channels
+        .values()
+        .cloned()
+        .filter(|ch| ch.channel_end.connection_hops.first() == Some(connection_id))
+        .collect())
+}
+
+#[tracing::instrument(skip(pool))]
 pub async fn query_channel(
     pool: &PgPool,
     query_height: &QueryHeight,

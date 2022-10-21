@@ -1200,7 +1200,21 @@ impl ChainEndpoint for PsqlChain {
         &self,
         request: QueryConnectionChannelsRequest,
     ) -> Result<Vec<IdentifiedChannelEnd>, Error> {
-        self.chain.query_connection_channels(request)
+        if self.is_synced() {
+            crate::time!("query_channels_psql");
+            crate::telemetry!(query, self.id(), "query_channels_psql");
+            self.block_on(query_connection_channels(
+                &self.pool,
+                &request.connection_id,
+                &QueryHeight::Latest,
+            ))
+        } else {
+            warn!(
+                "chain psql dbs not synchronized on {}, falling back to gRPC query_connection_channels",
+                self.chain.id()
+            );
+            self.chain.query_connection_channels(request)
+        }
     }
 
     fn query_channels(
