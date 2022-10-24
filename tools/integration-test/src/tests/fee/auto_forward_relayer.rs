@@ -1,10 +1,10 @@
 //! Tests the relayer's support for the `auto_register_counterparty_payee` configuration option.
 //! When this option is toggled on, the relayer will discover the address of the counterparty payee
-//! automatically without the user needing to provide it. 
-//! 
-//! The test enables this option and then performs an `ibc_token_transfer_with_fee` between 
+//! automatically without the user needing to provide it.
+//!
+//! The test enables this option and then performs an `ibc_token_transfer_with_fee` between
 //! `chain_driver_a` (the source chain) and `chain_driver_b` (the destination chain) without
-//! explicitly registering the counterparty's address. It then checks to make sure all the 
+//! explicitly registering the counterparty's address. It then checks to make sure all the
 //! appropriate fees are paid out to the correct parties involved in the transaction.
 
 use ibc_relayer_types::core::ics04_channel::version::Version;

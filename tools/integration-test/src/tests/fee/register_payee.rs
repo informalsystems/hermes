@@ -1,14 +1,14 @@
-//! This test ensures the correctness of the fee module in the case when the payee is not 
-//! the default. 
-//! 
+//! This test ensures the correctness of the fee module in the case when the payee is not
+//! the default.
+//!
 //! `register_payee` allows the user to specify the payee that receives the `ack_fee`.
-//! In the default case, when only `register_counterparty_payee` is called, then both the 
+//! In the default case, when only `register_counterparty_payee` is called, then both the
 //! `recv_fee` and `ack_fee` will be paid to the counterparty payee. If `register_payee` is called
 //! as well, then the payee will be paid the `ack_fee` and the counterparty payee will be paid
-//! the `recv_fee`. 
-//! 
-//! One possible usage of this would be in the case when the forward and reverse relayer are 
-//! the same, but the relayer wishes to store the `recv_fee` and `ack_fee` in separate wallets. 
+//! the `recv_fee`.
+//!
+//! One possible usage of this would be in the case when the forward and reverse relayer are
+//! the same, but the relayer wishes to store the `recv_fee` and `ack_fee` in separate wallets.
 
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_test_framework::prelude::*;
