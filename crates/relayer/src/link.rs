@@ -3,6 +3,7 @@ use ibc_relayer_types::core::{
     ics04_channel::channel::State as ChannelState,
     ics24_host::identifier::{ChannelId, PortChannelId, PortId},
 };
+use tracing::info;
 
 use crate::chain::requests::{QueryChannelRequest, QueryHeight};
 use crate::chain::{counterparty::check_channel_counterparty, requests::QueryConnectionRequest};
@@ -53,6 +54,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         b_chain: ChainB,
         opts: LinkParameters,
         with_tx_confirmation: bool,
+        auto_register_counterparty_payee: bool,
     ) -> Result<Link<ChainA, ChainB>, LinkError> {
         // Check that the packet's channel on source chain is Open
         let a_channel_id = &opts.src_channel_id;
@@ -88,6 +90,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             .counterparty()
             .channel_id()
             .ok_or_else(|| LinkError::counterparty_channel_not_found(a_channel_id.clone()))?;
+
+        let b_port_id = a_channel.counterparty().port_id.clone();
 
         if a_channel.connection_hops().is_empty() {
             return Err(LinkError::no_connection_hop(
@@ -132,7 +136,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         let channel = Channel {
             ordering: a_channel.ordering,
             a_side: ChannelSide::new(
-                a_chain,
+                a_chain.clone(),
                 a_connection.client_id().clone(),
                 a_connection_id,
                 opts.src_port_id.clone(),
@@ -140,7 +144,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 None,
             ),
             b_side: ChannelSide::new(
-                b_chain,
+                b_chain.clone(),
                 a_connection.counterparty().client_id().clone(),
                 a_connection.counterparty().connection_id().unwrap().clone(),
                 a_channel.counterparty().port_id.clone(),
@@ -150,12 +154,31 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             connection_delay: a_connection.delay_period(),
         };
 
+        if auto_register_counterparty_payee && a_channel.version.supports_fee() {
+            let address_a = a_chain.get_signer().map_err(LinkError::relayer)?;
+
+            info!(
+                "auto registering counterparty payee on chain {} as {} on chain {}",
+                b_chain.id(),
+                address_a,
+                a_chain.id()
+            );
+
+            b_chain
+                .maybe_register_counterparty_payee(b_channel_id.clone(), b_port_id, address_a)
+                .map_err(LinkError::relayer)?;
+        }
+
         Link::new(channel, with_tx_confirmation)
     }
 
     /// Constructs a link around the channel that is reverse to the channel
     /// in this link.
-    pub fn reverse(&self, with_tx_confirmation: bool) -> Result<Link<ChainB, ChainA>, LinkError> {
+    pub fn reverse(
+        &self,
+        with_tx_confirmation: bool,
+        auto_register_counterparty_payee: bool,
+    ) -> Result<Link<ChainB, ChainA>, LinkError> {
         let opts = LinkParameters {
             src_port_id: self.a_to_b.dst_port_id().clone(),
             src_channel_id: self.a_to_b.dst_channel_id().clone(),
@@ -165,6 +188,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
 
         // Some of the checks and initializations may be redundant;
         // going slowly, but reliably.
-        Link::new_from_opts(chain_b, chain_a, opts, with_tx_confirmation)
+        Link::new_from_opts(
+            chain_b,
+            chain_a,
+            opts,
+            with_tx_confirmation,
+            auto_register_counterparty_payee,
+        )
     }
 }

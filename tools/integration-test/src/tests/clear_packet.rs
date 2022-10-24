@@ -1,6 +1,5 @@
-use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
-use ibc_test_framework::util::random::random_u64_range;
+use ibc_test_framework::util::random::random_u128_range;
 
 #[test]
 fn test_clear_packet() -> Result<(), Error> {
@@ -62,7 +61,7 @@ impl BinaryChannelTest for ClearPacketTest {
             .chain_driver()
             .query_balance(&wallet_a.address(), &denom_a)?;
 
-        let amount1 = random_u64_range(1000, 5000);
+        let amount1 = denom_a.with_amount(random_u128_range(1000, 5000));
 
         info!(
             "Performing IBC transfer with amount {}, which should *not* be relayed",
@@ -74,8 +73,7 @@ impl BinaryChannelTest for ClearPacketTest {
             &channel.channel_id_a.as_ref(),
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a,
-            amount1,
+            &amount1.as_ref(),
         )?;
 
         sleep(Duration::from_secs(1));
@@ -84,7 +82,7 @@ impl BinaryChannelTest for ClearPacketTest {
         relayer.with_supervisor(|| {
             sleep(Duration::from_secs(1));
 
-            let amount2 = random_u64_range(1000, 5000);
+            let amount2 = denom_a.with_amount(random_u128_range(1000, 5000));
 
             info!(
                 "Performing IBC transfer with amount {}, which should be relayed",
@@ -96,31 +94,25 @@ impl BinaryChannelTest for ClearPacketTest {
                 &channel.channel_id_a.as_ref(),
                 &wallet_a.as_ref(),
                 &wallet_b.address(),
-                &denom_a,
-                amount2,
+                &amount2.as_ref(),
             )?;
 
             sleep(Duration::from_secs(1));
 
-            let denom_b = derive_ibc_denom(
-                &channel.port_b.as_ref(),
-                &channel.channel_id_b.as_ref(),
-                &denom_a,
-            )?;
+            let amount_b =
+                amount2.transfer(&channel.port_b.as_ref(), &channel.channel_id_b.as_ref())?;
 
             // Wallet on chain A should have both amount deducted.
             chains.node_a.chain_driver().assert_eventual_wallet_amount(
                 &wallet_a.address(),
-                balance_a - amount1 - amount2,
-                &denom_a,
+                &(balance_a - amount1.amount() - amount2.amount()).as_ref(),
             )?;
 
             // Wallet on chain B should only receive the second IBC transfer
-            chains.node_b.chain_driver().assert_eventual_wallet_amount(
-                &wallet_b.address(),
-                amount2,
-                &denom_b.as_ref(),
-            )?;
+            chains
+                .node_b
+                .chain_driver()
+                .assert_eventual_wallet_amount(&wallet_b.address(), &amount_b.as_ref())?;
 
             Ok(())
         })
@@ -147,19 +139,17 @@ impl BinaryChannelTest for ClearPacketRecoveryTest {
         chains.node_b.chain_driver().local_transfer_token(
             &relayer_wallet_b.as_ref(),
             &wallet_b.address(),
-            100,
-            &denom_b1,
+            &denom_b1.with_amount(100u64).as_ref(),
         )?;
 
-        let amount1 = random_u64_range(1000, 5000);
+        let amount1 = random_u128_range(1000, 5000);
 
         chains.node_a.chain_driver().ibc_transfer_token(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a,
-            amount1,
+            &denom_a.with_amount(amount1).as_ref(),
         )?;
 
         let denom_b2 = derive_ibc_denom(
@@ -171,8 +161,7 @@ impl BinaryChannelTest for ClearPacketRecoveryTest {
         relayer.with_supervisor(|| {
             chains.node_b.chain_driver().assert_eventual_wallet_amount(
                 &wallet_b.address(),
-                amount1,
-                &denom_b2.as_ref(),
+                &denom_b2.with_amount(amount1).as_ref(),
             )?;
 
             Ok(())

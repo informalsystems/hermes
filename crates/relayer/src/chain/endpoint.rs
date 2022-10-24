@@ -107,7 +107,7 @@ pub trait ChainEndpoint: Sized {
     /// Returns the chain's keybase, mutably
     fn keybase_mut(&mut self) -> &mut KeyRing;
 
-    fn get_signer(&mut self) -> Result<Signer, Error>;
+    fn get_signer(&self) -> Result<Signer, Error>;
 
     fn get_key(&mut self) -> Result<KeyEntry, Error>;
 
@@ -133,8 +133,6 @@ pub trait ChainEndpoint: Sized {
         &mut self,
         tracked_msgs: TrackedMsgs,
     ) -> Result<Vec<TxResponse>, Error>;
-
-    // Light client
 
     /// Fetch a header from the chain at the given height and verify it.
     fn verify_header(
@@ -602,4 +600,11 @@ pub trait ChainEndpoint: Sized {
 
         Ok(proofs)
     }
+
+    fn maybe_register_counterparty_payee(
+        &mut self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_payee: &Signer,
+    ) -> Result<(), Error>;
 }

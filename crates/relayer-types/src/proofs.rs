@@ -1,16 +1,22 @@
+use flex_error::{define_error, TraceError};
+use prost::EncodeError;
 use serde::Serialize;
 
 use crate::core::ics23_commitment::commitment::CommitmentProofBytes;
 use crate::Height;
-use flex_error::define_error;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
     ProofError {
         ZeroHeight
             | _ | { format_args!("proof height cannot be zero") },
+
         EmptyProof
             | _ | { format_args!("proof cannot be empty") },
+
+        Encode
+            [ TraceError<EncodeError> ]
+            | _ | { "protobuf encode error" },
     }
 }
 

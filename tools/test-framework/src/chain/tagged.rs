@@ -3,13 +3,16 @@
 */
 
 use ibc_proto::google::protobuf::Any;
+use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
+use ibc_relayer::event::IbcEventWithHeight;
 use serde_json as json;
 
 use crate::chain::cli::query::query_recipient_transactions;
 use crate::chain::driver::ChainDriver;
 use crate::error::Error;
 use crate::ibc::denom::Denom;
+use crate::ibc::token::{TaggedDenomExt, TaggedToken, TaggedTokenRef};
 use crate::types::id::TaggedChainIdRef;
 use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress};
@@ -29,8 +32,11 @@ pub trait TaggedChainDriverExt<Chain> {
 
     fn tx_config(&self) -> MonoTagged<Chain, &TxConfig>;
 
-    fn send_tx(&self, wallet: &MonoTagged<Chain, &Wallet>, messages: Vec<Any>)
-        -> Result<(), Error>;
+    fn send_tx(
+        &self,
+        wallet: &MonoTagged<Chain, &Wallet>,
+        messages: Vec<Any>,
+    ) -> Result<Vec<IbcEventWithHeight>, Error>;
 
     /**
        Tagged version of [`ChainDriver::query_balance`].
@@ -42,7 +48,7 @@ pub trait TaggedChainDriverExt<Chain> {
         &self,
         wallet_id: &MonoTagged<Chain, &WalletAddress>,
         denom: &MonoTagged<Chain, &Denom>,
-    ) -> Result<u64, Error>;
+    ) -> Result<TaggedToken<Chain>, Error>;
 
     /**
        Tagged version of [`ChainDriver::assert_eventual_wallet_amount`].
@@ -53,8 +59,7 @@ pub trait TaggedChainDriverExt<Chain> {
     fn assert_eventual_wallet_amount(
         &self,
         user: &MonoTagged<Chain, &WalletAddress>,
-        target_amount: u64,
-        denom: &MonoTagged<Chain, &Denom>,
+        token: &TaggedTokenRef<Chain>,
     ) -> Result<(), Error>;
 
     /**
@@ -82,26 +87,35 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
         &self,
         wallet: &MonoTagged<Chain, &Wallet>,
         messages: Vec<Any>,
-    ) -> Result<(), Error> {
-        self.value().send_tx(wallet.value(), messages)
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
+        self.value()
+            .runtime
+            .block_on(simple_send_tx(
+                &self.value().tx_config,
+                &wallet.value().key,
+                messages,
+            ))
+            .map_err(Error::relayer)
     }
 
     fn query_balance(
         &self,
         wallet_id: &MonoTagged<Chain, &WalletAddress>,
         denom: &MonoTagged<Chain, &Denom>,
-    ) -> Result<u64, Error> {
-        self.value().query_balance(wallet_id.value(), denom.value())
+    ) -> Result<TaggedToken<Chain>, Error> {
+        let balance = self
+            .value()
+            .query_balance(wallet_id.value(), denom.value())?;
+        Ok(denom.with_amount(balance))
     }
 
     fn assert_eventual_wallet_amount(
         &self,
         user: &MonoTagged<Chain, &WalletAddress>,
-        target_amount: u64,
-        denom: &MonoTagged<Chain, &Denom>,
+        token: &TaggedTokenRef<Chain>,
     ) -> Result<(), Error> {
         self.value()
-            .assert_eventual_wallet_amount(user.value(), target_amount, denom.value())
+            .assert_eventual_wallet_amount(user.value(), token.value())
     }
 
     fn query_recipient_transactions(

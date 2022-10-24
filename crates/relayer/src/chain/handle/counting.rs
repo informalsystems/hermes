@@ -472,4 +472,15 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inc_metric("query_host_consensus_state");
         self.inner.query_host_consensus_state(request)
     }
+
+    fn maybe_register_counterparty_payee(
+        &self,
+        channel_id: ChannelId,
+        port_id: PortId,
+        counterparty_payee: Signer,
+    ) -> Result<(), Error> {
+        self.inc_metric("maybe_register_counterparty_payee");
+        self.inner
+            .maybe_register_counterparty_payee(channel_id, port_id, counterparty_payee)
+    }
 }

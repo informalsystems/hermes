@@ -310,7 +310,7 @@ pub async fn query_tx_response(
     Ok(response.txs.into_iter().next())
 }
 
-fn all_ibc_events_from_tx_search_response(
+pub fn all_ibc_events_from_tx_search_response(
     chain_id: &ChainId,
     response: TxResponse,
 ) -> Vec<IbcEventWithHeight> {

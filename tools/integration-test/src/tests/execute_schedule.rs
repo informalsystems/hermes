@@ -13,7 +13,7 @@
 //! exist in the pending queue.
 
 use ibc_test_framework::prelude::*;
-use ibc_test_framework::util::random::random_u64_range;
+use ibc_test_framework::util::random::random_u128_range;
 
 use ibc_relayer::link::{Link, LinkParameters};
 
@@ -41,7 +41,7 @@ impl BinaryChannelTest for ExecuteScheduleTest {
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let amount1 = random_u64_range(1000, 5000);
+        let amount1 = random_u128_range(1000, 5000);
 
         let chain_a_link_opts = LinkParameters {
             src_port_id: channel.port_a.clone().into_value(),
@@ -53,6 +53,7 @@ impl BinaryChannelTest for ExecuteScheduleTest {
             chains.handle_b().clone(),
             chain_a_link_opts,
             true,
+            false,
         )?;
 
         let mut relay_path_a_to_b = chain_a_link.a_to_b;
@@ -64,8 +65,7 @@ impl BinaryChannelTest for ExecuteScheduleTest {
                 &channel.channel_id_a.as_ref(),
                 &chains.node_a.wallets().user1(),
                 &chains.node_b.wallets().user1().address(),
-                &chains.node_a.denom(),
-                amount1,
+                &chains.node_a.denom().with_amount(amount1).as_ref(),
             )?;
 
             relay_path_a_to_b.schedule_packet_clearing(None)?;

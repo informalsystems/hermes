@@ -1,16 +1,20 @@
 //! All errors which can be raised from a command.
 
-use flex_error::define_error;
+use flex_error::{define_error, DisplayError};
+use std::io::Error as IoError;
 
 use tendermint::Error as TendermintError;
 
+use ibc_relayer_types::applications::ics29_fee::error::Error as FeeError;
 use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::signer::SignerError;
 
 use ibc_relayer::channel::ChannelError;
 use ibc_relayer::connection::ConnectionError;
 use ibc_relayer::error::Error as RelayerError;
 use ibc_relayer::foreign_client::ForeignClientError;
+use ibc_relayer::keyring::errors::Error as KeyRingError;
 use ibc_relayer::link::error::LinkError;
 use ibc_relayer::spawn::SpawnError;
 use ibc_relayer::supervisor::Error as SupervisorError;
@@ -24,6 +28,7 @@ define_error! {
             |_| { "config error" },
 
         Io
+            [ DisplayError<IoError> ]
             |_| { "I/O error" },
 
         Query
@@ -79,6 +84,10 @@ define_error! {
             [ ConnectionError ]
             |_| { "connection error" },
 
+        Fee
+            [ FeeError ]
+            |_| { "fee error" },
+
         Transfer
             [ TransferError ]
             |_| { "transfer error" },
@@ -102,5 +111,13 @@ define_error! {
         UpgradeChain
             [ UpgradeChainError ]
             |_| { "upgrade chain error" },
+
+        Signer
+            [ SignerError ]
+            |_| { "signer error" },
+
+        KeyRing
+            [ KeyRingError ]
+            |_| { "keyring error" },
     }
 }

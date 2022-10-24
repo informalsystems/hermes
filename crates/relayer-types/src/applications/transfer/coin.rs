@@ -28,6 +28,25 @@ pub struct Coin<D> {
     pub amount: Amount,
 }
 
+impl<D> Coin<D> {
+    pub fn new(denom: D, amount: impl Into<Amount>) -> Self {
+        Self {
+            denom,
+            amount: amount.into(),
+        }
+    }
+
+    pub fn checked_add(self, rhs: impl Into<Amount>) -> Option<Self> {
+        let amount = self.amount.checked_add(rhs)?;
+        Some(Self::new(self.denom, amount))
+    }
+
+    pub fn checked_sub(self, rhs: impl Into<Amount>) -> Option<Self> {
+        let amount = self.amount.checked_sub(rhs)?;
+        Some(Self::new(self.denom, amount))
+    }
+}
+
 impl<D: FromStr> Coin<D>
 where
     D::Err: Into<Error>,

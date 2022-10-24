@@ -2,22 +2,22 @@
    Types for information about a chain wallet.
 */
 
-use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
 use core::fmt::{self, Display};
 use ibc_relayer::keyring::KeyEntry;
 
+use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
 use crate::types::tagged::*;
 
 /**
    Newtype wrapper for a wallet ID as identified by the chain and relayer.
 */
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct WalletId(pub String);
 
 /**
    Newtype wrapper for the address a wallet corresponds to.
 */
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct WalletAddress(pub String);
 
 /**

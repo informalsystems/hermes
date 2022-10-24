@@ -84,6 +84,8 @@ impl BinaryChannelTest for OrderedChannelClearTest {
             .query_balance(&wallet_a.address(), &denom_a)?;
 
         let amount = random_u64_range(1000, 5000);
+        let token = denom_a.with_amount(amount);
+
         let num_msgs = 150_usize;
         let total_amount = amount * u64::try_from(num_msgs).unwrap();
 
@@ -97,8 +99,7 @@ impl BinaryChannelTest for OrderedChannelClearTest {
             &channel.channel_id_a.as_ref(),
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a,
-            amount,
+            &token.as_ref(),
             num_msgs,
         )?;
 
@@ -114,6 +115,7 @@ impl BinaryChannelTest for OrderedChannelClearTest {
             chains.handle_b().clone(),
             chain_a_link_opts,
             true,
+            true,
         )?;
 
         let chain_b_link_opts = LinkParameters {
@@ -125,6 +127,7 @@ impl BinaryChannelTest for OrderedChannelClearTest {
             chains.handle_b().clone(),
             chains.handle_a().clone(),
             chain_b_link_opts,
+            true,
             true,
         )?;
 
@@ -144,8 +147,7 @@ impl BinaryChannelTest for OrderedChannelClearTest {
         // Wallet on chain B should have received IBC transfers with the ibc denomination.
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
             &wallet_b.address(),
-            total_amount,
-            &denom_b.as_ref(),
+            &denom_b.with_amount(total_amount).as_ref(),
         )?;
 
         // Send the packet acknowledgments from B to A.
@@ -156,11 +158,12 @@ impl BinaryChannelTest for OrderedChannelClearTest {
         sleep(Duration::from_secs(10));
 
         // Wallet on chain A should have sum of amounts deducted.
-        chains.node_a.chain_driver().assert_eventual_wallet_amount(
-            &wallet_a.address(),
-            balance_a - total_amount,
-            &denom_a,
-        )?;
+        let expected_a = denom_a.with_amount(balance_a.amount().checked_sub(total_amount).unwrap());
+
+        chains
+            .node_a
+            .chain_driver()
+            .assert_eventual_wallet_amount(&wallet_a.address(), &expected_a.as_ref())?;
 
         Ok(())
     }
@@ -216,8 +219,8 @@ impl BinaryChannelTest for OrderedChannelClearEqualCLITest {
         );
 
         let transfer_options = TransferOptions {
-            packet_src_port_id: channel.port_a.value().clone(),
-            packet_src_channel_id: channel.channel_id_a.value().clone(),
+            src_port_id: channel.port_a.value().clone(),
+            src_channel_id: channel.channel_id_a.value().clone(),
             amount: random_u64_range(1000, 5000).into(),
             denom: chains.node_a.denom().value().to_string(),
             receiver: Some(chains.node_b.wallets().user1().address().value().0.clone()),
@@ -237,6 +240,7 @@ impl BinaryChannelTest for OrderedChannelClearEqualCLITest {
             .iter()
             .filter(|&ev| ev.height == clear_height)
             .count();
+
         let expected_num_events = num_packets_at_clear_height + 1; // account for the update client
 
         let chain_a_link_opts = LinkParameters {
@@ -249,15 +253,19 @@ impl BinaryChannelTest for OrderedChannelClearEqualCLITest {
             chains.handle_b().clone(),
             chain_a_link_opts,
             true,
+            true,
         )?;
+
         let events_returned: Vec<IbcEvent> = chain_a_link
             .relay_recv_packet_and_timeout_messages_with_packet_data_query_height(Some(
                 clear_height,
             ))
             .unwrap();
+
         info!("recv packets sent, chain events: {:?}", events_returned);
 
         assert_eq!(expected_num_events, events_returned.len());
+
         Ok(())
     }
 }

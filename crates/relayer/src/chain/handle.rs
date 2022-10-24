@@ -346,6 +346,13 @@ pub enum ChainRequest {
         request: QueryHostConsensusStateRequest,
         reply_to: ReplyTo<AnyConsensusState>,
     },
+
+    MaybeRegisterCounterpartyPayee {
+        channel_id: ChannelId,
+        port_id: PortId,
+        counterparty_payee: Signer,
+        reply_to: ReplyTo<()>,
+    },
 }
 
 pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
@@ -642,4 +649,11 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
         &self,
         request: QueryHostConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error>;
+
+    fn maybe_register_counterparty_payee(
+        &self,
+        channel_id: ChannelId,
+        port_id: PortId,
+        counterparty_payee: Signer,
+    ) -> Result<(), Error>;
 }
