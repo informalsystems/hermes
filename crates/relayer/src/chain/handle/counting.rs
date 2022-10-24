@@ -480,6 +480,7 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         port_id: PortId,
         counterparty_payee: Signer,
     ) -> Result<(), Error> {
+        self.inc_metric("maybe_register_counterparty_payee");
         self.inner
             .maybe_register_counterparty_payee(channel_id, port_id, counterparty_payee)
     }
