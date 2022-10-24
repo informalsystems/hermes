@@ -39,10 +39,10 @@ pub fn setup_chains<ChainA: ChainHandle, ChainB: ChainHandle>(
 
 pub fn local_transfer_handler<ChainA: ChainHandle>(
     node: Tagged<ChainA, &FullNode>,
-    source: u64,
-    target: u64,
-    denom: u64,
-    amount: u64,
+    source: u128,
+    target: u128,
+    denom: u128,
+    amount: u128,
 ) -> Result<(), Error> {
     let wallets = node.wallets();
 
@@ -53,8 +53,7 @@ pub fn local_transfer_handler<ChainA: ChainHandle>(
     node.chain_driver().local_transfer_token(
         &source_wallet,
         &target_wallet.address(),
-        amount,
-        &denom,
+        &denom.with_amount(amount).as_ref(),
     )?;
 
     Ok(())
@@ -196,14 +195,12 @@ pub fn ibc_transfer_send_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
         &channel_id_source,
         &wallet_source,
         &wallet_target.address(),
-        &denom_source,
-        amount_source_to_target,
+        &denom_source.with_amount(amount_source_to_target).as_ref(),
     )?;
 
     node_source.chain_driver().assert_eventual_wallet_amount(
         &wallet_source.address(),
-        balance_source - amount_source_to_target,
-        &denom_source,
+        &(balance_source - amount_source_to_target).as_ref(),
     )?;
 
     Ok(())
@@ -239,8 +236,7 @@ pub fn ibc_transfer_receive_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     node_target.chain_driver().assert_eventual_wallet_amount(
         &wallet_target.address(),
-        amount_source_to_target,
-        &denom_target.as_ref(),
+        &denom_target.with_amount(amount_source_to_target).as_ref(),
     )?;
 
     Ok(())

@@ -412,6 +412,16 @@ where
         self.value().query_all_balances(key_name)
     }
 
+    fn maybe_register_counterparty_payee(
+        &self,
+        channel_id: ChannelId,
+        port_id: PortId,
+        counterparty_payee: Signer,
+    ) -> Result<(), Error> {
+        self.value()
+            .maybe_register_counterparty_payee(channel_id, port_id, counterparty_payee)
+    }
+
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
         self.value().query_denom_trace(hash)
     }

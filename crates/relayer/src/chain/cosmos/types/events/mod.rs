@@ -4,6 +4,7 @@ use tendermint::abci::Event as AbciEvent;
 use crate::event::{ibc_event_try_from_abci_event, IbcEventWithHeight};
 
 pub mod channel;
+pub mod fee;
 
 pub fn from_tx_response_event(height: Height, event: &AbciEvent) -> Option<IbcEventWithHeight> {
     ibc_event_try_from_abci_event(event)

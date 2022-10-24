@@ -165,7 +165,7 @@ impl FullNode {
 
        Test writers can use this to kill the full node in the middle of tests, and
        then restart it using
-       [`ChainDriver::start`](crate::chain::driver::ChainDriver::start).
+       [`ChainDriver::start`](crate::chain::ext::bootstrap::ChainBootstrapMethodsExt::start).
     */
     pub fn kill(&self) -> Result<(), Error> {
         self.process

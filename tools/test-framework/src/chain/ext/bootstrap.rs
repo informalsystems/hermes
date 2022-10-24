@@ -8,7 +8,6 @@ use std::str;
 use toml;
 use tracing::debug;
 
-use crate::ibc::denom::Denom;
 use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
 
 use crate::chain::cli::bootstrap::{
@@ -17,6 +16,7 @@ use crate::chain::cli::bootstrap::{
 };
 use crate::chain::driver::ChainDriver;
 use crate::error::{handle_generic_error, Error};
+use crate::ibc::token::Token;
 use crate::types::process::ChildProcess;
 use crate::types::wallet::{Wallet, WalletAddress, WalletId};
 
@@ -72,22 +72,13 @@ pub trait ChainBootstrapMethodsExt {
        Add a wallet address to the genesis account list for an uninitialized
        full node.
     */
-    fn add_genesis_account(
-        &self,
-        wallet: &WalletAddress,
-        amounts: &[(&Denom, u64)],
-    ) -> Result<(), Error>;
+    fn add_genesis_account(&self, wallet: &WalletAddress, amounts: &[&Token]) -> Result<(), Error>;
 
     /**
        Add a wallet ID with the given stake amount to be the genesis validator
        for an uninitialized chain.
     */
-    fn add_genesis_validator(
-        &self,
-        wallet_id: &WalletId,
-        denom: &Denom,
-        amount: u64,
-    ) -> Result<(), Error>;
+    fn add_genesis_validator(&self, wallet_id: &WalletId, token: &Token) -> Result<(), Error>;
 
     /**
        Call `gaiad collect-gentxs` to generate the genesis transactions.
@@ -190,15 +181,8 @@ impl ChainBootstrapMethodsExt for ChainDriver {
         Ok(Wallet::new(wallet_id.to_string(), wallet_address, key))
     }
 
-    fn add_genesis_account(
-        &self,
-        wallet: &WalletAddress,
-        amounts: &[(&Denom, u64)],
-    ) -> Result<(), Error> {
-        let amounts_str = amounts
-            .iter()
-            .map(|(denom, amount)| format!("{}{}", amount, denom))
-            .collect::<Vec<_>>();
+    fn add_genesis_account(&self, wallet: &WalletAddress, amounts: &[&Token]) -> Result<(), Error> {
+        let amounts_str = amounts.iter().map(|t| t.to_string()).collect::<Vec<_>>();
 
         add_genesis_account(
             self.chain_id.as_str(),
@@ -209,18 +193,13 @@ impl ChainBootstrapMethodsExt for ChainDriver {
         )
     }
 
-    fn add_genesis_validator(
-        &self,
-        wallet_id: &WalletId,
-        denom: &Denom,
-        amount: u64,
-    ) -> Result<(), Error> {
+    fn add_genesis_validator(&self, wallet_id: &WalletId, token: &Token) -> Result<(), Error> {
         add_genesis_validator(
             self.chain_id.as_str(),
             &self.command_path,
             &self.home_path,
             &wallet_id.0,
-            &format!("{}{}", amount, denom),
+            &token.to_string(),
         )
     }
 

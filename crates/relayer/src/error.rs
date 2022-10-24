@@ -2,7 +2,7 @@
 
 use core::time::Duration;
 
-use flex_error::{define_error, DisplayOnly, TraceClone, TraceError};
+use flex_error::{define_error, DisplayOnly, TraceError};
 use http::uri::InvalidUri;
 use humantime::format_duration;
 use ibc_proto::protobuf::Error as TendermintProtoError;
@@ -15,6 +15,7 @@ use tendermint_light_client::errors::{
 };
 use tendermint_rpc::endpoint::abci_query::AbciQuery;
 use tendermint_rpc::endpoint::broadcast::tx_commit::TxResult;
+use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxSyncResponse;
 use tendermint_rpc::Error as TendermintRpcError;
 use tonic::{
     metadata::errors::InvalidMetadataValue, transport::Error as TransportError,
@@ -22,6 +23,7 @@ use tonic::{
 };
 
 use ibc_relayer_types::{
+    applications::ics29_fee::error::Error as FeeError,
     clients::ics07_tendermint::error as tendermint_error,
     core::{
         ics02_client::{client_type::ClientType, error as client_error},
@@ -47,7 +49,7 @@ define_error! {
 
         Rpc
             { url: tendermint_rpc::Url }
-            [ TraceClone<TendermintRpcError> ]
+            [ TendermintRpcError ]
             |e| { format!("RPC error to endpoint {}", e.url) },
 
         AbciQuery
@@ -56,10 +58,9 @@ define_error! {
 
         CheckTx
             {
-                detail: SdkError,
-                tx: TxResult
+                response: TxSyncResponse,
             }
-            |e| { format!("CheckTx commit returned an error: {0}, raw result: {1:?}", e.detail, e.tx) },
+            | e | { format!("CheckTx returned an error: {:?}", e.response) },
 
         DeliverTx
             {
@@ -92,7 +93,7 @@ define_error! {
             |e| { format!("missing parameter in GRPC response: {}", e.param) },
 
         Decode
-            [ TraceError<TendermintProtoError> ]
+            [ TendermintProtoError ]
             |_| { "error decoding protobuf" },
 
         LightClientVerification
@@ -123,7 +124,7 @@ define_error! {
             |_| { "bad notification" },
 
         ConversionFromAny
-            [ TraceError<TendermintProtoError> ]
+            [ TendermintProtoError ]
             |_| { "conversion from a protobuf `Any` into a domain type failed" },
 
         EmptyUpgradedClientState
@@ -141,6 +142,10 @@ define_error! {
 
         EmptyResponseProof
             |_| { "empty response proof" },
+
+        RpcResponse
+            { detail: String }
+            | e | { format!("RPC client returns error response: {}", e.detail) },
 
         MalformedProof
             [ ProofError ]
@@ -265,6 +270,10 @@ define_error! {
         Ics23
             [ commitment_error::Error ]
             |_| { "ICS 23 error" },
+
+        Ics29
+            [ FeeError ]
+            | _ | { "ICS 29 error" },
 
         InvalidUri
             { uri: String }
@@ -525,7 +534,7 @@ define_error! {
             { len: usize }
             |e| {
                 format_args!("message with length {} is too large for a transaction", e.len)
-            }
+            },
     }
 }
 

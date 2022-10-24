@@ -9,7 +9,6 @@ use core::{
 use num_bigint::BigInt;
 use std::thread;
 
-use bitcoin::hashes::hex::ToHex;
 use ibc_proto::protobuf::Protobuf;
 use tendermint::block::Height as TmHeight;
 use tendermint::{
@@ -34,7 +33,9 @@ use ibc_relayer_types::core::ics03_connection::connection::{
 use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc_relayer_types::core::ics04_channel::packet::{Packet, Sequence};
 use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use ibc_relayer_types::core::ics24_host::identifier::{
+    ChainId, ChannelId, ClientId, ConnectionId, PortId,
+};
 use ibc_relayer_types::core::ics24_host::path::{
     AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
     ConnectionsPath, ReceiptsPath, SeqRecvsPath,
@@ -56,6 +57,8 @@ use ibc_relayer_types::{
 
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;
+use crate::chain::cosmos::encode::key_entry_to_signer;
+use crate::chain::cosmos::fee::maybe_register_counterparty_payee;
 use crate::chain::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::query::balance::{query_all_balances, query_balance};
 use crate::chain::cosmos::query::denom_trace::query_denom_trace;
@@ -84,15 +87,12 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
+use crate::util::pretty::{PrettyConsensusStateWithHeight, PrettyIdentifiedChannel};
 use crate::{
     chain::cosmos::batch::{
         send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
     },
     util::pretty::{PrettyIdentifiedClientState, PrettyIdentifiedConnection},
-};
-use crate::{
-    chain::cosmos::encode::encode_to_bech32,
-    util::pretty::{PrettyConsensusStateWithHeight, PrettyIdentifiedChannel},
 };
 
 use super::requests::{
@@ -113,6 +113,7 @@ pub mod client;
 pub mod compatibility;
 pub mod encode;
 pub mod estimate;
+pub mod fee;
 pub mod gas;
 pub mod query;
 pub mod retry;
@@ -673,19 +674,15 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     /// Get the account for the signer
-    fn get_signer(&mut self) -> Result<Signer, Error> {
+    fn get_signer(&self) -> Result<Signer, Error> {
         crate::time!("get_signer");
 
         // Get the key from key seed file
-        let key = self
-            .keybase()
-            .get_key(&self.config.key_name)
-            .map_err(|e| Error::key_not_found(self.config.key_name.clone(), e))?;
+        let key_entry = self.key()?;
 
-        let bech32 = encode_to_bech32(&key.address.to_hex(), &self.config.account_prefix)?;
-        bech32
-            .parse()
-            .map_err(|e| Error::ics02(ClientError::signer(e)))
+        let signer = key_entry_to_signer(&key_entry, &self.config.account_prefix)?;
+
+        Ok(signer)
     }
 
     /// Get the chain configuration
@@ -1721,6 +1718,27 @@ impl ChainEndpoint for CosmosSdkChain {
         )?;
 
         Ok((target, supporting))
+    }
+
+    fn maybe_register_counterparty_payee(
+        &mut self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_payee: &Signer,
+    ) -> Result<(), Error> {
+        let address = self.get_signer()?;
+        let key_entry = self.key()?;
+
+        self.rt.block_on(maybe_register_counterparty_payee(
+            &self.tx_config,
+            &key_entry,
+            &mut self.account,
+            &self.config.memo_prefix,
+            channel_id,
+            port_id,
+            &address,
+            counterparty_payee,
+        ))
     }
 }
 

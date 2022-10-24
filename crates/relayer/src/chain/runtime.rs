@@ -426,6 +426,10 @@ where
                         ChainRequest::QueryHostConsensusState { request, reply_to } => {
                             self.query_host_consensus_state(request, reply_to)?
                         },
+
+                        ChainRequest::MaybeRegisterCounterpartyPayee { channel_id, port_id, counterparty_payee, reply_to } => {
+                            self.maybe_register_counterparty_payee(&channel_id, &port_id, &counterparty_payee, reply_to)?
+                        }
                     }
                 },
             }
@@ -894,6 +898,22 @@ where
             .chain
             .query_host_consensus_state(request)
             .map(|h| h.into());
+
+        reply_to.send(result).map_err(Error::send)?;
+
+        Ok(())
+    }
+
+    fn maybe_register_counterparty_payee(
+        &mut self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_payee: &Signer,
+        reply_to: ReplyTo<()>,
+    ) -> Result<(), Error> {
+        let result =
+            self.chain
+                .maybe_register_counterparty_payee(channel_id, port_id, counterparty_payee);
 
         reply_to.send(result).map_err(Error::send)?;
 

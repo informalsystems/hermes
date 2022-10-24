@@ -486,4 +486,14 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     ) -> Result<AnyConsensusState, Error> {
         self.inner.query_host_consensus_state(request)
     }
+
+    fn maybe_register_counterparty_payee(
+        &self,
+        channel_id: ChannelId,
+        port_id: PortId,
+        counterparty_payee: Signer,
+    ) -> Result<(), Error> {
+        self.inner
+            .maybe_register_counterparty_payee(channel_id, port_id, counterparty_payee)
+    }
 }

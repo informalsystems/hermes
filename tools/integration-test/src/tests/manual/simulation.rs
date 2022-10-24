@@ -82,8 +82,8 @@ fn tx_raw_ft_transfer<SrcChain: ChainHandle, DstChain: ChainHandle>(
     number_messages: usize,
 ) -> Result<Vec<IbcEvent>, Error> {
     let transfer_options = TransferOptions {
-        packet_src_port_id: channel.port_a.value().clone(),
-        packet_src_channel_id: channel.channel_id_a.value().clone(),
+        src_port_id: channel.port_a.value().clone(),
+        src_channel_id: channel.channel_id_a.value().clone(),
         amount: amount.into(),
         denom: denom.value().to_string(),
         receiver: Some(recipient.value().0.clone()),

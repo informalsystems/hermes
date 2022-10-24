@@ -21,6 +21,9 @@ pub mod tendermint;
 pub mod ternary_transfer;
 pub mod transfer;
 
+#[cfg(any(doc, feature = "ics29-fee"))]
+pub mod fee;
+
 #[cfg(any(doc, feature = "ordered"))]
 pub mod ordered_channel;
 

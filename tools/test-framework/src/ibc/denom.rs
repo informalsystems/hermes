@@ -35,8 +35,6 @@ pub type TaggedDenom<Chain> = MonoTagged<Chain, Denom>;
 pub type TaggedDenomRef<'a, Chain> = MonoTagged<Chain, &'a Denom>;
 
 /**
-   A tagged version of `derive_ibc_denom` from the [`ibc`] module.
-
    Derives the denom on `ChainB` based on a denom on `ChainA` that has been
    transferred to `ChainB` via IBC.
 
@@ -136,3 +134,26 @@ impl Display for Denom {
         }
     }
 }
+
+impl PartialEq for Denom {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Base(d1), Self::Base(d2)) => d1 == d2,
+            (
+                Self::Ibc {
+                    path: p1,
+                    denom: d1,
+                    hashed: h1,
+                },
+                Self::Ibc {
+                    path: p2,
+                    denom: d2,
+                    hashed: h2,
+                },
+            ) => p1 == p2 && d1 == d2 && h1 == h2,
+            _ => self.as_str() == other.as_str(),
+        }
+    }
+}
+
+impl Eq for Denom {}
