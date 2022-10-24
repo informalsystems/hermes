@@ -13,7 +13,7 @@ use crate::prelude::*;
 ///
 /// TODO: ChainId validation is not standardized yet.
 ///       `is_epoch_format` will most likely be replaced by validate_chain_id()-style function.
-///       See: <https://github.com/informalsystems/ibc-rs/pull/304#discussion_r503917283>.
+///       See: <https://github.com/informalsystems/hermes/pull/304#discussion_r503917283>.
 ///
 /// Also, contrast with tendermint-rs `ChainId` type.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]

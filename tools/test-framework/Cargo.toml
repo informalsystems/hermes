@@ -6,7 +6,7 @@ license    = "Apache-2.0"
 readme     = "README.md"
 keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 homepage   = "https://hermes.informal.systems/"
-repository = "https://github.com/informalsystems/ibc-rs"
+repository = "https://github.com/informalsystems/hermes"
 authors    = ["Informal Systems <hello@informal.systems>"]
 
 description = """

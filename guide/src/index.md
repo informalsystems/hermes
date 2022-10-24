@@ -16,7 +16,7 @@ The relayer is a central element in the IBC network architecture. This is becaus
 
 We sometimes refer to Hermes as "IBC Relayer CLI", to make it clear that this is a relayer CLI (i.e., a binary) and distinguish it from the relayer core library (that is the crate called ibc-relayer).
 
-Hermes is actively developed and maintained by [Informal Systems](https://informal.systems) in the [ibc-rs](https://github.com/informalsystems/ibc-rs) repository.
+Hermes is actively developed and maintained by [Informal Systems](https://informal.systems) in the [ibc-rs](https://github.com/informalsystems/hermes) repository.
 
 ## Where to go
 
@@ -60,15 +60,15 @@ Hermes is actively developed and maintained by [Informal Systems](https://inform
 * Educational resources
   - [About IBC](https://ibc.cosmos.network/)
       - The official IBC-Go documentation. 
-  - [Cosmos network tutorial](https://tutorials.cosmos.network/academy/4-ibc/what-is-ibc.html#)
+  - [Cosmos network tutorial](https://tutorials.cosmos.network/academy/3-ibc/1-what-is-ibc.html)
       - Learn the basics of IBC in the official tutorial. 
   - [Connect IBC enabled chains with Hermes](https://www.youtube.com/watch?v=_xQDTj1PcEw&t=4289s)
       - Video demonstration of Hermes at Hackatom 2021.
 
 * Useful links
-  - [Hermes FAQ Page](https://github.com/informalsystems/ibc-rs/discussions/2472)
+  - [Hermes FAQ Page](https://github.com/informalsystems/hermes/discussions/2472)
       - The official FAQ of Hermes.
-  - [Hermes GitHub repository](https://github.com/informalsystems/ibc-rs)
+  - [Hermes GitHub repository](https://github.com/informalsystems/hermes)
       - The official GitHub repository for Hermes.
   - [IBC GitHub repository](https://github.com/cosmos/ics)
       - The official repository for the Inter-blockchain protocol (IBC).
@@ -99,7 +99,7 @@ __Disclaimer__ This project is undergoing heavy development, use at your own ris
 
 
 
-[feature-request]: https://github.com/informalsystems/ibc-rs/issues/new?assignees=&labels=&template=feature-request.md
-[bug-report]: https://github.com/informalsystems/ibc-rs/issues/new?assignees=&labels=&template=bug-report.md
+[feature-request]: https://github.com/informalsystems/hermes/issues/new?assignees=&labels=&template=feature-request.md
+[bug-report]: https://github.com/informalsystems/hermes/issues/new?assignees=&labels=&template=bug-report.md
 [twitter]: https://twitter.com/informalinc
-[issues]: https://github.com/informalsystems/ibc-rs/issues
+[issues]: https://github.com/informalsystems/hermes/issues

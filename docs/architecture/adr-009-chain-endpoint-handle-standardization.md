@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted - The PR has been merged in [#2108](https://github.com/informalsystems/ibc-rs/pull/2108)
+Accepted - The PR has been merged in [#2108](https://github.com/informalsystems/hermes/pull/2108)
 
 ## Changelog
 * 2022-04-19: Initial Proposal
@@ -47,5 +47,5 @@ This will allow us to modify the domain type as we wish, without requiring a cha
 
 ## References
 
-* [Option type should be used with non-zero Height #1009](https://github.com/informalsystems/ibc-rs/issues/1009)
+* [Option type should be used with non-zero Height #1009](https://github.com/informalsystems/hermes/issues/1009)
     + The new domain types proposed here, as well as the reduced deduplication of methods, will make fixing this issue easier

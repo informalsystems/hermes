@@ -1,6 +1,6 @@
 /*!
    Test for verifying the solution in
-   [#1542](https://github.com/informalsystems/ibc-rs/pull/1542)
+   [#1542](https://github.com/informalsystems/hermes/pull/1542)
 
    On running the test, the log should show messages like:
 

@@ -135,7 +135,7 @@ impl FullNode {
 
             // By default we use in-memory key store to avoid polluting
             // ~/.hermes/keys. See
-            // https://github.com/informalsystems/ibc-rs/issues/1541
+            // https://github.com/informalsystems/hermes/issues/1541
             key_store_type: Store::Memory,
 
             store_prefix: "ibc".to_string(),

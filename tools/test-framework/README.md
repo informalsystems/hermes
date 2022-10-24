@@ -16,7 +16,7 @@ Alternatively, you can use `$CHAIN_COMMAND_PATH` to override with a different ex
 
 ## Examples
 
-Example tests written using `ibc-test-framework` can be found in the [`ibc-rs` project repository](https://github.com/informalsystems/ibc-rs/tree/master/tools/integration-test)
+Example tests written using `ibc-test-framework` can be found in the [`ibc-rs` project repository](https://github.com/informalsystems/hermes/tree/master/tools/integration-test)
 
 ## Diagrams
 
