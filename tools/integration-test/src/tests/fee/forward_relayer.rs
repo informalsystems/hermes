@@ -1,3 +1,13 @@
+//! Tests the relayer's support of fee transfer functionality.
+//!
+//! This test performs an `ibc_token_transfer_with_fee` between `chain_driver_a`
+//! (the source chain) and `chain_driver_b` (the destination chain). Before it
+//! can perform this operation, it first checks that no `counterparty_payee` has
+//! been registered, and then registers `relayer_a`'s address as the
+//! `counterparty_payee` so that the fees will be sent to it. After the transfer,
+//! it checks to make sure that all the appropriate fees were faid out to the
+//! correct parties involved in the transaction.
+
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
