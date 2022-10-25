@@ -6,8 +6,7 @@ use prost::EncodeError;
 use tonic::transport::Error as TransportError;
 use tonic::Status as StatusError;
 
-use crate::transaction::impls::keys;
-use crate::transaction::traits::field::{FieldGetter, HasField};
+use crate::transaction::traits::fields::HasGrpcAddress;
 
 #[async_trait]
 pub trait CanSendTxSimulate: HasError {
@@ -20,10 +19,10 @@ where
     Context: InjectError<EncodeError>
         + InjectError<TransportError>
         + InjectError<StatusError>
-        + HasField<keys::GrpcAddress>,
+        + HasGrpcAddress,
 {
     async fn send_tx_simulate(&self, tx: Tx) -> Result<SimulateResponse, Self::Error> {
-        let grpc_address = keys::GrpcAddress::get_from(self);
+        let grpc_address = self.grpc_address();
 
         // The `tx` field of `SimulateRequest` was deprecated in Cosmos SDK 0.43 in favor of `tx_bytes`.
         let mut tx_bytes = vec![];

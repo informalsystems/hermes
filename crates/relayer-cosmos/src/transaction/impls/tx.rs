@@ -8,8 +8,7 @@ use tendermint_rpc::Client;
 
 use crate::transaction::impls::encode::CanSignAndEncodeTx;
 use crate::transaction::impls::estimate::CanEstimateTxFees;
-use crate::transaction::impls::keys;
-use crate::transaction::traits::field::{FieldGetter, HasField};
+use crate::transaction::traits::fields::{HasRpcAddress, HasRpcClient};
 
 #[async_trait]
 pub trait CanEstimateFeeAndSendTx: HasError {
@@ -55,10 +54,10 @@ pub trait CanBroadcastTxSync: HasError {
 #[async_trait]
 impl<Context> CanBroadcastTxSync for Context
 where
-    Context: InjectError<RpcError> + HasField<keys::RpcClient> + HasField<keys::RpcAddress>,
+    Context: InjectError<RpcError> + HasRpcClient + HasRpcAddress,
 {
     async fn broadcast_tx_sync(&self, data: Vec<u8>) -> Result<Response, Self::Error> {
-        let rpc_client = keys::RpcClient::get_from(self);
+        let rpc_client = self.rpc_client();
 
         let response = rpc_client
             .broadcast_tx_sync(data.into())

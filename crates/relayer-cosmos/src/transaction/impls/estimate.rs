@@ -9,9 +9,8 @@ use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tracing::{debug, error, warn};
 
 use crate::transaction::impls::encode::CanSignTx;
-use crate::transaction::impls::keys;
 use crate::transaction::impls::simulate::CanSendTxSimulate;
-use crate::transaction::traits::field::{FieldGetter, HasField};
+use crate::transaction::traits::fields::{HasChainId, HasDefaultGas, HasGasConfig, HasMaxGas};
 
 #[async_trait]
 pub trait CanEstimateTxFees: HasError {
@@ -21,10 +20,10 @@ pub trait CanEstimateTxFees: HasError {
 #[async_trait]
 impl<Context> CanEstimateTxFees for Context
 where
-    Context: HasError + HasField<keys::GasConfig> + CanSignTx + CanEstimateTxGas,
+    Context: HasError + HasGasConfig + CanSignTx + CanEstimateTxGas,
 {
     async fn estimate_tx_fees(&self, messages: &[Any]) -> Result<Fee, Self::Error> {
-        let gas_config = keys::GasConfig::get_from(self);
+        let gas_config = self.gas_config();
 
         let signed_tx = self.sign_tx(messages, &gas_config.max_fee)?;
 
@@ -57,10 +56,10 @@ pub struct BaseTxGasEstimator;
 #[async_trait]
 impl<Context> TxGasEstimator<Context> for BaseTxGasEstimator
 where
-    Context: HasError + HasField<keys::DefaultGas> + CanSendTxSimulate,
+    Context: HasError + HasDefaultGas + CanSendTxSimulate,
 {
     async fn estimate_gas_with_tx(context: &Context, tx: Tx) -> Result<u64, Context::Error> {
-        let default_gas = *keys::DefaultGas::get_from(context);
+        let default_gas = context.default_gas();
 
         let simulated_gas = context.send_tx_simulate(tx).await?
             .gas_info
@@ -86,7 +85,7 @@ pub trait HasRecoverableErrorForSimulation: HasError {
 #[async_trait]
 impl<Context, InEstimator> TxGasEstimator<Context> for RecoverableTxGasEstimator<InEstimator>
 where
-    Context: HasRecoverableErrorForSimulation + HasField<keys::DefaultGas>,
+    Context: HasRecoverableErrorForSimulation + HasDefaultGas,
     Context::Error: Display,
     InEstimator: TxGasEstimator<Context>,
 {
@@ -102,7 +101,7 @@ where
                         e
                     );
 
-                    let default_gas = *keys::DefaultGas::get_from(context);
+                    let default_gas = context.default_gas();
                     Ok(default_gas)
                 } else {
                     error!("failed to simulate tx. propagating error to caller: {}", e);
@@ -127,16 +126,16 @@ impl<Context, InEstimator> TxGasEstimator<Context> for MaxTxGasEstimator<InEstim
 where
     Context: HasRecoverableErrorForSimulation
         + InjectError<MaxGasExceededError>
-        + HasField<keys::MaxGas>
-        + HasField<keys::ChainId>,
+        + HasMaxGas
+        + HasChainId,
     Context::Error: Display,
     InEstimator: TxGasEstimator<Context>,
 {
     async fn estimate_gas_with_tx(context: &Context, tx: Tx) -> Result<u64, Context::Error> {
         let estimated_gas = InEstimator::estimate_gas_with_tx(context, tx).await?;
 
-        let max_gas = *keys::MaxGas::get_from(context);
-        let chain_id = keys::ChainId::get_from(context);
+        let max_gas = context.max_gas();
+        let chain_id = context.chain_id();
 
         if estimated_gas > max_gas {
             debug!(

@@ -7,8 +7,10 @@ use ibc_relayer::keyring::{errors::Error as KeyringError, sign_message};
 use ibc_relayer_framework::base::core::traits::error::{HasError, InjectError};
 use prost::EncodeError;
 
-use crate::transaction::impls::keys;
-use crate::transaction::traits::field::{FieldGetter, HasField};
+use crate::transaction::traits::fields::{
+    HasAccountNumber, HasAccountSequence, HasAddressType, HasChainId, HasExtensionOptions,
+    HasKeyEntry, HasMemo,
+};
 
 pub trait CanSignAndEncodeTx: HasError {
     fn sign_and_encode_tx(&self, messages: &[Any], fee: &Fee) -> Result<Vec<u8>, Self::Error>;
@@ -76,10 +78,10 @@ trait CanEncodeKeyBytes: HasError {
 impl<Context> CanEncodeKeyBytes for Context
 where
     Context: InjectError<EncodeError>,
-    Context: HasField<keys::KeyEntry>,
+    Context: HasKeyEntry,
 {
     fn encode_key_bytes(&self) -> Result<Vec<u8>, Self::Error> {
-        let key_entry = keys::KeyEntry::get_from(self);
+        let key_entry = self.key_entry();
 
         let public_key_bytes = key_entry.public_key.to_pub().to_bytes();
 
@@ -97,11 +99,11 @@ trait CanEncodeSignerInfo: HasError {
 
 impl<Context> CanEncodeSignerInfo for Context
 where
-    Context: HasError + HasField<keys::AccountSequence> + HasField<keys::AddressType>,
+    Context: HasError + HasAccountSequence + HasAddressType,
 {
     fn encode_signer_info(&self, key_bytes: Vec<u8>) -> Result<SignerInfo, Self::Error> {
-        let address_type = keys::AddressType::get_from(self);
-        let account_sequence = keys::AccountSequence::get_from(self);
+        let address_type = self.address_type();
+        let account_sequence = self.account_sequence();
 
         let pk_type = match address_type {
             AddressType::Cosmos => "/cosmos.crypto.secp256k1.PubKey".to_string(),
@@ -131,11 +133,11 @@ trait CanEncodeTxBodyAndBytes: HasError {
 
 impl<Context> CanEncodeTxBodyAndBytes for Context
 where
-    Context: InjectError<EncodeError> + HasField<keys::Memo> + HasField<keys::ExtensionOptions>,
+    Context: InjectError<EncodeError> + HasMemo + HasExtensionOptions,
 {
     fn encode_tx_body_and_bytes(&self, messages: &[Any]) -> Result<(TxBody, Vec<u8>), Self::Error> {
-        let memo = keys::Memo::get_from(self);
-        let extension_options = keys::ExtensionOptions::get_from(self);
+        let memo = self.memo();
+        let extension_options = self.extension_options();
 
         let body = TxBody {
             messages: messages.to_vec(),
@@ -196,18 +198,15 @@ trait CanEncodeSignDoc: HasError {
 
 impl<Context> CanEncodeSignDoc for Context
 where
-    Context: HasField<keys::ChainId>
-        + HasField<keys::AccountNumber>
-        + InjectError<EncodeError>
-        + CanSignMessage,
+    Context: HasChainId + HasAccountNumber + InjectError<EncodeError> + CanSignMessage,
 {
     fn encode_sign_doc(
         &self,
         auth_info_bytes: Vec<u8>,
         body_bytes: Vec<u8>,
     ) -> Result<Vec<u8>, Self::Error> {
-        let chain_id = keys::ChainId::get_from(self);
-        let account_number = keys::AccountNumber::get_from(self);
+        let chain_id = self.chain_id();
+        let account_number = self.account_number();
 
         let sign_doc = SignDoc {
             body_bytes,
@@ -232,11 +231,11 @@ trait CanSignMessage: HasError {
 
 impl<Context> CanSignMessage for Context
 where
-    Context: HasField<keys::AddressType> + HasField<keys::KeyEntry> + InjectError<KeyringError>,
+    Context: HasAddressType + HasKeyEntry + InjectError<KeyringError>,
 {
     fn sign_message(&self, message: Vec<u8>) -> Result<Vec<u8>, Self::Error> {
-        let address_type = keys::AddressType::get_from(self);
-        let key_entry = keys::KeyEntry::get_from(self);
+        let address_type = self.address_type();
+        let key_entry = self.key_entry();
 
         sign_message(key_entry, message, address_type).map_err(Context::inject_error)
     }
