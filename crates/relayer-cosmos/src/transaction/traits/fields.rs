@@ -1,7 +1,6 @@
 use core::time::Duration;
 use http::uri::Uri;
 use ibc_proto::google::protobuf::Any;
-use ibc_relayer::chain::cosmos::types::account::{AccountNumber, AccountSequence};
 use ibc_relayer::chain::cosmos::types::gas::GasConfig;
 use ibc_relayer::config::types::Memo;
 use ibc_relayer::config::AddressType;
@@ -11,14 +10,6 @@ use tendermint_rpc::{HttpClient, Url};
 
 pub trait HasKeyEntry {
     fn key_entry(&self) -> &KeyEntry;
-}
-
-pub trait HasAccountSequence {
-    fn account_sequence(&self) -> &AccountSequence;
-}
-
-pub trait HasAccountNumber {
-    fn account_number(&self) -> &AccountNumber;
 }
 
 pub trait HasAddressType {

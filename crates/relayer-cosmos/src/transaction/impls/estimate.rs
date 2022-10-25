@@ -25,7 +25,7 @@ where
     async fn estimate_tx_fees(&self, messages: &[Any]) -> Result<Fee, Self::Error> {
         let gas_config = self.gas_config();
 
-        let signed_tx = self.sign_tx(messages, &gas_config.max_fee)?;
+        let signed_tx = self.sign_tx(messages, &gas_config.max_fee).await?;
 
         let tx = Tx {
             body: Some(signed_tx.body),

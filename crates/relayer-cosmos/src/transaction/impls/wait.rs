@@ -2,11 +2,11 @@ use async_trait::async_trait;
 use ibc_relayer_framework::base::core::traits::error::HasError;
 use std::time::Instant;
 use tendermint::abci::transaction::Hash as TxHash;
-use tendermint::abci::Code;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tokio::time::sleep;
 
 use crate::transaction::impls::queries::tx::CanQueryTxResponse;
+use crate::transaction::impls::response::CanValidateRpcResponse;
 use crate::transaction::traits::fields::HasWaitTimeout;
 
 #[async_trait]
@@ -27,8 +27,6 @@ where
 
 pub trait InjectWaitTxError: HasError {
     fn tx_no_confirmation_error() -> Self::Error;
-
-    fn rpc_error_response(code: Code) -> Self::Error;
 }
 
 pub struct BaseWaitTxHash;
@@ -40,7 +38,7 @@ impl<Context> TxHashWaiter<Context> for WaitTxSucceed
 where
     Context: InjectWaitTxError,
     Context: HasWaitTimeout,
-    Context: CanQueryTxResponse,
+    Context: CanQueryTxResponse + CanValidateRpcResponse,
     BaseWaitTxHash: TxHashWaiter<Context>,
 {
     async fn wait_tx_hash(
@@ -49,10 +47,7 @@ where
     ) -> Result<TxResponse, Context::Error> {
         let response = BaseWaitTxHash::wait_tx_hash(context, tx_hash).await?;
 
-        let response_code = response.tx_result.code;
-        if response_code.is_err() {
-            return Err(Context::rpc_error_response(response_code));
-        }
+        Context::validate_rpc_response_code(response.tx_result.code)?;
 
         Ok(response)
     }
