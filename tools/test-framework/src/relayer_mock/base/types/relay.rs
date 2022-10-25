@@ -1,16 +1,14 @@
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
+use std::sync::Arc;
 use tokio::runtime::Runtime;
 
-use ibc_relayer_framework::{
-    base::one_for_all::traits::runtime::OfaRuntimeContext,
-    common::one_for_all::types::chain::OfaChainWrapper,
-};
+use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
+use ibc_relayer_framework::common::one_for_all::types::chain::OfaChainWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
 
-use crate::relayer_mock::base::{
-    traits::relay::MockRelay,
-    types::{chain::MockChainWrapper, runtime::MockRuntimeContext},
-};
+use crate::relayer_mock::base::traits::relay::MockRelay;
+use crate::relayer_mock::base::types::chain::MockChainWrapper;
+use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
 
 pub struct MockRelayWrapper<Relay: MockRelay> {
     pub relay: Arc<Relay>,

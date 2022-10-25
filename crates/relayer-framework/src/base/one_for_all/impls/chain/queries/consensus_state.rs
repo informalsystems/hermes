@@ -3,9 +3,7 @@ use async_trait::async_trait;
 use crate::base::chain::traits::queries::consensus_state::{
     CanQueryConsensusState, ConsensusStateQuerier, HasConsensusState,
 };
-use crate::base::one_for_all::traits::chain::OfaBaseChain;
-use crate::base::one_for_all::traits::chain::OfaIbcChain;
-use crate::base::one_for_all::traits::chain::OfaIbcChainPreset;
+use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain, OfaIbcChainPreset};
 use crate::common::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 

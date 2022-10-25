@@ -1,10 +1,8 @@
 use http::uri;
 use ibc_proto::google::protobuf::Any;
-use ibc_relayer::chain::cosmos::types::account;
-use ibc_relayer::chain::cosmos::types::gas;
-use ibc_relayer::config;
+use ibc_relayer::chain::cosmos::types::{account, gas};
 use ibc_relayer::config::types;
-use ibc_relayer::keyring;
+use ibc_relayer::{config, keyring};
 use ibc_relayer_types::core::ics24_host::identifier;
 use tendermint_rpc;
 

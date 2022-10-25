@@ -6,12 +6,10 @@ use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::Height;
 use tracing::{debug, trace};
 
-use crate::{
-    chain::handle::{ChainHandle, ChainHandlePair},
-    config::Config,
-    object::Object,
-    telemetry,
-};
+use crate::chain::handle::{ChainHandle, ChainHandlePair};
+use crate::config::Config;
+use crate::object::Object;
+use crate::telemetry;
 
 use super::{spawn_worker_tasks, WorkerHandle, WorkerId};
 

@@ -1,24 +1,22 @@
 use alloc::sync::Arc;
-use core::{
-    fmt::{Display, Error as FmtError, Formatter},
-    ops::Deref,
-    str::FromStr,
-};
+use core::fmt::{Display, Error as FmtError, Formatter};
+use core::ops::Deref;
+use core::str::FromStr;
 use std::thread;
 
+use abscissa_core::application::fatal_error;
 use abscissa_core::clap::Parser;
-use abscissa_core::{application::fatal_error, Runnable};
+use abscissa_core::Runnable;
 use itertools::Itertools;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, info, instrument};
 
-use ibc_relayer_types::{core::ics24_host::identifier::ChainId, events::IbcEvent};
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::events::IbcEvent;
 
 use eyre::eyre;
-use ibc_relayer::{
-    config::ChainConfig,
-    event::monitor::{EventMonitor, EventReceiver},
-};
+use ibc_relayer::config::ChainConfig;
+use ibc_relayer::event::monitor::{EventMonitor, EventReceiver};
 
 use crate::prelude::*;
 

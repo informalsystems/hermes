@@ -3,7 +3,8 @@ use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInf
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::tx::SignedTx;
 use ibc_relayer::config::AddressType;
-use ibc_relayer::keyring::{errors::Error as KeyringError, sign_message};
+use ibc_relayer::keyring::errors::Error as KeyringError;
+use ibc_relayer::keyring::sign_message;
 use ibc_relayer_framework::base::core::traits::error::{HasError, InjectError};
 use prost::EncodeError;
 

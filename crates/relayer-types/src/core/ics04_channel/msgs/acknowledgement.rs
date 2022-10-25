@@ -123,8 +123,9 @@ impl From<MsgAcknowledgement> for RawMsgAcknowledgement {
 
 #[cfg(test)]
 pub mod test_util {
-    use ibc_proto::ibc::core::channel::v1::MsgAcknowledgement as RawMsgAcknowledgement;
-    use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
+    use ibc_proto::ibc::core::channel::v1::{
+        MsgAcknowledgement as RawMsgAcknowledgement, Packet as RawPacket,
+    };
     use ibc_proto::ibc::core::client::v1::Height as RawHeight;
 
     use crate::core::ics04_channel::packet::test_utils::get_dummy_raw_packet;

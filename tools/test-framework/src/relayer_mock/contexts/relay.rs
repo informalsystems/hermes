@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use crate::relayer_mock::base::traits::{chain::MockChain, relay::MockRelay};
+use crate::relayer_mock::base::traits::chain::MockChain;
+use crate::relayer_mock::base::traits::relay::MockRelay;
 
 pub struct MockRelayContext<SrcChain, DstChain>
 where

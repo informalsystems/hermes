@@ -1,34 +1,32 @@
 use itertools::Itertools;
 
-use tendermint_light_client::{
-    components::{self, io::AtHeight},
-    light_client::LightClient as TmLightClient,
-    state::State as LightClientState,
-    store::{memory::MemoryStore, LightStore},
-};
-use tendermint_light_client_verifier::operations;
+use tendermint_light_client::components::io::AtHeight;
+use tendermint_light_client::components::{self};
+use tendermint_light_client::light_client::LightClient as TmLightClient;
+use tendermint_light_client::state::State as LightClientState;
+use tendermint_light_client::store::memory::MemoryStore;
+use tendermint_light_client::store::LightStore;
 use tendermint_light_client_verifier::options::Options as TmOptions;
 use tendermint_light_client_verifier::types::{Height as TMHeight, LightBlock, PeerId, Status};
-use tendermint_light_client_verifier::ProdVerifier;
+use tendermint_light_client_verifier::{operations, ProdVerifier};
 use tendermint_rpc as rpc;
 
-use ibc_relayer_types::{
-    clients::ics07_tendermint::{
-        header::{headers_compatible, Header as TmHeader},
-        misbehaviour::Misbehaviour as TmMisbehaviour,
-    },
-    core::{
-        ics02_client::{client_type::ClientType, events::UpdateClient, header::downcast_header},
-        ics24_host::identifier::ChainId,
-    },
-    downcast, Height as ICSHeight,
+use ibc_relayer_types::clients::ics07_tendermint::header::{
+    headers_compatible, Header as TmHeader,
 };
+use ibc_relayer_types::clients::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
+use ibc_relayer_types::core::ics02_client::client_type::ClientType;
+use ibc_relayer_types::core::ics02_client::events::UpdateClient;
+use ibc_relayer_types::core::ics02_client::header::downcast_header;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::{downcast, Height as ICSHeight};
 use tracing::trace;
 
-use crate::{
-    chain::cosmos::CosmosSdkChain, client_state::AnyClientState, config::ChainConfig, error::Error,
-    misbehaviour::MisbehaviourEvidence,
-};
+use crate::chain::cosmos::CosmosSdkChain;
+use crate::client_state::AnyClientState;
+use crate::config::ChainConfig;
+use crate::error::Error;
+use crate::misbehaviour::MisbehaviourEvidence;
 
 use super::Verified;
 

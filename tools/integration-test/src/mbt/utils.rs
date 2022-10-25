@@ -10,10 +10,8 @@ use ibc_test_framework::ibc::denom::Denom;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::types::tagged::mono::Tagged;
 
-use super::{
-    itf::InformalTrace,
-    state::{DenomId, State},
-};
+use super::itf::InformalTrace;
+use super::state::{DenomId, State};
 
 pub const CLIENT_EXPIRY: Duration = Duration::from_secs(15);
 

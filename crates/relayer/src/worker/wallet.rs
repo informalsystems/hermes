@@ -2,11 +2,9 @@ use std::time::Duration;
 
 use tracing::{error_span, trace, warn};
 
-use crate::{
-    chain::handle::ChainHandle,
-    telemetry,
-    util::task::{spawn_background_task, Next, TaskError, TaskHandle},
-};
+use crate::chain::handle::ChainHandle;
+use crate::telemetry;
+use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
 
 pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
     let span = error_span!("wallet", chain = %chain.id());

@@ -7,11 +7,12 @@ pub mod proof_specs;
 pub mod types;
 
 use alloc::collections::BTreeMap;
-use core::{
-    fmt::{Display, Error as FmtError, Formatter},
-    time::Duration,
-};
-use std::{fs, fs::File, io::Write, path::Path};
+use core::fmt::{Display, Error as FmtError, Formatter};
+use core::time::Duration;
+use std::fs;
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
 
 use ibc_proto::google::protobuf::Any;
 use serde_derive::{Deserialize, Serialize};

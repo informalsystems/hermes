@@ -1,7 +1,6 @@
 use core::str::FromStr;
 use eyre::eyre;
-use serde_json as json;
-use serde_yaml as yaml;
+use {serde_json as json, serde_yaml as yaml};
 
 use crate::chain::exec::simple_exec;
 use crate::error::{handle_generic_error, Error};

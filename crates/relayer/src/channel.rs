@@ -34,8 +34,7 @@ use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Channel as WorkerChannelObject;
 use crate::supervisor::error::Error as SupervisorError;
 use crate::util::pretty::{PrettyDuration, PrettyOption};
-use crate::util::retry::retry_with_index;
-use crate::util::retry::RetryResult;
+use crate::util::retry::{retry_with_index, RetryResult};
 use crate::util::task::Next;
 
 pub mod error;

@@ -1,7 +1,6 @@
 use core::marker::PhantomData;
 
-use crate::base::one_for_all::traits::relay::OfaBaseRelay;
-use crate::base::one_for_all::traits::relay::OfaRelayPreset;
+use crate::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayPreset};
 use crate::base::relay::impls::packet_relayers::ack::base_ack_packet::BaseAckPacketRelayer;
 use crate::base::relay::impls::packet_relayers::general::full_relay::FullRelayer;
 use crate::base::relay::impls::packet_relayers::general::retry::RetryRelayer;

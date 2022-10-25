@@ -1,11 +1,8 @@
 use flex_error::{define_error, TraceError};
-use http;
-use reqwest;
-use serde_json;
 use std::path::PathBuf;
-use tendermint_rpc;
 use tokio::task::JoinError;
 use tokio::time::error::Elapsed;
+use {http, reqwest, serde_json, tendermint_rpc};
 
 define_error! {
     RegistryError {

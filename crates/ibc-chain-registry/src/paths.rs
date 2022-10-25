@@ -1,8 +1,7 @@
 /// Models for serializing and deserializing IBC path JSON data found in the `_IBC/` directory of the registry repository
 use crate::fetchable::Fetchable;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use serde::Deserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

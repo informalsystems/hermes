@@ -180,8 +180,7 @@ pub mod test_util {
 
     use subtle_encoding::hex;
     use tendermint::block::signed_header::SignedHeader;
-    use tendermint::validator::Info as ValidatorInfo;
-    use tendermint::validator::Set as ValidatorSet;
+    use tendermint::validator::{Info as ValidatorInfo, Set as ValidatorSet};
     use tendermint::PublicKey;
 
     use crate::clients::ics07_tendermint::header::Header;

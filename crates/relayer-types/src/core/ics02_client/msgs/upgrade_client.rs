@@ -119,13 +119,12 @@ impl TryFrom<RawMsgUpgradeClient> for MsgUpgradeClient {
 pub mod test_util {
     use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
 
-    use crate::{
-        core::{ics02_client::height::Height, ics24_host::identifier::ClientId},
-        mock::{
-            client_state::MockClientState, consensus_state::MockConsensusState, header::MockHeader,
-        },
-        test_utils::{get_dummy_bech32_account, get_dummy_proof},
-    };
+    use crate::core::ics02_client::height::Height;
+    use crate::core::ics24_host::identifier::ClientId;
+    use crate::mock::client_state::MockClientState;
+    use crate::mock::consensus_state::MockConsensusState;
+    use crate::mock::header::MockHeader;
+    use crate::test_utils::{get_dummy_bech32_account, get_dummy_proof};
 
     use super::MsgUpgradeClient;
 
@@ -155,17 +154,14 @@ mod tests {
 
     use ibc_proto::ibc::core::client::v1::MsgUpgradeClient as RawMsgUpgradeClient;
 
-    use crate::{
-        core::{
-            ics02_client::{height::Height, msgs::upgrade_client::MsgUpgradeClient},
-            ics23_commitment::commitment::test_util::get_dummy_merkle_proof,
-            ics24_host::identifier::ClientId,
-        },
-        mock::{
-            client_state::MockClientState, consensus_state::MockConsensusState, header::MockHeader,
-        },
-        test_utils::get_dummy_account_id,
-    };
+    use crate::core::ics02_client::height::Height;
+    use crate::core::ics02_client::msgs::upgrade_client::MsgUpgradeClient;
+    use crate::core::ics23_commitment::commitment::test_util::get_dummy_merkle_proof;
+    use crate::core::ics24_host::identifier::ClientId;
+    use crate::mock::client_state::MockClientState;
+    use crate::mock::consensus_state::MockConsensusState;
+    use crate::mock::header::MockHeader;
+    use crate::test_utils::get_dummy_account_id;
 
     #[test]
     fn msg_upgrade_client_serialization() {

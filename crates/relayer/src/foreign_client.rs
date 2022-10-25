@@ -4,7 +4,8 @@
 //! i.e. they are *foreign* to the relayer. In contrast, the term "local client"
 //! refers to light clients running *locally* as part of the relayer.
 
-use core::{fmt, time::Duration};
+use core::fmt;
+use core::time::Duration;
 use std::thread;
 use std::time::Instant;
 
@@ -23,11 +24,10 @@ use ibc_relayer_types::core::ics02_client::msgs::update_client::MsgUpdateClient;
 use ibc_relayer_types::core::ics02_client::msgs::upgrade_client::MsgUpgradeClient;
 use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId};
-use ibc_relayer_types::downcast;
 use ibc_relayer_types::events::{IbcEvent, IbcEventType, WithBlockDataType};
 use ibc_relayer_types::timestamp::{Timestamp, TimestampOverflowError};
 use ibc_relayer_types::tx_msg::Msg;
-use ibc_relayer_types::Height;
+use ibc_relayer_types::{downcast, Height};
 
 use crate::chain::client::ClientSettings;
 use crate::chain::handle::ChainHandle;

@@ -5,15 +5,12 @@
 
 use eyre::Report as Error;
 use ibc_relayer_cli::components::enable_ansi;
-use std::env;
-use std::fs;
 use std::sync::Once;
-use tracing_subscriber::{
-    self as ts,
-    filter::EnvFilter,
-    layer::{Layer, SubscriberExt},
-    util::SubscriberInitExt,
-};
+use std::{env, fs};
+use tracing_subscriber::filter::EnvFilter;
+use tracing_subscriber::layer::{Layer, SubscriberExt};
+use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{self as ts};
 
 use crate::types::config::TestConfig;
 use crate::util::random::random_u32;

@@ -1,25 +1,22 @@
 use tracing::{error, info};
 
-use ibc_relayer_types::core::{
-    ics02_client::client_state::ClientState, ics03_connection::connection::IdentifiedConnectionEnd,
-    ics04_channel::channel::State as ChannelState, ics24_host::identifier::ChainId,
-};
+use ibc_relayer_types::core::ics02_client::client_state::ClientState;
+use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
+use ibc_relayer_types::core::ics04_channel::channel::State as ChannelState;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
-use crate::{
-    chain::{counterparty::connection_state_on_destination, handle::ChainHandle},
-    client_state::IdentifiedAnyClientState,
-    config::Config,
-    object::{Channel, Client, Connection, Object, Packet, Wallet},
-    registry::Registry,
-    supervisor::error::Error as SupervisorError,
-    telemetry,
-    worker::WorkerMap,
-};
+use crate::chain::counterparty::connection_state_on_destination;
+use crate::chain::handle::ChainHandle;
+use crate::client_state::IdentifiedAnyClientState;
+use crate::config::Config;
+use crate::object::{Channel, Client, Connection, Object, Packet, Wallet};
+use crate::registry::Registry;
+use crate::supervisor::error::Error as SupervisorError;
+use crate::telemetry;
+use crate::worker::WorkerMap;
 
-use super::{
-    scan::{ChainScan, ChainsScan, ChannelScan, ClientScan, ConnectionScan},
-    Error,
-};
+use super::scan::{ChainScan, ChainsScan, ChannelScan, ClientScan, ConnectionScan};
+use super::Error;
 
 /// A context for spawning workers within the supervisor.
 pub struct SpawnContext<'a, Chain: ChainHandle> {

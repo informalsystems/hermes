@@ -117,10 +117,8 @@ mod tests {
     use std::str::FromStr;
 
     use abscissa_core::clap::Parser;
-    use ibc_relayer_types::core::{
-        ics04_channel::packet::Sequence,
-        ics24_host::identifier::{ChainId, ChannelId, PortId},
-    };
+    use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
     #[test]
     fn test_query_packet_commitment_required_only() {

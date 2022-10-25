@@ -2,9 +2,7 @@
    Filesystem utilities.
 */
 
-use std::fs;
-use std::io;
-use std::thread;
+use std::{fs, io, thread};
 
 use crate::error::Error;
 

@@ -2,7 +2,9 @@ use serde::Serialize;
 
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
-use crate::{config::ChainConfig, rest::RestApiError, supervisor::dump_state::SupervisorState};
+use crate::config::ChainConfig;
+use crate::rest::RestApiError;
+use crate::supervisor::dump_state::SupervisorState;
 
 pub type ReplySender<T> = crossbeam_channel::Sender<Result<T, RestApiError>>;
 pub type ReplyReceiver<T> = crossbeam_channel::Receiver<Result<T, RestApiError>>;

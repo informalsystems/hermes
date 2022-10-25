@@ -7,16 +7,16 @@ use tracing::{debug, error, trace, trace_span};
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 use ibc_relayer_types::events::IbcEvent;
 
+use crate::chain::handle::ChainHandle;
 use crate::chain::requests::{QueryTxHash, QueryTxRequest};
 use crate::chain::tracking::TrackingId;
 use crate::error::Error as RelayerError;
-use crate::link::{error::LinkError, RelayPath};
+use crate::link::error::LinkError;
+use crate::link::operational_data::OperationalData;
+use crate::link::relay_sender::AsyncReply;
+use crate::link::{RelayPath, RelaySummary, TxHashes};
 use crate::telemetry;
 use crate::util::queue::Queue;
-use crate::{
-    chain::handle::ChainHandle,
-    link::{operational_data::OperationalData, relay_sender::AsyncReply, RelaySummary, TxHashes},
-};
 
 pub const TIMEOUT: Duration = Duration::from_secs(300);
 

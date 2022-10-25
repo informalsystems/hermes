@@ -6,10 +6,8 @@ use tracing::{info, trace};
 
 use ibc_relayer::rest::request::Request;
 
-use crate::{
-    handle::{all_chain_ids, assemble_version_info, chain_config, supervisor_state},
-    Config,
-};
+use crate::handle::{all_chain_ids, assemble_version_info, chain_config, supervisor_state};
+use crate::Config;
 
 pub struct ServerHandle {
     join_handle: thread::JoinHandle<()>,

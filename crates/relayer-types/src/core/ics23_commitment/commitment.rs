@@ -2,7 +2,8 @@ use crate::core::ics23_commitment::error::Error;
 use crate::prelude::*;
 use crate::proofs::ProofError;
 
-use core::{convert::TryFrom, fmt};
+use core::convert::TryFrom;
+use core::fmt;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 use serde::{Deserialize, Serialize};
 use subtle_encoding::{Encoding, Hex};

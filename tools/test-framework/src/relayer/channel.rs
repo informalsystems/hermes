@@ -3,8 +3,9 @@ use eyre::eyre;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{IncludeProof, QueryChannelRequest, QueryHeight};
 use ibc_relayer::channel::{extract_channel_id, Channel, ChannelSide};
-use ibc_relayer_types::core::ics04_channel::channel::State as ChannelState;
-use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, Order};
+use ibc_relayer_types::core::ics04_channel::channel::{
+    ChannelEnd, IdentifiedChannelEnd, Order, State as ChannelState,
+};
 
 use crate::error::Error;
 use crate::types::id::{

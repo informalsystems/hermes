@@ -6,8 +6,7 @@
 use crate::bootstrap::single::bootstrap_single_node;
 use crate::chain::builder::ChainBuilder;
 use crate::error::Error;
-use crate::framework::base::HasOverrides;
-use crate::framework::base::{run_basic_test, BasicTest, TestConfigOverride};
+use crate::framework::base::{run_basic_test, BasicTest, HasOverrides, TestConfigOverride};
 use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::types::config::TestConfig;
 use crate::types::single::node::FullNode;

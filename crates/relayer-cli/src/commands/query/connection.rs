@@ -5,11 +5,8 @@ use ibc_relayer::chain::requests::{
     IncludeProof, PageRequest, QueryConnectionChannelsRequest, QueryConnectionRequest, QueryHeight,
 };
 
-use ibc_relayer_types::core::{
-    ics03_connection::connection::State,
-    ics24_host::identifier::ConnectionId,
-    ics24_host::identifier::{ChainId, PortChannelId},
-};
+use ibc_relayer_types::core::ics03_connection::connection::State;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ConnectionId, PortChannelId};
 use ibc_relayer_types::Height;
 
 use crate::cli_utils::spawn_chain_runtime;

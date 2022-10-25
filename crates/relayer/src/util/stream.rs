@@ -94,7 +94,8 @@ where
 mod tests {
     use super::*;
 
-    use futures::{executor::block_on, stream, StreamExt};
+    use futures::executor::block_on;
+    use futures::{stream, StreamExt};
     use test_log::test;
 
     fn ok<A>(a: A) -> Result<A, ()> {

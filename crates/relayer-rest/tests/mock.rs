@@ -2,14 +2,13 @@ use std::str::FromStr;
 
 use serde::{Deserialize, Serialize};
 
-use ibc_relayer::{
-    config::ChainConfig,
-    rest::request::{Request, VersionInfo},
-    supervisor::dump_state::SupervisorState,
-};
+use ibc_relayer::config::ChainConfig;
+use ibc_relayer::rest::request::{Request, VersionInfo};
+use ibc_relayer::supervisor::dump_state::SupervisorState;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
-use ibc_relayer_rest::{server::spawn, Config};
+use ibc_relayer_rest::server::spawn;
+use ibc_relayer_rest::Config;
 
 enum TestResult {
     Success,

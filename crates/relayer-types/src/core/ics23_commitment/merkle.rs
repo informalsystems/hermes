@@ -1,9 +1,7 @@
 use crate::prelude::*;
 use tendermint::merkle::proof::Proof as TendermintProof;
 
-use ibc_proto::ibc::core::commitment::v1::MerklePath;
-use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
-use ibc_proto::ibc::core::commitment::v1::MerkleRoot;
+use ibc_proto::ibc::core::commitment::v1::{MerklePath, MerkleProof as RawMerkleProof, MerkleRoot};
 use ics23::commitment_proof::Proof;
 use ics23::{
     calculate_existence_root, verify_membership, verify_non_membership, CommitmentProof,

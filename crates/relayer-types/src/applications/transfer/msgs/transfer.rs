@@ -130,17 +130,14 @@ pub mod test_util {
 
     use super::MsgTransfer;
     use crate::applications::transfer::packet::PacketData;
-    use crate::applications::transfer::Coin;
+    use crate::applications::transfer::{BaseCoin, Coin, PrefixedCoin};
     use crate::bigint::U256;
     use crate::core::ics04_channel::packet::{Packet, Sequence};
     use crate::core::ics04_channel::timeout::TimeoutHeight;
+    use crate::core::ics24_host::identifier::{ChannelId, PortId};
     use crate::signer::Signer;
-    use crate::{
-        applications::transfer::{BaseCoin, PrefixedCoin},
-        core::ics24_host::identifier::{ChannelId, PortId},
-        test_utils::get_dummy_bech32_account,
-        timestamp::Timestamp,
-    };
+    use crate::test_utils::get_dummy_bech32_account;
+    use crate::timestamp::Timestamp;
 
     // Returns a dummy ICS20 `MsgTransfer`. If no `timeout_timestamp` is
     // specified, a timestamp of 10 seconds in the future is used.

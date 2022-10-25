@@ -1,11 +1,11 @@
-use ibc_proto::{google::protobuf::Any, protobuf::Protobuf};
+use ibc_proto::google::protobuf::Any;
+use ibc_proto::protobuf::Protobuf;
 use ibc_relayer_types::clients::ics07_tendermint::misbehaviour::{
     Misbehaviour as TmMisbehaviour, TENDERMINT_MISBEHAVIOR_TYPE_URL,
 };
-use ibc_relayer_types::core::{
-    ics02_client::{error::Error, misbehaviour::Misbehaviour},
-    ics24_host::identifier::ClientId,
-};
+use ibc_relayer_types::core::ics02_client::error::Error;
+use ibc_relayer_types::core::ics02_client::misbehaviour::Misbehaviour;
+use ibc_relayer_types::core::ics24_host::identifier::ClientId;
 #[cfg(test)]
 use ibc_relayer_types::mock::misbehaviour::Misbehaviour as MockMisbehaviour;
 #[cfg(test)]

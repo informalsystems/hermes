@@ -6,11 +6,9 @@ pub mod state;
 
 use alloc::sync::Arc;
 use once_cell::sync::Lazy;
-use std::{
-    error::Error,
-    net::{SocketAddr, ToSocketAddrs},
-    thread::JoinHandle,
-};
+use std::error::Error;
+use std::net::{SocketAddr, ToSocketAddrs};
+use std::thread::JoinHandle;
 
 pub use crate::state::TelemetryState;
 

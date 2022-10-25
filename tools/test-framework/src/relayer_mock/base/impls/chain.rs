@@ -1,23 +1,17 @@
 use async_trait::async_trait;
 use std::time::SystemTime;
 
-use ibc_relayer_framework::{
-    base::one_for_all::traits::{
-        chain::{OfaBaseChain, OfaChainTypes, OfaIbcChain},
-        runtime::OfaRuntimeContext,
-    },
-    common::one_for_all::presets::MinimalPreset,
+use ibc_relayer_framework::base::one_for_all::traits::chain::{
+    OfaBaseChain, OfaChainTypes, OfaIbcChain,
 };
+use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
+use ibc_relayer_framework::common::one_for_all::presets::MinimalPreset;
 
-use crate::relayer_mock::base::{
-    error::Error,
-    traits::chain::MockChain,
-    types::{
-        chain::{ChainStatus, ConsensusState, MockChainWrapper},
-        events::{Event, WriteAcknowledgementEvent},
-        runtime::MockRuntimeContext,
-    },
-};
+use crate::relayer_mock::base::error::Error;
+use crate::relayer_mock::base::traits::chain::MockChain;
+use crate::relayer_mock::base::types::chain::{ChainStatus, ConsensusState, MockChainWrapper};
+use crate::relayer_mock::base::types::events::{Event, WriteAcknowledgementEvent};
+use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
 
 impl<Chain> OfaChainTypes for MockChainWrapper<Chain>
 where

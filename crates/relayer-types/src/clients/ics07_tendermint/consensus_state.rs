@@ -4,7 +4,9 @@ use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::lightclients::tendermint::v1::ConsensusState as RawConsensusState;
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
-use tendermint::{hash::Algorithm, time::Time, Hash};
+use tendermint::hash::Algorithm;
+use tendermint::time::Time;
+use tendermint::Hash;
 use tendermint_proto::google::protobuf as tpb;
 
 use crate::clients::ics07_tendermint::error::Error;

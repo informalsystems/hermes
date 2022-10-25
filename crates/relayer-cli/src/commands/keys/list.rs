@@ -4,12 +4,10 @@ use core::fmt::Write;
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
-use crate::conclude::Output;
-use crate::{application::app_config, conclude::json};
-use ibc_relayer::{
-    config::{ChainConfig, Config},
-    keyring::{KeyEntry, KeyRing, Store},
-};
+use crate::application::app_config;
+use crate::conclude::{json, Output};
+use ibc_relayer::config::{ChainConfig, Config};
+use ibc_relayer::keyring::{KeyEntry, KeyRing, Store};
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]

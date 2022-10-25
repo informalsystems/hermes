@@ -6,10 +6,8 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
-use crate::{
-    object::{Object, ObjectType},
-    worker::{WorkerData, WorkerHandle, WorkerId},
-};
+use crate::object::{Object, ObjectType};
+use crate::worker::{WorkerData, WorkerHandle, WorkerId};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WorkerDesc {

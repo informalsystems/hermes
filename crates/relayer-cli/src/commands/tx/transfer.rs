@@ -1,5 +1,6 @@
 use abscissa_core::clap::Parser;
-use abscissa_core::{config::Override, Command, FrameworkErrorKind, Runnable};
+use abscissa_core::config::Override;
+use abscissa_core::{Command, FrameworkErrorKind, Runnable};
 
 use core::time::Duration;
 use eyre::eyre;
@@ -7,18 +8,12 @@ use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     IncludeProof, QueryChannelRequest, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
-use ibc_relayer::{
-    config::Config,
-    transfer::{build_and_send_transfer_messages, TransferOptions},
-};
-use ibc_relayer_types::{
-    applications::transfer::Amount,
-    core::{
-        ics02_client::client_state::ClientState,
-        ics24_host::identifier::{ChainId, ChannelId, PortId},
-    },
-    events::IbcEvent,
-};
+use ibc_relayer::config::Config;
+use ibc_relayer::transfer::{build_and_send_transfer_messages, TransferOptions};
+use ibc_relayer_types::applications::transfer::Amount;
+use ibc_relayer_types::core::ics02_client::client_state::ClientState;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+use ibc_relayer_types::events::IbcEvent;
 
 use crate::cli_utils::ChainHandlePair;
 use crate::conclude::{exit_with_unrecoverable_error, Output};
@@ -275,10 +270,8 @@ impl Runnable for TxIcs20MsgTransferCmd {
 
 #[cfg(test)]
 mod tests {
-    use ibc_relayer_types::{
-        applications::transfer::Amount,
-        core::ics24_host::identifier::{ChainId, ChannelId, PortId},
-    };
+    use ibc_relayer_types::applications::transfer::Amount;
+    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
     use super::TxIcs20MsgTransferCmd;
 

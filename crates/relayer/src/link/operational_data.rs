@@ -8,11 +8,8 @@ use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::Height;
 
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::IncludeProof;
-use crate::chain::requests::QueryClientStateRequest;
-use crate::chain::requests::QueryHeight;
-use crate::chain::tracking::TrackedMsgs;
-use crate::chain::tracking::TrackingId;
+use crate::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
+use crate::chain::tracking::{TrackedMsgs, TrackingId};
 use crate::event::IbcEventWithHeight;
 use crate::link::error::LinkError;
 use crate::link::RelayPath;

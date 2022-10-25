@@ -9,13 +9,11 @@ use lazy_static::lazy_static;
 use mdbook_template::replace_template;
 use mdbook_template::utils::SystemFileReader;
 use regex::Regex;
-use std::{
-    collections::HashSet,
-    ffi::OsStr,
-    fs::File,
-    io::{BufRead, BufReader},
-    path::{Path, PathBuf},
-};
+use std::collections::HashSet;
+use std::ffi::OsStr;
+use std::fs::File;
+use std::io::{BufRead, BufReader};
+use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 
 #[derive(Debug)]

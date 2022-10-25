@@ -15,18 +15,27 @@ mod update;
 mod upgrade;
 mod version;
 
-use self::{
-    clear::ClearCmds, completions::CompletionsCmd, config::ConfigCmd, create::CreateCmds,
-    health::HealthCheckCmd, keys::KeysCmd, listen::ListenCmd, misbehaviour::MisbehaviourCmd,
-    query::QueryCmd, start::StartCmd, tx::TxCmd, update::UpdateCmds, upgrade::UpgradeCmds,
-    version::VersionCmd,
-};
+use self::clear::ClearCmds;
+use self::completions::CompletionsCmd;
+use self::config::ConfigCmd;
+use self::create::CreateCmds;
+use self::health::HealthCheckCmd;
+use self::keys::KeysCmd;
+use self::listen::ListenCmd;
+use self::misbehaviour::MisbehaviourCmd;
+use self::query::QueryCmd;
+use self::start::StartCmd;
+use self::tx::TxCmd;
+use self::update::UpdateCmds;
+use self::upgrade::UpgradeCmds;
+use self::version::VersionCmd;
 
 use core::time::Duration;
 use std::path::PathBuf;
 
 use abscissa_core::clap::Parser;
-use abscissa_core::{config::Override, Command, Configurable, FrameworkError, Runnable};
+use abscissa_core::config::Override;
+use abscissa_core::{Command, Configurable, FrameworkError, Runnable};
 use tracing::{error, info};
 
 use crate::DEFAULT_CONFIG_PATH;

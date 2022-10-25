@@ -2,21 +2,17 @@
 
 use std::path::PathBuf;
 
-use abscissa_core::{
-    application::{self, AppCell},
-    component::Component,
-    config::{self, CfgCell},
-    terminal::component::Terminal,
-    terminal::ColorChoice,
-    Application, Configurable, FrameworkError, FrameworkErrorKind, StandardPaths,
-};
+use abscissa_core::application::{self, AppCell};
+use abscissa_core::component::Component;
+use abscissa_core::config::{self, CfgCell};
+use abscissa_core::terminal::component::Terminal;
+use abscissa_core::terminal::ColorChoice;
+use abscissa_core::{Application, Configurable, FrameworkError, FrameworkErrorKind, StandardPaths};
 use ibc_relayer::config::Config;
 
-use crate::{
-    components::{JsonTracing, PrettyTracing},
-    config::validate_config,
-    entry::EntryPoint,
-};
+use crate::components::{JsonTracing, PrettyTracing};
+use crate::config::validate_config;
+use crate::entry::EntryPoint;
 
 /// Application state
 pub static APPLICATION: AppCell<CliApp> = AppCell::new();

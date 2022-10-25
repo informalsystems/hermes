@@ -1,5 +1,5 @@
-use serde::de::Unexpected;
-use serde::{de::Error as _, Deserialize, Deserializer, Serialize, Serializer};
+use serde::de::{Error as _, Unexpected};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 flex_error::define_error! {
     Error {

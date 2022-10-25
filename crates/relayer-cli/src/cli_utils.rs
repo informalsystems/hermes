@@ -7,14 +7,10 @@ use tokio::runtime::Runtime as TokioRuntime;
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
-use ibc_relayer::{
-    chain::{
-        counterparty::{channel_connection_client, ChannelConnectionClient},
-        handle::{BaseChainHandle, ChainHandle},
-    },
-    config::Config,
-    spawn,
-};
+use ibc_relayer::chain::counterparty::{channel_connection_client, ChannelConnectionClient};
+use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
+use ibc_relayer::config::Config;
+use ibc_relayer::spawn;
 
 use crate::error::Error;
 
