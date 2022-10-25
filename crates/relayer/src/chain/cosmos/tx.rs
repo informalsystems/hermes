@@ -1,5 +1,6 @@
 use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_proto::google::protobuf::Any;
+use ibc_relayer_types::events::IbcEvent;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::{Client, HttpClient, Url};
 
@@ -14,6 +15,8 @@ use crate::config::types::Memo;
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
 use crate::keyring::KeyEntry;
+
+use super::batch::send_batched_messages_and_wait_commit;
 
 pub async fn estimate_fee_and_send_tx(
     config: &TxConfig,
@@ -94,6 +97,35 @@ pub async fn simple_send_tx(
     .await?;
 
     let events = all_ibc_events_from_tx_search_response(&config.chain_id, response);
+
+    Ok(events)
+}
+
+pub async fn batched_send_tx(
+    config: &TxConfig,
+    key_entry: &KeyEntry,
+    messages: Vec<Any>,
+) -> Result<Vec<IbcEventWithHeight>, Error> {
+    let mut account = query_account(&config.grpc_address, &key_entry.account)
+        .await?
+        .into();
+
+    let events = send_batched_messages_and_wait_commit(
+        config,
+        config.max_msg_num,
+        config.max_tx_size,
+        key_entry,
+        &mut account,
+        &Default::default(),
+        messages,
+    )
+    .await?;
+
+    for event in &events {
+        if let IbcEvent::ChainError(ref e) = event.event {
+            return Err(Error::send_tx(e.clone()));
+        }
+    }
 
     Ok(events)
 }

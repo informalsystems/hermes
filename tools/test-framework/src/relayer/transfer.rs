@@ -7,6 +7,7 @@ use core::ops::Add;
 use core::time::Duration;
 
 use ibc_proto::google::protobuf::Any;
+use ibc_relayer::chain::cosmos::tx::batched_send_tx;
 use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::transfer::build_transfer_message as raw_build_transfer_message;
@@ -82,17 +83,26 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
     sender: &MonoTagged<SrcChain, &Wallet>,
     recipient: &MonoTagged<DstChain, &WalletAddress>,
     token: &TaggedTokenRef<'_, SrcChain>,
+    num_msgs: usize,
 ) -> Result<(), Error> {
-    let message = build_transfer_message(
-        port_id,
-        channel_id,
-        sender,
-        recipient,
-        token,
-        Duration::from_secs(60),
-    )?;
+    let messages = std::iter::repeat_with(|| {
+        build_transfer_message(
+            port_id,
+            channel_id,
+            sender,
+            recipient,
+            token,
+            Duration::from_secs(60),
+        )
+    })
+    .take(num_msgs)
+    .collect::<Result<Vec<_>, _>>()?;
 
-    simple_send_tx(tx_config.value(), &sender.value().key, vec![message]).await?;
+    if num_msgs > 1 {
+        batched_send_tx(tx_config.value(), &sender.value().key, messages).await?;
+    } else {
+        simple_send_tx(tx_config.value(), &sender.value().key, messages).await?;
+    };
 
     Ok(())
 }

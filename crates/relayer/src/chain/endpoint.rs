@@ -20,24 +20,16 @@ use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
-use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::proofs::{ConsensusProof, Proofs};
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::Height as ICSHeight;
+
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;
-use crate::chain::requests::{
-    QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
-    QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
-    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
-    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
-    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
-};
+use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;
@@ -52,8 +44,8 @@ use crate::light_client::AnyHeader;
 use crate::misbehaviour::MisbehaviourEvidence;
 
 use super::requests::{
-    IncludeProof, QueryBlockRequest, QueryHeight, QueryPacketAcknowledgementRequest,
-    QueryPacketCommitmentRequest, QueryPacketReceiptRequest, QueryTxRequest,
+    IncludeProof, QueryHeight, QueryPacketAcknowledgementRequest, QueryPacketCommitmentRequest,
+    QueryPacketReceiptRequest, QueryTxRequest,
 };
 
 /// The result of a health check.
@@ -346,10 +338,10 @@ pub trait ChainEndpoint: Sized {
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error>;
 
-    fn query_blocks(
+    fn query_packet_events(
         &self,
-        request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
+        request: QueryPacketEventDataRequest,
+    ) -> Result<Vec<IbcEventWithHeight>, Error>;
 
     fn query_host_consensus_state(
         &self,

@@ -1,17 +1,18 @@
+use core::time::Duration;
+
 use abscissa_core::clap::Parser;
 use abscissa_core::{config::Override, Command, FrameworkErrorKind, Runnable};
-
-use core::time::Duration;
 use eyre::eyre;
-use ibc_relayer::chain::handle::ChainHandle;
+
 use ibc_relayer::{
+    chain::handle::ChainHandle,
     config::Config,
+    event::IbcEventWithHeight,
     transfer::{build_and_send_transfer_messages, TransferOptions},
 };
 use ibc_relayer_types::{
     applications::transfer::Amount,
     core::ics24_host::identifier::{ChainId, ChannelId, PortId},
-    events::IbcEvent,
 };
 
 use crate::cli_utils::{check_can_send_on_channel, ChainHandlePair};
@@ -189,7 +190,7 @@ impl Runnable for TxIcs20MsgTransferCmd {
         .unwrap_or_else(exit_with_unrecoverable_error);
 
         // Checks pass, build and send the tx
-        let res: Result<Vec<IbcEvent>, Error> =
+        let res: Result<Vec<IbcEventWithHeight>, Error> =
             build_and_send_transfer_messages(&chains.src, &chains.dst, &opts)
                 .map_err(Error::transfer);
 

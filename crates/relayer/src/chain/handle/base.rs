@@ -15,7 +15,6 @@ use ibc_relayer_types::{
         ics24_host::identifier::ChannelId,
         ics24_host::identifier::{ClientId, ConnectionId, PortId},
     },
-    events::IbcEvent,
     proofs::Proofs,
     signer::Signer,
     Height,
@@ -471,11 +470,11 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryPacketEventDataFromTxs { request, reply_to })
     }
 
-    fn query_blocks(
+    fn query_packet_events(
         &self,
-        request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
-        self.send(|reply_to| ChainRequest::QueryPacketEventDataFromBlocks { request, reply_to })
+        request: QueryPacketEventDataRequest,
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
+        self.send(|reply_to| ChainRequest::QueryPacketEventData { request, reply_to })
     }
 
     fn query_host_consensus_state(

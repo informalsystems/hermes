@@ -33,7 +33,6 @@ use ibc_relayer_types::{
     core::ics04_channel::channel::ChannelEnd,
     core::ics23_commitment::commitment::CommitmentPrefix,
     core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
-    events::IbcEvent,
     proofs::Proofs,
     signer::Signer,
     Height,
@@ -458,12 +457,12 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inner().query_txs(request)
     }
 
-    fn query_blocks(
+    fn query_packet_events(
         &self,
-        request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
-        self.inc_metric("query_blocks");
-        self.inner().query_blocks(request)
+        request: QueryPacketEventDataRequest,
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
+        self.inc_metric("query_packet_events");
+        self.inner().query_packet_events(request)
     }
 
     fn query_host_consensus_state(

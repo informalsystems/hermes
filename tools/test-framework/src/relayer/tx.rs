@@ -1,6 +1,8 @@
 use core::str::FromStr;
 use core::time::Duration;
+
 use http::uri::Uri;
+
 use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_relayer::chain::cosmos::gas::calculate_fee;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
@@ -45,13 +47,11 @@ pub fn new_tx_config_for_test(
     let rpc_address = Url::from_str(&raw_rpc_address).map_err(handle_generic_error)?;
 
     let rpc_client = HttpClient::new(rpc_address.clone()).map_err(handle_generic_error)?;
-
     let grpc_address = Uri::from_str(&raw_grpc_address).map_err(handle_generic_error)?;
-
     let gas_config = gas_config_for_test();
-
     let rpc_timeout = Duration::from_secs(30);
-
+    let max_msg_num = Default::default();
+    let max_tx_size = Default::default();
     let extension_options = Default::default();
 
     Ok(TxConfig {
@@ -62,6 +62,8 @@ pub fn new_tx_config_for_test(
         grpc_address,
         rpc_timeout,
         address_type,
+        max_msg_num,
+        max_tx_size,
         extension_options,
     })
 }

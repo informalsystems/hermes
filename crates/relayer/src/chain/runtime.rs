@@ -19,12 +19,12 @@ use ibc_relayer_types::{
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
         ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     },
-    events::IbcEvent,
     proofs::Proofs,
     signer::Signer,
     Height,
 };
 
+use crate::chain::requests::QueryPacketEventDataRequest;
 use crate::{
     account::Balance,
     client_state::{AnyClientState, IdentifiedAnyClientState},
@@ -48,15 +48,15 @@ use super::{
     endpoint::{ChainEndpoint, ChainStatus, HealthCheck},
     handle::{ChainHandle, ChainRequest, ReplyTo, Subscription},
     requests::{
-        IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
-        QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
-        QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
-        QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
-        QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
-        QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
-        QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
-        QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-        QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+        IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+        QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
+        QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
+        QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
+        QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementRequest,
+        QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest,
+        QueryPacketCommitmentsRequest, QueryPacketReceiptRequest, QueryTxRequest,
+        QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
+        QueryUpgradedConsensusStateRequest,
     },
     tracking::TrackedMsgs,
 };
@@ -419,8 +419,8 @@ where
                             self.query_txs(request, reply_to)?
                         },
 
-                        ChainRequest::QueryPacketEventDataFromBlocks { request, reply_to } => {
-                            self.query_blocks(request, reply_to)?
+                        ChainRequest::QueryPacketEventData { request, reply_to } => {
+                            self.query_packet_events(request, reply_to)?
                         },
 
                         ChainRequest::QueryHostConsensusState { request, reply_to } => {
@@ -877,12 +877,12 @@ where
         reply_to.send(result).map_err(Error::send)
     }
 
-    fn query_blocks(
+    fn query_packet_events(
         &self,
-        request: QueryBlockRequest,
-        reply_to: ReplyTo<(Vec<IbcEvent>, Vec<IbcEvent>)>,
+        request: QueryPacketEventDataRequest,
+        reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     ) -> Result<(), Error> {
-        let result = self.chain.query_blocks(request);
+        let result = self.chain.query_packet_events(request);
 
         reply_to.send(result).map_err(Error::send)?;
 
