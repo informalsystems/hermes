@@ -98,6 +98,10 @@ pub mod default {
         false
     }
 
+    pub fn clear_on_start() -> bool {
+        true
+    }
+
     pub fn clear_packets_interval() -> u64 {
         100
     }
@@ -116,6 +120,10 @@ pub mod default {
 
     pub fn connection_delay() -> Duration {
         ZERO_DURATION
+    }
+
+    pub fn auto_register_counterparty_payee() -> bool {
+        false
     }
 }
 
@@ -198,9 +206,7 @@ impl Default for ModeConfig {
             channels: Channels { enabled: false },
             packets: Packets {
                 enabled: true,
-                clear_interval: default::clear_packets_interval(),
-                clear_on_start: true,
-                tx_confirmation: default::tx_confirmation(),
+                ..Default::default()
             },
         }
     }
@@ -234,19 +240,22 @@ pub struct Packets {
     pub enabled: bool,
     #[serde(default = "default::clear_packets_interval")]
     pub clear_interval: u64,
-    #[serde(default)]
+    #[serde(default = "default::clear_on_start")]
     pub clear_on_start: bool,
     #[serde(default = "default::tx_confirmation")]
     pub tx_confirmation: bool,
+    #[serde(default = "default::auto_register_counterparty_payee")]
+    pub auto_register_counterparty_payee: bool,
 }
 
 impl Default for Packets {
     fn default() -> Self {
         Self {
-            enabled: false,
+            enabled: true,
             clear_interval: default::clear_packets_interval(),
-            clear_on_start: false,
+            clear_on_start: default::clear_on_start(),
             tx_confirmation: default::tx_confirmation(),
+            auto_register_counterparty_payee: default::auto_register_counterparty_payee(),
         }
     }
 }

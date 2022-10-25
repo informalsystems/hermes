@@ -24,7 +24,7 @@ define_error! {
             { chain_id: ChainId }
             | e | {
                 format_args!("missing chain config for '{}' in configuration file", e.chain_id)
-            }
+            },
     }
 }
 

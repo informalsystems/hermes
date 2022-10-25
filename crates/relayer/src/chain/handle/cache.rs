@@ -126,8 +126,16 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().ibc_version()
     }
 
-    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
-        self.inner().query_balance(key_name)
+    fn query_balance(
+        &self,
+        key_name: Option<String>,
+        denom: Option<String>,
+    ) -> Result<Balance, Error> {
+        self.inner().query_balance(key_name, denom)
+    }
+
+    fn query_all_balances(&self, key_name: Option<String>) -> Result<Vec<Balance>, Error> {
+        self.inner().query_all_balances(key_name)
     }
 
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
@@ -477,5 +485,15 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         request: QueryHostConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error> {
         self.inner.query_host_consensus_state(request)
+    }
+
+    fn maybe_register_counterparty_payee(
+        &self,
+        channel_id: ChannelId,
+        port_id: PortId,
+        counterparty_payee: Signer,
+    ) -> Result<(), Error> {
+        self.inner
+            .maybe_register_counterparty_payee(channel_id, port_id, counterparty_payee)
     }
 }

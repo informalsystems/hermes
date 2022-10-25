@@ -146,8 +146,20 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::IbcVersion { reply_to })
     }
 
-    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
-        self.send(|reply_to| ChainRequest::QueryBalance { key_name, reply_to })
+    fn query_balance(
+        &self,
+        key_name: Option<String>,
+        denom: Option<String>,
+    ) -> Result<Balance, Error> {
+        self.send(|reply_to| ChainRequest::QueryBalance {
+            key_name,
+            denom,
+            reply_to,
+        })
+    }
+
+    fn query_all_balances(&self, key_name: Option<String>) -> Result<Vec<Balance>, Error> {
+        self.send(|reply_to| ChainRequest::QueryAllBalances { key_name, reply_to })
     }
 
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
@@ -471,5 +483,19 @@ impl ChainHandle for BaseChainHandle {
         request: QueryHostConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error> {
         self.send(|reply_to| ChainRequest::QueryHostConsensusState { request, reply_to })
+    }
+
+    fn maybe_register_counterparty_payee(
+        &self,
+        channel_id: ChannelId,
+        port_id: PortId,
+        counterparty_payee: Signer,
+    ) -> Result<(), Error> {
+        self.send(|reply_to| ChainRequest::MaybeRegisterCounterpartyPayee {
+            channel_id,
+            port_id,
+            counterparty_payee,
+            reply_to,
+        })
     }
 }

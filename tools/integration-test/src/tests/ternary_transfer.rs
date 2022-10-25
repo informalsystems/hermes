@@ -45,7 +45,7 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
             .chain_driver()
             .query_balance(&wallet_a1.address(), &denom_a)?;
 
-        let a_to_b_amount = 5000;
+        let a_to_b_amount = 5000u64;
 
         let channel_a_to_b = channels.channel_at::<0, 1>()?;
 
@@ -62,8 +62,7 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
             &channel_a_to_b.channel_id_a.as_ref(),
             &wallet_a1.as_ref(),
             &wallet_b1.address(),
-            &denom_a,
-            a_to_b_amount,
+            &denom_a.with_amount(a_to_b_amount).as_ref(),
             None,
         )?;
 
@@ -82,14 +81,12 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
 
         node_a.chain_driver().assert_eventual_wallet_amount(
             &wallet_a1.address(),
-            balance_a - a_to_b_amount,
-            &denom_a,
+            &(balance_a - a_to_b_amount).as_ref(),
         )?;
 
         node_b.chain_driver().assert_eventual_wallet_amount(
             &wallet_b1.address(),
-            a_to_b_amount,
-            &denom_a_to_b.as_ref(),
+            &denom_a_to_b.with_amount(a_to_b_amount).as_ref(),
         )?;
 
         info!(
@@ -113,8 +110,7 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
             &channel_b_to_c.channel_id_a.as_ref(),
             &wallet_b1.as_ref(),
             &wallet_c1.address(),
-            &denom_a_to_b.as_ref(),
-            b_to_c_amount,
+            &denom_a_to_b.with_amount(b_to_c_amount).as_ref(),
             None,
         )?;
 
@@ -127,14 +123,14 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
 
         node_b.chain_driver().assert_eventual_wallet_amount(
             &wallet_b1.address(),
-            a_to_b_amount - b_to_c_amount,
-            &denom_a_to_b.as_ref(),
+            &denom_a_to_b
+                .with_amount(a_to_b_amount - b_to_c_amount)
+                .as_ref(),
         )?;
 
         node_c.chain_driver().assert_eventual_wallet_amount(
             &wallet_c1.address(),
-            b_to_c_amount,
-            &denom_a_to_c.as_ref(),
+            &denom_a_to_c.with_amount(b_to_c_amount).as_ref(),
         )?;
 
         let channel_c_to_a = channels.channel_at::<2, 0>()?;
@@ -152,8 +148,7 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
             &channel_c_to_a.channel_id_a.as_ref(),
             &wallet_c1.as_ref(),
             &wallet_a1.address(),
-            &denom_a_to_c.as_ref(),
-            c_to_a_amount,
+            &denom_a_to_c.with_amount(c_to_a_amount).as_ref(),
             None,
         )?;
 
@@ -166,14 +161,14 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
 
         node_c.chain_driver().assert_eventual_wallet_amount(
             &wallet_c1.address(),
-            b_to_c_amount - c_to_a_amount,
-            &denom_a_to_c.as_ref(),
+            &denom_a_to_c
+                .with_amount(b_to_c_amount - c_to_a_amount)
+                .as_ref(),
         )?;
 
         node_a.chain_driver().assert_eventual_wallet_amount(
             &wallet_a1.address(),
-            c_to_a_amount,
-            &denom_a_to_c_to_a.as_ref(),
+            &denom_a_to_c_to_a.with_amount(c_to_a_amount).as_ref(),
         )?;
 
         let c_to_b_amount = 500;
@@ -183,8 +178,7 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
             &channel_b_to_c.channel_id_b.as_ref(),
             &wallet_c1.as_ref(),
             &wallet_b2.address(),
-            &denom_a_to_c.as_ref(),
-            c_to_b_amount,
+            &denom_a_to_c.with_amount(c_to_b_amount).as_ref(),
             None,
         )?;
 
@@ -197,14 +191,14 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
 
         node_c.chain_driver().assert_eventual_wallet_amount(
             &wallet_c1.address(),
-            b_to_c_amount - c_to_a_amount - c_to_b_amount,
-            &denom_a_to_c.as_ref(),
+            &denom_a_to_c
+                .with_amount(b_to_c_amount - c_to_a_amount - c_to_b_amount)
+                .as_ref(),
         )?;
 
         node_b.chain_driver().assert_eventual_wallet_amount(
             &wallet_b2.address(),
-            c_to_b_amount,
-            &denom_a_to_b.as_ref(),
+            &denom_a_to_b.with_amount(c_to_b_amount).as_ref(),
         )?;
 
         Ok(())

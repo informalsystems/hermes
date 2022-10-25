@@ -19,7 +19,7 @@ use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
 use ibc_relayer_types::timestamp::Timestamp;
 
 use crate::error::{handle_generic_error, Error};
-use crate::ibc::denom::Denom;
+use crate::ibc::token::TaggedTokenRef;
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress};
@@ -29,12 +29,11 @@ pub fn build_transfer_message<SrcChain, DstChain>(
     channel_id: &TaggedChannelIdRef<'_, SrcChain, DstChain>,
     sender: &MonoTagged<SrcChain, &Wallet>,
     recipient: &MonoTagged<DstChain, &WalletAddress>,
-    denom: &MonoTagged<SrcChain, &Denom>,
-    amount: u64,
-    duration: Option<Duration>,
+    token: &TaggedTokenRef<'_, SrcChain>,
+    timeout: Duration,
 ) -> Result<Any, Error> {
     let timeout_timestamp = Timestamp::now()
-        .add(duration.unwrap_or_else(|| Duration::from_secs(60)))
+        .add(timeout)
         .map_err(handle_generic_error)?;
 
     let sender = sender
@@ -53,8 +52,8 @@ pub fn build_transfer_message<SrcChain, DstChain>(
     Ok(raw_build_transfer_message(
         (*port_id.value()).clone(),
         (*channel_id.value()).clone(),
-        amount.into(),
-        denom.to_string(),
+        token.value().amount,
+        token.value().denom.to_string(),
         sender,
         receiver,
         TimeoutHeight::no_timeout(),
@@ -85,12 +84,16 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
     channel_id: &TaggedChannelIdRef<'_, SrcChain, DstChain>,
     sender: &MonoTagged<SrcChain, &Wallet>,
     recipient: &MonoTagged<DstChain, &WalletAddress>,
-    denom: &MonoTagged<SrcChain, &Denom>,
-    amount: u64,
-    duration: Option<Duration>,
+    token: &TaggedTokenRef<'_, SrcChain>,
+    timeout: Option<Duration>,
 ) -> Result<Packet, Error> {
     let message = build_transfer_message(
-        port_id, channel_id, sender, recipient, denom, amount, duration,
+        port_id,
+        channel_id,
+        sender,
+        recipient,
+        token,
+        timeout.unwrap_or(Duration::from_secs(60)),
     )?;
 
     let events = simple_send_tx(tx_config.value(), &sender.value().key, vec![message]).await?;

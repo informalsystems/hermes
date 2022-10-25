@@ -6,6 +6,7 @@ use core::convert::Infallible;
 use core::fmt::{Display, Error as FmtError, Formatter};
 use core::str::FromStr;
 use serde_derive::{Deserialize, Serialize};
+use serde_json as json;
 
 use crate::applications::transfer;
 use crate::prelude::*;
@@ -16,7 +17,7 @@ use crate::prelude::*;
 /// No explicit validation is necessary, and the
 /// spec (v1) currently allows empty strings.
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
-pub struct Version(String);
+pub struct Version(pub String);
 
 impl Version {
     pub fn new(v: String) -> Self {
@@ -27,8 +28,30 @@ impl Version {
         Self::new(transfer::VERSION.to_string())
     }
 
+    pub fn ics20_with_fee() -> Self {
+        let val = json::json!({
+            "fee_version": "ics29-1",
+            "app_version": transfer::VERSION,
+        });
+
+        Self::new(val.to_string())
+    }
+
     pub fn empty() -> Self {
         Self::new("".to_string())
+    }
+
+    pub fn supports_fee(&self) -> bool {
+        json::from_str::<json::Value>(&self.0)
+            .ok()
+            .and_then(|val| {
+                let _app_version = val.get("app_version")?.as_str()?;
+
+                let fee_version = val.get("fee_version")?.as_str()?;
+
+                Some(fee_version == "ics29-1")
+            })
+            .unwrap_or(false)
     }
 }
 
@@ -56,5 +79,23 @@ impl Default for Version {
 impl Display for Version {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}", self.0)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::Version;
+
+    #[test]
+    fn test_ics29_version() {
+        {
+            let version = Version::ics20();
+            assert!(!version.supports_fee());
+        }
+
+        {
+            let version = Version::ics20_with_fee();
+            assert!(version.supports_fee());
+        }
     }
 }

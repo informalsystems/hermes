@@ -5,7 +5,7 @@ use crate::chain::cli::transfer::local_transfer_token;
 use crate::chain::driver::ChainDriver;
 use crate::chain::tagged::TaggedChainDriverExt;
 use crate::error::Error;
-use crate::ibc::denom::Denom;
+use crate::ibc::token::TaggedTokenRef;
 use crate::relayer::transfer::ibc_token_transfer;
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
@@ -38,8 +38,7 @@ pub trait ChainTransferMethodsExt<Chain> {
         channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
-        denom: &MonoTagged<Chain, &Denom>,
-        amount: u64,
+        token: &TaggedTokenRef<Chain>,
         timeout: Option<Duration>,
     ) -> Result<Packet, Error>;
 
@@ -47,8 +46,7 @@ pub trait ChainTransferMethodsExt<Chain> {
         &self,
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Chain, &WalletAddress>,
-        amount: u64,
-        denom: &MonoTagged<Chain, &Denom>,
+        token: &TaggedTokenRef<Chain>,
     ) -> Result<(), Error>;
 }
 
@@ -59,8 +57,7 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
-        denom: &MonoTagged<Chain, &Denom>,
-        amount: u64,
+        token: &TaggedTokenRef<Chain>,
         timeout: Option<Duration>,
     ) -> Result<Packet, Error> {
         self.value().runtime.block_on(ibc_token_transfer(
@@ -69,8 +66,7 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
             channel_id,
             sender,
             recipient,
-            denom,
-            amount,
+            token,
             timeout,
         ))
     }
@@ -79,8 +75,7 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         &self,
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Chain, &WalletAddress>,
-        amount: u64,
-        denom: &MonoTagged<Chain, &Denom>,
+        token: &TaggedTokenRef<Chain>,
     ) -> Result<(), Error> {
         let driver = *self.value();
         local_transfer_token(
@@ -90,7 +85,7 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
             &driver.rpc_listen_address(),
             sender.value().address.as_str(),
             recipient.value().as_str(),
-            &format!("{}{}", amount, denom),
+            &token.value().to_string(),
         )
     }
 }

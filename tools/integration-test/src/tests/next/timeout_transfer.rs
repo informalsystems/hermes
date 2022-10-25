@@ -62,8 +62,7 @@ impl BinaryChannelTest for IbcTransferTest {
             &channel.channel_id_a.as_ref(),
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a,
-            a_to_b_amount,
+            &denom_a.with_amount(a_to_b_amount).as_ref(),
             Some(Duration::from_secs(1)),
         )?;
 
@@ -86,11 +85,10 @@ impl BinaryChannelTest for IbcTransferTest {
 
         info!("finished running relayer");
 
-        chains.node_a.chain_driver().assert_eventual_wallet_amount(
-            &wallet_a.address(),
-            balance_a,
-            &denom_a,
-        )?;
+        chains
+            .node_a
+            .chain_driver()
+            .assert_eventual_wallet_amount(&wallet_a.address(), &balance_a.as_ref())?;
 
         info!(
             "successfully refunded IBC transfer back to chain {} from chain {}",

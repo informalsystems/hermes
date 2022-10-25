@@ -400,8 +400,26 @@ where
         self.value().query_host_consensus_state(request)
     }
 
-    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
-        self.value().query_balance(key_name)
+    fn query_balance(
+        &self,
+        key_name: Option<String>,
+        denom: Option<String>,
+    ) -> Result<Balance, Error> {
+        self.value().query_balance(key_name, denom)
+    }
+
+    fn query_all_balances(&self, key_name: Option<String>) -> Result<Vec<Balance>, Error> {
+        self.value().query_all_balances(key_name)
+    }
+
+    fn maybe_register_counterparty_payee(
+        &self,
+        channel_id: ChannelId,
+        port_id: PortId,
+        counterparty_payee: Signer,
+    ) -> Result<(), Error> {
+        self.value()
+            .maybe_register_counterparty_payee(channel_id, port_id, counterparty_payee)
     }
 
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {

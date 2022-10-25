@@ -116,8 +116,8 @@ impl TransferTimeout {
 
 #[derive(Clone, Debug)]
 pub struct TransferOptions {
-    pub packet_src_port_id: PortId,
-    pub packet_src_channel_id: ChannelId,
+    pub src_port_id: PortId,
+    pub src_channel_id: ChannelId,
     pub amount: Amount,
     pub denom: String,
     pub receiver: Option<String>,
@@ -127,8 +127,8 @@ pub struct TransferOptions {
 }
 
 pub fn build_transfer_message(
-    packet_src_port_id: PortId,
-    packet_src_channel_id: ChannelId,
+    src_port_id: PortId,
+    src_channel_id: ChannelId,
     amount: Amount,
     denom: String,
     sender: Signer,
@@ -137,8 +137,8 @@ pub fn build_transfer_message(
     timeout_timestamp: Timestamp,
 ) -> Any {
     let msg = MsgTransfer {
-        source_port: packet_src_port_id,
-        source_channel: packet_src_channel_id,
+        source_port: src_port_id,
+        source_channel: src_channel_id,
         token: Coin {
             denom,
             amount: amount.to_string(),
@@ -152,19 +152,19 @@ pub fn build_transfer_message(
     msg.to_any()
 }
 
-pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHandle>(
-    packet_src_chain: &SrcChain, // the chain whose account is debited
-    packet_dst_chain: &DstChain, // the chain whose account eventually gets credited
+pub fn build_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHandle>(
+    src_chain: &SrcChain, // the chain whose account is debited
+    dst_chain: &DstChain, // the chain whose account eventually gets credited
     opts: &TransferOptions,
-) -> Result<Vec<IbcEvent>, TransferError> {
+) -> Result<Vec<Any>, TransferError> {
     let receiver = match &opts.receiver {
         Some(receiver) => Signer::from_str(receiver).map_err(TransferError::receiver_address)?,
-        None => packet_dst_chain.get_signer().map_err(TransferError::key)?,
+        None => dst_chain.get_signer().map_err(TransferError::key)?,
     };
 
-    let sender = packet_src_chain.get_signer().map_err(TransferError::key)?;
+    let sender = src_chain.get_signer().map_err(TransferError::key)?;
 
-    let destination_chain_status = packet_dst_chain
+    let destination_chain_status = dst_chain
         .query_application_status()
         .map_err(TransferError::relayer)?;
 
@@ -174,25 +174,31 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
         &destination_chain_status,
     )?;
 
-    let msg = MsgTransfer {
-        source_port: opts.packet_src_port_id.clone(),
-        source_channel: opts.packet_src_channel_id.clone(),
-        token: Coin {
-            denom: opts.denom.clone(),
-            amount: opts.amount.to_string(),
-        },
+    let message = build_transfer_message(
+        opts.src_port_id.clone(),
+        opts.src_channel_id.clone(),
+        opts.amount,
+        opts.denom.clone(),
         sender,
         receiver,
-        timeout_height: timeout.timeout_height,
-        timeout_timestamp: timeout.timeout_timestamp,
-    };
+        timeout.timeout_height,
+        timeout.timeout_timestamp,
+    );
 
-    let raw_msg = msg.to_any();
-    let msgs = vec![raw_msg; opts.number_msgs];
+    let msgs = vec![message; opts.number_msgs];
 
-    let events_with_heights = packet_src_chain
+    Ok(msgs)
+}
+
+pub fn send_messages<Chain: ChainHandle>(
+    // the chain to send the messages to
+    chain: &Chain,
+    // messages to send the chain
+    msgs: Vec<Any>,
+) -> Result<Vec<IbcEvent>, TransferError> {
+    let events_with_heights = chain
         .send_messages_and_wait_commit(TrackedMsgs::new_static(msgs, "ft-transfer"))
-        .map_err(|e| TransferError::submit(packet_src_chain.id(), e))?;
+        .map_err(|e| TransferError::submit(chain.id(), e))?;
 
     // Check if the chain rejected the transaction
     let result = events_with_heights
@@ -212,4 +218,16 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
             }
         }
     }
+}
+
+pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHandle>(
+    // the chain whose account is debited
+    src_chain: &SrcChain,
+    // the chain whose account eventually gets credited
+    dst_chain: &DstChain,
+    // options describing the transfer
+    opts: &TransferOptions,
+) -> Result<Vec<IbcEvent>, TransferError> {
+    let msgs = build_transfer_messages(src_chain, dst_chain, opts)?;
+    send_messages(src_chain, msgs)
 }

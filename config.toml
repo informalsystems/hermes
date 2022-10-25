@@ -50,7 +50,7 @@ enabled = true
 # periodic packet clearing. [Default: 100]
 clear_interval = 100
 
-# Whether or not to clear packets on start. [Default: false]
+# Whether or not to clear packets on start. [Default: true]
 clear_on_start = true
 
 # Toggle the transaction confirmation mechanism.
@@ -63,6 +63,15 @@ clear_on_start = true
 # `acknowledgment_packets_confirmed`, `receive_packets_confirmed` and `timeout_packets_confirmed`.
 # [Default: false]
 tx_confirmation = false
+
+# Auto register the counterparty payee on a destination chain to
+# the relayer's address on the source chain. This can be used
+# for simple configuration of the relayer to receive fees for
+# relaying RecvPacket on fee-enabled channels.
+# For more complex configuration, turn this off and use the CLI
+# to manually register the payee addresses.
+# [Default: false]
+auto_register_counterparty_payee = false
 
 # The REST section defines parameters for Hermes' built-in RESTful API.
 # https://hermes.informal.systems/rest.html

@@ -10,6 +10,8 @@ use serde_derive::{Deserialize, Serialize};
 use tendermint::abci::tag::Tag;
 use tendermint::abci::Event as AbciEvent;
 
+use crate::applications::ics29_fee::error::Error as FeeError;
+use crate::applications::ics29_fee::events::IncentivizedPacket;
 use crate::core::ics02_client::error as client_error;
 use crate::core::ics02_client::events as ClientEvents;
 use crate::core::ics02_client::events::NewBlock;
@@ -43,6 +45,10 @@ define_error! {
         Channel
             [ channel_error::Error ]
             | _ | { "channel error" },
+
+        Fee
+            [ FeeError ]
+            | _ | { "fee error" },
 
         Timestamp
             [ ParseTimestampError ]
@@ -126,6 +132,7 @@ const WRITE_ACK_EVENT: &str = "write_acknowledgement";
 const ACK_PACKET_EVENT: &str = "acknowledge_packet";
 const TIMEOUT_EVENT: &str = "timeout_packet";
 const TIMEOUT_ON_CLOSE_EVENT: &str = "timeout_packet_on_close";
+const INCENTIVIZED_PACKET_EVENT: &str = "incentivized_ibc_packet";
 
 /// Events types
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
@@ -151,6 +158,7 @@ pub enum IbcEventType {
     AckPacket,
     Timeout,
     TimeoutOnClose,
+    IncentivizedPacket,
     AppModule,
     Empty,
     ChainError,
@@ -180,6 +188,7 @@ impl IbcEventType {
             IbcEventType::AckPacket => ACK_PACKET_EVENT,
             IbcEventType::Timeout => TIMEOUT_EVENT,
             IbcEventType::TimeoutOnClose => TIMEOUT_ON_CLOSE_EVENT,
+            IbcEventType::IncentivizedPacket => INCENTIVIZED_PACKET_EVENT,
             IbcEventType::AppModule => APP_MODULE_EVENT,
             IbcEventType::Empty => EMPTY_EVENT,
             IbcEventType::ChainError => CHAIN_ERROR_EVENT,
@@ -213,6 +222,7 @@ impl FromStr for IbcEventType {
             ACK_PACKET_EVENT => Ok(IbcEventType::AckPacket),
             TIMEOUT_EVENT => Ok(IbcEventType::Timeout),
             TIMEOUT_ON_CLOSE_EVENT => Ok(IbcEventType::TimeoutOnClose),
+            INCENTIVIZED_PACKET_EVENT => Ok(IbcEventType::IncentivizedPacket),
             EMPTY_EVENT => Ok(IbcEventType::Empty),
             CHAIN_ERROR_EVENT => Ok(IbcEventType::ChainError),
             // from_str() for `APP_MODULE_EVENT` MUST fail because a `ModuleEvent`'s type isn't constant
@@ -250,6 +260,8 @@ pub enum IbcEvent {
     TimeoutPacket(ChannelEvents::TimeoutPacket),
     TimeoutOnClosePacket(ChannelEvents::TimeoutOnClosePacket),
 
+    IncentivizedPacket(IncentivizedPacket),
+
     AppModule(ModuleEvent),
 
     ChainError(String), // Special event, signifying an error on CheckTx or DeliverTx
@@ -284,6 +296,8 @@ impl Display for IbcEvent {
             IbcEvent::TimeoutPacket(ev) => write!(f, "TimeoutPacket({})", ev),
             IbcEvent::TimeoutOnClosePacket(ev) => write!(f, "TimeoutOnClosePacket({})", ev),
 
+            IbcEvent::IncentivizedPacket(ev) => write!(f, "IncenvitizedPacket({:?}", ev),
+
             IbcEvent::AppModule(ev) => write!(f, "AppModule({})", ev),
 
             IbcEvent::ChainError(ev) => write!(f, "ChainError({})", ev),
@@ -316,6 +330,7 @@ impl TryFrom<IbcEvent> for AbciEvent {
             IbcEvent::AcknowledgePacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::TimeoutPacket(event) => event.try_into().map_err(Error::channel)?,
             IbcEvent::TimeoutOnClosePacket(event) => event.try_into().map_err(Error::channel)?,
+            IbcEvent::IncentivizedPacket(event) => event.into(),
             IbcEvent::AppModule(event) => event.try_into()?,
             IbcEvent::NewBlock(_) | IbcEvent::ChainError(_) => {
                 return Err(Error::incorrect_event_type(event.to_string()))
@@ -355,6 +370,7 @@ impl IbcEvent {
             IbcEvent::AcknowledgePacket(_) => IbcEventType::AckPacket,
             IbcEvent::TimeoutPacket(_) => IbcEventType::Timeout,
             IbcEvent::TimeoutOnClosePacket(_) => IbcEventType::TimeoutOnClose,
+            IbcEvent::IncentivizedPacket(_) => IbcEventType::IncentivizedPacket,
             IbcEvent::AppModule(_) => IbcEventType::AppModule,
             IbcEvent::ChainError(_) => IbcEventType::ChainError,
         }
