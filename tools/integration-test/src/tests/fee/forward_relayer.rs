@@ -5,7 +5,7 @@
 //! can perform this operation, it first checks that no `counterparty_payee` has
 //! been registered, and then registers `relayer_a`'s address as the
 //! `counterparty_payee` so that the fees will be sent to it. After the transfer,
-//! it checks to make sure that all the appropriate fees were faid out to the
+//! it checks to make sure that all the appropriate fees were paid out to the
 //! correct parties involved in the transaction.
 
 use ibc_relayer_types::core::ics04_channel::version::Version;
