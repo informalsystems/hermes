@@ -1,3 +1,4 @@
+use core::time::Duration;
 use http::uri::Uri;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::account::{AccountNumber, AccountSequence};
@@ -41,11 +42,11 @@ pub trait HasRpcClient {
 }
 
 pub trait HasRpcAddress {
-    fn rpc_address(&self) -> Url;
+    fn rpc_address(&self) -> &Url;
 }
 
 pub trait HasGrpcAddress {
-    fn grpc_address(&self) -> Uri;
+    fn grpc_address(&self) -> &Uri;
 }
 
 pub trait HasGasConfig {
@@ -58,4 +59,10 @@ pub trait HasDefaultGas {
 
 pub trait HasMaxGas {
     fn max_gas(&self) -> u64;
+}
+
+pub trait HasWaitTimeout {
+    fn wait_timeout(&self) -> &Duration;
+
+    fn wait_backoff(&self) -> &Duration;
 }
