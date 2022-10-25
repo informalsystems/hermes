@@ -20,6 +20,7 @@ use crate::chain::endpoint::ChainStatus;
 use crate::chain::handle::ChainHandle;
 use crate::chain::tracking::TrackedMsgs;
 use crate::error::Error;
+use crate::event::IbcEventWithHeight;
 
 define_error! {
     TransferError {
@@ -191,11 +192,9 @@ pub fn build_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHandle>(
 }
 
 pub fn send_messages<Chain: ChainHandle>(
-    // the chain to send the messages to
     chain: &Chain,
-    // messages to send the chain
     msgs: Vec<Any>,
-) -> Result<Vec<IbcEvent>, TransferError> {
+) -> Result<Vec<IbcEventWithHeight>, TransferError> {
     let events_with_heights = chain
         .send_messages_and_wait_commit(TrackedMsgs::new_static(msgs, "ft-transfer"))
         .map_err(|e| TransferError::submit(chain.id(), e))?;
@@ -206,7 +205,7 @@ pub fn send_messages<Chain: ChainHandle>(
         .find(|event| matches!(event.event, IbcEvent::ChainError(_)));
 
     match result {
-        None => Ok(events_with_heights.into_iter().map(|ev| ev.event).collect()),
+        None => Ok(events_with_heights),
         Some(err) => {
             if let IbcEvent::ChainError(ref err) = err.event {
                 Err(TransferError::tx_response(err.clone()))
@@ -227,7 +226,7 @@ pub fn build_and_send_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHa
     dst_chain: &DstChain,
     // options describing the transfer
     opts: &TransferOptions,
-) -> Result<Vec<IbcEvent>, TransferError> {
+) -> Result<Vec<IbcEventWithHeight>, TransferError> {
     let msgs = build_transfer_messages(src_chain, dst_chain, opts)?;
     send_messages(src_chain, msgs)
 }

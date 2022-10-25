@@ -15,7 +15,7 @@
 //! calling `pay_packet_fee` doesn't construct a new `IbcEvent::IncentivizedPacket`; the additional
 //! fees are added to the initial fees contained in the incentivized packet.
 //!
-//! Finally,  the test initializes the supervisor in order to relay the pending packets so that the
+//! Finally, the test initializes the supervisor in order to relay the pending packets so that the
 //! balances on the two chains can be asserted.
 
 use ibc_relayer_types::core::ics04_channel::version::Version;

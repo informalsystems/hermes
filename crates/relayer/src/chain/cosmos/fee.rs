@@ -48,7 +48,7 @@ pub async fn maybe_register_counterparty_payee(
                 key_entry,
                 account,
                 tx_memo,
-                vec![message],
+                &[message],
             )
             .await?;
 

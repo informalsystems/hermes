@@ -8,6 +8,7 @@ use core::time::Duration;
 use eyre::eyre;
 
 use ibc_proto::google::protobuf::Any;
+use ibc_relayer::chain::cosmos::tx::batched_send_tx;
 use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
@@ -110,4 +111,31 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
         .ok_or_else(|| eyre!("failed to find send packet event"))?;
 
     Ok(packet)
+}
+
+pub async fn batched_ibc_token_transfer<SrcChain, DstChain>(
+    tx_config: &MonoTagged<SrcChain, &TxConfig>,
+    port_id: &TaggedPortIdRef<'_, SrcChain, DstChain>,
+    channel_id: &TaggedChannelIdRef<'_, SrcChain, DstChain>,
+    sender: &MonoTagged<SrcChain, &Wallet>,
+    recipient: &MonoTagged<DstChain, &WalletAddress>,
+    token: &TaggedTokenRef<'_, SrcChain>,
+    num_msgs: usize,
+) -> Result<(), Error> {
+    let messages = std::iter::repeat_with(|| {
+        build_transfer_message(
+            port_id,
+            channel_id,
+            sender,
+            recipient,
+            token,
+            Duration::from_secs(60),
+        )
+    })
+    .take(num_msgs)
+    .collect::<Result<Vec<_>, _>>()?;
+
+    batched_send_tx(tx_config.value(), &sender.value().key, messages).await?;
+
+    Ok(())
 }

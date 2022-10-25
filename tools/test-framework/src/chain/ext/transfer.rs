@@ -6,7 +6,7 @@ use crate::chain::driver::ChainDriver;
 use crate::chain::tagged::TaggedChainDriverExt;
 use crate::error::Error;
 use crate::ibc::token::TaggedTokenRef;
-use crate::relayer::transfer::ibc_token_transfer;
+use crate::relayer::transfer::{batched_ibc_token_transfer, ibc_token_transfer};
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress};
@@ -42,6 +42,16 @@ pub trait ChainTransferMethodsExt<Chain> {
         timeout: Option<Duration>,
     ) -> Result<Packet, Error>;
 
+    fn ibc_transfer_token_multiple<Counterparty>(
+        &self,
+        port_id: &TaggedPortIdRef<Chain, Counterparty>,
+        channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
+        sender: &MonoTagged<Chain, &Wallet>,
+        recipient: &MonoTagged<Counterparty, &WalletAddress>,
+        token: &TaggedTokenRef<Chain>,
+        num_msgs: usize,
+    ) -> Result<(), Error>;
+
     fn local_transfer_token(
         &self,
         sender: &MonoTagged<Chain, &Wallet>,
@@ -68,6 +78,26 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
             recipient,
             token,
             timeout,
+        ))
+    }
+
+    fn ibc_transfer_token_multiple<Counterparty>(
+        &self,
+        port_id: &TaggedPortIdRef<Chain, Counterparty>,
+        channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
+        sender: &MonoTagged<Chain, &Wallet>,
+        recipient: &MonoTagged<Counterparty, &WalletAddress>,
+        token: &TaggedTokenRef<Chain>,
+        num_msgs: usize,
+    ) -> Result<(), Error> {
+        self.value().runtime.block_on(batched_ibc_token_transfer(
+            &self.tx_config(),
+            port_id,
+            channel_id,
+            sender,
+            recipient,
+            token,
+            num_msgs,
         ))
     }
 

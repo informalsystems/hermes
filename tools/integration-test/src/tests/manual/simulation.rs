@@ -92,7 +92,8 @@ fn tx_raw_ft_transfer<SrcChain: ChainHandle, DstChain: ChainHandle>(
         number_msgs: number_messages,
     };
 
-    let events = build_and_send_transfer_messages(src_handle, dst_handle, &transfer_options)?;
+    let events_with_heights =
+        build_and_send_transfer_messages(src_handle, dst_handle, &transfer_options)?;
 
-    Ok(events)
+    Ok(events_with_heights.into_iter().map(|ev| ev.event).collect())
 }

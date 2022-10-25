@@ -1,3 +1,13 @@
+//! This test ensures that the relayer defaults the `channel_version` to `ics20`,
+//! the expected behavior when fees are not enabled, when the fee transaction is
+//! not configured correctly.
+//!
+//! In the case of this test, the calls to `register_counterparty_payee` and
+//! `ibc_token_transfer_with_fee` return errors because the `channel_version`
+//! override to set the version to `ics20_with_fee` is left out. The test
+//! ensures then that the transaction still follows through using
+//! `ibc_transfer_token` if the transfer without fees is used.
+
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u128_range;
 

@@ -1,5 +1,6 @@
-//! This test ensures that a `timeout_fee` is correctly paid to a relayer in the case that
-//! it relays a timeout packet when an `ibc_token_transfer_with_fee` operation times out.
+//! This test ensures that a `timeout_fee` is correctly paid to a relayer in
+//! the case that it relays a timeout packet when an `ibc_token_transfer_with_fee`
+//! operation times out.
 
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_test_framework::prelude::*;

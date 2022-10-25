@@ -39,6 +39,13 @@ impl IbcEventWithHeight {
     pub fn new(event: IbcEvent, height: Height) -> Self {
         Self { event, height }
     }
+
+    pub fn with_height(self, height: Height) -> Self {
+        Self {
+            event: self.event,
+            height,
+        }
+    }
 }
 
 impl Display for IbcEventWithHeight {
