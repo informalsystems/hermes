@@ -3,7 +3,7 @@ use time::OffsetDateTime;
 
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
-use ibc_test_framework::util::random::random_u64_range;
+use ibc_test_framework::util::random::random_u128_range;
 
 const CONNECTION_DELAY: Duration = Duration::from_secs(10);
 
@@ -39,7 +39,7 @@ impl BinaryChannelTest for ConnectionDelayTest {
                 .chain_driver()
                 .query_balance(&wallet_a.address(), &denom_a)?;
 
-            let a_to_b_amount = random_u64_range(1000, 5000);
+            let a_to_b_amount = random_u128_range(1000, 5000);
 
             info!(
                 "Sending IBC transfer from chain {} to chain {} with amount of {} {}",
@@ -54,8 +54,7 @@ impl BinaryChannelTest for ConnectionDelayTest {
                 &channel.channel_id_a.as_ref(),
                 &wallet_a.as_ref(),
                 &wallet_b.address(),
-                &denom_a,
-                a_to_b_amount,
+                &denom_a.with_amount(a_to_b_amount).as_ref(),
             )?;
 
             let time1 = OffsetDateTime::now_utc();
@@ -73,14 +72,12 @@ impl BinaryChannelTest for ConnectionDelayTest {
 
             chains.node_a.chain_driver().assert_eventual_wallet_amount(
                 &wallet_a.address(),
-                balance_a - a_to_b_amount,
-                &denom_a,
+                &(balance_a - a_to_b_amount).as_ref(),
             )?;
 
             chains.node_b.chain_driver().assert_eventual_wallet_amount(
                 &wallet_b.address(),
-                a_to_b_amount,
-                &denom_b.as_ref(),
+                &denom_b.with_amount(a_to_b_amount).as_ref(),
             )?;
 
             info!(

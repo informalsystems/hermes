@@ -19,7 +19,7 @@ pub const CLIENT_EXPIRY: Duration = Duration::from_secs(15);
 
 pub fn get_chain<ChainA, ChainB, ChainX>(
     chains: &ConnectedChains<ChainA, ChainB>,
-    chain_id: u64,
+    chain_id: u128,
 ) -> Tagged<ChainX, &FullNode>
 where
     ChainA: ChainHandle,
@@ -35,7 +35,7 @@ where
 
 pub fn get_wallet<'a, ChainX>(
     wallets: &'a Tagged<ChainX, &TestWallets>,
-    user: u64,
+    user: u128,
 ) -> Tagged<ChainX, &'a Wallet> {
     match user {
         1 => wallets.user1(),

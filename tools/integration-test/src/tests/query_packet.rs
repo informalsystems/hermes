@@ -4,7 +4,7 @@ use ibc_relayer::link::{Link, LinkParameters};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::query_identified_channel_end;
 use ibc_test_framework::relayer::connection::query_identified_connection_end;
-use ibc_test_framework::util::random::random_u64_range;
+use ibc_test_framework::util::random::random_u128_range;
 
 #[test]
 fn test_query_packet_pending() -> Result<(), Error> {
@@ -39,7 +39,7 @@ impl BinaryChannelTest for QueryPacketPendingTest {
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
 
-        let amount1 = random_u64_range(1000, 5000);
+        let amount1 = random_u128_range(1000, 5000);
 
         info!(
             "Performing IBC transfer with amount {}, which should *not* be relayed",
@@ -51,8 +51,7 @@ impl BinaryChannelTest for QueryPacketPendingTest {
             &channel.channel_id_a.as_ref(),
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a,
-            amount1,
+            &denom_a.with_amount(amount1).as_ref(),
         )?;
 
         sleep(Duration::from_secs(2));
@@ -65,6 +64,7 @@ impl BinaryChannelTest for QueryPacketPendingTest {
             chains.handle_a().clone(),
             chains.handle_b().clone(),
             opts,
+            false,
             false,
         )?;
 
@@ -90,7 +90,7 @@ impl BinaryChannelTest for QueryPacketPendingTest {
         assert_eq!(summary.unreceived_acks, [1.into()]);
 
         // Acknowledge the packet on the source chain
-        let link = link.reverse(false)?;
+        let link = link.reverse(false, false)?;
         link.relay_ack_packet_messages()?;
 
         let summary =
@@ -100,15 +100,14 @@ impl BinaryChannelTest for QueryPacketPendingTest {
         assert!(summary.unreceived_acks.is_empty());
 
         let denom_b = chains.node_b.denom();
-        let amount2 = random_u64_range(1000, 5000);
+        let amount2 = random_u128_range(1000, 5000);
 
         chains.node_b.chain_driver().ibc_transfer_token(
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
             &wallet_b.as_ref(),
             &wallet_a.address(),
-            &denom_b,
-            amount2,
+            &denom_b.with_amount(amount2).as_ref(),
         )?;
 
         info!(

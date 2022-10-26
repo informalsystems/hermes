@@ -2,7 +2,7 @@
 
 use core::time::Duration;
 
-use flex_error::{define_error, DisplayOnly, TraceClone, TraceError};
+use flex_error::{define_error, DisplayOnly, TraceError};
 use http::uri::InvalidUri;
 use humantime::format_duration;
 use ibc_proto::protobuf::Error as TendermintProtoError;
@@ -15,6 +15,7 @@ use tendermint_light_client::errors::{
 };
 use tendermint_rpc::endpoint::abci_query::AbciQuery;
 use tendermint_rpc::endpoint::broadcast::tx_commit::TxResult;
+use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxSyncResponse;
 use tendermint_rpc::Error as TendermintRpcError;
 use tonic::{
     metadata::errors::InvalidMetadataValue, transport::Error as TransportError,
@@ -22,6 +23,7 @@ use tonic::{
 };
 
 use ibc_relayer_types::{
+    applications::ics29_fee::error::Error as FeeError,
     clients::ics07_tendermint::error as tendermint_error,
     core::{
         ics02_client::{client_type::ClientType, error as client_error},
@@ -47,7 +49,7 @@ define_error! {
 
         Rpc
             { url: tendermint_rpc::Url }
-            [ TraceClone<TendermintRpcError> ]
+            [ TendermintRpcError ]
             |e| { format!("RPC error to endpoint {}", e.url) },
 
         AbciQuery
@@ -56,10 +58,9 @@ define_error! {
 
         CheckTx
             {
-                detail: SdkError,
-                tx: TxResult
+                response: TxSyncResponse,
             }
-            |e| { format!("CheckTx commit returned an error: {0}, raw result: {1:?}", e.detail, e.tx) },
+            | e | { format!("CheckTx returned an error: {:?}", e.response) },
 
         DeliverTx
             {
@@ -67,6 +68,12 @@ define_error! {
                 tx: TxResult
             }
             |e| { format!("DeliverTx Commit returns error: {0}. RawResult: {1:?}", e.detail, e.tx) },
+
+        SendTx
+            {
+                detail: String
+            }
+            |e| { format_args!("send_tx resulted in chain error event: {}", e.detail) },
 
         WebSocket
             { url: tendermint_rpc::Url }
@@ -92,7 +99,7 @@ define_error! {
             |e| { format!("missing parameter in GRPC response: {}", e.param) },
 
         Decode
-            [ TraceError<TendermintProtoError> ]
+            [ TendermintProtoError ]
             |_| { "error decoding protobuf" },
 
         LightClientVerification
@@ -123,7 +130,7 @@ define_error! {
             |_| { "bad notification" },
 
         ConversionFromAny
-            [ TraceError<TendermintProtoError> ]
+            [ TendermintProtoError ]
             |_| { "conversion from a protobuf `Any` into a domain type failed" },
 
         EmptyUpgradedClientState
@@ -141,6 +148,10 @@ define_error! {
 
         EmptyResponseProof
             |_| { "empty response proof" },
+
+        RpcResponse
+            { detail: String }
+            | e | { format!("RPC client returns error response: {}", e.detail) },
 
         MalformedProof
             [ ProofError ]
@@ -265,6 +276,10 @@ define_error! {
         Ics23
             [ commitment_error::Error ]
             |_| { "ICS 23 error" },
+
+        Ics29
+            [ FeeError ]
+            | _ | { "ICS 29 error" },
 
         InvalidUri
             { uri: String }
@@ -525,7 +540,7 @@ define_error! {
             { len: usize }
             |e| {
                 format_args!("message with length {} is too large for a transaction", e.len)
-            }
+            },
     }
 }
 
@@ -560,9 +575,9 @@ impl GrpcStatusSubdetail {
         msg.contains("verification failed") && msg.contains("client state height < proof height")
     }
 
-    /// Check whether this gRPC error message starts with "account sequence mismatch".
+    /// Check whether this gRPC error message contains the string "account sequence mismatch".
     ///
-    /// # Note:
+    /// ## Note
     /// This predicate is tested and validated against errors
     /// that appear at the `estimate_gas` step. The error
     /// predicate to be used at the `broadcast_tx_sync` step
@@ -581,6 +596,21 @@ impl GrpcStatusSubdetail {
     /// then this predicate will catch all "account sequence mismatch" errors
     pub fn is_account_sequence_mismatch_that_requires_refresh(&self) -> bool {
         self.status.message().contains("account sequence mismatch")
+    }
+
+    /// Check whether this gRPC error message contains the string "packet sequence out of order".
+    ///
+    /// ## Note
+    /// This error may happen even when packets are submitted in order when the `simulate_tx`
+    /// gRPC endpoint is allowed to be called after a block is created and before
+    /// Tendermint/mempool finishes `recheck_tx`, similary to the issue described in
+    /// <https://github.com/informalsystems/hermes/issues/2249>.
+    ///
+    /// See <https://github.com/informalsystems/hermes/issues/2670> for more info.
+    pub fn is_out_of_order_packet_sequence_error(&self) -> bool {
+        self.status
+            .message()
+            .contains("packet sequence is out of order")
     }
 
     /// Check whether this gRPC error matches:

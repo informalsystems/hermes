@@ -82,8 +82,8 @@ fn tx_raw_ft_transfer<SrcChain: ChainHandle, DstChain: ChainHandle>(
     number_messages: usize,
 ) -> Result<Vec<IbcEvent>, Error> {
     let transfer_options = TransferOptions {
-        packet_src_port_id: channel.port_a.value().clone(),
-        packet_src_channel_id: channel.channel_id_a.value().clone(),
+        src_port_id: channel.port_a.value().clone(),
+        src_channel_id: channel.channel_id_a.value().clone(),
         amount: amount.into(),
         denom: denom.value().to_string(),
         receiver: Some(recipient.value().0.clone()),
@@ -92,7 +92,8 @@ fn tx_raw_ft_transfer<SrcChain: ChainHandle, DstChain: ChainHandle>(
         number_msgs: number_messages,
     };
 
-    let events = build_and_send_transfer_messages(src_handle, dst_handle, &transfer_options)?;
+    let events_with_heights =
+        build_and_send_transfer_messages(src_handle, dst_handle, &transfer_options)?;
 
-    Ok(events)
+    Ok(events_with_heights.into_iter().map(|ev| ev.event).collect())
 }

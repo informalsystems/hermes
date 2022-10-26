@@ -52,8 +52,8 @@ class TxPacketSend(Cmd[TxPacketSendRes]):
         return args
 
     def process(self, result: Any) -> TxPacketSendRes:
-        entry = find_entry(result, 'SendPacket')
-        return from_dict(TxPacketSendRes, entry)
+        entry = find_entry(result, 'event')
+        return from_dict(TxPacketSendRes, entry['SendPacket'])
 
 # -----------------------------------------------------------------------------
 

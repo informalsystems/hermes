@@ -66,8 +66,8 @@ impl BinaryChannelTest for SequentialCommitTest {
                 &channel.channel_id_a.as_ref(),
                 &wallet_a.as_ref(),
                 &wallet_b.address(),
-                &denom_a,
-                100,
+                &denom_a.with_amount(100u64).as_ref(),
+                Duration::from_secs(30),
             )?;
 
             let messages = TrackedMsgs::new_static(
@@ -108,8 +108,8 @@ impl BinaryChannelTest for SequentialCommitTest {
                 &channel.channel_id_b.as_ref(),
                 &wallet_b.as_ref(),
                 &wallet_a.address(),
-                &denom_b,
-                100,
+                &denom_b.with_amount(100u64).as_ref(),
+                Duration::from_secs(30),
             )?;
 
             let messages = TrackedMsgs::new_static(
