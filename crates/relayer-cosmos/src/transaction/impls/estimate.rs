@@ -11,10 +11,15 @@ use tracing::{debug, error, warn};
 use crate::transaction::impls::encode::CanSignTx;
 use crate::transaction::impls::simulate::CanSendTxSimulate;
 use crate::transaction::traits::fields::{HasChainId, HasDefaultGas, HasGasConfig, HasMaxGas};
+use ibc_relayer::chain::cosmos::types::account::AccountSequence;
 
 #[async_trait]
 pub trait CanEstimateTxFees: HasError {
-    async fn estimate_tx_fees(&self, messages: &[Any]) -> Result<Fee, Self::Error>;
+    async fn estimate_tx_fees(
+        &self,
+        sequence: &AccountSequence,
+        messages: &[Any],
+    ) -> Result<Fee, Self::Error>;
 }
 
 #[async_trait]
@@ -22,10 +27,16 @@ impl<Context> CanEstimateTxFees for Context
 where
     Context: HasError + HasGasConfig + CanSignTx + CanEstimateTxGas,
 {
-    async fn estimate_tx_fees(&self, messages: &[Any]) -> Result<Fee, Self::Error> {
+    async fn estimate_tx_fees(
+        &self,
+        sequence: &AccountSequence,
+        messages: &[Any],
+    ) -> Result<Fee, Self::Error> {
         let gas_config = self.gas_config();
 
-        let signed_tx = self.sign_tx(messages, &gas_config.max_fee).await?;
+        let signed_tx = self
+            .sign_tx(&gas_config.max_fee, sequence, messages)
+            .await?;
 
         let tx = Tx {
             body: Some(signed_tx.body),

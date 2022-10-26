@@ -6,8 +6,10 @@ use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 
 use crate::transaction::impls::estimate::CanEstimateTxFees;
 use crate::transaction::impls::response::CanValidateRpcResponse;
+use crate::transaction::impls::tx_with_fee::CanSubmitTxWithFee;
 use crate::transaction::impls::wait::{CanWaitTxHash, InjectWaitTxError};
-use crate::transaction::traits::tx_sender::{CanSubmitTxWithFee, TxSender, TxSubmitter};
+use crate::transaction::traits::queries::account::CanQueryAccount;
+use crate::transaction::traits::tx_sender::{TxSender, TxSubmitter};
 
 pub struct SimpleTxSender;
 
@@ -15,12 +17,18 @@ pub struct SimpleTxSender;
 impl<Context> TxSubmitter<Context> for SimpleTxSender
 where
     Context: InjectWaitTxError,
-    Context: CanEstimateTxFees + CanSubmitTxWithFee + CanWaitTxHash + CanValidateRpcResponse,
+    Context: CanQueryAccount + CanEstimateTxFees + CanSubmitTxWithFee + CanValidateRpcResponse,
 {
     async fn submit_tx(context: &Context, messages: &[Any]) -> Result<Response, Context::Error> {
-        let fee = context.estimate_tx_fees(messages).await?;
+        let account = context.query_account().await?;
 
-        let broadcast_response = context.submit_tx_with_fee(messages, &fee).await?;
+        let fee = context
+            .estimate_tx_fees(&account.sequence, messages)
+            .await?;
+
+        let broadcast_response = context
+            .submit_tx_with_fee(&fee, &account.sequence, messages)
+            .await?;
 
         Context::validate_rpc_response_code(broadcast_response.code)?;
 

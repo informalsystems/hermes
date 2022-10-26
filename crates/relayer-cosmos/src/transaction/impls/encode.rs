@@ -2,6 +2,7 @@ use async_trait::async_trait;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
 use ibc_proto::google::protobuf::Any;
+use ibc_relayer::chain::cosmos::types::account::AccountSequence;
 use ibc_relayer::chain::cosmos::types::tx::SignedTx;
 use ibc_relayer::config::AddressType;
 use ibc_relayer::keyring::{errors::Error as KeyringError, sign_message};
@@ -9,19 +10,27 @@ use ibc_relayer_framework::base::core::traits::error::{HasError, InjectError};
 use prost::EncodeError;
 
 use crate::transaction::traits::fields::{
-    HasAddressType, HasChainId, HasExtensionOptions, HasKeyEntry, HasMemo,
+    HasAccountNumber, HasAddressType, HasChainId, HasExtensionOptions, HasKeyEntry, HasMemo,
 };
-use crate::transaction::traits::queries::account::CanQueryAccount;
 
 #[async_trait]
 pub trait CanSignAndEncodeTx: HasError {
-    async fn sign_and_encode_tx(&self, messages: &[Any], fee: &Fee)
-        -> Result<Vec<u8>, Self::Error>;
+    async fn sign_and_encode_tx(
+        &self,
+        fee: &Fee,
+        sequence: &AccountSequence,
+        messages: &[Any],
+    ) -> Result<Vec<u8>, Self::Error>;
 }
 
 #[async_trait]
 pub trait CanSignTx: HasError {
-    async fn sign_tx(&self, messages: &[Any], fee: &Fee) -> Result<SignedTx, Self::Error>;
+    async fn sign_tx(
+        &self,
+        fee: &Fee,
+        sequence: &AccountSequence,
+        messages: &[Any],
+    ) -> Result<SignedTx, Self::Error>;
 }
 
 trait CanEncodeKeyBytes: HasError {
@@ -30,7 +39,11 @@ trait CanEncodeKeyBytes: HasError {
 
 #[async_trait]
 trait CanEncodeSignerInfo: HasError {
-    async fn encode_signer_info(&self, key_bytes: Vec<u8>) -> Result<SignerInfo, Self::Error>;
+    async fn encode_signer_info(
+        &self,
+        account_sequence: &AccountSequence,
+        key_bytes: Vec<u8>,
+    ) -> Result<SignerInfo, Self::Error>;
 }
 
 trait CanEncodeTxBodyAndBytes: HasError {
@@ -64,10 +77,11 @@ where
 {
     async fn sign_and_encode_tx(
         &self,
-        messages: &[Any],
         fee: &Fee,
+        sequence: &AccountSequence,
+        messages: &[Any],
     ) -> Result<Vec<u8>, Self::Error> {
-        let signed_tx = self.sign_tx(messages, fee).await?;
+        let signed_tx = self.sign_tx(fee, sequence, messages).await?;
 
         let tx_raw = TxRaw {
             body_bytes: signed_tx.body_bytes,
@@ -93,10 +107,15 @@ where
         + CanEncodeAuthInfoAndBytes
         + CanEncodeSignDoc,
 {
-    async fn sign_tx(&self, messages: &[Any], fee: &Fee) -> Result<SignedTx, Self::Error> {
+    async fn sign_tx(
+        &self,
+        fee: &Fee,
+        sequence: &AccountSequence,
+        messages: &[Any],
+    ) -> Result<SignedTx, Self::Error> {
         let key_bytes = self.encode_key_bytes()?;
 
-        let signer = self.encode_signer_info(key_bytes).await?;
+        let signer = self.encode_signer_info(sequence, key_bytes).await?;
 
         let (body, body_bytes) = self.encode_tx_body_and_bytes(messages)?;
 
@@ -137,12 +156,13 @@ where
 #[async_trait]
 impl<Context> CanEncodeSignerInfo for Context
 where
-    Context: HasError + CanQueryAccount + HasAddressType,
+    Context: HasError + HasAddressType,
 {
-    async fn encode_signer_info(&self, key_bytes: Vec<u8>) -> Result<SignerInfo, Self::Error> {
-        let account = self.query_account().await?;
-        let account_sequence = &account.sequence;
-
+    async fn encode_signer_info(
+        &self,
+        account_sequence: &AccountSequence,
+        key_bytes: Vec<u8>,
+    ) -> Result<SignerInfo, Self::Error> {
         let address_type = self.address_type();
 
         let pk_type = match address_type {
@@ -220,7 +240,7 @@ where
 #[async_trait]
 impl<Context> CanEncodeSignDoc for Context
 where
-    Context: HasChainId + CanQueryAccount + InjectError<EncodeError> + CanSignMessage,
+    Context: HasChainId + HasAccountNumber + InjectError<EncodeError> + CanSignMessage,
 {
     async fn encode_sign_doc(
         &self,
@@ -228,8 +248,7 @@ where
         body_bytes: Vec<u8>,
     ) -> Result<Vec<u8>, Self::Error> {
         let chain_id = self.chain_id();
-        let account = self.query_account().await?;
-        let account_number = &account.number;
+        let account_number = self.account_number();
 
         let sign_doc = SignDoc {
             body_bytes,

@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer_framework::base::core::traits::error::HasError;
 use tendermint::abci::responses::Event;
@@ -32,13 +31,4 @@ where
     Context: HasError,
 {
     async fn submit_tx(context: &Context, messages: &[Any]) -> Result<Response, Context::Error>;
-}
-
-#[async_trait]
-pub trait CanSubmitTxWithFee: HasError {
-    async fn submit_tx_with_fee(
-        &self,
-        messages: &[Any],
-        fee: &Fee,
-    ) -> Result<Response, Self::Error>;
 }
