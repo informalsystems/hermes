@@ -46,10 +46,6 @@ impl OrderedChannelClearTest {
 }
 
 impl TestOverrides for OrderedChannelClearTest {
-    fn modify_test_config(&self, config: &mut TestConfig) {
-        config.bootstrap_with_random_ids = false;
-    }
-
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.packets.tx_confirmation = self.tx_confirmation;
         config.chains[0].sequential_batch_tx = self.sequential_batch_tx;
@@ -172,10 +168,6 @@ impl BinaryChannelTest for OrderedChannelClearTest {
 pub struct OrderedChannelClearEqualCLITest;
 
 impl TestOverrides for OrderedChannelClearEqualCLITest {
-    fn modify_test_config(&self, config: &mut TestConfig) {
-        config.bootstrap_with_random_ids = false;
-    }
-
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.packets.tx_confirmation = true;
 
