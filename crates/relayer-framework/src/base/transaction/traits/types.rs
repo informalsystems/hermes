@@ -1,29 +1,32 @@
+use crate::base::chain::traits::types::{HasEventType, HasMessageType};
 use crate::base::core::traits::error::HasError;
+use crate::base::core::traits::sync::Async;
 
-pub trait HasTxTypes: HasError {
-    type Message;
+pub trait HasTxTypes: HasMessageType + HasEventType + HasError {
+    type Transaction: Async;
 
-    type Transaction;
+    type Signer: Async;
 
-    type Wallet;
+    type Nonce: Async;
 
-    type Nonce;
+    type Fee: Async;
 
-    type Fee;
+    type Memo: Async;
 
-    type Memo;
+    type TxHash: Async;
 
-    type TxHash;
+    type TxResponse: Async;
 
-    type TxResponse;
+    fn tx_size(tx: &Self::Transaction) -> usize;
 }
 
 pub trait SameTxTypes<Other>:
     HasTxTypes<
     Error = Other::Error,
     Message = Other::Message,
+    Event = Other::Event,
     Transaction = Other::Transaction,
-    Wallet = Other::Wallet,
+    Signer = Other::Signer,
     Nonce = Other::Nonce,
     Fee = Other::Fee,
     Memo = Other::Memo,
@@ -41,8 +44,9 @@ where
     Context: HasTxTypes<
         Error = Other::Error,
         Message = Other::Message,
+        Event = Other::Event,
         Transaction = Other::Transaction,
-        Wallet = Other::Wallet,
+        Signer = Other::Signer,
         Nonce = Other::Nonce,
         Fee = Other::Fee,
         Memo = Other::Memo,

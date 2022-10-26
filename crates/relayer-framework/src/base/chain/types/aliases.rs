@@ -1,5 +1,7 @@
 use crate::base::chain::traits::ibc_event::HasIbcEvents;
-use crate::base::chain::traits::types::{HasChainTypes, HasIbcChainTypes};
+use crate::base::chain::traits::types::{
+    HasChainTypes, HasEventType, HasIbcChainTypes, HasMessageType,
+};
 
 pub type ClientId<Chain, Counterparty> = <Chain as HasIbcChainTypes<Counterparty>>::ClientId;
 
@@ -12,9 +14,9 @@ pub type PortId<Chain, Counterparty> = <Chain as HasIbcChainTypes<Counterparty>>
 
 pub type Sequence<Chain, Counterparty> = <Chain as HasIbcChainTypes<Counterparty>>::Sequence;
 
-pub type Message<Chain> = <Chain as HasChainTypes>::Message;
+pub type Message<Chain> = <Chain as HasMessageType>::Message;
 
-pub type Event<Chain> = <Chain as HasChainTypes>::Event;
+pub type Event<Chain> = <Chain as HasEventType>::Event;
 
 pub type Height<Chain> = <Chain as HasChainTypes>::Height;
 

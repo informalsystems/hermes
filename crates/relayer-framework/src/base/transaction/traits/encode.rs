@@ -5,21 +5,23 @@ use crate::std_prelude::*;
 
 #[async_trait]
 pub trait CanEncodeTx: HasTxTypes {
-    async fn encode_tx_with_fee(
+    async fn encode_tx(
         &self,
-        fee: Self::Fee,
+        nonce: &Self::Nonce,
+        fee: &Self::Fee,
         messages: &[Self::Message],
     ) -> Result<Self::Transaction, Self::Error>;
 }
 
 #[async_trait]
-pub trait TxFeeEstimator<Context>
+pub trait TxEncoder<Context>
 where
     Context: HasTxTypes,
 {
-    async fn encode_tx_with_fee(
+    async fn encode_tx(
         context: &Context,
-        fee: Context::Fee,
+        nonce: &Context::Nonce,
+        fee: &Context::Fee,
         messages: &[Context::Message],
     ) -> Result<Context::Transaction, Context::Error>;
 }

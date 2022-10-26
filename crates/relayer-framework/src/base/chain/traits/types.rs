@@ -7,17 +7,19 @@
 use crate::base::core::traits::error::HasError;
 use crate::base::core::traits::sync::Async;
 
+pub trait HasMessageType: Async {
+    type Message: Async;
+}
+
+pub trait HasEventType: Async {
+    type Event: Async;
+}
+
 /// The minimal datatypes that any chain needs to expose.
-pub trait HasChainTypes: HasError {
+pub trait HasChainTypes: HasMessageType + HasEventType + HasError {
     type Height: Async;
 
     type Timestamp: Async;
-
-    type Message: Async;
-
-    type Signer: Async;
-
-    type Event: Async;
 
     fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error>;
 }
