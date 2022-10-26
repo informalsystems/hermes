@@ -20,6 +20,44 @@ pub trait CanSignAndEncodeTx: HasError {
 }
 
 #[async_trait]
+pub trait CanSignTx: HasError {
+    async fn sign_tx(&self, messages: &[Any], fee: &Fee) -> Result<SignedTx, Self::Error>;
+}
+
+trait CanEncodeKeyBytes: HasError {
+    fn encode_key_bytes(&self) -> Result<Vec<u8>, Self::Error>;
+}
+
+#[async_trait]
+trait CanEncodeSignerInfo: HasError {
+    async fn encode_signer_info(&self, key_bytes: Vec<u8>) -> Result<SignerInfo, Self::Error>;
+}
+
+trait CanEncodeTxBodyAndBytes: HasError {
+    fn encode_tx_body_and_bytes(&self, messages: &[Any]) -> Result<(TxBody, Vec<u8>), Self::Error>;
+}
+
+trait CanEncodeAuthInfoAndBytes: HasError {
+    fn encode_auth_info_and_bytes(
+        signer_info: SignerInfo,
+        fee: Fee,
+    ) -> Result<(AuthInfo, Vec<u8>), Self::Error>;
+}
+
+trait CanSignMessage: HasError {
+    fn sign_message(&self, message: Vec<u8>) -> Result<Vec<u8>, Self::Error>;
+}
+
+#[async_trait]
+trait CanEncodeSignDoc: HasError {
+    async fn encode_sign_doc(
+        &self,
+        auth_info_bytes: Vec<u8>,
+        body_bytes: Vec<u8>,
+    ) -> Result<Vec<u8>, Self::Error>;
+}
+
+#[async_trait]
 impl<Context> CanSignAndEncodeTx for Context
 where
     Context: InjectError<EncodeError> + CanSignTx,
@@ -43,11 +81,6 @@ where
 
         Ok(tx_bytes)
     }
-}
-
-#[async_trait]
-pub trait CanSignTx: HasError {
-    async fn sign_tx(&self, messages: &[Any], fee: &Fee) -> Result<SignedTx, Self::Error>;
 }
 
 #[async_trait]
@@ -83,10 +116,6 @@ where
     }
 }
 
-trait CanEncodeKeyBytes: HasError {
-    fn encode_key_bytes(&self) -> Result<Vec<u8>, Self::Error>;
-}
-
 impl<Context> CanEncodeKeyBytes for Context
 where
     Context: InjectError<EncodeError>,
@@ -103,11 +132,6 @@ where
 
         Ok(pk_buf)
     }
-}
-
-#[async_trait]
-trait CanEncodeSignerInfo: HasError {
-    async fn encode_signer_info(&self, key_bytes: Vec<u8>) -> Result<SignerInfo, Self::Error>;
 }
 
 #[async_trait]
@@ -143,10 +167,6 @@ where
     }
 }
 
-trait CanEncodeTxBodyAndBytes: HasError {
-    fn encode_tx_body_and_bytes(&self, messages: &[Any]) -> Result<(TxBody, Vec<u8>), Self::Error>;
-}
-
 impl<Context> CanEncodeTxBodyAndBytes for Context
 where
     Context: InjectError<EncodeError> + HasMemo + HasExtensionOptions,
@@ -172,13 +192,6 @@ where
     }
 }
 
-trait CanEncodeAuthInfoAndBytes: HasError {
-    fn encode_auth_info_and_bytes(
-        signer_info: SignerInfo,
-        fee: Fee,
-    ) -> Result<(AuthInfo, Vec<u8>), Self::Error>;
-}
-
 impl<Context> CanEncodeAuthInfoAndBytes for Context
 where
     Context: InjectError<EncodeError>,
@@ -202,15 +215,6 @@ where
 
         Ok((auth_info, auth_buf))
     }
-}
-
-#[async_trait]
-trait CanEncodeSignDoc: HasError {
-    async fn encode_sign_doc(
-        &self,
-        auth_info_bytes: Vec<u8>,
-        body_bytes: Vec<u8>,
-    ) -> Result<Vec<u8>, Self::Error>;
 }
 
 #[async_trait]
@@ -242,10 +246,6 @@ where
 
         Ok(signed)
     }
-}
-
-trait CanSignMessage: HasError {
-    fn sign_message(&self, message: Vec<u8>) -> Result<Vec<u8>, Self::Error>;
 }
 
 impl<Context> CanSignMessage for Context

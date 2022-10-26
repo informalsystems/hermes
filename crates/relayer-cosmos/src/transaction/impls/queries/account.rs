@@ -6,8 +6,8 @@ use ibc_relayer_framework::base::core::traits::error::{HasError, InjectError};
 use tonic::transport::Error as TransportError;
 use tonic::{Request, Status};
 
-use crate::transaction::impls::decoders::account::CanDecodeAccount;
 use crate::transaction::traits::account::{HasAccount, MaybeHasAccount};
+use crate::transaction::traits::decoders::account::CanDecodeAccount;
 use crate::transaction::traits::fields::{HasGrpcAddress, HasKeyEntry};
 use crate::transaction::traits::queries::account::AccountQuerier;
 
