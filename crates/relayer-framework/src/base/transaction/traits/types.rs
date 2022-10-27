@@ -5,8 +5,6 @@ use crate::base::core::traits::sync::Async;
 pub trait HasTxTypes: HasMessageType + HasEventType + HasError {
     type Transaction: Async;
 
-    type Signer: Async;
-
     type Nonce: Async;
 
     type Fee: Async;
@@ -26,7 +24,6 @@ pub trait SameTxTypes<Other>:
     Message = Other::Message,
     Event = Other::Event,
     Transaction = Other::Transaction,
-    Signer = Other::Signer,
     Nonce = Other::Nonce,
     Fee = Other::Fee,
     Memo = Other::Memo,
@@ -46,7 +43,6 @@ where
         Message = Other::Message,
         Event = Other::Event,
         Transaction = Other::Transaction,
-        Signer = Other::Signer,
         Nonce = Other::Nonce,
         Fee = Other::Fee,
         Memo = Other::Memo,

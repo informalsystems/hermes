@@ -21,8 +21,8 @@ pub trait HasNonceMismatchError:
 }
 
 #[async_trait]
-pub trait CanQuerySignerNonce: HasTxTypes {
-    async fn query_signer_nonce(&self, signer: &Self::Signer) -> Result<Self::Nonce, Self::Error>;
+pub trait CanQueryNonce: HasTxTypes {
+    async fn query_nonce(&self) -> Result<Self::Nonce, Self::Error>;
 }
 
 #[async_trait]
@@ -30,14 +30,33 @@ pub trait CanIncrementNonce: HasTxTypes {
     fn increment_nonce(nonce: &Self::Nonce) -> Self::Nonce;
 }
 
-#[async_trait]
-pub trait HasNonce: HasTxTypes {
-    fn with_nonce<'a, R, Cont>(
+pub trait CanAllocateNonce: HasTxTypes {
+    fn with_allocated_nonce<'a, R, Cont>(
         &'a self,
         cont: Cont,
     ) -> Pin<Box<dyn Future<Output = Result<R, Self::Error>> + Send + 'a>>
     where
         R: Async + 'a,
-        Cont: Fn(&'a Self::Nonce) -> Pin<Box<dyn Future<Output = Result<R, Self::Error>> + Send + 'a>>
+        Cont: Fn(Self::Nonce) -> Pin<Box<dyn Future<Output = Result<R, Self::Error>> + Send + 'a>>
+            + Send
+            + Sync
+            + 'a;
+}
+
+pub trait NonceAllocator<Context>
+where
+    Context: HasTxTypes,
+{
+    fn with_allocated_nonce<'a, R, Cont>(
+        context: &'a Context,
+        cont: Cont,
+    ) -> Pin<Box<dyn Future<Output = Result<R, Context::Error>> + Send + 'a>>
+    where
+        R: Async + 'a,
+        Cont: Fn(
+                Context::Nonce,
+            ) -> Pin<Box<dyn Future<Output = Result<R, Context::Error>> + Send + 'a>>
+            + Send
+            + Sync
             + 'a;
 }

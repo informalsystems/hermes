@@ -7,7 +7,7 @@ use crate::base::transaction::traits::estimate::CanEstimateTxFee;
 use crate::base::transaction::traits::event::CanParseTxResponseAsEvents;
 use crate::base::transaction::traits::fee::HasFeeForSimulation;
 use crate::base::transaction::traits::message::{CanSendMessagesAsTx, MessageAsTxSender};
-use crate::base::transaction::traits::nonce::HasNonce;
+use crate::base::transaction::traits::nonce::CanAllocateNonce;
 use crate::base::transaction::traits::response::CanPollTxResponse;
 use crate::base::transaction::traits::submit::CanSubmitTx;
 use crate::base::transaction::traits::types::HasTxTypes;
@@ -18,15 +18,20 @@ pub struct SendMessagesAsTx;
 #[async_trait]
 impl<Chain> MessageSender<Chain> for SendMessagesAsTx
 where
-    Chain: HasChainTypes + HasTxTypes + HasNonce + CanSendMessagesAsTx + CanParseTxResponseAsEvents,
+    Chain: HasChainTypes
+        + HasTxTypes
+        + CanAllocateNonce
+        + CanSendMessagesAsTx
+        + CanParseTxResponseAsEvents,
 {
     async fn send_messages(
         chain: &Chain,
         messages: Vec<Chain::Message>,
     ) -> Result<Vec<Vec<Chain::Event>>, Chain::Error> {
         let response = chain
-            .with_nonce(|nonce| {
-                Box::pin(async { chain.send_messages_as_tx(nonce, &messages).await })
+            .with_allocated_nonce(|nonce| {
+                let messages_ref = &messages;
+                Box::pin(async move { chain.send_messages_as_tx(&nonce, messages_ref).await })
             })
             .await?;
 
