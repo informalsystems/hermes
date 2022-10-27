@@ -59,7 +59,7 @@ pub fn init_test() -> Result<TestConfig, Error> {
         chain_store_dir,
         account_prefix,
         hang_on_fail,
-        bootstrap_with_random_ids: true,
+        bootstrap_with_random_ids: false,
     })
 }
 

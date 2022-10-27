@@ -40,11 +40,6 @@ impl IcaFilterTestAllow {
 }
 
 impl TestOverrides for IcaFilterTestAllow {
-    // Use `icad` binary and deterministic identifiers for clients, connections, and channels
-    fn modify_test_config(&self, config: &mut TestConfig) {
-        config.bootstrap_with_random_ids = false;
-    }
-
     // Enable channel workers and allow relaying on ICA channels
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.channels.enabled = true;
@@ -179,11 +174,6 @@ fn test_ica_filter_deny() -> Result<(), Error> {
 pub struct IcaFilterTestDeny;
 
 impl TestOverrides for IcaFilterTestDeny {
-    // Use deterministic identifiers for clients, connections, and channels
-    fn modify_test_config(&self, config: &mut TestConfig) {
-        config.bootstrap_with_random_ids = false;
-    }
-
     // Enable channel workers and deny ICA ports
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.channels.enabled = true;

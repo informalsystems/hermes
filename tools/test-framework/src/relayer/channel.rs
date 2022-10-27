@@ -64,10 +64,32 @@ pub fn init_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     };
 
     let event = channel.build_chan_open_init_and_send()?;
-
     let channel_id = extract_channel_id(&event)?.clone();
-
     let channel2 = Channel::restore_from_event(handle_b.clone(), handle_a.clone(), event)?;
+
+    Ok((DualTagged::new(channel_id), channel2))
+}
+
+pub fn try_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
+    handle_a: &ChainA,
+    handle_b: &ChainB,
+    channel: &Channel<ChainB, ChainA>,
+) -> Result<(TaggedChannelId<ChainA, ChainB>, Channel<ChainA, ChainB>), Error> {
+    let event = channel.build_chan_open_try_and_send()?;
+    let channel_id = extract_channel_id(&event)?.clone();
+    let channel2 = Channel::restore_from_event(handle_a.clone(), handle_b.clone(), event)?;
+
+    Ok((DualTagged::new(channel_id), channel2))
+}
+
+pub fn ack_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
+    handle_a: &ChainA,
+    handle_b: &ChainB,
+    channel: &Channel<ChainB, ChainA>,
+) -> Result<(TaggedChannelId<ChainA, ChainB>, Channel<ChainA, ChainB>), Error> {
+    let event = channel.build_chan_open_ack_and_send()?;
+    let channel_id = extract_channel_id(&event)?.clone();
+    let channel2 = Channel::restore_from_event(handle_a.clone(), handle_b.clone(), event)?;
 
     Ok((DualTagged::new(channel_id), channel2))
 }
