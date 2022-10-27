@@ -7,6 +7,7 @@ use crate::std_prelude::*;
 pub trait CanSendMessagesAsTx: HasTxTypes {
     async fn send_messages_as_tx(
         &self,
+        signer: &Self::Signer,
         nonce: &Self::Nonce,
         messages: &[Self::Message],
     ) -> Result<Self::TxResponse, Self::Error>;
@@ -19,6 +20,7 @@ where
 {
     async fn send_messages_as_tx(
         context: &Context,
+        signer: &Context::Signer,
         nonce: &Context::Nonce,
         messages: &[Context::Message],
     ) -> Result<Context::TxResponse, Context::Error>;

@@ -9,6 +9,7 @@ use crate::base::transaction::traits::fee::HasFeeForSimulation;
 use crate::base::transaction::traits::message::{CanSendMessagesAsTx, MessageAsTxSender};
 use crate::base::transaction::traits::nonce::CanAllocateNonce;
 use crate::base::transaction::traits::response::CanPollTxResponse;
+use crate::base::transaction::traits::signer::HasSigner;
 use crate::base::transaction::traits::submit::CanSubmitTx;
 use crate::base::transaction::traits::types::HasTxTypes;
 use crate::std_prelude::*;
@@ -20,6 +21,7 @@ impl<Chain> MessageSender<Chain> for SendMessagesAsTx
 where
     Chain: HasChainTypes
         + HasTxTypes
+        + HasSigner
         + CanAllocateNonce
         + CanSendMessagesAsTx
         + CanParseTxResponseAsEvents,
@@ -28,10 +30,15 @@ where
         chain: &Chain,
         messages: Vec<Chain::Message>,
     ) -> Result<Vec<Vec<Chain::Event>>, Chain::Error> {
+        let signer = chain.get_signer();
         let response = chain
-            .with_allocated_nonce(|nonce| {
+            .with_allocated_nonce(signer, |nonce| {
                 let messages_ref = &messages;
-                Box::pin(async move { chain.send_messages_as_tx(&nonce, messages_ref).await })
+                Box::pin(async move {
+                    chain
+                        .send_messages_as_tx(signer, &nonce, messages_ref)
+                        .await
+                })
             })
             .await?;
 
@@ -54,18 +61,19 @@ where
 {
     async fn send_messages_as_tx(
         context: &Context,
+        signer: &Context::Signer,
         nonce: &Context::Nonce,
         messages: &[Context::Message],
     ) -> Result<Context::TxResponse, Context::Error> {
         let fee_for_simulation = context.fee_for_simulation();
 
         let simulate_tx = context
-            .encode_tx(nonce, fee_for_simulation, messages)
+            .encode_tx(signer, nonce, fee_for_simulation, messages)
             .await?;
 
         let tx_fee = context.estimate_tx_fee(&simulate_tx).await?;
 
-        let tx = context.encode_tx(nonce, &tx_fee, messages).await?;
+        let tx = context.encode_tx(signer, nonce, &tx_fee, messages).await?;
 
         let tx_hash = context.submit_tx(&tx).await?;
 

@@ -9,7 +9,7 @@ pub trait HasTxTypes: HasMessageType + HasEventType + HasError {
 
     type Fee: Async;
 
-    type Memo: Async;
+    type Signer: Async;
 
     type TxHash: Async;
 
@@ -26,7 +26,7 @@ pub trait SameTxTypes<Other>:
     Transaction = Other::Transaction,
     Nonce = Other::Nonce,
     Fee = Other::Fee,
-    Memo = Other::Memo,
+    Signer = Other::Signer,
     TxHash = Other::TxHash,
     TxResponse = Other::TxResponse,
 >
@@ -45,7 +45,7 @@ where
         Transaction = Other::Transaction,
         Nonce = Other::Nonce,
         Fee = Other::Fee,
-        Memo = Other::Memo,
+        Signer = Other::Signer,
         TxHash = Other::TxHash,
         TxResponse = Other::TxResponse,
     >,

@@ -7,6 +7,7 @@ use crate::std_prelude::*;
 pub trait CanEncodeTx: HasTxTypes {
     async fn encode_tx(
         &self,
+        signer: &Self::Signer,
         nonce: &Self::Nonce,
         fee: &Self::Fee,
         messages: &[Self::Message],
@@ -20,6 +21,7 @@ where
 {
     async fn encode_tx(
         context: &Context,
+        signer: &Context::Signer,
         nonce: &Context::Nonce,
         fee: &Context::Fee,
         messages: &[Context::Message],

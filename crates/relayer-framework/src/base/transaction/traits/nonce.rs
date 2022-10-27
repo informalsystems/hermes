@@ -22,7 +22,7 @@ pub trait HasNonceMismatchError:
 
 #[async_trait]
 pub trait CanQueryNonce: HasTxTypes {
-    async fn query_nonce(&self) -> Result<Self::Nonce, Self::Error>;
+    async fn query_nonce(&self, signer: &Self::Signer) -> Result<Self::Nonce, Self::Error>;
 }
 
 #[async_trait]
@@ -33,6 +33,7 @@ pub trait CanIncrementNonce: HasTxTypes {
 pub trait CanAllocateNonce: HasTxTypes {
     fn with_allocated_nonce<'a, R, Cont>(
         &'a self,
+        signer: &'a Self::Signer,
         cont: Cont,
     ) -> Pin<Box<dyn Future<Output = Result<R, Self::Error>> + Send + 'a>>
     where
@@ -49,6 +50,7 @@ where
 {
     fn with_allocated_nonce<'a, R, Cont>(
         context: &'a Context,
+        signer: &'a Context::Signer,
         cont: Cont,
     ) -> Pin<Box<dyn Future<Output = Result<R, Context::Error>> + Send + 'a>>
     where
