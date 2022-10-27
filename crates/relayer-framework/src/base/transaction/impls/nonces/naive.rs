@@ -38,7 +38,7 @@ where
     fn with_allocated_nonce<'a, R, Cont>(
         context: &'a Context,
         signer: &'a Context::Signer,
-        cont: Cont,
+        cont: &'a Cont,
     ) -> Pin<Box<dyn Future<Output = Result<R, Context::Error>> + Send + 'a>>
     where
         R: Async + 'a,

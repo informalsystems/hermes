@@ -32,7 +32,7 @@ where
     ) -> Result<Vec<Vec<Chain::Event>>, Chain::Error> {
         let signer = chain.get_signer();
         let response = chain
-            .with_allocated_nonce(signer, |nonce| {
+            .with_allocated_nonce(signer, &|nonce| {
                 let messages_ref = &messages;
                 Box::pin(async move {
                     chain
