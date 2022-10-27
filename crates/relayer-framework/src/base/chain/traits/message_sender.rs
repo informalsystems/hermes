@@ -4,8 +4,12 @@ use crate::base::chain::traits::types::HasChainTypes;
 use crate::base::core::traits::sync::Async;
 use crate::std_prelude::*;
 
-pub trait HasMessageSender: HasChainTypes {
-    type MessageSender: MessageSender<Self>;
+#[async_trait]
+pub trait CanSendMessages: HasChainTypes {
+    async fn send_messages(
+        &self,
+        messages: Vec<Self::Message>,
+    ) -> Result<Vec<Vec<Self::Event>>, Self::Error>;
 }
 
 #[async_trait]
