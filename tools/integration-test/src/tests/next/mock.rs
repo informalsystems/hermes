@@ -39,13 +39,11 @@ impl PrimitiveTest for MockChainTest {
         info!("Relaying recv packet");
 
         let events =
-            runtime.block_on(async { relay_context.relay_receive_packet(&1, &packet).await });
+            runtime.block_on(async { relay_context.relay_receive_packet(&0, &packet).await });
 
         println!("Events from relaying recv packet : {:?}", events);
 
         assert!(events.is_ok());
-
-        println!("Event : {:?}", events.as_ref().unwrap());
 
         assert!(events.as_ref().unwrap().is_some());
 

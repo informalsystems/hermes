@@ -1,6 +1,6 @@
 #[derive(Debug)]
 pub enum Event {
-    PacketRecv(u128),
+    RecvPacket(u128),
     WriteAcknowledgment(u128),
 }
 

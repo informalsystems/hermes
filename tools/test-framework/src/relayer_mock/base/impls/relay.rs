@@ -8,6 +8,7 @@ use ibc_relayer_framework::common::one_for_all::types::chain::OfaChainWrapper;
 
 use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::height::Height as MockHeight;
+use crate::relayer_mock::base::types::message::Message as MockMessage;
 use crate::relayer_mock::base::types::packet::PacketKey;
 use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
 use crate::relayer_mock::contexts::chain::MockChainContext;
@@ -96,44 +97,38 @@ impl OfaBaseRelay for MockRelayContext {
         &self,
         height: &<Self::DstChain as OfaChainTypes>::Height,
     ) -> Result<Vec<<Self::SrcChain as OfaChainTypes>::Message>, Self::Error> {
-        Ok(vec![format!("src_update:{}", height)])
+        Ok(vec![MockMessage::UpdateClient(*height)])
     }
 
     async fn build_dst_update_client_messages(
         &self,
         height: &<Self::SrcChain as OfaChainTypes>::Height,
     ) -> Result<Vec<<Self::DstChain as OfaChainTypes>::Message>, Self::Error> {
-        Ok(vec![format!("dst_update:{}", height)])
+        Ok(vec![MockMessage::UpdateClient(*height)])
     }
 
     async fn build_receive_packet_message(
         &self,
         height: &<Self::SrcChain as OfaChainTypes>::Height,
-        packet: &Self::Packet,
+        _packet: &Self::Packet,
     ) -> Result<<Self::DstChain as OfaChainTypes>::Message, Self::Error> {
-        Ok(format!(
-            "{}/{}:recv-{}:{}-{}",
-            packet.channel_id, packet.port_id, packet.sequence, height, packet.height
-        ))
+        Ok(MockMessage::SendPacket(*height))
     }
 
     async fn build_ack_packet_message(
         &self,
         destination_height: &<Self::DstChain as OfaChainTypes>::Height,
-        packet: &Self::Packet,
+        _packet: &Self::Packet,
         _ack: &<Self::DstChain as OfaChainTypes>::WriteAcknowledgementEvent,
     ) -> Result<<Self::SrcChain as OfaChainTypes>::Message, Self::Error> {
-        Ok(format!(
-            "{}/{}:ack-{}:{}-{}",
-            packet.channel_id, packet.port_id, packet.sequence, destination_height, packet.height
-        ))
+        Ok(MockMessage::AckPacket(*destination_height))
     }
 
     async fn build_timeout_unordered_packet_message(
         &self,
-        _destination_height: &<Self::DstChain as OfaChainTypes>::Height,
+        destination_height: &<Self::DstChain as OfaChainTypes>::Height,
         _packet: &Self::Packet,
     ) -> Result<<Self::SrcChain as OfaChainTypes>::Message, Self::Error> {
-        unimplemented!()
+        Ok(MockMessage::TimeoutPacket(*destination_height))
     }
 }

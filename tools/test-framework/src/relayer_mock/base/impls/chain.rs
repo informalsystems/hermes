@@ -10,6 +10,7 @@ use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::chain::{ChainStatus, ConsensusState};
 use crate::relayer_mock::base::types::events::{Event, WriteAcknowledgementEvent};
 use crate::relayer_mock::base::types::height::Height;
+use crate::relayer_mock::base::types::message::Message as MockMessage;
 use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
 use crate::relayer_mock::contexts::chain::MockChainContext;
 
@@ -24,7 +25,7 @@ impl OfaChainTypes for MockChainContext {
 
     type Timestamp = Height;
 
-    type Message = String;
+    type Message = MockMessage;
 
     type Signer = u128;
 
@@ -80,16 +81,18 @@ impl OfaBaseChain for MockChainContext {
     fn try_extract_write_acknowledgement_event(
         event: Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent> {
-        match event.event_type.as_str() {
-            t if t.contains("recv") => Some(WriteAcknowledgementEvent {}),
+        match event {
+            Event::RecvPacket(_) => Some(WriteAcknowledgementEvent{}),
             _ => None,
         }
     }
 
-    async fn send_messages(&self, messages: Vec<String>) -> Result<Vec<Vec<Event>>, Error> {
+    async fn send_messages(&self, messages: Vec<MockMessage>) -> Result<Vec<Vec<Event>>, Error> {
         let mut res = vec![];
         for m in messages {
-            res.push(Event::new(m));
+            if let MockMessage::SendPacket(h) = m {
+                res.push(Event::RecvPacket(h));
+            }
         }
         Ok(vec![res])
     }
@@ -102,16 +105,12 @@ impl OfaBaseChain for MockChainContext {
 #[async_trait]
 impl OfaIbcChain<MockChainContext> for MockChainContext {
     fn counterparty_message_height(message: &Self::Message) -> Option<u128> {
-        let height_block = message.rsplit_once(':');
-        if let Some((_, h1)) = height_block {
-            let extract_height = h1.rsplit_once('-');
-            if let Some((_, _h2)) = extract_height {
-                return None;
-            } else {
-                return None;
-            }
+        match message {
+            MockMessage::SendPacket(h) => Some(*h),
+            MockMessage::AckPacket(h) => Some(*h),
+            MockMessage::TimeoutPacket(h) => Some(*h),
+            _ => None,
         }
-        None
     }
 
     async fn query_consensus_state(
