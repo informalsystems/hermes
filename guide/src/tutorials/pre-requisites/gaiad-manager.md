@@ -38,7 +38,7 @@ Follow the instructions below to install and configure `gm`.
 
     ```bash
     git clone https://github.com/informalsystems/gm
-    bin/gm install
+    gm/bin/gm install
     ```
     Alternatively, you can create the folder `$HOME/.gm/bin` and copy the files from `gm/bin` in there.
 
