@@ -67,14 +67,18 @@ general_entries_title = "General"
 # The number of spaces to inject before each component-related entry.
 entry_indent = 2
 
-    # The components themselves. Each component has a name (used when rendered
-    # to Markdown) and a path relative to the project folder (i.e. relative to
-    # the parent of the `.changelog` folder).
-    [components.all]
-    chain-registry       = { name = "Chain Registry",             path = "chain-registry" }
-    ibc                  = { name = "IBC Modules",                path = "modules" }
-    ibc-relayer          = { name = "Relayer Library",            path = "relayer" }
-    ibc-relayer-cli      = { name = "Relayer CLI",                path = "relayer-cli" }
-    ibc-telemetry        = { name = "Telemetry & Metrics",        path = "telemetry" }
-    ibc-integration-test = { name = "Integration Test Framework", path = "tools/test-framework" }
-    guide                = { name = "Guide",                      path = "guide" }
+# The components themselves. Each component has a name (used when rendered
+# to Markdown) and a path relative to the project folder (i.e. relative to
+# the parent of the `.changelog` folder).
+[components.all]
+ibc-relayer          = { name = "Relayer Library",            path = "relayer" }
+ibc-relayer-cli      = { name = "Relayer CLI",                path = "relayer-cli" }
+ibc-relayer-types    = { name = "IBC Data structures",        path = "relayer-types" }
+ibc-telemetry        = { name = "Telemetry & Metrics",        path = "telemetry" }
+ibc-chain-registry   = { name = "Chain Registry",             path = "chain-registry" }
+ibc-integration-test = { name = "Integration Test Framework", path = "tools/test-framework" }
+guide                = { name = "Guide",                      path = "guide" }
+
+# Split off into their own repositories
+ibc                  = { name = "IBC Modules",                path = "modules" }
+ibc-proto            = { name = "IBC Protos",                 path = "proto" }
