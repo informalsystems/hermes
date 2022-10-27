@@ -5,7 +5,7 @@
 # Usage:
 #   docker build . --build-arg TAG=v0.3.0 -t informalsystems/hermes:0.3.0 -f hermes.Dockerfile
 
-FROM rust:1.52-buster AS build-env
+FROM rust:1-buster AS build-env
 
 ARG TAG
 WORKDIR /root
