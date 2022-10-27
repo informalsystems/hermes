@@ -34,3 +34,14 @@ pub fn assert_gt<T: Ord + Debug>(message: &str, left: &T, right: &T) -> Result<(
         )))
     }
 }
+
+pub fn assert_err<T: Debug, E: Debug>(message: &str, result: Result<T, E>) -> Result<(), Error> {
+    if result.is_err() {
+        Ok(())
+    } else {
+        Err(Error::assertion(format!(
+            "expect result ({:?}) to be an error: {}",
+            result, message
+        )))
+    }
+}

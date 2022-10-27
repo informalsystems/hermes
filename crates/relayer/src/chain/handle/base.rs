@@ -15,7 +15,6 @@ use ibc_relayer_types::{
         ics24_host::identifier::ChannelId,
         ics24_host::identifier::{ClientId, ConnectionId, PortId},
     },
-    events::IbcEvent,
     proofs::Proofs,
     signer::Signer,
     Height,
@@ -146,8 +145,20 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::IbcVersion { reply_to })
     }
 
-    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
-        self.send(|reply_to| ChainRequest::QueryBalance { key_name, reply_to })
+    fn query_balance(
+        &self,
+        key_name: Option<String>,
+        denom: Option<String>,
+    ) -> Result<Balance, Error> {
+        self.send(|reply_to| ChainRequest::QueryBalance {
+            key_name,
+            denom,
+            reply_to,
+        })
+    }
+
+    fn query_all_balances(&self, key_name: Option<String>) -> Result<Vec<Balance>, Error> {
+        self.send(|reply_to| ChainRequest::QueryAllBalances { key_name, reply_to })
     }
 
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
@@ -459,11 +470,11 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryPacketEventDataFromTxs { request, reply_to })
     }
 
-    fn query_blocks(
+    fn query_packet_events(
         &self,
-        request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
-        self.send(|reply_to| ChainRequest::QueryPacketEventDataFromBlocks { request, reply_to })
+        request: QueryPacketEventDataRequest,
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
+        self.send(|reply_to| ChainRequest::QueryPacketEventData { request, reply_to })
     }
 
     fn query_host_consensus_state(
@@ -471,5 +482,19 @@ impl ChainHandle for BaseChainHandle {
         request: QueryHostConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error> {
         self.send(|reply_to| ChainRequest::QueryHostConsensusState { request, reply_to })
+    }
+
+    fn maybe_register_counterparty_payee(
+        &self,
+        channel_id: ChannelId,
+        port_id: PortId,
+        counterparty_payee: Signer,
+    ) -> Result<(), Error> {
+        self.send(|reply_to| ChainRequest::MaybeRegisterCounterpartyPayee {
+            channel_id,
+            port_id,
+            counterparty_payee,
+            reply_to,
+        })
     }
 }

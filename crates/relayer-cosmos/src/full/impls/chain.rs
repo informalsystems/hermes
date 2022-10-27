@@ -20,6 +20,6 @@ where
     }
 
     fn telemetry(&self) -> &OfaTelemetryWrapper<CosmosTelemetry> {
-        &self.chain.telemetry()
+        self.chain.telemetry()
     }
 }

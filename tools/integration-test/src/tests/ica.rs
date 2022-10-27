@@ -40,11 +40,6 @@ impl IcaFilterTestAllow {
 }
 
 impl TestOverrides for IcaFilterTestAllow {
-    // Use `icad` binary and deterministic identifiers for clients, connections, and channels
-    fn modify_test_config(&self, config: &mut TestConfig) {
-        config.bootstrap_with_random_ids = false;
-    }
-
     // Enable channel workers and allow relaying on ICA channels
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.channels.enabled = true;
@@ -111,23 +106,19 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
             .chain_driver()
             .query_balance(&ica_address.as_ref(), &stake_denom.as_ref())?;
 
-        assert_eq("balance of ICA account should be 0", &ica_balance, &0)?;
+        assert_eq(
+            "balance of ICA account should be 0",
+            &ica_balance.amount(),
+            &0u64.into(),
+        )?;
 
         // Send funds to the interchain account.
-        let ica_fund = 42000;
+        let ica_fund = 42000u64;
 
         chains.node_b.chain_driver().local_transfer_token(
             &chains.node_b.wallets().user1(),
             &ica_address.as_ref(),
-            ica_fund,
-            &stake_denom.as_ref(),
-        )?;
-
-        // Check that the balance has been updated.
-        chains.node_b.chain_driver().assert_eventual_wallet_amount(
-            &ica_address.as_ref(),
-            ica_fund,
-            &stake_denom.as_ref(),
+            &stake_denom.with_amount(ica_fund).as_ref(),
         )?;
 
         #[derive(Serialize)]
@@ -168,8 +159,7 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
         // Check that the ICA account's balance has been debited the sent amount.
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
             &ica_address.as_ref(),
-            ica_fund - amount,
-            &stake_denom.as_ref(),
+            &stake_denom.with_amount(ica_fund - amount).as_ref(),
         )?;
 
         Ok(())
@@ -184,11 +174,6 @@ fn test_ica_filter_deny() -> Result<(), Error> {
 pub struct IcaFilterTestDeny;
 
 impl TestOverrides for IcaFilterTestDeny {
-    // Use deterministic identifiers for clients, connections, and channels
-    fn modify_test_config(&self, config: &mut TestConfig) {
-        config.bootstrap_with_random_ids = false;
-    }
-
     // Enable channel workers and deny ICA ports
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.channels.enabled = true;

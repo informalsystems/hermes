@@ -4,7 +4,6 @@ use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusStat
 use ibc_relayer_types::core::ics04_channel::events::WriteAcknowledgement;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::Height;
 use tendermint::abci::responses::Event;
@@ -19,7 +18,6 @@ pub trait AfoCosmosBaseChain<Counterparty>:
     Height = Height,
     Timestamp = Timestamp,
     Message = CosmosIbcMessage,
-    Signer = Signer,
     Event = Event,
     ClientId = ClientId,
     ConnectionId = ConnectionId,
@@ -43,7 +41,6 @@ where
         Height = Height,
         Timestamp = Timestamp,
         Message = CosmosIbcMessage,
-        Signer = Signer,
         Event = Event,
         ClientId = ClientId,
         ConnectionId = ConnectionId,

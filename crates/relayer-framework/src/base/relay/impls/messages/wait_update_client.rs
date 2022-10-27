@@ -5,12 +5,12 @@ use core::time::Duration;
 
 use crate::base::chain::traits::queries::status::CanQueryChainStatus;
 use crate::base::chain::traits::types::HasIbcChainTypes;
-use crate::base::core::traits::runtime::HasRuntime;
-use crate::base::core::traits::runtimes::sleep::CanSleep;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::messages::update_client::UpdateClientMessageBuilder;
 use crate::base::relay::traits::target::ChainTarget;
 use crate::base::relay::traits::types::HasRelayTypes;
+use crate::base::runtime::traits::runtime::HasRuntime;
+use crate::base::runtime::traits::sleep::CanSleep;
 use crate::std_prelude::*;
 
 /**

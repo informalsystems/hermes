@@ -33,7 +33,6 @@ use ibc_relayer_types::{
     core::ics04_channel::channel::ChannelEnd,
     core::ics23_commitment::commitment::CommitmentPrefix,
     core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
-    events::IbcEvent,
     proofs::Proofs,
     signer::Signer,
     Height,
@@ -151,9 +150,18 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inner().ibc_version()
     }
 
-    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error> {
+    fn query_balance(
+        &self,
+        key_name: Option<String>,
+        denom: Option<String>,
+    ) -> Result<Balance, Error> {
         self.inc_metric("query_balance");
-        self.inner().query_balance(key_name)
+        self.inner().query_balance(key_name, denom)
+    }
+
+    fn query_all_balances(&self, key_name: Option<String>) -> Result<Vec<Balance>, Error> {
+        self.inc_metric("query_all_balance");
+        self.inner().query_all_balances(key_name)
     }
 
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error> {
@@ -449,12 +457,12 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inner().query_txs(request)
     }
 
-    fn query_blocks(
+    fn query_packet_events(
         &self,
-        request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
-        self.inc_metric("query_blocks");
-        self.inner().query_blocks(request)
+        request: QueryPacketEventDataRequest,
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
+        self.inc_metric("query_packet_events");
+        self.inner().query_packet_events(request)
     }
 
     fn query_host_consensus_state(
@@ -463,5 +471,16 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
     ) -> Result<AnyConsensusState, Error> {
         self.inc_metric("query_host_consensus_state");
         self.inner.query_host_consensus_state(request)
+    }
+
+    fn maybe_register_counterparty_payee(
+        &self,
+        channel_id: ChannelId,
+        port_id: PortId,
+        counterparty_payee: Signer,
+    ) -> Result<(), Error> {
+        self.inc_metric("maybe_register_counterparty_payee");
+        self.inner
+            .maybe_register_counterparty_payee(channel_id, port_id, counterparty_payee)
     }
 }

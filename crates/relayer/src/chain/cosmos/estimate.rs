@@ -153,6 +153,7 @@ fn can_recover_from_simulation_failure(e: &Error) -> bool {
         GrpcStatus(detail) => {
             detail.is_client_state_height_too_low()
                 || detail.is_account_sequence_mismatch_that_can_be_ignored()
+                || detail.is_out_of_order_packet_sequence_error()
         }
         _ => false,
     }

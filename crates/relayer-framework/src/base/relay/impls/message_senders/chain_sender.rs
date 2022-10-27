@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::message_sender::{HasMessageSender, MessageSender};
+use crate::base::chain::traits::message_sender::CanSendMessages;
 use crate::base::chain::traits::types::HasIbcChainTypes;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
@@ -18,7 +18,7 @@ where
     Event: Async,
     Context: HasRelayTypes<Error = Error>,
     Target: ChainTarget<Context, TargetChain = TargetChain>,
-    TargetChain: HasMessageSender,
+    TargetChain: CanSendMessages,
     TargetChain: HasIbcChainTypes<
         Target::CounterpartyChain,
         Message = Message,
@@ -30,9 +30,9 @@ where
         context: &Context,
         messages: Vec<Message>,
     ) -> Result<Vec<Vec<Event>>, Error> {
-        let events =
-            TargetChain::MessageSender::send_messages(Target::target_chain(context), messages)
-                .await?;
+        let events = Target::target_chain(context)
+            .send_messages(messages)
+            .await?;
 
         Ok(events)
     }

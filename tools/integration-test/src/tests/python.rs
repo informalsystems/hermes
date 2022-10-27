@@ -6,10 +6,6 @@ use std::process::{Command, Stdio};
 struct PythonTest;
 
 impl TestOverrides for PythonTest {
-    fn modify_test_config(&self, config: &mut TestConfig) {
-        config.bootstrap_with_random_ids = false;
-    }
-
     fn modify_relayer_config(&self, config: &mut Config) {
         for mut chain in config.chains.iter_mut() {
             // Modify the key store type to `Store::Test` so that the wallet

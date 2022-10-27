@@ -18,7 +18,6 @@ use ibc_relayer_types::{
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
         ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     },
-    events::IbcEvent,
     proofs::Proofs,
     signer::Signer,
     Height,
@@ -144,7 +143,13 @@ pub enum ChainRequest {
 
     QueryBalance {
         key_name: Option<String>,
+        denom: Option<String>,
         reply_to: ReplyTo<Balance>,
+    },
+
+    QueryAllBalances {
+        key_name: Option<String>,
+        reply_to: ReplyTo<Vec<Balance>>,
     },
 
     QueryDenomTrace {
@@ -332,14 +337,21 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     },
 
-    QueryPacketEventDataFromBlocks {
-        request: QueryBlockRequest,
-        reply_to: ReplyTo<(Vec<IbcEvent>, Vec<IbcEvent>)>,
+    QueryPacketEventData {
+        request: QueryPacketEventDataRequest,
+        reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     },
 
     QueryHostConsensusState {
         request: QueryHostConsensusStateRequest,
         reply_to: ReplyTo<AnyConsensusState>,
+    },
+
+    MaybeRegisterCounterpartyPayee {
+        channel_id: ChannelId,
+        port_id: PortId,
+        counterparty_payee: Signer,
+        reply_to: ReplyTo<()>,
     },
 }
 
@@ -385,9 +397,18 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
     /// Return the version of the IBC protocol that this chain is running, if known.
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
 
-    /// Query the balance of the given account for the denom used to pay tx fees.
+    /// Query the balance of the given account for the given denom.
     /// If no account is given, behavior must be specified, e.g. retrieve it from configuration file.
-    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error>;
+    /// If no denom is given, behavior must be specified, e.g. using the denom used to pay tx fees
+    fn query_balance(
+        &self,
+        key_name: Option<String>,
+        denom: Option<String>,
+    ) -> Result<Balance, Error>;
+
+    /// Query the balances from all denom of the given account.
+    /// If no account is given, behavior must be specified, e.g. retrieve it from configuration file.
+    fn query_all_balances(&self, key_name: Option<String>) -> Result<Vec<Balance>, Error>;
 
     /// Query the denomination trace given a trace hash.
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error>;
@@ -619,13 +640,20 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error>;
 
-    fn query_blocks(
+    fn query_packet_events(
         &self,
-        request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
+        request: QueryPacketEventDataRequest,
+    ) -> Result<Vec<IbcEventWithHeight>, Error>;
 
     fn query_host_consensus_state(
         &self,
         request: QueryHostConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error>;
+
+    fn maybe_register_counterparty_payee(
+        &self,
+        channel_id: ChannelId,
+        port_id: PortId,
+        counterparty_payee: Signer,
+    ) -> Result<(), Error>;
 }
