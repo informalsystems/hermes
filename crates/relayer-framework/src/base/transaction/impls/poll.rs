@@ -1,9 +1,9 @@
 use async_trait::async_trait;
 use core::time::Duration;
 
-use crate::base::core::traits::runtime::HasRuntime;
-use crate::base::core::traits::runtimes::sleep::CanSleep;
-use crate::base::core::traits::runtimes::time::{HasTime, Time};
+use crate::base::runtime::traits::runtime::HasRuntime;
+use crate::base::runtime::traits::sleep::CanSleep;
+use crate::base::runtime::traits::time::{HasTime, Time};
 use crate::base::transaction::traits::response::{CanQueryTxResponse, TxResponsePoller};
 use crate::base::transaction::traits::types::HasTxTypes;
 use crate::std_prelude::*;

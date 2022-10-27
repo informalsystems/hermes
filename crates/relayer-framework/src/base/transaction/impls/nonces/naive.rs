@@ -1,9 +1,9 @@
 use core::future::Future;
 use core::pin::Pin;
 
-use crate::base::core::traits::runtime::HasRuntime;
-use crate::base::core::traits::runtimes::mutex::HasMutex;
 use crate::base::core::traits::sync::Async;
+use crate::base::runtime::traits::mutex::HasMutex;
+use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::base::transaction::traits::nonce::{CanQueryNonce, NonceAllocator};
 use crate::std_prelude::*;
 
