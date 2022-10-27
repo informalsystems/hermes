@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use std::time::SystemTime;
 
 use ibc_relayer_framework::base::one_for_all::traits::chain::{
     OfaBaseChain, OfaChainTypes, OfaIbcChain,
@@ -8,15 +7,13 @@ use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext
 use ibc_relayer_framework::common::one_for_all::presets::MinimalPreset;
 
 use crate::relayer_mock::base::error::Error;
-use crate::relayer_mock::base::traits::chain::MockChain;
-use crate::relayer_mock::base::types::chain::{ChainStatus, ConsensusState, MockChainWrapper};
+use crate::relayer_mock::base::types::chain::{ChainStatus, ConsensusState};
 use crate::relayer_mock::base::types::events::{Event, WriteAcknowledgementEvent};
+use crate::relayer_mock::base::types::height::Height;
 use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
+use crate::relayer_mock::contexts::chain::MockChainContext;
 
-impl<Chain> OfaChainTypes for MockChainWrapper<Chain>
-where
-    Chain: MockChain,
-{
+impl OfaChainTypes for MockChainContext {
     type Preset = MinimalPreset;
 
     type Error = Error;
@@ -25,7 +22,7 @@ where
 
     type Height = u128;
 
-    type Timestamp = SystemTime;
+    type Timestamp = Height;
 
     type Message = String;
 
@@ -53,10 +50,7 @@ where
 }
 
 #[async_trait]
-impl<Chain> OfaBaseChain for MockChainWrapper<Chain>
-where
-    Chain: MockChain,
-{
+impl OfaBaseChain for MockChainContext {
     fn runtime(&self) -> &OfaRuntimeContext<MockRuntimeContext> {
         unimplemented!()
     }
@@ -106,19 +100,15 @@ where
 }
 
 #[async_trait]
-impl<Chain, Counterparty> OfaIbcChain<MockChainWrapper<Counterparty>> for MockChainWrapper<Chain>
-where
-    Chain: MockChain,
-    Counterparty: MockChain,
-{
+impl OfaIbcChain<MockChainContext> for MockChainContext {
     fn counterparty_message_height(message: &Self::Message) -> Option<u128> {
         let height_block = message.rsplit_once(':');
         if let Some((_, h1)) = height_block {
             let extract_height = h1.rsplit_once('-');
-            if let Some((_, h2)) = extract_height {
-                return h2.parse::<u128>().ok();
+            if let Some((_, _h2)) = extract_height {
+                return None;
             } else {
-                return h1.parse::<u128>().ok();
+                return None;
             }
         }
         None
@@ -127,11 +117,11 @@ where
     async fn query_consensus_state(
         &self,
         client_id: &String,
-        _height: &u128,
+        height: &u128,
     ) -> Result<ConsensusState, Self::Error> {
-        let res = self.query_consensus_state(client_id);
-        if let Some(state) = res {
-            Ok(state.clone())
+        let res = self.query_state(Height::from(*height));
+        if let Some(_state) = res {
+            Ok(ConsensusState{ })
         } else {
             Err(Error::no_consensus_state(client_id.clone()))
         }

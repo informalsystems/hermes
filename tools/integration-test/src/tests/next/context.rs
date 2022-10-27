@@ -4,15 +4,15 @@ use ibc_relayer_cosmos::contexts::full::chain::CosmosChainContext;
 use ibc_relayer_cosmos::contexts::full::relay::new_relay_context_with_batch;
 use ibc_relayer_cosmos::full::all_for_one::relay::AfoCosmosFullRelay;
 use ibc_relayer_cosmos::full::types::telemetry::{CosmosTelemetry, TelemetryState};
+use ibc_relayer_framework::common::one_for_all::types::chain::OfaChainWrapper;
 use ibc_relayer_framework::common::one_for_all::types::relay::OfaRelayWrapper;
 use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
-use ibc_test_framework::relayer_mock::base::traits::relay::MockRelay;
-use ibc_test_framework::relayer_mock::base::types::relay::MockRelayWrapper;
 use ibc_test_framework::relayer_mock::contexts::chain::MockChainContext;
 use ibc_test_framework::relayer_mock::contexts::relay::MockRelayContext;
 use ibc_test_framework::types::binary::chains::ConnectedChains;
 
 use opentelemetry::global;
+use tokio::runtime::Runtime;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
@@ -78,22 +78,18 @@ where
     relay
 }
 
-pub fn build_mock_relay_context<Relay>(
-) -> OfaRelayWrapper<MockRelayWrapper<MockRelayContext<MockChainContext, MockChainContext>>>
-where
-    Relay: MockRelay,
-{
-    let chain_a = MockChainContext::default();
-    let chain_b = MockChainContext::default();
-
-    let mock_relay = Arc::new(MockRelayContext::new(
-        Arc::new(chain_a),
-        Arc::new(chain_b),
+pub fn build_mock_relay_context(
+) -> OfaRelayWrapper<MockRelayContext> {
+    let runtime = TokioRuntimeContext::new(Arc::new(Runtime::new().unwrap()));
+    let mock_relay = MockRelayContext::new(
+        Arc::new(OfaChainWrapper { chain: MockChainContext::default() }),
+        Arc::new(OfaChainWrapper { chain: MockChainContext::default() }),
         String::from("client_a"),
         String::from("client_b"),
-    ));
+        runtime,
+    );
 
-    let relay = OfaRelayWrapper::new(MockRelayWrapper::new(mock_relay));
+    let relay = OfaRelayWrapper::new(mock_relay);
 
     relay
 }

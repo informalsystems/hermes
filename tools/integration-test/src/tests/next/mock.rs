@@ -6,8 +6,6 @@ use ibc_relayer_framework::base::relay::traits::packet_relayers::receive_packet:
 use ibc_test_framework::framework::base::{run_test, PrimitiveTest};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer_mock::base::types::packet::PacketKey;
-use ibc_test_framework::relayer_mock::contexts::chain::MockChainContext;
-use ibc_test_framework::relayer_mock::contexts::relay::MockRelayContext;
 
 use super::context::build_mock_relay_context;
 
@@ -21,7 +19,7 @@ pub struct MockChainTest;
 impl PrimitiveTest for MockChainTest {
     fn run(&self) -> Result<(), Error> {
         let relay_context =
-            build_mock_relay_context::<MockRelayContext<MockChainContext, MockChainContext>>();
+            build_mock_relay_context();
 
         let runtime = relay_context.relay.runtime().runtime.runtime.as_ref();
 
@@ -46,6 +44,8 @@ impl PrimitiveTest for MockChainTest {
         println!("Events from relaying recv packet : {:?}", events);
 
         assert!(events.is_ok());
+
+        println!("Event : {:?}", events.as_ref().unwrap());
 
         assert!(events.as_ref().unwrap().is_some());
 

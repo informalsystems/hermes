@@ -1,12 +1,7 @@
 #[derive(Debug)]
-pub struct Event {
-    pub event_type: String,
-}
-
-impl Event {
-    pub fn new(event_type: String) -> Self {
-        Event { event_type }
-    }
+pub enum Event {
+    PacketRecv(u128),
+    WriteAcknowledgment(u128),
 }
 
 #[derive(Debug)]

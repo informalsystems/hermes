@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use std::time::SystemTime;
 
 use ibc_relayer_framework::base::one_for_all::traits::chain::OfaChainTypes;
 use ibc_relayer_framework::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayTypes};
@@ -8,16 +7,13 @@ use ibc_relayer_framework::common::one_for_all::presets::MinimalPreset;
 use ibc_relayer_framework::common::one_for_all::types::chain::OfaChainWrapper;
 
 use crate::relayer_mock::base::error::Error;
-use crate::relayer_mock::base::traits::relay::MockRelay;
-use crate::relayer_mock::base::types::chain::MockChainWrapper;
+use crate::relayer_mock::base::types::height::Height as MockHeight;
 use crate::relayer_mock::base::types::packet::PacketKey;
-use crate::relayer_mock::base::types::relay::MockRelayWrapper;
 use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
+use crate::relayer_mock::contexts::chain::MockChainContext;
+use crate::relayer_mock::contexts::relay::MockRelayContext;
 
-impl<Relay> OfaRelayTypes for MockRelayWrapper<Relay>
-where
-    Relay: MockRelay,
-{
+impl OfaRelayTypes for MockRelayContext {
     type Preset = MinimalPreset;
 
     type Error = Error;
@@ -26,16 +22,13 @@ where
 
     type Packet = PacketKey;
 
-    type SrcChain = MockChainWrapper<Relay::SrcChain>;
+    type SrcChain = MockChainContext;
 
-    type DstChain = MockChainWrapper<Relay::DstChain>;
+    type DstChain = MockChainContext;
 }
 
 #[async_trait]
-impl<Relay> OfaBaseRelay for MockRelayWrapper<Relay>
-where
-    Relay: MockRelay,
-{
+impl OfaBaseRelay for MockRelayContext {
     fn is_retryable_error(_e: &Self::Error) -> bool {
         unimplemented!()
     }
@@ -72,7 +65,7 @@ where
         unimplemented!()
     }
 
-    fn packet_timeout_timestamp(_packet: &Self::Packet) -> &SystemTime {
+    fn packet_timeout_timestamp(_packet: &Self::Packet) -> &MockHeight {
         unimplemented!()
     }
 
@@ -81,15 +74,15 @@ where
     }
 
     fn src_client_id(&self) -> &<Self::SrcChain as OfaChainTypes>::ClientId {
-        self.relay.src_to_dst_client()
+        self.src_to_dst_client()
     }
 
-    fn src_chain(&self) -> &OfaChainWrapper<Self::SrcChain> {
+    fn src_chain(&self) -> &OfaChainWrapper<MockChainContext> {
         &self.src_chain
     }
 
     fn dst_client_id(&self) -> &<Self::DstChain as OfaChainTypes>::ClientId {
-        self.relay.dst_to_src_client()
+        self.dst_to_src_client()
     }
 
     fn dst_chain(

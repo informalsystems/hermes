@@ -1,61 +1,50 @@
 use std::sync::Arc;
 
-use crate::relayer_mock::base::traits::chain::MockChain;
-use crate::relayer_mock::base::traits::relay::MockRelay;
+use ibc_relayer_framework::{common::one_for_all::types::chain::OfaChainWrapper, base::one_for_all::traits::runtime::OfaRuntimeContext};
 
-pub struct MockRelayContext<SrcChain, DstChain>
-where
-    SrcChain: MockChain,
-    DstChain: MockChain,
-{
-    pub src_chain: Arc<SrcChain>,
-    pub dst_chain: Arc<DstChain>,
+use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
+
+use super::chain::MockChainContext;
+
+pub struct MockRelayContext {
+    pub src_chain: Arc<OfaChainWrapper<MockChainContext>>,
+    pub dst_chain: Arc<OfaChainWrapper<MockChainContext>>,
     pub src_to_dst_client: String,
     pub dst_to_src_client: String,
+    pub runtime: OfaRuntimeContext<MockRuntimeContext>,
 }
 
-impl<SrcChain, DstChain> MockRelayContext<SrcChain, DstChain>
-where
-    SrcChain: MockChain,
-    DstChain: MockChain,
-{
+impl MockRelayContext {
     pub fn new(
-        src_chain: Arc<SrcChain>,
-        dst_chain: Arc<DstChain>,
+        src_chain: Arc<OfaChainWrapper<MockChainContext>>,
+        dst_chain: Arc<OfaChainWrapper<MockChainContext>>,
         src_to_dst_client: String,
         dst_to_src_client: String,
+        runtime: MockRuntimeContext,
     ) -> Self {
+        let runtime = OfaRuntimeContext::new(runtime);
         Self {
             src_chain,
             dst_chain,
             src_to_dst_client,
             dst_to_src_client,
+            runtime,
         }
     }
-}
 
-impl<SrcChain, DstChain> MockRelay for MockRelayContext<SrcChain, DstChain>
-where
-    SrcChain: MockChain,
-    DstChain: MockChain,
-{
-    type SrcChain = SrcChain;
-
-    type DstChain = DstChain;
-
-    fn src_chain(&self) -> &Arc<Self::SrcChain> {
+    pub fn src_chain(&self) -> &Arc<OfaChainWrapper<MockChainContext>> {
         &self.src_chain
     }
 
-    fn dst_chain(&self) -> &Arc<Self::DstChain> {
+    pub fn dst_chain(&self) -> &Arc<OfaChainWrapper<MockChainContext>> {
         &self.dst_chain
     }
 
-    fn src_to_dst_client(&self) -> &String {
+    pub fn src_to_dst_client(&self) -> &String {
         &self.src_to_dst_client
     }
 
-    fn dst_to_src_client(&self) -> &String {
+    pub fn dst_to_src_client(&self) -> &String {
         &self.dst_to_src_client
     }
 }
