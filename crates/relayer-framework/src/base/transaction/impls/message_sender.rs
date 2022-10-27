@@ -1,13 +1,11 @@
 use async_trait::async_trait;
 
-use crate::base::chain::traits::message_sender::MessageSender;
-use crate::base::chain::traits::types::HasChainTypes;
 use crate::base::transaction::traits::encode::CanEncodeTx;
 use crate::base::transaction::traits::estimate::CanEstimateTxFee;
 use crate::base::transaction::traits::event::CanParseTxResponseAsEvents;
 use crate::base::transaction::traits::fee::HasMaxFee;
-use crate::base::transaction::traits::nonce::HasNonce;
-use crate::base::transaction::traits::response::CanQueryTxResponse;
+use crate::base::transaction::traits::message::MessageAsTxSender;
+use crate::base::transaction::traits::response::CanPollTxResponse;
 use crate::base::transaction::traits::submit::CanSubmitTx;
 use crate::base::transaction::traits::types::HasTxTypes;
 use crate::std_prelude::*;
@@ -19,45 +17,34 @@ pub trait InjectNoTxResponseError: HasTxTypes {
 }
 
 #[async_trait]
-impl<Chain> MessageSender<Chain> for SendMessagesAsTx
+impl<Context> MessageAsTxSender<Context> for SendMessagesAsTx
 where
-    Chain: HasChainTypes
-        + HasTxTypes
+    Context: HasTxTypes
         + InjectNoTxResponseError
         + HasMaxFee
-        + HasNonce
         + CanEncodeTx
         + CanEstimateTxFee
         + CanSubmitTx
-        + CanQueryTxResponse
+        + CanPollTxResponse
         + CanParseTxResponseAsEvents,
 {
-    async fn send_messages(
-        chain: &Chain,
-        messages: Vec<Chain::Message>,
-    ) -> Result<Vec<Vec<Chain::Event>>, Chain::Error> {
-        let max_fee = chain.max_fee();
-        chain
-            .with_nonce(|nonce| {
-                Box::pin(async {
-                    let simulate_tx = chain.encode_tx(nonce, max_fee, &messages).await?;
+    async fn send_messages_as_tx(
+        context: &Context,
+        nonce: &Context::Nonce,
+        messages: &[Context::Message],
+    ) -> Result<Context::TxResponse, Context::Error> {
+        let max_fee = context.max_fee();
 
-                    let tx_fee = chain.estimate_tx_fee(&simulate_tx).await?;
+        let simulate_tx = context.encode_tx(nonce, max_fee, &messages).await?;
 
-                    let tx = chain.encode_tx(nonce, &tx_fee, &messages).await?;
+        let tx_fee = context.estimate_tx_fee(&simulate_tx).await?;
 
-                    let tx_hash = chain.submit_tx(&tx).await?;
+        let tx = context.encode_tx(nonce, &tx_fee, &messages).await?;
 
-                    let response = chain
-                        .query_tx_response(&tx_hash)
-                        .await?
-                        .ok_or_else(|| Chain::inject_tx_no_response_error(tx_hash))?;
+        let tx_hash = context.submit_tx(&tx).await?;
 
-                    let events = Chain::parse_tx_response_as_events(response)?;
+        let response = context.poll_tx_response(&tx_hash).await?;
 
-                    Ok(events)
-                })
-            })
-            .await
+        Ok(response)
     }
 }
