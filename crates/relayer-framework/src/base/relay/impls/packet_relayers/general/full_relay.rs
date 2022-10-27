@@ -31,7 +31,8 @@ where
         let packet_timeout_height = Relay::packet_timeout_height(&packet);
         let packet_timeout_timestamp = Relay::packet_timeout_timestamp(&packet);
 
-        let has_packet_timed_out = false;
+        // let has_packet_timed_out = packet_timeout_height > source_chain_height
+        //     && packet_timeout_timestamp > source_chain_timestamp;
 
         let write_ack = relay
             .relay_receive_packet(
