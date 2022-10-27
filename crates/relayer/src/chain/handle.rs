@@ -4,40 +4,48 @@ use core::fmt::{self, Debug, Display};
 use crossbeam_channel as channel;
 use tracing::Span;
 
-use ibc_relayer_types::core::ics02_client::events::UpdateClient;
-use ibc_relayer_types::core::ics03_connection::connection::{
-    ConnectionEnd, IdentifiedConnectionEnd,
+use ibc_relayer_types::{
+    core::{
+        ics02_client::events::UpdateClient,
+        ics03_connection::{
+            connection::{ConnectionEnd, IdentifiedConnectionEnd},
+            version::Version,
+        },
+        ics04_channel::{
+            channel::{ChannelEnd, IdentifiedChannelEnd},
+            packet::{PacketMsgType, Sequence},
+        },
+        ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
+        ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+    },
+    proofs::Proofs,
+    signer::Signer,
+    Height,
 };
-use ibc_relayer_types::core::ics03_connection::version::Version;
-use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
-use ibc_relayer_types::core::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
-use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
-use ibc_relayer_types::core::ics24_host::identifier::{
-    ChainId, ChannelId, ClientId, ConnectionId, PortId,
+
+use crate::{
+    account::Balance,
+    client_state::{AnyClientState, IdentifiedAnyClientState},
+    config::ChainConfig,
+    connection::ConnectionMsgType,
+    consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight},
+    denom::DenomTrace,
+    error::Error,
+    event::{
+        monitor::{EventBatch, Result as MonitorResult},
+        IbcEventWithHeight,
+    },
+    keyring::KeyEntry,
+    light_client::AnyHeader,
+    misbehaviour::MisbehaviourEvidence,
 };
-use ibc_relayer_types::events::IbcEvent;
-use ibc_relayer_types::proofs::Proofs;
-use ibc_relayer_types::signer::Signer;
-use ibc_relayer_types::Height;
 
-use crate::account::Balance;
-use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
-use crate::config::ChainConfig;
-use crate::connection::ConnectionMsgType;
-use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
-use crate::denom::DenomTrace;
-use crate::error::Error;
-use crate::event::monitor::{EventBatch, Result as MonitorResult};
-use crate::event::IbcEventWithHeight;
-use crate::keyring::KeyEntry;
-use crate::light_client::AnyHeader;
-use crate::misbehaviour::MisbehaviourEvidence;
-
-use super::client::ClientSettings;
-use super::endpoint::{ChainStatus, HealthCheck};
-use super::requests::*;
-use super::tracking::TrackedMsgs;
+use super::{
+    client::ClientSettings,
+    endpoint::{ChainStatus, HealthCheck},
+    requests::*,
+    tracking::TrackedMsgs,
+};
 
 mod base;
 mod cache;
@@ -135,7 +143,13 @@ pub enum ChainRequest {
 
     QueryBalance {
         key_name: Option<String>,
+        denom: Option<String>,
         reply_to: ReplyTo<Balance>,
+    },
+
+    QueryAllBalances {
+        key_name: Option<String>,
+        reply_to: ReplyTo<Vec<Balance>>,
     },
 
     QueryDenomTrace {
@@ -323,14 +337,21 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     },
 
-    QueryPacketEventDataFromBlocks {
-        request: QueryBlockRequest,
-        reply_to: ReplyTo<(Vec<IbcEvent>, Vec<IbcEvent>)>,
+    QueryPacketEventData {
+        request: QueryPacketEventDataRequest,
+        reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     },
 
     QueryHostConsensusState {
         request: QueryHostConsensusStateRequest,
         reply_to: ReplyTo<AnyConsensusState>,
+    },
+
+    MaybeRegisterCounterpartyPayee {
+        channel_id: ChannelId,
+        port_id: PortId,
+        counterparty_payee: Signer,
+        reply_to: ReplyTo<()>,
     },
 }
 
@@ -376,9 +397,18 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
     /// Return the version of the IBC protocol that this chain is running, if known.
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
 
-    /// Query the balance of the given account for the denom used to pay tx fees.
+    /// Query the balance of the given account for the given denom.
     /// If no account is given, behavior must be specified, e.g. retrieve it from configuration file.
-    fn query_balance(&self, key_name: Option<String>) -> Result<Balance, Error>;
+    /// If no denom is given, behavior must be specified, e.g. using the denom used to pay tx fees
+    fn query_balance(
+        &self,
+        key_name: Option<String>,
+        denom: Option<String>,
+    ) -> Result<Balance, Error>;
+
+    /// Query the balances from all denom of the given account.
+    /// If no account is given, behavior must be specified, e.g. retrieve it from configuration file.
+    fn query_all_balances(&self, key_name: Option<String>) -> Result<Vec<Balance>, Error>;
 
     /// Query the denomination trace given a trace hash.
     fn query_denom_trace(&self, hash: String) -> Result<DenomTrace, Error>;
@@ -610,13 +640,20 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error>;
 
-    fn query_blocks(
+    fn query_packet_events(
         &self,
-        request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
+        request: QueryPacketEventDataRequest,
+    ) -> Result<Vec<IbcEventWithHeight>, Error>;
 
     fn query_host_consensus_state(
         &self,
         request: QueryHostConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error>;
+
+    fn maybe_register_counterparty_payee(
+        &self,
+        channel_id: ChannelId,
+        port_id: PortId,
+        counterparty_payee: Signer,
+    ) -> Result<(), Error>;
 }

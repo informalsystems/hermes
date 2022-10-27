@@ -6,7 +6,7 @@ use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawTmHeader;
 use ibc_proto::protobuf::Protobuf as ErasedProtobuf;
 use ibc_relayer_types::clients::ics07_tendermint::header::{
-    decode_header, Header as TendermintHeader, TENDERMINT_HEADER_TYPE_URL,
+    decode_header as tm_decode_header, Header as TendermintHeader, TENDERMINT_HEADER_TYPE_URL,
 };
 use ibc_relayer_types::core::ics02_client::client_type::ClientType;
 use ibc_relayer_types::core::ics02_client::error::Error;
@@ -15,7 +15,6 @@ use ibc_relayer_types::core::ics02_client::header::Header;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::Height;
 use serde::{Deserialize, Serialize};
-use subtle_encoding::hex;
 
 use crate::chain::endpoint::ChainEndpoint;
 use crate::client_state::AnyClientState;
@@ -65,6 +64,17 @@ pub trait LightClient<C: ChainEndpoint>: Send + Sync {
     fn fetch(&mut self, height: Height) -> Result<C::LightBlock, error::Error>;
 }
 
+/// Decodes an encoded header into a known `Header` type,
+pub fn decode_header(header_bytes: &[u8]) -> Result<Box<dyn Header>, Error> {
+    // For now, we only have tendermint; however when there is more than one, we
+    // can try decoding into all the known types, and return an error only if
+    // none work
+    let header: TendermintHeader =
+        ErasedProtobuf::<Any>::decode(header_bytes).map_err(Error::invalid_raw_header)?;
+
+    Ok(Box::new(header))
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 #[allow(clippy::large_enum_variant)]
 pub enum AnyHeader {
@@ -91,19 +101,6 @@ impl Header for AnyHeader {
     }
 }
 
-impl AnyHeader {
-    pub fn encode_to_string(&self) -> String {
-        let buf = ErasedProtobuf::encode_vec(self).expect("encoding shouldn't fail");
-        let encoded = hex::encode(buf);
-        String::from_utf8(encoded).expect("hex-encoded string should always be valid UTF-8")
-    }
-
-    pub fn decode_from_string(s: &str) -> Result<Self, Error> {
-        let header_bytes = hex::decode(s).unwrap();
-        ErasedProtobuf::decode(header_bytes.as_ref()).map_err(Error::invalid_raw_header)
-    }
-}
-
 impl ErasedProtobuf<Any> for AnyHeader {}
 
 impl TryFrom<Any> for AnyHeader {
@@ -112,7 +109,7 @@ impl TryFrom<Any> for AnyHeader {
     fn try_from(raw: Any) -> Result<Self, Error> {
         match raw.type_url.as_str() {
             TENDERMINT_HEADER_TYPE_URL => {
-                let val = decode_header(raw.value.deref())?;
+                let val = tm_decode_header(raw.value.deref())?;
 
                 Ok(AnyHeader::Tendermint(val))
             }

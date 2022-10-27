@@ -1,6 +1,7 @@
 use crate::core::ics23_commitment::error::Error;
 use crate::prelude::*;
 use crate::proofs::ProofError;
+use crate::tx_msg::encode_message;
 
 use core::convert::TryFrom;
 use core::fmt;
@@ -85,9 +86,9 @@ impl TryFrom<RawMerkleProof> for CommitmentProofBytes {
     type Error = ProofError;
 
     fn try_from(proof: RawMerkleProof) -> Result<Self, Self::Error> {
-        let mut buf = Vec::new();
-        prost::Message::encode(&proof, &mut buf).unwrap();
-        buf.try_into()
+        encode_message(&proof)
+            .map_err(ProofError::encode)?
+            .try_into()
     }
 }
 

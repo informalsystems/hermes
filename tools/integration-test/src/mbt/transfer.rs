@@ -139,10 +139,6 @@ fn test_self_connected_ibc_transfer() -> Result<(), Error> {
 pub struct IbcTransferMBT(Vec<State>);
 
 impl TestOverrides for IbcTransferMBT {
-    fn modify_test_config(&self, config: &mut TestConfig) {
-        config.bootstrap_with_random_ids = false;
-    }
-
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode = ModeConfig {
             clients: ConfigClients {
@@ -157,6 +153,7 @@ impl TestOverrides for IbcTransferMBT {
                 clear_interval: 10,
                 clear_on_start: true,
                 tx_confirmation: true,
+                ..Default::default()
             },
         };
 

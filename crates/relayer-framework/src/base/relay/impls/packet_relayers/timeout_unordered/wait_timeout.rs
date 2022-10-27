@@ -6,11 +6,11 @@ use async_trait::async_trait;
 
 use crate::base::chain::traits::queries::status::{CanQueryChainStatus, HasChainStatus};
 use crate::base::chain::types::aliases::Message;
-use crate::base::core::traits::runtime::HasRuntime;
-use crate::base::core::traits::runtimes::sleep::CanSleep;
 use crate::base::core::traits::sync::Async;
 use crate::base::relay::traits::messages::timeout_unordered_packet::TimeoutUnorderedPacketMessageBuilder;
 use crate::base::relay::traits::types::HasRelayTypes;
+use crate::base::runtime::traits::runtime::HasRuntime;
+use crate::base::runtime::traits::sleep::CanSleep;
 use crate::std_prelude::*;
 
 /// An unordered packet message builder variant that waits for the counterparty

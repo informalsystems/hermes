@@ -1,6 +1,8 @@
 use core::str::FromStr;
 use eyre::eyre;
-use {serde_json as json, serde_yaml as yaml};
+use ibc_relayer_types::applications::transfer::amount::Amount;
+use serde_json as json;
+use serde_yaml as yaml;
 
 use crate::chain::exec::simple_exec;
 use crate::error::{handle_generic_error, Error};
@@ -11,7 +13,7 @@ pub fn query_balance(
     rpc_listen_address: &str,
     wallet_id: &str,
     denom: &str,
-) -> Result<u64, Error> {
+) -> Result<Amount, Error> {
     let res = simple_exec(
         chain_id,
         command_path,
@@ -38,7 +40,7 @@ pub fn query_balance(
         .ok_or_else(|| eyre!("expected string field"))?
         .to_string();
 
-    let amount = u64::from_str(&amount_str).map_err(handle_generic_error)?;
+    let amount = Amount::from_str(&amount_str).map_err(handle_generic_error)?;
 
     Ok(amount)
 }

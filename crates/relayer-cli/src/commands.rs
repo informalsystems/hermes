@@ -4,6 +4,7 @@ mod clear;
 mod completions;
 mod config;
 mod create;
+mod fee;
 mod health;
 mod keys;
 mod listen;
@@ -15,27 +16,18 @@ mod update;
 mod upgrade;
 mod version;
 
-use self::clear::ClearCmds;
-use self::completions::CompletionsCmd;
-use self::config::ConfigCmd;
-use self::create::CreateCmds;
-use self::health::HealthCheckCmd;
-use self::keys::KeysCmd;
-use self::listen::ListenCmd;
-use self::misbehaviour::MisbehaviourCmd;
-use self::query::QueryCmd;
-use self::start::StartCmd;
-use self::tx::TxCmd;
-use self::update::UpdateCmds;
-use self::upgrade::UpgradeCmds;
-use self::version::VersionCmd;
+use self::{
+    clear::ClearCmds, completions::CompletionsCmd, config::ConfigCmd, create::CreateCmds,
+    fee::FeeCmd, health::HealthCheckCmd, keys::KeysCmd, listen::ListenCmd,
+    misbehaviour::MisbehaviourCmd, query::QueryCmd, start::StartCmd, tx::TxCmd, update::UpdateCmds,
+    upgrade::UpgradeCmds, version::VersionCmd,
+};
 
 use core::time::Duration;
 use std::path::PathBuf;
 
 use abscissa_core::clap::Parser;
-use abscissa_core::config::Override;
-use abscissa_core::{Command, Configurable, FrameworkError, Runnable};
+use abscissa_core::{config::Override, Command, Configurable, FrameworkError, Runnable};
 use tracing::{error, info};
 
 use crate::DEFAULT_CONFIG_PATH;
@@ -85,6 +77,10 @@ pub enum CliCmd {
     /// Create and send IBC transactions
     #[clap(subcommand)]
     Tx(TxCmd),
+
+    /// Interact with the fee middleware
+    #[clap(subcommand)]
+    Fee(FeeCmd),
 
     /// Listen to and display IBC events emitted by a chain
     Listen(ListenCmd),
@@ -157,6 +153,7 @@ impl Configurable<Config> for CliCmd {
 
         match self {
             CliCmd::Tx(cmd) => cmd.override_config(config),
+            CliCmd::Fee(cmd) => cmd.override_config(config),
             // CliCmd::Help(cmd) => cmd.override_config(config),
             // CliCmd::Keys(cmd) => cmd.override_config(config),
             // CliCmd::Create(cmd) => cmd.override_config(config),

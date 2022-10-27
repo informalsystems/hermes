@@ -5,52 +5,61 @@ use crossbeam_channel as channel;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, Span};
 
-use ibc_relayer_types::core::ics02_client::events::UpdateClient;
-use ibc_relayer_types::core::ics03_connection::connection::{
-    ConnectionEnd, IdentifiedConnectionEnd,
+use ibc_relayer_types::{
+    core::{
+        ics02_client::events::UpdateClient,
+        ics03_connection::{
+            connection::{ConnectionEnd, IdentifiedConnectionEnd},
+            version::Version,
+        },
+        ics04_channel::{
+            channel::{ChannelEnd, IdentifiedChannelEnd},
+            packet::{PacketMsgType, Sequence},
+        },
+        ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
+        ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
+    },
+    proofs::Proofs,
+    signer::Signer,
+    Height,
 };
-use ibc_relayer_types::core::ics03_connection::version::Version;
-use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
-use ibc_relayer_types::core::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
-use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
-use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
-use ibc_relayer_types::events::IbcEvent;
-use ibc_relayer_types::proofs::Proofs;
-use ibc_relayer_types::signer::Signer;
-use ibc_relayer_types::Height;
 
-use crate::account::Balance;
-use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
-use crate::config::ChainConfig;
-use crate::connection::ConnectionMsgType;
-use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
-use crate::denom::DenomTrace;
-use crate::error::Error;
-use crate::event::bus::EventBus;
-use crate::event::monitor::{
-    EventBatch, EventReceiver, MonitorCmd, Result as MonitorResult, TxMonitorCmd,
+use crate::chain::requests::QueryPacketEventDataRequest;
+use crate::{
+    account::Balance,
+    client_state::{AnyClientState, IdentifiedAnyClientState},
+    config::ChainConfig,
+    connection::ConnectionMsgType,
+    consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight},
+    denom::DenomTrace,
+    error::Error,
+    event::{
+        bus::EventBus,
+        monitor::{EventBatch, EventReceiver, MonitorCmd, Result as MonitorResult, TxMonitorCmd},
+        IbcEventWithHeight,
+    },
+    keyring::KeyEntry,
+    light_client::AnyHeader,
+    misbehaviour::MisbehaviourEvidence,
 };
-use crate::event::IbcEventWithHeight;
-use crate::keyring::KeyEntry;
-use crate::light_client::AnyHeader;
-use crate::misbehaviour::MisbehaviourEvidence;
 
-use super::client::ClientSettings;
-use super::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
-use super::handle::{ChainHandle, ChainRequest, ReplyTo, Subscription};
-use super::requests::{
-    IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
-    QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
-    QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
-    QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest,
-    QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
-    QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
-    QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
+use super::{
+    client::ClientSettings,
+    endpoint::{ChainEndpoint, ChainStatus, HealthCheck},
+    handle::{ChainHandle, ChainRequest, ReplyTo, Subscription},
+    requests::{
+        IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+        QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
+        QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
+        QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
+        QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementRequest,
+        QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest,
+        QueryPacketCommitmentsRequest, QueryPacketReceiptRequest, QueryTxRequest,
+        QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
+        QueryUpgradedConsensusStateRequest,
+    },
+    tracking::TrackedMsgs,
 };
-use super::tracking::TrackedMsgs;
 
 pub struct Threads {
     pub chain_runtime: thread::JoinHandle<()>,
@@ -294,8 +303,12 @@ where
                             self.build_channel_proofs(port_id, channel_id, height, reply_to)?
                         },
 
-                        ChainRequest::QueryBalance { key_name, reply_to } => {
-                            self.query_balance(key_name, reply_to)?
+                        ChainRequest::QueryBalance { key_name, denom, reply_to } => {
+                            self.query_balance(key_name, denom, reply_to)?
+                        },
+
+                        ChainRequest::QueryAllBalances { key_name, reply_to } => {
+                            self.query_all_balances(key_name, reply_to)?
                         },
 
                         ChainRequest::QueryDenomTrace { hash, reply_to } => {
@@ -406,13 +419,17 @@ where
                             self.query_txs(request, reply_to)?
                         },
 
-                        ChainRequest::QueryPacketEventDataFromBlocks { request, reply_to } => {
-                            self.query_blocks(request, reply_to)?
+                        ChainRequest::QueryPacketEventData { request, reply_to } => {
+                            self.query_packet_events(request, reply_to)?
                         },
 
                         ChainRequest::QueryHostConsensusState { request, reply_to } => {
                             self.query_host_consensus_state(request, reply_to)?
                         },
+
+                        ChainRequest::MaybeRegisterCounterpartyPayee { channel_id, port_id, counterparty_payee, reply_to } => {
+                            self.maybe_register_counterparty_payee(&channel_id, &port_id, &counterparty_payee, reply_to)?
+                        }
                     }
                 },
             }
@@ -465,10 +482,23 @@ where
     fn query_balance(
         &self,
         key_name: Option<String>,
+        denom: Option<String>,
         reply_to: ReplyTo<Balance>,
     ) -> Result<(), Error> {
-        let balance = self.chain.query_balance(key_name);
+        let balance = self
+            .chain
+            .query_balance(key_name.as_deref(), denom.as_deref());
+
         reply_to.send(balance).map_err(Error::send)
+    }
+
+    fn query_all_balances(
+        &self,
+        key_name: Option<String>,
+        reply_to: ReplyTo<Vec<Balance>>,
+    ) -> Result<(), Error> {
+        let balances = self.chain.query_all_balances(key_name.as_deref());
+        reply_to.send(balances).map_err(Error::send)
     }
 
     fn query_denom_trace(&self, hash: String, reply_to: ReplyTo<DenomTrace>) -> Result<(), Error> {
@@ -847,12 +877,12 @@ where
         reply_to.send(result).map_err(Error::send)
     }
 
-    fn query_blocks(
+    fn query_packet_events(
         &self,
-        request: QueryBlockRequest,
-        reply_to: ReplyTo<(Vec<IbcEvent>, Vec<IbcEvent>)>,
+        request: QueryPacketEventDataRequest,
+        reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     ) -> Result<(), Error> {
-        let result = self.chain.query_blocks(request);
+        let result = self.chain.query_packet_events(request);
 
         reply_to.send(result).map_err(Error::send)?;
 
@@ -868,6 +898,22 @@ where
             .chain
             .query_host_consensus_state(request)
             .map(|h| h.into());
+
+        reply_to.send(result).map_err(Error::send)?;
+
+        Ok(())
+    }
+
+    fn maybe_register_counterparty_payee(
+        &mut self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_payee: &Signer,
+        reply_to: ReplyTo<()>,
+    ) -> Result<(), Error> {
+        let result =
+            self.chain
+                .maybe_register_counterparty_payee(channel_id, port_id, counterparty_payee);
 
         reply_to.send(result).map_err(Error::send)?;
 

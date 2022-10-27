@@ -7,5 +7,6 @@ pub mod error;
 pub mod events;
 pub mod msgs;
 pub mod packet;
+pub mod packet_id;
 pub mod timeout;
 pub mod version;

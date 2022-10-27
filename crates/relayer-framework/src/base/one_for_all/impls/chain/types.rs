@@ -1,9 +1,11 @@
 use crate::base::chain::traits::ibc_event::HasIbcEvents;
-use crate::base::chain::traits::types::{HasChainTypes, HasIbcChainTypes};
+use crate::base::chain::traits::types::{
+    HasChainTypes, HasEventType, HasIbcChainTypes, HasMessageType,
+};
 use crate::base::core::traits::error::HasError;
-use crate::base::core::traits::runtime::HasRuntime;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
+use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::common::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
@@ -19,16 +21,18 @@ impl<Chain: OfaBaseChain> HasRuntime for OfaChainWrapper<Chain> {
     }
 }
 
+impl<Chain: OfaBaseChain> HasMessageType for OfaChainWrapper<Chain> {
+    type Message = Chain::Message;
+}
+
+impl<Chain: OfaBaseChain> HasEventType for OfaChainWrapper<Chain> {
+    type Event = Chain::Event;
+}
+
 impl<Chain: OfaBaseChain> HasChainTypes for OfaChainWrapper<Chain> {
     type Height = Chain::Height;
 
     type Timestamp = Chain::Timestamp;
-
-    type Message = Chain::Message;
-
-    type Signer = Chain::Signer;
-
-    type Event = Chain::Event;
 
     fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error> {
         Chain::estimate_message_len(message)

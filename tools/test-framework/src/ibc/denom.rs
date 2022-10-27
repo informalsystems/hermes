@@ -134,3 +134,26 @@ impl Display for Denom {
         }
     }
 }
+
+impl PartialEq for Denom {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Base(d1), Self::Base(d2)) => d1 == d2,
+            (
+                Self::Ibc {
+                    path: p1,
+                    denom: d1,
+                    hashed: h1,
+                },
+                Self::Ibc {
+                    path: p2,
+                    denom: d2,
+                    hashed: h2,
+                },
+            ) => p1 == p2 && d1 == d2 && h1 == h2,
+            _ => self.as_str() == other.as_str(),
+        }
+    }
+}
+
+impl Eq for Denom {}

@@ -8,6 +8,7 @@ use core::time::Duration;
 use eyre::eyre;
 
 use ibc_proto::google::protobuf::Any;
+use ibc_relayer::chain::cosmos::tx::batched_send_tx;
 use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::event::extract_packet_and_write_ack_from_tx;
@@ -18,7 +19,7 @@ use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
 use ibc_relayer_types::timestamp::Timestamp;
 
 use crate::error::{handle_generic_error, Error};
-use crate::ibc::denom::Denom;
+use crate::ibc::token::TaggedTokenRef;
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress};
@@ -28,12 +29,11 @@ pub fn build_transfer_message<SrcChain, DstChain>(
     channel_id: &TaggedChannelIdRef<'_, SrcChain, DstChain>,
     sender: &MonoTagged<SrcChain, &Wallet>,
     recipient: &MonoTagged<DstChain, &WalletAddress>,
-    denom: &MonoTagged<SrcChain, &Denom>,
-    amount: u64,
-    duration: Option<Duration>,
+    token: &TaggedTokenRef<'_, SrcChain>,
+    timeout: Duration,
 ) -> Result<Any, Error> {
     let timeout_timestamp = Timestamp::now()
-        .add(duration.unwrap_or_else(|| Duration::from_secs(60)))
+        .add(timeout)
         .map_err(handle_generic_error)?;
 
     let sender = sender
@@ -52,8 +52,8 @@ pub fn build_transfer_message<SrcChain, DstChain>(
     Ok(raw_build_transfer_message(
         (*port_id.value()).clone(),
         (*channel_id.value()).clone(),
-        amount.into(),
-        denom.to_string(),
+        token.value().amount,
+        token.value().denom.to_string(),
         sender,
         receiver,
         TimeoutHeight::no_timeout(),
@@ -84,12 +84,16 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
     channel_id: &TaggedChannelIdRef<'_, SrcChain, DstChain>,
     sender: &MonoTagged<SrcChain, &Wallet>,
     recipient: &MonoTagged<DstChain, &WalletAddress>,
-    denom: &MonoTagged<SrcChain, &Denom>,
-    amount: u64,
-    duration: Option<Duration>,
+    token: &TaggedTokenRef<'_, SrcChain>,
+    timeout: Option<Duration>,
 ) -> Result<Packet, Error> {
     let message = build_transfer_message(
-        port_id, channel_id, sender, recipient, denom, amount, duration,
+        port_id,
+        channel_id,
+        sender,
+        recipient,
+        token,
+        timeout.unwrap_or(Duration::from_secs(60)),
     )?;
 
     let events = simple_send_tx(tx_config.value(), &sender.value().key, vec![message]).await?;
@@ -106,4 +110,31 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
         .ok_or_else(|| eyre!("failed to find send packet event"))?;
 
     Ok(packet)
+}
+
+pub async fn batched_ibc_token_transfer<SrcChain, DstChain>(
+    tx_config: &MonoTagged<SrcChain, &TxConfig>,
+    port_id: &TaggedPortIdRef<'_, SrcChain, DstChain>,
+    channel_id: &TaggedChannelIdRef<'_, SrcChain, DstChain>,
+    sender: &MonoTagged<SrcChain, &Wallet>,
+    recipient: &MonoTagged<DstChain, &WalletAddress>,
+    token: &TaggedTokenRef<'_, SrcChain>,
+    num_msgs: usize,
+) -> Result<(), Error> {
+    let messages = std::iter::repeat_with(|| {
+        build_transfer_message(
+            port_id,
+            channel_id,
+            sender,
+            recipient,
+            token,
+            Duration::from_secs(60),
+        )
+    })
+    .take(num_msgs)
+    .collect::<Result<Vec<_>, _>>()?;
+
+    batched_send_tx(tx_config.value(), &sender.value().key, messages).await?;
+
+    Ok(())
 }

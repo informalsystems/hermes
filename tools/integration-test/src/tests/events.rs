@@ -28,9 +28,8 @@ impl BinaryChannelTest for EventsTest {
             &channel.channel_id_a.as_ref(),
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a,
-            100,
-            None,
+            &denom_a.with_amount(100u64).as_ref(),
+            Duration::from_secs(60),
         )?;
 
         let messages = vec![transfer_message; 2];

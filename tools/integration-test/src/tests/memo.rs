@@ -4,7 +4,7 @@ use serde_json as json;
 
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
 use ibc_test_framework::prelude::*;
-use ibc_test_framework::util::random::{random_string, random_u64_range};
+use ibc_test_framework::util::random::{random_string, random_u128_range};
 
 #[test]
 fn test_memo() -> Result<(), Error> {
@@ -40,15 +40,14 @@ impl BinaryChannelTest for MemoTest {
 
         let denom_a = chains.node_a.denom();
 
-        let a_to_b_amount = random_u64_range(1000, 5000);
+        let a_to_b_amount = random_u128_range(1000, 5000);
 
         chains.node_a.chain_driver().ibc_transfer_token(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
             &chains.node_a.wallets().user1(),
             &chains.node_b.wallets().user1().address(),
-            &denom_a,
-            a_to_b_amount,
+            &denom_a.with_amount(a_to_b_amount).as_ref(),
             None,
         )?;
 
@@ -60,8 +59,7 @@ impl BinaryChannelTest for MemoTest {
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
             &chains.node_b.wallets().user1().address(),
-            a_to_b_amount,
-            &denom_b.as_ref(),
+            &denom_b.with_amount(a_to_b_amount).as_ref(),
         )?;
 
         let tx_info = chains
