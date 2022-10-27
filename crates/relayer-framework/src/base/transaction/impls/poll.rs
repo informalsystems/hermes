@@ -1,22 +1,57 @@
 use async_trait::async_trait;
-use core::marker::PhantomData;
+use core::time::Duration;
 
-use crate::base::transaction::traits::response::TxResponseQuerier;
+use crate::base::core::traits::runtime::HasRuntime;
+use crate::base::core::traits::runtimes::sleep::CanSleep;
+use crate::base::core::traits::runtimes::time::{HasTime, Time};
+use crate::base::transaction::traits::response::{CanQueryTxResponse, TxResponsePoller};
 use crate::base::transaction::traits::types::HasTxTypes;
 use crate::std_prelude::*;
 
-pub struct PollTxResponse<InQuerier>(pub PhantomData<InQuerier>);
+pub trait InjectNoTxResponseError: HasTxTypes {
+    fn inject_tx_no_response_error(tx_hash: &Self::TxHash) -> Self::Error;
+}
+
+pub trait HasPollTimeout {
+    fn poll_timeout(&self) -> Duration;
+
+    fn poll_backoff(&self) -> Duration;
+}
+
+pub struct PollTxResponse;
 
 #[async_trait]
-impl<Context, InQuerier> TxResponseQuerier<Context> for PollTxResponse<InQuerier>
+impl<Context> TxResponsePoller<Context> for PollTxResponse
 where
-    Context: HasTxTypes,
-    InQuerier: TxResponseQuerier<Context>,
+    Context: CanQueryTxResponse + HasPollTimeout + HasRuntime + InjectNoTxResponseError,
+    Context::Runtime: HasTime + CanSleep,
 {
-    async fn query_tx_response(
-        _context: &Context,
-        _tx_hash: &Context::TxHash,
-    ) -> Result<Option<Context::TxResponse>, Context::Error> {
-        todo!()
+    async fn poll_tx_response(
+        context: &Context,
+        tx_hash: &Context::TxHash,
+    ) -> Result<Context::TxResponse, Context::Error> {
+        let runtime = context.runtime();
+        let wait_timeout = context.poll_timeout();
+        let wait_backoff = context.poll_backoff();
+
+        let start_time = runtime.now();
+
+        loop {
+            let response = context.query_tx_response(tx_hash).await?;
+
+            match response {
+                None => {
+                    let elapsed = start_time.duration_since(&runtime.now());
+                    if elapsed > wait_timeout {
+                        return Err(Context::inject_tx_no_response_error(tx_hash));
+                    } else {
+                        runtime.sleep(wait_backoff).await;
+                    }
+                }
+                Some(response) => {
+                    return Ok(response);
+                }
+            }
+        }
     }
 }
