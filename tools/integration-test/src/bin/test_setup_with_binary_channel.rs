@@ -36,7 +36,6 @@ struct Test {
 
 impl TestOverrides for Test {
     fn modify_test_config(&self, config: &mut TestConfig) {
-        config.bootstrap_with_random_ids = false;
         config.chain_store_dir = self.store_dir.clone();
     }
 
