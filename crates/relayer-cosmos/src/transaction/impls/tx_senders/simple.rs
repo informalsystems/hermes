@@ -4,10 +4,12 @@ use ibc_relayer::chain::cosmos::event::split_events_by_messages;
 use tendermint::abci::responses::Event;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 
+use crate::transaction::impls::broadcast::CanBroadcastTxSync;
+use crate::transaction::impls::encode::CanSignTx;
 use crate::transaction::impls::estimate::CanEstimateTxFees;
 use crate::transaction::impls::response::CanValidateRpcResponse;
-use crate::transaction::impls::tx_with_fee::CanSubmitTxWithFee;
 use crate::transaction::impls::wait::{CanWaitTxHash, InjectWaitTxError};
+use crate::transaction::traits::fields::HasGasConfig;
 use crate::transaction::traits::queries::account::CanQueryAccount;
 use crate::transaction::traits::tx_sender::{TxSender, TxSubmitter};
 
@@ -17,22 +19,31 @@ pub struct SimpleTxSender;
 impl<Context> TxSubmitter<Context> for SimpleTxSender
 where
     Context: InjectWaitTxError,
-    Context: CanQueryAccount + CanEstimateTxFees + CanSubmitTxWithFee + CanValidateRpcResponse,
+    Context: CanQueryAccount
+        + CanEstimateTxFees
+        + CanValidateRpcResponse
+        + CanSignTx
+        + CanBroadcastTxSync
+        + HasGasConfig,
 {
     async fn submit_tx(context: &Context, messages: &[Any]) -> Result<Response, Context::Error> {
+        let gas_config = context.gas_config();
+
         let account = context.query_account().await?;
 
-        let fee = context
-            .estimate_tx_fees(&account.sequence, messages)
+        let simulate_tx = context
+            .sign_tx(&gas_config.max_fee, &account.sequence, messages)
             .await?;
 
-        let broadcast_response = context
-            .submit_tx_with_fee(&fee, &account.sequence, messages)
-            .await?;
+        let fee = context.estimate_tx_fees(simulate_tx).await?;
 
-        Context::validate_rpc_response_code(broadcast_response.code)?;
+        let tx = context.sign_tx(&fee, &account.sequence, messages).await?;
 
-        Ok(broadcast_response)
+        let response = context.broadcast_tx_sync(tx).await?;
+
+        Context::validate_rpc_response_code(response.code)?;
+
+        Ok(response)
     }
 }
 

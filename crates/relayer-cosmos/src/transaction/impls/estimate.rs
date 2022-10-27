@@ -1,48 +1,28 @@
 use async_trait::async_trait;
 use core::fmt::Display;
 use core::marker::PhantomData;
-use ibc_proto::cosmos::tx::v1beta1::{Fee, Tx};
-use ibc_proto::google::protobuf::Any;
+use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_relayer::chain::cosmos::gas::gas_amount_to_fee;
+use ibc_relayer::chain::cosmos::types::tx::SignedTx;
 use ibc_relayer_framework::base::core::traits::error::{HasError, InjectError};
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tracing::{debug, error, warn};
 
-use crate::transaction::impls::encode::CanSignTx;
 use crate::transaction::impls::simulate::CanSendTxSimulate;
 use crate::transaction::traits::fields::{HasChainId, HasDefaultGas, HasGasConfig, HasMaxGas};
-use ibc_relayer::chain::cosmos::types::account::AccountSequence;
 
 #[async_trait]
 pub trait CanEstimateTxFees: HasError {
-    async fn estimate_tx_fees(
-        &self,
-        sequence: &AccountSequence,
-        messages: &[Any],
-    ) -> Result<Fee, Self::Error>;
+    async fn estimate_tx_fees(&self, tx: SignedTx) -> Result<Fee, Self::Error>;
 }
 
 #[async_trait]
 impl<Context> CanEstimateTxFees for Context
 where
-    Context: HasError + HasGasConfig + CanSignTx + CanEstimateTxGas,
+    Context: HasGasConfig + CanEstimateTxGas,
 {
-    async fn estimate_tx_fees(
-        &self,
-        sequence: &AccountSequence,
-        messages: &[Any],
-    ) -> Result<Fee, Self::Error> {
+    async fn estimate_tx_fees(&self, tx: SignedTx) -> Result<Fee, Self::Error> {
         let gas_config = self.gas_config();
-
-        let signed_tx = self
-            .sign_tx(&gas_config.max_fee, sequence, messages)
-            .await?;
-
-        let tx = Tx {
-            body: Some(signed_tx.body),
-            auth_info: Some(signed_tx.auth_info),
-            signatures: signed_tx.signatures,
-        };
 
         let estimated_gas = self.estimate_gas_with_tx(tx).await?;
 
@@ -54,12 +34,12 @@ where
 
 #[async_trait]
 pub trait TxGasEstimator<Context: HasError> {
-    async fn estimate_gas_with_tx(context: &Context, tx: Tx) -> Result<u64, Context::Error>;
+    async fn estimate_gas_with_tx(context: &Context, tx: SignedTx) -> Result<u64, Context::Error>;
 }
 
 #[async_trait]
 pub trait CanEstimateTxGas: HasError {
-    async fn estimate_gas_with_tx(&self, tx: Tx) -> Result<u64, Self::Error>;
+    async fn estimate_gas_with_tx(&self, tx: SignedTx) -> Result<u64, Self::Error>;
 }
 
 pub struct BaseTxGasEstimator;
@@ -67,9 +47,9 @@ pub struct BaseTxGasEstimator;
 #[async_trait]
 impl<Context> TxGasEstimator<Context> for BaseTxGasEstimator
 where
-    Context: HasError + HasDefaultGas + CanSendTxSimulate,
+    Context: HasDefaultGas + CanSendTxSimulate,
 {
-    async fn estimate_gas_with_tx(context: &Context, tx: Tx) -> Result<u64, Context::Error> {
+    async fn estimate_gas_with_tx(context: &Context, tx: SignedTx) -> Result<u64, Context::Error> {
         let default_gas = context.default_gas();
 
         let simulated_gas = context.send_tx_simulate(tx).await?
@@ -100,7 +80,7 @@ where
     Context::Error: Display,
     InEstimator: TxGasEstimator<Context>,
 {
-    async fn estimate_gas_with_tx(context: &Context, tx: Tx) -> Result<u64, Context::Error> {
+    async fn estimate_gas_with_tx(context: &Context, tx: SignedTx) -> Result<u64, Context::Error> {
         let res = InEstimator::estimate_gas_with_tx(context, tx).await;
 
         match res {
@@ -142,7 +122,7 @@ where
     Context::Error: Display,
     InEstimator: TxGasEstimator<Context>,
 {
-    async fn estimate_gas_with_tx(context: &Context, tx: Tx) -> Result<u64, Context::Error> {
+    async fn estimate_gas_with_tx(context: &Context, tx: SignedTx) -> Result<u64, Context::Error> {
         let estimated_gas = InEstimator::estimate_gas_with_tx(context, tx).await?;
 
         let max_gas = context.max_gas();

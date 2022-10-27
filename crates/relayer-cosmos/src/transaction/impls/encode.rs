@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
-use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
+use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody};
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::account::AccountSequence;
 use ibc_relayer::chain::cosmos::types::tx::SignedTx;
@@ -12,16 +12,6 @@ use prost::EncodeError;
 use crate::transaction::traits::fields::{
     HasAccountNumber, HasAddressType, HasChainId, HasExtensionOptions, HasKeyEntry, HasMemo,
 };
-
-#[async_trait]
-pub trait CanSignAndEncodeTx: HasError {
-    async fn sign_and_encode_tx(
-        &self,
-        fee: &Fee,
-        sequence: &AccountSequence,
-        messages: &[Any],
-    ) -> Result<Vec<u8>, Self::Error>;
-}
 
 #[async_trait]
 pub trait CanSignTx: HasError {
@@ -68,33 +58,6 @@ trait CanEncodeSignDoc: HasError {
         auth_info_bytes: Vec<u8>,
         body_bytes: Vec<u8>,
     ) -> Result<Vec<u8>, Self::Error>;
-}
-
-#[async_trait]
-impl<Context> CanSignAndEncodeTx for Context
-where
-    Context: InjectError<EncodeError> + CanSignTx,
-{
-    async fn sign_and_encode_tx(
-        &self,
-        fee: &Fee,
-        sequence: &AccountSequence,
-        messages: &[Any],
-    ) -> Result<Vec<u8>, Self::Error> {
-        let signed_tx = self.sign_tx(fee, sequence, messages).await?;
-
-        let tx_raw = TxRaw {
-            body_bytes: signed_tx.body_bytes,
-            auth_info_bytes: signed_tx.auth_info_bytes,
-            signatures: signed_tx.signatures,
-        };
-
-        let mut tx_bytes = Vec::new();
-
-        prost::Message::encode(&tx_raw, &mut tx_bytes).map_err(Context::inject_error)?;
-
-        Ok(tx_bytes)
-    }
 }
 
 #[async_trait]
