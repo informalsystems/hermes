@@ -14,13 +14,16 @@ use tendermint::trust_threshold::TrustThresholdFraction;
 use crate::core::ics02_client::error::Error;
 
 /// Represents the level of trust that a client has towards a set of validators
-/// of a chain. Another way to phrase it is that the trust threshold specifies
+/// of a chain. Another way to phrase it is that the trust threshold defines
 /// the minimum amount of voting power in a block that originates from trusted
 /// validators.
 ///
 /// To be a bit more concrete, given a _trusted_ header at height H1 and an
-/// _untrusted_ header at height H2 with H2 > H1, the trust threshold defines
-/// the minimal ratio of voting power that must have come from H1.
+/// _untrusted_ header at height H2 with H2 > H1, of the set of validators for
+/// the block at height H2 proposed by the validators of the block at height H1,
+/// the trust threshold specifies the minimal ratio of voting power that must
+/// originate from the trusted validators at height H1 in order to deem the
+/// block at height H2 as trusted.
 ///
 /// Since Tendermint assumes that at least 2/3 validators are trustworthy, then
 /// if at least 1/3 of the voting power in block H2 originates from the trusted
