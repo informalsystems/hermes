@@ -2,10 +2,8 @@
 //! represented as a fraction with valid values in the
 //! range `[0, 1)`.
 
-use core::{
-    convert::TryFrom,
-    fmt::{Display, Error as FmtError, Formatter},
-};
+use core::convert::TryFrom;
+use core::fmt::{Display, Error as FmtError, Formatter};
 
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};
@@ -15,17 +13,27 @@ use tendermint::trust_threshold::TrustThresholdFraction;
 
 use crate::core::ics02_client::error::Error;
 
-/// [`TrustThreshold`] defines the level of trust that a client has
-/// towards a set of validators of a chain.
+/// Represents the level of trust that a client has towards a set of validators
+/// of a chain. Another way to phrase it is that the trust threshold specifies
+/// the minimum amount of voting power in a block that originates from trusted
+/// validators.
 ///
-/// A trust threshold is represented as a fraction, i.e., a numerator and
-/// and a denominator.
-/// A typical trust threshold is 1/3 in practice.
+/// To be a bit more concrete, given a _trusted_ header at height H1 and an
+/// _untrusted_ header at height H2 with H2 > H1, the trust threshold defines
+/// the minimal ratio of voting power that must have come from H1.
+///
+/// Since Tendermint assumes that at least 2/3 validators are trustworthy, then
+/// if at least 1/3 of the voting power in block H2 originates from the trusted
+/// validators at height H1, then at least 1 trusted validator proposed the
+/// block at height H2. Thus, a typical trust threshold in practice is 1/3.
+///
 /// This type accepts even a value of 0, (numerator = 0, denominator = 0),
 /// which is used in the client state of an upgrading client.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TrustThreshold {
+    /// The fractional amount of trusted voting power in a block.
     numerator: u64,
+    /// The fractional total voting power in a block.
     denominator: u64,
 }
 
