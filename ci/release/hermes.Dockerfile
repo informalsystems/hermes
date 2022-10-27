@@ -11,7 +11,7 @@ ARG TAG
 WORKDIR /root
 
 RUN git clone https://github.com/informalsystems/hermes
-RUN cd ibc-rs && git checkout $TAG && cargo build --release
+RUN cd hermes && git checkout $TAG && cargo build --release
 
 
 FROM debian:buster-slim
@@ -24,5 +24,5 @@ ENTRYPOINT ["/usr/bin/hermes"]
 
 COPY --chown=0:0 --from=build-env /usr/lib/x86_64-linux-gnu/libssl.so.1.1 /usr/lib/x86_64-linux-gnu/libssl.so.1.1
 COPY --chown=0:0 --from=build-env /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1
-COPY --chown=0:0 --from=build-env /root/ibc-rs/target/release/hermes /usr/bin/hermes
+COPY --chown=0:0 --from=build-env /root/hermes/target/release/hermes /usr/bin/hermes
 COPY --chown=0:0 --from=build-env /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
