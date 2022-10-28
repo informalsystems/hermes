@@ -27,14 +27,7 @@ pub fn sign_and_encode_tx(
     fee: &Fee,
 ) -> Result<Vec<u8>, Error> {
     let signed_tx = sign_tx(config, key_entry, account, tx_memo, messages, fee)?;
-
-    let tx_raw = TxRaw {
-        body_bytes: signed_tx.body_bytes,
-        auth_info_bytes: signed_tx.auth_info_bytes,
-        signatures: signed_tx.signatures,
-    };
-
-    encode_tx_raw(tx_raw)
+    encode_tx_raw(signed_tx)
 }
 
 /// Length information for an encoded transaction.
@@ -169,7 +162,13 @@ fn encode_signer_info(
     Ok(signer_info)
 }
 
-fn encode_tx_raw(tx_raw: TxRaw) -> Result<Vec<u8>, Error> {
+pub fn encode_tx_raw(signed_tx: SignedTx) -> Result<Vec<u8>, Error> {
+    let tx_raw = TxRaw {
+        body_bytes: signed_tx.body_bytes,
+        auth_info_bytes: signed_tx.auth_info_bytes,
+        signatures: signed_tx.signatures,
+    };
+
     let mut tx_bytes = Vec::new();
     prost::Message::encode(&tx_raw, &mut tx_bytes)
         .map_err(|e| Error::protobuf_encode("Transaction".to_string(), e))?;
