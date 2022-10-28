@@ -1866,6 +1866,7 @@ name = "ibc-relayer-framework"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "kani",
 ]
 
 [[package]]
@@ -2139,6 +2140,23 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "sha2 0.10.6",
+]
+
+[[package]]
+name = "kani"
+version = "0.13.0"
+source = "git+https://github.com/model-checking/kani#221fe3bab408e99ddbd0071ada7ba0a59a63b5c5"
+dependencies = [
+ "kani_macros",
+]
+
+[[package]]
+name = "kani_macros"
+version = "0.13.0"
+source = "git+https://github.com/model-checking/kani#221fe3bab408e99ddbd0071ada7ba0a59a63b5c5"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]
