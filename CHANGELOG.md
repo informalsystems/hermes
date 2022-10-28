@@ -28,14 +28,17 @@ this reorganization of the repository.
 
 ### General
 
-The `gm` binary has been split out of the repo and has been moved into its own [repository](https://github.com/informalsystems/gm). This change doesn't affect current local instances of the `gm` binary, though new versions will need to be sourced from the new repository by running `git clone informalsystems/gm` and running the install script from there. 
+The `gm` binary has been split out of the repo and has been moved into its own [repository](https://github.com/informalsystems/gm).
+This change doesn't affect current local instances of the `gm` binary,
+though new versions will need to be sourced from the new repository by running
+`git clone informalsystems/gm` and running the install script from there. 
 
-For more information, see [this](https://hermes.informal.systems/tutorials/local-chains/gaiad-manager.html#how-to-run) section of the Hermes guide. 
+For more information, see [this section](https://hermes.informal.systems/tutorials/local-chains/gaiad-manager.html#how-to-run) of the Hermes guide. 
 
 #### BREAKING CHANGES
 
-- Bump tendermint-rs dependencies to v0.25.0
-  ([#2677](https://github.com/informalsystems/ibc-rs/issues/2677))
+- Removed `gm` folder and its contents
+  ([#2754](https://github.com/informalsystems/hermes/issues/2754))
 - Remove the `ibc-proto` and `ibc-proto-compiler` crates from the repository
   ([#2667](https://github.com/informalsystems/hermes/pull/2667))
 
@@ -73,6 +76,11 @@ For more information, see [this](https://hermes.informal.systems/tutorials/local
 
 
 ### Relayer Library - `ibc-relayer` (v0.20.0)
+
+#### BREAKING CHANGES
+
+- Bump tendermint-rs dependencies to v0.25.0
+  ([#2677](https://github.com/informalsystems/ibc-rs/issues/2677))
 
 #### BUG FIXES
 
