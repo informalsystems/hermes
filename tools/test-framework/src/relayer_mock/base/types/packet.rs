@@ -1,5 +1,6 @@
 use std::time::SystemTime;
 
+#[derive(Clone)]
 pub struct PacketKey {
     pub client_id: String,
     pub channel_id: String,

@@ -20,10 +20,23 @@ define_error! {
                 format_args!("mismatch size for events returned. expected: {}, got: {}",
                     e.expected, e.actual)
             },
+
         NoConsensusState
         { client_id: String }
             | e | {
                 format_args!("no consensus state found for client id: {}", e.client_id)
+            },
+
+        NoHeightState
+        { height: u128 }
+            | e | {
+                format_args!("No state at height: {}", e.height)
+            },
+
+        NoHeight
+        { name: String }
+            | e | {
+                format_args!("No height for chain: {}", e.name)
             },
     }
 }

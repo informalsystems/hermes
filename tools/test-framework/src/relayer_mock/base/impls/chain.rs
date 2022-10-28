@@ -75,9 +75,6 @@ impl OfaBaseChain for MockChainContext {
         unimplemented!()
     }
 
-    // For this Mock Chain, a Write Acknowledgement Event is extracted when
-    // an Receive Packet Event, which is defined by a packet with the format:
-    // `<channel_id>/<port_id>:recv-<packet_sequence>/<chain_height-packet_heigh>`
     fn try_extract_write_acknowledgement_event(
         event: Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent> {
@@ -126,14 +123,18 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         }
     }
 
-    // The Mock Chain assumes packets are never received.
-    // This is temporary
     async fn is_packet_received(
         &self,
-        _port_id: &String,
-        _channel_id: &String,
-        _sequence: &u128,
+        port_id: &String,
+        channel_id: &String,
+        sequence: &u128,
     ) -> Result<bool, Self::Error> {
-        Ok(false)
+        if let Some(height) = self.get_latest_height() {
+            if let Some(state) = self.query_state(height.clone()) {
+                return Ok(state.check_received(port_id, channel_id, sequence));
+            }
+            return Err(Error::no_height_state(height.0));
+        }
+        return Err(Error::no_height(self.name().to_string()));
     }
 }
