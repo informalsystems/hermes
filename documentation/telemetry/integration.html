@@ -1,0 +1,342 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Integration - Hermes (IBC Relayer CLI) Documentation</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="../../favicon.svg">
+        <link rel="shortcut icon" href="../../favicon.png">
+        <link rel="stylesheet" href="../../css/variables.css">
+        <link rel="stylesheet" href="../../css/general.css">
+        <link rel="stylesheet" href="../../css/chrome.css">
+        <link rel="stylesheet" href="../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../../highlight.css">
+        <link rel="stylesheet" href="../../tomorrow-night.css">
+        <link rel="stylesheet" href="../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "../../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><li class="part-title">Hermes v1.0.0</li><li class="spacer"></li><li class="chapter-item expanded "><a href="../../index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../../quick-start/index.html"><strong aria-hidden="true">2.</strong> Quick start</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../quick-start/pre-requisites.html"><strong aria-hidden="true">2.1.</strong> Prerequisites</a></li><li class="chapter-item expanded "><a href="../../quick-start/installation.html"><strong aria-hidden="true">2.2.</strong> Installation</a></li></ol></li><li class="chapter-item expanded "><a href="../../tutorials/index.html"><strong aria-hidden="true">3.</strong> Tutorials</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../tutorials/pre-requisites/index.html"><strong aria-hidden="true">3.1.</strong> Prerequisites for local chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../tutorials/pre-requisites/gaia.html"><strong aria-hidden="true">3.1.1.</strong> Install Gaia</a></li><li class="chapter-item expanded "><a href="../../tutorials/pre-requisites/gaiad-manager.html"><strong aria-hidden="true">3.1.2.</strong> Install Gaiad Manager</a></li></ol></li><li class="chapter-item expanded "><a href="../../tutorials/local-chains/index.html"><strong aria-hidden="true">3.2.</strong> Local chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../tutorials/local-chains/start-local-chains.html"><strong aria-hidden="true">3.2.1.</strong> Start the local chains</a></li><li class="chapter-item expanded "><a href="../../tutorials/local-chains/add-a-new-relay-path.html"><strong aria-hidden="true">3.2.2.</strong> Add a new relay path</a></li><li class="chapter-item expanded "><a href="../../tutorials/local-chains/start-relaying.html"><strong aria-hidden="true">3.2.3.</strong> Start relaying</a></li></ol></li><li class="chapter-item expanded "><a href="../../tutorials/more-chains/index.html"><strong aria-hidden="true">3.3.</strong> More Local Chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../tutorials/more-chains/start-local-chains.html"><strong aria-hidden="true">3.3.1.</strong> Start the local chains</a></li><li class="chapter-item expanded "><a href="../../tutorials/more-chains/build-the-topology.html"><strong aria-hidden="true">3.3.2.</strong> Build the topology</a></li><li class="chapter-item expanded "><a href="../../tutorials/more-chains/start-relaying.html"><strong aria-hidden="true">3.3.3.</strong> Start relaying</a></li><li class="chapter-item expanded "><a href="../../tutorials/more-chains/concurrent-instances.html"><strong aria-hidden="true">3.3.4.</strong> Add new instances of Hermes</a></li></ol></li><li class="chapter-item expanded "><a href="../../tutorials/production/index.html"><strong aria-hidden="true">3.4.</strong> Relaying in production</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../tutorials/production/setup-grafana.html"><strong aria-hidden="true">3.4.1.</strong> Set up the monitoring platform</a></li><li class="chapter-item expanded "><a href="../../tutorials/production/setup-hermes.html"><strong aria-hidden="true">3.4.2.</strong> Set up Hermes</a></li><li class="chapter-item expanded "><a href="../../tutorials/production/start-relaying.html"><strong aria-hidden="true">3.4.3.</strong> Start relaying</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../../advanced/index.html"><strong aria-hidden="true">4.</strong> Advanced</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../advanced/features.html"><strong aria-hidden="true">4.1.</strong> Features</a></li><li class="chapter-item expanded "><a href="../../advanced/troubleshooting/index.html"><strong aria-hidden="true">4.2.</strong> Troubleshooting</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../advanced/troubleshooting/help-command.html"><strong aria-hidden="true">4.2.1.</strong> Help Command</a></li><li class="chapter-item expanded "><a href="../../advanced/troubleshooting/profiling.html"><strong aria-hidden="true">4.2.2.</strong> Profiling</a></li><li class="chapter-item expanded "><a href="../../advanced/troubleshooting/log-level.html"><strong aria-hidden="true">4.2.3.</strong> Log level</a></li><li class="chapter-item expanded "><a href="../../advanced/troubleshooting/patch-gaia.html"><strong aria-hidden="true">4.2.4.</strong> Patch Gaia</a></li><li class="chapter-item expanded "><a href="../../advanced/troubleshooting/inspect.html"><strong aria-hidden="true">4.2.5.</strong> Inspecting the relayer's state</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../../documentation/index.html"><strong aria-hidden="true">5.</strong> Documentation</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../documentation/configuration/index.html"><strong aria-hidden="true">5.1.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../documentation/configuration/configure-hermes.html"><strong aria-hidden="true">5.1.1.</strong> Configure Hermes</a></li><li class="chapter-item expanded "><a href="../../documentation/configuration/description.html"><strong aria-hidden="true">5.1.2.</strong> Description of the parameters</a></li></ol></li><li class="chapter-item expanded "><a href="../../documentation/telemetry/index.html"><strong aria-hidden="true">5.2.</strong> Telemetry</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../documentation/telemetry/operators.html"><strong aria-hidden="true">5.2.1.</strong> Operators guide</a></li><li class="chapter-item expanded "><a href="../../documentation/telemetry/integration.html" class="active"><strong aria-hidden="true">5.2.2.</strong> Integration</a></li></ol></li><li class="chapter-item expanded "><a href="../../documentation/rest-api.html"><strong aria-hidden="true">5.3.</strong> REST API</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/index.html"><strong aria-hidden="true">5.4.</strong> Commands Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../documentation/commands/global.html"><strong aria-hidden="true">5.4.1.</strong> Global options and JSON output</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/keys/index.html"><strong aria-hidden="true">5.4.2.</strong> Keys</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/config.html"><strong aria-hidden="true">5.4.3.</strong> Config</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/path-setup/index.html"><strong aria-hidden="true">5.4.4.</strong> Path setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../documentation/commands/path-setup/clients.html"><strong aria-hidden="true">5.4.4.1.</strong> Clients</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/path-setup/connections.html"><strong aria-hidden="true">5.4.4.2.</strong> Connections</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/path-setup/channels.html"><strong aria-hidden="true">5.4.4.3.</strong> Channels</a></li></ol></li><li class="chapter-item expanded "><a href="../../documentation/commands/relaying/index.html"><strong aria-hidden="true">5.4.5.</strong> Relaying</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../documentation/commands/relaying/packets.html"><strong aria-hidden="true">5.4.5.1.</strong> Packet Messages</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/relaying/handshakes.html"><strong aria-hidden="true">5.4.5.2.</strong> Handshake Messages</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/relaying/clear.html"><strong aria-hidden="true">5.4.5.3.</strong> Clearing Packets</a></li></ol></li><li class="chapter-item expanded "><a href="../../documentation/commands/listen/index.html"><strong aria-hidden="true">5.4.6.</strong> Listen mode</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/upgrade/index.html"><strong aria-hidden="true">5.4.7.</strong> Client upgrade</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../documentation/commands/upgrade/test.html"><strong aria-hidden="true">5.4.7.1.</strong> Testing client upgrade</a></li></ol></li><li class="chapter-item expanded "><a href="../../documentation/commands/misbehaviour/index.html"><strong aria-hidden="true">5.4.8.</strong> Misbehaviour</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/queries/index.html"><strong aria-hidden="true">5.4.9.</strong> Queries</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../documentation/commands/queries/client.html"><strong aria-hidden="true">5.4.9.1.</strong> Client</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/queries/connection.html"><strong aria-hidden="true">5.4.9.2.</strong> Connection</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/queries/channel.html"><strong aria-hidden="true">5.4.9.3.</strong> Channel</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/queries/packet.html"><strong aria-hidden="true">5.4.9.4.</strong> Packet</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/queries/tx.html"><strong aria-hidden="true">5.4.9.5.</strong> Tx</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/queries/transfer.html"><strong aria-hidden="true">5.4.9.6.</strong> Transfer</a></li></ol></li><li class="chapter-item expanded "><a href="../../documentation/commands/tx/index.html"><strong aria-hidden="true">5.4.10.</strong> Transactions</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../documentation/commands/tx/connection.html"><strong aria-hidden="true">5.4.10.1.</strong> Connection</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/tx/channel-open.html"><strong aria-hidden="true">5.4.10.2.</strong> Channel Open</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/tx/channel-close.html"><strong aria-hidden="true">5.4.10.3.</strong> Channel Close</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/tx/packet.html"><strong aria-hidden="true">5.4.10.4.</strong> Packet</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/tx/upgrade.html"><strong aria-hidden="true">5.4.10.5.</strong> Upgrade</a></li></ol></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../../glossary.html"><strong aria-hidden="true">6.</strong> Glossary</a></li><li class="spacer"></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Hermes (IBC Relayer CLI) Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="integration-with-prometheus"><a class="header" href="#integration-with-prometheus">Integration with Prometheus</a></h1>
+<p>With the <code>enabled = true</code> setting for <code>telemetry</code> in your config.toml, the telemetry service will be enabled and will serve the metrics using
+the Prometheus encoder over HTTP at <a href="http://localhost:3001/metrics"><code>http://localhost:3001/metrics</code></a>.</p>
+<p>After starting Hermes with <code>hermes start</code>, and letting it run for a while to relay packets,
+open <a href="http://localhost:3001/metrics"><code>http://localhost:3001/metrics</code></a> in a browser, you should
+see Prometheus-encoded metrics.</p>
+<p>For example, with two channels and after transferring some tokens between the chains:</p>
+<pre><code class="language-text"># HELP acknowledgement_events Number of WriteAcknowledgement events received
+# TYPE acknowledgement_events counter
+acknowledgement_events{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;} 2
+acknowledgement_events{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;} 2
+# HELP acknowledgment_packets_confirmed Number of confirmed acknowledgment packets. Available if relayer runs with Tx confirmation enabled
+# TYPE acknowledgment_packets_confirmed counter
+acknowledgment_packets_confirmed{src_chain=&quot;ibc-0&quot;,src_channel=&quot;channel-0&quot;,src_port=&quot;transfer&quot;} 2
+acknowledgment_packets_confirmed{src_chain=&quot;ibc-1&quot;,src_channel=&quot;channel-0&quot;,src_port=&quot;transfer&quot;} 2
+# HELP backlog_oldest_sequence Sequence number of the oldest SendPacket event in the backlog
+# TYPE backlog_oldest_sequence gauge
+backlog_oldest_sequence{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;} 0
+backlog_oldest_sequence{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;} 0
+# HELP backlog_oldest_timestamp Local timestamp for the oldest SendPacket event in the backlog
+# TYPE backlog_oldest_timestamp gauge
+backlog_oldest_timestamp{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;} 0
+backlog_oldest_timestamp{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;} 0
+# HELP backlog_size Total number of SendPacket events in the backlog
+# TYPE backlog_size gauge
+backlog_size{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;} 0
+backlog_size{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;} 0
+# HELP client_updates_submitted Number of client update messages submitted
+# TYPE client_updates_submitted counter
+client_updates_submitted{chain=&quot;ibc-0&quot;,client=&quot;07-tendermint-0&quot;} 8
+client_updates_submitted{chain=&quot;ibc-1&quot;,client=&quot;07-tendermint-0&quot;} 19
+# HELP queries Number of queries submitted by Hermes
+# TYPE queries counter
+queries{chain=&quot;ibc-0&quot;,query_type=&quot;query_application_status&quot;} 486
+queries{chain=&quot;ibc-0&quot;,query_type=&quot;query_channel&quot;} 20
+queries{chain=&quot;ibc-0&quot;,query_type=&quot;query_client_state&quot;} 375
+queries{chain=&quot;ibc-0&quot;,query_type=&quot;query_clients&quot;} 1
+queries{chain=&quot;ibc-0&quot;,query_type=&quot;query_commitment_prefix&quot;} 2
+queries{chain=&quot;ibc-0&quot;,query_type=&quot;query_connection&quot;} 21
+queries{chain=&quot;ibc-0&quot;,query_type=&quot;query_consensus_state&quot;} 373
+queries{chain=&quot;ibc-0&quot;,query_type=&quot;query_consensus_states&quot;} 2
+queries{chain=&quot;ibc-0&quot;,query_type=&quot;query_latest_height&quot;} 1
+queries{chain=&quot;ibc-0&quot;,query_type=&quot;query_packet_acknowledgements&quot;} 2
+queries{chain=&quot;ibc-0&quot;,query_type=&quot;query_packet_commitments&quot;} 3
+queries{chain=&quot;ibc-0&quot;,query_type=&quot;query_staking_params&quot;} 2
+queries{chain=&quot;ibc-0&quot;,query_type=&quot;query_txs&quot;} 48
+queries{chain=&quot;ibc-0&quot;,query_type=&quot;query_unreceived_acknowledgements&quot;} 4
+queries{chain=&quot;ibc-0&quot;,query_type=&quot;query_unreceived_packets&quot;} 5
+queries{chain=&quot;ibc-1&quot;,query_type=&quot;query_application_status&quot;} 449
+queries{chain=&quot;ibc-1&quot;,query_type=&quot;query_blocks&quot;} 1
+queries{chain=&quot;ibc-1&quot;,query_type=&quot;query_channel&quot;} 21
+queries{chain=&quot;ibc-1&quot;,query_type=&quot;query_client_connections&quot;} 3
+queries{chain=&quot;ibc-1&quot;,query_type=&quot;query_client_state&quot;} 367
+queries{chain=&quot;ibc-1&quot;,query_type=&quot;query_clients&quot;} 1
+queries{chain=&quot;ibc-1&quot;,query_type=&quot;query_commitment_prefix&quot;} 2
+queries{chain=&quot;ibc-1&quot;,query_type=&quot;query_connection&quot;} 22
+queries{chain=&quot;ibc-1&quot;,query_type=&quot;query_connection_channels&quot;} 5
+queries{chain=&quot;ibc-1&quot;,query_type=&quot;query_connections&quot;} 6
+queries{chain=&quot;ibc-1&quot;,query_type=&quot;query_consensus_state&quot;} 372
+queries{chain=&quot;ibc-1&quot;,query_type=&quot;query_consensus_states&quot;} 2
+queries{chain=&quot;ibc-1&quot;,query_type=&quot;query_latest_height&quot;} 1
+queries{chain=&quot;ibc-1&quot;,query_type=&quot;query_packet_acknowledgements&quot;} 1
+queries{chain=&quot;ibc-1&quot;,query_type=&quot;query_packet_commitments&quot;} 3
+queries{chain=&quot;ibc-1&quot;,query_type=&quot;query_staking_params&quot;} 2
+queries{chain=&quot;ibc-1&quot;,query_type=&quot;query_txs&quot;} 40
+queries{chain=&quot;ibc-1&quot;,query_type=&quot;query_unreceived_acknowledgements&quot;} 5
+queries{chain=&quot;ibc-1&quot;,query_type=&quot;query_unreceived_packets&quot;} 4
+# HELP queries_cache_hits Number of cache hits for queries submitted by Hermes
+# TYPE queries_cache_hits counter
+queries_cache_hits{chain=&quot;ibc-0&quot;,query_type=&quot;query_channel&quot;} 13
+queries_cache_hits{chain=&quot;ibc-0&quot;,query_type=&quot;query_client_state&quot;} 29
+queries_cache_hits{chain=&quot;ibc-0&quot;,query_type=&quot;query_connection&quot;} 29
+queries_cache_hits{chain=&quot;ibc-0&quot;,query_type=&quot;query_latest_height&quot;} 133
+queries_cache_hits{chain=&quot;ibc-1&quot;,query_type=&quot;query_channel&quot;} 6
+queries_cache_hits{chain=&quot;ibc-1&quot;,query_type=&quot;query_client_state&quot;} 50
+queries_cache_hits{chain=&quot;ibc-1&quot;,query_type=&quot;query_connection&quot;} 17
+queries_cache_hits{chain=&quot;ibc-1&quot;,query_type=&quot;query_latest_height&quot;} 64
+# HELP receive_packets_confirmed Number of confirmed receive packets. Available if relayer runs with Tx confirmation enabled
+# TYPE receive_packets_confirmed counter
+receive_packets_confirmed{src_chain=&quot;ibc-0&quot;,src_channel=&quot;channel-0&quot;,src_port=&quot;transfer&quot;} 2
+receive_packets_confirmed{src_chain=&quot;ibc-1&quot;,src_channel=&quot;channel-0&quot;,src_port=&quot;transfer&quot;} 2
+# HELP send_packet_events Number of SendPacket events received
+# TYPE send_packet_events counter
+send_packet_events{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;} 2
+send_packet_events{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;} 2
+# HELP total_messages_submitted Number of messages submitted to a specific chain
+# TYPE total_messages_submitted counter
+total_messages_submitted{chain=&quot;ibc-0&quot;} 11
+total_messages_submitted{chain=&quot;ibc-1&quot;} 22
+# HELP tx_latency_confirmed The latency for all transactions submitted &amp; confirmed to a specific chain, i.e. the difference between the moment when Hermes received a batch of events until the corresponding transaction(s) were confirmed. Milliseconds.
+# TYPE tx_latency_confirmed histogram
+tx_latency_confirmed_bucket{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;,le=&quot;1000&quot;} 0
+tx_latency_confirmed_bucket{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;,le=&quot;5000&quot;} 4
+tx_latency_confirmed_bucket{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;,le=&quot;9000&quot;} 4
+tx_latency_confirmed_bucket{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;,le=&quot;13000&quot;} 4
+tx_latency_confirmed_bucket{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;,le=&quot;17000&quot;} 4
+tx_latency_confirmed_bucket{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;,le=&quot;20000&quot;} 4
+tx_latency_confirmed_bucket{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;,le=&quot;+Inf&quot;} 4
+tx_latency_confirmed_sum{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;} 14265
+tx_latency_confirmed_count{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;} 4
+tx_latency_confirmed_bucket{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;,le=&quot;1000&quot;} 0
+tx_latency_confirmed_bucket{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;,le=&quot;5000&quot;} 4
+tx_latency_confirmed_bucket{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;,le=&quot;9000&quot;} 4
+tx_latency_confirmed_bucket{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;,le=&quot;13000&quot;} 4
+tx_latency_confirmed_bucket{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;,le=&quot;17000&quot;} 4
+tx_latency_confirmed_bucket{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;,le=&quot;20000&quot;} 4
+tx_latency_confirmed_bucket{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;,le=&quot;+Inf&quot;} 4
+tx_latency_confirmed_sum{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;} 10103
+tx_latency_confirmed_count{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;} 4
+# HELP tx_latency_submitted The latency for all transactions submitted to a specific chain, i.e. the difference between the moment when Hermes received a batch of events and when it submitted the corresponding transaction(s). Milliseconds.
+# TYPE tx_latency_submitted histogram
+tx_latency_submitted_bucket{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;,le=&quot;200&quot;} 0
+tx_latency_submitted_bucket{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;,le=&quot;500&quot;} 2
+tx_latency_submitted_bucket{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;,le=&quot;1000&quot;} 4
+tx_latency_submitted_bucket{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;,le=&quot;2000&quot;} 4
+tx_latency_submitted_bucket{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;,le=&quot;5000&quot;} 4
+tx_latency_submitted_bucket{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;,le=&quot;10000&quot;} 4
+tx_latency_submitted_bucket{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;,le=&quot;+Inf&quot;} 4
+tx_latency_submitted_sum{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;} 1941
+tx_latency_submitted_count{chain=&quot;ibc-0&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-1&quot;,port=&quot;transfer&quot;} 4
+tx_latency_submitted_bucket{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;,le=&quot;200&quot;} 0
+tx_latency_submitted_bucket{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;,le=&quot;500&quot;} 0
+tx_latency_submitted_bucket{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;,le=&quot;1000&quot;} 4
+tx_latency_submitted_bucket{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;,le=&quot;2000&quot;} 4
+tx_latency_submitted_bucket{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;,le=&quot;5000&quot;} 4
+tx_latency_submitted_bucket{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;,le=&quot;10000&quot;} 4
+tx_latency_submitted_bucket{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;,le=&quot;+Inf&quot;} 4
+tx_latency_submitted_sum{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;} 2535
+tx_latency_submitted_count{chain=&quot;ibc-1&quot;,channel=&quot;channel-0&quot;,counterparty=&quot;ibc-0&quot;,port=&quot;transfer&quot;} 4
+# HELP wallet_balance The balance of each wallet Hermes uses per chain. Please note that when converting the balance to f64 a loss in precision might be introduced in the displayed value
+# TYPE wallet_balance gauge
+wallet_balance{account=&quot;cosmos1a450s556xf9n63vdd9aet6g6t29tm207ygp5rj&quot;,chain=&quot;ibc-1&quot;,denom=&quot;stake&quot;} 99969960
+wallet_balance{account=&quot;cosmos1fafdyl4hl0ltcx4c3y9zhnkf5uxcah9tefuavy&quot;,chain=&quot;ibc-0&quot;,denom=&quot;stake&quot;} 99983143
+# HELP workers Number of workers
+# TYPE workers gauge
+workers{type=&quot;channel&quot;} 3
+workers{type=&quot;client&quot;} 2
+workers{type=&quot;connection&quot;} 3
+workers{type=&quot;packet&quot;} 2
+workers{type=&quot;wallet&quot;} 2
+# HELP ws_events How many IBC events did Hermes receive via the websocket subscription
+# TYPE ws_events counter
+ws_events{chain=&quot;ibc-0&quot;} 115
+ws_events{chain=&quot;ibc-1&quot;} 128
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../documentation/telemetry/operators.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next" href="../../documentation/rest-api.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../documentation/telemetry/operators.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next" href="../../documentation/rest-api.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../../mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../../searcher.js" type="text/javascript" charset="utf-8"></script>
+
+        <script src="../../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../../highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../../book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="../../mermaid.min.js"></script>
+        <script type="text/javascript" src="../../mermaid-init.js"></script>
+
+
+    </body>
+</html>

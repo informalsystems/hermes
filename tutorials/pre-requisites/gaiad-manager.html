@@ -1,0 +1,314 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Install Gaiad Manager - Hermes (IBC Relayer CLI) Documentation</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="../../favicon.svg">
+        <link rel="shortcut icon" href="../../favicon.png">
+        <link rel="stylesheet" href="../../css/variables.css">
+        <link rel="stylesheet" href="../../css/general.css">
+        <link rel="stylesheet" href="../../css/chrome.css">
+        <link rel="stylesheet" href="../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../../highlight.css">
+        <link rel="stylesheet" href="../../tomorrow-night.css">
+        <link rel="stylesheet" href="../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "../../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><li class="part-title">Hermes v1.0.0</li><li class="spacer"></li><li class="chapter-item expanded "><a href="../../index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../../quick-start/index.html"><strong aria-hidden="true">2.</strong> Quick start</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../quick-start/pre-requisites.html"><strong aria-hidden="true">2.1.</strong> Prerequisites</a></li><li class="chapter-item expanded "><a href="../../quick-start/installation.html"><strong aria-hidden="true">2.2.</strong> Installation</a></li></ol></li><li class="chapter-item expanded "><a href="../../tutorials/index.html"><strong aria-hidden="true">3.</strong> Tutorials</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../tutorials/pre-requisites/index.html"><strong aria-hidden="true">3.1.</strong> Prerequisites for local chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../tutorials/pre-requisites/gaia.html"><strong aria-hidden="true">3.1.1.</strong> Install Gaia</a></li><li class="chapter-item expanded "><a href="../../tutorials/pre-requisites/gaiad-manager.html" class="active"><strong aria-hidden="true">3.1.2.</strong> Install Gaiad Manager</a></li></ol></li><li class="chapter-item expanded "><a href="../../tutorials/local-chains/index.html"><strong aria-hidden="true">3.2.</strong> Local chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../tutorials/local-chains/start-local-chains.html"><strong aria-hidden="true">3.2.1.</strong> Start the local chains</a></li><li class="chapter-item expanded "><a href="../../tutorials/local-chains/add-a-new-relay-path.html"><strong aria-hidden="true">3.2.2.</strong> Add a new relay path</a></li><li class="chapter-item expanded "><a href="../../tutorials/local-chains/start-relaying.html"><strong aria-hidden="true">3.2.3.</strong> Start relaying</a></li></ol></li><li class="chapter-item expanded "><a href="../../tutorials/more-chains/index.html"><strong aria-hidden="true">3.3.</strong> More Local Chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../tutorials/more-chains/start-local-chains.html"><strong aria-hidden="true">3.3.1.</strong> Start the local chains</a></li><li class="chapter-item expanded "><a href="../../tutorials/more-chains/build-the-topology.html"><strong aria-hidden="true">3.3.2.</strong> Build the topology</a></li><li class="chapter-item expanded "><a href="../../tutorials/more-chains/start-relaying.html"><strong aria-hidden="true">3.3.3.</strong> Start relaying</a></li><li class="chapter-item expanded "><a href="../../tutorials/more-chains/concurrent-instances.html"><strong aria-hidden="true">3.3.4.</strong> Add new instances of Hermes</a></li></ol></li><li class="chapter-item expanded "><a href="../../tutorials/production/index.html"><strong aria-hidden="true">3.4.</strong> Relaying in production</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../tutorials/production/setup-grafana.html"><strong aria-hidden="true">3.4.1.</strong> Set up the monitoring platform</a></li><li class="chapter-item expanded "><a href="../../tutorials/production/setup-hermes.html"><strong aria-hidden="true">3.4.2.</strong> Set up Hermes</a></li><li class="chapter-item expanded "><a href="../../tutorials/production/start-relaying.html"><strong aria-hidden="true">3.4.3.</strong> Start relaying</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../../advanced/index.html"><strong aria-hidden="true">4.</strong> Advanced</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../advanced/features.html"><strong aria-hidden="true">4.1.</strong> Features</a></li><li class="chapter-item expanded "><a href="../../advanced/troubleshooting/index.html"><strong aria-hidden="true">4.2.</strong> Troubleshooting</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../advanced/troubleshooting/help-command.html"><strong aria-hidden="true">4.2.1.</strong> Help Command</a></li><li class="chapter-item expanded "><a href="../../advanced/troubleshooting/profiling.html"><strong aria-hidden="true">4.2.2.</strong> Profiling</a></li><li class="chapter-item expanded "><a href="../../advanced/troubleshooting/log-level.html"><strong aria-hidden="true">4.2.3.</strong> Log level</a></li><li class="chapter-item expanded "><a href="../../advanced/troubleshooting/patch-gaia.html"><strong aria-hidden="true">4.2.4.</strong> Patch Gaia</a></li><li class="chapter-item expanded "><a href="../../advanced/troubleshooting/inspect.html"><strong aria-hidden="true">4.2.5.</strong> Inspecting the relayer's state</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../../documentation/index.html"><strong aria-hidden="true">5.</strong> Documentation</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../documentation/configuration/index.html"><strong aria-hidden="true">5.1.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../documentation/configuration/configure-hermes.html"><strong aria-hidden="true">5.1.1.</strong> Configure Hermes</a></li><li class="chapter-item expanded "><a href="../../documentation/configuration/description.html"><strong aria-hidden="true">5.1.2.</strong> Description of the parameters</a></li></ol></li><li class="chapter-item expanded "><a href="../../documentation/telemetry/index.html"><strong aria-hidden="true">5.2.</strong> Telemetry</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../documentation/telemetry/operators.html"><strong aria-hidden="true">5.2.1.</strong> Operators guide</a></li><li class="chapter-item expanded "><a href="../../documentation/telemetry/integration.html"><strong aria-hidden="true">5.2.2.</strong> Integration</a></li></ol></li><li class="chapter-item expanded "><a href="../../documentation/rest-api.html"><strong aria-hidden="true">5.3.</strong> REST API</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/index.html"><strong aria-hidden="true">5.4.</strong> Commands Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../documentation/commands/global.html"><strong aria-hidden="true">5.4.1.</strong> Global options and JSON output</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/keys/index.html"><strong aria-hidden="true">5.4.2.</strong> Keys</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/config.html"><strong aria-hidden="true">5.4.3.</strong> Config</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/path-setup/index.html"><strong aria-hidden="true">5.4.4.</strong> Path setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../documentation/commands/path-setup/clients.html"><strong aria-hidden="true">5.4.4.1.</strong> Clients</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/path-setup/connections.html"><strong aria-hidden="true">5.4.4.2.</strong> Connections</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/path-setup/channels.html"><strong aria-hidden="true">5.4.4.3.</strong> Channels</a></li></ol></li><li class="chapter-item expanded "><a href="../../documentation/commands/relaying/index.html"><strong aria-hidden="true">5.4.5.</strong> Relaying</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../documentation/commands/relaying/packets.html"><strong aria-hidden="true">5.4.5.1.</strong> Packet Messages</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/relaying/handshakes.html"><strong aria-hidden="true">5.4.5.2.</strong> Handshake Messages</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/relaying/clear.html"><strong aria-hidden="true">5.4.5.3.</strong> Clearing Packets</a></li></ol></li><li class="chapter-item expanded "><a href="../../documentation/commands/listen/index.html"><strong aria-hidden="true">5.4.6.</strong> Listen mode</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/upgrade/index.html"><strong aria-hidden="true">5.4.7.</strong> Client upgrade</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../documentation/commands/upgrade/test.html"><strong aria-hidden="true">5.4.7.1.</strong> Testing client upgrade</a></li></ol></li><li class="chapter-item expanded "><a href="../../documentation/commands/misbehaviour/index.html"><strong aria-hidden="true">5.4.8.</strong> Misbehaviour</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/queries/index.html"><strong aria-hidden="true">5.4.9.</strong> Queries</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../documentation/commands/queries/client.html"><strong aria-hidden="true">5.4.9.1.</strong> Client</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/queries/connection.html"><strong aria-hidden="true">5.4.9.2.</strong> Connection</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/queries/channel.html"><strong aria-hidden="true">5.4.9.3.</strong> Channel</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/queries/packet.html"><strong aria-hidden="true">5.4.9.4.</strong> Packet</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/queries/tx.html"><strong aria-hidden="true">5.4.9.5.</strong> Tx</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/queries/transfer.html"><strong aria-hidden="true">5.4.9.6.</strong> Transfer</a></li></ol></li><li class="chapter-item expanded "><a href="../../documentation/commands/tx/index.html"><strong aria-hidden="true">5.4.10.</strong> Transactions</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../documentation/commands/tx/connection.html"><strong aria-hidden="true">5.4.10.1.</strong> Connection</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/tx/channel-open.html"><strong aria-hidden="true">5.4.10.2.</strong> Channel Open</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/tx/channel-close.html"><strong aria-hidden="true">5.4.10.3.</strong> Channel Close</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/tx/packet.html"><strong aria-hidden="true">5.4.10.4.</strong> Packet</a></li><li class="chapter-item expanded "><a href="../../documentation/commands/tx/upgrade.html"><strong aria-hidden="true">5.4.10.5.</strong> Upgrade</a></li></ol></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../../glossary.html"><strong aria-hidden="true">6.</strong> Glossary</a></li><li class="spacer"></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Hermes (IBC Relayer CLI) Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="install-gaiad-manager"><a class="header" href="#install-gaiad-manager">Install Gaiad Manager</a></h2>
+<p>Gaiad manager (<code>gm</code>) is a command-line tool (CLI) that helps manage local <code>gaiad</code> networks. </p>
+<p>Follow the instructions below to install and configure <code>gm</code>.</p>
+<hr />
+<h3 id="requirements"><a class="header" href="#requirements">Requirements</a></h3>
+<ul>
+<li>Bourne shell (<code>sh</code>)</li>
+<li><a href="https://github.com/freshautomations/sconfig/releases"><code>sconfig</code></a> and
+<a href="https://github.com/freshautomations/stoml/releases"><code>stoml</code></a> installed in your PATH (put them in <code>/usr/local/bin</code>)</li>
+<li><code>sed</code>, <code>tr</code></li>
+<li>For shell-completion Bourne Again Shell (<code>bash</code>) for the local user</li>
+</ul>
+<h3 id="how-to-run"><a class="header" href="#how-to-run">How to run</a></h3>
+<ol>
+<li>
+<p>Install the dependencies.</p>
+<p>On macOS:</p>
+<pre><code class="language-bash"># You might need sudo permissions and create the `usr/local/bin` directory
+
+curl -Lo /usr/local/bin/sconfig https://github.com/freshautomations/sconfig/releases/download/v0.1.0/sconfig_darwin_amd64
+curl -Lo /usr/local/bin/stoml https://github.com/freshautomations/stoml/releases/download/v0.7.0/stoml_darwin_amd64
+chmod 755 /usr/local/bin/sconfig
+chmod 755 /usr/local/bin/stoml
+</code></pre>
+<p>On Linux:</p>
+<pre><code class="language-bash">curl -Lo /usr/local/bin/sconfig https://github.com/freshautomations/sconfig/releases/download/v0.1.0/sconfig_linux_amd64
+curl -Lo /usr/local/bin/stoml https://github.com/freshautomations/stoml/releases/download/v0.7.0/stoml_linux_amd64
+chmod 755 /usr/local/bin/sconfig
+chmod 755 /usr/local/bin/stoml
+</code></pre>
+</li>
+<li>
+<p>Install <code>gm</code></p>
+<pre><code class="language-bash">git clone https://github.com/informalsystems/gm
+gm/bin/gm install
+</code></pre>
+<p>Alternatively, you can create the folder <code>$HOME/.gm/bin</code> and copy the files from <code>gm/bin</code> in there.</p>
+</li>
+<li>
+<p>Activate <code>gm</code></p>
+</li>
+</ol>
+<ul>
+<li>
+<p>Add <code>source $HOME/.gm/bin/shell-support</code> to a file that executes when a new terminal window comes up
+(<code>$HOME/.bash_profile</code> or <code>$HOME/.bashrc</code> or <code>$HOME/.zprofile</code>)</p>
+</li>
+<li>
+<p>(Optional) Enable auto-completion</p>
+<ul>
+<li>
+<p>On macOS:</p>
+<pre><code class="language-bash"># Note: zsh is the default shell on MacOS, so no need to run this unless you explicitly use bash
+brew install bash-completion
+</code></pre>
+</li>
+<li>
+<p>On Linux:</p>
+<pre><code>apt install bash-completion || yum install bash-completion
+</code></pre>
+</li>
+</ul>
+</li>
+<li>
+<p>Restart your terminal</p>
+</li>
+</ul>
+<p>Note: The <code>shell-support</code> script allows bash-completion as well as creating a <code>gm</code> alias, so you don't need to add more
+entries to your PATH environment variable. If you don't want to use this, you can always just add <code>$HOME/.gm/bin</code> to
+your path.</p>
+<h3 id="the-configuration-gmtoml"><a class="header" href="#the-configuration-gmtoml">The configuration: <code>gm.toml</code></a></h3>
+<p><strong>Where</strong>: <code>$HOME/.gm/gm.toml</code>.</p>
+<p><strong>Description</strong>: This file contains all the high-level node configuration that <code>gm</code> is aware of. Note that all entries under <code>[global]</code> are also valid entries under any <code>[node]</code> header, and can be used to override the global entries for specific nodes/validators.</p>
+<p><strong>Entries</strong>: All entries are defined and documented in the <code>gm.toml</code> example configuration file.</p>
+<p>Copy and paste below to <code>$HOME/.gm/gm.toml</code> and set Hermes' binary path according to your setup.</p>
+<p>The following configuration you need to specify 2 <code>gaiad</code> chains. <code>hermes</code> will know about these chains.</p>
+<pre><code class="language-toml">[global]
+  add_to_hermes = false
+  auto_maintain_config = true
+  extra_wallets = 2
+  gaiad_binary = &quot;~/go/bin/gaiad&quot;
+  hdpath = &quot;&quot;
+  home_dir = &quot;$HOME/.gm&quot;
+  ports_start_at = 27000
+  validator_mnemonic = &quot;&quot;
+  wallet_mnemonic = &quot;&quot;
+
+  [global.hermes]
+    binary = &quot;./hermes&quot; #change this path according to your setup
+    config = &quot;$HOME/.hermes/config.toml&quot;
+    log_level = &quot;info&quot;
+    telemetry_enabled = true
+    telemetry_host = &quot;127.0.0.1&quot;
+    telemetry_port = 3001
+
+[ibc-0]
+  ports_start_at = 27010
+
+[ibc-1]
+  ports_start_at = 27020
+
+[node-0]
+  add_to_hermes = true
+  network = &quot;ibc-0&quot;
+  ports_start_at = 27030
+
+[node-1]
+  add_to_hermes = true
+  network = &quot;ibc-1&quot;
+  ports_start_at = 27040
+</code></pre>
+<blockquote>
+<p><strong>NOTE:</strong> Go to this page for more details about <a href="https://github.com/informalsystems/gm">Gaiad Manager</a></p>
+</blockquote>
+<hr />
+<h2 id="next-steps"><a class="header" href="#next-steps">Next steps</a></h2>
+<p>Now that <code>Gaiad Manager</code> is installed on your machine, visit the <a href="../local-chains/index.html">first tutorial</a> to learn the basics of Hermes. You will start two local chains and exchange tokens over IBC transfers.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../tutorials/pre-requisites/gaia.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next" href="../../tutorials/local-chains/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../tutorials/pre-requisites/gaia.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next" href="../../tutorials/local-chains/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../../mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../../searcher.js" type="text/javascript" charset="utf-8"></script>
+
+        <script src="../../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../../highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../../book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="../../mermaid.min.js"></script>
+        <script type="text/javascript" src="../../mermaid-init.js"></script>
+
+
+    </body>
+</html>

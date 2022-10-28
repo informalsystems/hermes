@@ -1,0 +1,472 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Client - Hermes (IBC Relayer CLI) Documentation</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="../../../favicon.svg">
+        <link rel="shortcut icon" href="../../../favicon.png">
+        <link rel="stylesheet" href="../../../css/variables.css">
+        <link rel="stylesheet" href="../../../css/general.css">
+        <link rel="stylesheet" href="../../../css/chrome.css">
+        <link rel="stylesheet" href="../../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../../../highlight.css">
+        <link rel="stylesheet" href="../../../tomorrow-night.css">
+        <link rel="stylesheet" href="../../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "../../../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><li class="part-title">Hermes v1.0.0</li><li class="spacer"></li><li class="chapter-item expanded "><a href="../../../index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../../../quick-start/index.html"><strong aria-hidden="true">2.</strong> Quick start</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../quick-start/pre-requisites.html"><strong aria-hidden="true">2.1.</strong> Prerequisites</a></li><li class="chapter-item expanded "><a href="../../../quick-start/installation.html"><strong aria-hidden="true">2.2.</strong> Installation</a></li></ol></li><li class="chapter-item expanded "><a href="../../../tutorials/index.html"><strong aria-hidden="true">3.</strong> Tutorials</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../tutorials/pre-requisites/index.html"><strong aria-hidden="true">3.1.</strong> Prerequisites for local chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../tutorials/pre-requisites/gaia.html"><strong aria-hidden="true">3.1.1.</strong> Install Gaia</a></li><li class="chapter-item expanded "><a href="../../../tutorials/pre-requisites/gaiad-manager.html"><strong aria-hidden="true">3.1.2.</strong> Install Gaiad Manager</a></li></ol></li><li class="chapter-item expanded "><a href="../../../tutorials/local-chains/index.html"><strong aria-hidden="true">3.2.</strong> Local chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../tutorials/local-chains/start-local-chains.html"><strong aria-hidden="true">3.2.1.</strong> Start the local chains</a></li><li class="chapter-item expanded "><a href="../../../tutorials/local-chains/add-a-new-relay-path.html"><strong aria-hidden="true">3.2.2.</strong> Add a new relay path</a></li><li class="chapter-item expanded "><a href="../../../tutorials/local-chains/start-relaying.html"><strong aria-hidden="true">3.2.3.</strong> Start relaying</a></li></ol></li><li class="chapter-item expanded "><a href="../../../tutorials/more-chains/index.html"><strong aria-hidden="true">3.3.</strong> More Local Chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../tutorials/more-chains/start-local-chains.html"><strong aria-hidden="true">3.3.1.</strong> Start the local chains</a></li><li class="chapter-item expanded "><a href="../../../tutorials/more-chains/build-the-topology.html"><strong aria-hidden="true">3.3.2.</strong> Build the topology</a></li><li class="chapter-item expanded "><a href="../../../tutorials/more-chains/start-relaying.html"><strong aria-hidden="true">3.3.3.</strong> Start relaying</a></li><li class="chapter-item expanded "><a href="../../../tutorials/more-chains/concurrent-instances.html"><strong aria-hidden="true">3.3.4.</strong> Add new instances of Hermes</a></li></ol></li><li class="chapter-item expanded "><a href="../../../tutorials/production/index.html"><strong aria-hidden="true">3.4.</strong> Relaying in production</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../tutorials/production/setup-grafana.html"><strong aria-hidden="true">3.4.1.</strong> Set up the monitoring platform</a></li><li class="chapter-item expanded "><a href="../../../tutorials/production/setup-hermes.html"><strong aria-hidden="true">3.4.2.</strong> Set up Hermes</a></li><li class="chapter-item expanded "><a href="../../../tutorials/production/start-relaying.html"><strong aria-hidden="true">3.4.3.</strong> Start relaying</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../../../advanced/index.html"><strong aria-hidden="true">4.</strong> Advanced</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../advanced/features.html"><strong aria-hidden="true">4.1.</strong> Features</a></li><li class="chapter-item expanded "><a href="../../../advanced/troubleshooting/index.html"><strong aria-hidden="true">4.2.</strong> Troubleshooting</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../advanced/troubleshooting/help-command.html"><strong aria-hidden="true">4.2.1.</strong> Help Command</a></li><li class="chapter-item expanded "><a href="../../../advanced/troubleshooting/profiling.html"><strong aria-hidden="true">4.2.2.</strong> Profiling</a></li><li class="chapter-item expanded "><a href="../../../advanced/troubleshooting/log-level.html"><strong aria-hidden="true">4.2.3.</strong> Log level</a></li><li class="chapter-item expanded "><a href="../../../advanced/troubleshooting/patch-gaia.html"><strong aria-hidden="true">4.2.4.</strong> Patch Gaia</a></li><li class="chapter-item expanded "><a href="../../../advanced/troubleshooting/inspect.html"><strong aria-hidden="true">4.2.5.</strong> Inspecting the relayer's state</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../../../documentation/index.html"><strong aria-hidden="true">5.</strong> Documentation</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../documentation/configuration/index.html"><strong aria-hidden="true">5.1.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../documentation/configuration/configure-hermes.html"><strong aria-hidden="true">5.1.1.</strong> Configure Hermes</a></li><li class="chapter-item expanded "><a href="../../../documentation/configuration/description.html"><strong aria-hidden="true">5.1.2.</strong> Description of the parameters</a></li></ol></li><li class="chapter-item expanded "><a href="../../../documentation/telemetry/index.html"><strong aria-hidden="true">5.2.</strong> Telemetry</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../documentation/telemetry/operators.html"><strong aria-hidden="true">5.2.1.</strong> Operators guide</a></li><li class="chapter-item expanded "><a href="../../../documentation/telemetry/integration.html"><strong aria-hidden="true">5.2.2.</strong> Integration</a></li></ol></li><li class="chapter-item expanded "><a href="../../../documentation/rest-api.html"><strong aria-hidden="true">5.3.</strong> REST API</a></li><li class="chapter-item expanded "><a href="../../../documentation/commands/index.html"><strong aria-hidden="true">5.4.</strong> Commands Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../documentation/commands/global.html"><strong aria-hidden="true">5.4.1.</strong> Global options and JSON output</a></li><li class="chapter-item expanded "><a href="../../../documentation/commands/keys/index.html"><strong aria-hidden="true">5.4.2.</strong> Keys</a></li><li class="chapter-item expanded "><a href="../../../documentation/commands/config.html"><strong aria-hidden="true">5.4.3.</strong> Config</a></li><li class="chapter-item expanded "><a href="../../../documentation/commands/path-setup/index.html"><strong aria-hidden="true">5.4.4.</strong> Path setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../documentation/commands/path-setup/clients.html"><strong aria-hidden="true">5.4.4.1.</strong> Clients</a></li><li class="chapter-item expanded "><a href="../../../documentation/commands/path-setup/connections.html"><strong aria-hidden="true">5.4.4.2.</strong> Connections</a></li><li class="chapter-item expanded "><a href="../../../documentation/commands/path-setup/channels.html"><strong aria-hidden="true">5.4.4.3.</strong> Channels</a></li></ol></li><li class="chapter-item expanded "><a href="../../../documentation/commands/relaying/index.html"><strong aria-hidden="true">5.4.5.</strong> Relaying</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../documentation/commands/relaying/packets.html"><strong aria-hidden="true">5.4.5.1.</strong> Packet Messages</a></li><li class="chapter-item expanded "><a href="../../../documentation/commands/relaying/handshakes.html"><strong aria-hidden="true">5.4.5.2.</strong> Handshake Messages</a></li><li class="chapter-item expanded "><a href="../../../documentation/commands/relaying/clear.html"><strong aria-hidden="true">5.4.5.3.</strong> Clearing Packets</a></li></ol></li><li class="chapter-item expanded "><a href="../../../documentation/commands/listen/index.html"><strong aria-hidden="true">5.4.6.</strong> Listen mode</a></li><li class="chapter-item expanded "><a href="../../../documentation/commands/upgrade/index.html"><strong aria-hidden="true">5.4.7.</strong> Client upgrade</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../documentation/commands/upgrade/test.html"><strong aria-hidden="true">5.4.7.1.</strong> Testing client upgrade</a></li></ol></li><li class="chapter-item expanded "><a href="../../../documentation/commands/misbehaviour/index.html"><strong aria-hidden="true">5.4.8.</strong> Misbehaviour</a></li><li class="chapter-item expanded "><a href="../../../documentation/commands/queries/index.html"><strong aria-hidden="true">5.4.9.</strong> Queries</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../documentation/commands/queries/client.html" class="active"><strong aria-hidden="true">5.4.9.1.</strong> Client</a></li><li class="chapter-item expanded "><a href="../../../documentation/commands/queries/connection.html"><strong aria-hidden="true">5.4.9.2.</strong> Connection</a></li><li class="chapter-item expanded "><a href="../../../documentation/commands/queries/channel.html"><strong aria-hidden="true">5.4.9.3.</strong> Channel</a></li><li class="chapter-item expanded "><a href="../../../documentation/commands/queries/packet.html"><strong aria-hidden="true">5.4.9.4.</strong> Packet</a></li><li class="chapter-item expanded "><a href="../../../documentation/commands/queries/tx.html"><strong aria-hidden="true">5.4.9.5.</strong> Tx</a></li><li class="chapter-item expanded "><a href="../../../documentation/commands/queries/transfer.html"><strong aria-hidden="true">5.4.9.6.</strong> Transfer</a></li></ol></li><li class="chapter-item expanded "><a href="../../../documentation/commands/tx/index.html"><strong aria-hidden="true">5.4.10.</strong> Transactions</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../documentation/commands/tx/connection.html"><strong aria-hidden="true">5.4.10.1.</strong> Connection</a></li><li class="chapter-item expanded "><a href="../../../documentation/commands/tx/channel-open.html"><strong aria-hidden="true">5.4.10.2.</strong> Channel Open</a></li><li class="chapter-item expanded "><a href="../../../documentation/commands/tx/channel-close.html"><strong aria-hidden="true">5.4.10.3.</strong> Channel Close</a></li><li class="chapter-item expanded "><a href="../../../documentation/commands/tx/packet.html"><strong aria-hidden="true">5.4.10.4.</strong> Packet</a></li><li class="chapter-item expanded "><a href="../../../documentation/commands/tx/upgrade.html"><strong aria-hidden="true">5.4.10.5.</strong> Upgrade</a></li></ol></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../../../glossary.html"><strong aria-hidden="true">6.</strong> Glossary</a></li><li class="spacer"></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Hermes (IBC Relayer CLI) Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="table-of-contents"><a class="header" href="#table-of-contents">Table of Contents</a></h1>
+<ul>
+<li><a href="#query-clients">Query Clients</a></li>
+<li><a href="#query-client-data">Query Client Data</a>
+<ul>
+<li><a href="#query-the-client-state">Query the client state</a></li>
+<li><a href="#query-the-client-consensus-state">Query the client consensus state</a></li>
+<li><a href="#query-the-identifiers-of-all-connections-associated-with-a-given-client">Query the identifiers of all connections associated with a given client</a></li>
+<li><a href="#query-for-the-header-used-in-a-client-update-at-a-certain-height">Query for the header used in a client update at a certain height</a></li>
+</ul>
+</li>
+</ul>
+<h1 id="query-clients"><a class="header" href="#query-clients">Query Clients</a></h1>
+<p>Use the <code>query clients</code> command to query the identifiers of all clients on a given chain, called
+the <em>host</em> chain.</p>
+<pre><code class="language-shell">DESCRIPTION:
+Query the identifiers of all clients on a chain
+
+USAGE:
+    hermes query clients [OPTIONS] --host-chain &lt;HOST_CHAIN_ID&gt;
+
+OPTIONS:
+    -h, --help
+            Print help information
+
+        --omit-chain-ids
+            Omit printing the reference (or target) chain for each client
+
+        --reference-chain &lt;REFERENCE_CHAIN_ID&gt;
+            Filter for clients which target a specific chain id (implies '--omit-chain-ids')
+
+REQUIRED:
+        --host-chain &lt;HOST_CHAIN_ID&gt;    Identifier of the chain to query
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query all clients on <code>ibc-1</code>:</p>
+<pre><code class="language-shell">hermes query clients --host-chain ibc-1
+</code></pre>
+<pre><code class="language-json">Success: [
+    ClientChain {
+        client_id: ClientId(
+            &quot;07-tendermint-0&quot;,
+        ),
+        chain_id: ChainId {
+            id: &quot;ibc-0&quot;,
+            version: 0,
+        },
+    },
+    ClientChain {
+        client_id: ClientId(
+            &quot;07-tendermint-1&quot;,
+        ),
+        chain_id: ChainId {
+            id: &quot;ibc-2&quot;,
+            version: 2,
+        },
+    },
+]
+</code></pre>
+<p>Query all clients on <code>ibc-1</code> having <code>ibc-2</code> as their reference chain:</p>
+<pre><code class="language-shell">hermes query clients --reference-chain ibc-2 --host-chain ibc-1
+</code></pre>
+<pre><code class="language-json">Success: [
+    ClientId(
+        &quot;07-tendermint-1&quot;,
+    ),
+]
+</code></pre>
+<h1 id="query-client-data"><a class="header" href="#query-client-data">Query Client Data</a></h1>
+<p>Use the <code>query client</code> command to query the information about a specific client.</p>
+<pre><code class="language-shell">DESCRIPTION:
+Query information about clients
+
+USAGE:
+    hermes query client &lt;SUBCOMMAND&gt;
+
+OPTIONS:
+    -h, --help    Print help information
+
+SUBCOMMANDS:
+    connections    Query the client connections
+    consensus      Query the client consensus state
+    header         Query for the header used in a client update at a certain height
+    help           Print this message or the help of the given subcommand(s)
+    state          Query the client state
+</code></pre>
+<h2 id="query-the-client-state"><a class="header" href="#query-the-client-state">Query the client state</a></h2>
+<p>Use the <code>query client state</code> command to query the client state of a client:</p>
+<pre><code class="language-shell">DESCRIPTION:
+Query the client state
+
+USAGE:
+    hermes query client state [OPTIONS] --chain &lt;CHAIN_ID&gt; --client &lt;CLIENT_ID&gt;
+
+OPTIONS:
+    -h, --help               Print help information
+        --height &lt;HEIGHT&gt;    The chain height context for the query
+
+REQUIRED:
+        --chain &lt;CHAIN_ID&gt;      Identifier of the chain to query
+        --client &lt;CLIENT_ID&gt;    Identifier of the client to query
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query the state of client <code>07-tendermint-2</code> on <code>ibc-1</code>:</p>
+<pre><code class="language-shell">hermes query client state --chain ibc-1 --client 07-tendermint-1
+</code></pre>
+<pre><code class="language-json">Success: ClientState {
+    chain_id: ChainId {
+        id: &quot;ibc-2&quot;,
+        version: 2,
+    },
+    trust_level: TrustThresholdFraction {
+        numerator: 1,
+        denominator: 3,
+    },
+    trusting_period: 1209600s,
+    unbonding_period: 1814400s,
+    max_clock_drift: 3s,
+    frozen_height: Height {
+        revision: 0,
+        height: 0,
+    },
+    latest_height: Height {
+        revision: 2,
+        height: 3069,
+    },
+    upgrade_path: [
+        &quot;upgrade&quot;,
+        &quot;upgradedIBCState&quot;,
+    ],
+    allow_update_after_expiry: true,
+    allow_update_after_misbehaviour: true,
+}
+</code></pre>
+<h2 id="query-the-client-consensus-state"><a class="header" href="#query-the-client-consensus-state">Query the client consensus state</a></h2>
+<p>Use the <code>query client consensus</code> command to query the consensus states of a given client, or the state at a specified height:</p>
+<pre><code class="language-shell">DESCRIPTION:
+Query the client consensus state
+
+USAGE:
+    hermes query client consensus [OPTIONS] --chain &lt;CHAIN_ID&gt; --client &lt;CLIENT_ID&gt;
+
+OPTIONS:
+        --consensus-height &lt;CONSENSUS_HEIGHT&gt;
+            Height of the client's consensus state to query
+
+    -h, --help
+            Print help information
+
+        --height &lt;HEIGHT&gt;
+            The chain height context to be used, applicable only to a specific height
+
+        --heights-only
+            Show only consensus heights
+
+REQUIRED:
+        --chain &lt;CHAIN_ID&gt;      Identifier of the chain to query
+        --client &lt;CLIENT_ID&gt;    Identifier of the client to query
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query the states of client <code>07-tendermint-0</code> on <code>ibc-0</code>:</p>
+<pre><code class="language-shell">hermes query client consensus --heights-only --chain ibc-0 --client 07-tendermint-0
+</code></pre>
+<pre><code class="language-json">Success: [
+    Height {
+        revision: 1,
+        height: 3049,
+    },
+    Height {
+        revision: 1,
+        height: 2888,
+    },
+    Height {
+        revision: 1,
+        height: 2736,
+    },
+    Height {
+        revision: 1,
+        height: 2729,
+    },
+    Height {
+        revision: 1,
+        height: 2724,
+    },
+    Height {
+        revision: 1,
+        height: 2717,
+    },
+]
+</code></pre>
+<p>Query <code>ibc-0</code> at height <code>2800</code> for the consensus state for height <code>2724</code>:</p>
+<pre><code class="language-shell">hermes query client consensus --consensus-height 2724 --height 2800 --chain ibc-0 --client 07-tendermint-0
+</code></pre>
+<pre><code class="language-json">Success: ConsensusState {
+    timestamp: Time(
+        2021-04-13T14:11:20.969154Z
+    ),
+    root: CommitmentRoot(
+        &quot;371DD19003221B60162D42C78FD86ABF95A572F3D9497084584B75F97B05B70C&quot;
+    ),
+    next_validators_hash: Hash::Sha256(
+        740950668B6705A136D041914FC219045B1D0AD1C6A284C626BF5116005A98A7
+    ),
+}
+</code></pre>
+<h2 id="query-the-identifiers-of-all-connections-associated-with-a-given-client"><a class="header" href="#query-the-identifiers-of-all-connections-associated-with-a-given-client">Query the identifiers of all connections associated with a given client</a></h2>
+<p>Use the <code>query client connections</code> command to query the connections associated with a given client:</p>
+<pre><code class="language-shell">DESCRIPTION:
+Query the client connections
+
+USAGE:
+    hermes query client connections [OPTIONS] --chain &lt;CHAIN_ID&gt; --client &lt;CLIENT_ID&gt;
+
+OPTIONS:
+    -h, --help               Print help information
+        --height &lt;HEIGHT&gt;    The chain height which this query should reflect
+
+REQUIRED:
+        --chain &lt;CHAIN_ID&gt;      Identifier of the chain to query
+        --client &lt;CLIENT_ID&gt;    Identifier of the client to query
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query the connections of client <code>07-tendermint-0</code> on <code>ibc-0</code>:</p>
+<pre><code class="language-shell">hermes query client connections --chain ibc-0 --client 07-tendermint-0
+</code></pre>
+<pre><code class="language-json">Success: [
+    ConnectionId(&quot;connection-0&quot;),
+    ConnectionId(&quot;connection-1&quot;),
+]
+</code></pre>
+<h2 id="query-for-the-header-used-in-a-client-update-at-a-certain-height"><a class="header" href="#query-for-the-header-used-in-a-client-update-at-a-certain-height">Query for the header used in a client update at a certain height</a></h2>
+<pre><code>DESCRIPTION:
+Query for the header used in a client update at a certain height
+
+USAGE:
+    hermes query client header [OPTIONS] --chain &lt;CHAIN_ID&gt; --client &lt;CLIENT_ID&gt; --consensus-height &lt;CONSENSUS_HEIGHT&gt;
+
+OPTIONS:
+    -h, --help               Print help information
+        --height &lt;HEIGHT&gt;    The chain height context for the query. Leave unspecified for latest
+                             height.
+
+REQUIRED:
+        --chain &lt;CHAIN_ID&gt;                       Identifier of the chain to query
+        --client &lt;CLIENT_ID&gt;                     Identifier of the client to query
+        --consensus-height &lt;CONSENSUS_HEIGHT&gt;    Height of header to query
+</code></pre>
+<p><strong>Example</strong></p>
+<p>Query for the header used in the <code>07-tendermint-0</code> client update at height 2724 on <code>ibc-0</code>:</p>
+<pre><code class="language-shell">hermes query client header --chain ibc-0 --client 07-tendermint-0 --consensus-height 2724
+</code></pre>
+<pre><code class="language-json">Success: [
+    UpdateClient(
+        UpdateClient {
+            common: Attributes {
+                height: Height {
+                    revision: 0,
+                    height: 0,
+                },
+                client_id: ClientId(
+                    &quot;07-tendermint-0&quot;,
+                ),
+                client_type: Tendermint,
+                consensus_height: Height {
+                    revision: 1,
+                    height: 2724,
+                },
+            },
+            header: Some(
+                Tendermint(...),
+            ),
+        },
+    ),
+]
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../../documentation/commands/queries/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next" href="../../../documentation/commands/queries/connection.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../../documentation/commands/queries/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next" href="../../../documentation/commands/queries/connection.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../../../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../../../mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../../../searcher.js" type="text/javascript" charset="utf-8"></script>
+
+        <script src="../../../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../../../highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../../../book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="../../../mermaid.min.js"></script>
+        <script type="text/javascript" src="../../../mermaid-init.js"></script>
+
+
+    </body>
+</html>

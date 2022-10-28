@@ -1,0 +1,342 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Features - Hermes (IBC Relayer CLI) Documentation</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><li class="part-title">Hermes v1.0.0</li><li class="spacer"></li><li class="chapter-item expanded "><a href="../index.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../quick-start/index.html"><strong aria-hidden="true">2.</strong> Quick start</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../quick-start/pre-requisites.html"><strong aria-hidden="true">2.1.</strong> Prerequisites</a></li><li class="chapter-item expanded "><a href="../quick-start/installation.html"><strong aria-hidden="true">2.2.</strong> Installation</a></li></ol></li><li class="chapter-item expanded "><a href="../tutorials/index.html"><strong aria-hidden="true">3.</strong> Tutorials</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../tutorials/pre-requisites/index.html"><strong aria-hidden="true">3.1.</strong> Prerequisites for local chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../tutorials/pre-requisites/gaia.html"><strong aria-hidden="true">3.1.1.</strong> Install Gaia</a></li><li class="chapter-item expanded "><a href="../tutorials/pre-requisites/gaiad-manager.html"><strong aria-hidden="true">3.1.2.</strong> Install Gaiad Manager</a></li></ol></li><li class="chapter-item expanded "><a href="../tutorials/local-chains/index.html"><strong aria-hidden="true">3.2.</strong> Local chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../tutorials/local-chains/start-local-chains.html"><strong aria-hidden="true">3.2.1.</strong> Start the local chains</a></li><li class="chapter-item expanded "><a href="../tutorials/local-chains/add-a-new-relay-path.html"><strong aria-hidden="true">3.2.2.</strong> Add a new relay path</a></li><li class="chapter-item expanded "><a href="../tutorials/local-chains/start-relaying.html"><strong aria-hidden="true">3.2.3.</strong> Start relaying</a></li></ol></li><li class="chapter-item expanded "><a href="../tutorials/more-chains/index.html"><strong aria-hidden="true">3.3.</strong> More Local Chains</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../tutorials/more-chains/start-local-chains.html"><strong aria-hidden="true">3.3.1.</strong> Start the local chains</a></li><li class="chapter-item expanded "><a href="../tutorials/more-chains/build-the-topology.html"><strong aria-hidden="true">3.3.2.</strong> Build the topology</a></li><li class="chapter-item expanded "><a href="../tutorials/more-chains/start-relaying.html"><strong aria-hidden="true">3.3.3.</strong> Start relaying</a></li><li class="chapter-item expanded "><a href="../tutorials/more-chains/concurrent-instances.html"><strong aria-hidden="true">3.3.4.</strong> Add new instances of Hermes</a></li></ol></li><li class="chapter-item expanded "><a href="../tutorials/production/index.html"><strong aria-hidden="true">3.4.</strong> Relaying in production</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../tutorials/production/setup-grafana.html"><strong aria-hidden="true">3.4.1.</strong> Set up the monitoring platform</a></li><li class="chapter-item expanded "><a href="../tutorials/production/setup-hermes.html"><strong aria-hidden="true">3.4.2.</strong> Set up Hermes</a></li><li class="chapter-item expanded "><a href="../tutorials/production/start-relaying.html"><strong aria-hidden="true">3.4.3.</strong> Start relaying</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../advanced/index.html"><strong aria-hidden="true">4.</strong> Advanced</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../advanced/features.html" class="active"><strong aria-hidden="true">4.1.</strong> Features</a></li><li class="chapter-item expanded "><a href="../advanced/troubleshooting/index.html"><strong aria-hidden="true">4.2.</strong> Troubleshooting</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../advanced/troubleshooting/help-command.html"><strong aria-hidden="true">4.2.1.</strong> Help Command</a></li><li class="chapter-item expanded "><a href="../advanced/troubleshooting/profiling.html"><strong aria-hidden="true">4.2.2.</strong> Profiling</a></li><li class="chapter-item expanded "><a href="../advanced/troubleshooting/log-level.html"><strong aria-hidden="true">4.2.3.</strong> Log level</a></li><li class="chapter-item expanded "><a href="../advanced/troubleshooting/patch-gaia.html"><strong aria-hidden="true">4.2.4.</strong> Patch Gaia</a></li><li class="chapter-item expanded "><a href="../advanced/troubleshooting/inspect.html"><strong aria-hidden="true">4.2.5.</strong> Inspecting the relayer's state</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../documentation/index.html"><strong aria-hidden="true">5.</strong> Documentation</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../documentation/configuration/index.html"><strong aria-hidden="true">5.1.</strong> Configuration</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../documentation/configuration/configure-hermes.html"><strong aria-hidden="true">5.1.1.</strong> Configure Hermes</a></li><li class="chapter-item expanded "><a href="../documentation/configuration/description.html"><strong aria-hidden="true">5.1.2.</strong> Description of the parameters</a></li></ol></li><li class="chapter-item expanded "><a href="../documentation/telemetry/index.html"><strong aria-hidden="true">5.2.</strong> Telemetry</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../documentation/telemetry/operators.html"><strong aria-hidden="true">5.2.1.</strong> Operators guide</a></li><li class="chapter-item expanded "><a href="../documentation/telemetry/integration.html"><strong aria-hidden="true">5.2.2.</strong> Integration</a></li></ol></li><li class="chapter-item expanded "><a href="../documentation/rest-api.html"><strong aria-hidden="true">5.3.</strong> REST API</a></li><li class="chapter-item expanded "><a href="../documentation/commands/index.html"><strong aria-hidden="true">5.4.</strong> Commands Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../documentation/commands/global.html"><strong aria-hidden="true">5.4.1.</strong> Global options and JSON output</a></li><li class="chapter-item expanded "><a href="../documentation/commands/keys/index.html"><strong aria-hidden="true">5.4.2.</strong> Keys</a></li><li class="chapter-item expanded "><a href="../documentation/commands/config.html"><strong aria-hidden="true">5.4.3.</strong> Config</a></li><li class="chapter-item expanded "><a href="../documentation/commands/path-setup/index.html"><strong aria-hidden="true">5.4.4.</strong> Path setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../documentation/commands/path-setup/clients.html"><strong aria-hidden="true">5.4.4.1.</strong> Clients</a></li><li class="chapter-item expanded "><a href="../documentation/commands/path-setup/connections.html"><strong aria-hidden="true">5.4.4.2.</strong> Connections</a></li><li class="chapter-item expanded "><a href="../documentation/commands/path-setup/channels.html"><strong aria-hidden="true">5.4.4.3.</strong> Channels</a></li></ol></li><li class="chapter-item expanded "><a href="../documentation/commands/relaying/index.html"><strong aria-hidden="true">5.4.5.</strong> Relaying</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../documentation/commands/relaying/packets.html"><strong aria-hidden="true">5.4.5.1.</strong> Packet Messages</a></li><li class="chapter-item expanded "><a href="../documentation/commands/relaying/handshakes.html"><strong aria-hidden="true">5.4.5.2.</strong> Handshake Messages</a></li><li class="chapter-item expanded "><a href="../documentation/commands/relaying/clear.html"><strong aria-hidden="true">5.4.5.3.</strong> Clearing Packets</a></li></ol></li><li class="chapter-item expanded "><a href="../documentation/commands/listen/index.html"><strong aria-hidden="true">5.4.6.</strong> Listen mode</a></li><li class="chapter-item expanded "><a href="../documentation/commands/upgrade/index.html"><strong aria-hidden="true">5.4.7.</strong> Client upgrade</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../documentation/commands/upgrade/test.html"><strong aria-hidden="true">5.4.7.1.</strong> Testing client upgrade</a></li></ol></li><li class="chapter-item expanded "><a href="../documentation/commands/misbehaviour/index.html"><strong aria-hidden="true">5.4.8.</strong> Misbehaviour</a></li><li class="chapter-item expanded "><a href="../documentation/commands/queries/index.html"><strong aria-hidden="true">5.4.9.</strong> Queries</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../documentation/commands/queries/client.html"><strong aria-hidden="true">5.4.9.1.</strong> Client</a></li><li class="chapter-item expanded "><a href="../documentation/commands/queries/connection.html"><strong aria-hidden="true">5.4.9.2.</strong> Connection</a></li><li class="chapter-item expanded "><a href="../documentation/commands/queries/channel.html"><strong aria-hidden="true">5.4.9.3.</strong> Channel</a></li><li class="chapter-item expanded "><a href="../documentation/commands/queries/packet.html"><strong aria-hidden="true">5.4.9.4.</strong> Packet</a></li><li class="chapter-item expanded "><a href="../documentation/commands/queries/tx.html"><strong aria-hidden="true">5.4.9.5.</strong> Tx</a></li><li class="chapter-item expanded "><a href="../documentation/commands/queries/transfer.html"><strong aria-hidden="true">5.4.9.6.</strong> Transfer</a></li></ol></li><li class="chapter-item expanded "><a href="../documentation/commands/tx/index.html"><strong aria-hidden="true">5.4.10.</strong> Transactions</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../documentation/commands/tx/connection.html"><strong aria-hidden="true">5.4.10.1.</strong> Connection</a></li><li class="chapter-item expanded "><a href="../documentation/commands/tx/channel-open.html"><strong aria-hidden="true">5.4.10.2.</strong> Channel Open</a></li><li class="chapter-item expanded "><a href="../documentation/commands/tx/channel-close.html"><strong aria-hidden="true">5.4.10.3.</strong> Channel Close</a></li><li class="chapter-item expanded "><a href="../documentation/commands/tx/packet.html"><strong aria-hidden="true">5.4.10.4.</strong> Packet</a></li><li class="chapter-item expanded "><a href="../documentation/commands/tx/upgrade.html"><strong aria-hidden="true">5.4.10.5.</strong> Upgrade</a></li></ol></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../glossary.html"><strong aria-hidden="true">6.</strong> Glossary</a></li><li class="spacer"></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Hermes (IBC Relayer CLI) Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="features"><a class="header" href="#features">Features</a></h1>
+<p>This section includes a summary of the supported and planned features. It also includes a feature matrix which compares <code>hermes</code> to the <a href="https://github.com/cosmos/relayer">cosmos-go-relayer</a>.</p>
+<blockquote>
+<p><strong>Cosmos SDK &amp; IBC compatibility:</strong>
+Hermes supports Cosmos SDK chains implementing the <a href="https://github.com/cosmos/ibc">IBC protocol v1</a> protocol specification.
+Cosmos SDK versions <code>0.41.3</code> through <code>0.45.x</code> are officially supported.
+IBC-go versions <code>1.1.*</code> thorough <code>3.*</code> are officially supported.
+In case Hermes finds an incompatible SDK or IBC-go version, it will output a log warning upon initialization as part of the <code>start</code> command or upon <code>health-check</code> command.</p>
+</blockquote>
+<hr />
+<h2 id="supported-features"><a class="header" href="#supported-features">Supported Features</a></h2>
+<ul>
+<li>Basic features
+<ul>
+<li>Create and update clients.</li>
+<li>Refresh clients to prevent expiration.</li>
+<li>Establish connections with new or existing clients.</li>
+<li>Establish channels with new or existing connection.</li>
+<li>Channel closing handshake.</li>
+<li>Relay packets, acknowledgments, timeout and timeout-on-close packets, with zero or non-zero delay.</li>
+<li>Queries for all objects.</li>
+</ul>
+</li>
+<li>Packet relaying over:
+<ul>
+<li>multiple paths, for the chains in <code>config.toml</code>.</li>
+</ul>
+</li>
+<li>Restart support:
+<ul>
+<li>Clear packets.</li>
+<li>Resume channel handshake if configured to relay <code>all</code>.</li>
+<li>Resume connection handshake if configured to relay <code>all</code>.</li>
+</ul>
+</li>
+<li>Client upgrade:
+<ul>
+<li>Upgrading clients after a counterparty chain has performed an upgrade for IBC breaking changes.</li>
+</ul>
+</li>
+<li>Packet delay:
+<ul>
+<li>Establish path over non-zero delay connection.</li>
+<li>Relay all packets with the specified delay.</li>
+</ul>
+</li>
+<li>Interchain Accounts &amp; Interchain Security</li>
+<li>Monitor and submit misbehaviour for clients
+<ul>
+<li>Monitor client updates for misbehaviour (fork and BFT time violation).</li>
+<li>Submit misbehaviour evidence to the on-chain IBC client.</li>
+</ul>
+<blockquote>
+<p>Misbehaviour submission to full node not yet supported.</p>
+</blockquote>
+</li>
+<li>Individual commands that build and send transactions for:
+<ul>
+<li>Creating and updating IBC Tendermint light clients.</li>
+<li>Sending connection open handshake messages.</li>
+<li>Sending channel open handshake messages.</li>
+<li>Sending channel closing handshake messages.</li>
+<li>Initiating a cross chain transfer (mainly for testing).</li>
+<li>Relaying sent packets, acknowledgments and timeouts.</li>
+<li>Automatically generate a configuration file from the <a href="https://github.com/cosmos/chain-registry">chain-registry</a></li>
+<li>Client upgrade.</li>
+</ul>
+</li>
+<li>Channel handshake for existing channel that is not in <code>Open</code> state.</li>
+<li>Connection handshake for existing connection that is not in <code>Open</code> state.</li>
+<li>Telemetry support.</li>
+</ul>
+<h2 id="upcoming--unsupported-features"><a class="header" href="#upcoming--unsupported-features">Upcoming / Unsupported Features</a></h2>
+<p>Planned features:</p>
+<ul>
+<li>Interchain Queries</li>
+<li>Non-SDK support</li>
+<li>Relay from all IBC events, including governance upgrade proposal</li>
+<li>Dynamic &amp; automatic configuration management</li>
+</ul>
+<h2 id="features-matrix"><a class="header" href="#features-matrix">Features matrix</a></h2>
+<hr />
+<p><strong>Legend</strong>:</p>
+<div class="table-wrapper"><table><thead><tr><th>Term</th><th>Description</th></tr></thead><tbody>
+<tr><td>❌</td><td>feature not supported</td></tr>
+<tr><td>✅</td><td>feature is supported</td></tr>
+<tr><td><code>Chain</code></td><td>chain related</td></tr>
+<tr><td><code>Cl</code></td><td>client related</td></tr>
+<tr><td><code>Conn</code></td><td>connection related</td></tr>
+<tr><td><code>Chan</code></td><td>channel related</td></tr>
+<tr><td><code>Cfg</code></td><td>config related</td></tr>
+<tr><td><code>.._Handshake_..</code></td><td>can execute all transactions required to finish a handshake from a single command</td></tr>
+<tr><td><code>.._&lt;msg&gt;_A</code></td><td>building and sending <code>msg</code> from a command that scans chain state</td></tr>
+<tr><td><code>.._&lt;msg&gt;_P</code></td><td>building and sending <code>msg</code> from IBC event; doesn't apply to <code>.._Init</code> and <code>FT_Transfer</code> features</td></tr>
+</tbody></table>
+</div>
+<hr />
+<p><strong>Feature comparison between Hermes and the Go relayer</strong> </p>
+<div class="table-wrapper"><table><thead><tr><th>Features \      Status</th><th style="text-align: center">Hermes</th><th style="text-align: center">Cosmos Go</th><th style="text-align: left">Feature Details</th></tr></thead><tbody>
+<tr><td>Restart</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left">replays any IBC events that happened before restart</td></tr>
+<tr><td>Multiple_Paths</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left">relays on multiple paths concurrently</td></tr>
+<tr><td></td><td style="text-align: center"></td><td style="text-align: center"></td><td style="text-align: left"></td></tr>
+<tr><td>Connection Delay</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: left"></td></tr>
+<tr><td>Cl_Misbehavior</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: left">monitors and submits IBC client misbehavior</td></tr>
+<tr><td>Cl_Refresh</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: left">periodically refresh an on-chain client to prevent expiration</td></tr>
+<tr><td>Packet Delay</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: left"></td></tr>
+<tr><td></td><td style="text-align: center"></td><td style="text-align: center"></td><td style="text-align: left"></td></tr>
+<tr><td>Chan_Unordered</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left"></td></tr>
+<tr><td>Chan_Ordered</td><td style="text-align: center">✅</td><td style="text-align: center">❓</td><td style="text-align: left"></td></tr>
+<tr><td></td><td style="text-align: center"></td><td style="text-align: center"></td><td style="text-align: left"></td></tr>
+<tr><td>Cl_Tendermint_Create</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left">tendermint light client creation</td></tr>
+<tr><td>Cl_Tendermint_Update</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left">tendermint light client update</td></tr>
+<tr><td>Cl_Tendermint_Upgrade</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left">tendermint light client upgrade</td></tr>
+<tr><td></td><td style="text-align: center"></td><td style="text-align: center"></td><td style="text-align: left"></td></tr>
+<tr><td>Conn_Open_Handshake_A</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left"></td></tr>
+<tr><td>Conn_Open_Handshake_P</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: left"></td></tr>
+<tr><td></td><td style="text-align: center"></td><td style="text-align: center"></td><td style="text-align: left"></td></tr>
+<tr><td>Chan_Open_Handshake_A</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left"></td></tr>
+<tr><td>Chan_Open_Handshake_P</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: left"></td></tr>
+<tr><td>Chan_Open_Handshake_Optimistic</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td><td style="text-align: left">open a channel on a non-Open connection</td></tr>
+<tr><td></td><td style="text-align: center"></td><td style="text-align: center"></td><td style="text-align: left"></td></tr>
+<tr><td>Chan_Close_Handshake_P</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left"></td></tr>
+<tr><td>Chan_Close_Handshake_A</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: left"></td></tr>
+<tr><td></td><td style="text-align: center"></td><td style="text-align: center"></td><td style="text-align: left"></td></tr>
+<tr><td>FT_Transfer</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left">can submit an ICS-20 fungible token transfer message</td></tr>
+<tr><td>ICA_Relay</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: left">can relay ICS-27 Interchain account packets</td></tr>
+<tr><td>Packet_Recv_A</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left"></td></tr>
+<tr><td>Packet_Recv_P</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left"></td></tr>
+<tr><td>Packet_Timeout_A</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left"></td></tr>
+<tr><td>Packet_Timeout_P</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left"></td></tr>
+<tr><td>Packet_TimeoutClose_A</td><td style="text-align: center">✅</td><td style="text-align: center">❓</td><td style="text-align: left"></td></tr>
+<tr><td>Packet_TimeoutClose_P</td><td style="text-align: center">✅</td><td style="text-align: center">❓</td><td style="text-align: left"></td></tr>
+<tr><td>Packet_Optimistic</td><td style="text-align: center">❌</td><td style="text-align: center">❓</td><td style="text-align: left">relay packets over non-Open channels</td></tr>
+<tr><td></td><td style="text-align: center"></td><td style="text-align: center"></td><td style="text-align: left"></td></tr>
+<tr><td>Cl_Non_Tendermint</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td><td style="text-align: left">supports non tendermint IBC light clients</td></tr>
+<tr><td>Chain_Non_Cosmos</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td><td style="text-align: left">supports non cosmos-SDK chains</td></tr>
+<tr><td></td><td style="text-align: center"></td><td style="text-align: center"></td><td style="text-align: left"></td></tr>
+<tr><td>Cfg_Static</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left">provides means for configuration prior to being started</td></tr>
+<tr><td>Cfg_Dynamic</td><td style="text-align: center">❌</td><td style="text-align: center">❌</td><td style="text-align: left">provides means for configuration and monitoring during runtime</td></tr>
+<tr><td>Cfg_Download_Config</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left">provides means for downloading recommended configuration</td></tr>
+<tr><td>Cfg_Edit_Config</td><td style="text-align: center">❌</td><td style="text-align: center">✅</td><td style="text-align: left">provides means for editing the configuration from the CLI</td></tr>
+<tr><td>Cfg_Validation</td><td style="text-align: center">✅</td><td style="text-align: center">✅</td><td style="text-align: left">provides means to validate the current configuration</td></tr>
+<tr><td>Telemetry</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: left">telemetry server to collect metrics</td></tr>
+<tr><td>REST API</td><td style="text-align: center">✅</td><td style="text-align: center">❌</td><td style="text-align: left">REST API to interact with the relayer</td></tr>
+</tbody></table>
+</div>
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../advanced/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next" href="../advanced/troubleshooting/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../advanced/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next" href="../advanced/troubleshooting/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
+
+        <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="../mermaid.min.js"></script>
+        <script type="text/javascript" src="../mermaid-init.js"></script>
+
+
+    </body>
+</html>
