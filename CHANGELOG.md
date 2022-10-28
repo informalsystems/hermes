@@ -28,20 +28,23 @@ this reorganization of the repository.
 
 ### General
 
+The `gm` binary has been split out of the repo and has been moved into its own [repository](https://github.com/informalsystems/gm). This change doesn't affect current local instances of the `gm` binary, though new versions will need to be sourced from the new repository by running `git clone informalsystems/gm` and running the install script from there. 
+
+For more information, see [this](https://hermes.informal.systems/tutorials/local-chains/gaiad-manager.html#how-to-run) section of the Hermes guide. 
 
 #### BREAKING CHANGES
 
 - Bump tendermint-rs dependencies to v0.25.0
   ([#2677](https://github.com/informalsystems/ibc-rs/issues/2677))
 - Remove the `ibc-proto` and `ibc-proto-compiler` crates from the repository
-  ([#2667](https://github.com/informalsystems/ibc-rs/issues/2667))
+  ([#2667](https://github.com/informalsystems/hermes/pull/2667))
 
 #### BUG FIXES
 
 - Fix incorrect Github workflow trigger paths
-  ([#2667](https://github.com/informalsystems/ibc-rs/issues/2667))
+  ([#2667](https://github.com/informalsystems/hermes/pull/2667))
 - Fix comment in `config.toml` to correctly state that the default value of `clear_on_start` is `true`
-  ([#2750](https://github.com/informalsystems/ibc-rs/issues/2750))
+  ([#2750](https://github.com/informalsystems/hermes/issues/2750))
 
 
 ### Hermes - `ibc-relayer-cli` (v1.1.0)
@@ -49,24 +52,24 @@ this reorganization of the repository.
 #### FEATURES
 
 - Add `hermes auto config` CLI command to automatically generate a config file with data from the chain registry
-  ([#2187](https://github.com/informalsystems/ibc-rs/issues/2187))
+  ([#2187](https://github.com/informalsystems/hermes/issues/2187))
 - Added new optional flag `--packet-data-query-height` to CLI `hermes tx packet-recv`
   in order to specify the height at which the packet data is queried
-  ([#2453](https://github.com/informalsystems/ibc-rs/issues/2453))
+  ([#2453](https://github.com/informalsystems/hermes/issues/2453))
 - New command `fee transfer` which transfers tokens with fees
-  ([#2714](https://github.com/informalsystems/ibc-rs/issues/2714))
+  ([#2714](https://github.com/informalsystems/hermes/issues/2714))
 
 #### IMPROVEMENTS
 
 - Clean up the logs emitted by the relayer and add more
   structured information to the messages recorded in the logs
-  ([#1538](https://github.com/informalsystems/ibc-rs/issues/1538))
+  ([#1538](https://github.com/informalsystems/hermes/issues/1538))
 - Log the packets cleared by the `clear packets` command
-  ([#2653](https://github.com/informalsystems/ibc-rs/issues/2653))
+  ([#2653](https://github.com/informalsystems/hermes/pull/2653))
 - Add a new optional flag, `--denom` to the `hermes keys balance` command in order
   to specify for which denomination the balance is queried.
   Specify the `--all` flag to get the balance for all denominations
-  ([#2726](https://github.com/informalsystems/ibc-rs/issues/2726))
+  ([#2726](https://github.com/informalsystems/hermes/issues/2726))
 
 
 ### Relayer Library - `ibc-relayer` (v0.20.0)
@@ -74,35 +77,35 @@ this reorganization of the repository.
 #### BUG FIXES
 
 - The channel and connection workers do not act needlessly on `NewBlock` events
-  anymore ([#2484](https://github.com/informalsystems/ibc-rs/issues/2484))
+  anymore ([#2484](https://github.com/informalsystems/hermes/issues/2484))
 - Fix several bugs which were preventing Hermes to clear packets on ordered channels
   in some specific conditions, as exhibited on the Interchain Security testnet
-  ([#2670](https://github.com/informalsystems/ibc-rs/issues/2670))
+  ([#2670](https://github.com/informalsystems/hermes/issues/2670))
 - Fix how headers are decoded from events
-  ([#2739](https://github.com/informalsystems/ibc-rs/issues/2739))
+  ([#2739](https://github.com/informalsystems/hermes/issues/2739))
 
 #### FEATURES
 
 - Support custom extension options to be able to specify `max_priority_price` for Ethermint dynamic tx fee
-  ([#2566](https://github.com/informalsystems/ibc-rs/issues/2566))
+  ([#2566](https://github.com/informalsystems/hermes/issues/2566))
 
 #### IMPROVEMENTS
 
 - Bump compatibility with IBC-Go v5 and Cosmos SDK v0.46
-  ([#2532](https://github.com/informalsystems/ibc-rs/issues/2532))
+  ([#2532](https://github.com/informalsystems/hermes/issues/2532))
 - Account for full transaction encoding when batching messages
-  ([#2575](https://github.com/informalsystems/ibc-rs/issues/2575))
+  ([#2575](https://github.com/informalsystems/hermes/pull/2575))
 - Add a health check to warn user if `gas_multiplier` is smaller than 1.1,
   and improve client refresh frequency to depend on the `trusting_period`
-  ([#2487](https://github.com/informalsystems/ibc-rs/issues/2487))
+  ([#2487](https://github.com/informalsystems/hermes/issues/2487))
 - Set `max_tx_size` default value to 180KB instead of 2MB
-  ([#2595](https://github.com/informalsystems/ibc-rs/issues/2595))
+  ([#2595](https://github.com/informalsystems/hermes/issues/2595))
 
 
 ### Chain Registry - `ibc-chain-registry` (v0.20.0)
 
 - New crate `ibc-chain-registry` to fetch data from the [chain-registry][cosmos-chain-registry] and query RPC/gRPC endpoints
-  ([#2187](https://github.com/informalsystems/ibc-rs/issues/2187))
+  ([#2187](https://github.com/informalsystems/hermes/issues/2187))
 
 [cosmos-chain-registry]: https://github.com/cosmos/chain-registry
 
@@ -111,14 +114,14 @@ this reorganization of the repository.
 #### FEATURES
 
 - Added Evmos compatible integration tests
-  ([#2442](https://github.com/informalsystems/ibc-rs/issues/2442))
+  ([#2442](https://github.com/informalsystems/hermes/issues/2442))
 
 ### Guide
 
 #### IMPROVEMENTS
 
 - Integration with `mdbook` templates
-  ([#2605](https://github.com/informalsystems/ibc-rs/issues/2605))
+  ([#2605](https://github.com/informalsystems/hermes/issues/2605))
 - New script `auto_gen_templates.sh` to automatically generate templates files and warns users when one of them is updated. It is the responsibility of the users to update the guide when a template file is updated
 - New CI job to check that every template is up-to-date
 
