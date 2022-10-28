@@ -6,5 +6,4 @@ pub mod queries;
 pub mod response;
 pub mod simulate;
 pub mod tx_senders;
-pub mod tx_with_fee;
 pub mod wait;

@@ -7,7 +7,7 @@ readme       = "README.md"
 keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 repository   = "https://github.com/informalsystems/ibc-rs"
 authors      = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.60"
+rust-version = "1.64"
 description  = """
     Implementation of an IBC Relayer in Rust, as a library
 """
@@ -19,3 +19,6 @@ all-features = true
 
 [dependencies]
 async-trait = "0.1.56"
+
+[dev-dependencies]
+kani = { git = "https://github.com/model-checking/kani", features = ["concrete_playback"] }

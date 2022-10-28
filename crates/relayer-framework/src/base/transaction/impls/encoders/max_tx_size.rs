@@ -29,11 +29,12 @@ where
 {
     async fn encode_tx(
         context: &Context,
+        signer: &Context::Signer,
         nonce: &Context::Nonce,
         fee: &Context::Fee,
         messages: &[Context::Message],
     ) -> Result<Context::Transaction, Context::Error> {
-        let tx = InEncoder::encode_tx(context, nonce, fee, messages).await?;
+        let tx = InEncoder::encode_tx(context, signer, nonce, fee, messages).await?;
 
         let given_tx_size = Context::tx_size(&tx);
         let max_tx_size = context.max_tx_size();

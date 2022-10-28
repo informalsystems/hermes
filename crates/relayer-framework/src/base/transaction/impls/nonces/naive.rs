@@ -5,6 +5,7 @@ use crate::base::core::traits::sync::Async;
 use crate::base::runtime::traits::mutex::HasMutex;
 use crate::base::runtime::traits::runtime::HasRuntime;
 use crate::base::transaction::traits::nonce::{CanQueryNonce, NonceAllocator};
+use crate::base::transaction::traits::types::HasTxTypes;
 use crate::std_prelude::*;
 
 /**!
@@ -17,11 +18,14 @@ use crate::std_prelude::*;
    allocator only allows one transaction to be submitted at a time.
 */
 
-pub trait HasMutexForNonceAllocation: HasRuntime
+pub trait HasMutexForNonceAllocation: HasRuntime + HasTxTypes
 where
     Self::Runtime: HasMutex,
 {
-    fn mutex_for_nonce_allocation(&self) -> &<Self::Runtime as HasMutex>::Mutex;
+    fn mutex_for_nonce_allocation(
+        &self,
+        signer: &Self::Signer,
+    ) -> &<Self::Runtime as HasMutex>::Mutex;
 }
 
 pub struct NaiveNonceAllocator;
@@ -33,7 +37,8 @@ where
 {
     fn with_allocated_nonce<'a, R, Cont>(
         context: &'a Context,
-        cont: Cont,
+        signer: &'a Context::Signer,
+        cont: &'a Cont,
     ) -> Pin<Box<dyn Future<Output = Result<R, Context::Error>> + Send + 'a>>
     where
         R: Async + 'a,
@@ -45,11 +50,11 @@ where
             + 'a,
     {
         Box::pin(async move {
-            let mutex = context.mutex_for_nonce_allocation();
+            let mutex = context.mutex_for_nonce_allocation(signer);
 
             let _guard = Context::Runtime::acquire_mutex(mutex).await;
 
-            let nonce = context.query_nonce().await?;
+            let nonce = context.query_nonce(signer).await?;
 
             let res = cont(nonce).await?;
 

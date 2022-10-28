@@ -1715,8 +1715,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.20.1"
-source = "git+https://github.com/cosmos/ibc-proto-rs?rev=65c050e3a20e3a1ef3c1247788b5013112e207d7#65c050e3a20e3a1ef3c1247788b5013112e207d7"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf16b17e83004295df8f6cad5a08a447c37be1465f9b5d6e652dbed527172bd3"
 dependencies = [
  "base64",
  "bytes",
@@ -1865,6 +1866,7 @@ name = "ibc-relayer-framework"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "kani",
 ]
 
 [[package]]
@@ -2140,6 +2142,23 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "sha2 0.10.6",
+]
+
+[[package]]
+name = "kani"
+version = "0.13.0"
+source = "git+https://github.com/model-checking/kani#221fe3bab408e99ddbd0071ada7ba0a59a63b5c5"
+dependencies = [
+ "kani_macros",
+]
+
+[[package]]
+name = "kani_macros"
+version = "0.13.0"
+source = "git+https://github.com/model-checking/kani#221fe3bab408e99ddbd0071ada7ba0a59a63b5c5"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]
