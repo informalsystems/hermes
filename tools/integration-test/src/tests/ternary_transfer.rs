@@ -9,10 +9,6 @@ fn test_ternary_ibc_transfer() -> Result<(), Error> {
 pub struct TernaryIbcTransferTest;
 
 impl TestOverrides for TernaryIbcTransferTest {
-    fn modify_test_config(&self, config: &mut TestConfig) {
-        config.bootstrap_with_random_ids = false;
-    }
-
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.clients.misbehaviour = false;
     }
