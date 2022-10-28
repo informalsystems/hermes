@@ -1,7 +1,7 @@
 pub mod chain;
 pub mod events;
+pub mod height;
+pub mod message;
 pub mod packet;
 pub mod runtime;
-pub mod height;
 pub mod state;
-pub mod message;

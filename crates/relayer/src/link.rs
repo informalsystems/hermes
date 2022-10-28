@@ -1,13 +1,13 @@
-use ibc_relayer_types::core::{
-    ics03_connection::connection::State as ConnectionState,
-    ics04_channel::channel::State as ChannelState,
-    ics24_host::identifier::{ChannelId, PortChannelId, PortId},
-};
+use ibc_relayer_types::core::ics03_connection::connection::State as ConnectionState;
+use ibc_relayer_types::core::ics04_channel::channel::State as ChannelState;
+use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortChannelId, PortId};
 use tracing::info;
 
-use crate::chain::requests::{QueryChannelRequest, QueryHeight};
-use crate::chain::{counterparty::check_channel_counterparty, requests::QueryConnectionRequest};
-use crate::chain::{handle::ChainHandle, requests::IncludeProof};
+use crate::chain::counterparty::check_channel_counterparty;
+use crate::chain::handle::ChainHandle;
+use crate::chain::requests::{
+    IncludeProof, QueryChannelRequest, QueryConnectionRequest, QueryHeight,
+};
 use crate::channel::{Channel, ChannelSide};
 use crate::link::error::LinkError;
 

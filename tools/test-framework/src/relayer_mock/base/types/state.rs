@@ -1,7 +1,8 @@
-use std::{collections::HashSet, fmt::Display};
+use std::collections::HashSet;
+use std::fmt::Display;
 
 #[derive(Clone, Default)]
-pub struct State{
+pub struct State {
     recv_events: HashSet<String>,
     ack_events: HashSet<String>,
 }
@@ -21,12 +22,7 @@ impl Display for State {
 }
 
 impl State {
-    pub fn check_received(
-        &self,
-        port_id: &String,
-        channel_id: &String,
-        sequence: &u128,
-    ) -> bool {
+    pub fn check_received(&self, port_id: &String, channel_id: &String, sequence: &u128) -> bool {
         let uid = format!("{}/{}/{}", channel_id, port_id, sequence);
         self.recv_events.get(&uid).is_some()
     }

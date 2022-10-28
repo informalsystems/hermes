@@ -79,7 +79,7 @@ impl OfaBaseChain for MockChainContext {
         event: Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent> {
         match event {
-            Event::RecvPacket(_) => Some(WriteAcknowledgementEvent{}),
+            Event::RecvPacket(_) => Some(WriteAcknowledgementEvent {}),
             _ => None,
         }
     }
@@ -117,7 +117,7 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
     ) -> Result<ConsensusState, Self::Error> {
         let res = self.query_state(Height::from(*height));
         if let Some(_state) = res {
-            Ok(ConsensusState{ })
+            Ok(ConsensusState {})
         } else {
             Err(Error::no_consensus_state(client_id.clone()))
         }

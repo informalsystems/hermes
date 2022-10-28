@@ -12,9 +12,9 @@ use ibc_test_framework::relayer_mock::contexts::relay::MockRelayContext;
 use ibc_test_framework::types::binary::chains::ConnectedChains;
 
 use opentelemetry::global;
-use tokio::runtime::Runtime;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use tokio::runtime::Runtime;
 
 pub fn build_cosmos_relay_context<ChainA, ChainB>(
     chains: &ConnectedChains<ChainA, ChainB>,
@@ -78,12 +78,15 @@ where
     relay
 }
 
-pub fn build_mock_relay_context(
-) -> OfaRelayWrapper<MockRelayContext> {
+pub fn build_mock_relay_context() -> OfaRelayWrapper<MockRelayContext> {
     let runtime = TokioRuntimeContext::new(Arc::new(Runtime::new().unwrap()));
     let mock_relay = MockRelayContext::new(
-        Arc::new(OfaChainWrapper { chain: MockChainContext::default() }),
-        Arc::new(OfaChainWrapper { chain: MockChainContext::default() }),
+        Arc::new(OfaChainWrapper {
+            chain: MockChainContext::default(),
+        }),
+        Arc::new(OfaChainWrapper {
+            chain: MockChainContext::default(),
+        }),
         String::from("client_a"),
         String::from("client_b"),
         runtime,

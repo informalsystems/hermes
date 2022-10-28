@@ -1,9 +1,12 @@
 #![allow(dead_code)]
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
+use std::sync::Arc;
 
 use std::sync::Mutex;
 
-use crate::relayer_mock::base::{types::{height::Height, state::State, packet::PacketKey}};
+use crate::relayer_mock::base::types::height::Height;
+use crate::relayer_mock::base::types::packet::PacketKey;
+use crate::relayer_mock::base::types::state::State;
 
 pub struct MockChainContext {
     pub name: String,
@@ -36,7 +39,10 @@ impl MockChainContext {
         if let Some(height) = self.get_latest_height() {
             if let Some(state) = self.query_state(height.clone()) {
                 let mut new_state = state;
-                let event = format!("{}/{}/{}", packet.channel_id, packet.port_id, packet.sequence);
+                let event = format!(
+                    "{}/{}/{}",
+                    packet.channel_id, packet.port_id, packet.sequence
+                );
                 new_state.update_received(event);
                 let mut state = self.state.lock().unwrap();
                 state.insert(height.increment(), new_state);
@@ -48,7 +54,10 @@ impl MockChainContext {
         if let Some(height) = self.get_latest_height() {
             if let Some(state) = self.query_state(height.clone()) {
                 let mut new_state = state;
-                let event = format!("{}/{}/{}", packet.channel_id, packet.port_id, packet.sequence);
+                let event = format!(
+                    "{}/{}/{}",
+                    packet.channel_id, packet.port_id, packet.sequence
+                );
                 new_state.update_acknowledged(event);
                 let mut state = self.state.lock().unwrap();
                 state.insert(height.increment(), new_state);
@@ -59,9 +68,11 @@ impl MockChainContext {
 
 impl Default for MockChainContext {
     fn default() -> Self {
-        let initial_state:HashMap<Height, State> = HashMap::from([
-            (Height::from(1), State::default()),
-        ]);
-        Self { name: "default".to_owned(), state: Arc::new(Mutex::new(initial_state)) }
+        let initial_state: HashMap<Height, State> =
+            HashMap::from([(Height::from(1), State::default())]);
+        Self {
+            name: "default".to_owned(),
+            state: Arc::new(Mutex::new(initial_state)),
+        }
     }
 }

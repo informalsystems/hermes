@@ -18,8 +18,7 @@ pub struct MockChainTest;
 
 impl PrimitiveTest for MockChainTest {
     fn run(&self) -> Result<(), Error> {
-        let relay_context =
-            build_mock_relay_context();
+        let relay_context = build_mock_relay_context();
 
         let runtime = relay_context.relay.runtime().runtime.runtime.as_ref();
 
@@ -50,14 +49,26 @@ impl PrimitiveTest for MockChainTest {
 
             assert!(l_h.is_some());
 
-            let state = relay_context.relay.dst_chain().chain.query_state(l_h.unwrap());
+            let state = relay_context
+                .relay
+                .dst_chain()
+                .chain
+                .query_state(l_h.unwrap());
 
             assert!(state.is_some());
 
-            assert!(!state.unwrap().check_received(&packet.port_id, &packet.channel_id, &packet.sequence));
+            assert!(!state.unwrap().check_received(
+                &packet.port_id,
+                &packet.channel_id,
+                &packet.sequence
+            ));
         }
 
-        relay_context.relay.dst_chain().chain.receive_packet(packet.clone());
+        relay_context
+            .relay
+            .dst_chain()
+            .chain
+            .receive_packet(packet.clone());
 
         {
             info!("Check that the packet has been received by the destination chain");
@@ -66,11 +77,19 @@ impl PrimitiveTest for MockChainTest {
 
             assert!(l_h.is_some());
 
-            let state = relay_context.relay.dst_chain().chain.query_state(l_h.unwrap());
+            let state = relay_context
+                .relay
+                .dst_chain()
+                .chain
+                .query_state(l_h.unwrap());
 
             assert!(state.is_some());
 
-            assert!(state.unwrap().check_received(&packet.port_id, &packet.channel_id, &packet.sequence));
+            assert!(state.unwrap().check_received(
+                &packet.port_id,
+                &packet.channel_id,
+                &packet.sequence
+            ));
         }
 
         let relay_ack = runtime.block_on(async {
@@ -81,7 +100,11 @@ impl PrimitiveTest for MockChainTest {
 
         assert!(relay_ack.is_ok());
 
-        relay_context.relay.src_chain().chain.acknowledge_packet(packet.clone());
+        relay_context
+            .relay
+            .src_chain()
+            .chain
+            .acknowledge_packet(packet.clone());
 
         {
             info!("Check that the acknowledgment has been received by the source chain");
@@ -90,11 +113,19 @@ impl PrimitiveTest for MockChainTest {
 
             assert!(l_h.is_some());
 
-            let state = relay_context.relay.src_chain().chain.query_state(l_h.unwrap());
+            let state = relay_context
+                .relay
+                .src_chain()
+                .chain
+                .query_state(l_h.unwrap());
 
             assert!(state.is_some());
 
-            assert!(state.unwrap().check_acknowledged(&packet.port_id, &packet.channel_id, &packet.sequence));
+            assert!(state.unwrap().check_acknowledged(
+                &packet.port_id,
+                &packet.channel_id,
+                &packet.sequence
+            ));
         }
 
         Ok(())

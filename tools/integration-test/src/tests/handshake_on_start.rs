@@ -1,12 +1,9 @@
-use ibc_test_framework::{
-    prelude::*,
-    relayer::{
-        channel::{ack_channel, assert_eventually_channel_established, init_channel, try_channel},
-        connection::{
-            ack_connection, assert_eventually_connection_established, init_connection,
-            try_connection,
-        },
-    },
+use ibc_test_framework::prelude::*;
+use ibc_test_framework::relayer::channel::{
+    ack_channel, assert_eventually_channel_established, init_channel, try_channel,
+};
+use ibc_test_framework::relayer::connection::{
+    ack_connection, assert_eventually_connection_established, init_connection, try_connection,
 };
 
 #[test]

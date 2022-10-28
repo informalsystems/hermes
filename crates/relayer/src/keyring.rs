@@ -5,14 +5,13 @@ use std::path::{Path, PathBuf};
 
 use bech32::{ToBase32, Variant};
 use bip39::{Language, Mnemonic, Seed};
-use bitcoin::{
-    network::constants::Network,
-    secp256k1::{Message, Secp256k1, SecretKey},
-    util::bip32::{DerivationPath, ExtendedPrivKey, ExtendedPubKey},
-};
+use bitcoin::network::constants::Network;
+use bitcoin::secp256k1::{Message, Secp256k1, SecretKey};
+use bitcoin::util::bip32::{DerivationPath, ExtendedPrivKey, ExtendedPubKey};
 use hdpath::StandardHDPath;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use k256::ecdsa::{signature::Signer as _, Signature, SigningKey};
+use k256::ecdsa::signature::Signer as _;
+use k256::ecdsa::{Signature, SigningKey};
 use ripemd::Ripemd160;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};

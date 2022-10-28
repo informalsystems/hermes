@@ -1,25 +1,23 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
-use ibc_relayer_types::{
-    applications::ics29_fee::events::IncentivizedPacket,
-    core::ics02_client::{
-        error::Error as ClientError,
-        events::{self as client_events, Attributes as ClientAttributes, HEADER_ATTRIBUTE_KEY},
-        header::Header,
-        height::HeightErrorDetail,
-    },
-    core::ics03_connection::{
-        error::Error as ConnectionError,
-        events::{self as connection_events, Attributes as ConnectionAttributes},
-    },
-    core::ics04_channel::{
-        error::Error as ChannelError,
-        events::{self as channel_events, Attributes as ChannelAttributes},
-        packet::Packet,
-        timeout::TimeoutHeight,
-    },
-    events::{Error as IbcEventError, IbcEvent, IbcEventType},
-    Height,
+use ibc_relayer_types::applications::ics29_fee::events::IncentivizedPacket;
+use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
+use ibc_relayer_types::core::ics02_client::events::{
+    self as client_events, Attributes as ClientAttributes, HEADER_ATTRIBUTE_KEY,
 };
+use ibc_relayer_types::core::ics02_client::header::Header;
+use ibc_relayer_types::core::ics02_client::height::HeightErrorDetail;
+use ibc_relayer_types::core::ics03_connection::error::Error as ConnectionError;
+use ibc_relayer_types::core::ics03_connection::events::{
+    self as connection_events, Attributes as ConnectionAttributes,
+};
+use ibc_relayer_types::core::ics04_channel::error::Error as ChannelError;
+use ibc_relayer_types::core::ics04_channel::events::{
+    self as channel_events, Attributes as ChannelAttributes,
+};
+use ibc_relayer_types::core::ics04_channel::packet::Packet;
+use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
+use ibc_relayer_types::events::{Error as IbcEventError, IbcEvent, IbcEventType};
+use ibc_relayer_types::Height;
 use serde::Serialize;
 use tendermint::abci::Event as AbciEvent;
 

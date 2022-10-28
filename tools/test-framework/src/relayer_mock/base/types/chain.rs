@@ -7,7 +7,7 @@ pub struct ConsensusState {}
 
 impl From<State> for ConsensusState {
     fn from(_: State) -> Self {
-        ConsensusState {  }
+        ConsensusState {}
     }
 }
 

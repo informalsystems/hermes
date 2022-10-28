@@ -1,19 +1,16 @@
 use core::time::Duration;
 
 use abscissa_core::clap::Parser;
-use abscissa_core::{config::Override, Command, FrameworkErrorKind, Runnable};
+use abscissa_core::config::Override;
+use abscissa_core::{Command, FrameworkErrorKind, Runnable};
 use eyre::eyre;
 
-use ibc_relayer::{
-    chain::handle::ChainHandle,
-    config::Config,
-    event::IbcEventWithHeight,
-    transfer::{build_and_send_transfer_messages, TransferOptions},
-};
-use ibc_relayer_types::{
-    applications::transfer::Amount,
-    core::ics24_host::identifier::{ChainId, ChannelId, PortId},
-};
+use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::config::Config;
+use ibc_relayer::event::IbcEventWithHeight;
+use ibc_relayer::transfer::{build_and_send_transfer_messages, TransferOptions};
+use ibc_relayer_types::applications::transfer::Amount;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
 use crate::cli_utils::{check_can_send_on_channel, ChainHandlePair};
 use crate::conclude::{exit_with_unrecoverable_error, Output};
