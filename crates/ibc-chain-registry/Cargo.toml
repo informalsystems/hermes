@@ -3,7 +3,6 @@ name         = "ibc-chain-registry"
 version      = "0.1.0"
 edition      = "2021"
 license      = "Apache-2.0"
-readme       = "README.md"
 keywords     = ["cosmos", "ibc", "relayer", "chain", "registry", "hermes"]
 repository   = "https://github.com/informalsystems/hermes"
 authors      = ["Informal Systems <hello@informal.systems>"]
