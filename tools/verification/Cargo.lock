@@ -14,6 +14,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "futures-task"
+version = "0.3.25"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ffb393ac5d9a6eaa9d3fdf37ae2776656b706e200c8e16b1bdb227f5198e6ea"
+
+[[package]]
 name = "ibc-relayer-framework"
 version = "0.1.0"
 dependencies = [
@@ -25,6 +31,7 @@ name = "ibc-relayer-verification"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "futures-task",
  "ibc-relayer-framework",
 ]
 

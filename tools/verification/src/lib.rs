@@ -2,6 +2,7 @@
 
 extern crate alloc;
 
+pub mod future;
 pub mod mock;
 pub mod std_prelude;
 

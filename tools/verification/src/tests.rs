@@ -1,5 +1,6 @@
 use ibc_relayer_framework::base::chain::traits::queries::status::CanQueryChainStatus;
 
+use crate::future::poll_future;
 use crate::mock::{ChainStatus, MockChain, Natural};
 use crate::std_prelude::*;
 
@@ -24,7 +25,11 @@ async fn test_kani() {
     // incrementing, this would result in an error from Kani
     if chain.current_status.height < Natural::MAX {
         chain.current_status.height += 1;
-        let status = chain.query_chain_status().await.unwrap();
+
+        let mut future = chain.query_chain_status();
+
+        // MVP that we can poll future result manually inside Kani
+        let status = poll_future(&mut future).unwrap().unwrap();
 
         assert_eq!(status.height, chain.current_status.height);
     }
