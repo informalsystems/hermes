@@ -9,7 +9,7 @@ use crate::transaction::impls::encode::CanSignTx;
 use crate::transaction::impls::estimate::CanEstimateTxFees;
 use crate::transaction::impls::response::CanValidateRpcResponse;
 use crate::transaction::impls::wait::{CanWaitTxHash, InjectWaitTxError};
-use crate::transaction::traits::fields::HasGasConfig;
+use crate::transaction::traits::fields::HasMaxFee;
 use crate::transaction::traits::queries::account::CanQueryAccount;
 use crate::transaction::traits::tx_sender::{TxSender, TxSubmitter};
 
@@ -24,15 +24,15 @@ where
         + CanValidateRpcResponse
         + CanSignTx
         + CanBroadcastTxSync
-        + HasGasConfig,
+        + HasMaxFee,
 {
     async fn submit_tx(context: &Context, messages: &[Any]) -> Result<Response, Context::Error> {
-        let gas_config = context.gas_config();
+        let max_fee = context.max_fee();
 
         let account = context.query_account().await?;
 
         let simulate_tx = context
-            .sign_tx(&gas_config.max_fee, &account.sequence, messages)
+            .sign_tx(&max_fee, &account.sequence, messages)
             .await?;
 
         let fee = context.estimate_tx_fees(simulate_tx).await?;

@@ -1,5 +1,5 @@
 [package]
-name         = "ibc-relayer-framework"
+name         = "ibc-relayer-verification"
 version      = "0.1.0"
 edition      = "2021"
 license      = "Apache-2.0"
@@ -19,3 +19,5 @@ all-features = true
 
 [dependencies]
 async-trait = "0.1.56"
+futures-task = "0.3.25"
+ibc-relayer-framework = { path = "../../crates/relayer-framework" }

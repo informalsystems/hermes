@@ -1,17 +1,23 @@
 use async_trait::async_trait;
+use ibc_relayer_framework::base::chain::traits::queries::status::{
+    CanQueryChainStatus, HasChainStatus,
+};
+use ibc_relayer_framework::base::chain::traits::types::{
+    HasChainTypes, HasEventType, HasMessageType,
+};
+use ibc_relayer_framework::base::core::traits::error::HasError;
 
-use crate::base::chain::traits::queries::status::{CanQueryChainStatus, HasChainStatus};
-use crate::base::chain::traits::types::{HasChainTypes, HasEventType, HasMessageType};
-use crate::base::core::traits::error::HasError;
 use crate::std_prelude::*;
+
+pub type Natural = u8;
 
 #[derive(Debug)]
 pub enum MockError {}
 
 #[derive(Clone)]
 pub struct ChainStatus {
-    pub height: u64,
-    pub timestamp: u64,
+    pub height: Natural,
+    pub timestamp: Natural,
 }
 
 pub struct MockChain {
@@ -31,8 +37,8 @@ impl HasEventType for MockChain {
 }
 
 impl HasChainTypes for MockChain {
-    type Height = u64;
-    type Timestamp = u64;
+    type Height = Natural;
+    type Timestamp = Natural;
 
     fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error> {
         Ok(message.len())

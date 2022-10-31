@@ -734,9 +734,13 @@ fn process_batch<Chain: ChainHandle>(
 /// So successfully sending a packet from chain A to chain B will result in first a SendPacket
 /// event with `chain_id = A` and `counterparty_chain_id = B` and then a WriteAcknowlegment
 /// event with `chain_id = B` and `counterparty_chain_id = A`.
-///
-fn send_telemetry<Src, Dst>(src: &Src, dst: &Dst, events: &[IbcEventWithHeight], path: &Packet)
-where
+#[cfg(feature = "telemetry")]
+fn send_telemetry<Src, Dst>(
+    src: &Src,
+    dst: &Dst,
+    events: &[IbcEventWithHeight],
+    path: &crate::object::Packet,
+) where
     Src: ChainHandle,
     Dst: ChainHandle,
 {

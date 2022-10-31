@@ -20,6 +20,7 @@ members = [
 
 exclude = [
     "ci/no-std-check",
+    "tools/verification",
 ]
 
 [patch.crates-io]

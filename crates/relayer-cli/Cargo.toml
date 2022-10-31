@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-relayer-cli"
-version    = "1.0.0"
+version    = "1.1.0"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -8,7 +8,7 @@ keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 homepage   = "https://hermes.informal.systems/"
 repository = "https://github.com/informalsystems/hermes"
 authors    = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.60"
+rust-version = "1.64"
 description  = """
   Hermes is an IBC Relayer written in Rust
 """
@@ -26,11 +26,11 @@ telemetry   = ["ibc-relayer/telemetry", "ibc-telemetry"]
 rest-server = ["ibc-relayer-rest"]
 
 [dependencies]
-ibc-relayer-types  = { version = "0.19.0", path = "../relayer-types", features = ["std", "clock"] }
-ibc-relayer        = { version = "0.19.0", path = "../relayer" }
+ibc-relayer-types  = { version = "0.20.0", path = "../relayer-types", features = ["std", "clock"] }
+ibc-relayer        = { version = "0.20.0", path = "../relayer" }
 ibc-proto          = { version = "0.21.0" }
-ibc-telemetry      = { version = "0.19.0", path = "../telemetry", optional = true }
-ibc-relayer-rest   = { version = "0.19.0", path = "../relayer-rest", optional = true }
+ibc-telemetry      = { version = "0.20.0", path = "../telemetry", optional = true }
+ibc-relayer-rest   = { version = "0.20.0", path = "../relayer-rest", optional = true }
 ibc-chain-registry = { version = "0.1.0" , path = "../ibc-chain-registry" }
 
 atty                     = "0.2.14"

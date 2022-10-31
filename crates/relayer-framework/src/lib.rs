@@ -8,8 +8,6 @@ extern crate alloc;
 #[cfg(doc)]
 pub mod docs;
 
-mod verification;
-
 mod std_prelude;
 
 pub mod base;

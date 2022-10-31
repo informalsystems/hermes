@@ -6,12 +6,13 @@ use tendermint::abci::responses::Event;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::{Client, HttpClient, Url};
 
-use crate::chain::cosmos::encode::sign_and_encode_tx;
-use crate::chain::cosmos::estimate::estimate_tx_fees;
+use crate::chain::cosmos::encode::{encode_tx_raw, sign_tx};
+use crate::chain::cosmos::estimate::{estimate_fee_with_tx, estimate_tx_fees};
 use crate::chain::cosmos::event::split_events_by_messages;
 use crate::chain::cosmos::query::account::query_account;
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
+use crate::chain::cosmos::types::tx::SignedTx;
 use crate::chain::cosmos::wait::wait_tx_succeed;
 use crate::config::types::Memo;
 use crate::error::Error;
@@ -39,9 +40,9 @@ async fn send_tx_with_fee(
     messages: &[Any],
     fee: &Fee,
 ) -> Result<Response, Error> {
-    let tx_bytes = sign_and_encode_tx(config, key_entry, account, tx_memo, messages, fee)?;
+    let tx = sign_tx(config, key_entry, account, tx_memo, messages, fee)?;
 
-    let response = broadcast_tx_sync(&config.rpc_client, &config.rpc_address, tx_bytes).await?;
+    let response = broadcast_tx_sync(&config.rpc_client, &config.rpc_address, tx).await?;
 
     Ok(response)
 }
@@ -50,8 +51,10 @@ async fn send_tx_with_fee(
 async fn broadcast_tx_sync(
     rpc_client: &HttpClient,
     rpc_address: &Url,
-    data: Vec<u8>,
+    tx: SignedTx,
 ) -> Result<Response, Error> {
+    let data = encode_tx_raw(tx)?;
+
     let response = rpc_client
         .broadcast_tx_sync(data.into())
         .await
@@ -77,13 +80,32 @@ pub async fn simple_send_tx(
     key_entry: &KeyEntry,
     messages: Vec<Any>,
 ) -> Result<Vec<Vec<Event>>, Error> {
-    let account = query_account(&config.grpc_address, &key_entry.account)
+    let account: Account = query_account(&config.grpc_address, &key_entry.account)
         .await?
         .into();
 
-    let response =
-        estimate_fee_and_send_tx(config, key_entry, &account, &Default::default(), &messages)
-            .await?;
+    let tx_memo = Memo::default();
+
+    let simulate_tx = sign_tx(
+        config,
+        key_entry,
+        &account,
+        &tx_memo,
+        &messages,
+        &config.gas_config.max_fee,
+    )?;
+
+    let fee = estimate_fee_with_tx(
+        &config.gas_config,
+        &config.grpc_address,
+        &config.chain_id,
+        simulate_tx,
+    )
+    .await?;
+
+    let tx = sign_tx(config, key_entry, &account, &tx_memo, &messages, &fee)?;
+
+    let response = broadcast_tx_sync(&config.rpc_client, &config.rpc_address, tx).await?;
 
     if response.code.is_err() {
         return Err(Error::check_tx(response));

@@ -1,5 +1,6 @@
 use core::time::Duration;
 use http::uri::Uri;
+use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::account::AccountNumber;
 use ibc_relayer::chain::cosmos::types::gas::GasConfig;
@@ -55,6 +56,10 @@ pub trait HasDefaultGas {
 
 pub trait HasMaxGas {
     fn max_gas(&self) -> u64;
+}
+
+pub trait HasMaxFee {
+    fn max_fee(&self) -> Fee;
 }
 
 pub trait HasWaitTimeout {
