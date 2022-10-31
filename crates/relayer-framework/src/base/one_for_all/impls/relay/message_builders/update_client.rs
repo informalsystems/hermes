@@ -8,7 +8,8 @@ use crate::base::relay::impls::messages::wait_update_client::WaitUpdateClient;
 use crate::base::relay::traits::messages::update_client::{
     CanBuildUpdateClientMessage, UpdateClientMessageBuilder,
 };
-use crate::base::relay::traits::target::{ChainTarget, DestinationTarget, SourceTarget};
+use crate::base::relay::traits::target::ChainTarget;
+use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::common::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
 

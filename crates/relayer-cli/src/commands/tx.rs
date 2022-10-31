@@ -1,7 +1,6 @@
 //! `tx` subcommand
 use abscissa_core::clap::Parser;
-use abscissa_core::config::Override;
-use abscissa_core::{Command, Runnable};
+use abscissa_core::{config::Override, Command, Runnable};
 use ibc_relayer::config::Config;
 
 mod channel;

@@ -9,25 +9,30 @@ use crossbeam_channel::{unbounded, Receiver, Sender};
 use itertools::Itertools;
 use tracing::{debug, error, error_span, info, instrument, trace, warn};
 
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc_relayer_types::events::IbcEvent;
-use ibc_relayer_types::Height;
-
-use crate::chain::endpoint::HealthCheck;
-use crate::chain::handle::ChainHandle;
-use crate::chain::tracking::TrackingId;
-use crate::config::Config;
-use crate::event::monitor::{
-    self, Error as EventError, ErrorDetail as EventErrorDetail, EventBatch,
+use ibc_relayer_types::{
+    core::ics24_host::identifier::{ChainId, ChannelId, PortId},
+    events::IbcEvent,
+    Height,
 };
-use crate::event::IbcEventWithHeight;
-use crate::object::Object;
-use crate::registry::{Registry, SharedRegistry};
-use crate::supervisor::scan::ScanMode;
-use crate::util::lock::LockExt;
-use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
-use crate::worker::WorkerMap;
-use crate::{rest, telemetry};
+
+use crate::{
+    chain::{endpoint::HealthCheck, handle::ChainHandle, tracking::TrackingId},
+    config::Config,
+    event::{
+        monitor::{self, Error as EventError, ErrorDetail as EventErrorDetail, EventBatch},
+        IbcEventWithHeight,
+    },
+    object::Object,
+    registry::{Registry, SharedRegistry},
+    rest,
+    supervisor::scan::ScanMode,
+    telemetry,
+    util::{
+        lock::LockExt,
+        task::{spawn_background_task, Next, TaskError, TaskHandle},
+    },
+    worker::WorkerMap,
+};
 
 pub mod client_state_filter;
 use client_state_filter::{FilterPolicy, Permission};
@@ -44,8 +49,7 @@ pub mod spawn;
 pub mod cmd;
 use cmd::SupervisorCmd;
 
-use self::scan::ChainScanner;
-use self::spawn::SpawnContext;
+use self::{scan::ChainScanner, spawn::SpawnContext};
 
 type ArcBatch = Arc<monitor::Result<EventBatch>>;
 type Subscription = Receiver<ArcBatch>;

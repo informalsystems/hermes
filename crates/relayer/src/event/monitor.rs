@@ -2,27 +2,32 @@ use alloc::sync::Arc;
 use core::cmp::Ordering;
 
 use crossbeam_channel as channel;
-use futures::stream::{self, select_all, StreamExt};
-use futures::{pin_mut, Stream, TryStreamExt};
-use tokio::runtime::Runtime as TokioRuntime;
-use tokio::sync::mpsc;
+use futures::{
+    pin_mut,
+    stream::{self, select_all, StreamExt},
+    Stream, TryStreamExt,
+};
 use tokio::task::JoinHandle;
+use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
 use tracing::{debug, error, info, instrument, trace};
 
-use tendermint_rpc::event::Event as RpcEvent;
-use tendermint_rpc::query::Query;
 use tendermint_rpc::{
-    Error as RpcError, SubscriptionClient, Url, WebSocketClient, WebSocketClientDriver,
+    event::Event as RpcEvent, query::Query, Error as RpcError, SubscriptionClient, Url,
+    WebSocketClient, WebSocketClientDriver,
 };
 
-use ibc_relayer_types::core::ics02_client::height::Height;
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer_types::{
+    core::ics02_client::height::Height, core::ics24_host::identifier::ChainId, events::IbcEvent,
+};
 
-use crate::chain::tracking::TrackingId;
-use crate::telemetry;
-use crate::util::retry::{retry_with_index, RetryResult};
-use crate::util::stream::try_group_while;
+use crate::{
+    chain::tracking::TrackingId,
+    telemetry,
+    util::{
+        retry::{retry_with_index, RetryResult},
+        stream::try_group_while,
+    },
+};
 
 mod error;
 pub use error::*;

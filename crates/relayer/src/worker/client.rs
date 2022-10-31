@@ -8,10 +8,12 @@ use ibc_relayer_types::events::IbcEvent;
 use retry::delay::Fibonacci;
 use retry::retry_with_index;
 
-use crate::chain::handle::ChainHandle;
-use crate::foreign_client::{ForeignClient, MisbehaviourResults};
 use crate::util::retry::clamp_total;
 use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
+use crate::{
+    chain::handle::ChainHandle,
+    foreign_client::{ForeignClient, MisbehaviourResults},
+};
 
 use super::WorkerCmd;
 

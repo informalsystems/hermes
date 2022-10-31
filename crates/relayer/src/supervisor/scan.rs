@@ -4,31 +4,32 @@ use std::collections::BTreeMap;
 use itertools::Itertools;
 use tracing::{debug, error, error_span, info, warn};
 
-use ibc_relayer_types::core::ics02_client::client_state::ClientState;
-use ibc_relayer_types::core::ics03_connection::connection::{
-    IdentifiedConnectionEnd, State as ConnectionState,
-};
-use ibc_relayer_types::core::ics04_channel::channel::{
-    IdentifiedChannelEnd, State as ChannelState,
-};
-use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-use ibc_relayer_types::core::ics24_host::identifier::{
-    ChainId, ChannelId, ClientId, ConnectionId, PortId,
+use ibc_relayer_types::core::{
+    ics02_client::client_state::ClientState,
+    ics03_connection::connection::{IdentifiedConnectionEnd, State as ConnectionState},
+    ics04_channel::{
+        channel::{IdentifiedChannelEnd, State as ChannelState},
+        packet::Sequence,
+    },
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
 };
 
-use crate::chain::counterparty::{channel_on_destination, connection_state_on_destination};
-use crate::chain::handle::ChainHandle;
-use crate::chain::requests::{
-    IncludeProof, PageRequest, QueryChannelRequest, QueryClientConnectionsRequest,
-    QueryClientStateRequest, QueryClientStatesRequest, QueryConnectionChannelsRequest,
-    QueryConnectionRequest, QueryHeight,
+use crate::{
+    chain::{
+        counterparty::{channel_on_destination, connection_state_on_destination},
+        handle::ChainHandle,
+        requests::{
+            IncludeProof, PageRequest, QueryChannelRequest, QueryClientConnectionsRequest,
+            QueryClientStateRequest, QueryClientStatesRequest, QueryConnectionChannelsRequest,
+            QueryConnectionRequest, QueryHeight,
+        },
+    },
+    client_state::IdentifiedAnyClientState,
+    config::{filter::ChannelFilters, ChainConfig, Config, PacketFilter},
+    path::PathIdentifiers,
+    registry::Registry,
+    supervisor::client_state_filter::{FilterPolicy, Permission},
 };
-use crate::client_state::IdentifiedAnyClientState;
-use crate::config::filter::ChannelFilters;
-use crate::config::{ChainConfig, Config, PacketFilter};
-use crate::path::PathIdentifiers;
-use crate::registry::Registry;
-use crate::supervisor::client_state_filter::{FilterPolicy, Permission};
 
 use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
 

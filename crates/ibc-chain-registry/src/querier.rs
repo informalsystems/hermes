@@ -6,10 +6,10 @@ use std::fmt::Debug;
 use std::str::FromStr;
 
 use async_trait::async_trait;
-use futures::stream::FuturesUnordered;
-use futures::StreamExt;
+use futures::{stream::FuturesUnordered, StreamExt};
 use http::Uri;
-use tokio::time::{timeout, Duration};
+use tokio::time::timeout;
+use tokio::time::Duration;
 use tracing::{debug, info};
 
 use ibc_proto::cosmos::bank::v1beta1::query_client::QueryClient;

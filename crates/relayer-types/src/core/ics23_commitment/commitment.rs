@@ -3,8 +3,7 @@ use crate::prelude::*;
 use crate::proofs::ProofError;
 use crate::tx_msg::encode_message;
 
-use core::convert::TryFrom;
-use core::fmt;
+use core::{convert::TryFrom, fmt};
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
 use serde::{Deserialize, Serialize};
 use subtle_encoding::{Encoding, Hex};

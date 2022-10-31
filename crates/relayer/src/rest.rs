@@ -1,9 +1,12 @@
 use crossbeam_channel::TryRecvError;
 use tracing::{error, trace};
 
-use crate::config::Config;
-use crate::rest::request::{ReplySender, Request, VersionInfo};
-use crate::supervisor::dump_state::SupervisorState;
+use crate::{
+    config::Config,
+    rest::request::ReplySender,
+    rest::request::{Request, VersionInfo},
+    supervisor::dump_state::SupervisorState,
+};
 
 pub mod request;
 

@@ -1,5 +1,4 @@
-use tendermint::public_key::Algorithm;
-use tendermint::{block, consensus, evidence};
+use tendermint::{block, consensus, evidence, public_key::Algorithm};
 
 use crate::prelude::*;
 use crate::signer::Signer;

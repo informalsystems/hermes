@@ -10,10 +10,10 @@ use ibc_relayer::chain::handle::{CachingChainHandle, ChainHandle};
 use ibc_relayer::config::Config;
 use ibc_relayer::registry::SharedRegistry;
 use ibc_relayer::rest;
-use ibc_relayer::supervisor::cmd::SupervisorCmd;
-use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle};
+use ibc_relayer::supervisor::{cmd::SupervisorCmd, spawn_supervisor, SupervisorHandle};
 
-use crate::conclude::{json, Output};
+use crate::conclude::json;
+use crate::conclude::Output;
 use crate::prelude::*;
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
@@ -55,8 +55,7 @@ impl Runnable for StartCmd {
 /// - [DEPRECATED] SIGHUP: Trigger a reload of the configuration.
 /// - SIGUSR1: Ask the supervisor to dump its state and print it to the console.
 fn register_signals(tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
-    use signal_hook::consts::signal::*;
-    use signal_hook::iterator::Signals;
+    use signal_hook::{consts::signal::*, iterator::Signals};
 
     let sigs = vec![
         SIGHUP,  // Reload of configuration (disabled)

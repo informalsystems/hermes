@@ -5,12 +5,11 @@ use tokio::runtime::Runtime as TokioRuntime;
 
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
-use crate::chain::cosmos::CosmosSdkChain;
-use crate::chain::handle::ChainHandle;
-use crate::chain::runtime::ChainRuntime;
-use crate::chain::ChainType;
-use crate::config::Config;
-use crate::error::Error as RelayerError;
+use crate::{
+    chain::{cosmos::CosmosSdkChain, handle::ChainHandle, runtime::ChainRuntime, ChainType},
+    config::Config,
+    error::Error as RelayerError,
+};
 
 define_error! {
     SpawnError {

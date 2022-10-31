@@ -1,9 +1,7 @@
 //! Various components for internal use by the Abscissa subsystem.
 
 use abscissa_core::{Component, FrameworkError, FrameworkErrorKind};
-use tracing_subscriber::filter::EnvFilter;
-use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::FmtSubscriber;
+use tracing_subscriber::{filter::EnvFilter, util::SubscriberInitExt, FmtSubscriber};
 
 use ibc_relayer::config::{GlobalConfig, LogLevel};
 

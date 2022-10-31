@@ -1,21 +1,23 @@
 use flex_error::define_error;
 use serde::{Deserialize, Serialize};
 
-use ibc_relayer_types::core::ics02_client::client_state::ClientState;
-use ibc_relayer_types::core::ics02_client::events::UpdateClient;
-use ibc_relayer_types::core::ics03_connection::events::Attributes as ConnectionAttributes;
-use ibc_relayer_types::core::ics04_channel::events::{
-    Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement,
-};
-use ibc_relayer_types::core::ics24_host::identifier::{
-    ChainId, ChannelId, ClientId, ConnectionId, PortId,
+use ibc_relayer_types::core::{
+    ics02_client::{client_state::ClientState, events::UpdateClient},
+    ics03_connection::events::Attributes as ConnectionAttributes,
+    ics04_channel::events::{
+        Attributes, CloseInit, SendPacket, TimeoutPacket, WriteAcknowledgement,
+    },
+    ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
 };
 
-use crate::chain::counterparty::{
-    channel_connection_client, counterparty_chain_from_channel, counterparty_chain_from_connection,
+use crate::chain::{
+    counterparty::{
+        channel_connection_client, counterparty_chain_from_channel,
+        counterparty_chain_from_connection,
+    },
+    handle::ChainHandle,
+    requests::{IncludeProof, QueryClientStateRequest, QueryHeight},
 };
-use crate::chain::handle::ChainHandle;
-use crate::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use crate::error::Error as RelayerError;
 use crate::supervisor::Error as SupervisorError;
 

@@ -1,24 +1,32 @@
 use std::collections::HashSet;
 
-use ibc_relayer_types::core::ics02_client::client_state::ClientState;
-use ibc_relayer_types::core::ics03_connection::connection::{
-    ConnectionEnd, IdentifiedConnectionEnd, State as ConnectionState,
+use ibc_relayer_types::{
+    core::{
+        ics02_client::client_state::ClientState,
+        ics03_connection::connection::{
+            ConnectionEnd, IdentifiedConnectionEnd, State as ConnectionState,
+        },
+        ics04_channel::{
+            channel::{IdentifiedChannelEnd, State},
+            packet::Sequence,
+        },
+        ics24_host::identifier::{
+            ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
+        },
+    },
+    Height,
 };
-use ibc_relayer_types::core::ics04_channel::channel::{IdentifiedChannelEnd, State};
-use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-use ibc_relayer_types::core::ics24_host::identifier::{
-    ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
-};
-use ibc_relayer_types::Height;
 use serde::{Deserialize, Serialize};
 use tracing::{error, trace};
 
-use super::handle::ChainHandle;
 use super::requests::{
     IncludeProof, PageRequest, QueryChannelRequest, QueryClientConnectionsRequest,
-    QueryClientStateRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
+    QueryClientStateRequest, QueryConnectionRequest, QueryPacketAcknowledgementsRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+};
+use super::{
+    handle::ChainHandle,
+    requests::{QueryConnectionChannelsRequest, QueryPacketCommitmentsRequest},
 };
 use crate::chain::requests::QueryHeight;
 use crate::channel::ChannelError;

@@ -1,13 +1,17 @@
 use core::str::FromStr;
-use std::fs;
-use std::path::{Path, PathBuf};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
 use eyre::eyre;
-use ibc_relayer::config::{ChainConfig, Config};
-use ibc_relayer::keyring::{HDPath, KeyEntry, KeyRing, Store};
+use ibc_relayer::{
+    config::{ChainConfig, Config},
+    keyring::{HDPath, KeyEntry, KeyRing, Store},
+};
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tracing::warn;
 

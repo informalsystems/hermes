@@ -5,11 +5,13 @@ use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tracing::error;
 
-use crate::chain::handle::{ChainHandle, ChainHandlePair};
-use crate::config::Config;
 use crate::foreign_client::ForeignClient;
 use crate::link::{Link, LinkParameters, Resubmit};
-use crate::object::Object;
+use crate::{
+    chain::handle::{ChainHandle, ChainHandlePair},
+    config::Config,
+    object::Object,
+};
 
 pub mod retry_strategy;
 

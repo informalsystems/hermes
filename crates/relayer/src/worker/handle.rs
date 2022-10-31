@@ -1,19 +1,21 @@
-use core::{fmt, mem};
+use core::fmt;
+use core::mem;
 
 use crossbeam_channel::Sender;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use tracing::{debug, trace};
 
-use ibc_relayer_types::core::ics02_client::events::NewBlock;
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use ibc_relayer_types::Height;
+use ibc_relayer_types::{
+    core::{ics02_client::events::NewBlock, ics24_host::identifier::ChainId},
+    Height,
+};
 
 use crate::chain::tracking::TrackingId;
-use crate::event::monitor::EventBatch;
 use crate::event::IbcEventWithHeight;
-use crate::object::Object;
 use crate::util::lock::{LockExt, RwArc};
 use crate::util::task::TaskHandle;
+use crate::{event::monitor::EventBatch, object::Object};
 
 use super::{WorkerCmd, WorkerId};
 

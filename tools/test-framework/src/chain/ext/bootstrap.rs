@@ -1,10 +1,12 @@
 use core::str::FromStr;
 
 use eyre::eyre;
+use serde_json as json;
+use std::fs;
 use std::path::PathBuf;
-use std::{fs, str};
+use std::str;
+use toml;
 use tracing::debug;
-use {serde_json as json, toml};
 
 use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
 

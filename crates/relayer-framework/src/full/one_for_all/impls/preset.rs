@@ -1,6 +1,7 @@
 use crate::base::one_for_all::impls::chain::queries::consensus_state::SendConsensusStateQueryToOfa;
 use crate::base::one_for_all::impls::chain::queries::status::SendChainStatusQueryToOfa;
-use crate::base::one_for_all::traits::chain::{OfaChainPreset, OfaIbcChain, OfaIbcChainPreset};
+use crate::base::one_for_all::traits::chain::OfaIbcChain;
+use crate::base::one_for_all::traits::chain::{OfaChainPreset, OfaIbcChainPreset};
 use crate::base::one_for_all::traits::relay::OfaRelayPreset;
 use crate::base::relay::impls::packet_relayers::general::full_relay::FullRelayer;
 use crate::base::relay::impls::packet_relayers::general::retry::RetryRelayer;

@@ -1,8 +1,11 @@
 use alloc::sync::Arc;
 use ibc_relayer_framework::full::one_for_all::traits::telemetry::OfaTelemetry;
 use ibc_relayer_framework::full::telemetry::traits::metrics::HasLabel;
-use opentelemetry::metrics::{Counter, Meter, Unit, UpDownCounter, ValueRecorder};
-use opentelemetry::KeyValue;
+use opentelemetry::metrics::Unit;
+use opentelemetry::{
+    metrics::{Counter, Meter, UpDownCounter, ValueRecorder},
+    KeyValue,
+};
 use std::collections::HashMap;
 use std::sync::Mutex;
 

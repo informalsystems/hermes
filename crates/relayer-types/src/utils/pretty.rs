@@ -84,8 +84,7 @@ mod tests {
     use super::*;
 
     use crate::alloc::string::ToString;
-    use std::string::String;
-    use std::vec;
+    use std::{string::String, vec};
 
     #[test]
     fn test_pretty_duration_micros() {

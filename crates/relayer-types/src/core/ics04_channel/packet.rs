@@ -9,8 +9,7 @@ use ibc_proto::ibc::core::channel::v1::Packet as RawPacket;
 use super::timeout::TimeoutHeight;
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics24_host::identifier::{ChannelId, PortId};
-use crate::timestamp::Expiry::Expired;
-use crate::timestamp::Timestamp;
+use crate::timestamp::{Expiry::Expired, Timestamp};
 use crate::Height;
 
 /// Enumeration of proof carrying ICS4 message, helper for relayer.

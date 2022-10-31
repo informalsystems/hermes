@@ -1,6 +1,8 @@
 //! Contains the trait required to fetch and deserialize data from the chain repository
-use crate::constants::{DEFAULT_REF, HOST, PROTOCOL, REGISTRY_PATH};
-use crate::error::RegistryError;
+use crate::{
+    constants::{DEFAULT_REF, HOST, PROTOCOL, REGISTRY_PATH},
+    error::RegistryError,
+};
 use async_trait::async_trait;
 use http::uri::Builder;
 use serde::de::DeserializeOwned;

@@ -1,9 +1,11 @@
 use crate::prelude::*;
 
-use core::fmt::{Display, Error as FmtError, Formatter};
 use core::str::FromStr;
 use core::time::Duration;
-use core::u64;
+use core::{
+    fmt::{Display, Error as FmtError, Formatter},
+    u64,
+};
 
 use ibc_proto::protobuf::Protobuf;
 use serde::{Deserialize, Serialize};

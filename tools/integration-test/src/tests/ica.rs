@@ -2,14 +2,16 @@ use std::str::FromStr;
 
 use serde::Serialize;
 
-use ibc_relayer::config::filter::{ChannelFilters, FilterPattern};
-use ibc_relayer::config::PacketFilter;
+use ibc_relayer::config::{
+    filter::{ChannelFilters, FilterPattern},
+    PacketFilter,
+};
 use ibc_relayer_types::core::ics04_channel::channel::State;
 
-use ibc_test_framework::ibc::denom::Denom;
-use ibc_test_framework::prelude::*;
-use ibc_test_framework::relayer::channel::{
-    assert_eventually_channel_established, query_channel_end,
+use ibc_test_framework::{
+    ibc::denom::Denom,
+    prelude::*,
+    relayer::channel::{assert_eventually_channel_established, query_channel_end},
 };
 
 #[test]

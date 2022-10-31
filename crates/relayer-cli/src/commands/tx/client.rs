@@ -1,5 +1,7 @@
-use core::fmt::{Display, Error as FmtError, Formatter};
-use core::time::Duration;
+use core::{
+    fmt::{Display, Error as FmtError, Formatter},
+    time::Duration,
+};
 use std::thread;
 
 use abscissa_core::clap::Parser;

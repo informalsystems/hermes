@@ -5,8 +5,10 @@
 
 use crate::base::all_for_one::chain::AfoBaseChain;
 use crate::base::all_for_one::relay::AfoBaseRelay;
-use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain, OfaIbcChainPreset};
-use crate::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayPreset};
+use crate::base::one_for_all::traits::chain::OfaIbcChainPreset;
+use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
+use crate::base::one_for_all::traits::relay::OfaBaseRelay;
+use crate::base::one_for_all::traits::relay::OfaRelayPreset;
 use crate::common::one_for_all::types::chain::OfaChainWrapper;
 use crate::common::one_for_all::types::relay::OfaRelayWrapper;
 

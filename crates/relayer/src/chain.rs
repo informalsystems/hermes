@@ -7,8 +7,7 @@ pub mod requests;
 pub mod runtime;
 pub mod tracking;
 
-use serde::de::Error;
-use serde::{Deserialize, Serialize};
+use serde::{de::Error, Deserialize, Serialize};
 
 // NOTE(new): When adding a variant to `ChainType`, make sure to update
 //            the `Deserialize` implementation below and the tests.

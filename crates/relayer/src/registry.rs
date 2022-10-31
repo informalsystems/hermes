@@ -9,10 +9,12 @@ use tracing::{trace, warn};
 
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
-use crate::chain::handle::ChainHandle;
-use crate::config::Config;
-use crate::spawn::{spawn_chain_runtime, SpawnError};
-use crate::util::lock::RwArc;
+use crate::{
+    chain::handle::ChainHandle,
+    config::Config,
+    spawn::{spawn_chain_runtime, SpawnError},
+    util::lock::RwArc,
+};
 
 /// Registry for keeping track of [`ChainHandle`]s indexed by a `ChainId`.
 ///

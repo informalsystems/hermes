@@ -203,8 +203,10 @@ impl Runnable for TxIcs20MsgTransferCmd {
 
 #[cfg(test)]
 mod tests {
-    use ibc_relayer_types::applications::transfer::Amount;
-    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
+    use ibc_relayer_types::{
+        applications::transfer::Amount,
+        core::ics24_host::identifier::{ChainId, ChannelId, PortId},
+    };
 
     use super::TxIcs20MsgTransferCmd;
 

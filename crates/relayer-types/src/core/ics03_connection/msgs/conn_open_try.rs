@@ -1,8 +1,10 @@
 use crate::prelude::*;
 
-use core::convert::{TryFrom, TryInto};
-use core::str::FromStr;
-use core::time::Duration;
+use core::{
+    convert::{TryFrom, TryInto},
+    str::FromStr,
+    time::Duration,
+};
 
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
@@ -232,9 +234,8 @@ mod tests {
     use test_log::test;
 
     use ibc_proto::ibc::core::client::v1::Height;
-    use ibc_proto::ibc::core::connection::v1::{
-        Counterparty as RawCounterparty, MsgConnectionOpenTry as RawMsgConnectionOpenTry,
-    };
+    use ibc_proto::ibc::core::connection::v1::Counterparty as RawCounterparty;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenTry as RawMsgConnectionOpenTry;
 
     use crate::core::ics03_connection::msgs::conn_open_try::test_util::get_dummy_raw_msg_conn_open_try;
     use crate::core::ics03_connection::msgs::conn_open_try::MsgConnectionOpenTry;

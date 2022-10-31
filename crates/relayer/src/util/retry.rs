@@ -1,7 +1,9 @@
 use core::time::Duration;
 
-pub use retry::delay::{Fibonacci, Fixed};
-pub use retry::{retry_with_index, Error as RetryError, OperationResult as RetryResult};
+pub use retry::{
+    delay::{Fibonacci, Fixed},
+    retry_with_index, Error as RetryError, OperationResult as RetryResult,
+};
 
 #[derive(Copy, Clone, Debug)]
 pub struct ConstantGrowth {

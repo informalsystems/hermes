@@ -4,7 +4,8 @@
 
 use core::str::FromStr;
 use core::time::Duration;
-use eyre::{eyre, Report as Error};
+use eyre::eyre;
+use eyre::Report as Error;
 use ibc_relayer::chain::ChainType;
 use ibc_relayer::config;
 use ibc_relayer::keyring::Store;

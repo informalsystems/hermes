@@ -4,8 +4,7 @@
 //! channel version to be used in a channel open
 //! handshake.
 
-use ibc_relayer_types::applications::transfer;
-use ibc_relayer_types::core::ics24_host::identifier::PortId;
+use ibc_relayer_types::{applications::transfer, core::ics24_host::identifier::PortId};
 
 pub use ibc_relayer_types::core::ics04_channel::version::Version;
 

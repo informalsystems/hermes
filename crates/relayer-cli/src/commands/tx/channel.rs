@@ -676,9 +676,9 @@ mod tests {
     use std::str::FromStr;
 
     use abscissa_core::clap::Parser;
-    use ibc_relayer_types::core::ics04_channel::channel::Order;
-    use ibc_relayer_types::core::ics24_host::identifier::{
-        ChainId, ChannelId, ConnectionId, PortId,
+    use ibc_relayer_types::core::{
+        ics04_channel::channel::Order,
+        ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortId},
     };
 
     #[test]

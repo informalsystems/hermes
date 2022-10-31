@@ -108,9 +108,8 @@ mod tests {
 
     use test_log::test;
 
-    use ibc_proto::ibc::core::connection::v1::{
-        Counterparty as RawCounterparty, MsgConnectionOpenInit as RawMsgConnectionOpenInit,
-    };
+    use ibc_proto::ibc::core::connection::v1::Counterparty as RawCounterparty;
+    use ibc_proto::ibc::core::connection::v1::MsgConnectionOpenInit as RawMsgConnectionOpenInit;
 
     use super::MsgConnectionOpenInit;
     use crate::core::ics03_connection::msgs::conn_open_init::test_util::get_dummy_raw_msg_conn_open_init;

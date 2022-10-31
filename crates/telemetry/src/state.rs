@@ -2,8 +2,11 @@ use core::fmt::{Display, Error as FmtError, Formatter};
 use std::time::{Duration, Instant};
 
 use dashmap::DashMap;
-use opentelemetry::metrics::{Counter, ObservableGauge, UpDownCounter};
-use opentelemetry::{global, Context, KeyValue};
+use opentelemetry::{
+    global,
+    metrics::{Counter, ObservableGauge, UpDownCounter},
+    Context, KeyValue,
+};
 use opentelemetry_prometheus::PrometheusExporter;
 use prometheus::proto::MetricFamily;
 
@@ -761,7 +764,8 @@ use std::sync::Arc;
 
 use opentelemetry::metrics::Unit;
 use opentelemetry::sdk::export::metrics::AggregatorSelector;
-use opentelemetry::sdk::metrics::aggregators::{histogram, last_value, sum, Aggregator};
+use opentelemetry::sdk::metrics::aggregators::Aggregator;
+use opentelemetry::sdk::metrics::aggregators::{histogram, last_value, sum};
 use opentelemetry::sdk::metrics::sdk_api::Descriptor;
 
 #[derive(Debug)]

@@ -1,5 +1,4 @@
-use ibc_relayer::config::types::Memo;
-use ibc_relayer::config::Config;
+use ibc_relayer::config::{types::Memo, Config};
 use serde_json as json;
 
 use ibc_test_framework::ibc::denom::derive_ibc_denom;
