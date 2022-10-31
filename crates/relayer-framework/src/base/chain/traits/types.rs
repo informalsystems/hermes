@@ -18,9 +18,9 @@ pub trait HasEventType: Async {
 
 /// The minimal datatypes that any chain needs to expose.
 pub trait HasChainTypes: HasMessageType + HasEventType + HasError {
-    type Height: Async + Ord;
+    type Height: Ord + Async;
 
-    type Timestamp: Async + Ord;
+    type Timestamp: Ord + Async;
 
     fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error>;
 }
