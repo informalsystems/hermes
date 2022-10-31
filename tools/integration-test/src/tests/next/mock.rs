@@ -1,10 +1,9 @@
-use std::time::SystemTime;
-
 use ibc_relayer_framework::base::one_for_all::traits::relay::OfaBaseRelay;
 use ibc_relayer_framework::base::relay::traits::packet_relayers::ack_packet::CanRelayAckPacket;
 use ibc_relayer_framework::base::relay::traits::packet_relayers::receive_packet::CanRelayReceivePacket;
 use ibc_test_framework::framework::base::{run_test, PrimitiveTest};
 use ibc_test_framework::prelude::*;
+use ibc_test_framework::relayer_mock::base::types::height::Height;
 use ibc_test_framework::relayer_mock::base::types::packet::PacketKey;
 
 use super::context::build_mock_relay_context;
@@ -29,8 +28,8 @@ impl PrimitiveTest for MockChainTest {
             String::from("channel-0"),
             String::from("transfer"),
             1,
-            1,
-            SystemTime::now(),
+            Height(10),
+            Height(10),
         );
 
         info!("Relaying recv packet");
