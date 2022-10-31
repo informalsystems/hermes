@@ -23,20 +23,20 @@ use crate::light_client::AnyHeader;
 use crate::misbehaviour::MisbehaviourEvidence;
 use crate::util::lock::LockExt;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
-use ibc_relayer_types::core::ics03_connection::connection::{
-    ConnectionEnd, IdentifiedConnectionEnd,
-};
-use ibc_relayer_types::core::ics03_connection::version::Version;
-use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
+use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
+use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc_relayer_types::core::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
-use ibc_relayer_types::core::ics24_host::identifier::{
-    ChainId, ChannelId, ClientId, ConnectionId, PortId,
+use ibc_relayer_types::{
+    core::ics03_connection::connection::ConnectionEnd,
+    core::ics03_connection::version::Version,
+    core::ics04_channel::channel::ChannelEnd,
+    core::ics23_commitment::commitment::CommitmentPrefix,
+    core::ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+    proofs::Proofs,
+    signer::Signer,
+    Height,
 };
-use ibc_relayer_types::proofs::Proofs;
-use ibc_relayer_types::signer::Signer;
-use ibc_relayer_types::Height;
 
 #[derive(Debug, Clone)]
 pub struct CountingChainHandle<Handle> {

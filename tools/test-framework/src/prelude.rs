@@ -50,7 +50,8 @@ pub use crate::framework::nary::connection::{
 pub use crate::framework::nary::node::{run_nary_node_test, NaryNodeTest, RunNaryNodeTest};
 pub use crate::framework::overrides::TestOverrides;
 pub use crate::framework::supervisor::RunWithSupervisor;
-pub use crate::ibc::denom::{derive_ibc_denom, Denom};
+pub use crate::ibc::denom::derive_ibc_denom;
+pub use crate::ibc::denom::Denom;
 pub use crate::ibc::token::{TaggedDenomExt, TaggedToken, TaggedTokenExt, TaggedTokenRef, Token};
 pub use crate::relayer::channel::TaggedChannelEndExt;
 pub use crate::relayer::connection::{TaggedConnectionEndExt, TaggedConnectionExt};

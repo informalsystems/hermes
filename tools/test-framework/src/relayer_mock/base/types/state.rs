@@ -1,5 +1,4 @@
-use std::collections::HashSet;
-use std::fmt::Display;
+use std::{collections::HashSet, fmt::Display};
 
 #[derive(Clone, Default)]
 pub struct State {

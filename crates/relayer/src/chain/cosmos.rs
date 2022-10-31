@@ -1,42 +1,36 @@
 use alloc::sync::Arc;
 use bytes::{Buf, Bytes};
-use core::convert::{TryFrom, TryInto};
-use core::future::Future;
-use core::str::FromStr;
-use core::time::Duration;
+use core::{
+    convert::{TryFrom, TryInto},
+    future::Future,
+    str::FromStr,
+    time::Duration,
+};
 use num_bigint::BigInt;
 use std::cmp::Ordering;
 use std::thread;
 
 use ibc_proto::protobuf::Protobuf;
-use tendermint::abci::Path as TendermintABCIPath;
 use tendermint::block::Height as TmHeight;
-use tendermint::node::info::TxIndexStatus;
+use tendermint::{abci::Path as TendermintABCIPath, node::info::TxIndexStatus};
 use tendermint_light_client_verifier::types::LightBlock as TmLightBlock;
-use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
-use tendermint_rpc::endpoint::status;
-use tendermint_rpc::{Client, HttpClient, Order};
+use tendermint_rpc::{
+    endpoint::broadcast::tx_sync::Response, endpoint::status, Client, HttpClient, Order,
+};
 use tokio::runtime::Runtime as TokioRuntime;
-use tonic::codegen::http::Uri;
-use tonic::metadata::AsciiMetadataValue;
+use tonic::{codegen::http::Uri, metadata::AsciiMetadataValue};
 use tracing::{error, instrument, trace, warn};
 
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
-use ibc_relayer_types::clients::ics07_tendermint::client_state::{
-    AllowUpdate, ClientState as TmClientState,
-};
-use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
 use ibc_relayer_types::core::ics02_client::client_type::ClientType;
 use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
-use ibc_relayer_types::core::ics02_client::events::UpdateClient;
 use ibc_relayer_types::core::ics03_connection::connection::{
     ConnectionEnd, IdentifiedConnectionEnd,
 };
 use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
-use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
@@ -49,6 +43,14 @@ use ibc_relayer_types::core::ics24_host::{
 };
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
+use ibc_relayer_types::{
+    clients::ics07_tendermint::client_state::{AllowUpdate, ClientState as TmClientState},
+    core::ics23_commitment::merkle::MerkleProof,
+};
+use ibc_relayer_types::{
+    clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState,
+    core::ics02_client::events::UpdateClient,
+};
 
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;
@@ -88,10 +90,8 @@ use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
-use crate::util::pretty::{
-    PrettyConsensusStateWithHeight, PrettyIdentifiedChannel, PrettyIdentifiedClientState,
-    PrettyIdentifiedConnection,
-};
+use crate::util::pretty::{PrettyConsensusStateWithHeight, PrettyIdentifiedChannel};
+use crate::util::pretty::{PrettyIdentifiedClientState, PrettyIdentifiedConnection};
 
 use super::requests::{
     IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
@@ -1924,15 +1924,15 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
 
 #[cfg(test)]
 mod tests {
-    use ibc_relayer_types::core::ics02_client::client_type::ClientType;
-    use ibc_relayer_types::core::ics24_host::identifier::ClientId;
-    use ibc_relayer_types::mock::client_state::MockClientState;
-    use ibc_relayer_types::mock::header::MockHeader;
-    use ibc_relayer_types::Height;
+    use ibc_relayer_types::{
+        core::{ics02_client::client_type::ClientType, ics24_host::identifier::ClientId},
+        mock::client_state::MockClientState,
+        mock::header::MockHeader,
+        Height,
+    };
 
-    use crate::chain::cosmos::client_id_suffix;
     use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
-    use crate::config::GasPrice;
+    use crate::{chain::cosmos::client_id_suffix, config::GasPrice};
 
     use super::calculate_fee;
 

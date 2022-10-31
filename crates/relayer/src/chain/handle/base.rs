@@ -3,37 +3,37 @@ use core::fmt::{Debug, Display, Error as FmtError, Formatter};
 use crossbeam_channel as channel;
 use tracing::Span;
 
-use ibc_relayer_types::core::ics02_client::events::UpdateClient;
-use ibc_relayer_types::core::ics03_connection::connection::{
-    ConnectionEnd, IdentifiedConnectionEnd,
+use ibc_relayer_types::{
+    core::{
+        ics02_client::events::UpdateClient,
+        ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
+        ics03_connection::version::Version,
+        ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd},
+        ics04_channel::packet::{PacketMsgType, Sequence},
+        ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
+        ics24_host::identifier::ChainId,
+        ics24_host::identifier::ChannelId,
+        ics24_host::identifier::{ClientId, ConnectionId, PortId},
+    },
+    proofs::Proofs,
+    signer::Signer,
+    Height,
 };
-use ibc_relayer_types::core::ics03_connection::version::Version;
-use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
-use ibc_relayer_types::core::ics04_channel::packet::{PacketMsgType, Sequence};
-use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
-use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
-use ibc_relayer_types::core::ics24_host::identifier::{
-    ChainId, ChannelId, ClientId, ConnectionId, PortId,
-};
-use ibc_relayer_types::proofs::Proofs;
-use ibc_relayer_types::signer::Signer;
-use ibc_relayer_types::Height;
 
-use crate::account::Balance;
-use crate::chain::client::ClientSettings;
-use crate::chain::endpoint::ChainStatus;
-use crate::chain::requests::*;
-use crate::chain::tracking::TrackedMsgs;
-use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
-use crate::config::ChainConfig;
-use crate::connection::ConnectionMsgType;
-use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
-use crate::denom::DenomTrace;
-use crate::error::Error;
-use crate::event::IbcEventWithHeight;
-use crate::keyring::KeyEntry;
-use crate::light_client::AnyHeader;
-use crate::misbehaviour::MisbehaviourEvidence;
+use crate::{
+    account::Balance,
+    chain::{client::ClientSettings, endpoint::ChainStatus, requests::*, tracking::TrackedMsgs},
+    client_state::{AnyClientState, IdentifiedAnyClientState},
+    config::ChainConfig,
+    connection::ConnectionMsgType,
+    consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight},
+    denom::DenomTrace,
+    error::Error,
+    event::IbcEventWithHeight,
+    keyring::KeyEntry,
+    light_client::AnyHeader,
+    misbehaviour::MisbehaviourEvidence,
+};
 
 use super::{reply_channel, ChainHandle, ChainRequest, HealthCheck, ReplyTo, Subscription};
 

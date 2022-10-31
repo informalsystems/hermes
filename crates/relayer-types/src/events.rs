@@ -12,13 +12,16 @@ use tendermint::abci::Event as AbciEvent;
 
 use crate::applications::ics29_fee::error::Error as FeeError;
 use crate::applications::ics29_fee::events::IncentivizedPacket;
+use crate::core::ics02_client::error as client_error;
+use crate::core::ics02_client::events as ClientEvents;
 use crate::core::ics02_client::events::NewBlock;
-use crate::core::ics02_client::{error as client_error, events as ClientEvents};
+use crate::core::ics03_connection::error as connection_error;
+use crate::core::ics03_connection::events as ConnectionEvents;
 use crate::core::ics03_connection::events::Attributes as ConnectionAttributes;
-use crate::core::ics03_connection::{error as connection_error, events as ConnectionEvents};
+use crate::core::ics04_channel::error as channel_error;
+use crate::core::ics04_channel::events as ChannelEvents;
 use crate::core::ics04_channel::events::Attributes as ChannelAttributes;
 use crate::core::ics04_channel::packet::Packet;
-use crate::core::ics04_channel::{error as channel_error, events as ChannelEvents};
 use crate::core::ics24_host::error::ValidationError;
 use crate::timestamp::ParseTimestampError;
 

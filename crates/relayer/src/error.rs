@@ -17,21 +17,26 @@ use tendermint_rpc::endpoint::abci_query::AbciQuery;
 use tendermint_rpc::endpoint::broadcast::tx_commit::TxResult;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxSyncResponse;
 use tendermint_rpc::Error as TendermintRpcError;
-use tonic::metadata::errors::InvalidMetadataValue;
-use tonic::transport::Error as TransportError;
-use tonic::Status as GrpcStatus;
+use tonic::{
+    metadata::errors::InvalidMetadataValue, transport::Error as TransportError,
+    Status as GrpcStatus,
+};
 
-use ibc_relayer_types::applications::ics29_fee::error::Error as FeeError;
-use ibc_relayer_types::clients::ics07_tendermint::error as tendermint_error;
-use ibc_relayer_types::core::ics02_client::client_type::ClientType;
-use ibc_relayer_types::core::ics02_client::error as client_error;
-use ibc_relayer_types::core::ics03_connection::error as connection_error;
-use ibc_relayer_types::core::ics23_commitment::error as commitment_error;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId};
-use ibc_relayer_types::proofs::ProofError;
-use ibc_relayer_types::relayer::ics18_relayer::error as relayer_error;
+use ibc_relayer_types::{
+    applications::ics29_fee::error::Error as FeeError,
+    clients::ics07_tendermint::error as tendermint_error,
+    core::{
+        ics02_client::{client_type::ClientType, error as client_error},
+        ics03_connection::error as connection_error,
+        ics23_commitment::error as commitment_error,
+        ics24_host::identifier::{ChainId, ChannelId, ConnectionId},
+    },
+    proofs::ProofError,
+    relayer::ics18_relayer::error as relayer_error,
+};
 
-use crate::chain::cosmos::{version, GENESIS_MAX_BYTES_MAX_FRACTION};
+use crate::chain::cosmos::version;
+use crate::chain::cosmos::GENESIS_MAX_BYTES_MAX_FRACTION;
 use crate::event::monitor;
 use crate::keyring::errors::Error as KeyringError;
 use crate::sdk_error::SdkError;

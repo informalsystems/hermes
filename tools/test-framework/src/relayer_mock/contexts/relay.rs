@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
-use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
-use ibc_relayer_framework::common::one_for_all::types::chain::OfaChainWrapper;
+use ibc_relayer_framework::{
+    base::one_for_all::traits::runtime::OfaRuntimeContext,
+    common::one_for_all::types::chain::OfaChainWrapper,
+};
 
 use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
 

@@ -1,17 +1,9 @@
 #![allow(dead_code)]
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use std::sync::Mutex;
 
-use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
-use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
-use tokio::runtime::Runtime;
-
-use crate::relayer_mock::base::error::Error;
-use crate::relayer_mock::base::types::height::Height;
-use crate::relayer_mock::base::types::packet::PacketKey;
-use crate::relayer_mock::base::types::state::State;
+use crate::relayer_mock::base::types::{height::Height, packet::PacketKey, state::State};
 
 pub struct MockChainContext {
     pub name: String,
