@@ -21,7 +21,7 @@ use crate::event::monitor::{
     self, Error as EventError, ErrorDetail as EventErrorDetail, EventBatch,
 };
 use crate::event::IbcEventWithHeight;
-use crate::object::{Object, Packet};
+use crate::object::Object;
 use crate::registry::{Registry, SharedRegistry};
 use crate::supervisor::scan::ScanMode;
 use crate::util::lock::LockExt;
