@@ -1,10 +1,12 @@
+//! Tests the capability of a full relayer instance to relay a timeout packet.
+//!
 //! This test ensures that a source chain that initiates an IBC transfer is
-//! refunded the tokens that it sent in response to receiving a timeout packet.
+//! refunded the tokens that it sent in response to receiving a timeout packet
+//! relayed by a full relayer.
 
 use ibc_relayer::config::PacketFilter;
 
-use ibc_relayer_framework::base::relay::impls::packet_relayers::timeout_unordered::timeout_unordered_packet::BaseTimeoutUnorderedPacketRelayer;
-use ibc_relayer_framework::base::relay::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer;
+use ibc_relayer_framework::base::relay::traits::packet_relayer::CanRelayPacket;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::util::random::random_u64_range;
 
@@ -70,18 +72,7 @@ impl BinaryChannelTest for IbcTransferTest {
 
         sleep(Duration::from_secs(5));
 
-        let chain_b_height = chains.handle_b.query_latest_height().unwrap();
-        let chain_b_height = chain_b_height.decrement().unwrap();
-
-        runtime.block_on(async {
-            BaseTimeoutUnorderedPacketRelayer::relay_timeout_unordered_packet(
-                &relay_context,
-                &chain_b_height,
-                &packet,
-            )
-            .await
-            .unwrap()
-        });
+        runtime.block_on(async { relay_context.relay_packet(&packet).await.unwrap() });
 
         info!("finished running relayer");
 

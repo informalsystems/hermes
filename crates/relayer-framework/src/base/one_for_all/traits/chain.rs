@@ -21,7 +21,7 @@ pub trait OfaChainTypes: Async {
 
     type Height: Ord + Async;
 
-    type Timestamp: Async;
+    type Timestamp: Ord + Async;
 
     type Message: Async;
 

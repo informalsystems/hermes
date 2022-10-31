@@ -6,6 +6,7 @@
 
 use crate::base::core::traits::error::HasError;
 use crate::base::core::traits::sync::Async;
+use crate::std_prelude::*;
 
 pub trait HasMessageType: Async {
     type Message: Async;
@@ -17,9 +18,9 @@ pub trait HasEventType: Async {
 
 /// The minimal datatypes that any chain needs to expose.
 pub trait HasChainTypes: HasMessageType + HasEventType + HasError {
-    type Height: Async;
+    type Height: Async + Ord;
 
-    type Timestamp: Async;
+    type Timestamp: Async + Ord;
 
     fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error>;
 }
