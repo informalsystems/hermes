@@ -29,7 +29,7 @@ impl OfaChainTypes for MockChainContext {
 
     type Signer = u128;
 
-    type RawMessage = Vec<u8>;
+    type RawMessage = String;
 
     type Event = Event;
 
@@ -53,26 +53,27 @@ impl OfaChainTypes for MockChainContext {
 #[async_trait]
 impl OfaBaseChain for MockChainContext {
     fn runtime(&self) -> &OfaRuntimeContext<MockRuntimeContext> {
-        unimplemented!()
+        self.runtime()
     }
 
     fn encode_raw_message(
-        _message: &Self::Message,
+        message: &Self::Message,
         _signer: &Self::Signer,
     ) -> Result<Self::RawMessage, Self::Error> {
-        unimplemented!()
+        Ok(message.to_string())
     }
 
+    // Only single messages are sent by the Mock Chain
     fn estimate_message_len(_message: &Self::Message) -> Result<usize, Self::Error> {
-        unimplemented!()
+        Ok(1)
     }
 
     fn chain_status_height(status: &Self::ChainStatus) -> &Self::Height {
         &status.height
     }
 
-    fn chain_status_timestamp(_status: &Self::ChainStatus) -> &Self::Timestamp {
-        unimplemented!()
+    fn chain_status_timestamp(status: &Self::ChainStatus) -> &Self::Timestamp {
+        &status.timestamp
     }
 
     fn try_extract_write_acknowledgement_event(
@@ -84,7 +85,10 @@ impl OfaBaseChain for MockChainContext {
         }
     }
 
-    async fn send_messages(&self, messages: Vec<MockMessage>) -> Result<Vec<Vec<Event>>, Error> {
+    async fn send_messages(
+        &self,
+        messages: Vec<Self::Message>,
+    ) -> Result<Vec<Vec<Self::Event>>, Error> {
         let mut res = vec![];
         for m in messages {
             if let MockMessage::SendPacket(h) = m {
@@ -101,7 +105,7 @@ impl OfaBaseChain for MockChainContext {
 
 #[async_trait]
 impl OfaIbcChain<MockChainContext> for MockChainContext {
-    fn counterparty_message_height(message: &Self::Message) -> Option<u128> {
+    fn counterparty_message_height(message: &Self::Message) -> Option<Self::Height> {
         match message {
             MockMessage::SendPacket(h) => Some(*h),
             MockMessage::AckPacket(h) => Some(*h),
@@ -112,22 +116,22 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
 
     async fn query_consensus_state(
         &self,
-        client_id: &String,
-        height: &u128,
-    ) -> Result<ConsensusState, Self::Error> {
+        client_id: &Self::ClientId,
+        height: &Self::Height,
+    ) -> Result<Self::ConsensusState, Self::Error> {
         let res = self.query_state(Height::from(*height));
         if let Some(_state) = res {
             Ok(ConsensusState {})
         } else {
-            Err(Error::no_consensus_state(client_id.clone()))
+            Err(Error::no_consensus_state(client_id.to_string()))
         }
     }
 
     async fn is_packet_received(
         &self,
-        port_id: &String,
-        channel_id: &String,
-        sequence: &u128,
+        port_id: &Self::PortId,
+        channel_id: &Self::ChannelId,
+        sequence: &Self::Sequence,
     ) -> Result<bool, Self::Error> {
         if let Some(height) = self.get_latest_height() {
             if let Some(state) = self.query_state(height.clone()) {

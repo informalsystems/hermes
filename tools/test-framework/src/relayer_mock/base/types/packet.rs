@@ -1,4 +1,4 @@
-use std::time::SystemTime;
+use crate::relayer_mock::base::types::height::Height;
 
 #[derive(Clone)]
 pub struct PacketKey {
@@ -6,8 +6,8 @@ pub struct PacketKey {
     pub channel_id: String,
     pub port_id: String,
     pub sequence: u128,
-    pub height: u128,
-    pub timeout: SystemTime,
+    pub timeout_height: Height,
+    pub timeout_timestamp: Height,
 }
 
 impl PacketKey {
@@ -16,16 +16,16 @@ impl PacketKey {
         channel_id: String,
         port_id: String,
         sequence: u128,
-        height: u128,
-        timeout: SystemTime,
+        timeout_height: Height,
+        timeout_timestamp: Height,
     ) -> Self {
         Self {
             client_id,
             channel_id,
             port_id,
             sequence,
-            height,
-            timeout,
+            timeout_height,
+            timeout_timestamp,
         }
     }
 }

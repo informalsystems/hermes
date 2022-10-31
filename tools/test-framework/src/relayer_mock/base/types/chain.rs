@@ -1,4 +1,4 @@
-use std::time::SystemTime;
+use crate::relayer_mock::base::types::height::Height;
 
 use super::state::State;
 
@@ -13,14 +13,14 @@ impl From<State> for ConsensusState {
 
 pub struct ChainStatus {
     pub height: u128,
-    pub timestamp: SystemTime,
+    pub timestamp: Height,
 }
 
 impl Default for ChainStatus {
     fn default() -> Self {
         ChainStatus {
             height: 1,
-            timestamp: SystemTime::now(),
+            timestamp: Height(1),
         }
     }
 }

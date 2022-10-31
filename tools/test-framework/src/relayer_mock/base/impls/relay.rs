@@ -7,7 +7,6 @@ use ibc_relayer_framework::common::one_for_all::presets::MinimalPreset;
 use ibc_relayer_framework::common::one_for_all::types::chain::OfaChainWrapper;
 
 use crate::relayer_mock::base::error::Error;
-use crate::relayer_mock::base::types::height::Height as MockHeight;
 use crate::relayer_mock::base::types::message::Message as MockMessage;
 use crate::relayer_mock::base::types::packet::PacketKey;
 use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
@@ -30,47 +29,55 @@ impl OfaRelayTypes for MockRelayContext {
 
 #[async_trait]
 impl OfaBaseRelay for MockRelayContext {
-    fn is_retryable_error(_e: &Self::Error) -> bool {
-        unimplemented!()
+    fn is_retryable_error(_: &Self::Error) -> bool {
+        false
     }
 
-    fn max_retry_exceeded_error(_e: Self::Error) -> Self::Error {
-        unimplemented!()
+    fn max_retry_exceeded_error(e: Self::Error) -> Self::Error {
+        e
     }
 
-    fn mismatch_ibc_events_count_error(_expected: usize, _actual: usize) -> Self::Error {
-        unimplemented!()
+    fn mismatch_ibc_events_count_error(expected: usize, actual: usize) -> Self::Error {
+        Error::mismatch_error(expected, actual)
     }
 
-    fn packet_src_channel_id(_packet: &PacketKey) -> &String {
-        unimplemented!()
-    }
-
-    fn packet_src_port(_packet: &PacketKey) -> &String {
-        unimplemented!()
-    }
-
-    fn packet_dst_port(packet: &PacketKey) -> &String {
-        &packet.port_id
-    }
-
-    fn packet_dst_channel_id(packet: &PacketKey) -> &String {
+    fn packet_src_channel_id(
+        packet: &Self::Packet,
+    ) -> &<Self::SrcChain as OfaChainTypes>::ChannelId {
         &packet.channel_id
     }
 
-    fn packet_sequence(packet: &PacketKey) -> &u128 {
+    fn packet_src_port(packet: &Self::Packet) -> &<Self::SrcChain as OfaChainTypes>::PortId {
+        &packet.channel_id
+    }
+
+    fn packet_dst_port(packet: &Self::Packet) -> &<Self::DstChain as OfaChainTypes>::PortId {
+        &packet.port_id
+    }
+
+    fn packet_dst_channel_id(
+        packet: &Self::Packet,
+    ) -> &<Self::DstChain as OfaChainTypes>::ChannelId {
+        &packet.channel_id
+    }
+
+    fn packet_sequence(packet: &Self::Packet) -> &<Self::SrcChain as OfaChainTypes>::Sequence {
         &packet.sequence
     }
 
-    fn packet_timeout_height(_packet: &PacketKey) -> Option<&u128> {
-        unimplemented!()
+    fn packet_timeout_height(
+        packet: &Self::Packet,
+    ) -> Option<&<Self::DstChain as OfaChainTypes>::Height> {
+        Some(&packet.timeout_height.0)
     }
 
-    fn packet_timeout_timestamp(_packet: &Self::Packet) -> &MockHeight {
-        unimplemented!()
+    fn packet_timeout_timestamp(
+        packet: &Self::Packet,
+    ) -> &<Self::DstChain as OfaChainTypes>::Timestamp {
+        &packet.timeout_timestamp
     }
 
-    fn runtime(&self) -> &OfaRuntimeContext<MockRuntimeContext> {
+    fn runtime(&self) -> &OfaRuntimeContext<Self::Runtime> {
         &self.runtime
     }
 
@@ -78,7 +85,7 @@ impl OfaBaseRelay for MockRelayContext {
         self.src_to_dst_client()
     }
 
-    fn src_chain(&self) -> &OfaChainWrapper<MockChainContext> {
+    fn src_chain(&self) -> &OfaChainWrapper<Self::SrcChain> {
         &self.src_chain
     }
 
@@ -86,10 +93,7 @@ impl OfaBaseRelay for MockRelayContext {
         self.dst_to_src_client()
     }
 
-    fn dst_chain(
-        &self,
-    ) -> &ibc_relayer_framework::common::one_for_all::types::chain::OfaChainWrapper<Self::DstChain>
-    {
+    fn dst_chain(&self) -> &OfaChainWrapper<Self::DstChain> {
         &self.dst_chain
     }
 
