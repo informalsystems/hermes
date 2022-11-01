@@ -1870,12 +1870,23 @@ fn client_id_suffix(client_id: &ClientId) -> Option<u64> {
         .and_then(|e| e.parse::<u64>().ok())
 }
 
+/// Performs a health check on a Cosmos chain.
+///
+/// This health check checks on the following in this order:
+/// 1. Checks on the self-reported health endpoint.
+/// 2. Checks that the staking module maintains some historical entries such
+///    that local header information is stored in the IBC state and thus
+///    client proofs that are part of the connection handshake can be verified.
+/// 3. Checks that transaction indexing is enabled.
+/// 4. Checks that the chain identifier matches the network name.
+/// 5. Checks that the underlying SDK and ibc-go versions are compatible.
+/// 6. Checks that the `gas_price` parameter in Hermes is >= the `min_gas_price`
+///    advertised by the chain.
 fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     let chain_id = chain.id();
     let grpc_address = chain.grpc_addr.to_string();
     let rpc_address = chain.config.rpc_addr.to_string();
 
-    // Checkup on the self-reported health endpoint
     chain.block_on(chain.rpc_client.health()).map_err(|e| {
         Error::health_check_json_rpc(
             chain_id.clone(),
@@ -1885,21 +1896,16 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
         )
     })?;
 
-    // Check that the staking module maintains some historical entries, meaning that
-    // local header information is stored in the IBC state and therefore client
-    // proofs that are part of the connection handshake messages can be verified.
     if chain.historical_entries()? == 0 {
         return Err(Error::no_historical_entries(chain_id.clone()));
     }
 
     let status = chain.chain_status()?;
 
-    // Check that transaction indexing is enabled
     if status.node_info.other.tx_index != TxIndexStatus::On {
         return Err(Error::tx_indexing_disabled(chain_id.clone()));
     }
 
-    // Check that the chain identifier matches the network name
     if status.node_info.network.as_str() != chain_id.as_str() {
         // Log the error, continue optimistically
         error!(
@@ -1911,7 +1917,6 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
 
     let version_specs = chain.block_on(fetch_version_specs(&chain.config.id, &chain.grpc_addr))?;
 
-    // Checkup on the underlying SDK & IBC-go versions
     if let Err(diagnostic) = compatibility::run_diagnostic(&version_specs) {
         return Err(Error::sdk_module_version(
             chain_id.clone(),
