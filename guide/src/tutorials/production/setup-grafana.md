@@ -31,7 +31,7 @@ Prometheus is a free software application used for event monitoring and alerting
 ## Setup Grafana
 
 ### Installation
-- Download [docker-compose.yaml](../../assets/docker-compose.yaml), [prometheus.yaml](../../assets/docker-compose.yaml) and [grafana_template.json](../../assets/grafana_template.json) and place them in the same repository. 
+- Download [docker-compose.yaml](../../assets/docker-compose.yaml), [prometheus.yaml](../../assets/prometheus.yaml) and [grafana_template.json](../../assets/grafana_template.json) and place them in the same repository. 
 
 - Run the following command in your command line to start Grafana, Prometheus, Loki, and Promtail.
     ```
