@@ -18,7 +18,7 @@ set -e
 # A space-separated list of all the crates we want to publish, in the order in
 # which they must be published. It's important to respect this order, since
 # each subsequent crate depends on one or more of the preceding ones.
-DEFAULT_CRATES="ibc-relayer-types ibc-telemetry ibc-relayer ibc-relayer-rest ibc-relayer-cli ibc-test-framework"
+DEFAULT_CRATES="ibc-relayer-types ibc-telemetry ibc-relayer ibc-relayer-rest ibc-chain-registry ibc-relayer-cli ibc-test-framework"
 
 # Allows us to override the crates we want to publish.
 CRATES=${*:-${DEFAULT_CRATES}}
