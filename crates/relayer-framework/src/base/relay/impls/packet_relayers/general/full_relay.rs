@@ -28,8 +28,8 @@ where
         let destination_height = Relay::DstChain::chain_status_height(&destination_status);
         let destination_timestamp = Relay::DstChain::chain_status_timestamp(&destination_status);
 
-        let packet_timeout_height = Relay::packet_timeout_height(&packet);
-        let packet_timeout_timestamp = Relay::packet_timeout_timestamp(&packet);
+        let packet_timeout_height = Relay::packet_timeout_height(packet);
+        let packet_timeout_timestamp = Relay::packet_timeout_timestamp(packet);
 
         let has_packet_timed_out = if let Some(packet_timeout_height) = packet_timeout_height {
             destination_height > packet_timeout_height
