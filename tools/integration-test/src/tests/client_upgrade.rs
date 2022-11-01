@@ -1,3 +1,11 @@
+//! This test tests two different cases:
+//!
+//! - The `ClientUpgradeTest` tests the case where the client upgrade works
+//!   correctly after the chain was upgraded.
+//!
+//! - The `InvalidClientUpgradeTest` tests the case where the
+//!   client upgrade fails as the chain has not been upgraded.
+
 use ibc_relayer::upgrade_chain::{build_and_send_ibc_upgrade_proposal, UpgradePlanOptions};
 use ibc_relayer_types::core::ics02_client::height::Height;
 use ibc_test_framework::{chain::cli::upgrade::vote_proposal, prelude::*};
@@ -5,6 +13,11 @@ use ibc_test_framework::{chain::cli::upgrade::vote_proposal, prelude::*};
 #[test]
 fn test_client_upgrade() -> Result<(), Error> {
     run_binary_chain_test(&ClientUpgradeTest)
+}
+
+#[test]
+fn test_invalid_client_upgrade() -> Result<(), Error> {
+    run_binary_chain_test(&InvalidClientUpgradeTest)
 }
 
 struct ClientUpgradeTest;
@@ -144,6 +157,68 @@ impl BinaryChainTest for ClientUpgradeTest {
             .upgrade(reference_upgrade_height);
 
         assert!(outcome.is_ok(), "{:?}", outcome);
+
+        Ok(())
+    }
+}
+
+struct InvalidClientUpgradeTest;
+
+impl TestOverrides for InvalidClientUpgradeTest {}
+
+impl BinaryChainTest for InvalidClientUpgradeTest {
+    fn run<
+        ChainA: ibc_test_framework::prelude::ChainHandle,
+        ChainB: ibc_test_framework::prelude::ChainHandle,
+    >(
+        &self,
+        _config: &ibc_test_framework::prelude::TestConfig,
+        _relayer: ibc_test_framework::prelude::RelayerDriver,
+        chains: ibc_test_framework::prelude::ConnectedChains<ChainA, ChainB>,
+    ) -> Result<(), ibc_test_framework::prelude::Error> {
+        let chain_upgrade_height = 10u64;
+        let foreign_clients = chains.foreign_clients;
+
+        // Wait for the chain to reach a given height.
+        let reference_upgrade_height = Height::new(
+            foreign_clients.client_a_to_b.src_chain().id().version(),
+            chain_upgrade_height,
+        )
+        .unwrap();
+
+        let target_reference_application_height = reference_upgrade_height
+            .decrement()
+            .expect("Upgrade height cannot be 1");
+
+        let mut reference_application_latest_height = foreign_clients
+            .client_a_to_b
+            .src_chain()
+            .query_latest_height()
+            .ok()
+            .unwrap();
+
+        while reference_application_latest_height != target_reference_application_height {
+            std::thread::sleep(core::time::Duration::from_millis(500));
+
+            reference_application_latest_height = foreign_clients
+                .client_a_to_b
+                .src_chain()
+                .query_latest_height()
+                .ok()
+                .unwrap();
+
+            println!(
+                "Reference application latest height: {}",
+                reference_application_latest_height
+            );
+        }
+
+        // Trigger the client upgrade.
+        let outcome = foreign_clients
+            .client_a_to_b
+            .upgrade(reference_upgrade_height);
+
+        assert!(outcome.is_err(), "{:?}", outcome);
 
         Ok(())
     }
