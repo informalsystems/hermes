@@ -1,9 +1,6 @@
 use ibc_relayer::upgrade_chain::{build_and_send_ibc_upgrade_proposal, UpgradePlanOptions};
 use ibc_relayer_types::core::ics02_client::height::Height;
-use ibc_test_framework::{
-    chain::cli::upgrade::{query_proposal, vote_proposal},
-    prelude::*,
-};
+use ibc_test_framework::{chain::cli::upgrade::vote_proposal, prelude::*};
 
 #[test]
 fn test_client_upgrade() -> Result<(), Error> {
@@ -94,13 +91,6 @@ impl BinaryChainTest for ClientUpgradeTest {
 
         let driver = chains.node_a.chain_driver().0;
 
-        query_proposal(
-            driver.chain_id.as_str(),
-            &driver.command_path,
-            &driver.home_path,
-            &driver.rpc_listen_address(),
-        )?;
-
         // Vote on the proposal so the chain will upgrade
         vote_proposal(
             driver.chain_id.as_str(),
@@ -147,13 +137,6 @@ impl BinaryChainTest for ClientUpgradeTest {
 
         // Wait for the chain to upgrade.
         std::thread::sleep(core::time::Duration::from_secs(6));
-
-        query_proposal(
-            driver.chain_id.as_str(),
-            &driver.command_path,
-            &driver.home_path,
-            &driver.rpc_listen_address(),
-        )?;
 
         // Trigger the client upgrade.
         let outcome = foreign_clients
