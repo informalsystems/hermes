@@ -4,7 +4,6 @@ use flex_error::define_error;
 use tracing::{debug, trace};
 
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
-use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
 use ibc_relayer_types::core::ics04_channel::error::Error as ChannelError;
 use ibc_relayer_types::core::ics24_host::identifier::{
@@ -172,15 +171,31 @@ impl FilterPolicy {
         }
 
         let permission = match state.trust_threshold() {
-            Some(trust) if trust == TrustThreshold::ONE_THIRD => Permission::Allow,
-            Some(_) => {
-                trace!(
-                    "client {} on chain {} has a trust threshold different than 1/3",
-                    client_id,
-                    host_chain
-                );
+            Some(trust) => {
+                let rational = (trust.numerator() / trust.denominator()) as f64;
 
-                Permission::Deny
+                let lower_bound = 1.0 / 3.0;
+                let upper_bound = 2.0 / 3.0;
+
+                if rational >= lower_bound && rational <= upper_bound {
+                    Permission::Allow
+                } else if rational < lower_bound {
+                    trace!(
+                        "client {} on chain {} has a trust threshold less than 1/3",
+                        client_id,
+                        host_chain,
+                    );
+
+                    Permission::Deny
+                } else {
+                    trace!(
+                        "client {} on chain {} has a trust threshold greater than 2/3",
+                        client_id,
+                        host_chain,
+                    );
+
+                    Permission::Deny
+                }
             }
             None => {
                 trace!(

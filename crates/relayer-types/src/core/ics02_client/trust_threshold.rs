@@ -62,7 +62,7 @@ impl TrustThreshold {
     /// Instantiate a TrustThreshold with the given denominator and
     /// numerator.
     ///
-    /// The constructor succeeds if long as the resulting fraction
+    /// The constructor succeeds as long as the resulting fraction
     /// is in the range`[0, 1)`.
     pub fn new(numerator: u64, denominator: u64) -> Result<Self, Error> {
         // The two parameters cannot yield a fraction that is bigger or equal to 1
