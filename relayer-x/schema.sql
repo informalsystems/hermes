@@ -106,13 +106,13 @@ CREATE VIEW tx_events AS
 
 -- A joined view of all IBC packet transaction events.
 CREATE VIEW ibc_packet_src_events AS SELECT * FROM (
-    SELECT tx_id, type, value AS packet_src_port FROM event_attributes WHERE key = 'packet_src_port'
+    SELECT DISTINCT tx_id, type, value AS packet_src_port FROM event_attributes WHERE key = 'packet_src_port'
     ) src_port
     NATURAL JOIN (
-        SELECT tx_id, value AS packet_src_channel FROM event_attributes WHERE key = 'packet_src_channel'
+        SELECT DISTINCT tx_id, value AS packet_src_channel FROM event_attributes WHERE key = 'packet_src_channel'
         ) src_channel
     NATURAL JOIN (
-        SELECT tx_id, value AS packet_sequence FROM event_attributes WHERE key = 'packet_sequence'
+        SELECT DISTINCT tx_id, value AS packet_sequence FROM event_attributes WHERE key = 'packet_sequence'
         ) seq
 ORDER BY seq.packet_sequence, src_port.tx_id, src_port.type, src_port.packet_src_port, src_channel.packet_src_channel;
 
