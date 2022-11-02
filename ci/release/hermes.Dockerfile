@@ -17,12 +17,12 @@ RUN cd hermes && git checkout $TAG && cargo build --release
 FROM debian:buster-slim
 LABEL maintainer="hello@informal.systems"
 
+RUN apt update && apt install -y libssl-dev
+
 RUN useradd -m hermes -s /bin/bash
 WORKDIR /home/hermes
 USER hermes:hermes
 ENTRYPOINT ["/usr/bin/hermes"]
 
-COPY --chown=0:0 --from=build-env /usr/lib/x86_64-linux-gnu/libssl.so.1.1 /usr/lib/x86_64-linux-gnu/libssl.so.1.1
-COPY --chown=0:0 --from=build-env /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1
 COPY --chown=0:0 --from=build-env /root/hermes/target/release/hermes /usr/bin/hermes
 COPY --chown=0:0 --from=build-env /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
