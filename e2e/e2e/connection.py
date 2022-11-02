@@ -264,13 +264,10 @@ def verify_state(c: Config,
     ibc1_conn_id: ConnectionId):
 
     mode = toml.load(c.config_file)['mode']
-    clients_enabled = mode['clients']['enabled']
     conn_enabled = mode['connections']['enabled']
-    chan_enabled = mode['channels']['enabled']
-    packets_enabled = mode['packets']['enabled']
 
     # verify connection state on both chains, should be 'Open' or 'Init' depending on config 'mode'
-    if clients_enabled and conn_enabled and chan_enabled and packets_enabled:
+    if conn_enabled:
         sleep(10.0)
         for i in range(20):
             sleep(5.0)

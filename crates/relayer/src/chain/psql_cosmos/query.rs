@@ -329,7 +329,8 @@ fn packet_events_from_tx_search_response(
 
     for response in responses {
         let height = ICSHeight::new(chain_id.version(), u64::from(response.height)).unwrap();
-        if let QueryHeight::Specific(specific_query_height) = request.height {
+
+        if let QueryHeight::Specific(specific_query_height) = request.height.get() {
             if height > specific_query_height {
                 continue;
             }
@@ -418,7 +419,9 @@ pub async fn query_txs_from_ibc_snapshots(
             crate::time!("query_txs_from_ibc_snapshots: query packet events");
             match request.event_id {
                 WithBlockDataType::SendPacket => {
-                    let (height, all_packets) = query_sent_packets(pool, &request.height).await?;
+                    let (height, all_packets) =
+                        query_sent_packets(pool, &request.height.get()).await?;
+
                     let events = all_packets
                         .into_iter()
                         .filter_map(|packet| {
@@ -662,18 +665,15 @@ async fn block_results_by_packet_fields(
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn query_blocks(
+pub async fn query_packet_events(
     pool: &PgPool,
     chain_id: &ChainId,
-    search: &QueryBlockRequest,
-) -> Result<Vec<IbcEvent>, Error> {
-    match search {
-        QueryBlockRequest::Packet(request) => {
-            crate::time!("query_blocks: query packet events");
+    request: &QueryPacketEventDataRequest,
+) -> Result<Vec<IbcEventWithHeight>, Error> {
+    crate::time!("query_packet_events");
 
-            Ok(block_search_response_from_packet_query(pool, chain_id, request).await?)
-        }
-    }
+    let events = block_search_response_from_packet_query(pool, chain_id, request).await?;
+    Ok(events)
 }
 
 fn ibc_packet_event_from_sql_block_query(
@@ -709,16 +709,24 @@ fn ibc_packet_event_from_sql_block_query(
 pub async fn block_search_response_from_packet_query(
     pool: &PgPool,
     chain_id: &ChainId,
-    search: &QueryPacketEventDataRequest,
-) -> Result<Vec<IbcEvent>, Error> {
+    request: &QueryPacketEventDataRequest,
+) -> Result<Vec<IbcEventWithHeight>, Error> {
     trace!("block_search_response_from_packet_query");
 
-    let results = block_results_by_packet_fields(pool, search).await?;
+    let results = block_results_by_packet_fields(pool, request).await?;
     let total_count = results.len() as u32;
 
     let events = results
         .into_iter()
         .filter_map(|result| ibc_packet_event_from_sql_block_query(chain_id, &result))
+        .map(|e| {
+            let height = match request.height.get() {
+                QueryHeight::Specific(height) => height,
+                QueryHeight::Latest => unreachable!(), // TODO(ibcnode)
+            };
+
+            IbcEventWithHeight::new(e, height)
+        })
         .collect();
 
     Ok(events)

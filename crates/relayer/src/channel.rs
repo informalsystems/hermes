@@ -747,7 +747,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         &mut self,
         state: State,
     ) -> Result<(Option<IbcEvent>, Next), ChannelError> {
-        let res = match (state, self.counterparty_state()?) {
+        let event = match (state, self.counterparty_state()?) {
             (State::Init, State::Uninitialized) => Some(self.build_chan_open_try_and_send()?),
             (State::Init, State::Init) => Some(self.build_chan_open_try_and_send()?),
             (State::TryOpen, State::Init) => Some(self.build_chan_open_ack_and_send()?),
@@ -762,7 +762,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             _ => None,
         };
 
-        Ok((res, Next::Continue))
+        // Abort if the channel is at OpenAck or OpenConfirm stage, as there is nothing more for the worker to do
+        match event {
+            Some(IbcEvent::OpenConfirmChannel(_)) | Some(IbcEvent::OpenAckChannel(_)) => {
+                Ok((event, Next::Abort))
+            }
+            _ => Ok((event, Next::Continue)),
+        }
     }
 
     pub fn step_state(&mut self, state: State, index: u64) -> RetryResult<Next, u64> {

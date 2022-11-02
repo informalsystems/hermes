@@ -27,9 +27,11 @@ const QUERY_TYPES_CACHE: [&str; 4] = [
     "query_channel",
 ];
 
-const QUERY_TYPES: [&str; 24] = [
+const QUERY_TYPES: [&str; 26] = [
     "query_latest_height",
+    "query_block",
     "query_blocks",
+    "query_packet_events",
     "query_txs",
     "query_next_sequence_receive",
     "query_unreceived_acknowledgements",

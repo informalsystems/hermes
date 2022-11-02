@@ -7,22 +7,19 @@ use core::{
     time::Duration,
 };
 use num_bigint::BigInt;
+use std::cmp::Ordering;
 use std::thread;
 
-use bitcoin::hashes::hex::ToHex;
 use ibc_proto::protobuf::Protobuf;
 use tendermint::block::Height as TmHeight;
-use tendermint::{
-    abci::{Event, Path as TendermintABCIPath},
-    node::info::TxIndexStatus,
-};
+use tendermint::{abci::Path as TendermintABCIPath, node::info::TxIndexStatus};
 use tendermint_light_client_verifier::types::LightBlock as TmLightBlock;
 use tendermint_rpc::{
     endpoint::broadcast::tx_sync::Response, endpoint::status, Client, HttpClient, Order,
 };
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::{codegen::http::Uri, metadata::AsciiMetadataValue};
-use tracing::{error, instrument, warn};
+use tracing::{error, instrument, trace, warn};
 
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
@@ -32,9 +29,11 @@ use ibc_relayer_types::core::ics03_connection::connection::{
     ConnectionEnd, IdentifiedConnectionEnd,
 };
 use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
-use ibc_relayer_types::core::ics04_channel::packet::{Packet, Sequence};
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ClientId, ConnectionId};
+use ibc_relayer_types::core::ics24_host::identifier::{
+    ChainId, ChannelId, ClientId, ConnectionId, PortId,
+};
 use ibc_relayer_types::core::ics24_host::path::{
     AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
     ConnectionsPath, ReceiptsPath, SeqRecvsPath,
@@ -42,7 +41,6 @@ use ibc_relayer_types::core::ics24_host::path::{
 use ibc_relayer_types::core::ics24_host::{
     ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH,
 };
-use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
 use ibc_relayer_types::{
@@ -55,11 +53,15 @@ use ibc_relayer_types::{
 };
 
 use crate::chain::client::ClientSettings;
+use crate::chain::cosmos::encode::key_entry_to_signer;
+use crate::chain::cosmos::fee::maybe_register_counterparty_payee;
 use crate::chain::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::query::balance::{query_all_balances, query_balance};
 use crate::chain::cosmos::query::denom_trace::query_denom_trace;
 use crate::chain::cosmos::query::status::query_status;
-use crate::chain::cosmos::query::tx::query_txs;
+use crate::chain::cosmos::query::tx::{
+    filter_matching_event, query_packets_from_block, query_packets_from_txs, query_txs,
+};
 use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query, QueryResponse};
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
@@ -71,6 +73,7 @@ use crate::chain::cosmos::{
     gas::{calculate_fee, mul_ceil},
 };
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
+use crate::chain::requests::{Qualified, QueryPacketEventDataRequest};
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;
@@ -78,11 +81,12 @@ use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::monitor::{EventMonitor, EventReceiver, TxMonitorCmd};
-use crate::event::{ibc_event_try_from_abci_event, IbcEventWithHeight};
+use crate::event::IbcEventWithHeight;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
+use crate::util::pretty::{PrettyConsensusStateWithHeight, PrettyIdentifiedChannel};
 use crate::{account::Balance, event::monitor::EventBatch};
 use crate::{
     chain::cosmos::batch::{
@@ -90,22 +94,17 @@ use crate::{
     },
     util::pretty::{PrettyIdentifiedClientState, PrettyIdentifiedConnection},
 };
-use crate::{
-    chain::cosmos::encode::encode_to_bech32,
-    util::pretty::{PrettyConsensusStateWithHeight, PrettyIdentifiedChannel},
-};
 
 use super::requests::{
-    IncludeProof, QueryBlockRequest, QueryChannelClientStateRequest, QueryChannelRequest,
-    QueryChannelsRequest, QueryClientConnectionsRequest, QueryClientStateRequest,
-    QueryClientStatesRequest, QueryConnectionChannelsRequest, QueryConnectionRequest,
-    QueryConnectionsRequest, QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHeight,
+    IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
+    QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
+    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
+    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHeight,
     QueryHostConsensusStateRequest, QueryNextSequenceReceiveRequest,
     QueryPacketAcknowledgementRequest, QueryPacketAcknowledgementsRequest,
-    QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketEventDataRequest,
-    QueryPacketReceiptRequest, QueryTxRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
-    QueryUpgradedConsensusStateRequest,
+    QueryPacketCommitmentRequest, QueryPacketCommitmentsRequest, QueryPacketReceiptRequest,
+    QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
+    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
 };
 
 pub mod batch;
@@ -113,6 +112,7 @@ pub mod client;
 pub mod compatibility;
 pub mod encode;
 pub mod estimate;
+pub mod fee;
 pub mod gas;
 pub mod query;
 pub mod retry;
@@ -517,6 +517,96 @@ impl CosmosSdkChain {
         )
         .await
     }
+
+    fn query_packet_from_block(
+        &self,
+        request: &QueryPacketEventDataRequest,
+        seqs: &[Sequence],
+        block_height: &ICSHeight,
+    ) -> Result<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>), Error> {
+        crate::time!("query_block: query block packet events");
+        crate::telemetry!(query, self.id(), "query_block");
+
+        let mut begin_block_events = vec![];
+        let mut end_block_events = vec![];
+
+        let tm_height =
+            tendermint::block::Height::try_from(block_height.revision_height()).unwrap();
+
+        let response = self
+            .block_on(self.rpc_client.block_results(tm_height))
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+
+        let response_height = ICSHeight::new(self.id().version(), u64::from(response.height))
+            .map_err(|_| Error::invalid_height_no_source())?;
+
+        begin_block_events.append(
+            &mut response
+                .begin_block_events
+                .unwrap_or_default()
+                .into_iter()
+                .filter_map(|ev| filter_matching_event(ev, request, seqs))
+                .map(|ev| IbcEventWithHeight::new(ev, response_height))
+                .collect(),
+        );
+
+        end_block_events.append(
+            &mut response
+                .end_block_events
+                .unwrap_or_default()
+                .into_iter()
+                .filter_map(|ev| filter_matching_event(ev, request, seqs))
+                .map(|ev| IbcEventWithHeight::new(ev, response_height))
+                .collect(),
+        );
+        Ok((begin_block_events, end_block_events))
+    }
+
+    fn query_packets_from_blocks(
+        &self,
+        request: &QueryPacketEventDataRequest,
+    ) -> Result<(Vec<IbcEventWithHeight>, Vec<IbcEventWithHeight>), Error> {
+        crate::time!("query_blocks: query block packet events");
+        crate::telemetry!(query, self.id(), "query_blocks");
+
+        let mut begin_block_events = vec![];
+        let mut end_block_events = vec![];
+
+        for seq in request.sequences.iter() {
+            let response = self
+                .block_on(self.rpc_client.block_search(
+                    packet_query(request, *seq),
+                    1,
+                    1, // there should only be a single match for this query
+                    Order::Ascending,
+                ))
+                .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+
+            assert!(
+                response.blocks.len() <= 1,
+                "block_results: unexpected number of blocks"
+            );
+
+            if let Some(block) = response.blocks.first().map(|first| &first.block) {
+                let response_height =
+                    ICSHeight::new(self.id().version(), u64::from(block.header.height))
+                        .map_err(|_| Error::invalid_height_no_source())?;
+
+                if let QueryHeight::Specific(query_height) = request.height.get() {
+                    if response_height > query_height {
+                        continue;
+                    }
+                }
+
+                let (new_begin_block_events, new_end_block_events) =
+                    self.query_packet_from_block(request, &[*seq], &response_height)?;
+
+                begin_block_events.extend(new_begin_block_events);
+                end_block_events.extend(new_end_block_events);
+            }
+        }
+        Ok((begin_block_events, end_block_events))
+    }
 }
 
 impl ChainEndpoint for CosmosSdkChain {
@@ -674,19 +764,15 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     /// Get the account for the signer
-    fn get_signer(&mut self) -> Result<Signer, Error> {
+    fn get_signer(&self) -> Result<Signer, Error> {
         crate::time!("get_signer");
 
         // Get the key from key seed file
-        let key = self
-            .keybase()
-            .get_key(&self.config.key_name)
-            .map_err(|e| Error::key_not_found(self.config.key_name.clone(), e))?;
+        let key_entry = self.key()?;
 
-        let bech32 = encode_to_bech32(&key.address.to_hex(), &self.config.account_prefix)?;
-        bech32
-            .parse()
-            .map_err(|e| Error::ics02(ClientError::signer(e)))
+        let signer = key_entry_to_signer(&key_entry, &self.config.account_prefix)?;
+
+        Ok(signer)
     }
 
     /// Get the chain configuration
@@ -1555,15 +1641,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
     /// This function queries transactions for events matching certain criteria.
     /// 1. Client Update request - returns a vector with at most one update client event
-    /// 2. Packet event request - returns at most one packet event for each sequence specified
-    ///    in the request.
-    ///    Note - there is no way to format the packet query such that it asks for Tx-es with either
-    ///    sequence (the query conditions can only be AND-ed).
-    ///    There is a possibility to include "<=" and ">=" conditions but it doesn't work with
-    ///    string attributes (sequence is emmitted as a string).
-    ///    Therefore, for packets we perform one tx_search for each sequence.
-    ///    Alternatively, a single query for all packets could be performed but it would return all
-    ///    packets ever sent.
+    /// 2. Transaction event request - returns all IBC events resulted from a Tx execution
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error> {
         crate::time!("query_txs");
         crate::telemetry!(query, self.id(), "query_txs");
@@ -1576,70 +1654,75 @@ impl ChainEndpoint for CosmosSdkChain {
         ))
     }
 
-    fn query_blocks(
+    /// This function queries transactions for packet events matching certain criteria.
+    /// It returns at most one packet event for each sequence specified in the request.
+    ///    Note - there is no way to format the packet query such that it asks for Tx-es with either
+    ///    sequence (the query conditions can only be AND-ed).
+    ///    There is a possibility to include "<=" and ">=" conditions but it doesn't work with
+    ///    string attributes (sequence is emmitted as a string).
+    ///    Therefore, for packets we perform one tx_search for each sequence.
+    ///    Alternatively, a single query for all packets could be performed but it would return all
+    ///    packets ever sent.
+    fn query_packet_events(
         &self,
-        request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
-        crate::time!("query_blocks");
-        crate::telemetry!(query, self.id(), "query_blocks");
+        mut request: QueryPacketEventDataRequest,
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
+        crate::time!("query_packet_events");
+        crate::telemetry!(query, self.id(), "query_packet_events");
 
-        match request {
-            QueryBlockRequest::Packet(request) => {
-                crate::time!("query_blocks: query block packet events");
+        match request.height {
+            Qualified::Equal(_) => self.block_on(query_packets_from_block(
+                self.id(),
+                &self.rpc_client,
+                &self.config.rpc_addr,
+                &request,
+            )),
+            Qualified::SmallerEqual(_) => {
+                let tx_events = self.block_on(query_packets_from_txs(
+                    self.id(),
+                    &self.rpc_client,
+                    &self.config.rpc_addr,
+                    &request,
+                ))?;
 
-                let mut begin_block_events: Vec<IbcEvent> = vec![];
-                let mut end_block_events: Vec<IbcEvent> = vec![];
+                let recvd_sequences: Vec<_> = tx_events
+                    .iter()
+                    .filter_map(|eh| eh.event.packet().map(|p| p.sequence))
+                    .collect();
 
-                for seq in &request.sequences {
-                    let response = self
-                        .block_on(self.rpc_client.block_search(
-                            packet_query(&request, *seq),
-                            1,
-                            1, // there should only be a single match for this query
-                            Order::Ascending,
-                        ))
-                        .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+                request
+                    .sequences
+                    .retain(|seq| !recvd_sequences.contains(seq));
 
-                    assert!(
-                        response.blocks.len() <= 1,
-                        "block_results: unexpected number of blocks"
-                    );
+                let (start_block_events, end_block_events) = if !request.sequences.is_empty() {
+                    self.query_packets_from_blocks(&request)?
+                } else {
+                    Default::default()
+                };
 
-                    if let Some(block) = response.blocks.first().map(|first| &first.block) {
-                        let response_height =
-                            ICSHeight::new(self.id().version(), u64::from(block.header.height))
-                                .map_err(|_| Error::invalid_height_no_source())?;
+                trace!("start_block_events {:?}", start_block_events);
+                trace!("tx_events {:?}", tx_events);
+                trace!("end_block_events {:?}", end_block_events);
 
-                        if let QueryHeight::Specific(query_height) = request.height {
-                            if response_height > query_height {
-                                continue;
-                            }
-                        }
+                // Events should be ordered in the following fashion,
+                // for any two blocks b1, b2 at height h1, h2 with h1 < h2:
+                // b1.start_block_events
+                // b1.tx_events
+                // b1.end_block_events
+                // b2.start_block_events
+                // b2.tx_events
+                // b2.end_block_events
+                //
+                // As of now, we just sort them by sequence number which should
+                // yield a similar result and will revisit this approach in the future.
+                let mut events = vec![];
+                events.extend(start_block_events);
+                events.extend(tx_events);
+                events.extend(end_block_events);
 
-                        let response = self
-                            .block_on(self.rpc_client.block_results(block.header.height))
-                            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+                sort_events_by_sequence(&mut events);
 
-                        begin_block_events.append(
-                            &mut response
-                                .begin_block_events
-                                .unwrap_or_default()
-                                .into_iter()
-                                .filter_map(|ev| filter_matching_event(ev, &request, *seq))
-                                .collect(),
-                        );
-
-                        end_block_events.append(
-                            &mut response
-                                .end_block_events
-                                .unwrap_or_default()
-                                .into_iter()
-                                .filter_map(|ev| filter_matching_event(ev, &request, *seq))
-                                .collect(),
-                        );
-                    }
-                }
-                Ok((begin_block_events, end_block_events))
+                Ok(events)
             }
         }
     }
@@ -1727,6 +1810,37 @@ impl ChainEndpoint for CosmosSdkChain {
     fn handle_ibc_event_batch(&mut self, _batch: EventBatch) -> Result<(), Error> {
         Ok(())
     }
+
+    fn maybe_register_counterparty_payee(
+        &mut self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_payee: &Signer,
+    ) -> Result<(), Error> {
+        let address = self.get_signer()?;
+        let key_entry = self.key()?;
+
+        self.rt.block_on(maybe_register_counterparty_payee(
+            &self.tx_config,
+            &key_entry,
+            &mut self.account,
+            &self.config.memo_prefix,
+            channel_id,
+            port_id,
+            &address,
+            counterparty_payee,
+        ))
+    }
+}
+
+fn sort_events_by_sequence(events: &mut [IbcEventWithHeight]) {
+    events.sort_by(|a, b| {
+        a.event
+            .packet()
+            .zip(b.event.packet())
+            .map(|(pa, pb)| pa.sequence.cmp(&pb.sequence))
+            .unwrap_or(Ordering::Equal)
+    });
 }
 
 /// Initialize the light client for the given chain using the given HTTP client
@@ -1748,41 +1862,6 @@ async fn init_light_client(
     let light_client = TmLightClient::from_config(config, peer_id)?;
 
     Ok(light_client)
-}
-
-fn filter_matching_event(
-    event: Event,
-    request: &QueryPacketEventDataRequest,
-    seq: Sequence,
-) -> Option<IbcEvent> {
-    fn matches_packet(
-        request: &QueryPacketEventDataRequest,
-        seq: Sequence,
-        packet: &Packet,
-    ) -> bool {
-        packet.source_port == request.source_port_id
-            && packet.source_channel == request.source_channel_id
-            && packet.destination_port == request.destination_port_id
-            && packet.destination_channel == request.destination_channel_id
-            && packet.sequence == seq
-    }
-
-    if event.type_str != request.event_id.as_str() {
-        return None;
-    }
-
-    let ibc_event = ibc_event_try_from_abci_event(&event).ok()?;
-    match ibc_event {
-        IbcEvent::SendPacket(ref send_ev) if matches_packet(request, seq, &send_ev.packet) => {
-            Some(ibc_event)
-        }
-        IbcEvent::WriteAcknowledgement(ref ack_ev)
-            if matches_packet(request, seq, &ack_ev.packet) =>
-        {
-            Some(ibc_event)
-        }
-        _ => None,
-    }
 }
 
 /// Returns the suffix counter for a CosmosSDK client id.

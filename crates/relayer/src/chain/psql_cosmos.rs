@@ -27,6 +27,7 @@ use ibc_relayer_types::{
     },
     downcast,
     events::{IbcEvent, WithBlockDataType},
+    signer::Signer,
     Height,
 };
 
@@ -464,7 +465,7 @@ impl PsqlChain {
                 destination_channel_id: c.channel_end.remote.channel_id.as_ref().unwrap().clone(),
                 destination_port_id: c.channel_end.remote.port_id.clone(),
                 sequences,
-                height: *query_height,
+                height: Qualified::Equal(*query_height),
             }),
         ))?;
 
@@ -1020,7 +1021,7 @@ impl ChainEndpoint for PsqlChain {
         self.chain.send_messages_and_wait_check_tx(tracked_msgs)
     }
 
-    fn get_signer(&mut self) -> Result<ibc_relayer_types::signer::Signer, Error> {
+    fn get_signer(&self) -> Result<Signer, Error> {
         self.chain.get_signer()
     }
 
@@ -1338,16 +1339,19 @@ impl ChainEndpoint for PsqlChain {
         }
     }
 
-    fn query_blocks(
+    fn query_packet_events(
         &self,
-        request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
+        request: QueryPacketEventDataRequest,
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
         // Currently the psql tendermint DB does not distinguish between begin and end block events.
         // The SQL query in `query_blocks` returns all block events
-        crate::time!("query_blocks_psql");
-        crate::telemetry!(query, self.id(), "query_blocks_psql");
-        let all_block_events = self.block_on(query_blocks(&self.pool, self.id(), &request))?;
-        Ok((all_block_events, vec![]))
+        crate::time!("query_packet_events_psql");
+        crate::telemetry!(query, self.id(), "query_packet_events_psql");
+
+        let all_block_events =
+            self.block_on(query_packet_events(&self.pool, self.id(), &request))?;
+
+        Ok(all_block_events)
     }
 
     fn query_host_consensus_state(
@@ -1430,5 +1434,15 @@ impl ChainEndpoint for PsqlChain {
 
     fn query_all_balances(&self, key_name: Option<&str>) -> Result<Vec<Balance>, Error> {
         self.chain.query_all_balances(key_name)
+    }
+
+    fn maybe_register_counterparty_payee(
+        &mut self,
+        channel_id: &ChannelId,
+        port_id: &PortId,
+        counterparty_payee: &Signer,
+    ) -> Result<(), Error> {
+        self.chain
+            .maybe_register_counterparty_payee(channel_id, port_id, counterparty_payee)
     }
 }

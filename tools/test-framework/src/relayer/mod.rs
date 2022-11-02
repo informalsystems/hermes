@@ -22,6 +22,7 @@ pub mod chain;
 pub mod channel;
 pub mod connection;
 pub mod driver;
+pub mod fee;
 pub mod foreign_client;
 pub mod refresh;
 pub mod transfer;

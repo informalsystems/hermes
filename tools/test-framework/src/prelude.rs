@@ -17,6 +17,7 @@ pub use std::thread::sleep;
 pub use tracing::{debug, error, info, warn};
 
 pub use crate::chain::driver::ChainDriver;
+pub use crate::chain::ext::fee::ChainFeeMethodsExt;
 pub use crate::chain::ext::ica::InterchainAccountMethodsExt;
 pub use crate::chain::ext::transfer::ChainTransferMethodsExt;
 pub use crate::chain::tagged::TaggedChainDriverExt;
@@ -49,7 +50,9 @@ pub use crate::framework::nary::connection::{
 pub use crate::framework::nary::node::{run_nary_node_test, NaryNodeTest, RunNaryNodeTest};
 pub use crate::framework::overrides::TestOverrides;
 pub use crate::framework::supervisor::RunWithSupervisor;
+pub use crate::ibc::denom::derive_ibc_denom;
 pub use crate::ibc::denom::Denom;
+pub use crate::ibc::token::{TaggedDenomExt, TaggedToken, TaggedTokenExt, TaggedTokenRef, Token};
 pub use crate::relayer::channel::TaggedChannelEndExt;
 pub use crate::relayer::connection::{TaggedConnectionEndExt, TaggedConnectionExt};
 pub use crate::relayer::driver::RelayerDriver;

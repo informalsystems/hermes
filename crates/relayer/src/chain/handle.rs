@@ -20,7 +20,6 @@ use ibc_relayer_types::{
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
         ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     },
-    events::IbcEvent,
     proofs::Proofs,
     signer::Signer,
     Height,
@@ -342,14 +341,21 @@ pub enum ChainRequest {
         reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     },
 
-    QueryPacketEventDataFromBlocks {
-        request: QueryBlockRequest,
-        reply_to: ReplyTo<(Vec<IbcEvent>, Vec<IbcEvent>)>,
+    QueryPacketEventData {
+        request: QueryPacketEventDataRequest,
+        reply_to: ReplyTo<Vec<IbcEventWithHeight>>,
     },
 
     QueryHostConsensusState {
         request: QueryHostConsensusStateRequest,
         reply_to: ReplyTo<AnyConsensusState>,
+    },
+
+    MaybeRegisterCounterpartyPayee {
+        channel_id: ChannelId,
+        port_id: PortId,
+        counterparty_payee: Signer,
+        reply_to: ReplyTo<()>,
     },
 }
 
@@ -640,13 +646,20 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
 
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error>;
 
-    fn query_blocks(
+    fn query_packet_events(
         &self,
-        request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error>;
+        request: QueryPacketEventDataRequest,
+    ) -> Result<Vec<IbcEventWithHeight>, Error>;
 
     fn query_host_consensus_state(
         &self,
         request: QueryHostConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error>;
+
+    fn maybe_register_counterparty_payee(
+        &self,
+        channel_id: ChannelId,
+        port_id: PortId,
+        counterparty_payee: Signer,
+    ) -> Result<(), Error>;
 }

@@ -15,7 +15,6 @@ use ibc_relayer_types::{
     core::ics24_host::identifier::{
         ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
     },
-    events::IbcEvent,
     proofs::Proofs,
     signer::Signer,
     Height,
@@ -478,11 +477,11 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         self.inner().query_txs(request)
     }
 
-    fn query_blocks(
+    fn query_packet_events(
         &self,
-        request: QueryBlockRequest,
-    ) -> Result<(Vec<IbcEvent>, Vec<IbcEvent>), Error> {
-        self.inner().query_blocks(request)
+        request: QueryPacketEventDataRequest,
+    ) -> Result<Vec<IbcEventWithHeight>, Error> {
+        self.inner().query_packet_events(request)
     }
 
     fn query_host_consensus_state(
@@ -490,5 +489,15 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
         request: QueryHostConsensusStateRequest,
     ) -> Result<AnyConsensusState, Error> {
         self.inner.query_host_consensus_state(request)
+    }
+
+    fn maybe_register_counterparty_payee(
+        &self,
+        channel_id: ChannelId,
+        port_id: PortId,
+        counterparty_payee: Signer,
+    ) -> Result<(), Error> {
+        self.inner
+            .maybe_register_counterparty_payee(channel_id, port_id, counterparty_payee)
     }
 }

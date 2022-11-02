@@ -2,11 +2,11 @@ use serde::{Deserialize, Serialize};
 
 use super::itf::{Map, Set};
 
-pub type ChainId = u64;
+pub type ChainId = u128;
 pub type DenomId = ChainId;
-pub type AccountId = u64;
-pub type PacketId = u64;
-pub type Balance = u64;
+pub type AccountId = u128;
+pub type PacketId = u128;
+pub type Balance = u128;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

@@ -21,7 +21,6 @@ exclude = [
 ]
 
 [patch.crates-io]
-ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs", rev = "3fac7ce93c80126cc690d565c85be042e384b31c" }
 tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibc-proxy" }
 tendermint-rpc                   = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibc-proxy" }
 tendermint-proto                 = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibc-proxy" }

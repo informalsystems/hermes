@@ -6,6 +6,7 @@ use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tendermint_rpc::{HttpClient, Url};
 
 use crate::chain::cosmos::types::gas::GasConfig;
+use crate::config::types::{MaxMsgNum, MaxTxSize};
 use crate::config::{AddressType, ChainConfig};
 use crate::error::Error;
 
@@ -18,6 +19,8 @@ pub struct TxConfig {
     pub grpc_address: Uri,
     pub rpc_timeout: Duration,
     pub address_type: AddressType,
+    pub max_msg_num: MaxMsgNum,
+    pub max_tx_size: MaxTxSize,
     pub extension_options: Vec<Any>,
 }
 
@@ -47,6 +50,8 @@ impl<'a> TryFrom<&'a ChainConfig> for TxConfig {
             grpc_address,
             rpc_timeout: config.rpc_timeout,
             address_type: config.address_type.clone(),
+            max_msg_num: config.max_msg_num,
+            max_tx_size: config.max_tx_size,
             extension_options,
         })
     }

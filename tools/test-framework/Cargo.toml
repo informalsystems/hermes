@@ -1,6 +1,6 @@
 [package]
 name       = "ibc-test-framework"
-version    = "0.19.0"
+version    = "0.20.0"
 edition    = "2021"
 license    = "Apache-2.0"
 readme     = "README.md"
@@ -14,12 +14,12 @@ description = """
 """
 
 [dependencies]
-ibc-relayer-types = { version = "=0.19.0",     path = "../../crates/relayer-types" }
-ibc-relayer      = { version = "=0.19.0",     path = "../../crates/relayer" }
-ibc-relayer-cli  = { version = "=1.0.0",      path = "../../crates/relayer-cli" }
-ibc-proto        = { version = "=0.20.1" }
-tendermint       = { version = "=0.25.0" }
-tendermint-rpc   = { version = "=0.25.0", features = ["http-client", "websocket-client"] }
+ibc-relayer-types = { version = "=0.20.0",     path = "../../crates/relayer-types" }
+ibc-relayer       = { version = "=0.20.0",     path = "../../crates/relayer" }
+ibc-relayer-cli   = { version = "=1.1.0",      path = "../../crates/relayer-cli" }
+ibc-proto         = { version = "=0.21.0" }
+tendermint        = { version = "=0.25.0" }
+tendermint-rpc    = { version = "=0.25.0", features = ["http-client", "websocket-client"] }
 
 async-trait = "0.1.57"
 http = "0.2.8"
@@ -40,3 +40,5 @@ sha2 = "0.10.6"
 crossbeam-channel = "0.5.5"
 semver = "1.0.14"
 flex-error = "0.4.4"
+prost = { version = "0.11" }
+tonic = { version = "0.8", features = ["tls", "tls-roots"] }

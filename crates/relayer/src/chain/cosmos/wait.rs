@@ -5,7 +5,10 @@ use ibc_relayer_types::Height;
 use itertools::Itertools;
 use std::thread;
 use std::time::Instant;
+use tendermint::abci::transaction::Hash as TxHash;
+use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tendermint_rpc::{HttpClient, Url};
+use tokio::time::sleep;
 use tracing::{debug, trace};
 
 use crate::chain::cosmos::query::tx::query_tx_response;
@@ -112,4 +115,47 @@ fn all_tx_results_found(tx_sync_results: &[TxSyncResult]) -> bool {
     tx_sync_results
         .iter()
         .all(|r| matches!(r.status, TxStatus::ReceivedResponse))
+}
+
+pub async fn wait_tx_succeed(
+    rpc_client: &HttpClient,
+    rpc_address: &Url,
+    timeout: &Duration,
+    tx_hash: &TxHash,
+) -> Result<TxResponse, Error> {
+    let response = wait_tx_hash(rpc_client, rpc_address, timeout, tx_hash).await?;
+
+    let response_code = response.tx_result.code;
+    if response_code.is_err() {
+        return Err(Error::rpc_response(format!("{}", response_code.value())));
+    }
+
+    Ok(response)
+}
+
+pub async fn wait_tx_hash(
+    rpc_client: &HttpClient,
+    rpc_address: &Url,
+    timeout: &Duration,
+    tx_hash: &TxHash,
+) -> Result<TxResponse, Error> {
+    let start_time = Instant::now();
+
+    loop {
+        let response = query_tx_response(rpc_client, rpc_address, tx_hash).await?;
+
+        match response {
+            None => {
+                let elapsed = start_time.elapsed();
+                if &elapsed > timeout {
+                    return Err(Error::tx_no_confirmation());
+                } else {
+                    sleep(WAIT_BACKOFF).await;
+                }
+            }
+            Some(response) => {
+                return Ok(response);
+            }
+        }
+    }
 }

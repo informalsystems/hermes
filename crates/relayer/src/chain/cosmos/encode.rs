@@ -1,9 +1,12 @@
 use bech32::{ToBase32, Variant};
+use bitcoin::hashes::hex::ToHex;
 use core::str::FromStr;
 use ibc_proto::cosmos::tx::v1beta1::mode_info::{Single, Sum};
 use ibc_proto::cosmos::tx::v1beta1::{AuthInfo, Fee, ModeInfo, SignDoc, SignerInfo, TxBody, TxRaw};
 use ibc_proto::google::protobuf::Any;
+use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::signer::Signer;
 use prost::Message;
 use tendermint::account::Id as AccountId;
 
@@ -188,6 +191,9 @@ fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, V
     let auth_info = AuthInfo {
         signer_infos: vec![signer_info],
         fee: Some(fee),
+
+        // Since Cosmos SDK v0.46.0
+        tip: None,
     };
 
     // A protobuf serialization of a AuthInfo
@@ -220,4 +226,13 @@ fn tx_body_and_bytes(
         .map_err(|e| Error::protobuf_encode(String::from("TxBody"), e))?;
 
     Ok((body, body_buf))
+}
+
+pub fn key_entry_to_signer(key_entry: &KeyEntry, account_prefix: &str) -> Result<Signer, Error> {
+    let bech32 = encode_to_bech32(&key_entry.address.to_hex(), account_prefix)?;
+    let signer = bech32
+        .parse()
+        .map_err(|e| Error::ics02(ClientError::signer(e)))?;
+
+    Ok(signer)
 }
