@@ -299,6 +299,17 @@ impl CosmosSdkChain {
         Ok(params)
     }
 
+    /// Query the chain configuration parameters
+    // pub fn query_config_params(&self) -> Result<ConfigParams, Error> {
+    //     crate::time!("query_staking_params");
+    //     crate::telemetry!(query, self.id(), "query_staking_params");
+
+    //     let mut client self
+    //         .block_on(
+    //             ibc_proto::cosmos::base::node::v1beta1::config::QueryClient::connect(
+    //         )
+    // }
+
     /// The unbonding period of this chain
     pub fn unbonding_period(&self) -> Result<Duration, Error> {
         crate::time!("unbonding_period");
@@ -1914,6 +1925,15 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
             chain_id, status.node_info.network
         );
     }
+
+    // Check for `min_gas_price` here
+    // ibc_proto::cosmos::staking::v1beta1::query_client::QueryClient::connect(
+    // ibc_proto::cosmos::base::node::v1beta1::config
+    // Add a `query_config_params` function that queries this gRPC endpoint to
+    // fetch the config parameters, specifically `min_gas_price`, and compare
+    // from there
+    // Need to update compatiblity to SDK v0.46.4 and regenerate the proto files
+    // in the process
 
     let version_specs = chain.block_on(fetch_version_specs(&chain.config.id, &chain.grpc_addr))?;
 
