@@ -20,6 +20,14 @@ use crate::object;
 use crate::registry::Registry;
 use crate::spawn::SpawnError;
 
+/// The lower bound trust threshold value. Clients with a trust threshold less
+/// than this will not be allowed due to security concerns.
+const LOWER_BOUND: f64 = 1.0 / 3.0;
+
+/// The lower bound trust threshold value. Clients with a trust threshold greater
+/// than this will not be allowed due to cost-efficiency concerns.
+const UPPER_BOUND: f64 = 2.0 / 3.0;
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Permission {
     Allow,
@@ -174,12 +182,9 @@ impl FilterPolicy {
             Some(trust) => {
                 let rational = (trust.numerator() / trust.denominator()) as f64;
 
-                let lower_bound = 1.0 / 3.0;
-                let upper_bound = 2.0 / 3.0;
-
-                if rational >= lower_bound && rational <= upper_bound {
+                if rational >= LOWER_BOUND && rational <= UPPER_BOUND {
                     Permission::Allow
-                } else if rational < lower_bound {
+                } else if rational < LOWER_BOUND {
                     trace!(
                         "client {} on chain {} has a trust threshold less than 1/3",
                         client_id,
