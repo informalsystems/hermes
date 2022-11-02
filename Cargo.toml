@@ -8,7 +8,7 @@ members = [
     "crates/relayer-cli",
     "crates/relayer-rest",
     "crates/telemetry",
-    "crates/ibc-chain-registry",
+    "crates/chain-registry",
     "tools/integration-test",
     "tools/test-framework",
     "tools/check-guide",
