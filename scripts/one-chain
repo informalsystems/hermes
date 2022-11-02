@@ -152,7 +152,9 @@ else
     # psql connection string/ url has this format:
     #  # postgresql://[user[:password]@][netloc][:port][/dbname][?param1=value1&...]
   sed -i '' -e '/indexer = \"psql\"/a\
-      psql-conn = "postgresql://tendermint:tendermint@localhost:5432/'"$PSQL_DB"'?sslmode=disable"' $CHAIN_DIR/$CHAIN_ID/config/config.toml
+psql-conn = "postgresql://tendermint:tendermint@localhost:5432/'"$PSQL_DB"'?sslmode=disable"' $CHAIN_DIR/$CHAIN_ID/config/config.toml
+  # delete the 'psql-conn = ""' line (if it exists)
+  sed -i '' '/psql-conn = \"\"/d' $CHAIN_DIR/$CHAIN_ID/config/config.toml
   sed -i '' '/^\[grpc-web\]/,/^\[/s/^enable = true/enable = false/' $CHAIN_DIR/$CHAIN_ID/config/app.toml
 fi
 
