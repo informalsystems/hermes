@@ -121,9 +121,9 @@ impl PrimitiveTest for MockChainTest {
             assert!(state.is_some());
 
             assert!(state.unwrap().check_acknowledged(
-                &packet.port_id,
-                &packet.channel_id,
-                &packet.sequence
+                packet.port_id,
+                packet.channel_id,
+                packet.sequence
             ));
         }
 

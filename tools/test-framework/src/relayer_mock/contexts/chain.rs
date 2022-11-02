@@ -47,11 +47,7 @@ impl MockChainContext {
         if let Some(height) = self.get_latest_height() {
             if let Some(state) = self.query_state(height.clone()) {
                 let mut new_state = state;
-                let event = format!(
-                    "{}/{}/{}",
-                    packet.channel_id, packet.port_id, packet.sequence
-                );
-                new_state.update_received(event);
+                new_state.update_received(packet.port_id, packet.channel_id, packet.sequence);
                 let mut state = self.state.lock().unwrap();
                 state.insert(height.increment(), new_state);
             }
@@ -62,11 +58,7 @@ impl MockChainContext {
         if let Some(height) = self.get_latest_height() {
             if let Some(state) = self.query_state(height.clone()) {
                 let mut new_state = state;
-                let event = format!(
-                    "{}/{}/{}",
-                    packet.channel_id, packet.port_id, packet.sequence
-                );
-                new_state.update_acknowledged(event);
+                new_state.update_acknowledged(packet.port_id, packet.channel_id, packet.sequence);
                 let mut state = self.state.lock().unwrap();
                 state.insert(height.increment(), new_state);
             }
