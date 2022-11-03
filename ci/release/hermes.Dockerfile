@@ -20,6 +20,4 @@ WORKDIR /home/hermes
 USER hermes:hermes
 ENTRYPOINT ["/usr/bin/hermes"]
 
-COPY --chown=0:0 --from=build-env /usr/lib/x86_64-linux-gnu/libssl.so.1.1 /usr/lib/x86_64-linux-gnu/libssl.so.1.1
-COPY --chown=0:0 --from=build-env /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1 /usr/lib/x86_64-linux-gnu/libcrypto.so.1.1
 COPY --chown=0:0 --from=build-env /root/hermes/target/release/hermes /usr/bin/hermes
