@@ -171,7 +171,7 @@ mod tests {
                 key_name: None,
                 counterparty_key_name: None,
             },
-            ClearPacketsCmd::parse_from(&[
+            ClearPacketsCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -193,7 +193,7 @@ mod tests {
                 key_name: None,
                 counterparty_key_name: None
             },
-            ClearPacketsCmd::parse_from(&[
+            ClearPacketsCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -215,7 +215,7 @@ mod tests {
                 key_name: Some("key_name".to_owned()),
                 counterparty_key_name: None,
             },
-            ClearPacketsCmd::parse_from(&[
+            ClearPacketsCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -239,7 +239,7 @@ mod tests {
                 key_name: None,
                 counterparty_key_name: Some("counterparty_key_name".to_owned()),
             },
-            ClearPacketsCmd::parse_from(&[
+            ClearPacketsCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -255,7 +255,7 @@ mod tests {
 
     #[test]
     fn test_clear_packets_no_chan() {
-        assert!(ClearPacketsCmd::try_parse_from(&[
+        assert!(ClearPacketsCmd::try_parse_from([
             "test", "--chain", "chain_id", "--port", "port_id"
         ])
         .is_err())
@@ -263,7 +263,7 @@ mod tests {
 
     #[test]
     fn test_clear_packets_no_port() {
-        assert!(ClearPacketsCmd::try_parse_from(&[
+        assert!(ClearPacketsCmd::try_parse_from([
             "test",
             "--chain",
             "chain_id",
@@ -275,7 +275,7 @@ mod tests {
 
     #[test]
     fn test_clear_packets_no_chain() {
-        assert!(ClearPacketsCmd::try_parse_from(&[
+        assert!(ClearPacketsCmd::try_parse_from([
             "test",
             "--port",
             "port_id",

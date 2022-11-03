@@ -100,7 +100,7 @@ mod tests {
                 port_id: PortId::from_str("port_id").unwrap(),
                 channel_id: ChannelId::from_str("channel-07").unwrap()
             },
-            QueryPendingAcksCmd::parse_from(&[
+            QueryPendingAcksCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -120,7 +120,7 @@ mod tests {
                 port_id: PortId::from_str("port_id").unwrap(),
                 channel_id: ChannelId::from_str("channel-07").unwrap()
             },
-            QueryPendingAcksCmd::parse_from(&[
+            QueryPendingAcksCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -134,7 +134,7 @@ mod tests {
 
     #[test]
     fn test_query_packet_unreceived_acks_no_chan() {
-        assert!(QueryPendingAcksCmd::try_parse_from(&[
+        assert!(QueryPendingAcksCmd::try_parse_from([
             "test", "--chain", "chain_id", "--port", "port_id"
         ])
         .is_err())
@@ -142,7 +142,7 @@ mod tests {
 
     #[test]
     fn test_query_packet_unreceived_acks_no_port() {
-        assert!(QueryPendingAcksCmd::try_parse_from(&[
+        assert!(QueryPendingAcksCmd::try_parse_from([
             "test",
             "--chain",
             "chain_id",
@@ -154,7 +154,7 @@ mod tests {
 
     #[test]
     fn test_query_packet_unreceived_acks_no_chain() {
-        assert!(QueryPendingAcksCmd::try_parse_from(&[
+        assert!(QueryPendingAcksCmd::try_parse_from([
             "test",
             "--port",
             "port_id",

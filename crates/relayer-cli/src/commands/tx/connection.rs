@@ -358,7 +358,7 @@ mod tests {
                 dst_client_id: ClientId::from_str("client_b-01").unwrap(),
                 src_client_id: ClientId::from_str("client_a-01").unwrap()
             },
-            TxConnInitCmd::parse_from(&[
+            TxConnInitCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -374,7 +374,7 @@ mod tests {
 
     #[test]
     fn test_conn_init_no_a_client() {
-        assert!(TxConnInitCmd::try_parse_from(&[
+        assert!(TxConnInitCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -388,7 +388,7 @@ mod tests {
 
     #[test]
     fn test_conn_init_no_b_client() {
-        assert!(TxConnInitCmd::try_parse_from(&[
+        assert!(TxConnInitCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -402,7 +402,7 @@ mod tests {
 
     #[test]
     fn test_conn_init_no_a_chain() {
-        assert!(TxConnInitCmd::try_parse_from(&[
+        assert!(TxConnInitCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -416,7 +416,7 @@ mod tests {
 
     #[test]
     fn test_conn_init_no_b_chain() {
-        assert!(TxConnInitCmd::try_parse_from(&[
+        assert!(TxConnInitCmd::try_parse_from([
             "test",
             "--src-chain",
             "chain_a",
@@ -439,7 +439,7 @@ mod tests {
                 src_conn_id: ConnectionId::from_str("connection_a").unwrap(),
                 dst_conn_id: None
             },
-            TxConnTryCmd::parse_from(&[
+            TxConnTryCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -466,7 +466,7 @@ mod tests {
                 src_conn_id: ConnectionId::from_str("connection_a").unwrap(),
                 dst_conn_id: Some(ConnectionId::from_str("connection_b").unwrap())
             },
-            TxConnTryCmd::parse_from(&[
+            TxConnTryCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -495,7 +495,7 @@ mod tests {
                 src_conn_id: ConnectionId::from_str("connection_a").unwrap(),
                 dst_conn_id: Some(ConnectionId::from_str("connection_b").unwrap())
             },
-            TxConnTryCmd::parse_from(&[
+            TxConnTryCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -515,7 +515,7 @@ mod tests {
 
     #[test]
     fn test_conn_try_no_a_connection() {
-        assert!(TxConnTryCmd::try_parse_from(&[
+        assert!(TxConnTryCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -531,7 +531,7 @@ mod tests {
 
     #[test]
     fn test_conn_try_no_a_client() {
-        assert!(TxConnTryCmd::try_parse_from(&[
+        assert!(TxConnTryCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -547,7 +547,7 @@ mod tests {
 
     #[test]
     fn test_conn_try_no_b_client() {
-        assert!(TxConnTryCmd::try_parse_from(&[
+        assert!(TxConnTryCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -563,7 +563,7 @@ mod tests {
 
     #[test]
     fn test_conn_try_no_a_chain() {
-        assert!(TxConnTryCmd::try_parse_from(&[
+        assert!(TxConnTryCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -579,7 +579,7 @@ mod tests {
 
     #[test]
     fn test_conn_try_no_b_chain() {
-        assert!(TxConnTryCmd::try_parse_from(&[
+        assert!(TxConnTryCmd::try_parse_from([
             "test",
             "--src-chain",
             "chain_a",
@@ -604,7 +604,7 @@ mod tests {
                 dst_conn_id: ConnectionId::from_str("connection_b").unwrap(),
                 src_conn_id: ConnectionId::from_str("connection_a").unwrap()
             },
-            TxConnAckCmd::parse_from(&[
+            TxConnAckCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -633,7 +633,7 @@ mod tests {
                 dst_conn_id: ConnectionId::from_str("connection_b").unwrap(),
                 src_conn_id: ConnectionId::from_str("connection_a").unwrap()
             },
-            TxConnAckCmd::parse_from(&[
+            TxConnAckCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -653,7 +653,7 @@ mod tests {
 
     #[test]
     fn test_conn_ack_no_a_connection() {
-        assert!(TxConnAckCmd::try_parse_from(&[
+        assert!(TxConnAckCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -671,7 +671,7 @@ mod tests {
 
     #[test]
     fn test_conn_ack_no_b_connection() {
-        assert!(TxConnAckCmd::try_parse_from(&[
+        assert!(TxConnAckCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -689,7 +689,7 @@ mod tests {
 
     #[test]
     fn test_conn_ack_no_a_client() {
-        assert!(TxConnAckCmd::try_parse_from(&[
+        assert!(TxConnAckCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -707,7 +707,7 @@ mod tests {
 
     #[test]
     fn test_conn_ack_no_b_client() {
-        assert!(TxConnAckCmd::try_parse_from(&[
+        assert!(TxConnAckCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -725,7 +725,7 @@ mod tests {
 
     #[test]
     fn test_conn_ack_no_a_chain() {
-        assert!(TxConnAckCmd::try_parse_from(&[
+        assert!(TxConnAckCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -743,7 +743,7 @@ mod tests {
 
     #[test]
     fn test_conn_ack_no_b_chain() {
-        assert!(TxConnAckCmd::try_parse_from(&[
+        assert!(TxConnAckCmd::try_parse_from([
             "test",
             "--src-chain",
             "chain_a",
@@ -770,7 +770,7 @@ mod tests {
                 dst_conn_id: ConnectionId::from_str("connection_b").unwrap(),
                 src_conn_id: ConnectionId::from_str("connection_a").unwrap()
             },
-            TxConnConfirmCmd::parse_from(&[
+            TxConnConfirmCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -799,7 +799,7 @@ mod tests {
                 dst_conn_id: ConnectionId::from_str("connection_b").unwrap(),
                 src_conn_id: ConnectionId::from_str("connection_a").unwrap()
             },
-            TxConnConfirmCmd::parse_from(&[
+            TxConnConfirmCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -819,7 +819,7 @@ mod tests {
 
     #[test]
     fn test_conn_confirm_no_a_connection() {
-        assert!(TxConnConfirmCmd::try_parse_from(&[
+        assert!(TxConnConfirmCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -837,7 +837,7 @@ mod tests {
 
     #[test]
     fn test_conn_confirm_no_b_connection() {
-        assert!(TxConnConfirmCmd::try_parse_from(&[
+        assert!(TxConnConfirmCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -855,7 +855,7 @@ mod tests {
 
     #[test]
     fn test_conn_confirm_no_a_client() {
-        assert!(TxConnConfirmCmd::try_parse_from(&[
+        assert!(TxConnConfirmCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -873,7 +873,7 @@ mod tests {
 
     #[test]
     fn test_conn_confirm_no_b_client() {
-        assert!(TxConnConfirmCmd::try_parse_from(&[
+        assert!(TxConnConfirmCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -891,7 +891,7 @@ mod tests {
 
     #[test]
     fn test_conn_confirm_no_a_chain() {
-        assert!(TxConnConfirmCmd::try_parse_from(&[
+        assert!(TxConnConfirmCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -909,7 +909,7 @@ mod tests {
 
     #[test]
     fn test_conn_confirm_no_b_chain() {
-        assert!(TxConnConfirmCmd::try_parse_from(&[
+        assert!(TxConnConfirmCmd::try_parse_from([
             "test",
             "--src-chain",
             "chain_a",

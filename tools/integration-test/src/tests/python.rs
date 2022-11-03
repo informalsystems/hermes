@@ -44,7 +44,7 @@ impl BinaryChainTest for PythonTest {
         let command_args = [&format!("{}/e2e/run.py", base_dir), "-c", config_path];
 
         let output = Command::new("python3")
-            .args(&command_args)
+            .args(command_args)
             .current_dir(base_dir)
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit())
