@@ -31,7 +31,7 @@ ibc-relayer        = { version = "0.20.0", path = "../relayer" }
 ibc-proto          = { version = "0.21.0" }
 ibc-telemetry      = { version = "0.20.0", path = "../telemetry", optional = true }
 ibc-relayer-rest   = { version = "0.20.0", path = "../relayer-rest", optional = true }
-ibc-chain-registry = { version = "0.1.0" , path = "../ibc-chain-registry" }
+ibc-chain-registry = { version = "0.1.0" , path = "../chain-registry" }
 
 atty                     = "0.2.14"
 clap                     = { version = "3.2", features = ["cargo"] }
