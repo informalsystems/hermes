@@ -96,7 +96,7 @@ mod tests {
                 port_id: PortId::from_str("port_id").unwrap(),
                 channel_id: ChannelId::from_str("channel-07").unwrap()
             },
-            QueryPacketAcknowledgementsCmd::parse_from(&[
+            QueryPacketAcknowledgementsCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -116,7 +116,7 @@ mod tests {
                 port_id: PortId::from_str("port_id").unwrap(),
                 channel_id: ChannelId::from_str("channel-07").unwrap()
             },
-            QueryPacketAcknowledgementsCmd::parse_from(&[
+            QueryPacketAcknowledgementsCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -130,7 +130,7 @@ mod tests {
 
     #[test]
     fn test_query_packet_acks_no_chan() {
-        assert!(QueryPacketAcknowledgementsCmd::try_parse_from(&[
+        assert!(QueryPacketAcknowledgementsCmd::try_parse_from([
             "test", "--chain", "chain_id", "--port", "port_id"
         ])
         .is_err())
@@ -138,7 +138,7 @@ mod tests {
 
     #[test]
     fn test_query_packet_acks_no_port() {
-        assert!(QueryPacketAcknowledgementsCmd::try_parse_from(&[
+        assert!(QueryPacketAcknowledgementsCmd::try_parse_from([
             "test",
             "--chain",
             "chain_id",
@@ -150,7 +150,7 @@ mod tests {
 
     #[test]
     fn test_query_packet_acks_no_chain() {
-        assert!(QueryPacketAcknowledgementsCmd::try_parse_from(&[
+        assert!(QueryPacketAcknowledgementsCmd::try_parse_from([
             "test",
             "--port",
             "port_id",
