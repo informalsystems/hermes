@@ -35,22 +35,22 @@ mod tests {
     fn test_completions() {
         assert_eq!(
             CompletionsCmd { shell: Shell::Zsh },
-            CompletionsCmd::parse_from(&["test", "--shell", "zsh"])
+            CompletionsCmd::parse_from(["test", "--shell", "zsh"])
         )
     }
 
     #[test]
     fn test_completions_no_shell() {
-        assert!(CompletionsCmd::try_parse_from(&["test", "--shell"]).is_err())
+        assert!(CompletionsCmd::try_parse_from(["test", "--shell"]).is_err())
     }
 
     #[test]
     fn test_completions_no_shell_flag() {
-        assert!(CompletionsCmd::try_parse_from(&["test"]).is_err())
+        assert!(CompletionsCmd::try_parse_from(["test"]).is_err())
     }
 
     #[test]
     fn test_completions_unknown_shell() {
-        assert!(CompletionsCmd::try_parse_from(&["test", "--shell", "my_shell"]).is_err())
+        assert!(CompletionsCmd::try_parse_from(["test", "--shell", "my_shell"]).is_err())
     }
 }

@@ -18,7 +18,7 @@ pub fn simple_exec(desc: &str, command_path: &str, args: &[&str]) -> Result<Exec
         itertools::join(args, " ")
     );
 
-    let output = Command::new(&command_path)
+    let output = Command::new(command_path)
         .args(args)
         .output()
         .map_err(handle_exec_error(command_path))?;

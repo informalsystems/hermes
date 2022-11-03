@@ -138,7 +138,7 @@ pub fn start_chain(
     let mut args: Vec<&str> = base_args.to_vec();
     args.extend(extra_start_args.iter());
 
-    let mut child = Command::new(&command_path)
+    let mut child = Command::new(command_path)
         .args(&args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
