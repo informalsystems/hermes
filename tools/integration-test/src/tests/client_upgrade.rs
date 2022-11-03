@@ -26,6 +26,7 @@ use ibc_test_framework::{chain::cli::upgrade::vote_proposal, prelude::*};
 const MAX_DEPOSIT_PERIOD: &str = "10s";
 const VOTING_PERIOD: &str = "10s";
 const DELTA_HEIGHT: u64 = 15;
+const WAIT_CHAIN_UPGRADE: Duration = Duration::from_secs(4);
 
 #[test]
 fn test_client_upgrade() -> Result<(), Error> {
@@ -131,7 +132,7 @@ impl BinaryChainTest for ClientUpgradeTest {
         .map_err(Error::upgrade_chain)?;
 
         // Wait for the proposal to be processed
-        std::thread::sleep(core::time::Duration::from_secs(2));
+        std::thread::sleep(Duration::from_secs(2));
 
         let driver = chains.node_a.chain_driver().0;
 
@@ -171,7 +172,7 @@ impl BinaryChainTest for ClientUpgradeTest {
             .unwrap();
 
         while reference_application_latest_height != target_reference_application_height {
-            std::thread::sleep(core::time::Duration::from_millis(500));
+            std::thread::sleep(Duration::from_millis(500));
 
             reference_application_latest_height = foreign_clients
                 .client_a_to_b
@@ -182,7 +183,7 @@ impl BinaryChainTest for ClientUpgradeTest {
         }
 
         // Wait for the chain to upgrade
-        std::thread::sleep(core::time::Duration::from_secs(6));
+        std::thread::sleep(WAIT_CHAIN_UPGRADE);
 
         // Trigger the client upgrade
         let outcome = foreign_clients.client_a_to_b.upgrade(client_upgrade_height);
@@ -220,7 +221,7 @@ impl BinaryChainTest for InvalidClientUpgradeTest {
         .unwrap();
 
         // Wait a bit before trying to upgrade the client
-        std::thread::sleep(core::time::Duration::from_secs(2));
+        std::thread::sleep(Duration::from_secs(2));
 
         // Trigger the client upgrade
         let outcome = foreign_clients.client_a_to_b.upgrade(client_upgrade_height);
@@ -315,7 +316,7 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
         .map_err(Error::upgrade_chain)?;
 
         // Wait for the proposal to be processed
-        std::thread::sleep(core::time::Duration::from_secs(2));
+        std::thread::sleep(Duration::from_secs(2));
 
         let driver = chains.node_a.chain_driver().0;
 
@@ -355,7 +356,7 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
             .unwrap();
 
         while reference_application_latest_height != target_reference_application_height {
-            std::thread::sleep(core::time::Duration::from_millis(500));
+            std::thread::sleep(Duration::from_millis(500));
 
             reference_application_latest_height = foreign_clients
                 .client_a_to_b
@@ -366,7 +367,7 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
         }
 
         // Wait for the chain to upgrade
-        std::thread::sleep(core::time::Duration::from_secs(6));
+        std::thread::sleep(WAIT_CHAIN_UPGRADE);
 
         // Trigger the client upgrade using client_upgrade_height + 1.
         let outcome = foreign_clients
@@ -463,7 +464,7 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
         .map_err(Error::upgrade_chain)?;
 
         // Wait for the proposal to be processed
-        std::thread::sleep(core::time::Duration::from_secs(2));
+        std::thread::sleep(Duration::from_secs(2));
 
         let driver = chains.node_a.chain_driver().0;
 
@@ -503,7 +504,7 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
             .unwrap();
 
         while reference_application_latest_height != target_reference_application_height {
-            std::thread::sleep(core::time::Duration::from_millis(500));
+            std::thread::sleep(Duration::from_millis(500));
 
             reference_application_latest_height = foreign_clients
                 .client_a_to_b
@@ -514,7 +515,7 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
         }
 
         // Wait for the chain to upgrade
-        std::thread::sleep(core::time::Duration::from_secs(6));
+        std::thread::sleep(WAIT_CHAIN_UPGRADE);
 
         // Trigger the client upgrade using client_upgrade_height - 1.
         let outcome = foreign_clients
