@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 use core::convert::TryFrom;
+use std::thread;
 
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -37,7 +38,7 @@ use crate::connection::ConnectionMsgType;
 use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::denom::DenomTrace;
 use crate::error::{Error, QUERY_PROOF_EXPECT_MSG};
-use crate::event::monitor::{EventReceiver, TxMonitorCmd};
+use crate::event::monitor::{EventMonitor, EventReceiver, TxMonitorCmd};
 use crate::event::IbcEventWithHeight;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::AnyHeader;
@@ -77,10 +78,12 @@ pub trait ChainEndpoint: Sized {
     type ClientState: ClientState + Into<AnyClientState>;
 
     /// Returns the chain's identifier
-    fn id(&self) -> &ChainId;
+    fn id(&self) -> &ChainId {
+        &self.config().id
+    }
 
     /// Returns the chain configuration
-    fn config(&self) -> ChainConfig;
+    fn config(&self) -> &ChainConfig;
 
     // Life cycle
 
@@ -91,7 +94,19 @@ pub trait ChainEndpoint: Sized {
     fn init_event_monitor(
         &self,
         rt: Arc<TokioRuntime>,
-    ) -> Result<(EventReceiver, TxMonitorCmd), Error>;
+    ) -> Result<(EventReceiver, TxMonitorCmd), Error> {
+        crate::time!("init_event_monitor");
+
+        let (mut event_monitor, event_receiver, monitor_tx) =
+            EventMonitor::new(self.id().clone(), self.config().websocket_addr.clone(), rt)
+                .map_err(Error::event_monitor)?;
+
+        event_monitor.subscribe().map_err(Error::event_monitor)?;
+
+        thread::spawn(move || event_monitor.run());
+
+        Ok((event_receiver, monitor_tx))
+    }
 
     /// Shutdown the chain runtime
     fn shutdown(self) -> Result<(), Error>;
@@ -109,9 +124,26 @@ pub trait ChainEndpoint: Sized {
 
     fn get_signer(&self) -> Result<Signer, Error>;
 
-    fn get_key(&mut self) -> Result<KeyEntry, Error>;
+    /// Get the signing key
+    fn get_key(&mut self) -> Result<KeyEntry, Error> {
+        crate::time!("get_key");
 
-    fn add_key(&mut self, key_name: &str, key: KeyEntry) -> Result<(), Error>;
+        // Get the key from key seed file
+        let key = self
+            .keybase()
+            .get_key(&self.config().key_name)
+            .map_err(|e| Error::key_not_found(self.config().key_name.clone(), e))?;
+
+        Ok(key)
+    }
+
+    fn add_key(&mut self, key_name: &str, key: KeyEntry) -> Result<(), Error> {
+        self.keybase_mut()
+            .add_key(key_name, key)
+            .map_err(Error::key_base)?;
+
+        Ok(())
+    }
 
     // Versioning
 

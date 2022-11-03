@@ -8,7 +8,6 @@ use core::{
 };
 use num_bigint::BigInt;
 use std::cmp::Ordering;
-use std::thread;
 
 use ibc_proto::protobuf::Protobuf;
 use tendermint::block::Height as TmHeight;
@@ -81,7 +80,6 @@ use crate::config::ChainConfig;
 use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::denom::DenomTrace;
 use crate::error::Error;
-use crate::event::monitor::{EventMonitor, EventReceiver, TxMonitorCmd};
 use crate::event::IbcEventWithHeight;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
@@ -645,32 +643,8 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(chain)
     }
 
-    fn init_event_monitor(
-        &self,
-        rt: Arc<TokioRuntime>,
-    ) -> Result<(EventReceiver, TxMonitorCmd), Error> {
-        crate::time!("init_event_monitor");
-
-        let (mut event_monitor, event_receiver, monitor_tx) = EventMonitor::new(
-            self.config.id.clone(),
-            self.config.websocket_addr.clone(),
-            rt,
-        )
-        .map_err(Error::event_monitor)?;
-
-        event_monitor.subscribe().map_err(Error::event_monitor)?;
-
-        thread::spawn(move || event_monitor.run());
-
-        Ok((event_receiver, monitor_tx))
-    }
-
     fn shutdown(self) -> Result<(), Error> {
         Ok(())
-    }
-
-    fn id(&self) -> &ChainId {
-        &self.config().id
     }
 
     fn keybase(&self) -> &KeyRing {
@@ -775,29 +749,8 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     /// Get the chain configuration
-    fn config(&self) -> ChainConfig {
-        self.config.clone()
-    }
-
-    /// Get the signing key
-    fn get_key(&mut self) -> Result<KeyEntry, Error> {
-        crate::time!("get_key");
-
-        // Get the key from key seed file
-        let key = self
-            .keybase()
-            .get_key(&self.config.key_name)
-            .map_err(|e| Error::key_not_found(self.config.key_name.clone(), e))?;
-
-        Ok(key)
-    }
-
-    fn add_key(&mut self, key_name: &str, key: KeyEntry) -> Result<(), Error> {
-        self.keybase_mut()
-            .add_key(key_name, key)
-            .map_err(Error::key_base)?;
-
-        Ok(())
+    fn config(&self) -> &ChainConfig {
+        &self.config
     }
 
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
