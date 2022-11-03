@@ -1669,11 +1669,13 @@ dependencies = [
 name = "ibc-integration-test"
 version = "0.20.0"
 dependencies = [
+ "http",
  "ibc-proto",
  "ibc-relayer",
  "ibc-relayer-cli",
  "ibc-relayer-types",
  "ibc-test-framework",
+ "prost",
  "serde",
  "serde_json",
  "tempfile",
@@ -1681,6 +1683,7 @@ dependencies = [
  "tendermint-rpc",
  "time 0.3.16",
  "toml",
+ "tonic",
 ]
 
 [[package]]
