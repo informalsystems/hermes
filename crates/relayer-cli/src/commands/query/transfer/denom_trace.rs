@@ -71,17 +71,17 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 hash: "abcdefg".to_owned()
             },
-            DenomTraceCmd::parse_from(&["test", "--chain", "chain_id", "--hash", "abcdefg"])
+            DenomTraceCmd::parse_from(["test", "--chain", "chain_id", "--hash", "abcdefg"])
         )
     }
 
     #[test]
     fn test_transfer_denom_trace_no_hash() {
-        assert!(DenomTraceCmd::try_parse_from(&["test", "--chain", "chain_id"]).is_err())
+        assert!(DenomTraceCmd::try_parse_from(["test", "--chain", "chain_id"]).is_err())
     }
 
     #[test]
     fn test_transfer_denom_trace_no_chain() {
-        assert!(DenomTraceCmd::try_parse_from(&["test", "--hash", "abcdefg"]).is_err())
+        assert!(DenomTraceCmd::try_parse_from(["test", "--hash", "abcdefg"]).is_err())
     }
 }

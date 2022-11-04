@@ -398,7 +398,7 @@ mod tests {
                 dst_chain_id: None,
                 show_counterparty: false,
             },
-            QueryChannelsCmd::parse_from(&["test", "--chain", "chain_id"])
+            QueryChannelsCmd::parse_from(["test", "--chain", "chain_id"])
         )
     }
 
@@ -411,7 +411,7 @@ mod tests {
                 dst_chain_id: None,
                 show_counterparty: false,
             },
-            QueryChannelsCmd::parse_from(&["test", "--chain", "chain_id", "--verbose"])
+            QueryChannelsCmd::parse_from(["test", "--chain", "chain_id", "--verbose"])
         )
     }
 
@@ -424,7 +424,7 @@ mod tests {
                 dst_chain_id: Some(ChainId::from_string("counterparty_chain")),
                 show_counterparty: false,
             },
-            QueryChannelsCmd::parse_from(&[
+            QueryChannelsCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -436,7 +436,7 @@ mod tests {
 
     #[test]
     fn test_query_channels_no_chain() {
-        assert!(QueryChannelsCmd::try_parse_from(&["test"]).is_err())
+        assert!(QueryChannelsCmd::try_parse_from(["test"]).is_err())
     }
 
     #[test]
@@ -448,7 +448,7 @@ mod tests {
                 dst_chain_id: None,
                 show_counterparty: true
             },
-            QueryChannelsCmd::parse_from(&["test", "--chain", "chain_id", "--show-counterparty",])
+            QueryChannelsCmd::parse_from(["test", "--chain", "chain_id", "--show-counterparty",])
         )
     }
 
@@ -461,7 +461,7 @@ mod tests {
                 dst_chain_id: Some(ChainId::from_string("counterparty_chain")),
                 show_counterparty: true
             },
-            QueryChannelsCmd::parse_from(&[
+            QueryChannelsCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -481,7 +481,7 @@ mod tests {
                 dst_chain_id: None,
                 show_counterparty: true
             },
-            QueryChannelsCmd::parse_from(&[
+            QueryChannelsCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",

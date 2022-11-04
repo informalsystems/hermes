@@ -86,12 +86,12 @@ mod tests {
             KeysListCmd {
                 chain_id: ChainId::from_string("chain_id")
             },
-            KeysListCmd::parse_from(&["test", "--chain", "chain_id"])
+            KeysListCmd::parse_from(["test", "--chain", "chain_id"])
         )
     }
 
     #[test]
     fn test_keys_list_no_chain() {
-        assert!(KeysListCmd::try_parse_from(&["test"]).is_err())
+        assert!(KeysListCmd::try_parse_from(["test"]).is_err())
     }
 }

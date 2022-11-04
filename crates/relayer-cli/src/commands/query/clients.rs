@@ -123,7 +123,7 @@ mod tests {
                 src_chain_id: None,
                 omit_chain_ids: false
             },
-            QueryAllClientsCmd::parse_from(&["test", "--host-chain", "chain_host_id"])
+            QueryAllClientsCmd::parse_from(["test", "--host-chain", "chain_host_id"])
         )
     }
 
@@ -135,7 +135,7 @@ mod tests {
                 src_chain_id: None,
                 omit_chain_ids: true
             },
-            QueryAllClientsCmd::parse_from(&[
+            QueryAllClientsCmd::parse_from([
                 "test",
                 "--host-chain",
                 "chain_host_id",
@@ -152,7 +152,7 @@ mod tests {
                 src_chain_id: Some(ChainId::from_string("reference_chain_id")),
                 omit_chain_ids: false
             },
-            QueryAllClientsCmd::parse_from(&[
+            QueryAllClientsCmd::parse_from([
                 "test",
                 "--host-chain",
                 "chain_host_id",
@@ -164,6 +164,6 @@ mod tests {
 
     #[test]
     fn test_query_clients_no_chain() {
-        assert!(QueryAllClientsCmd::try_parse_from(&["test"]).is_err())
+        assert!(QueryAllClientsCmd::try_parse_from(["test"]).is_err())
     }
 }

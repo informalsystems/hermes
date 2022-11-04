@@ -200,7 +200,7 @@ mod tests {
     fn test_start_required_only() {
         assert_eq!(
             StartCmd { full_scan: false },
-            StartCmd::parse_from(&["test"])
+            StartCmd::parse_from(["test"])
         )
     }
 
@@ -208,7 +208,7 @@ mod tests {
     fn test_start_full_scan() {
         assert_eq!(
             StartCmd { full_scan: true },
-            StartCmd::parse_from(&["test", "--full-scan"])
+            StartCmd::parse_from(["test", "--full-scan"])
         )
     }
 }
