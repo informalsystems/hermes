@@ -113,7 +113,7 @@ mod tests {
                 counterparty_chain_id: None,
                 verbose: false,
             },
-            QueryConnectionsCmd::parse_from(&["test", "--chain", "chain_id"])
+            QueryConnectionsCmd::parse_from(["test", "--chain", "chain_id"])
         )
     }
 
@@ -125,7 +125,7 @@ mod tests {
                 counterparty_chain_id: Some(ChainId::from_string("chain_counterparty_id")),
                 verbose: false,
             },
-            QueryConnectionsCmd::parse_from(&[
+            QueryConnectionsCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -143,12 +143,12 @@ mod tests {
                 counterparty_chain_id: None,
                 verbose: true,
             },
-            QueryConnectionsCmd::parse_from(&["test", "--chain", "chain_id", "--verbose"])
+            QueryConnectionsCmd::parse_from(["test", "--chain", "chain_id", "--verbose"])
         )
     }
 
     #[test]
     fn test_query_connections_no_chain() {
-        assert!(QueryConnectionsCmd::try_parse_from(&["test"]).is_err())
+        assert!(QueryConnectionsCmd::try_parse_from(["test"]).is_err())
     }
 }

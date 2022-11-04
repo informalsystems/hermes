@@ -120,7 +120,7 @@ mod tests {
                 sequence: Sequence::from(42),
                 height: None
             },
-            QueryPacketAcknowledgmentCmd::parse_from(&[
+            QueryPacketAcknowledgmentCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -144,7 +144,7 @@ mod tests {
                 sequence: Sequence::from(42),
                 height: None
             },
-            QueryPacketAcknowledgmentCmd::parse_from(&[
+            QueryPacketAcknowledgmentCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -168,7 +168,7 @@ mod tests {
                 sequence: Sequence::from(42),
                 height: Some(21)
             },
-            QueryPacketAcknowledgmentCmd::parse_from(&[
+            QueryPacketAcknowledgmentCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -186,7 +186,7 @@ mod tests {
 
     #[test]
     fn test_query_packet_ack_no_seq() {
-        assert!(QueryPacketAcknowledgmentCmd::try_parse_from(&[
+        assert!(QueryPacketAcknowledgmentCmd::try_parse_from([
             "test",
             "--chain",
             "chain_id",
@@ -200,7 +200,7 @@ mod tests {
 
     #[test]
     fn test_query_packet_ack_no_chan() {
-        assert!(QueryPacketAcknowledgmentCmd::try_parse_from(&[
+        assert!(QueryPacketAcknowledgmentCmd::try_parse_from([
             "test",
             "--chain",
             "chain_id",
@@ -214,7 +214,7 @@ mod tests {
 
     #[test]
     fn test_query_packet_ack_no_port() {
-        assert!(QueryPacketAcknowledgmentCmd::try_parse_from(&[
+        assert!(QueryPacketAcknowledgmentCmd::try_parse_from([
             "test",
             "--chain",
             "chain_id",
@@ -228,7 +228,7 @@ mod tests {
 
     #[test]
     fn test_query_packet_ack_no_chain() {
-        assert!(QueryPacketAcknowledgmentCmd::try_parse_from(&[
+        assert!(QueryPacketAcknowledgmentCmd::try_parse_from([
             "test",
             "--port",
             "port_id",

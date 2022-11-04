@@ -294,7 +294,7 @@ mod tests {
                 new_client_connection: false,
                 yes: false
             },
-            CreateChannelCommand::parse_from(&[
+            CreateChannelCommand::parse_from([
                 "test",
                 "--a-chain",
                 "chain_a",
@@ -322,7 +322,7 @@ mod tests {
                 new_client_connection: false,
                 yes: false
             },
-            CreateChannelCommand::parse_from(&[
+            CreateChannelCommand::parse_from([
                 "test",
                 "--a-chain",
                 "chain_a",
@@ -352,7 +352,7 @@ mod tests {
                 new_client_connection: false,
                 yes: false
             },
-            CreateChannelCommand::parse_from(&[
+            CreateChannelCommand::parse_from([
                 "test",
                 "--a-chain",
                 "chain_a",
@@ -382,7 +382,7 @@ mod tests {
                 new_client_connection: false,
                 yes: false
             },
-            CreateChannelCommand::parse_from(&[
+            CreateChannelCommand::parse_from([
                 "test",
                 "--a-chain",
                 "chain_a",
@@ -398,7 +398,7 @@ mod tests {
 
     #[test]
     fn test_create_channel_a_conn_with_new_client_conn() {
-        assert!(CreateChannelCommand::try_parse_from(&[
+        assert!(CreateChannelCommand::try_parse_from([
             "test",
             "--a-chain",
             "chain_a",
@@ -415,7 +415,7 @@ mod tests {
 
     #[test]
     fn test_create_channel_a_conn_with_yes() {
-        assert!(CreateChannelCommand::try_parse_from(&[
+        assert!(CreateChannelCommand::try_parse_from([
             "test",
             "--a-chain",
             "chain_a",
@@ -436,7 +436,7 @@ mod tests {
 
     #[test]
     fn test_create_channel_a_conn_with_b_chain() {
-        assert!(CreateChannelCommand::try_parse_from(&[
+        assert!(CreateChannelCommand::try_parse_from([
             "test",
             "--a-chain",
             "chain_a",
@@ -468,7 +468,7 @@ mod tests {
                 new_client_connection: true,
                 yes: false
             },
-            CreateChannelCommand::parse_from(&[
+            CreateChannelCommand::parse_from([
                 "test",
                 "--a-chain",
                 "chain_a",
@@ -497,7 +497,7 @@ mod tests {
                 new_client_connection: true,
                 yes: true
             },
-            CreateChannelCommand::parse_from(&[
+            CreateChannelCommand::parse_from([
                 "test",
                 "--a-chain",
                 "chain_a",
@@ -527,7 +527,7 @@ mod tests {
                 new_client_connection: true,
                 yes: false
             },
-            CreateChannelCommand::parse_from(&[
+            CreateChannelCommand::parse_from([
                 "test",
                 "--a-chain",
                 "chain_a",
@@ -544,7 +544,7 @@ mod tests {
 
     #[test]
     fn test_create_channel_b_chain_without_new_client() {
-        assert!(CreateChannelCommand::try_parse_from(&[
+        assert!(CreateChannelCommand::try_parse_from([
             "test",
             "--a-chain",
             "chain_a",
@@ -560,7 +560,7 @@ mod tests {
 
     #[test]
     fn test_create_channel_no_b_port() {
-        assert!(CreateChannelCommand::try_parse_from(&[
+        assert!(CreateChannelCommand::try_parse_from([
             "test",
             "--a-chain",
             "chain_a",
@@ -576,7 +576,7 @@ mod tests {
 
     #[test]
     fn test_create_channel_no_a_port() {
-        assert!(CreateChannelCommand::try_parse_from(&[
+        assert!(CreateChannelCommand::try_parse_from([
             "test",
             "--a-chain",
             "chain_a",
@@ -592,7 +592,7 @@ mod tests {
 
     #[test]
     fn test_create_channel_no_b_chain_nor_a_conn() {
-        assert!(CreateChannelCommand::try_parse_from(&[
+        assert!(CreateChannelCommand::try_parse_from([
             "test",
             "--a-chain",
             "chain_a",
@@ -606,7 +606,7 @@ mod tests {
 
     #[test]
     fn test_create_channel_no_a_chain() {
-        assert!(CreateChannelCommand::try_parse_from(&[
+        assert!(CreateChannelCommand::try_parse_from([
             "test",
             "--b-chain",
             "chain_b",

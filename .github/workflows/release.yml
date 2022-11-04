@@ -79,3 +79,5 @@ jobs:
           push: true
           build-args: TAG=v${{env.TAG}}
           tags: informalsystems/hermes:${{env.TAG}}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

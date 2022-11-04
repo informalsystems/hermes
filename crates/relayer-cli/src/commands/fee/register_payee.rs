@@ -111,7 +111,7 @@ mod tests {
                 port_id: PortId::from_str("port_a").unwrap(),
                 payee_address: "payee_address_hash".to_owned(),
             },
-            RegisterPayeeCmd::parse_from(&[
+            RegisterPayeeCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_a",
@@ -133,7 +133,7 @@ mod tests {
                 port_id: PortId::from_str("port_a").unwrap(),
                 payee_address: "payee_address_hash".to_owned(),
             },
-            RegisterPayeeCmd::parse_from(&[
+            RegisterPayeeCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_a",
@@ -149,7 +149,7 @@ mod tests {
 
     #[test]
     fn test_register_payee_no_payee() {
-        assert!(RegisterPayeeCmd::try_parse_from(&[
+        assert!(RegisterPayeeCmd::try_parse_from([
             "test",
             "--chain",
             "chain_a",
@@ -163,7 +163,7 @@ mod tests {
 
     #[test]
     fn test_register_payee_no_port() {
-        assert!(RegisterPayeeCmd::try_parse_from(&[
+        assert!(RegisterPayeeCmd::try_parse_from([
             "test",
             "--chain",
             "chain_a",
@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn test_register_payee_no_channel() {
-        assert!(RegisterPayeeCmd::try_parse_from(&[
+        assert!(RegisterPayeeCmd::try_parse_from([
             "test",
             "--chain",
             "chain_a",
@@ -191,7 +191,7 @@ mod tests {
 
     #[test]
     fn test_register_payee_no_chain() {
-        assert!(RegisterPayeeCmd::try_parse_from(&[
+        assert!(RegisterPayeeCmd::try_parse_from([
             "test",
             "--channel",
             "channel_a",

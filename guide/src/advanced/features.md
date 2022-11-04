@@ -86,7 +86,7 @@ __Feature comparison between Hermes and the Go relayer__
 |                        |       |        |
 | Connection Delay       | ✅    | ❌     | 
 | Cl_Misbehavior         | ✅    | ❌     | monitors and submits IBC client misbehavior
-| Cl_Refresh             | ✅    | ❌     | periodically refresh an on-chain client to prevent expiration
+| Cl_Refresh             | ✅    | ✅     | periodically refresh an on-chain client to prevent expiration
 | Packet Delay           | ✅    | ❌     | 
 |                        |       |        |
 | Chan_Unordered         | ✅    | ✅     |

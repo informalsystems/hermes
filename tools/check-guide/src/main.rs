@@ -64,7 +64,7 @@ fn verify_line(line: &str, path: &Path, line_number: i32) -> i32 {
 
     TEMPLATE_RE.find_iter(line).for_each(|m| {
         let template = m.as_str();
-        let template_replaced = replace_template(template, &*FILEREADER, &parent, "", 0);
+        let template_replaced = replace_template(template, &*FILEREADER, parent, "", 0);
         if let Err(e) = check_correctness(template_replaced.split_whitespace()) {
             eprintln!("{}:{}: {:?}", path.display(), line_number, e);
             errors_found += 1;

@@ -179,7 +179,7 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 events: vec!()
             },
-            ListenCmd::parse_from(&["test", "--chain", "chain_id"])
+            ListenCmd::parse_from(["test", "--chain", "chain_id"])
         )
     }
 
@@ -190,7 +190,7 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 events: vec!(EventFilter::from_str("Tx").unwrap())
             },
-            ListenCmd::parse_from(&["test", "--chain", "chain_id", "--events", "Tx"])
+            ListenCmd::parse_from(["test", "--chain", "chain_id", "--events", "Tx"])
         )
     }
 
@@ -204,7 +204,7 @@ mod tests {
                     EventFilter::from_str("NewBlock").unwrap()
                 )
             },
-            ListenCmd::parse_from(&[
+            ListenCmd::parse_from([
                 "test", "--chain", "chain_id", "--events", "Tx", "--events", "NewBlock"
             ])
         )
@@ -220,13 +220,13 @@ mod tests {
                     EventFilter::from_str("NewBlock").unwrap()
                 )
             },
-            ListenCmd::parse_from(&["test", "--chain", "chain_id", "--events", "Tx", "NewBlock"])
+            ListenCmd::parse_from(["test", "--chain", "chain_id", "--events", "Tx", "NewBlock"])
         )
     }
 
     #[test]
     fn test_listen_unknown_event_filter() {
-        assert!(ListenCmd::try_parse_from(&[
+        assert!(ListenCmd::try_parse_from([
             "test",
             "--chain",
             "chain_id",
@@ -238,6 +238,6 @@ mod tests {
 
     #[test]
     fn test_listen_unknown_no_chain() {
-        assert!(ListenCmd::try_parse_from(&["test"]).is_err())
+        assert!(ListenCmd::try_parse_from(["test"]).is_err())
     }
 }
