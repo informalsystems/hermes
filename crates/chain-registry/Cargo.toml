@@ -6,7 +6,7 @@ license      = "Apache-2.0"
 keywords     = ["cosmos", "ibc", "relayer", "chain", "registry"]
 repository   = "https://github.com/informalsystems/hermes"
 authors      = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.60"
+rust-version = "1.65"
 description  = """
     Service to fetch data from the chain-registry
 """
@@ -30,4 +30,3 @@ tracing     = "0.1.36"
 [dependencies.tendermint-rpc]
 version = "=0.25.0"
 features = ["http-client", "websocket-client"]
-
