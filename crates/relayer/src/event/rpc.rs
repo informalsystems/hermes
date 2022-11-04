@@ -158,7 +158,8 @@ pub fn get_all_events(
                     {
                         tracing::trace!("extracted ibc_connection event {}", ibc_event);
                         events_with_height.push(IbcEventWithHeight::new(ibc_event, height));
-                    } else if query == queries::ibc_channel().to_string()
+                    } else if (query == queries::ibc_channel().to_string()
+                        || query == queries::ibc_wasm().to_string())
                         && event_is_type_channel(&ibc_event)
                     {
                         let _span = tracing::trace_span!("ibc_channel event").entered();
