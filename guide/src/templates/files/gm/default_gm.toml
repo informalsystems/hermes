@@ -10,7 +10,7 @@
   wallet_mnemonic = ""
 
   [global.hermes]
-    binary = "./hermes" #change this path according to your setup
+    binary = "PATH-TO-HERMES-BINARY" #change this path according to your setup
     config = "$HOME/.hermes/config.toml"
     log_level = "info"
     telemetry_enabled = true

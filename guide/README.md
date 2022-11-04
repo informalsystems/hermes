@@ -36,7 +36,7 @@ cargo install mdbook-toc
 
 ### Building and viewing the guide locally
 
-In order to build and view the guide on your local machine, please follow this instructions.
+In order to build and view the guide on your local machine, please follow these instructions.
 
 #### Change to the `guide` dir
 

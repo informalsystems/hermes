@@ -51,7 +51,7 @@ where
 impl<Context> TxSender<Context> for SimpleTxSender
 where
     Context: InjectWaitTxError,
-    Context: CanWaitTxHash + CanValidateRpcResponse,
+    Context: CanWaitTxHash,
     Self: TxSubmitter<Context>,
 {
     async fn send_tx(

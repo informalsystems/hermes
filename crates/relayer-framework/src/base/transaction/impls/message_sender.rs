@@ -56,8 +56,7 @@ where
         + CanEncodeTx
         + CanEstimateTxFee
         + CanSubmitTx
-        + CanPollTxResponse
-        + CanParseTxResponseAsEvents,
+        + CanPollTxResponse,
 {
     async fn send_messages_as_tx(
         context: &Context,
