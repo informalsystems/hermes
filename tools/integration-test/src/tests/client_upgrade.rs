@@ -104,17 +104,12 @@ impl BinaryChainTest for ClientUpgradeTest {
     ) -> Result<(), ibc_test_framework::prelude::Error> {
         let foreign_clients = chains.clone().foreign_clients;
 
-        let src_chain_config = chains.handle_b().config().unwrap();
-        let dst_chain_config = chains.handle_a().config().unwrap();
-
         let upgraded_chain_id = chains.chain_id_a().0.clone();
 
         let src_client_id = foreign_clients.client_id_b().0.clone();
 
         // Create and send an chain upgrade proposal
         let opts = UpgradePlanOptions {
-            dst_chain_config,
-            src_chain_config,
             src_client_id,
             amount: 10000000u64,
             denom: "stake".to_string(),
@@ -288,17 +283,12 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
     ) -> Result<(), ibc_test_framework::prelude::Error> {
         let foreign_clients = chains.clone().foreign_clients;
 
-        let src_chain_config = chains.handle_b().config().unwrap();
-        let dst_chain_config = chains.handle_a().config().unwrap();
-
         let upgraded_chain_id = chains.chain_id_a().0.clone();
 
         let src_client_id = foreign_clients.client_id_b().0.clone();
 
         // Create and send an chain upgrade proposal
         let opts = UpgradePlanOptions {
-            dst_chain_config,
-            src_chain_config,
             src_client_id,
             amount: 10000000u64,
             denom: "stake".to_string(),
@@ -436,17 +426,12 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
     ) -> Result<(), ibc_test_framework::prelude::Error> {
         let foreign_clients = chains.clone().foreign_clients;
 
-        let src_chain_config = chains.handle_b().config().unwrap();
-        let dst_chain_config = chains.handle_a().config().unwrap();
-
         let upgraded_chain_id = chains.chain_id_a().0.clone();
 
         let src_client_id = foreign_clients.client_id_b().0.clone();
 
         // Create and send an chain upgrade proposal
         let opts = UpgradePlanOptions {
-            dst_chain_config,
-            src_chain_config,
             src_client_id,
             amount: 10000000u64,
             denom: "stake".to_string(),
