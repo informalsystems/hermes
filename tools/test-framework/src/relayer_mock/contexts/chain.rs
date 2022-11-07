@@ -45,11 +45,15 @@ impl MockChainContext {
         state.keys().into_iter().max().cloned()
     }
 
+    // Query the chain state, which is used to see which receive and
+    // acknowledgment messages have been processed by the Mock Chain
     pub fn query_state(&self, height: Height) -> Option<State> {
         let state = self.state.lock().unwrap();
         state.get(&height).cloned()
     }
 
+    // Query the chain consensus state, which is used to see if an update client
+    // message must be sent.
     pub fn query_consensus_state(&self, height: Height) -> Option<Height> {
         let consensus_state = self.consensus_state.lock().unwrap();
         consensus_state.get(&height).cloned()

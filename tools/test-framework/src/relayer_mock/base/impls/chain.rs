@@ -85,6 +85,11 @@ impl OfaBaseChain for MockChainContext {
         }
     }
 
+    /// If the message is a `SendPacket`, update the received packets,
+    /// and add a `RecvPacket` event to the returned array of events.
+    /// If the message is an `AckPacket`, update the received acknowledgment
+    /// packets.
+    /// If the message is an `UpdateClient` update the consensus state.
     async fn send_messages(
         &self,
         messages: Vec<Self::Message>,

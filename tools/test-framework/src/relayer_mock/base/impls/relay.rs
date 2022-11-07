@@ -116,7 +116,7 @@ impl OfaBaseRelay for MockRelayContext {
         height: &<Self::SrcChain as OfaChainTypes>::Height,
         packet: &Self::Packet,
     ) -> Result<<Self::DstChain as OfaChainTypes>::Message, Self::Error> {
-        let h = self.dst_chain.chain.get_latest_height().unwrap();
+        let h = self.dst_chain().chain.get_latest_height().unwrap();
         Ok(MockMessage::SendPacket(*height, h.0, packet.clone()))
     }
 
