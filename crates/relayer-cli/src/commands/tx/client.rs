@@ -437,7 +437,7 @@ impl TxUpgradeClientsCmd {
             .map_err(Error::relayer)?
             .into_iter()
             .filter_map(|c| {
-                (self.reference_chain_id == c.client_state.chain_id()).then(|| c.client_id)
+                (self.reference_chain_id == c.client_state.chain_id()).then_some(c.client_id)
             })
             .map(|id| {
                 TxUpgradeClientsCmd::upgrade_client(
@@ -594,7 +594,7 @@ mod tests {
                 trusting_period: None,
                 trust_threshold: None
             },
-            TxCreateClientCmd::parse_from(&[
+            TxCreateClientCmd::parse_from([
                 "test",
                 "--host-chain",
                 "host_chain",
@@ -614,7 +614,7 @@ mod tests {
                 trusting_period: None,
                 trust_threshold: None
             },
-            TxCreateClientCmd::parse_from(&[
+            TxCreateClientCmd::parse_from([
                 "test",
                 "--host-chain",
                 "host_chain",
@@ -632,7 +632,7 @@ mod tests {
                 trusting_period: None,
                 trust_threshold: None
             },
-            TxCreateClientCmd::parse_from(&[
+            TxCreateClientCmd::parse_from([
                 "test",
                 "--host-chain",
                 "host_chain",
@@ -654,7 +654,7 @@ mod tests {
                 trusting_period: Some("5s".parse::<Duration>().unwrap()),
                 trust_threshold: None
             },
-            TxCreateClientCmd::parse_from(&[
+            TxCreateClientCmd::parse_from([
                 "test",
                 "--host-chain",
                 "host_chain",
@@ -672,7 +672,7 @@ mod tests {
                 trusting_period: Some("3s".parse::<Duration>().unwrap()),
                 trust_threshold: None
             },
-            TxCreateClientCmd::parse_from(&[
+            TxCreateClientCmd::parse_from([
                 "test",
                 "--host-chain",
                 "host_chain",
@@ -694,7 +694,7 @@ mod tests {
                 trusting_period: None,
                 trust_threshold: Some(TrustThreshold::new(1, 2).unwrap())
             },
-            TxCreateClientCmd::parse_from(&[
+            TxCreateClientCmd::parse_from([
                 "test",
                 "--host-chain",
                 "host_chain",
@@ -716,7 +716,7 @@ mod tests {
                 trusting_period: Some("3s".parse::<Duration>().unwrap()),
                 trust_threshold: Some(TrustThreshold::new(1, 2).unwrap())
             },
-            TxCreateClientCmd::parse_from(&[
+            TxCreateClientCmd::parse_from([
                 "test",
                 "--host-chain",
                 "host_chain",
@@ -734,7 +734,7 @@ mod tests {
 
     #[test]
     fn test_create_client_no_host_chain() {
-        assert!(TxCreateClientCmd::try_parse_from(&[
+        assert!(TxCreateClientCmd::try_parse_from([
             "test",
             "--reference-chain",
             "reference_chain",
@@ -750,7 +750,7 @@ mod tests {
 
     #[test]
     fn test_create_client_no_reference_chain() {
-        assert!(TxCreateClientCmd::try_parse_from(&[
+        assert!(TxCreateClientCmd::try_parse_from([
             "test",
             "--host-chain",
             "host_chain",
@@ -766,7 +766,7 @@ mod tests {
 
     #[test]
     fn test_create_client_no_chain() {
-        assert!(TxCreateClientCmd::try_parse_from(&[
+        assert!(TxCreateClientCmd::try_parse_from([
             "test",
             "--clock-drift",
             "5sec",
@@ -787,7 +787,7 @@ mod tests {
                 target_height: None,
                 trusted_height: None
             },
-            TxUpdateClientCmd::parse_from(&[
+            TxUpdateClientCmd::parse_from([
                 "test",
                 "--host-chain",
                 "host_chain",
@@ -806,7 +806,7 @@ mod tests {
                 target_height: Some(42),
                 trusted_height: None
             },
-            TxUpdateClientCmd::parse_from(&[
+            TxUpdateClientCmd::parse_from([
                 "test",
                 "--host-chain",
                 "host_chain",
@@ -827,7 +827,7 @@ mod tests {
                 target_height: None,
                 trusted_height: Some(42)
             },
-            TxUpdateClientCmd::parse_from(&[
+            TxUpdateClientCmd::parse_from([
                 "test",
                 "--host-chain",
                 "host_chain",
@@ -848,7 +848,7 @@ mod tests {
                 target_height: Some(21),
                 trusted_height: Some(42)
             },
-            TxUpdateClientCmd::parse_from(&[
+            TxUpdateClientCmd::parse_from([
                 "test",
                 "--host-chain",
                 "host_chain",
@@ -864,7 +864,7 @@ mod tests {
 
     #[test]
     fn test_update_client_no_chain() {
-        assert!(TxUpdateClientCmd::try_parse_from(&[
+        assert!(TxUpdateClientCmd::try_parse_from([
             "test",
             "--client",
             "client_to_update",
@@ -878,7 +878,7 @@ mod tests {
 
     #[test]
     fn test_update_client_no_client() {
-        assert!(TxUpdateClientCmd::try_parse_from(&[
+        assert!(TxUpdateClientCmd::try_parse_from([
             "test",
             "--host-chain",
             "host_chain",
@@ -898,7 +898,7 @@ mod tests {
                 client_id: ClientId::from_str("client_to_upgrade").unwrap(),
                 reference_upgrade_height: 42,
             },
-            TxUpgradeClientCmd::parse_from(&[
+            TxUpgradeClientCmd::parse_from([
                 "test",
                 "--host-chain",
                 "chain_id",
@@ -912,7 +912,7 @@ mod tests {
 
     #[test]
     fn test_upgrade_client_no_chain() {
-        assert!(TxUpgradeClientCmd::try_parse_from(&[
+        assert!(TxUpgradeClientCmd::try_parse_from([
             "test",
             "--client",
             "client_to_upgrade",
@@ -924,7 +924,7 @@ mod tests {
 
     #[test]
     fn test_upgrade_client_no_client() {
-        assert!(TxUpgradeClientCmd::try_parse_from(&[
+        assert!(TxUpgradeClientCmd::try_parse_from([
             "test",
             "--host-chain",
             "chain_id",
@@ -936,7 +936,7 @@ mod tests {
 
     #[test]
     fn test_upgrade_client_no_upgrade_height() {
-        assert!(TxUpgradeClientCmd::try_parse_from(&[
+        assert!(TxUpgradeClientCmd::try_parse_from([
             "test",
             "--host-chain",
             "chain_id",
@@ -954,7 +954,7 @@ mod tests {
                 reference_upgrade_height: 42,
                 host_chain_id: None,
             },
-            TxUpgradeClientsCmd::parse_from(&[
+            TxUpgradeClientsCmd::parse_from([
                 "test",
                 "--reference-chain",
                 "chain_id",
@@ -972,7 +972,7 @@ mod tests {
                 reference_upgrade_height: 42,
                 host_chain_id: Some(ChainId::from_string("chain_host_id")),
             },
-            TxUpgradeClientsCmd::parse_from(&[
+            TxUpgradeClientsCmd::parse_from([
                 "test",
                 "--reference-chain",
                 "chain_id",
@@ -987,13 +987,13 @@ mod tests {
     #[test]
     fn test_upgrade_clients_no_upgrade_height() {
         assert!(
-            TxUpgradeClientsCmd::try_parse_from(&["test", "--reference-chain", "chain_id",])
+            TxUpgradeClientsCmd::try_parse_from(["test", "--reference-chain", "chain_id",])
                 .is_err()
         )
     }
 
     #[test]
     fn test_upgrade_clients_no_chain() {
-        assert!(TxUpgradeClientsCmd::try_parse_from(&["test", "--upgrade-height", "42"]).is_err())
+        assert!(TxUpgradeClientsCmd::try_parse_from(["test", "--upgrade-height", "42"]).is_err())
     }
 }

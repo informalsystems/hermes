@@ -342,7 +342,7 @@ mod tests {
                 client_id: ClientId::from_str("client_id").unwrap(),
                 height: None
             },
-            QueryClientConnectionsCmd::parse_from(&[
+            QueryClientConnectionsCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -360,7 +360,7 @@ mod tests {
                 client_id: ClientId::from_str("client_id").unwrap(),
                 height: Some(42)
             },
-            QueryClientConnectionsCmd::parse_from(&[
+            QueryClientConnectionsCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -374,15 +374,13 @@ mod tests {
 
     #[test]
     fn test_query_client_connections_no_client() {
-        assert!(
-            QueryClientConnectionsCmd::try_parse_from(&["test", "--chain", "chain_id"]).is_err()
-        )
+        assert!(QueryClientConnectionsCmd::try_parse_from(["test", "--chain", "chain_id"]).is_err())
     }
 
     #[test]
     fn test_query_client_connections_no_chain() {
         assert!(
-            QueryClientConnectionsCmd::try_parse_from(&["test", "--client", "client_id"]).is_err()
+            QueryClientConnectionsCmd::try_parse_from(["test", "--client", "client_id"]).is_err()
         )
     }
 
@@ -396,7 +394,7 @@ mod tests {
                 heights_only: false,
                 height: None
             },
-            QueryClientConsensusCmd::parse_from(&[
+            QueryClientConsensusCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -416,7 +414,7 @@ mod tests {
                 heights_only: false,
                 height: None
             },
-            QueryClientConsensusCmd::parse_from(&[
+            QueryClientConsensusCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -438,7 +436,7 @@ mod tests {
                 heights_only: false,
                 height: Some(42)
             },
-            QueryClientConsensusCmd::parse_from(&[
+            QueryClientConsensusCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -460,7 +458,7 @@ mod tests {
                 heights_only: true,
                 height: None
             },
-            QueryClientConsensusCmd::parse_from(&[
+            QueryClientConsensusCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -473,14 +471,12 @@ mod tests {
 
     #[test]
     fn test_query_client_consensus_no_client() {
-        assert!(QueryClientConsensusCmd::try_parse_from(&["test", "--chain", "chain_id"]).is_err())
+        assert!(QueryClientConsensusCmd::try_parse_from(["test", "--chain", "chain_id"]).is_err())
     }
 
     #[test]
     fn test_query_client_consensus_no_chain() {
-        assert!(
-            QueryClientConsensusCmd::try_parse_from(&["test", "--client", "client_id"]).is_err()
-        )
+        assert!(QueryClientConsensusCmd::try_parse_from(["test", "--client", "client_id"]).is_err())
     }
 
     #[test]
@@ -492,7 +488,7 @@ mod tests {
                 consensus_height: 42,
                 height: None
             },
-            QueryClientHeaderCmd::parse_from(&[
+            QueryClientHeaderCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -513,7 +509,7 @@ mod tests {
                 consensus_height: 42,
                 height: Some(21)
             },
-            QueryClientHeaderCmd::parse_from(&[
+            QueryClientHeaderCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -529,7 +525,7 @@ mod tests {
 
     #[test]
     fn test_query_client_header_no_consensus_height() {
-        assert!(QueryClientHeaderCmd::try_parse_from(&[
+        assert!(QueryClientHeaderCmd::try_parse_from([
             "test",
             "--chain",
             "chain_id",
@@ -541,7 +537,7 @@ mod tests {
 
     #[test]
     fn test_query_client_header_no_client() {
-        assert!(QueryClientHeaderCmd::try_parse_from(&[
+        assert!(QueryClientHeaderCmd::try_parse_from([
             "test",
             "--chain",
             "chain_id",
@@ -553,7 +549,7 @@ mod tests {
 
     #[test]
     fn test_query_client_header_no_chain() {
-        assert!(QueryClientHeaderCmd::try_parse_from(&[
+        assert!(QueryClientHeaderCmd::try_parse_from([
             "test",
             "--client",
             "client_id",
@@ -571,7 +567,7 @@ mod tests {
                 client_id: ClientId::from_str("client_id").unwrap(),
                 height: None
             },
-            QueryClientStateCmd::parse_from(&[
+            QueryClientStateCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -589,7 +585,7 @@ mod tests {
                 client_id: ClientId::from_str("client_id").unwrap(),
                 height: Some(42)
             },
-            QueryClientStateCmd::parse_from(&[
+            QueryClientStateCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -603,11 +599,11 @@ mod tests {
 
     #[test]
     fn test_query_client_state_no_client() {
-        assert!(QueryClientStateCmd::try_parse_from(&["test", "--chain", "chain_id"]).is_err())
+        assert!(QueryClientStateCmd::try_parse_from(["test", "--chain", "chain_id"]).is_err())
     }
 
     #[test]
     fn test_query_client_state_no_chain() {
-        assert!(QueryClientStateCmd::try_parse_from(&["test", "--client", "client_id"]).is_err())
+        assert!(QueryClientStateCmd::try_parse_from(["test", "--client", "client_id"]).is_err())
     }
 }

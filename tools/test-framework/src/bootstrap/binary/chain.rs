@@ -263,7 +263,7 @@ pub fn add_chain_config(config: &mut Config, running_node: &FullNode) -> Result<
 pub fn save_relayer_config(config: &Config, config_path: &Path) -> Result<(), Error> {
     let config_str = toml::to_string_pretty(&config)?;
 
-    fs::write(&config_path, &config_str)?;
+    fs::write(config_path, &config_str)?;
 
     info!(
         "written hermes config.toml to {}:\n{}",

@@ -127,7 +127,7 @@ mod tests {
                 denom: None,
                 all: false,
             },
-            KeyBalanceCmd::parse_from(&["test", "--chain", "chain_id"])
+            KeyBalanceCmd::parse_from(["test", "--chain", "chain_id"])
         )
     }
 
@@ -140,7 +140,7 @@ mod tests {
                 denom: None,
                 all: false,
             },
-            KeyBalanceCmd::parse_from(&["test", "--chain", "chain_id", "--key-name", "kname"])
+            KeyBalanceCmd::parse_from(["test", "--chain", "chain_id", "--key-name", "kname"])
         )
     }
 
@@ -153,7 +153,7 @@ mod tests {
                 denom: Some("samoleans".to_owned()),
                 all: false,
             },
-            KeyBalanceCmd::parse_from(&["test", "--chain", "chain_id", "--denom", "samoleans"])
+            KeyBalanceCmd::parse_from(["test", "--chain", "chain_id", "--denom", "samoleans"])
         )
     }
 
@@ -166,12 +166,12 @@ mod tests {
                 denom: None,
                 all: true,
             },
-            KeyBalanceCmd::parse_from(&["test", "--chain", "chain_id", "--all"])
+            KeyBalanceCmd::parse_from(["test", "--chain", "chain_id", "--all"])
         )
     }
 
     #[test]
     fn test_keys_balance_no_chain() {
-        assert!(KeyBalanceCmd::try_parse_from(&["test"]).is_err())
+        assert!(KeyBalanceCmd::try_parse_from(["test"]).is_err())
     }
 }

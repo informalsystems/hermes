@@ -692,7 +692,7 @@ mod tests {
                 src_port_id: PortId::from_str("port_a").unwrap(),
                 order: Order::Unordered
             },
-            TxChanOpenInitCmd::parse_from(&[
+            TxChanOpenInitCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -719,7 +719,7 @@ mod tests {
                 src_port_id: PortId::from_str("port_a").unwrap(),
                 order: Order::Ordered
             },
-            TxChanOpenInitCmd::parse_from(&[
+            TxChanOpenInitCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -748,7 +748,7 @@ mod tests {
                 src_port_id: PortId::from_str("port_a").unwrap(),
                 order: Order::Unordered
             },
-            TxChanOpenInitCmd::parse_from(&[
+            TxChanOpenInitCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -766,7 +766,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_init_no_a_port() {
-        assert!(TxChanOpenInitCmd::try_parse_from(&[
+        assert!(TxChanOpenInitCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -782,7 +782,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_init_no_b_port() {
-        assert!(TxChanOpenInitCmd::try_parse_from(&[
+        assert!(TxChanOpenInitCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -798,7 +798,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_init_no_b_connection() {
-        assert!(TxChanOpenInitCmd::try_parse_from(&[
+        assert!(TxChanOpenInitCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -814,7 +814,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_init_no_a_chain() {
-        assert!(TxChanOpenInitCmd::try_parse_from(&[
+        assert!(TxChanOpenInitCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -830,7 +830,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_init_no_b_chain() {
-        assert!(TxChanOpenInitCmd::try_parse_from(&[
+        assert!(TxChanOpenInitCmd::try_parse_from([
             "test",
             "--src-chain",
             "chain_a",
@@ -856,7 +856,7 @@ mod tests {
                 src_chan_id: ChannelId::from_str("channel_a").unwrap(),
                 dst_chan_id: None
             },
-            TxChanOpenTryCmd::parse_from(&[
+            TxChanOpenTryCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -886,7 +886,7 @@ mod tests {
                 src_chan_id: ChannelId::from_str("channel_a").unwrap(),
                 dst_chan_id: Some(ChannelId::from_str("channel_b").unwrap())
             },
-            TxChanOpenTryCmd::parse_from(&[
+            TxChanOpenTryCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -918,7 +918,7 @@ mod tests {
                 src_chan_id: ChannelId::from_str("channel_a").unwrap(),
                 dst_chan_id: Some(ChannelId::from_str("channel_b").unwrap())
             },
-            TxChanOpenTryCmd::parse_from(&[
+            TxChanOpenTryCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -940,7 +940,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_try_no_a_channel() {
-        assert!(TxChanOpenTryCmd::try_parse_from(&[
+        assert!(TxChanOpenTryCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -958,7 +958,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_try_no_a_port() {
-        assert!(TxChanOpenTryCmd::try_parse_from(&[
+        assert!(TxChanOpenTryCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -976,7 +976,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_try_no_b_port() {
-        assert!(TxChanOpenTryCmd::try_parse_from(&[
+        assert!(TxChanOpenTryCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -994,7 +994,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_try_no_b_connection() {
-        assert!(TxChanOpenTryCmd::try_parse_from(&[
+        assert!(TxChanOpenTryCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1012,7 +1012,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_try_no_a_chain() {
-        assert!(TxChanOpenTryCmd::try_parse_from(&[
+        assert!(TxChanOpenTryCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1030,7 +1030,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_try_no_b_chain() {
-        assert!(TxChanOpenTryCmd::try_parse_from(&[
+        assert!(TxChanOpenTryCmd::try_parse_from([
             "test",
             "--src-chain",
             "chain_a",
@@ -1058,7 +1058,7 @@ mod tests {
                 dst_chan_id: ChannelId::from_str("channel_b").unwrap(),
                 src_chan_id: ChannelId::from_str("channel_a").unwrap()
             },
-            TxChanOpenAckCmd::parse_from(&[
+            TxChanOpenAckCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -1090,7 +1090,7 @@ mod tests {
                 dst_chan_id: ChannelId::from_str("channel_b").unwrap(),
                 src_chan_id: ChannelId::from_str("channel_a").unwrap()
             },
-            TxChanOpenAckCmd::parse_from(&[
+            TxChanOpenAckCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -1112,7 +1112,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_ack_no_a_channel() {
-        assert!(TxChanOpenAckCmd::try_parse_from(&[
+        assert!(TxChanOpenAckCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1132,7 +1132,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_ack_no_b_channel() {
-        assert!(TxChanOpenAckCmd::try_parse_from(&[
+        assert!(TxChanOpenAckCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1152,7 +1152,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_ack_no_a_port() {
-        assert!(TxChanOpenAckCmd::try_parse_from(&[
+        assert!(TxChanOpenAckCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1172,7 +1172,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_ack_no_b_port() {
-        assert!(TxChanOpenAckCmd::try_parse_from(&[
+        assert!(TxChanOpenAckCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1192,7 +1192,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_ack_no_b_connection() {
-        assert!(TxChanOpenAckCmd::try_parse_from(&[
+        assert!(TxChanOpenAckCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1212,7 +1212,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_ack_no_a_chain() {
-        assert!(TxChanOpenAckCmd::try_parse_from(&[
+        assert!(TxChanOpenAckCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1232,7 +1232,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_ack_no_b_chain() {
-        assert!(TxChanOpenAckCmd::try_parse_from(&[
+        assert!(TxChanOpenAckCmd::try_parse_from([
             "test",
             "--src-chain",
             "chain_a",
@@ -1262,7 +1262,7 @@ mod tests {
                 dst_chan_id: ChannelId::from_str("channel_b").unwrap(),
                 src_chan_id: ChannelId::from_str("channel_a").unwrap()
             },
-            TxChanOpenConfirmCmd::parse_from(&[
+            TxChanOpenConfirmCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -1294,7 +1294,7 @@ mod tests {
                 dst_chan_id: ChannelId::from_str("channel_b").unwrap(),
                 src_chan_id: ChannelId::from_str("channel_a").unwrap()
             },
-            TxChanOpenConfirmCmd::parse_from(&[
+            TxChanOpenConfirmCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -1316,7 +1316,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_confirm_no_a_channel() {
-        assert!(TxChanOpenConfirmCmd::try_parse_from(&[
+        assert!(TxChanOpenConfirmCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1336,7 +1336,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_confirm_no_b_channel() {
-        assert!(TxChanOpenConfirmCmd::try_parse_from(&[
+        assert!(TxChanOpenConfirmCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1356,7 +1356,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_confirm_no_a_port() {
-        assert!(TxChanOpenConfirmCmd::try_parse_from(&[
+        assert!(TxChanOpenConfirmCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1376,7 +1376,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_confirm_no_b_port() {
-        assert!(TxChanOpenConfirmCmd::try_parse_from(&[
+        assert!(TxChanOpenConfirmCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1396,7 +1396,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_confirm_no_b_connection() {
-        assert!(TxChanOpenConfirmCmd::try_parse_from(&[
+        assert!(TxChanOpenConfirmCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1416,7 +1416,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_confirm_no_a_chain() {
-        assert!(TxChanOpenConfirmCmd::try_parse_from(&[
+        assert!(TxChanOpenConfirmCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1436,7 +1436,7 @@ mod tests {
 
     #[test]
     fn test_chan_open_confirm_no_b_chain() {
-        assert!(TxChanOpenConfirmCmd::try_parse_from(&[
+        assert!(TxChanOpenConfirmCmd::try_parse_from([
             "test",
             "--src-chain",
             "chain_a",
@@ -1466,7 +1466,7 @@ mod tests {
                 dst_chan_id: ChannelId::from_str("channel_b").unwrap(),
                 src_chan_id: ChannelId::from_str("channel_a").unwrap()
             },
-            TxChanCloseInitCmd::parse_from(&[
+            TxChanCloseInitCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -1498,7 +1498,7 @@ mod tests {
                 dst_chan_id: ChannelId::from_str("channel_b").unwrap(),
                 src_chan_id: ChannelId::from_str("channel_a").unwrap()
             },
-            TxChanCloseInitCmd::parse_from(&[
+            TxChanCloseInitCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -1520,7 +1520,7 @@ mod tests {
 
     #[test]
     fn test_chan_close_init_no_a_channel() {
-        assert!(TxChanCloseInitCmd::try_parse_from(&[
+        assert!(TxChanCloseInitCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1540,7 +1540,7 @@ mod tests {
 
     #[test]
     fn test_chan_close_init_no_b_channel() {
-        assert!(TxChanCloseInitCmd::try_parse_from(&[
+        assert!(TxChanCloseInitCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1560,7 +1560,7 @@ mod tests {
 
     #[test]
     fn test_chan_close_init_no_a_port() {
-        assert!(TxChanCloseInitCmd::try_parse_from(&[
+        assert!(TxChanCloseInitCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1580,7 +1580,7 @@ mod tests {
 
     #[test]
     fn test_chan_close_init_no_b_port() {
-        assert!(TxChanCloseInitCmd::try_parse_from(&[
+        assert!(TxChanCloseInitCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1600,7 +1600,7 @@ mod tests {
 
     #[test]
     fn test_chan_close_init_no_b_connection() {
-        assert!(TxChanCloseInitCmd::try_parse_from(&[
+        assert!(TxChanCloseInitCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1620,7 +1620,7 @@ mod tests {
 
     #[test]
     fn test_chan_close_init_no_a_chain() {
-        assert!(TxChanCloseInitCmd::try_parse_from(&[
+        assert!(TxChanCloseInitCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1640,7 +1640,7 @@ mod tests {
 
     #[test]
     fn test_chan_close_init_no_b_chain() {
-        assert!(TxChanCloseInitCmd::try_parse_from(&[
+        assert!(TxChanCloseInitCmd::try_parse_from([
             "test",
             "--src-chain",
             "chain_a",
@@ -1670,7 +1670,7 @@ mod tests {
                 dst_chan_id: ChannelId::from_str("channel_b").unwrap(),
                 src_chan_id: ChannelId::from_str("channel_a").unwrap()
             },
-            TxChanCloseConfirmCmd::parse_from(&[
+            TxChanCloseConfirmCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -1702,7 +1702,7 @@ mod tests {
                 dst_chan_id: ChannelId::from_str("channel_b").unwrap(),
                 src_chan_id: ChannelId::from_str("channel_a").unwrap()
             },
-            TxChanCloseConfirmCmd::parse_from(&[
+            TxChanCloseConfirmCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -1724,7 +1724,7 @@ mod tests {
 
     #[test]
     fn test_chan_close_confirm_no_a_channel() {
-        assert!(TxChanCloseConfirmCmd::try_parse_from(&[
+        assert!(TxChanCloseConfirmCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1744,7 +1744,7 @@ mod tests {
 
     #[test]
     fn test_chan_close_confirm_no_b_channel() {
-        assert!(TxChanCloseConfirmCmd::try_parse_from(&[
+        assert!(TxChanCloseConfirmCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1764,7 +1764,7 @@ mod tests {
 
     #[test]
     fn test_chan_close_confirm_no_a_port() {
-        assert!(TxChanCloseConfirmCmd::try_parse_from(&[
+        assert!(TxChanCloseConfirmCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1784,7 +1784,7 @@ mod tests {
 
     #[test]
     fn test_chan_close_confirm_no_b_port() {
-        assert!(TxChanCloseConfirmCmd::try_parse_from(&[
+        assert!(TxChanCloseConfirmCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1804,7 +1804,7 @@ mod tests {
 
     #[test]
     fn test_chan_close_confirm_no_b_connection() {
-        assert!(TxChanCloseConfirmCmd::try_parse_from(&[
+        assert!(TxChanCloseConfirmCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1824,7 +1824,7 @@ mod tests {
 
     #[test]
     fn test_chan_close_confirm_no_a_chain() {
-        assert!(TxChanCloseConfirmCmd::try_parse_from(&[
+        assert!(TxChanCloseConfirmCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -1844,7 +1844,7 @@ mod tests {
 
     #[test]
     fn test_chan_close_confirm_no_b_chain() {
-        assert!(TxChanCloseConfirmCmd::try_parse_from(&[
+        assert!(TxChanCloseConfirmCmd::try_parse_from([
             "test",
             "--src-chain",
             "chain_a",

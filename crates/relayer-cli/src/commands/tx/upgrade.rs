@@ -174,7 +174,7 @@ mod tests {
                 upgrade_name: None,
                 denom: None
             },
-            TxIbcUpgradeChainCmd::parse_from(&[
+            TxIbcUpgradeChainCmd::parse_from([
                 "test",
                 "--reference-chain",
                 "chain_receiver",
@@ -204,7 +204,7 @@ mod tests {
                 upgrade_name: None,
                 denom: Some("my_denom".to_owned())
             },
-            TxIbcUpgradeChainCmd::parse_from(&[
+            TxIbcUpgradeChainCmd::parse_from([
                 "test",
                 "--reference-chain",
                 "chain_receiver",
@@ -236,7 +236,7 @@ mod tests {
                 upgrade_name: None,
                 denom: None
             },
-            TxIbcUpgradeChainCmd::parse_from(&[
+            TxIbcUpgradeChainCmd::parse_from([
                 "test",
                 "--reference-chain",
                 "chain_receiver",
@@ -268,7 +268,7 @@ mod tests {
                 upgrade_name: None,
                 denom: None
             },
-            TxIbcUpgradeChainCmd::parse_from(&[
+            TxIbcUpgradeChainCmd::parse_from([
                 "test",
                 "--reference-chain",
                 "chain_receiver",
@@ -300,7 +300,7 @@ mod tests {
                 upgrade_name: Some("upgrade_name".to_owned()),
                 denom: None
             },
-            TxIbcUpgradeChainCmd::parse_from(&[
+            TxIbcUpgradeChainCmd::parse_from([
                 "test",
                 "--reference-chain",
                 "chain_receiver",
@@ -320,7 +320,7 @@ mod tests {
 
     #[test]
     fn test_upgrade_chain_no_height_offset() {
-        assert!(TxIbcUpgradeChainCmd::try_parse_from(&[
+        assert!(TxIbcUpgradeChainCmd::try_parse_from([
             "test",
             "--reference-chain",
             "chain_receiver",
@@ -336,7 +336,7 @@ mod tests {
 
     #[test]
     fn test_upgrade_chain_no_amount() {
-        assert!(TxIbcUpgradeChainCmd::try_parse_from(&[
+        assert!(TxIbcUpgradeChainCmd::try_parse_from([
             "test",
             "--reference-chain",
             "chain_receiver",
@@ -352,7 +352,7 @@ mod tests {
 
     #[test]
     fn test_upgrade_chain_no_sender_client() {
-        assert!(TxIbcUpgradeChainCmd::try_parse_from(&[
+        assert!(TxIbcUpgradeChainCmd::try_parse_from([
             "test",
             "--reference-chain",
             "chain_receiver",
@@ -368,7 +368,7 @@ mod tests {
 
     #[test]
     fn test_upgrade_chain_no_sender_chain() {
-        assert!(TxIbcUpgradeChainCmd::try_parse_from(&[
+        assert!(TxIbcUpgradeChainCmd::try_parse_from([
             "test",
             "--reference-chain",
             "chain_receiver",
@@ -384,7 +384,7 @@ mod tests {
 
     #[test]
     fn test_upgrade_chain_no_receiver_chain() {
-        assert!(TxIbcUpgradeChainCmd::try_parse_from(&[
+        assert!(TxIbcUpgradeChainCmd::try_parse_from([
             "test",
             "--host-chain",
             "chain_sender",

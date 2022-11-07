@@ -141,7 +141,7 @@ mod tests {
                 key_name: Some("to_delete".to_owned()),
                 all: false
             },
-            KeysDeleteCmd::parse_from(&["test", "--chain", "chain_id", "--key-name", "to_delete"])
+            KeysDeleteCmd::parse_from(["test", "--chain", "chain_id", "--key-name", "to_delete"])
         )
     }
 
@@ -153,18 +153,18 @@ mod tests {
                 key_name: None,
                 all: true
             },
-            KeysDeleteCmd::parse_from(&["test", "--chain", "chain_id", "--all"])
+            KeysDeleteCmd::parse_from(["test", "--chain", "chain_id", "--all"])
         )
     }
 
     #[test]
     fn test_keys_delete_only_chain() {
-        assert!(KeysDeleteCmd::try_parse_from(&["test", "--chain", "chain_id"]).is_err())
+        assert!(KeysDeleteCmd::try_parse_from(["test", "--chain", "chain_id"]).is_err())
     }
 
     #[test]
     fn test_keys_delete_key_name_or_all() {
-        assert!(KeysDeleteCmd::try_parse_from(&[
+        assert!(KeysDeleteCmd::try_parse_from([
             "test",
             "--chain",
             "chain_id",
@@ -177,6 +177,6 @@ mod tests {
 
     #[test]
     fn test_keys_delete_no_chain() {
-        assert!(KeysDeleteCmd::try_parse_from(&["test", "--all"]).is_err())
+        assert!(KeysDeleteCmd::try_parse_from(["test", "--all"]).is_err())
     }
 }
