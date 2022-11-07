@@ -1,4 +1,5 @@
 #![allow(dead_code)]
+use std::collections::HashSet;
 use std::{collections::HashMap, sync::Arc};
 
 use std::sync::Mutex;
@@ -13,14 +14,20 @@ use crate::relayer_mock::base::types::{height::Height, packet::PacketKey, state:
 pub struct MockChainContext {
     pub name: String,
     pub state: Arc<Mutex<HashMap<Height, State>>>,
+    pub consensus_state: Arc<Mutex<HashSet<Height>>>,
     pub runtime: OfaRuntimeContext<TokioRuntimeContext<Error>>,
 }
 
 impl MockChainContext {
-    fn new(name: String, runtime: OfaRuntimeContext<TokioRuntimeContext<Error>>) -> Self {
+    pub fn new(name: String) -> Self {
+        let runtime =
+            OfaRuntimeContext::new(TokioRuntimeContext::new(Arc::new(Runtime::new().unwrap())));
+        let initial_state: HashMap<Height, State> =
+            HashMap::from([(Height::from(1), State::default())]);
         Self {
             name,
-            state: Arc::new(Mutex::new(HashMap::new())),
+            state: Arc::new(Mutex::new(initial_state)),
+            consensus_state: Arc::new(Mutex::new(HashSet::new())),
             runtime,
         }
     }
@@ -41,6 +48,25 @@ impl MockChainContext {
     pub fn query_state(&self, height: Height) -> Option<State> {
         let state = self.state.lock().unwrap();
         state.get(&height).cloned()
+    }
+
+    pub fn query_consensus_state(&self, height: Height) -> Option<Height> {
+        let consensus_state = self.consensus_state.lock().unwrap();
+        consensus_state.get(&height).cloned()
+    }
+
+    pub fn insert_consensus_state(&self, height: Height) {
+        let mut consensus_state = self.consensus_state.lock().unwrap();
+        consensus_state.insert(height);
+    }
+
+    pub fn new_block(&self) {
+        if let Some(height) = self.get_latest_height() {
+            if let Some(current_state) = self.query_state(height.clone()) {
+                let mut state = self.state.lock().unwrap();
+                state.insert(height.increment(), current_state);
+            }
+        }
     }
 
     pub fn receive_packet(&self, packet: PacketKey) {
@@ -75,6 +101,7 @@ impl Default for MockChainContext {
         Self {
             name: "default".to_owned(),
             state: Arc::new(Mutex::new(initial_state)),
+            consensus_state: Arc::new(Mutex::new(HashSet::new())),
             runtime,
         }
     }

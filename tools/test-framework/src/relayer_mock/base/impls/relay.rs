@@ -114,25 +114,29 @@ impl OfaBaseRelay for MockRelayContext {
     async fn build_receive_packet_message(
         &self,
         height: &<Self::SrcChain as OfaChainTypes>::Height,
-        _packet: &Self::Packet,
+        packet: &Self::Packet,
     ) -> Result<<Self::DstChain as OfaChainTypes>::Message, Self::Error> {
-        Ok(MockMessage::SendPacket(*height))
+        let h = self.dst_chain.chain.get_latest_height().unwrap();
+        Ok(MockMessage::SendPacket(*height, h.0, packet.clone()))
     }
 
     async fn build_ack_packet_message(
         &self,
         destination_height: &<Self::DstChain as OfaChainTypes>::Height,
-        _packet: &Self::Packet,
+        packet: &Self::Packet,
         _ack: &<Self::DstChain as OfaChainTypes>::WriteAcknowledgementEvent,
     ) -> Result<<Self::SrcChain as OfaChainTypes>::Message, Self::Error> {
-        Ok(MockMessage::AckPacket(*destination_height))
+        Ok(MockMessage::AckPacket(*destination_height, packet.clone()))
     }
 
     async fn build_timeout_unordered_packet_message(
         &self,
         destination_height: &<Self::DstChain as OfaChainTypes>::Height,
-        _packet: &Self::Packet,
+        packet: &Self::Packet,
     ) -> Result<<Self::SrcChain as OfaChainTypes>::Message, Self::Error> {
-        Ok(MockMessage::TimeoutPacket(*destination_height))
+        Ok(MockMessage::TimeoutPacket(
+            *destination_height,
+            packet.clone(),
+        ))
     }
 }

@@ -78,15 +78,21 @@ where
     relay
 }
 
-pub fn build_mock_relay_context() -> OfaRelayWrapper<MockRelayContext> {
+pub fn build_mock_relay_context() -> (
+    OfaRelayWrapper<MockRelayContext>,
+    Arc<OfaChainWrapper<MockChainContext>>,
+    Arc<OfaChainWrapper<MockChainContext>>,
+) {
     let runtime = TokioRuntimeContext::new(Arc::new(Runtime::new().unwrap()));
+    let src_chain = Arc::new(OfaChainWrapper {
+        chain: MockChainContext::new("chain1".to_string()),
+    });
+    let dst_chain = Arc::new(OfaChainWrapper {
+        chain: MockChainContext::new("chain2".to_string()),
+    });
     let mock_relay = MockRelayContext::new(
-        Arc::new(OfaChainWrapper {
-            chain: MockChainContext::default(),
-        }),
-        Arc::new(OfaChainWrapper {
-            chain: MockChainContext::default(),
-        }),
+        src_chain.clone(),
+        dst_chain.clone(),
         String::from("client_a"),
         String::from("client_b"),
         runtime,
@@ -94,5 +100,5 @@ pub fn build_mock_relay_context() -> OfaRelayWrapper<MockRelayContext> {
 
     let relay = OfaRelayWrapper::new(mock_relay);
 
-    relay
+    (relay, src_chain, dst_chain)
 }

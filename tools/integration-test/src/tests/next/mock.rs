@@ -1,6 +1,5 @@
 use ibc_relayer_framework::base::one_for_all::traits::relay::OfaBaseRelay;
-use ibc_relayer_framework::base::relay::traits::packet_relayers::ack_packet::CanRelayAckPacket;
-use ibc_relayer_framework::base::relay::traits::packet_relayers::receive_packet::CanRelayReceivePacket;
+use ibc_relayer_framework::base::relay::traits::packet_relayer::CanRelayPacket;
 use ibc_test_framework::framework::base::{run_test, PrimitiveTest};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer_mock::base::types::height::Height;
@@ -17,7 +16,7 @@ pub struct MockChainTest;
 
 impl PrimitiveTest for MockChainTest {
     fn run(&self) -> Result<(), Error> {
-        let relay_context = build_mock_relay_context();
+        let (relay_context, src_chain, dst_chain) = build_mock_relay_context();
 
         let runtime = relay_context.relay.runtime().runtime.runtime.as_ref();
 
@@ -32,27 +31,14 @@ impl PrimitiveTest for MockChainTest {
             Height(10),
         );
 
-        info!("Relaying recv packet");
-
-        let events =
-            runtime.block_on(async { relay_context.relay_receive_packet(&0, &packet).await });
-
-        assert!(events.is_ok());
-
-        assert!(events.as_ref().unwrap().is_some());
-
         {
             info!("Check that the packet has not yet been received");
 
-            let l_h = relay_context.relay.dst_chain().chain.get_latest_height();
+            let l_h = dst_chain.chain.get_latest_height();
 
             assert!(l_h.is_some());
 
-            let state = relay_context
-                .relay
-                .dst_chain()
-                .chain
-                .query_state(l_h.unwrap());
+            let state = dst_chain.chain.query_state(l_h.unwrap());
 
             assert!(state.is_some());
 
@@ -63,24 +49,21 @@ impl PrimitiveTest for MockChainTest {
             ));
         }
 
-        relay_context
-            .relay
-            .dst_chain()
-            .chain
-            .receive_packet(packet.clone());
+        // Source chain must be higher than destination chain
+        src_chain.chain.new_block();
+
+        let events = runtime.block_on(async { relay_context.relay_packet(&packet).await });
+
+        assert!(events.is_ok());
 
         {
             info!("Check that the packet has been received by the destination chain");
 
-            let l_h = relay_context.relay.dst_chain().chain.get_latest_height();
+            let l_h = dst_chain.chain.get_latest_height();
 
             assert!(l_h.is_some());
 
-            let state = relay_context
-                .relay
-                .dst_chain()
-                .chain
-                .query_state(l_h.unwrap());
+            let state = dst_chain.chain.query_state(l_h.unwrap());
 
             assert!(state.is_some());
 
@@ -91,32 +74,14 @@ impl PrimitiveTest for MockChainTest {
             ));
         }
 
-        let relay_ack = runtime.block_on(async {
-            relay_context
-                .relay_ack_packet(&1, &packet, &events.unwrap().unwrap())
-                .await
-        });
-
-        assert!(relay_ack.is_ok());
-
-        relay_context
-            .relay
-            .src_chain()
-            .chain
-            .acknowledge_packet(packet.clone());
-
         {
             info!("Check that the acknowledgment has been received by the source chain");
 
-            let l_h = relay_context.relay.src_chain().chain.get_latest_height();
+            let l_h = src_chain.chain.get_latest_height();
 
             assert!(l_h.is_some());
 
-            let state = relay_context
-                .relay
-                .src_chain()
-                .chain
-                .query_state(l_h.unwrap());
+            let state = src_chain.chain.query_state(l_h.unwrap());
 
             assert!(state.is_some());
 

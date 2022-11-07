@@ -91,15 +91,28 @@ impl OfaBaseChain for MockChainContext {
     ) -> Result<Vec<Vec<Self::Event>>, Error> {
         let mut res = vec![];
         for m in messages {
-            if let MockMessage::SendPacket(h) = m {
-                res.push(Event::RecvPacket(h));
+            match m {
+                MockMessage::SendPacket(_, h, p) => {
+                    self.receive_packet(p);
+                    res.push(Event::RecvPacket(h));
+                }
+                MockMessage::AckPacket(_, p) => {
+                    self.acknowledge_packet(p);
+                }
+                MockMessage::UpdateClient(h) => {
+                    self.insert_consensus_state(Height(h));
+                }
+                _ => {}
             }
         }
         Ok(vec![res])
     }
 
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error> {
-        Ok(ChainStatus::default())
+        if let Some(h) = self.get_latest_height() {
+            return Ok(ChainStatus::new(h.0, h));
+        }
+        return Err(Error::no_height(self.name().clone()));
     }
 }
 
@@ -107,9 +120,9 @@ impl OfaBaseChain for MockChainContext {
 impl OfaIbcChain<MockChainContext> for MockChainContext {
     fn counterparty_message_height(message: &Self::Message) -> Option<Self::Height> {
         match message {
-            MockMessage::SendPacket(h) => Some(*h),
-            MockMessage::AckPacket(h) => Some(*h),
-            MockMessage::TimeoutPacket(h) => Some(*h),
+            MockMessage::SendPacket(_, h, _) => Some(*h),
+            MockMessage::AckPacket(h, _) => Some(*h),
+            MockMessage::TimeoutPacket(h, _) => Some(*h),
             _ => None,
         }
     }
@@ -119,8 +132,8 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         client_id: &Self::ClientId,
         height: &Self::Height,
     ) -> Result<Self::ConsensusState, Self::Error> {
-        let res = self.query_state(Height::from(*height));
-        if let Some(_state) = res {
+        let res = self.query_consensus_state(Height::from(*height));
+        if res.is_some() {
             Ok(ConsensusState {})
         } else {
             Err(Error::no_consensus_state(client_id.to_string()))
@@ -133,12 +146,14 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         channel_id: &Self::ChannelId,
         sequence: &Self::Sequence,
     ) -> Result<bool, Self::Error> {
-        if let Some(height) = self.get_latest_height() {
-            if let Some(state) = self.query_state(height.clone()) {
-                return Ok(state.check_received(port_id, channel_id, sequence));
+        match self.get_latest_height() {
+            Some(height) => {
+                if let Some(state) = self.query_state(height.clone()) {
+                    return Ok(state.check_received(port_id, channel_id, sequence));
+                }
+                return Err(Error::no_height_state(height.0));
             }
-            return Err(Error::no_height_state(height.0));
+            None => Ok(false),
         }
-        return Err(Error::no_height(self.name().to_string()));
     }
 }

@@ -4,7 +4,7 @@ type PortId = String;
 type ChannelId = String;
 type Sequence = u128;
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct State {
     recv_events: HashSet<(PortId, ChannelId, Sequence)>,
     ack_events: HashSet<(PortId, ChannelId, Sequence)>,

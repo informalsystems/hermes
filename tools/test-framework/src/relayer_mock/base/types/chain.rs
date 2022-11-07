@@ -11,9 +11,16 @@ impl From<State> for ConsensusState {
     }
 }
 
+#[derive(Debug)]
 pub struct ChainStatus {
     pub height: u128,
     pub timestamp: Height,
+}
+
+impl ChainStatus {
+    pub fn new(height: u128, timestamp: Height) -> Self {
+        Self { height, timestamp }
+    }
 }
 
 impl Default for ChainStatus {
