@@ -13,15 +13,18 @@
 //!   fails to upgrade because a height too small is given as input.
 
 use http::Uri;
-use prost::Message;
 use std::str::FromStr;
 
-use ibc_proto::cosmos::gov::v1beta1::{query_client::QueryClient, QueryProposalRequest};
-use ibc_proto::ibc::core::client::v1::UpgradeProposal;
-use ibc_relayer::error::Error as RelayerError;
 use ibc_relayer::upgrade_chain::{build_and_send_ibc_upgrade_proposal, UpgradePlanOptions};
 use ibc_relayer_types::core::ics02_client::height::Height;
-use ibc_test_framework::{chain::cli::upgrade::vote_proposal, prelude::*};
+use ibc_test_framework::{
+    chain::{
+        cli::upgrade::vote_proposal,
+        config::{set_max_deposit_period, set_voting_period},
+        ext::proposal::query_upgrade_proposal_height,
+    },
+    prelude::*,
+};
 
 const MAX_DEPOSIT_PERIOD: &str = "10s";
 const VOTING_PERIOD: &str = "10s";
@@ -74,23 +77,9 @@ impl TestOverrides for ClientUpgradeTestOverrides {
             )));
         }
 
-        let voting_period = genesis
-            .get_mut("app_state")
-            .and_then(|app_state| app_state.get_mut("gov"))
-            .and_then(|gov| gov.get_mut("voting_params"))
-            .and_then(|voting_params| voting_params.as_object_mut());
-
-        if let Some(voting_period) = voting_period {
-            voting_period.insert(
-                "voting_period".to_owned(),
-                Value::String(VOTING_PERIOD.to_string()),
-            );
-            Ok(())
-        } else {
-            Err(Error::generic(eyre!(
-                "failed to update voting_period in genesis file"
-            )))
-        }
+        set_max_deposit_period(genesis, MAX_DEPOSIT_PERIOD)?;
+        set_voting_period(genesis, VOTING_PERIOD)?;
+        Ok(())
     }
 }
 
@@ -428,54 +417,6 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
         assert!(outcome.is_err(), "{:?}", outcome);
 
         Ok(())
-    }
-}
-
-/// Query the proposal with the given proposal_id, which is supposed to be an UpgradeProposal.
-/// Extract the Plan from the UpgradeProposal and get the height at which the chain upgrades,
-/// from the Plan.
-pub async fn query_upgrade_proposal_height(
-    grpc_address: &Uri,
-    proposal_id: u64,
-) -> Result<u64, Error> {
-    let mut client = match QueryClient::connect(grpc_address.clone()).await {
-        Ok(client) => client,
-        Err(_) => {
-            return Err(Error::query_client());
-        }
-    };
-
-    let request = tonic::Request::new(QueryProposalRequest { proposal_id });
-
-    let response = client
-        .proposal(request)
-        .await
-        .map(|r| r.into_inner())
-        .map_err(RelayerError::grpc_status)?;
-
-    // Querying for a balance might fail, i.e. if the account doesn't actually exist
-    let proposal = response
-        .proposal
-        .ok_or_else(|| RelayerError::empty_query_account(proposal_id.to_string()))?;
-
-    match proposal.content {
-        Some(content) => {
-            if content.type_url != *"/ibc.core.client.v1.UpgradeProposal" {
-                return Err(Error::incorrect_proposal_type_url(content.type_url));
-            }
-            let raw_upgrade_proposal: &[u8] = &content.value;
-            match UpgradeProposal::decode(raw_upgrade_proposal) {
-                Ok(upgrade_proposal) => match upgrade_proposal.plan {
-                    Some(plan) => {
-                        let h = plan.height;
-                        Ok(h as u64)
-                    }
-                    None => Err(Error::empty_plan()),
-                },
-                Err(_e) => Err(Error::incorrect_proposal()),
-            }
-        }
-        None => Err(Error::empty_proposal()),
     }
 }
 
