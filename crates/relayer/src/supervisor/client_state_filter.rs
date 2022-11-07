@@ -180,9 +180,12 @@ impl FilterPolicy {
 
         let permission = match state.trust_threshold() {
             Some(trust) => {
-                let rational = (trust.numerator() / trust.denominator()) as f64;
+                let numerator = trust.numerator() as f64;
+                let denominator = trust.denominator() as f64;
+                let rational = numerator / denominator;
+                println!("Trust threshold rational: {}", rational);
 
-                if rational >= LOWER_BOUND && rational <= UPPER_BOUND {
+                if (LOWER_BOUND..=UPPER_BOUND).contains(&rational) {
                     Permission::Allow
                 } else if rational < LOWER_BOUND {
                     trace!(
