@@ -183,7 +183,6 @@ impl FilterPolicy {
                 let numerator = trust.numerator() as f64;
                 let denominator = trust.denominator() as f64;
                 let rational = numerator / denominator;
-                println!("Trust threshold rational: {}", rational);
 
                 if (LOWER_BOUND..=UPPER_BOUND).contains(&rational) {
                     Permission::Allow
