@@ -391,7 +391,6 @@ pub struct QueryHostConsensusStateRequest {
 /// Used for queries and not yet standardized in channel's query.proto
 #[derive(Clone, Debug)]
 pub enum QueryTxRequest {
-    Packet(QueryPacketEventDataRequest),
     Client(QueryClientEventRequest),
     Transaction(QueryTxHash),
 }

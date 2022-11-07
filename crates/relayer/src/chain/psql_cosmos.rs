@@ -455,18 +455,20 @@ impl PsqlChain {
         }
         sequences.sort_unstable();
 
-        let results = self.block_on(query_txs_from_tendermint(
+        let mut query = QueryPacketEventDataRequest {
+            event_id: WithBlockDataType::SendPacket,
+            source_channel_id: c.channel_id.clone(),
+            source_port_id: c.port_id.clone(),
+            destination_channel_id: c.channel_end.remote.channel_id.as_ref().unwrap().clone(),
+            destination_port_id: c.channel_end.remote.port_id.clone(),
+            sequences,
+            height: Qualified::Equal(*query_height),
+        };
+
+        let results = self.block_on(query_packets_from_tendermint(
             &self.pool,
             self.id(),
-            &QueryTxRequest::Packet(QueryPacketEventDataRequest {
-                event_id: WithBlockDataType::SendPacket,
-                source_channel_id: c.channel_id.clone(),
-                source_port_id: c.port_id.clone(),
-                destination_channel_id: c.channel_end.remote.channel_id.as_ref().unwrap().clone(),
-                destination_port_id: c.channel_end.remote.port_id.clone(),
-                sequences,
-                height: Qualified::Equal(*query_height),
-            }),
+            &mut query,
         ))?;
 
         for ev in results {
@@ -1111,13 +1113,13 @@ impl ChainEndpoint for PsqlChain {
         request: QueryConsensusStateRequest,
         include_proof: IncludeProof,
     ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error> {
-        if self.is_synced() {
+        if self.is_synced() && matches!(include_proof, IncludeProof::No) {
             crate::time!("query_consensus_state_psql");
             crate::telemetry!(query, self.id(), "query_consensus_state_psql");
 
             let states = self.block_on(query_consensus_state(&self.pool, request))?;
 
-            Ok((states, None)) // TODO(ibc): Handle IncludeProof::Yes
+            Ok((states, None))
         } else {
             self.chain.query_consensus_state(request, include_proof)
         }
@@ -1341,17 +1343,25 @@ impl ChainEndpoint for PsqlChain {
 
     fn query_packet_events(
         &self,
-        request: QueryPacketEventDataRequest,
+        mut request: QueryPacketEventDataRequest,
     ) -> Result<Vec<IbcEventWithHeight>, Error> {
-        // Currently the psql tendermint DB does not distinguish between begin and end block events.
-        // The SQL query in `query_blocks` returns all block events
-        crate::time!("query_packet_events_psql");
-        crate::telemetry!(query, self.id(), "query_packet_events_psql");
-
-        let all_block_events =
-            self.block_on(query_packet_events(&self.pool, self.id(), &request))?;
-
-        Ok(all_block_events)
+        if self.is_synced() {
+            crate::time!("query_packet_events_psql");
+            crate::telemetry!(query, self.id(), "query_packet_events_psql");
+            self.block_on(query_packets_from_ibc_snapshots(
+                &self.pool,
+                self.id(),
+                &mut request,
+            ))
+        } else {
+            crate::time!("query_packets_from_tendermint");
+            crate::telemetry!(query, self.id(), "query_packets_from_tendermint");
+            self.block_on(query_packets_from_tendermint(
+                &self.pool,
+                self.id(),
+                &mut request,
+            ))
+        }
     }
 
     fn query_host_consensus_state(

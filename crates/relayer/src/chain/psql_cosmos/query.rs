@@ -350,20 +350,44 @@ fn packet_events_from_tx_search_response(
 }
 
 #[tracing::instrument(skip(pool))]
+pub async fn query_packets_from_tendermint(
+    pool: &PgPool,
+    chain_id: &ChainId,
+    request: &mut QueryPacketEventDataRequest,
+) -> Result<Vec<IbcEventWithHeight>, Error> {
+    crate::time!("query_packets_from_tendermint: query packet events");
+
+    // Get the txs from the Tx events.
+    let responses = tx_search_response_from_packet_query(pool, request).await?;
+    // Extract the Tx packet events. Filter out the ones that don't match the request height.
+    let mut tx_events = packet_events_from_tx_search_response(chain_id, request, responses.txs);
+
+    let recvd_sequences: Vec<_> = tx_events
+        .iter()
+        .filter_map(|eh| eh.event.packet().map(|p| p.sequence))
+        .collect();
+
+    request
+        .sequences
+        .retain(|seq| !recvd_sequences.contains(seq));
+
+    // For the rest of the sequences try to get the events from the block events
+    let mut block_events = vec![];
+    if !request.sequences.is_empty() {
+        block_events = block_search_response_from_packet_query(pool, chain_id, request).await?;
+    }
+
+    tx_events.append(&mut block_events);
+    Ok(tx_events)
+}
+
+#[tracing::instrument(skip(pool))]
 pub async fn query_txs_from_tendermint(
     pool: &PgPool,
     chain_id: &ChainId,
     search: &QueryTxRequest,
 ) -> Result<Vec<IbcEventWithHeight>, Error> {
     match search {
-        QueryTxRequest::Packet(request) => {
-            crate::time!("query_txs_from_tendermint: query packet events");
-
-            let responses = tx_search_response_from_packet_query(pool, request).await?;
-            let events = packet_events_from_tx_search_response(chain_id, request, responses.txs);
-            Ok(events)
-        }
-
         QueryTxRequest::Client(request) => {
             let mut response = header_search(pool, request).await?;
             if response.txs.is_empty() {
@@ -409,41 +433,51 @@ pub async fn query_txs_from_tendermint(
 }
 
 #[tracing::instrument(skip(pool))]
+pub async fn query_packets_from_ibc_snapshots(
+    pool: &PgPool,
+    chain_id: &ChainId,
+    request: &mut QueryPacketEventDataRequest,
+) -> Result<Vec<IbcEventWithHeight>, Error> {
+    crate::time!("query_packets_from_ibc_snapshots");
+    match request.event_id {
+        // Only query for sent packet events is currently supported with snapshots.
+        WithBlockDataType::SendPacket => {
+            let (height, all_packets) =
+                query_sent_packets_from_ibc_snapshots(pool, &request.height.get()).await?;
+
+            let events = all_packets
+                .into_iter()
+                .filter_map(|packet| {
+                    if packet.source_port == request.source_port_id
+                        && packet.source_channel == request.source_channel_id
+                        && request.sequences.contains(&packet.sequence)
+                    {
+                        Some(IbcEventWithHeight::new(
+                            IbcEvent::SendPacket(SendPacket { packet }),
+                            height,
+                        ))
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            Ok(events)
+        }
+        // All other queries go to the chain for now.
+        _ => query_packets_from_tendermint(pool, chain_id, request).await,
+    }
+}
+
+//#[tracing::instrument(skip(pool))]
 pub async fn query_txs_from_ibc_snapshots(
     pool: &PgPool,
     chain_id: &ChainId,
     search: &QueryTxRequest,
 ) -> Result<Vec<IbcEventWithHeight>, Error> {
     match search {
-        QueryTxRequest::Packet(request) => {
-            crate::time!("query_txs_from_ibc_snapshots: query packet events");
-            match request.event_id {
-                WithBlockDataType::SendPacket => {
-                    let (height, all_packets) =
-                        query_sent_packets(pool, &request.height.get()).await?;
-
-                    let events = all_packets
-                        .into_iter()
-                        .filter_map(|packet| {
-                            if packet.source_port == request.source_port_id
-                                && packet.source_channel == request.source_channel_id
-                                && request.sequences.contains(&packet.sequence)
-                            {
-                                Some(IbcEventWithHeight::new(
-                                    IbcEvent::SendPacket(SendPacket { packet }),
-                                    height,
-                                ))
-                            } else {
-                                None
-                            }
-                        })
-                        .collect();
-                    Ok(events)
-                }
-                _ => query_txs_from_tendermint(pool, chain_id, search).await,
-            }
-        }
-        _ => query_txs_from_tendermint(pool, chain_id, search).await,
+        // TODO - implement this to actually query for client updates or Tx hash from snapshots.
+        QueryTxRequest::Client(request) => query_txs_from_tendermint(pool, chain_id, search).await,
+        QueryTxRequest::Transaction(tx) => query_txs_from_tendermint(pool, chain_id, search).await,
     }
 }
 
@@ -664,45 +698,31 @@ async fn block_results_by_packet_fields(
     Ok(results)
 }
 
-#[tracing::instrument(skip(pool))]
-pub async fn query_packet_events(
-    pool: &PgPool,
-    chain_id: &ChainId,
-    request: &QueryPacketEventDataRequest,
-) -> Result<Vec<IbcEventWithHeight>, Error> {
-    crate::time!("query_packet_events");
-
-    let events = block_search_response_from_packet_query(pool, chain_id, request).await?;
-    Ok(events)
-}
-
 fn ibc_packet_event_from_sql_block_query(
     chain_id: &ChainId,
     event: &SqlPacketBlockEvents,
-) -> Option<IbcEvent> {
-    fn ibc_packet_from_sql_block_by_packet_query(event: &SqlPacketBlockEvents) -> Packet {
-        Packet {
-            sequence: event.packet_sequence.parse().unwrap(),
-            source_port: event.packet_src_port.parse().unwrap(),
-            source_channel: event.packet_src_channel.parse().unwrap(),
-            destination_port: event.packet_dst_port.parse().unwrap(),
-            destination_channel: event.packet_dst_channel.parse().unwrap(),
-            data: Vec::from(event.packet_data.as_bytes()),
-            timeout_height: parse_timeout_height(&event.packet_timeout_height).unwrap(),
-            timeout_timestamp: event.packet_timeout_timestamp.parse().unwrap(),
-        }
-    }
-
-    match event.r#type.as_str() {
-        events::SEND_PACKET_EVENT => Some(IbcEvent::SendPacket(SendPacket {
-            packet: ibc_packet_from_sql_block_by_packet_query(event),
-        })),
+) -> Option<IbcEventWithHeight> {
+    let height =
+        ICSHeight::new(chain_id.version(), u64::try_from(event.block_id).unwrap()).unwrap();
+    let packet = Packet {
+        sequence: event.packet_sequence.parse().unwrap(),
+        source_port: event.packet_src_port.parse().unwrap(),
+        source_channel: event.packet_src_channel.parse().unwrap(),
+        destination_port: event.packet_dst_port.parse().unwrap(),
+        destination_channel: event.packet_dst_channel.parse().unwrap(),
+        data: Vec::from(event.packet_data.as_bytes()),
+        timeout_height: parse_timeout_height(&event.packet_timeout_height).unwrap(),
+        timeout_timestamp: event.packet_timeout_timestamp.parse().unwrap(),
+    };
+    let ibc_event = match event.r#type.as_str() {
+        events::SEND_PACKET_EVENT => Some(IbcEvent::SendPacket(SendPacket { packet })),
         events::WRITE_ACK_EVENT => Some(IbcEvent::WriteAcknowledgement(WriteAcknowledgement {
-            packet: ibc_packet_from_sql_block_by_packet_query(event),
+            packet,
             ack: Vec::from(event.packet_ack.as_bytes()),
         })),
         _ => None,
-    }
+    };
+    ibc_event.map(|ibc_event| IbcEventWithHeight::new(ibc_event, height))
 }
 
 #[tracing::instrument(skip(pool))]
@@ -719,13 +739,13 @@ pub async fn block_search_response_from_packet_query(
     let events = results
         .into_iter()
         .filter_map(|result| ibc_packet_event_from_sql_block_query(chain_id, &result))
-        .map(|e| {
-            let height = match request.height.get() {
-                QueryHeight::Specific(height) => height,
-                QueryHeight::Latest => unreachable!(), // TODO(ibcnode)
-            };
-
-            IbcEventWithHeight::new(e, height)
+        .filter_map(|event| {
+            let request_height = request.height.get();
+            match request_height {
+                QueryHeight::Latest => Some(event),
+                QueryHeight::Specific(height) if event.height <= height => Some(event),
+                _ => None,
+            }
         })
         .collect();
 
@@ -882,7 +902,7 @@ pub async fn query_consensus_state(
 }
 
 #[tracing::instrument(skip(pool))]
-pub async fn query_sent_packets(
+pub async fn query_sent_packets_from_ibc_snapshots(
     pool: &PgPool,
     query_height: &QueryHeight,
 ) -> Result<(Height, Vec<Packet>), Error> {

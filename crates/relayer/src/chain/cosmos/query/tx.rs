@@ -29,13 +29,6 @@ pub async fn query_txs(
     crate::telemetry!(query, chain_id, "query_txs");
 
     match request {
-        QueryTxRequest::Packet(_request) => {
-            crate::time!("query_txs: packet events");
-
-            // TODO(ibcnode)
-            todo!()
-        }
-
         QueryTxRequest::Client(request) => {
             crate::time!("query_txs: single client update event");
 
