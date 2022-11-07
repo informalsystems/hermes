@@ -1,6 +1,6 @@
 use crate::base::one_for_all::traits::relay::OfaBaseRelay;
+use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::base::relay::impls::packet_relayers::general::retry::SupportsPacketRetry;
-use crate::common::one_for_all::types::relay::OfaRelayWrapper;
 
 impl<Relay: OfaBaseRelay> SupportsPacketRetry for OfaRelayWrapper<Relay> {
     const MAX_RETRY: usize = 3;

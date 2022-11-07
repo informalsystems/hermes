@@ -5,8 +5,8 @@ use crate::base::chain::traits::types::{
 use crate::base::core::traits::error::HasError;
 use crate::base::one_for_all::traits::chain::{OfaBaseChain, OfaIbcChain};
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
+use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::base::runtime::traits::runtime::HasRuntime;
-use crate::common::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
 impl<Chain: OfaBaseChain> HasError for OfaChainWrapper<Chain> {

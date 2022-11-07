@@ -2,8 +2,22 @@
 
 ## Changelog
 
-* 2022-07-29: Initial Draft
-
-## Problem Statement
+* 2022-11-07: Initial Draft
 
 ## Context
+
+## Decision
+
+## Status
+
+Proposed
+
+## Consequences
+
+## Positive
+
+## Negative
+
+## Neutral
+
+## References

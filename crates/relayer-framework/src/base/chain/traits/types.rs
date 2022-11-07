@@ -1,5 +1,5 @@
 //! The base chain contexts upon which higher level chain contexts such as
-//! [`OfaBaseChain`] are composed from.
+//! `OfaBaseChain` are composed from.
 //!
 //! These traits can be implemented over the default `OfaBaseChain` trait if the
 //! behavior exposed by that trait and the `AfoBaseChain` trait are not desired.
@@ -26,9 +26,9 @@ pub trait HasChainTypes: HasMessageType + HasEventType + HasError {
 }
 
 /// The datatypes that IBC chains need to expose in addition to the datatypes
-/// exposed by the base [`ChainContext`].
+/// exposed by the base `ChainContext`.
 ///
-/// Each [`HasIbcChainTypes`] is parameterized by a [`Counterparty`] chain
+/// Each [`HasIbcChainTypes`] is parameterized by a `Counterparty` chain
 /// which must also implement the `ChainContext` trait.
 pub trait HasIbcChainTypes<Counterparty>: HasChainTypes
 where

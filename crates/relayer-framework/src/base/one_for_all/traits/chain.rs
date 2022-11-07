@@ -1,5 +1,5 @@
 //! The `OfaChainWrapper` trait specifies what a chain context needs to provide
-//! in order to gain access to the APIs provided by the [`AfoBaseChain`]
+//! in order to gain access to the APIs provided by the `AfoBaseChain`
 //! trait.
 
 use async_trait::async_trait;
@@ -9,7 +9,7 @@ use crate::base::chain::traits::queries::consensus_state::ConsensusStateQuerier;
 use crate::base::chain::traits::queries::status::ChainStatusQuerier;
 use crate::base::core::traits::sync::Async;
 use crate::base::one_for_all::traits::runtime::{OfaRuntime, OfaRuntimeContext};
-use crate::common::one_for_all::types::chain::OfaChainWrapper;
+use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
 pub trait OfaChainTypes: Async {

@@ -14,7 +14,7 @@ use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::base::relay::traits::types::HasRelayTypes;
 
 /// The functionality that a relay context gains access to once that relay
-/// context implements the [`OfaRelayWrapper`] trait.
+/// context implements the `OfaRelayWrapper` trait.
 pub trait AfoBaseRelay:
     HasRelayTypes<SrcChain = Self::AfoSrcChain, DstChain = Self::AfoDstChain>
     + CanBuildUpdateClientMessage<SourceTarget>

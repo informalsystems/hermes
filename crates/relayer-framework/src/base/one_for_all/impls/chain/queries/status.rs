@@ -5,7 +5,7 @@ use crate::base::chain::traits::queries::status::{
 };
 use crate::base::one_for_all::traits::chain::OfaBaseChain;
 use crate::base::one_for_all::traits::chain::OfaChainPreset;
-use crate::common::one_for_all::types::chain::OfaChainWrapper;
+use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
 pub struct SendChainStatusQueryToOfa;
