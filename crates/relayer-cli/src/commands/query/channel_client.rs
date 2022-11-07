@@ -79,7 +79,7 @@ mod tests {
                 port_id: PortId::from_str("port_id").unwrap(),
                 channel_id: ChannelId::from_str("channel-07").unwrap()
             },
-            QueryChannelClientCmd::parse_from(&[
+            QueryChannelClientCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -99,7 +99,7 @@ mod tests {
                 port_id: PortId::from_str("port_id").unwrap(),
                 channel_id: ChannelId::from_str("channel-07").unwrap()
             },
-            QueryChannelClientCmd::parse_from(&[
+            QueryChannelClientCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -113,7 +113,7 @@ mod tests {
 
     #[test]
     fn test_query_channel_client_no_chan() {
-        assert!(QueryChannelClientCmd::try_parse_from(&[
+        assert!(QueryChannelClientCmd::try_parse_from([
             "test", "--chain", "chain_id", "--port", "port_id"
         ])
         .is_err())
@@ -121,7 +121,7 @@ mod tests {
 
     #[test]
     fn test_query_channel_client_no_port() {
-        assert!(QueryChannelClientCmd::try_parse_from(&[
+        assert!(QueryChannelClientCmd::try_parse_from([
             "test",
             "--chain",
             "chain_id",
@@ -133,7 +133,7 @@ mod tests {
 
     #[test]
     fn test_query_channel_client_no_chain() {
-        assert!(QueryChannelClientCmd::try_parse_from(&[
+        assert!(QueryChannelClientCmd::try_parse_from([
             "test",
             "--port",
             "port_id",

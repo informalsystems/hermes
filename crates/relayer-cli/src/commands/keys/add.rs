@@ -254,7 +254,7 @@ mod tests {
                 hd_path: "m/44'/118'/0'/0/0".to_string(),
                 overwrite: false,
             },
-            KeysAddCmd::parse_from(&["test", "--chain", "chain_id", "--key-file", "key_file"])
+            KeysAddCmd::parse_from(["test", "--chain", "chain_id", "--key-file", "key_file"])
         )
     }
 
@@ -269,7 +269,7 @@ mod tests {
                 hd_path: "m/44'/118'/0'/0/0".to_string(),
                 overwrite: false
             },
-            KeysAddCmd::parse_from(&[
+            KeysAddCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -290,7 +290,7 @@ mod tests {
                 hd_path: "m/44'/118'/0'/0/0".to_string(),
                 overwrite: true,
             },
-            KeysAddCmd::parse_from(&[
+            KeysAddCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -312,7 +312,7 @@ mod tests {
                 hd_path: "m/44'/118'/0'/0/0".to_string(),
                 overwrite: true,
             },
-            KeysAddCmd::parse_from(&[
+            KeysAddCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -325,12 +325,12 @@ mod tests {
 
     #[test]
     fn test_keys_add_no_file_nor_mnemonic() {
-        assert!(KeysAddCmd::try_parse_from(&["test", "--chain", "chain_id"]).is_err());
+        assert!(KeysAddCmd::try_parse_from(["test", "--chain", "chain_id"]).is_err());
     }
 
     #[test]
     fn test_keys_add_key_and_mnemonic() {
-        assert!(KeysAddCmd::try_parse_from(&[
+        assert!(KeysAddCmd::try_parse_from([
             "test",
             "--chain",
             "chain_id",
@@ -344,6 +344,6 @@ mod tests {
 
     #[test]
     fn test_keys_add_no_chain() {
-        assert!(KeysAddCmd::try_parse_from(&["test", "--key-file", "key_file"]).is_err());
+        assert!(KeysAddCmd::try_parse_from(["test", "--key-file", "key_file"]).is_err());
     }
 }

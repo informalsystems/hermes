@@ -324,7 +324,7 @@ mod tests {
                 ack_fee: Amount::from(0u64),
                 timeout_fee: Amount::from(0u64),
             },
-            FeeTransferCmd::parse_from(&[
+            FeeTransferCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -359,7 +359,7 @@ mod tests {
                 ack_fee: Amount::from(0u64),
                 timeout_fee: Amount::from(0u64),
             },
-            FeeTransferCmd::parse_from(&[
+            FeeTransferCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -394,7 +394,7 @@ mod tests {
                 ack_fee: Amount::from(0u64),
                 timeout_fee: Amount::from(0u64),
             },
-            FeeTransferCmd::parse_from(&[
+            FeeTransferCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -431,7 +431,7 @@ mod tests {
                 ack_fee: Amount::from(0u64),
                 timeout_fee: Amount::from(0u64),
             },
-            FeeTransferCmd::parse_from(&[
+            FeeTransferCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -468,7 +468,7 @@ mod tests {
                 ack_fee: Amount::from(0u64),
                 timeout_fee: Amount::from(0u64),
             },
-            FeeTransferCmd::parse_from(&[
+            FeeTransferCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -505,7 +505,7 @@ mod tests {
                 ack_fee: Amount::from(0u64),
                 timeout_fee: Amount::from(0u64),
             },
-            FeeTransferCmd::parse_from(&[
+            FeeTransferCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -542,7 +542,7 @@ mod tests {
                 ack_fee: Amount::from(0u64),
                 timeout_fee: Amount::from(0u64),
             },
-            FeeTransferCmd::parse_from(&[
+            FeeTransferCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -579,7 +579,7 @@ mod tests {
                 ack_fee: Amount::from(0u64),
                 timeout_fee: Amount::from(0u64),
             },
-            FeeTransferCmd::parse_from(&[
+            FeeTransferCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -616,7 +616,7 @@ mod tests {
                 ack_fee: Amount::from(0u64),
                 timeout_fee: Amount::from(0u64),
             },
-            FeeTransferCmd::parse_from(&[
+            FeeTransferCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -652,7 +652,7 @@ mod tests {
                 ack_fee: Amount::from(52u64),
                 timeout_fee: Amount::from(0u64),
             },
-            FeeTransferCmd::parse_from(&[
+            FeeTransferCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -689,7 +689,7 @@ mod tests {
                 ack_fee: Amount::from(0u64),
                 timeout_fee: Amount::from(53u64),
             },
-            FeeTransferCmd::parse_from(&[
+            FeeTransferCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_b",
@@ -709,7 +709,7 @@ mod tests {
 
     #[test]
     fn test_fee_transfer_no_amount() {
-        assert!(FeeTransferCmd::try_parse_from(&[
+        assert!(FeeTransferCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -725,7 +725,7 @@ mod tests {
 
     #[test]
     fn test_fee_transfer_no_src_channel() {
-        assert!(FeeTransferCmd::try_parse_from(&[
+        assert!(FeeTransferCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -741,7 +741,7 @@ mod tests {
 
     #[test]
     fn test_fee_transfer_no_src_port() {
-        assert!(FeeTransferCmd::try_parse_from(&[
+        assert!(FeeTransferCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -757,7 +757,7 @@ mod tests {
 
     #[test]
     fn test_fee_transfer_no_src_chain() {
-        assert!(FeeTransferCmd::try_parse_from(&[
+        assert!(FeeTransferCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_b",
@@ -773,7 +773,7 @@ mod tests {
 
     #[test]
     fn test_fee_transfer_no_dst_chain() {
-        assert!(FeeTransferCmd::try_parse_from(&[
+        assert!(FeeTransferCmd::try_parse_from([
             "test",
             "--src-chain",
             "chain_a",

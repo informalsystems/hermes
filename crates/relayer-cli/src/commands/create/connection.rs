@@ -194,7 +194,7 @@ mod tests {
                 client_b: None,
                 delay: 0
             },
-            CreateConnectionCommand::parse_from(&[
+            CreateConnectionCommand::parse_from([
                 "test",
                 "--a-chain",
                 "chain_a",
@@ -214,7 +214,7 @@ mod tests {
                 client_b: None,
                 delay: 42
             },
-            CreateConnectionCommand::parse_from(&[
+            CreateConnectionCommand::parse_from([
                 "test",
                 "--a-chain",
                 "chain_a",
@@ -236,7 +236,7 @@ mod tests {
                 client_b: Some(ClientId::from_str("07-client_b").unwrap()),
                 delay: 0
             },
-            CreateConnectionCommand::parse_from(&[
+            CreateConnectionCommand::parse_from([
                 "test",
                 "--a-chain",
                 "chain_a",
@@ -258,7 +258,7 @@ mod tests {
                 client_b: Some(ClientId::from_str("07-client_b").unwrap()),
                 delay: 42
             },
-            CreateConnectionCommand::parse_from(&[
+            CreateConnectionCommand::parse_from([
                 "test",
                 "--a-chain",
                 "chain_a",
@@ -274,17 +274,17 @@ mod tests {
 
     #[test]
     fn test_create_connection_a_chain_only() {
-        assert!(CreateConnectionCommand::try_parse_from(&["test", "--a-chain", "chain_a"]).is_err())
+        assert!(CreateConnectionCommand::try_parse_from(["test", "--a-chain", "chain_a"]).is_err())
     }
 
     #[test]
     fn test_create_connection_no_a_chain() {
-        assert!(CreateConnectionCommand::try_parse_from(&["test", "--b-chain", "chain_b"]).is_err())
+        assert!(CreateConnectionCommand::try_parse_from(["test", "--b-chain", "chain_b"]).is_err())
     }
 
     #[test]
     fn test_create_connection_b_client_without_a_client() {
-        assert!(CreateConnectionCommand::try_parse_from(&[
+        assert!(CreateConnectionCommand::try_parse_from([
             "test",
             "--a-chain",
             "chain_a",
@@ -296,7 +296,7 @@ mod tests {
 
     #[test]
     fn test_create_connection_a_client_required_without_b_client() {
-        assert!(CreateConnectionCommand::try_parse_from(&[
+        assert!(CreateConnectionCommand::try_parse_from([
             "test",
             "--a-chain",
             "chain_a",
@@ -308,7 +308,7 @@ mod tests {
 
     #[test]
     fn test_create_connection_b_chain_with_a_client() {
-        assert!(CreateConnectionCommand::try_parse_from(&[
+        assert!(CreateConnectionCommand::try_parse_from([
             "test",
             "--a-chain",
             "chain_a",
@@ -322,7 +322,7 @@ mod tests {
 
     #[test]
     fn test_create_connection_b_chain_with_b_client() {
-        assert!(CreateConnectionCommand::try_parse_from(&[
+        assert!(CreateConnectionCommand::try_parse_from([
             "test",
             "--a-chain",
             "chain_a",

@@ -154,7 +154,7 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 connection_id: ConnectionId::from_str("connection_id").unwrap()
             },
-            QueryConnectionChannelsCmd::parse_from(&[
+            QueryConnectionChannelsCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -171,7 +171,7 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 connection_id: ConnectionId::from_str("connection_id").unwrap()
             },
-            QueryConnectionChannelsCmd::parse_from(&[
+            QueryConnectionChannelsCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -184,13 +184,13 @@ mod tests {
     #[test]
     fn test_query_connection_channels_no_conn() {
         assert!(
-            QueryConnectionChannelsCmd::try_parse_from(&["test", "--chain", "chain_id"]).is_err()
+            QueryConnectionChannelsCmd::try_parse_from(["test", "--chain", "chain_id"]).is_err()
         )
     }
 
     #[test]
     fn test_query_connection_channels_no_chain() {
-        assert!(QueryConnectionChannelsCmd::try_parse_from(&[
+        assert!(QueryConnectionChannelsCmd::try_parse_from([
             "test",
             "--connection",
             "connection_id"
@@ -206,7 +206,7 @@ mod tests {
                 connection_id: ConnectionId::from_str("connection_id").unwrap(),
                 height: None
             },
-            QueryConnectionEndCmd::parse_from(&[
+            QueryConnectionEndCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -224,7 +224,7 @@ mod tests {
                 connection_id: ConnectionId::from_str("connection_id").unwrap(),
                 height: None
             },
-            QueryConnectionEndCmd::parse_from(&[
+            QueryConnectionEndCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -242,7 +242,7 @@ mod tests {
                 connection_id: ConnectionId::from_str("connection_id").unwrap(),
                 height: Some(42)
             },
-            QueryConnectionEndCmd::parse_from(&[
+            QueryConnectionEndCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -256,13 +256,13 @@ mod tests {
 
     #[test]
     fn test_query_connection_end_no_conn() {
-        assert!(QueryConnectionEndCmd::try_parse_from(&["test", "--chain", "chain_id"]).is_err())
+        assert!(QueryConnectionEndCmd::try_parse_from(["test", "--chain", "chain_id"]).is_err())
     }
 
     #[test]
     fn test_query_connection_end_no_chain() {
         assert!(
-            QueryConnectionEndCmd::try_parse_from(&["test", "--connection", "connection_id"])
+            QueryConnectionEndCmd::try_parse_from(["test", "--connection", "connection_id"])
                 .is_err()
         )
     }
