@@ -5,7 +5,7 @@ use core::future::Future;
 use std::collections::HashMap;
 
 use semver::Version;
-use sqlx::postgres::{PgPool, PgPoolOptions};
+use sqlx::{postgres::PgPoolOptions, PgPool};
 use tonic::metadata::AsciiMetadataValue;
 use tracing::{debug, info, span, trace, warn, Level};
 
@@ -37,17 +37,12 @@ use crate::{
         client::ClientSettings,
         cosmos::{query::account::get_or_fetch_account, CosmosSdkChain},
         endpoint::{ChainEndpoint, ChainStatus, HealthCheck},
-        psql_cosmos::{
-            batch::send_batched_messages_and_wait_commit,
-            query::*,
-            snapshot::psql::update_snapshot,
-            snapshot::{Key, PacketId},
-        },
+        psql_cosmos::{batch::send_batched_messages_and_wait_commit, query::*},
         requests::*,
         tracking::TrackedMsgs,
     },
     client_state::{AnyClientState, IdentifiedAnyClientState},
-    config::ChainConfig,
+    config::{ChainConfig, SnapshotStoreType},
     consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight},
     denom::DenomTrace,
     error::Error,
@@ -57,14 +52,15 @@ use crate::{
     },
     keyring::{KeyEntry, KeyRing},
     misbehaviour::MisbehaviourEvidence,
+    snapshot::{
+        memory::MemorySnapshotStore, psql::PsqlSnapshotStore, IbcData, IbcSnapshot, Key, PacketId,
+        SnapshotStore,
+    },
 };
-
-use self::snapshot::{IbcData, IbcSnapshot};
 
 pub mod batch;
 pub mod events;
 pub mod query;
-pub mod snapshot;
 pub mod wait;
 
 flex_error::define_error! {
@@ -102,6 +98,7 @@ pub enum PsqlSyncStatus {
 pub struct PsqlChain {
     chain: CosmosSdkChain,
     pool: PgPool,
+    snapshot_store: Box<dyn SnapshotStore>,
     rt: Arc<tokio::runtime::Runtime>,
     sync_state: PsqlSyncStatus,
 }
@@ -262,11 +259,7 @@ impl PsqlChain {
             .into_iter()
             .filter_map(|cs| AnyConsensusStateWithHeight::try_from(cs).ok());
 
-        let entry = snapshot
-            .data
-            .consensus_states
-            .entry(client_id)
-            .or_insert(Vec::new());
+        let entry = snapshot.data.consensus_states.entry(client_id).or_default();
 
         entry.extend(consensus_states);
         entry.sort_by(|a, b| b.height.cmp(&a.height));
@@ -533,14 +526,18 @@ impl PsqlChain {
             warn!("database is not synced, updating snapshot");
 
             let snapshot = self.ibc_snapshot(&previous_height)?;
-            self.block_on(update_snapshot(&self.pool.clone(), &snapshot))?;
+            self.rt
+                .block_on(self.snapshot_store.update_snapshot(&snapshot))?;
             self.sync_state = PsqlSyncStatus::Synced;
         }
 
-        let mut work_copy = self.block_on(query_ibc_data(
-            &self.pool,
-            &QueryHeight::Specific(previous_height),
-        ))?;
+        let mut work_copy = self
+            .rt
+            .block_on(
+                self.snapshot_store
+                    .fetch_snapshot(QueryHeight::Specific(previous_height)),
+            )?
+            .into_owned();
 
         work_copy.height = batch.height.revision_height();
 
@@ -549,7 +546,8 @@ impl PsqlChain {
             self.update_with_event(event, &mut work_copy);
         }
 
-        self.block_on(update_snapshot(&self.pool, &work_copy))
+        self.rt
+            .block_on(self.snapshot_store.update_snapshot(&work_copy))
     }
 
     fn try_update_with_create_client(
@@ -967,6 +965,12 @@ impl ChainEndpoint for PsqlChain {
             .block_on(PgPoolOptions::new().max_connections(5).connect(psql_conn))
             .map_err(Error::sqlx)?;
 
+        let snapshot_store: Box<dyn SnapshotStore> =
+            match config.snapshot_store.unwrap_or(SnapshotStoreType::Psql) {
+                SnapshotStoreType::Psql => Box::new(PsqlSnapshotStore::new(pool.clone())),
+                SnapshotStoreType::Memory => Box::new(MemorySnapshotStore::new()),
+            };
+
         info!("instantiating chain");
 
         let chain = CosmosSdkChain::bootstrap(config, rt.clone())?;
@@ -974,6 +978,7 @@ impl ChainEndpoint for PsqlChain {
         Ok(Self {
             chain,
             pool,
+            snapshot_store,
             rt,
             sync_state: PsqlSyncStatus::Unknown,
         })
@@ -1055,7 +1060,7 @@ impl ChainEndpoint for PsqlChain {
         if self.is_synced() {
             crate::time!("query_application_status_psql");
             crate::telemetry!(query, self.id(), "query_application_status_psql");
-            self.block_on(query_application_status(&self.pool))
+            self.block_on(self.snapshot_store.query_application_status())
         } else {
             self.chain.query_application_status()
         }
@@ -1076,7 +1081,7 @@ impl ChainEndpoint for PsqlChain {
             crate::time!("query_clients_psql");
             crate::telemetry!(query, self.id(), "query_clients_psql");
 
-            self.block_on(query_clients(&self.pool, &QueryHeight::Latest))
+            self.block_on(self.snapshot_store.query_clients(QueryHeight::Latest))
         } else {
             self.chain.query_clients(request)
         }
@@ -1098,11 +1103,10 @@ impl ChainEndpoint for PsqlChain {
             crate::time!("query_consensus_states_psql");
             crate::telemetry!(query, self.id(), "query_consensus_states_psql");
 
-            self.block_on(query_consensus_states(
-                &self.pool,
-                request,
-                &QueryHeight::Latest,
-            ))
+            self.block_on(
+                self.snapshot_store
+                    .query_consensus_states(QueryHeight::Latest, request),
+            )
         } else {
             self.chain.query_consensus_states(request)
         }
@@ -1117,7 +1121,7 @@ impl ChainEndpoint for PsqlChain {
             crate::time!("query_consensus_state_psql");
             crate::telemetry!(query, self.id(), "query_consensus_state_psql");
 
-            let states = self.block_on(query_consensus_state(&self.pool, request))?;
+            let states = self.block_on(self.snapshot_store.query_consensus_state(request))?;
 
             Ok((states, None))
         } else {
@@ -1147,7 +1151,7 @@ impl ChainEndpoint for PsqlChain {
             crate::time!("query_connections_psql");
             crate::telemetry!(query, self.id(), "query_connections_psql");
 
-            self.block_on(query_connections(&self.pool, &QueryHeight::Latest))
+            self.block_on(self.snapshot_store.query_connections(QueryHeight::Latest))
         } else {
             warn!(
                 "chain psql dbs not synchronized on {}, falling back to gRPC query_connections",
@@ -1166,11 +1170,10 @@ impl ChainEndpoint for PsqlChain {
             crate::time!("query_client_connections_psql");
             crate::telemetry!(query, self.id(), "query_client_connections_psql");
 
-            self.block_on(query_client_connections(
-                &self.pool,
-                &QueryHeight::Latest,
-                &request.client_id,
-            ))
+            self.block_on(
+                self.snapshot_store
+                    .query_client_connections(QueryHeight::Latest, &request.client_id),
+            )
         } else {
             warn!(
                 "chain psql dbs not synchronized on {}, falling back to gRPC query_client_connections",
@@ -1193,11 +1196,10 @@ impl ChainEndpoint for PsqlChain {
                     crate::time!("query_connection_psql");
                     crate::telemetry!(query, self.id(), "query_connection_psql");
                     Ok((
-                        self.block_on(query_connection(
-                            &self.pool,
-                            &request.height,
-                            &request.connection_id,
-                        ))?
+                        self.block_on(
+                            self.snapshot_store
+                                .query_connection(request.height, &request.connection_id),
+                        )?
                         .ok_or_else(|| {
                             PsqlError::connection_not_found(request.connection_id.clone())
                         })?
@@ -1220,16 +1222,17 @@ impl ChainEndpoint for PsqlChain {
         if self.is_synced() {
             crate::time!("query_channels_psql");
             crate::telemetry!(query, self.id(), "query_channels_psql");
-            self.block_on(query_connection_channels(
-                &self.pool,
-                &request.connection_id,
-                &QueryHeight::Latest,
-            ))
+
+            self.block_on(
+                self.snapshot_store
+                    .query_connection_channels(QueryHeight::Latest, &request.connection_id),
+            )
         } else {
             warn!(
                 "chain psql dbs not synchronized on {}, falling back to gRPC query_connection_channels",
                 self.chain.id()
             );
+
             self.chain.query_connection_channels(request)
         }
     }
@@ -1241,12 +1244,14 @@ impl ChainEndpoint for PsqlChain {
         if self.is_synced() {
             crate::time!("query_channels_psql");
             crate::telemetry!(query, self.id(), "query_channels_psql");
-            self.block_on(query_channels(&self.pool, &QueryHeight::Latest))
+
+            self.block_on(self.snapshot_store.query_channels(QueryHeight::Latest))
         } else {
             warn!(
                 "chain psql dbs not synchronized on {}, falling back to gRPC query_channels",
                 self.chain.id()
             );
+
             self.chain.query_channels(request)
         }
     }
@@ -1267,7 +1272,10 @@ impl ChainEndpoint for PsqlChain {
                         PortChannelId::new(request.channel_id.clone(), request.port_id.clone());
 
                     let channel_end = self
-                        .block_on(query_channel(&self.pool, &request.height, &port_channel_id))?
+                        .block_on(
+                            self.snapshot_store
+                                .query_channel(request.height, &port_channel_id),
+                        )?
                         .ok_or_else(|| PsqlError::channel_not_found(request.channel_id.clone()))?
                         .channel_end;
 
@@ -1350,6 +1358,7 @@ impl ChainEndpoint for PsqlChain {
             crate::telemetry!(query, self.id(), "query_packet_events_psql");
             self.block_on(query_packets_from_ibc_snapshots(
                 &self.pool,
+                self.snapshot_store.as_ref(),
                 self.id(),
                 &mut request,
             ))

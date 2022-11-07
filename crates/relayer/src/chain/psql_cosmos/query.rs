@@ -1,39 +1,30 @@
-use bigdecimal::BigDecimal;
 use color_eyre::eyre::Context;
 use prost::Message;
 use sqlx::PgPool;
+use tracing::{info, trace};
 
 use tendermint::abci::transaction::Hash;
 use tendermint::abci::{self, responses::Codespace, tag::Tag, Event, Gas, Info, Log};
 use tendermint_proto::abci::TxResult;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::endpoint::tx_search::Response as TxSearchResponse;
-use tracing::{info, trace};
 
 use ibc_relayer_types::core::ics02_client::height::Height;
-use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
-use ibc_relayer_types::core::ics24_host::identifier::{
-    ChainId, ClientId, ConnectionId, PortChannelId,
-};
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::events::{self, IbcEvent, WithBlockDataType};
 use ibc_relayer_types::Height as ICSHeight;
 
 use crate::chain::cosmos::types::events::channel::parse_timeout_height;
 use crate::chain::cosmos::types::events::from_tx_response_event;
 use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
-use crate::chain::endpoint::ChainStatus;
-use crate::chain::psql_cosmos::snapshot::{IbcSnapshot, PacketId};
+
 use crate::chain::requests::*;
-use crate::client_state::IdentifiedAnyClientState;
-use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
+
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
-
-use super::snapshot::Key;
-use super::PsqlError;
+use crate::snapshot::SnapshotStore;
 
 /// This function queries transactions for events matching certain criteria.
 /// 1. Client Update request - returns a vector with at most one update client event
@@ -432,9 +423,10 @@ pub async fn query_txs_from_tendermint(
     }
 }
 
-#[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(snapshot))]
 pub async fn query_packets_from_ibc_snapshots(
     pool: &PgPool,
+    snapshot: &dyn SnapshotStore,
     chain_id: &ChainId,
     request: &mut QueryPacketEventDataRequest,
 ) -> Result<Vec<IbcEventWithHeight>, Error> {
@@ -442,8 +434,7 @@ pub async fn query_packets_from_ibc_snapshots(
     match request.event_id {
         // Only query for sent packet events is currently supported with snapshots.
         WithBlockDataType::SendPacket => {
-            let (height, all_packets) =
-                query_sent_packets_from_ibc_snapshots(pool, &request.height.get()).await?;
+            let (height, all_packets) = snapshot.query_sent_packets(request.height.get()).await?;
 
             let events = all_packets
                 .into_iter()
@@ -750,177 +741,4 @@ pub async fn block_search_response_from_packet_query(
         .collect();
 
     Ok(events)
-}
-
-#[tracing::instrument(skip(pool))]
-pub async fn query_ibc_data(
-    pool: &PgPool,
-    query_height: &QueryHeight,
-) -> Result<IbcSnapshot, Error> {
-    let query = match query_height {
-        QueryHeight::Latest => {
-            sqlx::query_as::<_, IbcSnapshot>("SELECT * FROM ibc_json ORDER BY height DESC LIMIT 1")
-        }
-        QueryHeight::Specific(h) => {
-            sqlx::query_as::<_, IbcSnapshot>("SELECT * FROM ibc_json WHERE height = $1 LIMIT 1")
-                .bind(BigDecimal::from(h.revision_height()))
-        }
-    };
-
-    query.fetch_one(pool).await.map_err(Error::sqlx)
-}
-
-#[tracing::instrument(skip(pool))]
-pub async fn query_application_status(pool: &PgPool) -> Result<ChainStatus, Error> {
-    let result = query_ibc_data(pool, &QueryHeight::Latest).await?;
-    Ok(result.data.app_status)
-}
-
-#[tracing::instrument(skip(pool))]
-pub async fn query_connections(
-    pool: &PgPool,
-    query_height: &QueryHeight,
-) -> Result<Vec<IdentifiedConnectionEnd>, Error> {
-    let result = query_ibc_data(pool, query_height).await?;
-    Ok(result.data.connections.values().cloned().collect())
-}
-
-#[tracing::instrument(skip(pool))]
-pub async fn query_client_connections(
-    pool: &PgPool,
-    query_height: &QueryHeight,
-    client_id: &ClientId,
-) -> Result<Vec<ConnectionId>, Error> {
-    let result = query_ibc_data(pool, query_height).await?;
-
-    let connections = result
-        .data
-        .connections
-        .values()
-        .filter_map(|connection| {
-            if connection.connection_end.client_id_matches(client_id) {
-                Some(connection.connection_id.clone())
-            } else {
-                None
-            }
-        })
-        .collect();
-
-    Ok(connections)
-}
-
-#[tracing::instrument(skip(pool))]
-pub async fn query_connection(
-    pool: &PgPool,
-    query_height: &QueryHeight,
-    id: &ConnectionId,
-) -> Result<Option<IdentifiedConnectionEnd>, Error> {
-    let result = query_ibc_data(pool, query_height).await?;
-    Ok(result.data.connections.get(id).cloned())
-}
-
-#[tracing::instrument(skip(pool))]
-pub async fn query_channels(
-    pool: &PgPool,
-    query_height: &QueryHeight,
-) -> Result<Vec<IdentifiedChannelEnd>, Error> {
-    let result = query_ibc_data(pool, query_height).await?;
-    Ok(result.data.channels.values().cloned().collect())
-}
-
-#[tracing::instrument(skip(pool))]
-pub async fn query_connection_channels(
-    pool: &PgPool,
-    connection_id: &ConnectionId,
-    query_height: &QueryHeight,
-) -> Result<Vec<IdentifiedChannelEnd>, Error> {
-    let result = query_ibc_data(pool, query_height).await?;
-    Ok(result
-        .data
-        .channels
-        .values()
-        .cloned()
-        .filter(|ch| ch.channel_end.connection_hops.first() == Some(connection_id))
-        .collect())
-}
-
-#[tracing::instrument(skip(pool))]
-pub async fn query_channel(
-    pool: &PgPool,
-    query_height: &QueryHeight,
-    id: &PortChannelId,
-) -> Result<Option<IdentifiedChannelEnd>, Error> {
-    let result = query_ibc_data(pool, query_height).await?;
-    Ok(result.data.channels.get(&Key(id.clone())).cloned())
-}
-
-#[tracing::instrument(skip(pool))]
-pub async fn query_clients(
-    pool: &PgPool,
-    query_height: &QueryHeight,
-) -> Result<Vec<IdentifiedAnyClientState>, Error> {
-    let result = query_ibc_data(pool, query_height).await?;
-    Ok(result.data.client_states.values().cloned().collect())
-}
-
-#[tracing::instrument(skip(pool))]
-pub async fn query_consensus_states(
-    pool: &PgPool,
-    request: QueryConsensusStatesRequest,
-    query_height: &QueryHeight,
-) -> Result<Vec<AnyConsensusStateWithHeight>, Error> {
-    let result = query_ibc_data(pool, query_height).await?;
-
-    let consensus_states = result
-        .data
-        .consensus_states
-        .get(&request.client_id)
-        .cloned()
-        .unwrap_or_default();
-
-    Ok(consensus_states)
-}
-
-#[tracing::instrument(skip(pool))]
-pub async fn query_consensus_state(
-    pool: &PgPool,
-    request: QueryConsensusStateRequest,
-) -> Result<AnyConsensusState, Error> {
-    let result = query_ibc_data(pool, &request.query_height).await?;
-
-    let consensus_state = result
-        .data
-        .consensus_states
-        .get(&request.client_id)
-        .and_then(|cs| cs.iter().find(|cs| cs.height == request.consensus_height))
-        .cloned()
-        .ok_or_else(|| {
-            PsqlError::consensus_state_not_found(request.client_id, request.consensus_height)
-        })?;
-
-    Ok(consensus_state.consensus_state)
-}
-
-#[tracing::instrument(skip(pool))]
-pub async fn query_sent_packets_from_ibc_snapshots(
-    pool: &PgPool,
-    query_height: &QueryHeight,
-) -> Result<(Height, Vec<Packet>), Error> {
-    let result = query_ibc_data(pool, query_height).await?;
-
-    Ok((
-        result.data.app_status.height,
-        result.data.pending_sent_packets.values().cloned().collect(),
-    ))
-}
-
-#[tracing::instrument(skip(pool))]
-pub async fn query_sent_packet(
-    pool: &PgPool,
-    query_height: &QueryHeight,
-    id: &PacketId,
-) -> Result<Option<Packet>, Error> {
-    let result = query_ibc_data(pool, query_height).await?;
-    let p = result.data.pending_sent_packets.get(id).cloned();
-    Ok(p)
 }

@@ -133,6 +133,7 @@ where
         sequential_batch_tx: false,
         extension_options: Vec::new(),
         psql_conn: None,
+        snapshot_store: None,
     })
 }
 

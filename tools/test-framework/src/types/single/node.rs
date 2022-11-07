@@ -158,6 +158,7 @@ impl FullNode {
             extension_options: Default::default(),
             sequential_batch_tx: false,
             psql_conn: Default::default(),
+            snapshot_store: Default::default(),
         })
     }
 

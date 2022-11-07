@@ -367,6 +367,12 @@ impl Display for AddressType {
     }
 }
 
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+pub enum SnapshotStoreType {
+    Memory,
+    Psql,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ChainConfig {
@@ -398,6 +404,7 @@ pub struct ChainConfig {
 
     /// Only used for the `Psql` chain type.
     pub psql_conn: Option<String>,
+    pub snapshot_store: Option<SnapshotStoreType>,
 
     /// A correction parameter that helps deal with clocks that are only approximately synchronized
     /// between the source and destination chains for a client.

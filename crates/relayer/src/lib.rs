@@ -43,6 +43,7 @@ pub mod path;
 pub mod registry;
 pub mod rest;
 pub mod sdk_error;
+pub mod snapshot;
 pub mod spawn;
 pub mod supervisor;
 pub mod telemetry;
