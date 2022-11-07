@@ -1048,6 +1048,11 @@ impl ChainEndpoint for PsqlChain {
         self.chain.ibc_version()
     }
 
+    fn ibc_snapshot(&self) -> Result<Option<IbcSnapshot>, Error> {
+        let snapshot = self.block_on(self.snapshot_store.fetch_snapshot(QueryHeight::Latest))?;
+        Ok(Some(snapshot.into_owned()))
+    }
+
     fn query_balance(&self, key_name: Option<&str>, denom: Option<&str>) -> Result<Balance, Error> {
         self.chain.query_balance(key_name, denom)
     }

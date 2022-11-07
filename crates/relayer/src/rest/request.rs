@@ -2,7 +2,10 @@ use serde::Serialize;
 
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
-use crate::{config::ChainConfig, rest::RestApiError, supervisor::dump_state::SupervisorState};
+use crate::{
+    config::ChainConfig, rest::RestApiError, snapshot::IbcSnapshot,
+    supervisor::dump_state::SupervisorState,
+};
 
 pub type ReplySender<T> = crossbeam_channel::Sender<Result<T, RestApiError>>;
 pub type ReplyReceiver<T> = crossbeam_channel::Receiver<Result<T, RestApiError>>;
@@ -35,5 +38,10 @@ pub enum Request {
     GetChain {
         chain_id: ChainId,
         reply_to: ReplySender<ChainConfig>,
+    },
+
+    IbcSnapshot {
+        chain_id: ChainId,
+        reply_to: ReplySender<Option<IbcSnapshot>>,
     },
 }

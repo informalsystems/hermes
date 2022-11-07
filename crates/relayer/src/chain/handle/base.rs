@@ -34,6 +34,7 @@ use crate::{
     keyring::KeyEntry,
     light_client::AnyHeader,
     misbehaviour::MisbehaviourEvidence,
+    snapshot::IbcSnapshot,
 };
 
 use super::{reply_channel, ChainHandle, ChainRequest, HealthCheck, ReplyTo, Subscription};
@@ -100,6 +101,10 @@ impl ChainHandle for BaseChainHandle {
 
     fn subscribe(&self) -> Result<Subscription, Error> {
         self.send(|reply_to| ChainRequest::Subscribe { reply_to })
+    }
+
+    fn ibc_snapshot(&self) -> Result<Option<IbcSnapshot>, Error> {
+        self.send(|reply_to| ChainRequest::IbcSnapshot { reply_to })
     }
 
     fn send_messages_and_wait_commit(

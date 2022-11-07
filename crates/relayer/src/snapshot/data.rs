@@ -2,6 +2,7 @@ use core::fmt;
 use std::collections::HashMap;
 
 use bigdecimal::BigDecimal;
+use ibc_relayer_types::Height;
 use serde::de::{Deserializer, Error as _};
 use serde::{Deserialize, Serialize, Serializer};
 use sqlx::postgres::PgRow;
@@ -20,7 +21,7 @@ use crate::consensus_state::AnyConsensusStateWithHeight;
 
 use super::util::bigdecimal_to_u64;
 
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct IbcSnapshot {
     pub height: u64,
     pub data: IbcData,
@@ -68,6 +69,22 @@ pub struct IbcData {
     pub consensus_states: HashMap<ClientId, Vec<AnyConsensusStateWithHeight>>,
 
     pub pending_sent_packets: HashMap<PacketId, Packet>, // TODO - use IbcEvent val (??)
+}
+
+impl Default for IbcData {
+    fn default() -> Self {
+        Self {
+            app_status: ChainStatus {
+                height: Height::new(1, 1).unwrap(),
+                timestamp: Default::default(),
+            },
+            connections: Default::default(),
+            channels: Default::default(),
+            client_states: Default::default(),
+            consensus_states: Default::default(),
+            pending_sent_packets: Default::default(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]

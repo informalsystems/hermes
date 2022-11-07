@@ -27,17 +27,7 @@ use ibc_relayer::account::Balance;
 use ibc_relayer::chain::client::ClientSettings;
 use ibc_relayer::chain::endpoint::{ChainStatus, HealthCheck};
 use ibc_relayer::chain::handle::{ChainHandle, ChainRequest, Subscription};
-use ibc_relayer::chain::requests::{
-    IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
-    QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
-    QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
-    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
-    QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementRequest,
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest,
-    QueryPacketCommitmentsRequest, QueryPacketEventDataRequest, QueryPacketReceiptRequest,
-    QueryTxRequest, QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
-    QueryUpgradedClientStateRequest, QueryUpgradedConsensusStateRequest,
-};
+use ibc_relayer::chain::requests::*;
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::client_state::{AnyClientState, IdentifiedAnyClientState};
 use ibc_relayer::config::ChainConfig;
@@ -50,23 +40,22 @@ use ibc_relayer::event::IbcEventWithHeight;
 use ibc_relayer::keyring::KeyEntry;
 use ibc_relayer::light_client::AnyHeader;
 use ibc_relayer::misbehaviour::MisbehaviourEvidence;
+use ibc_relayer::snapshot::IbcSnapshot;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
+use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
 use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
+use ibc_relayer_types::core::ics03_connection::version::Version;
+use ibc_relayer_types::core::ics04_channel::channel::ChannelEnd;
 use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc_relayer_types::core::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
-use ibc_relayer_types::{
-    core::ics03_connection::connection::ConnectionEnd,
-    core::ics03_connection::version::Version,
-    core::ics04_channel::channel::ChannelEnd,
-    core::ics23_commitment::commitment::CommitmentPrefix,
-    core::ics24_host::identifier::ChainId,
-    core::ics24_host::identifier::ChannelId,
-    core::ics24_host::identifier::{ClientId, ConnectionId, PortId},
-    proofs::Proofs,
-    signer::Signer,
-    Height,
-};
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::core::ics24_host::identifier::ChannelId;
+use ibc_relayer_types::core::ics24_host::identifier::{ClientId, ConnectionId, PortId};
+use ibc_relayer_types::proofs::Proofs;
+use ibc_relayer_types::signer::Signer;
+use ibc_relayer_types::Height;
 
 use crate::types::tagged::*;
 
@@ -132,6 +121,10 @@ where
 
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
         self.value().ibc_version()
+    }
+
+    fn ibc_snapshot(&self) -> Result<Option<IbcSnapshot>, Error> {
+        self.value().ibc_snapshot()
     }
 
     fn query_application_status(&self) -> Result<ChainStatus, Error> {

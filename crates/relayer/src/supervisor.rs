@@ -25,6 +25,7 @@ use crate::{
     object::Object,
     registry::{Registry, SharedRegistry},
     rest,
+    snapshot::IbcSnapshot,
     supervisor::scan::ScanMode,
     telemetry,
     util::{
@@ -246,7 +247,12 @@ pub fn spawn_rest_worker<Chain: ChainHandle>(
         error_span!("rest"),
         Some(Duration::from_millis(500)),
         move || -> Result<Next, TaskError<Infallible>> {
-            handle_rest_requests(&config, &registry.read(), &workers.acquire_read(), &rest_rx);
+            handle_rest_requests(
+                &config,
+                &mut registry.write(),
+                &workers.acquire_read(),
+                &rest_rx,
+            );
 
             Ok(Next::Continue)
         },
@@ -612,9 +618,18 @@ fn state<Chain: ChainHandle>(registry: &Registry<Chain>, workers: &WorkerMap) ->
     SupervisorState::new(chains, workers.handles())
 }
 
+/// Returns the latest IBC snapshot for the given chain.
+fn ibc_snapshot<Chain: ChainHandle>(
+    registry: &mut Registry<Chain>,
+    chain_id: &ChainId,
+) -> Option<IbcSnapshot> {
+    let chain = registry.get_or_spawn(chain_id).ok()?;
+    chain.ibc_snapshot().unwrap_or_default()
+}
+
 fn handle_rest_requests<Chain: ChainHandle>(
     config: &Config,
-    registry: &Registry<Chain>,
+    registry: &mut Registry<Chain>,
     workers: &WorkerMap,
     rest_rx: &rest::Receiver,
 ) {
@@ -625,15 +640,22 @@ fn handle_rest_requests<Chain: ChainHandle>(
 
 #[instrument(name = "supervisor.handle_rest_cmd", level = "error", skip_all)]
 fn handle_rest_cmd<Chain: ChainHandle>(
-    registry: &Registry<Chain>,
+    registry: &mut Registry<Chain>,
     workers: &WorkerMap,
-    m: rest::Command,
+    cmd: rest::Command,
 ) {
-    match m {
+    match cmd {
         rest::Command::DumpState(reply) => {
             let state = state(registry, workers);
             reply
                 .send(Ok(state))
+                .unwrap_or_else(|e| error!("error replying to a REST request {}", e));
+        }
+
+        rest::Command::IbcSnapshot(chain_id, reply) => {
+            let snapshot = ibc_snapshot(registry, &chain_id);
+            reply
+                .send(Ok(snapshot))
                 .unwrap_or_else(|e| error!("error replying to a REST request {}", e));
         }
     }

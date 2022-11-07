@@ -1,5 +1,6 @@
 use core::fmt::Debug;
 
+use ibc_relayer::snapshot::IbcSnapshot;
 use tracing::error;
 
 use crossbeam_channel as channel;
@@ -62,6 +63,16 @@ pub fn supervisor_state(
     sender: &channel::Sender<Request>,
 ) -> Result<SupervisorState, RestApiError> {
     submit_request(sender, |reply_to| Request::State { reply_to })
+}
+
+pub fn ibc_snapshot(
+    sender: &channel::Sender<Request>,
+    chain_id: &str,
+) -> Result<Option<IbcSnapshot>, RestApiError> {
+    submit_request(sender, |reply_to| Request::IbcSnapshot {
+        chain_id: ChainId::from_string(chain_id),
+        reply_to,
+    })
 }
 
 pub fn assemble_version_info(sender: &channel::Sender<Request>) -> Vec<VersionInfo> {

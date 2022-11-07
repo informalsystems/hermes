@@ -40,6 +40,7 @@ use crate::{
     keyring::KeyEntry,
     light_client::AnyHeader,
     misbehaviour::MisbehaviourEvidence,
+    snapshot::IbcSnapshot,
 };
 
 use super::{
@@ -357,6 +358,9 @@ pub enum ChainRequest {
         counterparty_payee: Signer,
         reply_to: ReplyTo<()>,
     },
+    IbcSnapshot {
+        reply_to: channel::Sender<Result<Option<IbcSnapshot>, Error>>,
+    },
 }
 
 pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
@@ -400,6 +404,9 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
 
     /// Return the version of the IBC protocol that this chain is running, if known.
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
+
+    /// Grab the latest IBC snapshot, if any (currently only applies to PsqlCosmos chains)
+    fn ibc_snapshot(&self) -> Result<Option<IbcSnapshot>, Error>;
 
     /// Query the balance of the given account for the given denom.
     /// If no account is given, behavior must be specified, e.g. retrieve it from configuration file.

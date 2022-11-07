@@ -52,7 +52,6 @@ use ibc_relayer_types::{
     core::ics02_client::events::UpdateClient,
 };
 
-use crate::chain::client::ClientSettings;
 use crate::chain::cosmos::encode::key_entry_to_signer;
 use crate::chain::cosmos::fee::maybe_register_counterparty_payee;
 use crate::chain::cosmos::query::account::get_or_fetch_account;
@@ -88,6 +87,7 @@ use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
 use crate::util::pretty::{PrettyConsensusStateWithHeight, PrettyIdentifiedChannel};
 use crate::{account::Balance, event::monitor::EventBatch};
+use crate::{chain::client::ClientSettings, snapshot::IbcSnapshot};
 use crate::{
     chain::cosmos::batch::{
         send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
@@ -804,6 +804,10 @@ impl ChainEndpoint for CosmosSdkChain {
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error> {
         let version_specs = self.block_on(fetch_version_specs(self.id(), &self.grpc_addr))?;
         Ok(version_specs.ibc_go)
+    }
+
+    fn ibc_snapshot(&self) -> Result<Option<IbcSnapshot>, Error> {
+        Ok(None)
     }
 
     fn query_balance(&self, key_name: Option<&str>, denom: Option<&str>) -> Result<Balance, Error> {

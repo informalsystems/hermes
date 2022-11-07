@@ -1,10 +1,12 @@
 use crossbeam_channel::TryRecvError;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tracing::{error, trace};
 
 use crate::{
     config::Config,
     rest::request::ReplySender,
     rest::request::{Request, VersionInfo},
+    snapshot::IbcSnapshot,
     supervisor::dump_state::SupervisorState,
 };
 
@@ -31,6 +33,7 @@ pub type Receiver = crossbeam_channel::Receiver<Request>;
 //  e.g., adjusting chain config, removing chains, etc.
 pub enum Command {
     DumpState(ReplySender<SupervisorState>),
+    IbcSnapshot(ChainId, ReplySender<Option<IbcSnapshot>>),
 }
 
 /// Process incoming REST requests.
@@ -81,6 +84,12 @@ pub fn process_incoming_requests(config: &Config, channel: &Receiver) -> Option<
                 trace!("State");
 
                 return Some(Command::DumpState(reply_to));
+            }
+
+            Request::IbcSnapshot { chain_id, reply_to } => {
+                trace!("IbcSnapshot");
+
+                return Some(Command::IbcSnapshot(chain_id, reply_to));
             }
         },
         Err(e) => {

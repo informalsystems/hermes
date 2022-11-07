@@ -7,7 +7,7 @@ use tracing::{info, trace};
 use ibc_relayer::rest::request::Request;
 
 use crate::{
-    handle::{all_chain_ids, assemble_version_info, chain_config, supervisor_state},
+    handle::{all_chain_ids, assemble_version_info, chain_config, ibc_snapshot, supervisor_state},
     Config,
 };
 
@@ -79,6 +79,12 @@ fn run(config: Config, sender: channel::Sender<Request>) -> ServerHandle {
             (GET) (/state) => {
                 trace!("[rest] GET /state");
                 let result = supervisor_state(&sender);
+                rouille::Response::json(&JsonResult::from(result))
+            },
+
+            (GET) (/ibc-snapshot/{id: String}) => {
+                trace!("[rest] GET /ibc-snapshot/{}", id);
+                let result = ibc_snapshot(&sender, &id);
                 rouille::Response::json(&JsonResult::from(result))
             },
 

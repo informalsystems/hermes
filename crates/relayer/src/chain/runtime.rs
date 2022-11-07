@@ -24,7 +24,6 @@ use ibc_relayer_types::{
     Height,
 };
 
-use crate::chain::requests::QueryPacketEventDataRequest;
 use crate::{
     account::Balance,
     client_state::{AnyClientState, IdentifiedAnyClientState},
@@ -42,6 +41,7 @@ use crate::{
     light_client::AnyHeader,
     misbehaviour::MisbehaviourEvidence,
 };
+use crate::{chain::requests::QueryPacketEventDataRequest, snapshot::IbcSnapshot};
 
 use super::{
     client::ClientSettings,
@@ -277,6 +277,10 @@ where
 
                         ChainRequest::IbcVersion { reply_to } => {
                             self.ibc_version(reply_to)?
+                        },
+
+                        ChainRequest::IbcSnapshot { reply_to } => {
+                            self.ibc_snapshot(reply_to)?
                         },
 
                         ChainRequest::BuildHeader { trusted_height, target_height, client_state, reply_to } => {
@@ -542,6 +546,11 @@ where
 
     fn ibc_version(&mut self, reply_to: ReplyTo<Option<semver::Version>>) -> Result<(), Error> {
         let result = self.chain.ibc_version();
+        reply_to.send(result).map_err(Error::send)
+    }
+
+    fn ibc_snapshot(&mut self, reply_to: ReplyTo<Option<IbcSnapshot>>) -> Result<(), Error> {
+        let result = self.chain.ibc_snapshot();
         reply_to.send(result).map_err(Error::send)
     }
 

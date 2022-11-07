@@ -43,6 +43,7 @@ use crate::event::IbcEventWithHeight;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::AnyHeader;
 use crate::misbehaviour::MisbehaviourEvidence;
+use crate::snapshot::IbcSnapshot;
 
 use super::requests::{
     IncludeProof, QueryHeight, QueryPacketAcknowledgementRequest, QueryPacketCommitmentRequest,
@@ -118,6 +119,11 @@ pub trait ChainEndpoint: Sized {
 
     /// Return the version of the IBC protocol that this chain is running, if known.
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;
+
+    // IBC snapshot
+
+    /// Grab the latest IBC snapshot, if any (currently only applies to PsqlCosmos chains)
+    fn ibc_snapshot(&self) -> Result<Option<IbcSnapshot>, Error>;
 
     // Send transactions
 
