@@ -48,9 +48,11 @@ fn test_height_too_low_client_upgrade() -> Result<(), Error> {
     run_binary_chain_test(&HeightTooLowClientUpgradeTest)
 }
 
+struct ClientUpgradeTestOverrides;
+
 struct ClientUpgradeTest;
 
-impl TestOverrides for ClientUpgradeTest {
+impl TestOverrides for ClientUpgradeTestOverrides {
     /// Update the genesis file in order to reduce the time required to upgrade the chain.
     fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
         use serde_json::Value;
@@ -229,48 +231,6 @@ impl BinaryChainTest for InvalidClientUpgradeTest {
 
 struct HeightTooHighClientUpgradeTest;
 
-impl TestOverrides for HeightTooHighClientUpgradeTest {
-    /// Update the genesis file in order to reduce the time required to upgrade the chain
-    fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
-        use serde_json::Value;
-
-        let max_deposit_periods = genesis
-            .get_mut("app_state")
-            .and_then(|app_state| app_state.get_mut("gov"))
-            .and_then(|gov| gov.get_mut("deposit_params"))
-            .and_then(|deposit_params| deposit_params.as_object_mut());
-
-        if let Some(max_deposit_period) = max_deposit_periods {
-            max_deposit_period.insert(
-                "max_deposit_period".to_owned(),
-                Value::String(MAX_DEPOSIT_PERIOD.to_string()),
-            );
-        } else {
-            return Err(Error::generic(eyre!(
-                "failed to update max_deposit_period in genesis file"
-            )));
-        }
-
-        let voting_period = genesis
-            .get_mut("app_state")
-            .and_then(|app_state| app_state.get_mut("gov"))
-            .and_then(|gov| gov.get_mut("voting_params"))
-            .and_then(|voting_params| voting_params.as_object_mut());
-
-        if let Some(voting_period) = voting_period {
-            voting_period.insert(
-                "voting_period".to_owned(),
-                Value::String(VOTING_PERIOD.to_string()),
-            );
-            Ok(())
-        } else {
-            Err(Error::generic(eyre!(
-                "failed to update voting_period in genesis file"
-            )))
-        }
-    }
-}
-
 impl BinaryChainTest for HeightTooHighClientUpgradeTest {
     fn run<
         ChainA: ibc_test_framework::prelude::ChainHandle,
@@ -371,48 +331,6 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
 }
 
 struct HeightTooLowClientUpgradeTest;
-
-impl TestOverrides for HeightTooLowClientUpgradeTest {
-    /// Update the genesis file in order to reduce the time required to upgrade the chain.
-    fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
-        use serde_json::Value;
-
-        let max_deposit_periods = genesis
-            .get_mut("app_state")
-            .and_then(|app_state| app_state.get_mut("gov"))
-            .and_then(|gov| gov.get_mut("deposit_params"))
-            .and_then(|deposit_params| deposit_params.as_object_mut());
-
-        if let Some(max_deposit_period) = max_deposit_periods {
-            max_deposit_period.insert(
-                "max_deposit_period".to_owned(),
-                Value::String(MAX_DEPOSIT_PERIOD.to_string()),
-            );
-        } else {
-            return Err(Error::generic(eyre!(
-                "failed to update max_deposit_period in genesis file"
-            )));
-        }
-
-        let voting_period = genesis
-            .get_mut("app_state")
-            .and_then(|app_state| app_state.get_mut("gov"))
-            .and_then(|gov| gov.get_mut("voting_params"))
-            .and_then(|voting_params| voting_params.as_object_mut());
-
-        if let Some(voting_period) = voting_period {
-            voting_period.insert(
-                "voting_period".to_owned(),
-                Value::String(VOTING_PERIOD.to_string()),
-            );
-            Ok(())
-        } else {
-            Err(Error::generic(eyre!(
-                "failed to update voting_period in genesis file"
-            )))
-        }
-    }
-}
 
 impl BinaryChainTest for HeightTooLowClientUpgradeTest {
     fn run<
@@ -558,5 +476,29 @@ pub async fn query_upgrade_proposal_height(
             }
         }
         None => Err(Error::empty_proposal()),
+    }
+}
+
+impl HasOverrides for ClientUpgradeTest {
+    type Overrides = ClientUpgradeTestOverrides;
+
+    fn get_overrides(&self) -> &ClientUpgradeTestOverrides {
+        &ClientUpgradeTestOverrides
+    }
+}
+
+impl HasOverrides for HeightTooLowClientUpgradeTest {
+    type Overrides = ClientUpgradeTestOverrides;
+
+    fn get_overrides(&self) -> &ClientUpgradeTestOverrides {
+        &ClientUpgradeTestOverrides
+    }
+}
+
+impl HasOverrides for HeightTooHighClientUpgradeTest {
+    type Overrides = ClientUpgradeTestOverrides;
+
+    fn get_overrides(&self) -> &ClientUpgradeTestOverrides {
+        &ClientUpgradeTestOverrides
     }
 }
