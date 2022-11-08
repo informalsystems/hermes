@@ -37,7 +37,6 @@
     a subset of components provided by the framework, or introduce new
     components that provide additional functionalities.
 
-    ## All-In-One Traits
 */
 
 mod std_prelude;

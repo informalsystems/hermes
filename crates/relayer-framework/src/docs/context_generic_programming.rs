@@ -132,14 +132,14 @@
 
    ```
    mod provider {
-       # trait HasRequirementsToPerformAction {}
+       # trait HasRequirementsToPerformSimpleAction {}
        # trait ActionPerformer<Context> {
        #     fn perform_action(context: &Context, /* ... */);
        # }
        struct PerformSimpleAction;
        impl<Context> ActionPerformer<Context> for PerformSimpleAction
        where
-           Context: HasRequirementsToPerformAction,
+           Context: HasRequirementsToPerformSimpleAction,
        {
            fn perform_action(context: &Context, /* ... */) {
                # unimplemented!()
@@ -155,9 +155,9 @@
 
    We then implement `ActionPerformer<Context>` for `PerformSimpleAction`,
    for any generic `Context` type, as long as the type satisfies some requirements
-   as specified in `HasRequirementsToPerformAction`.
+   as specified in `HasRequirementsToPerformSimpleAction`.
 
-   One thing worth noting is that the constraint `HasRequirementsToPerformAction`
+   One thing worth noting is that the constraint `HasRequirementsToPerformSimpleAction`
    is _hidden_ behind the `impl` definition, as it is not shown in the
    `ActionPerformer` trait itself.
    Essentially, we have made use of the properties of Rust's trait system
@@ -174,7 +174,7 @@
 
    ```
    pub mod provider {
-       # trait HasRequirementsToPerformAction {}
+       # trait HasRequirementsToPerformSimpleAction {}
        # trait CanPerformAction {
        #     fn perform_action(&self, /* ... */);
        # }
@@ -184,7 +184,7 @@
        # struct PerformSimpleAction;
        # impl<Context> ActionPerformer<Context> for PerformSimpleAction
        # where
-       #     Context: HasRequirementsToPerformAction,
+       #     Context: HasRequirementsToPerformSimpleAction,
        # {
        #     fn perform_action(context: &Context, /* ... */) {
        #         unimplemented!()
@@ -192,7 +192,7 @@
        #     }
        # }
        pub struct AppContext { /* ... */ }
-       impl HasRequirementsToPerformAction for AppContext { /* ... */ }
+       impl HasRequirementsToPerformSimpleAction for AppContext { /* ... */ }
 
        impl CanPerformAction for AppContext {
            fn perform_action(&self, /* ... */) {
@@ -204,7 +204,7 @@
 
    We first ensure that the concrete type `AppContext` implements the
    requirements that are needed to call `PerformSimpleAction`, such as by
-   implementing `HasRequirementsToPerformAction`. We then implement
+   implementing `HasRequirementsToPerformSimpleAction`. We then implement
    `CanPerformAction` by simply forwarding to the call to
    `PerformSimpleAction::perform_action`.
 
@@ -220,7 +220,7 @@
 
    ```
    pub mod provider {
-       # trait HasRequirementsToPerformAction {}
+       # trait HasRequirementsToPerformSimpleAction {}
        # trait CanPerformAction {
        #     fn perform_action(&self, /* ... */);
        # }
@@ -230,7 +230,7 @@
        # struct PerformSimpleAction;
        # impl<Context> ActionPerformer<Context> for PerformSimpleAction
        # where
-       #     Context: HasRequirementsToPerformAction,
+       #     Context: HasRequirementsToPerformSimpleAction,
        # {
        #     fn perform_action(context: &Context, /* ... */) {
        #         unimplemented!()
@@ -238,7 +238,7 @@
        #     }
        # }
        pub struct AnotherAppContext { /* ... */ }
-       # impl HasRequirementsToPerformAction for AnotherAppContext { /* ... */ }
+       # impl HasRequirementsToPerformSimpleAction for AnotherAppContext { /* ... */ }
        impl CanPerformAction for AnotherAppContext {
            fn perform_action(&self, /* ... */) {
                PerformSimpleAction::perform_action(self, /* ... */)
@@ -301,6 +301,7 @@
        # trait CanPerformAction {
        #     fn perform_action(&self, /* ... */);
        # }
+       # trait HasRequirementsToDoSomethingSmart {}
        trait CanDoSomething {
            fn do_something(&self, /* ... */);
        }
@@ -312,6 +313,7 @@
        impl<Context> SomethingDoer<Context> for DoSomethingSmart
        where
            Context: CanPerformAction,
+           Context: HasRequirementsToDoSomethingSmart,
        {
            fn do_something(context: &Context, /* ... */) {
                /* ... */
@@ -332,20 +334,354 @@
    implementation for `CanDoSomething`.
 
    It is worth noting that the transitive dependency
-   `HasRequirementsToPerformAction` is not seen anywhere inside the
+   `HasRequirementsToPerformSimpleAction` is not seen anywhere inside the
    `consumer` module. In other words, the `consumer` module is _decoupled_
    from the requirements of implementing `CanPerformAction`. If the
    concrete context implements `CanPerformAction` by using
    `PerformSimpleAction`, then the constraints are propagated _automatically_
    while completely bypassing the definitions in `consumer`.
 
-   ## Conclusion
+    ## All-In-One Traits
 
-   This concludes the short introduction to context-generic programming.
-   With this, you should be able to start understanding the design patterns
-   used in the IBC relayer framework.
+    Context-generic programming provides a lot of flexibility for context
+    implementations to choose on how to wire up consumer traits with provider
+    trait implementations. The late-bound nature of dependency injection
+    also means that we do not know the exact requirements the concrete
+    context needs to provide until all of the wirings have been decided.
 
-   To learn more in depth techniques that are used by the relayer framework,
-   check out our full tutorial on context-generic programming
-   [here](https://informalsystems.github.io/context-generic-programming/).
+    To make it easy for normal users to use the components, we can provide
+    an optional set of _all-in-one_ traits so that users can implement only
+    a handful of traits for their concrete contexts, and let the framework
+    do the wiring for them. The all-in-one traits provides the convenience of
+    less wirings, with the trade off of less customizability.
+
+    One way to think of this is that we can imagine the all-in-one traits
+    being like a motherboard of a computer. It provides a fixed number of
+    sockets which you can only plug in with compatible components. If you
+    want to use a different component like an unsupported CPU, you would
+    have to get a different motherboard or build a new motherboard. But that
+    doesn't mean you need to rebuild everything from scratch, because you
+    can still reuse the other components from the old motherboard, such as
+    RAM and storage.
+
+    ## One-For-All Traits
+
+    The _one-for-all_ (OFA) trait is an all-in-one _provider_ trait that
+    the concrete context providers can use to implement low-level features.
+    The term one-for-all means here:
+    _implement this one trait, then all other traits are implemented for you automatically_.
+
+    The one-for-all trait achieve this by gathering all the low-level
+    requirements requirements and define them in a single trait. Consider
+    our previous examples, we have the `PerformSimpleAction` and `DoSomethingSmart`
+    components that can be reused. However in order to use them, the context
+    would also have to satisfy the constraints
+    `HasRequirementsToPerformSimpleAction` and `HasRequirementsToDoSomethingSmart`.
+
+    If we want to provide an all-in-one framework to implement contexts
+    that provides the consumer traits `PerformSimpleAction` and
+    `DoSomethingSmart`, it is sufficient that the context provides the
+    low level implementations of `HasRequirementsToPerformSimpleAction`
+    and `HasRequirementsToDoSomethingSmart`, and then delegate the high-level
+    implementations for `PerformSimpleAction` and `DoSomethingSmart`.
+
+    We can do so with the following one-for-all definitions:
+
+    ```
+    trait OfaContext {
+        fn gather_requirements_to_perform_simple_action();
+
+        fn gather_requirements_to_do_something_smart();
+    }
+
+    struct OfaWrapper<Context> {
+        context: Context,
+    }
+    ```
+
+    The trait `OfaContext` defines the abstract methods a concrete context
+    needs to implement. The `OfaWrapper` struct is a wrapper struct that
+    wraps any `Context` type that implements `OfaContext`. Using the
+    methods provided in `OfaContext`, we can now implement `CanPerformAction`
+    for any `OfaWrapper<Context>` as follows:
+
+    ```
+    # trait HasRequirementsToPerformSimpleAction {}
+    # trait CanPerformAction {
+    #     fn perform_action(&self, /* ... */);
+    # }
+    # trait ActionPerformer<Context> {
+    #     fn perform_action(context: &Context, /* ... */);
+    # }
+    # struct PerformSimpleAction;
+    # impl<Context> ActionPerformer<Context> for PerformSimpleAction
+    # where
+    #     Context: HasRequirementsToPerformSimpleAction,
+    # {
+    #     fn perform_action(context: &Context, /* ... */) {
+    #         unimplemented!()
+    #     }
+    # }
+    # trait OfaContext {
+    #     fn gather_requirements_to_perform_simple_action();
+    #     fn gather_requirements_to_do_something_smart();
+    # }
+    # struct OfaWrapper<Context> {
+    #     context: Context,
+    # }
+    impl<Context>
+        HasRequirementsToPerformSimpleAction
+        for OfaWrapper<Context>
+    where
+        Context: OfaContext,
+    { /* ... */ }
+
+    impl<Context> CanPerformAction for OfaWrapper<Context>
+    where
+        Context: OfaContext,
+    {
+        fn perform_action(&self, /* ... */) {
+            PerformSimpleAction::perform_action(self, /* ... */)
+        }
+    }
+    ```
+
+    We first implement `HasRequirementsToPerformSimpleAction` for
+    `OfaWrapper<Context>`, given that if `Context` implements `OfaContext`.
+    The implementation can make use of the methods in `OfaContext`,
+    such as `gather_requirements_to_perform_simple_action`, to satisfy
+    the requirements for `HasRequirementsToPerformSimpleAction`.
+
+    We then implement `CanPerformAction` for `OfaWrapper<Context>`,
+    also given that if `Context` implements `OfaContext`. The implementation
+    simply delegates the call to `PerformSimpleAction`, and this is allowed
+    because the constraint `HasRequirementsToPerformSimpleAction` has already
+    been satisfied.
+
+    Similarly, we can implement `CanDoSomething` for `OfaWrapper<Context>`
+    following the same convention:
+
+    ```
+    # trait HasRequirementsToDoSomethingSmart {}
+    # trait CanDoSomething {
+    #     fn do_something(&self, /* ... */);
+    # }
+    # trait SomethingDoer<Context> {
+    #     fn do_something(context: &Context, /* ... */);
+    # }
+    # struct DoSomethingSmart;
+    # impl<Context> SomethingDoer<Context> for DoSomethingSmart
+    # where
+    #     Context: HasRequirementsToDoSomethingSmart,
+    # {
+    #     fn do_something(context: &Context, /* ... */) {
+    #     }
+    # }
+    # trait OfaContext {
+    #     fn gather_requirements_to_perform_simple_action();
+    #     fn gather_requirements_to_do_something_smart();
+    # }
+    # struct OfaWrapper<Context> {
+    #     context: Context,
+    # }
+    impl<Context> HasRequirementsToDoSomethingSmart
+        for OfaWrapper<Context>
+    where
+        Context: OfaContext,
+    { /* ... */ }
+
+    impl<Context> CanDoSomething for OfaWrapper<Context>
+    where
+        Context: OfaContext,
+    {
+        fn do_something(&self, /* ... */) {
+            DoSomethingSmart::do_something(self, /* ... */)
+        }
+    }
+    ```
+
+    With the blanket implementations by `OfaWrapper`, a concrete context like
+    `AppContext` now only needs to implement `OfaContext`. It can then
+    call methods like `perform_action` and `do_something` by wrapping
+    the concrete context into `OfaWrapper<AppContext>`.
+
+    ## All-For-One Traits
+
+    The _all-for-one_ (AFO) trait is an all-in-one _consumer_ trait that
+    consumers of a generic context can use to consume all features offered
+    by the context. The term all-for-one means here:
+    _import all the traits available by importing only this one trait_.
+
+    The all-for-one trait achieve this by specifying all consumer traits
+    as its _parent_ trait. With that, when the all-for-one trait is imported
+    in the `where` clause, Rust's trait system would help to also automatically
+    import all its parent traits and make them available for use.
+
+    Using our previous examples, consider an external consumer that want to
+    use both `CanPerformAction` and `CanDoSomething`. They can define a
+    context-generic function as follows:
+
+    ```
+    # trait CanPerformAction {
+    #     fn perform_action(&self, /* ... */);
+    # }
+    # trait CanDoSomething {
+    #     fn do_something(&self, /* ... */);
+    # }
+    fn run_assembly<Context>(context: Context, /* ... */)
+    where
+        Context: CanPerformAction + CanDoSomething,
+    { /* ... */ }
+    ```
+
+    With only two components, it is still manageable to list everything as
+    explicit constraints. But as the number of components increase, the
+    explicit list can become tedious to repeat.
+
+    We can instead define an all-for-one context as follows:
+
+    ```
+    # trait CanPerformAction {
+    #     fn perform_action(&self, /* ... */);
+    # }
+    # trait CanDoSomething {
+    #     fn do_something(&self, /* ... */);
+    # }
+    trait AfoContext: CanPerformAction + CanDoSomething {}
+    impl<Context> AfoContext for Context
+    where
+        Context: CanPerformAction + CanDoSomething,
+    {}
+    ```
+
+    We define the `AfoContext` with `CanPerformAction` and `CanDoSomething`
+    as its parent traits. We then immediately define a blanket implementation
+    for `AfoContext` for any generic `Context` type that implements
+    `CanPerformAction` and `CanDoSomething`. This means that `AfoContext`
+    is automatically implemented for any `Context` type that implements
+    `CanPerformAction` and `CanDoSomething`.
+
+    With that, functions that consume any subset of the components can simply
+    import `AfoContext` without having to know the detailed traits for
+    each API they want to use:
+
+    ```
+    # trait AfoContext { }
+    fn run_assembly<Context>(context: Context, /* ... */)
+    where
+        Context: AfoContext,
+    { /* ... */ }
+    ```
+
+    Note that the all-for-one trait is meant for _external_ consumption.
+    This means that any internal components such as `PerformSimpleAction`
+    and `DoSomethingSmart` should _not_ use `AfoContext` to import their
+    dependencies, as otherwise it would cause cyclic dependencies in the
+    implementation graph.
+
+    ## One-For-All and All-For-One
+
+    The main difference between a one-for-all trait and an all-for-one trait
+    is that the former is a _provider_ trait to be used by concrete context
+    implementers, while the latter is a _consumer_ trait to be used by
+    consumers of a generic context.
+
+    There is also a relation between one-for-all and all-for-one, in that
+    for any collection of components, an implementation of the one-for-all trait
+    for that collection should be sufficient to implement all requirements
+    in the all-in-one trait.
+
+    In other words, we can construct a _proof_ that one-for-all implements
+    all-for-one:
+
+    ```
+    # trait CanPerformAction {
+    #     fn perform_action(&self, /* ... */);
+    # }
+    # trait ActionPerformer<Context> {
+    #     fn perform_action(context: &Context, /* ... */);
+    # }
+    # struct PerformSimpleAction;
+    # impl<Context> ActionPerformer<Context> for PerformSimpleAction
+    # {
+    #     fn perform_action(context: &Context, /* ... */) {
+    #         unimplemented!()
+    #     }
+    # }
+    # trait CanDoSomething {
+    #     fn do_something(&self, /* ... */);
+    # }
+    # trait SomethingDoer<Context> {
+    #     fn do_something(context: &Context, /* ... */);
+    # }
+    # struct DoSomethingSmart;
+    # impl<Context> SomethingDoer<Context> for DoSomethingSmart
+    # {
+    #     fn do_something(context: &Context, /* ... */) {
+    #     }
+    # }
+    # trait OfaContext {}
+    # struct OfaWrapper<Context> {
+    #     context: Context,
+    # }
+    # impl<Context> CanDoSomething for OfaWrapper<Context>
+    # where
+    #     Context: OfaContext,
+    # {
+    #     fn do_something(&self, /* ... */) {
+    #         DoSomethingSmart::do_something(self, /* ... */)
+    #     }
+    # }
+    # impl<Context> CanPerformAction for OfaWrapper<Context>
+    # where
+    #     Context: OfaContext,
+    # {
+    #     fn perform_action(&self, /* ... */) {
+    #         PerformSimpleAction::perform_action(self, /* ... */)
+    #     }
+    # }
+    # trait AfoContext: CanPerformAction + CanDoSomething {}
+    # impl<Context> AfoContext for Context
+    # where
+    #     Context: CanPerformAction + CanDoSomething,
+    # {}
+    fn ofa_implements_afo<Context>(context: Context) -> impl AfoContext
+    where
+        Context: OfaContext,
+    {
+        OfaWrapper { context }
+    }
+    ```
+
+    In the function `ofa_implements_afo`, it accepts any generic context
+    type `Context` that implements `OfaContext`. It then wraps the context
+    inside `OfaWrapper` and returns the wrapped context. However the
+    return type of the function is `impl AfoContext`, indicating that it
+    is an _existential type_ that implements `AfoContext`. But since the
+    actual return type is `OfaWrapper<Context>`, Rust would have to
+    automatically ensures that `OfaWrapper<Context>` implements `AfoContext`.
+
+    From the `impl` definitions for `OfaWrapper` earlier, we can confirm
+    that `OfaWrapper` indeed implements `CanPerformAction` and `CanDoSomething`,
+    which in turns satisfies all the requirements for `AfoContext`. Behind
+    the scene, Rust also automatically confirm that the requirements are
+    satisfied, and thus the proof compiles successfully.
+
+    Proof functions like `ofa_implements_afo` are useful for us to statically
+    checks that the relation between our one-for-all trait and our all-for-one
+    trait are _sound_. If we were to make a mistake and miss something, such as
+    forgetting to implement `HasAdditionalRequirementsToPerformAction`,
+    this would result in a compile-time error on the `ofa_implements_afo`.
+    This helps us to catch any mistakes early, and fix it before the concrete
+    context is used anywhere.
+
+    ## Conclusion
+
+    This concludes the short introduction to context-generic programming.
+    With this, you should be able to start understanding the design patterns
+    used in the IBC relayer framework.
+
+    To learn more in depth techniques that are used by the relayer framework,
+    check out our full tutorial on context-generic programming
+    [here](https://informalsystems.github.io/context-generic-programming/).
 */
