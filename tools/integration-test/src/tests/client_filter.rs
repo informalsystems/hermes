@@ -3,7 +3,7 @@
 
 use std::time::Duration;
 
-use ibc_relayer::supervisor::client_state_filter::{Permission, FilterPolicy};
+use ibc_relayer::supervisor::client_state_filter::{FilterPolicy, Permission};
 use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
 
 use ibc_relayer::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
@@ -15,7 +15,7 @@ use ibc_test_framework::prelude::*;
 
 #[test]
 fn test_client_filter() -> Result<(), Error> {
-    run_binary_chain_test(&ClientFilterTest)
+    run_binary_channel_test(&ClientFilterTest)
 }
 
 struct ClientFilterTest;
@@ -38,26 +38,33 @@ impl TestOverrides for ClientFilterTest {
     }
 }
 
-impl BinaryChainTest for ClientFilterTest {
+impl BinaryChannelTest for ClientFilterTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
         relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
+        _channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let mut policy = FilterPolicy::default(); 
+        let mut policy = FilterPolicy::default();
 
         let client_id = chains.foreign_clients.client_a_to_b.id();
         let chain_id = chains.handle_b.id();
         let state = query_client_state(chains.handle_b, client_id)?;
         let state = AnyClientState::Tendermint(state);
-        assert_eq!(policy.control_client(&chain_id, client_id, &state), Permission::Deny);
+        assert_eq!(
+            policy.control_client(&chain_id, client_id, &state),
+            Permission::Deny
+        );
 
         let client_id = chains.foreign_clients.client_b_to_a.id();
         let chain_id = chains.handle_a.id();
         let state = query_client_state(chains.handle_a, client_id)?;
         let state = AnyClientState::Tendermint(state);
-        assert_eq!(policy.control_client(&chain_id, client_id, &state), Permission::Allow);
+        assert_eq!(
+            policy.control_client(&chain_id, client_id, &state),
+            Permission::Allow
+        );
 
         let supervisor = relayer.spawn_supervisor()?;
         let state = supervisor.dump_state()?;
