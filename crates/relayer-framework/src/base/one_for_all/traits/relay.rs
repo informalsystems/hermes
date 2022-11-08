@@ -15,7 +15,6 @@ use crate::base::relay::traits::packet_relayer::PacketRelayer;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::common::one_for_all::types::chain::OfaChainWrapper;
 use crate::common::one_for_all::types::relay::OfaRelayWrapper;
-use crate::full::one_for_all::traits::relay::OfaFullRelay;
 use crate::std_prelude::*;
 
 pub trait OfaRelayTypes: Async {
@@ -112,7 +111,7 @@ pub trait OfaRelayPreset<Relay>:
     OfaIbcChainPreset<Relay::SrcChain, Relay::DstChain>
     + OfaIbcChainPreset<Relay::DstChain, Relay::SrcChain>
 where
-    Relay: OfaFullRelay,
+    Relay: OfaBaseRelay,
 {
     type PacketRelayer: PacketRelayer<OfaRelayWrapper<Relay>>;
 

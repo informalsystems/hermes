@@ -11,7 +11,6 @@ use crate::base::relay::traits::packet_relayers::receive_packet::CanRelayReceive
 use crate::base::relay::traits::packet_relayers::timeout_unordered_packet::CanRelayTimeoutUnorderedPacket;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::base::relay::traits::types::HasRelayTypes;
-use crate::full::relay::impls::packet_relayers::retry::SupportsPacketRetry;
 
 /// The functionality that a relay context gains access to once that relay
 /// context implements the [`OfaRelayWrapper`] trait.
@@ -28,7 +27,6 @@ pub trait AfoBaseRelay:
     + CanRelayPacket
     + CanRelayAckPacket
     + CanRelayTimeoutUnorderedPacket
-    + SupportsPacketRetry
     + InjectMismatchIbcEventsCountError
 {
     type AfoSrcChain: AfoBaseChain<Self::AfoDstChain>;
@@ -52,7 +50,6 @@ where
         + CanRelayAckPacket
         + CanRelayTimeoutUnorderedPacket
         + CanBuildTimeoutUnorderedPacketMessage
-        + SupportsPacketRetry
         + InjectMismatchIbcEventsCountError,
 {
     type AfoSrcChain = SrcChain;
