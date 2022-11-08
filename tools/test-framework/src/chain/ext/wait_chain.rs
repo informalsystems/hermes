@@ -1,3 +1,5 @@
+use std::time::SystemTime;
+
 use ibc_relayer_types::core::ics02_client::height::Height;
 
 use crate::prelude::*;
@@ -18,10 +20,10 @@ pub fn wait_for_chain_height<ChainA: ChainHandle, ChainB: ChainHandle>(
         .ok()
         .unwrap();
 
-    let start = std::time::SystemTime::now();
+    let start = SystemTime::now();
     while reference_application_latest_height < target_reference_application_height {
         // Check if the wait time has timed out.
-        match std::time::SystemTime::now().duration_since(start) {
+        match SystemTime::now().duration_since(start) {
             Ok(elapsed_time) => {
                 if elapsed_time > timeout_bound {
                     return Err(Error::generic(eyre!(
