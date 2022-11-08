@@ -18,7 +18,7 @@ use ibc_relayer_types::Height;
 use crate::chain::endpoint::ChainStatus;
 use crate::chain::psql_cosmos::PsqlError;
 use crate::chain::requests::*;
-use crate::client_state::IdentifiedAnyClientState;
+use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::error::Error;
 
@@ -164,6 +164,26 @@ pub trait SnapshotStore: Send + Sync {
             })?;
 
         Ok(consensus_state.consensus_state)
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn query_client_state(
+        &self,
+        request: QueryClientStateRequest,
+    ) -> Result<AnyClientState, Error> {
+        let snapshot = self.fetch_snapshot(request.height).await?;
+
+        let client_state = snapshot
+            .data
+            .client_states
+            .get(&request.client_id)
+            .cloned()
+            .ok_or_else(|| {
+                // TODO(ibcnode): Use other error type
+                PsqlError::client_state_not_found(request.client_id, request.height)
+            })?;
+
+        Ok(client_state.client_state)
     }
 
     #[tracing::instrument(skip(self))]

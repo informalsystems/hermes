@@ -87,6 +87,13 @@ flex_error::define_error! {
                 consensus_height: Height,
             }
             |e| { format_args!("consensus state for client '{}' at height {} not found", e.client_id, e.consensus_height) },
+
+        ClientStateNotFound
+            {
+                client_id: ClientId,
+                height: QueryHeight,
+            }
+            |e| { format_args!("client state for client '{}' at height {} not found", e.client_id, e.height) },
     }
 }
 #[derive(Eq, PartialEq)]
@@ -1105,7 +1112,15 @@ impl ChainEndpoint for PsqlChain {
         request: QueryClientStateRequest,
         include_proof: IncludeProof,
     ) -> Result<(AnyClientState, Option<MerkleProof>), Error> {
-        self.chain.query_client_state(request, include_proof)
+        if self.is_synced() && include_proof.is_no() {
+            crate::time!("query_client_state_psql");
+            crate::telemetry!(query, self.id(), "query_client_state_psql");
+
+            let client_state = self.block_on(self.snapshot_store.query_client_state(request))?;
+            Ok((client_state, None))
+        } else {
+            self.chain.query_client_state(request, include_proof)
+        }
     }
 
     fn query_consensus_states(
