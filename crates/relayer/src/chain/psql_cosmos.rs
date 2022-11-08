@@ -2,7 +2,7 @@
 
 use alloc::sync::Arc;
 use core::future::Future;
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 use semver::Version;
 use sqlx::{postgres::PgPoolOptions, PgPool};
@@ -485,7 +485,7 @@ impl PsqlChain {
     }
 
     #[tracing::instrument(skip(self))]
-    fn ibc_snapshot(&self, query_height: &Height) -> Result<IbcSnapshot, Error> {
+    fn compute_ibc_snapshot(&self, query_height: &Height) -> Result<IbcSnapshot, Error> {
         let mut result = IbcSnapshot {
             height: query_height.revision_height(),
             data: IbcData {
@@ -522,32 +522,40 @@ impl PsqlChain {
     fn update_with_events(&mut self, batch: EventBatch) -> Result<(), Error> {
         let previous_height = batch.height.decrement().unwrap();
 
-        if !self.is_synced() {
-            warn!("database is not synced, updating snapshot");
+        // Get the snapshot at the previous height, which will
+        // be updated by the events received at the current height.
+        let mut snapshot = if !self.is_synced() {
+            warn!("database is not synced, computing IBC snapshot");
 
-            let snapshot = self.ibc_snapshot(&previous_height)?;
+            // Compute the snapshot for the previous height...
+            let snapshot = self.compute_ibc_snapshot(&previous_height)?;
+
+            // ...and store it
             self.rt
                 .block_on(self.snapshot_store.update_snapshot(&snapshot))?;
+
             self.sync_state = PsqlSyncStatus::Synced;
-        }
 
-        let mut work_copy = self
-            .rt
-            .block_on(
-                self.snapshot_store
-                    .fetch_snapshot(QueryHeight::Specific(previous_height)),
-            )?
-            .into_owned();
+            snapshot
+        } else {
+            let snapshot = self
+                .snapshot_store
+                .fetch_snapshot(QueryHeight::Specific(previous_height));
 
-        work_copy.height = batch.height.revision_height();
+            self.rt.block_on(snapshot).map(Cow::into_owned)?
+        };
+
+        // Override with the current height
+        snapshot.height = batch.height.revision_height();
 
         for event in batch.events {
-            // best effort to maintain the IBC snapshot based on events
-            self.update_with_event(event, &mut work_copy);
+            // Best effort to maintain the IBC snapshot based on events
+            self.update_with_event(event, &mut snapshot);
         }
 
+        // Insert the new snapshot for the current height
         self.rt
-            .block_on(self.snapshot_store.update_snapshot(&work_copy))
+            .block_on(self.snapshot_store.update_snapshot(&snapshot))
     }
 
     fn try_update_with_create_client(
