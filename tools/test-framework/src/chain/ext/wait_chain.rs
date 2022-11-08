@@ -7,7 +7,7 @@ use crate::prelude::*;
 /// time.
 pub fn wait_for_chain_height<ChainA: ChainHandle, ChainB: ChainHandle>(
     foreign_clients: &ForeignClientPair<ChainA, ChainB>,
-    target_reference_application_height: Height,
+    target_height_of_a: Height,
     timeout_bound: Duration,
 ) -> Result<(), Error> {
     // Query the latest height of the chain
@@ -19,7 +19,7 @@ pub fn wait_for_chain_height<ChainA: ChainHandle, ChainB: ChainHandle>(
         .unwrap();
 
     let start = std::time::SystemTime::now();
-    while reference_application_latest_height != target_reference_application_height {
+    while reference_application_latest_height < target_reference_application_height {
         // Check if the wait time has timed out.
         match std::time::SystemTime::now().duration_since(start) {
             Ok(elapsed_time) => {
