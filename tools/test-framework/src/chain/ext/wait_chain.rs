@@ -21,7 +21,7 @@ pub fn wait_for_chain_height<ChainA: ChainHandle, ChainB: ChainHandle>(
         .unwrap();
 
     let start = SystemTime::now();
-    while reference_application_latest_height < target_reference_application_height {
+    while reference_application_latest_height < target_height_of_a {
         // Check if the wait time has timed out.
         match SystemTime::now().duration_since(start) {
             Ok(elapsed_time) => {
