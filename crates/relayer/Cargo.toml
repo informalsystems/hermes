@@ -88,7 +88,7 @@ version = "=0.25.0"
 default-features = false
 
 [dependencies.tendermint-proto]
-version = "=0.25.0"
+version = "=0.26.0"
 
 [dev-dependencies]
 ibc-relayer-types = { version = "0.20.0", path = "../relayer-types", features = ["mocks"] }
