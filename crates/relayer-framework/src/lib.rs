@@ -37,6 +37,61 @@
     a subset of components provided by the framework, or introduce new
     components that provide additional functionalities.
 
+    ## All-In-One Traits
+
+    The relayer framework provides several
+    _[all-in-one traits](crate::docs::context_generic_programming#all-in-one-traits)_
+    for users to
+    easily implement and use custom relayers. The all-in-one traits are
+    configured with a _preset_ list of components, and is best suited
+    for users who find the presets to be sufficient.
+
+    A good starting point to learn about the all-in-one traits is to look at
+    the _one-for-all_ consumer traits like
+    [`OfaBaseChain`](base::one_for_all::traits::chain::OfaBaseChain) and
+    [`OfaBaseRelay`](base::one_for_all::traits::relay::OfaBaseRelay).
+
+    There are currently two all-in-one variants of the relayer. The
+    [`base`] or minimal variant expose the minimal set of requirements
+    that a context needs to implement in order to construct a minimal
+    relayer. The [`full`] variant requires the context to implement
+    additional traits, such as
+    [OfaFullChain](crate::full::one_for_all::traits::chain::OfaFullChain),
+    in order to construct a full-featured relayer.
+
+    The all-in-one traits provided by the relayer framework for convenience,
+    and they are _not_ meant to cover all possible use cases of using the relayer.
+    If users want to customize further on how the relayer should
+    behave, they can skip the all-in-one traits and make use
+    of context-generic programming to implement their own all-in-one
+    traits, or to implement the relay context directly by implementing
+    the individual traits.
+
+    ## Relayer Framework Internals
+
+    For basic users who just want quick and easy way to creat custom relayers,
+    it is usually sufficient to learn how to use the all-in-one traits like
+    [`OfaBaseRelay`](base::one_for_all::traits::relay::OfaBaseRelay).
+    But for power users who want to have more customization, or developers
+    who are maintaining the relayer framework itself, it is necessary to
+    have a deeper understanding of how context-generic programming works,
+    and explore the individual components that are defined in the
+    relayer framework.
+
+    A good starting point to understand the relayer framework internals
+    is to look at how abstract types are defined in
+    [`HasChainTypes`](crate::base::chain::traits::types::HasChainTypes) and
+    [`HasRelayTypes`](crate::base::relay::traits::types::HasRelayTypes).
+    There are also simple components like
+    [`CanQueryChainStatus`](crate::base::chain::traits::queries::status::CanQueryChainStatus)
+    that can be understood as standalone pieces.
+
+    The core logic of IBC relaying is encapsulated behind the
+    [`CanRelayPacket`](crate::base::relay::traits::packet_relayer::CanRelayPacket) trait.
+    The [`FullRelayer`](crate::base::relay::impls::packet_relayers::general::full_relay::FullRelayer)
+    component is one of the top-level components that performs the full cycle of
+    relaying an IBC packet from a source chain to a destination chain.
+
 */
 
 mod std_prelude;
