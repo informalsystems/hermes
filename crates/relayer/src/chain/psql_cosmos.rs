@@ -1008,7 +1008,7 @@ impl ChainEndpoint for PsqlChain {
     }
 
     fn health_check(&self) -> Result<HealthCheck, Error> {
-        // TODO(romac): Check database connection
+        // TODO(ibcnode): Check database connection
 
         self.chain.health_check()
     }
@@ -1130,7 +1130,7 @@ impl ChainEndpoint for PsqlChain {
         request: QueryConsensusStateRequest,
         include_proof: IncludeProof,
     ) -> Result<(AnyConsensusState, Option<MerkleProof>), Error> {
-        if self.is_synced() && matches!(include_proof, IncludeProof::No) {
+        if self.is_synced() && include_proof.is_no() {
             crate::time!("query_consensus_state_psql");
             crate::telemetry!(query, self.id(), "query_consensus_state_psql");
 
@@ -1202,29 +1202,30 @@ impl ChainEndpoint for PsqlChain {
         request: QueryConnectionRequest,
         include_proof: IncludeProof,
     ) -> Result<(ConnectionEnd, Option<MerkleProof>), Error> {
-        match include_proof {
-            IncludeProof::Yes => self.chain.query_connection(request, include_proof),
-            IncludeProof::No => {
-                if self.is_synced() {
-                    crate::time!("query_connection_psql");
-                    crate::telemetry!(query, self.id(), "query_connection_psql");
-                    Ok((
-                        self.block_on(
-                            self.snapshot_store
-                                .query_connection(request.height, &request.connection_id),
-                        )?
-                        .ok_or_else(|| {
-                            PsqlError::connection_not_found(request.connection_id.clone())
-                        })?
-                        .connection_end,
-                        None,
-                    ))
-                } else {
-                    warn!("chain psql dbs not synchronized on {}, falling back to gRPC query_connection for {}",
-                    self.chain.id(), request.connection_id);
-                    self.chain.query_connection(request, include_proof)
-                }
-            }
+        if include_proof.is_yes() {
+            return self.chain.query_connection(request, include_proof);
+        }
+
+        if self.is_synced() {
+            crate::time!("query_connection_psql");
+            crate::telemetry!(query, self.id(), "query_connection_psql");
+
+            let connection_end = self
+                .block_on(
+                    self.snapshot_store
+                        .query_connection(request.height, &request.connection_id),
+                )?
+                .ok_or_else(|| PsqlError::connection_not_found(request.connection_id.clone()))?
+                .connection_end;
+
+            Ok((connection_end, None))
+        } else {
+            warn!(
+                "chain psql dbs not synchronized on {}, falling back to gRPC query_connection for {}",
+                self.chain.id(), request.connection_id
+            );
+
+            self.chain.query_connection(request, include_proof)
         }
     }
 

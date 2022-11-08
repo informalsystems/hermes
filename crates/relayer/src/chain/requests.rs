@@ -83,6 +83,18 @@ pub enum IncludeProof {
     No,
 }
 
+impl IncludeProof {
+    #[must_use]
+    pub fn is_yes(&self) -> bool {
+        matches!(self, Self::Yes)
+    }
+
+    #[must_use]
+    pub fn is_no(&self) -> bool {
+        matches!(self, Self::No)
+    }
+}
+
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct PageRequest {
     /// key is a value returned in PageResponse.next_key to begin
