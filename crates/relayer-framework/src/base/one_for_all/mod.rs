@@ -1,3 +1,7 @@
+/*!
+   The one-for-all provider constructs for the minimal relayer.
+*/
+
 //! An abstract trait which stipulates all of dependencies that an application
 //! needs to provide in order to make use of the functionality the framework
 //! exposes.

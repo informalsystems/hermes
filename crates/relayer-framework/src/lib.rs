@@ -67,6 +67,9 @@
     traits, or to implement the relay context directly by implementing
     the individual traits.
 
+    A tutorial is available on
+    [how to implement a custom relayer using the relayer framework](crate::docs::tutorials::implementing_new_relayer).
+
     ## Relayer Framework Internals
 
     For basic users who just want quick and easy way to creat custom relayers,
@@ -92,6 +95,17 @@
     component is one of the top-level components that performs the full cycle of
     relaying an IBC packet from a source chain to a destination chain.
 
+    A key feature that the relayer framework provides is to allow for
+    customization on different strategies of how the messages should be
+    submitted to the chain. The
+    [`CanSendMessages`](crate::base::chain::traits::message_sender::CanSendMessages)
+    trait provides the interface for sending messages to a chain. In contrast,
+    the [`CanSendIbcMessages`](crate::base::relay::traits::ibc_message_sender::CanSendIbcMessages)
+    trait provides the interface for sending messages from a _relay_ context. The
+    [`SendIbcMessagesWithUpdateClient`](crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
+    component is one example of an IBC message sender _middleware_ that attaches
+    an UpdateClient message before sending the modified message to a downstream
+    message sender.
 */
 
 mod std_prelude;
