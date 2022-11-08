@@ -1681,7 +1681,7 @@ dependencies = [
  "tempfile",
  "tendermint",
  "tendermint-rpc",
- "time 0.3.16",
+ "time 0.3.17",
  "toml",
  "tonic",
 ]
@@ -1848,7 +1848,7 @@ dependencies = [
  "tendermint-rpc",
  "tendermint-testgen",
  "test-log",
- "time 0.3.16",
+ "time 0.3.17",
  "tracing",
  "tracing-subscriber",
  "uint",
@@ -2892,9 +2892,9 @@ dependencies = [
 
 [[package]]
 name = "prost"
-version = "0.11.0"
+version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "399c3c31cdec40583bb68f0b18403400d01ec4289c383aa047560439952c4dd7"
+checksum = "a0841812012b2d4a6145fae9a6af1534873c32aa67fff26bd09f8fa42c83f95a"
 dependencies = [
  "bytes",
  "prost-derive",
@@ -3206,7 +3206,7 @@ dependencies = [
  "serde_json",
  "sha1",
  "threadpool",
- "time 0.3.16",
+ "time 0.3.17",
  "tiny_http",
  "url",
 ]
@@ -3900,7 +3900,7 @@ dependencies = [
  "subtle",
  "subtle-encoding",
  "tendermint-proto",
- "time 0.3.16",
+ "time 0.3.17",
  "zeroize",
 ]
 
@@ -3936,7 +3936,7 @@ dependencies = [
  "tendermint",
  "tendermint-light-client-verifier",
  "tendermint-rpc",
- "time 0.3.16",
+ "time 0.3.17",
  "tokio",
 ]
 
@@ -3950,7 +3950,7 @@ dependencies = [
  "flex-error",
  "serde",
  "tendermint",
- "time 0.3.16",
+ "time 0.3.17",
 ]
 
 [[package]]
@@ -3968,7 +3968,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "subtle-encoding",
- "time 0.3.16",
+ "time 0.3.17",
 ]
 
 [[package]]
@@ -3997,7 +3997,7 @@ dependencies = [
  "tendermint-config",
  "tendermint-proto",
  "thiserror",
- "time 0.3.16",
+ "time 0.3.17",
  "tokio",
  "tracing",
  "url",
@@ -4018,7 +4018,7 @@ dependencies = [
  "simple-error",
  "tempfile",
  "tendermint",
- "time 0.3.16",
+ "time 0.3.17",
 ]
 
 [[package]]
@@ -4118,9 +4118,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.16"
+version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fab5c8b9980850e06d92ddbe3ab839c062c801f3927c0fb8abd6fc8e918fbca"
+checksum = "a561bf4617eebd33bca6434b988f39ed798e527f51a1e797d0ee4f61c0a38376"
 dependencies = [
  "libc",
  "num_threads",
@@ -4137,9 +4137,9 @@ checksum = "2e153e1f1acaef8acc537e68b44906d2db6436e2b35ac2c6b42640fff91f00fd"
 
 [[package]]
 name = "time-macros"
-version = "0.2.5"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "65bb801831d812c562ae7d2bfb531f26e66e4e1f6b17307ba4149c5064710e5b"
+checksum = "d967f99f534ca7e495c575c62638eebc2898a8c84c119b89e250477bc4ba16b2"
 dependencies = [
  "time-core",
 ]
