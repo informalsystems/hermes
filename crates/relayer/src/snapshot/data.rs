@@ -1,12 +1,9 @@
 use core::fmt;
 use std::collections::HashMap;
 
-use bigdecimal::BigDecimal;
 use ibc_relayer_types::Height;
 use serde::de::{Deserializer, Error as _};
 use serde::{Deserialize, Serialize, Serializer};
-use sqlx::postgres::PgRow;
-use sqlx::types::Json;
 
 use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
@@ -19,26 +16,10 @@ use crate::chain::endpoint::ChainStatus;
 use crate::client_state::IdentifiedAnyClientState;
 use crate::consensus_state::AnyConsensusStateWithHeight;
 
-use super::util::bigdecimal_to_u64;
-
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 pub struct IbcSnapshot {
     pub height: u64,
     pub data: IbcData,
-}
-
-impl<'r> sqlx::FromRow<'r, PgRow> for IbcSnapshot {
-    fn from_row(row: &'r PgRow) -> Result<Self, sqlx::Error> {
-        use sqlx::Row;
-
-        let height: BigDecimal = row.try_get("height")?;
-        let data: Json<IbcData> = row.try_get("data")?;
-
-        Ok(IbcSnapshot {
-            height: bigdecimal_to_u64(height),
-            data: data.0,
-        })
-    }
 }
 
 // TODO: Consider:

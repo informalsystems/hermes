@@ -2,9 +2,11 @@ use std::borrow::Cow;
 
 use async_trait::async_trait;
 use bigdecimal::BigDecimal;
-use sqlx::types::Json;
 use sqlx::PgPool;
+use sqlx::{postgres::PgRow, types::Json};
 
+use crate::snapshot::util::bigdecimal_to_u64;
+use crate::snapshot::IbcData;
 use crate::{chain::requests::QueryHeight, error::Error};
 
 use super::{IbcSnapshot, SnapshotStore, KEEP_SNAPSHOTS};
@@ -127,4 +129,18 @@ async fn vacuum_snapshots(pool: &PgPool, at_or_below: u64) -> Result<(), Error> 
         .map_err(Error::sqlx)?;
 
     Ok(())
+}
+
+impl<'r> sqlx::FromRow<'r, PgRow> for IbcSnapshot {
+    fn from_row(row: &'r PgRow) -> Result<Self, sqlx::Error> {
+        use sqlx::Row;
+
+        let height: BigDecimal = row.try_get("height")?;
+        let data: Json<IbcData> = row.try_get("data")?;
+
+        Ok(IbcSnapshot {
+            height: bigdecimal_to_u64(height),
+            data: data.0,
+        })
+    }
 }

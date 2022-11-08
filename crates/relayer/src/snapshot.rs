@@ -17,9 +17,7 @@ use ibc_relayer_types::Height;
 
 use crate::chain::endpoint::ChainStatus;
 use crate::chain::psql_cosmos::PsqlError;
-use crate::chain::requests::{
-    QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHeight,
-};
+use crate::chain::requests::*;
 use crate::client_state::IdentifiedAnyClientState;
 use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::error::Error;
@@ -188,7 +186,7 @@ pub trait SnapshotStore: Send + Sync {
         packet_id: &PacketId,
     ) -> Result<Option<Packet>, Error> {
         let result = self.fetch_snapshot(query_height).await?;
-        let p = result.data.pending_sent_packets.get(packet_id).cloned();
-        Ok(p)
+        let packet = result.data.pending_sent_packets.get(packet_id).cloned();
+        Ok(packet)
     }
 }
