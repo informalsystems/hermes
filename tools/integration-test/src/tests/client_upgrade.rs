@@ -19,9 +19,8 @@ use ibc_relayer::upgrade_chain::{build_and_send_ibc_upgrade_proposal, UpgradePla
 use ibc_relayer_types::core::ics02_client::height::Height;
 use ibc_test_framework::{
     chain::{
-        cli::upgrade::vote_proposal,
         config::{set_max_deposit_period, set_voting_period},
-        ext::{proposal::query_upgrade_proposal_height, wait_chain::wait_for_chain_height},
+        ext::wait_chain::wait_for_chain_height,
     },
     prelude::*,
 };
@@ -121,15 +120,11 @@ impl BinaryChainTest for ClientUpgradeTest {
         // Wait for the proposal to be processed
         std::thread::sleep(Duration::from_secs(2));
 
-        let driver = chains.node_a.chain_driver().0;
+        let driver = chains.node_a.chain_driver();
 
         // Retrieve the height which should be used to upgrade the client
         let upgrade_height = driver
-            .runtime
-            .block_on(query_upgrade_proposal_height(
-                &Uri::from_str(&driver.grpc_address()).unwrap(),
-                1,
-            ))
+            .query_upgrade_proposal_height(&Uri::from_str(&driver.0.grpc_address()).unwrap(), 1)
             .unwrap();
 
         let client_upgrade_height = Height::new(
@@ -139,12 +134,7 @@ impl BinaryChainTest for ClientUpgradeTest {
         .unwrap();
 
         // Vote on the proposal so the chain will upgrade
-        vote_proposal(
-            driver.chain_id.as_str(),
-            &driver.command_path,
-            &driver.home_path,
-            &driver.rpc_listen_address(),
-        )?;
+        driver.vote_proposal()?;
 
         // The application height reports a height of 1 less than the height according to Tendermint
         let target_reference_application_height = client_upgrade_height
@@ -247,15 +237,11 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
         // Wait for the proposal to be processed
         std::thread::sleep(Duration::from_secs(2));
 
-        let driver = chains.node_a.chain_driver().0;
+        let driver = chains.node_a.chain_driver();
 
         // Retrieve the height which should be used to upgrade the client
         let upgrade_height = driver
-            .runtime
-            .block_on(query_upgrade_proposal_height(
-                &Uri::from_str(&driver.grpc_address()).unwrap(),
-                1,
-            ))
+            .query_upgrade_proposal_height(&Uri::from_str(&driver.0.grpc_address()).unwrap(), 1)
             .unwrap();
 
         let client_upgrade_height = Height::new(
@@ -265,12 +251,7 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
         .unwrap();
 
         // Vote on the proposal so the chain will upgrade
-        vote_proposal(
-            driver.chain_id.as_str(),
-            &driver.command_path,
-            &driver.home_path,
-            &driver.rpc_listen_address(),
-        )?;
+        driver.vote_proposal()?;
 
         // The application height reports a height of 1 less than the height according to Tendermint
         let target_reference_application_height = client_upgrade_height
@@ -337,15 +318,11 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
         // Wait for the proposal to be processed
         std::thread::sleep(Duration::from_secs(2));
 
-        let driver = chains.node_a.chain_driver().0;
+        let driver = chains.node_a.chain_driver();
 
         // Retrieve the height which should be used to upgrade the client
         let upgrade_height = driver
-            .runtime
-            .block_on(query_upgrade_proposal_height(
-                &Uri::from_str(&driver.grpc_address()).unwrap(),
-                1,
-            ))
+            .query_upgrade_proposal_height(&Uri::from_str(&driver.0.grpc_address()).unwrap(), 1)
             .unwrap();
 
         let client_upgrade_height = Height::new(
@@ -355,12 +332,7 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
         .unwrap();
 
         // Vote on the proposal so the chain will upgrade
-        vote_proposal(
-            driver.chain_id.as_str(),
-            &driver.command_path,
-            &driver.home_path,
-            &driver.rpc_listen_address(),
-        )?;
+        driver.vote_proposal()?;
 
         // The application height reports a height of 1 less than the height according to Tendermint
         let target_reference_application_height = client_upgrade_height

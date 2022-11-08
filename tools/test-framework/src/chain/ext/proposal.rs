@@ -1,10 +1,46 @@
 use http::Uri;
 use prost::Message;
 
-use crate::error::Error;
 use ibc_proto::cosmos::gov::v1beta1::{query_client::QueryClient, QueryProposalRequest};
 use ibc_proto::ibc::core::client::v1::UpgradeProposal;
 use ibc_relayer::error::Error as RelayerError;
+
+use crate::chain::cli::upgrade::vote_proposal;
+use crate::chain::driver::ChainDriver;
+use crate::error::Error;
+use crate::types::tagged::*;
+
+pub trait ChainProposalMethodsExt<Chain> {
+    fn query_upgrade_proposal_height(
+        &self,
+        grpc_address: &Uri,
+        proposal_id: u64,
+    ) -> Result<u64, Error>;
+
+    fn vote_proposal(&self) -> Result<(), Error>;
+}
+
+impl<'a, Chain: Send> ChainProposalMethodsExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
+    fn query_upgrade_proposal_height(
+        &self,
+        grpc_address: &Uri,
+        proposal_id: u64,
+    ) -> Result<u64, Error> {
+        self.value()
+            .runtime
+            .block_on(query_upgrade_proposal_height(grpc_address, proposal_id))
+    }
+
+    fn vote_proposal(&self) -> Result<(), Error> {
+        vote_proposal(
+            self.value().chain_id.as_str(),
+            &self.value().command_path,
+            &self.value().home_path,
+            &self.value().rpc_listen_address(),
+        )?;
+        Ok(())
+    }
+}
 
 /// Query the proposal with the given proposal_id, which is supposed to be an UpgradeProposal.
 /// Extract the Plan from the UpgradeProposal and get the height at which the chain upgrades,
