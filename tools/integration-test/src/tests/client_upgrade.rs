@@ -21,7 +21,7 @@ use ibc_test_framework::{
     chain::{
         cli::upgrade::vote_proposal,
         config::{set_max_deposit_period, set_voting_period},
-        ext::proposal::query_upgrade_proposal_height,
+        ext::{proposal::query_upgrade_proposal_height, wait_chain::wait_for_chain_height},
     },
     prelude::*,
 };
@@ -30,6 +30,7 @@ const MAX_DEPOSIT_PERIOD: &str = "10s";
 const VOTING_PERIOD: &str = "10s";
 const DELTA_HEIGHT: u64 = 15;
 const WAIT_CHAIN_UPGRADE: Duration = Duration::from_secs(4);
+const MAX_WAIT_FOR_CHAIN_HEIGHT: Duration = Duration::from_secs(60);
 
 #[test]
 fn test_client_upgrade() -> Result<(), Error> {
@@ -150,23 +151,12 @@ impl BinaryChainTest for ClientUpgradeTest {
             .decrement()
             .expect("Upgrade height cannot be 1");
 
-        let mut reference_application_latest_height = foreign_clients
-            .client_a_to_b
-            .src_chain()
-            .query_latest_height()
-            .ok()
-            .unwrap();
-
-        while reference_application_latest_height != target_reference_application_height {
-            std::thread::sleep(Duration::from_millis(500));
-
-            reference_application_latest_height = foreign_clients
-                .client_a_to_b
-                .src_chain()
-                .query_latest_height()
-                .ok()
-                .unwrap();
-        }
+        assert!(wait_for_chain_height(
+            &foreign_clients,
+            target_reference_application_height,
+            MAX_WAIT_FOR_CHAIN_HEIGHT
+        )
+        .is_ok());
 
         // Wait for the chain to upgrade
         std::thread::sleep(WAIT_CHAIN_UPGRADE);
@@ -287,23 +277,12 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
             .decrement()
             .expect("Upgrade height cannot be 1");
 
-        let mut reference_application_latest_height = foreign_clients
-            .client_a_to_b
-            .src_chain()
-            .query_latest_height()
-            .ok()
-            .unwrap();
-
-        while reference_application_latest_height != target_reference_application_height {
-            std::thread::sleep(Duration::from_millis(500));
-
-            reference_application_latest_height = foreign_clients
-                .client_a_to_b
-                .src_chain()
-                .query_latest_height()
-                .ok()
-                .unwrap();
-        }
+        assert!(wait_for_chain_height(
+            &foreign_clients,
+            target_reference_application_height,
+            MAX_WAIT_FOR_CHAIN_HEIGHT
+        )
+        .is_ok());
 
         // Wait for the chain to upgrade
         std::thread::sleep(WAIT_CHAIN_UPGRADE);
@@ -388,23 +367,12 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
             .decrement()
             .expect("Upgrade height cannot be 1");
 
-        let mut reference_application_latest_height = foreign_clients
-            .client_a_to_b
-            .src_chain()
-            .query_latest_height()
-            .ok()
-            .unwrap();
-
-        while reference_application_latest_height != target_reference_application_height {
-            std::thread::sleep(Duration::from_millis(500));
-
-            reference_application_latest_height = foreign_clients
-                .client_a_to_b
-                .src_chain()
-                .query_latest_height()
-                .ok()
-                .unwrap();
-        }
+        assert!(wait_for_chain_height(
+            &foreign_clients,
+            target_reference_application_height,
+            MAX_WAIT_FOR_CHAIN_HEIGHT
+        )
+        .is_ok());
 
         // Wait for the chain to upgrade
         std::thread::sleep(WAIT_CHAIN_UPGRADE);
