@@ -84,7 +84,7 @@ default-features = false
 features = ["rpc-client", "secp256k1", "unstable"]
 
 [dependencies.tendermint-light-client-verifier]
-version = "=0.25.0"
+version = "=0.26.0"
 default-features = false
 
 [dependencies.tendermint-proto]
