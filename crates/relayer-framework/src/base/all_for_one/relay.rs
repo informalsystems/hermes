@@ -1,5 +1,4 @@
 use crate::base::all_for_one::chain::AfoBaseChain;
-use crate::base::relay::impls::packet_relayers::general::retry::SupportsPacketRetry;
 use crate::base::relay::traits::ibc_message_sender::CanSendIbcMessages;
 use crate::base::relay::traits::ibc_message_sender::InjectMismatchIbcEventsCountError;
 use crate::base::relay::traits::messages::ack_packet::CanBuildAckPacketMessage;
@@ -12,6 +11,7 @@ use crate::base::relay::traits::packet_relayers::receive_packet::CanRelayReceive
 use crate::base::relay::traits::packet_relayers::timeout_unordered_packet::CanRelayTimeoutUnorderedPacket;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::base::relay::traits::types::HasRelayTypes;
+use crate::full::relay::impls::packet_relayers::retry::SupportsPacketRetry;
 
 /// The functionality that a relay context gains access to once that relay
 /// context implements the [`OfaRelayWrapper`] trait.

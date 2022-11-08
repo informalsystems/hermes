@@ -15,6 +15,7 @@ use crate::base::relay::traits::packet_relayer::PacketRelayer;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::common::one_for_all::types::chain::OfaChainWrapper;
 use crate::common::one_for_all::types::relay::OfaRelayWrapper;
+use crate::full::one_for_all::traits::relay::OfaFullRelay;
 use crate::std_prelude::*;
 
 pub trait OfaRelayTypes: Async {
@@ -43,10 +44,6 @@ pub trait OfaRelayTypes: Async {
 
 #[async_trait]
 pub trait OfaBaseRelay: OfaRelayTypes {
-    fn is_retryable_error(e: &Self::Error) -> bool;
-
-    fn max_retry_exceeded_error(e: Self::Error) -> Self::Error;
-
     fn mismatch_ibc_events_count_error(expected: usize, actual: usize) -> Self::Error;
 
     fn packet_src_port(packet: &Self::Packet) -> &<Self::SrcChain as OfaChainTypes>::PortId;
@@ -115,7 +112,7 @@ pub trait OfaRelayPreset<Relay>:
     OfaIbcChainPreset<Relay::SrcChain, Relay::DstChain>
     + OfaIbcChainPreset<Relay::DstChain, Relay::SrcChain>
 where
-    Relay: OfaBaseRelay,
+    Relay: OfaFullRelay,
 {
     type PacketRelayer: PacketRelayer<OfaRelayWrapper<Relay>>;
 
