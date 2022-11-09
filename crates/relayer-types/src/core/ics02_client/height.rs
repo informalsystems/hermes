@@ -41,30 +41,12 @@ impl Height {
         self.revision_height
     }
 
-    pub fn add(&self, delta: u64) -> Height {
-        Height {
-            revision_number: self.revision_number,
-            revision_height: self.revision_height + delta,
-        }
+    pub fn increment(self) -> Height {
+        self + 1
     }
 
-    pub fn increment(&self) -> Height {
-        self.add(1)
-    }
-
-    pub fn sub(&self, delta: u64) -> Result<Height, Error> {
-        if self.revision_height <= delta {
-            return Err(Error::invalid_height_result());
-        }
-
-        Ok(Height {
-            revision_number: self.revision_number,
-            revision_height: self.revision_height - delta,
-        })
-    }
-
-    pub fn decrement(&self) -> Result<Height, Error> {
-        self.sub(1)
+    pub fn decrement(self) -> Result<Height, Error> {
+        self - 1
     }
 }
 
@@ -87,6 +69,32 @@ impl Ord for Height {
         } else {
             Ordering::Equal
         }
+    }
+}
+
+impl core::ops::Add<u64> for Height {
+    type Output = Self;
+
+    fn add(self, rhs: u64) -> Self::Output {
+        Self {
+            revision_number: self.revision_number,
+            revision_height: self.revision_height + rhs,
+        }
+    }
+}
+
+impl core::ops::Sub<u64> for Height {
+    type Output = Result<Self, Error>;
+
+    fn sub(self, delta: u64) -> Self::Output {
+        if self.revision_height <= delta {
+            return Err(Error::invalid_height_result());
+        }
+
+        Ok(Height {
+            revision_number: self.revision_number,
+            revision_height: self.revision_height - delta,
+        })
     }
 }
 
