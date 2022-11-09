@@ -123,15 +123,16 @@ impl BinaryChainTest for ClientUpgradeTest {
         let driver = chains.node_a.chain_driver();
 
         // Retrieve the height which should be used to upgrade the client
-        let upgrade_height = driver
-            .query_upgrade_proposal_height(&Uri::from_str(&driver.0.grpc_address()).unwrap(), 1)
-            .unwrap();
+        let upgrade_height = driver.query_upgrade_proposal_height(
+            &Uri::from_str(&driver.0.grpc_address()).map_err(handle_generic_error)?,
+            1,
+        )?;
 
         let client_upgrade_height = Height::new(
             foreign_clients.client_a_to_b.src_chain().id().version(),
             upgrade_height,
         )
-        .unwrap();
+        .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
         driver.vote_proposal()?;
@@ -184,7 +185,7 @@ impl BinaryChainTest for InvalidClientUpgradeTest {
             foreign_clients.client_a_to_b.src_chain().id().version(),
             arbitrary_height,
         )
-        .unwrap();
+        .map_err(handle_generic_error)?;
 
         // Wait a bit before trying to upgrade the client
         std::thread::sleep(Duration::from_secs(2));
@@ -240,15 +241,16 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
         let driver = chains.node_a.chain_driver();
 
         // Retrieve the height which should be used to upgrade the client
-        let upgrade_height = driver
-            .query_upgrade_proposal_height(&Uri::from_str(&driver.0.grpc_address()).unwrap(), 1)
-            .unwrap();
+        let upgrade_height = driver.query_upgrade_proposal_height(
+            &Uri::from_str(&driver.0.grpc_address()).map_err(handle_generic_error)?,
+            1,
+        )?;
 
         let client_upgrade_height = Height::new(
             foreign_clients.client_a_to_b.src_chain().id().version(),
             upgrade_height,
         )
-        .unwrap();
+        .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
         driver.vote_proposal()?;
@@ -321,15 +323,16 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
         let driver = chains.node_a.chain_driver();
 
         // Retrieve the height which should be used to upgrade the client
-        let upgrade_height = driver
-            .query_upgrade_proposal_height(&Uri::from_str(&driver.0.grpc_address()).unwrap(), 1)
-            .unwrap();
+        let upgrade_height = driver.query_upgrade_proposal_height(
+            &Uri::from_str(&driver.0.grpc_address()).map_err(handle_generic_error)?,
+            1,
+        )?;
 
         let client_upgrade_height = Height::new(
             foreign_clients.client_a_to_b.src_chain().id().version(),
             upgrade_height,
         )
-        .unwrap();
+        .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
         driver.vote_proposal()?;
@@ -350,9 +353,11 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
         std::thread::sleep(WAIT_CHAIN_UPGRADE);
 
         // Trigger the client upgrade using client_upgrade_height - 1.
-        let outcome = foreign_clients
-            .client_a_to_b
-            .upgrade(client_upgrade_height.decrement().unwrap());
+        let outcome = foreign_clients.client_a_to_b.upgrade(
+            client_upgrade_height
+                .decrement()
+                .map_err(handle_generic_error)?,
+        );
 
         assert!(outcome.is_err(), "{:?}", outcome);
 

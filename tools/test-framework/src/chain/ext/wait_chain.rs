@@ -16,9 +16,7 @@ pub fn wait_for_chain_height<ChainA: ChainHandle, ChainB: ChainHandle>(
     let mut reference_application_latest_height = foreign_clients
         .client_a_to_b
         .src_chain()
-        .query_latest_height()
-        .ok()
-        .unwrap();
+        .query_latest_height()?;
 
     let start = SystemTime::now();
     while reference_application_latest_height < target_height_of_a {
