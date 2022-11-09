@@ -123,8 +123,8 @@ pub mod version;
 pub mod wait;
 
 /// Defines an upper limit on how large any transaction can be.
-/// This upper limit is defined as a fraction relative to the block
-/// maximum bytes. For example if the fraction is `0.9`, then
+/// This upper limit is defined as a fraction relative to the block's
+/// maximum bytes. For example, if the fraction is `0.9`, then
 /// `max_tx_size` will not be allowed to exceed 0.9 of the
 /// maximum block size of any Cosmos SDK network.
 ///
