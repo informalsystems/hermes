@@ -54,13 +54,13 @@ mod git {
 
         // Returns the short hash of the last git commit
         pub fn last_commit_hash(&self) -> String {
-            let commit = Self::command(&["rev-parse", "--short", "HEAD"]);
+            let commit = Self::command(["rev-parse", "--short", "HEAD"]);
             String::from_utf8_lossy(&commit.stdout).into_owned()
         }
 
         // Checks if the git repo is dirty
         pub fn is_dirty(&self) -> bool {
-            !Self::command(&["diff-index", "--quiet", "HEAD", "--"])
+            !Self::command(["diff-index", "--quiet", "HEAD", "--"])
                 .status
                 .success()
         }
@@ -73,7 +73,7 @@ mod git {
         // returns true iff git is installed and current directory is a git repo
         fn is_git_repo() -> bool {
             Command::new("git")
-                .args(&["rev-parse", "--git-dir"])
+                .args(["rev-parse", "--git-dir"])
                 .output()
                 .map_or(false, |o| o.status.success())
         }

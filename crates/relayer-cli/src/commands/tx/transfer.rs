@@ -229,7 +229,7 @@ mod tests {
                 number_msgs: None,
                 key_name: None
             },
-            TxIcs20MsgTransferCmd::parse_from(&[
+            TxIcs20MsgTransferCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_receiver",
@@ -261,7 +261,7 @@ mod tests {
                 number_msgs: None,
                 key_name: None
             },
-            TxIcs20MsgTransferCmd::parse_from(&[
+            TxIcs20MsgTransferCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_receiver",
@@ -293,7 +293,7 @@ mod tests {
                 number_msgs: None,
                 key_name: None
             },
-            TxIcs20MsgTransferCmd::parse_from(&[
+            TxIcs20MsgTransferCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_receiver",
@@ -327,7 +327,7 @@ mod tests {
                 number_msgs: None,
                 key_name: Some("key_name".to_owned())
             },
-            TxIcs20MsgTransferCmd::parse_from(&[
+            TxIcs20MsgTransferCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_receiver",
@@ -361,7 +361,7 @@ mod tests {
                 number_msgs: Some(21),
                 key_name: None
             },
-            TxIcs20MsgTransferCmd::parse_from(&[
+            TxIcs20MsgTransferCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_receiver",
@@ -395,7 +395,7 @@ mod tests {
                 number_msgs: None,
                 key_name: None
             },
-            TxIcs20MsgTransferCmd::parse_from(&[
+            TxIcs20MsgTransferCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_receiver",
@@ -429,7 +429,7 @@ mod tests {
                 number_msgs: None,
                 key_name: None
             },
-            TxIcs20MsgTransferCmd::parse_from(&[
+            TxIcs20MsgTransferCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_receiver",
@@ -463,7 +463,7 @@ mod tests {
                 number_msgs: None,
                 key_name: None
             },
-            TxIcs20MsgTransferCmd::parse_from(&[
+            TxIcs20MsgTransferCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_receiver",
@@ -483,7 +483,7 @@ mod tests {
 
     #[test]
     fn test_ft_transfer_no_amount() {
-        assert!(TxIcs20MsgTransferCmd::try_parse_from(&[
+        assert!(TxIcs20MsgTransferCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_receiver",
@@ -499,7 +499,7 @@ mod tests {
 
     #[test]
     fn test_ft_transfer_no_sender_channel() {
-        assert!(TxIcs20MsgTransferCmd::try_parse_from(&[
+        assert!(TxIcs20MsgTransferCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_receiver",
@@ -515,7 +515,7 @@ mod tests {
 
     #[test]
     fn test_ft_transfer_no_sender_port() {
-        assert!(TxIcs20MsgTransferCmd::try_parse_from(&[
+        assert!(TxIcs20MsgTransferCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_receiver",
@@ -531,7 +531,7 @@ mod tests {
 
     #[test]
     fn test_ft_transfer_no_sender_chain() {
-        assert!(TxIcs20MsgTransferCmd::try_parse_from(&[
+        assert!(TxIcs20MsgTransferCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_receiver",
@@ -547,7 +547,7 @@ mod tests {
 
     #[test]
     fn test_ft_transfer_no_receiver_chain() {
-        assert!(TxIcs20MsgTransferCmd::try_parse_from(&[
+        assert!(TxIcs20MsgTransferCmd::try_parse_from([
             "test",
             "--src-chain",
             "chain_sender",

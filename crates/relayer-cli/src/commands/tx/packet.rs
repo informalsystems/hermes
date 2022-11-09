@@ -191,7 +191,7 @@ mod tests {
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
                 packet_data_query_height: None
             },
-            TxPacketRecvCmd::parse_from(&[
+            TxPacketRecvCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_receiver",
@@ -215,7 +215,7 @@ mod tests {
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
                 packet_data_query_height: None
             },
-            TxPacketRecvCmd::parse_from(&[
+            TxPacketRecvCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_receiver",
@@ -238,7 +238,7 @@ mod tests {
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
                 packet_data_query_height: Some(5),
             },
-            TxPacketRecvCmd::parse_from(&[
+            TxPacketRecvCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_receiver",
@@ -256,7 +256,7 @@ mod tests {
 
     #[test]
     fn test_packet_recv_no_sender_channel() {
-        assert!(TxPacketRecvCmd::try_parse_from(&[
+        assert!(TxPacketRecvCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_receiver",
@@ -270,7 +270,7 @@ mod tests {
 
     #[test]
     fn test_packet_recv_no_sender_port() {
-        assert!(TxPacketRecvCmd::try_parse_from(&[
+        assert!(TxPacketRecvCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_receiver",
@@ -284,7 +284,7 @@ mod tests {
 
     #[test]
     fn test_packet_recv_no_sender_chain() {
-        assert!(TxPacketRecvCmd::try_parse_from(&[
+        assert!(TxPacketRecvCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_receiver",
@@ -298,7 +298,7 @@ mod tests {
 
     #[test]
     fn test_packet_recv_no_receiver_chain() {
-        assert!(TxPacketRecvCmd::try_parse_from(&[
+        assert!(TxPacketRecvCmd::try_parse_from([
             "test",
             "--src-chain",
             "chain_sender",
@@ -320,7 +320,7 @@ mod tests {
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
                 packet_data_query_height: None
             },
-            TxPacketAckCmd::parse_from(&[
+            TxPacketAckCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_receiver",
@@ -344,7 +344,7 @@ mod tests {
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
                 packet_data_query_height: None
             },
-            TxPacketAckCmd::parse_from(&[
+            TxPacketAckCmd::parse_from([
                 "test",
                 "--dst-chain",
                 "chain_receiver",
@@ -360,7 +360,7 @@ mod tests {
 
     #[test]
     fn test_packet_ack_no_sender_channel() {
-        assert!(TxPacketAckCmd::try_parse_from(&[
+        assert!(TxPacketAckCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_receiver",
@@ -374,7 +374,7 @@ mod tests {
 
     #[test]
     fn test_packet_ack_no_sender_port() {
-        assert!(TxPacketAckCmd::try_parse_from(&[
+        assert!(TxPacketAckCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_receiver",
@@ -388,7 +388,7 @@ mod tests {
 
     #[test]
     fn test_packet_ack_no_sender_chain() {
-        assert!(TxPacketAckCmd::try_parse_from(&[
+        assert!(TxPacketAckCmd::try_parse_from([
             "test",
             "--dst-chain",
             "chain_receiver",
@@ -402,7 +402,7 @@ mod tests {
 
     #[test]
     fn test_packet_ack_no_receiver_chain() {
-        assert!(TxPacketAckCmd::try_parse_from(&[
+        assert!(TxPacketAckCmd::try_parse_from([
             "test",
             "--src-chain",
             "chain_sender",

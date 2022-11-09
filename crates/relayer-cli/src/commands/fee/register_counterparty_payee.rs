@@ -116,7 +116,7 @@ mod tests {
                 port_id: PortId::from_str("port_a").unwrap(),
                 counterparty_payee_address: "counterparty_address_hash".to_owned(),
             },
-            RegisterCounterpartyPayeeCmd::parse_from(&[
+            RegisterCounterpartyPayeeCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_a",
@@ -139,7 +139,7 @@ mod tests {
                 port_id: PortId::from_str("port_a").unwrap(),
                 counterparty_payee_address: "counterparty_address_hash".to_owned(),
             },
-            RegisterCounterpartyPayeeCmd::parse_from(&[
+            RegisterCounterpartyPayeeCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_a",
@@ -155,7 +155,7 @@ mod tests {
 
     #[test]
     fn test_register_counterparty_payee_no_counterparty_payee() {
-        assert!(RegisterCounterpartyPayeeCmd::try_parse_from(&[
+        assert!(RegisterCounterpartyPayeeCmd::try_parse_from([
             "test",
             "--chain",
             "chain_a",
@@ -169,7 +169,7 @@ mod tests {
 
     #[test]
     fn test_register_counterparty_payee_no_port() {
-        assert!(RegisterCounterpartyPayeeCmd::try_parse_from(&[
+        assert!(RegisterCounterpartyPayeeCmd::try_parse_from([
             "test",
             "--chain",
             "chain_a",
@@ -183,7 +183,7 @@ mod tests {
 
     #[test]
     fn test_register_counterparty_payee_no_channel() {
-        assert!(RegisterCounterpartyPayeeCmd::try_parse_from(&[
+        assert!(RegisterCounterpartyPayeeCmd::try_parse_from([
             "test",
             "--chain",
             "chain_a",
@@ -197,7 +197,7 @@ mod tests {
 
     #[test]
     fn test_register_counterparty_payee_no_chain() {
-        assert!(RegisterCounterpartyPayeeCmd::try_parse_from(&[
+        assert!(RegisterCounterpartyPayeeCmd::try_parse_from([
             "test",
             "--channel",
             "channel_a",
