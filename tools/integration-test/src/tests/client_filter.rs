@@ -109,7 +109,7 @@ impl BinaryChannelTest for ClientFilterBlocksConnectionTest {
         let supervisor = relayer.spawn_supervisor()?;
         let state = supervisor.dump_state()?;
 
-        assert_eq!(state.workers.contains_key(&ObjectType::Client), false);
+        assert!(!state.workers.contains_key(&ObjectType::Client));
 
         Ok(())
     }
@@ -146,7 +146,7 @@ impl BinaryChannelTest for ClientFilterAllowsConnectionTest {
         let supervisor = relayer.spawn_supervisor()?;
         let state = supervisor.dump_state()?;
 
-        assert_eq!(state.workers.contains_key(&ObjectType::Client), true);
+        assert!(state.workers.contains_key(&ObjectType::Client));
 
         Ok(())
     }
