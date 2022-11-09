@@ -12,7 +12,7 @@ use crate::chain::requests::{Qualified, QueryHeight, QueryPacketEventDataRequest
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
 use crate::path::PathIdentifiers;
-use crate::util::collate::CollateIterExt;
+use crate::util::collate::CollatedIterExt;
 
 /// Limit on how many query results should be expected.
 pub const CHUNK_LENGTH: usize = 50;
@@ -49,7 +49,7 @@ where
                     "pulled packet data for {} events out of {} sequences: {};",
                     events.len(),
                     chunk.len(),
-                    chunk.iter().copied().collate().format(", "),
+                    chunk.iter().copied().collated().format(", "),
                 );
 
                 // Because we use the first event height to do the client update,

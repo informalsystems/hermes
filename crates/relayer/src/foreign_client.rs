@@ -44,7 +44,7 @@ use crate::event::IbcEventWithHeight;
 use crate::light_client::AnyHeader;
 use crate::misbehaviour::MisbehaviourEvidence;
 use crate::telemetry;
-use crate::util::collate::CollateIterExt;
+use crate::util::collate::CollatedIterExt;
 use crate::util::pretty::{PrettyDuration, PrettySlice};
 
 const MAX_MISBEHAVIOUR_CHECK_DURATION: Duration = Duration::from_secs(120);
@@ -1496,7 +1496,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         trace!(
             total = %consensus_state_heights.len(),
-            heights = %consensus_state_heights.iter().copied().collate().format(", "),
+            heights = %consensus_state_heights.iter().copied().collated().format(", "),
             "checking misbehaviour for consensus state heights",
         );
 

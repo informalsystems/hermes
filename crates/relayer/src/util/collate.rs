@@ -1,6 +1,8 @@
 use std::{fmt, ops::Add};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Collated<T> {
     pub start: T,
     pub end: T,
@@ -67,17 +69,17 @@ where
     Collate::new(iter)
 }
 
-pub trait CollateIterExt: Iterator {
-    fn collate(self) -> Collate<Self, Self::Item>
+pub trait CollatedIterExt: Iterator {
+    fn collated(self) -> Collate<Self, Self::Item>
     where
         Self: Sized;
 }
 
-impl<T: ?Sized> CollateIterExt for T
+impl<T: ?Sized> CollatedIterExt for T
 where
     T: Iterator,
 {
-    fn collate(self) -> Collate<Self, Self::Item>
+    fn collated(self) -> Collate<Self, Self::Item>
     where
         Self: Sized,
     {
@@ -95,7 +97,7 @@ mod tests {
             1, 2, 3, 10, 10, 10, 11, 11, 20, 30, 31, 31, 32, 33, 35, 40, 40, 40, 40,
         ];
 
-        let collated = items.into_iter().collate().collect::<Vec<_>>();
+        let collated = items.into_iter().collated().collect::<Vec<_>>();
 
         assert_eq!(
             collated,

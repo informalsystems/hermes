@@ -56,7 +56,7 @@ use crate::link::relay_summary::RelaySummary;
 use crate::link::{pending, relay_sender};
 use crate::path::PathIdentifiers;
 use crate::telemetry;
-use crate::util::collate::CollateIterExt;
+use crate::util::collate::CollatedIterExt;
 use crate::util::pretty::PrettyEvents;
 use crate::util::queue::Queue;
 
@@ -1103,7 +1103,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             dst_chain = %self.dst_chain().id(),
             src_chain = %self.src_chain().id(),
             total = sequences.len(),
-            sequences = %sequences.iter().copied().collate().format(", "),
+            sequences = %sequences.iter().copied().collated().format(", "),
             "sequence numbers of unreceived packets to send to the destination chain out of the ones with commitments on the source chain",
         );
 
@@ -1161,7 +1161,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             dst_chain = %self.dst_chain().id(),
             src_chain = %self.src_chain().id(),
             total = sequences.len(),
-            sequences = %sequences.iter().copied().collate().format(", "),
+            sequences = %sequences.iter().copied().collated().format(", "),
             "sequence numbers of ack packets to send to the destination chain out of the ones with acknowledgments on the source chain",
         );
 
