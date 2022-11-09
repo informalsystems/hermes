@@ -9,6 +9,14 @@ impl<Relay> OfaFullRelay for CosmosRelayWrapper<Relay>
 where
     Relay: CosmosFullRelay,
 {
+    fn is_retryable_error(_: &Self::Error) -> bool {
+        false
+    }
+
+    fn max_retry_exceeded_error(e: Self::Error) -> Self::Error {
+        e
+    }
+
     async fn should_relay_packet(&self, packet: &Self::Packet) -> Result<bool, Self::Error> {
         Ok(self
             .relay
