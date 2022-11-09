@@ -1,3 +1,4 @@
+use eyre::eyre;
 use http::Uri;
 use prost::Message;
 
@@ -8,6 +9,7 @@ use ibc_relayer::error::Error as RelayerError;
 use crate::chain::cli::upgrade::vote_proposal;
 use crate::chain::driver::ChainDriver;
 use crate::error::Error;
+use crate::prelude::handle_generic_error;
 use crate::types::tagged::*;
 
 pub trait ChainProposalMethodsExt {
@@ -69,23 +71,22 @@ pub async fn query_upgrade_proposal_height(
         .proposal
         .ok_or_else(|| RelayerError::empty_query_account(proposal_id.to_string()))?;
 
-    match proposal.content {
-        Some(content) => {
-            if content.type_url != *"/ibc.core.client.v1.UpgradeProposal" {
-                return Err(Error::incorrect_proposal_type_url(content.type_url));
-            }
-            let raw_upgrade_proposal: &[u8] = &content.value;
-            match UpgradeProposal::decode(raw_upgrade_proposal) {
-                Ok(upgrade_proposal) => match upgrade_proposal.plan {
-                    Some(plan) => {
-                        let h = plan.height;
-                        Ok(h as u64)
-                    }
-                    None => Err(Error::empty_plan()),
-                },
-                Err(_e) => Err(Error::incorrect_proposal()),
-            }
-        }
-        None => Err(Error::empty_proposal()),
+    let proposal_content = proposal
+        .content
+        .ok_or_else(|| eyre!("failed to retrieve content of Proposal"))?;
+
+    if proposal_content.type_url != *"/ibc.core.client.v1.UpgradeProposal" {
+        return Err(Error::incorrect_proposal_type_url(
+            proposal_content.type_url,
+        ));
     }
+
+    let upgrade_plan =
+        UpgradeProposal::decode(&proposal_content.value as &[u8]).map_err(handle_generic_error)?;
+
+    let plan = upgrade_plan
+        .plan
+        .ok_or_else(|| eyre!("failed to plan from UpgradeProposal"))?;
+
+    Ok(plan.height as u64)
 }
