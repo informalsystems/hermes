@@ -10,7 +10,7 @@ use crate::chain::driver::ChainDriver;
 use crate::error::Error;
 use crate::types::tagged::*;
 
-pub trait ChainProposalMethodsExt<Chain> {
+pub trait ChainProposalMethodsExt {
     fn query_upgrade_proposal_height(
         &self,
         grpc_address: &Uri,
@@ -20,7 +20,7 @@ pub trait ChainProposalMethodsExt<Chain> {
     fn vote_proposal(&self) -> Result<(), Error>;
 }
 
-impl<'a, Chain: Send> ChainProposalMethodsExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
+impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDriver> {
     fn query_upgrade_proposal_height(
         &self,
         grpc_address: &Uri,
