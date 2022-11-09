@@ -23,6 +23,10 @@ impl<Chain: OfaBaseChain> HasRuntime for OfaChainWrapper<Chain> {
 
 impl<Chain: OfaBaseChain> HasMessageType for OfaChainWrapper<Chain> {
     type Message = Chain::Message;
+
+    fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error> {
+        Chain::estimate_message_len(message)
+    }
 }
 
 impl<Chain: OfaBaseChain> HasEventType for OfaChainWrapper<Chain> {
@@ -33,10 +37,6 @@ impl<Chain: OfaBaseChain> HasChainTypes for OfaChainWrapper<Chain> {
     type Height = Chain::Height;
 
     type Timestamp = Chain::Timestamp;
-
-    fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error> {
-        Chain::estimate_message_len(message)
-    }
 }
 
 impl<Chain, Counterparty> HasIbcChainTypes<OfaChainWrapper<Counterparty>> for OfaChainWrapper<Chain>
