@@ -44,6 +44,7 @@ use crate::event::IbcEventWithHeight;
 use crate::light_client::AnyHeader;
 use crate::misbehaviour::MisbehaviourEvidence;
 use crate::telemetry;
+use crate::util::collate::CollateIterExt;
 use crate::util::pretty::{PrettyDuration, PrettySlice};
 
 const MAX_MISBEHAVIOUR_CHECK_DURATION: Duration = Duration::from_secs(120);
@@ -1494,9 +1495,9 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         };
 
         trace!(
-            "checking misbehaviour for consensus state heights (first 50 shown here, total: {}): {}",
-            consensus_state_heights.len(),
-            consensus_state_heights.iter().take(50).join(", "),
+            total = %consensus_state_heights.len(),
+            heights = %consensus_state_heights.iter().copied().collate().format(", "),
+            "checking misbehaviour for consensus state heights",
         );
 
         let start_time = Instant::now();
