@@ -143,23 +143,21 @@ pub fn set_mode(config: &mut Value, mode: &str) -> Result<(), Error> {
 }
 
 pub fn set_max_deposit_period(genesis: &mut serde_json::Value, period: &str) -> Result<(), Error> {
-    let max_deposit_periods = genesis
+    let max_deposit_period = genesis
         .get_mut("app_state")
         .and_then(|app_state| app_state.get_mut("gov"))
         .and_then(|gov| gov.get_mut("deposit_params"))
-        .and_then(|deposit_params| deposit_params.as_object_mut());
+        .and_then(|deposit_params| deposit_params.as_object_mut())
+        .ok_or_else(|| eyre!("failed to update max_deposit_period in genesis file"))?;
 
-    if let Some(max_deposit_period) = max_deposit_periods {
-        match max_deposit_period.insert(
+    max_deposit_period
+        .insert(
             "max_deposit_period".to_owned(),
             serde_json::Value::String(period.to_string()),
-        ) {
-            Some(_) => Ok(()),
-            None => Err(eyre!("failed to update max_deposit_period in genesis file")),
-        }
-    } else {
-        Err(eyre!("failed to update max_deposit_period in genesis file"))
-    }
+        )
+        .ok_or_else(|| eyre!("failed to update max_deposit_period in genesis file"))?;
+
+    Ok(())
 }
 
 pub fn set_voting_period(genesis: &mut serde_json::Value, period: &str) -> Result<(), Error> {
@@ -167,17 +165,15 @@ pub fn set_voting_period(genesis: &mut serde_json::Value, period: &str) -> Resul
         .get_mut("app_state")
         .and_then(|app_state| app_state.get_mut("gov"))
         .and_then(|gov| gov.get_mut("voting_params"))
-        .and_then(|voting_params| voting_params.as_object_mut());
+        .and_then(|voting_params| voting_params.as_object_mut())
+        .ok_or_else(|| eyre!("failed to update voting_period in genesis file"))?;
 
-    if let Some(voting_period) = voting_period {
-        match voting_period.insert(
+    voting_period
+        .insert(
             "voting_period".to_owned(),
             serde_json::Value::String(period.to_string()),
-        ) {
-            Some(_) => Ok(()),
-            None => Err(eyre!("failed to update voting_period in genesis file")),
-        }
-    } else {
-        Err(eyre!("failed to update voting_period in genesis file"))
-    }
+        )
+        .ok_or_else(|| eyre!("failed to update voting_period in genesis file"))?;
+
+    Ok(())
 }
