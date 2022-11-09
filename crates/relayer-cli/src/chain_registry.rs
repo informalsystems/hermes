@@ -1,4 +1,5 @@
 //! Contains functions to generate a relayer config for a given chain
+
 use ibc_chain_registry::{
     asset_list::AssetList,
     chain::ChainData,
@@ -163,7 +164,7 @@ async fn get_data_from_handles<T>(
 }
 
 /// Generates a Vec<ChainConfig> for a slice of chains names by fetching data from
-/// https://github.com/cosmos/chain-registry. Gas settings are set to default values.
+/// <https://github.com/cosmos/chain-registry>. Gas settings are set to default values.
 ///
 /// # Arguments
 ///
