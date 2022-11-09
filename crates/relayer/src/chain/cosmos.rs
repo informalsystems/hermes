@@ -128,6 +128,9 @@ pub mod wait;
 /// `max_tx_size` will not be allowed to exceed 0.9 of the
 /// maximum block size of any Cosmos SDK network.
 ///
+/// The default fraction we use is `0.9`; anything larger than that
+/// would be risky, as transactions might be rejected; a smaller value
+/// might be un-necessarily restrictive on the relayer side.
 /// The [default max. block size in Tendermint 0.37 is 21MB](tm-37-max).
 /// With a fraction of `0.9`, then Hermes will never permit the configuration
 /// of `max_tx_size` to exceed ~18.9MB.
