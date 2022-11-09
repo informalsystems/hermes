@@ -117,17 +117,6 @@ pub trait HasEventType: Async {
        trait, which contains the IBC event variant types like
        [`WriteAcknowledgementEvent`](crate::base::chain::traits::ibc_event::HasIbcEvents::WriteAcknowledgementEvent),
        and _extraction_ methods to parse the variant information from the event.
-
-       When used in testing, the `Event` type can be defined to be simple enums
-       that only contain the exact variants that the test would be using.
-       For example, if a test is only interested in `WriteAcknowledgementEvent`,
-       then it is fine to define a `MockEvent` enum with only a single variant:
-
-       ```
-       enum MockEvent {
-           WriteAcknowledgementEvent { /* ... */ },
-       }
-       ```
     */
     type Event: Async;
 }
@@ -135,7 +124,7 @@ pub trait HasEventType: Async {
 /**
    This covers the minimal abstract types that are used inside a chain context.
 
-   A chain context should have the following abstract types:
+   A chain context have the following abstract types:
 
    -   [`Error`](HasError::Error) - the error type encapsulating errors occured
        during chain operations.
@@ -231,6 +220,13 @@ pub trait HasChainTypes: HasMessageType + HasEventType + HasError {
    on which counterparty chain it is. For example, a Cosmos chain context
    connected with a non-Cosmos chain context may want to use different
    `ClientId` type, as compared to connecting to a Cosmos chain.
+
+   Note that even when a chain context implements `HasIbcChainTypes`, it is
+   _not_ expected to has access to resources on the counterparty chain. That
+   would require access to the counterparty chain context, which is implemented
+   separately from the self chain context. Instead, operations that require
+   access to two chain contexts are handled by the
+   [relay context](crate::base::relay).
 */
 pub trait HasIbcChainTypes<Counterparty>: HasChainTypes
 where
@@ -263,6 +259,9 @@ where
     /**
        The IBC packet sequence for the packet that is sent from the self chain
        to the counterparty chain.
+
+       Note that for sequences of packets that are sent from the counterparty
+       chain to self, the `Counterparty::Sequence` will be used.
     */
     type Sequence: Async;
 
