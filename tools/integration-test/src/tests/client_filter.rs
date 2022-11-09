@@ -1,5 +1,20 @@
 //! This test ensures that the [`FilterPolicy`] type correctly filters clients
-//! based on the clients' [`TrustThreshold`].
+//! based on the clients' [`TrustThreshold`]. Clients with `TrustThreshold`
+//! values less than 1/3 or greater than 2/3 should not be allowed. Note that
+//! in order for a client to be allowed, _both_ client connections must
+//! exhibit a `TrustThreshold` value within the acceptable range.
+//!
+//! `ClientFilterBlocksConnectionTest` sets the `TrustThreshold` for the client
+//! outside of the acceptable range; the `TrustThreshold` of the client connection
+//! from chain A to chain B is too large, though the `TrustThreshold` of the
+//! client connection from chain B to chain A is within the acceptable range.
+//! It then asserts that no client workers were established on account of the
+//! connection not being allowed through.
+//!
+//! `ClientFilterAllowsConnectionTest` sets the `TrustThreshold` for the client
+//! within the acceptable range in both directions such that the client connection
+//! is allowed through the filter. It then asserts that client workers were
+//! established as a result of the connection being allowed through.
 
 use std::time::Duration;
 
