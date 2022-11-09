@@ -20,6 +20,9 @@ use crate::std_prelude::*;
 pub trait OfaRelayTypes: Async {
     type Preset;
 
+    /**
+       Corresponds to [`HasError::Error`](crate::base::core::traits::error::HasError).
+    */
     type Error: Async + Debug;
 
     type Runtime: OfaRuntime<Error = Self::Error>;

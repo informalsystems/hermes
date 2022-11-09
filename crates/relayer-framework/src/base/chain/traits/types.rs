@@ -152,6 +152,10 @@ pub trait HasEventType: Async {
    -   [`Event`](HasEventType::Event) - the events that are emitted after
        a transaction is committed to a chain.
 
+    This trait only covers chain types that involve a single chain. For IBC
+    chain types that involve _two_ chains, the abstract types are defined
+    in [`HasIbcChainTypes`].
+
     Notice that a chain context do not contain a `Transaction` abstract
     type. This is because we separate the concerns of normal chain operations
     from the special concerns of assembling chain messages into transactions
