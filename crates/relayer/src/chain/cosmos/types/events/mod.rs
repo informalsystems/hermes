@@ -1,5 +1,5 @@
 use ibc_relayer_types::Height;
-use tendermint::abci::Event as AbciEvent;
+use tendermint_rpc::abci::Event as AbciEvent;
 
 use crate::event::{ibc_event_try_from_abci_event, IbcEventWithHeight};
 

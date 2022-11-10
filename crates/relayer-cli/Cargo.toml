@@ -28,7 +28,7 @@ rest-server = ["ibc-relayer-rest"]
 [dependencies]
 ibc-relayer-types  = { version = "0.20.0", path = "../relayer-types", features = ["std", "clock"] }
 ibc-relayer        = { version = "0.20.0", path = "../relayer" }
-ibc-proto          = { version = "0.21.0" }
+ibc-proto          = { version = "0.22.0" }
 ibc-telemetry      = { version = "0.20.0", path = "../telemetry", optional = true }
 ibc-relayer-rest   = { version = "0.20.0", path = "../relayer-rest", optional = true }
 ibc-chain-registry = { version = "0.1.0" , path = "../chain-registry" }
@@ -61,22 +61,22 @@ tracing                  = "0.1.36"
 tracing-subscriber       = { version = "0.3.14", features = ["fmt", "env-filter", "json"]}
 
 [dependencies.tendermint-proto]
-version = "=0.25.0"
+version = "0.26.0"
 
 [dependencies.tendermint]
-version = "=0.25.0"
+version = "0.26.0"
 features = ["secp256k1"]
 
 [dependencies.tendermint-rpc]
-version = "=0.25.0"
+version = "0.26.0"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client]
-version = "=0.25.0"
+version = "0.26.0"
 features = ["unstable"]
 
 [dependencies.tendermint-light-client-verifier]
-version = "=0.25.0"
+version = "0.26.0"
 
 [dependencies.abscissa_core]
 version = "=0.6.0"
