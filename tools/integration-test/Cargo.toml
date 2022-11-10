@@ -36,6 +36,7 @@ ica = []
 ics29-fee = []
 experimental = []
 mbt = []
+forward-packet = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"
