@@ -86,10 +86,19 @@ impl ClientState {
         }
 
         // `TrustThreshold` is guaranteed to be in the range `[0, 1)`,
-        // but a zero value is invalid in this context
-        if trust_threshold.numerator() == 0 || trust_threshold.denominator() == 0 {
+        // but a zero value is invalid in this context.
+        if trust_threshold.numerator() == 0 {
             return Err(Error::validation(
                 "ClientState trust threshold cannot be zero".to_string(),
+            ));
+        }
+
+        // Dividing by zero is undefined so we also rule out a zero denominator.
+        // This should be checked already by the `TrustThreshold` constructor
+        // but it does not hurt to redo the check here.
+        if trust_threshold.denominator() == 0 {
+            return Err(Error::validation(
+                "ClientState trust threshold cannot divide by zero".to_string(),
             ));
         }
 
@@ -464,9 +473,9 @@ mod tests {
                 want_pass: false,
             },
             Test {
-                name: "Invalid (too small) trusting trust threshold".to_string(),
+                name: "Invalid (zero) trust threshold".to_string(),
                 params: ClientStateParams {
-                    trust_level: TrustThreshold::new(1, 5).unwrap(),
+                    trust_level: TrustThreshold::new(0, 3).unwrap(),
                     ..default_params.clone()
                 },
                 want_pass: false,
