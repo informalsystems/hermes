@@ -2,7 +2,6 @@
 //! represented as a fraction with valid values in the
 //! range `[0, 1)`.
 
-use core::cmp;
 use core::convert::TryFrom;
 use core::fmt::{Display, Error as FmtError, Formatter};
 
@@ -34,7 +33,7 @@ use crate::core::ics02_client::error::Error;
 ///
 /// This type accepts even a value of 0, (numerator = 0, denominator = 0),
 /// which is used in the client state of an upgrading client.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TrustThreshold(Ratio<u64>);
 
 impl TrustThreshold {
@@ -73,26 +72,6 @@ impl TrustThreshold {
     /// The denominator of the fraction underlying this trust threshold.
     pub fn denominator(&self) -> u64 {
         *self.0.denom()
-    }
-}
-
-impl PartialEq for TrustThreshold {
-    fn eq(&self, other: &Self) -> bool {
-        self.0.eq(&other.0)
-    }
-}
-
-impl Eq for TrustThreshold {}
-
-impl PartialOrd for TrustThreshold {
-    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
-        self.0.partial_cmp(&other.0)
-    }
-}
-
-impl Ord for TrustThreshold {
-    fn cmp(&self, other: &Self) -> cmp::Ordering {
-        self.0.cmp(&other.0)
     }
 }
 
