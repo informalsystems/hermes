@@ -1,4 +1,5 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
+use std::ops::Add;
 use std::time::{Duration, Instant};
 
 use ibc_proto::google::protobuf::Any;
@@ -359,6 +360,7 @@ impl ConnectionDelay {
             .update_height
             .expect("processed height not set")
             .add(block_delay);
+
         if latest_height >= acceptable_height {
             0
         } else {

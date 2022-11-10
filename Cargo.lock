@@ -1830,7 +1830,6 @@ dependencies = [
  "ics23",
  "itertools",
  "modelator",
- "num-traits",
  "primitive-types",
  "prost",
  "safe-regex",
