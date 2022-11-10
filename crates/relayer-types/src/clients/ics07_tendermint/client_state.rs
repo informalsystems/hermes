@@ -233,7 +233,7 @@ impl Ics2ClientState for ClientState {
 
         // Reset custom fields to zero values
         self.trusting_period = ZERO_DURATION;
-        self.trust_level = TrustThreshold::ZERO;
+        self.trust_level = TrustThreshold::CLIENT_STATE_RESET;
         self.allow_update.after_expiry = false;
         self.allow_update.after_misbehaviour = false;
         self.frozen_height = None;

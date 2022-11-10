@@ -44,8 +44,12 @@ impl TrustThreshold {
     /// Constant for a trust threshold of 2/3.
     pub const TWO_THIRDS: Self = Self(Ratio::new_raw(2, 3));
 
-    /// Constant for a trust threshold of 0/1.
-    pub const ZERO: Self = Self(Ratio::new_raw(0, 1));
+    /// Constant for a trust threshold of 0/0.
+    ///
+    /// IMPORTANT: Only to be used for resetting the client state
+    /// during a client upgrade. Using this value anywhere else
+    /// might lead to panics.
+    pub const CLIENT_STATE_RESET: Self = Self(Ratio::new_raw(0, 0));
 
     /// Instantiate a TrustThreshold with the given denominator and
     /// numerator.
