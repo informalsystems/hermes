@@ -13,7 +13,6 @@ pub mod connection_delay;
 pub mod denom_trace;
 pub mod error_events;
 pub mod execute_schedule;
-pub mod forward_transfer;
 pub mod handshake_on_start;
 pub mod memo;
 pub mod python;
@@ -40,3 +39,6 @@ pub mod manual;
 
 #[cfg(any(doc, feature = "example"))]
 pub mod example;
+
+#[cfg(any(doc, feature = "forward-packet"))]
+pub mod forward_transfer;
