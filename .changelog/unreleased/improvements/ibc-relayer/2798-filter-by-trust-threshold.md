@@ -1,3 +1,2 @@
-- Filter policies now filter out client connections based on a range of trust threshold values;
-  trust thresholds within the range of [1/3, 2/3] inclusive are allowed
+- Filter policy now allows clients with trust thresholds in the range [1/3, 2/3] (inclusive)
   ([#2798](https://github.com/informalsystems/hermes/issues/2798))
