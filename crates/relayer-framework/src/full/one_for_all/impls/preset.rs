@@ -4,7 +4,7 @@ use crate::base::one_for_all::presets::FullPreset;
 use crate::base::one_for_all::traits::chain::OfaIbcChain;
 use crate::base::one_for_all::traits::chain::{OfaChainPreset, OfaIbcChainPreset};
 use crate::base::one_for_all::traits::relay::OfaRelayPreset;
-use crate::base::relay::impls::packet_relayers::general::full_relay::FullRelayer;
+use crate::base::relay::impls::packet_relayers::general::full_relay::FullCycleRelayer;
 use crate::base::relay::impls::packet_relayers::general::retry::RetryRelayer;
 use crate::full::batch::message_sender::SendMessagetoBatchWorker;
 use crate::full::filter::impls::filter_relayer::FilterRelayer;
@@ -35,7 +35,7 @@ where
     Relay::SrcChain: OfaFullChain,
     Relay::DstChain: OfaFullChain,
 {
-    type PacketRelayer = FilterRelayer<RetryRelayer<FullRelayer>>;
+    type PacketRelayer = FilterRelayer<RetryRelayer<FullCycleRelayer>>;
 
     type IbcMessageSender = SendMessagetoBatchWorker;
 }

@@ -146,7 +146,7 @@ implementations, the duplication would only involve low-level operations such as
 protobuf encodings, and it would not affect the core logic of the relayer or
 other users of the relayer framework.
 
-### Modular Components
+### Update client message builder
 
 The use of CGP allows the relayer framework to break down complex relaying
 logic into smaller pieces of components. As an example, the component
@@ -205,12 +205,12 @@ other non-Cosmos relay contexts. However, it can be composed with other
 generic components like `SkipUpdateClient` and form a component like:
 
 ```rust
-type MyUpdateClientMessageBuilder =
+type ChosenUpdateClientMessageBuilder =
     SkipUpdateClient<WaitUpdateClient<
         BuildCosmosUpdateClientMessage>>;
 ```
 
-Above we have a declarative type alias of a component `MyUpdateClientMessageBuilder`, which is made from the composition of
+Above we have a declarative type alias of a component `ChosenUpdateClientMessageBuilder`, which is made from the composition of
 three smaller components. When this is used, the component will first
 use `SkipUpdateClient` to check whether the client has already been updated,
 it then uses `WaitUpdateClient` to wait for the counterparty chain's height
@@ -224,6 +224,8 @@ Cosmos-specific UpdateClient message. On the other hands, users of the relayer
 framework can also _opt-out_ of using a middleware component like
 `WaitUpdateClient`, or they can also define new middleware components
 to customize the UpdateClient logic.
+
+### IBC message sender
 
 A use case for having modular component is the ability for relayers to customize
 on different strategies for sending IBC messages. For instance, a message sender
@@ -267,6 +269,145 @@ For instance, if `SendMessagetoBatchWorker` is used, the relay context is
 required to provide MPSC channels that can be used for sending messages to the
 batch worker. On the other hand, if only `MinimalIbcMessageSender` is used,
 the relay context can remove the burden of having to provide an MPSC channel.
+
+### Async Concurrency
+
+The v1 relayer was developed at a time when Rust's async/await infrastructure
+was not yet ready for use. As a result, the v1 relayer uses thread-based
+concurrency, by spawning limited number of threads and does manual multiplexing
+of multiple tasks in each thread.
+
+As time moves forward, the async/await feature in Rust has become mature enough,
+and the new relayer is able to make use of async tasks to manage the concurrency
+for relaying packets. At its core, the relaying of packets is done through the
+following interface:
+
+```rust
+pub trait PacketRelayer<Relay>: Async
+where
+    Relay: HasRelayTypes,
+{
+    async fn relay_packet(relay: &Relay, packet: &Relay::Packet) ->
+        Result<(), Relay::Error>;
+}
+```
+
+The `PacketRelayer` trait allows the handling of a single IBC packet at a time.
+When multiple IBC packets need to be relayed at the same time, the relayer
+framework allows multiple async tasks to be spawned at the same time, with each
+tasks sharing the same relay context but does the relaying for different packets.
+
+To optimize for efficiency, the relay context can switch the strategy for
+batching messages and transactions at the lower layers without affecting the
+logic for the packet relayers themselves. From the perspective of the packet
+relayer implementation, the relay context appears to be exclusively owned by the
+packet relayer, and it is not aware of other concurrent tasks running.
+
+The relayer framework uses multiple layers of optimizations to improve the
+efficiency of relaying IBC packets. The first layer performs message
+batching per relay context, by collecting messages being sent over a relay
+context within a time frame and send them all as a single batch if it does not
+exceed the batch size limit. This layer does the batching per relay context,
+because it allows the use of the `SendIbcMessagesWithUpdateClient` component to
+add update client messages to the batched messages, which has to be tied to
+specific relay context.
+
+The second layer performs message batching per chain context. It would collect
+all messages being sent to a chain within a time frame, and send them all in
+a single batch if it does not exceed the batch size limit. The batching
+mechanics is the same, but is done at the chain level. As a result, it is able
+to batch IBC messages coming from multiple counterparty chains.
+
+The third layer performs batching at the _transaction_ context. It provides a
+_nonce allocator_ interface to allow a limited number of messages to be sent
+at the same time as transactions. Since Cosmos chains require strict order in
+the use of monotonically increasing account sequences as nonces, the nonce
+allocator needs to be conservative in the number of nonces to be allocated in
+parallel. This is because if an earlier transaction failed to be broadcasted,
+latter transactions that use the higher-numbered nonces may fail as well. When
+a nonce mismatch error happens, the nonce allocator also needs to be smart
+enough to refresh the cached nonce sequences so that the correct nonces can be
+allocated to the next messages.
+
+It is also worth noting that all optimization layers offered by the relayer
+framework are _optional_. For example, if the relayer is used to relay
+non-Cosmos chains, or if future Cosmos SDK chains allow parallel nonces to be
+used, then one can easily swap with a different nonce allocator that is better
+suited for the given nonce logic. The relayer framework also provides a _naive_
+nonce allocator, which only allows one transaction to be sent at a time using
+a mutually exclusive nonce.
+
+The relayer framework also allows for easy addition of new optimization layers.
+For example, we can consider adding a _signer allocator_ layer, which
+multiplexes the sending of parallel transactions using multiple signer wallets.
+Adding such layer would require transaction contexts that use it to provide
+a _list_ of signers, as compared to a single signer. On the other hands,
+transaction contexts that do not need such optimization are not affected and
+would only have to provide a single signer.
+
+### Error Handling
+
+With the async task-based concurrency, the new relayer has a simpler error
+handling logic than the v1 relayer. At minimum, there are two places where retry
+logic needs to be implemented. The first is at the packet relayer layer, where
+if any part of the relaying operation failed, the packet relayer would retry
+the whole process of relaying that packet. This is done by having a separate
+`RetryRelayer` component that specifically handles the retry logic:
+
+```rust
+type ChosenPacketRelayer = RetryRelayer<FullCycleRelayer>;
+```
+
+In the above example, the `FullCycleRelayer` is the core packet relayer that
+performs the actual packet relaying logic. It is wrapped by `RetryRelayer`,
+which would call `FullCycleRelayer::relay_packet()` to attempt to relay the
+IBC packet. If the operation fais and returns an error, `RetryRelayer` would
+check on whether the error is retryable, and if so it would call the inner
+relayer again. As the relayer framework also keeps the error type generic,
+a concrete relay context can provide custom error types as well as provide
+methods for the `RetryRelayer` to determine whether an error is retryable.
+
+Inside the `FullCycleRelayer`, it always start the relaying from the beginning
+of a lifecycle, which is to relay `RecvPacket`, then `AckPacket` or
+`TimeoutPacket`. It does not check for what is the current relaying state of the
+packet, because this is done by separate components such as
+`SkipReceivedPacketRelayer`, which would skip the stage for relaying
+`RecvPacket` if the chain has already received the packet before. This helps
+keep the core relaying logic simple, while still provides robust retry mechanism
+that allows the retry operation to resume at appropriate stages.
+
+The seond layer of retry is at the transaction layer with the nonce allocator.
+When sending of a transaction fails, the nonce allocator can check whether
+the failure is caused by nonce mismatch errors. If so, it can retry sending
+the transaction with a refresh nonce, without having to propagate the error
+all the way back to `RetryRelayer`.
+
+### Model Checking
+
+The retry logic at the transaction layer can be more complicated than one
+imagine. This is because failure of sending transactions may be local and
+temporary, and the relayer may receive transaction failure even if a transaction
+is eventually committed, such as due to insufficient waiting time before timing
+out, or failure on the full node or network while the transaction has already
+been broadcasted. If the sending of a successful transaction is incorrectly
+identified as failure, it may result in cascading failures being accumulated
+on the relayer, such as repeatedly retrying the sending of transactions with
+invalidated nonces.
+
+Because of this, a lot of rigorous testing are required to ensure that the
+combined logic of retrying to send packets and transactions is sound. A good
+way to test that is to build a model of the concurrent system and test all
+possible states using model checking tools like TLA+ and Apalache. On the other
+hand, since the relayer framework itself is fully abstract, it is also possble
+to treat the relayer framework as a model. This can be potentially done by using
+model checking tools for Rust, such as Kani and Prusti.
+
+Although we are still in the research phase on exploring the feasibility of
+doing model checking in Rust, the abstract nature of the relayer framework
+increases the chance of the tools being a good fit. In particular, the
+relayer framwork supports no_std and is not tied to specific async runtime.
+As a result, it has less problem to work with symbolic execution environments
+like Kani, which does not support std and async constructs.
 
 ### All-In-One Traits
 

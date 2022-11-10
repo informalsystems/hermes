@@ -91,7 +91,7 @@
 
     The core logic of IBC relaying is encapsulated behind the
     [`CanRelayPacket`](crate::base::relay::traits::packet_relayer::CanRelayPacket) trait.
-    The [`FullRelayer`](crate::base::relay::impls::packet_relayers::general::full_relay::FullRelayer)
+    The [`FullCycleRelayer`](crate::base::relay::impls::packet_relayers::general::full_relay::FullCycleRelayer)
     component is one of the top-level components that performs the full cycle of
     relaying an IBC packet from a source chain to a destination chain.
 

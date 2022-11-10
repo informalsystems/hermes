@@ -10,10 +10,10 @@ use crate::base::relay::traits::types::HasRelayTypes;
 use crate::base::relay::types::aliases::Packet;
 use crate::std_prelude::*;
 
-pub struct FullRelayer;
+pub struct FullCycleRelayer;
 
 #[async_trait]
-impl<Relay> PacketRelayer<Relay> for FullRelayer
+impl<Relay> PacketRelayer<Relay> for FullCycleRelayer
 where
     Relay: HasRelayTypes,
     Relay: CanRelayAckPacket,
