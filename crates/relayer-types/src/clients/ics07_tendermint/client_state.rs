@@ -54,7 +54,7 @@ impl ClientState {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         chain_id: ChainId,
-        trust_level: TrustThreshold,
+        trust_threshold: TrustThreshold,
         trusting_period: Duration,
         unbonding_period: Duration,
         max_clock_drift: Duration,
@@ -85,24 +85,24 @@ impl ClientState {
             )));
         }
 
-        // `TrustThreshold` is guaranteed to be in the range `[0, 1)`, but a `TrustThreshold::ZERO`
-        // value is invalid in this context
-        if trust_level == TrustThreshold::ZERO {
+        // `TrustThreshold` is guaranteed to be in the range `[0, 1)`,
+        // but a zero value is invalid in this context
+        if trust_threshold.numerator() == 0 || trust_threshold.denominator() == 0 {
             return Err(Error::validation(
-                "ClientState trust-level cannot be zero".to_string(),
+                "ClientState trust threshold cannot be zero".to_string(),
             ));
         }
 
         // Disallow empty proof-specs
         if proof_specs.is_empty() {
             return Err(Error::validation(
-                "ClientState proof-specs cannot be empty".to_string(),
+                "ClientState proof specs cannot be empty".to_string(),
             ));
         }
 
         Ok(Self {
             chain_id,
-            trust_level,
+            trust_level: trust_threshold,
             trusting_period,
             unbonding_period,
             max_clock_drift,
@@ -466,7 +466,7 @@ mod tests {
             Test {
                 name: "Invalid (too small) trusting trust threshold".to_string(),
                 params: ClientStateParams {
-                    trust_level: TrustThreshold::ZERO,
+                    trust_level: TrustThreshold::new(1, 5).unwrap(),
                     ..default_params.clone()
                 },
                 want_pass: false,
