@@ -21,7 +21,7 @@ use ibc_relayer_types::{
     Height,
 };
 use serde::Serialize;
-use tendermint_rpc::abci::Event as AbciEvent;
+use tendermint::abci::Event as AbciEvent;
 
 use crate::light_client::decode_header;
 
@@ -122,7 +122,7 @@ pub fn ibc_event_try_from_abci_event(abci_event: &AbciEvent) -> Result<IbcEvent,
             timeout_packet_try_from_abci_event(abci_event).map_err(IbcEventError::channel)?,
         )),
         Ok(IbcEventType::IncentivizedPacket) => Ok(IbcEvent::IncentivizedPacket(
-            IncentivizedPacket::try_from(&abci_event.attributes).map_err(IbcEventError::fee)?,
+            IncentivizedPacket::try_from(&abci_event.attributes[..]).map_err(IbcEventError::fee)?,
         )),
         _ => Err(IbcEventError::unsupported_abci_event(
             abci_event.type_str.to_owned(),
