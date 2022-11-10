@@ -212,6 +212,46 @@ jobs:
             test -p ibc-integration-test --features ics29-fee --no-fail-fast -- \
             --nocapture --test-threads=1 fee::
 
+  forward-packet:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        chain:
+          - package: gaia6
+            command: gaiad
+            account_prefix: cosmos
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v15
+        with:
+          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
+          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - uses: cachix/cachix-action@v10
+        with:
+          name: cosmos
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: Swatinem/rust-cache@v1
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p ibc-integration-test --features forward-packet --no-fail-fast --no-run
+      - env:
+          RUST_LOG: info
+          RUST_BACKTRACE: 1
+          NO_COLOR_LOG: 1
+          CHAIN_COMMAND_PATH: ${{ matrix.chain.command }}
+          ACCOUNT_PREFIX: ${{ matrix.chain.account_prefix }}
+        run: |
+          nix shell .#${{ matrix.chain.package }} -c cargo \
+            test -p ibc-integration-test --features forward-packet --no-fail-fast -- \
+            --nocapture --test-threads=1
+
   model-based-test:
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -251,42 +291,3 @@ jobs:
       #       -c cargo \
       #       test -p ibc-integration-test --features mbt --no-fail-fast -- \
       #       --nocapture --test-threads=1 mbt
-forward-packet:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        chain:
-          - package: gaia6
-            command: gaiad
-            account_prefix: cosmos
-    steps:
-      - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v15
-        with:
-          install_url: https://nixos-nix-install-tests.cachix.org/serve/vij683ly7sl95nnhb67bdjjfabclr85m/install
-          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v10
-        with:
-          name: cosmos
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v1
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p ibc-integration-test --features forward-packet --no-fail-fast --no-run
-      - env:
-          RUST_LOG: info
-          RUST_BACKTRACE: 1
-          NO_COLOR_LOG: 1
-          CHAIN_COMMAND_PATH: ${{ matrix.chain.command }}
-          ACCOUNT_PREFIX: ${{ matrix.chain.account_prefix }}
-        run: |
-          nix shell .#${{ matrix.chain.package }} -c cargo \
-            test -p ibc-integration-test --features ics29-fee --no-fail-fast -- \
-            --nocapture --test-threads=1 fee::
