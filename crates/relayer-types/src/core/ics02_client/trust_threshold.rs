@@ -2,10 +2,12 @@
 //! represented as a fraction with valid values in the
 //! range `[0, 1)`.
 
+use core::cmp;
 use core::convert::TryFrom;
 use core::fmt::{Display, Error as FmtError, Formatter};
 
 use ibc_proto::protobuf::Protobuf;
+use num_rational::Ratio;
 use serde::{Deserialize, Serialize};
 
 use ibc_proto::ibc::lightclients::tendermint::v1::Fraction;
@@ -32,7 +34,7 @@ use crate::core::ics02_client::error::Error;
 ///
 /// This type accepts even a value of 0, (numerator = 0, denominator = 0),
 /// which is used in the client state of an upgrading client.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 pub struct TrustThreshold {
     /// The fractional amount of trusted voting power in a block.
     numerator: u64,
@@ -87,6 +89,31 @@ impl TrustThreshold {
     /// The denominator of the fraction underlying this trust threshold.
     pub fn denominator(&self) -> u64 {
         self.denominator
+    }
+
+    /// Return this trust threshold as a `num_rational::Ratio<u64>`
+    pub fn to_ratio(&self) -> Ratio<u64> {
+        Ratio::new(self.numerator, self.denominator)
+    }
+}
+
+impl PartialEq for TrustThreshold {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_ratio().eq(&other.to_ratio())
+    }
+}
+
+impl Eq for TrustThreshold {}
+
+impl PartialOrd for TrustThreshold {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        self.to_ratio().partial_cmp(&other.to_ratio())
+    }
+}
+
+impl Ord for TrustThreshold {
+    fn cmp(&self, other: &Self) -> cmp::Ordering {
+        self.to_ratio().cmp(&other.to_ratio())
     }
 }
 

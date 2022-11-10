@@ -1830,6 +1830,7 @@ dependencies = [
  "ics23",
  "itertools",
  "modelator",
+ "num-rational",
  "num-traits",
  "primitive-types",
  "prost",
