@@ -40,9 +40,6 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia5
-            command: gaiad
-            account_prefix: cosmos
           - package: gaia6
             command: gaiad
             account_prefix: cosmos

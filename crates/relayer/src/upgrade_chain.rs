@@ -22,7 +22,6 @@ use crate::chain::handle::ChainHandle;
 use crate::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::AnyClientState;
-use crate::config::ChainConfig;
 use crate::error::Error;
 
 define_error! {
@@ -55,8 +54,6 @@ define_error! {
 
 #[derive(Clone, Debug)]
 pub struct UpgradePlanOptions {
-    pub src_chain_config: ChainConfig,
-    pub dst_chain_config: ChainConfig,
     pub src_client_id: ClientId,
     pub amount: u64,
     pub denom: String,
