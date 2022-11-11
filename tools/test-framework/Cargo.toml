@@ -21,7 +21,6 @@ ibc-proto         = { version = "=0.21.0" }
 tendermint        = { version = "=0.25.0" }
 tendermint-rpc    = { version = "=0.25.0", features = ["http-client", "websocket-client"] }
 
-async-trait = "0.1.57"
 http = "0.2.8"
 tokio = { version = "1.0", features = ["full"] }
 tracing = "0.1.36"
@@ -40,5 +39,3 @@ sha2 = "0.10.6"
 crossbeam-channel = "0.5.5"
 semver = "1.0.14"
 flex-error = "0.4.4"
-prost = { version = "0.11" }
-tonic = { version = "0.8", features = ["tls", "tls-roots"] }
