@@ -400,7 +400,9 @@ way to test that is to build a model of the concurrent system and test all
 possible states using model checking tools like TLA+ and Apalache. On the other
 hand, since the relayer framework itself is fully abstract, it is also possble
 to treat the relayer framework as a model. This can be potentially done by using
-model checking tools for Rust, such as Kani and Prusti.
+model checking tools for Rust, such as Kani and Prusti. If that is possible,
+it could significantly reduce the effort of model checking, since there
+wouldn't be need to re-implement the relayer logic in a separate language.
 
 Although we are still in the research phase on exploring the feasibility of
 doing model checking in Rust, the abstract nature of the relayer framework
@@ -411,6 +413,80 @@ like Kani, which does not support std and async constructs.
 
 ### All-In-One Traits
 
+The relayer framework makes use of context-generic programming to define a
+dozens of component interfaces and implementations. Although that provides a
+lot of flexibilities for context implementers to mix and match components as
+they see fit, it would also require them to have deeper understanding of how
+each component works and how to combine them using context-generic programming.
+
+As an analogy, a computer is made of many modular components, such as CPU, RAM,
+and storage. With well defined hardware interfaces, anyone can in theory
+assemble their own computer with the exact hardware specs that they prefer.
+However, even though having modular hardware components is very useful, the
+majority of consumers would prefer _not_ to assemble their own computer, or to
+understand how each hardware component works. Instead, consumers prefer to have
+pre-assembled computers that are designed to fit specific use cases, such as
+gaming laptops or smartphones with good cameras, and choose a model that matches
+closest to their use cases.
+
+To help normal users to build custom relayers with minimal effort, the relayer
+framework offers _all-in-one_ traits that have most parts of the relayer
+pre-configured as _presets_. The relayer framework currently offers two presets:
+minimal and full-featured.
+
+The minimal preset, as its name implies, offers an abstract implementation of a
+minimal relayer, which only performs the core logic of relaying with no
+additional complexity. Because the relayer is minimal, it has less requirements
+of what the concrete contexts need to implement. As a result, it takes the least
+effort for users to build a minimal relayer that targets custom chains like
+solomachines, or custom environments like Wasm.
+
+On the other hand, the full preset includes all available components that the
+relayer framework offers, such as message batching, parallel transactions,
+packet filter, error retry, and telemetry. While these features are not
+essential for a minimal relayer to work, they are useful for operating
+production relayers that require high reliability and efficiency. As a tradeoff,
+since the full relayer includes more components with complex logic, it also
+impose more requirements to the concrete context implementation, and there may
+be more potential for subtle bugs to be found.
+
+The minimal preset requires implementers of custom relay context to implement
+the _one-for-all_ traits such as `OfaBaseChain` and `OfaBaseRelay`. In addition
+to that, the full preset requires implementers to also implement traits like
+`OfaFullChain` and `OfaFullRelay`. An example use of this is demonstrated
+in the later section using the Cosmos chain context.
+
+### Limitations of All-In-One Traits
+
+Since the relayer framework only offers two presets, there is a gap between
+the minimal preset and the full preset. As a result, users cannot selectively
+choose only specific features from the full relayer, such as enabling only
+the message batching feature without telemetry. The choice of us imposing
+this restriction is _deliberate_, as we want to keep the all-in-one traits
+simple and have a smooth learning curve.
+
+It is worth noting that even though the relayer components defined using
+context-generic programming are fully modular, the all-in-one traits are
+designed to be _rigid_ and _specialized_. Observant readers may notice that
+the all-in-one traits are similar to the traditional god traits that are
+commonly found in Rust code, such as `ChainHandle` in relayer v1. At the expense
+of user convenience, the all-in-one traits suffer the same limitations as other
+god traits of being very complex and inflexible. However, the main difference is
+that since the all-in-one traits are nothing but glue code to the actual
+components, their presence is optional and can be bypassed easily if needed.
+
+If users want to mix and match specific features of the relayer, they can
+instead bypass the all-in-one traits and use the relayer components directly
+with context-generic programming. Similarly, if users want to implement custom
+components, such as custom logic for building UpdateClient messages, they
+should skip the all-in-one traits and implement the custom logic directly using
+context-generic programming.
+
+In the future, the relayer framework may offer more variants of all-in-one
+traits that are catered for specific use cases. For example, we may define
+multiple specialized relayers that _prioritize_ differently on how packets
+should be relayed, such as based on incentivized packet fees or how long the
+packet has stayed idle.
 
 ### Cosmos Relayer
 
