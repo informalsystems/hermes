@@ -1,5 +1,6 @@
 //! Utility methods for querying packet event data.
 
+use itertools::Itertools;
 use tracing::{info, span, warn, Level};
 
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
@@ -11,10 +12,10 @@ use crate::chain::requests::{Qualified, QueryHeight, QueryPacketEventDataRequest
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
 use crate::path::PathIdentifiers;
-use crate::util::pretty::PrettySlice;
+use crate::util::collate::CollatedIterExt;
 
 /// Limit on how many query results should be expected.
-pub const QUERY_RESULT_LIMIT: usize = 50;
+pub const CHUNK_LENGTH: usize = 50;
 
 /// Returns an iterator on batches of packet events.
 pub fn query_packet_events_with<'a, ChainA, QueryFn>(
@@ -37,39 +38,37 @@ where
     let events_total = sequences.len();
     let mut events_left = events_total;
 
-    sequences
-        .chunks(QUERY_RESULT_LIMIT)
-        .map_while(
-            move |chunk| match query_fn(src_chain, path, chunk, query_height) {
-                Ok(events) => {
-                    events_left -= chunk.len();
+    sequences.chunks(CHUNK_LENGTH).map_while(move |chunk| {
+        match query_fn(src_chain, path, chunk, query_height) {
+            Ok(events) => {
+                events_left -= chunk.len();
 
-                    info!(
-                        events.total = %events_total,
-                        events.left = %events_left,
-                        "pulled packet data for {} events out of {} sequences: {};",
-                        events.len(),
-                        chunk.len(),
-                        PrettySlice(chunk)
-                    );
+                info!(
+                    events.total = %events_total,
+                    events.left = %events_left,
+                    "pulled packet data for {} events out of {} sequences: {};",
+                    events.len(),
+                    chunk.len(),
+                    chunk.iter().copied().collated().format(", "),
+                );
 
-                    // Because we use the first event height to do the client update,
-                    // if the heights of the events differ, we get proof verification failures.
-                    // Therefore we overwrite the events height with the query height,
-                    // ie. the height of the first event.
-                    let events = events
-                        .into_iter()
-                        .map(|ev| ev.with_height(query_height.get()))
-                        .collect();
+                // Because we use the first event height to do the client update,
+                // if the heights of the events differ, we get proof verification failures.
+                // Therefore we overwrite the events height with the query height,
+                // ie. the height of the first event.
+                let events = events
+                    .into_iter()
+                    .map(|ev| ev.with_height(query_height.get()))
+                    .collect();
 
-                    Some(events)
-                }
-                Err(e) => {
-                    warn!("encountered query failure while pulling packet data: {}", e);
-                    None
-                }
-            },
-        )
+                Some(events)
+            }
+            Err(e) => {
+                warn!("encountered query failure while pulling packet data: {}", e);
+                None
+            }
+        }
+    })
 }
 
 fn query_packet_events<ChainA: ChainHandle>(

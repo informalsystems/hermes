@@ -121,9 +121,21 @@ pub mod types;
 pub mod version;
 pub mod wait;
 
-/// fraction of the maximum block size defined in the Tendermint core consensus parameters.
-pub const GENESIS_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
-// https://github.com/cosmos/cosmos-sdk/blob/v0.44.0/types/errors/errors.go#L115-L117
+/// Defines an upper limit on how large any transaction can be.
+/// This upper limit is defined as a fraction relative to the block's
+/// maximum bytes. For example, if the fraction is `0.9`, then
+/// `max_tx_size` will not be allowed to exceed 0.9 of the
+/// maximum block size of any Cosmos SDK network.
+///
+/// The default fraction we use is `0.9`; anything larger than that
+/// would be risky, as transactions might be rejected; a smaller value
+/// might be un-necessarily restrictive on the relayer side.
+/// The [default max. block size in Tendermint 0.37 is 21MB](tm-37-max).
+/// With a fraction of `0.9`, then Hermes will never permit the configuration
+/// of `max_tx_size` to exceed ~18.9MB.
+///
+/// [tm-37-max]: https://github.com/tendermint/tendermint/blob/v0.37.0-rc1/types/params.go#L79
+pub const BLOCK_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
 pub struct CosmosSdkChain {
     config: ChainConfig,
     tx_config: TxConfig,
@@ -162,8 +174,8 @@ impl CosmosSdkChain {
             .unwrap_or(2 * unbonding_period / 3)
     }
 
-    /// Performs validation of chain-specific configuration
-    /// parameters against the chain's genesis configuration.
+    /// Performs validation of the relayer's configuration
+    /// for a specific chain against the parameters of that chain.
     ///
     /// Currently, validates the following:
     ///     - the configured `max_tx_size` is appropriate
@@ -227,7 +239,7 @@ impl CosmosSdkChain {
             })?;
 
         let max_bound = result.consensus_params.block.max_bytes;
-        let max_allowed = mul_ceil(max_bound, GENESIS_MAX_BYTES_MAX_FRACTION);
+        let max_allowed = mul_ceil(max_bound, BLOCK_MAX_BYTES_MAX_FRACTION);
         let max_tx_size = BigInt::from(self.max_tx_size());
 
         if max_tx_size > max_allowed {
@@ -686,7 +698,7 @@ impl ChainEndpoint for CosmosSdkChain {
     /// Currently this checks that:
     ///     - the node responds OK to `/health` RPC call;
     ///     - the node has transaction indexing enabled;
-    ///     - the SDK version is supported;
+    ///     - the SDK & IBC versions are supported;
     ///
     /// Emits a log warning in case anything is amiss.
     /// Exits early if any health check fails, without doing any
