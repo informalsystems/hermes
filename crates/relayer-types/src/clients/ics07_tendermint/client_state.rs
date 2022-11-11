@@ -265,10 +265,16 @@ impl TryFrom<RawTmClientState> for ClientState {
     type Error = Error;
 
     fn try_from(raw: RawTmClientState) -> Result<Self, Self::Error> {
-        let trust_level = raw
-            .trust_level
-            .clone()
-            .ok_or_else(Error::missing_trusting_period)?;
+        let trust_level = raw.trust_level.ok_or_else(Error::missing_trust_threshold)?;
+
+        // We need to handle the case where the client is being upgraded and the trust threshold is set to 0/0
+        let trust_threshold = if trust_level.denominator == 0 && trust_level.numerator == 0 {
+            TrustThreshold::CLIENT_STATE_RESET
+        } else {
+            trust_level
+                .try_into()
+                .map_err(|e| Error::invalid_trust_threshold(format!("{}", e)))?
+        };
 
         // In `RawClientState`, a `frozen_height` of `0` means "not frozen".
         // See:
@@ -280,9 +286,7 @@ impl TryFrom<RawTmClientState> for ClientState {
         #[allow(deprecated)]
         Ok(Self {
             chain_id: ChainId::from_string(raw.chain_id.as_str()),
-            trust_level: trust_level
-                .try_into()
-                .map_err(|e| Error::invalid_trust_threshold(format!("{}", e)))?,
+            trust_level: trust_threshold,
             trusting_period: raw
                 .trusting_period
                 .ok_or_else(Error::missing_trusting_period)?

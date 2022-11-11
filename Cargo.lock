@@ -1824,7 +1824,6 @@ dependencies = [
  "itertools",
  "modelator",
  "num-rational",
- "num-traits",
  "primitive-types",
  "prost",
  "safe-regex",

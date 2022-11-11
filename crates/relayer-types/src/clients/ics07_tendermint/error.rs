@@ -62,6 +62,9 @@ define_error! {
         MissingUnbondingPeriod
             |_| { "missing unbonding period" },
 
+        MissingTrustThreshold
+            |_| { "missing trust threshold" },
+
         InvalidChainIdentifier
             [ ValidationError ]
             |_| { "invalid chain identifier" },
