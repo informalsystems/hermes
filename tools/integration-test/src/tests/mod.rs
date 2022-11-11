@@ -41,4 +41,4 @@ pub mod manual;
 pub mod example;
 
 #[cfg(any(doc, feature = "forward-packet"))]
-pub mod forward_transfer;
+pub mod forward;

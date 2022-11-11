@@ -250,7 +250,7 @@ jobs:
         run: |
           nix shell .#${{ matrix.chain.package }} -c cargo \
             test -p ibc-integration-test --features forward-packet --no-fail-fast -- \
-            --nocapture --test-threads=1
+            --nocapture --test-threads=1 forward::
 
   model-based-test:
     runs-on: ubuntu-latest
