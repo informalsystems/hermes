@@ -36,7 +36,7 @@ use ibc_relayer_types::{
 };
 
 use crate::chain::cosmos::version;
-use crate::chain::cosmos::GENESIS_MAX_BYTES_MAX_FRACTION;
+use crate::chain::cosmos::BLOCK_MAX_BYTES_MAX_FRACTION;
 use crate::event::monitor;
 use crate::keyring::errors::Error as KeyringError;
 use crate::sdk_error::SdkError;
@@ -428,7 +428,7 @@ define_error! {
             }
             |e| {
                 format!("semantic config validation failed for option `max_tx_size` for chain '{}', reason: `max_tx_size` = {} is greater than {}% of the consensus parameter `max_size` = {}",
-                    e.chain_id, e.configured_bound, GENESIS_MAX_BYTES_MAX_FRACTION * 100.0, e.genesis_bound)
+                    e.chain_id, e.configured_bound, BLOCK_MAX_BYTES_MAX_FRACTION * 100.0, e.genesis_bound)
             },
 
         ConfigValidationMaxGasTooHigh

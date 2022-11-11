@@ -2,6 +2,7 @@
 #![allow(deprecated)] // TODO(hu55a1n1): remove this when we don't need legacy upgrade support
 
 use core::time::Duration;
+use std::ops::Add;
 
 use bytes::BufMut;
 use flex_error::define_error;
