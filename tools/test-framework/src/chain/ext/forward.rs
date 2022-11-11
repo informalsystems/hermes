@@ -17,3 +17,16 @@ pub fn build_forward_address<'a, ChainB, ChainC>(
     );
     WalletAddress(forward_address)
 }
+
+/// Build a forward address with the destination address invalid
+pub fn build_invalid_forward_address<'a, ChainB, ChainC>(
+    intermediate_destination_address: MonoTagged<ChainB, &'a WalletAddress>,
+    port: DualTagged<ChainB, ChainC, PortId>,
+    channel: &'a ChannelId,
+) -> WalletAddress {
+    let forward_address = format!(
+        "{}|{}/{}:invalid address",
+        intermediate_destination_address, port, channel
+    );
+    WalletAddress(forward_address)
+}
