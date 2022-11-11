@@ -474,7 +474,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 ForeignClientError::client_upgrade(
                     self.id.clone(),
                     self.src_chain.id(),
-                    "failed while fetching from chain the upgraded client state".to_string(),
+                    format!("failed while fetching from chain the upgraded client state. The upgrade height `{}` might be too low", src_upgrade_height),
                     e,
                 )
             })?;
