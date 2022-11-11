@@ -4,6 +4,7 @@ use abscissa_core::{Command, Runnable};
 use ibc_relayer::chain::counterparty::unreceived_acknowledgements;
 use ibc_relayer::chain::handle::BaseChainHandle;
 use ibc_relayer::path::PathIdentifiers;
+use ibc_relayer::util::collate::CollatedIterExt;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
@@ -76,9 +77,12 @@ impl QueryPendingAcksCmd {
 
 impl Runnable for QueryPendingAcksCmd {
     fn run(&self) {
+        use crate::conclude::json;
+
         match self.execute() {
-            Ok(seqs) => Output::success(seqs).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Ok(seqs) if json() => Output::success(seqs).exit(),
+            Ok(seqs) => Output::success(seqs.into_iter().collated().collect::<Vec<_>>()).exit(),
+            Err(e) => Output::error(e).exit(),
         }
     }
 }

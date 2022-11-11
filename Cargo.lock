@@ -1663,25 +1663,19 @@ dependencies = [
  "serde_json",
  "tendermint-rpc",
  "tokio",
- "toml",
  "tracing",
- "url",
 ]
 
 [[package]]
 name = "ibc-integration-test"
 version = "0.20.0"
 dependencies = [
- "ibc-proto",
  "ibc-relayer",
- "ibc-relayer-cli",
  "ibc-relayer-types",
  "ibc-test-framework",
  "serde",
  "serde_json",
  "tempfile",
- "tendermint",
- "tendermint-rpc",
  "time 0.3.17",
  "toml",
 ]
@@ -1744,7 +1738,6 @@ dependencies = [
  "tendermint",
  "tendermint-light-client",
  "tendermint-light-client-verifier",
- "tendermint-proto",
  "tendermint-rpc",
  "tendermint-testgen",
  "test-log",
@@ -1775,11 +1768,9 @@ dependencies = [
  "eyre",
  "flex-error",
  "futures",
- "hex",
  "http",
  "humantime",
  "ibc-chain-registry",
- "ibc-proto",
  "ibc-relayer",
  "ibc-relayer-rest",
  "ibc-relayer-types",
@@ -1789,17 +1780,13 @@ dependencies = [
  "oneline-eyre",
  "regex",
  "serde",
- "serde_derive",
  "serde_json",
  "signal-hook",
  "subtle-encoding",
  "tendermint",
- "tendermint-light-client",
  "tendermint-light-client-verifier",
- "tendermint-proto",
  "tendermint-rpc",
  "tokio",
- "toml",
  "tracing",
  "tracing-subscriber",
 ]
@@ -1833,14 +1820,12 @@ dependencies = [
  "ics23",
  "itertools",
  "modelator",
- "num-traits",
  "primitive-types",
  "prost",
  "safe-regex",
  "serde",
  "serde_derive",
  "serde_json",
- "sha2 0.10.6",
  "subtle-encoding",
  "tendermint",
  "tendermint-light-client-verifier",
@@ -1858,7 +1843,6 @@ dependencies = [
 name = "ibc-telemetry"
 version = "0.20.0"
 dependencies = [
- "crossbeam-channel 0.5.6",
  "dashmap",
  "ibc-relayer-types",
  "moka",
@@ -1868,14 +1852,12 @@ dependencies = [
  "prometheus",
  "rouille",
  "tendermint",
- "uuid 1.2.1",
 ]
 
 [[package]]
 name = "ibc-test-framework"
 version = "0.20.0"
 dependencies = [
- "async-trait",
  "color-eyre",
  "crossbeam-channel 0.5.6",
  "eyre",
@@ -1887,7 +1869,6 @@ dependencies = [
  "ibc-relayer-cli",
  "ibc-relayer-types",
  "itertools",
- "prost",
  "rand",
  "semver",
  "serde",
@@ -1895,11 +1876,9 @@ dependencies = [
  "serde_yaml",
  "sha2 0.10.6",
  "subtle-encoding",
- "tendermint",
  "tendermint-rpc",
  "tokio",
  "toml",
- "tonic",
  "tracing",
  "tracing-subscriber",
 ]
