@@ -44,7 +44,7 @@ where
         telemetry.clone(),
     );
 
-    let chain_b = FullCosmosChain::new(
+    let chain_b = FullCosmosChainContext::new(
         chains.handle_b.clone(),
         chains
             .node_b

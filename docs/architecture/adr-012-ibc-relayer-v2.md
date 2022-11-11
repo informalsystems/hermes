@@ -45,7 +45,7 @@ support relaying between a Cosmos chain and a Substrate chain.
 
 # Decision
 
-## Development Plan
+## Development Strategy
 
 The Hermes V2 relayer is designed from the top down with a new architecture
 that is compatible with existing code base. This reduces the risk of having
@@ -59,7 +59,7 @@ relayer is expected to supercede the majority features of the v1 relayer
 with new and improved code.
 
 For the purpose of the architecture re-design, all the new code being
-developed are targetted toward the relayer v2. But the new code will be
+developed are targeted toward the relayer v2. But the new code will be
 usable in the form of experimental features when the relayer v1.5 is
 released. Both the v1 relayer and the new relayer will co-exist from
 v1.5 onward, until the v2 relayer is released.
@@ -473,14 +473,14 @@ commonly found in Rust code, such as `ChainHandle` in relayer v1. At the expense
 of user convenience, the all-in-one traits suffer the same limitations as other
 god traits of being very complex and inflexible. However, the main difference is
 that since the all-in-one traits are nothing but glue code to the actual
-components, their presence is optional and can be bypassed easily if needed.
+components, hence their presence is optional and can be bypassed easily if
+needed.
 
 If users want to mix and match specific features of the relayer, they can
 instead bypass the all-in-one traits and use the relayer components directly
-with context-generic programming. Similarly, if users want to implement custom
-components, such as custom logic for building UpdateClient messages, they
-should skip the all-in-one traits and implement the custom logic directly using
-context-generic programming.
+with CGP. Similarly, if users want to implement custom components, such as
+custom logic for building UpdateClient messages, they should skip the all-in-one
+traits and implement the custom logic directly CGP.
 
 In the future, the relayer framework may offer more variants of all-in-one
 traits that are catered for specific use cases. For example, we may define
@@ -602,6 +602,58 @@ steps of implementing the one-for-all traits and then wrapping the values inside
 the one-for-all wrappers are sufficient for us to build a fully customized
 relayer from the relayer framework.
 
+## Development Status
+
+We are slowly progressing toward finishing the relayer v1.5 MVP. At the current
+stage, we have finished a full implementation of the `PacketRelayer` and tested
+the successful relaying of a single IBC packet for Cosmos chains. To make the
+code ready for an initial v1.5 MVP release, the following work are still needed
+to be completed:
+
+### IBC Event Source
+
+To support relaying of multiple packets, the relayer framework needs to define
+an even source interface to listen to incoming IBC packets and then spawning
+new tasks to relay the packets using `PacketRelayer`. The Cosmos MVP for this
+will make use of the event subscription code provided by the v1 relayer
+supervisor to implement the event source.
+
+### Transaction Context
+
+The current MVP makes use of the existing `ChainHandle`'s `send_messages` method
+to submit messages as transactions to the chain. In order to implement custom
+strategies for submitting transactions, we are implementing a new transaction
+context as an additional layer below the chain context to handle the submission
+of messages as transactions to the blockchain.
+
+Due to the v2 relayer having different concurrency semantics from the v1 relayer,
+most of the messages sent by the new relayer would get queued up and be sent
+sequentially if they are sent using the existing `ChainHandle`. As a result,
+the transaction context is needed for the new relayer to demonstrate measurable
+difference in performance from the v1 relayer.
+
+### CLI Integration
+
+The new relayer will be made available by adding it as an experimental
+subcommand in the current relayer CLI. For example, the following CLI could
+be introduced to start the new relayer:
+
+```
+hermes new-relay start
+```
+
+The new relayer CLI would have to implement the logic for loading the relayer
+config in the current format, and then constructing the Cosmos relay context
+based on that.
+
+The initial new relayer MVP would initially lack many features from the current
+v1 relayer, such as packet clearing, robust retry logic, and handshakes. As a
+result, they are meant to be experimental and not used in production. The CLI
+may be conditionally enabled from an `experimental` feature flag, so that
+official releases of the Hermes relayer do not expose the CLI to be accidentally
+used by relayer operators.
+
+## Future Development
 
 # Status
 
