@@ -10,7 +10,7 @@ use ibc_proto::{
         connection::v1::{Counterparty as ConnectionCounterparty, IdentifiedConnection, Version},
     },
 };
-use tendermint::abci::Code;
+use tendermint_rpc::abci::Code;
 
 use crate::event::IbcEventWithHeight;
 
