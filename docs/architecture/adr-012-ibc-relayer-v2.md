@@ -490,6 +490,119 @@ packet has stayed idle.
 
 ### Cosmos Relayer
 
+The all-in-one traits offered by the relayer framework serves as a starter
+pack for building custom relayers. To dogfood the all-in-one traits, we create
+the `ibc-relayer-cosmos` crate which offers the Cosmos-specific implementation
+of the relayer.
+
+Following the available all-in-one presets, the `relayer-cosmos` crate offers
+two variants of Cosmos chains, minimal and full, defined as follows:
+
+```rust
+pub struct MinCosmosChainContext {
+    pub handle: ChainHandle,
+    pub signer: Signer,
+    pub tx_config: TxConfig,
+    pub key_entry: KeyEntry,
+}
+
+pub struct FullCosmosChainContext {
+    pub handle: ChainHandle,
+    pub signer: Signer,
+    pub tx_config: TxConfig,
+    pub key_entry: KeyEntry,
+    pub batch_channel: CosmosBatchChannel,
+    pub telemetry: CosmosTelemetry,
+}
+```
+
+A visual inspection of the type definitions above shows that the full-featured
+Cosmos chain context contains two additional fields, `batch_channel` and
+`telemetry`. This is because the full preset makes use of the batched message
+sender and telemetry components, which requires the chain context to provide
+the batch channels and telemetry context. Hence, if a user want to use the
+full-featured Cosmos relayer, they would also have to instantiate and provide
+the additional parameters when constructing the chain context.
+
+The Cosmos chain context is implemented as an MVP for the relayer v1.5. As a
+result, it delegates most of the chain operations to the existing `ChainHandle`
+code in relayer v1. As we progress toward the v2 relayer, the Cosmos chain
+context is expected to eventually remove its dependency to `ChainHandle`, and
+directly holds the low-level fields such as `grpc_address`.
+
+To make use of the Cosmos chain context for relaying between Cosmos chains,
+we implement the one-for-all traits for our Cosmos chain contexts roughly as
+follows:
+
+```rust
+impl OfaBaseChain for MinCosmosChainContext
+{
+    type Preset = MinimalPreset;
+
+    type Error = CosmosError;
+
+    type Height = CosmosHeight;
+
+    type Timestamp = CosmosTimestamp;
+
+    type Message = CosmosMessage;
+
+    type Event = CosmosEvent;
+
+    type ChainStatus = CosmosChainStatus;
+
+    /* ... */
+
+    async fn query_chain_status(&self) -> Result<CosmosChainStatus, CosmosError> {
+        /* ... */
+    }
+
+    async fn send_messages(
+        &self,
+        messages: Vec<CosmosMessage>,
+    ) -> Result<Vec<Vec<CosmosEvent>>, CosmosError> {
+        /* ... */
+    }
+
+    /* ... */
+}
+```
+
+For demonstration purpose, the above code is slightly simplified from the actual
+Cosmos chain implementation. Readers are encouraged to refer to the
+`ibc-relayer-cosmos` itself to see the full implementation details.
+
+In the `OfaBaseChain` implementation for `MinCosmosChainContext`, we first
+define the `Preset` type attribute to `MinimalPreset`, indicating that we
+only want to build a minimal relayer with our concrete context. We then bind
+the abstract types such as `Error` and `Height` to the Cosmos-specific types
+such as `CosmosError` and `CosmosTimestamp`. Finally, we implement the abstract
+methods that are reqruired to be provided by the concrete chain implementation,
+such as `query_chain_status` and `send_messages`.
+
+We would also do the same implementation for the concrete relay contexts, such
+as implementing `OfaBaseRelay` for  `MinCosmosRelayContext`, which would contain
+two `MinCosmosChainContext`s. Once the traits are implemented, the relayer
+methods would automatically be implemented by wrapping the relay context
+inside `OfaRelayWrapper`, such as follows:
+
+```rust
+let relayer = OfaRelayWrapper::new(MinCosmosRelayContext::new(/* ... */));
+let packet = /* ... */;
+
+// PacketRelayer::relay_packet is automatically implemented
+relayer.relay_packet(packet);
+```
+
+The wrapper types like `OfaRelayWrapper` are newtype wrappers that helps provide
+automatic implementation of the relayer traits provided by the relayer framework.
+The reason it is needed is to avoid having conflicting trait implementations
+if we try to implement it without the wrapper types. Aside from that, the two
+steps of implementing the one-for-all traits and then wrapping the values inside
+the one-for-all wrappers are sufficient for us to build a fully customized
+relayer from the relayer framework.
+
+
 # Status
 
 Proposed
