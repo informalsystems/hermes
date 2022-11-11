@@ -1,8 +1,11 @@
 //! Contains models for serializing and deserializing `assets.json` for a given chain
-//! originally from https://github.com/PeggyJV/ocular/blob/main/ocular/src/registry/assets.rs
-use crate::fetchable::Fetchable;
-use serde::{Deserialize, Serialize};
+//! originally from <https://github.com/PeggyJV/ocular/blob/main/ocular/src/registry/assets.rs>
+
 use std::path::PathBuf;
+
+use serde::{Deserialize, Serialize};
+
+use crate::fetchable::Fetchable;
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(default)]
