@@ -8,6 +8,7 @@ mod commitments;
 mod pending;
 mod pending_acks;
 mod pending_sends;
+mod util;
 
 #[derive(Command, Debug, Parser, Runnable)]
 pub enum QueryPacketCmds {

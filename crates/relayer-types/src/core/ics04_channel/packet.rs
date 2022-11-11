@@ -83,6 +83,22 @@ impl core::fmt::Display for Sequence {
     }
 }
 
+impl core::ops::Add<Self> for Sequence {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self {
+        Self(self.0 + rhs.0)
+    }
+}
+
+impl core::ops::Add<u64> for Sequence {
+    type Output = Self;
+
+    fn add(self, rhs: u64) -> Self {
+        Self(self.0 + rhs)
+    }
+}
+
 #[derive(Clone, Default, Hash, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Packet {
     pub sequence: Sequence,

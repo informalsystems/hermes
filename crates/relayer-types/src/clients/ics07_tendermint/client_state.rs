@@ -179,7 +179,7 @@ impl ClientState {
             return Err(Error::not_enough_time_elapsed(current_time, earliest_time));
         }
 
-        let earliest_height = processed_height.add(delay_period_blocks);
+        let earliest_height = processed_height + delay_period_blocks;
         if current_height < earliest_height {
             return Err(Error::not_enough_blocks_elapsed(
                 current_height,
