@@ -2,7 +2,6 @@
 //! represented as a fraction with valid values in the
 //! range `[0, 1)`.
 
-use core::cmp;
 use core::convert::TryFrom;
 use core::fmt::{Display, Error as FmtError, Formatter};
 
@@ -34,86 +33,45 @@ use crate::core::ics02_client::error::Error;
 ///
 /// This type accepts even a value of 0, (numerator = 0, denominator = 0),
 /// which is used in the client state of an upgrading client.
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
-pub struct TrustThreshold {
-    /// The fractional amount of trusted voting power in a block.
-    numerator: u64,
-    /// The fractional total voting power in a block.
-    denominator: u64,
-}
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct TrustThreshold(Ratio<u64>);
 
 impl TrustThreshold {
     /// Constant for a trust threshold of 1/3.
-    pub const ONE_THIRD: Self = Self {
-        numerator: 1,
-        denominator: 3,
-    };
+    pub const ONE_THIRD: Self = Self(Ratio::new_raw(1, 3));
 
     /// Constant for a trust threshold of 2/3.
-    pub const TWO_THIRDS: Self = Self {
-        numerator: 2,
-        denominator: 3,
-    };
+    pub const TWO_THIRDS: Self = Self(Ratio::new_raw(2, 3));
 
     /// Constant for a trust threshold of 0/0.
-    pub const ZERO: Self = Self {
-        numerator: 0,
-        denominator: 0,
-    };
+    ///
+    /// IMPORTANT: Only to be used for resetting the client state
+    /// during a client upgrade. Using this value anywhere else
+    /// might lead to panics.
+    pub const CLIENT_STATE_RESET: Self = Self(Ratio::new_raw(0, 0));
 
     /// Instantiate a TrustThreshold with the given denominator and
     /// numerator.
     ///
     /// The constructor succeeds as long as the resulting fraction
-    /// is in the range`[0, 1)`.
+    /// is a rational number in the range`[0, 1)`.
     pub fn new(numerator: u64, denominator: u64) -> Result<Self, Error> {
-        // The two parameters cannot yield a fraction that is bigger or equal to 1
-        if (numerator > denominator)
-            || (denominator == 0 && numerator != 0)
-            || (numerator == denominator && numerator != 0)
-        {
+        // The fraction cannot be bigger than 1, nor can the denominator be zero
+        if numerator > denominator || denominator == 0 {
             return Err(Error::invalid_trust_threshold(numerator, denominator));
         }
 
-        Ok(Self {
-            numerator,
-            denominator,
-        })
+        Ok(Self(Ratio::new(numerator, denominator)))
     }
 
     /// The numerator of the fraction underlying this trust threshold.
     pub fn numerator(&self) -> u64 {
-        self.numerator
+        *self.0.numer()
     }
 
     /// The denominator of the fraction underlying this trust threshold.
     pub fn denominator(&self) -> u64 {
-        self.denominator
-    }
-
-    /// Return this trust threshold as a `num_rational::Ratio<u64>`
-    pub fn to_ratio(&self) -> Ratio<u64> {
-        Ratio::new(self.numerator, self.denominator)
-    }
-}
-
-impl PartialEq for TrustThreshold {
-    fn eq(&self, other: &Self) -> bool {
-        self.to_ratio().eq(&other.to_ratio())
-    }
-}
-
-impl Eq for TrustThreshold {}
-
-impl PartialOrd for TrustThreshold {
-    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
-        self.to_ratio().partial_cmp(&other.to_ratio())
-    }
-}
-
-impl Ord for TrustThreshold {
-    fn cmp(&self, other: &Self) -> cmp::Ordering {
-        self.to_ratio().cmp(&other.to_ratio())
+        *self.0.denom()
     }
 }
 
@@ -121,10 +79,7 @@ impl Ord for TrustThreshold {
 /// IBC domain type.
 impl From<TrustThresholdFraction> for TrustThreshold {
     fn from(t: TrustThresholdFraction) -> Self {
-        Self {
-            numerator: t.numerator(),
-            denominator: t.denominator(),
-        }
+        Self(Ratio::new_raw(t.numerator(), t.denominator()))
     }
 }
 
@@ -134,8 +89,8 @@ impl TryFrom<TrustThreshold> for TrustThresholdFraction {
     type Error = Error;
 
     fn try_from(t: TrustThreshold) -> Result<TrustThresholdFraction, Error> {
-        Self::new(t.numerator, t.denominator)
-            .map_err(|_| Error::failed_trust_threshold_conversion(t.numerator, t.denominator))
+        TrustThresholdFraction::new(t.numerator(), t.denominator())
+            .map_err(|_| Error::failed_trust_threshold_conversion(t.numerator(), t.denominator()))
     }
 }
 
@@ -143,9 +98,9 @@ impl Protobuf<Fraction> for TrustThreshold {}
 
 impl From<TrustThreshold> for Fraction {
     fn from(t: TrustThreshold) -> Self {
-        Self {
-            numerator: t.numerator,
-            denominator: t.denominator,
+        Fraction {
+            numerator: t.numerator(),
+            denominator: t.denominator(),
         }
     }
 }
@@ -166,6 +121,42 @@ impl Default for TrustThreshold {
 
 impl Display for TrustThreshold {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
-        write!(f, "{}/{}", self.numerator, self.denominator)
+        write!(f, "{}/{}", self.numerator(), self.denominator())
+    }
+}
+
+impl Serialize for TrustThreshold {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        #[derive(Serialize)]
+        struct TrustThreshold {
+            numerator: u64,
+            denominator: u64,
+        }
+
+        let tt = TrustThreshold {
+            numerator: self.numerator(),
+            denominator: self.denominator(),
+        };
+
+        tt.serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for TrustThreshold {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct TrustThreshold {
+            numerator: u64,
+            denominator: u64,
+        }
+
+        let tt = TrustThreshold::deserialize(deserializer)?;
+        Self::new(tt.numerator, tt.denominator).map_err(serde::de::Error::custom)
     }
 }
