@@ -58,25 +58,6 @@ struct ClientUpgradeTest;
 impl TestOverrides for ClientUpgradeTestOverrides {
     /// Update the genesis file in order to reduce the time required to upgrade the chain.
     fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
-        use serde_json::Value;
-
-        let max_deposit_periods = genesis
-            .get_mut("app_state")
-            .and_then(|app_state| app_state.get_mut("gov"))
-            .and_then(|gov| gov.get_mut("deposit_params"))
-            .and_then(|deposit_params| deposit_params.as_object_mut());
-
-        if let Some(max_deposit_period) = max_deposit_periods {
-            max_deposit_period.insert(
-                "max_deposit_period".to_owned(),
-                Value::String(MAX_DEPOSIT_PERIOD.to_string()),
-            );
-        } else {
-            return Err(Error::generic(eyre!(
-                "failed to update max_deposit_period in genesis file"
-            )));
-        }
-
         set_max_deposit_period(genesis, MAX_DEPOSIT_PERIOD)?;
         set_voting_period(genesis, VOTING_PERIOD)?;
         Ok(())
