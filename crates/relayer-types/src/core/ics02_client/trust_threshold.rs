@@ -54,10 +54,10 @@ impl TrustThreshold {
     /// numerator.
     ///
     /// The constructor succeeds as long as the resulting fraction
-    /// is in the range`[0, 1)`.
+    /// is a rational number in the range`[0, 1)`.
     pub fn new(numerator: u64, denominator: u64) -> Result<Self, Error> {
-        // The two parameters cannot yield a fraction that is bigger than 1
-        if (numerator > denominator) || (denominator == 0 && numerator != 0) {
+        // The fraction cannot be bigger than 1, nor can the denominator be zero
+        if numerator > denominator || denominator == 0 {
             return Err(Error::invalid_trust_threshold(numerator, denominator));
         }
 
