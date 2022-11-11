@@ -653,7 +653,81 @@ may be conditionally enabled from an `experimental` feature flag, so that
 official releases of the Hermes relayer do not expose the CLI to be accidentally
 used by relayer operators.
 
-## Future Development
+## Future development plans toward relayer v2
+
+To progress the relayer v1.5 MVP toward relayer v2, there are several key
+milestones that we need to reach:
+
+### Remove Dependency to `ForeignClient`
+
+The relayer v1.5 MVP currently relies on `ForeignClient` to perform operations
+such as building UpdateClient messages. As a tradeoff, this restricts the
+Cosmos relay context to be usable with two Cosmos chains. To support relaying
+between a Cosmos chain and a non-Cosmos chain, it is necessary to remove
+the dependency to `ForeignClient`, as the non-Cosmos chain would otherwise
+have to implement `ChainHandle` to support the heterogenous relaying.
+
+### Remove Dependency to `ChainHandle`
+
+The relayer v1.5 MVP currently relies on `ChainHandle` for the majority chain
+operations such as doing queries and building merkle proofs. However as
+`ChainHandle` has a thread-based concurrency, it can only handle one operation
+at a time. With the transaction context, the new relayer is able to parallelize
+the query operations from the sending of transactions. However, the query
+part of the chain remains a bottleneck, and may impact the performance of the
+new relayer.
+
+As a result, the new Cosmos relayer needs to remove its dependency to
+`ChainHandle` so that it can perform concurrent queries to the chain. This
+would also allow the relayer framework to implement proper caching layers
+to reduce the traffic on the full node.
+
+### Heterogenous Relaying MVP
+
+The new relayer needs to demonstrate that the new architecture is sufficient
+to support relaying between different types of chains, such as Cosmos to
+Substrate relaying. To show that, we need to implement at least one non-Cosmos
+chain context and implement a relay context that supports two different
+chain contexts.
+
+A candidate for heterogenous relaying MVP is to build a mock solomachine chain
+context. Because the solomachine spec is relatively simple, it should require
+less effort to build a solomachine chain context from scratch. Furthermore,
+as the solomachine light client is already officially supported in ibc-go,
+we can test the solomachine relaying without having to use a custom Cosmos chain
+with custom light clients.
+
+Once the mock solomachine chain context is implemented, it would be possible to
+write integration tests to relay IBC packets between an in-memory solomachine
+with a live Cosmos chain.
+
+### Multiple Strategies for Concurrent Transactions
+
+A key goal for relayer v2 is to support the submission of concurrent
+transactions with upcoming major changes for Cosmos chains, in particular
+prioritized mempool and ABCI++. Depending on the chain implementation,
+it may not be possible to submit parallel transactions with different nonces.
+
+To mitigate that, the relayer may need different strategies of allocating nonces.
+For example, future Cosmos SDK chains may offer parallel lanes of account
+sequences, so that parallel transactions can make use of nonces from different
+lanes.
+
+An alternative strategy would be to multiplex the sending of transaction between
+multiple signers. However as this may bring operational burden to relayer
+operators, the relayer may need to automate the process of managing multiple
+wallets, such as with the use of fee grant.
+
+The relayer v1.5 MVP offers a nonce allocator interface as a starting point for
+implementing different nonce allocation strategies. However it currently
+only implements a naive nonce allocator which does _not_ support parallel
+transactions. In contrast, the relayer v2 would need to have multiple nonce
+allocators implemented, and testing them throughoutly with new versions of
+Cosmos chains.
+
+The relayer v1.5 MVP also does not design the interfaces to support sending
+transactions with multiple signers. Since such features also require significant
+effort in designing proper UX, it is left as a task for relayer v2 to implement.
 
 # Status
 
