@@ -6,26 +6,26 @@
 
 # Context and Problem Statement
 
-The current Hermes relayer, hereby called V1 relayer in this document, was
+The current Hermes relayer, hereby called v1 relayer in this document, was
 implemented at a time when the Cosmos ecosystem was still very new, and the
-idea of cross-chain with IBC was still a novel concept. The Hermes relayer
-has a monumental contribution toward the success of IBC and Cosmos, and it
+idea of cross-chain communication with IBC was still a novel concept. The Hermes relayer
+has made a monumental contribution toward the success of IBC and Cosmos, and it
 is the most widely used IBC relayer in the Cosmos ecosystem today.
 
 The adoption of Interchain and IBC continues to grow, and IBC traffic is
-increasing at an expoential pace. From our experience in developing and
+increasing at an exponential pace. From our experience in developing and
 operating the Hermes relayer, we have learned many valuable lessons about
 the challenges of building a reliable IBC relayer for a modern Interchain
 ecosystem.
 
-In this section, we will share some of the challenges that the V1 Hermes
+In this section, we will share some of the challenges that the v1 Hermes
 relayer faces, and the motivation for why there is a need to rethink about
 the IBC relayer architecture.
 
 ### Support for non-SDK and non-Cosmos Chains
 
 The success of IBC and the growth of Interchain introduce new use cases that
-the V1 relayer did not sufficiently focus on. For example, we have received
+the v1 relayer did not sufficiently focus on. For example, we have received
 many feature requests from Substrate to modify the Hermes code base to better
 support relaying between a Cosmos chain and a Substrate chain.
 
@@ -47,15 +47,15 @@ support relaying between a Cosmos chain and a Substrate chain.
 
 ## Development Strategy
 
-The Hermes V2 relayer is designed from the top down with a new architecture
-that is compatible with existing code base. This reduces the risk of having
+The Hermes v2 relayer is designed from the top down with a new architecture
+that is compatible with the existing code base. This reduces the risk of having
 a complete rewrite from the ground up, which may take too long and may fail
 to deliver.
 
 We progress toward the relayer v2 design with an MVP, called relayer v1.5,
 which adds a small number of experimental features to the existing v1 relayer
 without replacing existing features of the v1 relayer. In contrast, a v2
-relayer is expected to supercede the majority features of the v1 relayer
+relayer is expected to supercede the majority of features of the v1 relayer
 with new and improved code.
 
 For the purpose of the architecture re-design, all the new code being
@@ -84,20 +84,20 @@ the concrete `Self` type with a _generic_ `Context` type. Using the special
 properties of Rust's trait system, CGP allows component implementations to
 add new constraints and requirements to the `Context` type through `where`
 clauses inside `impl` blocks, by which the constraints would automatically
-propagated to the top level without having to repeatedly specify the
+propagate to the top level without having to repeatedly specify the
 constraints at every level of the code.
 
 ### Relayer Framework
 
 Using CGP, the core logic of the new relayer is implemented as a fully
 abstract library crate called `ibc-relayer-framework`, with no dependency
-to external crates except for using the `async-trait` crate to support
+on external crates except for using the `async-trait` crate to support
 async functions inside traits. In addition, the relayer framework is
-developed with `#![no_std]` enabled. By having almost no external dependency,
+developed with `#![no_std]` enabled. By having almost no external dependencies,
 the relayer can be ported to various restrictive environments, such as
-Wasm, Substrate runtime, and symbolic execution environments.
+Wasm, the Substrate runtime, and symbolic execution environments.
 
-Since the relayer framework is fully abstract, it also does not depends on
+Since the relayer framework is fully abstract, it also does not depend on
 the concrete type definitions of the IBC constructs, including primitives
 like height. Instead, the types are declared as abstract associated types in
 traits like `HasChainTypes` and `HasRelayTypes`:
@@ -124,7 +124,7 @@ the `ibc-relayer-framework` crate to see the full definitions.
 Since the type definitions are abstract, different chain implementations
 are free to make use of custom types to instantiate the relayer
 with. For example, a Cosmos chain implementation can use a `Height` type
-that contains revision number, while a mock chain implementation can use
+that contains a revision number, while a mock chain implementation can use
 `u64` as height.
 
 The use of abstract types is most useful in places where chain implementations
@@ -210,7 +210,7 @@ type ChosenUpdateClientMessageBuilder =
         BuildCosmosUpdateClientMessage>>;
 ```
 
-Above we have a declarative type alias of a component `ChosenUpdateClientMessageBuilder`, which is made from the composition of
+Above we have a declarative type alias of a component `ChosenUpdateClientMessageBuilder`, which is composed of
 three smaller components. When this is used, the component will first
 use `SkipUpdateClient` to check whether the client has already been updated,
 it then uses `WaitUpdateClient` to wait for the counterparty chain's height
@@ -227,7 +227,7 @@ to customize the UpdateClient logic.
 
 ### IBC message sender
 
-A use case for having modular component is the ability for relayers to customize
+A use case for having modular components is the ability for relayers to customize
 on different strategies for sending IBC messages. For instance, a message sender
 for a minimal relayer can be:
 
@@ -242,30 +242,30 @@ the front of messages being sent, and `SendIbcMessagesToChain` sends
 the messages from the relay context to the chain context.
 
 On the other hand, in a full-featured relayer, a batch message worker could be
-used to batch multiple batch of messages being sent within a timeframe into a
+used to batch multiple messages being sent within a timeframe into a
 single message batch:
 
 ```rust
-type FullIbcMessageSender = SendMessagetoBatchWorker;
+type FullIbcMessageSender = SendMessageToBatchWorker;
 
 type IbcMessageSenderForBatchWorker =
     SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>;
 ```
 
-In the above declaration, the relay context would use `SendMessagetoBatchWorker`
+In the above declaration, the relay context would use `SendMessageToBatchWorker`
 to send the IBC messages to the batch worker using an MPSC channel. Inside
 the batch worker, it would then bundle multiple batches of messages and
 send them together using
 `SendIbcMessagesWithUpdateClient<SendIbcMessagesToChain>`. Through this, the
 batched version of the message sender can save cost and performance on sending
 IBC messages, because the relayer would only attach one UpdateClient message
-along multiple messages that are batched together.
+alongside multiple messages that are batched together.
 
 With the declarative nature of context-generic programming, users would be able
 to easily customize on different strategies of sending IBC messages,
 as well as building update client messages. CGP also helps propagate the
 additional constraints of components to the concrete context implementer.
-For instance, if `SendMessagetoBatchWorker` is used, the relay context is
+For instance, if `SendMessageToBatchWorker` is used, the relay context is
 required to provide MPSC channels that can be used for sending messages to the
 batch worker. On the other hand, if only `MinimalIbcMessageSender` is used,
 the relay context can remove the burden of having to provide an MPSC channel.
@@ -274,8 +274,8 @@ the relay context can remove the burden of having to provide an MPSC channel.
 
 The v1 relayer was developed at a time when Rust's async/await infrastructure
 was not yet ready for use. As a result, the v1 relayer uses thread-based
-concurrency, by spawning limited number of threads and does manual multiplexing
-of multiple tasks in each thread.
+concurrency, by spawning limited number of threads and manually multiplexing
+multiple tasks in each thread.
 
 As time moves forward, the async/await feature in Rust has become mature enough,
 and the new relayer is able to make use of async tasks to manage the concurrency
@@ -295,7 +295,7 @@ where
 The `PacketRelayer` trait allows the handling of a single IBC packet at a time.
 When multiple IBC packets need to be relayed at the same time, the relayer
 framework allows multiple async tasks to be spawned at the same time, with each
-tasks sharing the same relay context but does the relaying for different packets.
+task sharing the same relay context but doing the relaying for different packets.
 
 To optimize for efficiency, the relay context can switch the strategy for
 batching messages and transactions at the lower layers without affecting the
@@ -306,25 +306,25 @@ packet relayer, and it is not aware of other concurrent tasks running.
 The relayer framework uses multiple layers of optimizations to improve the
 efficiency of relaying IBC packets. The first layer performs message
 batching per relay context, by collecting messages being sent over a relay
-context within a time frame and send them all as a single batch if it does not
+context within a time frame and sending them all as a single batch if it does not
 exceed the batch size limit. This layer does the batching per relay context,
 because it allows the use of the `SendIbcMessagesWithUpdateClient` component to
-add update client messages to the batched messages, which has to be tied to
+add update client messages to the batched messages, which has to be tied to a
 specific relay context.
 
 The second layer performs message batching per chain context. It would collect
 all messages being sent to a chain within a time frame, and send them all in
 a single batch if it does not exceed the batch size limit. The batching
-mechanics is the same, but is done at the chain level. As a result, it is able
-to batch IBC messages coming from multiple counterparty chains.
+mechanics are the same, but is done at the chain level, as opposed to at the relayer level. 
+As a result, it is able to batch IBC messages coming from multiple counterparty chains.
 
 The third layer performs batching at the _transaction_ context. It provides a
 _nonce allocator_ interface to allow a limited number of messages to be sent
-at the same time as transactions. Since Cosmos chains require strict order in
-the use of monotonically increasing account sequences as nonces, the nonce
+at the same time as other transactions. Since Cosmos chains require strict order in
+the use of monotonically-increasing account sequences as nonces, the nonce
 allocator needs to be conservative in the number of nonces to be allocated in
 parallel. This is because if an earlier transaction failed to be broadcasted,
-latter transactions that use the higher-numbered nonces may fail as well. When
+later transactions that use the higher-numbered nonces may fail as well. When
 a nonce mismatch error happens, the nonce allocator also needs to be smart
 enough to refresh the cached nonce sequences so that the correct nonces can be
 allocated to the next messages.
@@ -340,17 +340,17 @@ a mutually exclusive nonce.
 The relayer framework also allows for easy addition of new optimization layers.
 For example, we can consider adding a _signer allocator_ layer, which
 multiplexes the sending of parallel transactions using multiple signer wallets.
-Adding such layer would require transaction contexts that use it to provide
-a _list_ of signers, as compared to a single signer. On the other hands,
-transaction contexts that do not need such optimization are not affected and
+Adding such a layer would require transaction contexts that use it to provide
+a _list_ of signers, as compared to a single signer. On the other hand,
+transaction contexts that do not need such an optimization are not affected and
 would only have to provide a single signer.
 
 ### Error Handling
 
-With the async task-based concurrency, the new relayer has a simpler error
+With the async task-based concurrency, the new relayer has simpler error
 handling logic than the v1 relayer. At minimum, there are two places where retry
 logic needs to be implemented. The first is at the packet relayer layer, where
-if any part of the relaying operation failed, the packet relayer would retry
+if any part of the relaying operation fails, the packet relayer will retry
 the whole process of relaying that packet. This is done by having a separate
 `RetryRelayer` component that specifically handles the retry logic:
 
@@ -360,41 +360,41 @@ type ChosenPacketRelayer = RetryRelayer<FullCycleRelayer>;
 
 In the above example, the `FullCycleRelayer` is the core packet relayer that
 performs the actual packet relaying logic. It is wrapped by `RetryRelayer`,
-which would call `FullCycleRelayer::relay_packet()` to attempt to relay the
-IBC packet. If the operation fais and returns an error, `RetryRelayer` would
-check on whether the error is retryable, and if so it would call the inner
+which calls `FullCycleRelayer::relay_packet()` in an attempt to relay the
+IBC packet. If the operation fails and returns an error, `RetryRelayer` 
+checks on whether the error is retryable, and if so it calls the inner
 relayer again. As the relayer framework also keeps the error type generic,
 a concrete relay context can provide custom error types as well as provide
 methods for the `RetryRelayer` to determine whether an error is retryable.
 
-Inside the `FullCycleRelayer`, it always start the relaying from the beginning
-of a lifecycle, which is to relay `RecvPacket`, then `AckPacket` or
-`TimeoutPacket`. It does not check for what is the current relaying state of the
+Inside the `FullCycleRelayer`, it always starts the relaying from the beginning
+of the packet lifecycle, which is to relay a `RecvPacket`, then an `AckPacket` or
+a `TimeoutPacket`. It does not check for what is the current relaying state of the
 packet, because this is done by separate components such as
-`SkipReceivedPacketRelayer`, which would skip the stage for relaying
-`RecvPacket` if the chain has already received the packet before. This helps
-keep the core relaying logic simple, while still provides robust retry mechanism
-that allows the retry operation to resume at appropriate stages.
+`SkipReceivedPacketRelayer`, which would skip relaying a `RecvPacket` if the chain
+has already received the packet before. This helps keep the core relaying logic simple, 
+while still providing a robust retry mechanism that allows the retry operation 
+to resume at an appropriate stage.
 
-The seond layer of retry is at the transaction layer with the nonce allocator.
+The second layer of the retry logic is at the transaction layer with the nonce allocator.
 When sending of a transaction fails, the nonce allocator can check whether
 the failure is caused by nonce mismatch errors. If so, it can retry sending
-the transaction with a refresh nonce, without having to propagate the error
+the transaction with a refreshed nonce, without having to propagate the error
 all the way back to `RetryRelayer`.
 
 ### Model Checking
 
 The retry logic at the transaction layer can be more complicated than one
-imagine. This is because failure of sending transactions may be local and
-temporary, and the relayer may receive transaction failure even if a transaction
+imagines. This is because failure of sending transactions may be local and
+temporary, and the relayer may receive transaction failures even if a transaction
 is eventually committed, such as due to insufficient waiting time before timing
 out, or failure on the full node or network while the transaction has already
 been broadcasted. If the sending of a successful transaction is incorrectly
-identified as failure, it may result in cascading failures being accumulated
-on the relayer, such as repeatedly retrying the sending of transactions with
+identified as a failure, it may result in cascading failures being accumulated
+in the relayer, such as repeatedly retrying the sending of transactions with
 invalidated nonces.
 
-Because of this, a lot of rigorous testing are required to ensure that the
+Because of this, a lot of rigorous testing is required to ensure that the
 combined logic of retrying to send packets and transactions is sound. A good
 way to test that is to build a model of the concurrent system and test all
 possible states using model checking tools like TLA+ and Apalache. On the other
@@ -402,25 +402,25 @@ hand, since the relayer framework itself is fully abstract, it is also possble
 to treat the relayer framework as a model. This can be potentially done by using
 model checking tools for Rust, such as Kani and Prusti. If that is possible,
 it could significantly reduce the effort of model checking, since there
-wouldn't be need to re-implement the relayer logic in a separate language.
+wouldn't be a need to re-implement the relayer logic in a separate language.
 
-Although we are still in the research phase on exploring the feasibility of
+Although we are still in the research phase of exploring the feasibility of
 doing model checking in Rust, the abstract nature of the relayer framework
 increases the chance of the tools being a good fit. In particular, the
-relayer framwork supports no_std and is not tied to specific async runtime.
-As a result, it has less problem to work with symbolic execution environments
-like Kani, which does not support std and async constructs.
+relayer framwork supports `no_std` and is not tied to a specific async runtime.
+As a result, fewer problems arise in a symbolic execution environment like Kani, 
+which does not support std and async constructs.
 
 ### All-In-One Traits
 
-The relayer framework makes use of context-generic programming to define a
+The relayer framework makes use of context-generic programming to define
 dozens of component interfaces and implementations. Although that provides a
-lot of flexibilities for context implementers to mix and match components as
-they see fit, it would also require them to have deeper understanding of how
+lot of flexibility for context implementers to mix and match components as
+they see fit, it also requires them to have a deeper understanding of how
 each component works and how to combine them using context-generic programming.
 
 As an analogy, a computer is made of many modular components, such as CPU, RAM,
-and storage. With well defined hardware interfaces, anyone can in theory
+and storage. With well-defined hardware interfaces, anyone can, in theory,
 assemble their own computer with the exact hardware specs that they prefer.
 However, even though having modular hardware components is very useful, the
 majority of consumers would prefer _not_ to assemble their own computer, or to
@@ -436,21 +436,21 @@ minimal and full-featured.
 
 The minimal preset, as its name implies, offers an abstract implementation of a
 minimal relayer, which only performs the core logic of relaying with no
-additional complexity. Because the relayer is minimal, it has less requirements
-of what the concrete contexts need to implement. As a result, it takes the least
+additional complexity. Because the relayer is minimal, there are fewer requirements
+that the concrete contexts need to implement. As a result, it takes the least
 effort for users to build a minimal relayer that targets custom chains like
 solomachines, or custom environments like Wasm.
 
 On the other hand, the full preset includes all available components that the
 relayer framework offers, such as message batching, parallel transactions,
-packet filter, error retry, and telemetry. While these features are not
+packet filtering, retrying of errors, and telemetry. While these features are not
 essential for a minimal relayer to work, they are useful for operating
 production relayers that require high reliability and efficiency. As a tradeoff,
 since the full relayer includes more components with complex logic, it also
-impose more requirements to the concrete context implementation, and there may
+imposes more requirements on the concrete context implementation, and there may
 be more potential for subtle bugs to be found.
 
-The minimal preset requires implementers of custom relay context to implement
+The minimal preset requires implementers of custom relay contexts to implement
 the _one-for-all_ traits such as `OfaBaseChain` and `OfaBaseRelay`. In addition
 to that, the full preset requires implementers to also implement traits like
 `OfaFullChain` and `OfaFullRelay`. An example use of this is demonstrated
@@ -462,7 +462,7 @@ Since the relayer framework only offers two presets, there is a gap between
 the minimal preset and the full preset. As a result, users cannot selectively
 choose only specific features from the full relayer, such as enabling only
 the message batching feature without telemetry. The choice of us imposing
-this restriction is _deliberate_, as we want to keep the all-in-one traits
+these restrictions is _deliberate_, as we want to keep the all-in-one traits
 simple and have a smooth learning curve.
 
 It is worth noting that even though the relayer components defined using
@@ -472,7 +472,7 @@ the all-in-one traits are similar to the traditional god traits that are
 commonly found in Rust code, such as `ChainHandle` in relayer v1. At the expense
 of user convenience, the all-in-one traits suffer the same limitations as other
 god traits of being very complex and inflexible. However, the main difference is
-that since the all-in-one traits are nothing but glue code to the actual
+that the all-in-one traits are nothing but glue code around the actual
 components, hence their presence is optional and can be bypassed easily if
 needed.
 
@@ -516,19 +516,19 @@ pub struct FullCosmosChainContext {
 }
 ```
 
-A visual inspection of the type definitions above shows that the full-featured
-Cosmos chain context contains two additional fields, `batch_channel` and
-`telemetry`. This is because the full preset makes use of the batched message
-sender and telemetry components, which requires the chain context to provide
-the batch channels and telemetry context. Hence, if a user want to use the
-full-featured Cosmos relayer, they would also have to instantiate and provide
-the additional parameters when constructing the chain context.
+Compared to the `MinCosmosChainContext`, the `FullCosmosChainContext` contains
+two additional fields, `batch_channel` and `telemetry`. This is because the full 
+preset makes use of the batched message sender and telemetry components, which 
+requires the chain context to provide the batch channels and telemetry context. 
+Hence, if a user wants to use the full-featured Cosmos relayer, they would also 
+have to instantiate and provide the additional parameters when constructing the 
+chain context.
 
 The Cosmos chain context is implemented as an MVP for the relayer v1.5. As a
 result, it delegates most of the chain operations to the existing `ChainHandle`
 code in relayer v1. As we progress toward the v2 relayer, the Cosmos chain
-context is expected to eventually remove its dependency to `ChainHandle`, and
-directly holds the low-level fields such as `grpc_address`.
+context is expected to eventually remove its dependency on `ChainHandle` and
+directly hold low-level fields such as `grpc_address`.
 
 To make use of the Cosmos chain context for relaying between Cosmos chains,
 we implement the one-for-all traits for our Cosmos chain contexts roughly as
@@ -568,7 +568,7 @@ impl OfaBaseChain for MinCosmosChainContext
 }
 ```
 
-For demonstration purpose, the above code is slightly simplified from the actual
+For demonstration purposes, the above code is slightly simplified from the actual
 Cosmos chain implementation. Readers are encouraged to refer to the
 `ibc-relayer-cosmos` itself to see the full implementation details.
 
@@ -577,11 +577,11 @@ define the `Preset` type attribute to `MinimalPreset`, indicating that we
 only want to build a minimal relayer with our concrete context. We then bind
 the abstract types such as `Error` and `Height` to the Cosmos-specific types
 such as `CosmosError` and `CosmosTimestamp`. Finally, we implement the abstract
-methods that are reqruired to be provided by the concrete chain implementation,
+methods that are required to be provided by the concrete chain implementation,
 such as `query_chain_status` and `send_messages`.
 
 We would also do the same implementation for the concrete relay contexts, such
-as implementing `OfaBaseRelay` for  `MinCosmosRelayContext`, which would contain
+as implementing `OfaBaseRelay` for `MinCosmosRelayContext`, which would contain
 two `MinCosmosChainContext`s. Once the traits are implemented, the relayer
 methods would automatically be implemented by wrapping the relay context
 inside `OfaRelayWrapper`, such as follows:
@@ -594,7 +594,7 @@ let packet = /* ... */;
 relayer.relay_packet(packet);
 ```
 
-The wrapper types like `OfaRelayWrapper` are newtype wrappers that helps provide
+The wrapper types like `OfaRelayWrapper` are newtype wrappers that help provide
 automatic implementation of the relayer traits provided by the relayer framework.
 The reason it is needed is to avoid having conflicting trait implementations
 if we try to implement it without the wrapper types. Aside from that, the two
@@ -607,13 +607,13 @@ relayer from the relayer framework.
 We are slowly progressing toward finishing the relayer v1.5 MVP. At the current
 stage, we have finished a full implementation of the `PacketRelayer` and tested
 the successful relaying of a single IBC packet for Cosmos chains. To make the
-code ready for an initial v1.5 MVP release, the following work are still needed
+code ready for an initial v1.5 MVP release, the following work still needs
 to be completed:
 
 ### IBC Event Source
 
 To support relaying of multiple packets, the relayer framework needs to define
-an even source interface to listen to incoming IBC packets and then spawning
+an event source interface to listen to incoming IBC packets and then spawn
 new tasks to relay the packets using `PacketRelayer`. The Cosmos MVP for this
 will make use of the event subscription code provided by the v1 relayer
 supervisor to implement the event source.
@@ -629,8 +629,8 @@ of messages as transactions to the blockchain.
 Due to the v2 relayer having different concurrency semantics from the v1 relayer,
 most of the messages sent by the new relayer would get queued up and be sent
 sequentially if they are sent using the existing `ChainHandle`. As a result,
-the transaction context is needed for the new relayer to demonstrate measurable
-difference in performance from the v1 relayer.
+the transaction context is needed for the new relayer to demonstrate a measurable
+improvement in performance from the v1 relayer.
 
 ### CLI Integration
 
@@ -648,7 +648,7 @@ based on that.
 
 The initial new relayer MVP would initially lack many features from the current
 v1 relayer, such as packet clearing, robust retry logic, and handshakes. As a
-result, they are meant to be experimental and not used in production. The CLI
+result, it is meant to be experimental and not used in production. The CLI
 may be conditionally enabled from an `experimental` feature flag, so that
 official releases of the Hermes relayer do not expose the CLI to be accidentally
 used by relayer operators.
@@ -658,26 +658,26 @@ used by relayer operators.
 To progress the relayer v1.5 MVP toward relayer v2, there are several key
 milestones that we need to reach:
 
-### Remove Dependency to `ForeignClient`
+### Remove Dependency on `ForeignClient`
 
 The relayer v1.5 MVP currently relies on `ForeignClient` to perform operations
 such as building UpdateClient messages. As a tradeoff, this restricts the
 Cosmos relay context to be usable with two Cosmos chains. To support relaying
 between a Cosmos chain and a non-Cosmos chain, it is necessary to remove
-the dependency to `ForeignClient`, as the non-Cosmos chain would otherwise
-have to implement `ChainHandle` to support the heterogenous relaying.
+the dependency on `ForeignClient`, as non-Cosmos chains would otherwise
+have to implement `ChainHandle` in order to support the heterogenous relaying.
 
-### Remove Dependency to `ChainHandle`
+### Remove Dependency on `ChainHandle`
 
-The relayer v1.5 MVP currently relies on `ChainHandle` for the majority chain
-operations such as doing queries and building merkle proofs. However as
+The relayer v1.5 MVP currently relies on `ChainHandle` for the majority of chain
+operations, such as performing queries and building merkle proofs. However as
 `ChainHandle` has a thread-based concurrency, it can only handle one operation
 at a time. With the transaction context, the new relayer is able to parallelize
 the query operations from the sending of transactions. However, the query
 part of the chain remains a bottleneck, and may impact the performance of the
 new relayer.
 
-As a result, the new Cosmos relayer needs to remove its dependency to
+As a result, the new Cosmos relayer needs to remove its dependency on
 `ChainHandle` so that it can perform concurrent queries to the chain. This
 would also allow the relayer framework to implement proper caching layers
 to reduce the traffic on the full node.
@@ -690,11 +690,11 @@ Substrate relaying. To show that, we need to implement at least one non-Cosmos
 chain context and implement a relay context that supports two different
 chain contexts.
 
-A candidate for heterogenous relaying MVP is to build a mock solomachine chain
+An MVP candidate for heterogenous relaying is to build a mock solomachine chain
 context. Because the solomachine spec is relatively simple, it should require
 less effort to build a solomachine chain context from scratch. Furthermore,
 as the solomachine light client is already officially supported in ibc-go,
-we can test the solomachine relaying without having to use a custom Cosmos chain
+we can test solomachine relaying without having to use a custom Cosmos chain
 with custom light clients.
 
 Once the mock solomachine chain context is implemented, it would be possible to
@@ -708,26 +708,26 @@ transactions with upcoming major changes for Cosmos chains, in particular
 prioritized mempool and ABCI++. Depending on the chain implementation,
 it may not be possible to submit parallel transactions with different nonces.
 
-To mitigate that, the relayer may need different strategies of allocating nonces.
+To mitigate this, the relayer may need different strategies for allocating nonces.
 For example, future Cosmos SDK chains may offer parallel lanes of account
 sequences, so that parallel transactions can make use of nonces from different
 lanes.
 
-An alternative strategy would be to multiplex the sending of transaction between
-multiple signers. However as this may bring operational burden to relayer
+An alternative strategy would be to multiplex the sending of transactions between
+multiple signers. However, as this may impose an operational burden on relayer
 operators, the relayer may need to automate the process of managing multiple
-wallets, such as with the use of fee grant.
+wallets, such as with the use of the fee grant module.
 
 The relayer v1.5 MVP offers a nonce allocator interface as a starting point for
-implementing different nonce allocation strategies. However it currently
+implementing different nonce allocation strategies. However, it currently
 only implements a naive nonce allocator which does _not_ support parallel
 transactions. In contrast, the relayer v2 would need to have multiple nonce
-allocators implemented, and testing them throughoutly with new versions of
+allocators implemented, and test them thoroughly with new versions of
 Cosmos chains.
 
-The relayer v1.5 MVP also does not design the interfaces to support sending
+The relayer v1.5 MVP will not expose interfaces that support sending
 transactions with multiple signers. Since such features also require significant
-effort in designing proper UX, it is left as a task for relayer v2 to implement.
+effort in the form of proper UX design, it is left as a task for relayer v2 to implement.
 
 # Status
 
