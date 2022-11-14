@@ -593,7 +593,7 @@ impl CosmosSdkChain {
                     packet_query(request, *seq),
                     1,
                     1, // there should only be a single match for this query
-                    Order::Ascending,
+                    Order::Descending,
                 ))
                 .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
@@ -620,6 +620,8 @@ impl CosmosSdkChain {
                 end_block_events.extend(new_end_block_events);
             }
         }
+        dbg!(&begin_block_events);
+        dbg!(&end_block_events);
         Ok((begin_block_events, end_block_events))
     }
 }
