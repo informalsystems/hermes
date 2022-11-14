@@ -203,11 +203,8 @@ pub async fn query_packets_from_block(
             .map(|ev| IbcEventWithHeight::new(ev, height))
             .collect(),
     );
-    dbg!(&begin_block_events);
-    dbg!(&end_block_events);
     result.append(&mut begin_block_events);
     result.append(&mut end_block_events);
-    dbg!(&result);
     Ok(result)
 }
 
