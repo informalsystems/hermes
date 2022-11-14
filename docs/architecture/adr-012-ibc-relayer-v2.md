@@ -100,7 +100,9 @@ Wasm, the Substrate runtime, and symbolic execution environments.
 Since the relayer framework is fully abstract, it also does not depend on
 the concrete type definitions of the IBC constructs, including primitives
 like height. Instead, the types are declared as abstract associated types in
-traits like `HasChainTypes` and `HasRelayTypes`:
+traits like
+[`HasChainTypes`](ibc_relayer_framework::base::chain::traits::types::HasChainTypes)
+and [`HasRelayTypes`](ibc_relayer_framework::base::relay::traits::types::HasRelayTypes):
 
 ```rust
 trait HasChainTypes {
@@ -168,7 +170,9 @@ where
 
 The trait allows an update client message builder component to be implemented
 generically over a relay context `Relay` and a chain target `Target` (for targetting either the source or destination chain). Using that, we can
-for example define a `SkipUpdateClient` component as follows:
+for example define a
+[`SkipUpdateClient`](ibc_relayer_framework::base::relay::impls::messages::skip_update_client::SkipUpdateClient)
+component as follows:
 
 ```rust
 pub struct SkipUpdateClient<InUpdateClient>(PhantomData<InUpdateClient>);
@@ -180,7 +184,9 @@ where /* ... */
 { /* ... */ }
 ```
 
-The `SkipUpdateClient` component is a _middleware_ component that wraps around
+The
+[`SkipUpdateClient`](ibc_relayer_framework::base::relay::impls::messages::skip_update_client::SkipUpdateClient)
+component is a _middleware_ component that wraps around
 an inner update client message builder, and skips calling the inner component
 if it finds that a client update at the given height had already been done
 before on the target chain.
@@ -213,7 +219,9 @@ type ChosenUpdateClientMessageBuilder =
 Above we have a declarative type alias of a component `ChosenUpdateClientMessageBuilder`, which is composed of
 three smaller components. When this is used, the component will first
 use `SkipUpdateClient` to check whether the client has already been updated,
-it then uses `WaitUpdateClient` to wait for the counterparty chain's height
+it then uses
+[`WaitUpdateClient`](ibc_relayer_framework::base::relay::impls::messages::wait_update_client::WaitUpdateClient)
+to wait for the counterparty chain's height
 to increase beyond the target height, then uses `BuildCosmosUpdateClientMessage`
 to build the Cosmos-specific update client message.
 
@@ -292,7 +300,9 @@ where
 }
 ```
 
-The `PacketRelayer` trait allows the handling of a single IBC packet at a time.
+The
+[`PacketRelayer`](ibc_relayer_framework::base::relay::traits::packet_relayer::PacketRelayer)
+trait allows the handling of a single IBC packet at a time.
 When multiple IBC packets need to be relayed at the same time, the relayer
 framework allows multiple async tasks to be spawned at the same time, with each
 task sharing the same relay context but doing the relaying for different packets.
@@ -397,10 +407,15 @@ invalidated nonces.
 Because of this, a lot of rigorous testing is required to ensure that the
 combined logic of retrying to send packets and transactions is sound. A good
 way to test that is to build a model of the concurrent system and test all
-possible states using model checking tools like TLA+ and Apalache. On the other
+possible states using model checking tools like
+[TLA+](https://lamport.azurewebsites.net/tla/tla.html) and
+[Apalache](https://apalache.informal.systems/).
+On the other
 hand, since the relayer framework itself is fully abstract, it is also possble
 to treat the relayer framework as a model. This can be potentially done by using
-model checking tools for Rust, such as Kani and Prusti. If that is possible,
+model checking tools for Rust, such as
+[Kani](https://github.com/model-checking/kani) and
+[Prusti](https://github.com/viperproject/prusti-dev). If that is possible,
 it could significantly reduce the effort of model checking, since there
 wouldn't be a need to re-implement the relayer logic in a separate language.
 
@@ -451,9 +466,16 @@ imposes more requirements on the concrete context implementation, and there may
 be more potential for subtle bugs to be found.
 
 The minimal preset requires implementers of custom relay contexts to implement
-the _one-for-all_ traits such as `OfaBaseChain` and `OfaBaseRelay`. In addition
+the _one-for-all_ traits such as
+[`OfaBaseChain`](ibc_relayer_framework::base::one_for_all::traits::chain::OfaBaseChain)
+and
+[`OfaBaseRelay`](ibc_relayer_framework::base::one_for_all::traits::relay::OfaBaseRelay).
+In addition
 to that, the full preset requires implementers to also implement traits like
-`OfaFullChain` and `OfaFullRelay`. An example use of this is demonstrated
+[`OfaFullChain`](ibc_relayer_framework::full::one_for_all::traits::chain::OfaFullChain)
+and
+[`OfaFullRelay`](ibc_relayer_framework::full::one_for_all::traits::relay::OfaFullRelay).
+An example use of this is demonstrated
 in the later section using the Cosmos chain context.
 
 ### Limitations of All-In-One Traits
