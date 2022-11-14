@@ -315,7 +315,7 @@ specific relay context.
 The second layer performs message batching per chain context. It would collect
 all messages being sent to a chain within a time frame, and send them all in
 a single batch if it does not exceed the batch size limit. The batching
-mechanics are the same, but is done at the chain level, as opposed to at the relayer level. 
+mechanics are the same, but is done at the chain level, as opposed to at the relayer level.
 As a result, it is able to batch IBC messages coming from multiple counterparty chains.
 
 The third layer performs batching at the _transaction_ context. It provides a
@@ -361,7 +361,7 @@ type ChosenPacketRelayer = RetryRelayer<FullCycleRelayer>;
 In the above example, the `FullCycleRelayer` is the core packet relayer that
 performs the actual packet relaying logic. It is wrapped by `RetryRelayer`,
 which calls `FullCycleRelayer::relay_packet()` in an attempt to relay the
-IBC packet. If the operation fails and returns an error, `RetryRelayer` 
+IBC packet. If the operation fails and returns an error, `RetryRelayer`
 checks on whether the error is retryable, and if so it calls the inner
 relayer again. As the relayer framework also keeps the error type generic,
 a concrete relay context can provide custom error types as well as provide
@@ -372,8 +372,8 @@ of the packet lifecycle, which is to relay a `RecvPacket`, then an `AckPacket` o
 a `TimeoutPacket`. It does not check for what is the current relaying state of the
 packet, because this is done by separate components such as
 `SkipReceivedPacketRelayer`, which would skip relaying a `RecvPacket` if the chain
-has already received the packet before. This helps keep the core relaying logic simple, 
-while still providing a robust retry mechanism that allows the retry operation 
+has already received the packet before. This helps keep the core relaying logic simple,
+while still providing a robust retry mechanism that allows the retry operation
 to resume at an appropriate stage.
 
 The second layer of the retry logic is at the transaction layer with the nonce allocator.
@@ -408,7 +408,7 @@ Although we are still in the research phase of exploring the feasibility of
 doing model checking in Rust, the abstract nature of the relayer framework
 increases the chance of the tools being a good fit. In particular, the
 relayer framwork supports `no_std` and is not tied to a specific async runtime.
-As a result, fewer problems arise in a symbolic execution environment like Kani, 
+As a result, fewer problems arise in a symbolic execution environment like Kani,
 which does not support std and async constructs.
 
 ### All-In-One Traits
@@ -517,11 +517,11 @@ pub struct FullCosmosChainContext {
 ```
 
 Compared to the `MinCosmosChainContext`, the `FullCosmosChainContext` contains
-two additional fields, `batch_channel` and `telemetry`. This is because the full 
-preset makes use of the batched message sender and telemetry components, which 
-requires the chain context to provide the batch channels and telemetry context. 
-Hence, if a user wants to use the full-featured Cosmos relayer, they would also 
-have to instantiate and provide the additional parameters when constructing the 
+two additional fields, `batch_channel` and `telemetry`. This is because the full
+preset makes use of the batched message sender and telemetry components, which
+requires the chain context to provide the batch channels and telemetry context.
+Hence, if a user wants to use the full-featured Cosmos relayer, they would also
+have to instantiate and provide the additional parameters when constructing the
 chain context.
 
 The Cosmos chain context is implemented as an MVP for the relayer v1.5. As a
