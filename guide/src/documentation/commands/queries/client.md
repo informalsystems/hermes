@@ -87,7 +87,7 @@ Success: ClientState {
         id: "ibc-2",
         version: 2,
     },
-    trust_level: TrustThresholdFraction {
+    trust_threshold: TrustThresholdFraction {
         numerator: 1,
         denominator: 3,
     },

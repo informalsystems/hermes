@@ -50,13 +50,13 @@ impl BinaryChainTest for ClientDefaultsTest {
         let state = query_client_state(chains.handle_b, client_id)?;
         assert_eq!(state.max_clock_drift, Duration::from_secs(24));
         assert_eq!(state.trusting_period, Duration::from_secs(120_000));
-        assert_eq!(state.trust_level, TrustThreshold::new(13, 23).unwrap());
+        assert_eq!(state.trust_threshold, TrustThreshold::new(13, 23).unwrap());
 
         let client_id = chains.foreign_clients.client_b_to_a.id();
         let state = query_client_state(chains.handle_a, client_id)?;
         assert_eq!(state.max_clock_drift, Duration::from_secs(14));
         assert_eq!(state.trusting_period, Duration::from_secs(340_000));
-        assert_eq!(state.trust_level, TrustThreshold::TWO_THIRDS);
+        assert_eq!(state.trust_threshold, TrustThreshold::TWO_THIRDS);
         Ok(())
     }
 }
@@ -90,13 +90,13 @@ impl BinaryChainTest for ClientOptionsTest {
         let state = query_client_state(chains.handle_b, client_id)?;
         assert_eq!(state.max_clock_drift, Duration::from_secs(3));
         assert_eq!(state.trusting_period, Duration::from_secs(120_000));
-        assert_eq!(state.trust_level, TrustThreshold::new(13, 23).unwrap());
+        assert_eq!(state.trust_threshold, TrustThreshold::new(13, 23).unwrap());
 
         let client_id = chains.foreign_clients.client_b_to_a.id();
         let state = query_client_state(chains.handle_a, client_id)?;
         assert_eq!(state.max_clock_drift, Duration::from_secs(6));
         assert_eq!(state.trusting_period, Duration::from_secs(340_000));
-        assert_eq!(state.trust_level, TrustThreshold::TWO_THIRDS);
+        assert_eq!(state.trust_threshold, TrustThreshold::TWO_THIRDS);
         Ok(())
     }
 }

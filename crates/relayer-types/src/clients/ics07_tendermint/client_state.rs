@@ -31,7 +31,7 @@ pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientState {
     pub chain_id: ChainId,
-    pub trust_level: TrustThreshold,
+    pub trust_threshold: TrustThreshold,
     pub trusting_period: Duration,
     pub unbonding_period: Duration,
     pub max_clock_drift: Duration,
@@ -111,7 +111,7 @@ impl ClientState {
 
         Ok(Self {
             chain_id,
-            trust_level: trust_threshold,
+            trust_threshold,
             trusting_period,
             unbonding_period,
             max_clock_drift,
@@ -156,7 +156,7 @@ impl ClientState {
     pub fn as_light_client_options(&self) -> Result<Options, Error> {
         Ok(Options {
             trust_threshold: self
-                .trust_level
+                .trust_threshold
                 .try_into()
                 .map_err(|e: Ics02Error| Error::invalid_trust_threshold(e.to_string()))?,
             trusting_period: self.trusting_period,
@@ -242,7 +242,7 @@ impl Ics2ClientState for ClientState {
 
         // Reset custom fields to zero values
         self.trusting_period = ZERO_DURATION;
-        self.trust_level = TrustThreshold::CLIENT_STATE_RESET;
+        self.trust_threshold = TrustThreshold::CLIENT_STATE_RESET;
         self.allow_update.after_expiry = false;
         self.allow_update.after_misbehaviour = false;
         self.frozen_height = None;
@@ -265,13 +265,14 @@ impl TryFrom<RawTmClientState> for ClientState {
     type Error = Error;
 
     fn try_from(raw: RawTmClientState) -> Result<Self, Self::Error> {
-        let trust_level = raw.trust_level.ok_or_else(Error::missing_trust_threshold)?;
+        let trust_threshold = raw.trust_level.ok_or_else(Error::missing_trust_threshold)?;
 
         // We need to handle the case where the client is being upgraded and the trust threshold is set to 0/0
-        let trust_threshold = if trust_level.denominator == 0 && trust_level.numerator == 0 {
+        let trust_threshold = if trust_threshold.denominator == 0 && trust_threshold.numerator == 0
+        {
             TrustThreshold::CLIENT_STATE_RESET
         } else {
-            trust_level
+            trust_threshold
                 .try_into()
                 .map_err(|e| Error::invalid_trust_threshold(format!("{}", e)))?
         };
@@ -286,7 +287,7 @@ impl TryFrom<RawTmClientState> for ClientState {
         #[allow(deprecated)]
         Ok(Self {
             chain_id: ChainId::from_string(raw.chain_id.as_str()),
-            trust_level: trust_threshold,
+            trust_threshold,
             trusting_period: raw
                 .trusting_period
                 .ok_or_else(Error::missing_trusting_period)?
@@ -324,7 +325,7 @@ impl From<ClientState> for RawTmClientState {
         #[allow(deprecated)]
         Self {
             chain_id: value.chain_id.to_string(),
-            trust_level: Some(value.trust_level.into()),
+            trust_level: Some(value.trust_threshold.into()),
             trusting_period: Some(value.trusting_period.into()),
             unbonding_period: Some(value.unbonding_period.into()),
             max_clock_drift: Some(value.max_clock_drift.into()),
@@ -397,7 +398,7 @@ mod tests {
     #[derive(Clone, Debug, PartialEq)]
     struct ClientStateParams {
         id: ChainId,
-        trust_level: TrustThreshold,
+        trust_threshold: TrustThreshold,
         trusting_period: Duration,
         unbonding_period: Duration,
         max_clock_drift: Duration,
@@ -426,7 +427,7 @@ mod tests {
         // Define a "default" set of parameters to reuse throughout these tests.
         let default_params: ClientStateParams = ClientStateParams {
             id: ChainId::default(),
-            trust_level: TrustThreshold::ONE_THIRD,
+            trust_threshold: TrustThreshold::ONE_THIRD,
             trusting_period: Duration::new(64000, 0),
             unbonding_period: Duration::new(128000, 0),
             max_clock_drift: Duration::new(3, 0),
@@ -479,7 +480,7 @@ mod tests {
             Test {
                 name: "Invalid (zero) trust threshold".to_string(),
                 params: ClientStateParams {
-                    trust_level: TrustThreshold::new(0, 3).unwrap(),
+                    trust_threshold: TrustThreshold::new(0, 3).unwrap(),
                     ..default_params.clone()
                 },
                 want_pass: false,
@@ -501,7 +502,7 @@ mod tests {
 
             let cs_result = ClientState::new(
                 p.id,
-                p.trust_level,
+                p.trust_threshold,
                 p.trusting_period,
                 p.unbonding_period,
                 p.max_clock_drift,
@@ -605,7 +606,7 @@ mod tests {
         // Define a "default" set of parameters to reuse throughout these tests.
         let default_params: ClientStateParams = ClientStateParams {
             id: ChainId::default(),
-            trust_level: TrustThreshold::ONE_THIRD,
+            trust_threshold: TrustThreshold::ONE_THIRD,
             trusting_period: Duration::new(64000, 0),
             unbonding_period: Duration::new(128000, 0),
             max_clock_drift: Duration::new(3, 0),
@@ -654,7 +655,7 @@ mod tests {
             let p = default_params.clone();
             let client_state = ClientState::new(
                 p.id,
-                p.trust_level,
+                p.trust_threshold,
                 p.trusting_period,
                 p.unbonding_period,
                 p.max_clock_drift,
