@@ -46,7 +46,7 @@ use ibc_relayer::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeigh
 use ibc_relayer::denom::DenomTrace;
 use ibc_relayer::error::Error;
 use ibc_relayer::event::IbcEventWithHeight;
-use ibc_relayer::keyring::KeyEntry;
+use ibc_relayer::keyring::AnySigningKeyPair;
 use ibc_relayer::light_client::AnyHeader;
 use ibc_relayer::misbehaviour::MisbehaviourEvidence;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
@@ -121,11 +121,11 @@ where
         self.value().config()
     }
 
-    fn get_key(&self) -> Result<KeyEntry, Error> {
+    fn get_key(&self) -> Result<AnySigningKeyPair, Error> {
         self.value().get_key()
     }
 
-    fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error> {
+    fn add_key(&self, key_name: String, key: AnySigningKeyPair) -> Result<(), Error> {
         self.value().add_key(key_name, key)
     }
 

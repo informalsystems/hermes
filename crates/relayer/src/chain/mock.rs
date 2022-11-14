@@ -38,7 +38,7 @@ use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::monitor::{EventReceiver, EventSender, TxMonitorCmd};
 use crate::event::IbcEventWithHeight;
-use crate::keyring::{KeyEntry, KeyRing};
+use crate::keyring::{KeyRing, Secp256k1KeyPair};
 use crate::light_client::Verified;
 use crate::light_client::{mock::LightClient as MockLightClient, LightClient};
 use crate::misbehaviour::MisbehaviourEvidence;
@@ -84,6 +84,7 @@ impl ChainEndpoint for MockChain {
     type Header = TendermintHeader;
     type ConsensusState = TendermintConsensusState;
     type ClientState = TmClientState;
+    type SigningKeyPair = Secp256k1KeyPair;
 
     fn bootstrap(config: ChainConfig, _rt: Arc<Runtime>) -> Result<Self, Error> {
         let (event_sender, event_receiver) = channel::unbounded();
@@ -126,11 +127,11 @@ impl ChainEndpoint for MockChain {
         Ok(())
     }
 
-    fn keybase(&self) -> &KeyRing {
+    fn keybase(&self) -> &KeyRing<Self::SigningKeyPair> {
         unimplemented!()
     }
 
-    fn keybase_mut(&mut self) -> &mut KeyRing {
+    fn keybase_mut(&mut self) -> &mut KeyRing<Self::SigningKeyPair> {
         unimplemented!()
     }
 
@@ -183,11 +184,11 @@ impl ChainEndpoint for MockChain {
         self.config.clone()
     }
 
-    fn get_key(&mut self) -> Result<KeyEntry, Error> {
+    fn get_key(&mut self) -> Result<Self::SigningKeyPair, Error> {
         unimplemented!()
     }
 
-    fn add_key(&mut self, _key_name: &str, _key: KeyEntry) -> Result<(), Error> {
+    fn add_key(&mut self, _key_name: &str, _key: Self::SigningKeyPair) -> Result<(), Error> {
         unimplemented!()
     }
 

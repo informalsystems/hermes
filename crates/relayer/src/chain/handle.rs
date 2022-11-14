@@ -35,7 +35,7 @@ use crate::{
         monitor::{EventBatch, Result as MonitorResult},
         IbcEventWithHeight,
     },
-    keyring::KeyEntry,
+    keyring::AnySigningKeyPair,
     light_client::AnyHeader,
     misbehaviour::MisbehaviourEvidence,
 };
@@ -128,12 +128,12 @@ pub enum ChainRequest {
     },
 
     GetKey {
-        reply_to: ReplyTo<KeyEntry>,
+        reply_to: ReplyTo<AnySigningKeyPair>,
     },
 
     AddKey {
         key_name: String,
-        key: KeyEntry,
+        key: AnySigningKeyPair,
         reply_to: ReplyTo<()>,
     },
 
@@ -390,9 +390,9 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
 
     fn config(&self) -> Result<ChainConfig, Error>;
 
-    fn get_key(&self) -> Result<KeyEntry, Error>;
+    fn get_key(&self) -> Result<AnySigningKeyPair, Error>;
 
-    fn add_key(&self, key_name: String, key: KeyEntry) -> Result<(), Error>;
+    fn add_key(&self, key_name: String, key: AnySigningKeyPair) -> Result<(), Error>;
 
     /// Return the version of the IBC protocol that this chain is running, if known.
     fn ibc_version(&self) -> Result<Option<semver::Version>, Error>;

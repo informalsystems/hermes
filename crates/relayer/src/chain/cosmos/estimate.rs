@@ -12,12 +12,12 @@ use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::types::Memo;
 use crate::error::Error;
-use crate::keyring::KeyEntry;
+use crate::keyring::Secp256k1KeyPair;
 use crate::util::pretty::PrettyFee;
 
 pub async fn estimate_tx_fees(
     config: &TxConfig,
-    key_entry: &KeyEntry,
+    key_pair: &Secp256k1KeyPair,
     account: &Account,
     tx_memo: &Memo,
     messages: &[Any],
@@ -31,7 +31,7 @@ pub async fn estimate_tx_fees(
 
     let signed_tx = sign_tx(
         config,
-        key_entry,
+        key_pair,
         account,
         tx_memo,
         messages,

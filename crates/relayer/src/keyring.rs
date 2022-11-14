@@ -1,155 +1,57 @@
+pub mod errors;
+pub use any_signing_key_pair::AnySigningKeyPair;
+pub use ed25519_key_pair::Ed25519KeyPair;
+pub use secp256k1_key_pair::Secp256k1KeyPair;
+pub use signing_key_pair::{SigningKeyPair, SigningKeyPairSized};
+
+mod any_signing_key_pair;
+mod ed25519_key_pair;
+mod key_type;
+mod key_utils;
+mod pub_key;
+mod secp256k1_key_pair;
+mod signing_key_pair;
+
 use alloc::collections::btree_map::BTreeMap as HashMap;
 use std::ffi::OsStr;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 
-use bech32::ToBase32;
-use bip39::{Language, Mnemonic, Seed};
-use bitcoin::{
-    network::constants::Network,
-    util::bip32::{DerivationPath, ExtendedPrivKey, ExtendedPubKey},
-};
-use digest::Digest;
-use generic_array::{typenum::U32, GenericArray};
-use hdpath::StandardHDPath;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use ripemd::Ripemd160;
-use secp256k1::{Message, PublicKey, Secp256k1};
 use serde::{Deserialize, Serialize};
-use sha2::Sha256;
-use tiny_keccak::{Hasher, Keccak};
 
-use crate::config::AddressType;
-
+use crate::{chain::ChainType, config::ChainConfig};
 use errors::Error;
-pub use pub_key::EncodedPubKey;
-
-pub mod errors;
-mod pub_key;
-
-pub type HDPath = StandardHDPath;
+use key_type::KeyType;
 
 pub const KEYSTORE_DEFAULT_FOLDER: &str = ".hermes/keys/";
 pub const KEYSTORE_DISK_BACKEND: &str = "keyring-test";
 pub const KEYSTORE_FILE_EXTENSION: &str = "json";
 
-// /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\
-// WARNING: Changing this struct in backward incompatible way
-//          will force users to re-import their keys.
-// /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\
-/// Key entry stores the Private Key and Public Key as well the address
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct KeyEntry {
-    /// Public key
-    pub public_key: ExtendedPubKey,
-
-    /// Private key
-    pub private_key: ExtendedPrivKey,
-
-    /// Account Bech32 format - TODO allow hrp
-    pub account: String,
-
-    /// Address
-    pub address: Vec<u8>,
-}
-
 /// JSON key seed file
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct KeyFile {
-    pub name: String,
-    pub r#type: String,
-    pub address: String,
-    pub pubkey: String,
-    pub mnemonic: String,
+    name: String,
+    r#type: String,
+    address: String,
+    pubkey: String,
+    mnemonic: String,
 }
 
-impl KeyEntry {
-    fn from_key_file(key_file: KeyFile, hd_path: &HDPath) -> Result<Self, Error> {
-        // Decode the Bech32-encoded address from the key file
-        let keyfile_address_bytes = decode_bech32(&key_file.address)?;
-
-        let encoded_key: EncodedPubKey = key_file.pubkey.parse()?;
-        let mut keyfile_pubkey_bytes = encoded_key.into_bytes();
-
-        // Decode the private key from the mnemonic
-        let private_key = private_key_from_mnemonic(&key_file.mnemonic, hd_path)?;
-        let derived_pubkey = ExtendedPubKey::from_priv(&Secp256k1::signing_only(), &private_key);
-        let derived_pubkey_bytes = derived_pubkey.to_pub().to_bytes();
-        assert!(derived_pubkey_bytes.len() <= keyfile_pubkey_bytes.len());
-
-        // FIXME: For some reason that is currently unclear, the public key decoded from
-        //        the keyfile contains a few extraneous leading bytes. To compare both
-        //        public keys, we therefore strip those leading bytes off and keep the
-        //        common parts.
-        let keyfile_pubkey_bytes =
-            keyfile_pubkey_bytes.split_off(keyfile_pubkey_bytes.len() - derived_pubkey_bytes.len());
-
-        // Ensure that the public key in the key file and the one extracted from the mnemonic match.
-        if keyfile_pubkey_bytes != derived_pubkey_bytes {
-            Err(Error::public_key_mismatch(
-                keyfile_pubkey_bytes,
-                derived_pubkey_bytes,
-            ))
-        } else {
-            Ok(Self {
-                public_key: derived_pubkey,
-                private_key,
-                account: key_file.address,
-                address: keyfile_address_bytes,
-            })
-        }
-    }
-
-    /// Get key from seed file
-    pub fn from_seed_file(key_file_content: &str, hd_path: &HDPath) -> Result<Self, Error> {
-        let key_file = serde_json::from_str(key_file_content).map_err(Error::encode)?;
-        Self::from_key_file(key_file, hd_path)
-    }
-
-    // NOTE: Neither Cosmos nor Ethermint keep `v` (recovery code) in the
-    // `(r, s, v)` tuple for secp256k1.
-    //
-    // Cosmos: https://github.com/cosmos/cosmos-sdk/blob/main/crypto/keys/secp256k1/secp256k1_cgo.go
-    // Ethermint:
-    // - https://github.com/evmos/ethermint/blob/main/crypto/ethsecp256k1/ethsecp256k1.go
-    // - informalsystems/hermes#2863.
-    pub fn sign_message(
-        &self,
-        message: &[u8],
-        address_type: &AddressType,
-    ) -> Result<Vec<u8>, Error> {
-        let hashed_message: GenericArray<u8, U32> = match address_type {
-            AddressType::Ethermint { ref pk_type } if pk_type.ends_with(".ethsecp256k1.PubKey") => {
-                keccak256_hash(message).into()
-            }
-            AddressType::Cosmos | AddressType::Ethermint { .. } => Sha256::digest(message),
-        };
-
-        // SAFETY: hashed_message is 32 bytes, as expected in `Message::from_slice`,
-        // so `unwrap` is safe.
-        let message = Message::from_slice(&hashed_message).unwrap();
-
-        Ok(Secp256k1::signing_only()
-            .sign_ecdsa(&message, &self.private_key.private_key)
-            .serialize_compact()
-            .to_vec())
-    }
-}
-
-pub trait KeyStore {
-    fn get_key(&self, key_name: &str) -> Result<KeyEntry, Error>;
-    fn add_key(&mut self, key_name: &str, key_entry: KeyEntry) -> Result<(), Error>;
+pub trait KeyStore<S> {
+    fn get_key(&self, key_name: &str) -> Result<S, Error>;
+    fn add_key(&mut self, key_name: &str, key_entry: S) -> Result<(), Error>;
     fn remove_key(&mut self, key_name: &str) -> Result<(), Error>;
-    fn keys(&self) -> Result<Vec<(String, KeyEntry)>, Error>;
+    fn keys(&self) -> Result<Vec<(String, S)>, Error>;
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Memory {
+pub struct Memory<S> {
     account_prefix: String,
-    keys: HashMap<String, KeyEntry>,
+    keys: HashMap<String, S>,
 }
 
-impl Memory {
+impl<S> Memory<S> {
     pub fn new(account_prefix: String) -> Self {
         Self {
             account_prefix,
@@ -158,15 +60,15 @@ impl Memory {
     }
 }
 
-impl KeyStore for Memory {
-    fn get_key(&self, key_name: &str) -> Result<KeyEntry, Error> {
+impl<S: SigningKeyPairSized> KeyStore<S> for Memory<S> {
+    fn get_key(&self, key_name: &str) -> Result<S, Error> {
         self.keys
             .get(key_name)
             .cloned()
             .ok_or_else(Error::key_not_found)
     }
 
-    fn add_key(&mut self, key_name: &str, key_entry: KeyEntry) -> Result<(), Error> {
+    fn add_key(&mut self, key_name: &str, key_entry: S) -> Result<(), Error> {
         if self.keys.contains_key(key_name) {
             Err(Error::key_already_exist())
         } else {
@@ -184,7 +86,7 @@ impl KeyStore for Memory {
         Ok(())
     }
 
-    fn keys(&self) -> Result<Vec<(String, KeyEntry)>, Error> {
+    fn keys(&self) -> Result<Vec<(String, S)>, Error> {
         Ok(self
             .keys
             .iter()
@@ -193,6 +95,7 @@ impl KeyStore for Memory {
     }
 }
 
+// TODO: Rename this to something like `Disk`
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Test {
     account_prefix: String,
@@ -208,8 +111,8 @@ impl Test {
     }
 }
 
-impl KeyStore for Test {
-    fn get_key(&self, key_name: &str) -> Result<KeyEntry, Error> {
+impl<S: SigningKeyPairSized> KeyStore<S> for Test {
+    fn get_key(&self, key_name: &str) -> Result<S, Error> {
         let mut key_file = self.store.join(key_name);
         key_file.set_extension(KEYSTORE_FILE_EXTENSION);
 
@@ -231,7 +134,7 @@ impl KeyStore for Test {
         Ok(key_entry)
     }
 
-    fn add_key(&mut self, key_name: &str, key_entry: KeyEntry) -> Result<(), Error> {
+    fn add_key(&mut self, key_name: &str, key_entry: S) -> Result<(), Error> {
         let mut filename = self.store.join(key_name);
         filename.set_extension(KEYSTORE_FILE_EXTENSION);
         let file_path = filename.display().to_string();
@@ -256,7 +159,7 @@ impl KeyStore for Test {
         Ok(())
     }
 
-    fn keys(&self) -> Result<Vec<(String, KeyEntry)>, Error> {
+    fn keys(&self) -> Result<Vec<(String, S)>, Error> {
         let dir = fs::read_dir(&self.store).map_err(|e| {
             Error::key_file_io(
                 self.store.display().to_string(),
@@ -291,12 +194,12 @@ impl Default for Store {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum KeyRing {
-    Memory(Memory),
+pub enum KeyRing<S> {
+    Memory(Memory<S>),
     Test(Test),
 }
 
-impl KeyRing {
+impl<S: SigningKeyPairSized> KeyRing<S> {
     pub fn new(store: Store, account_prefix: &str, chain_id: &ChainId) -> Result<Self, Error> {
         match store {
             Store::Memory => Ok(Self::Memory(Memory::new(account_prefix.to_string()))),
@@ -321,14 +224,14 @@ impl KeyRing {
         }
     }
 
-    pub fn get_key(&self, key_name: &str) -> Result<KeyEntry, Error> {
+    pub fn get_key(&self, key_name: &str) -> Result<S, Error> {
         match self {
             KeyRing::Memory(m) => m.get_key(key_name),
             KeyRing::Test(d) => d.get_key(key_name),
         }
     }
 
-    pub fn add_key(&mut self, key_name: &str, key_entry: KeyEntry) -> Result<(), Error> {
+    pub fn add_key(&mut self, key_name: &str, key_entry: S) -> Result<(), Error> {
         match self {
             KeyRing::Memory(m) => m.add_key(key_name, key_entry),
             KeyRing::Test(d) => d.add_key(key_name, key_entry),
@@ -338,41 +241,15 @@ impl KeyRing {
     pub fn remove_key(&mut self, key_name: &str) -> Result<(), Error> {
         match self {
             KeyRing::Memory(m) => m.remove_key(key_name),
-            KeyRing::Test(d) => d.remove_key(key_name),
+            KeyRing::Test(d) => <Test as KeyStore<S>>::remove_key(d, key_name),
         }
     }
 
-    pub fn keys(&self) -> Result<Vec<(String, KeyEntry)>, Error> {
+    pub fn keys(&self) -> Result<Vec<(String, S)>, Error> {
         match self {
             KeyRing::Memory(m) => m.keys(),
             KeyRing::Test(d) => d.keys(),
         }
-    }
-
-    /// Add a key entry in the store using a mnemonic.
-    pub fn key_from_mnemonic(
-        &self,
-        mnemonic_words: &str,
-        hd_path: &HDPath,
-        address_type: &AddressType,
-    ) -> Result<KeyEntry, Error> {
-        let private_key = private_key_from_mnemonic(mnemonic_words, hd_path)?;
-        let public_key = ExtendedPubKey::from_priv(&Secp256k1::signing_only(), &private_key);
-        let address = get_address(&public_key.public_key, address_type).to_vec();
-
-        let account = bech32::encode(
-            self.account_prefix(),
-            address.to_base32(),
-            bech32::Variant::Bech32,
-        )
-        .map_err(Error::bech32)?;
-
-        Ok(KeyEntry {
-            public_key,
-            private_key,
-            account,
-            address,
-        })
     }
 
     pub fn account_prefix(&self) -> &str {
@@ -383,57 +260,19 @@ impl KeyRing {
     }
 }
 
-/// Decode an extended private key from a mnemonic
-fn private_key_from_mnemonic(
-    mnemonic_words: &str,
-    hd_path: &StandardHDPath,
-) -> Result<ExtendedPrivKey, Error> {
-    let mnemonic = Mnemonic::from_phrase(mnemonic_words, Language::English)
-        .map_err(Error::invalid_mnemonic)?;
-
-    let seed = Seed::new(&mnemonic, "");
-
-    let base_key = ExtendedPrivKey::new_master(Network::Bitcoin, seed.as_bytes())
-        .map_err(Error::private_key)?;
-
-    let private_key = base_key
-        .derive_priv(
-            &Secp256k1::signing_only(),
-            &standard_path_to_derivation_path(hd_path),
-        )
-        .map_err(Error::private_key)?;
-
-    Ok(private_key)
-}
-
-/// Return an address from a Public Key
-fn get_address(public_key: &PublicKey, address_type: &AddressType) -> [u8; 20] {
-    match address_type {
-        AddressType::Ethermint { ref pk_type } if pk_type.ends_with(".ethsecp256k1.PubKey") => {
-            let public_key = public_key.serialize_uncompressed();
-            // 0x04 is `SECP256K1_TAG_PUBKEY_UNCOMPRESSED`:
-            // https://github.com/bitcoin-core/secp256k1/blob/d7ec49a6893751f068275cc8ddf4993ef7f31756/include/secp256k1.h#L196
-            debug_assert_eq!(public_key[0], 0x04);
-
-            let hashed_key = keccak256_hash(&public_key[1..]);
-            // right-most 20-bytes from the 32-byte keccak hash
-            // (see https://kobl.one/blog/create-full-ethereum-keypair-and-address/)
-            hashed_key[12..].try_into().unwrap()
+pub fn list_keys(config: &ChainConfig) -> Result<Vec<(String, AnySigningKeyPair)>, Error> {
+    let keys = match config.r#type {
+        ChainType::CosmosSdk => {
+            let keyring =
+                KeyRing::<Secp256k1KeyPair>::new(Store::Test, &config.account_prefix, &config.id)?;
+            keyring
+                .keys()?
+                .into_iter()
+                .map(|(key_name, keys)| (key_name, keys.into()))
+                .collect()
         }
-        AddressType::Cosmos | AddressType::Ethermint { .. } => {
-            Ripemd160::digest(Sha256::digest(public_key.serialize())).into()
-        }
-    }
-}
-
-fn decode_bech32(input: &str) -> Result<Vec<u8>, Error> {
-    use bech32::FromBase32;
-
-    let bytes = bech32::decode(input)
-        .and_then(|(_, data, _)| Vec::from_base32(&data))
-        .map_err(Error::bech32_account)?;
-
-    Ok(bytes)
+    };
+    Ok(keys)
 }
 
 fn disk_store_path(folder_name: &str) -> Result<PathBuf, Error> {
@@ -445,27 +284,4 @@ fn disk_store_path(folder_name: &str) -> Result<PathBuf, Error> {
         .join(KEYSTORE_DISK_BACKEND);
 
     Ok(folder)
-}
-
-fn keccak256_hash(bytes: &[u8]) -> [u8; 32] {
-    let mut hasher = Keccak::v256();
-    hasher.update(bytes);
-    let mut output = [0u8; 32];
-    hasher.finalize(&mut output);
-    output
-}
-
-fn standard_path_to_derivation_path(path: &StandardHDPath) -> DerivationPath {
-    use bitcoin::util::bip32::ChildNumber;
-
-    let child_numbers = vec![
-        ChildNumber::from_hardened_idx(path.purpose().as_value().as_number())
-            .expect("Purpose is not Hardened"),
-        ChildNumber::from_hardened_idx(path.coin_type()).expect("Coin Type is not Hardened"),
-        ChildNumber::from_hardened_idx(path.account()).expect("Account is not Hardened"),
-        ChildNumber::from_normal_idx(path.change()).expect("Change is Hardened"),
-        ChildNumber::from_normal_idx(path.index()).expect("Index is Hardened"),
-    ];
-
-    DerivationPath::from(child_numbers)
 }

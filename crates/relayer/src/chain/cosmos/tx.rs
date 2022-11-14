@@ -14,31 +14,31 @@ use crate::chain::cosmos::wait::wait_tx_succeed;
 use crate::config::types::Memo;
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
-use crate::keyring::KeyEntry;
+use crate::keyring::{Secp256k1KeyPair, SigningKeyPair};
 
 use super::batch::send_batched_messages_and_wait_commit;
 
 pub async fn estimate_fee_and_send_tx(
     config: &TxConfig,
-    key_entry: &KeyEntry,
+    key_pair: &Secp256k1KeyPair,
     account: &Account,
     tx_memo: &Memo,
     messages: &[Any],
 ) -> Result<Response, Error> {
-    let fee = estimate_tx_fees(config, key_entry, account, tx_memo, messages).await?;
+    let fee = estimate_tx_fees(config, key_pair, account, tx_memo, messages).await?;
 
-    send_tx_with_fee(config, key_entry, account, tx_memo, messages, &fee).await
+    send_tx_with_fee(config, key_pair, account, tx_memo, messages, &fee).await
 }
 
 async fn send_tx_with_fee(
     config: &TxConfig,
-    key_entry: &KeyEntry,
+    key_pair: &Secp256k1KeyPair,
     account: &Account,
     tx_memo: &Memo,
     messages: &[Any],
     fee: &Fee,
 ) -> Result<Response, Error> {
-    let tx_bytes = sign_and_encode_tx(config, key_entry, account, tx_memo, messages, fee)?;
+    let tx_bytes = sign_and_encode_tx(config, key_pair, account, tx_memo, messages, fee)?;
 
     let response = broadcast_tx_sync(&config.rpc_client, &config.rpc_address, tx_bytes).await?;
 
@@ -73,16 +73,16 @@ async fn broadcast_tx_sync(
 */
 pub async fn simple_send_tx(
     config: &TxConfig,
-    key_entry: &KeyEntry,
+    key_pair: &Secp256k1KeyPair,
     messages: Vec<Any>,
 ) -> Result<Vec<IbcEventWithHeight>, Error> {
-    let account = query_account(&config.grpc_address, &key_entry.account)
+    let key_account = key_pair.account();
+    let account = query_account(&config.grpc_address, &key_account)
         .await?
         .into();
 
     let response =
-        estimate_fee_and_send_tx(config, key_entry, &account, &Default::default(), &messages)
-            .await?;
+        estimate_fee_and_send_tx(config, key_pair, &account, &Memo::default(), &messages).await?;
 
     if response.code.is_err() {
         return Err(Error::check_tx(response));
@@ -103,10 +103,11 @@ pub async fn simple_send_tx(
 
 pub async fn batched_send_tx(
     config: &TxConfig,
-    key_entry: &KeyEntry,
+    key_pair: &Secp256k1KeyPair,
     messages: Vec<Any>,
 ) -> Result<Vec<IbcEventWithHeight>, Error> {
-    let mut account = query_account(&config.grpc_address, &key_entry.account)
+    let key_account = key_pair.account();
+    let mut account = query_account(&config.grpc_address, &key_account)
         .await?
         .into();
 
@@ -114,9 +115,9 @@ pub async fn batched_send_tx(
         config,
         config.max_msg_num,
         config.max_tx_size,
-        key_entry,
+        key_pair,
         &mut account,
-        &Default::default(),
+        &Memo::default(),
         messages,
     )
     .await?;
