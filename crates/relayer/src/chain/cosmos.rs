@@ -545,6 +545,7 @@ impl CosmosSdkChain {
         let tm_height =
             tendermint::block::Height::try_from(block_height.revision_height()).unwrap();
 
+        dbg!(&tm_height);
         let response = self
             .block_on(self.rpc_client.block_results(tm_height))
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
@@ -571,6 +572,8 @@ impl CosmosSdkChain {
                 .map(|ev| IbcEventWithHeight::new(ev, response_height))
                 .collect(),
         );
+        dbg!(&begin_block_events);
+        dbg!(&end_block_events);
         Ok((begin_block_events, end_block_events))
     }
 

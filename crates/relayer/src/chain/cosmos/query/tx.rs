@@ -151,6 +151,8 @@ pub async fn query_packets_from_block(
     crate::telemetry!(query, chain_id, "query_packets_from_txs");
 
     let mut result: Vec<IbcEventWithHeight> = vec![];
+    let mut begin_block_events = vec![];
+    let mut end_block_events = vec![];
 
     let tm_height = match request.height.get() {
         QueryHeight::Latest => tendermint::block::Height::default(),
@@ -162,11 +164,11 @@ pub async fn query_packets_from_block(
     let height = Height::new(chain_id.version(), u64::from(tm_height))
         .map_err(|_| Error::invalid_height_no_source())?;
 
-    let exact_tx_block_results = rpc_client
+    let block_results = rpc_client
         .block_results(tm_height)
         .await
-        .map_err(|e| Error::rpc(rpc_address.clone(), e))?
-        .txs_results;
+        .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
+    let exact_tx_block_results = block_results.txs_results;
 
     if let Some(txs) = exact_tx_block_results {
         for tx in txs.iter() {
@@ -182,6 +184,30 @@ pub async fn query_packets_from_block(
         }
     }
 
+    begin_block_events.append(
+        &mut block_results
+            .begin_block_events
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|ev| filter_matching_event(ev, request, &request.sequences))
+            .map(|ev| IbcEventWithHeight::new(ev, height))
+            .collect(),
+    );
+
+    end_block_events.append(
+        &mut block_results
+            .end_block_events
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|ev| filter_matching_event(ev, request, &request.sequences))
+            .map(|ev| IbcEventWithHeight::new(ev, height))
+            .collect(),
+    );
+    dbg!(&begin_block_events);
+    dbg!(&end_block_events);
+    result.append(&mut begin_block_events);
+    result.append(&mut end_block_events);
+    dbg!(&result);
     Ok(result)
 }
 
