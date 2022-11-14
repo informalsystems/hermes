@@ -2,8 +2,8 @@
 
 use core::fmt::{Display, Error as FmtError, Formatter};
 use serde_derive::{Deserialize, Serialize};
-use tendermint::abci::tag::Tag;
-use tendermint::abci::Event as AbciEvent;
+use tendermint_rpc::abci::tag::Tag;
+use tendermint_rpc::abci::Event as AbciEvent;
 
 use crate::core::ics04_channel::error::Error;
 use crate::core::ics04_channel::packet::Packet;
