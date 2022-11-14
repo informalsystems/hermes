@@ -1,5 +1,4 @@
 use crate::base::all_for_one::chain::AfoBaseChain;
-use crate::base::relay::impls::packet_relayers::general::retry::SupportsPacketRetry;
 use crate::base::relay::traits::ibc_message_sender::CanSendIbcMessages;
 use crate::base::relay::traits::ibc_message_sender::InjectMismatchIbcEventsCountError;
 use crate::base::relay::traits::messages::ack_packet::CanBuildAckPacketMessage;
@@ -28,7 +27,6 @@ pub trait AfoBaseRelay:
     + CanRelayPacket
     + CanRelayAckPacket
     + CanRelayTimeoutUnorderedPacket
-    + SupportsPacketRetry
     + InjectMismatchIbcEventsCountError
 {
     type AfoSrcChain: AfoBaseChain<Self::AfoDstChain>;
@@ -52,7 +50,6 @@ where
         + CanRelayAckPacket
         + CanRelayTimeoutUnorderedPacket
         + CanBuildTimeoutUnorderedPacketMessage
-        + SupportsPacketRetry
         + InjectMismatchIbcEventsCountError,
 {
     type AfoSrcChain = SrcChain;

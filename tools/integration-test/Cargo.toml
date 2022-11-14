@@ -20,7 +20,7 @@ ibc-relayer-cli    = { path = "../../crates/relayer-cli" }
 ibc-relayer-framework     = { path = "../../crates/relayer-framework" }
 ibc-relayer-runtime     = { path = "../../crates/relayer-runtime" }
 ibc-relayer-cosmos     = { path = "../../crates/relayer-cosmos" }
-ibc-proto          = { version = "0.21.0" }
+ibc-proto          = { version = "0.22.0" }
 ibc-test-framework = { path = "../test-framework" }
 
 http = "0.2.8"

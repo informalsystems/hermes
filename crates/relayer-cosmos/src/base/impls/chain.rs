@@ -20,7 +20,7 @@ use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::Height;
 use prost::Message as _;
-use tendermint::abci::responses::Event;
+use tendermint_rpc::abci::responses::Event;
 
 use crate::base::error::Error;
 use crate::base::traits::chain::CosmosChain;

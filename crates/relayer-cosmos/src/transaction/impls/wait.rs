@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use ibc_relayer_framework::base::core::traits::error::HasError;
 use std::time::Instant;
-use tendermint::abci::transaction::Hash as TxHash;
+use tendermint_rpc::abci::transaction::Hash as TxHash;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tokio::time::sleep;
 

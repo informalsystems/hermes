@@ -4,7 +4,7 @@ use std::thread;
 use tracing::{debug, error, instrument, warn};
 
 use ibc_proto::google::protobuf::Any;
-use tendermint::abci::Code;
+use tendermint_rpc::abci::Code;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 
 use crate::chain::cosmos::query::account::refresh_account;
@@ -90,7 +90,7 @@ async fn do_send_tx_with_account_sequence_retry(
         }
 
         // Gas estimation succeeded but broadcast_tx_sync failed with a retry-able error.
-        Ok(ref response) if response.code == Code::Err(INCORRECT_ACCOUNT_SEQUENCE_ERR) => {
+        Ok(ref response) if response.code == Code::from(INCORRECT_ACCOUNT_SEQUENCE_ERR) => {
             warn!(
                 ?response,
                 "failed to broadcast tx because of a mismatched account sequence number, \
@@ -133,7 +133,7 @@ async fn do_send_tx_with_account_sequence_retry(
                     // Log the error.
                     error!(
                         ?response,
-                        diagnostic = ?sdk_error_from_tx_sync_error_code(code),
+                        diagnostic = ?sdk_error_from_tx_sync_error_code(code.into()),
                         "failed to broadcast tx with unrecoverable error"
                     );
 

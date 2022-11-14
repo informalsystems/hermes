@@ -3,7 +3,7 @@ use core::fmt::{Display, Error as FmtError, Formatter};
 use serde::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
-use tendermint::abci::tag::Value as TagValue;
+use tendermint_rpc::abci::tag::Value as TagValue;
 
 use crate::core::ics02_client::{error::Error as ICS2Error, height::Height};
 use crate::prelude::*;

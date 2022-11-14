@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use ibc_relayer::chain::cosmos::query::tx_hash_query;
 use ibc_relayer::chain::requests::QueryTxHash;
 use ibc_relayer_framework::base::core::traits::error::{HasError, InjectError};
-use tendermint::abci::transaction::Hash as TxHash;
+use tendermint_rpc::abci::transaction::Hash as TxHash;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tendermint_rpc::{Client, Error as RpcError, Order};
 

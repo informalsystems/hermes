@@ -1,8 +1,8 @@
 use ibc_relayer_types::core::ics23_commitment::merkle::{
     convert_tm_to_ics_merkle_proof, MerkleProof,
 };
-use tendermint::abci::Path as TendermintABCIPath;
 use tendermint::block::Height;
+use tendermint_rpc::abci::Path as TendermintABCIPath;
 use tendermint_rpc::{Client, HttpClient, Url};
 
 use crate::error::Error;
