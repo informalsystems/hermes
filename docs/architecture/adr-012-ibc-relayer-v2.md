@@ -480,7 +480,7 @@ If users want to mix and match specific features of the relayer, they can
 instead bypass the all-in-one traits and use the relayer components directly
 with CGP. Similarly, if users want to implement custom components, such as
 custom logic for building UpdateClient messages, they should skip the all-in-one
-traits and implement the custom logic directly CGP.
+traits and implement the custom logic directly using CGP.
 
 In the future, the relayer framework may offer more variants of all-in-one
 traits that are catered for specific use cases. For example, we may define
@@ -602,7 +602,7 @@ steps of implementing the one-for-all traits and then wrapping the values inside
 the one-for-all wrappers are sufficient for us to build a fully customized
 relayer from the relayer framework.
 
-## Development Status
+## Development plan toward relayer v1.5
 
 We are slowly progressing toward finishing the relayer v1.5 MVP. At the current
 stage, we have finished a full implementation of the `PacketRelayer` and tested
@@ -653,7 +653,7 @@ may be conditionally enabled from an `experimental` feature flag, so that
 official releases of the Hermes relayer do not expose the CLI to be accidentally
 used by relayer operators.
 
-## Future development plans toward relayer v2
+## Development plan toward relayer v2
 
 To progress the relayer v1.5 MVP toward relayer v2, there are several key
 milestones that we need to reach:
