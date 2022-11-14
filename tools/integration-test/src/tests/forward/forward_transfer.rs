@@ -12,6 +12,7 @@
 //!   For Gaia 6 the intermediate address will receive the refunded tokens.
 //!   For Gaia 8 the sender will receive the refunded tokens.
 
+use ibc_relayer::config::{self, Config, ModeConfig};
 use ibc_test_framework::chain::ext::forward::{
     build_forward_address, build_invalid_forward_address,
 };
@@ -32,11 +33,26 @@ fn test_invalid_channel_ibc_forward_transfer() -> Result<(), Error> {
 fn test_invalid_address_ibc_forward_transfer() -> Result<(), Error> {
     run_nary_channel_test(&InvalidAddressIbcForwardTransferTest)
 }
-pub struct IbcForwardTransferTest;
 
-impl TestOverrides for IbcForwardTransferTest {}
+struct IbcForwardTransferTestOverrides;
 
-impl PortsOverride<3> for IbcForwardTransferTest {}
+impl PortsOverride<3> for IbcForwardTransferTestOverrides {}
+
+impl TestOverrides for IbcForwardTransferTestOverrides {
+    fn modify_relayer_config(&self, config: &mut Config) {
+        config.mode = ModeConfig {
+            connections: config::Connections { enabled: false },
+            channels: config::Channels { enabled: false },
+            ..Default::default()
+        };
+    }
+
+    fn modify_test_config(&self, config: &mut TestConfig) {
+        config.bootstrap_with_random_ids = false;
+    }
+}
+
+struct IbcForwardTransferTest;
 
 impl NaryChannelTest<3> for IbcForwardTransferTest {
     fn run<Handle: ChainHandle>(
@@ -47,6 +63,7 @@ impl NaryChannelTest<3> for IbcForwardTransferTest {
         channels: NaryConnectedChannels<Handle, 3>,
     ) -> Result<(), Error> {
         let connected_chains = chains.connected_chains_at::<0, 2>()?;
+
         let node_a = chains.full_node_at::<0>()?;
         let node_b = chains.full_node_at::<1>()?;
         let node_c = chains.full_node_at::<2>()?;
@@ -56,34 +73,36 @@ impl NaryChannelTest<3> for IbcForwardTransferTest {
 
         let denom_a = connected_chains.node_a.denom();
 
-        let binding = node_a.wallets();
-        let wallet_a = binding.user1();
-        let binding = node_b.wallets();
-        let wallet_b = binding.user1();
-        let binding = node_c.wallets();
-        let wallet_c = binding.user1();
-
-        let balance_a = node_a
-            .chain_driver()
-            .query_balance(&wallet_a.address(), &denom_a)?;
-
-        let a_to_c_amount = 4000_u128;
-
         let denom_b = derive_ibc_denom(
             &channel_a_to_b.port_b.as_ref(),
             &channel_a_to_b.channel_id_b.as_ref(),
             &denom_a,
         )?;
 
-        let balance_b = node_b
-            .chain_driver()
-            .query_balance(&wallet_b.address(), &denom_b.as_ref())?;
-
         let denom_a_to_c = derive_ibc_denom(
             &channel_b_to_c.port_b.as_ref(),
             &channel_b_to_c.channel_id_b.as_ref(),
             &denom_b.as_ref(),
         )?;
+
+        let wallets_a = node_a.wallets();
+        let wallet_a = wallets_a.user1();
+
+        let wallets_b = node_b.wallets();
+        let wallet_b = wallets_b.user1();
+
+        let wallets_c = node_c.wallets();
+        let wallet_c = wallets_c.user1();
+
+        let balance_a = node_a
+            .chain_driver()
+            .query_balance(&wallet_a.address(), &denom_a)?;
+
+        let balance_b = node_b
+            .chain_driver()
+            .query_balance(&wallet_b.address(), &denom_b.as_ref())?;
+
+        let a_to_c_amount = 4000_u128;
 
         let forward_a_to_c_from_b = build_forward_address(
             wallet_b.address(),
@@ -114,6 +133,11 @@ impl NaryChannelTest<3> for IbcForwardTransferTest {
             a_to_c_amount
         );
 
+        node_c.chain_driver().assert_eventual_wallet_amount(
+            &wallet_c.address(),
+            &denom_a_to_c.with_amount(a_to_c_amount).as_ref(),
+        )?;
+
         node_a.chain_driver().assert_eventual_wallet_amount(
             &wallet_a.address(),
             &(balance_a - a_to_c_amount).as_ref(),
@@ -122,11 +146,6 @@ impl NaryChannelTest<3> for IbcForwardTransferTest {
         node_b
             .chain_driver()
             .assert_eventual_wallet_amount(&wallet_b.address(), &(balance_b).as_ref())?;
-
-        node_c.chain_driver().assert_eventual_wallet_amount(
-            &wallet_c.address(),
-            &denom_a_to_c.with_amount(a_to_c_amount).as_ref(),
-        )?;
 
         info!(
             "successfully performed IBC transfer from chain {} to chain {}",
@@ -138,16 +157,7 @@ impl NaryChannelTest<3> for IbcForwardTransferTest {
     }
 }
 
-pub struct InvalidChannelIbcForwardTransferTest;
-
-impl TestOverrides for InvalidChannelIbcForwardTransferTest {
-    // Ensure the invalid channel doesn't exist
-    fn modify_test_config(&self, config: &mut TestConfig) {
-        config.bootstrap_with_random_ids = false;
-    }
-}
-
-impl PortsOverride<3> for InvalidChannelIbcForwardTransferTest {}
+struct InvalidChannelIbcForwardTransferTest;
 
 impl NaryChannelTest<3> for InvalidChannelIbcForwardTransferTest {
     fn run<Handle: ChainHandle>(
@@ -158,6 +168,7 @@ impl NaryChannelTest<3> for InvalidChannelIbcForwardTransferTest {
         channels: NaryConnectedChannels<Handle, 3>,
     ) -> Result<(), Error> {
         let connected_chains = chains.connected_chains_at::<0, 2>()?;
+
         let node_a = chains.full_node_at::<0>()?;
         let node_b = chains.full_node_at::<1>()?;
         let node_c = chains.full_node_at::<2>()?;
@@ -167,28 +178,11 @@ impl NaryChannelTest<3> for InvalidChannelIbcForwardTransferTest {
 
         let denom_a = connected_chains.node_a.denom();
 
-        let binding = node_a.wallets();
-        let wallet_a = binding.user1();
-        let binding = node_b.wallets();
-        let wallet_b = binding.user1();
-        let binding = node_c.wallets();
-        let wallet_c = binding.user1();
-
-        let balance_a = node_a
-            .chain_driver()
-            .query_balance(&wallet_a.address(), &denom_a)?;
-
-        let a_to_c_amount = 4000_u128;
-
         let denom_b = derive_ibc_denom(
             &channel_a_to_b.port_b.as_ref(),
             &channel_a_to_b.channel_id_b.as_ref(),
             &denom_a,
         )?;
-
-        let balance_b = node_b
-            .chain_driver()
-            .query_balance(&wallet_b.address(), &denom_b.as_ref())?;
 
         let denom_a_to_c = derive_ibc_denom(
             &channel_b_to_c.port_b.as_ref(),
@@ -196,9 +190,28 @@ impl NaryChannelTest<3> for InvalidChannelIbcForwardTransferTest {
             &denom_b.as_ref(),
         )?;
 
+        let wallets_a = node_a.wallets();
+        let wallet_a = wallets_a.user1();
+
+        let wallets_b = node_b.wallets();
+        let wallet_b = wallets_b.user1();
+
+        let wallets_c = node_c.wallets();
+        let wallet_c = wallets_c.user1();
+
+        let balance_a = node_a
+            .chain_driver()
+            .query_balance(&wallet_a.address(), &denom_a)?;
+
+        let balance_b = node_b
+            .chain_driver()
+            .query_balance(&wallet_b.address(), &denom_b.as_ref())?;
+
         let balance_c = node_c
             .chain_driver()
             .query_balance(&wallet_c.address(), &denom_a_to_c.as_ref())?;
+
+        let a_to_c_amount = 4000_u128;
 
         let invalid_channel = ChannelId::new(9999);
 
@@ -226,7 +239,9 @@ impl NaryChannelTest<3> for InvalidChannelIbcForwardTransferTest {
             &denom_a.with_amount(a_to_c_amount).as_ref(),
         )?;
 
-        sleep(Duration::from_secs(2));
+        info!(
+            "Verify that the tokens were refunded to the sender if the forward channel is invalid"
+        );
 
         // The sender will still lose the tokens if the channel is invalid.
         node_a
@@ -246,16 +261,7 @@ impl NaryChannelTest<3> for InvalidChannelIbcForwardTransferTest {
     }
 }
 
-pub struct InvalidAddressIbcForwardTransferTest;
-
-impl TestOverrides for InvalidAddressIbcForwardTransferTest {
-    // Ensure the invalid channel doesn't exist
-    fn modify_test_config(&self, config: &mut TestConfig) {
-        config.bootstrap_with_random_ids = false;
-    }
-}
-
-impl PortsOverride<3> for InvalidAddressIbcForwardTransferTest {}
+struct InvalidAddressIbcForwardTransferTest;
 
 impl NaryChannelTest<3> for InvalidAddressIbcForwardTransferTest {
     fn run<Handle: ChainHandle>(
@@ -266,6 +272,7 @@ impl NaryChannelTest<3> for InvalidAddressIbcForwardTransferTest {
         channels: NaryConnectedChannels<Handle, 3>,
     ) -> Result<(), Error> {
         let connected_chains = chains.connected_chains_at::<0, 2>()?;
+
         let node_a = chains.full_node_at::<0>()?;
         let node_b = chains.full_node_at::<1>()?;
         let node_c = chains.full_node_at::<2>()?;
@@ -275,28 +282,11 @@ impl NaryChannelTest<3> for InvalidAddressIbcForwardTransferTest {
 
         let denom_a = connected_chains.node_a.denom();
 
-        let binding = node_a.wallets();
-        let wallet_a = binding.user1();
-        let binding = node_b.wallets();
-        let wallet_b = binding.user1();
-        let binding = node_c.wallets();
-        let wallet_c = binding.user1();
-
-        let balance_a = node_a
-            .chain_driver()
-            .query_balance(&wallet_a.address(), &denom_a)?;
-
-        let a_to_c_amount = 4000_u128;
-
         let denom_b = derive_ibc_denom(
             &channel_a_to_b.port_b.as_ref(),
             &channel_a_to_b.channel_id_b.as_ref(),
             &denom_a,
         )?;
-
-        let balance_b = node_b
-            .chain_driver()
-            .query_balance(&wallet_b.address(), &denom_b.as_ref())?;
 
         let denom_a_to_c = derive_ibc_denom(
             &channel_b_to_c.port_b.as_ref(),
@@ -304,9 +294,28 @@ impl NaryChannelTest<3> for InvalidAddressIbcForwardTransferTest {
             &denom_b.as_ref(),
         )?;
 
+        let wallets_a = node_a.wallets();
+        let wallet_a = wallets_a.user1();
+
+        let wallets_b = node_b.wallets();
+        let wallet_b = wallets_b.user1();
+
+        let wallets_c = node_c.wallets();
+        let wallet_c = wallets_c.user1();
+
+        let balance_a = node_a
+            .chain_driver()
+            .query_balance(&wallet_a.address(), &denom_a)?;
+
+        let balance_b = node_b
+            .chain_driver()
+            .query_balance(&wallet_b.address(), &denom_b.as_ref())?;
+
         let balance_c = node_c
             .chain_driver()
             .query_balance(&wallet_c.address(), &denom_a_to_c.as_ref())?;
+
+        let a_to_c_amount = 4000_u128;
 
         let forward_a_to_c_from_b = build_invalid_forward_address(
             wallet_b.address(),
@@ -331,7 +340,9 @@ impl NaryChannelTest<3> for InvalidAddressIbcForwardTransferTest {
             &denom_a.with_amount(a_to_c_amount).as_ref(),
         )?;
 
-        sleep(Duration::from_secs(2));
+        info!(
+            "Verify refunded tokens after trying to transfer with an invalid destination address"
+        );
 
         match node_a.chain_driver().major_version() {
             Ok(6) => {
@@ -379,5 +390,29 @@ impl NaryChannelTest<3> for InvalidAddressIbcForwardTransferTest {
                 e
             ))),
         }
+    }
+}
+
+impl HasOverrides for IbcForwardTransferTest {
+    type Overrides = IbcForwardTransferTestOverrides;
+
+    fn get_overrides(&self) -> &IbcForwardTransferTestOverrides {
+        &IbcForwardTransferTestOverrides
+    }
+}
+
+impl HasOverrides for InvalidChannelIbcForwardTransferTest {
+    type Overrides = IbcForwardTransferTestOverrides;
+
+    fn get_overrides(&self) -> &IbcForwardTransferTestOverrides {
+        &IbcForwardTransferTestOverrides
+    }
+}
+
+impl HasOverrides for InvalidAddressIbcForwardTransferTest {
+    type Overrides = IbcForwardTransferTestOverrides;
+
+    fn get_overrides(&self) -> &IbcForwardTransferTestOverrides {
+        &IbcForwardTransferTestOverrides
     }
 }
