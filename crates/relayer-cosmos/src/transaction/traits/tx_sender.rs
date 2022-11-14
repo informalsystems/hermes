@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer_framework::base::core::traits::error::HasError;
-use tendermint::abci::responses::Event;
+use tendermint_rpc::abci::responses::Event;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 
 #[async_trait]
