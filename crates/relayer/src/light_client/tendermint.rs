@@ -18,7 +18,9 @@ use ibc_relayer_types::{
         misbehaviour::Misbehaviour as TmMisbehaviour,
     },
     core::{
-        ics02_client::{client_type::ClientType, events::UpdateClient, header::downcast_header},
+        ics02_client::{
+            self, client_type::ClientType, events::UpdateClient, header::downcast_header,
+        },
         ics24_host::identifier::ChainId,
     },
     downcast, Height as ICSHeight,
@@ -188,11 +190,15 @@ impl LightClient {
                 Error::client_type_mismatch(ClientType::Tendermint, client_state.client_type())
             })?;
 
+        let trust_threshold = match client_state.trust_level {
+            Some(tt) => tt.try_into().map_err(Error::light_client_state),
+            None => Err(Error::light_client_state(
+                ics02_client::error::Error::invalid_trust_threshold(0, 0),
+            )),
+        }?;
+
         let params = TmOptions {
-            trust_threshold: client_state
-                .trust_level
-                .try_into()
-                .map_err(Error::light_client_state)?,
+            trust_threshold,
             trusting_period: client_state.trusting_period,
             clock_drift: client_state.max_clock_drift,
         };

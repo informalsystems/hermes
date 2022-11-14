@@ -31,8 +31,9 @@ use crate::core::ics02_client::error::Error;
 /// validators at height H1, then at least 1 trusted validator proposed the
 /// block at height H2. Thus, a typical trust threshold in practice is 1/3.
 ///
-/// This type accepts even a value of 0, (numerator = 0, denominator = 0),
-/// which is used in the client state of an upgrading client.
+/// This type can represent a value of 0/0, (numerator = 0, denominator = 0),
+/// which is used in the client state of an upgrading client, via
+/// the `TrustThreshold::CLIENT_STATE_RESET` constant.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TrustThreshold(Ratio<u64>);
 

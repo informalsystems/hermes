@@ -31,7 +31,7 @@ pub const TENDERMINT_CLIENT_STATE_TYPE_URL: &str = "/ibc.lightclients.tendermint
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientState {
     pub chain_id: ChainId,
-    pub trust_level: TrustThreshold,
+    pub trust_level: Option<TrustThreshold>,
     pub trusting_period: Duration,
     pub unbonding_period: Duration,
     pub max_clock_drift: Duration,
@@ -111,7 +111,7 @@ impl ClientState {
 
         Ok(Self {
             chain_id,
-            trust_level: trust_threshold,
+            trust_level: Some(trust_threshold),
             trusting_period,
             unbonding_period,
             max_clock_drift,
@@ -154,11 +154,17 @@ impl ClientState {
     /// Helper method to produce a [`Options`] struct for use in
     /// Tendermint-specific light client verification.
     pub fn as_light_client_options(&self) -> Result<Options, Error> {
-        Ok(Options {
-            trust_threshold: self
-                .trust_level
+        let trust_threshold = match self.trust_level {
+            Some(tt) => tt
                 .try_into()
-                .map_err(|e: Ics02Error| Error::invalid_trust_threshold(e.to_string()))?,
+                .map_err(|e: Ics02Error| Error::invalid_trust_threshold(e.to_string())),
+            None => Err(Error::invalid_trust_threshold(
+                "Cannot use 0/0 trust threshold as light client option".to_string(),
+            )),
+        }?;
+
+        Ok(Options {
+            trust_threshold,
             trusting_period: self.trusting_period,
             clock_drift: self.max_clock_drift,
         })
@@ -242,7 +248,7 @@ impl Ics2ClientState for ClientState {
 
         // Reset custom fields to zero values
         self.trusting_period = ZERO_DURATION;
-        self.trust_level = TrustThreshold::CLIENT_STATE_RESET;
+        self.trust_level = None;
         self.allow_update.after_expiry = false;
         self.allow_update.after_misbehaviour = false;
         self.frozen_height = None;
@@ -269,11 +275,13 @@ impl TryFrom<RawTmClientState> for ClientState {
 
         // We need to handle the case where the client is being upgraded and the trust threshold is set to 0/0
         let trust_threshold = if trust_level.denominator == 0 && trust_level.numerator == 0 {
-            TrustThreshold::CLIENT_STATE_RESET
+            None
         } else {
-            trust_level
-                .try_into()
-                .map_err(|e| Error::invalid_trust_threshold(format!("{}", e)))?
+            Some(
+                trust_level
+                    .try_into()
+                    .map_err(|e| Error::invalid_trust_threshold(format!("{}", e)))?,
+            )
         };
 
         // In `RawClientState`, a `frozen_height` of `0` means "not frozen".
@@ -324,7 +332,7 @@ impl From<ClientState> for RawTmClientState {
         #[allow(deprecated)]
         Self {
             chain_id: value.chain_id.to_string(),
-            trust_level: Some(value.trust_level.into()),
+            trust_level: value.trust_level.map(Into::into),
             trusting_period: Some(value.trusting_period.into()),
             unbonding_period: Some(value.unbonding_period.into()),
             max_clock_drift: Some(value.max_clock_drift.into()),
