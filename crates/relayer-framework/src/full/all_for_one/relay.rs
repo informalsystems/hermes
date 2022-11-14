@@ -4,6 +4,7 @@ use crate::base::relay::traits::types::HasRelayTypes;
 use crate::full::all_for_one::chain::AfoFullChain;
 use crate::full::batch::message_sender::CanSendIbcMessagesFromBatchWorker;
 use crate::full::filter::traits::filter::HasPacketFilter;
+use crate::full::relay::impls::packet_relayers::retry::SupportsPacketRetry;
 
 pub trait AfoFullRelay:
     HasRelayTypes<SrcChain = Self::AfoSrcFullChain, DstChain = Self::AfoDstFullChain>
@@ -22,7 +23,8 @@ where
         + AfoBaseRelay<AfoSrcChain = SrcChain, AfoDstChain = DstChain>
         + HasPacketFilter
         + CanSendIbcMessagesFromBatchWorker<SourceTarget>
-        + CanSendIbcMessagesFromBatchWorker<DestinationTarget>,
+        + CanSendIbcMessagesFromBatchWorker<DestinationTarget>
+        + SupportsPacketRetry,
     SrcChain: AfoFullChain<DstChain>,
     DstChain: AfoFullChain<SrcChain>,
 {

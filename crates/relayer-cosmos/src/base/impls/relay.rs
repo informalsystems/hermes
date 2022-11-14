@@ -47,14 +47,6 @@ impl<Relay> OfaBaseRelay for CosmosRelayWrapper<Relay>
 where
     Relay: CosmosRelay,
 {
-    fn is_retryable_error(_: &Self::Error) -> bool {
-        false
-    }
-
-    fn max_retry_exceeded_error(e: Self::Error) -> Self::Error {
-        e
-    }
-
     fn mismatch_ibc_events_count_error(expected: usize, actual: usize) -> Self::Error {
         Error::mismatch_ibc_events_count(expected, actual)
     }
