@@ -61,7 +61,7 @@ class ClientState:
     frozen_height: Optional[Height]
     latest_height: Height
     max_clock_drift: Duration
-    trust_threshold: TrustLevel
+    trust_threshold: TrustThreshold
     trusting_period: Duration
     unbonding_period: Duration
     upgrade_path: List[str]
