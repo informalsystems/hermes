@@ -1,8 +1,8 @@
 use core::str::FromStr;
 use itertools::Itertools;
 use serde_derive::{Deserialize, Serialize};
-use tendermint::abci::tag::Tag;
-use tendermint::abci::Event as AbciEvent;
+use tendermint_rpc::abci::tag::Tag;
+use tendermint_rpc::abci::Event as AbciEvent;
 
 use super::error::Error;
 use crate::applications::transfer::coin::RawCoin;
