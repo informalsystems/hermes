@@ -636,7 +636,7 @@ implementation for
 [`MinCosmosChainContext`](crate::contexts::min::chain::MinCosmosChainContext),
 we first
 define the `Preset` type attribute to
-[`MinimalPreset`](ibc_relayer_framework::base::one_for_all::presets::MinimalPreset),
+[`MinimalPreset`](ibc_relayer_framework::base::one_for_all::presets::min::MinimalPreset),
 indicating that we
 only want to build a minimal relayer with our concrete context. We then bind
 the abstract types such as `Error` and `Height` to the Cosmos-specific types

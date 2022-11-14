@@ -1,8 +1,8 @@
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::keyring::KeyEntry;
-use ibc_relayer_framework::base::one_for_all::presets::FullPreset;
 use ibc_relayer_framework::full::batch::context::new_batch_channel;
+use ibc_relayer_framework::full::one_for_all::presets::full::FullPreset;
 use ibc_relayer_framework::full::one_for_all::traits::batch::OfaBatchContext;
 use ibc_relayer_framework::full::one_for_all::traits::telemetry::OfaTelemetryWrapper;
 use ibc_relayer_types::signer::Signer;

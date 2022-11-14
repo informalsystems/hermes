@@ -1,7 +1,7 @@
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::keyring::KeyEntry;
-use ibc_relayer_framework::base::one_for_all::presets::MinimalPreset;
+use ibc_relayer_framework::base::one_for_all::presets::min::MinimalPreset;
 use ibc_relayer_types::signer::Signer;
 
 use crate::base::traits::chain::CosmosChain;
