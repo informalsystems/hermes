@@ -453,7 +453,7 @@ doing model checking in Rust, the abstract nature of the relayer framework
 increases the chance of the tools being a good fit. In particular, the
 relayer framwork supports `no_std` and is not tied to a specific async runtime.
 As a result, fewer problems arise in a symbolic execution environment like Kani,
-which does not support std and async constructs.
+which does not support std and async runtimes like Tokio.
 
 ### All-In-One Traits
 
@@ -640,7 +640,8 @@ define the `Preset` type attribute to
 indicating that we
 only want to build a minimal relayer with our concrete context. We then bind
 the abstract types such as `Error` and `Height` to the Cosmos-specific types
-such as `CosmosError` and `CosmosTimestamp`. Finally, we implement the abstract
+such as `CosmosError` and [`CosmosHeight`](ibc_relayer_types::Height).
+Finally, we implement the abstract
 methods that are required to be provided by the concrete chain implementation,
 such as `query_chain_status` and `send_messages`.
 
