@@ -7,7 +7,7 @@ use core::{
     time::Duration,
 };
 use num_bigint::BigInt;
-use std::cmp::Ordering;
+use std::{cmp::Ordering, thread};
 
 use ibc_proto::protobuf::Protobuf;
 use tendermint::block::Height as TmHeight;
@@ -22,15 +22,21 @@ use tonic::{codegen::http::Uri, metadata::AsciiMetadataValue};
 use tracing::{error, instrument, trace, warn};
 
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
+use ibc_relayer_types::clients::ics07_tendermint::client_state::{
+    AllowUpdate, ClientState as TmClientState,
+};
+use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState;
 use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
 use ibc_relayer_types::core::ics02_client::client_type::ClientType;
 use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
+use ibc_relayer_types::core::ics02_client::events::UpdateClient;
 use ibc_relayer_types::core::ics03_connection::connection::{
     ConnectionEnd, IdentifiedConnectionEnd,
 };
 use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
+use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
@@ -43,19 +49,15 @@ use ibc_relayer_types::core::ics24_host::{
 };
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
-use ibc_relayer_types::{
-    clients::ics07_tendermint::client_state::{AllowUpdate, ClientState as TmClientState},
-    core::ics23_commitment::merkle::MerkleProof,
-};
-use ibc_relayer_types::{
-    clients::ics07_tendermint::consensus_state::ConsensusState as TMConsensusState,
-    core::ics02_client::events::UpdateClient,
-};
 
-use crate::account::Balance;
 use crate::chain::client::ClientSettings;
+use crate::chain::cosmos::batch::sequential_send_batched_messages_and_wait_commit;
+use crate::chain::cosmos::batch::{
+    send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
+};
 use crate::chain::cosmos::encode::key_entry_to_signer;
 use crate::chain::cosmos::fee::maybe_register_counterparty_payee;
+use crate::chain::cosmos::gas::{calculate_fee, mul_ceil};
 use crate::chain::cosmos::query::account::get_or_fetch_account;
 use crate::chain::cosmos::query::balance::{query_all_balances, query_balance};
 use crate::chain::cosmos::query::denom_trace::query_denom_trace;
@@ -69,10 +71,6 @@ use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::gas::{
     default_gas_from_config, gas_multiplier_from_config, max_gas_from_config,
 };
-use crate::chain::cosmos::{
-    batch::sequential_send_batched_messages_and_wait_commit,
-    gas::{calculate_fee, mul_ceil},
-};
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
 use crate::chain::requests::{Qualified, QueryPacketEventDataRequest};
 use crate::chain::tracking::TrackedMsgs;
@@ -81,18 +79,15 @@ use crate::config::ChainConfig;
 use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::denom::DenomTrace;
 use crate::error::Error;
+use crate::event::monitor::{EventReceiver, TxMonitorCmd};
 use crate::event::IbcEventWithHeight;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
 use crate::util::pretty::{PrettyConsensusStateWithHeight, PrettyIdentifiedChannel};
-use crate::{
-    chain::cosmos::batch::{
-        send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
-    },
-    util::pretty::{PrettyIdentifiedClientState, PrettyIdentifiedConnection},
-};
+use crate::util::pretty::{PrettyIdentifiedClientState, PrettyIdentifiedConnection};
+use crate::{account::Balance, event::monitor::EventMonitor};
 
 use super::requests::{
     IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
@@ -654,6 +649,26 @@ impl ChainEndpoint for CosmosSdkChain {
         };
 
         Ok(chain)
+    }
+
+    fn init_event_monitor(
+        &self,
+        rt: Arc<TokioRuntime>,
+    ) -> Result<(EventReceiver, TxMonitorCmd), Error> {
+        crate::time!("init_event_monitor");
+
+        let (mut event_monitor, event_receiver, monitor_tx) = EventMonitor::new(
+            self.config.id.clone(),
+            self.config.websocket_addr.clone(),
+            rt,
+        )
+        .map_err(Error::event_monitor)?;
+
+        event_monitor.subscribe().map_err(Error::event_monitor)?;
+
+        thread::spawn(move || event_monitor.run());
+
+        Ok((event_receiver, monitor_tx))
     }
 
     fn shutdown(self) -> Result<(), Error> {

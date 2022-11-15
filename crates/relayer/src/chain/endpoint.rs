@@ -1,6 +1,5 @@
 use alloc::sync::Arc;
 use core::convert::TryFrom;
-use std::thread;
 
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -38,7 +37,7 @@ use crate::connection::ConnectionMsgType;
 use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::denom::DenomTrace;
 use crate::error::{Error, QUERY_PROOF_EXPECT_MSG};
-use crate::event::monitor::{EventMonitor, EventReceiver, TxMonitorCmd};
+use crate::event::monitor::{EventReceiver, TxMonitorCmd};
 use crate::event::IbcEventWithHeight;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::AnyHeader;
@@ -94,19 +93,7 @@ pub trait ChainEndpoint: Sized {
     fn init_event_monitor(
         &self,
         rt: Arc<TokioRuntime>,
-    ) -> Result<(EventReceiver, TxMonitorCmd), Error> {
-        crate::time!("init_event_monitor");
-
-        let (mut event_monitor, event_receiver, monitor_tx) =
-            EventMonitor::new(self.id().clone(), self.config().websocket_addr.clone(), rt)
-                .map_err(Error::event_monitor)?;
-
-        event_monitor.subscribe().map_err(Error::event_monitor)?;
-
-        thread::spawn(move || event_monitor.run());
-
-        Ok((event_receiver, monitor_tx))
-    }
+    ) -> Result<(EventReceiver, TxMonitorCmd), Error>;
 
     /// Shutdown the chain runtime
     fn shutdown(self) -> Result<(), Error>;
