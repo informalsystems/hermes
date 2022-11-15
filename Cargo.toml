@@ -19,7 +19,6 @@ members = [
 ]
 
 exclude = [
-    "ci/no-std-check",
     "tools/verification",
 ]
 

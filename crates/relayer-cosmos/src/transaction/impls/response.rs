@@ -1,5 +1,5 @@
 use ibc_relayer_framework::base::core::traits::error::HasError;
-use tendermint::abci::Code;
+use tendermint_rpc::abci::Code;
 
 pub trait InjectRpcResponseError: HasError {
     fn rpc_response_error(code: Code) -> Self::Error;

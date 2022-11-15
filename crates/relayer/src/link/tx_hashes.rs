@@ -1,6 +1,6 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
 
-use tendermint::abci::transaction;
+use tendermint_rpc::abci::transaction;
 
 use crate::link::relay_sender::AsyncReply;
 

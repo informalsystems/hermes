@@ -3,8 +3,8 @@ use ibc_relayer_types::core::ics04_channel::packet::{Packet, Sequence};
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::Height as ICSHeight;
-use tendermint::abci::transaction::Hash as TxHash;
-use tendermint::abci::Event;
+use tendermint_rpc::abci::transaction::Hash as TxHash;
+use tendermint_rpc::abci::Event;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tendermint_rpc::{Client, HttpClient, Order, Url};
 

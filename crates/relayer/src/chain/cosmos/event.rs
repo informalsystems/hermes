@@ -1,4 +1,4 @@
-use tendermint::abci::responses::Event;
+use tendermint_rpc::abci::responses::Event;
 
 pub fn split_events_by_messages(in_events: Vec<Event>) -> Vec<Vec<Event>> {
     let mut out_events = Vec::new();
