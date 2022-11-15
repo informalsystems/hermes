@@ -596,7 +596,7 @@ impl CosmosSdkChain {
 
             assert!(
                 response.blocks.len() <= 1,
-                "block_results: unexpected number of blocks"
+                "block_search: unexpected number of blocks"
             );
 
             if let Some(block) = response.blocks.first().map(|first| &first.block) {

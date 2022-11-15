@@ -139,7 +139,8 @@ pub async fn query_packets_from_txs(
     Ok(result)
 }
 
-/// This function queries packet events from a given block, events matching certain criteria.
+/// This function queries packet events from a block at a specific height.
+/// It returns packet events that match certain criteria (see [`filter_matching_event`]).
 /// It returns at most one packet event for each sequence specified in the request.
 pub async fn query_packets_from_block(
     chain_id: &ChainId,
@@ -147,8 +148,8 @@ pub async fn query_packets_from_block(
     rpc_address: &Url,
     request: &QueryPacketEventDataRequest,
 ) -> Result<Vec<IbcEventWithHeight>, Error> {
-    crate::time!("query_packets_from_txs");
-    crate::telemetry!(query, chain_id, "query_packets_from_txs");
+    crate::time!("query_packets_from_block");
+    crate::telemetry!(query, chain_id, "query_packets_from_block");
 
     let mut result: Vec<IbcEventWithHeight> = vec![];
 
