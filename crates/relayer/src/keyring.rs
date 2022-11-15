@@ -420,7 +420,7 @@ fn get_address(public_key: &PublicKey, address_type: &AddressType) -> [u8; 20] {
             hashed_key[12..].try_into().unwrap()
         }
         AddressType::Cosmos | AddressType::Ethermint { .. } => {
-            Ripemd160::digest(&Sha256::digest(&public_key.serialize())).into()
+            Ripemd160::digest(Sha256::digest(public_key.serialize())).into()
         }
     }
 }
