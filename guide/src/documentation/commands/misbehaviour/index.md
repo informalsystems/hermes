@@ -98,7 +98,7 @@ Which should output:
       "nanos": 0,
       "secs": 3
     },
-    "trust_level": {
+    "trust_threshold": {
       "denominator": "3",
       "numerator": "1"
     },

@@ -1,5 +1,5 @@
 use flex_error::define_error;
-use tendermint::abci::Code;
+use tendermint_rpc::abci::Code;
 use tendermint_rpc::endpoint::broadcast::tx_commit::TxResult;
 
 // Provides mapping for errors returned from ibc-go and cosmos-sdk
@@ -175,10 +175,10 @@ pub fn sdk_error_from_tx_result(result: &TxResult) -> SdkError {
         Code::Err(code) => {
             let codespace = result.codespace.to_string();
             if codespace == "client" {
-                SdkError::client(client_error_from_code(code))
+                SdkError::client(client_error_from_code(code.into()))
             } else {
                 // TODO: Implement mapping for other codespaces in ibc-go
-                SdkError::unknown_sdk(codespace, code)
+                SdkError::unknown_sdk(codespace, code.into())
             }
         }
     }
