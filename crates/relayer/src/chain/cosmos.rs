@@ -1683,6 +1683,9 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_packet_events");
 
         match request.height {
+            // Usage note: `Qualified::Equal` is currently only used in the call hierarchy involving
+            // the CLI methods, namely the CLI for `tx packet-recv` and `tx packet-ack` when the
+            // user passes the flag `packet-data-query-height`.
             Qualified::Equal(_) => self.block_on(query_packets_from_block(
                 self.id(),
                 &self.rpc_client,

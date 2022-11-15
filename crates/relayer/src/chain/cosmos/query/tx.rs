@@ -255,6 +255,9 @@ fn packet_from_tx_search_response(
         .map(|ibc_event| IbcEventWithHeight::new(ibc_event, height)))
 }
 
+/// Returns the given event wrapped in `Some` if the event data
+/// is consistent with the request parameters.
+/// Returns `None` otherwise.
 pub fn filter_matching_event(
     event: Event,
     request: &QueryPacketEventDataRequest,
