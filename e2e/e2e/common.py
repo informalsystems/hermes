@@ -23,7 +23,7 @@ class Duration:
 
 
 @dataclass
-class TrustLevel:
+class TrustThreshold:
     denominator: int
     numerator: int
 
