@@ -32,14 +32,6 @@ impl OfaRelayTypes for MockRelayContext {
 
 #[async_trait]
 impl OfaBaseRelay for MockRelayContext {
-    fn is_retryable_error(_: &Self::Error) -> bool {
-        false
-    }
-
-    fn max_retry_exceeded_error(e: Self::Error) -> Self::Error {
-        e
-    }
-
     fn mismatch_ibc_events_count_error(expected: usize, actual: usize) -> Self::Error {
         Error::mismatch_error(expected, actual)
     }
