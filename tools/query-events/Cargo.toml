@@ -1,0 +1,18 @@
+[package]
+name    = "query-events"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap               = { version = "3.2", features = ["derive"] }
+futures            = "0.3.25"
+itertools          = "0.10.5"
+tokio              = { version = "1.21.2", features = ["full"] }
+tracing            = "0.1.37"
+tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
+
+[dependencies.tendermint-rpc]
+version  = "0.26"
+features = ["http-client"]
+git      = "https://github.com/informalsystems/tendermint-rs"
+branch   = "romac/pub-query-conditions-bak"
