@@ -5,6 +5,12 @@
 
 extern crate alloc;
 
+#[cfg(test)]
+extern crate std;
+
+#[cfg(test)]
+pub mod tests;
+
 #[cfg(doc)]
 pub mod docs;
 

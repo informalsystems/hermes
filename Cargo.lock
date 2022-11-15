@@ -1851,6 +1851,11 @@ name = "ibc-relayer-framework"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "eyre",
+ "flex-error",
+ "ibc-relayer-runtime",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]

@@ -13,6 +13,5 @@ pub mod framework;
 pub mod ibc;
 pub mod prelude;
 pub mod relayer;
-pub mod relayer_mock;
 pub mod types;
 pub mod util;

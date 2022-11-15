@@ -1,20 +1,21 @@
-use ibc_relayer_framework::base::one_for_all::traits::relay::OfaBaseRelay;
-use ibc_relayer_framework::base::relay::traits::packet_relayer::CanRelayPacket;
-use ibc_test_framework::framework::base::{run_test, PrimitiveTest};
-use ibc_test_framework::prelude::*;
-use ibc_test_framework::relayer_mock::base::types::height::Height;
-use ibc_test_framework::relayer_mock::base::types::packet::PacketKey;
+use alloc::string::String;
+use tracing::info;
 
-use super::context::build_mock_relay_context;
+use crate::base::one_for_all::traits::relay::OfaBaseRelay;
+use crate::base::relay::traits::packet_relayer::CanRelayPacket;
+use crate::tests::relayer_mock::base::error::Error;
+use crate::tests::relayer_mock::base::types::height::Height;
+use crate::tests::relayer_mock::base::types::packet::PacketKey;
+use crate::tests::relayer_mock::util::context::build_mock_relay_context;
 
 #[test]
 fn test_mock_chain_test() -> Result<(), Error> {
-    run_test(&MockChainTest)
+    MockChainTest::run(&MockChainTest)
 }
 
 pub struct MockChainTest;
 
-impl PrimitiveTest for MockChainTest {
+impl MockChainTest {
     fn run(&self) -> Result<(), Error> {
         let (relay_context, src_chain, dst_chain) = build_mock_relay_context();
 
@@ -38,7 +39,7 @@ impl PrimitiveTest for MockChainTest {
 
             assert!(l_h.is_some());
 
-            let state = dst_chain.chain.query_state(l_h.unwrap());
+            let state = dst_chain.chain.query_state_at_height(l_h.unwrap());
 
             assert!(state.is_some());
 
@@ -50,7 +51,7 @@ impl PrimitiveTest for MockChainTest {
         }
 
         // Source chain must be higher than destination chain
-        src_chain.chain.new_block();
+        src_chain.chain.new_block()?;
 
         let events = runtime.block_on(async { relay_context.relay_packet(&packet).await });
 
@@ -63,7 +64,7 @@ impl PrimitiveTest for MockChainTest {
 
             assert!(l_h.is_some());
 
-            let state = dst_chain.chain.query_state(l_h.unwrap());
+            let state = dst_chain.chain.query_state_at_height(l_h.unwrap());
 
             assert!(state.is_some());
 
@@ -81,7 +82,7 @@ impl PrimitiveTest for MockChainTest {
 
             assert!(l_h.is_some());
 
-            let state = src_chain.chain.query_state(l_h.unwrap());
+            let state = src_chain.chain.query_state_at_height(l_h.unwrap());
 
             assert!(state.is_some());
 

@@ -1,13 +1,12 @@
+use alloc::string::String;
 use std::sync::Arc;
 
-use ibc_relayer_framework::{
+use crate::tests::relayer_mock::base::types::runtime::MockRuntimeContext;
+use crate::tests::relayer_mock::contexts::chain::MockChainContext;
+use crate::{
     base::one_for_all::traits::runtime::OfaRuntimeContext,
     common::one_for_all::types::chain::OfaChainWrapper,
 };
-
-use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
-
-use super::chain::MockChainContext;
 
 pub struct MockRelayContext {
     pub src_chain: Arc<OfaChainWrapper<MockChainContext>>,

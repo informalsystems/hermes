@@ -1,17 +1,20 @@
+use alloc::boxed::Box;
+use alloc::string::ToString;
+use alloc::vec::Vec;
 use async_trait::async_trait;
+use std::vec;
 
-use ibc_relayer_framework::base::one_for_all::traits::chain::OfaChainTypes;
-use ibc_relayer_framework::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayTypes};
-use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
-use ibc_relayer_framework::common::one_for_all::presets::MinimalPreset;
-use ibc_relayer_framework::common::one_for_all::types::chain::OfaChainWrapper;
-
-use crate::relayer_mock::base::error::Error;
-use crate::relayer_mock::base::types::message::Message as MockMessage;
-use crate::relayer_mock::base::types::packet::PacketKey;
-use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
-use crate::relayer_mock::contexts::chain::MockChainContext;
-use crate::relayer_mock::contexts::relay::MockRelayContext;
+use crate::base::one_for_all::traits::chain::OfaChainTypes;
+use crate::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayTypes};
+use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
+use crate::common::one_for_all::presets::MinimalPreset;
+use crate::common::one_for_all::types::chain::OfaChainWrapper;
+use crate::tests::relayer_mock::base::error::Error;
+use crate::tests::relayer_mock::base::types::message::Message as MockMessage;
+use crate::tests::relayer_mock::base::types::packet::PacketKey;
+use crate::tests::relayer_mock::base::types::runtime::MockRuntimeContext;
+use crate::tests::relayer_mock::contexts::chain::MockChainContext;
+use crate::tests::relayer_mock::contexts::relay::MockRelayContext;
 
 impl OfaRelayTypes for MockRelayContext {
     type Preset = MinimalPreset;
@@ -68,7 +71,7 @@ impl OfaBaseRelay for MockRelayContext {
     fn packet_timeout_height(
         packet: &Self::Packet,
     ) -> Option<&<Self::DstChain as OfaChainTypes>::Height> {
-        Some(&packet.timeout_height.0)
+        Some(&packet.timeout_height)
     }
 
     fn packet_timeout_timestamp(
@@ -101,14 +104,24 @@ impl OfaBaseRelay for MockRelayContext {
         &self,
         height: &<Self::DstChain as OfaChainTypes>::Height,
     ) -> Result<Vec<<Self::SrcChain as OfaChainTypes>::Message>, Self::Error> {
-        Ok(vec![MockMessage::UpdateClient(*height)])
+        let state = self.src_chain().chain.state();
+        Ok(vec![MockMessage::UpdateClient(
+            self.src_client_id().to_string(),
+            height.clone(),
+            state,
+        )])
     }
 
     async fn build_dst_update_client_messages(
         &self,
         height: &<Self::SrcChain as OfaChainTypes>::Height,
     ) -> Result<Vec<<Self::DstChain as OfaChainTypes>::Message>, Self::Error> {
-        Ok(vec![MockMessage::UpdateClient(*height)])
+        let state = self.dst_chain().chain.state();
+        Ok(vec![MockMessage::UpdateClient(
+            self.dst_client_id().to_string(),
+            height.clone(),
+            state,
+        )])
     }
 
     async fn build_receive_packet_message(
@@ -117,7 +130,12 @@ impl OfaBaseRelay for MockRelayContext {
         packet: &Self::Packet,
     ) -> Result<<Self::DstChain as OfaChainTypes>::Message, Self::Error> {
         let h = self.dst_chain().chain.get_latest_height().unwrap();
-        Ok(MockMessage::SendPacket(*height, h.0, packet.clone()))
+        Ok(MockMessage::SendPacket(
+            packet.client_id.clone(),
+            height.clone(),
+            h,
+            packet.clone(),
+        ))
     }
 
     async fn build_ack_packet_message(
@@ -126,7 +144,11 @@ impl OfaBaseRelay for MockRelayContext {
         packet: &Self::Packet,
         _ack: &<Self::DstChain as OfaChainTypes>::WriteAcknowledgementEvent,
     ) -> Result<<Self::SrcChain as OfaChainTypes>::Message, Self::Error> {
-        Ok(MockMessage::AckPacket(*destination_height, packet.clone()))
+        Ok(MockMessage::AckPacket(
+            self.src_client_id().clone(),
+            destination_height.clone(),
+            packet.clone(),
+        ))
     }
 
     async fn build_timeout_unordered_packet_message(
@@ -135,7 +157,8 @@ impl OfaBaseRelay for MockRelayContext {
         packet: &Self::Packet,
     ) -> Result<<Self::SrcChain as OfaChainTypes>::Message, Self::Error> {
         Ok(MockMessage::TimeoutPacket(
-            *destination_height,
+            self.src_client_id().clone(),
+            destination_height.clone(),
             packet.clone(),
         ))
     }

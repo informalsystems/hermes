@@ -1,3 +1,4 @@
+use alloc::string::String;
 use eyre::Report;
 use flex_error::{define_error, TraceError};
 

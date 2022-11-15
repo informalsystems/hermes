@@ -1,3 +1,4 @@
+use alloc::string::{String, ToString};
 use std::{collections::HashSet, fmt::Display};
 
 type PortId = String;

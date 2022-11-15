@@ -1,6 +1,7 @@
+use alloc::string::String;
 use std::fmt::Display;
 
-use crate::relayer_mock::base::types::height::Height;
+use crate::tests::relayer_mock::base::types::height::Height;
 
 #[derive(Clone, Debug)]
 pub struct PacketKey {
