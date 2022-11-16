@@ -134,7 +134,7 @@ jobs:
           NO_COLOR_LOG: 1
         run: |
           nix shell .#python .#gaia6-ordered -c cargo \
-            nextest -p ibc-integration-test --features ordered --no-fail-fast -- \
+            nextest run -p ibc-integration-test --features ordered --no-fail-fast -- \
             --no-capture test_ordered_channel
 
   ica-filter-test:
@@ -167,7 +167,7 @@ jobs:
           CHAIN_COMMAND_PATH: icad
         run: |
           nix shell .#python .#ica -c cargo \
-            nextest -p ibc-integration-test --features ica --no-fail-fast -- \
+            nextest run -p ibc-integration-test --features ica --no-fail-fast -- \
             --no-capture test_ica_filter
 
   ics29-fee-test:
@@ -211,7 +211,7 @@ jobs:
           ACCOUNT_PREFIX: ${{ matrix.chain.account_prefix }}
         run: |
           nix shell .#${{ matrix.chain.package }} -c cargo \
-            nextest -p ibc-integration-test --features ics29-fee --no-fail-fast -- \
+            nextest run -p ibc-integration-test --features ics29-fee --no-fail-fast -- \
             --no-capture fee::
 
   model-based-test:
@@ -253,5 +253,5 @@ jobs:
       #       .#${{ matrix.gaiad }} \
       #       .#apalache \
       #       -c cargo \
-      #       nextest -p ibc-integration-test --features mbt --no-fail-fast -- \
+      #       nextest run -p ibc-integration-test --features mbt --no-fail-fast -- \
       #       --no-capture mbt
