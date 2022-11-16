@@ -26,11 +26,13 @@ on:
 
 env:
   CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
   CARGO_PROFILE_DEV_DEBUG: 1
   CARGO_PROFILE_RELEASE_DEBUG: 1
-  RUST_BACKTRACE: short
-  CARGO_NET_RETRY: 10
+  CARGO_TERM_COLOR: always
+  NEXTEST_RETRIES: 1
   RUSTUP_MAX_RETRIES: 10
+  RUST_BACKTRACE: short
 
 jobs:
   integration-test:
@@ -87,9 +89,10 @@ jobs:
           toolchain: stable
           override: true
       - uses: Swatinem/rust-cache@v1
+      - uses: taiki-e/install-action@nextest
       - uses: actions-rs/cargo@v1
         with:
-          command: test
+          command: nextest
           args: -p ibc-integration-test --no-fail-fast --no-run
       - env:
           RUST_LOG: info
@@ -99,8 +102,7 @@ jobs:
           ACCOUNT_PREFIX: ${{ matrix.chain.account_prefix }}
         run: |
           nix shell .#python .#${{ matrix.chain.package }} -c cargo \
-            test -p ibc-integration-test --no-fail-fast -- \
-            --nocapture --test-threads=2
+            nexttest -p ibc-integration-test --no-fail-fast -- --no-capture
 
   ordered-channel-test:
     runs-on: ubuntu-latest
@@ -121,9 +123,10 @@ jobs:
           toolchain: stable
           override: true
       - uses: Swatinem/rust-cache@v1
+      - uses: taiki-e/install-action@nextest
       - uses: actions-rs/cargo@v1
         with:
-          command: test
+          command: nextest
           args: -p ibc-integration-test --no-fail-fast --no-run
       - env:
           RUST_LOG: info
@@ -131,8 +134,8 @@ jobs:
           NO_COLOR_LOG: 1
         run: |
           nix shell .#python .#gaia6-ordered -c cargo \
-            test -p ibc-integration-test --features ordered --no-fail-fast -- \
-            --nocapture --test-threads=1 test_ordered_channel
+            nextest -p ibc-integration-test --features ordered --no-fail-fast -- \
+            --no-capture test_ordered_channel
 
   ica-filter-test:
     runs-on: ubuntu-latest
@@ -152,9 +155,10 @@ jobs:
           toolchain: stable
           override: true
       - uses: Swatinem/rust-cache@v1
+      - uses: taiki-e/install-action@nextest
       - uses: actions-rs/cargo@v1
         with:
-          command: test
+          command: nextest
           args: -p ibc-integration-test --no-fail-fast --no-run
       - env:
           RUST_LOG: info
@@ -163,8 +167,8 @@ jobs:
           CHAIN_COMMAND_PATH: icad
         run: |
           nix shell .#python .#ica -c cargo \
-            test -p ibc-integration-test --features ica --no-fail-fast -- \
-            --nocapture --test-threads=1 test_ica_filter
+            nextest -p ibc-integration-test --features ica --no-fail-fast -- \
+            --no-capture test_ica_filter
 
   ics29-fee-test:
     runs-on: ubuntu-latest
@@ -194,6 +198,7 @@ jobs:
           toolchain: stable
           override: true
       - uses: Swatinem/rust-cache@v1
+      - uses: taiki-e/install-action@nextest
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -206,8 +211,8 @@ jobs:
           ACCOUNT_PREFIX: ${{ matrix.chain.account_prefix }}
         run: |
           nix shell .#${{ matrix.chain.package }} -c cargo \
-            test -p ibc-integration-test --features ics29-fee --no-fail-fast -- \
-            --nocapture --test-threads=1 fee::
+            nextest -p ibc-integration-test --features ics29-fee --no-fail-fast -- \
+            --no-capture fee::
 
   model-based-test:
     runs-on: ubuntu-latest
@@ -232,10 +237,12 @@ jobs:
           toolchain: stable
           override: true
       - uses: Swatinem/rust-cache@v1
+      - uses: taiki-e/install-action@nextest
       - uses: actions-rs/cargo@v1
         with:
-          command: test
+          command: nextest
           args: -p ibc-integration-test --features mbt --no-fail-fast --no-run
+
       # Disable running MBT tests until flakiness is addressed
       # - env:
       #     RUST_LOG: debug
@@ -246,5 +253,5 @@ jobs:
       #       .#${{ matrix.gaiad }} \
       #       .#apalache \
       #       -c cargo \
-      #       test -p ibc-integration-test --features mbt --no-fail-fast -- \
-      #       --nocapture --test-threads=1 mbt
+      #       nextest -p ibc-integration-test --features mbt --no-fail-fast -- \
+      #       --no-capture mbt
