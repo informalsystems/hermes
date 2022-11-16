@@ -93,7 +93,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: nextest
-          args: -p ibc-integration-test --no-fail-fast --no-run
+          args: run -p ibc-integration-test --no-fail-fast --no-run
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
@@ -127,7 +127,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: nextest
-          args: -p ibc-integration-test --no-fail-fast --no-run
+          args: run -p ibc-integration-test --no-fail-fast --no-run
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
@@ -159,7 +159,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: nextest
-          args: -p ibc-integration-test --no-fail-fast --no-run
+          args: run -p ibc-integration-test --no-fail-fast --no-run
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
@@ -202,7 +202,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p ibc-integration-test --features ics29-fee --no-fail-fast --no-run
+          args: run -p ibc-integration-test --features ics29-fee --no-fail-fast --no-run
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
@@ -241,7 +241,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: nextest
-          args: -p ibc-integration-test --features mbt --no-fail-fast --no-run
+          args: run -p ibc-integration-test --features mbt --no-fail-fast --no-run
 
       # Disable running MBT tests until flakiness is addressed
       # - env:
