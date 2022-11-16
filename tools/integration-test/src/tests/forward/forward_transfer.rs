@@ -11,6 +11,8 @@
 //!   version.
 //!   For Gaia 6 the intermediate address will receive the refunded tokens.
 //!   For Gaia 8 the sender will receive the refunded tokens.
+//!   This is due to Gaia 6 using the Forward Middleware Module v1.0.1, which
+//!   doesn't have the atomic forwarding which was introduced in v3.
 
 use ibc_relayer::config::{self, Config, ModeConfig};
 use ibc_test_framework::chain::ext::forward::{
