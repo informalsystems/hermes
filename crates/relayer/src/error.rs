@@ -300,6 +300,10 @@ define_error! {
             [ TraceError<crossbeam_channel::RecvError> ]
             |_| { "internal message-passing failure while receiving inter-thread request/response" },
 
+        ChannelReceiveTimeout
+            [ TraceError<crossbeam_channel::RecvTimeoutError> ]
+            |_| { "timeout when waiting for reponse over inter-thread channel" },
+
         InvalidInputHeader
             |_| { "the input header is not recognized as a header for this chain" },
 
