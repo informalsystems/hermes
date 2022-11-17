@@ -25,7 +25,6 @@ use ibc_relayer_types::timestamp::ZERO_DURATION;
 use crate::chain::ChainType;
 use crate::config::gas_multiplier::GasMultiplier;
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
-use crate::config::Error as ConfigError;
 use crate::error::Error as RelayerError;
 use crate::extension_options::ExtensionOptionDynamicFeeTx;
 use crate::keyring::Store;
@@ -53,7 +52,7 @@ impl Display for GasPrice {
 }
 
 impl TryFrom<String> for GasPrice {
-    type Error = ConfigError;
+    type Error = RelayerError;
 
     fn try_from(price: String) -> Result<Self, Self::Error> {
         // Note: `split_once` does _not_ split inclusively
@@ -61,10 +60,14 @@ impl TryFrom<String> for GasPrice {
         let (price, denom) = if let Some((price, denom)) = price.split_once(char::is_alphabetic) {
             (price, String::from(denom))
         } else {
-            return Err(Error::InvalidGasPrice);
+            return Err(Error::);
         };
 
-        let price = price.parse::<f64>().map_err(Error::InvalidGasPrice)?;
+        let price = if let Ok(price) = price.parse::<f64>() {
+            price
+        } else {
+            return Err(Error::invalid_gas_price());
+        };
 
         Ok(GasPrice { price, denom })
     }

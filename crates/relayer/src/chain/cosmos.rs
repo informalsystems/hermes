@@ -51,7 +51,6 @@ use ibc_relayer_types::core::ics24_host::{
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
 
-use crate::chain::client::ClientSettings;
 use crate::chain::cosmos::batch::sequential_send_batched_messages_and_wait_commit;
 use crate::chain::cosmos::batch::{
     send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
@@ -89,6 +88,7 @@ use crate::misbehaviour::MisbehaviourEvidence;
 use crate::util::pretty::{PrettyConsensusStateWithHeight, PrettyIdentifiedChannel};
 use crate::util::pretty::{PrettyIdentifiedClientState, PrettyIdentifiedConnection};
 use crate::{account::Balance, event::monitor::EventMonitor};
+use crate::{chain::client::ClientSettings, config::GasPrice};
 
 use super::requests::{
     IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
@@ -328,6 +328,15 @@ impl CosmosSdkChain {
         let params = response.into_inner();
 
         Ok(params)
+    }
+
+    /// The minimum gas price of this chain
+    pub fn min_gas_price(&self) -> Result<GasPrice, Error> {
+        crate::time!("min_gas_price");
+
+        let min_gas_price: GasPrice = self.query_config_params()?.minimum_gas_price.try_into()?;
+
+        Ok(min_gas_price)
     }
 
     /// The unbonding period of this chain

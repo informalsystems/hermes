@@ -37,6 +37,7 @@ use ibc_relayer_types::{
 
 use crate::chain::cosmos::version;
 use crate::chain::cosmos::BLOCK_MAX_BYTES_MAX_FRACTION;
+use crate::config::Error as ConfigError;
 use crate::event::monitor;
 use crate::keyring::errors::Error as KeyringError;
 use crate::sdk_error::SdkError;
@@ -55,6 +56,10 @@ define_error! {
         AbciQuery
             { query: AbciQuery }
             |e| { format!("ABCI query returned an error: {:?}", e.query) },
+
+        ConfigError
+            { detail: ConfigError }
+            |e| { format!("Configuration error: {:?}", e.detail) },
 
         CheckTx
             {
@@ -481,6 +486,15 @@ define_error! {
             }
             |e| {
                 format!("semantic config validation failed for option `gas_multiplier` of chain '{}', reason: gas multiplier ({}) is smaller than `1.1`, which could trigger gas fee errors in production", e.chain_id, e.gas_multiplier)
+            },
+
+        ConfigInvalidGasPrice
+            { 
+                chain_id: ChainId,
+                gas_price: String, 
+            }
+            |e| {
+                format!("semantic config validation failed for option `minimum_gas_price` of chain '{}', reason: improperly-formatted gas price ({})", e.chain_id, e.gas_price)
             },
 
         SdkModuleVersion
