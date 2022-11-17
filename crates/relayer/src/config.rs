@@ -8,6 +8,7 @@ pub mod types;
 
 use alloc::collections::BTreeMap;
 use core::{
+    convert::TryFrom,
     fmt::{Display, Error as FmtError, Formatter},
     time::Duration,
 };
@@ -24,6 +25,7 @@ use ibc_relayer_types::timestamp::ZERO_DURATION;
 use crate::chain::ChainType;
 use crate::config::gas_multiplier::GasMultiplier;
 use crate::config::types::{MaxMsgNum, MaxTxSize, Memo};
+use crate::config::Error as ConfigError;
 use crate::error::Error as RelayerError;
 use crate::extension_options::ExtensionOptionDynamicFeeTx;
 use crate::keyring::Store;
@@ -47,6 +49,24 @@ impl GasPrice {
 impl Display for GasPrice {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}{}", self.price, self.denom)
+    }
+}
+
+impl TryFrom<String> for GasPrice {
+    type Error = ConfigError;
+
+    fn try_from(price: String) -> Result<Self, Self::Error> {
+        // Note: `split_once` does _not_ split inclusively
+        // the first alphabetic letter is dropped
+        let (price, denom) = if let Some((price, denom)) = price.split_once(char::is_alphabetic) {
+            (price, String::from(denom))
+        } else {
+            return Err(Error::InvalidGasPrice);
+        };
+
+        let price = price.parse::<f64>().map_err(Error::InvalidGasPrice)?;
+
+        Ok(GasPrice { price, denom })
     }
 }
 
