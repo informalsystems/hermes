@@ -21,6 +21,7 @@ use tokio::runtime::Runtime as TokioRuntime;
 use tonic::{codegen::http::Uri, metadata::AsciiMetadataValue};
 use tracing::{error, instrument, trace, warn};
 
+use ibc_proto::cosmos::base::node::v1beta1::ConfigResponse;
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
     AllowUpdate, ClientState as TmClientState,
@@ -306,15 +307,28 @@ impl CosmosSdkChain {
     }
 
     /// Query the chain configuration parameters
-    // pub fn query_config_params(&self) -> Result<ConfigParams, Error> {
-    //     crate::time!("query_staking_params");
-    //     crate::telemetry!(query, self.id(), "query_staking_params");
+    pub fn query_config_params(&self) -> Result<ConfigResponse, Error> {
+        crate::time!("query_config_params");
+        crate::telemetry!(query, self.id(), "query_config_params");
 
-    //     let mut client self
-    //         .block_on(
-    //             ibc_proto::cosmos::base::node::v1beta1::config::QueryClient::connect(
-    //         )
-    // }
+        let mut client = self
+            .block_on(
+                ibc_proto::cosmos::base::node::v1beta1::service_client::ServiceClient::connect(
+                    self.grpc_addr.clone(),
+                ),
+            )
+            .map_err(Error::grpc_transport)?;
+
+        let request = tonic::Request::new(ibc_proto::cosmos::base::node::v1beta1::ConfigRequest {});
+
+        let response = self
+            .block_on(client.config(request))
+            .map_err(Error::grpc_status)?;
+
+        let params = response.into_inner();
+
+        Ok(params)
+    }
 
     /// The unbonding period of this chain
     pub fn unbonding_period(&self) -> Result<Duration, Error> {
