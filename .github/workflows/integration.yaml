@@ -30,7 +30,6 @@ env:
   CARGO_PROFILE_DEV_DEBUG: 1
   CARGO_PROFILE_RELEASE_DEBUG: 1
   CARGO_TERM_COLOR: always
-  NEXTEST_RETRIES: 1
   RUSTUP_MAX_RETRIES: 10
   RUST_BACKTRACE: short
 
@@ -100,6 +99,7 @@ jobs:
           NO_COLOR_LOG: 1
           CHAIN_COMMAND_PATH: ${{ matrix.chain.command }}
           ACCOUNT_PREFIX: ${{ matrix.chain.account_prefix }}
+          NEXTEST_RETRIES: 1
         run: |
           nix shell .#python .#${{ matrix.chain.package }} -c cargo \
             nexttest -p ibc-integration-test --no-fail-fast -- --no-capture
@@ -132,6 +132,7 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
+          NEXTEST_RETRIES: 1
         run: |
           nix shell .#python .#gaia6-ordered -c cargo \
             nextest run -p ibc-integration-test --features ordered --no-fail-fast -- \
@@ -165,6 +166,7 @@ jobs:
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
           CHAIN_COMMAND_PATH: icad
+          NEXTEST_RETRIES: 1
         run: |
           nix shell .#python .#ica -c cargo \
             nextest run -p ibc-integration-test --features ica --no-fail-fast -- \
@@ -209,6 +211,7 @@ jobs:
           NO_COLOR_LOG: 1
           CHAIN_COMMAND_PATH: ${{ matrix.chain.command }}
           ACCOUNT_PREFIX: ${{ matrix.chain.account_prefix }}
+          NEXTEST_RETRIES: 1
         run: |
           nix shell .#${{ matrix.chain.package }} -c cargo \
             nextest run -p ibc-integration-test --features ics29-fee --no-fail-fast -- \
