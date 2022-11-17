@@ -98,7 +98,7 @@ jobs:
           ACCOUNT_PREFIX: ${{ matrix.chain.account_prefix }}
         run: |
           nix shell .#python .#${{ matrix.chain.package }} -c cargo \
-            nextest -p ibc-integration-test --no-fail-fast --no-capture
+            nextest run -p ibc-integration-test --no-fail-fast --no-capture
 
   ordered-channel-test:
     runs-on: ubuntu-latest
