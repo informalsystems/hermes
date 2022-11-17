@@ -32,6 +32,7 @@ env:
   CARGO_TERM_COLOR: always
   RUSTUP_MAX_RETRIES: 10
   RUST_BACKTRACE: short
+  NEXTEST_RETRIES: 1
 
 jobs:
   integration-test:
@@ -89,17 +90,12 @@ jobs:
           override: true
       - uses: Swatinem/rust-cache@v1
       - uses: taiki-e/install-action@nextest
-      # - uses: actions-rs/cargo@v1
-      #   with:
-      #     command: nextest
-      #     args: run -p ibc-integration-test --no-run
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
           CHAIN_COMMAND_PATH: ${{ matrix.chain.command }}
           ACCOUNT_PREFIX: ${{ matrix.chain.account_prefix }}
-          NEXTEST_RETRIES: 1
         run: |
           nix shell .#python .#${{ matrix.chain.package }} -c cargo \
             nexttest -p ibc-integration-test --no-fail-fast -- --no-capture
@@ -124,15 +120,10 @@ jobs:
           override: true
       - uses: Swatinem/rust-cache@v1
       - uses: taiki-e/install-action@nextest
-      # - uses: actions-rs/cargo@v1
-      #   with:
-      #     command: nextest
-      #     args: run -p ibc-integration-test --no-run
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
-          NEXTEST_RETRIES: 1
         run: |
           nix shell .#python .#gaia6-ordered -c cargo \
             nextest run -p ibc-integration-test --features ordered --no-fail-fast -- \
@@ -157,16 +148,11 @@ jobs:
           override: true
       - uses: Swatinem/rust-cache@v1
       - uses: taiki-e/install-action@nextest
-      # - uses: actions-rs/cargo@v1
-      #   with:
-      #     command: nextest
-      #     args: run -p ibc-integration-test --no-run
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
           CHAIN_COMMAND_PATH: icad
-          NEXTEST_RETRIES: 1
         run: |
           nix shell .#python .#ica -c cargo \
             nextest run -p ibc-integration-test --features ica --no-fail-fast -- \
@@ -201,17 +187,12 @@ jobs:
           override: true
       - uses: Swatinem/rust-cache@v1
       - uses: taiki-e/install-action@nextest
-      # - uses: actions-rs/cargo@v1
-      #   with:
-      #     command: nextest
-      #     args: run -p ibc-integration-test --features ics29-fee --no-run
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
           CHAIN_COMMAND_PATH: ${{ matrix.chain.command }}
           ACCOUNT_PREFIX: ${{ matrix.chain.account_prefix }}
-          NEXTEST_RETRIES: 1
         run: |
           nix shell .#${{ matrix.chain.package }} -c cargo \
             nextest run -p ibc-integration-test --features ics29-fee --no-fail-fast -- \
@@ -243,7 +224,7 @@ jobs:
       - uses: taiki-e/install-action@nextest
       - uses: actions-rs/cargo@v1
         with:
-          command: nextest
+          command: test
           args: run -p ibc-integration-test --features mbt --no-run
 
       # Disable running MBT tests until flakiness is addressed
