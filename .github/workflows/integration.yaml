@@ -105,7 +105,10 @@ jobs:
       - uses: cachix/cachix-action@v10
         with:
           name: cosmos
-      - run: mkdir -p ~/.cargo/bin
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
       - uses: taiki-e/install-action@nextest
       - name: Download archive
         uses: actions/download-artifact@v3
