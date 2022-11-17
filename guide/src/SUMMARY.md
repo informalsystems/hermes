@@ -58,6 +58,8 @@
       - [Listen mode](./documentation/commands/listen/index.md)
       - [Client upgrade](./documentation/commands/upgrade/index.md)
         - [Testing client upgrade](./documentation/commands/upgrade/test.md)
+      - [Packet Forwarding](./documentation/forwarding/index.md)
+        - [Testing packet forwarding](./documentation/forwarding/test.md)
       - [Misbehaviour](./documentation/commands/misbehaviour/index.md)
       - [Queries](./documentation/commands/queries/index.md)
         - [Client](./documentation/commands/queries/client.md)
