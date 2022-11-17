@@ -151,10 +151,6 @@ pub async fn query_packets_from_block(
     crate::time!("query_packets_from_block");
     crate::telemetry!(query, chain_id, "query_packets_from_block");
 
-    let mut result: Vec<IbcEventWithHeight> = vec![];
-    let mut begin_block_events = vec![];
-    let mut end_block_events = vec![];
-
     let tm_height = match request.height.get() {
         QueryHeight::Latest => tendermint::block::Height::default(),
         QueryHeight::Specific(h) => {
@@ -169,13 +165,15 @@ pub async fn query_packets_from_block(
         .block_results(tm_height)
         .await
         .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
-    let exact_tx_block_results = block_results.txs_results;
 
-    if let Some(txs) = exact_tx_block_results {
-        for tx in txs.iter() {
-            let tx_copy = tx.clone();
-            result.append(
-                &mut tx_copy
+    let mut tx_events = vec![];
+    let mut begin_block_events = vec![];
+    let mut end_block_events = vec![];
+
+    if let Some(txs) = block_results.txs_results {
+        for tx in txs {
+            tx_events.append(
+                &mut tx
                     .events
                     .into_iter()
                     .filter_map(|e| filter_matching_event(e, request, &request.sequences))
@@ -204,9 +202,12 @@ pub async fn query_packets_from_block(
             .map(|ev| IbcEventWithHeight::new(ev, height))
             .collect(),
     );
-    result.append(&mut begin_block_events);
-    result.append(&mut end_block_events);
-    Ok(result)
+
+    let mut events = begin_block_events;
+    events.append(&mut tx_events);
+    events.append(&mut end_block_events);
+
+    Ok(events)
 }
 
 // Extracts from the Tx the update client event for the requested client and height.
