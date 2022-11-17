@@ -8,11 +8,13 @@
 //!
 //! - The `InvalidAddressIbcForwardTransferTest` tests the case when the destination
 //!   address is invalid. This results in two scenarios depending on the Gaia
-//!   version.
-//!   For Gaia 6 the intermediate address will receive the refunded tokens.
-//!   For Gaia 8 the sender will receive the refunded tokens.
-//!   This is due to Gaia 6 using the Forward Middleware Module v1.0.1, which
-//!   doesn't have the atomic forwarding which was introduced in v3.
+//!   version:
+//!    - For Gaia 6, the intermediate address will receive the refunded tokens. This behavior
+//!      deviates from other Gaia versions due to Gaia 6 using the Forward Middleware
+//!      Middleware Module v1.0.1, which doesn't make use of atomic forwarding functionality.
+//!    - For Gaia 8, the sender will receive the refunded tokens. This is due to Gaia 8 making
+//!      use of the Forward Middleware Middleware Module v3 which includes atomic
+//!      forwarding functionality.
 
 use ibc_relayer::config::{self, Config, ModeConfig};
 use ibc_test_framework::chain::ext::forward::{
