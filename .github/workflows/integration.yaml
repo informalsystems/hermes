@@ -89,10 +89,10 @@ jobs:
           override: true
       - uses: Swatinem/rust-cache@v1
       - uses: taiki-e/install-action@nextest
-      - uses: actions-rs/cargo@v1
-        with:
-          command: nextest
-          args: run -p ibc-integration-test --no-run
+      # - uses: actions-rs/cargo@v1
+      #   with:
+      #     command: nextest
+      #     args: run -p ibc-integration-test --no-run
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
@@ -124,10 +124,10 @@ jobs:
           override: true
       - uses: Swatinem/rust-cache@v1
       - uses: taiki-e/install-action@nextest
-      - uses: actions-rs/cargo@v1
-        with:
-          command: nextest
-          args: run -p ibc-integration-test --no-run
+      # - uses: actions-rs/cargo@v1
+      #   with:
+      #     command: nextest
+      #     args: run -p ibc-integration-test --no-run
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
@@ -157,10 +157,10 @@ jobs:
           override: true
       - uses: Swatinem/rust-cache@v1
       - uses: taiki-e/install-action@nextest
-      - uses: actions-rs/cargo@v1
-        with:
-          command: nextest
-          args: run -p ibc-integration-test --no-run
+      # - uses: actions-rs/cargo@v1
+      #   with:
+      #     command: nextest
+      #     args: run -p ibc-integration-test --no-run
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
@@ -201,10 +201,10 @@ jobs:
           override: true
       - uses: Swatinem/rust-cache@v1
       - uses: taiki-e/install-action@nextest
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: run -p ibc-integration-test --features ics29-fee --no-run
+      # - uses: actions-rs/cargo@v1
+      #   with:
+      #     command: nextest
+      #     args: run -p ibc-integration-test --features ics29-fee --no-run
       - env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
