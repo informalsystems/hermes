@@ -1,23 +1,16 @@
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
-use ibc_relayer_types::core::ics04_channel::packet::Sequence;
-use serde::Serialize;
 
+use ibc_relayer::chain::counterparty::acknowledgements_on_chain;
 use ibc_relayer::chain::handle::BaseChainHandle;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
-use ibc_relayer_types::Height;
 
 use crate::cli_utils::spawn_chain_counterparty;
 use crate::conclude::Output;
 use crate::error::Error;
 use crate::prelude::*;
-use ibc_relayer::chain::counterparty::acknowledgements_on_chain;
 
-#[derive(Serialize, Debug)]
-struct PacketSeqs {
-    height: Height,
-    seqs: Vec<Sequence>,
-}
+use super::util::PacketSeqs;
 
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
 pub struct QueryPacketAcknowledgementsCmd {
@@ -72,8 +65,11 @@ impl QueryPacketAcknowledgementsCmd {
 // cargo run --bin hermes -- query packet acknowledgements --chain ibc-0 --port transfer --connection ibconexfer --height 3
 impl Runnable for QueryPacketAcknowledgementsCmd {
     fn run(&self) {
+        use crate::conclude::json;
+
         match self.execute() {
-            Ok(ps) => Output::success(ps).exit(),
+            Ok(p) if json() => Output::success(p).exit(),
+            Ok(p) => Output::success(p.collated()).exit(),
             Err(e) => Output::error(format!("{}", e)).exit(),
         }
     }
@@ -96,7 +92,7 @@ mod tests {
                 port_id: PortId::from_str("port_id").unwrap(),
                 channel_id: ChannelId::from_str("channel-07").unwrap()
             },
-            QueryPacketAcknowledgementsCmd::parse_from(&[
+            QueryPacketAcknowledgementsCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -116,7 +112,7 @@ mod tests {
                 port_id: PortId::from_str("port_id").unwrap(),
                 channel_id: ChannelId::from_str("channel-07").unwrap()
             },
-            QueryPacketAcknowledgementsCmd::parse_from(&[
+            QueryPacketAcknowledgementsCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -130,7 +126,7 @@ mod tests {
 
     #[test]
     fn test_query_packet_acks_no_chan() {
-        assert!(QueryPacketAcknowledgementsCmd::try_parse_from(&[
+        assert!(QueryPacketAcknowledgementsCmd::try_parse_from([
             "test", "--chain", "chain_id", "--port", "port_id"
         ])
         .is_err())
@@ -138,7 +134,7 @@ mod tests {
 
     #[test]
     fn test_query_packet_acks_no_port() {
-        assert!(QueryPacketAcknowledgementsCmd::try_parse_from(&[
+        assert!(QueryPacketAcknowledgementsCmd::try_parse_from([
             "test",
             "--chain",
             "chain_id",
@@ -150,7 +146,7 @@ mod tests {
 
     #[test]
     fn test_query_packet_acks_no_chain() {
-        assert!(QueryPacketAcknowledgementsCmd::try_parse_from(&[
+        assert!(QueryPacketAcknowledgementsCmd::try_parse_from([
             "test",
             "--port",
             "port_id",

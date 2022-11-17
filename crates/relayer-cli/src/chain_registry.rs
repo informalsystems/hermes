@@ -1,4 +1,5 @@
 //! Contains functions to generate a relayer config for a given chain
+
 use ibc_chain_registry::{
     asset_list::AssetList,
     chain::ChainData,
@@ -31,21 +32,21 @@ use tokio::task::{JoinError, JoinHandle};
 
 /// Generate packet filters from Vec<IBCPath> and load them in a Map(chain_name -> filter).
 fn construct_packet_filters(ibc_paths: Vec<IBCPath>) -> HashMap<String, PacketFilter> {
-    let mut packet_filters = HashMap::new();
+    let mut packet_filters: HashMap<_, Vec<_>> = HashMap::new();
 
     for path in ibc_paths {
         for channel in path.channels {
             let chain_1 = path.chain_1.chain_name.to_owned();
             let chain_2 = path.chain_2.chain_name.to_owned();
 
-            let filters_1 = packet_filters.entry(chain_1).or_insert(Vec::new());
+            let filters_1 = packet_filters.entry(chain_1).or_default();
 
             filters_1.push((
                 FilterPattern::Exact(channel.chain_1.port_id.clone()),
                 FilterPattern::Exact(channel.chain_1.channel_id.clone()),
             ));
 
-            let filters_2 = packet_filters.entry(chain_2).or_insert(Vec::new());
+            let filters_2 = packet_filters.entry(chain_2).or_default();
 
             filters_2.push((
                 FilterPattern::Exact(channel.chain_2.port_id.clone()),
@@ -163,7 +164,7 @@ async fn get_data_from_handles<T>(
 }
 
 /// Generates a Vec<ChainConfig> for a slice of chains names by fetching data from
-/// https://github.com/cosmos/chain-registry. Gas settings are set to default values.
+/// <https://github.com/cosmos/chain-registry>. Gas settings are set to default values.
 ///
 /// # Arguments
 ///

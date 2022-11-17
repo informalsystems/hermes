@@ -156,7 +156,7 @@ mod tests {
                 chain_names: vec!["chain1:key1".to_string(), "chain2".to_string()],
                 commit: None,
             },
-            AutoCmd::parse_from(&[
+            AutoCmd::parse_from([
                 "test",
                 "--output",
                 "./example.toml",
@@ -175,7 +175,7 @@ mod tests {
                 chain_names: vec!["chain1:key1".to_string(), "chain2".to_string()],
                 commit: Some("test_commit".to_string()),
             },
-            AutoCmd::parse_from(&[
+            AutoCmd::parse_from([
                 "test",
                 "--output",
                 "./example.toml",

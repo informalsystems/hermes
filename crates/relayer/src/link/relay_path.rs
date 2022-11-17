@@ -7,6 +7,21 @@ use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
 use tracing::{debug, error, info, span, trace, warn, Level};
 
+use ibc_relayer_types::core::ics02_client::events::ClientMisbehaviour as ClientMisbehaviourEvent;
+use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, Order, State as ChannelState};
+use ibc_relayer_types::core::ics04_channel::events::{SendPacket, WriteAcknowledgement};
+use ibc_relayer_types::core::ics04_channel::msgs::{
+    acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
+    recv_packet::MsgRecvPacket, timeout::MsgTimeout, timeout_on_close::MsgTimeoutOnClose,
+};
+use ibc_relayer_types::core::ics04_channel::packet::{Packet, PacketMsgType};
+use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
+use ibc_relayer_types::events::{IbcEvent, WithBlockDataType};
+use ibc_relayer_types::signer::Signer;
+use ibc_relayer_types::timestamp::Timestamp;
+use ibc_relayer_types::tx_msg::Msg;
+use ibc_relayer_types::Height;
+
 use crate::chain::counterparty::unreceived_acknowledgements;
 use crate::chain::counterparty::unreceived_packets;
 use crate::chain::endpoint::ChainStatus;
@@ -41,29 +56,9 @@ use crate::link::relay_summary::RelaySummary;
 use crate::link::{pending, relay_sender};
 use crate::path::PathIdentifiers;
 use crate::telemetry;
+use crate::util::collate::CollatedIterExt;
 use crate::util::pretty::PrettyEvents;
 use crate::util::queue::Queue;
-use ibc_relayer_types::{
-    core::{
-        ics02_client::events::ClientMisbehaviour as ClientMisbehaviourEvent,
-        ics04_channel::{
-            channel::{ChannelEnd, Order, State as ChannelState},
-            events::{SendPacket, WriteAcknowledgement},
-            msgs::{
-                acknowledgement::MsgAcknowledgement, chan_close_confirm::MsgChannelCloseConfirm,
-                recv_packet::MsgRecvPacket, timeout::MsgTimeout,
-                timeout_on_close::MsgTimeoutOnClose,
-            },
-            packet::{Packet, PacketMsgType},
-        },
-        ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
-    },
-    events::{IbcEvent, WithBlockDataType},
-    signer::Signer,
-    timestamp::Timestamp,
-    tx_msg::Msg,
-    Height,
-};
 
 const MAX_RETRIES: usize = 5;
 
@@ -1108,8 +1103,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             dst_chain = %self.dst_chain().id(),
             src_chain = %self.src_chain().id(),
             total = sequences.len(),
-            sequences = %sequences.iter().take(10).format(", "),
-            "sequence numbers of unreceived packets to send to the destination chain out of the ones with commitments on the source chain (first 10 shown here)",
+            sequences = %sequences.iter().copied().collated().format(", "),
+            "sequence numbers of unreceived packets to send to the destination chain out of the ones with commitments on the source chain",
         );
 
         // Chunk-up the list of sequence nrs. into smaller parts,
@@ -1166,8 +1161,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             dst_chain = %self.dst_chain().id(),
             src_chain = %self.src_chain().id(),
             total = sequences.len(),
-            sequences = %sequences.iter().take(10).format(", "),
-            "sequence numbers of ack packets to send to the destination chain out of the ones with acknowledgments on the source chain (first 10 shown here)",
+            sequences = %sequences.iter().copied().collated().format(", "),
+            "sequence numbers of ack packets to send to the destination chain out of the ones with acknowledgments on the source chain",
         );
 
         // Incrementally process all the available sequence numbers in chunks

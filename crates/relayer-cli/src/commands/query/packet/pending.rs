@@ -13,14 +13,25 @@ use crate::conclude::Output;
 use crate::error::Error;
 use crate::prelude::*;
 
+use super::util::CollatedPendingPackets;
+
 /// A structure to display pending packet commitment sequence IDs
 /// at both ends of a channel.
 #[derive(Debug, Serialize)]
-struct Summary {
+struct Summary<P> {
     /// The packets sent on the source chain as identified by the command.
-    src: PendingPackets,
+    src: P,
     /// The packets sent on the counterparty chain.
-    dst: PendingPackets,
+    dst: P,
+}
+
+impl Summary<PendingPackets> {
+    fn collate(self) -> Summary<CollatedPendingPackets> {
+        Summary {
+            src: CollatedPendingPackets::new(self.src),
+            dst: CollatedPendingPackets::new(self.dst),
+        }
+    }
 }
 
 /// This command does the following:
@@ -61,7 +72,7 @@ pub struct QueryPendingPacketsCmd {
 }
 
 impl QueryPendingPacketsCmd {
-    fn execute(&self) -> Result<Summary, Error> {
+    fn execute(&self) -> Result<Summary<PendingPackets>, Error> {
         let config = app_config();
 
         let (chains, chan_conn_cli) = spawn_chain_counterparty::<BaseChainHandle>(
@@ -78,6 +89,7 @@ impl QueryPendingPacketsCmd {
 
         let src_summary = pending_packet_summary(&chains.src, &chains.dst, &chan_conn_cli.channel)
             .map_err(Error::supervisor)?;
+
         let counterparty_channel = channel_on_destination(
             &chan_conn_cli.channel,
             &chan_conn_cli.connection,
@@ -85,8 +97,10 @@ impl QueryPendingPacketsCmd {
         )
         .map_err(Error::supervisor)?
         .ok_or_else(|| Error::missing_counterparty_channel_id(chan_conn_cli.channel))?;
+
         let dst_summary = pending_packet_summary(&chains.dst, &chains.src, &counterparty_channel)
             .map_err(Error::supervisor)?;
+
         Ok(Summary {
             src: src_summary,
             dst: dst_summary,
@@ -96,9 +110,12 @@ impl QueryPendingPacketsCmd {
 
 impl Runnable for QueryPendingPacketsCmd {
     fn run(&self) {
+        use crate::conclude::json;
+
         match self.execute() {
-            Ok(pending) => Output::success(pending).exit(),
-            Err(e) => Output::error(format!("{}", e)).exit(),
+            Ok(summary) if json() => Output::success(summary).exit(),
+            Ok(summary) => Output::success(summary.collate()).exit(),
+            Err(e) => Output::error(e).exit(),
         }
     }
 }
@@ -120,7 +137,7 @@ mod tests {
                 port_id: PortId::from_str("port_id").unwrap(),
                 channel_id: ChannelId::from_str("channel-07").unwrap()
             },
-            QueryPendingPacketsCmd::parse_from(&[
+            QueryPendingPacketsCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -140,7 +157,7 @@ mod tests {
                 port_id: PortId::from_str("port_id").unwrap(),
                 channel_id: ChannelId::from_str("channel-07").unwrap()
             },
-            QueryPendingPacketsCmd::parse_from(&[
+            QueryPendingPacketsCmd::parse_from([
                 "test",
                 "--chain",
                 "chain_id",
@@ -154,7 +171,7 @@ mod tests {
 
     #[test]
     fn test_query_packet_pending_no_chan() {
-        assert!(QueryPendingPacketsCmd::try_parse_from(&[
+        assert!(QueryPendingPacketsCmd::try_parse_from([
             "test", "--chain", "chain_id", "--port", "port_id"
         ])
         .is_err())
@@ -162,7 +179,7 @@ mod tests {
 
     #[test]
     fn test_query_packet_pending_no_port() {
-        assert!(QueryPendingPacketsCmd::try_parse_from(&[
+        assert!(QueryPendingPacketsCmd::try_parse_from([
             "test",
             "--chain",
             "chain_id",
@@ -174,7 +191,7 @@ mod tests {
 
     #[test]
     fn test_query_packet_pending_no_chain() {
-        assert!(QueryPendingPacketsCmd::try_parse_from(&[
+        assert!(QueryPendingPacketsCmd::try_parse_from([
             "test",
             "--port",
             "port_id",

@@ -3,7 +3,7 @@ use core::str::FromStr;
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
-use tendermint::abci::transaction::Hash;
+use tendermint_rpc::abci::transaction::Hash;
 
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
@@ -74,17 +74,17 @@ mod tests {
                 chain_id: ChainId::from_string("chain_id"),
                 hash: "abcdefg".to_owned()
             },
-            QueryTxEventsCmd::parse_from(&["test", "--chain", "chain_id", "--hash", "abcdefg"])
+            QueryTxEventsCmd::parse_from(["test", "--chain", "chain_id", "--hash", "abcdefg"])
         )
     }
 
     #[test]
     fn test_query_tx_events_no_hash() {
-        assert!(QueryTxEventsCmd::try_parse_from(&["test", "--chain", "chain_id"]).is_err())
+        assert!(QueryTxEventsCmd::try_parse_from(["test", "--chain", "chain_id"]).is_err())
     }
 
     #[test]
     fn test_query_tx_events_no_chain() {
-        assert!(QueryTxEventsCmd::try_parse_from(&["test", "--hash", "abcdefg"]).is_err())
+        assert!(QueryTxEventsCmd::try_parse_from(["test", "--hash", "abcdefg"]).is_err())
     }
 }

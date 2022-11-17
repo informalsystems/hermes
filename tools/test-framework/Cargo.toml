@@ -18,10 +18,8 @@ ibc-relayer-types = { version = "=0.20.0",     path = "../../crates/relayer-type
 ibc-relayer       = { version = "=0.20.0",     path = "../../crates/relayer" }
 ibc-relayer-cli   = { version = "=1.1.0",      path = "../../crates/relayer-cli" }
 ibc-proto         = { version = "=0.22.0" }
-tendermint        = { version = "=0.25.0" }
-tendermint-rpc    = { version = "=0.25.0", features = ["http-client", "websocket-client"] }
+tendermint-rpc    = { version = "0.26.0", features = ["http-client", "websocket-client"] }
 
-async-trait = "0.1.57"
 http = "0.2.8"
 tokio = { version = "1.0", features = ["full"] }
 tracing = "0.1.36"

@@ -3,12 +3,12 @@
 use core::convert::{From, Into};
 use eyre::Report;
 use flex_error::{define_error, TraceError};
-use ibc_relayer::channel::error::ChannelError;
 use ibc_relayer::connection::ConnectionError;
 use ibc_relayer::error::Error as RelayerError;
 use ibc_relayer::link::error::LinkError;
 use ibc_relayer::supervisor::error::Error as SupervisorError;
 use ibc_relayer::transfer::TransferError;
+use ibc_relayer::{channel::error::ChannelError, upgrade_chain::UpgradeChainError};
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
 
 define_error! {
@@ -66,6 +66,26 @@ define_error! {
                     e.task_name
                 )
             },
+
+        UpgradeChain
+            [ UpgradeChainError ]
+            | _ | { "upgrade chain error" },
+
+        QueryClient
+            | _ | { "error querying client" },
+
+        IncorrectProposal
+            | _ | { "error decoding the Proposal to an UpgradeProposal" },
+
+        IncorrectProposalTypeUrl
+            { type_url: String }
+            | e | format_args!("expected /ibc.core.client.v1.UpgradeProposal but got {}", e.type_url),
+
+        EmptyProposal
+            | _ | { "the Proposal content is empty" },
+
+        EmptyPlan
+            | _ | { "The plan in the UpgradeProposal is empty" },
     }
 }
 

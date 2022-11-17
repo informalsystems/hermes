@@ -138,7 +138,7 @@ pub fn start_chain(
     let mut args: Vec<&str> = base_args.to_vec();
     args.extend(extra_start_args.iter());
 
-    let mut child = Command::new(&command_path)
+    let mut child = Command::new(command_path)
         .args(&args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
@@ -158,8 +158,8 @@ pub fn start_chain(
     let stderr_path = format!("{}/stdout.log", home_path);
     let stdout_path = format!("{}/stderr.log", home_path);
 
-    pipe_to_file(stdout, &stderr_path)?;
-    pipe_to_file(stderr, &stdout_path)?;
+    pipe_to_file(stdout, &stdout_path)?;
+    pipe_to_file(stderr, &stderr_path)?;
 
     // Wait for a while and check if the child process exited immediately.
     // If so, return error since we expect the full node to be running in the background.

@@ -21,7 +21,7 @@ use ibc_relayer_types::{
     Height,
 };
 use serde::Serialize;
-use tendermint::abci::Event as AbciEvent;
+use tendermint_rpc::abci::Event as AbciEvent;
 
 use crate::light_client::decode_header;
 
