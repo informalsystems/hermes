@@ -415,6 +415,16 @@ pub struct QueryPacketEventDataRequest {
     pub height: Qualified<QueryHeight>,
 }
 
+/// Refines an inner type by assigning it to refer to either a:
+///     - range of values (when using variant `SmallerEqual`), or
+///     - to a specific value (with variant `Equal`).
+///
+/// For example, the inner type is typically a [`QueryHeight`].
+/// In this case, we can capture and handle the two separate cases
+/// that can appear when we want to query for packet event data,
+/// depending on the request: The request might refer to a specific
+/// height (i.e., we want packets from a block _at height_ T), or to
+/// a range of heights (i.e., all packets _up to height_ T).
 #[derive(Clone, Copy, Debug)]
 pub enum Qualified<T> {
     SmallerEqual(T),
@@ -422,6 +432,7 @@ pub enum Qualified<T> {
 }
 
 impl<T> Qualified<T> {
+    /// Access the inner type.
     pub fn get(self) -> T {
         match self {
             Qualified::SmallerEqual(t) => t,

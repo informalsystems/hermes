@@ -69,6 +69,12 @@ define_error! {
         Scan
             [ ScanError ]
             |_| { "supervisor encountered an error when scanning chains" },
+
+        HandleSend
+            |_| { "failed to send a command to the supervisor through a channel" },
+
+        HandleRecv
+            |_| { "failed to receive the result of a command from the supervisor through a channel" },
     }
 }
 

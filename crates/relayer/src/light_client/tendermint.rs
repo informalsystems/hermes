@@ -190,7 +190,7 @@ impl LightClient {
 
         let params = TmOptions {
             trust_threshold: client_state
-                .trust_level
+                .trust_threshold
                 .try_into()
                 .map_err(Error::light_client_state)?,
             trusting_period: client_state.trusting_period,

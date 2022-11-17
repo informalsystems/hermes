@@ -164,7 +164,7 @@ Success: Some(
                     id: "network2",
                     version: 0,
                 },
-                trust_level: TrustThreshold {
+                trust_threshold: TrustThreshold {
                     numerator: 1,
                     denominator: 3,
                 },
@@ -331,7 +331,7 @@ If the command is successful a message with the following format will be display
                     "min_depth":0
                 }
             ],
-            "trust_level":
+            "trust_threshold":
             {
                 "denominator":3,
                 "numerator":1
