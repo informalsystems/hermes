@@ -22,6 +22,10 @@ struct Opts {
     /// The query against which blocks should be matched
     query: Query,
 
+    /// The maximum height at which blocks should be queried (optional)
+    #[clap(long)]
+    max_height: Option<u64>,
+
     /// Which page to get
     #[clap(long, default_value = "1")]
     page: u32,
@@ -68,6 +72,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .blocks
         .iter()
         .map(|b| b.block.header.height)
+        .filter(|h| opts.max_height.map_or(true, |max| h.value() <= max))
         .collect_vec();
 
     info!(
