@@ -12,7 +12,7 @@ description  = """
 """
 
 [dependencies]
-ibc-proto         = { version = "0.21.0" }
+ibc-proto         = { version = "0.22.0" }
 ibc-relayer-types = { version = "0.20.0", path = "../relayer-types", features = ["std"] }
 
 async-trait = "0.1.57"
