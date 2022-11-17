@@ -2949,7 +2949,8 @@ dependencies = [
  "clap",
  "futures",
  "itertools",
- "tendermint-rpc 0.26.0 (git+https://github.com/informalsystems/tendermint-rs?branch=romac/pub-query-conditions-bak)",
+ "tendermint 0.26.0 (git+https://github.com/informalsystems/tendermint-rs?branch=main)",
+ "tendermint-rpc 0.26.0 (git+https://github.com/informalsystems/tendermint-rs?branch=main)",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -3915,7 +3916,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.26.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=romac/pub-query-conditions-bak#41a400e15a3d3f092ab11e05ced8b418be2cb7d4"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=main#c5f76fbcc4b0255e76b39cd9d57130759335aeeb"
 dependencies = [
  "async-trait",
  "bytes",
@@ -3935,7 +3936,7 @@ dependencies = [
  "signature",
  "subtle",
  "subtle-encoding",
- "tendermint-proto 0.26.0 (git+https://github.com/informalsystems/tendermint-rs?branch=romac/pub-query-conditions-bak)",
+ "tendermint-proto 0.26.0 (git+https://github.com/informalsystems/tendermint-rs?branch=main)",
  "time 0.3.17",
  "zeroize",
 ]
@@ -3957,12 +3958,12 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.26.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=romac/pub-query-conditions-bak#41a400e15a3d3f092ab11e05ced8b418be2cb7d4"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=main#c5f76fbcc4b0255e76b39cd9d57130759335aeeb"
 dependencies = [
  "flex-error",
  "serde",
  "serde_json",
- "tendermint 0.26.0 (git+https://github.com/informalsystems/tendermint-rs?branch=romac/pub-query-conditions-bak)",
+ "tendermint 0.26.0 (git+https://github.com/informalsystems/tendermint-rs?branch=main)",
  "toml",
  "url",
 ]
@@ -4023,7 +4024,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.26.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=romac/pub-query-conditions-bak#41a400e15a3d3f092ab11e05ced8b418be2cb7d4"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=main#c5f76fbcc4b0255e76b39cd9d57130759335aeeb"
 dependencies = [
  "bytes",
  "flex-error",
@@ -4075,7 +4076,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.26.0"
-source = "git+https://github.com/informalsystems/tendermint-rs?branch=romac/pub-query-conditions-bak#41a400e15a3d3f092ab11e05ced8b418be2cb7d4"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=main#c5f76fbcc4b0255e76b39cd9d57130759335aeeb"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4093,9 +4094,8 @@ dependencies = [
  "serde_json",
  "subtle",
  "subtle-encoding",
- "tendermint 0.26.0 (git+https://github.com/informalsystems/tendermint-rs?branch=romac/pub-query-conditions-bak)",
- "tendermint-config 0.26.0 (git+https://github.com/informalsystems/tendermint-rs?branch=romac/pub-query-conditions-bak)",
- "tendermint-proto 0.26.0 (git+https://github.com/informalsystems/tendermint-rs?branch=romac/pub-query-conditions-bak)",
+ "tendermint 0.26.0 (git+https://github.com/informalsystems/tendermint-rs?branch=main)",
+ "tendermint-config 0.26.0 (git+https://github.com/informalsystems/tendermint-rs?branch=main)",
  "thiserror",
  "time 0.3.17",
  "tokio",

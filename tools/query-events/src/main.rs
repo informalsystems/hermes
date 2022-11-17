@@ -6,10 +6,10 @@ use itertools::Itertools;
 use tracing::{error, info};
 use tracing_subscriber::{filter::LevelFilter, EnvFilter};
 
+use tendermint::abci::{Event, EventAttribute};
 use tendermint_rpc::{
-    abci::{self, tag::Tag},
     endpoint::block_results,
-    query::{Condition, Query},
+    query::{Condition, Operation, Query},
     Client, HttpClient, Order, Url,
 };
 
@@ -98,7 +98,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn collect_events(res: block_results::Response, query: &Query) -> Vec<abci::Event> {
+fn collect_events(res: block_results::Response, query: &Query) -> Vec<Event> {
     let tx_events = res
         .txs_results
         .unwrap_or_default()
@@ -115,47 +115,33 @@ fn collect_events(res: block_results::Response, query: &Query) -> Vec<abci::Even
         .collect_vec()
 }
 
-fn event_matches(event: &abci::Event, query: &Query) -> bool {
-    let tags = attrs_to_map(&event.attributes, &event.type_str);
+fn event_matches(event: &Event, query: &Query) -> bool {
+    let tags = attrs_to_map(&event.attributes, &event.kind);
 
     query.conditions.iter().all(|cond| {
-        tags.get(key(cond))
+        tags.get(&cond.key)
             .map(|tag| eval(cond, tag))
             .unwrap_or(false)
     })
 }
 
-fn key(cond: &Condition) -> &str {
-    use Condition::*;
-
-    match cond {
-        Eq(k, _) => k,
-        Lt(k, _) => k,
-        Lte(k, _) => k,
-        Gt(k, _) => k,
-        Gte(k, _) => k,
-        Contains(k, _) => k,
-        Exists(k) => k,
-    }
-}
-
-fn attrs_to_map(tags: &[Tag], type_str: &str) -> HashMap<String, Tag> {
-    tags.iter()
-        .map(|tag| (format!("{}.{}", type_str, tag.key), tag.clone()))
+fn attrs_to_map(attrs: &[EventAttribute], kind: &str) -> HashMap<String, EventAttribute> {
+    attrs
+        .iter()
+        .map(|tag| (format!("{}.{}", kind, tag.key), tag.clone()))
         .collect()
 }
 
 #[allow(unused_variables)]
-fn eval(cond: &Condition, tag: &Tag) -> bool {
-    use Condition::*;
+fn eval(cond: &Condition, attr: &EventAttribute) -> bool {
+    match &cond.operation {
+        Operation::Eq(op) => attr.value == op.to_string().as_str().trim_matches('\''), // FIXME: Unescape properly
+        Operation::Contains(needle) => attr.value.contains(needle),
+        Operation::Exists => true,
 
-    match cond {
-        Eq(key, op) => tag.value.as_ref() == op.to_string().as_str().trim_matches('\''), // FIXME: Unescape properly
-        Contains(key, needle) => tag.value.as_ref().contains(needle),
-        Exists(key) => true,
-        Lt(key, op) => todo!(),
-        Lte(key, op) => todo!(),
-        Gt(key, op) => todo!(),
-        Gte(key, op) => todo!(),
+        Operation::Lt(op) => todo!(),
+        Operation::Lte(op) => todo!(),
+        Operation::Gt(op) => todo!(),
+        Operation::Gte(op) => todo!(),
     }
 }

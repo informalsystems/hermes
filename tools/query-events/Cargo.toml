@@ -11,8 +11,13 @@ tokio              = { version = "1.21.2", features = ["full"] }
 tracing            = "0.1.37"
 tracing-subscriber = { version = "0.3.16", features = ["env-filter"] }
 
+[dependencies.tendermint]
+version  = "0.26"
+git      = "https://github.com/informalsystems/tendermint-rs"
+branch   = "main"
+
 [dependencies.tendermint-rpc]
 version  = "0.26"
 features = ["http-client"]
 git      = "https://github.com/informalsystems/tendermint-rs"
-branch   = "romac/pub-query-conditions-bak"
+branch   = "main"
