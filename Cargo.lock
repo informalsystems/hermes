@@ -758,6 +758,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "curve25519-dalek-ng"
+version = "4.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c359b7249347e46fb28804470d071c921156ad62b3eef5d34e2ba867533dec8"
+dependencies = [
+ "byteorder",
+ "digest 0.9.0",
+ "rand_core 0.6.4",
+ "subtle-ng",
+ "zeroize",
+]
+
+[[package]]
 name = "cxx"
 version = "1.0.83"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -948,6 +961,19 @@ checksum = "1e9c280362032ea4203659fc489832d0204ef09f247a0506f170dafcac08c369"
 dependencies = [
  "serde",
  "signature",
+]
+
+[[package]]
+name = "ed25519-consensus"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e1dd91246c940272326f665724138660a183577ffb77b384a5e10d67d2d5075a"
+dependencies = [
+ "curve25519-dalek-ng",
+ "hex",
+ "rand_core 0.6.4",
+ "sha2 0.9.9",
+ "zeroize",
 ]
 
 [[package]]
@@ -1761,8 +1787,7 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.24.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30b46bcc4540116870cfb184f338b45174a7560ad46dd74e4cb4e81e005e2056"
+source = "git+https://github.com/cosmos/ibc-proto-rs.git?branch=mikhail/explicit-tendermint-core-ver#352498501ceb04c9eb234da3511468d4a33d7730"
 dependencies = [
  "base64",
  "bytes",
@@ -4014,6 +4039,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "subtle-ng"
+version = "2.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "734676eb262c623cec13c3155096e08d1f8f29adce39ba17948b18dad1e54142"
+
+[[package]]
 name = "syn"
 version = "1.0.105"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4065,12 +4096,11 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c518c082146825f10d6f9a32159ae46edcfd7dae8ac630c8067594bb2a784d72"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=mikhail/multi-tc-version-support#c2fa95a62e926001b2f810693201f16d07aa3d18"
 dependencies = [
  "bytes",
  "ed25519",
- "ed25519-dalek",
+ "ed25519-consensus",
  "flex-error",
  "futures",
  "k256",
@@ -4095,8 +4125,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f58b86374e3bcfc8135770a6c55388fce101c00de4a5f03224fa5830c9240b7"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=mikhail/multi-tc-version-support#c2fa95a62e926001b2f810693201f16d07aa3d18"
 dependencies = [
  "flex-error",
  "serde",
@@ -4109,8 +4138,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ab1450566e4347f3a81e27d3e701d74313f9fc2efb072fc3f49e0a762cb2a0f"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=mikhail/multi-tc-version-support#c2fa95a62e926001b2f810693201f16d07aa3d18"
 dependencies = [
  "contracts",
  "crossbeam-channel 0.4.4",
@@ -4131,8 +4159,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-verifier"
 version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c742bb914f9fb025ce0e481fbef9bb59c94d5a4bbd768798102675a2e0fb7440"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=mikhail/multi-tc-version-support#c2fa95a62e926001b2f810693201f16d07aa3d18"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -4144,8 +4171,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "890f1fb6dee48900c85f0cdf711ebf130e505ac09ad918cee5c34ed477973b05"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=mikhail/multi-tc-version-support#c2fa95a62e926001b2f810693201f16d07aa3d18"
 dependencies = [
  "bytes",
  "flex-error",
@@ -4162,8 +4188,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "06df4715f9452ec0a21885d6da8d804799455ba50d8bc40be1ec1c800afd4bd8"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=mikhail/multi-tc-version-support#c2fa95a62e926001b2f810693201f16d07aa3d18"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -4196,10 +4221,9 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.28.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05912d3072284786c0dec18e82779003724e0da566676fbd90e4fba6845fd81a"
+source = "git+https://github.com/informalsystems/tendermint-rs?branch=mikhail/multi-tc-version-support#c2fa95a62e926001b2f810693201f16d07aa3d18"
 dependencies = [
- "ed25519-dalek",
+ "ed25519-consensus",
  "gumdrop",
  "serde",
  "serde_json",

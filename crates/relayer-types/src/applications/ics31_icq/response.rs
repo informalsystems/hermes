@@ -7,7 +7,7 @@ use prost::Message;
 use std::prelude::v1::*;
 use std::vec;
 use tendermint::merkle::proof::ProofOps as TendermintProofOps;
-use tendermint_proto::crypto::{ProofOp, ProofOps};
+use tendermint_proto::v0_34::crypto::{ProofOp, ProofOps};
 
 pub const TYPE_URL: &str = "/stride.interchainquery.v1.MsgSubmitQueryResponse";
 
