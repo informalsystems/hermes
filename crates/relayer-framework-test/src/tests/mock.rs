@@ -28,19 +28,9 @@ fn test_mock_chain_test() -> Result<(), Error> {
     {
         info!("Check that the packet has not yet been received");
 
-        let l_h = dst_chain.chain.get_latest_height();
+        let state = dst_chain.chain.get_current_state();
 
-        assert!(l_h.is_some());
-
-        let state = dst_chain.chain.query_state_at_height(l_h.unwrap());
-
-        assert!(state.is_some());
-
-        assert!(!state.unwrap().check_received(
-            &packet.port_id,
-            &packet.channel_id,
-            &packet.sequence
-        ));
+        assert!(!state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence));
     }
 
     // Source chain must be higher than destination chain
@@ -53,37 +43,17 @@ fn test_mock_chain_test() -> Result<(), Error> {
     {
         info!("Check that the packet has been received by the destination chain");
 
-        let l_h = dst_chain.chain.get_latest_height();
+        let state = dst_chain.chain.get_current_state();
 
-        assert!(l_h.is_some());
-
-        let state = dst_chain.chain.query_state_at_height(l_h.unwrap());
-
-        assert!(state.is_some());
-
-        assert!(state.unwrap().check_received(
-            &packet.port_id,
-            &packet.channel_id,
-            &packet.sequence
-        ));
+        assert!(state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence));
     }
 
     {
         info!("Check that the acknowledgment has been received by the source chain");
 
-        let l_h = src_chain.chain.get_latest_height();
+        let state = src_chain.chain.get_current_state();
 
-        assert!(l_h.is_some());
-
-        let state = src_chain.chain.query_state_at_height(l_h.unwrap());
-
-        assert!(state.is_some());
-
-        assert!(state.unwrap().check_acknowledged(
-            packet.port_id,
-            packet.channel_id,
-            packet.sequence
-        ));
+        assert!(state.check_acknowledged(packet.port_id, packet.channel_id, packet.sequence));
     }
 
     Ok(())

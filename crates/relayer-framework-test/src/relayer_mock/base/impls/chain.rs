@@ -117,9 +117,7 @@ impl OfaBaseChain for MockChainContext {
     }
 
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error> {
-        let height = self
-            .get_latest_height()
-            .ok_or_else(|| Error::no_height(self.name().to_string()))?;
+        let height = self.get_latest_height();
         Ok(ChainStatus::new(height.clone(), height))
     }
 }
@@ -158,16 +156,7 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         channel_id: &Self::ChannelId,
         sequence: &Self::Sequence,
     ) -> Result<bool, Self::Error> {
-        match self.get_latest_height() {
-            Some(height) => {
-                let state = self
-                    .query_state_at_height(height.clone())
-                    .ok_or_else(|| Error::no_height_state(height.0))?;
-                return Ok(state.check_received(port_id, channel_id, sequence));
-            }
-            // If the latest height is not found it means that the Chain hasn't received anything,
-            // so the packet is not received.
-            None => Ok(false),
-        }
+        let state = self.get_current_state();
+        Ok(state.check_received(port_id, channel_id, sequence))
     }
 }

@@ -1,4 +1,4 @@
-use alloc::string::{String, ToString};
+use alloc::string::String;
 use std::sync::Mutex;
 use std::{collections::HashMap, sync::Arc};
 use tokio::runtime::Runtime;
@@ -21,6 +21,7 @@ pub type ClientId = <relayer_mock::contexts::chain::MockChainContext as OfaChain
 pub struct MockChainContext {
     pub name: String,
     pub states: Arc<Mutex<HashMap<Height, State>>>,
+    pub current_state: Arc<Mutex<(Height, State)>>,
     pub consensus_states: Arc<Mutex<HashMap<ClientId, ChainState>>>,
     pub runtime: OfaRuntimeContext<MockChainRuntimeContext<Error>>,
 }
@@ -35,6 +36,7 @@ impl MockChainContext {
         Self {
             name,
             states: Arc::new(Mutex::new(initial_state)),
+            current_state: Arc::new(Mutex::new((Height::from(1), State::default()))),
             consensus_states: Arc::new(Mutex::new(HashMap::new())),
             runtime,
         }
@@ -48,14 +50,24 @@ impl MockChainContext {
         &self.runtime
     }
 
-    pub fn get_latest_height(&self) -> Option<Height> {
-        let state = self.states.lock().unwrap();
-        state.keys().into_iter().max().cloned()
+    pub fn get_latest_height(&self) -> Height {
+        let current_state = self.current_state.lock().unwrap();
+        current_state.0.clone()
+    }
+
+    pub fn get_current_state(&self) -> State {
+        let current_state = self.current_state.lock().unwrap();
+        current_state.1.clone()
     }
 
     // Query the chain states at all Heights
-    pub fn state(&self) -> ChainState {
+    pub fn states(&self) -> ChainState {
         self.states.clone()
+    }
+
+    pub fn update_current_state(&self, height: Height, state: State) {
+        let mut current_state = self.current_state.lock().unwrap();
+        *current_state = (height, state);
     }
 
     // Query the chain state at a given Height. This is used to see which receive and
@@ -78,40 +90,37 @@ impl MockChainContext {
     }
 
     pub fn new_block(&self) -> Result<(), Error> {
-        let height = self
-            .get_latest_height()
-            .ok_or_else(|| Error::no_height(self.name().to_string()))?;
-        let current_state = self
-            .query_state_at_height(height.clone())
-            .ok_or_else(|| Error::no_height_state(height.0))?;
-        let mut state = self.states.lock().unwrap();
-        state.insert(height.increment(), current_state);
+        let height = self.get_latest_height();
+        let state = self.get_current_state();
+        let states = self.states();
+        let mut current_states = states.lock().unwrap();
+        let new_height = height.increment();
+        current_states.insert(new_height.clone(), state.clone());
+        self.update_current_state(new_height, state);
         Ok(())
     }
 
     pub fn receive_packet(&self, packet: PacketKey) -> Result<(), Error> {
-        let height = self
-            .get_latest_height()
-            .ok_or_else(|| Error::no_height(self.name().to_string()))?;
-        let mut new_state = self
-            .query_state_at_height(height.clone())
-            .ok_or_else(|| Error::no_height_state(height.0))?;
+        let height = self.get_latest_height();
+        let mut new_state = self.get_current_state();
         new_state.update_received(packet.port_id, packet.channel_id, packet.sequence);
-        let mut state = self.states.lock().unwrap();
-        state.insert(height.increment(), new_state);
+        let states = self.states();
+        let mut current_states = states.lock().unwrap();
+        let new_height = height.increment();
+        current_states.insert(new_height.clone(), new_state.clone());
+        self.update_current_state(new_height, new_state);
         Ok(())
     }
 
     pub fn acknowledge_packet(&self, packet: PacketKey) -> Result<(), Error> {
-        let height = self
-            .get_latest_height()
-            .ok_or_else(|| Error::no_height(self.name().to_string()))?;
-        let mut new_state = self
-            .query_state_at_height(height.clone())
-            .ok_or_else(|| Error::no_height_state(height.0))?;
+        let height = self.get_latest_height();
+        let mut new_state = self.get_current_state();
         new_state.update_acknowledged(packet.port_id, packet.channel_id, packet.sequence);
-        let mut state = self.states.lock().unwrap();
-        state.insert(height.increment(), new_state);
+        let states = self.states();
+        let mut current_states = states.lock().unwrap();
+        let new_height = height.increment();
+        current_states.insert(new_height.clone(), new_state.clone());
+        self.update_current_state(new_height, new_state);
         Ok(())
     }
 }
