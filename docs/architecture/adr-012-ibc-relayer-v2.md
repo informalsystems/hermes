@@ -45,6 +45,13 @@ support relaying between a Cosmos chain and a Substrate chain.
 
 # Decision
 
+## Concurrency Architecture
+
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/master/docs/architecture/assets/concurrency-architecture-1.svg)
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/master/docs/architecture/assets/concurrency-architecture-2.svg)
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/master/docs/architecture/assets/concurrency-architecture-3.svg)
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/master/docs/architecture/assets/concurrency-architecture-4.svg)
+
 ## Development Strategy
 
 The Hermes v2 relayer is designed from the top down with a new architecture
