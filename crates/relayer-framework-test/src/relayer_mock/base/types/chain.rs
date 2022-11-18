@@ -1,5 +1,5 @@
-use crate::tests::relayer_mock::base::types::height::Height;
-use crate::tests::relayer_mock::base::types::state::State;
+use crate::relayer_mock::base::types::height::Height;
+use crate::relayer_mock::base::types::state::State;
 
 #[derive(Clone)]
 pub struct ConsensusState {}

@@ -3,17 +3,15 @@ use std::sync::Mutex;
 use std::{collections::HashMap, sync::Arc};
 use tokio::runtime::Runtime;
 
-use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
-
-use crate::base::one_for_all::traits::chain::OfaChainTypes;
-use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
-use crate::tests;
-use crate::tests::relayer_mock::base::error::Error;
-use crate::tests::relayer_mock::base::types::{height::Height, packet::PacketKey, state::State};
+use crate::relayer_mock;
+use crate::relayer_mock::base::error::Error;
+use crate::relayer_mock::base::types::runtime::{MockChainRuntimeContext, MockRuntimeContext};
+use crate::relayer_mock::base::types::{height::Height, packet::PacketKey, state::State};
+use ibc_relayer_framework::base::one_for_all::traits::chain::OfaChainTypes;
+use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
 
 pub type ChainState = Arc<Mutex<HashMap<Height, State>>>;
-pub type ClientId =
-    <tests::relayer_mock::contexts::chain::MockChainContext as OfaChainTypes>::ClientId;
+pub type ClientId = <relayer_mock::contexts::chain::MockChainContext as OfaChainTypes>::ClientId;
 
 /// The 'state' represents the received messages and received acks at a given height.
 /// The 'consensus_states' represent the known whole states of clients.
@@ -24,13 +22,14 @@ pub struct MockChainContext {
     pub name: String,
     pub states: Arc<Mutex<HashMap<Height, State>>>,
     pub consensus_states: Arc<Mutex<HashMap<ClientId, ChainState>>>,
-    pub runtime: OfaRuntimeContext<TokioRuntimeContext<Error>>,
+    pub runtime: OfaRuntimeContext<MockChainRuntimeContext<Error>>,
 }
 
 impl MockChainContext {
     pub fn new(name: String) -> Self {
-        let runtime =
-            OfaRuntimeContext::new(TokioRuntimeContext::new(Arc::new(Runtime::new().unwrap())));
+        let runtime = OfaRuntimeContext::new(MockChainRuntimeContext::new(Arc::new(
+            Runtime::new().unwrap(),
+        )));
         let initial_state: HashMap<Height, State> =
             HashMap::from([(Height::from(1), State::default())]);
         Self {
@@ -45,7 +44,7 @@ impl MockChainContext {
         &self.name
     }
 
-    pub fn runtime(&self) -> &OfaRuntimeContext<TokioRuntimeContext<Error>> {
+    pub fn runtime(&self) -> &OfaRuntimeContext<MockRuntimeContext> {
         &self.runtime
     }
 

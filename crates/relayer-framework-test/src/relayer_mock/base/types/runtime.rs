@@ -1,20 +1,46 @@
 use alloc::boxed::Box;
 use async_trait::async_trait;
+use core::fmt::Debug;
 use core::{future::Future, time::Duration};
-use std::time::Instant;
-use tokio::time::sleep;
+use std::{marker::PhantomData, sync::Arc, time::Instant};
+use tokio::{runtime::Runtime, time::sleep};
 
-use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
-
-use crate::{
-    base::one_for_all::traits::runtime::{LogLevel, OfaRuntime},
-    tests::relayer_mock::base::error::Error,
+use ibc_relayer_framework::base::{
+    core::traits::sync::Async,
+    one_for_all::traits::runtime::{LogLevel, OfaRuntime},
 };
 
-pub type MockRuntimeContext = TokioRuntimeContext<Error>;
+use crate::relayer_mock::base::error::Error;
+
+use ibc_relayer_runtime::tokio::error::Error as TokioError;
+
+pub type MockRuntimeContext = MockChainRuntimeContext<Error>;
+
+pub struct MockChainRuntimeContext<Error> {
+    pub runtime: Arc<Runtime>,
+    pub phantom: PhantomData<Error>,
+}
+
+impl<Error> MockChainRuntimeContext<Error> {
+    pub fn new(runtime: Arc<Runtime>) -> Self {
+        Self {
+            runtime,
+            phantom: PhantomData,
+        }
+    }
+}
+
+impl<Error> Clone for MockChainRuntimeContext<Error> {
+    fn clone(&self) -> Self {
+        Self::new(self.runtime.clone())
+    }
+}
 
 #[async_trait]
-impl OfaRuntime for MockRuntimeContext {
+impl OfaRuntime for MockRuntimeContext
+where
+    Error: From<TokioError> + Debug + Async,
+{
     type Error = Error;
 
     type Time = Instant;

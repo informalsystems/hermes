@@ -2,19 +2,18 @@ use alloc::string::{String, ToString};
 use std::sync::Arc;
 use tokio::runtime::Runtime;
 
-use ibc_relayer_runtime::tokio::context::TokioRuntimeContext;
-
-use crate::common::one_for_all::types::chain::OfaChainWrapper;
-use crate::common::one_for_all::types::relay::OfaRelayWrapper;
-use crate::tests::relayer_mock::contexts::chain::MockChainContext;
-use crate::tests::relayer_mock::contexts::relay::MockRelayContext;
+use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
+use crate::relayer_mock::contexts::chain::MockChainContext;
+use crate::relayer_mock::contexts::relay::MockRelayContext;
+use ibc_relayer_framework::common::one_for_all::types::chain::OfaChainWrapper;
+use ibc_relayer_framework::common::one_for_all::types::relay::OfaRelayWrapper;
 
 pub fn build_mock_relay_context() -> (
     OfaRelayWrapper<MockRelayContext>,
     Arc<OfaChainWrapper<MockChainContext>>,
     Arc<OfaChainWrapper<MockChainContext>>,
 ) {
-    let runtime = TokioRuntimeContext::new(Arc::new(Runtime::new().unwrap()));
+    let runtime = MockRuntimeContext::new(Arc::new(Runtime::new().unwrap()));
     let src_chain = Arc::new(OfaChainWrapper {
         chain: MockChainContext::new("chain1".to_string()),
     });

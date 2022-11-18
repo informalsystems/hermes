@@ -1,7 +1,7 @@
 use std::fmt::{Display, Formatter, Result};
 
-use crate::tests::relayer_mock::base::types::{height::Height, packet::PacketKey};
-use crate::tests::relayer_mock::contexts::chain::{ChainState, ClientId};
+use crate::relayer_mock::base::types::{height::Height, packet::PacketKey};
+use crate::relayer_mock::contexts::chain::{ChainState, ClientId};
 
 #[derive(Debug)]
 pub enum Message {

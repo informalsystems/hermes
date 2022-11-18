@@ -4,17 +4,17 @@ use alloc::vec::Vec;
 use async_trait::async_trait;
 use std::vec;
 
-use crate::base::one_for_all::traits::chain::OfaChainTypes;
-use crate::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayTypes};
-use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
-use crate::common::one_for_all::presets::MinimalPreset;
-use crate::common::one_for_all::types::chain::OfaChainWrapper;
-use crate::tests::relayer_mock::base::error::Error;
-use crate::tests::relayer_mock::base::types::message::Message as MockMessage;
-use crate::tests::relayer_mock::base::types::packet::PacketKey;
-use crate::tests::relayer_mock::base::types::runtime::MockRuntimeContext;
-use crate::tests::relayer_mock::contexts::chain::MockChainContext;
-use crate::tests::relayer_mock::contexts::relay::MockRelayContext;
+use crate::relayer_mock::base::error::Error;
+use crate::relayer_mock::base::types::message::Message as MockMessage;
+use crate::relayer_mock::base::types::packet::PacketKey;
+use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
+use crate::relayer_mock::contexts::chain::MockChainContext;
+use crate::relayer_mock::contexts::relay::MockRelayContext;
+use ibc_relayer_framework::base::one_for_all::traits::chain::OfaChainTypes;
+use ibc_relayer_framework::base::one_for_all::traits::relay::{OfaBaseRelay, OfaRelayTypes};
+use ibc_relayer_framework::base::one_for_all::traits::runtime::OfaRuntimeContext;
+use ibc_relayer_framework::common::one_for_all::presets::MinimalPreset;
+use ibc_relayer_framework::common::one_for_all::types::chain::OfaChainWrapper;
 
 impl OfaRelayTypes for MockRelayContext {
     type Preset = MinimalPreset;

@@ -1,12 +1,12 @@
 use alloc::string::String;
 use tracing::info;
 
-use crate::base::one_for_all::traits::relay::OfaBaseRelay;
-use crate::base::relay::traits::packet_relayer::CanRelayPacket;
-use crate::tests::relayer_mock::base::error::Error;
-use crate::tests::relayer_mock::base::types::height::Height;
-use crate::tests::relayer_mock::base::types::packet::PacketKey;
-use crate::tests::relayer_mock::util::context::build_mock_relay_context;
+use crate::relayer_mock::base::error::Error;
+use crate::relayer_mock::base::types::height::Height;
+use crate::relayer_mock::base::types::packet::PacketKey;
+use crate::tests::util::context::build_mock_relay_context;
+use ibc_relayer_framework::base::one_for_all::traits::relay::OfaBaseRelay;
+use ibc_relayer_framework::base::relay::traits::packet_relayer::CanRelayPacket;
 
 #[test]
 fn test_mock_chain_test() -> Result<(), Error> {
