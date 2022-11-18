@@ -306,13 +306,6 @@ TODO
 
 # Decision
 
-## Concurrency Architecture
-
-![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-1.svg)
-![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-2.svg)
-![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-3.svg)
-![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-4.svg)
-
 ## Development Strategy
 
 The Hermes v2 relayer is designed from the top down with a new architecture
@@ -342,6 +335,56 @@ continue to rely on the
 [`ForeignClient`](ibc_relayer::foreign_client::ForeignClient) and
 [`ChainHandle`](ibc_relayer::chain::handle::ChainHandle) datatypes
 to perform queries and processing of messages.
+
+## Concurrency Architecture
+
+We start by giving a high-level picture of the official concurrency architecture
+that will be adopted for Hermes relayer v2. Before we get into detail, it is
+also worth noting that the relayer v2 architecture is designed to support
+_modular_ concurrency. i.e. it is possible for advanced users to customize
+the concurrency model using the relayer framework, which will be described in
+the later section. With a modular concurrency architecture, it is also worth
+keeping in mind that future versions of relayer v2 may pivot to different
+concurrency model as needed.
+
+The relayer v2 implementations are centered around three kinds of contexts:
+relay context, chain context, and transaction context. Each context contains
+the environment and dependencies that are required for operations in that
+context to work. For instance, the chain context would contain parameters
+for talking to a full node, and the transaction context would contain
+the wallet credentials for signing transactions.
+
+The relay context is special in that it contains _two_ chain sub-contexts.
+The two chain contexts are referred to as the source context and the destination
+context, corresponding to the sending of an IBC packet from the source chain
+to the destination chain. Compared to relayer v1, the roles of the two chain
+sub-contexts are fixed, i.e. a source chain would always remain a source chain.
+This means that to perform bi-directional relaying for IBC packets for two
+chains, _two_ relay contexts will needed for handling packets for each direction
+separately.
+
+In addition to the source and destination chain contexts, the relay context also
+have two _dynamic_ context parameters: the _target_ chain context, and the
+_counterparty_ chain context. This is to denote which chain context the relay
+context is currently targetting on. For example, if the relay context were to
+send messages to the source chain context, then the target chain context would
+be the source chain, while the counterparty chain context would be the
+destination chain. This helps differentiates the different kinds of chain
+the relay context is interacting with, and avoid the coding errors caused by
+mistaking one chain with another chain.
+
+To help visualize the concurrency architecture, a lot of details are omitted for
+_how_ the relayer performs the operations. Instead, we would focus on the steps
+that the relayer would take for specific use cases.
+
+The first use case would be focused on the relaying of multiple IBC packets
+from one relay context. In the below scenario, we have a relay context with
+chain A being the source chain, and chain B being the destination chain.
+
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-1.svg)
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-2.svg)
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-3.svg)
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-4.svg)
 
 ## Architecture Overview
 
