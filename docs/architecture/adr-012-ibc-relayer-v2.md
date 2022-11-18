@@ -336,56 +336,6 @@ continue to rely on the
 [`ChainHandle`](ibc_relayer::chain::handle::ChainHandle) datatypes
 to perform queries and processing of messages.
 
-## Concurrency Architecture
-
-We start by giving a high-level picture of the official concurrency architecture
-that will be adopted for Hermes relayer v2. Before we get into detail, it is
-also worth noting that the relayer v2 architecture is designed to support
-_modular_ concurrency. i.e. it is possible for advanced users to customize
-the concurrency model using the relayer framework, which will be described in
-the later section. With a modular concurrency architecture, it is also worth
-keeping in mind that future versions of relayer v2 may pivot to different
-concurrency model as needed.
-
-The relayer v2 implementations are centered around three kinds of contexts:
-relay context, chain context, and transaction context. Each context contains
-the environment and dependencies that are required for operations in that
-context to work. For instance, the chain context would contain parameters
-for talking to a full node, and the transaction context would contain
-the wallet credentials for signing transactions.
-
-The relay context is special in that it contains _two_ chain sub-contexts.
-The two chain contexts are referred to as the source context and the destination
-context, corresponding to the sending of an IBC packet from the source chain
-to the destination chain. Compared to relayer v1, the roles of the two chain
-sub-contexts are fixed, i.e. a source chain would always remain a source chain.
-This means that to perform bi-directional relaying for IBC packets for two
-chains, _two_ relay contexts will needed for handling packets for each direction
-separately.
-
-In addition to the source and destination chain contexts, the relay context also
-have two _dynamic_ context parameters: the _target_ chain context, and the
-_counterparty_ chain context. This is to denote which chain context the relay
-context is currently targetting on. For example, if the relay context were to
-send messages to the source chain context, then the target chain context would
-be the source chain, while the counterparty chain context would be the
-destination chain. This helps differentiates the different kinds of chain
-the relay context is interacting with, and avoid the coding errors caused by
-mistaking one chain with another chain.
-
-To help visualize the concurrency architecture, a lot of details are omitted for
-_how_ the relayer performs the operations. Instead, we would focus on the steps
-that the relayer would take for specific use cases.
-
-The first use case would be focused on the relaying of multiple IBC packets
-from one relay context. In the below scenario, we have a relay context with
-chain A being the source chain, and chain B being the destination chain.
-
-![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-1.svg)
-![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-2.svg)
-![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-3.svg)
-![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-4.svg)
-
 ## Architecture Overview
 
 A full description of the relayer v2 architecture is too much to be described
@@ -1125,6 +1075,113 @@ Cosmos chains.
 The relayer v1.5 MVP will not expose interfaces that support sending
 transactions with multiple signers. Since such features also require significant
 effort in the form of proper UX design, it is left as a task for relayer v2 to implement.
+
+
+## Concurrency Architectures
+
+We start by giving a high-level picture of the possible concurrency
+architectures that can be be adopted for Hermes relayer v2. The relayer
+framework makes it possible to implement _modular_ concurrency, and allows
+the v2 relayer to offer multiple modes of operation. Aside from that, advanced
+users will be able to customize the relayer framework and introduce new
+concurrency architectures that are best suited for specific relaying use cases.
+
+The relayer v2 implementations are centered around three kinds of contexts:
+relay context, chain context, and transaction context. Each context contains
+the environment and dependencies that are required for operations in that
+context to work. For instance, the chain context would contain parameters
+for talking to a full node, and the transaction context would contain
+the wallet credentials for signing transactions.
+
+The relay context is special in that it contains _two_ chain sub-contexts.
+The two chain contexts are referred to as the source context and the destination
+context, corresponding to the sending of an IBC packet from the source chain
+to the destination chain. Compared to relayer v1, the roles of the two chain
+sub-contexts are fixed, i.e. a source chain would always remain a source chain.
+This means that to perform bi-directional relaying for IBC packets for two
+chains, _two_ relay contexts will needed for handling packets for each direction
+separately.
+
+In addition to the source and destination chain contexts, the relay context also
+have two _dynamic_ context parameters: the _target_ chain context, and the
+_counterparty_ chain context. This is to denote which chain context the relay
+context is currently targetting on. For example, if the relay context were to
+send messages to the source chain context, then the target chain context would
+be the source chain, while the counterparty chain context would be the
+destination chain. This helps differentiates the different kinds of chain
+the relay context is interacting with, and avoid the coding errors caused by
+mistaking one chain with another chain.
+
+To help visualize the concurrency architecture, a lot of details are omitted for
+_how_ the relayer performs the operations. Instead, we would focus on the steps
+that the relayer would take for specific use cases.
+
+### Single chain event source with one relay context
+
+The first use case would be focused on the relaying of multiple IBC packets
+from one relay context:
+
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-1.svg)
+
+In the above scenario, we have a relay context with chain A being the source
+chain, and chain B being the destination chain. In our scenario, we have chain A
+emitting multiple source chain events that are of interest of the relay context,
+which are `SendPacket` events that are targetting chain B.
+
+When the `SendPacket` events are handled, the event handler spawns three
+concurrent async tasks, all of which handles the relaying of the packets by
+holding a shared reference to the relay context. The worker tasks would
+call the `PacketRelayer`'s `relay_packet` method, which would start the
+lifecycle of relaying an IBC packet.
+
+The packet relayer may contain logics such as checking on whether the packet
+has already been relayed. in our scenario, the packet relayers would construct
+`RecvPacket` messages that are targetting the destination chain, chain B.
+To optimize for efficiency, the packet relayers send the messages to a message
+batch worker, which runs on a separate async task and receive the incoming
+messages via MPSC channels.
+
+Inside the batch worker, it collects all messages that are sent over a certain
+period, such as 500ms, and attempt to consolidate them into a single batch.
+In our scenario, we can assume that all chain events are emitted at the same
+time, and the packet relayers manage to finish the construction of the
+`RecvPacket` messages within the 500ms time frame.
+
+With that, the batch worker attempts to consolidate the three `RecvPacket`
+messages into a single batch. However, there is also a configuration for batch
+size limit, and for our scenario, the batch size limit exceeds after two
+`RecvPacket` messages are batched. Therefore, the batch worker sends the
+three messages as two batches instead of one. The first batch would contain
+the first and second `RecvPacket` messages, while the second batch contains
+the third `RecvPacket` messages.
+
+The batch worker sends the batched messages by spawning concurrent async tasks
+for each batch. For each of the batch, the messages would go through the
+[SendIbcMessagesWithUpdateClient](ibc_relayer_framework::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
+middleware, which would build and attach `UpdateClient` messages to each message
+batch.
+
+
+### Success transaction result returned
+
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-2.svg)
+
+### Error transaction result returned
+
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-3.svg)
+
+### Single chain event source with one relay context (cost-optimized)
+
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-4.svg)
+
+### Single chain event source with two coupled relay contexts
+
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-5.svg)
+
+### Single chain event source with multiple relay contexts
+
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-6.svg)
+
 
 # Status
 
