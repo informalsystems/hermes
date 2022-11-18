@@ -106,11 +106,13 @@ impl KeyEntry {
         Self::from_key_file(key_file, hd_path)
     }
 
-    // NOTE: Cosmos does not keep `v` (recovery code) in the `(r, s, v)` tuple
-    // for secp256k1, while Ethereum (and therefore Evmos) does.
+    // NOTE: Neither Cosmos nor Ethermint keep `v` (recovery code) in the
+    // `(r, s, v)` tuple for secp256k1.
     //
-    // Cosmos implementation: https://github.com/cosmos/cosmos-sdk/blob/main/crypto/keys/secp256k1/secp256k1_cgo.go
-    // Evmos docs: https://docs.evmos.org/modules/evm/04_transactions.html
+    // Cosmos: https://github.com/cosmos/cosmos-sdk/blob/main/crypto/keys/secp256k1/secp256k1_cgo.go
+    // Ethermint:
+    // - https://github.com/evmos/ethermint/blob/main/crypto/ethsecp256k1/ethsecp256k1.go
+    // - informalsystems/hermes#2863.
     pub fn sign_message(
         &self,
         message: &[u8],
@@ -127,7 +129,6 @@ impl KeyEntry {
         // so `unwrap` is safe.
         let message = Message::from_slice(&hashed_message).unwrap();
 
-        // TODO: Call `.sign_ecdsa_recoverable` for Evmos.
         Ok(Secp256k1::signing_only()
             .sign_ecdsa(&message, &self.private_key.private_key)
             .serialize_compact()
