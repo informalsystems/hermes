@@ -77,10 +77,12 @@ pub trait ChainEndpoint: Sized {
     type ClientState: ClientState + Into<AnyClientState>;
 
     /// Returns the chain's identifier
-    fn id(&self) -> &ChainId;
+    fn id(&self) -> &ChainId {
+        &self.config().id
+    }
 
     /// Returns the chain configuration
-    fn config(&self) -> ChainConfig;
+    fn config(&self) -> &ChainConfig;
 
     // Life cycle
 
@@ -109,9 +111,26 @@ pub trait ChainEndpoint: Sized {
 
     fn get_signer(&self) -> Result<Signer, Error>;
 
-    fn get_key(&mut self) -> Result<KeyEntry, Error>;
+    /// Get the signing key
+    fn get_key(&mut self) -> Result<KeyEntry, Error> {
+        crate::time!("get_key");
 
-    fn add_key(&mut self, key_name: &str, key: KeyEntry) -> Result<(), Error>;
+        // Get the key from key seed file
+        let key = self
+            .keybase()
+            .get_key(&self.config().key_name)
+            .map_err(|e| Error::key_not_found(self.config().key_name.clone(), e))?;
+
+        Ok(key)
+    }
+
+    fn add_key(&mut self, key_name: &str, key: KeyEntry) -> Result<(), Error> {
+        self.keybase_mut()
+            .add_key(key_name, key)
+            .map_err(Error::key_base)?;
+
+        Ok(())
+    }
 
     // Versioning
 

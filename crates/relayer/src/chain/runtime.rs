@@ -517,7 +517,7 @@ where
     }
 
     fn get_config(&self, reply_to: ReplyTo<ChainConfig>) -> Result<(), Error> {
-        let result = Ok(self.chain.config());
+        let result = Ok(self.chain.config().clone());
         reply_to.send(result).map_err(Error::send)
     }
 
