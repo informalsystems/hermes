@@ -130,6 +130,12 @@ impl Wallet {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub struct CrossChainQueryPacket {
+    pub src_chain_id: ChainId,
+    pub query_id: String,
+}
+
 /// An object determines the amount of parallelism that can
 /// be exercised when processing [`IbcEvent`](ibc_relayer_types::events::IbcEvent)
 /// between two chains. For each [`Object`], a corresponding
@@ -478,5 +484,16 @@ impl Object {
             src_port_id: e.port_id().clone(),
         }
         .into())
+    }
+
+    /// Build the object associated with the given [`CrossChainQuery`] event.
+    pub fn for_cross_chain_query_packet(
+        p: &ibc_relayer_types::applications::ics31_icq::events::CrossChainQueryPacket,
+        src_chain: &impl ChainHandle,
+    ) -> Result<Self, ObjectError> {
+        Ok(CrossChainQueryPacket {
+            src_chain_id: src_chain.id(),
+            query_id: p.query_id.to_string(),
+        }.into())
     }
 }
