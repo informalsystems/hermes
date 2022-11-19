@@ -6,7 +6,7 @@ use flex_error::define_error;
 define_error! {
     Error {
         Parse
-            | _ | { "Cannot parse packet content into ABCI Event" },
+            | _ | { "Failed to parse content" },
 
         Attribute
             { event: String }

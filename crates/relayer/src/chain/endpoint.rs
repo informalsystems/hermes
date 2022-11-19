@@ -24,6 +24,7 @@ use ibc_relayer_types::proofs::{ConsensusProof, Proofs};
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::Height as ICSHeight;
+use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
@@ -626,4 +627,9 @@ pub trait ChainEndpoint: Sized {
         port_id: &PortId,
         counterparty_payee: &Signer,
     ) -> Result<(), Error>;
+
+    fn cross_chain_query(
+        &self,
+        requests: Vec<CrossChainQueryRequest>,
+    ) -> Result<Vec<CrossChainQueryResponse>, Error>;
 }

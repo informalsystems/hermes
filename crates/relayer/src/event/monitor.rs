@@ -134,6 +134,10 @@ pub mod queries {
     pub fn ibc_channel() -> Query {
         Query::eq("message.module", "ibc_channel")
     }
+
+    pub fn ibc_query() -> Query {
+        Query::eq("message.module", "interchainquery")
+    }
 }
 
 impl EventMonitor {

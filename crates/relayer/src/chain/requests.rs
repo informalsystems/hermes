@@ -30,6 +30,7 @@ use serde::{Deserialize, Serialize};
 use tendermint::block::Height as TMBlockHeight;
 use tendermint_rpc::abci::transaction::Hash as TxHash;
 use tonic::metadata::AsciiMetadataValue;
+use crate::event::IbcEventWithHeight;
 
 /// Type to specify a height in a query. Specifically, this caters to the use
 /// case where the user wants to query at whatever the latest height is, as
@@ -464,4 +465,33 @@ pub struct QueryClientEventRequest {
     pub event_id: WithBlockDataType,
     pub client_id: ClientId,
     pub consensus_height: Height,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
+pub struct CrossChainQueryRequest {
+    pub chain_id: String,
+    pub query_id: String,
+    pub query_type: String,
+    pub request: String,
+    pub height: String,
+}
+
+/// Convert CrossChainQueryPacket into CrossChainQueryRequest
+impl TryFrom<IbcEventWithHeight> for CrossChainQueryRequest {
+    type Error = Error;
+
+    fn try_from(ibc_event_with_height: IbcEventWithHeight) -> Result<Self, Self::Error> {
+        match ibc_event_with_height.event.cross_chain_query_packet() {
+            Some(packet) => Ok(CrossChainQueryRequest {
+                chain_id: packet.chain_id.to_string(),
+                query_id: packet.query_id.to_string(),
+                query_type: packet.query_type.to_string(),
+                request: packet.request.to_string(),
+                height: packet.height.to_string()
+            }),
+            None => Err(
+                Error::ics31(ibc_relayer_types::applications::ics31_icq::error::Error::parse())
+            ),
+        }
+    }
 }

@@ -8,6 +8,7 @@ use core::{
 };
 use num_bigint::BigInt;
 use std::{cmp::Ordering, thread};
+use futures::future::join_all;
 
 use ibc_proto::protobuf::Protobuf;
 use tendermint::block::Height as TmHeight;
@@ -22,6 +23,7 @@ use tonic::{codegen::http::Uri, metadata::AsciiMetadataValue};
 use tracing::{error, instrument, trace, warn};
 
 use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
+use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
     AllowUpdate, ClientState as TmClientState,
 };
@@ -72,7 +74,7 @@ use crate::chain::cosmos::types::gas::{
     default_gas_from_config, gas_multiplier_from_config, max_gas_from_config,
 };
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
-use crate::chain::requests::{Qualified, QueryPacketEventDataRequest};
+use crate::chain::requests::{CrossChainQueryRequest, Qualified, QueryPacketEventDataRequest};
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;
@@ -115,6 +117,17 @@ pub mod tx;
 pub mod types;
 pub mod version;
 pub mod wait;
+
+/// temporal mocking function of gRPC query
+async fn mock_grpc_query(_req: CrossChainQueryRequest) -> Result<CrossChainQueryResponse, Error>{
+    Ok(CrossChainQueryResponse {
+        chain_id: "".to_string(),
+        query_id: "".to_string(),
+        query_type: "".to_string(),
+        data: "".to_string(),
+        height: "".to_string()
+    })
+}
 
 /// Defines an upper limit on how large any transaction can be.
 /// This upper limit is defined as a fraction relative to the block's
@@ -1809,6 +1822,25 @@ impl ChainEndpoint for CosmosSdkChain {
             &address,
             counterparty_payee,
         ))
+    }
+
+    fn cross_chain_query(
+        &self,
+        requests: Vec<CrossChainQueryRequest>
+    ) -> Result<Vec<CrossChainQueryResponse>, Error> {
+        let tasks = requests
+            .into_iter()
+            .map(|req| mock_grpc_query(req))
+            .collect::<Vec<_>>();
+
+        let joined_tasks = join_all(tasks);
+        let results: Vec<_> = self.rt.block_on(joined_tasks);
+        let responses = results
+            .into_iter()
+            .filter_map(|req| req.ok())
+            .collect::<Vec<_>>();
+
+        Ok(responses)
     }
 }
 

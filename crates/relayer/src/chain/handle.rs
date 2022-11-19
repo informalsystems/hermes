@@ -18,6 +18,7 @@ use ibc_relayer_types::{
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
         ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     },
+    applications::ics31_icq::response::CrossChainQueryResponse,
     proofs::Proofs,
     signer::Signer,
     Height,
@@ -352,6 +353,11 @@ pub enum ChainRequest {
         port_id: PortId,
         counterparty_payee: Signer,
         reply_to: ReplyTo<()>,
+    },
+
+    CrossChainQuery {
+        request: Vec<CrossChainQueryRequest>,
+        reply_to: ReplyTo<Vec<CrossChainQueryResponse>>,
     },
 }
 
