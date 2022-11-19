@@ -15,6 +15,7 @@ use ibc_relayer_types::{
     core::ics24_host::identifier::{
         ChainId, ChannelId, ClientId, ConnectionId, PortChannelId, PortId,
     },
+    applications::ics31_icq::response::CrossChainQueryResponse,
     proofs::Proofs,
     signer::Signer,
     Height,
@@ -494,5 +495,12 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     ) -> Result<(), Error> {
         self.inner
             .maybe_register_counterparty_payee(channel_id, port_id, counterparty_payee)
+    }
+
+    fn cross_chain_query(
+        &self,
+        request: Vec<CrossChainQueryRequest>,
+    ) -> Result<Vec<CrossChainQueryResponse>, Error> {
+        self.inner.cross_chain_query(request)
     }
 }

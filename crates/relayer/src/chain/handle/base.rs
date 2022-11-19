@@ -15,6 +15,7 @@ use ibc_relayer_types::{
         ics24_host::identifier::ChannelId,
         ics24_host::identifier::{ClientId, ConnectionId, PortId},
     },
+    applications::ics31_icq::response::CrossChainQueryResponse,
     proofs::Proofs,
     signer::Signer,
     Height,
@@ -496,5 +497,12 @@ impl ChainHandle for BaseChainHandle {
             counterparty_payee,
             reply_to,
         })
+    }
+
+    fn cross_chain_query(
+        &self,
+        request: Vec<CrossChainQueryRequest>,
+    ) -> Result<Vec<CrossChainQueryResponse>, Error> {
+        self.send(|reply_to| ChainRequest::CrossChainQuery { request, reply_to })
     }
 }
