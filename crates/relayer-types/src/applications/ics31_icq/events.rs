@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use crate::core::ics24_host::identifier::{ChainId, ConnectionId};
 
-use super::error::QueryPacketError;
+use super::error::Error;
 
 use core::str::FromStr;
 use serde::{Serialize, Deserialize};
@@ -20,7 +20,7 @@ pub struct CrossChainQueryPacket {
     pub request: String,
 }
 
-fn find_value(key: &str, entries: &[Tag]) -> Result<String, QueryPacketError> {
+fn find_value(key: &str, entries: &[Tag]) -> Result<String, Error> {
     entries
         .iter()
         .find_map(|entry| {
@@ -30,7 +30,7 @@ fn find_value(key: &str, entries: &[Tag]) -> Result<String, QueryPacketError> {
                 None
             }
         })
-        .ok_or_else(|| QueryPacketError::EventAttributeNotFound { event: key.to_string() })
+        .ok_or_else(|| Error::attribute(key.to_string()))
 }
 
 fn new_tag(key: &str, value: &str) -> Tag {
@@ -60,10 +60,10 @@ impl From<CrossChainQueryPacket> for AbciEvent {
     }
 }
 
-impl TryFrom<Vec<Tag>> for CrossChainQueryPacket {
-    type Error = QueryPacketError;
+impl<'a> TryFrom<&'a Vec<Tag>> for CrossChainQueryPacket {
+    type Error = Error;
 
-    fn try_from(entries: Vec<Tag>) -> Result<Self, Self::Error> {
+    fn try_from(entries: &'a Vec<Tag>) -> Result<Self, Self::Error> {
         let module = find_value("module", &entries)?;
         let action = find_value("action", &entries)?;
         let query_id = find_value("query_id", &entries)?;
@@ -74,7 +74,7 @@ impl TryFrom<Vec<Tag>> for CrossChainQueryPacket {
         let height = find_value("height", &entries)?;
 
         let chain_id = ChainId::from_string(&chain_id_str);
-        let connection_id = ConnectionId::from_str(&connection_id_str).map_err(|e| QueryPacketError::Ics24Error(e))?;
+        let connection_id = ConnectionId::from_str(&connection_id_str).map_err(|_| Error::ics24())?;
 
         Ok(
             Self {

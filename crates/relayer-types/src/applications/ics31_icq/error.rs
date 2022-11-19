@@ -1,24 +1,24 @@
 use crate::core::ics24_host::error::ValidationError as Ics24ValidationError;
 
 use std::prelude::v1::*;
-use thiserror::Error;
+use flex_error::define_error;
 
-#[derive(Error, Debug)]
-pub enum QueryPacketError {
-    #[error("Cannot parse packet content into ABCI Event")]
-    PacketParseError {},
+define_error! {
+    Error {
+        Parse
+            | _ | { "Cannot parse packet content into ABCI Event" },
 
-    #[error("Event attribute not found: {event}")]
-    EventAttributeNotFound {
-        event: String
-    },
+        Attribute
+            { event: String }
+            | e | { format_args!("Event attribute not found: {}", e.event) },
 
-    #[error("ics24 validation error")]
-    Ics24Error(Ics24ValidationError),
+        Ics24
+            | _ | { "ics24 validation error" },
+    }
 }
 
-impl From<Ics24ValidationError> for QueryPacketError {
-    fn from(error: Ics24ValidationError) -> Self {
-        Self::Ics24Error(error)
+impl From<Ics24ValidationError> for Error {
+    fn from(_: Ics24ValidationError) -> Self {
+        Self::ics24()
     }
 }
