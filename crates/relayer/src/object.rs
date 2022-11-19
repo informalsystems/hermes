@@ -131,9 +131,15 @@ impl Wallet {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub struct CrossChainQueryPacket {
+pub struct CrossChainQuery {
     pub src_chain_id: ChainId,
     pub query_id: String,
+}
+
+impl CrossChainQuery {
+    pub fn short_name(&self) -> String {
+        format!("cross_chain_query::{}", self.query_id)
+    }
 }
 
 /// An object determines the amount of parallelism that can
@@ -155,6 +161,8 @@ pub enum Object {
     Packet(Packet),
     /// See [`Wallet`]
     Wallet(Wallet),
+    /// See [`CrossChainQuery`]
+    CrossChainQuery(CrossChainQuery)
 }
 
 define_error! {
@@ -204,6 +212,7 @@ impl Object {
             Object::Channel(c) => &c.src_chain_id == src_chain_id,
             Object::Packet(p) => &p.src_chain_id == src_chain_id,
             Object::Wallet(_) => false,
+            Object::CrossChainQuery(_) => true,
         }
     }
 
@@ -215,6 +224,7 @@ impl Object {
             Object::Channel(c) => &c.src_chain_id == chain_id || &c.dst_chain_id == chain_id,
             Object::Packet(p) => &p.src_chain_id == chain_id || &p.dst_chain_id == chain_id,
             Object::Wallet(w) => &w.chain_id == chain_id,
+            Object::CrossChainQuery(_) => true,
         }
     }
 
@@ -226,6 +236,7 @@ impl Object {
             Object::Connection(_) => ObjectType::Connection,
             Object::Packet(_) => ObjectType::Packet,
             Object::Wallet(_) => ObjectType::Wallet,
+            Object::CrossChainQuery(_) => ObjectType::CrossChainQuery,
         }
     }
 }
@@ -238,6 +249,7 @@ pub enum ObjectType {
     Connection,
     Packet,
     Wallet,
+    CrossChainQuery,
 }
 
 impl From<Client> for Object {
@@ -270,6 +282,12 @@ impl From<Wallet> for Object {
     }
 }
 
+impl From<CrossChainQuery> for Object {
+    fn from(c: CrossChainQuery) -> Self {
+        Self::CrossChainQuery(c)
+    }
+}
+
 impl Object {
     pub fn src_chain_id(&self) -> &ChainId {
         match self {
@@ -278,6 +296,7 @@ impl Object {
             Self::Channel(ref channel) => &channel.src_chain_id,
             Self::Packet(ref path) => &path.src_chain_id,
             Self::Wallet(ref wallet) => &wallet.chain_id,
+            Self::CrossChainQuery(ref query) => &query.src_chain_id,
         }
     }
 
@@ -288,6 +307,7 @@ impl Object {
             Self::Channel(ref channel) => &channel.dst_chain_id,
             Self::Packet(ref path) => &path.dst_chain_id,
             Self::Wallet(ref wallet) => &wallet.chain_id,
+            Self::CrossChainQuery(ref query) => &query.src_chain_id,
         }
     }
 
@@ -298,6 +318,7 @@ impl Object {
             Self::Channel(ref channel) => channel.short_name(),
             Self::Packet(ref path) => path.short_name(),
             Self::Wallet(ref wallet) => wallet.short_name(),
+            Self::CrossChainQuery(ref query) => query.short_name(),
         }
     }
 
@@ -491,7 +512,7 @@ impl Object {
         p: &ibc_relayer_types::applications::ics31_icq::events::CrossChainQueryPacket,
         src_chain: &impl ChainHandle,
     ) -> Result<Self, ObjectError> {
-        Ok(CrossChainQueryPacket {
+        Ok(CrossChainQuery {
             src_chain_id: src_chain.id(),
             query_id: p.query_id.to_string(),
         }.into())
