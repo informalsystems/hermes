@@ -662,4 +662,9 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
         port_id: PortId,
         counterparty_payee: Signer,
     ) -> Result<(), Error>;
+
+    fn cross_chain_query(
+        &self,
+        request: Vec<CrossChainQueryRequest>,
+    ) -> Result<Vec<CrossChainQueryResponse>, Error>;
 }

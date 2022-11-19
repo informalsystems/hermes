@@ -32,6 +32,7 @@ pub mod client;
 pub mod connection;
 pub mod packet;
 pub mod wallet;
+pub mod cross_chain_query;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -159,6 +160,18 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
             task_handles.push(wallet_task);
 
             (None, None)
+        }
+
+        Object::CrossChainQuery(cross_chain_query) => {
+            let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
+            let cross_chain_query_task = cross_chain_query::spawn_cross_chain_query_worker(
+                    chains.a.clone(),
+                    cmd_rx,
+                    cross_chain_query.clone(),
+                );
+            task_handles.push(cross_chain_query_task);
+
+            (Some(cmd_tx), None)
         }
     };
 
