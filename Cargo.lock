@@ -1837,6 +1837,7 @@ dependencies = [
  "tendermint-rpc",
  "tendermint-testgen",
  "test-log",
+ "thiserror",
  "time 0.3.17",
  "tracing",
  "tracing-subscriber",
