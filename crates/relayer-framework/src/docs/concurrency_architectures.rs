@@ -80,7 +80,7 @@ the third `RecvPacket` messages.
 
 The batch worker sends the batched messages by spawning concurrent async tasks
 for each batch. For each of the batch, the messages would go through the
-[SendIbcMessagesWithUpdateClient](ibc_relayer_framework::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
+[SendIbcMessagesWithUpdateClient](crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
 middleware component, which would build and attach `UpdateClient` messages to
 each message batch. In this specific case, we can see that the relayer is not
 being very cost-efficient, as the same `UpdateClient` messages are sent twice
@@ -108,10 +108,42 @@ allocated, the task continues and builds the transaction with the given
 nonce and messages. After that, the transactions are broadcasted to the
 blockchain and the tasks would wait for the transactions to be committed.
 
-
 ## Success transaction result returned
 
+We will next look at what happens after the transactions are submitted to the
+blockchain. We first focus on the success case, where the transactions are
+committed successfully to the blockchain:
+
 ![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-2.svg)
+
+The direction of information flow for the diagram above is reversed, and flows
+from right to left. First, the blockchain returns the transaction result as a
+single `TXResponse` that contains the events emmitted from each message.
+The events are extracted from the transaction response, and returned by
+passing through the nonce allocator.
+
+When the events are returned to the
+[SendIbcMessagesWithUpdateClient](crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
+middleware, the component extracts the update client event from the top of the
+list, and returns the remaining events. This is required, as the downstream
+components require the events returned in the same order as the original
+ordering of messages submitted.
+
+After the update client event is extracted, the remaining events are split out
+by the batch message component _within the same task_ as the batched messages
+are sent. i.e. the result returned are _not_ processed by the batch worker task.
+For the first message batch, the messages are originated from two separate
+packet worker tasks. Hence, the batch component splits the first event to
+be returned to the first task, and the second event to be returned to the
+second task. (Note that in the actual operation, the transaction events are
+grouped into a _list of list of_ events. So in our example, there are three
+list of events with one event being present in each list)
+
+For the second batched message worker task, since there were only one message
+coming from the third worker task, the event is returned directly to the
+third packet worker task. Once the events are returned, the packet workers
+can continue with the next operations, such as relaying the ack packet messages.
+
 
 ## Error transaction result returned
 
