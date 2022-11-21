@@ -80,7 +80,7 @@ the third `RecvPacket` messages.
 
 The batch worker sends the batched messages by spawning concurrent async tasks
 for each batch. For each of the batch, the messages would go through the
-[SendIbcMessagesWithUpdateClient](crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
+[`SendIbcMessagesWithUpdateClient`](crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
 middleware component, which would build and attach `UpdateClient` messages to
 each message batch. In this specific case, we can see that the relayer is not
 being very cost-efficient, as the same `UpdateClient` messages are sent twice
@@ -285,10 +285,60 @@ be handled by the top-level
 component, which would call the core packet relaying logic again if the error
 is considered retryable.
 
-
 ## Single chain event source with one relay context (cost-optimized)
 
+In the earlier section, we discussed about a potential room for optimization on
+the construction for the building of `UpdateClient` messages, so that one
+`UpdateClient` message is built for two batches of messages.
+
+In the simplest case, a naive version of the optimization can be done by
+having the batch message worker to send one batch of messages at a time,
+as compared to spawning multiple tasks to send the messages. However, this
+would be a trade off of minimizing the cost by increasing the latency of
+messages, since the transactions cannot be submitted in parallel.
+
+A more advanced version of the optimization can be done with the following
+modification:
+
 ![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-4.svg)
+
+The above optimization can be done by having a custom implementation of
+[`SendIbcMessagesWithUpdateClient`](crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
+Using a shared state across tasks, we can make it such that the component blocks
+a task if multiple tasks are trying to build `UpdateClient` messages at the
+same height.
+
+In our scenario, the `UpdateClient` message would only be built when the first
+message batch, while the second message batch is blocked to wait for the
+first message batch to be sent. When the `UpdateClient` message is encoded
+into transactions and submitted to the mempool, the task can then send a signal
+back to `SendIbcMessagesWithUpdateClient` and let it unblock the second message
+task.
+
+The optimization is slightly more complicated, because it requires the relay
+context to provide shared states that can be used across the `UpdateClient`
+component and the transaction sender component. It may also reduce the
+reliability of the relayer, as while the second message batch is being sent, the
+transaction for the first message batch may fail. If that happens, the second
+message batch would also fail, due to the IBC client not being updated by
+the first transaction.
+
+It is worth noting that the first transaction would also cause the second
+transaction to fail in other ways, such as nonce mismatch. However there can
+be alternative ways of handling nonce, such as using parallel nonces or signers.
+In such cases, the `UpdateClient` message would introduce additional coupling
+between the two transactions. Thus, it is still important to ensure that the
+optimization of the `UpdateClient` messages do not affect the improvement of
+reliability made by other components.
+
+An alternative approach is to continue blocking the second message batch until
+the transaction for the first message batch is committed on the chain. While
+this would look similar to the batch worker itself sending messages in serial,
+it still differs in that other forms of parallelism are allowed. In particular,
+the message batches are only blocked when they try to build `UpdateClient`
+messages at the same height. If there are new message batches arrive with
+different `UpdateClient` message heights, they would be able to continue
+and submit transactions to the chain in parallel.
 
 ## Single chain event source with two coupled relay contexts
 
