@@ -57,16 +57,14 @@ impl TryFrom<String> for GasPrice {
     fn try_from(price: String) -> Result<Self, Self::Error> {
         // Note: `split_once` does _not_ split inclusively
         // the first alphabetic letter is dropped
-        let (price, denom) = if let Some((price, denom)) = price.split_once(char::is_alphabetic) {
-            (price, String::from(denom))
-        } else {
-            return Err(Error::);
+        let (price, denom) = match price.split_once(char::is_alphabetic) {
+            Some((price, denom)) => (price, String::from(denom)),
+            _ => return Err(Error::invalid_gas_price()),
         };
 
-        let price = if let Ok(price) = price.parse::<f64>() {
-            price
-        } else {
-            return Err(Error::invalid_gas_price());
+        let price = match price.parse::<f64>() {
+            Ok(price) => price,
+            Err(_) => return Err(Error::invalid_gas_price()),
         };
 
         Ok(GasPrice { price, denom })
