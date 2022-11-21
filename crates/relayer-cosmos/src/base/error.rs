@@ -34,13 +34,6 @@ define_error! {
             [ TraceError<EncodeError> ]
             | _ | { "protobuf encode error" },
 
-        MismatchIbcEventsCount
-            { expected: usize, actual: usize }
-            | e | {
-                format_args!("mismatch size for events returned. expected: {}, got: {}",
-                    e.expected, e.actual)
-            },
-
         MismatchConsensusState
             | _ | { "consensus state of a cosmos chain on the counterparty chain must be a tendermint consensus state" },
 
