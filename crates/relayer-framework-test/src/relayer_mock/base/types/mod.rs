@@ -1,3 +1,4 @@
+pub mod aliases;
 pub mod chain;
 pub mod events;
 pub mod height;

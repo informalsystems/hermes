@@ -1,23 +1,19 @@
 use crate::relayer_mock::base::types::height::Height;
 use crate::relayer_mock::base::types::state::State;
 
-#[derive(Clone)]
-pub struct ConsensusState {}
-
-impl From<State> for ConsensusState {
-    fn from(_: State) -> Self {
-        ConsensusState {}
-    }
-}
-
-#[derive(Debug)]
-pub struct ChainStatus {
+#[derive(Clone, Debug)]
+pub struct MockChainStatus {
     pub height: Height,
     pub timestamp: Height,
+    pub state: State,
 }
 
-impl ChainStatus {
-    pub fn new(height: Height, timestamp: Height) -> Self {
-        Self { height, timestamp }
+impl MockChainStatus {
+    pub fn new(height: Height, timestamp: Height, state: State) -> Self {
+        Self {
+            height,
+            timestamp,
+            state,
+        }
     }
 }

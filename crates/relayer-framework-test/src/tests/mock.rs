@@ -3,7 +3,6 @@ use tracing::info;
 
 use crate::relayer_mock::base::error::Error;
 use crate::relayer_mock::base::types::height::Height;
-use crate::relayer_mock::base::types::packet::PacketKey;
 use crate::tests::util::context::build_mock_relay_context;
 use ibc_relayer_framework::base::one_for_all::traits::relay::OfaBaseRelay;
 use ibc_relayer_framework::base::relay::traits::packet_relayer::CanRelayPacket;
@@ -16,11 +15,10 @@ fn test_mock_chain_test() -> Result<(), Error> {
 
     let src_client_id = relay_context.relay.src_client_id().clone();
 
-    let packet = PacketKey::new(
+    let packet = src_chain.chain.build_send_packet(
         src_client_id,
         String::from("channel-0"),
         String::from("transfer"),
-        1,
         Height(10),
         Height(10),
     );
@@ -28,13 +26,12 @@ fn test_mock_chain_test() -> Result<(), Error> {
     {
         info!("Check that the packet has not yet been received");
 
-        let state = dst_chain.chain.get_current_state();
+        let state = dst_chain.chain.get_current_state().state;
 
         assert!(!state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence));
     }
 
-    // Source chain must be higher than destination chain
-    src_chain.chain.new_block()?;
+    src_chain.chain.send_packet(packet.clone())?;
 
     let events = runtime.block_on(async { relay_context.relay_packet(&packet).await });
 
@@ -43,7 +40,7 @@ fn test_mock_chain_test() -> Result<(), Error> {
     {
         info!("Check that the packet has been received by the destination chain");
 
-        let state = dst_chain.chain.get_current_state();
+        let state = dst_chain.chain.get_current_state().state;
 
         assert!(state.check_received(&packet.port_id, &packet.channel_id, &packet.sequence));
     }
@@ -51,7 +48,7 @@ fn test_mock_chain_test() -> Result<(), Error> {
     {
         info!("Check that the acknowledgment has been received by the source chain");
 
-        let state = src_chain.chain.get_current_state();
+        let state = src_chain.chain.get_current_state().state;
 
         assert!(state.check_acknowledged(packet.port_id, packet.channel_id, packet.sequence));
     }

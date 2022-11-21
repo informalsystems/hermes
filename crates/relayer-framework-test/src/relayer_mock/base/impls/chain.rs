@@ -5,11 +5,12 @@ use async_trait::async_trait;
 use std::vec;
 
 use crate::relayer_mock::base::error::Error;
-use crate::relayer_mock::base::types::chain::{ChainStatus, ConsensusState};
+use crate::relayer_mock::base::types::chain::MockChainStatus;
 use crate::relayer_mock::base::types::events::{Event, WriteAcknowledgementEvent};
 use crate::relayer_mock::base::types::height::Height;
 use crate::relayer_mock::base::types::message::Message as MockMessage;
 use crate::relayer_mock::base::types::runtime::MockRuntimeContext;
+use crate::relayer_mock::base::types::state::State;
 use crate::relayer_mock::contexts::chain::MockChainContext;
 use ibc_relayer_framework::base::one_for_all::traits::chain::{
     OfaBaseChain, OfaChainTypes, OfaIbcChain,
@@ -48,9 +49,9 @@ impl OfaChainTypes for MockChainContext {
 
     type WriteAcknowledgementEvent = WriteAcknowledgementEvent;
 
-    type ConsensusState = ConsensusState;
+    type ConsensusState = State;
 
-    type ChainStatus = ChainStatus;
+    type ChainStatus = MockChainStatus;
 }
 
 #[async_trait]
@@ -83,7 +84,7 @@ impl OfaBaseChain for MockChainContext {
         event: Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent> {
         match event {
-            Event::RecvPacket(_) => Some(WriteAcknowledgementEvent {}),
+            Event::WriteAcknowledgment(_) => Some(WriteAcknowledgementEvent {}),
             _ => None,
         }
     }
@@ -100,15 +101,15 @@ impl OfaBaseChain for MockChainContext {
         let mut res = vec![];
         for m in messages {
             match m {
-                MockMessage::SendPacket(_, _, h, p) => {
+                MockMessage::RecvPacket(_, _, h, p) => {
                     self.receive_packet(p)?;
-                    res.push(Event::RecvPacket(h));
+                    res.push(Event::WriteAcknowledgment(h));
                 }
                 MockMessage::AckPacket(_, _, p) => {
                     self.acknowledge_packet(p)?;
                 }
-                MockMessage::UpdateClient(from, _, s) => {
-                    self.insert_consensus_state(from, s);
+                MockMessage::UpdateClient(from, h, s) => {
+                    self.insert_consensus_state(from, h, s)?;
                 }
                 _ => {}
             }
@@ -117,8 +118,7 @@ impl OfaBaseChain for MockChainContext {
     }
 
     async fn query_chain_status(&self) -> Result<Self::ChainStatus, Self::Error> {
-        let height = self.get_latest_height();
-        Ok(ChainStatus::new(height.clone(), height))
+        Ok(self.get_current_state())
     }
 }
 
@@ -126,7 +126,7 @@ impl OfaBaseChain for MockChainContext {
 impl OfaIbcChain<MockChainContext> for MockChainContext {
     fn counterparty_message_height(message: &Self::Message) -> Option<Self::Height> {
         match message {
-            MockMessage::SendPacket(_, _, h, _) => Some(h.clone()),
+            MockMessage::RecvPacket(_, _, h, _) => Some(h.clone()),
             MockMessage::AckPacket(_, h, _) => Some(h.clone()),
             MockMessage::TimeoutPacket(_, h, _) => Some(h.clone()),
             _ => None,
@@ -138,16 +138,14 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         client_id: &Self::ClientId,
         height: &Self::Height,
     ) -> Result<Self::ConsensusState, Self::Error> {
-        let client_consensus = self
-            .query_consensus_state(client_id.to_string())
-            .ok_or_else(|| Error::no_consensus_state(client_id.to_string()))?;
+        let client_consensus =
+            self.query_consensus_state_at_height(client_id.to_string(), height.clone())?;
         let unlocked_client_consensus = client_consensus.lock().unwrap();
         let state = unlocked_client_consensus.get(height);
-        if state.is_some() {
-            Ok(ConsensusState {})
-        } else {
-            Err(Error::no_consensus_state(client_id.to_string()))
+        if let Some(state) = state {
+            return Ok(state.clone());
         }
+        Err(Error::no_consensus_state(client_id.to_string()))
     }
 
     async fn is_packet_received(
@@ -156,7 +154,7 @@ impl OfaIbcChain<MockChainContext> for MockChainContext {
         channel_id: &Self::ChannelId,
         sequence: &Self::Sequence,
     ) -> Result<bool, Self::Error> {
-        let state = self.get_current_state();
+        let state = self.get_current_state().state;
         Ok(state.check_received(port_id, channel_id, sequence))
     }
 }

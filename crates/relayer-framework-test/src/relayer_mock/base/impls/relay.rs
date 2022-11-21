@@ -96,7 +96,7 @@ impl OfaBaseRelay for MockRelayContext {
         &self,
         height: &<Self::DstChain as OfaChainTypes>::Height,
     ) -> Result<Vec<<Self::SrcChain as OfaChainTypes>::Message>, Self::Error> {
-        let state = self.src_chain().chain.states();
+        let state = self.src_chain().chain.consensus_states();
         Ok(vec![MockMessage::UpdateClient(
             self.src_client_id().to_string(),
             height.clone(),
@@ -108,7 +108,7 @@ impl OfaBaseRelay for MockRelayContext {
         &self,
         height: &<Self::SrcChain as OfaChainTypes>::Height,
     ) -> Result<Vec<<Self::DstChain as OfaChainTypes>::Message>, Self::Error> {
-        let state = self.dst_chain().chain.states();
+        let state = self.dst_chain().chain.consensus_states();
         Ok(vec![MockMessage::UpdateClient(
             self.dst_client_id().to_string(),
             height.clone(),
@@ -122,7 +122,18 @@ impl OfaBaseRelay for MockRelayContext {
         packet: &Self::Packet,
     ) -> Result<<Self::DstChain as OfaChainTypes>::Message, Self::Error> {
         let h = self.dst_chain().chain.get_latest_height();
-        Ok(MockMessage::SendPacket(
+        // If the latest state of the source chain doesn't have the packet as sent, return an error.
+        if !self.src_chain().chain.get_current_state().state.check_sent(
+            &packet.port_id,
+            &packet.channel_id,
+            &packet.sequence,
+        ) {
+            return Err(Error::receive_without_sent(
+                self.src_chain().chain.name().to_string(),
+                self.dst_chain().chain.name().to_string(),
+            ));
+        }
+        Ok(MockMessage::RecvPacket(
             packet.client_id.clone(),
             height.clone(),
             h,
@@ -136,6 +147,19 @@ impl OfaBaseRelay for MockRelayContext {
         packet: &Self::Packet,
         _ack: &<Self::DstChain as OfaChainTypes>::WriteAcknowledgementEvent,
     ) -> Result<<Self::SrcChain as OfaChainTypes>::Message, Self::Error> {
+        // If the latest state of the destination chain doesn't have the packet as received, return an error.
+        if !self
+            .dst_chain()
+            .chain
+            .get_current_state()
+            .state
+            .check_received(&packet.port_id, &packet.channel_id, &packet.sequence)
+        {
+            return Err(Error::acknowledgment_without_received(
+                self.src_chain().chain.name().to_string(),
+                self.dst_chain().chain.name().to_string(),
+            ));
+        }
         Ok(MockMessage::AckPacket(
             self.src_client_id().clone(),
             destination_height.clone(),
@@ -148,6 +172,17 @@ impl OfaBaseRelay for MockRelayContext {
         destination_height: &<Self::DstChain as OfaChainTypes>::Height,
         packet: &Self::Packet,
     ) -> Result<<Self::SrcChain as OfaChainTypes>::Message, Self::Error> {
+        // If the latest state of the source chain doesn't have the packet as sent, return an error.
+        if !self.src_chain().chain.get_current_state().state.check_sent(
+            &packet.port_id,
+            &packet.channel_id,
+            &packet.sequence,
+        ) {
+            return Err(Error::timeout_without_sent(
+                self.src_chain().chain.name().to_string(),
+                self.dst_chain().chain.name().to_string(),
+            ));
+        }
         Ok(MockMessage::TimeoutPacket(
             self.src_client_id().clone(),
             destination_height.clone(),
