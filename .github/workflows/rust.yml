@@ -82,6 +82,21 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --no-default-features --all-targets
 
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - uses: actions-rs/cargo@v1
+        env:
+          RUSTDOCFLAGS: "--cfg docsrs"
+        with:
+          command: doc
+          args: --all-features
+
   test-stable:
     runs-on: ubuntu-latest
     timeout-minutes: 30
