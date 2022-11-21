@@ -30,6 +30,7 @@ use crate::extension_options::ExtensionOptionDynamicFeeTx;
 use crate::keyring::Store;
 
 pub use error::Error;
+pub use crate::config::Error as ConfigError;
 
 pub use filter::PacketFilter;
 
@@ -52,20 +53,18 @@ impl Display for GasPrice {
 }
 
 impl TryFrom<String> for GasPrice {
-    type Error = RelayerError;
+    type Error = ConfigError;
 
     fn try_from(price: String) -> Result<Self, Self::Error> {
         // Note: `split_once` does _not_ split inclusively
         // the first alphabetic letter is dropped
         let (price, denom) = match price.split_once(char::is_alphabetic) {
             Some((price, denom)) => (price, String::from(denom)),
-            _ => return Err(Error::invalid_gas_price()),
+            _ => return Err(Error::invalid_gas_price(price)),
         };
 
-        let price = match price.parse::<f64>() {
-            Ok(price) => price,
-            Err(_) => return Err(Error::invalid_gas_price()),
-        };
+
+        let price = price.parse::<f64>().map_err(|_| Error::invalid_gas_price(price.to_string()))?;
 
         Ok(GasPrice { price, denom })
     }

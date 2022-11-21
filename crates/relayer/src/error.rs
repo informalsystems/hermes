@@ -57,9 +57,9 @@ define_error! {
             { query: AbciQuery }
             |e| { format!("ABCI query returned an error: {:?}", e.query) },
 
-        ConfigError
-            { detail: ConfigError }
-            |e| { format!("Configuration error: {:?}", e.detail) },
+        Config
+            [ ConfigError ]
+            |_| { format!("Configuration error") },
 
         CheckTx
             {

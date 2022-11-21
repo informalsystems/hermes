@@ -15,6 +15,7 @@ define_error! {
             |_| { "invalid configuration" },
 
         InvalidGasPrice
-            |_| { "invalid gas price" },
+            { price: String }
+            |e| { format!("invalid gas price: {}", e.price) },
     }
 }

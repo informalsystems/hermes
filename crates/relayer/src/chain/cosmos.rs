@@ -334,7 +334,7 @@ impl CosmosSdkChain {
     pub fn min_gas_price(&self) -> Result<GasPrice, Error> {
         crate::time!("min_gas_price");
 
-        let min_gas_price: GasPrice = self.query_config_params()?.minimum_gas_price.try_into()?;
+        let min_gas_price: GasPrice = self.query_config_params()?.minimum_gas_price.try_into().map_err(Error::config)?;
 
         Ok(min_gas_price)
     }
