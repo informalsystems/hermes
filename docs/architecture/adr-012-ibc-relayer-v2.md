@@ -1149,8 +1149,8 @@ time, and the packet relayers manage to finish the construction of the
 
 With that, the batch worker attempts to consolidate the three `RecvPacket`
 messages into a single batch. However, there is also a configuration for batch
-size limit, and for our scenario, the batch size limit exceeds after two
-`RecvPacket` messages are batched. Therefore, the batch worker sends the
+size limit, and for our simplified scenario, the batch size limit exceeds after
+two `RecvPacket` messages are batched. Therefore, the batch worker sends the
 three messages as two batches instead of one. The first batch would contain
 the first and second `RecvPacket` messages, while the second batch contains
 the third `RecvPacket` messages.
@@ -1158,8 +1158,32 @@ the third `RecvPacket` messages.
 The batch worker sends the batched messages by spawning concurrent async tasks
 for each batch. For each of the batch, the messages would go through the
 [SendIbcMessagesWithUpdateClient](ibc_relayer_framework::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
-middleware, which would build and attach `UpdateClient` messages to each message
-batch.
+middleware component, which would build and attach `UpdateClient` messages to
+each message batch. In this specific case, we can see that the relayer is not
+being very cost-efficient, as the same `UpdateClient` messages are sent twice
+for the two batches. However, the upside for this design is that the two
+message batches are completely independent, and thus any failure from the first
+batch would not affect the second batch. We will discuss about alternative
+concurrency architectures later, where there can be less redundancy on the
+number of `UpdateClient` messages being sent, together with the tradeoffs made.
+
+Moving forward, the two tasks are running concurrently to send the batched
+messages to the _transaction context_. In there, the messages are processed
+by a _nonce allocator_, which handles the incoming messages with a
+_shared state_ and use different strategies to assign nonces for each
+transaction. For example, the nonce allocator may use a _naive_ strategy,
+where it _blocks_ on concurrent tasks and only allow one task to proceed at
+a time. A more complex strategy would be for the nonce allocator to assign
+multiple nonces and resume multiple tasks in parallel. This would allow
+multiple transactions to be submitted to the chain at the same time, and have
+them potentially be committed into the same block.
+
+For the purpose of the architecture discussion, we do not go into detail the
+specific strategies the nonce allocator use, and assume that it allows
+concurrent allocation of nonces across multiple tasks. Once the nonce is
+allocated, the task continues and builds the transaction with the given
+nonce and messages. After that, the transactions are broadcasted to the
+blockchain and the tasks would wait for the transactions to be committed.
 
 
 ### Success transaction result returned
@@ -1178,10 +1202,15 @@ batch.
 
 ![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-5.svg)
 
-### Single chain event source with multiple relay contexts
+
+### Separately batched UpdateClient sender
+
 
 ![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-6.svg)
 
+### Single chain event source with multiple relay contexts
+
+![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-7.svg)
 
 # Status
 
