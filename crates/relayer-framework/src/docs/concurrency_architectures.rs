@@ -147,7 +147,144 @@ can continue with the next operations, such as relaying the ack packet messages.
 
 ## Error transaction result returned
 
+The relayer architecture would be significantly simpler, if it did not have
+to account to failures and recovery. However in practice, there are many cases
+of errors that the relayer needs to handle differently, and we will go through
+some of the error cases below:
+
 ![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-3.svg)
+
+A common source of error during the relayer operation is failures on submitting
+transactions. There several variants of such errors. The first is that the
+transaction was committed successfully to the chain, however there are errors
+processing some messages, or there are transaction-level failures such as
+running out of gas. In such case, since the transaction has already been
+processed, the error would need to be handled by higher-level application logic.
+
+A second case of error is when there are errors _before_ the transaction is
+processed by the blockchain. This could result from error in communication with
+the full node, or error from the full node communicating with the blockchain's
+P2P network. In such cases, there are not much options for the relayer but to
+_assume_ that the transaction has failed, and retry on submitting the messages
+again in a different transaction.
+
+However, since blockchains are eventually consistent systems, there is no way
+for the relayer to reliably know if the transaction has truly failed or not.
+There is also a possibility that the transaction has already been broadcasted
+and received by other full nodes, and the transaction is eventually committed
+to the blockchain, albeit more slowly than the relayer expects.
+
+### Nonce Mismatch Errors
+
+If the relayer incorrectly interprets a transaction as being a failure, while
+the transaction is eventually committed successfully to the blockchain, this can
+cause inconsistency in the subsequent operations by the relayer. In particular,
+this can cause the relayer to submit subsequence transactions with the same
+nonce, thus causing the infamous account sequence (nonce) mismatch errors.
+In other words, a false failure on the relayer could result in true failure in
+subsequent relayer operations.
+
+The first line of recovery on the relayer is handled by the nonce allocated.
+It needs to interpret the returned error, and choose appropriate actions to take.
+In the case that the error is a nonce mismatch error, that means the nonce
+allocator's cached nonce sequences have become out of sync with the blockchain.
+In that case, the nonce allocator needs to fetch the up-to-date nonce from
+the blockchain.
+
+However, the nonce allocator cannot just refresh the nonce that when
+encountering the first nonce error. Instead, it has to wait for all pending
+transactions to return, and then refresh the nonce before allowin new
+transactions to be submitted to the blockchain. The nonce allocator would also
+have to be mindful of false failures returned from the transaction sender,
+which may once again invalidate the nonce that it just fetched from the
+blockchain. If necessary, the nonce allocator may need to make use of
+exponential back off when refreshing the nonce, in order to avoid the nonce
+getting perpetually out of sync.
+
+In this first layer of error handling, the relayer needs to make a trade off
+between reliability and efficiency. On one hand, the relayer can increase
+reliability by waiting for a longer time to ensure that its local state reach
+eventual consistency with the blockchain's state. On the other hand, the relayer
+can ignore the eventual consistency and resume transaction submission quickly,
+in the hope that its local state is already in sync with the blockchain's state.
+To maximize the reliability, the Cosmos ecosystem may require _both_ types of
+relayers to work in tandem, so that a more reliable but potentially slower
+relayer can be used as a backup for the more effecient but less reliable relayer.
+
+### Transaction Size Limit Exceeded Error
+
+After the error is handled by the nonce allocator, it is then propagated to the
+upstream components. In the message batch component, another source of error
+is when the transaction sender _rejects_ the incoming messages, due to it
+exceeding the maximum transaction size limit. This can potentially happen,
+because it is not possible to know the actual size of the transaction until it
+is encoded together with the other parameters such as nonce, signer, and
+transaction memo.
+
+Although the message batch worker does estimation on the message size when
+batching messages, the estimated size may not match the actual transaction size,
+depending on the way the transaction is encoded. In practice, a slight deviation
+in the max transaction may not affect the relayer operations. However, some
+relayer operators may have strict requirements on the maximum transaction size.
+If so, the transaction sender would have to reject the transaction if the size
+exceeds the max limit.
+
+In case if the transaction size exceeds both the estimated message batch size
+and the maximum transaction size limit, the error would be propagated back to
+the message batch component. It the given message batch comes from more than
+message sender, the batch component may retry the submission by splitting the
+messages into smaller batches. Otherwise if a single message sender sends
+messages that exceed the transaction size limit, the error would propagate
+back to the originating message sender.
+
+The relayer needs to have a careful strategy of when to check for the
+transaction limit. On one hand, it could potentially check for the transaction
+size limit when building the actual transaction. However, doing so may interfer
+with the nonce allocator. This is because if the transaction sender aborts the
+sending of transaction, the nonce that is being allocated to it would not be
+used. This would in turns invalidate other parallel transactions that make use
+of nonces that are higher than the current nonce.
+
+An alternative strategy is to build and estimate the transaction size using
+a dummy nonce. However, doing so may increase the CPU load of the relayer, as
+it has to perform an extra encoding of transactions just for estimating the
+transaction size. If possible, the best strategy is for the relayer to _not_
+impose hard limit on the transaction size. This would not only simplify the
+error handling logic, but also reduce the CPU load of the relayer.
+
+### Retry Relaying
+
+If the error is not handled by the batch message component, it would then be
+_cloned_ and propagated to multiple upstream message senders. This would
+eventually be handled by the packet relayer, which needs to decide whether
+to retry relaying the packet or not.
+
+A potential source of error downstream is when multiple messages are batched
+into a single transaction. If any message causes an on-chain error, this would
+result in failure of the transaction as a whole. As a result, if any part of
+the relayer submits faulty messages, it would result in failure on the other
+parts of the relayer which are implemented correctly.
+
+Fortunately, since the relaying of packets are done by separate tasks, each
+packet relayer may attempt to retry the relaying independent of each others.
+The first thing that a packet relayer should check is on whether it should
+retry relaying the packet for the given error. For instance, if the error
+is arise from transaction error caused by message batching, the packet relayer
+may perform random exponential backoff to retry sending the message at a later
+time. With that, the next submission of messages can hopefully not be in the
+same batch as the faulty message, which would allow the message to be committed
+to the chain.
+
+The packet relayer could also perform retry if the relaying operation failed
+in any stage of the pipeline. For example, there could be temporary network
+failure when the update client component attempts to build the `UpdateClient`
+message. There could also be errors within the packet relayer itself, such as
+temporary failures when constructing the `RecvPacket` message. All these would
+be handled by the top-level
+[`RetryRelayer`](crate::full::relay::impls::packet_relayers::retry::RetryRelayer)
+component, which would call the core packet relaying logic again if the error
+is considered retryable.
+
 
 ## Single chain event source with one relay context (cost-optimized)
 
