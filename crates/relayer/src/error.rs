@@ -59,7 +59,7 @@ define_error! {
 
         Config
             [ ConfigError ]
-            |_| { format!("Configuration error") },
+            |_| { "Configuration error" },
 
         CheckTx
             {
@@ -489,9 +489,9 @@ define_error! {
             },
 
         ConfigInvalidGasPrice
-            { 
+            {
                 chain_id: ChainId,
-                gas_price: String, 
+                gas_price: String,
             }
             |e| {
                 format!("semantic config validation failed for option `minimum_gas_price` of chain '{}', reason: improperly-formatted gas price ({})", e.chain_id, e.gas_price)
