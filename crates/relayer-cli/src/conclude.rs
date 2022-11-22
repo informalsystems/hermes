@@ -77,7 +77,7 @@ pub fn exit_with(out: Output) -> ! {
             Status::Success => style("SUCCESS").green(),
             Status::Error => style("ERROR").red(),
         };
-        println!("{} {}", status, out.result);
+        println!("{}: {} {}", clap::crate_version!(), status, out.result);
     }
 
     // The return code
