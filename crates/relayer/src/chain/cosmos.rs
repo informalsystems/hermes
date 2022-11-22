@@ -334,7 +334,11 @@ impl CosmosSdkChain {
     pub fn min_gas_price(&self) -> Result<GasPrice, Error> {
         crate::time!("min_gas_price");
 
-        let min_gas_price: GasPrice = self.query_config_params()?.minimum_gas_price.try_into().map_err(Error::config)?;
+        let min_gas_price: GasPrice = self
+            .query_config_params()?
+            .minimum_gas_price
+            .try_into()
+            .map_err(Error::config)?;
 
         Ok(min_gas_price)
     }
@@ -1933,14 +1937,11 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
         );
     }
 
-    // Check for `min_gas_price` here
-    // ibc_proto::cosmos::staking::v1beta1::query_client::QueryClient::connect(
-    // ibc_proto::cosmos::base::node::v1beta1::config
-    // Add a `query_config_params` function that queries this gRPC endpoint to
-    // fetch the config parameters, specifically `min_gas_price`, and compare
-    // from there
-    // Need to update compatiblity to SDK v0.46.4 and regenerate the proto files
-    // in the process
+    let gas_price = chain.config.gas_price;
+
+    if chain.min_gas_price()? < gas_price {
+        return Err(Error::no_historical_entries(chain_id.clone()));
+    }
 
     let version_specs = chain.block_on(fetch_version_specs(&chain.config.id, &chain.grpc_addr))?;
 
