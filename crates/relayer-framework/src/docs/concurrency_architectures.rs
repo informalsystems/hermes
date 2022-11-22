@@ -148,24 +148,24 @@ can continue with the next operations, such as relaying the ack packet messages.
 
 ## Error transaction result returned
 
-The relayer architecture would be significantly simpler, if it did not have
-to account to failures and recovery. However in practice, there are many cases
+The relayer architecture would be significantly simpler if it did not have
+to account for failures and recovery. However, in practice, there are many cases
 of errors that the relayer needs to handle differently, and we will go through
 some of the error cases below:
 
 ![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-3.svg)
 
-A common source of error during the relayer operation is failures on submitting
-transactions. There several variants of such errors. The first is that the
+A common source of error during relayer operation is failures upon submitting
+transactions. There are several variants of such errors. The first is that the
 transaction was committed successfully to the chain, however there are errors
 processing some messages, or there are transaction-level failures such as
-running out of gas. In such case, since the transaction has already been
+running out of gas. In such cases, since the transaction has already been
 processed, the error would need to be handled by higher-level application logic.
 
 A second case of error is when there are errors _before_ the transaction is
 processed by the blockchain. This could result from error in communication with
 the full node, or error from the full node communicating with the blockchain's
-P2P network. In such cases, there are not much options for the relayer but to
+P2P network. In such cases, there are not many options for the relayer other than to
 _assume_ that the transaction has failed, and retry on submitting the messages
 again in a different transaction.
 
@@ -177,22 +177,22 @@ to the blockchain, albeit more slowly than the relayer expects.
 
 ### Nonce Mismatch Errors
 
-If the relayer incorrectly interprets a transaction as being a failure, while
+If the relayer incorrectly interprets a transaction as being a failure when in reality
 the transaction is eventually committed successfully to the blockchain, this can
-cause inconsistency in the subsequent operations by the relayer. In particular,
-this can cause the relayer to submit subsequence transactions with the same
+cause inconsistency in the relayer's subsequent operations. In particular,
+this can cause the relayer to submit subsequent transactions with the same
 nonce, thus causing the infamous account sequence (nonce) mismatch errors.
 In other words, _a false failure on the relayer could result in true failure in
 subsequent relayer operations_.
 
 The first line of recovery on the relayer is handled by the nonce allocater.
-It needs to interpret the returned error, and choose appropriate actions to take.
+It needs to interpret the returned error and choose appropriate actions to take.
 In the case that the error is a nonce mismatch error, that means the nonce
 allocator's cached nonce sequences have become out of sync with the blockchain.
 In that case, the nonce allocator needs to fetch the up-to-date nonce from
 the blockchain.
 
-However, the nonce allocator cannot just refresh the nonce that when
+However, the nonce allocator cannot just refresh the nonce upon
 encountering the first nonce error. Instead, it has to wait for all pending
 transactions to return, and then refresh the nonce before allowing new
 transactions to be submitted to the blockchain. The nonce allocator would also
