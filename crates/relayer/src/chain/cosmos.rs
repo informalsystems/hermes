@@ -1937,10 +1937,10 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
         );
     }
 
-    let gas_price = chain.config.gas_price;
+    let gas_price = chain.config.gas_price.clone();
 
     if chain.min_gas_price()? < gas_price {
-        return Err(Error::no_historical_entries(chain_id.clone()));
+        return Err(Error::gas_price_too_low(chain_id.clone()));
     }
 
     let version_specs = chain.block_on(fetch_version_specs(&chain.config.id, &chain.grpc_addr))?;
