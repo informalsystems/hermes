@@ -524,6 +524,91 @@ the need for building a cost-efficient relayer may come sooner than we expect.
 
 ## Single chain event source with multiple relay contexts
 
+In the earlier sections, we have been covering the scenarios of relaying between
+one relay context, or two coupled relay contexts. However both cases only
+involved the relaying of IBC packets between two chains. In a multichain world,
+the relayer would need to relay packets from many chains, and with that there
+are additional room for improving the efficiency of relaying IBC packets from
+multiple chains.
+
+Consider a simple scenario, where the relayer needs to send one `RecvPacket`
+message from chain A to chain B, and one `RecvPacket` from _chain C_ to chain B.
+In this case, the relayer would need to also build an `UpdateClient` message for
+chain A's client on chain B, as well as an `UpdateClient` message for chain C's
+client on chain B. With that, there are a total of four IBC messages to be sent
+to chain B.
+
+If the relayer tries to relay all four IBC messages at roughly the same time,
+there is an opportunity to batch all messages into a single transaction.
+However in relayer v1, such optimization is not done, as the relayer only batch
+IBC messages between two chains as specified in the `RelayPath` construct.
+
+In the v2 relayer, we can batch IBC messages from multiple chains by adding
+an additional layer of message batch worker as follows:
+
 ![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-7.svg)
+
+In the above scenario, we have a relay context X, with the source chain being
+chain A, and the destination chain being chain B. We also have a relay context Y,
+with the source chain being chain B, and the destination chain being _chain C_.
+Relay context X would be using the IBC event source from chain B as the
+source chain event source, and relay `RecvPacket` messages from there. On the
+other hand, relay context Y would be using the same IBC event source from chain
+B as the destination chain event source, and relay `AckPacket` and
+`TimeoutPacket` messages from there.
+
+In relay context X, the packet relayers attempt to send two `RecvPacket`
+messages from different concurrent tasks. The two messages would first be
+handled by the relay-level message batch worker in the same way as previous
+examples, and the two messages are combined into the same batch. The batch
+worker then spawns a task for sending the batched messages. Inside the task,
+the `UpdateClient` message is built and prepended to the message batch.
+Following that, instead of sending the messages to the transaction context,
+the task sends the message batch to another message batch worker, which works
+at the chain-level.
+
+In relay context Y, the packet relayers attempt to send one `TimeoutPacket`
+message. The message pass through the relay-level message batch worker without
+additional batching, and then builds the `UpdateClient` message to be sent
+together with the `TimeoutPacket` message. The two messages are then sent to
+the chain-level message batch worker. Notice that the `UpdateClient` message
+here is from chain C, while the `UpdateClient` message from relay context X is
+from chain A.
+
+The chain-level message batch worker receives the batched messages from both
+relay context X and relay context Y. It then combine all five messages into
+a single batch and sends it to the transaction context. The five messages are
+then submitted to the blockchain as a single transaction.
+
+In this architecture, the relayer can potentially achieve higher cost efficiency
+by combining messages from multiple chain into a single batch. As today's IBC
+traffic is relatively low, it is less frequent to have the relayer sending
+multiple IBC messages from one chain to another chain. But when relaying
+across multiple chains, it becomes increasingly likely that at any one time,
+there are IBC messages from two or more chain that needs to be sent to a common
+chain. As a result, this design may help reduce the relaying cost, if the
+fee for sending one transaction with the combined messages is lower than sending
+them as two or more transaction.
+
+This architecture is likely also implemented by the Go relayer, as we have seen
+messages from multiple chains being batched in this way when inspecting the
+transaction logs from non-Hermes relayers.
+
+The downside of this architecture is that there may be a slight increase in
+latency for the messages to be relayed. This is because there are now two
+batch message workers that are running separately, and each of them needs to
+collect incoming messages across a timeframe in order to combine them into
+one batch. Furthermore, there is a higher chance for faulty messages from one
+chain to affect the messages from other chains, due to them being batched
+into the same transaction.
+
+On the other hand, this architecture may also help in improving the reliability
+of the relayer from a different aspect. If more messages can be combined into
+a single transaction, there is then a less need for the relayer to submit
+multiple parallel transactions at the same time. If the relayer is able to
+submit only one transaction to each chain during most of the time, then there
+is less likely for the relayer to encounter concurrency errors caused by
+the nonce mismatch error arise from the use of multiple nonces.
+
 
 */
