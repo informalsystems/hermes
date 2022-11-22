@@ -1939,7 +1939,7 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
 
     let gas_price = chain.config.gas_price.clone();
 
-    if chain.min_gas_price()? < gas_price {
+    if chain.min_gas_price()? > gas_price {
         return Err(Error::gas_price_too_low(chain_id.clone()));
     }
 
