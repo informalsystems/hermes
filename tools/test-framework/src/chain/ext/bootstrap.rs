@@ -8,7 +8,7 @@ use std::str;
 use toml;
 use tracing::debug;
 
-use ibc_relayer::keyring::{HDPath, KeyEntry, KeyFile};
+use ibc_relayer::keyring::{HDPath, KeyEntry};
 
 use crate::chain::cli::bootstrap::{
     add_genesis_account, add_genesis_validator, add_wallet, collect_gen_txs, initialize,
@@ -174,9 +174,8 @@ impl ChainBootstrapMethodsExt for ChainDriver {
         let hd_path = HDPath::from_str(self.chain_type.hd_path())
             .map_err(|e| eyre!("failed to create HDPath: {:?}", e))?;
 
-        let key_file: KeyFile = json::from_str(&seed_content).map_err(handle_generic_error)?;
-
-        let key = KeyEntry::from_key_file(key_file, &hd_path).map_err(handle_generic_error)?;
+        let key =
+            KeyEntry::from_seed_file(&seed_content, &hd_path).map_err(handle_generic_error)?;
 
         Ok(Wallet::new(wallet_id.to_string(), wallet_address, key))
     }

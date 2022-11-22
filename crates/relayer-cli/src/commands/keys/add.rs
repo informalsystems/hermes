@@ -195,7 +195,7 @@ pub fn add_key(
     check_key_exists(&keyring, key_name, overwrite);
 
     let key_contents = fs::read_to_string(file).map_err(|_| eyre!("error reading the key file"))?;
-    let key = keyring.key_from_seed_file(&key_contents, hd_path)?;
+    let key = KeyEntry::from_seed_file(&key_contents, hd_path)?;
 
     keyring.add_key(key_name, key.clone())?;
     Ok(key)
