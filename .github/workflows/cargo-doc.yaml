@@ -1,4 +1,4 @@
-name: API Documentation
+name: API Docs
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
   pull_request: {}
 
 jobs:
-  cargo_doc:
+  cargo-doc:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
