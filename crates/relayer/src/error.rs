@@ -488,15 +488,6 @@ define_error! {
                 format!("semantic config validation failed for option `gas_multiplier` of chain '{}', reason: gas multiplier ({}) is smaller than `1.1`, which could trigger gas fee errors in production", e.chain_id, e.gas_multiplier)
             },
 
-        ConfigInvalidGasPrice
-            {
-                chain_id: ChainId,
-                gas_price: String,
-            }
-            |e| {
-                format!("semantic config validation failed for option `minimum_gas_price` of chain '{}', reason: improperly-formatted gas price ({})", e.chain_id, e.gas_price)
-            },
-
         SdkModuleVersion
             {
                 chain_id: ChainId,
