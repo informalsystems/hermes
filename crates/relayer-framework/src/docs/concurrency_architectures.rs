@@ -27,67 +27,67 @@ chains, _two_ relay contexts will needed for handling packets for each direction
 separately.
 
 In addition to the source and destination chain contexts, the relay context also
-have two _dynamic_ context parameters: the _target_ chain context, and the
+has two _dynamic_ context parameters: the _target_ chain context, and the
 _counterparty_ chain context. This is to denote which chain context the relay
-context is currently targetting on. For example, if the relay context were to
+context is currently targeting. For example, if the relay context were to
 send messages to the source chain context, then the target chain context would
 be the source chain, while the counterparty chain context would be the
-destination chain. This helps differentiates the different kinds of chain
-the relay context is interacting with, and avoid the coding errors caused by
+destination chain. This helps differentiate the different kinds of chains
+the relay context is interacting with, and helps us avoid coding errors caused by
 mistaking one chain with another chain.
 
-To help visualize the concurrency architecture, a lot of details are omitted for
-_how_ the relayer performs the operations. Instead, we would focus on the steps
-that the relayer would take for specific use cases.
+To help visualize the concurrency architecture, a lot of details are omitted
+regarding _how_ the relayer performs the operations. Instead, we focus on the steps
+that the relayer will take for specific use cases.
 
 ## Single chain event source with one relay context
 
-The first use case would be focused on the relaying of multiple IBC packets
+The first use case focuses on the relaying of multiple IBC packets
 from one relay context:
 
 ![Concurrency Architecture](https://raw.githubusercontent.com/informalsystems/hermes/soares/relayer-next-adr/docs/architecture/assets/concurrency-architecture-1.svg)
 
 In the above scenario, we have a relay context with chain A being the source
 chain, and chain B being the destination chain. In our scenario, we have chain A
-emitting multiple source chain events that are of interest of the relay context,
+emitting multiple source chain events that are of interest to the relay context,
 which are `SendPacket` events that are targetting chain B.
 
 When the `SendPacket` events are handled, the event handler spawns three
-concurrent async tasks, all of which handles the relaying of the packets by
-holding a shared reference to the relay context. The worker tasks would call the
+concurrent async tasks, all of which handle the relaying of the packets by
+holding a shared reference to the relay context. The worker tasks call the
 [`PacketRelayer`](crate::base::relay::traits::packet_relayer::PacketRelayer)'s
-`relay_packet` method, which would start the lifecycle of relaying an IBC packet.
+`relay_packet` method, which start the lifecycle of relaying an IBC packet.
 
 The packet relayer may contain logics such as checking on whether the packet
-has already been relayed. in our scenario, the packet relayers would construct
-`RecvPacket` messages that are targetting the destination chain, chain B.
+has already been relayed. In our scenario, the packet relayers would construct
+`RecvPacket` messages that are targeting the destination chain, chain B.
 To optimize for efficiency, the packet relayers send the messages to a message
-batch worker, which runs on a separate async task and receive the incoming
+batch worker, which runs on a separate async task and receives the incoming
 messages via MPSC channels.
 
 Inside the batch worker, it collects all messages that are sent over a certain
-period, such as 500ms, and attempt to consolidate them into a single batch.
+period, such as 500ms, and attempts to consolidate them into a single batch.
 In our scenario, we can assume that all chain events are emitted at the same
 time, and the packet relayers manage to finish the construction of the
 `RecvPacket` messages within the 500ms time frame.
 
 With that, the batch worker attempts to consolidate the three `RecvPacket`
 messages into a single batch. However, there is also a configuration for batch
-size limit, and for our simplified scenario, the batch size limit exceeds after
+size limit, and for our simplified scenario, the batch size limit is exceeded after
 two `RecvPacket` messages are batched. Therefore, the batch worker sends the
 three messages as two batches instead of one. The first batch would contain
 the first and second `RecvPacket` messages, while the second batch contains
 the third `RecvPacket` messages.
 
 The batch worker sends the batched messages by spawning concurrent async tasks
-for each batch. For each of the batch, the messages would go through the
+for each batch. For each batch, the messages would go through the
 [`SendIbcMessagesWithUpdateClient`](crate::base::relay::impls::message_senders::update_client::SendIbcMessagesWithUpdateClient)
 middleware component, which would build and attach `UpdateClient` messages to
 each message batch. In this specific case, we can see that the relayer is not
 being very cost-efficient, as the same `UpdateClient` messages are sent twice
 for the two batches. However, the upside for this design is that the two
 message batches are completely independent, and thus any failure from the first
-batch would not affect the second batch. We will discuss about alternative
+batch would not affect the second batch. We will discuss alternative
 concurrency architectures later, where there can be less redundancy on the
 number of `UpdateClient` messages being sent, together with the tradeoffs made.
 
@@ -96,14 +96,14 @@ messages to the _transaction context_. In there, the messages are processed
 by a _nonce allocator_, which handles the incoming messages with a
 _shared state_ and use different strategies to assign nonces for each
 transaction. For example, the nonce allocator may use a _naive_ strategy,
-where it _blocks_ on concurrent tasks and only allow one task to proceed at
+where it _blocks_ on concurrent tasks and only allows one task to proceed at
 a time. A more complex strategy would be for the nonce allocator to assign
 multiple nonces and resume multiple tasks in parallel. This would allow
 multiple transactions to be submitted to the chain at the same time, and have
 them potentially be committed into the same block.
 
-For the purpose of the architecture discussion, we do not go into detail the
-specific strategies the nonce allocator use, and assume that it allows
+For the purpose of the architecture discussion, we do not go into detail about the
+specific strategies of the nonce allocator use, and assume that it allows
 concurrent allocation of nonces across multiple tasks. Once the nonce is
 allocated, the task continues and builds the transaction with the given
 nonce and messages. After that, the transactions are broadcasted to the
