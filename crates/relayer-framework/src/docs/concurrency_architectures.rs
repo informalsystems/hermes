@@ -10,7 +10,8 @@ users will be able to customize the relayer framework and introduce new
 concurrency architectures that are best suited for specific relaying use cases.
 
 The relayer v2 implementations are centered around three kinds of contexts:
-relay context, chain context, and transaction context. Each context contains
+[relay context](crate::base::relay), [chain context](crate::base::chain),
+and [transaction context](crate::base::transaction). Each context contains
 the environment and dependencies that are required for operations in that
 context to work. For instance, the chain context would contain parameters
 for talking to a full node, and the transaction context would contain
@@ -53,9 +54,9 @@ which are `SendPacket` events that are targetting chain B.
 
 When the `SendPacket` events are handled, the event handler spawns three
 concurrent async tasks, all of which handles the relaying of the packets by
-holding a shared reference to the relay context. The worker tasks would
-call the `PacketRelayer`'s `relay_packet` method, which would start the
-lifecycle of relaying an IBC packet.
+holding a shared reference to the relay context. The worker tasks would call the
+[`PacketRelayer`](crate::base::relay::traits::packet_relayer::PacketRelayer)'s
+`relay_packet` method, which would start the lifecycle of relaying an IBC packet.
 
 The packet relayer may contain logics such as checking on whether the packet
 has already been relayed. in our scenario, the packet relayers would construct
@@ -181,10 +182,10 @@ the transaction is eventually committed successfully to the blockchain, this can
 cause inconsistency in the subsequent operations by the relayer. In particular,
 this can cause the relayer to submit subsequence transactions with the same
 nonce, thus causing the infamous account sequence (nonce) mismatch errors.
-In other words, a false failure on the relayer could result in true failure in
-subsequent relayer operations.
+In other words, _a false failure on the relayer could result in true failure in
+subsequent relayer operations_.
 
-The first line of recovery on the relayer is handled by the nonce allocated.
+The first line of recovery on the relayer is handled by the nonce allocater.
 It needs to interpret the returned error, and choose appropriate actions to take.
 In the case that the error is a nonce mismatch error, that means the nonce
 allocator's cached nonce sequences have become out of sync with the blockchain.
@@ -193,7 +194,7 @@ the blockchain.
 
 However, the nonce allocator cannot just refresh the nonce that when
 encountering the first nonce error. Instead, it has to wait for all pending
-transactions to return, and then refresh the nonce before allowin new
+transactions to return, and then refresh the nonce before allowing new
 transactions to be submitted to the blockchain. The nonce allocator would also
 have to be mindful of false failures returned from the transaction sender,
 which may once again invalidate the nonce that it just fetched from the
@@ -325,11 +326,11 @@ the first transaction.
 
 It is worth noting that the first transaction would also cause the second
 transaction to fail in other ways, such as nonce mismatch. However there can
-be alternative ways of handling nonce, such as using parallel nonces or signers.
-In such cases, the `UpdateClient` message would introduce additional coupling
-between the two transactions. Thus, it is still important to ensure that the
-optimization of the `UpdateClient` messages do not affect the improvement of
-reliability made by other components.
+be alternative ways of handling nonce, such as using multiple _nonce lanes_
+or multiple signers. In such cases, the `UpdateClient` message would still
+introduce additional coupling between the two transactions. Thus, it is still
+important to ensure that the optimization of the `UpdateClient` messages do not
+affect the improvement of reliability made by other components.
 
 An alternative approach is to continue blocking the second message batch until
 the transaction for the first message batch is committed on the chain. While
@@ -345,9 +346,9 @@ and submit transactions to the chain in parallel.
 The previous examples we have all work with only one relay context. Recall that
 a relay context have its source and destination chains fixed. With that, a
 relay context would be sending `RecvPacket` messages to the destination chain,
-and `AckPacket` and `TimeoutPacket` messages to the source chain. From the
-perspective of a chain context, two relay contexts are needed to send all
-three kinds of packet messages to the chain. In this case where two relay
+and `AckPacket` and `TimeoutPacket` messages to the source chain. To build a
+bi-directional relayer, two relay contexts are needed to send all
+three kinds of packet messages to each chain. In this case where two relay
 contexts are working together to relay the IBC packets for two chain pairs,
 we say that the two relay contexts are _coupled_.
 
@@ -373,7 +374,9 @@ source chain, and chain B being the destination chain. Next, we have a relay
 context Y, with chain B being the source chain, and chain B being the
 destination chain. Relay context X would be responsible for sending `RecvPacket`
 messages to chain B, while relay context Y would be responsible for sending
-`AckPacket` and `TimeoutPacket` messages to chain B.
+`AckPacket` and `TimeoutPacket` messages to chain B. Both relay contexts listen
+to the event source from chain A, to build IBC messages that are targetted for
+chain B.
 
 To share the batch workload between relay contexts X and Y, the message batch
 worker would work in a relay context Z. For the purpose of the batch worker,
@@ -461,8 +464,8 @@ with the update height being at least height 8.
 It also happens that when the worker attempt to build the message, it also finds
 the latest height of chain A to be at height 9. So instead, it builds the
 `UpdateClient` message at height 9, so that the same UpdateClient could also be
-used for future IBC messages. The `UpdateClient` message is then submitted
-as a standalone transaction to the chain.
+potentially used for future IBC messages. The `UpdateClient` message is then
+submitted as a _standalone transaction_ to chain B.
 
 Once the `UpdateClient` message is committed to the chain, then only the
 batch UpdateClient worker returns the result to all three packet workers.
@@ -551,10 +554,10 @@ an additional layer of message batch worker as follows:
 In the above scenario, we have a relay context X, with the source chain being
 chain A, and the destination chain being chain B. We also have a relay context Y,
 with the source chain being chain B, and the destination chain being _chain C_.
-Relay context X would be using the IBC event source from chain B as the
+Relay context X would be using the IBC event source from chain A as the
 source chain event source, and relay `RecvPacket` messages from there. On the
-other hand, relay context Y would be using the same IBC event source from chain
-B as the destination chain event source, and relay `AckPacket` and
+other hand, relay context Y would be using the IBC event source from chain
+C as the destination chain event source, and relay `AckPacket` and
 `TimeoutPacket` messages from there.
 
 In relay context X, the packet relayers attempt to send two `RecvPacket`
@@ -576,15 +579,15 @@ here is from chain C, while the `UpdateClient` message from relay context X is
 from chain A.
 
 The chain-level message batch worker receives the batched messages from both
-relay context X and relay context Y. It then combine all five messages into
+relay context X and relay context Y. It then combines all five messages into
 a single batch and sends it to the transaction context. The five messages are
 then submitted to the blockchain as a single transaction.
 
 In this architecture, the relayer can potentially achieve higher cost efficiency
 by combining messages from multiple chain into a single batch. As today's IBC
 traffic is relatively low, it is less frequent to have the relayer sending
-multiple IBC messages from one chain to another chain. But when relaying
-across multiple chains, it becomes increasingly likely that at any one time,
+multiple IBC messages from one chain to another chain. But as the relayer relays
+between more chains, it becomes increasingly likely that at any one time,
 there are IBC messages from two or more chain that needs to be sent to a common
 chain. As a result, this design may help reduce the relaying cost, if the
 fee for sending one transaction with the combined messages is lower than sending
@@ -604,7 +607,7 @@ into the same transaction.
 
 On the other hand, this architecture may also help in improving the reliability
 of the relayer from a different aspect. If more messages can be combined into
-a single transaction, there is then a less need for the relayer to submit
+a single transaction, then there is less need for the relayer to submit
 multiple parallel transactions at the same time. If the relayer is able to
 submit only one transaction to each chain during most of the time, then there
 is less likely for the relayer to encounter concurrency errors caused by
