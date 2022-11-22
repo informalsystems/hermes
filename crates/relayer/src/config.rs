@@ -8,6 +8,7 @@ pub mod types;
 
 use alloc::collections::BTreeMap;
 use core::{
+    cmp::Ordering,
     convert::TryFrom,
     fmt::{Display, Error as FmtError, Formatter},
     time::Duration,
@@ -29,8 +30,8 @@ use crate::error::Error as RelayerError;
 use crate::extension_options::ExtensionOptionDynamicFeeTx;
 use crate::keyring::Store;
 
-pub use error::Error;
 pub use crate::config::Error as ConfigError;
+pub use error::Error;
 
 pub use filter::PacketFilter;
 
@@ -63,10 +64,21 @@ impl TryFrom<String> for GasPrice {
             _ => return Err(Error::invalid_gas_price(price)),
         };
 
-
-        let price = price.parse::<f64>().map_err(|_| Error::invalid_gas_price(price.to_string()))?;
+        let price = price
+            .parse::<f64>()
+            .map_err(|_| Error::invalid_gas_price(price.to_string()))?;
 
         Ok(GasPrice { price, denom })
+    }
+}
+
+impl PartialOrd for GasPrice {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        if self.denom == other.denom {
+            self.price.partial_cmp(&other.price)
+        } else {
+            None
+        }
     }
 }
 
