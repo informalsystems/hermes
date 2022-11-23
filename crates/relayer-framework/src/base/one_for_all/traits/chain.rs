@@ -1,5 +1,5 @@
 //! The `OfaChainWrapper` trait specifies what a chain context needs to provide
-//! in order to gain access to the APIs provided by the [`AfoBaseChain`]
+//! in order to gain access to the APIs provided by the `AfoBaseChain`
 //! trait.
 
 use async_trait::async_trait;
@@ -9,53 +9,100 @@ use crate::base::chain::traits::queries::consensus_state::ConsensusStateQuerier;
 use crate::base::chain::traits::queries::status::ChainStatusQuerier;
 use crate::base::core::traits::sync::Async;
 use crate::base::one_for_all::traits::runtime::{OfaRuntime, OfaRuntimeContext};
-use crate::common::one_for_all::types::chain::OfaChainWrapper;
+use crate::base::one_for_all::types::chain::OfaChainWrapper;
 use crate::std_prelude::*;
 
 pub trait OfaChainTypes: Async {
     type Preset;
 
+    /**
+       Corresponds to
+       [`HasError::Error`](crate::base::core::traits::error::HasError::Error).
+    */
     type Error: Async + Debug;
 
+    /**
+       Corresponds to
+       [`HasRuntime::Runtime`](crate::base::runtime::traits::runtime::HasRuntime::Runtime).
+    */
     type Runtime: OfaRuntime<Error = Self::Error>;
 
+    /**
+       Corresponds to
+       [`HasChainTypes::Height`](crate::base::chain::traits::types::HasChainTypes::Height).
+    */
     type Height: Ord + Async;
 
+    /**
+       Corresponds to
+       [`HasChainTypes::Timestamp`](crate::base::chain::traits::types::HasChainTypes::Timestamp).
+    */
     type Timestamp: Ord + Async;
 
+    /**
+       Corresponds to
+       [`HasMessageType::Message`](crate::base::chain::traits::types::HasMessageType::Message).
+    */
     type Message: Async;
 
-    type RawMessage: Async;
-
-    type Signer: Async;
-
+    /**
+       Corresponds to
+       [`HasEventType::Event`](crate::base::chain::traits::types::HasEventType::Event).
+    */
     type Event: Async;
 
+    /**
+       Corresponds to
+       [`HasIbcChainTypes::ClientId`](crate::base::chain::traits::types::HasIbcChainTypes::ClientId).
+    */
     type ClientId: Async;
 
+    /**
+       Corresponds to
+       [`HasIbcChainTypes::ConnectionId`](crate::base::chain::traits::types::HasIbcChainTypes::ConnectionId).
+    */
     type ConnectionId: Async;
 
+    /**
+       Corresponds to
+       [`HasIbcChainTypes::ChannelId`](crate::base::chain::traits::types::HasIbcChainTypes::ChannelId).
+    */
     type ChannelId: Async;
 
+    /**
+       Corresponds to
+       [`HasIbcChainTypes::PortId`](crate::base::chain::traits::types::HasIbcChainTypes::PortId).
+    */
     type PortId: Async;
 
+    /**
+       Corresponds to
+       [`HasIbcChainTypes::Sequence`](crate::base::chain::traits::types::HasIbcChainTypes::Sequence).
+    */
     type Sequence: Async;
 
+    /**
+       Corresponds to
+       [`HasChainStatus::ChainStatus`](crate::base::chain::traits::queries::status::HasChainStatus::ChainStatus).
+    */
     type ChainStatus: Async;
 
+    /**
+       Corresponds to
+       [`HasConsensusState::ConsensusState`](crate::base::chain::traits::queries::consensus_state::HasConsensusState::ConsensusState).
+    */
     type ConsensusState: Async;
 
+    /**
+       Corresponds to
+       [`HasIbcEvents::WriteAcknowledgementEvent`](crate::base::chain::traits::ibc_event::HasIbcEvents::WriteAcknowledgementEvent).
+    */
     type WriteAcknowledgementEvent: Async;
 }
 
 #[async_trait]
 pub trait OfaBaseChain: OfaChainTypes {
     fn runtime(&self) -> &OfaRuntimeContext<Self::Runtime>;
-
-    fn encode_raw_message(
-        message: &Self::Message,
-        signer: &Self::Signer,
-    ) -> Result<Self::RawMessage, Self::Error>;
 
     fn estimate_message_len(message: &Self::Message) -> Result<usize, Self::Error>;
 

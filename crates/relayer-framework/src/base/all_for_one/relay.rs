@@ -1,6 +1,5 @@
 use crate::base::all_for_one::chain::AfoBaseChain;
 use crate::base::relay::traits::ibc_message_sender::CanSendIbcMessages;
-use crate::base::relay::traits::ibc_message_sender::InjectMismatchIbcEventsCountError;
 use crate::base::relay::traits::messages::ack_packet::CanBuildAckPacketMessage;
 use crate::base::relay::traits::messages::receive_packet::CanBuildReceivePacketMessage;
 use crate::base::relay::traits::messages::timeout_unordered_packet::CanBuildTimeoutUnorderedPacketMessage;
@@ -13,7 +12,7 @@ use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
 use crate::base::relay::traits::types::HasRelayTypes;
 
 /// The functionality that a relay context gains access to once that relay
-/// context implements the [`OfaRelayWrapper`] trait.
+/// context implements the `OfaRelayWrapper` trait.
 pub trait AfoBaseRelay:
     HasRelayTypes<SrcChain = Self::AfoSrcChain, DstChain = Self::AfoDstChain>
     + CanBuildUpdateClientMessage<SourceTarget>
@@ -27,7 +26,6 @@ pub trait AfoBaseRelay:
     + CanRelayPacket
     + CanRelayAckPacket
     + CanRelayTimeoutUnorderedPacket
-    + InjectMismatchIbcEventsCountError
 {
     type AfoSrcChain: AfoBaseChain<Self::AfoDstChain>;
 
@@ -49,8 +47,7 @@ where
         + CanRelayPacket
         + CanRelayAckPacket
         + CanRelayTimeoutUnorderedPacket
-        + CanBuildTimeoutUnorderedPacketMessage
-        + InjectMismatchIbcEventsCountError,
+        + CanBuildTimeoutUnorderedPacketMessage,
 {
     type AfoSrcChain = SrcChain;
 

@@ -1,5 +1,5 @@
 //! The `OfaRelayWrapper` trait specifies what a relay context needs to provide
-//! in order to gain access to the APIs provided by the [`AfoBaseRelay`]
+//! in order to gain access to the APIs provided by the `AfoBaseRelay`
 //! trait.
 
 use async_trait::async_trait;
@@ -10,16 +10,19 @@ use crate::base::one_for_all::traits::chain::OfaIbcChainPreset;
 use crate::base::one_for_all::traits::chain::{OfaChainTypes, OfaIbcChain};
 use crate::base::one_for_all::traits::runtime::OfaRuntime;
 use crate::base::one_for_all::traits::runtime::OfaRuntimeContext;
+use crate::base::one_for_all::types::chain::OfaChainWrapper;
+use crate::base::one_for_all::types::relay::OfaRelayWrapper;
 use crate::base::relay::traits::ibc_message_sender::IbcMessageSender;
 use crate::base::relay::traits::packet_relayer::PacketRelayer;
 use crate::base::relay::traits::target::{DestinationTarget, SourceTarget};
-use crate::common::one_for_all::types::chain::OfaChainWrapper;
-use crate::common::one_for_all::types::relay::OfaRelayWrapper;
 use crate::std_prelude::*;
 
 pub trait OfaRelayTypes: Async {
     type Preset;
 
+    /**
+       Corresponds to [`HasError::Error`](crate::base::core::traits::error::HasError).
+    */
     type Error: Async + Debug;
 
     type Runtime: OfaRuntime<Error = Self::Error>;
@@ -43,8 +46,6 @@ pub trait OfaRelayTypes: Async {
 
 #[async_trait]
 pub trait OfaBaseRelay: OfaRelayTypes {
-    fn mismatch_ibc_events_count_error(expected: usize, actual: usize) -> Self::Error;
-
     fn packet_src_port(packet: &Self::Packet) -> &<Self::SrcChain as OfaChainTypes>::PortId;
 
     fn packet_src_channel_id(

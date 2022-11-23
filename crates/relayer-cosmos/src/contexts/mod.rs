@@ -1,2 +1,2 @@
-pub mod base;
 pub mod full;
+pub mod min;

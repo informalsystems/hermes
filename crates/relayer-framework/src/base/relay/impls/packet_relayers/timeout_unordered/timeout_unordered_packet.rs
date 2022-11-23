@@ -1,9 +1,7 @@
 use async_trait::async_trait;
 
 use crate::base::chain::types::aliases::Height;
-use crate::base::relay::traits::ibc_message_sender::{
-    CanSendIbcMessages, IbcMessageSenderExt, InjectMismatchIbcEventsCountError,
-};
+use crate::base::relay::traits::ibc_message_sender::{CanSendIbcMessages, IbcMessageSenderExt};
 use crate::base::relay::traits::messages::timeout_unordered_packet::CanBuildTimeoutUnorderedPacketMessage;
 use crate::base::relay::traits::packet_relayers::timeout_unordered_packet::TimeoutUnorderedPacketRelayer;
 use crate::base::relay::traits::target::SourceTarget;
@@ -22,7 +20,6 @@ where
     Context: CanBuildTimeoutUnorderedPacketMessage,
     Context: CanSendIbcMessages<SourceTarget>,
     Context: HasRelayTypes,
-    Context: InjectMismatchIbcEventsCountError,
 {
     async fn relay_timeout_unordered_packet(
         context: &Context,
