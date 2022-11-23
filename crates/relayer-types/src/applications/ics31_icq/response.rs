@@ -1,8 +1,8 @@
 use crate::signer::Signer;
-use crate::core::ics23_commitment::merkle::MerkleProof;
 
 use std::prelude::v1::*;
 use ibc_proto::google::protobuf::Any;
+use tendermint::merkle::proof::Proof;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CrossChainQueryResponse {
@@ -10,7 +10,7 @@ pub struct CrossChainQueryResponse {
     pub query_id: String,
     pub result: String,
     pub height: String,
-    pub proof: MerkleProof
+    pub proof: Proof
 }
 
 impl CrossChainQueryResponse {
@@ -19,7 +19,7 @@ impl CrossChainQueryResponse {
         query_id: String,
         result: String,
         height: String,
-        proof: MerkleProof,
+        proof: Proof,
     ) -> Self {
         Self {
             chain_id,

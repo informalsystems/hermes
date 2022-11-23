@@ -6,8 +6,6 @@ use ibc_relayer_types::applications::ics31_icq::{
     error::Error as CrossChainQueryError
 };
 use hex;
-use ibc_proto::ibc::core::commitment::v1::MerkleProof;
-use ibc_relayer_types::core::ics23_commitment::merkle::convert_tm_to_ics_merkle_proof;
 
 pub async fn cross_chain_query_via_rpc(
     client: &HttpClient,
@@ -26,18 +24,9 @@ pub async fn cross_chain_query_via_rpc(
         return Err(Error::ics31(CrossChainQueryError::query()));
     }
 
-    if response.proof.is_none() {
+    if response.proof.clone().is_none() {
         return Err(Error::ics31(CrossChainQueryError::proof()));
     }
-
-    let proof = response
-        .proof
-        .map(|p| convert_tm_to_ics_merkle_proof(&p))
-        .transpose()
-        .map_err(Error::ics23)?
-        .ok_or_else(|| MerkleProof{proofs: vec![]})
-        .map_err(|_| Error::ics31(CrossChainQueryError::proof()))?;
-
 
     Ok(
         CrossChainQueryResponse::new(
@@ -45,7 +34,7 @@ pub async fn cross_chain_query_via_rpc(
             cross_chain_query_request.query_id,
             hex::encode(response.value),
             response.height.to_string(),
-            proof,
+            response.proof.unwrap(),
         )
     )
 }
