@@ -61,7 +61,7 @@ Hermes is packaged in the `ibc-relayer-cli` Rust crate.
 To install the latest release of Hermes, run the following command in a terminal:
 
 ```shell
-cargo install ibc-relayer-cli@1.0.0 --bin hermes --locked
+cargo install ibc-relayer-cli --bin hermes --locked
 ```
 
 This will download and build the crate `ibc-relayer-cli`, and install the

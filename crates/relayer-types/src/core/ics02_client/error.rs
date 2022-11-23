@@ -55,7 +55,7 @@ define_error! {
 
         InvalidTrustThreshold
             { numerator: u64, denominator: u64 }
-            | e | { format_args!("failed to build trust threshold from fraction: {}/{}", e.numerator, e.denominator) },
+            | e | { format_args!("invalid trust threshold: {}/{}", e.numerator, e.denominator) },
 
         FailedTrustThresholdConversion
             { numerator: u64, denominator: u64 }

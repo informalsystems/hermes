@@ -1,10 +1,10 @@
 use alloc::collections::BTreeMap as HashMap;
 
 use flex_error::define_error;
+use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
 use tracing::{debug, trace};
 
 use ibc_relayer_types::core::ics02_client::client_state::ClientState;
-use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
 use ibc_relayer_types::core::ics04_channel::error::Error as ChannelError;
 use ibc_relayer_types::core::ics24_host::identifier::{
@@ -20,6 +20,14 @@ use crate::error::Error as RelayerError;
 use crate::object;
 use crate::registry::Registry;
 use crate::spawn::SpawnError;
+
+/// The lower bound trust threshold value. Clients with a trust threshold less
+/// than this will not be allowed due to security concerns.
+const LOWER_BOUND: TrustThreshold = TrustThreshold::ONE_THIRD;
+
+/// The lower bound trust threshold value. Clients with a trust threshold greater
+/// than this will not be allowed due to cost-efficiency concerns.
+const UPPER_BOUND: TrustThreshold = TrustThreshold::TWO_THIRDS;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Permission {
@@ -172,15 +180,28 @@ impl FilterPolicy {
         }
 
         let permission = match state.trust_threshold() {
-            Some(trust) if trust == TrustThreshold::ONE_THIRD => Permission::Allow,
-            Some(_) => {
-                trace!(
-                    "client {} on chain {} has a trust threshold different than 1/3",
-                    client_id,
-                    host_chain
-                );
+            Some(threshold) => {
+                if threshold < LOWER_BOUND {
+                    trace!(
+                        "client {} on chain {} has a trust threshold less than {}",
+                        client_id,
+                        host_chain,
+                        LOWER_BOUND
+                    );
 
-                Permission::Deny
+                    Permission::Deny
+                } else if threshold > UPPER_BOUND {
+                    trace!(
+                        "client {} on chain {} has a trust threshold greater than {}",
+                        client_id,
+                        host_chain,
+                        UPPER_BOUND
+                    );
+
+                    Permission::Deny
+                } else {
+                    Permission::Allow
+                }
             }
             None => {
                 trace!(
