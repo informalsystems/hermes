@@ -306,7 +306,7 @@ impl CosmosSdkChain {
         Ok(params)
     }
 
-    /// Query the chain configuration parameters
+    /// Query the chain for its configuration parameters
     pub fn query_config_params(&self) -> Result<ConfigResponse, Error> {
         crate::time!("query_config_params");
         crate::telemetry!(query, self.id(), "query_config_params");
