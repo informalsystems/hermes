@@ -35,6 +35,7 @@ __Hermes vs other configuration parameters that may cause Hermes failures__
 |                                                                                                 |                                                                                                                  |                                                                       |
 | `max_block_delay = x`                                                                           | `genesis.app_state`<br/>`.ibc.connection_genesis.params`<br/>`.max_expected_time_per_block = y`<br/>`with x < y` | [`Block delay not reached`](#block-delay-not-reached)                 |
 |                                                                                                 |                                                                                                                  |                                                                       |
+| `key_name = <wallet_name>` | | [`Insufficient funds`](#insufficient-funds) |
 
 
 ## Recheck
@@ -164,4 +165,14 @@ genesis.app_state.ibc.connection_genesis.params.max_expected_time_per_block
        tendermint.consensus.timeout_commit
 ```
 
+## Insufficient Funds
+If the wallet configured in Hermes' `config.toml` is empty or doesn't have enough funds, any transfer will result in the following error:
 
+```
+ERROR ThreadId(11) send_messages_and_wait_commit{chain=ibc-0 tracking_id=ft-transfer}:send_tx_with_account_sequence_retry{chain=ibc-0 account.sequence=25}:estimate_gas: failed to simulate tx. propagating error to caller: gRPC call failed with status: status: Unknown, message: "failed to execute message; message index: 0: 20stake is smaller than 108stake: insufficient funds [cosmos/cosmos-sdk@v0.46.3/x/bank/keeper/send.go:191] With gas wanted: '18446744073709551615' and gas used: '52497' ", details: [], metadata: MetadataMap { headers: {"content-type": "application/grpc", "x-cosmos-block-height": "377"} }
+```
+
+### Fix
+In order to fix the error above, use one of the following two solutions:
+- add enough funds to the wallet configured by `key_name` in Hermes' `config.toml`.
+- change the wallet configured by `key_name` in Hermes' `config.toml` to a wallet which has enough funds.

@@ -3,11 +3,11 @@ use std::sync::{Arc, RwLock};
 
 use crate::util::lock::LockExt;
 
-/// A lightweight wrapper type to RefCell<VecDeque<T>> so that
+/// A lightweight wrapper type around `Arc<RwLock<VecDeque<T>>>` so that
 /// we can safely mutate it with regular reference instead of
-/// mutable reference. We only expose subset of VecDeque methods
-/// that does not return any inner reference, so that the RefCell
-/// can never panic caused by simultaneous borrow and borrow_mut.
+/// mutable reference. We only expose subset of `VecDeque` methods
+/// that does not return any inner reference, so that the `RefCell`
+/// can never panic caused by simultaneous `borrow` and `borrow_mut`.
 pub struct Queue<T>(Arc<RwLock<VecDeque<T>>>);
 
 impl<T> Queue<T> {

@@ -1,4 +1,4 @@
-name: Publish Cargo Doc
+name: API Docs
 
 on:
   push:
@@ -7,18 +7,24 @@ on:
   pull_request: {}
 
 jobs:
-  deploy:
+  cargo-doc:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: nightly
+          override: true
 
-      - run: cargo doc
+      - name: Build API documentation
+        uses: actions-rs/cargo@v1
+        env:
+          RUSTDOCFLAGS: "--cfg docsrs"
+        with:
+          command: doc
+          args: --all-features
 
-      - name: Deploy
+      - name: Push API documentation to GitHub Pages
         if: github.ref == 'refs/heads/master'
         uses: peaceiris/actions-gh-pages@v3
         with:
