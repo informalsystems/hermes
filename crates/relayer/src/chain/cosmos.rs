@@ -1833,6 +1833,8 @@ impl ChainEndpoint for CosmosSdkChain {
             .map(|req| mock_grpc_query(req))
             .collect::<Vec<_>>();
 
+
+
         let joined_tasks = join_all(tasks);
         let results: Vec<_> = self.rt.block_on(joined_tasks);
         let responses = results

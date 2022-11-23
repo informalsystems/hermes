@@ -133,12 +133,13 @@ impl Wallet {
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct CrossChainQuery {
     pub src_chain_id: ChainId,
+    pub dst_chain_id: ChainId,
     pub query_id: String,
 }
 
 impl CrossChainQuery {
     pub fn short_name(&self) -> String {
-        format!("cross_chain_query::{}", self.query_id)
+        format!("cross_chain_query::{}/{}", self.dst_chain_id, self.query_id)
     }
 }
 
@@ -512,8 +513,11 @@ impl Object {
         p: &ibc_relayer_types::applications::ics31_icq::events::CrossChainQueryPacket,
         src_chain: &impl ChainHandle,
     ) -> Result<Self, ObjectError> {
+        let dst_chain_id = counterparty_chain_from_connection(&src_chain.clone(), &p.connection_id)
+            .map_err(ObjectError::supervisor)?;
         Ok(CrossChainQuery {
-            src_chain_id: src_chain.id(),
+            src_chain_id: src_chain.clone().id(),
+            dst_chain_id,
             query_id: p.query_id.to_string(),
         }.into())
     }

@@ -11,27 +11,34 @@ use crossbeam_channel::Receiver;
 use tracing::{info, info_span};
 use uuid::Uuid;
 
-pub fn spawn_cross_chain_query_worker<ChainA: ChainHandle>(
-    handle: ChainA,
+pub fn spawn_cross_chain_query_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
+    chain_a_handle: ChainA,
+    chain_b_handle: ChainB,
     cmd_rx: Receiver<WorkerCmd>,
     cross_chain_query: CrossChainQuery,
-)  -> TaskHandle {
+) -> TaskHandle {
     spawn_background_task(
-        info_span!("cross_chain_query"),
+        info_span!("cross chain query"),
         Some(Duration::from_millis(1000)),
         move || {
             if let Ok(cmd) = cmd_rx.try_recv() {
-                handle_cross_chain_query(handle.clone(), cmd, &cross_chain_query)?;
+                handle_cross_chain_query(
+                    chain_a_handle.clone(),
+                    chain_b_handle.clone(),
+                    cmd,
+                    &cross_chain_query
+                )?;
             }
             Ok(Next::Continue)
         },
     )
 }
 
-fn handle_cross_chain_query<ChainA: ChainHandle>(
-    handle: ChainA,
+fn handle_cross_chain_query<ChainA: ChainHandle, ChainB: ChainHandle>(
+    chain_a_handle: ChainA,
+    chain_b_handle: ChainB,
     cmd: WorkerCmd,
-    _: &CrossChainQuery,
+    cross_chain_query: &CrossChainQuery,
 ) -> Result<(), TaskError<RunError>> {
     if let WorkerCmd::IbcEvents {batch} = &cmd {
         let queries: Vec<CrossChainQueryRequest> = batch
@@ -40,17 +47,19 @@ fn handle_cross_chain_query<ChainA: ChainHandle>(
             .filter_map(|ev| ev.try_into().ok())
             .collect();
 
-        let response = handle.cross_chain_query(queries);
+        // Handle of queried chain has to query data from it's RPC
+        info!("request: {}", cross_chain_query.short_name());
+        let response = chain_b_handle.cross_chain_query(queries);
         if let Ok(res) = response {
             res.iter()
                 .for_each(|r| info!("response arrived: query_id: {}", r.query_id));
             let any_msgs = res
                 .clone()
                 .into_iter()
-                .map(|r| r.to_any(handle.get_signer().unwrap()))
+                .map(|r| r.to_any(chain_a_handle.get_signer().unwrap()))
                 .collect::<Vec<_>>();
 
-            handle
+            chain_a_handle
                 .send_messages_and_wait_check_tx(TrackedMsgs::new_uuid(any_msgs, Uuid::new_v4()))
                 .map_err(|_| TaskError::Ignore(RunError::query()))?;
         }

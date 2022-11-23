@@ -166,6 +166,7 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
             let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
             let cross_chain_query_task = cross_chain_query::spawn_cross_chain_query_worker(
                     chains.a.clone(),
+                    chains.b.clone(),
                     cmd_rx,
                     cross_chain_query.clone(),
                 );
