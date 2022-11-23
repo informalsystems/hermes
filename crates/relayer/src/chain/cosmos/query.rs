@@ -21,6 +21,7 @@ pub mod denom_trace;
 pub mod fee;
 pub mod status;
 pub mod tx;
+pub mod custom;
 
 /// Generic query response type
 #[derive(Clone, Debug, PartialEq)]

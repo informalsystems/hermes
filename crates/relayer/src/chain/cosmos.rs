@@ -67,7 +67,7 @@ use crate::chain::cosmos::query::status::query_status;
 use crate::chain::cosmos::query::tx::{
     filter_matching_event, query_packets_from_block, query_packets_from_txs, query_txs,
 };
-use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query, QueryResponse};
+use crate::chain::cosmos::query::{abci_query, fetch_version_specs, packet_query, QueryResponse, custom::cross_chain_query_via_rpc};
 use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::gas::{
@@ -117,17 +117,6 @@ pub mod tx;
 pub mod types;
 pub mod version;
 pub mod wait;
-
-/// temporal mocking function of gRPC query
-async fn mock_grpc_query(_req: CrossChainQueryRequest) -> Result<CrossChainQueryResponse, Error>{
-    Ok(CrossChainQueryResponse {
-        chain_id: "".to_string(),
-        query_id: "".to_string(),
-        query_type: "".to_string(),
-        data: "".to_string(),
-        height: "".to_string()
-    })
-}
 
 /// Defines an upper limit on how large any transaction can be.
 /// This upper limit is defined as a fraction relative to the block's
@@ -1830,17 +1819,18 @@ impl ChainEndpoint for CosmosSdkChain {
     ) -> Result<Vec<CrossChainQueryResponse>, Error> {
         let tasks = requests
             .into_iter()
-            .map(|req| mock_grpc_query(req))
+            .map(|req| cross_chain_query_via_rpc(
+                &self.rpc_client,
+                req,
+            ))
             .collect::<Vec<_>>();
 
-
-
         let joined_tasks = join_all(tasks);
-        let results: Vec<_> = self.rt.block_on(joined_tasks);
+        let results: Vec<Result<CrossChainQueryResponse, _>> = self.rt.block_on(joined_tasks);
         let responses = results
             .into_iter()
             .filter_map(|req| req.ok())
-            .collect::<Vec<_>>();
+            .collect::<Vec<CrossChainQueryResponse>>();
 
         Ok(responses)
     }

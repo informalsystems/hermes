@@ -1,32 +1,32 @@
 use crate::signer::Signer;
+use crate::core::ics23_commitment::merkle::MerkleProof;
 
 use std::prelude::v1::*;
-use serde::{Deserialize, Serialize};
 use ibc_proto::google::protobuf::Any;
 
-#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CrossChainQueryResponse {
     pub chain_id: String,
     pub query_id: String,
-    pub query_type: String,
-    pub data: String,
+    pub result: String,
     pub height: String,
+    pub proof: MerkleProof
 }
 
 impl CrossChainQueryResponse {
     pub fn new(
         chain_id: String,
         query_id: String,
-        query_type: String,
-        data: String,
+        result: String,
         height: String,
+        proof: MerkleProof,
     ) -> Self {
         Self {
             chain_id,
             query_id,
-            query_type,
-            data,
+            result,
             height,
+            proof,
         }
     }
 

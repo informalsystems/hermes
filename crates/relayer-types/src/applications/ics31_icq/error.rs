@@ -14,6 +14,15 @@ define_error! {
 
         Ics24
             | _ | { "ics24 validation error" },
+
+        Tendermint
+            | _ | { "Tendermint error" },
+
+        Query
+            | _ | { "Failed to query data" },
+
+        Proof
+            | _ | { "Proof not found" },
     }
 }
 

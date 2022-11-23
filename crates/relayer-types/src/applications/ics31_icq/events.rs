@@ -5,18 +5,20 @@ use super::error::Error;
 
 use core::str::FromStr;
 use serde::{Serialize, Deserialize};
-use tendermint_rpc::abci::Event as AbciEvent;
+use tendermint::block::Height;
+use tendermint_rpc::abci::{Event as AbciEvent, Path as TendermintPath};
 use tendermint_rpc::abci::tag::Tag;
 
-#[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq, Eq)]
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct CrossChainQueryPacket {
     pub module: String,
     pub action: String,
     pub query_id: String,
     pub chain_id: ChainId,
     pub connection_id: ConnectionId,
-    pub query_type: String,
-    pub height: String,
+    pub query_type: TendermintPath,
+    pub height: Height,
     pub request: String,
 }
 
@@ -48,9 +50,9 @@ impl From<CrossChainQueryPacket> for AbciEvent {
             new_tag("query_id", packet.query_id.as_str()),
             new_tag("chain_id", packet.chain_id.as_str()),
             new_tag("connection_id", packet.connection_id.as_str()),
-            new_tag("type", packet.query_type.as_str()),
+            new_tag("type", &packet.query_type.to_string()),
             new_tag("request", packet.request.as_str()),
-            new_tag("height", packet.height.as_str()),
+            new_tag("height", &packet.height.to_string()),
         ];
 
         AbciEvent {
@@ -69,12 +71,14 @@ impl<'a> TryFrom<&'a Vec<Tag>> for CrossChainQueryPacket {
         let query_id = find_value("query_id", &entries)?;
         let chain_id_str = find_value("chain_id", &entries)?;
         let connection_id_str = find_value("connection_id", &entries)?;
-        let query_type = find_value("type", &entries)?;
+        let query_type_str = find_value("type", &entries)?;
         let request = find_value("request", &entries)?;
-        let height = find_value("height", &entries)?;
+        let height_str = find_value("height", &entries)?;
 
         let chain_id = ChainId::from_string(&chain_id_str);
         let connection_id = ConnectionId::from_str(&connection_id_str).map_err(|_| Error::ics24())?;
+        let query_path = TendermintPath::from_str(&query_type_str).map_err(|_| Error::tendermint())?;
+        let height = Height::from_str(&height_str).map_err(|_| Error::tendermint())?;
 
         Ok(
             Self {
@@ -83,7 +87,7 @@ impl<'a> TryFrom<&'a Vec<Tag>> for CrossChainQueryPacket {
                 query_id,
                 chain_id,
                 connection_id,
-                query_type,
+                query_type: query_path,
                 height,
                 request,
             }
