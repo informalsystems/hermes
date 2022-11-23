@@ -77,7 +77,7 @@ pub fn exit_with(out: Output) -> ! {
             Status::Success => style("SUCCESS").green(),
             Status::Error => style("ERROR").red(),
         };
-        println!("{}: {} {}", clap::crate_version!(), status, out.result);
+        println!("{}(v{}) {}", status, out.version, out.result);
     }
 
     // The return code
@@ -147,6 +147,9 @@ pub struct Output {
 
     /// The result of a command, such as the output from a query or transaction.
     pub result: Result,
+
+    /// The Hermes version
+    version: String,
 }
 
 impl Output {
@@ -155,6 +158,7 @@ impl Output {
         Output {
             status,
             result: Result::Nothing,
+            version: clap::crate_version!().to_string(),
         }
     }
 
@@ -220,6 +224,11 @@ impl Output {
         map.insert(
             "status".to_string(),
             serde_json::to_value(self.status).unwrap(),
+        );
+
+        map.insert(
+            "version".to_string(),
+            serde_json::to_value(self.version).unwrap(),
         );
 
         let value = match self.result {
