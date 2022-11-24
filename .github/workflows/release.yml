@@ -29,6 +29,14 @@ jobs:
     runs-on: ${{ matrix.config.os }}
     steps:
       - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Install cross-compilation tools
+        uses: taiki-e/setup-cross-toolchain-action@v1
+        with:
+          target: ${{ matrix.config.target }}
+        if: startsWith(matrix.config.os, 'ubuntu')
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
           # (required)
