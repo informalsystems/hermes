@@ -36,7 +36,7 @@ __Hermes vs other configuration parameters that may cause Hermes failures__
 | `max_block_delay = x`                                                                                                                                                                                                                                                                                                      | `genesis.app_state`<br/>`.ibc.connection_genesis.params`<br/>`.max_expected_time_per_block = y`<br/>`with x < y` | [`Block delay not reached`](#block-delay-not-reached)                 |
 |                                                                                                                                                                                                                                                                                                                            |                                                                                                                  |                                                                       |
 | `key_name = <wallet_name>`                                                                                                                                                                                                                                                                                                 |                                                                                                                  | [`Insufficient funds`](#insufficient-funds) |
-|| `app.pruning = "custom",`<br/>`app.pruning-keep-recent= w,`<br/>`app.pruning-keep-every = x,`<br/>`app.pruning-interval = y,`<br/>`app.min-retain-blocks = z`, <br/>`app.pruning = "custom",`<br/>`genesis.consensus_params.evidence.max_age_num_blocks = e,`<br/>`genesis.consensus_params.evidence.max_age_duration = d` | [`Uncleared packets`](#uncleared-pending-packets)                                                                       |
+|| `app.pruning = "custom",`<br/>`app.pruning-keep-recent= w,`<br/>`app.pruning-keep-every = x,`<br/>`app.pruning-interval = y,`<br/>`app.min-retain-blocks = z,`<br/>`genesis.consensus_params.evidence.max_age_num_blocks = e,`<br/>`genesis.consensus_params.evidence.max_age_duration = d` | [`Uncleared packets`](#uncleared-pending-packets)                                                                       |
 
 
 ## Recheck
@@ -181,6 +181,7 @@ In order to fix the error above, use one of the following two solutions:
 
 ## Uncleared Pending Packets
 When Hermes starts, it retrieves the sequences for the unrelayed receive and acknowledgment packets from the application. Since only the packet commitments are stored in the application state, Hermes then queries tendermint for the IBC events with those sequence numbers and obtains the packet data from these events. The IBC events are retrieved from transaction and block indexes maintained by tendermint nodes.
+
 In some cases these queries fail to obtain the packet data due to the fact that the state that contained those events has been pruned from the tendermint node. In this case Hermes will not be able to relay the packet. One example can be seen below. Hermes queries the application and finds `222` unreceived acknowledgment packets. Then it queries tendermint for the packet data but fails to find it (`pulled packet data for 0 events`). In this case the command returns zero relayed packets (`SUCCESS []`):
 
 ```
@@ -209,7 +210,7 @@ pruning-interval = y
 ```
 
 #### Tendermint State Pruning
-The `app.toml` file also defines parmeters to control the tendermint block pruning window:
+The `app.toml` file also defines parameters to control the tendermint block pruning window:
 
 ```
 min-retain-blocks = z
@@ -230,8 +231,8 @@ The evidence genesis parameters that also influence the actual size of the tende
     },
 ```
 
-These parameters are used to determine if a block (and associated state) should be prunned:
-- a block with height `h` and time `t` is prunned if `h < max(z, b) && t < now - d`
+These parameters are used to determine if a block (and associated state) should be pruned:
+- a block with height `h` and time `t` is pruned if `h < max(z, b) && t < now - d`
 
 Additional tendermint state may be maintained for state-sync purposes.
 
