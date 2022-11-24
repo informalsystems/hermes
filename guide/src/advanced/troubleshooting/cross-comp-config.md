@@ -31,11 +31,12 @@ __Hermes vs other configuration parameters that may cause Hermes failures__
 |                                                                                                 |                                                                                                                  |                                                                       |
 | `during connection creation`                                                                    | `genesis.app_state`<br/>`.staking.params`<br/>`.historical_entries  = 0`                                         | [`No historical info`](#historical-entries)                           |
 |                                                                                                 |                                                                                                                  |                                                                       |
-| `ref_chain.clock_drift +<br/>tgt_chain.clock_drift +`<br/>`tgt_chain.max_block_time`<br/> `= x` | `tendermint.consensus.* => y block time,`<br/>`with x < y`                                                       | [`Header in the future` ](#header-in-the-future)                      |
+| `ref_chain.clock_drift +`<br/>`tgt_chain.clock_drift +`<br/>`tgt_chain.max_block_time`<br/>`= x` | `tendermint.consensus.* => y block time,`<br/>`with x < y`                                                       | [`Header in the future` ](#header-in-the-future)                      |
 |                                                                                                 |                                                                                                                  |                                                                       |
 | `max_block_delay = x`                                                                           | `genesis.app_state`<br/>`.ibc.connection_genesis.params`<br/>`.max_expected_time_per_block = y`<br/>`with x < y` | [`Block delay not reached`](#block-delay-not-reached)                 |
 |                                                                                                 |                                                                                                                  |                                                                       |
 | `key_name = <wallet_name>` | | [`Insufficient funds`](#insufficient-funds) |
+|| `tendermint.pruning = "custom",`<br/>`tendermint.pruning-keep-recent= w,`<br/>`tendermint.pruning-keep-every = x,`<br/>`tendermint.pruning-interval = y,`<br/>`tendermint.min-retain-blocks = z` | [`Uncleared packets`](#uncleared-packets) |
 
 
 ## Recheck
@@ -176,3 +177,35 @@ ERROR ThreadId(11) send_messages_and_wait_commit{chain=ibc-0 tracking_id=ft-tran
 In order to fix the error above, use one of the following two solutions:
 - add enough funds to the wallet configured by `key_name` in Hermes' `config.toml`.
 - change the wallet configured by `key_name` in Hermes' `config.toml` to a wallet which has enough funds.
+
+
+## Uncleared Packets
+If Hermes finds one or more unreceived packets but isn't ablt to clear them, it could mean that the tendermint pruning configuration isn't done properly.
+
+### Debug
+When running the command `hermes tx packet-recv` or `hermes tx packet-ack` and get the following output:
+
+```
+INFO ThreadId(01) relay_ack_packet_messages{src_chain=ibc-1 src_port=transfer src_channel=channel-0 dst_chain=ibc-0}: 222 unreceived acknowledgements found: 222
+INFO ThreadId(01) relay_ack_packet_messages{src_chain=ibc-1 src_port=transfer src_channel=channel-0 dst_chain=ibc-0}: pulled packet data for 0 events; events.total=222 events.left=172
+INFO ThreadId(01) relay_ack_packet_messages{src_chain=ibc-1 src_port=transfer src_channel=channel-0 dst_chain=ibc-0}: pulled packet data for 0 events; events.total=222 events.left=122
+INFO ThreadId(01) relay_ack_packet_messages{src_chain=ibc-1 src_port=transfer src_channel=channel-0 dst_chain=ibc-0}: pulled packet data for 0 events; events.total=222 events.left=72
+INFO ThreadId(01) relay_ack_packet_messages{src_chain=ibc-1 src_port=transfer src_channel=channel-0 dst_chain=ibc-0}: pulled packet data for 0 events; events.total=222 events.left=22
+INFO ThreadId(01) relay_ack_packet_messages{src_chain=ibc-1 src_port=transfer src_channel=channel-0 dst_chain=ibc-0}: pulled packet data for 0 events; events.total=222 events.left=0
+SUCCESS []
+```
+
+This is a good indication there is an issue with the Node used to retrieve the packet data or the tendermint pruning configuration.
+
+### Fix
+In order to retrieve more information on the packet data the Tx hash of the transaction is required. It can be retrieved using the packet sequence number which can be found using the following command:
+
+```
+hermes query packet pending --chain <CHAIN_ID> --channel <CHANNEL_ID> --port <PORT_ID>
+```
+
+With the sequence number the Tx hash can be found with an RPC dquery to the node, e.g. `https://mainnet-node.like.co/rpc/tx_search?query=%22send_packet.packet_sequence=%27<sequence_number>%27%22`.
+
+The Tx hash will allow you to get information such as the time and height of the transaction. With this information it is possible to deduce if the transaction is older than the history of the Node or if the height is too high, `current_height > height + tendermint.pruning-keep-recent`.
+
+Using an Archival Node which have a longer history should usually fix this issue.
