@@ -308,7 +308,7 @@ impl Object {
             Self::Channel(ref channel) => &channel.dst_chain_id,
             Self::Packet(ref path) => &path.dst_chain_id,
             Self::Wallet(ref wallet) => &wallet.chain_id,
-            Self::CrossChainQuery(ref query) => &query.src_chain_id,
+            Self::CrossChainQuery(ref query) => &query.dst_chain_id,
         }
     }
 

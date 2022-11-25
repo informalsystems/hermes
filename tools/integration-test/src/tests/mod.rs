@@ -23,6 +23,7 @@ pub mod supervisor;
 pub mod tendermint;
 pub mod ternary_transfer;
 pub mod transfer;
+pub mod cross_chain_query;
 
 #[cfg(any(doc, feature = "ics29-fee"))]
 pub mod fee;

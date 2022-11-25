@@ -1,14 +1,17 @@
 use crate::prelude::*;
 use crate::core::ics24_host::identifier::{ChainId, ConnectionId};
+use crate::events::IbcEvent;
 
 use super::error::Error;
 
 use core::str::FromStr;
+use std::collections::BTreeMap;
 use serde::{Serialize, Deserialize};
 use tendermint::block::Height;
 use tendermint_rpc::abci::{Event as AbciEvent, Path as TendermintPath};
 use tendermint_rpc::abci::tag::Tag;
 
+const EVENT_TYPE_PREFIX: &str = "query_request";
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct CrossChainQueryPacket {
@@ -77,7 +80,7 @@ impl<'a> TryFrom<&'a Vec<Tag>> for CrossChainQueryPacket {
 
         let chain_id = ChainId::from_string(&chain_id_str);
         let connection_id = ConnectionId::from_str(&connection_id_str).map_err(|_| Error::ics24())?;
-        let query_path = TendermintPath::from_str(&query_type_str).map_err(|_| Error::tendermint())?;
+        let query_type = TendermintPath::from_str(&query_type_str).map_err(|_| Error::tendermint())?;
         let height = Height::from_str(&height_str).map_err(|_| Error::tendermint())?;
 
         Ok(
@@ -87,10 +90,48 @@ impl<'a> TryFrom<&'a Vec<Tag>> for CrossChainQueryPacket {
                 query_id,
                 chain_id,
                 connection_id,
-                query_type: query_path,
+                query_type,
                 height,
                 request,
             }
+        )
+    }
+}
+
+fn fetch_first_element_from_events(
+    block_events: &BTreeMap<String, Vec<String>>,
+    key: &str,
+) -> Result<String, Error> {
+    let res = block_events.get(key)
+        .ok_or_else(|| vec![])
+        .map_err(|_: Vec<&String>| Error::parse())?
+        .get(0)
+        .ok_or_else(|| Err(()))
+        .map_err(|_: Result<&String, ()>| Error::parse())?;
+
+    Ok(res.clone())
+}
+
+impl CrossChainQueryPacket {
+    pub fn extract_query_event(
+        block_events: &BTreeMap<String, Vec<String>>,
+    ) -> Result<IbcEvent, Error> {
+        let chain_id_str = fetch_first_element_from_events(block_events, &format!("{}.{}", EVENT_TYPE_PREFIX, "chain_id"))?;
+        let connection_id_str = fetch_first_element_from_events(block_events, &format!("{}.{}", EVENT_TYPE_PREFIX, "connection_id"))?;
+        let query_type_str = fetch_first_element_from_events(block_events, &format!("{}.{}", EVENT_TYPE_PREFIX, "type"))?;
+        let height_str = fetch_first_element_from_events(block_events, &format!("{}.{}", EVENT_TYPE_PREFIX, "height"))?;
+
+        Ok(
+            IbcEvent::CrossChainQueryPacket(CrossChainQueryPacket {
+                module: fetch_first_element_from_events(block_events, &format!("{}.{}", EVENT_TYPE_PREFIX, "module"))?,
+                action: fetch_first_element_from_events(block_events, &format!("{}.{}", EVENT_TYPE_PREFIX, "action"))?,
+                query_id: fetch_first_element_from_events(block_events, &format!("{}.{}", EVENT_TYPE_PREFIX, "query_id"))?,
+                chain_id: ChainId::from_string(&chain_id_str),
+                connection_id: ConnectionId::from_str(&connection_id_str).map_err(|_| Error::parse())?,
+                query_type: TendermintPath::from_str(&query_type_str).map_err(|_| Error::parse())?,
+                height: Height::from_str(&height_str).map_err(|_| Error::parse())?,
+                request: fetch_first_element_from_events(block_events, &format!("{}.{}", EVENT_TYPE_PREFIX, "request"))?,
+            })
         )
     }
 }

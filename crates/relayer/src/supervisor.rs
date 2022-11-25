@@ -335,8 +335,7 @@ fn relay_on_object<Chain: ChainHandle>(
         Object::Channel(chan) => client_state_filter.control_chan_object(registry, chan),
         Object::Packet(packet) => client_state_filter.control_packet_object(registry, packet),
         Object::Wallet(_wallet) => Ok(Permission::Allow),
-        // CrossChainQuery should not relay to queried chain
-        Object::CrossChainQuery(_) => Ok(Permission::Deny),
+        Object::CrossChainQuery(_) => Ok(Permission::Allow),
     };
 
     match client_filter_outcome {

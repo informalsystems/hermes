@@ -6,6 +6,7 @@ use tendermint_rpc::{event::Event as RpcEvent, event::EventData as RpcEventData}
 use ibc_relayer_types::core::ics02_client::{events as ClientEvents, height::Height};
 use ibc_relayer_types::core::ics04_channel::events as ChannelEvents;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::applications::ics31_icq::events::CrossChainQueryPacket;
 use ibc_relayer_types::events::IbcEvent;
 
 use crate::chain::cosmos::types::events::channel::RawObject;
@@ -302,5 +303,9 @@ fn extract_block_events(
         extract_events(height, block_events, "channel_close_confirm", "channel_id"),
         height,
     );
+    if let Ok(ccq) = CrossChainQueryPacket::extract_query_event(block_events) {
+        events.push(IbcEventWithHeight::new(ccq, height));
+    }
+
     events
 }

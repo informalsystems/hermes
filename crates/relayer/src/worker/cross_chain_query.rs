@@ -4,12 +4,12 @@ use crate::util::task::{Next, spawn_background_task, TaskError, TaskHandle};
 use crate::worker::WorkerCmd;
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::CrossChainQueryRequest;
-use crate::chain::tracking::TrackedMsgs;
+// use crate::chain::tracking::TrackedMsgs;
 
 use std::time::Duration;
 use crossbeam_channel::Receiver;
 use tracing::{info, info_span};
-use uuid::Uuid;
+// use uuid::Uuid;
 
 pub fn spawn_cross_chain_query_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     chain_a_handle: ChainA,
@@ -53,15 +53,15 @@ fn handle_cross_chain_query<ChainA: ChainHandle, ChainB: ChainHandle>(
         if let Ok(res) = response {
             res.iter()
                 .for_each(|r| info!("response arrived: query_id: {}", r.query_id));
-            let any_msgs = res
+            let _any_msgs = res
                 .clone()
                 .into_iter()
                 .map(|r| r.to_any(chain_a_handle.get_signer().unwrap()))
                 .collect::<Vec<_>>();
 
-            chain_a_handle
-                .send_messages_and_wait_check_tx(TrackedMsgs::new_uuid(any_msgs, Uuid::new_v4()))
-                .map_err(|_| TaskError::Ignore(RunError::query()))?;
+            // chain_a_handle
+            //     .send_messages_and_wait_check_tx(TrackedMsgs::new_uuid(any_msgs, Uuid::new_v4()))
+            //     .map_err(|_| TaskError::Ignore(RunError::query()))?;
         }
     }
     Ok(())
