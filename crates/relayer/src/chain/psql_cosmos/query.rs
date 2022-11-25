@@ -3,8 +3,8 @@ use prost::Message;
 use sqlx::PgPool;
 use tracing::{info, trace};
 
-use tendermint::abci::transaction::Hash;
-use tendermint::abci::{self, responses::Codespace, tag::Tag, Event, Gas, Info, Log};
+use tendermint_rpc::abci::transaction::Hash;
+use tendermint_rpc::abci::{self, responses::Codespace, Data, tag::Tag, Event, Gas, Info, Log};
 use tendermint_proto::abci::TxResult;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::endpoint::tx_search::Response as TxSearchResponse;
@@ -74,8 +74,8 @@ pub fn all_ibc_events_from_tx_search_response(
 }
 
 fn event_attribute_to_tag(a: tendermint_proto::abci::EventAttribute) -> Result<Tag, Error> {
-    let key = String::from_utf8(a.key).unwrap();
-    let value = String::from_utf8(a.value).unwrap();
+    let key = String::from_utf8(Vec::from(a.key)).unwrap();
+    let value = String::from_utf8(Vec::from(a.value)).unwrap();
 
     Ok(Tag {
         key: key.into(),
@@ -107,7 +107,7 @@ pub fn proto_to_deliver_tx(
 
     Ok(abci::DeliverTx {
         code: deliver_tx.code.into(),
-        data: deliver_tx.data.into(),
+        data: Data::from(Vec::from(deliver_tx.data)),
         log: Log::new(deliver_tx.log),
         info: Info::new(deliver_tx.info),
         gas_wanted: Gas::from(deliver_tx.gas_wanted as u64),
@@ -132,7 +132,7 @@ async fn tx_result_by_hash(pool: &PgPool, hash: &str) -> Result<TxResult, Error>
     .await
     .map_err(Error::sqlx)?;
 
-    let tx_result = tendermint_proto::abci::TxResult::decode(bytes.as_slice())
+    let tx_result = TxResult::decode(bytes.as_slice())
         .wrap_err("failed to decode tx result")
         .unwrap();
 
@@ -187,7 +187,7 @@ pub async fn header_search(
         height: raw_tx_result.height.try_into().unwrap(),
         index: raw_tx_result.index,
         tx_result,
-        tx: raw_tx_result.tx.into(),
+        tx: tendermint_rpc::abci::Transaction::from(Vec::from(raw_tx_result.tx)),
         proof: None,
     }];
 
@@ -301,7 +301,7 @@ pub async fn tx_search_response_from_packet_query(
                 height: height.try_into().unwrap(),
                 index: raw_tx_result.index,
                 tx_result,
-                tx: raw_tx_result.tx.into(),
+                tx: tendermint_rpc::abci::Transaction::from(Vec::from(raw_tx_result.tx)),
                 proof: None,
             }
         })
@@ -529,7 +529,7 @@ async fn rpc_tx_results_by_hashes(
                 height: height.try_into().unwrap(),
                 index: raw_tx_result.index,
                 tx_result,
-                tx: raw_tx_result.tx.into(),
+                tx: tendermint_rpc::abci::Transaction::from(Vec::from(raw_tx_result.tx)),
                 proof: None,
             }
         })

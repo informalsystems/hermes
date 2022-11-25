@@ -2,11 +2,12 @@
 #![allow(deprecated)] // TODO(hu55a1n1): remove this when we don't need legacy upgrade support
 
 use core::time::Duration;
+use std::ops::Add;
 
 use bytes::BufMut;
 use flex_error::define_error;
 
-use tendermint::abci::transaction::Hash as TxHash;
+use tendermint_rpc::abci::transaction::Hash as TxHash;
 
 use ibc_proto::cosmos::gov::v1beta1::MsgSubmitProposal;
 use ibc_proto::cosmos::upgrade::v1beta1::Plan;
@@ -21,7 +22,6 @@ use crate::chain::handle::ChainHandle;
 use crate::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::AnyClientState;
-use crate::config::ChainConfig;
 use crate::error::Error;
 
 define_error! {
@@ -54,8 +54,6 @@ define_error! {
 
 #[derive(Clone, Debug)]
 pub struct UpgradePlanOptions {
-    pub src_chain_config: ChainConfig,
-    pub dst_chain_config: ChainConfig,
     pub src_client_id: ClientId,
     pub amount: u64,
     pub denom: String,

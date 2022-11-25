@@ -115,7 +115,7 @@ psql_conn = 'postgres://tendermint:tendermint@localhost/ibc0'
 # Snapshot store implementation
 # - Psql: Use the same Postgres database as the Tendermint indexer
 # - Memory: Use an in-memory cache
-snapshot_store = "Psql"
+snapshot_store = "Memory"
 
 # Specify the chain ID. Required
 id = 'ibc-0'
@@ -296,7 +296,7 @@ memo_prefix = ''
 id = 'ibc-1'
 type = 'CosmosPsql'
 psql_conn = 'postgres://tendermint:tendermint@localhost/ibc1'
-snapshot_store = "Psql"
+snapshot_store = "Memory"
 
 rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'

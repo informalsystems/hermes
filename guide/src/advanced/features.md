@@ -124,7 +124,7 @@ __Feature comparison between Hermes and the Go relayer__
 | Cfg_Download_Config   | ✅    | ✅     | provides means for downloading recommended configuration 
 | Cfg_Edit_Config       | ❌    | ✅     | provides means for editing the configuration from the CLI 
 | Cfg_Validation        | ✅    | ✅     | provides means to validate the current configuration 
-| Telemetry             | ✅    | ❌     | telemetry server to collect metrics 
+| Telemetry             | ✅    | ✅     | telemetry server to collect metrics 
 | REST API              | ✅    | ❌     | REST API to interact with the relayer 
 
 

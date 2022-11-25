@@ -1047,7 +1047,7 @@ impl ChainEndpoint for PsqlChain {
         self.chain.get_signer()
     }
 
-    fn config(&self) -> ChainConfig {
+    fn config(&self) -> &ChainConfig {
         ChainEndpoint::config(&self.chain)
     }
 

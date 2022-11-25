@@ -119,6 +119,19 @@ impl SupervisorHandle {
             task.join();
         }
     }
+
+    /// Ask the supervisor to dump its internal state
+    pub fn dump_state(&self) -> Result<SupervisorState, Error> {
+        let (tx, rx) = crossbeam_channel::bounded(1);
+
+        self.sender
+            .send(SupervisorCmd::DumpState(tx))
+            .map_err(|_| Error::handle_send())?;
+
+        let state = rx.recv().map_err(|_| Error::handle_recv())?;
+
+        Ok(state)
+    }
 }
 
 pub fn spawn_supervisor_tasks<Chain: ChainHandle>(

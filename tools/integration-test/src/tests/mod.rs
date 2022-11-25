@@ -7,8 +7,10 @@
 
 pub mod clear_packet;
 pub mod client_expiration;
+pub mod client_filter;
 pub mod client_refresh;
 pub mod client_settings;
+pub mod client_upgrade;
 pub mod connection_delay;
 pub mod denom_trace;
 pub mod error_events;
@@ -39,3 +41,6 @@ pub mod manual;
 
 #[cfg(any(doc, feature = "example"))]
 pub mod example;
+
+#[cfg(any(doc, feature = "forward-packet"))]
+pub mod forward;

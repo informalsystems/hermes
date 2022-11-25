@@ -380,11 +380,9 @@ mod tests {
             "/tests/config/fixtures/relayer-seed.json"
         );
         let seed_file_content = fs::read_to_string(path).unwrap();
-        let keyring = KeyRing::new(keyring::Store::Memory, "cosmos", &chain_id).unwrap();
+        let _keyring = KeyRing::new(keyring::Store::Memory, "cosmos", &chain_id).unwrap();
         let hd_path = COSMOS_HD_PATH.parse().unwrap();
-        let key_entry = keyring
-            .key_from_seed_file(&seed_file_content, &hd_path)
-            .unwrap();
+        let key_entry = KeyEntry::from_seed_file(&seed_file_content, &hd_path).unwrap();
 
         let account = Account {
             address: AccountAddress::new("".to_owned()),
