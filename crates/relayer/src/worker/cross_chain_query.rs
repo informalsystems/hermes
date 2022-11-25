@@ -52,7 +52,7 @@ fn handle_cross_chain_query<ChainA: ChainHandle, ChainB: ChainHandle>(
         let response = chain_b_handle.cross_chain_query(queries);
         if let Ok(res) = response {
             res.iter()
-                .for_each(|r| info!("response arrived: query_id: {}", r.query_id));
+                .for_each(|r| info!("response arrived: query_id: {}, result: {}", r.query_id, r.result));
             let _any_msgs = res
                 .clone()
                 .into_iter()

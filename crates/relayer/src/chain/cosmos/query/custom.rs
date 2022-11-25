@@ -33,7 +33,7 @@ pub async fn cross_chain_query_via_rpc(
             cross_chain_query_request.chain_id.to_string(),
             cross_chain_query_request.query_id,
             hex::encode(response.value),
-            response.height.to_string(),
+            response.height.value().try_into().map_err(|_| Error::ics31(CrossChainQueryError::parse()))?,
             response.proof.unwrap(),
         )
     )
