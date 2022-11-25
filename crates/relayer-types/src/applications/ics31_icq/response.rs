@@ -9,7 +9,7 @@ pub struct CrossChainQueryResponse {
     pub chain_id: String,
     pub query_id: String,
     pub result: String,
-    pub height: String,
+    pub height: i64,
     pub proof: Proof
 }
 
@@ -18,7 +18,7 @@ impl CrossChainQueryResponse {
         chain_id: String,
         query_id: String,
         result: String,
-        height: String,
+        height: i64,
         proof: Proof,
     ) -> Self {
         Self {
