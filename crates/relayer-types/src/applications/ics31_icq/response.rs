@@ -3,6 +3,7 @@ use crate::signer::Signer;
 use std::prelude::v1::*;
 use ibc_proto::google::protobuf::Any;
 use tendermint::merkle::proof::Proof;
+use crate::applications::ics31_icq::proto::{MsgSubmitQueryResponse, ProofOp, ProofOps};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CrossChainQueryResponse {
@@ -10,7 +11,22 @@ pub struct CrossChainQueryResponse {
     pub query_id: String,
     pub result: String,
     pub height: i64,
-    pub proof: Proof
+    pub proof: Proof,
+}
+
+fn into_proof_ops(
+    merkle_proof: Proof,
+) -> ProofOps {
+    ProofOps {
+        ops: merkle_proof.ops
+            .into_iter()
+            .map(|o| ProofOp {
+                r#type: o.field_type,
+                key: o.key,
+                data: o.data,
+            })
+            .collect()
+    }
 }
 
 impl CrossChainQueryResponse {
@@ -30,22 +46,21 @@ impl CrossChainQueryResponse {
         }
     }
 
-    pub fn to_any(&self, _signer: Signer) -> Any {
+    pub fn to_any(&self, signer: Signer, type_url: &str) -> Any {
         let mut encoded = Vec::new();
 
-        // TODO: encode tx submit cross chain query
-        // let msg_submit_cross_chain_query_result = MsgSubmitCrossChainQueryResult {
-        //     id: self.id.to_string(),
-        //     query_height: self.height.parse().unwrap(),
-        //     result: self.result,
-        //     data: self.data.as_bytes().to_vec(),
-        //     sender: handle.get_signer().unwrap().to_string(),
-        //     query_sender: self.sender.to_string(),
-        //     proof_specs: vec![],
-        // };
-        prost::Message::encode(&{}, &mut encoded).unwrap();
+        let msg_submit_cross_chain_query_result = MsgSubmitQueryResponse {
+            chain_id: self.chain_id.to_string(),
+            query_id: self.query_id.to_string(),
+            result: self.result.to_string().into_bytes(),
+            proof_ops: Some(into_proof_ops(self.proof.clone())),
+            height: self.height,
+            from_address: signer.as_ref().to_string(),
+        };
+
+        prost::Message::encode(&msg_submit_cross_chain_query_result, &mut encoded).unwrap();
         Any {
-            type_url: "".to_string(),
+            type_url: type_url.to_string(),
             value: encoded,
         }
     }
