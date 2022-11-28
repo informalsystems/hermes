@@ -7,7 +7,6 @@ use ibc_relayer_types::core::ics23_commitment::merkle::{
 };
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tendermint::block::Height;
-use tendermint_rpc::abci::Path as TendermintABCIPath;
 use tendermint_rpc::query::Query;
 use tendermint_rpc::{Client, HttpClient, Url};
 
@@ -76,7 +75,7 @@ pub fn tx_hash_query(request: &QueryTxHash) -> Query {
 pub async fn abci_query(
     rpc_client: &HttpClient,
     rpc_address: &Url,
-    path: TendermintABCIPath,
+    path: String,
     data: String,
     height: Height,
     prove: bool,
