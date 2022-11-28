@@ -65,7 +65,7 @@ version = "0.26.0"
 features = ["http-client", "websocket-client"]
 
 [dependencies.tendermint-light-client-verifier]
-version = "0.26.0"
+version = "0.27.0"
 
 [dependencies.abscissa_core]
 version = "=0.6.0"
