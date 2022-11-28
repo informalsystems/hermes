@@ -15,6 +15,7 @@ members = [
 ]
 
 [patch.crates-io]
+ibc-proto = { git = "https://github.com/cosmos/ibc-proto-rs.git", branch = "mikhail/tendermint-0.27" }
 # tendermint              = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
 # tendermint-rpc          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
 # tendermint-proto        = { git = "https://github.com/informalsystems/tendermint-rs", branch = "v0.23.x" }
