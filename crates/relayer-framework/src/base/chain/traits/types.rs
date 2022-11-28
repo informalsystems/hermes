@@ -145,10 +145,10 @@ pub trait HasEventType: Async {
     chain types that involve _two_ chains, the abstract types are defined
     in [`HasIbcChainTypes`].
 
-    Notice that a chain context do not contain a `Transaction` abstract
+    Notice that a chain context does not contain a `Transaction` abstract
     type. This is because we separate the concerns of normal chain operations
     from the special concerns of assembling chain messages into transactions
-    and broadcasting it to the blockchain. See the
+    and broadcasting them to the blockchain. See the
     [`transaction`](crate::base::transaction) module for more information
     about the transaction context.
 */
@@ -195,15 +195,15 @@ pub trait HasChainTypes: HasMessageType + HasEventType + HasError {
 }
 
 /**
-   The abstract types for a chain context, when it is used for IBC
-   communication wit a `Counterparty` chain context.
+   The abstract types for a chain context when it is used for IBC
+   communication with a `Counterparty` chain context.
 
    In contrast to [`HasChainTypes`], this trait is parameterized by a
    `Counterparty` chain context, which is also required to implement
    [`HasChainTypes`].
 
    Because of the `Counterparty` parameter, the associated types
-   in this trait is going to be different when used with different
+   in this trait are going to be different when used with different
    counterparty chain contexts. In other words, the type
    `<ChainA as HasIbcChainTypes<ChainB>>::ClientId` is different from
    `<ChainA as HasIbcChainTypes<ChainC>>::ClientId` if `ChainB` and `ChainC`
@@ -222,7 +222,7 @@ pub trait HasChainTypes: HasMessageType + HasEventType + HasError {
    `ClientId` type, as compared to connecting to a Cosmos chain.
 
    Note that even when a chain context implements `HasIbcChainTypes`, it is
-   _not_ expected to has access to resources on the counterparty chain. That
+   _not_ expected to have access to resources on the counterparty chain. That
    would require access to the counterparty chain context, which is implemented
    separately from the self chain context. Instead, operations that require
    access to two chain contexts are handled by the

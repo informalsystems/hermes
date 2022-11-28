@@ -4,6 +4,8 @@ use crate::base::chain::traits::types::HasChainTypes;
 use crate::base::core::traits::sync::Async;
 use crate::std_prelude::*;
 
+/// Chains that implement this trait expose a `ChainStatus` type that, at
+/// minimum, exposes the chain's height and timestamp.
 pub trait HasChainStatus: HasChainTypes {
     type ChainStatus: Async;
 

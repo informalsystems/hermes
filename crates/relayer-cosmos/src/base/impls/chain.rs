@@ -187,4 +187,14 @@ where
 
         Ok(is_packet_received)
     }
+
+    async fn query_write_ack_event(
+        channel_id: &Self::ChannelId,
+        port_id: &Self::PortId,
+        counterparty_channel_id: &<CosmosChainWrapper<Counterparty> as OfaChainTypes>::ChannelId,
+        counterparty_port_id: &<CosmosChainWrapper<Counterparty> as OfaChainTypes>::PortId,
+        sequence: &<CosmosChainWrapper<Counterparty> as OfaChainTypes>::Sequence,
+    ) -> Result<Option<Self::WriteAcknowledgementEvent>, Self::Error> {
+        todo!()
+    }
 }
