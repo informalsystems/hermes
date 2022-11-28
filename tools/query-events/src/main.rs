@@ -9,7 +9,7 @@ use tracing_subscriber::{filter::LevelFilter, EnvFilter};
 use tendermint::abci::{Event, EventAttribute};
 use tendermint_rpc::{
     endpoint::block_results,
-    query::{Condition, Operation, Query},
+    query::{Condition, Operand, Operation, Query},
     Client, HttpClient, Order, Url,
 };
 
@@ -59,7 +59,9 @@ async fn main() {
     }
 }
 
-async fn run() -> Result<(), Box<dyn std::error::Error>> {
+type BoxError = Box<dyn std::error::Error>;
+
+async fn run() -> Result<(), BoxError> {
     let opts = Opts::parse();
 
     info!("Connecting to {}", opts.url);
@@ -143,7 +145,12 @@ fn event_matches(event: &Event, query: &Query) -> bool {
 
     query.conditions.iter().all(|cond| {
         tags.get(&cond.key)
-            .map(|tag| eval(cond, tag))
+            .map(|tag| {
+                eval(cond, tag).unwrap_or_else(|e| {
+                    error!("error when evaluating query: {}", e);
+                    false
+                })
+            })
             .unwrap_or(false)
     })
 }
@@ -155,20 +162,44 @@ fn attrs_to_map(attrs: &[EventAttribute], kind: &str) -> HashMap<String, EventAt
         .collect()
 }
 
-#[allow(unused_variables)]
-fn eval(cond: &Condition, attr: &EventAttribute) -> bool {
-    match &cond.operation {
-        Operation::Eq(op) => attr.value == unescape(&op.to_string()),
-        Operation::Contains(needle) => attr.value.contains(needle),
-        Operation::Exists => true,
-
-        Operation::Lt(op) => todo!(),
-        Operation::Lte(op) => todo!(),
-        Operation::Gt(op) => todo!(),
-        Operation::Gte(op) => todo!(),
+macro_rules! eval_op {
+    ($attr:expr, $op:tt $rhs:expr) => {
+        {
+            let lhs = to_matching_operand(&$attr, $rhs)?;
+            match (&lhs, $rhs) {
+                (Operand::String(l), Operand::String(r)) => Ok(l $op r),
+                (Operand::Signed(l), Operand::Signed(r)) => Ok(l $op r),
+                (Operand::Unsigned(l), Operand::Unsigned(r)) => Ok(l $op r),
+                (Operand::Float(l), Operand::Float(r)) => Ok(l $op r),
+                (Operand::Date(l), Operand::Date(r)) => Ok(l $op r),
+                (Operand::DateTime(l), Operand::DateTime(r)) => Ok(l $op r),
+                _ => Err("mismatching types".into()),
+            }
+        }
     }
 }
 
-fn unescape(s: &str) -> String {
-    s.trim_matches('\'').replace("\\'", "'")
+#[allow(unused_variables)]
+fn eval(cond: &Condition, attr: &EventAttribute) -> Result<bool, BoxError> {
+    match &cond.operation {
+        // we know this key exists otherwise we wouldn't have called `eval`
+        Operation::Exists => Ok(true),
+        Operation::Contains(needle) => Ok(attr.value.contains(needle)),
+        Operation::Eq(rhs) => eval_op!(attr.value, == rhs),
+        Operation::Lt(rhs) => eval_op!(attr.value, < rhs),
+        Operation::Lte(rhs) => eval_op!(attr.value, <= rhs),
+        Operation::Gt(rhs) => eval_op!(attr.value, <= rhs),
+        Operation::Gte(rhs) => eval_op!(attr.value, <= rhs),
+    }
+}
+
+fn to_matching_operand(value: &str, op: &Operand) -> Result<Operand, BoxError> {
+    match op {
+        Operand::String(_) => Ok(Operand::String(value.to_owned())),
+        Operand::Signed(_) => value.parse().map(Operand::Signed).map_err(Into::into),
+        Operand::Unsigned(_) => value.parse().map(Operand::Unsigned).map_err(Into::into),
+        Operand::Float(_) => value.parse().map(Operand::Float).map_err(Into::into),
+        Operand::Date(_) => todo!(),
+        Operand::DateTime(_) => todo!(),
+    }
 }
