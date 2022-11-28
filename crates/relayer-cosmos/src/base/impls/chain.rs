@@ -189,6 +189,7 @@ where
     }
 
     async fn query_write_ack_event(
+        &self,
         channel_id: &Self::ChannelId,
         port_id: &Self::PortId,
         counterparty_channel_id: &<CosmosChainWrapper<Counterparty> as OfaChainTypes>::ChannelId,
