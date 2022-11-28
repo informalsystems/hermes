@@ -158,7 +158,7 @@ fn attrs_to_map(attrs: &[EventAttribute], kind: &str) -> HashMap<String, EventAt
 #[allow(unused_variables)]
 fn eval(cond: &Condition, attr: &EventAttribute) -> bool {
     match &cond.operation {
-        Operation::Eq(op) => attr.value == op.to_string().as_str().trim_matches('\''), // FIXME: Unescape properly
+        Operation::Eq(op) => attr.value == unescape(&op.to_string()),
         Operation::Contains(needle) => attr.value.contains(needle),
         Operation::Exists => true,
 
@@ -167,4 +167,8 @@ fn eval(cond: &Condition, attr: &EventAttribute) -> bool {
         Operation::Gt(op) => todo!(),
         Operation::Gte(op) => todo!(),
     }
+}
+
+fn unescape(s: &str) -> String {
+    s.trim_matches('\'').replace("\\'", "'")
 }
