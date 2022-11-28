@@ -37,6 +37,10 @@ struct Opts {
     /// How to order the results by height
     #[clap(long, default_value = "desc")]
     order: Order,
+
+    /// Enable verbose mode, display partially matching events
+    #[clap(short, long)]
+    verbose: bool,
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -83,9 +87,32 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
 
     let results = try_join_all(heights.iter().map(|&h| client.block_results(h))).await?;
 
+    if opts.verbose {
+        for result in &results {
+            let height = result.height;
+            let events = collect_events(result.clone()).collect_vec();
+
+            if !events.is_empty() {
+                info!(
+                    "Block {}: found {} partially matching events",
+                    height,
+                    events.len()
+                );
+                info!("{:#?}", events);
+            } else {
+                info!(
+                    "Block {}: found no matching events, even with partial match",
+                    height
+                );
+            }
+        }
+    }
+
     for result in results {
         let height = result.height;
-        let events = collect_events(result, &query);
+        let events = collect_events(result)
+            .filter(|event| event_matches(event, &query))
+            .collect_vec();
 
         if !events.is_empty() {
             info!("Block {}: found {} matching events", height, events.len());
@@ -98,7 +125,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn collect_events(res: block_results::Response, query: &Query) -> Vec<Event> {
+fn collect_events(res: block_results::Response) -> impl Iterator<Item = Event> {
     let tx_events = res
         .txs_results
         .unwrap_or_default()
@@ -108,11 +135,7 @@ fn collect_events(res: block_results::Response, query: &Query) -> Vec<Event> {
     let begin_events = res.begin_block_events.unwrap_or_default().into_iter();
     let end_events = res.end_block_events.unwrap_or_default().into_iter();
 
-    begin_events
-        .chain(tx_events)
-        .chain(end_events)
-        .filter(|event| event_matches(event, query))
-        .collect_vec()
+    begin_events.chain(tx_events).chain(end_events)
 }
 
 fn event_matches(event: &Event, query: &Query) -> bool {
