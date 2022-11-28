@@ -46,6 +46,9 @@ jobs:
           - package: gaia7
             command: gaiad
             account_prefix: cosmos
+          - package: gaia8
+            command: gaiad
+            account_prefix: cosmos
           - package: ibc-go-v2-simapp
             command: simd
             account_prefix: cosmos
@@ -216,6 +219,9 @@ jobs:
       matrix:
         chain:
           - package: gaia6
+            command: gaiad
+            account_prefix: cosmos
+          - package: gaia8
             command: gaiad
             account_prefix: cosmos
     steps:
