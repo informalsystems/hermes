@@ -1,5 +1,6 @@
 use crate::prelude::*;
-use tendermint::merkle::proof::Proof as TendermintProof;
+
+use tendermint::merkle::proof::ProofOps as TendermintProofOps;
 
 use ibc_proto::ibc::core::commitment::v1::MerklePath;
 use ibc_proto::ibc::core::commitment::v1::MerkleProof as RawMerkleProof;
@@ -249,7 +250,7 @@ fn calculate_non_existence_root(proof: &NonExistenceProof) -> Result<Vec<u8>, Er
 //     }
 // }
 
-pub fn convert_tm_to_ics_merkle_proof(tm_proof: &TendermintProof) -> Result<MerkleProof, Error> {
+pub fn convert_tm_to_ics_merkle_proof(tm_proof: &TendermintProofOps) -> Result<MerkleProof, Error> {
     let mut proofs = Vec::new();
 
     for op in &tm_proof.ops {

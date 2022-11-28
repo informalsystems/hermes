@@ -3,7 +3,6 @@ use core::fmt::{Display, Error as FmtError, Formatter};
 use serde::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
-use tendermint_rpc::abci::tag::Value as TagValue;
 
 use crate::core::ics02_client::{error::Error as ICS2Error, height::Height};
 use crate::prelude::*;
@@ -111,20 +110,11 @@ impl From<Height> for TimeoutHeight {
     }
 }
 
-impl From<TimeoutHeight> for TagValue {
-    fn from(timeout_height: TimeoutHeight) -> Self {
-        match timeout_height {
-            TimeoutHeight::At(height) => height.to_string().parse().unwrap(),
-            TimeoutHeight::Never => "0-0".parse().unwrap(),
-        }
-    }
-}
-
 impl Display for TimeoutHeight {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match self {
             TimeoutHeight::At(timeout_height) => write!(f, "{}", timeout_height),
-            TimeoutHeight::Never => write!(f, "no timeout"),
+            TimeoutHeight::Never => write!(f, "0-0"),
         }
     }
 }

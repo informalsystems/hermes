@@ -2,8 +2,8 @@
 
 use core::fmt::{Display, Error as FmtError, Formatter};
 use serde_derive::{Deserialize, Serialize};
-use tendermint_rpc::abci::tag::Tag;
-use tendermint_rpc::abci::Event as AbciEvent;
+
+use tendermint::abci::{Event as AbciEvent, EventAttribute};
 
 use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::events::{IbcEvent, IbcEventType};
@@ -26,10 +26,26 @@ pub struct Attributes {
 impl Display for Attributes {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match (&self.connection_id, &self.counterparty_connection_id) {
-            (Some(connection_id), Some(counterparty_connection_id)) => write!(f, "Attributes {{ connection_id: {}, client_id: {}, counterparty_connection_id: {}, counterparty_client_id: {} }}", connection_id, self.client_id, counterparty_connection_id, self.counterparty_client_id),
-            (Some(connection_id), None) => write!(f, "Attributes {{ connection_id: {}, client_id: {}, counterparty_connection_id: None, counterparty_client_id: {} }}", connection_id, self.client_id, self.counterparty_client_id),
-            (None, Some(counterparty_connection_id)) => write!(f, "Attributes {{ connection_id: None, client_id: {}, counterparty_connection_id: {}, counterparty_client_id: {} }}", self.client_id, counterparty_connection_id, self.counterparty_client_id),
-            (None, None) => write!(f, "Attributes {{ connection_id: None, client_id: {}, counterparty_connection_id: None, counterparty_client_id: {} }}", self.client_id, self.counterparty_client_id),
+            (Some(connection_id), Some(counterparty_connection_id)) => write!(
+                f,
+                "Attributes {{ connection_id: {}, client_id: {}, counterparty_connection_id: {}, counterparty_client_id: {} }}",
+                connection_id, self.client_id, counterparty_connection_id, self.counterparty_client_id
+            ),
+            (Some(connection_id), None) => write!(
+                f,
+                "Attributes {{ connection_id: {}, client_id: {}, counterparty_connection_id: None, counterparty_client_id: {} }}",
+                connection_id, self.client_id, self.counterparty_client_id
+            ),
+            (None, Some(counterparty_connection_id)) => write!(
+                f,
+                "Attributes {{ connection_id: None, client_id: {}, counterparty_connection_id: {}, counterparty_client_id: {} }}",
+                self.client_id, counterparty_connection_id, self.counterparty_client_id
+            ),
+            (None, None) => write!(
+                f,
+                "Attributes {{ connection_id: None, client_id: {}, counterparty_connection_id: None, counterparty_client_id: {} }}",
+                self.client_id, self.counterparty_client_id
+            ),
         }
     }
 }
@@ -42,33 +58,42 @@ impl Display for Attributes {
 /// is infallible, even if it is not represented in the error type.
 /// Once tendermint-rs improves the API of the `Key` and `Value` types,
 /// we will be able to remove the `.parse().unwrap()` calls.
-impl From<Attributes> for Vec<Tag> {
+impl From<Attributes> for Vec<EventAttribute> {
     fn from(a: Attributes) -> Self {
         let mut attributes = vec![];
+
         if let Some(conn_id) = a.connection_id {
-            let conn_id = Tag {
+            let conn_id = EventAttribute {
                 key: CONN_ID_ATTRIBUTE_KEY.parse().unwrap(),
                 value: conn_id.to_string().parse().unwrap(),
+                index: true,
             };
             attributes.push(conn_id);
         }
-        let client_id = Tag {
+
+        let client_id = EventAttribute {
             key: CLIENT_ID_ATTRIBUTE_KEY.parse().unwrap(),
             value: a.client_id.to_string().parse().unwrap(),
+            index: true,
         };
         attributes.push(client_id);
+
         if let Some(conn_id) = a.counterparty_connection_id {
-            let conn_id = Tag {
+            let conn_id = EventAttribute {
                 key: COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY.parse().unwrap(),
                 value: conn_id.to_string().parse().unwrap(),
+                index: true,
             };
             attributes.push(conn_id);
         }
-        let counterparty_client_id = Tag {
+
+        let counterparty_client_id = EventAttribute {
             key: COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY.parse().unwrap(),
             value: a.counterparty_client_id.to_string().parse().unwrap(),
+            index: true,
         };
         attributes.push(counterparty_client_id);
+
         attributes
     }
 }
@@ -105,10 +130,9 @@ impl From<OpenInit> for IbcEvent {
 
 impl From<OpenInit> for AbciEvent {
     fn from(v: OpenInit) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
         AbciEvent {
-            type_str: IbcEventType::OpenInitConnection.as_str().to_string(),
-            attributes,
+            kind: IbcEventType::OpenInitConnection.as_str().to_string(),
+            attributes: v.0.into(),
         }
     }
 }
@@ -145,10 +169,9 @@ impl From<OpenTry> for IbcEvent {
 
 impl From<OpenTry> for AbciEvent {
     fn from(v: OpenTry) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
         AbciEvent {
-            type_str: IbcEventType::OpenTryConnection.as_str().to_string(),
-            attributes,
+            kind: IbcEventType::OpenTryConnection.as_str().to_string(),
+            attributes: v.0.into(),
         }
     }
 }
@@ -185,10 +208,9 @@ impl From<OpenAck> for IbcEvent {
 
 impl From<OpenAck> for AbciEvent {
     fn from(v: OpenAck) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
         AbciEvent {
-            type_str: IbcEventType::OpenAckConnection.as_str().to_string(),
-            attributes,
+            kind: IbcEventType::OpenAckConnection.as_str().to_string(),
+            attributes: v.0.into(),
         }
     }
 }
@@ -225,10 +247,9 @@ impl From<OpenConfirm> for IbcEvent {
 
 impl From<OpenConfirm> for AbciEvent {
     fn from(v: OpenConfirm) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
         AbciEvent {
-            type_str: IbcEventType::OpenConfirmConnection.as_str().to_string(),
-            attributes,
+            kind: IbcEventType::OpenConfirmConnection.as_str().to_string(),
+            attributes: v.0.into(),
         }
     }
 }

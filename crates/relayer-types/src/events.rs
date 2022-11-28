@@ -7,8 +7,7 @@ use core::fmt::{Display, Error as FmtError, Formatter};
 use core::str::FromStr;
 use flex_error::{define_error, TraceError};
 use serde_derive::{Deserialize, Serialize};
-use tendermint_rpc::abci::tag::Tag;
-use tendermint_rpc::abci::Event as AbciEvent;
+use tendermint::abci::{Event as AbciEvent, EventAttribute};
 
 use crate::applications::ics29_fee::error::Error as FeeError;
 use crate::applications::ics29_fee::events::IncentivizedPacket;
@@ -475,7 +474,7 @@ impl TryFrom<ModuleEvent> for AbciEvent {
 
         let attributes = event.attributes.into_iter().map(Into::into).collect();
         Ok(AbciEvent {
-            type_str: event.kind,
+            kind: event.kind,
             attributes,
         })
     }
@@ -512,17 +511,12 @@ impl<K: ToString, V: ToString> From<(K, V)> for ModuleEventAttribute {
     }
 }
 
-impl From<ModuleEventAttribute> for Tag {
+impl From<ModuleEventAttribute> for EventAttribute {
     fn from(attr: ModuleEventAttribute) -> Self {
         Self {
-            key: attr
-                .key
-                .parse()
-                .expect("Key::from_str() impl is infallible"),
-            value: attr
-                .key
-                .parse()
-                .expect("Value::from_str() impl is infallible"),
+            key: attr.key,
+            value: attr.key,
+            index: true,
         }
     }
 }

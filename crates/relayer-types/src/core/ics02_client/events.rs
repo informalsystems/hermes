@@ -2,8 +2,8 @@
 
 use core::fmt::{Display, Error as FmtError, Formatter};
 use serde_derive::{Deserialize, Serialize};
-use tendermint_rpc::abci::tag::Tag;
-use tendermint_rpc::abci::Event as AbciEvent;
+
+use tendermint::abci::{Event as AbciEvent, EventAttribute};
 
 use super::header::Header;
 use crate::core::ics02_client::client_type::ClientType;
@@ -90,19 +90,22 @@ impl Display for Attributes {
 /// is infallible, even if it is not represented in the error type.
 /// Once tendermint-rs improves the API of the `Key` and `Value` types,
 /// we will be able to remove the `.parse().unwrap()` calls.
-impl From<Attributes> for Vec<Tag> {
+impl From<Attributes> for Vec<EventAttribute> {
     fn from(attrs: Attributes) -> Self {
-        let client_id = Tag {
+        let client_id = EventAttribute {
             key: CLIENT_ID_ATTRIBUTE_KEY.parse().unwrap(),
             value: attrs.client_id.to_string().parse().unwrap(),
+            index: true,
         };
-        let client_type = Tag {
+        let client_type = EventAttribute {
             key: CLIENT_TYPE_ATTRIBUTE_KEY.parse().unwrap(),
             value: attrs.client_type.as_str().parse().unwrap(),
+            index: true,
         };
-        let consensus_height = Tag {
+        let consensus_height = EventAttribute {
             key: CONSENSUS_HEIGHT_ATTRIBUTE_KEY.parse().unwrap(),
             value: attrs.consensus_height.to_string().parse().unwrap(),
+            index: true,
         };
         vec![client_id, client_type, consensus_height]
     }
@@ -138,10 +141,9 @@ impl From<CreateClient> for IbcEvent {
 
 impl From<CreateClient> for AbciEvent {
     fn from(v: CreateClient) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
         AbciEvent {
-            type_str: IbcEventType::CreateClient.as_str().to_string(),
-            attributes,
+            kind: IbcEventType::CreateClient.as_str().to_string(),
+            attributes: v.0.into(),
         }
     }
 }
@@ -172,8 +174,13 @@ impl Display for UpdateClient {
         // TODO Display: Check for a solution for Box<dyn Header>
         write!(
             f,
-            "UpdateClient {{ common: {}, header: None }}",
-            self.common
+            "UpdateClient {{ common: {}, header: {} }}",
+            self.common,
+            if self.header.is_some() {
+                "Some(<header>)"
+            } else {
+                "None"
+            }
         )
     }
 }
@@ -195,16 +202,20 @@ impl From<UpdateClient> for IbcEvent {
 
 impl From<UpdateClient> for AbciEvent {
     fn from(v: UpdateClient) -> Self {
-        let mut attributes = Vec::<Tag>::from(v.common);
+        let mut attributes = Vec::<EventAttribute>::from(v.common);
+
         if let Some(h) = v.header {
-            let header = Tag {
+            let header = EventAttribute {
                 key: HEADER_ATTRIBUTE_KEY.parse().unwrap(),
                 value: h.encode_to_hex_string().parse().unwrap(),
+                index: true,
             };
+
             attributes.push(header);
         }
+
         AbciEvent {
-            type_str: IbcEventType::UpdateClient.as_str().to_string(),
+            kind: IbcEventType::UpdateClient.as_str().to_string(),
             attributes,
         }
     }
@@ -241,10 +252,9 @@ impl From<ClientMisbehaviour> for IbcEvent {
 
 impl From<ClientMisbehaviour> for AbciEvent {
     fn from(v: ClientMisbehaviour) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
         AbciEvent {
-            type_str: IbcEventType::ClientMisbehaviour.as_str().to_string(),
-            attributes,
+            kind: IbcEventType::ClientMisbehaviour.as_str().to_string(),
+            attributes: v.0.into(),
         }
     }
 }
@@ -273,10 +283,9 @@ impl From<Attributes> for UpgradeClient {
 
 impl From<UpgradeClient> for AbciEvent {
     fn from(v: UpgradeClient) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
         AbciEvent {
-            type_str: IbcEventType::UpgradeClient.as_str().to_string(),
-            attributes,
+            kind: IbcEventType::UpgradeClient.as_str().to_string(),
+            attributes: v.0.into(),
         }
     }
 }

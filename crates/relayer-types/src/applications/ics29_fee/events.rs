@@ -1,8 +1,8 @@
 use core::str::FromStr;
 use itertools::Itertools;
 use serde_derive::{Deserialize, Serialize};
-use tendermint_rpc::abci::tag::Tag;
-use tendermint_rpc::abci::Event as AbciEvent;
+
+use tendermint::abci::{Event as AbciEvent, EventAttribute};
 
 use super::error::Error;
 use crate::applications::transfer::coin::RawCoin;
@@ -21,29 +21,24 @@ pub struct IncentivizedPacket {
     pub total_timeout_fee: Vec<RawCoin>,
 }
 
-fn find_value(key: &str, entries: &[Tag]) -> Result<String, Error> {
+fn find_value(key: &str, entries: &[EventAttribute]) -> Result<String, Error> {
     entries
         .iter()
-        .find_map(|entry| {
-            if entry.key.as_ref() == key {
-                Some(entry.value.to_string())
-            } else {
-                None
-            }
-        })
+        .find_map(|entry| (entry.key == key).then(|| entry.value.to_string()))
         .ok_or_else(|| Error::event_attribute_not_found(key.to_string()))
 }
 
-fn new_tag(key: &str, value: &str) -> Tag {
-    Tag {
+fn new_tag(key: &str, value: &str) -> EventAttribute {
+    EventAttribute {
         key: key.parse().unwrap(),
         value: value.parse().unwrap(),
+        index: true,
     }
 }
 
 impl From<IncentivizedPacket> for AbciEvent {
     fn from(event: IncentivizedPacket) -> AbciEvent {
-        let attributes: Vec<Tag> = vec![
+        let attributes = vec![
             new_tag("port_id", event.port_id.as_str()),
             new_tag("channel_id", event.channel_id.as_ref()),
             new_tag("packet_sequence", &event.sequence.to_string()),
@@ -53,16 +48,16 @@ impl From<IncentivizedPacket> for AbciEvent {
         ];
 
         AbciEvent {
-            type_str: IbcEventType::IncentivizedPacket.as_str().to_string(),
+            kind: IbcEventType::IncentivizedPacket.as_str().to_string(),
             attributes,
         }
     }
 }
 
-impl<'a> TryFrom<&'a Vec<Tag>> for IncentivizedPacket {
+impl<'a> TryFrom<&'a [EventAttribute]> for IncentivizedPacket {
     type Error = Error;
 
-    fn try_from(entries: &'a Vec<Tag>) -> Result<Self, Error> {
+    fn try_from(entries: &'a [EventAttribute]) -> Result<Self, Error> {
         let port_id_str = find_value("port_id", entries)?;
         let channel_id_str = find_value("channel_id", entries)?;
         let sequence_str = find_value("packet_sequence", entries)?;
