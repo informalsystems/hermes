@@ -16,7 +16,7 @@ use crate::chain::cosmos::types::tx::SignedTx;
 use crate::config::types::Memo;
 use crate::config::AddressType;
 use crate::error::Error;
-use crate::keyring::{sign_message, KeyEntry};
+use crate::keyring::KeyEntry;
 
 pub fn sign_and_encode_tx(
     config: &TxConfig,
@@ -138,7 +138,9 @@ fn encode_sign_doc(
     let mut signdoc_buf = Vec::new();
     prost::Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
 
-    let signed = sign_message(key, signdoc_buf, address_type).map_err(Error::key_base)?;
+    let signed = key
+        .sign_message(&signdoc_buf, address_type)
+        .map_err(Error::key_base)?;
 
     Ok(signed)
 }
