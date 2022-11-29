@@ -95,6 +95,7 @@ impl ChainBuilder {
         // If there are more spawned chains than given chain binaries, take the N-th position modulo
         // the number of chain binaries given.
         let chain_number = chain_number % self.command_paths.len();
+        let account_number = chain_number % self.account_prefixes.len();
 
         let chain_type = ChainType::from_str(&self.command_paths[chain_number])?;
 
@@ -112,7 +113,7 @@ impl ChainBuilder {
             self.command_paths[chain_number].clone(),
             chain_id,
             home_path,
-            self.account_prefixes[chain_number].clone(),
+            self.account_prefixes[account_number].clone(),
             rpc_port,
             grpc_port,
             grpc_web_port,
