@@ -68,11 +68,12 @@ impl TryFrom<String> for GasPrice {
                     .parse::<f64>()
                     .map_err(|_| Error::invalid_gas_price(price_in.to_string()))?;
 
-                Ok(GasPrice { price, denom: denom.to_owned() })
+                Ok(GasPrice {
+                    price,
+                    denom: denom.to_owned(),
+                })
             }
-            None => {
-                return Err(Error::invalid_gas_price(price_in.to_string()));
-            }
+            None => Err(Error::invalid_gas_price(price_in)),
         }
     }
 }
@@ -519,8 +520,8 @@ pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<()
 
 #[cfg(test)]
 mod tests {
-    use crate::config::GasPrice;
     use super::{load, store_writer};
+    use crate::config::GasPrice;
     use test_log::test;
 
     #[test]
@@ -553,7 +554,9 @@ mod tests {
         let gp_original = GasPrice::new(10.0, "atom".to_owned());
 
         let gp_raw: String = gp_original.to_string();
-        let gp: GasPrice = gp_raw.try_into().expect("could not parse String into GasPrice");
+        let gp: GasPrice = gp_raw
+            .try_into()
+            .expect("could not parse String into GasPrice");
 
         assert_eq!(gp, gp_original);
     }
