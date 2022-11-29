@@ -73,6 +73,9 @@ jobs:
           - package: osmosis
             command: osmosisd
             account_prefix: osmo
+          - package: gaia8 .#evmos
+            command: gaiad,evmosd
+            account_prefix: cosmos,evmos
 
     steps:
       - uses: actions/checkout@v2
@@ -98,8 +101,8 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
-          CHAIN_COMMAND_PATH: ${{ matrix.chain.command }}
-          ACCOUNT_PREFIX: ${{ matrix.chain.account_prefix }}
+          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
+          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
           nix shell .#python .#${{ matrix.chain.package }} -c cargo \
             test -p ibc-integration-test --no-fail-fast -- \
@@ -163,7 +166,7 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
-          CHAIN_COMMAND_PATH: icad
+          CHAIN_COMMAND_PATHS: icad
         run: |
           nix shell .#python .#ica -c cargo \
             test -p ibc-integration-test --features ica --no-fail-fast -- \
@@ -205,8 +208,8 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
-          CHAIN_COMMAND_PATH: ${{ matrix.chain.command }}
-          ACCOUNT_PREFIX: ${{ matrix.chain.account_prefix }}
+          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
+          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
           nix shell .#${{ matrix.chain.package }} -c cargo \
             test -p ibc-integration-test --features ics29-fee --no-fail-fast -- \
@@ -248,8 +251,8 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
-          CHAIN_COMMAND_PATH: ${{ matrix.chain.command }}
-          ACCOUNT_PREFIX: ${{ matrix.chain.account_prefix }}
+          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
+          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
           nix shell .#${{ matrix.chain.package }} -c cargo \
             test -p ibc-integration-test --features forward-packet --no-fail-fast -- \
