@@ -306,10 +306,29 @@ impl CosmosSdkChain {
         Ok(params)
     }
 
-    /// Query the chain for its configuration parameters
-    pub fn query_config_params(&self) -> Result<ConfigResponse, Error> {
+    /// Query the chain for its configuration parameters.
+    ///
+    /// ### Note: This query endpoint was introduced in SDK v0.46.3/v0.45.10. Not available before that.
+    ///
+    /// Returns:
+    ///     - `Ok(Some(..))` if the query was successful.
+    ///     - `Ok(None) in case the query endpoint is not available.
+    ///     - `Err` for any other error.
+    pub fn query_config_params(&self) -> Result<Option<ConfigResponse>, Error> {
         crate::time!("query_config_params");
         crate::telemetry!(query, self.id(), "query_config_params");
+
+        // Helper function to diagnose if the node config query is unimplemented
+        // by matching on the error details.
+        fn is_unimplemented_node_query(err_status: tonic::Status) -> bool {
+            if err_status.code() != tonic::Code::Unimplemented {
+                return false;
+            }
+
+            err_status
+                .message()
+                .contains("unknown service cosmos.base.node.v1beta1.Service")
+        }
 
         let mut client = self
             .block_on(
@@ -321,23 +340,30 @@ impl CosmosSdkChain {
 
         let request = tonic::Request::new(ibc_proto::cosmos::base::node::v1beta1::ConfigRequest {});
 
-        let response = self
-            .block_on(client.config(request))
-            .map_err(Error::grpc_status)?;
+        match self.block_on(client.config(request)) {
+            Ok(response) => {
+                let params = response.into_inner();
 
-        let params = response.into_inner();
-
-        Ok(params)
+                Ok(Some(params))
+            }
+            Err(e) => {
+                if is_unimplemented_node_query(e.clone()) {
+                    Ok(None)
+                } else {
+                    Err(e).map_err(Error::grpc_status)
+                }
+            }
+        }
     }
 
     /// The minimum gas price of this chain
-    pub fn min_gas_price(&self) -> Result<GasPrice, Error> {
+    pub fn min_gas_price(&self) -> Result<Option<GasPrice>, Error> {
         crate::time!("min_gas_price");
 
-        let min_gas_price: GasPrice = self
+        let min_gas_price: Option<GasPrice> = self
             .query_config_params()?
-            .minimum_gas_price
-            .try_into()
+            .map(|cfg_response| GasPrice::try_from(cfg_response.minimum_gas_price))
+            .transpose()
             .map_err(Error::config)?;
 
         Ok(min_gas_price)
@@ -1937,10 +1963,12 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
         );
     }
 
-    let gas_price = chain.config.gas_price.clone();
+    let relayer_gas_price = chain.config.gas_price.clone();
 
-    if chain.min_gas_price()? > gas_price {
-        return Err(Error::gas_price_too_low(chain_id.clone()));
+    if let Some(node_min_gas_price) = chain.min_gas_price()? {
+        if node_min_gas_price > relayer_gas_price {
+            return Err(Error::gas_price_too_low(chain_id.clone()));
+        }
     }
 
     let version_specs = chain.block_on(fetch_version_specs(&chain.config.id, &chain.grpc_addr))?;

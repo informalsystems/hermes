@@ -56,19 +56,25 @@ impl Display for GasPrice {
 impl TryFrom<String> for GasPrice {
     type Error = ConfigError;
 
-    fn try_from(price: String) -> Result<Self, Self::Error> {
-        // Note: `split_once` does _not_ split inclusively
-        // the first alphabetic letter is dropped
-        let (price, denom) = match price.split_once(char::is_alphabetic) {
-            Some((price, denom)) => (price, String::from(denom)),
-            _ => return Err(Error::invalid_gas_price(price)),
-        };
+    fn try_from(price_in: String) -> Result<Self, Self::Error> {
+        // TODO: We split by `char::is_alphabetic` delimiter.
+        //      More robust parsing methods might be needed.
+        let spos = price_in.find(char::is_alphabetic);
+        match spos {
+            Some(position) => {
+                let (price_str, denom) = price_in.split_at(position);
 
-        let price = price
-            .parse::<f64>()
-            .map_err(|_| Error::invalid_gas_price(price.to_string()))?;
+                let price = price_str
+                    .parse::<f64>()
+                    .map_err(|_| Error::invalid_gas_price(price_in.to_string()))?;
 
-        Ok(GasPrice { price, denom })
+                Ok(GasPrice {
+                    price,
+                    denom: denom.to_owned(),
+                })
+            }
+            None => Err(Error::invalid_gas_price(price_in)),
+        }
     }
 }
 
@@ -515,6 +521,7 @@ pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<()
 #[cfg(test)]
 mod tests {
     use super::{load, store_writer};
+    use crate::config::GasPrice;
     use test_log::test;
 
     #[test]
@@ -540,5 +547,17 @@ mod tests {
 
         let mut buffer = Vec::new();
         store_writer(&config, &mut buffer).unwrap();
+    }
+
+    #[test]
+    fn gas_price_try_from() {
+        let gp_original = GasPrice::new(10.0, "atom".to_owned());
+
+        let gp_raw: String = gp_original.to_string();
+        let gp: GasPrice = gp_raw
+            .try_into()
+            .expect("could not parse String into GasPrice");
+
+        assert_eq!(gp, gp_original);
     }
 }
