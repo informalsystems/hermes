@@ -83,7 +83,7 @@ async fn run() -> Result<(), BoxError> {
 
     info!(
         "Found {} blocks with partially matching events at heights: {}",
-        result.total_count,
+        heights.len(),
         heights.iter().join(", ")
     );
 
