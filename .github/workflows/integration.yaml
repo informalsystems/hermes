@@ -76,9 +76,6 @@ jobs:
           - package: .#gaia8 .#evmos
             command: gaiad,evmosd
             account_prefix: cosmos,evmos
-          - package: .#gaia6 .#gaia7
-            command: $(nix shell .#gaia6 -c which gaiad),$(nix shell .#gaia7 -c which gaiad)
-            account_prefix: cosmos
 
     steps:
       - uses: actions/checkout@v2
