@@ -1892,6 +1892,8 @@ dependencies = [
  "opentelemetry-prometheus",
  "prometheus",
  "rouille",
+ "serde",
+ "serde_json",
  "tendermint",
 ]
 
