@@ -40,40 +40,40 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia6
+          - package: .#gaia6
             command: gaiad
             account_prefix: cosmos
-          - package: gaia7
+          - package: .#gaia7
             command: gaiad
             account_prefix: cosmos
-          - package: gaia8
+          - package: .#gaia8
             command: gaiad
             account_prefix: cosmos
-          - package: ibc-go-v2-simapp
+          - package: .#ibc-go-v2-simapp
             command: simd
             account_prefix: cosmos
-          - package: ibc-go-v3-simapp
+          - package: .#ibc-go-v3-simapp
             command: simd
             account_prefix: cosmos
-          - package: ibc-go-v4-simapp
+          - package: .#ibc-go-v4-simapp
             command: simd
             account_prefix: cosmos
-          - package: ibc-go-v5-simapp
+          - package: .#ibc-go-v5-simapp
             command: simd
             account_prefix: cosmos
-          - package: ibc-go-v6-simapp
+          - package: .#ibc-go-v6-simapp
             command: simd
             account_prefix: cosmos
-          - package: wasmd
+          - package: .#wasmd
             command: wasmd
             account_prefix: wasm
-          - package: evmos
+          - package: .#evmos
             command: evmosd
             account_prefix: evmos
-          - package: osmosis
+          - package: .#osmosis
             command: osmosisd
             account_prefix: osmo
-          - package: gaia8 .#evmos
+          - package: .#gaia8 .#evmos
             command: gaiad,evmosd
             account_prefix: cosmos,evmos
 
@@ -108,7 +108,7 @@ jobs:
           max_attempts: 3
           timeout_minutes: 45
           command: |
-            nix shell .#python .#${{ matrix.chain.package }} -c cargo \
+            nix shell .#python ${{ matrix.chain.package }} -c cargo \
               test -p ibc-integration-test --no-fail-fast -- \
               --nocapture --test-threads=2
 
@@ -182,10 +182,10 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: ibc-go-v5-simapp
+          - package: .#ibc-go-v5-simapp
             command: simd
             account_prefix: cosmos
-          - package: ibc-go-v6-simapp
+          - package: .#ibc-go-v6-simapp
             command: simd
             account_prefix: cosmos
     steps:
@@ -215,7 +215,7 @@ jobs:
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
-          nix shell .#${{ matrix.chain.package }} -c cargo \
+          nix shell ${{ matrix.chain.package }} -c cargo \
             test -p ibc-integration-test --features ics29-fee --no-fail-fast -- \
             --nocapture --test-threads=1 fee::
 
@@ -225,10 +225,10 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia6
+          - package: .#gaia6
             command: gaiad
             account_prefix: cosmos
-          - package: gaia8
+          - package: .#gaia8
             command: gaiad
             account_prefix: cosmos
     steps:
@@ -258,7 +258,7 @@ jobs:
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
         run: |
-          nix shell .#${{ matrix.chain.package }} -c cargo \
+          nix shell ${{ matrix.chain.package }} -c cargo \
             test -p ibc-integration-test --features forward-packet --no-fail-fast -- \
             --nocapture --test-threads=1 forward::
 
