@@ -135,6 +135,7 @@ pub struct CrossChainQuery {
     pub src_chain_id: ChainId,
     pub dst_chain_id: ChainId,
     pub query_id: String,
+    pub connection_id: ConnectionId,
 }
 
 impl CrossChainQuery {
@@ -519,6 +520,7 @@ impl Object {
             src_chain_id: src_chain.clone().id(),
             dst_chain_id,
             query_id: p.query_id.to_string(),
+            connection_id: p.connection_id.clone(),
         }.into())
     }
 }
