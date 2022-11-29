@@ -22,7 +22,9 @@ prometheus               = "0.13.2"
 rouille                  = "3.6.1"
 moka                     = "0.9.4"
 dashmap                  = "5.4.0"
+serde_json = "1.0.87"
+serde = "1.0.147"
 
 [dependencies.tendermint]
-version = "0.26.0"
+version = "0.27.0"
 default-features = false

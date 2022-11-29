@@ -14,8 +14,7 @@ use tendermint::block::Height as TmHeight;
 use tendermint::node::info::TxIndexStatus;
 use tendermint_light_client_verifier::types::LightBlock as TmLightBlock;
 use tendermint_rpc::{
-    abci::Path as TendermintABCIPath, endpoint::broadcast::tx_sync::Response, endpoint::status,
-    Client, HttpClient, Order,
+    endpoint::broadcast::tx_sync::Response, endpoint::status, Client, HttpClient, Order,
 };
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::{codegen::http::Uri, metadata::AsciiMetadataValue};
@@ -409,9 +408,7 @@ impl CosmosSdkChain {
     ) -> Result<QueryResponse, Error> {
         crate::time!("query");
 
-        // SAFETY: Creating a Path from a constant; this should never fail
-        let path = TendermintABCIPath::from_str(IBC_QUERY_PATH)
-            .expect("Turning IBC query path constant into a Tendermint ABCI path");
+        let path = IBC_QUERY_PATH.into();
 
         let height = TmHeight::try_from(height_query)?;
 
@@ -457,9 +454,7 @@ impl CosmosSdkChain {
         query_data: ClientUpgradePath,
         query_height: ICSHeight,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
-        // SAFETY: Creating a Path from a constant; this should never fail
-        let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH)
-            .expect("Turning SDK upgrade query path constant into a Tendermint ABCI path");
+        let path = SDK_UPGRADE_QUERY_PATH.into();
 
         let response: QueryResponse = self.block_on(abci_query(
             &self.rpc_client,

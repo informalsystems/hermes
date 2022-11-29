@@ -1,5 +1,6 @@
 extern crate alloc;
 
+pub mod encoder;
 mod path_identifier;
 pub mod server;
 pub mod state;
