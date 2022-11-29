@@ -526,7 +526,7 @@ define_error! {
 
         GasPriceTooLow
             { chain_id: ChainId }
-            |e| { format!("Hermes gas price is lower than the minimum gas price set by chain '{}'", e.chain_id) },
+            |e| { format!("Hermes gas price is lower than the minimum gas price set by node operator'{}'", e.chain_id) },
 
         TxIndexingDisabled
             { chain_id: ChainId }

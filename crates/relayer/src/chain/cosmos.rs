@@ -306,7 +306,7 @@ impl CosmosSdkChain {
         Ok(params)
     }
 
-    /// Query the chain for its configuration parameters
+    /// Query the node for its configuration parameters
     pub fn query_config_params(&self) -> Result<ConfigResponse, Error> {
         crate::time!("query_config_params");
         crate::telemetry!(query, self.id(), "query_config_params");
@@ -330,7 +330,7 @@ impl CosmosSdkChain {
         Ok(params)
     }
 
-    /// The minimum gas price of this chain
+    /// The minimum gas price that this node accepts
     pub fn min_gas_price(&self) -> Result<GasPrice, Error> {
         crate::time!("min_gas_price");
 
@@ -1903,7 +1903,7 @@ fn client_id_suffix(client_id: &ClientId) -> Option<u64> {
 /// 4. Checks that the chain identifier matches the network name.
 /// 5. Checks that the underlying SDK and ibc-go versions are compatible.
 /// 6. Checks that the `gas_price` parameter in Hermes is >= the `min_gas_price`
-///    advertised by the chain.
+///    advertised by the node Hermes is connected to.
 fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     let chain_id = chain.id();
     let grpc_address = chain.grpc_addr.to_string();
