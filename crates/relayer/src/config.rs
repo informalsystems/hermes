@@ -514,6 +514,7 @@ pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<()
 
 #[cfg(test)]
 mod tests {
+    use crate::config::GasPrice;
     use super::{load, store_writer};
     use test_log::test;
 
@@ -540,5 +541,15 @@ mod tests {
 
         let mut buffer = Vec::new();
         store_writer(&config, &mut buffer).unwrap();
+    }
+
+    #[test]
+    fn gas_price_try_from() {
+        let gp_original = GasPrice::new(10.0, "atom".to_owned());
+
+        let gp_raw: String = gp_original.to_string();
+        let gp: GasPrice = gp_raw.try_into().expect("could not parse String into GasPrice");
+
+        assert_eq!(gp, gp_original);
     }
 }
