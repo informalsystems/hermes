@@ -50,7 +50,7 @@ jobs:
           command: fmt
           args: --all -- --check
 
-  clippy_all_features:
+  clippy-all-features:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -62,10 +62,11 @@ jobs:
       - uses: Swatinem/rust-cache@v1
       - uses: actions-rs/clippy-check@v1
         with:
+          name: clippy-all-features
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features --all-targets
 
-  clippy_no_default_features:
+  clippy-no-default-features:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -77,6 +78,7 @@ jobs:
       - uses: Swatinem/rust-cache@v1
       - uses: actions-rs/clippy-check@v1
         with:
+          name: clippy-no-default-features
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --no-default-features --all-targets
 
