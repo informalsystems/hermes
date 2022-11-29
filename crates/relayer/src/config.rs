@@ -56,19 +56,24 @@ impl Display for GasPrice {
 impl TryFrom<String> for GasPrice {
     type Error = ConfigError;
 
-    fn try_from(price: String) -> Result<Self, Self::Error> {
-        // Note: `split_once` does _not_ split inclusively
-        // the first alphabetic letter is dropped
-        let (price, denom) = match price.split_once(char::is_alphabetic) {
-            Some((price, denom)) => (price, String::from(denom)),
-            _ => return Err(Error::invalid_gas_price(price)),
-        };
+    fn try_from(price_in: String) -> Result<Self, Self::Error> {
+        // TODO: We split by `char::is_alphabetic` delimiter.
+        //      More robust parsing methods might be needed.
+        let spos = price_in.find(char::is_alphabetic);
+        match spos {
+            Some(position) => {
+                let (price_str, denom) = price_in.split_at(position);
 
-        let price = price
-            .parse::<f64>()
-            .map_err(|_| Error::invalid_gas_price(price.to_string()))?;
+                let price = price_str
+                    .parse::<f64>()
+                    .map_err(|_| Error::invalid_gas_price(price_in.to_string()))?;
 
-        Ok(GasPrice { price, denom })
+                Ok(GasPrice { price, denom: denom.to_owned() })
+            }
+            None => {
+                return Err(Error::invalid_gas_price(price_in.to_string()));
+            }
+        }
     }
 }
 
