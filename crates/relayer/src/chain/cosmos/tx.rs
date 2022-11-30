@@ -52,7 +52,7 @@ async fn broadcast_tx_sync(
     data: Vec<u8>,
 ) -> Result<Response, Error> {
     let response = rpc_client
-        .broadcast_tx_sync(data.into())
+        .broadcast_tx_sync(data)
         .await
         .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
 
