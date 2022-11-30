@@ -32,6 +32,11 @@ env:
   CARGO_NET_RETRY: 10
   RUSTUP_MAX_RETRIES: 10
 
+# Cancel previous runs of this workflow when a new commit is added to the PR, branch or tag
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   integration-test:
     runs-on: ubuntu-latest
@@ -44,6 +49,9 @@ jobs:
             command: gaiad
             account_prefix: cosmos
           - package: gaia7
+            command: gaiad
+            account_prefix: cosmos
+          - package: gaia8
             command: gaiad
             account_prefix: cosmos
           - package: ibc-go-v2-simapp
@@ -91,16 +99,20 @@ jobs:
         with:
           command: test
           args: -p ibc-integration-test --no-fail-fast --no-run
-      - env:
+      - uses: nick-fields/retry@v2
+        env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
           CHAIN_COMMAND_PATH: ${{ matrix.chain.command }}
           ACCOUNT_PREFIX: ${{ matrix.chain.account_prefix }}
-        run: |
-          nix shell .#python .#${{ matrix.chain.package }} -c cargo \
-            test -p ibc-integration-test --no-fail-fast -- \
-            --nocapture --test-threads=2
+        with:
+          max_attempts: 3
+          timeout_minutes: 45
+          command: |
+            nix shell .#python .#${{ matrix.chain.package }} -c cargo \
+              test -p ibc-integration-test --no-fail-fast -- \
+              --nocapture --test-threads=2
 
   ordered-channel-test:
     runs-on: ubuntu-latest
@@ -216,6 +228,9 @@ jobs:
       matrix:
         chain:
           - package: gaia6
+            command: gaiad
+            account_prefix: cosmos
+          - package: gaia8
             command: gaiad
             account_prefix: cosmos
     steps:

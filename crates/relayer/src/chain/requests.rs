@@ -28,7 +28,7 @@ use ibc_relayer_types::Height;
 
 use serde::{Deserialize, Serialize};
 use tendermint::block::Height as TMBlockHeight;
-use tendermint_rpc::abci::transaction::Hash as TxHash;
+use tendermint::Hash as TxHash;
 use tonic::metadata::AsciiMetadataValue;
 
 /// Type to specify a height in a query. Specifically, this caters to the use

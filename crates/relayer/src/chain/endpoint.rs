@@ -30,6 +30,7 @@ use tendermint_rpc::endpoint::broadcast::tx_sync::Response as TxResponse;
 
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;
+use crate::chain::handle::Subscription;
 use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
@@ -38,17 +39,12 @@ use crate::connection::ConnectionMsgType;
 use crate::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
 use crate::denom::DenomTrace;
 use crate::error::{Error, QUERY_PROOF_EXPECT_MSG};
-use crate::event::monitor::{EventBatch, EventReceiver, TxMonitorCmd};
+use crate::event::monitor::EventBatch;
 use crate::event::IbcEventWithHeight;
 use crate::keyring::{KeyEntry, KeyRing};
 use crate::light_client::AnyHeader;
 use crate::misbehaviour::MisbehaviourEvidence;
 use crate::snapshot::IbcSnapshot;
-
-use super::requests::{
-    IncludeProof, QueryHeight, QueryPacketAcknowledgementRequest, QueryPacketCommitmentRequest,
-    QueryPacketReceiptRequest, QueryTxRequest,
-};
 
 /// The result of a health check.
 #[derive(Debug)]
@@ -91,17 +87,14 @@ pub trait ChainEndpoint: Sized {
     /// Constructs the chain
     fn bootstrap(config: ChainConfig, rt: Arc<TokioRuntime>) -> Result<Self, Error>;
 
-    /// Initializes and returns the event monitor (if any) associated with this chain.
-    fn init_event_monitor(
-        &self,
-        rt: Arc<TokioRuntime>,
-    ) -> Result<(EventReceiver, TxMonitorCmd), Error>;
-
     /// Shutdown the chain runtime
     fn shutdown(self) -> Result<(), Error>;
 
     /// Perform a health check
     fn health_check(&self) -> Result<HealthCheck, Error>;
+
+    // Events
+    fn subscribe(&mut self) -> Result<Subscription, Error>;
 
     // Keyring
 

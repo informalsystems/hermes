@@ -12,6 +12,7 @@ members = [
     "tools/integration-test",
     "tools/test-framework",
     "tools/check-guide",
+    "tools/query-events",
 ]
 
 exclude = [
@@ -20,10 +21,10 @@ exclude = [
     "relayer-x/ibc-proxy",
 ]
 
-[patch.crates-io]
-tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibcnode" }
-tendermint-rpc                   = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibcnode" }
-tendermint-proto                 = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibcnode" }
-tendermint-light-client          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibcnode" }
-tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibcnode" }
-tendermint-testgen               = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibcnode" }
+# [patch.crates-io]
+# tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibcnode" }
+# tendermint-rpc                   = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibcnode" }
+# tendermint-proto                 = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibcnode" }
+# tendermint-light-client          = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibcnode" }
+# tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibcnode" }
+# tendermint-testgen               = { git = "https://github.com/informalsystems/tendermint-rs", branch = "romac/ibcnode" }

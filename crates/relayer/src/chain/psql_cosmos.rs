@@ -37,6 +37,7 @@ use crate::{
         client::ClientSettings,
         cosmos::{query::account::get_or_fetch_account, CosmosSdkChain},
         endpoint::{ChainEndpoint, ChainStatus, HealthCheck},
+        handle::Subscription,
         psql_cosmos::{batch::send_batched_messages_and_wait_commit, query::*},
         requests::*,
         tracking::TrackedMsgs,
@@ -46,10 +47,7 @@ use crate::{
     consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight},
     denom::DenomTrace,
     error::Error,
-    event::{
-        monitor::{EventBatch, EventReceiver, TxMonitorCmd},
-        IbcEventWithHeight,
-    },
+    event::{monitor::EventBatch, IbcEventWithHeight},
     keyring::{KeyEntry, KeyRing},
     misbehaviour::MisbehaviourEvidence,
     snapshot::{
@@ -999,11 +997,8 @@ impl ChainEndpoint for PsqlChain {
         })
     }
 
-    fn init_event_monitor(
-        &self,
-        rt: Arc<tokio::runtime::Runtime>,
-    ) -> Result<(EventReceiver, TxMonitorCmd), Error> {
-        self.chain.init_event_monitor(rt)
+    fn subscribe(&mut self) -> Result<Subscription, Error> {
+        self.chain.subscribe()
     }
 
     fn id(&self) -> &ChainId {

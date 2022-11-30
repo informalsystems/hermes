@@ -3,8 +3,8 @@ use prost::Message;
 use sqlx::PgPool;
 use tracing::{info, trace};
 
-use tendermint_rpc::abci::transaction::Hash;
-use tendermint_rpc::abci::{self, responses::Codespace, Data, tag::Tag, Event, Gas, Info, Log};
+use tendermint::abci::{self, Event};
+use tendermint::Hash;
 use tendermint_proto::abci::TxResult;
 use tendermint_rpc::endpoint::tx::Response as ResultTx;
 use tendermint_rpc::endpoint::tx_search::Response as TxSearchResponse;
@@ -43,7 +43,7 @@ fn filter_matching_event(
             && request.sequences.contains(&packet.sequence)
     }
 
-    if event.type_str != request.event_id.as_str() {
+    if event.kind != request.event_id.as_str() {
         return None;
     }
 
@@ -62,7 +62,7 @@ fn filter_matching_event(
 
 pub fn all_ibc_events_from_tx_search_response(
     height: ICSHeight,
-    result: abci::DeliverTx,
+    result: abci::response::DeliverTx,
 ) -> Vec<IbcEventWithHeight> {
     let mut events = vec![];
     for event in result.events {
@@ -71,50 +71,6 @@ pub fn all_ibc_events_from_tx_search_response(
         }
     }
     events
-}
-
-fn event_attribute_to_tag(a: tendermint_proto::abci::EventAttribute) -> Result<Tag, Error> {
-    let key = String::from_utf8(Vec::from(a.key)).unwrap();
-    let value = String::from_utf8(Vec::from(a.value)).unwrap();
-
-    Ok(Tag {
-        key: key.into(),
-        value: value.into(),
-    })
-}
-
-fn proto_to_abci_event(e: tendermint_proto::abci::Event) -> Result<Event, Error> {
-    let attributes = e
-        .attributes
-        .into_iter()
-        .filter_map(|a| event_attribute_to_tag(a).ok())
-        .collect::<Vec<Tag>>();
-
-    Ok(Event {
-        type_str: e.r#type,
-        attributes,
-    })
-}
-
-pub fn proto_to_deliver_tx(
-    deliver_tx: tendermint_proto::abci::ResponseDeliverTx,
-) -> Result<abci::DeliverTx, Error> {
-    let events = deliver_tx
-        .events
-        .into_iter()
-        .filter_map(|r| proto_to_abci_event(r).ok())
-        .collect();
-
-    Ok(abci::DeliverTx {
-        code: deliver_tx.code.into(),
-        data: Data::from(Vec::from(deliver_tx.data)),
-        log: Log::new(deliver_tx.log),
-        info: Info::new(deliver_tx.info),
-        gas_wanted: Gas::from(deliver_tx.gas_wanted as u64),
-        gas_used: Gas::from(deliver_tx.gas_used as u64),
-        codespace: Codespace::new(deliver_tx.codespace),
-        events,
-    })
 }
 
 #[derive(Debug, sqlx::FromRow)]
@@ -178,16 +134,18 @@ pub async fn header_search(
 
     let (raw_tx_result, hash) = tx_result_by_header_fields(pool, search).await?;
     let deliver_tx = raw_tx_result.result.unwrap();
-    let tx_result = proto_to_deliver_tx(deliver_tx)?;
 
-    trace!(tx_result.events = ? &tx_result.events, "got events");
+    let tx_result =
+        abci::response::DeliverTx::try_from(deliver_tx).map_err(Error::tendermint_decode)?;
+
+    trace!(tx_result.events = ?tx_result.events, "got events");
 
     let txs = vec![ResultTx {
-        hash: hash.parse().unwrap(), // TODO: validate hash earlier
+        hash: hash.parse().unwrap(), // FIXME(romac): validate hash earlier
         height: raw_tx_result.height.try_into().unwrap(),
         index: raw_tx_result.index,
         tx_result,
-        tx: tendermint_rpc::abci::Transaction::from(Vec::from(raw_tx_result.tx)),
+        tx: Vec::from(raw_tx_result.tx),
         proof: None,
     }];
 
@@ -221,7 +179,7 @@ fn update_client_events_from_tx_search_response(
         .tx_result
         .events
         .into_iter()
-        .filter(|event| event.type_str == request.event_id.as_str())
+        .filter(|event| event.kind == request.event_id.as_str())
         .flat_map(|event| from_tx_response_event(height, &event))
         .flat_map(|event| match event.event {
             IbcEvent::UpdateClient(update) => Some(update),
@@ -292,16 +250,16 @@ pub async fn tx_search_response_from_packet_query(
         .map(|result| {
             let (height, raw_tx_result, hash) = result;
             let deliver_tx = raw_tx_result.result.unwrap();
-            trace!(tx_result.events = ? &deliver_tx.events, "got events");
+            trace!(tx_result.events = ?deliver_tx.events, "got events");
 
-            let tx_result = proto_to_deliver_tx(deliver_tx).unwrap();
+            let tx_result = abci::response::DeliverTx::try_from(deliver_tx).unwrap();
 
             ResultTx {
                 hash: hash.parse().unwrap(),
                 height: height.try_into().unwrap(),
                 index: raw_tx_result.index,
                 tx_result,
-                tx: tendermint_rpc::abci::Transaction::from(Vec::from(raw_tx_result.tx)),
+                tx: Vec::from(raw_tx_result.tx),
                 proof: None,
             }
         })
@@ -399,6 +357,8 @@ pub async fn query_txs_from_tendermint(
         }
 
         QueryTxRequest::Transaction(tx) => {
+            // FIXME(romac): unwraps
+
             let hash = tx.0.to_string();
             let raw_tx_result = tx_result_by_hash(pool, hash.as_str()).await?;
             let height =
@@ -407,7 +367,9 @@ pub async fn query_txs_from_tendermint(
 
             let deliver_tx = raw_tx_result.result.unwrap();
 
-            let tx_result = proto_to_deliver_tx(deliver_tx)?;
+            let tx_result = abci::response::DeliverTx::try_from(deliver_tx)
+                .map_err(Error::tendermint_decode)?;
+
             if tx_result.code.is_err() {
                 return Ok(vec![IbcEventWithHeight::new(
                     IbcEvent::ChainError(format!(
@@ -522,14 +484,15 @@ async fn rpc_tx_results_by_hashes(
             let deliver_tx = raw_tx_result.result.unwrap();
             trace!(tx_result.events = ? &deliver_tx.events, "got events");
 
-            let tx_result = proto_to_deliver_tx(deliver_tx).unwrap();
+            // FIXME(romac): Unwraps
+            let tx_result = abci::response::DeliverTx::try_from(deliver_tx).unwrap();
 
             ResultTx {
                 hash: hash.parse().unwrap(),
                 height: height.try_into().unwrap(),
                 index: raw_tx_result.index,
                 tx_result,
-                tx: tendermint_rpc::abci::Transaction::from(Vec::from(raw_tx_result.tx)),
+                tx: Vec::from(raw_tx_result.tx),
                 proof: None,
             }
         })
