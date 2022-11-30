@@ -12,7 +12,7 @@ description  = """
 """
 
 [dependencies]
-ibc-proto         = { version = "0.22.0" }
+ibc-proto         = { version = "0.23.0" }
 ibc-relayer-types = { version = "0.20.0", path = "../relayer-types", features = ["std"] }
 
 async-trait = "0.1.57"
@@ -26,5 +26,5 @@ tokio       = "1.17.0"
 tracing     = "0.1.36"
 
 [dependencies.tendermint-rpc]
-version = "0.26"
+version = "0.27"
 features = ["http-client", "websocket-client"]

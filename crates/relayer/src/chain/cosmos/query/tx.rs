@@ -3,8 +3,8 @@ use ibc_relayer_types::core::ics04_channel::packet::{Packet, Sequence};
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::Height as ICSHeight;
-use tendermint_rpc::abci::transaction::Hash as TxHash;
-use tendermint_rpc::abci::Event;
+use tendermint::abci::Event;
+use tendermint::Hash as TxHash;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tendermint_rpc::{Client, HttpClient, Order, Url};
 
@@ -236,7 +236,7 @@ fn update_client_from_tx_search_response(
         .tx_result
         .events
         .into_iter()
-        .filter(|event| event.type_str == request.event_id.as_str())
+        .filter(|event| event.kind == request.event_id.as_str())
         .flat_map(|event| ibc_event_try_from_abci_event(&event).ok())
         .flat_map(|event| match event {
             IbcEvent::UpdateClient(update) => Some(update),
@@ -299,7 +299,7 @@ pub fn filter_matching_event(
             && seqs.contains(&packet.sequence)
     }
 
-    if event.type_str != request.event_id.as_str() {
+    if event.kind != request.event_id.as_str() {
         return None;
     }
 

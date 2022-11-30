@@ -3,7 +3,7 @@ use core::str::FromStr;
 use abscissa_core::clap::Parser;
 use abscissa_core::{Command, Runnable};
 
-use tendermint_rpc::abci::transaction::Hash;
+use tendermint::Hash;
 
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
