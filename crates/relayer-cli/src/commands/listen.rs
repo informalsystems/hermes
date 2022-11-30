@@ -8,17 +8,13 @@ use std::thread;
 
 use abscissa_core::clap::Parser;
 use abscissa_core::{application::fatal_error, Runnable};
+use eyre::eyre;
 use itertools::Itertools;
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, info, instrument};
 
+use ibc_relayer::{chain::handle::Subscription, config::ChainConfig, event::monitor::EventMonitor};
 use ibc_relayer_types::{core::ics24_host::identifier::ChainId, events::IbcEvent};
-
-use eyre::eyre;
-use ibc_relayer::{
-    config::ChainConfig,
-    event::monitor::{EventMonitor, EventReceiver},
-};
 
 use crate::prelude::*;
 
@@ -115,14 +111,14 @@ pub fn listen(config: &ChainConfig, filters: &[EventFilter]) -> eyre::Result<()>
     thread::spawn(|| event_monitor.run());
 
     while let Ok(event_batch) = rx.recv() {
-        match event_batch {
+        match event_batch.as_ref() {
             Ok(batch) => {
                 let _span =
                     tracing::error_span!("event_batch", batch_height = %batch.height).entered();
 
                 let matching_events = batch
                     .events
-                    .into_iter()
+                    .iter()
                     .filter(|e| event_match(&e.event, filters))
                     .collect_vec();
 
@@ -148,8 +144,8 @@ fn event_match(event: &IbcEvent, filters: &[EventFilter]) -> bool {
 fn subscribe(
     chain_config: &ChainConfig,
     rt: Arc<TokioRuntime>,
-) -> eyre::Result<(EventMonitor, EventReceiver)> {
-    let (mut event_monitor, rx, _) = EventMonitor::new(
+) -> eyre::Result<(EventMonitor, Subscription)> {
+    let (mut event_monitor, tx_cmd) = EventMonitor::new(
         chain_config.id.clone(),
         chain_config.websocket_addr.clone(),
         rt,
@@ -157,10 +153,12 @@ fn subscribe(
     .map_err(|e| eyre!("could not initialize event monitor: {}", e))?;
 
     event_monitor
-        .subscribe()
+        .init_subscriptions()
         .map_err(|e| eyre!("could not initialize subscriptions: {}", e))?;
 
-    Ok((event_monitor, rx))
+    let subscription = tx_cmd.subscribe()?;
+
+    Ok((event_monitor, subscription))
 }
 
 #[cfg(test)]
