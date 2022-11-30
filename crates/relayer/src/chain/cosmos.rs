@@ -46,7 +46,6 @@ use ibc_relayer_types::Height as ICSHeight;
 use tendermint::block::Height as TmHeight;
 use tendermint::node::info::TxIndexStatus;
 use tendermint_light_client_verifier::types::LightBlock as TmLightBlock;
-use tendermint_rpc::abci::Path as TendermintABCIPath;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::endpoint::status;
 use tendermint_rpc::{Client, HttpClient, Order};
@@ -354,9 +353,7 @@ impl CosmosSdkChain {
     ) -> Result<QueryResponse, Error> {
         crate::time!("query");
 
-        // SAFETY: Creating a Path from a constant; this should never fail
-        let path = TendermintABCIPath::from_str(IBC_QUERY_PATH)
-            .expect("Turning IBC query path constant into a Tendermint ABCI path");
+        let path = IBC_QUERY_PATH.into();
 
         let height = TmHeight::try_from(height_query)?;
 
@@ -402,9 +399,7 @@ impl CosmosSdkChain {
         query_data: ClientUpgradePath,
         query_height: ICSHeight,
     ) -> Result<(Vec<u8>, MerkleProof), Error> {
-        // SAFETY: Creating a Path from a constant; this should never fail
-        let path = TendermintABCIPath::from_str(SDK_UPGRADE_QUERY_PATH)
-            .expect("Turning SDK upgrade query path constant into a Tendermint ABCI path");
+        let path = SDK_UPGRADE_QUERY_PATH.into();
 
         let response: QueryResponse = self.block_on(abci_query(
             &self.rpc_client,
