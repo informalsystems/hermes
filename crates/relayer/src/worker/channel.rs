@@ -3,6 +3,7 @@ use crossbeam_channel::Receiver;
 use tracing::{debug, error_span};
 
 use crate::channel::Channel as RelayChannel;
+use crate::util::retry::RetryResult;
 use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
 use crate::{
     chain::handle::{ChainHandle, ChainHandlePair},
@@ -34,15 +35,16 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
 
                         complete_handshake_on_new_block = false;
                         if let Some(event_with_height) = last_event {
-                            let mut handshake_channel = RelayChannel::restore_from_event(
-                                chains.a.clone(),
-                                chains.b.clone(),
-                                event_with_height.event.clone(),
-                            )
-                            .map_err(|e| TaskError::Fatal(RunError::channel(e)))?;
-
                             retry_with_index(retry_strategy::worker_default_strategy(), |index| {
-                                handshake_channel.step_event(&event_with_height.event, index)
+                                match RelayChannel::restore_from_event(
+                                    chains.a.clone(),
+                                    chains.b.clone(),
+                                    event_with_height.event.clone(),
+                                ) {
+                                    Ok(mut handshake_channel) => handshake_channel
+                                        .step_event(&event_with_height.event, index),
+                                    Err(_) => RetryResult::Retry(index),
+                                }
                             })
                             .map_err(|e| TaskError::Fatal(RunError::retry(e)))
                         } else {
@@ -60,17 +62,19 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                             .decrement()
                             .map_err(|e| TaskError::Fatal(RunError::ics02(e)))?;
 
-                        let (mut handshake_channel, state) = RelayChannel::restore_from_state(
-                            chains.a.clone(),
-                            chains.b.clone(),
-                            channel.clone(),
-                            height,
-                        )
-                        .map_err(|e| TaskError::Fatal(RunError::channel(e)))?;
-
                         complete_handshake_on_new_block = false;
                         retry_with_index(retry_strategy::worker_default_strategy(), |index| {
-                            handshake_channel.step_state(state, index)
+                            match RelayChannel::restore_from_state(
+                                chains.a.clone(),
+                                chains.b.clone(),
+                                channel.clone(),
+                                height,
+                            ) {
+                                Ok((mut handshake_channel, state)) => {
+                                    handshake_channel.step_state(state, index)
+                                }
+                                Err(_) => RetryResult::Retry(index),
+                            }
                         })
                         .map_err(|e| TaskError::Fatal(RunError::retry(e)))
                     }
