@@ -1,6 +1,7 @@
 use crate::signer::Signer;
 
 use std::prelude::v1::*;
+use std::vec;
 use ibc_proto::google::protobuf::Any;
 use tendermint::merkle::proof::Proof;
 use crate::applications::ics31_icq::proto::{MsgSubmitQueryResponse, ProofOp, ProofOps};
@@ -47,7 +48,7 @@ impl CrossChainQueryResponse {
     }
 
     pub fn to_any(&self, signer: Signer, type_url: &str) -> Any {
-        let mut encoded = Vec::new();
+        let mut encoded = vec![];
 
         let msg_submit_cross_chain_query_result = MsgSubmitQueryResponse {
             chain_id: self.chain_id.to_string(),
