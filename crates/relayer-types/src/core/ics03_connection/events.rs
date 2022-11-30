@@ -2,8 +2,7 @@
 
 use core::fmt::{Display, Error as FmtError, Formatter};
 use serde_derive::{Deserialize, Serialize};
-use tendermint_rpc::abci::tag::Tag;
-use tendermint_rpc::abci::Event as AbciEvent;
+use tendermint::abci;
 
 use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::events::{IbcEvent, IbcEventType};
@@ -35,39 +34,24 @@ impl Display for Attributes {
 }
 
 /// Convert attributes to Tendermint ABCI tags
-///
-/// # Note
-/// The parsing of `Key`s and `Value`s never fails, because the
-/// `FromStr` instance of `tendermint::abci::tag::{Key, Value}`
-/// is infallible, even if it is not represented in the error type.
-/// Once tendermint-rs improves the API of the `Key` and `Value` types,
-/// we will be able to remove the `.parse().unwrap()` calls.
-impl From<Attributes> for Vec<Tag> {
+impl From<Attributes> for Vec<abci::EventAttribute> {
     fn from(a: Attributes) -> Self {
         let mut attributes = vec![];
         if let Some(conn_id) = a.connection_id {
-            let conn_id = Tag {
-                key: CONN_ID_ATTRIBUTE_KEY.parse().unwrap(),
-                value: conn_id.to_string().parse().unwrap(),
-            };
+            let conn_id = (CONN_ID_ATTRIBUTE_KEY, conn_id.as_str()).into();
             attributes.push(conn_id);
         }
-        let client_id = Tag {
-            key: CLIENT_ID_ATTRIBUTE_KEY.parse().unwrap(),
-            value: a.client_id.to_string().parse().unwrap(),
-        };
+        let client_id = (CLIENT_ID_ATTRIBUTE_KEY, a.client_id.as_str()).into();
         attributes.push(client_id);
         if let Some(conn_id) = a.counterparty_connection_id {
-            let conn_id = Tag {
-                key: COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY.parse().unwrap(),
-                value: conn_id.to_string().parse().unwrap(),
-            };
+            let conn_id = (COUNTERPARTY_CONN_ID_ATTRIBUTE_KEY, conn_id.as_str()).into();
             attributes.push(conn_id);
         }
-        let counterparty_client_id = Tag {
-            key: COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY.parse().unwrap(),
-            value: a.counterparty_client_id.to_string().parse().unwrap(),
-        };
+        let counterparty_client_id = (
+            COUNTERPARTY_CLIENT_ID_ATTRIBUTE_KEY,
+            a.counterparty_client_id.to_string(),
+        )
+            .into();
         attributes.push(counterparty_client_id);
         attributes
     }
@@ -103,12 +87,11 @@ impl From<OpenInit> for IbcEvent {
     }
 }
 
-impl From<OpenInit> for AbciEvent {
+impl From<OpenInit> for abci::Event {
     fn from(v: OpenInit) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
-        AbciEvent {
-            type_str: IbcEventType::OpenInitConnection.as_str().to_string(),
-            attributes,
+        Self {
+            kind: IbcEventType::OpenInitConnection.as_str().to_owned(),
+            attributes: v.0.into(),
         }
     }
 }
@@ -143,12 +126,11 @@ impl From<OpenTry> for IbcEvent {
     }
 }
 
-impl From<OpenTry> for AbciEvent {
+impl From<OpenTry> for abci::Event {
     fn from(v: OpenTry) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
-        AbciEvent {
-            type_str: IbcEventType::OpenTryConnection.as_str().to_string(),
-            attributes,
+        Self {
+            kind: IbcEventType::OpenTryConnection.as_str().to_owned(),
+            attributes: v.0.into(),
         }
     }
 }
@@ -183,12 +165,11 @@ impl From<OpenAck> for IbcEvent {
     }
 }
 
-impl From<OpenAck> for AbciEvent {
+impl From<OpenAck> for abci::Event {
     fn from(v: OpenAck) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
-        AbciEvent {
-            type_str: IbcEventType::OpenAckConnection.as_str().to_string(),
-            attributes,
+        Self {
+            kind: IbcEventType::OpenAckConnection.as_str().to_owned(),
+            attributes: v.0.into(),
         }
     }
 }
@@ -223,12 +204,11 @@ impl From<OpenConfirm> for IbcEvent {
     }
 }
 
-impl From<OpenConfirm> for AbciEvent {
+impl From<OpenConfirm> for abci::Event {
     fn from(v: OpenConfirm) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
-        AbciEvent {
-            type_str: IbcEventType::OpenConfirmConnection.as_str().to_string(),
-            attributes,
+        Self {
+            kind: IbcEventType::OpenConfirmConnection.as_str().to_owned(),
+            attributes: v.0.into(),
         }
     }
 }
