@@ -573,6 +573,7 @@ impl CosmosSdkChain {
                 .map(|ev| IbcEventWithHeight::new(ev, response_height))
                 .collect(),
         );
+
         Ok((begin_block_events, end_block_events))
     }
 
@@ -586,22 +587,29 @@ impl CosmosSdkChain {
         let mut begin_block_events = vec![];
         let mut end_block_events = vec![];
 
-        for seq in request.sequences.iter() {
+        for seq in request.sequences.iter().copied() {
             let response = self
                 .block_on(self.rpc_client.block_search(
-                    packet_query(request, *seq),
+                    packet_query(request, seq),
+                    // We only need the first page
                     1,
-                    1, // there should only be a single match for this query
-                    Order::Ascending,
+                    // There should only be a single match for this query, but due to
+                    // the fact that the indexer treat the query as a disjunction over
+                    // all events in a block rather than a conjunction over a single event,
+                    // we may end up with partial matches and therefore have to account for
+                    // that by fetching multiple results and filter it down after the fact.
+                    // In the worst case we get N blocks where N is the number of channels,
+                    // but 10 seems to work well enough in practice while keeping the response
+                    // size, and therefore pressure on the node, fairly low.
+                    10,
+                    // We could pick either ordering here, since matching blocks may be at pretty
+                    // much any height relative to the target blocks, so we went with most recent
+                    // blocks first.
+                    Order::Descending,
                 ))
                 .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
-            assert!(
-                response.blocks.len() <= 1,
-                "block_search: unexpected number of blocks"
-            );
-
-            if let Some(block) = response.blocks.first().map(|first| &first.block) {
+            for block in response.blocks.into_iter().map(|response| response.block) {
                 let response_height =
                     ICSHeight::new(self.id().version(), u64::from(block.header.height))
                         .map_err(|_| Error::invalid_height_no_source())?;
@@ -612,13 +620,16 @@ impl CosmosSdkChain {
                     }
                 }
 
+                // `query_packet_from_block` retrieves the begin and end block events
+                // and filter them to retain only those matching the query
                 let (new_begin_block_events, new_end_block_events) =
-                    self.query_packet_from_block(request, &[*seq], &response_height)?;
+                    self.query_packet_from_block(request, &[seq], &response_height)?;
 
                 begin_block_events.extend(new_begin_block_events);
                 end_block_events.extend(new_end_block_events);
             }
         }
+
         Ok((begin_block_events, end_block_events))
     }
 }
