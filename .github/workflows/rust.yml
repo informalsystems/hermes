@@ -64,7 +64,7 @@ jobs:
         with:
           name: clippy-all-features
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features --all-targets
+          args: --all-features --all-targets -- -D warnings
 
   clippy-no-default-features:
     runs-on: ubuntu-latest
@@ -80,7 +80,7 @@ jobs:
         with:
           name: clippy-no-default-features
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --no-default-features --all-targets
+          args: --no-default-features --all-targets -- -D warnings
 
   test-stable:
     runs-on: ubuntu-latest
