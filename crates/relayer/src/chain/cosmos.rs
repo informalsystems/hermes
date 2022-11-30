@@ -589,9 +589,13 @@ impl CosmosSdkChain {
                     // all events in a block rather than a conjunction over a single event,
                     // we may end up with partial matches and therefore have to account for
                     // that by fetching multiple results and filter it down after the fact.
+                    // In the worst case we get N blocks where N is the number of channels,
+                    // but 10 seems to work well enough in practice while keeping the response
+                    // size, and therefore pressure on the node, fairly low.
                     10,
-                    // Order them in descending order so we get the most recent blocks,
-                    // which are likely to be the most relevant.
+                    // We could pick either ordering here, since matching blocks may be at pretty
+                    // much any height relative to the target blocks, so we went with most recent
+                    // blocks first.
                     Order::Descending,
                 ))
                 .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
@@ -607,6 +611,8 @@ impl CosmosSdkChain {
                     }
                 }
 
+                // `query_packet_from_block` retrieves the begin and end block events
+                // and filter them to retain only those matching the query
                 let (new_begin_block_events, new_end_block_events) =
                     self.query_packet_from_block(request, &[seq], &response_height)?;
 
