@@ -356,13 +356,8 @@ impl CosmosSdkChain {
         }
     }
 
-<<<<<<< HEAD
     /// The minimum gas price that this node accepts
-    pub fn min_gas_price(&self) -> Result<GasPrice, Error> {
-=======
-    /// The minimum gas price of this chain
     pub fn min_gas_price(&self) -> Result<Option<GasPrice>, Error> {
->>>>>>> 0db501c98cf26b30d5fd7bad11559c8da6910513
         crate::time!("min_gas_price");
 
         let min_gas_price: Option<GasPrice> = self

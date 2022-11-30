@@ -60,6 +60,7 @@ impl TryFrom<String> for GasPrice {
         // TODO: We split by `char::is_alphabetic` delimiter.
         //      More robust parsing methods might be needed.
         let spos = price_in.find(char::is_alphabetic);
+
         match spos {
             Some(position) => {
                 let (price_str, denom) = price_in.split_at(position);
@@ -73,6 +74,7 @@ impl TryFrom<String> for GasPrice {
                     denom: denom.to_owned(),
                 })
             }
+
             None => Err(Error::invalid_gas_price(price_in)),
         }
     }
@@ -86,6 +88,17 @@ impl PartialOrd for GasPrice {
             None
         }
     }
+}
+
+/// Attempts to parse 0 or more `GasPrice`s from a String,
+/// returning the successfully parsed prices in a Vec. Any
+/// single price that fails to be parsed does not affect
+/// the parsing of other prices.
+pub fn parse_gas_prices(prices: String) -> Vec<GasPrice> {
+    prices
+        .split(';')
+        .filter_map(|gp| GasPrice::try_from(String::from(gp)).ok())
+        .collect()
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -520,7 +533,7 @@ pub(crate) fn store_writer(config: &Config, mut writer: impl Write) -> Result<()
 
 #[cfg(test)]
 mod tests {
-    use super::{load, store_writer};
+    use super::{load, parse_gas_prices, store_writer};
     use crate::config::GasPrice;
     use test_log::test;
 
@@ -553,11 +566,51 @@ mod tests {
     fn gas_price_try_from() {
         let gp_original = GasPrice::new(10.0, "atom".to_owned());
 
-        let gp_raw: String = gp_original.to_string();
+        let gp_raw = gp_original.to_string();
         let gp: GasPrice = gp_raw
             .try_into()
             .expect("could not parse String into GasPrice");
 
         assert_eq!(gp, gp_original);
+    }
+
+    #[test]
+    fn parse_multiple_gas_prices() {
+        let gas_prices = "0.25token1;0.0001token2";
+        let parsed = parse_gas_prices(gas_prices.to_string());
+
+        let expected = vec![
+            GasPrice {
+                price: 0.25,
+                denom: "token1".to_owned(),
+            },
+            GasPrice {
+                price: 0.0001,
+                denom: "token2".to_owned(),
+            },
+        ];
+
+        assert_eq!(expected, parsed);
+    }
+
+    #[test]
+    fn parse_empty_gas_price() {
+        let empty_price = "";
+        let parsed = parse_gas_prices(empty_price.to_string());
+
+        assert_eq!(parsed, vec![]);
+    }
+
+    #[test]
+    fn incorrectly_formatted_prices_do_not_parse() {
+        let gas_prices = "0.25token10.0001token2;0.0064token3";
+        let parsed = parse_gas_prices(gas_prices.to_string());
+
+        let expected = vec![GasPrice {
+            price: 0.0064,
+            denom: "token3".to_owned(),
+        }];
+
+        assert_eq!(expected, parsed);
     }
 }
