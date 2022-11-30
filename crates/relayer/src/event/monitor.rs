@@ -21,7 +21,7 @@ use ibc_relayer_types::{
 };
 
 use crate::{
-    chain::tracking::TrackingId,
+    chain::{handle::Subscription, tracking::TrackingId},
     telemetry,
     util::{
         retry::{retry_with_index, RetryResult},
@@ -32,7 +32,7 @@ use crate::{
 mod error;
 pub use error::*;
 
-use super::IbcEventWithHeight;
+use super::{bus::EventBus, IbcEventWithHeight};
 
 pub type Result<T> = core::result::Result<T, Error>;
 
@@ -65,11 +65,33 @@ type SubscriptionStream = dyn Stream<Item = SubscriptionResult> + Send + Sync + 
 
 pub type EventSender = channel::Sender<Result<EventBatch>>;
 pub type EventReceiver = channel::Receiver<Result<EventBatch>>;
-pub type TxMonitorCmd = channel::Sender<MonitorCmd>;
+
+#[derive(Clone, Debug)]
+pub struct TxMonitorCmd(channel::Sender<MonitorCmd>);
+
+impl TxMonitorCmd {
+    pub fn shutdown(&self) -> Result<()> {
+        self.0
+            .send(MonitorCmd::Shutdown)
+            .map_err(|_| Error::channel_send_failed())
+    }
+
+    pub fn subscribe(&self) -> Result<Subscription> {
+        let (tx, rx) = crossbeam_channel::bounded(1);
+        self.0
+            .send(MonitorCmd::Subscribe(tx))
+            .map_err(|_| Error::channel_send_failed())?;
+
+        let subscription = rx.recv().map_err(|_| Error::channel_recv_failed())?;
+
+        Ok(subscription)
+    }
+}
 
 #[derive(Debug)]
 pub enum MonitorCmd {
     Shutdown,
+    Subscribe(channel::Sender<Subscription>),
 }
 
 /// Connect to a Tendermint node, subscribe to a set of queries,
@@ -85,8 +107,8 @@ pub struct EventMonitor {
     client: WebSocketClient,
     /// Async task handle for the WebSocket client's driver
     driver_handle: JoinHandle<()>,
-    /// Channel to handler where the monitor for this chain sends the events
-    tx_batch: channel::Sender<Result<EventBatch>>,
+    /// Event bus for broadcasting events
+    event_bus: EventBus<Arc<Result<EventBatch>>>,
     /// Channel where to receive client driver errors
     rx_err: mpsc::UnboundedReceiver<tendermint_rpc::Error>,
     /// Channel where to send client driver errors
@@ -148,8 +170,8 @@ impl EventMonitor {
         chain_id: ChainId,
         node_addr: Url,
         rt: Arc<TokioRuntime>,
-    ) -> Result<(Self, EventReceiver, TxMonitorCmd)> {
-        let (tx_batch, rx_batch) = channel::unbounded();
+    ) -> Result<(Self, TxMonitorCmd)> {
+        let event_bus = EventBus::new();
         let (tx_cmd, rx_cmd) = channel::unbounded();
 
         let ws_addr = node_addr.clone();
@@ -158,7 +180,7 @@ impl EventMonitor {
             .map_err(|_| Error::client_creation_failed(chain_id.clone(), node_addr.clone()))?;
 
         let (tx_err, rx_err) = mpsc::unbounded_channel();
-        let websocket_driver_handle = rt.spawn(run_driver(driver, tx_err.clone()));
+        let driver_handle = rt.spawn(run_driver(driver, tx_err.clone()));
 
         // TODO: move them to config file(?)
         let event_queries = queries::all();
@@ -167,9 +189,9 @@ impl EventMonitor {
             rt,
             chain_id,
             client,
-            driver_handle: websocket_driver_handle,
+            driver_handle,
             event_queries,
-            tx_batch,
+            event_bus,
             rx_err,
             tx_err,
             rx_cmd,
@@ -177,7 +199,7 @@ impl EventMonitor {
             subscriptions: Box::new(futures::stream::empty()),
         };
 
-        Ok((monitor, rx_batch, tx_cmd))
+        Ok((monitor, TxMonitorCmd(tx_cmd)))
     }
 
     /// The list of [`Query`] that this event monitor is subscribing for.
@@ -186,8 +208,8 @@ impl EventMonitor {
     }
 
     /// Clear the current subscriptions, and subscribe again to all queries.
-    #[instrument(name = "event_monitor.subscribe", skip_all, fields(chain = %self.chain_id))]
-    pub fn subscribe(&mut self) -> Result<()> {
+    #[instrument(name = "event_monitor.init_subscriptions", skip_all, fields(chain = %self.chain_id))]
+    pub fn init_subscriptions(&mut self) -> Result<()> {
         let mut subscriptions = vec![];
 
         for query in &self.event_queries {
@@ -260,7 +282,7 @@ impl EventMonitor {
     )]
     fn try_resubscribe(&mut self) -> Result<()> {
         trace!("trying to resubscribe to events");
-        self.subscribe()
+        self.init_subscriptions()
     }
 
     /// Attempt to reconnect the WebSocket client using the given retry strategy.
@@ -348,8 +370,11 @@ impl EventMonitor {
         let rt = self.rt.clone();
 
         loop {
-            if let Ok(MonitorCmd::Shutdown) = self.rx_cmd.try_recv() {
-                return Next::Abort;
+            if let Ok(cmd) = self.rx_cmd.try_recv() {
+                match cmd {
+                    MonitorCmd::Shutdown => return Next::Abort,
+                    MonitorCmd::Subscribe(tx) => tx.send(self.event_bus.subscribe()).unwrap(),
+                }
             }
 
             let result = rt.block_on(async {
@@ -366,16 +391,12 @@ impl EventMonitor {
             }
 
             match result {
-                Ok(batch) => self.process_batch(batch).unwrap_or_else(|e| {
-                    error!("error while processing batch: {}", e);
-                }),
+                Ok(batch) => self.process_batch(batch),
                 Err(e) => {
                     if let ErrorDetail::SubscriptionCancelled(reason) = e.detail() {
                         error!("subscription cancelled, reason: {}", reason);
 
-                        self.propagate_error(e).unwrap_or_else(|e| {
-                            error!("{}", e);
-                        });
+                        self.propagate_error(e);
 
                         telemetry!(ws_reconnect, &self.chain_id);
 
@@ -413,23 +434,15 @@ impl EventMonitor {
     /// and to trigger a clearing of packets, as this typically means that we have
     /// missed a bunch of events which were emitted after the subscription was closed.
     /// In that case, this error will be handled in [`Supervisor::handle_batch`].
-    fn propagate_error(&self, error: Error) -> Result<()> {
-        self.tx_batch
-            .send(Err(error))
-            .map_err(|_| Error::channel_send_failed())?;
-
-        Ok(())
+    fn propagate_error(&mut self, error: Error) {
+        self.event_bus.broadcast(Arc::new(Err(error)));
     }
 
     /// Collect the IBC events from the subscriptions
-    fn process_batch(&self, batch: EventBatch) -> Result<()> {
+    fn process_batch(&mut self, batch: EventBatch) {
         telemetry!(ws_events, &batch.chain_id, batch.events.len() as u64);
 
-        self.tx_batch
-            .send(Ok(batch))
-            .map_err(|_| Error::channel_send_failed())?;
-
-        Ok(())
+        self.event_bus.broadcast(Arc::new(Ok(batch)));
     }
 }
 
