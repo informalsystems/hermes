@@ -11,7 +11,8 @@ pub async fn cross_chain_query_via_rpc(
     client: &HttpClient,
     cross_chain_query_request: CrossChainQueryRequest,
 ) -> Result<CrossChainQueryResponse, Error> {
-    let hex_decoded_request = hex::decode(cross_chain_query_request.request).map_err(|_| Error::ics31(CrossChainQueryError::parse()))?;
+    let hex_decoded_request = hex::decode(cross_chain_query_request.request)
+        .map_err(|_| Error::ics31(CrossChainQueryError::parse()))?;
 
     let response = client.abci_query(
         Some(cross_chain_query_request.query_type),
@@ -32,7 +33,7 @@ pub async fn cross_chain_query_via_rpc(
         CrossChainQueryResponse::new(
             cross_chain_query_request.chain_id.to_string(),
             cross_chain_query_request.query_id,
-            hex::encode(response.value),
+            response.value,
             response.height.value().try_into().map_err(|_| Error::ics31(CrossChainQueryError::parse()))?,
             response.proof.unwrap(),
         )

@@ -77,18 +77,23 @@ fn handle_cross_chain_query<ChainA: ChainHandle, ChainB: ChainHandle>(
                 chain_b_handle.id().version(),
                 cross_chain_query_responses.get(0).unwrap().height as u64,
             )
-                .map_err(|_| TaskError::Fatal(RunError::query()))?;
+                .map_err(|_| TaskError::Fatal(RunError::query()))?
+                .increment();
 
-            let mut chain_a_msgs = client_a.wait_and_build_update_client(target_height.increment()).unwrap();
+            // Push update client msg
+            let mut chain_a_msgs = client_a
+                .wait_and_build_update_client(target_height)
+                .map_err(|_| TaskError::Fatal(RunError::query()))?;
 
             cross_chain_query_responses.iter()
                 .for_each(|response| {
-                    info!("response arrived: query_id: {}, result: {}", response.query_id, response.result);
-
+                    info!("response arrived: query_id: {}", response.query_id);
+                    // After updating client, send response tx to querying chain
                     chain_a_msgs.push(response.to_any(
                         chain_a_handle.get_signer().unwrap(),
+                        // temporary hard-coded
                         "/stride.interchainquery.v1.MsgSubmitQueryResponse",
-                    ))
+                    ));
                 });
 
             chain_a_handle

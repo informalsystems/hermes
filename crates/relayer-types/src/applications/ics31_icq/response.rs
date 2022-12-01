@@ -10,7 +10,7 @@ use crate::applications::ics31_icq::proto::{MsgSubmitQueryResponse, ProofOp, Pro
 pub struct CrossChainQueryResponse {
     pub chain_id: String,
     pub query_id: String,
-    pub result: String,
+    pub result: Vec<u8>,
     pub height: i64,
     pub proof: Proof,
 }
@@ -34,7 +34,7 @@ impl CrossChainQueryResponse {
     pub fn new(
         chain_id: String,
         query_id: String,
-        result: String,
+        result: Vec<u8>,
         height: i64,
         proof: Proof,
     ) -> Self {
@@ -53,7 +53,7 @@ impl CrossChainQueryResponse {
         let msg_submit_cross_chain_query_result = MsgSubmitQueryResponse {
             chain_id: self.chain_id.to_string(),
             query_id: self.query_id.to_string(),
-            result: self.result.to_string().into_bytes(),
+            result: self.result.clone(),
             proof_ops: Some(into_proof_ops(self.proof.clone())),
             height: self.height,
             from_address: signer.as_ref().to_string(),
