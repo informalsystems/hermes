@@ -62,7 +62,7 @@ fn register_signals(tx_cmd: Sender<SupervisorCmd>) -> Result<(), io::Error> {
         SIGUSR1, // Dump state
     ];
 
-    let mut signals = Signals::new(&sigs)?;
+    let mut signals = Signals::new(sigs)?;
 
     std::thread::spawn(move || {
         for signal in &mut signals {

@@ -1960,12 +1960,12 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
         );
     }
 
-    let relayer_gas_price = chain.config.gas_price.clone();
+    let relayer_gas_price = &chain.config.gas_price;
     let node_min_gas_prices = chain.min_gas_price()?;
     let mut found_matching_denom = false;
 
     for price in node_min_gas_prices {
-        match price.partial_cmp(&relayer_gas_price) {
+        match price.partial_cmp(relayer_gas_price) {
             Some(Ordering::Greater) => return Err(Error::gas_price_too_low(chain_id.clone())),
             Some(_) => {
                 found_matching_denom = true;
