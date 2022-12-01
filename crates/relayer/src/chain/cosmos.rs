@@ -50,7 +50,6 @@ use ibc_relayer_types::core::ics24_host::{
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
 
-use crate::chain::cosmos::batch::sequential_send_batched_messages_and_wait_commit;
 use crate::chain::cosmos::batch::{
     send_batched_messages_and_wait_check_tx, send_batched_messages_and_wait_commit,
 };
@@ -88,6 +87,10 @@ use crate::util::pretty::{PrettyConsensusStateWithHeight, PrettyIdentifiedChanne
 use crate::util::pretty::{PrettyIdentifiedClientState, PrettyIdentifiedConnection};
 use crate::{account::Balance, event::monitor::EventMonitor};
 use crate::{chain::client::ClientSettings, config::GasPrice};
+use crate::{
+    chain::cosmos::batch::sequential_send_batched_messages_and_wait_commit,
+    config::parse_gas_prices,
+};
 
 use super::requests::{
     IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
@@ -356,14 +359,13 @@ impl CosmosSdkChain {
     }
 
     /// The minimum gas price that this node accepts
-    pub fn min_gas_price(&self) -> Result<Option<GasPrice>, Error> {
+    pub fn min_gas_price(&self) -> Result<Vec<GasPrice>, Error> {
         crate::time!("min_gas_price");
 
-        let min_gas_price: Option<GasPrice> = self
-            .query_config_params()?
-            .map(|cfg_response| GasPrice::try_from(cfg_response.minimum_gas_price))
-            .transpose()
-            .map_err(Error::config)?;
+        let min_gas_price: Vec<GasPrice> =
+            self.query_config_params()?.map_or(vec![], |cfg_response| {
+                parse_gas_prices(cfg_response.minimum_gas_price)
+            });
 
         Ok(min_gas_price)
     }
@@ -1959,11 +1961,26 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     }
 
     let relayer_gas_price = chain.config.gas_price.clone();
+    let node_min_gas_prices = chain.min_gas_price()?;
+    let mut found_matching_denom = false;
 
-    if let Some(node_min_gas_price) = chain.min_gas_price()? {
-        if node_min_gas_price > relayer_gas_price {
-            return Err(Error::gas_price_too_low(chain_id.clone()));
+    for price in node_min_gas_prices {
+        match price.partial_cmp(&relayer_gas_price) {
+            Some(Ordering::Greater) => return Err(Error::gas_price_too_low(chain_id.clone())),
+            Some(_) => {
+                found_matching_denom = true;
+                break;
+            }
+            None => continue,
         }
+    }
+
+    if !found_matching_denom {
+        warn!(
+            "Chain '{}' has no minimum gas price value configured for denomination '{}'. \
+            This is usually a sign of misconfiguration, please check your config.toml",
+            chain_id, relayer_gas_price.denom
+        );
     }
 
     let version_specs = chain.block_on(fetch_version_specs(&chain.config.id, &chain.grpc_addr))?;

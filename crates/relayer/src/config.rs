@@ -600,17 +600,4 @@ mod tests {
 
         assert_eq!(parsed, vec![]);
     }
-
-    #[test]
-    fn incorrectly_formatted_prices_do_not_parse() {
-        let gas_prices = "0.25token10.0001token2;0.0064token3";
-        let parsed = parse_gas_prices(gas_prices.to_string());
-
-        let expected = vec![GasPrice {
-            price: 0.0064,
-            denom: "token3".to_owned(),
-        }];
-
-        assert_eq!(expected, parsed);
-    }
 }
