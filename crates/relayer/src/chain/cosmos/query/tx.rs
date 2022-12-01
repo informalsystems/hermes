@@ -151,8 +151,6 @@ pub async fn query_packets_from_block(
     crate::time!("query_packets_from_block");
     crate::telemetry!(query, chain_id, "query_packets_from_block");
 
-    let mut result: Vec<IbcEventWithHeight> = vec![];
-
     let tm_height = match request.height.get() {
         QueryHeight::Latest => tendermint::block::Height::default(),
         QueryHeight::Specific(h) => {
@@ -163,17 +161,19 @@ pub async fn query_packets_from_block(
     let height = Height::new(chain_id.version(), u64::from(tm_height))
         .map_err(|_| Error::invalid_height_no_source())?;
 
-    let exact_tx_block_results = rpc_client
+    let block_results = rpc_client
         .block_results(tm_height)
         .await
-        .map_err(|e| Error::rpc(rpc_address.clone(), e))?
-        .txs_results;
+        .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
 
-    if let Some(txs) = exact_tx_block_results {
-        for tx in txs.iter() {
-            let tx_copy = tx.clone();
-            result.append(
-                &mut tx_copy
+    let mut tx_events = vec![];
+    let mut begin_block_events = vec![];
+    let mut end_block_events = vec![];
+
+    if let Some(txs) = block_results.txs_results {
+        for tx in txs {
+            tx_events.append(
+                &mut tx
                     .events
                     .into_iter()
                     .filter_map(|e| filter_matching_event(e, request, &request.sequences))
@@ -183,7 +183,31 @@ pub async fn query_packets_from_block(
         }
     }
 
-    Ok(result)
+    begin_block_events.append(
+        &mut block_results
+            .begin_block_events
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|ev| filter_matching_event(ev, request, &request.sequences))
+            .map(|ev| IbcEventWithHeight::new(ev, height))
+            .collect(),
+    );
+
+    end_block_events.append(
+        &mut block_results
+            .end_block_events
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|ev| filter_matching_event(ev, request, &request.sequences))
+            .map(|ev| IbcEventWithHeight::new(ev, height))
+            .collect(),
+    );
+
+    let mut events = begin_block_events;
+    events.append(&mut tx_events);
+    events.append(&mut end_block_events);
+
+    Ok(events)
 }
 
 // Extracts from the Tx the update client event for the requested client and height.
