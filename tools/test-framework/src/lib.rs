@@ -4,7 +4,6 @@
 #![allow(clippy::ptr_arg)]
 #![doc = include_str!("../README.md")]
 
-//!
 //! ## Overview
 //!
 //! This IBC test framework gives developers working on relayer software in Rust a robust
@@ -74,6 +73,8 @@
 //! which suspends the test indefinitely. While this means the test will never actually
 //! pass, we can use this as a starting point in order to perform _manual testing_ with
 //! the chains that have been set up in the test.
+//!
+//! You can find the file containing this example test at `tools/integration-test/src/tests/example.rs`.
 //!
 //! ## Running Tests
 //! By convention, tests are written to the [`tests`](ibc_test_framework::tests) module. We
