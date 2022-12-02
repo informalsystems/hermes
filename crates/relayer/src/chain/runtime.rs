@@ -24,20 +24,16 @@ use ibc_relayer_types::{
     Height,
 };
 
-use crate::chain::requests::QueryPacketEventDataRequest;
 use crate::{
     account::Balance,
+    chain::requests::QueryPacketEventDataRequest,
     client_state::{AnyClientState, IdentifiedAnyClientState},
     config::ChainConfig,
     connection::ConnectionMsgType,
     consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight},
     denom::DenomTrace,
     error::Error,
-    event::{
-        bus::EventBus,
-        monitor::{EventBatch, EventReceiver, MonitorCmd, Result as MonitorResult, TxMonitorCmd},
-        IbcEventWithHeight,
-    },
+    event::IbcEventWithHeight,
     keyring::KeyEntry,
     light_client::AnyHeader,
     misbehaviour::MisbehaviourEvidence,
@@ -47,81 +43,13 @@ use super::{
     client::ClientSettings,
     endpoint::{ChainEndpoint, ChainStatus, HealthCheck},
     handle::{ChainHandle, ChainRequest, ReplyTo, Subscription},
-    requests::{
-        IncludeProof, QueryChannelClientStateRequest, QueryChannelRequest, QueryChannelsRequest,
-        QueryClientConnectionsRequest, QueryClientStateRequest, QueryClientStatesRequest,
-        QueryConnectionChannelsRequest, QueryConnectionRequest, QueryConnectionsRequest,
-        QueryConsensusStateRequest, QueryConsensusStatesRequest, QueryHostConsensusStateRequest,
-        QueryNextSequenceReceiveRequest, QueryPacketAcknowledgementRequest,
-        QueryPacketAcknowledgementsRequest, QueryPacketCommitmentRequest,
-        QueryPacketCommitmentsRequest, QueryPacketReceiptRequest, QueryTxRequest,
-        QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest, QueryUpgradedClientStateRequest,
-        QueryUpgradedConsensusStateRequest,
-    },
+    requests::*,
     tracking::TrackedMsgs,
 };
 
 pub struct Threads {
     pub chain_runtime: thread::JoinHandle<()>,
     pub event_monitor: Option<thread::JoinHandle<()>>,
-}
-
-#[derive(Debug)]
-pub enum EventMonitorCtrl {
-    None {
-        /// Empty channel for when the None case
-        never: EventReceiver,
-    },
-    Live {
-        /// Receiver channel from the event bus
-        event_receiver: EventReceiver,
-
-        /// Sender channel to terminate the event monitor
-        tx_monitor_cmd: TxMonitorCmd,
-    },
-}
-
-impl EventMonitorCtrl {
-    pub fn none() -> Self {
-        Self::None {
-            never: channel::never(),
-        }
-    }
-
-    pub fn live(event_receiver: EventReceiver, tx_monitor_cmd: TxMonitorCmd) -> Self {
-        Self::Live {
-            event_receiver,
-            tx_monitor_cmd,
-        }
-    }
-
-    pub fn enable(&mut self, event_receiver: EventReceiver, tx_monitor_cmd: TxMonitorCmd) {
-        *self = Self::live(event_receiver, tx_monitor_cmd);
-    }
-
-    pub fn recv(&self) -> &EventReceiver {
-        match self {
-            Self::None { ref never } => never,
-            Self::Live {
-                ref event_receiver, ..
-            } => event_receiver,
-        }
-    }
-
-    pub fn shutdown(&self) -> Result<(), Error> {
-        match self {
-            Self::None { .. } => Ok(()),
-            Self::Live {
-                ref tx_monitor_cmd, ..
-            } => tx_monitor_cmd
-                .send(MonitorCmd::Shutdown)
-                .map_err(Error::send),
-        }
-    }
-
-    pub fn is_live(&self) -> bool {
-        matches!(self, Self::Live { .. })
-    }
 }
 
 pub struct ChainRuntime<Endpoint: ChainEndpoint> {
@@ -135,12 +63,6 @@ pub struct ChainRuntime<Endpoint: ChainEndpoint> {
     /// The receiving side of a channel to this runtime. The runtime consumes chain requests coming
     /// in through this channel.
     request_receiver: channel::Receiver<(Span, ChainRequest)>,
-
-    /// An event bus, for broadcasting events that this runtime receives (via `event_receiver`) to subscribers
-    event_bus: EventBus<Arc<MonitorResult<EventBatch>>>,
-
-    /// Interface to the event monitor
-    event_monitor_ctrl: EventMonitorCtrl,
 
     #[allow(dead_code)]
     rt: Arc<TokioRuntime>, // Making this future-proof, so we keep the runtime around.
@@ -194,8 +116,6 @@ where
             chain,
             request_sender,
             request_receiver,
-            event_bus: EventBus::new(),
-            event_monitor_ctrl: EventMonitorCtrl::none(),
         }
     }
 
@@ -209,18 +129,6 @@ where
     fn run(mut self) -> Result<(), Error> {
         loop {
             channel::select! {
-                recv(self.event_monitor_ctrl.recv()) -> event_batch => {
-                    match event_batch {
-                        Ok(event_batch) => {
-                            self.event_bus
-                                .broadcast(Arc::new(event_batch));
-                        },
-                        Err(e) => {
-                            error!("received error via event bus: {}", e);
-                            return Err(Error::channel_receive(e));
-                        },
-                    }
-                },
                 recv(self.request_receiver) -> event => {
                     let (span, event) = match event {
                         Ok((span, event)) => (span, event),
@@ -234,9 +142,8 @@ where
 
                     match event {
                         ChainRequest::Shutdown { reply_to } => {
-                            self.event_monitor_ctrl.shutdown()?;
-
                             let res = self.chain.shutdown();
+
                             reply_to.send(res)
                                 .map_err(Error::send)?;
 
@@ -444,21 +351,8 @@ where
     }
 
     fn subscribe(&mut self, reply_to: ReplyTo<Subscription>) -> Result<(), Error> {
-        if !self.event_monitor_ctrl.is_live() {
-            self.enable_event_monitor()?;
-        }
-
-        let subscription = self.event_bus.subscribe();
-        reply_to.send(Ok(subscription)).map_err(Error::send)
-    }
-
-    fn enable_event_monitor(&mut self) -> Result<(), Error> {
-        let (event_receiver, tx_monitor_cmd) = self.chain.init_event_monitor(self.rt.clone())?;
-
-        self.event_monitor_ctrl
-            .enable(event_receiver, tx_monitor_cmd);
-
-        Ok(())
+        let subscription = self.chain.subscribe();
+        reply_to.send(subscription).map_err(Error::send)
     }
 
     fn send_messages_and_wait_commit(

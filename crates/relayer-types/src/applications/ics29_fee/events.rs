@@ -1,8 +1,7 @@
 use core::str::FromStr;
 use itertools::Itertools;
 use serde_derive::{Deserialize, Serialize};
-use tendermint_rpc::abci::tag::Tag;
-use tendermint_rpc::abci::Event as AbciEvent;
+use tendermint::abci;
 
 use super::error::Error;
 use crate::applications::transfer::coin::RawCoin;
@@ -21,48 +20,41 @@ pub struct IncentivizedPacket {
     pub total_timeout_fee: Vec<RawCoin>,
 }
 
-fn find_value(key: &str, entries: &[Tag]) -> Result<String, Error> {
+fn find_value<'a>(key: &str, entries: &'a [abci::EventAttribute]) -> Result<&'a str, Error> {
     entries
         .iter()
         .find_map(|entry| {
-            if entry.key.as_ref() == key {
-                Some(entry.value.to_string())
+            if entry.key == key {
+                Some(entry.value.as_str())
             } else {
                 None
             }
         })
-        .ok_or_else(|| Error::event_attribute_not_found(key.to_string()))
+        .ok_or_else(|| Error::event_attribute_not_found(key.to_owned()))
 }
 
-fn new_tag(key: &str, value: &str) -> Tag {
-    Tag {
-        key: key.parse().unwrap(),
-        value: value.parse().unwrap(),
-    }
-}
-
-impl From<IncentivizedPacket> for AbciEvent {
-    fn from(event: IncentivizedPacket) -> AbciEvent {
-        let attributes: Vec<Tag> = vec![
-            new_tag("port_id", event.port_id.as_str()),
-            new_tag("channel_id", event.channel_id.as_ref()),
-            new_tag("packet_sequence", &event.sequence.to_string()),
-            new_tag("recv_fee", &event.total_recv_fee.iter().join(",")),
-            new_tag("ack_fee", &event.total_ack_fee.iter().join(",")),
-            new_tag("timeout_fee", &event.total_timeout_fee.iter().join(",")),
+impl From<IncentivizedPacket> for abci::Event {
+    fn from(event: IncentivizedPacket) -> Self {
+        let attributes = vec![
+            ("port_id", event.port_id.as_str()).into(),
+            ("channel_id", event.channel_id.as_str()).into(),
+            ("packet_sequence", &event.sequence.to_string()).into(),
+            ("recv_fee", &event.total_recv_fee.iter().join(",")).into(),
+            ("ack_fee", &event.total_ack_fee.iter().join(",")).into(),
+            ("timeout_fee", &event.total_timeout_fee.iter().join(",")).into(),
         ];
 
-        AbciEvent {
-            type_str: IbcEventType::IncentivizedPacket.as_str().to_string(),
+        Self {
+            kind: IbcEventType::IncentivizedPacket.as_str().to_owned(),
             attributes,
         }
     }
 }
 
-impl<'a> TryFrom<&'a Vec<Tag>> for IncentivizedPacket {
+impl<'a> TryFrom<&'a [abci::EventAttribute]> for IncentivizedPacket {
     type Error = Error;
 
-    fn try_from(entries: &'a Vec<Tag>) -> Result<Self, Error> {
+    fn try_from(entries: &'a [abci::EventAttribute]) -> Result<Self, Error> {
         let port_id_str = find_value("port_id", entries)?;
         let channel_id_str = find_value("channel_id", entries)?;
         let sequence_str = find_value("packet_sequence", entries)?;
@@ -70,18 +62,18 @@ impl<'a> TryFrom<&'a Vec<Tag>> for IncentivizedPacket {
         let ack_fee_str = find_value("ack_fee", entries)?;
         let timeout_fee_str = find_value("timeout_fee", entries)?;
 
-        let port_id = PortId::from_str(&port_id_str).map_err(Error::ics24)?;
+        let port_id = PortId::from_str(port_id_str).map_err(Error::ics24)?;
 
-        let channel_id = ChannelId::from_str(&channel_id_str).map_err(Error::ics24)?;
+        let channel_id = ChannelId::from_str(channel_id_str).map_err(Error::ics24)?;
 
-        let sequence = Sequence::from_str(&sequence_str).map_err(Error::channel)?;
+        let sequence = Sequence::from_str(sequence_str).map_err(Error::channel)?;
 
-        let total_recv_fee = RawCoin::from_string_list(&recv_fee_str).map_err(Error::transfer)?;
+        let total_recv_fee = RawCoin::from_string_list(recv_fee_str).map_err(Error::transfer)?;
 
-        let total_ack_fee = RawCoin::from_string_list(&ack_fee_str).map_err(Error::transfer)?;
+        let total_ack_fee = RawCoin::from_string_list(ack_fee_str).map_err(Error::transfer)?;
 
         let total_timeout_fee =
-            RawCoin::from_string_list(&timeout_fee_str).map_err(Error::transfer)?;
+            RawCoin::from_string_list(timeout_fee_str).map_err(Error::transfer)?;
 
         Ok(IncentivizedPacket {
             port_id,

@@ -3,7 +3,6 @@ use core::fmt::{Display, Error as FmtError, Formatter};
 use serde::{Deserialize, Serialize};
 
 use ibc_proto::ibc::core::client::v1::Height as RawHeight;
-use tendermint_rpc::abci::tag::Value as TagValue;
 
 use crate::core::ics02_client::{error::Error as ICS2Error, height::Height};
 use crate::prelude::*;
@@ -52,6 +51,14 @@ impl TimeoutHeight {
             Self::At(timeout_height) => height > *timeout_height,
             // When there's no timeout, heights are never expired
             Self::Never => false,
+        }
+    }
+
+    /// Returns the height formatted for an ABCI event attribute value.
+    pub fn to_event_attribute_value(self) -> String {
+        match self {
+            TimeoutHeight::At(height) => height.to_string(),
+            TimeoutHeight::Never => "0-0".into(),
         }
     }
 }
@@ -108,15 +115,6 @@ impl From<TimeoutHeight> for Option<RawHeight> {
 impl From<Height> for TimeoutHeight {
     fn from(height: Height) -> Self {
         Self::At(height)
-    }
-}
-
-impl From<TimeoutHeight> for TagValue {
-    fn from(timeout_height: TimeoutHeight) -> Self {
-        match timeout_height {
-            TimeoutHeight::At(height) => height.to_string().parse().unwrap(),
-            TimeoutHeight::Never => "0-0".parse().unwrap(),
-        }
     }
 }
 

@@ -2,7 +2,6 @@ use ibc_relayer_types::core::ics23_commitment::merkle::{
     convert_tm_to_ics_merkle_proof, MerkleProof,
 };
 use tendermint::block::Height;
-use tendermint_rpc::abci::Path as TendermintABCIPath;
 use tendermint_rpc::{Client, HttpClient, Url};
 
 use crate::error::Error;
@@ -19,7 +18,7 @@ pub struct QueryResponse {
 pub async fn abci_query(
     rpc_client: &HttpClient,
     rpc_address: &Url,
-    path: TendermintABCIPath,
+    path: String,
     data: String,
     height: Height,
     prove: bool,
@@ -64,7 +63,7 @@ pub async fn abci_query(
 pub async fn abci_query_with_proof(
     rpc_client: &HttpClient,
     rpc_address: &Url,
-    path: TendermintABCIPath,
+    path: String,
     data: String,
     height: Option<Height>,
 ) -> Result<(Height, Vec<u8>, MerkleProof), Error> {

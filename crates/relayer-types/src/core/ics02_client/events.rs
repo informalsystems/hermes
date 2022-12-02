@@ -2,8 +2,7 @@
 
 use core::fmt::{Display, Error as FmtError, Formatter};
 use serde_derive::{Deserialize, Serialize};
-use tendermint_rpc::abci::tag::Tag;
-use tendermint_rpc::abci::Event as AbciEvent;
+use tendermint::abci;
 
 use super::header::Header;
 use crate::core::ics02_client::client_type::ClientType;
@@ -83,27 +82,15 @@ impl Display for Attributes {
 }
 
 /// Convert attributes to Tendermint ABCI tags
-///
-/// # Note
-/// The parsing of `Key`s and `Value`s never fails, because the
-/// `FromStr` instance of `tendermint::abci::tag::{Key, Value}`
-/// is infallible, even if it is not represented in the error type.
-/// Once tendermint-rs improves the API of the `Key` and `Value` types,
-/// we will be able to remove the `.parse().unwrap()` calls.
-impl From<Attributes> for Vec<Tag> {
+impl From<Attributes> for Vec<abci::EventAttribute> {
     fn from(attrs: Attributes) -> Self {
-        let client_id = Tag {
-            key: CLIENT_ID_ATTRIBUTE_KEY.parse().unwrap(),
-            value: attrs.client_id.to_string().parse().unwrap(),
-        };
-        let client_type = Tag {
-            key: CLIENT_TYPE_ATTRIBUTE_KEY.parse().unwrap(),
-            value: attrs.client_type.as_str().parse().unwrap(),
-        };
-        let consensus_height = Tag {
-            key: CONSENSUS_HEIGHT_ATTRIBUTE_KEY.parse().unwrap(),
-            value: attrs.consensus_height.to_string().parse().unwrap(),
-        };
+        let client_id = (CLIENT_ID_ATTRIBUTE_KEY, attrs.client_id.as_str()).into();
+        let client_type = (CLIENT_TYPE_ATTRIBUTE_KEY, attrs.client_type.as_str()).into();
+        let consensus_height = (
+            CONSENSUS_HEIGHT_ATTRIBUTE_KEY,
+            attrs.consensus_height.to_string(),
+        )
+            .into();
         vec![client_id, client_type, consensus_height]
     }
 }
@@ -136,12 +123,11 @@ impl From<CreateClient> for IbcEvent {
     }
 }
 
-impl From<CreateClient> for AbciEvent {
+impl From<CreateClient> for abci::Event {
     fn from(v: CreateClient) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
-        AbciEvent {
-            type_str: IbcEventType::CreateClient.as_str().to_string(),
-            attributes,
+        Self {
+            kind: IbcEventType::CreateClient.as_str().to_owned(),
+            attributes: v.0.into(),
         }
     }
 }
@@ -193,18 +179,15 @@ impl From<UpdateClient> for IbcEvent {
     }
 }
 
-impl From<UpdateClient> for AbciEvent {
+impl From<UpdateClient> for abci::Event {
     fn from(v: UpdateClient) -> Self {
-        let mut attributes = Vec::<Tag>::from(v.common);
+        let mut attributes: Vec<_> = v.common.into();
         if let Some(h) = v.header {
-            let header = Tag {
-                key: HEADER_ATTRIBUTE_KEY.parse().unwrap(),
-                value: h.encode_to_hex_string().parse().unwrap(),
-            };
+            let header = (HEADER_ATTRIBUTE_KEY, h.encode_to_hex_string()).into();
             attributes.push(header);
         }
-        AbciEvent {
-            type_str: IbcEventType::UpdateClient.as_str().to_string(),
+        Self {
+            kind: IbcEventType::UpdateClient.as_str().to_string(),
             attributes,
         }
     }
@@ -239,12 +222,11 @@ impl From<ClientMisbehaviour> for IbcEvent {
     }
 }
 
-impl From<ClientMisbehaviour> for AbciEvent {
+impl From<ClientMisbehaviour> for abci::Event {
     fn from(v: ClientMisbehaviour) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
-        AbciEvent {
-            type_str: IbcEventType::ClientMisbehaviour.as_str().to_string(),
-            attributes,
+        Self {
+            kind: IbcEventType::ClientMisbehaviour.as_str().to_owned(),
+            attributes: v.0.into(),
         }
     }
 }
@@ -271,12 +253,11 @@ impl From<Attributes> for UpgradeClient {
     }
 }
 
-impl From<UpgradeClient> for AbciEvent {
+impl From<UpgradeClient> for abci::Event {
     fn from(v: UpgradeClient) -> Self {
-        let attributes = Vec::<Tag>::from(v.0);
-        AbciEvent {
-            type_str: IbcEventType::UpgradeClient.as_str().to_string(),
-            attributes,
+        Self {
+            kind: IbcEventType::UpgradeClient.as_str().to_owned(),
+            attributes: v.0.into(),
         }
     }
 }
