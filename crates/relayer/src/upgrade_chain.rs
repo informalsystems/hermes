@@ -7,7 +7,7 @@ use std::ops::Add;
 use bytes::BufMut;
 use flex_error::define_error;
 
-use tendermint_rpc::abci::transaction::Hash as TxHash;
+use tendermint::Hash as TxHash;
 
 use ibc_proto::cosmos::gov::v1beta1::MsgSubmitProposal;
 use ibc_proto::cosmos::upgrade::v1beta1::Plan;

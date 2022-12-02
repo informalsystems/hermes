@@ -21,7 +21,7 @@ use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::Height;
 use prost::Message as _;
-use tendermint_rpc::abci::responses::Event;
+use tendermint::abci::Event;
 
 use crate::base::error::Error;
 use crate::base::traits::chain::CosmosChain;
@@ -94,7 +94,7 @@ where
     fn try_extract_write_acknowledgement_event(
         event: Self::Event,
     ) -> Option<Self::WriteAcknowledgementEvent> {
-        if let IbcEventType::WriteAck = event.type_str.parse().ok()? {
+        if let IbcEventType::WriteAck = event.kind.parse().ok()? {
             let (packet, write_ack) = extract_packet_and_write_ack_from_tx(&event).ok()?;
 
             let ack = WriteAcknowledgement {

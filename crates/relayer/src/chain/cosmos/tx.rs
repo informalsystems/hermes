@@ -2,7 +2,7 @@ use crate::event::IbcEventWithHeight;
 use ibc_proto::cosmos::tx::v1beta1::Fee;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::events::IbcEvent;
-use tendermint_rpc::abci::responses::Event;
+use tendermint::abci::Event;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tendermint_rpc::{Client, HttpClient, Url};
 
@@ -56,7 +56,7 @@ async fn broadcast_tx_sync(
     let data = encode_tx_raw(tx)?;
 
     let response = rpc_client
-        .broadcast_tx_sync(data.into())
+        .broadcast_tx_sync(data)
         .await
         .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
 

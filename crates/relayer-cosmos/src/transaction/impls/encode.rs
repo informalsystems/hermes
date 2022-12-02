@@ -5,7 +5,7 @@ use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::types::account::AccountSequence;
 use ibc_relayer::chain::cosmos::types::tx::SignedTx;
 use ibc_relayer::config::AddressType;
-use ibc_relayer::keyring::{errors::Error as KeyringError, sign_message};
+use ibc_relayer::keyring::errors::Error as KeyringError;
 use ibc_relayer_framework::base::core::traits::error::{HasError, InjectError};
 use prost::EncodeError;
 
@@ -239,6 +239,8 @@ where
         let address_type = self.address_type();
         let key_entry = self.key_entry();
 
-        sign_message(key_entry, message, address_type).map_err(Context::inject_error)
+        key_entry
+            .sign_message(&message, address_type)
+            .map_err(Context::inject_error)
     }
 }

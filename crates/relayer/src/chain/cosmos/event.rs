@@ -1,4 +1,4 @@
-use tendermint_rpc::abci::responses::Event;
+use tendermint::abci::Event;
 
 pub fn split_events_by_messages(in_events: Vec<Event>) -> Vec<Vec<Event>> {
     let mut out_events = Vec::new();
@@ -6,9 +6,9 @@ pub fn split_events_by_messages(in_events: Vec<Event>) -> Vec<Vec<Event>> {
     let mut first_message_event_found = false;
 
     for event in in_events.into_iter() {
-        if event.type_str == "message"
+        if event.kind == "message"
             && event.attributes.len() == 1
-            && event.attributes[0].key.as_ref() == "action"
+            && &event.attributes[0].key == "action"
         {
             if first_message_event_found {
                 out_events.push(current_events);

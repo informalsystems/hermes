@@ -132,6 +132,8 @@ impl Application for CliApp {
             }
         };
 
+        tracing::info!("running Hermes v{}", clap::crate_version!());
+
         self.config.set_once(config);
 
         Ok(())

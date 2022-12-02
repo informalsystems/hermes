@@ -163,7 +163,7 @@ async fn get_data_from_handles<T>(
     data_array
 }
 
-/// Generates a Vec<ChainConfig> for a slice of chains names by fetching data from
+/// Generates a `Vec<ChainConfig>` for a slice of chains names by fetching data from
 /// <https://github.com/cosmos/chain-registry>. Gas settings are set to default values.
 ///
 /// # Arguments

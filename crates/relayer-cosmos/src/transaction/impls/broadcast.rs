@@ -37,7 +37,7 @@ where
         };
 
         let response = rpc_client
-            .broadcast_tx_sync(data.into())
+            .broadcast_tx_sync(data)
             .await
             .map_err(Context::inject_error)?;
 

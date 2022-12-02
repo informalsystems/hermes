@@ -102,7 +102,7 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
     let (packet, _) = events[0]
         .iter()
         .find_map(|event| {
-            if event.type_str == "send_packet" {
+            if event.kind == "send_packet" {
                 extract_packet_and_write_ack_from_tx(event).ok()
             } else {
                 None

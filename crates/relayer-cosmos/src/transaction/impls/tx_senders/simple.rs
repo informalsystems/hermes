@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::event::split_events_by_messages;
-use tendermint_rpc::abci::responses::Event;
+use tendermint::abci::Event;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 
 use crate::transaction::impls::broadcast::CanBroadcastTxSync;
