@@ -6,10 +6,6 @@ use serde::{de::DeserializeOwned, Serialize};
 use super::{errors::Error, KeyFile, KeyType};
 use crate::config::AddressType;
 
-// /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\
-// WARNING: Changing this struct in backward incompatible way
-//          will force users to re-import their keys.
-// /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\
 pub trait SigningKeyPair {
     const KEY_TYPE: KeyType;
 

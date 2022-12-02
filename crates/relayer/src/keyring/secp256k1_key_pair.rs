@@ -123,8 +123,15 @@ fn encode_address(account_prefix: &str, address: &[u8]) -> Result<String, Error>
     encode_bech32(account_prefix, address)
 }
 
+// /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\
+// WARNING: Changing this struct in backward incompatible way
+//          will force users to re-import their keys.
+//
+// This uses `VersionedKeyPair` to allow for backwards-
+// compatible deserialization.
+// /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\ /!\
 #[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(try_from = "KeysConversion")]
+#[serde(try_from = "VersionedKeyPair")]
 pub struct Secp256k1KeyPair {
     private_key: SecretKey,
     pub public_key: PublicKey,
@@ -133,8 +140,9 @@ pub struct Secp256k1KeyPair {
     account: String,
 }
 
+// The old `KeyEntry` type
 #[derive(Debug, Deserialize)]
-struct OldKeyEntry {
+struct KeyPairV1 {
     public_key: ExtendedPubKey,
     private_key: ExtendedPrivKey,
     account: String,
@@ -142,7 +150,7 @@ struct OldKeyEntry {
 }
 
 #[derive(Debug, Deserialize)]
-struct NewKeyEntry {
+struct KeyPairV2 {
     private_key: SecretKey,
     public_key: PublicKey,
     address: [u8; 20],
@@ -150,19 +158,21 @@ struct NewKeyEntry {
     account: String,
 }
 
+// Note: Since this uses Serde's untagged enums, the serialized formats between
+// versions must be incompatible with each other.
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
-enum KeysConversion {
-    Old(OldKeyEntry),
-    New(NewKeyEntry),
+enum VersionedKeyPair {
+    V1(KeyPairV1),
+    V2(KeyPairV2),
 }
 
-impl TryFrom<KeysConversion> for Secp256k1KeyPair {
+impl TryFrom<VersionedKeyPair> for Secp256k1KeyPair {
     type Error = Error;
 
-    fn try_from(conversion: KeysConversion) -> Result<Self, Self::Error> {
-        match conversion {
-            KeysConversion::Old(OldKeyEntry {
+    fn try_from(versioned_key_pair: VersionedKeyPair) -> Result<Self, Self::Error> {
+        match versioned_key_pair {
+            VersionedKeyPair::V1(KeyPairV1 {
                 public_key,
                 private_key,
                 account,
@@ -180,7 +190,7 @@ impl TryFrom<KeysConversion> for Secp256k1KeyPair {
                     account,
                 })
             }
-            KeysConversion::New(NewKeyEntry {
+            VersionedKeyPair::V2(KeyPairV2 {
                 private_key,
                 public_key,
                 address,
