@@ -82,13 +82,15 @@ impl Secp256k1AddressType {
     }
 }
 
-impl From<&AddressType> for Secp256k1AddressType {
-    fn from(address_type: &AddressType) -> Self {
+impl TryFrom<&AddressType> for Secp256k1AddressType {
+    type Error = Error;
+
+    fn try_from(address_type: &AddressType) -> Result<Self, Self::Error> {
         match address_type {
             AddressType::Ethermint { pk_type } if pk_type.ends_with(".ethsecp256k1.PubKey") => {
-                Self::Ethermint
+                Ok(Self::Ethermint)
             }
-            AddressType::Cosmos | AddressType::Ethermint { pk_type: _ } => Self::Cosmos,
+            AddressType::Cosmos | AddressType::Ethermint { pk_type: _ } => Ok(Self::Cosmos),
         }
     }
 }
@@ -280,7 +282,7 @@ impl SigningKeyPair for Secp256k1KeyPair {
         address_type: &AddressType,
         account_prefix: &str,
     ) -> Result<Self, Error> {
-        Self::from_mnemonic_internal(mnemonic, hd_path, address_type.into(), account_prefix)
+        Self::from_mnemonic_internal(mnemonic, hd_path, address_type.try_into()?, account_prefix)
     }
 
     fn account(&self) -> String {

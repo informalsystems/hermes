@@ -2,6 +2,7 @@ use flex_error::{define_error, DisplayOnly, TraceError};
 use std::io::Error as IoError;
 
 use super::KeyType;
+use crate::config::AddressType;
 
 define_error! {
     Error {
@@ -139,5 +140,13 @@ define_error! {
             [ TraceError<bs58::decode::Error> ]
             |_| { "bs58 decode error" },
 
+        UnsupportedAddressType
+          {
+              address_type: AddressType,
+              key_type: KeyType,
+          }
+          |e| {
+              format!("Unsupported address type {} for key type {}", e.address_type, e.key_type)
+          }
     }
 }
