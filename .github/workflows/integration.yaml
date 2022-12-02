@@ -120,7 +120,7 @@ jobs:
       matrix:
         package1: [.#gaia6, .#gaia7, .#gaia8]
         package2: [.#gaia6, .#gaia7, .#gaia8]
-        command: $(nix shell ${{ matrix.package1 }} -c which gaiad),$(nix shell ${{ matrix.package2 }} -c which gaiad)
+        command: [gaiad]
         account_prefix: [cosmos]
 
     steps:
@@ -143,12 +143,14 @@ jobs:
         with:
           command: test
           args: -p ibc-integration-test --no-fail-fast --no-run
+      - name: Set multi binary command env
+        run: echo "GITHUB_MULTI_BINARY=$(echo $(nix shell ${{ matrix.package1 }} -c which ${{ matrix.command }}),$(nix shell ${{ matrix.package2 }} -c which ${{ matrix.command }}))" >> GITHUB_ENV
       - uses: nick-fields/retry@v2
         env:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
-          CHAIN_COMMAND_PATHS: ${{ matrix.command }}
+          CHAIN_COMMAND_PATHS: ${{ env.GITHUB_MULTI_BINARY }}
           ACCOUNT_PREFIXES: ${{ matrix.account_prefix }}
         with:
           max_attempts: 3
