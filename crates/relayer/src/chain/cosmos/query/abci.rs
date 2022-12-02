@@ -7,7 +7,7 @@ use tendermint_rpc::{Client, HttpClient, Url};
 use crate::error::Error;
 
 /// Generic query response type
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct QueryResponse {
     pub value: Vec<u8>,
     pub proof: Option<MerkleProof>,
