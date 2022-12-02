@@ -7,11 +7,11 @@ use crate::chain::tracking::TrackedMsgs;
 use crate::chain::requests::{CrossChainQueryRequest, IncludeProof, QueryConnectionRequest, QueryHeight};
 use crate::foreign_client::ForeignClient;
 
-use std::time::Duration;
-use crossbeam_channel::Receiver;
-use tracing::{info, info_span};
-use uuid::Uuid;
 use ibc_relayer_types::core::ics02_client::height::Height;
+use crossbeam_channel::Receiver;
+use std::time::Duration;
+use uuid::Uuid;
+use tracing::{info, info_span};
 
 pub fn spawn_cross_chain_query_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     chain_a_handle: ChainA,

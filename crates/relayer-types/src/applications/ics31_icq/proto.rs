@@ -1,5 +1,8 @@
+/// Temporal files before prost files are merged into cosmos/ibc-proto-rs
+
 use std::prelude::v1::*;
 
+/// https://github.com/Stride-Labs/stride/blob/main/proto/stride/interchainquery/v1/messages.proto
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgSubmitQueryResponse {
     #[prost(string, tag="1")]
@@ -16,6 +19,7 @@ pub struct MsgSubmitQueryResponse {
     pub from_address: String,
 }
 
+/// https://github.com/tendermint/tendermint/blob/main/proto/tendermint/crypto/proof.proto
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProofOp {
     #[prost(string, tag="1")]

@@ -303,6 +303,7 @@ fn extract_block_events(
         extract_events(height, block_events, "channel_close_confirm", "channel_id"),
         height,
     );
+    // extract cross chain query event from block_events
     if let Ok(ccq) = CrossChainQueryPacket::extract_query_event(block_events) {
         events.push(IbcEventWithHeight::new(ccq, height));
     }
