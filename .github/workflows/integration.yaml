@@ -144,7 +144,7 @@ jobs:
           command: test
           args: -p ibc-integration-test --no-fail-fast --no-run
       - name: Set multi binary command env
-        run: echo "GITHUB_MULTI_BINARY=$(echo $(nix shell ${{ matrix.package1 }} -c which ${{ matrix.command }}),$(nix shell ${{ matrix.package2 }} -c which ${{ matrix.command }}))" >> GITHUB_ENV
+        run: echo "GITHUB_MULTI_BINARY=$(nix shell ${{ matrix.package1 }} -c which ${{ matrix.command }}),$(nix shell ${{ matrix.package2 }} -c which ${{ matrix.command }}))" >> GITHUB_ENV
       - uses: nick-fields/retry@v2
         env:
           RUST_LOG: info
