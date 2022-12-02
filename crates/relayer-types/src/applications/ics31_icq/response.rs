@@ -4,7 +4,8 @@ use std::prelude::v1::*;
 use std::vec;
 use ibc_proto::google::protobuf::Any;
 use tendermint::merkle::proof::Proof;
-use crate::applications::ics31_icq::proto::{MsgSubmitQueryResponse, ProofOp, ProofOps};
+use tendermint_proto::crypto::{ProofOp, ProofOps};
+use crate::applications::ics31_icq::proto::MsgSubmitQueryResponse;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct CrossChainQueryResponse {

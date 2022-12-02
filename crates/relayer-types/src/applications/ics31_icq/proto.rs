@@ -1,6 +1,7 @@
 /// Temporal files before prost files are merged into cosmos/ibc-proto-rs
 
 use std::prelude::v1::*;
+use tendermint_proto::crypto::ProofOps;
 
 /// https://github.com/Stride-Labs/stride/blob/main/proto/stride/interchainquery/v1/messages.proto
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -17,21 +18,4 @@ pub struct MsgSubmitQueryResponse {
     pub height: i64,
     #[prost(string, tag="6")]
     pub from_address: String,
-}
-
-/// https://github.com/tendermint/tendermint/blob/main/proto/tendermint/crypto/proof.proto
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ProofOp {
-    #[prost(string, tag="1")]
-    pub r#type: String,
-    #[prost(bytes="vec", tag="2")]
-    pub key: Vec<u8>,
-    #[prost(bytes="vec", tag="3")]
-    pub data: Vec<u8>,
-}
-/// ProofOps is Merkle proof defined by the list of ProofOps
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ProofOps {
-    #[prost(message, repeated, tag="1")]
-    pub ops: Vec<ProofOp>,
 }
