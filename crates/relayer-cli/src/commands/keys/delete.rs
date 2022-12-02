@@ -5,7 +5,7 @@ use eyre::eyre;
 use ibc_relayer::{
     chain::ChainType,
     config::{ChainConfig, Config},
-    keyring::{KeyRing, Secp256k1KeyPair, Store},
+    keyring::{KeyRing, Store},
 };
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
@@ -116,7 +116,7 @@ pub fn delete_key(config: &ChainConfig, key_name: &str) -> eyre::Result<()> {
     match config.r#type {
         ChainType::CosmosSdk => {
             let mut keyring =
-                KeyRing::<Secp256k1KeyPair>::new(Store::Test, &config.account_prefix, &config.id)?;
+                KeyRing::new_secp256k1(Store::Test, &config.account_prefix, &config.id)?;
             keyring.remove_key(key_name)?;
         }
     }
@@ -127,7 +127,7 @@ pub fn delete_all_keys(config: &ChainConfig) -> eyre::Result<()> {
     match config.r#type {
         ChainType::CosmosSdk => {
             let mut keyring =
-                KeyRing::<Secp256k1KeyPair>::new(Store::Test, &config.account_prefix, &config.id)?;
+                KeyRing::new_secp256k1(Store::Test, &config.account_prefix, &config.id)?;
             let keys = keyring.keys()?;
             for (key_name, _) in keys {
                 keyring.remove_key(&key_name)?;

@@ -226,45 +226,64 @@ impl<S: SigningKeyPairSized> KeyRing<S> {
 
     pub fn get_key(&self, key_name: &str) -> Result<S, Error> {
         match self {
-            KeyRing::Memory(m) => m.get_key(key_name),
-            KeyRing::Test(d) => d.get_key(key_name),
+            Self::Memory(m) => m.get_key(key_name),
+            Self::Test(d) => d.get_key(key_name),
         }
     }
 
     pub fn add_key(&mut self, key_name: &str, key_entry: S) -> Result<(), Error> {
         match self {
-            KeyRing::Memory(m) => m.add_key(key_name, key_entry),
-            KeyRing::Test(d) => d.add_key(key_name, key_entry),
+            Self::Memory(m) => m.add_key(key_name, key_entry),
+            Self::Test(d) => d.add_key(key_name, key_entry),
         }
     }
 
     pub fn remove_key(&mut self, key_name: &str) -> Result<(), Error> {
         match self {
-            KeyRing::Memory(m) => m.remove_key(key_name),
-            KeyRing::Test(d) => <Test as KeyStore<S>>::remove_key(d, key_name),
+            Self::Memory(m) => m.remove_key(key_name),
+            Self::Test(d) => <Test as KeyStore<S>>::remove_key(d, key_name),
         }
     }
 
     pub fn keys(&self) -> Result<Vec<(String, S)>, Error> {
         match self {
-            KeyRing::Memory(m) => m.keys(),
-            KeyRing::Test(d) => d.keys(),
+            Self::Memory(m) => m.keys(),
+            Self::Test(d) => d.keys(),
         }
     }
 
     pub fn account_prefix(&self) -> &str {
         match self {
-            KeyRing::Memory(m) => &m.account_prefix,
-            KeyRing::Test(d) => &d.account_prefix,
+            Self::Memory(m) => &m.account_prefix,
+            Self::Test(d) => &d.account_prefix,
         }
+    }
+}
+
+impl KeyRing<Secp256k1KeyPair> {
+    pub fn new_secp256k1(
+        store: Store,
+        account_prefix: &str,
+        chain_id: &ChainId,
+    ) -> Result<Self, Error> {
+        Self::new(store, account_prefix, chain_id)
+    }
+}
+
+impl KeyRing<Ed25519KeyPair> {
+    pub fn new_ed25519(
+        store: Store,
+        account_prefix: &str,
+        chain_id: &ChainId,
+    ) -> Result<Self, Error> {
+        Self::new(store, account_prefix, chain_id)
     }
 }
 
 pub fn list_keys(config: &ChainConfig) -> Result<Vec<(String, AnySigningKeyPair)>, Error> {
     let keys = match config.r#type {
         ChainType::CosmosSdk => {
-            let keyring =
-                KeyRing::<Secp256k1KeyPair>::new(Store::Test, &config.account_prefix, &config.id)?;
+            let keyring = KeyRing::new_secp256k1(Store::Test, &config.account_prefix, &config.id)?;
             keyring
                 .keys()?
                 .into_iter()

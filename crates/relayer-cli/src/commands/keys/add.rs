@@ -200,7 +200,8 @@ pub fn add_key(
 ) -> eyre::Result<AnySigningKeyPair> {
     let key_pair = match config.r#type {
         ChainType::CosmosSdk => {
-            let mut keyring = KeyRing::new(Store::Test, &config.account_prefix, &config.id)?;
+            let mut keyring =
+                KeyRing::new_secp256k1(Store::Test, &config.account_prefix, &config.id)?;
 
             check_key_exists(&keyring, key_name, overwrite);
 
@@ -229,7 +230,7 @@ pub fn restore_key(
     let key_pair = match config.r#type {
         ChainType::CosmosSdk => {
             let mut keyring =
-                KeyRing::<Secp256k1KeyPair>::new(Store::Test, &config.account_prefix, &config.id)?;
+                KeyRing::new_secp256k1(Store::Test, &config.account_prefix, &config.id)?;
 
             check_key_exists(&keyring, key_name, overwrite);
 

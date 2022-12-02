@@ -377,8 +377,7 @@ mod tests {
             "/tests/config/fixtures/relayer-seed.json"
         );
         let seed_file_content = fs::read_to_string(path).unwrap();
-        let _keyring =
-            KeyRing::<Secp256k1KeyPair>::new(keyring::Store::Memory, "cosmos", &chain_id).unwrap();
+        let _keyring = KeyRing::new_secp256k1(keyring::Store::Memory, "cosmos", &chain_id).unwrap();
         let hd_path = COSMOS_HD_PATH.parse().unwrap();
         let key_pair = Secp256k1KeyPair::from_seed_file(&seed_file_content, &hd_path).unwrap();
 
