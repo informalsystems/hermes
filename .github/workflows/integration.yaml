@@ -148,8 +148,8 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
-          CHAIN_COMMAND_PATHS: $(nix shell ${{ matrix.chain.package1 }} -c which gaiad),$(nix shell ${{ matrix.chain.package2 }} -c which ${{ matrix.chain.command }})
-          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
+          CHAIN_COMMAND_PATHS: $(nix shell ${{ matrix.package1 }} -c which gaiad),$(nix shell ${{ matrix.package2 }} -c which ${{ matrix.command }})
+          ACCOUNT_PREFIXES: ${{ matrix.account_prefix }}
         with:
           max_attempts: 3
           timeout_minutes: 45
